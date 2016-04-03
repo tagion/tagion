@@ -5,4 +5,5 @@ __dummy.html
 *.obj
 __test__library__
 dub.selections.json
+dub.userprefs
 libpbkdf2.*
