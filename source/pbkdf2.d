@@ -43,15 +43,17 @@ body
 	import std.digest.hmac;
 	import std.range : iota;
 
+	alias digestLength!H hLen;
+
 	auto hmac = HMAC!H(data);
-	auto l = cast(uint)((dkLen + digestLength!H - 1)/ digestLength!H);
+	auto l = cast(uint)((dkLen + hLen - 1)/ hLen);
 
 	uint idx;
-	ubyte[] res = new ubyte[l * digestLength!H];
+	ubyte[] res = new ubyte[l * hLen];
 	foreach(block; iota(1, l+1))
 	{
-		res[idx..idx+digestLength!H] = f(hmac, salt, iterations, block);
-		idx += digestLength!H;
+		res[idx..idx+hLen] = f(hmac, salt, iterations, block);
+		idx += hLen;
 	}
 
 	return res[0..dkLen];
