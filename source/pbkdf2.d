@@ -7,13 +7,13 @@ import std.digest.digest : isDigest, digestLength;
  * Returns a binary digest for the PBKDF2 hash algorithm of `data` with the given `salt`.
  * It iterates `iterations` time and produces a key of `dkLen` bytes.
  * By default SHA-1 is used as hash function.
- * 
+ *
  * Params:
  * 		data = data to hash
  * 		salt = salt to use to hash data
  * 		iterations = number of iterations to create hash with
  * 		dkLen = intended length of the derived key, at most (2^32 - 1) * hLen
- * 
+ *
  * Authors: T. Chaloupka
  */
 auto pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 1000, uint dkLen = 24)
