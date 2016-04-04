@@ -16,7 +16,7 @@ import std.digest.digest : isDigest, digestLength;
  *
  * Authors: T. Chaloupka
  */
-auto pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 1000, uint dkLen = 24)
+auto pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 4096, uint dkLen = 256)
 	if (isDigest!H)
 in
 {
