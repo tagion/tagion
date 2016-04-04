@@ -1,4 +1,4 @@
-module pbkdf2;
+module dkf.pbkdf2;
 
 import std.digest.sha : SHA1;
 import std.digest.digest : isDigest, digestLength;
