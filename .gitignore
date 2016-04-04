@@ -3,7 +3,7 @@ docs.json
 __dummy.html
 *.o
 *.obj
-__test__library__
+__test__*
 dub.selections.json
 dub.userprefs
 libpbkdf2.*

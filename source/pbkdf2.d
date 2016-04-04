@@ -79,9 +79,12 @@ unittest
 	res = pbkdf2("password".representation, "salt".representation, 4096, 20).toHexString!(LetterCase.lower);
 	assert(res == "4b007901b765489abead49d926f721d065a429c1");
 
-	//Works, but takes too long..
-//	res = pbkdf2("password".representation, "salt".representation, 16777216, 20).toHexString!(LetterCase.lower);
-//	assert(res == "eefe3d61cd4da4e4e9945b3d6ba2158c2634e984");
+	//Takes too long so it s versioned out..
+	version(LongTests)
+	{
+		res = pbkdf2("password".representation, "salt".representation, 16_777_216, 20).toHexString!(LetterCase.lower);
+		assert(res == "eefe3d61cd4da4e4e9945b3d6ba2158c2634e984");
+	}
 
 	res = pbkdf2("passwordPASSWORDpassword".representation, "saltSALTsaltSALTsaltSALTsaltSALTsalt".representation, 4096, 25).toHexString!(LetterCase.lower);
 	assert(res == "3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038");
@@ -123,9 +126,12 @@ unittest
 	res = pbkdf2!SHA256("password".representation, "salt".representation, 4096, 32).toHexString!(LetterCase.lower);
 	assert(res == "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a");
 
-	//Works, but takes too long..
-//	res = pbkdf2!SHA256("password".representation, "salt".representation, 16777216, 32).toHexString!(LetterCase.lower);
-//	assert(res == "cf81c66fe8cfc04d1f31ecb65dab4089f7f179e89b3b0bcb17ad10e3ac6eba46");
+	//Takes too long so it s versioned out..
+	version(LongTests)
+	{
+		res = pbkdf2!SHA256("password".representation, "salt".representation, 16_777_216, 32).toHexString!(LetterCase.lower);
+		assert(res == "cf81c66fe8cfc04d1f31ecb65dab4089f7f179e89b3b0bcb17ad10e3ac6eba46");
+	}
 
 	res = pbkdf2!SHA256("passwordPASSWORDpassword".representation, "saltSALTsaltSALTsaltSALTsaltSALTsalt".representation, 4096, 40).toHexString!(LetterCase.lower);
 	assert(res == "348c89dbcbd32b2f32d814b8116e84cf2b17347ebc1800181c4e2a1fb8dd53e1c635518c7dac47e9");
