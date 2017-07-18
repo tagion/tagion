@@ -1,6 +1,5 @@
 /**
-   This takes care to the transport layer to other Baking Sheets (node)
-   In the Bitcuits network
+   This the block in the chain called the BitcuitBlock
  */
 
 module Bakery.Owen.BitcuitBlock;
@@ -13,7 +12,7 @@ struct LedgerItem(H) {
     /**
        Ledger header format.
        struct {
-          uint size; // Size in bytes
+          uint size; // Size in ubytes
           Time time;
           int count;
           ..
@@ -25,7 +24,7 @@ struct LedgerItem(H) {
         time_end = size_end + Time.sizeof;
         count_end = time_end.sizeof + int.sizeof;
     };
-    this(const(byte)[] ledger)
+    this(const(ubyte)[] ledger)
     in {
         assert(lendger.sizeof > count_end,
             "Ledger violation. Size of the ledger block too small"
@@ -46,7 +45,7 @@ struct LedgerItem(H) {
     immutable(uint) count() const pure nothrow {
         return cast(immutable(Time))ledger[size_time..count_end];
     }
-    immutable(byte)[] data() const pure nothrow {
+    immutable(ubyte)[] data() const pure nothrow {
         return ledger;
     }
 
@@ -73,7 +72,7 @@ struct LedgerItem(H) {
         }
     }
 private:
-    immutable(byte)[] ledger;
+    immutable(ubyte)[] ledger;
 }
 
 
@@ -90,8 +89,8 @@ struct Ledger(H) {
             sorted=true;
         }
     }
-    immutable(byte)[] payload() nothrow {
-        immutable(byte)[] _payload;
+    immutable(ubyte)[] payload() nothrow {
+        immutable(ubyte)[] _payload;
         sort;
         foreach(item; ledgerlist) {
             payload~=item.data;
@@ -103,7 +102,10 @@ private:
     bool sorted;
 }
 
-struct BiscuitBlock(H, Consensus) {
+/**
+
+ */
+struct BitcuitBlock(H, C) {
     enum long timeCorrection = 0; // Adjust time to newyears 2017 TBD
     enum long Epoch2017=
         TimeSpan.Epich1970 +
@@ -124,30 +126,30 @@ struct BiscuitBlock(H, Consensus) {
         immutable(BitcuitBlock(H)) block,
         immutable(H) lederIndex,
         immutable(H) applicationIndex,
-        Concensus concenus;
+        C concensus
         Valid valid  ) {
         this.previousBlock = H(block);
         this.blockCount = block.blockCount + 1;
         this.time = block.time + blockPeriod;
         this.ledgerIndex = lederIndex;
         this.applicationIndex = applicationIndex;
-        this.valid = &valid;
+        this.consensus = consensus;
     }
     @property immutable(H) Nounce() const pure nothrow {
         return nounce;
     }
     @property immutable(H) blockLock() const nothrow {
-        if ( Valid(blockLock) ) {
+        if ( consenus.valid(blockLock) ) {
             return assumeUnique(blockLock);
         }
         else {
-            immutable(byte)[] p=payload;
-            p~=(cast(byte[])nounce).idup;
+            immutable(ubyte)[] p=payload;
+            p~=(cast(ubyte[])nounce).idup;
             blockLock = H(p);
             return blockLock.idup;
         }
     }
-    @property void Nounce(const(byte)[] nounce)
+    @property void Nounce(const(ubyte)[] nounce)
         in {
             assert(this.nounce.sizeof == nounce.length,
                 "Byte size of nounce is wrong");
@@ -157,13 +159,13 @@ struct BiscuitBlock(H, Consensus) {
     }
 
 private:
-    immutable(byte)[] payload() const pure nothrow {
-        immutable(byte)[] p;
-        p~=cast(immutable(byte)[])previousBlock;
-        p~=cast(immutable(byte)[])blockCount;
-        p~=cast(immutable(byte)[])time;
-        p~=cast(immutable(byte)[])legerIndex;
-        p~=cast(immutable(byte)[])applicationIndex;
+    immutable(ubyte)[] payload() const pure nothrow {
+        immutable(ubyte)[] p;
+        p~=cast(immutable(ubyte)[])previousBlock;
+        p~=cast(immutable(ubyte)[])blockCount;
+        p~=cast(immutable(ubyte)[])time;
+        p~=cast(immutable(ubyte)[])legerIndex;
+        p~=cast(immutable(ubyte)[])applicationIndex;
     }
     H nounce;
     H blockLock;
@@ -171,7 +173,8 @@ private:
     /**
        The valid function checks if
      */
-    Valid valid;
+    C consensus;
+
     /**
        mined is true when block is a valid minded block
      */
