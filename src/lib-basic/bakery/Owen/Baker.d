@@ -7,16 +7,16 @@ module Bakery.Owen.Baker;
 
 import Tango.time.Time;
 private import Bakery.Owen.BitcuitBlock;
+private import Bakery.Owner.ConcensusBase;
 
 @safe
-interface Concensus {
-
-}
-
-@safe
-class Baker(H, C) {
-    alias BitcuitBlock!(H, C) BitcuitBlockT;
+class Baker(H) {
+    alias ConcensusBase(H) ConcensusT;
+    alias BitcuitBlock!(H, ConcensusT) BitcuitBlockT;
     // This function mines the Block
+    this(ConcensusT concensus) {
+        this.consensus = concensus;
+    }
     bool baking(
         immutable(BitcuitBlockT) block,
         function immutable(ubyte)[] random,
@@ -33,6 +33,7 @@ class Baker(H, C) {
     }
 
 private:
+    Concensus consensus;
     bool heat(
         immutable(BitcuitBlockT) block,
         immutable(ubyte)[] nounce,
@@ -41,8 +42,6 @@ private:
         buffer=block.payload;
         buffer~=nounce;
         blockhash=H(buffer);
-        return C.isBaked(blockhash);
+        return concensus.isBaked(blockhash);
     }
-    immutable(ubyte)[] buffer;
-    H blockhash;
 }
