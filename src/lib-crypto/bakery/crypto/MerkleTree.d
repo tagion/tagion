@@ -97,7 +97,7 @@ public class MerkleTree(H : Hash) {
                 immutable(Node) b) dg) {
             void local_search(immutable(Node) a, immutable(Node) b) {
                 if ( stop ) {
-                    return
+                    return;
                 }
                 if ( ( a is null) || ( b is null ) ) {
                     if ( a is null ) {
@@ -107,7 +107,7 @@ public class MerkleTree(H : Hash) {
 
                     }
                     else if ( b is null ) {
-                        local_search(a.left, ,b);
+                        local_search(a.left, b);
                         stop = dg(a, b);
                         local_search(a.right, b);
                     }
@@ -218,9 +218,10 @@ public class MerkleTree(H : Hash) {
    * [(nodetype:byte)(siglength:int)(signature:[]byte)]
    * @param buf
    */
+    /*
   void serializeBreadthFirst(ByteBuffer buf) {
-    Queue<Node> q = new ArrayDeque<Node>((nnodes / 2) + 1);
-    q.add(root);
+      Queue<Node> q = new ArrayDeque<Node>((nnodes / 2) + 1);
+      q.add(root);
 
     while (!q.isEmpty()) {
       Node nd = q.remove();
@@ -234,7 +235,7 @@ public class MerkleTree(H : Hash) {
       }
     }
   }
-
+    */
   /**
    * Create a tree from the bottom up starting from the leaf signatures.
    * @param signatures
