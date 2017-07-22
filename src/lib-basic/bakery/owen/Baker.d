@@ -5,7 +5,7 @@
 
 module bakery.owen.Baker;
 
-import Tango.time.Time;
+import tango.time.Time;
 private import bakery.owen.BitcuitBlock;
 private import bakery.owen.ConcensusBase;
 

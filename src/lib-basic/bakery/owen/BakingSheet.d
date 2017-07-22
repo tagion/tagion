@@ -5,7 +5,7 @@
 
 module bakery.owen.BakingSheet;
 
-import Tango.time.Time;
+import tango.time.Time;
 private import bakery.owen.BitcuitBlock;
 
 @safe
@@ -35,7 +35,8 @@ interface CoockieSheet {
 
 
 @safe
-class BakingSheet(Sheet : CoockieSheet) {
+class BakingSheet(Sheet) {
+    static assert(is(Sheet : CoockieSheet));
     private const(Sheet) sheet;
     this(immutable(Sheet) sheet) {
         sheet = this.sheet;

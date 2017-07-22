@@ -2,7 +2,8 @@
    This the block in the chain called the BitcuitBlock
  */
 
-module Bakery.Owen.BitcuitBlock;
+module bakery.owen.BitcuitBlock;
+
 
 /**
 
@@ -180,12 +181,4 @@ private:
        mined is true when block is a valid minded block
      */
     bool mined;
-}
-
-@safe
-class BakingSheet(T : CoockieSheet) {
-    private const(T) sheet;
-    this(immutable(T) sheet) {
-        sheet = this.sheet;
-    }
 }

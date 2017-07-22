@@ -1,3 +1,4 @@
+module bakery.owen.ConcensusBase;
 
 @safe
 interface ConcensusBase(H) {
