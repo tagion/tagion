@@ -3,10 +3,10 @@
    In the Bitcuits network
  */
 
-module Bakery.Owen.BakingSheet;
+module bakery.owen.BakingSheet;
 
 import Tango.time.Time;
-private import Bakery.Owen.BitcuitBlock;
+private import bakery.owen.BitcuitBlock;
 
 @safe
 interface CoockieSheet {
@@ -23,7 +23,7 @@ interface CoockieSheet {
     /**
         send data package on channel
     */
-    void send(T)(uint channel, T data) static ;
+    void send(T)(uint channel, T data);
     /**
        broadcast the data package to all connected channels
      */

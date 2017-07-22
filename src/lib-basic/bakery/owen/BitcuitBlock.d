@@ -20,9 +20,9 @@ struct LedgerItem(H) {
 
      */
     enum {
-        size_end = uint.sizeof;
-        time_end = size_end + Time.sizeof;
-        count_end = time_end.sizeof + int.sizeof;
+        size_end = uint.sizeof,
+        time_end = size_end + Time.sizeof,
+        count_end = time_end.sizeof + int.sizeof
     };
     this(const(ubyte)[] ledger)
     in {
@@ -49,7 +49,7 @@ struct LedgerItem(H) {
         return ledger;
     }
 
-    int opComp(const(LedgerItem(H)) a, const(LedgerItem(H)) b) const pure nothrow {
+    int opComp(const(LedgerItemT) a, const(LedgerItemT) b) const pure nothrow {
         if ( a == b ) {
             return 0;
         }
@@ -77,7 +77,7 @@ private:
 
 
 struct Ledger(H) {
-    alias LedgerItem(H) LedgerItemT;
+    alias LedgerItem!(H) LedgerItemT;
     void append(ref immutable(LedgerItemT) item) {
         sorted=false;
         ledgerlist~=&item;
@@ -89,9 +89,10 @@ struct Ledger(H) {
             sorted=true;
         }
     }
+
     immutable(ubyte)[] payload() nothrow {
         immutable(ubyte)[] _payload;
-        sort;
+//        sort;
         foreach(item; ledgerlist) {
             payload~=item.data;
         }
@@ -121,12 +122,12 @@ struct BitcuitBlock(H, C) {
     /**
        Valid check is the hash is valid minded value
      */
-    alias function bool(const(H) h) const pure nothrow Valid;
+    alias bool function(const(H) h) pure nothrow Valid;
     this(
-        immutable(BitcuitBlock(H)) block,
+        immutable(BitcuitBlock!(H)) block,
         immutable(H) lederIndex,
         immutable(H) applicationIndex,
-        C concensus
+        C concensus,
         Valid valid  ) {
         this.previousBlock = H(block);
         this.blockCount = block.blockCount + 1;
@@ -187,7 +188,4 @@ class BakingSheet(T : CoockieSheet) {
     this(immutable(T) sheet) {
         sheet = this.sheet;
     }
-
-
-
 }

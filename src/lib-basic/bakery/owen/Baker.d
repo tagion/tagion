@@ -3,15 +3,15 @@
    called the baker
  */
 
-module Bakery.Owen.Baker;
+module bakery.owen.Baker;
 
 import Tango.time.Time;
-private import Bakery.Owen.BitcuitBlock;
-private import Bakery.Owner.ConcensusBase;
+private import bakery.owen.BitcuitBlock;
+private import bakery.owen.ConcensusBase;
 
 @safe
 class Baker(H) {
-    alias ConcensusBase(H) ConcensusT;
+    alias ConcensusBase!(H) ConcensusT;
     alias BitcuitBlock!(H, ConcensusT) BitcuitBlockT;
     // This function mines the Block
     this(ConcensusT concensus) {
@@ -19,7 +19,7 @@ class Baker(H) {
     }
     bool baking(
         immutable(BitcuitBlockT) block,
-        function immutable(ubyte)[] random,
+        immutable(ubyte)[] function() random,
         ref immutable(ubyte)[] buffer,
         Time finish
         ) {
