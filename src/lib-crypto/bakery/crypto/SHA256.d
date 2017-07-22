@@ -1,19 +1,19 @@
-module Bakery.crypto.SHA256;
+module bakery.crypto.SHA256;
 
-import Bakery.crypto.Hash;
-private alias tango.util.digest digest;
+import bakery.crypto.Hash;
+import tango.util.digest.Sha256 : Sha256;
 
 class SHA256 : Hash {
-    private digest.Sha256 sha256_core;
-    alias private immutable(ubyte)[size_of_hash] ;
+    private Sha256 sha256_core;
+//    alias immutable(ubyte)[size_of_hash] ;
     private immutable(ubyte)[] data;
     this(immutable(ubyte)[] data) {
-        sha256_core = new digist.Sha256;
+        sha256_core = new Sha256;
         sha256_core.update(data);
         this.data=data;
     }
-    static Hash opCall(immutable(ubyte)[] data) {
-        auto result = new Hash(data);
+    static immutable(Hash) opCall(immutable(ubyte)[] data) {
+        auto result = Hash(data);
         return result;
     }
     char[] hexDigest (char[] buffer = null) {
