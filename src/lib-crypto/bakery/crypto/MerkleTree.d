@@ -1,6 +1,9 @@
 module bakery.crypto.MerkleTree;
 
 import bakery.crypto.Hash;
+import std.exception : assumeUnique;
+import tango.core.Traits;
+
 /**
  * MerkleTree is an implementation of a Merkle binary hash tree where the leaves
  * are signatures (hashes, digests, CRCs, etc.) of some underlying data structure
@@ -28,20 +31,21 @@ import bakery.crypto.Hash;
 
 @safe
 interface SignatureArray(H) {
-    alias Hash!H HashT;
+    static assert(is(H : Hash), "The hash object H must implement the Hash interface");
     @property
     final size_t length() const pure nothrow {
         return cast(size_t)this.size;
     }
     @property
-    unit size() const pure nothrow;
-    immutable(HashT) opIndex(const uint index) const pure nothrow;
+    uint size() const pure nothrow;
+    immutable(H) opIndex(const uint index) const pure nothrow;
+//    immutable(ubyte)[] buffer() const pure nothrow;
 }
 
 @safe
-public class MerkleTree(HashT) {
-    alias Hash!H HashT;
-    alias immutable(immutable(Node))[] Nodes;
+public class MerkleTree(H) {
+    static assert(is(H : Hash), "The hash object H must implement the Hash interface");
+    alias immutable(Node)[] Nodes;
     enum int MAGIC_HDR = 0xcdaace99;
     /*
       enum int INT_BYTES = 4;
@@ -51,9 +55,9 @@ public class MerkleTree(HashT) {
       enum byte INTERNAL_SIG_TYPE = 0x01;
     */
 
-    private final Adler32 crc = new Adler32();
-    private SignatureArray!(HashT) leafSigs;
-    private Node root;
+    //private final Adler32 crc = new Adler32();
+    private SignatureArray!(H) leafSigs;
+    private immutable(Node) root;
     private int depth;
     private int nnodes;
 
@@ -62,41 +66,41 @@ public class MerkleTree(HashT) {
      * The Merkle tree is built from the bottom up.
      * @param leafSignatures
      */
-    this(SignatureArray!(HashT)  leafSignatures)
+    this(SignatureArray!(H)  leafSignatures)
     in {
-        assert(signatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
+        assert(leafSignatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
     }
     body
     {
-        leafSigs = signatures;
-        nnodes = signatures.size();
-        auto  parents = bottomLevel(signatures);
-        nnodes += parents.size();
+        leafSigs = leafSignatures;
+        nnodes = leafSignatures.size();
+        auto  parents = bottomLevel(leafSignatures);
+        nnodes += parents.length;
         depth = 1;
 
-        while (parents.size() > 1) {
+        while (parents.length > 1) {
             parents = internalLevel(parents);
             depth++;
-            nnodes += parents.size();
+            nnodes += parents.length;
         }
         root = parents[0];
     }
 
-    Iterator search(MerkleTree!(HashT) B) {
+    Iterator search(MerkleTree!(H) B) {
         return Iterator(this, B);
     }
 
+
     struct Iterator {
-        private MerkleTree!(HashT) A, B;
-        private MerkleTree!(HashT) B;
-        this(MerkleTree!(HashT) A, B) {
+        alias bool delegate(immutable(Node) a, immutable(Node) b) @safe pure nothrow searchDg;
+        private MerkleTree!(H) A, B;
+        this(MerkleTree!(H) A, MerkleTree!(H) B) {
             this.A=A;
             this.B=B;
         }
-        bool search(scope bool delegate(
-                immutable(Node) a,
-                immutable(Node) b) dg) {
-            void local_search(immutable(Node) a, immutable(Node) b) {
+        bool search(scope searchDg dg) {
+            bool stop=false;
+            void local_search(immutable(Node) a, immutable(Node) b) @safe {
                 if ( stop ) {
                     return;
                 }
@@ -113,14 +117,13 @@ public class MerkleTree(HashT) {
                         local_search(a.right, b);
                     }
                 }
-                if ( a.signature != b.signature ) {
+                if ( !a.signature.isEqual(b.signature) ) {
                     local_search(a.left, b.left);
                     stop = dg(a, b);
                     local_search(a.right, b.right);
                 }
             }
-            bool stop=false;
-            local_search(a.root, b.root);
+            local_search(A.root, B.root);
             return stop;
         }
     }
@@ -129,18 +132,18 @@ public class MerkleTree(HashT) {
        I only validate the tree not the hash of the item array.
 
      */
-    bool validate() const pure nothrow {
-        void local_validate(const(Node) node) {
+    bool validate() const pure {
+        bool result;
+        void local_validate(const(Node) node) pure {
             if ( result ) {
                 if ( node !is null ) {
-                    if ( node.signature != Node.cHash(node.left, node.right) ) {
+                    if ( node.signature.isEqual(Node.cHash(node.left, node.right)) ) {
                         result = false;
                         return;
                     }
                 }
             }
         }
-        bool result;
         local_validate(root);
         return result;
     }
@@ -148,12 +151,15 @@ public class MerkleTree(HashT) {
        This function validates of the leaf of the MerkleTree mach the item list
        The delegate function is call when the leaf node does not match
      */
-    bool validateSignatures(scope bool delegate(const(Node) node, const(uint) index) dg) const pure nothrow {
-        void local_validate(const(Node) node) {
+    bool validateSignatures(
+        scope bool delegate(const(Node) node, const(uint) index) @safe pure dg) const pure {
+        bool result=true;
+        uint index=0;
+        void local_validate(const(Node) node) @safe pure  {
             if ( result ) {
                 if ( node !is null ) {
-                    if ( node.type == Node.sigType.Leaf ) {
-                        if ( (index => leafSigs.length) || ( node.signature != leafSigs[index].signature ) ) {
+                    if ( node.type == Node.sigType.leaf ) {
+                        if ( (index >= leafSigs.length) || ( !node.signature.isEqual(leafSigs[index]) ) ) {
                             result = dg(node, index);
                         }
                         else {
@@ -166,17 +172,17 @@ public class MerkleTree(HashT) {
                     }
                 }
             }
-            uint index=0;
-            bool result=true;
-            local_validate(root);
-            return result;
         }
+        local_validate(root);
+        return result;
     }
   /**
    * Serialization format:
    * (magicheader:uint)(numnodes:uint)[(nodetype:byte)(siglength:uint)(signature:[]byte)]
    * @return
    */
+    version(none)
+    @trusted
     immutable(ubyte)[] serialize() {
         void serializeTree(immutable(Node) tree, ubyte[] buffer, immutable(uint) level) {
             if ( tree !is null ) {
@@ -188,20 +194,28 @@ public class MerkleTree(HashT) {
         }
         ubyte[] result;
         ubyte[] buffer;
-        const uint num_of_nodes=tree.number_of_elements;
+        immutable uint num_of_nodes=root.number_of_elements;
 
         enum {
             magicHeaderSz = MAGIC_HDR.sizeof,
             nnodesSz = num_of_nodes.sizeof,
-            siglength = siglength.sizeof,
-            hdrSz = magicHeaderSz + nnodesSz + siglength,
+//            siglengthSz = siglength.sizeof,
+            hdrSz = magicHeaderSz + nnodesSz // + siglengthSz,
         };
         result = new ubyte[hdrSz + num_of_nodes * Node.payload_size];
         // buffer points into result
         buffer = result;
         /** buffer append function */
         void append(T)(T item) {
-            buffer[0..item.sizeof]=cast(ubyte[])item;
+            static assert(isAtomicType!(BaseTypeOf!(T)), "Only atomic type supported");
+            static if ( is(BaseTypeOf!(T) == T) ) {
+                ubyte* item_p = cast(ubyte*)&item;
+            }
+            else {
+                T x=item;
+                ubyte* item_p = cast(ubyte*)&x;
+            }
+            buffer[0..item.sizeof]=item_p[0..item.sizeof];
             buffer=buffer[item.sizeof..$];
         }
         append(MAGIC_HDR);
@@ -210,6 +224,7 @@ public class MerkleTree(HashT) {
         // And the whole thee
         serializeTree(root, buffer, 0);
         //
+
         return assumeUnique(result);
     }
 
@@ -241,7 +256,7 @@ public class MerkleTree(HashT) {
    * Create a tree from the bottom up starting from the leaf signatures.
    * @param signatures
    */
-    private immutable(Node) constructTree(SignatureArray signatures)
+    private immutable(Node) constructTree(SignatureArray!(H) signatures)
       in {
           assert(signatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
       }
@@ -250,19 +265,19 @@ public class MerkleTree(HashT) {
         leafSigs = signatures;
         nnodes = signatures.size();
         auto  parents = bottomLevel(signatures);
-        nnodes += parents.size();
+        nnodes += cast(uint)parents.length;
         depth = 1;
 
-        while (parents.size() > 1) {
+        while (parents.length > 1) {
             parents = internalLevel(parents);
             depth++;
-            nnodes += parents.size();
+            nnodes += cast(uint)parents.length;
         }
 
         return parents[0];
     }
 
-
+/*
     public int getNumNodes() {
         return nnodes;
     }
@@ -274,24 +289,22 @@ public class MerkleTree(HashT) {
     public int getHeight() {
         return depth;
     }
-
+*/
 
   /**
    * Constructs an internal level of the tree
    */
   static Nodes internalLevel(Nodes children) {
-      auto parrents = new immutable(Node)[signatures.size/2];
+      Nodes parents;
       // List<Node> parents = new ArrayList<Node>(children.size() / 2);
-      uint j=0;
-      for (uint i = 0; i < children.size() - 1; i += 2) {
+      for (uint i = 0; i < children.length - 1; i += 2) {
           auto parent = Node(children[i], children[i+1]);
-          parents[j]=parent;
-          j+=1;
+          parents~=parent;
       }
 
-      if (children.size() % 2 != 0) {
-          Node parent = constructInternalNode(children[$], null);
-          parents.add(parent);
+      if (children.length % 2 != 0) {
+          auto parent = Node(children[$], null);
+          parents~=parent;
       }
       return assumeUnique(parents);
   }
@@ -301,32 +314,33 @@ public class MerkleTree(HashT) {
    * Constructs the bottom part of the tree - the leaf nodes and their
    * immediate parents.  Returns a list of the parent nodes.
    */
-    static Nodes bottomLevel(SignatureArray signatures) {
-        auto parents = new immutable(Node)[signatures.size/2];
+    static Nodes bottomLevel(SignatureArray!(H) signatures) {
+        Nodes parents;
+//        auto parents = new const(Node)[signatures.size/2];
 
 //            List<Node> parents = new ArrayList<Node>(signatures.size() / 2);
-        uint j=0;
         for(uint i=0; i < signatures.size - 1; i += 2) {
-            auto leaf1 = Node(signatures[i].buffer);
-            auto leaf2 = Node(signatures[i+1].buffer);
-            auto parent = Node(leaf1, leaf2);
-            parents[j]=parent;
-            j+=1;
+
+            immutable left_leaf = Node(signatures[i]);
+            immutable right_leaf = Node(signatures[i+1]);
+            auto parent = Node(left_leaf, right_leaf);
+            parents~=parent;
         }
 
         // if odd number of leafs, handle last entry
         if (signatures.size % 2 != 0) {
-            auto leaf = constructLeafNode(signatures[$]);
-            auto parent = Node(leaf, null);
-            parents[j]=parent;
+            immutable left_leaf = Node(signatures[signatures.size-1]);
+            auto parent = Node(left_leaf, null);
+            parents~=parent;
         }
 
-        return assumeUnique(parents);
+        return parents;
     }
 
+    /*
     private Node constructInternalNode(const(Node) child1, const(Node) child2) {
         Node parent = new Node();
-        parent.type = INTERNAL_SIG_TYPE;
+        parent.type = Node.Si;
 
         if (child2 is null) {
             parent.sig = child1.sig;
@@ -338,13 +352,15 @@ public class MerkleTree(HashT) {
         parent.right = child2;
         return parent;
     }
-
+    */
+    /*
     private static Node constructLeafNode(String signature) {
         Node leaf = new Node(Node.sigType.leaf, signature);
         // leaf.type = LEAF_SIG_TYPE;
         // leaf.sig = signature.getBytes(StandardCharsets.UTF_8);
         return leaf;
     }
+    */
 /*
     immutable(HashT) internalHash(const(HashT) leftChildSig, const(HashT) rightChildSig) const pure nothrow {
         return H(leftChildSig,
@@ -372,63 +388,76 @@ public class MerkleTree(HashT) {
    */
     class Node {
         enum sigType : ubyte {
-          // Type of the Node
-          internal,
-          leaf
-      };
-      enum payload_size = sigType.sizeof + H.buffer_size;
-      private this(sigType type) {
-          this.type = type;
-      }
-      static immutable(Node) opCall(const(Node) child1, const(Node) child2)
-          in {
-              assert(child2 !is null);
-          }
-      body {
-          auto parent = new Node(sigType.internal);
-          if ( child2 is null ) {
-              parent.signature = child1.signature;
-          }
-          else {
-              parent.signature = H(child1.signature, child2.signature);
-          }
-          parent.left = child1;
-          parent.right = child2;
-          return assumeUnique(parent);
-      }
-      static immutable(Node) opCall(immutable(HashT) signature) {
-          auto leaf = new Node(sigType.internal);
-          leaf.signature = hash;
-      }
-      immutable(ubyte)[] payload() const pure nothrow {
-          immutable(ubyte)[] buffer;
-          buffer~=cast(immutable(ubyte[]))type;
-          buffer~=signature.buffer;
-      }
-      uint number_of_elements() const pure nothrow {
-          void local_count(immutable(Node) node) {
-              if ( node !is null ) {
-                  count++;
-                  local_count(node.left);
-                  local_count(node.right);
-              }
-          }
-          uint count = 0;
-          local_count(this);
-          return count;
-      }
-      static immutable(HashT) cHash(const(Node) A, const(Node) B) const pure nothrow
-          in {
-              assert(A !is null);
-          }
-      body {
-          if ( B is null ) {
-              return A.signature;
-          }
-          else {
-              return H(A.signature, B.signature);
-          }
-      }
+            // Type of the Node
+            internal,
+                leaf
+                };
+        static immutable payload_size = sigType.sizeof + H.buffer_size;
+        private this(immutable(Node) child1, immutable(Node) child2)
+            in {
+                assert(child1 !is null);
+            }
+        body {
+            this.type = sigType.internal;
+            if ( child2 is null ) {
+                this.signature = child2.signature;
+            }
+            else {
+                this.signature = H(child1.signature, child2.signature);
+            }
+            this.left = child1;
+            this.right = child2;
+        }
+        private this(immutable(H) signature) {
+            type = sigType.leaf;
+            this.signature = signature;
+            left = null;
+            right = null;
+        }
+        private this(immutable(ubyte)[] buffer) {
+            type = sigType.leaf;
+            this.signature = H(buffer);
+            left = null;
+            right = null;
+        }
+        @trusted
+        static immutable(Node) opCall(immutable(Node) child1, immutable(Node) child2) {
+                return cast(immutable(Node))new Node(child1, child2);
+        }
+        static const(Node) opCall(immutable(H) signature) {
+            return new Node(signature);
+        }
+        immutable(ubyte)[] payload() const pure nothrow {
+            immutable(ubyte)[] buffer;
+            ubyte type_b=type;
+            buffer~=type_b;
+            buffer~=signature.signed;
+            return buffer;
+        }
+        uint number_of_elements() const pure nothrow {
+            uint count = 0;
+            void local_count(const(Node) node) pure nothrow {
+                if ( node !is null ) {
+                    count++;
+                    local_count(node.left);
+                    local_count(node.right);
+                }
+            }
+            local_count(this);
+            return count;
+        }
+        static immutable(H) cHash(const(Node) A, const(Node) B) pure
+            in {
+                assert(A !is null);
+            }
+        body {
+            if ( B is null ) {
+                return A.signature;
+            }
+            else {
+                return H(A.signature, B.signature);
+            }
+        }
       /*
       @Override
       public String toString() {
@@ -455,10 +484,10 @@ public class MerkleTree(HashT) {
       }
       */
   private:
-      sigType type;
-      H signature; // signature of the node
-      Node left;
-      Node right;
+        immutable(sigType) type;
+        immutable(H) signature; // signature of the node
+        immutable(Node) left;
+        immutable(Node) right;
   }
 
   /**

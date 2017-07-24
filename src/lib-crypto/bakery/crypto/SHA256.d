@@ -2,23 +2,52 @@ module bakery.crypto.SHA256;
 
 import bakery.crypto.Hash;
 import tango.util.digest.Sha256 : Sha256;
+import std.exception : assumeUnique;
 
+@safe
 class SHA256 : Hash {
     private Sha256 sha256_core;
 //    alias immutable(ubyte)[size_of_hash] ;
     private immutable(ubyte)[] data;
+    private immutable(ubyte)[8] hashed;
     this(immutable(ubyte)[] data) {
         sha256_core = new Sha256;
         sha256_core.update(data);
+        hashed=sha256_core.binaryDigiets().idup;
         this.data=data;
     }
-    static immutable(Hash) opCall(immutable(ubyte)[] data) {
-        auto result = Hash(data);
-        return result;
+    static immutable(uint) buffer_size() {
+        return 32;
     }
-    char[] hexDigest (char[] buffer = null) {
-        return sha256_core.hexDigest(buffer);
+    static immutable(SHA256) opCall(immutable(ubyte)[] data) pure {
+        auto result = new Hash(data);
+        return assumeUnique(result);
     }
+    static immutable(SHA256) opCall(const(Hash) left, const(Hash) right) pure {
+        immutable(ubyte)[] data;
+        data~=left.hashed;
+        data~=right.hashed;
+        return this.opCall(data);
+    }
+    immutable(char)[] hexDigest () {
+        char[] buffer;
+        return assumeUnique(sha256_core.hexDigest(buffer));
+    }
+    immutable(ubyte)[] signed() const pure nothrow {
+        return buffer;
+    }
+    bool isEqual(const(Hash) h) pure const {
+        static assert(is(Hash : SHA256));
+        return h.buffer == buffer;
+    }
+    /*
+    override bool opEquals(Object h) {
+        if ( is(typeof(h) : SHA256) ) {
+            return false;
+        }
+        return isEqual(h);
+    }
+    */
     unittest() {
         enum immutable(char)[][] strings = [
             // Here the sha256sum has been used to verify the sha256 hash
