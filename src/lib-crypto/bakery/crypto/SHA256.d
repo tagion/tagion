@@ -8,23 +8,23 @@ import std.exception : assumeUnique;
 class SHA256 : Hash {
     private Sha256 sha256_core;
 //    alias immutable(ubyte)[size_of_hash] ;
-    private immutable(ubyte)[] data;
+//    private immutable(ubyte)[] data;
     private immutable(ubyte)[8] hashed;
-    this(immutable(ubyte)[] data) {
+    this(scope const(ubyte)[] data) {
         sha256_core = new Sha256;
         sha256_core.update(data);
         hashed=sha256_core.binaryDigiets().idup;
-        this.data=data;
+//        this.data=data;
     }
-    static immutable(uint) buffer_size() {
+    static immutable(uint) buffer_size() pure nothrow {
         return 32;
     }
-    static immutable(SHA256) opCall(immutable(ubyte)[] data) pure {
+    static immutable(SHA256) opCall(scope const(ubyte)[] data) pure {
         auto result = new Hash(data);
         return assumeUnique(result);
     }
     static immutable(SHA256) opCall(const(Hash) left, const(Hash) right) pure {
-        immutable(ubyte)[] data;
+        scope immutable(ubyte)[] data;
         data~=left.hashed;
         data~=right.hashed;
         return this.opCall(data);

@@ -30,7 +30,7 @@ import tango.core.Traits;
  */
 
 @safe
-interface SignatureArray(H) {
+interface MerkleTable(H) {
     static assert(is(H : Hash), "The hash object H must implement the Hash interface");
     @property
     final size_t length() const pure nothrow {
@@ -39,7 +39,6 @@ interface SignatureArray(H) {
     @property
     uint size() const pure nothrow;
     immutable(H) opIndex(const uint index) const pure nothrow;
-//    immutable(ubyte)[] buffer() const pure nothrow;
 }
 
 @safe
@@ -56,7 +55,7 @@ public class MerkleTree(H) {
     */
 
     //private final Adler32 crc = new Adler32();
-    private SignatureArray!(H) leafSigs;
+    private MerkleTable!(H) leafSigs;
     private immutable(Node) root;
     private int depth;
     private int nnodes;
@@ -66,7 +65,7 @@ public class MerkleTree(H) {
      * The Merkle tree is built from the bottom up.
      * @param leafSignatures
      */
-    this(SignatureArray!(H)  leafSignatures)
+    this(MerkleTable!(H)  leafSignatures)
     in {
         assert(leafSignatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
     }
@@ -256,7 +255,7 @@ public class MerkleTree(H) {
    * Create a tree from the bottom up starting from the leaf signatures.
    * @param signatures
    */
-    private immutable(Node) constructTree(SignatureArray!(H) signatures)
+    private immutable(Node) constructTree(MerkleTable!(H) signatures)
       in {
           assert(signatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
       }
@@ -314,7 +313,7 @@ public class MerkleTree(H) {
    * Constructs the bottom part of the tree - the leaf nodes and their
    * immediate parents.  Returns a list of the parent nodes.
    */
-    static Nodes bottomLevel(SignatureArray!(H) signatures) {
+    static Nodes bottomLevel(MerkleTable!(H) signatures) {
         Nodes parents;
 //        auto parents = new const(Node)[signatures.size/2];
 
