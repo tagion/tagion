@@ -27,9 +27,10 @@ class SHA256 : Hash {
     static immutable(uint) buffer_size() pure nothrow {
         return 32;
     }
-    static SHA256 opCall(scope const(ubyte)[] data) {
+    @trusted
+    static immutable(SHA256) opCall(scope const(ubyte)[] data) {
         auto result = new SHA256(data);
-        return result;
+        return cast(immutable)result;
     }
     @trusted
     static SHA256 opCall(const(char)[] str) {
@@ -37,7 +38,7 @@ class SHA256 : Hash {
         auto result = new SHA256(data);
         return result;
     }
-    static SHA256 opCall(const(SHA256) left, const(SHA256) right) {
+    static immutable(SHA256) opCall(const(SHA256) left, const(SHA256) right) {
         scope immutable(ubyte)[] data;
         data~=left.signed;
         data~=right.signed;
@@ -70,6 +71,8 @@ class SHA256 : Hash {
         enum immutable(char)[][] strings = [
             // Here the sha256sum has been used to verify the sha256 hash
             // echo "Go dav do!" | sha256sum
+//            "Go dav do!",
+//            "0Go dav",
             "Go dav do!",
             // echo "Dette er bare en laenger historie, for at set om vores Merkle Damgaard virker, det burde get goer" | sha256sum
             "Dette er bare en laenger historie, for at set om vores Merkle " ~
@@ -79,7 +82,8 @@ class SHA256 : Hash {
             ];
 
         enum immutable(char)[][] results = [
-            "8274aeb4c6c22340d682a2037a601378faaed52cedd3ccfc796f7dbab73d81f4",
+            "d85e36494ed350f5ec5135d1431145831f53a6416fb58bb03be9040e00a4f0a6",
+//            "8274aeb4c6c22340d682a2037a601378faaed52cedd3ccfc796f7dbab73d81f4",
             "c2fb4e5c40809031a0bbd29cd8af0fabb2cebefa096e89d8bcda462c03699da5",
             "c227722cd9cad6ff4961310fb9c3d36eff5f124739c24c4c4ba45dc9071f586b"
             ];

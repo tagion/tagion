@@ -38,7 +38,7 @@ interface MerkleTable(H) {
     }
     @property
     uint size() const pure nothrow;
-    immutable(H) opIndex(const uint index) const pure;
+    immutable(H) opIndex(const uint index) const;
 }
 
 @safe
@@ -135,9 +135,9 @@ public class MerkleTree(H) {
        I only validate the tree not the hash of the item array.
 
      */
-    bool validate() const pure {
+    bool validate() const  {
         bool result;
-        void local_validate(const(Node) node) pure {
+        void local_validate(const(Node) node)  {
             if ( result ) {
                 if ( node !is null ) {
                     if ( node.signature.isEqual(Node.cHash(node.left, node.right)) ) {
@@ -155,10 +155,10 @@ public class MerkleTree(H) {
        The delegate function is call when the leaf node does not match
      */
     bool validateSignatures(
-        scope bool delegate(const(Node) node, const(uint) index) @safe pure dg) const pure {
+        scope bool delegate(const(Node) node, const(uint) index) @safe pure dg) const  {
         bool result=true;
         uint index=0;
-        void local_validate(const(Node) node) @safe pure  {
+        void local_validate(const(Node) node) @safe   {
             if ( result ) {
                 if ( node !is null ) {
                     if ( node.type == Node.sigType.leaf ) {
@@ -467,7 +467,7 @@ public class MerkleTree(H) {
             local_count(this);
             return count;
         }
-        static immutable(H) cHash(const(Node) A, const(Node) B) pure
+        static immutable(H) cHash(const(Node) A, const(Node) B)
             in {
                 assert(A !is null);
             }
@@ -477,6 +477,7 @@ public class MerkleTree(H) {
             }
             else {
                 return H(A.signature, B.signature);
+
             }
         }
       /*
