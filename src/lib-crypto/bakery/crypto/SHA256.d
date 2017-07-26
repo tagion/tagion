@@ -6,39 +6,57 @@ import std.exception : assumeUnique;
 
 @safe
 class SHA256 : Hash {
-    private Sha256 sha256_core;
+//    private Sha256 sha256_core;
 //    alias immutable(ubyte)[size_of_hash] ;
 //    private immutable(ubyte)[] data;
-    private immutable(ubyte)[8] hashed;
+    enum hash_size=32;
+    alias immutable(ubyte)[] hash_array_t;
+    private hash_array_t _hashed;
     this(scope const(ubyte)[] data) {
-        sha256_core = new Sha256;
-        sha256_core.update(data);
-        hashed=sha256_core.binaryDigiets().idup;
-//        this.data=data;
+        immutable(ubyte)[] createSha256() @trusted
+            out(result) {
+                    assert(result.length == hash_size);
+                }
+        body {
+            auto sha256_core = new Sha256;
+            sha256_core.update(data);
+            return sha256_core.binaryDigest.idup;
+        }
+        _hashed=cast(hash_array_t)createSha256()[0..hash_size];
     }
     static immutable(uint) buffer_size() pure nothrow {
         return 32;
     }
-    static immutable(SHA256) opCall(scope const(ubyte)[] data) pure {
-        auto result = new Hash(data);
-        return assumeUnique(result);
+    static SHA256 opCall(scope const(ubyte)[] data) {
+        auto result = new SHA256(data);
+        return result;
     }
-    static immutable(SHA256) opCall(const(Hash) left, const(Hash) right) pure {
+    @trusted
+    static SHA256 opCall(const(char)[] str) {
+        const(ubyte)[] data = (cast(const(ubyte)*)str.ptr)[0..str.length];
+        auto result = new SHA256(data);
+        return result;
+    }
+    static SHA256 opCall(const(SHA256) left, const(SHA256) right) {
         scope immutable(ubyte)[] data;
-        data~=left.hashed;
-        data~=right.hashed;
-        return this.opCall(data);
+        data~=left.signed;
+        data~=right.signed;
+        return SHA256(data);
     }
+    version(node)
     immutable(char)[] hexDigest () {
         char[] buffer;
         return assumeUnique(sha256_core.hexDigest(buffer));
     }
-    immutable(ubyte)[] signed() const pure nothrow {
-        return buffer;
+
+    override immutable(ubyte)[] signed() const pure nothrow {
+        return _hashed;
     }
-    bool isEqual(const(Hash) h) pure const {
-        static assert(is(Hash : SHA256));
-        return h.buffer == buffer;
+    override immutable(char)[] hex() const pure nothrow {
+        return .hex(_hashed);
+    }
+    bool isEqual(const(SHA256) h) pure const nothrow {
+        return h.signed == signed;
     }
     /*
     override bool opEquals(Object h) {
@@ -67,8 +85,8 @@ class SHA256 : Hash {
             ];
         foreach(i, s; strings) {
             auto h=SHA256(s);
-            auto hex = h.hexDigist;
-            assert(hex == results[i], "Cipher:("~s~")("~d~")!=("~results[i]~")");
+            auto d = h.hex;
+            assert(d == results[i], "Cipher:("~s~")("~d~")!=("~results[i]~")");
         }
     }
 }
