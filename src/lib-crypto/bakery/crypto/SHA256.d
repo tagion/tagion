@@ -48,13 +48,13 @@ class SHA256 : Hash {
         return isEqual(h);
     }
     */
-    unittest() {
+    unittest {
         enum immutable(char)[][] strings = [
             // Here the sha256sum has been used to verify the sha256 hash
             // echo "Go dav do!" | sha256sum
             "Go dav do!",
             // echo "Dette er bare en laenger historie, for at set om vores Merkle Damgaard virker, det burde get goer" | sha256sum
-            "Dette er bare en laenger historie, for at set om vores Merkle "
+            "Dette er bare en laenger historie, for at set om vores Merkle " ~
             "Damgaard virker, det burde get goer",
             // echo "In this example. The Linux command sha256 has been used to generate the hash values" | sha256sum
             "In this example. The Linux command sha256 has been used to generate the hash values"

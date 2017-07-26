@@ -38,7 +38,7 @@ interface MerkleTable(H) {
     }
     @property
     uint size() const pure nothrow;
-    immutable(H) opIndex(const uint index) const pure nothrow;
+    immutable(H) opIndex(const uint index) const pure;
 }
 
 @safe
@@ -55,7 +55,7 @@ public class MerkleTree(H) {
     */
 
     //private final Adler32 crc = new Adler32();
-    private MerkleTable!(H) leafSigs;
+    private const MerkleTable!(H) leafSigs;
     private immutable(Node) root;
     private int depth;
     private int nnodes;
@@ -65,23 +65,27 @@ public class MerkleTree(H) {
      * The Merkle tree is built from the bottom up.
      * @param leafSignatures
      */
-    this(MerkleTable!(H)  leafSignatures)
+    this(immutable MerkleTable!(H)  leafSignatures) immutable
     in {
         assert(leafSignatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
     }
     body
     {
+        uint counted_nodes;
+        uint counted_depth;
         leafSigs = leafSignatures;
-        nnodes = leafSignatures.size();
-        auto  parents = bottomLevel(leafSignatures);
-        nnodes += parents.length;
-        depth = 1;
+        counted_nodes = leafSignatures.size();
+        Nodes  parents = bottomLevel(leafSignatures);
+        counted_nodes += parents.length;
+        counted_depth = 1;
 
         while (parents.length > 1) {
-            parents = internalLevel(parents);
-            depth++;
-            nnodes += parents.length;
+            parents ~= internalLevel(parents);
+            counted_depth++;
+            counted_nodes += parents.length;
         }
+        nnodes = counted_nodes;
+        depth = counted_depth;
         root = parents[0];
     }
 
@@ -255,6 +259,7 @@ public class MerkleTree(H) {
    * Create a tree from the bottom up starting from the leaf signatures.
    * @param signatures
    */
+    version(node)
     private immutable(Node) constructTree(MerkleTable!(H) signatures)
       in {
           assert(signatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
@@ -289,20 +294,32 @@ public class MerkleTree(H) {
         return depth;
     }
 */
-
+    /*
+    @trusted
+    private immutable(Node) createNode(immutable(Node) node1, immutable(Node) node2) const pure {
+        auto result=new const(Node)(node1, node2);
+        return cast(immutable)(result);
+    }
+    @trusted
+    private immutable(Node) createNode(immutable(Node) node) const pure {
+        immutable(Node) right_null = null;
+        auto result=new const(Node)(node, right_null);
+        return cast(immutable)(result);
+    }
+    */
   /**
    * Constructs an internal level of the tree
    */
-  static Nodes internalLevel(Nodes children) {
+    protected Nodes internalLevel(Nodes children) immutable {
       Nodes parents;
-      // List<Node> parents = new ArrayList<Node>(children.size() / 2);
       for (uint i = 0; i < children.length - 1; i += 2) {
-          auto parent = Node(children[i], children[i+1]);
+          auto parent = new immutable(Node)(children[i], children[i+1]);
           parents~=parent;
       }
 
       if (children.length % 2 != 0) {
-          auto parent = Node(children[$], null);
+          immutable Node right_null = null;
+          auto parent = new immutable(Node)(children[$-1], right_null);
           parents~=parent;
       }
       return assumeUnique(parents);
@@ -313,29 +330,26 @@ public class MerkleTree(H) {
    * Constructs the bottom part of the tree - the leaf nodes and their
    * immediate parents.  Returns a list of the parent nodes.
    */
-    static Nodes bottomLevel(MerkleTable!(H) signatures) {
+    Nodes bottomLevel(immutable(MerkleTable!(H)) signatures) immutable {
         Nodes parents;
 //        auto parents = new const(Node)[signatures.size/2];
 
 //            List<Node> parents = new ArrayList<Node>(signatures.size() / 2);
         for(uint i=0; i < signatures.size - 1; i += 2) {
-
-            immutable left_leaf = Node(signatures[i]);
-            immutable right_leaf = Node(signatures[i+1]);
-            auto parent = Node(left_leaf, right_leaf);
+            auto parent = new immutable(Node)(H(signatures[i], signatures[i+1]));
             parents~=parent;
         }
 
         // if odd number of leafs, handle last entry
         if (signatures.size % 2 != 0) {
-            immutable left_leaf = Node(signatures[signatures.size-1]);
-            auto parent = Node(left_leaf, null);
+            auto parent = new immutable(Node)(signatures[signatures.size-1]);
             parents~=parent;
         }
 
         return parents;
     }
 
+//    private immutable(Node) createNode();
     /*
     private Node constructInternalNode(const(Node) child1, const(Node) child2) {
         Node parent = new Node();
@@ -392,7 +406,7 @@ public class MerkleTree(H) {
                 leaf
                 };
         static immutable payload_size = sigType.sizeof + H.buffer_size;
-        private this(immutable(Node) child1, immutable(Node) child2)
+        this(immutable(Node) child1, immutable(Node) child2) immutable
             in {
                 assert(child1 !is null);
             }
@@ -407,25 +421,33 @@ public class MerkleTree(H) {
             this.left = child1;
             this.right = child2;
         }
-        private this(immutable(H) signature) {
+        this(immutable(H) signature) immutable {
             type = sigType.leaf;
             this.signature = signature;
             left = null;
             right = null;
         }
-        private this(immutable(ubyte)[] buffer) {
+        this(immutable(ubyte)[] buffer) immutable {
             type = sigType.leaf;
             this.signature = H(buffer);
             left = null;
             right = null;
         }
-        @trusted
-        static immutable(Node) opCall(immutable(Node) child1, immutable(Node) child2) {
-                return cast(immutable(Node))new Node(child1, child2);
+        /*
+        static immutable(Node) opCall(immutable(ubyte)[] buffer) {
+            auto result=new Node(buffer);
+            return result;
         }
         static const(Node) opCall(immutable(H) signature) {
-            return new Node(signature);
+            auto result=new MerkleTree.Node(signature);
+            return result;
         }
+        @trusted
+        static immutable(Node) opCall(ref immutable(Node) child1, ref immutable(Node) child2) {
+            auto result=new Node(child1, child2);
+            return cast(immutable(Node))(result);
+        }
+        */
         immutable(ubyte)[] payload() const pure nothrow {
             immutable(ubyte)[] buffer;
             ubyte type_b=type;
