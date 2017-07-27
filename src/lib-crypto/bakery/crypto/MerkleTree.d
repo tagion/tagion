@@ -41,8 +41,17 @@ interface MerkleTable(H) {
     immutable(H) opIndex(const uint index) const;
 }
 
+@trusted
+immutable(ubyte)[] buffer(string str) pure nothrow {
+    ubyte* buf=cast(ubyte*)str.ptr;
+    return cast(immutable)(buf[0..str.length]);
+}
+/**
+   @param H is the hash function object
+   @param D is data object
+ */
 @safe
-public class MerkleTree(H) {
+public class MerkleTree(H,D=string) {
     static assert(is(H : Hash), "The hash object H must implement the Hash interface");
     alias immutable(Node)[] Nodes;
     enum int MAGIC_HDR = 0xcdaace99;
@@ -55,38 +64,55 @@ public class MerkleTree(H) {
     */
 
     //private final Adler32 crc = new Adler32();
-    private const MerkleTable!(H) leafSigs;
-    private immutable(Node) root;
-    private int depth;
-    private int nnodes;
+    //   private const(D)  leafSigs;
+//    private immutable(Node) root;
+    private immutable(Node)[][] parents;
+//    private immutable(H)[][] famelitree;
+//    private int depth;
+//    private int nnodes;
 
     /**
      * Use this constructor to create a MerkleTree from a list of leaf signatures.
      * The Merkle tree is built from the bottom up.
      * @param leafSignatures
      */
-    this(immutable MerkleTable!(H)  leafSignatures) immutable
+    this(const(D)[] leafs)
     in {
-        assert(leafSignatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
+        assert(leafs.length > 1, "Must be at least two signatures to construct a Merkle tree");
+    }
+    out {
+        assert(parents.length == node_size(leafs.length));
     }
     body
     {
-        uint counted_nodes;
-        uint counted_depth;
-        leafSigs = leafSignatures;
-        counted_nodes = leafSignatures.size();
-        Nodes  parents = bottomLevel(leafSignatures);
-        counted_nodes += parents.length;
-        counted_depth = 1;
+//        leafSigs = leafSignatures;
+//        counted_nodes = cast(uint)leafs.length;
+        parents ~= bottomLevel(leafs);
+//        counted_nodes += parents.length;
+//        counted_depth = 1;
 
-        while (parents.length > 1) {
-            parents ~= internalLevel(parents);
-            counted_depth++;
-            counted_nodes += parents.length;
+        foreach(i;0..parents.length) {
+//        while (parents.length > 1) {
+            parents ~= internalLevel(parents[i-1]);
+//            counted_depth++;
+//            counted_nodes += parents.length;
         }
-        nnodes = counted_nodes;
-        depth = counted_depth;
-        root = parents[0];
+    }
+
+    uint depth() const pure nothrow {
+        return cast(uint)parents.length;
+    }
+
+    uint nnodes() const pure nothrow {
+        uint result;
+        foreach(p; parents) {
+            result+=cast(uint)p.length;
+        }
+        return result;
+    }
+
+    immutable(Node) root() const pure nothrow {
+        return parents[$-1][0];
     }
 
     Iterator search(MerkleTree!(H) B) {
@@ -155,6 +181,7 @@ public class MerkleTree(H) {
        The delegate function is call when the leaf node does not match
      */
     bool validateSignatures(
+        const(D)[] leafs,
         scope bool delegate(const(Node) node, const(uint) index) @safe pure dg) const  {
         bool result=true;
         uint index=0;
@@ -162,7 +189,9 @@ public class MerkleTree(H) {
             if ( result ) {
                 if ( node !is null ) {
                     if ( node.type == Node.sigType.leaf ) {
-                        if ( (index >= leafSigs.length) || ( !node.signature.isEqual(leafSigs[index]) ) ) {
+                        if (
+                            ( index >= leafs.length ) ||
+                            ( !node.signature.isEqual(H(leafs[index])) ) ) {
                             result = dg(node, index);
                         }
                         else {
@@ -307,46 +336,47 @@ public class MerkleTree(H) {
         return cast(immutable)(result);
     }
     */
-  /**
-   * Constructs an internal level of the tree
-   */
-    protected Nodes internalLevel(Nodes children) immutable {
-      Nodes parents;
-      for (uint i = 0; i < children.length - 1; i += 2) {
-          auto parent = new immutable(Node)(children[i], children[i+1]);
-          parents~=parent;
-      }
+    static void buildTree(ref immutable(Node)[][] parents, const(D)[] leafs) {
+        /**
+         * Constructs an internal level of the tree
+         */
+        void internalLevel(ref Node[] p, immutable(Node)[] children) {
+            uint j;
+            parrents~=immune(p[0..width(cast(uint)children.length);
+            for (uint i = 0; i < children.length - 1; i += 2) {
+                auto parent = new Node(children[i], children[i+1]);
+                p[j++]~=parent;
+            }
 
-      if (children.length % 2 != 0) {
-          immutable Node right_null = null;
-          auto parent = new immutable(Node)(children[$-1], right_null);
-          parents~=parent;
-      }
-      return assumeUnique(parents);
-  }
-
-
-  /**
-   * Constructs the bottom part of the tree - the leaf nodes and their
-   * immediate parents.  Returns a list of the parent nodes.
-   */
-    Nodes bottomLevel(immutable(MerkleTable!(H)) signatures) immutable {
-        Nodes parents;
-//        auto parents = new const(Node)[signatures.size/2];
-
-//            List<Node> parents = new ArrayList<Node>(signatures.size() / 2);
-        for(uint i=0; i < signatures.size - 1; i += 2) {
-            auto parent = new immutable(Node)(H(signatures[i], signatures[i+1]));
-            parents~=parent;
+            if (children.length % 2 != 0) {
+                immutable Node right_null = null;
+                auto parent = new Node(children[$-1], right_null);
+                p[j++]~=parent;
+            }
+            p=p[j..$];
         }
 
-        // if odd number of leafs, handle last entry
-        if (signatures.size % 2 != 0) {
-            auto parent = new immutable(Node)(signatures[signatures.size-1]);
-            parents~=parent;
-        }
 
-        return parents;
+        /**
+         * Constructs the bottom part of the tree - the leaf nodes and their
+         * immediate parents.  Returns a list of the parent nodes.
+         */
+        void bottomLevel(ref Nodes[] p, const(D)[] leafs) {
+            uint i;
+            parrents~=immune(p[0..width(cast(uint)leafs.length]));
+            foreach(l;leafs) {
+                p[i++] = new Node(H(l.buffer));
+            }
+            p=p[i..$];
+                }
+                Node[] parents=new Node[node_size(leafs.length)];
+        Node[] p=parrents;
+                bottomLevel(p, leafs);
+                while (p.length > 1)
+    }
+    @trusted
+    static private immutable(T)[] immune(T)(const(T)[] table) pure nothrow {
+        return assumeUnique(table);
     }
 
 //    private immutable(Node) createNode();
@@ -387,7 +417,77 @@ public class MerkleTree(H) {
 */
     //}
 
+    unittest {
+        //
+        // Merkle tree test
+        //
+        size_t tree_span(const(size_t) n) const {
+            return (n/2)+(n & 1);
+        }
+        //
+        // Item table
+        //
+        string[] table=[
+            "A",
+            "BB",
+            "CCC",
+            "EEEE",
+            "FFFFF"
+            ];
+        //
+        // Leaf hashs
+        //
+        const(H)[] leaf_hash;
+        foreach(i;0..table.length) {
+            leaf_hash~=H(table[i]);
+        }
+        // Lowest merkle level
+        const(H)[] level2;
+        foreach(i;0..leaf_hash.length/2) {
+            level2~=H(leaf_hash[2*i], leaf_hash[2*i+1]);
+        }
+        if ( leaf_hash.length % 1 ) {
+            level2~=leaf_hash[$-1];
+        }
+        assert(level2.length == tree_span(leaf_hash.length));
 
+        const(H)[] level1;
+        foreach(i;0..level2.length/2) {
+            level1~=H(level2[2*i], level2[2*i+1]);
+        }
+        if ( level2.length % 1 ) {
+            level1~=level2[$-1];
+        }
+        assert(level1.length == tree_span(level2.length));
+
+        const(H)[] level0;
+        foreach(i;0..level1.length/2) {
+            level0~=H(level1[2*i], level1[2*i+1]);
+        }
+        if ( level1.length % 1 ) {
+            level0~=level1[$-1];
+        }
+        assert(level0.length == tree_span(level1.length));
+        assert(level0.length == 2);
+
+        auto mt=new MerkleTree!H(table);
+//        auto root=
+
+    }
+
+    uint parent_width(uint child_width) const pure nothrow {
+        return (child_width/2)+(child_width % 2);
+    }
+    uint node_size(size_t leaf_width) const pure nothrow {
+        uint local_size(uint width) {
+            if ( width > 0 ) {
+                return width+local_size(parent_width(width));
+
+            }
+            return 0;
+        }
+        return local_size(cast(uint)leaf_width);
+    }
   /* ---[ Node class ]--- */
 
   /**
@@ -406,14 +506,14 @@ public class MerkleTree(H) {
                 leaf
                 };
         static immutable payload_size = sigType.sizeof + H.buffer_size;
-        this(immutable(Node) child1, immutable(Node) child2) immutable
+        this(immutable(Node) child1, immutable(Node) child2)
             in {
                 assert(child1 !is null);
             }
         body {
             this.type = sigType.internal;
             if ( child2 is null ) {
-                this.signature = child2.signature;
+                this.signature = child1.signature;
             }
             else {
                 this.signature = H(child1.signature, child2.signature);
@@ -421,13 +521,13 @@ public class MerkleTree(H) {
             this.left = child1;
             this.right = child2;
         }
-        this(immutable(H) signature) immutable {
+        this(immutable(H) signature) {
             type = sigType.leaf;
             this.signature = signature;
             left = null;
             right = null;
         }
-        this(immutable(ubyte)[] buffer) immutable {
+        this(immutable(ubyte)[] buffer) {
             type = sigType.leaf;
             this.signature = H(buffer);
             left = null;

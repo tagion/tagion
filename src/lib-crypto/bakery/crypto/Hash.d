@@ -23,6 +23,7 @@ immutable(char)[] hex(alias ucase=false)(const(ubyte)[] buffer) pure nothrow {
 interface Hash {
     static immutable(Hash) opCall(const(ubyte)[] buffer) pure nothrow;
     static immutable(Hash) opCall(const(Hash) left, const(Hash) right) pure nothrow;
+    static immutable(Hash) opCall(const(Hash) left, const(Hash) right) pure nothrow;
     static immutable(Hash) opCall(const(char)[] str) pure nothrow;
     static immutable(uint) buffer_size() pure nothrow;
     immutable(ubyte)[] signed() const pure nothrow;
