@@ -70,22 +70,19 @@ class SHA256 : Hash {
     unittest {
         enum immutable(char)[][] strings = [
             // Here the sha256sum has been used to verify the sha256 hash
-            // echo "Go dav do!" | sha256sum
-//            "Go dav do!",
-//            "0Go dav",
+            // echo -n "Go dav do!" | sha256sum
             "Go dav do!",
-            // echo "Dette er bare en laenger historie, for at set om vores Merkle Damgaard virker, det burde get goer" | sha256sum
-            "Dette er bare en laenger historie, for at set om vores Merkle " ~
-            "Damgaard virker, det burde get goer",
-            // echo "In this example. The Linux command sha256 has been used to generate the hash values" | sha256sum
+            // echo -n "Dette er bare en laengere historie, for at set om vores Merkle Damgaard virker, det burde det goere" | sha256sum
+            "Dette er bare en laengere historie, for at set om vores Merkle " ~
+            "Damgaard virker, det burde det goere",
+            // echo -n "In this example. The Linux command sha256 has been used to generate the hash values" | sha256sum
             "In this example. The Linux command sha256 has been used to generate the hash values"
             ];
 
         enum immutable(char)[][] results = [
             "d85e36494ed350f5ec5135d1431145831f53a6416fb58bb03be9040e00a4f0a6",
-//            "8274aeb4c6c22340d682a2037a601378faaed52cedd3ccfc796f7dbab73d81f4",
-            "c2fb4e5c40809031a0bbd29cd8af0fabb2cebefa096e89d8bcda462c03699da5",
-            "c227722cd9cad6ff4961310fb9c3d36eff5f124739c24c4c4ba45dc9071f586b"
+            "cec9a209eb3cd33ef9b8ff80929b5e3bf18b749452a326c1fb0989baa24e5d03",
+            "feb83c9699afe2b2d848998696d41715525e5e0e61517f0cadce4feace2a7fed"
             ];
         foreach(i, s; strings) {
             auto h=SHA256(s);
