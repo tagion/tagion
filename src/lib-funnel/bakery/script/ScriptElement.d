@@ -78,7 +78,7 @@ abstract class ScriptElement {
     private ScriptElement _next;
     private bool touched; // Set to true if the function has been executed
     immutable uint runlevel;
-    ScriptElement doit(const Script s, ScriptContext sc)
+    ScriptElement opCall(const Script s, ScriptContext sc)
         in {
             assert(sc !is null);
         }
@@ -118,7 +118,7 @@ class ScriptConditional : ScriptElement {
         this.next=next;
         this.jump=jump;
     }
-    override ScriptElement doit(const Script s, ScriptContext sc) {
+    override ScriptElement opCall(const Script s, ScriptContext sc) {
         check(sc);
         if ( sc.pop.isTrue ) {
             return next;
@@ -136,7 +136,7 @@ class ScriptJump : ScriptElement {
         runlevel=2;
         this.next=next;
     }
-    override ScriptElement doit(const Script s, ScriptContext sc) {
+    override ScriptElement opCall(const Script s, ScriptContext sc) {
         check(sc);
         if ( turing_complete ) {
             if ( !sc.turing_complete) {
@@ -161,7 +161,7 @@ class ScriptCall : ScriptElement {
         this.call=call;
         this.runlevel=2;
     }
-    override ScriptElement doit(const Script s, ScriptContext sc) {
+    override ScriptElement opCall(const Script s, ScriptContext sc) {
         check(s,sc);
         sc.return_push(next);
         return call;
@@ -172,15 +172,16 @@ class ScriptCall : ScriptElement {
 /*
 class ScriptAdd : ScriptElement {
 
-    override ScriptElement doit(const ScriptContext sc) {
+    override ScriptElement opCall(const ScriptContext sc) {
 
     }
 }
 
-class PushLiteral : ScriptElement {
-
-}
 */
+
+class PushLiteral : ScriptElement {
+    t
+}
 
 class Script {
     private ScriptElement root, last;
@@ -192,7 +193,7 @@ class Script {
         this.root=root;
     }
     void run() {
-        for(const ScriptElement current=root; current !is null; current=current.doit(this, context) ) {
+        for(const ScriptElement current=root; current !is null; current=current(this, context) ) {
             /* empty */
         }
     }
