@@ -1,19 +1,16 @@
 
 module bakery.script.ScriptElement;
 
+alias long BitInt;
+
 @safe
 class Value {
-    immutable(ulong[]) data;
-    this(const(ulong)[] x) {
-        data=cast(immutable(ulong[]))x.idup;
+    immutable(BitInt) data;
+    this(immutable(BitInt) x) {
+        data = x;
     }
     bool isTrue() pure nothrow const {
-        foreach(d;data) {
-            if ( d ) {
-                return true;
-            }
-        }
-        return false;
+        return data != 0;
     }
 }
 
@@ -179,8 +176,14 @@ class ScriptAdd : ScriptElement {
 
 */
 
-class PushLiteral : ScriptElement {
-    t
+class PushLiteral(T) : ScriptElement {
+    private immutable T x;
+    this(const ScriptElement next, T x) {
+        this.x = x;
+    }
+    override ScriptElement opCall(const Script s, ScriptContext sc) {
+        check(s, sc);
+    }
 }
 
 class Script {
@@ -202,7 +205,8 @@ class Script {
             root = last = e;
         }
         else {
-            last.next =
+            last.next = e;
+            last = e;
         }
     }
 }
