@@ -15,7 +15,7 @@
  *    (See accompanying file LICENSE_1_0.txt or copy at
  *            http://www.apache.org/licenses/)
  */
-module proton.parser.bson.BSON;
+module bakery.utils.BSON;
 
 import core.stdc.string;  // Some operations in Phobos not safe, pure and nothrow, e.g. cmp
 
@@ -26,7 +26,7 @@ import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
 private import std.bitmanip;
 
-private import proton.core.Misc;
+//private import proton.core.Misc;
 import tango.text.convert.Format;
 private import tango.core.Traits : isStringType;
 static import tango.text.convert.Integer;
@@ -1702,7 +1702,7 @@ BinarySubType getSubtype(T)() {
         else static if (is(T:string[])) {
             return STRING_array;
         }
-        else static if (is(T:const(BSON)[])) {
+        else static if (is(T:const(BSON!true)[]) || is(T:const(BSON!false)[])) {
             return DOCUMENT_array;
         }
         else  {
@@ -1731,11 +1731,11 @@ unittest
 }
 
 
-class BSON {
+class BSON(bool key_sort_flag=true) {
     package Type _type;
     package BinarySubType subtype;
     private BSON members; // List of members
-    private immutable(char)[] key;
+    private immutable(char)[] _key;
     public bool typedarray; // Start standard type array as Binary data (like double[])
     public bool no_duble; // This will prevent the BSON object from creating double or multiple members
     struct CodeScope {
@@ -1748,6 +1748,9 @@ class BSON {
         ubyte _day   = 1;
     }
 
+    immutable(char)[] key() @safe pure nothrow const {
+        return _key;
+    }
 
     union Value {
         double number;
@@ -1889,9 +1892,32 @@ class BSON {
 
     }
     package Value value;
+    package void sort_keys() {
+        if ( (type == Type.DOCUMENT) ) {
+            BSON[] barry;
+            import std.algorithm.mutation : SwapStrategy;
+            for(auto b=members; b !is null; b=b.members) {
+                barry~=b;
+            }
+            if ( barry.length > 1 ) {
+                // Sort by key
+                sort!("a.key < b.key", SwapStrategy.stable)(barry);
+                BSON prev;
+                foreach(i,ref b;barry) {
+                    if ( i > 0 ) {
+                        prev.members=b;
+                    }
+                    prev=b;
+                }
+                prev.members=null;
+                this.members=barry[0];
+            }
+        }
+    }
     bool isDocument() {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
+    @trusted
     bool append(T)(Type type, immutable(char)[] key, T x, BinarySubType subtype=BinarySubType.generic) {
         bool result=false;
         BSON elm=new BSON;
@@ -2107,7 +2133,7 @@ class BSON {
             }
             elm._type=type;
             elm.subtype=subtype;
-            elm.key=key;
+            elm._key=key;
             elm.members=members;
             members=elm;
         }
@@ -2505,6 +2531,9 @@ class BSON {
     immutable(ubyte)[] expand() {
         immutable(ubyte)[] local_expand() {
             immutable(ubyte)[] data;
+            static if (key_sort_flag ) {
+                sort_keys();
+            }
             foreach(e; this) {
                 data~=e._type;
                 data~=e.key;
@@ -2512,15 +2541,12 @@ class BSON {
                 with(Type) final switch(e._type) {
                     case NONE:
                         data~=zero;
-                        //dgelm(data);
                         break;
                     case DOUBLE:
                         data~=nativeToLittleEndian(e.value.number);
-                        //dgelm(data);
                         break;
                     case FLOAT:
                         data~=nativeToLittleEndian(e.value.number32);
-                        //dgelm(data);
                         break;
                     case STRING:
                     case SYMBOL:
