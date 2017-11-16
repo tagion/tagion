@@ -161,13 +161,21 @@ private:
             return false;
         }
         // Trim line feed and increas line number
-        while ( is_white_space(current[pos]) ) {
-            if (!check_newline(pos, line)) {
-                pos++;
-            }
+        if ( pos >= current.length ) {
+            immutable(Token) result= {
+              token : "<EOF>",
+              line : line,
+              type : Type.EOF
+            };
+            return result;
         }
-        if ( current.length > 0 ) {
-            try {
+        try {
+            while ( is_white_space(current[pos]) ) {
+                if (!check_newline(pos, line)) {
+                    pos++;
+                }
+            }
+            if ( current.length > 0 ) {
                 immutable start = pos;
                 auto c=lower(current[start]);
                 pos++;
@@ -243,20 +251,21 @@ private:
                     return result;
                 }
             }
-            catch (RangeError e) {
-                immutable(Token) result= {
-                  token : current[pos..$],
-                  line : line,
-                  type : Type.ERROR
-                };
-                return result;
-            }
+        // }
+        // else {
+        //     immutable(Token) result= {
+        //       token : "<EOF>",
+        //       line : line,
+        //       type : Type.EOF
+        //     };
+        //     return result;
+        // }
         }
-        else {
+        catch (RangeError e) {
             immutable(Token) result= {
-              token : "<EOF>",
+              token : current[pos..$],
               line : line,
-              type : Type.EOF
+              type : Type.ERROR
             };
             return result;
         }
