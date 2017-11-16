@@ -97,10 +97,12 @@ public:
             s.popFront;
             s.popFront;
 
-            if (!s.empty)
+            if (!s.empty) {
                 ok = data.fromHexString(s.filterBidirectional!(a => a != '_'));
-            else
+            }
+            else {
                 ok = false;
+            }
         }
         else {
             ok = data.fromDecimalString(s.filterBidirectional!(a => a != '_'));
@@ -850,6 +852,99 @@ public:
         }
     }
 
+    /*
+      BigInt math
+     */
+    version(none)
+    private MutableBigInteger _modInverse(MutableBigInteger mod) {
+        MutableBigInteger p = new MutableBigInteger(mod);
+        MutableBigInteger f = new MutableBigInteger(this);
+        MutableBigInteger g = new MutableBigInteger(p);
+        SignedMutableBigInteger c = new SignedMutableBigInteger(1);
+        SignedMutableBigInteger d = new SignedMutableBigInteger();
+        MutableBigInteger temp = null;
+        SignedMutableBigInteger sTemp = null;
+
+        int k = 0;
+        // Right shift f k times until odd, left shift d k times
+        if (f.isEven()) {
+            int trailingZeros = f.getLowestSetBit();
+            f.rightShift(trailingZeros);
+            d.leftShift(trailingZeros);
+            k = trailingZeros;
+        }
+
+        // The Almost Inverse Algorithm
+        while (!f.isOne()) {
+            // If gcd(f, g) != 1, number is not invertible modulo mod
+            if (f.isZero()) {
+                throw new ArithmeticException("BigInteger not invertible.");
+            }
+            // If f < g exchange f, g and c, d
+            if (f.compare(g) < 0) {
+                temp = f; f = g; g = temp;
+                sTemp = d; d = c; c = sTemp;
+            }
+
+            // If f == g (mod 4)
+            if (((f.value[f.offset + f.intLen - 1] ^
+                 g.value[g.offset + g.intLen - 1]) & 3) == 0) {
+                f.subtract(g);
+                c.signedSubtract(d);
+            }
+            else { // If f != g (mod 4)
+                f.add(g);
+                c.signedAdd(d);
+            }
+
+            // Right shift f k times until odd, left shift d k times
+            int trailingZeros = f.getLowestSetBit();
+            f.rightShift(trailingZeros);
+            d.leftShift(trailingZeros);
+            k += trailingZeros;
+        }
+
+        while (c.sign < 0) {
+           c.signedAdd(p);
+        }
+
+        return fixup(c, p, k);
+    }
+
+    /**
+     * Returns a BigInteger whose value is {@code (this}<sup>-1</sup> {@code mod m)}.
+     *
+     * @param  m the modulus.
+     * @return {@code this}<sup>-1</sup> {@code mod m}.
+     * @throws ArithmeticException {@code  m} &le; 0, or this BigInteger
+     *         has no multiplicative inverse mod m (that is, this BigInteger
+     *         is not <i>relatively prime</i> to m).
+     */
+    BigInt modInverse(const BigInt m) {
+        if (m.signum != 1) {
+            throw new ArithmeticException("BigInteger: modulus not positive");
+        }
+
+        if (m.equals(ONE)) {
+            return ZERO;
+        }
+        // Calculate (this mod m)
+        BigInteger modVal = this;
+        if (signum < 0 || (this.compareMagnitude(m) >= 0)) {
+            modVal = this.mod(m);
+        }
+
+        if (modVal.equals(ONE)) {
+            return ONE;
+        }
+
+        MutableBigInteger a = new MutableBigInteger(modVal);
+        MutableBigInteger b = new MutableBigInteger(m);
+
+        MutableBigInteger result = a.mutableModInverse(b);
+        return result.toBigInteger(1);
+    }
+
     /**
         $(D toString) is rarely directly invoked; the usual way of using it is via
         $(REF format, std, format):
@@ -886,6 +981,30 @@ public:
 
         assert(aa[BigInt(123)] == "abc");
         assert(aa[BigInt(456)] == "def");
+    }
+
+    bool isOdd() @safe pure nothrow const @nogc {
+        static if ( BitDigit.sizeof == int.sizeof ) {
+            auto x=data.peekUint(0);
+            return (x & 0x1) == 0x1;
+        }
+        else {
+            auto x=data.peekUlong(0);
+            return (x & 0x1) == 0x1;
+        }
+    }
+
+    size_t length() @safe pure nothrow const @nogc {
+        static if ( size_t.sizeof == uint.sizeof ) {
+            return data.uintLength;
+        }
+        else {
+            return data.ulongLength;
+        }
+    }
+
+    ~this() @trusted {
+        // Scramble bit int memory before free the memory
     }
 
 private:
