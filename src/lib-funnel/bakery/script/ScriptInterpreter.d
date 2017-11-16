@@ -1,12 +1,20 @@
-module bakery.script.ScriptIntrepreter;
+module bakery.script.ScriptInterpreter;
 
-@safe
-class ScriptIntrepreter : Script {
+import bakery.utils.BSON : R_BSON=BSON;
+import core.exception : RangeError;
+
+
+alias R_BSON!true BSON;
+
+class ScriptInterpreter {
     enum Type {
         NUMBER,
         HEX,
         TEXT,
         WORD,
+        FUNC,
+        ENDFUNC,
+        EXIT,
         COMMENT,
         ERROR,
         UNKNOWN,
@@ -18,11 +26,58 @@ class ScriptIntrepreter : Script {
         Type type;
     };
     this(string source) {
+        current = source;
     }
-    void parse(string[][] source) {
+    BSON parse() {
+        BSON bson_token(immutable(Token) t) {
+            auto result=new BSON();
+            result["line"]=t.line;
+            result["token"]=t.token;
+            result["type"]=t.type;
+            return result;
+        }
+        auto bson = new BSON();
+        bson["source"]=current;
+        BSON[] code;
+        bool func_scope;
 
+        for(;;) {
+            auto t = token();
+            if ( t.type == Type.EOF ) {
+                break;
+            }
+            else if ( t.type == Type.FUNC ) {
+                if ( func_scope ) {
+                    immutable(Token) error_token = {
+                      token : "Declaration of function inside a function is not allowed",
+                      line : t.line,
+                      type : Type.ERROR
+                    };
+                    code~=bson_token(error_token);
+                }
+                func_scope=true;
+                code~=bson_token(token);
+            }
+            else if ( t.type == Type.ENDFUNC ) {
+                if ( !func_scope ) {
+                    immutable(Token) error_token = {
+                      token : "End of function outside a function is not allowed",
+                      line : t.line,
+                      type : Type.ERROR
+                    };
+                    code~=bson_token(error_token);
+                }
+                func_scope=true;
+                code~=bson_token(token);
+            }
+            else {
+                code~=bson_token(token);
+            }
+        }
+        bson["code"]=code;
+        return bson;
     }
-    immutable(Token) token() @safe {
+    immutable(Token) token() {
         auto result=base_token();
         if ( (result.type == Type.WORD) ) {
             if ( result.token == ":" ) {
@@ -48,10 +103,10 @@ private:
     string current;
     private uint line;
     private uint pos;
-    immutable(Token) base_token() @safe {
+    immutable(Token) base_token() {
         immutable(char) lower(immutable char c) @safe pure nothrow {
             if ( (c >='A') || (c <='Z') ) {
-                return c+('A'-'a');
+                return cast(immutable char)(c+('A'-'a'));
             }
             else {
                 return c;
@@ -68,26 +123,29 @@ private:
             return ( c == '-' ) || ( c == '+' );
         }
         bool is_number_and_sign(immutable char c) @safe pure nothrow {
-            return number(c) || sign(c);
+            return is_number(c) || is_sign(c);
         }
         bool is_number_symbol(immutable char c) @safe pure nothrow {
-            return number(c) || ( c == '_' );
+            return is_number(c) || ( c == '_' );
         }
         bool is_hex_number(immutable char c) @safe pure nothrow {
             immutable lower_c = lower(c);
-            return number(c) (lower_c >= 'a') || (lower_c <= 'f');
+            return is_number(c) || (lower_c >= 'a') || (lower_c <= 'f');
         }
         bool is_hex_number_and_sign(immutable char c) @safe pure nothrow {
-            return hex_number(c) || sign(c);
+            return is_hex_number(c) || is_sign(c);
         }
         bool is_hex_number_symbol(immutable char c) @safe pure nothrow {
-            return hex_number(c) || ( c == '_' );
+            return is_hex_number(c) || ( c == '_' );
         }
         bool is_hex_prefix(string str) @safe pure nothrow {
             return (str[0]=='0') || (lower(str[1]) == 'x');
         }
         bool is_white_space(immutable char c) @safe pure nothrow {
             return ( (c == ' ') || ( c == '\t' ) || (c == '\n') || (c == '\r'));
+        }
+        bool is_word_symbol(immutable char c) @safe pure nothrow {
+            return !is_white_space(c);
         }
         bool check_newline(ref uint pos, ref uint line) @safe nothrow {
             if ( (current[pos] == '\n' ) ) {
@@ -113,14 +171,14 @@ private:
                 immutable start = pos;
                 auto c=lower(current[start]);
                 pos++;
-                if ( number_and_sign(current[start]) ) {
+                if ( is_number_and_sign(current[start]) ) {
                     if ( is_sign(current[start]) ) {
                         pos++;
                     }
-                    if ( is_hex_prefix(pos) ) { // ex 0x1234_5678_ABCD_EF09
+                    if ( is_hex_prefix(current) ) { // ex 0x1234_5678_ABCD_EF09
                         string num;
-                        pos+2;
-                        while ( hex_number_symbol(current[pos]) ) {
+                        pos+=2;
+                        while ( is_hex_number_symbol(current[pos]) ) {
                             pos++;
                         }
                         immutable(Token) result= {
@@ -132,7 +190,7 @@ private:
                     else { // Decimal number
                         do {
                             pos++;
-                        } while( !number_symbol(current[pos]));
+                        } while( !is_number_symbol(current[pos]));
                         immutable(Token) result= {
                           token : current[start..pos],
                           line : line,
@@ -152,7 +210,7 @@ private:
                     };
                     return result;
                 }
-                else if ( is_word_symbol(current[start]) ) {
+                else if ( (!is_number_and_sign(current[start])) && (is_word_symbol(current[start+1])) ) {
                     do {
                         pos++;
                     } while ( !is_word_symbol(current[pos]) );
@@ -187,7 +245,7 @@ private:
             }
             catch (RangeError e) {
                 immutable(Token) result= {
-                  token : current[start..$],
+                  token : current[pos..$],
                   line : line,
                   type : Type.ERROR
                 };
@@ -196,11 +254,12 @@ private:
         }
         else {
             immutable(Token) result= {
-              token : '<EOF>',
+              token : "<EOF>",
               line : line,
               type : Type.EOF
             };
             return result;
         }
+        assert(0);
     }
 }
