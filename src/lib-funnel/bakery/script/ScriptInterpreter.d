@@ -12,9 +12,32 @@ class ScriptInterpreter {
         HEX,
         TEXT,
         WORD,
+        // Function tokens
         FUNC,
         ENDFUNC,
         EXIT,
+
+        // Conditional jump tokens
+        IF,
+        ELSE,
+        ENDIF,
+
+        // Loop tokens
+        DO,
+        LOOP,
+        INCLOOP,
+        BEGIN,
+        UNTIL,
+        WHILE,
+        REPEAT,
+        LEAVE,
+        INDEX,
+
+        // Memory and variables
+        VAR, // Get the address of the variable
+        PUT, // Puts the value to the address
+        GET, // Gets the value on the address
+
         COMMENT,
         ERROR,
         UNKNOWN,
@@ -24,6 +47,7 @@ class ScriptInterpreter {
         string token;
         uint line;
         Type type;
+        uint jump_index;
     };
     this(string source) {
         current = source;

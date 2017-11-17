@@ -15,7 +15,6 @@ class ScriptException : Exception {
 
 @safe
 struct Value {
-
     union BInt {
         BigInt value;
         /* This struct is just read only for the BitInt value */
@@ -177,10 +176,15 @@ abstract class ScriptElement {
 @safe
 class ScriptConditional : ScriptElement {
     private ScriptElement _jump;
-    this(ScriptElement next, ScriptElement jump) {
+    this() {
         super(0);
-        this._next=next;
-        this._jump=jump;
+    }
+    package const(ScriptElement) jump(ScriptElement n) {
+        _jump = n;
+        return _jump;
+    }
+    const(ScriptElement) jump() pure nothrow const {
+        return _jump;
     }
     override ScriptElement opCall(const Script s, ScriptContext sc)  {
         check(s, sc);
@@ -196,9 +200,9 @@ class ScriptConditional : ScriptElement {
 @safe
 class ScriptJump : ScriptElement {
     private bool turing_complete;
-    this(ScriptElement next) {
+    this() {
         super(2);
-        this._next=next;
+//        this._next=next;
     }
     override ScriptElement opCall(const Script s, ScriptContext sc) {
         check(s, sc);
@@ -214,20 +218,21 @@ class ScriptJump : ScriptElement {
 
 @safe
 class ScriptCall : ScriptElement {
-    private ScriptElement call;
-    this(ScriptElement next, ScriptElement call, immutable uint runlevel=2)
-    in {
-        assert( runlevel>=2 );
+    private ScriptElement _call;
+    this() {
+        super(0);
     }
-    body {
-        super(runlevel);
-        this.next=next;
-        this.call=call;
+    package const(ScriptElement) call(ScriptElement n) {
+        _call = n;
+        return _call;
+    }
+    const(ScriptElement) call() pure nothrow const {
+        return _call;
     }
     override ScriptElement opCall(const Script s, ScriptContext sc) {
         check(s,sc);
         sc.return_push(next);
-        return call;
+        return _call;
     }
 }
 
