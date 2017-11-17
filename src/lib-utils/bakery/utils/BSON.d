@@ -9,6 +9,7 @@
  * Copyright: Copyright Masahiro Nakagawa 2011-.
  * License:   <a href="http://www.apache.org/licenses/">Apache LICENSE Version 2.0</a>.
  * Authors:   Masahiro Nakagawa
+ * Modified   Carsten Bleser Rasmussen
  *
  *            Copyright Masahiro Nakagawa 2011-.
  *    Distributed under the Apache LICENSE Version 2.0.
