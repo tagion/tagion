@@ -20,6 +20,7 @@ class ScriptInterpreter {
         // Conditional jump tokens
         IF,
         ELSE,
+        THEN, // Used as traget label of IF to ELSE jump
         ENDIF,
 
         // Loop tokens
@@ -47,7 +48,7 @@ class ScriptInterpreter {
         string token;
         uint line;
         Type type;
-        uint jump_index;
+        uint jump;
     };
     this(string source) {
         current = source;
