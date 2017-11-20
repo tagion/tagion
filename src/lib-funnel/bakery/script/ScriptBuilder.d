@@ -10,6 +10,7 @@ import bakery.utils.BSON : R_BSON=BSON, Document;
 
 
 
+import std.stdio;
 
 alias R_BSON!true BSON;
 
@@ -28,7 +29,7 @@ class ScriptBuilder {
         ScriptElement opcode;
         bool compiled;
     }
-    private Function[string] functions;
+    static private Function[string] functions;
     static this() {
 
     }
@@ -121,11 +122,13 @@ class ScriptBuilder {
     }
 
     @safe
-    bool parse_functions(immutable(Token)[] tokens) {
+    bool parse_functions(immutable(Token)[] tokens, output immutable(Token)[] base_tokens) {
         immutable(Token)[] function_tokens;
         string function_name;
-        bool success=true;
+        bool fail=false;
+        bool inside_function;
         foreach(t; tokens) {
+            writefln("%s",t.toText);
             if ( t.type == ScriptType.FUNC ) {
                 if ( function_name !is null ) {
                     immutable(Token) error = {
@@ -135,9 +138,11 @@ class ScriptBuilder {
                     };
                     function_tokens~=t;
                     function_tokens~=error;
-                    success=false;
+                    base_tokens~=error;
+                    fail=true;
                 }
                 if ( t.token !in functions ) {
+                    writefln("%s",t.token);
                     function_tokens = null;
                     function_name = t.token;
                 }
@@ -150,10 +155,12 @@ class ScriptBuilder {
                     };
                     function_tokens~=t;
                     function_tokens~=error;
-                    success=false;
+                    base_tokens~=error;
+                    fail=true;
                 }
             }
             else if ( t.type == ScriptType.ENDFUNC ) {
+                writefln("%s",function_name);
                 immutable(Token) exit = {
                   token : "$exit",
                   line : t.line,
@@ -172,17 +179,10 @@ class ScriptBuilder {
                 function_tokens~=tokens;
             }
             else { //
-                immutable(Token) error = {
-                  token : "Only function declarations allowed",
-                  line : t.line,
-                  type : ScriptType.ERROR
-                };
-                function_tokens~=t;
-                function_tokens~=error;
-                success=false;
+                base_tokens~=t;
             }
         }
-        return success;
+        return fail;
     }
 
 
@@ -263,20 +263,29 @@ class ScriptBuilder {
         tokens~=opcode;
         tokens~=token_incloop;
 
-        // Build BSON array of the token list
-        foreach(t; tokens) {
-            codes~=BSONToken(t);
-        }
-        // Build the BSON stream
-        auto bson_stream=new BSON();
-        bson_stream["code"]=codes;
-        auto stream=bson_stream.expand;
+        {
+            // Build BSON array of the token list
+            foreach(t; tokens) {
+                codes~=BSONToken(t);
+            }
+            // Build the BSON stream
+            auto bson_stream=new BSON();
+            bson_stream["code"]=codes;
+            auto stream=bson_stream.expand;
 
-        //
-        // Reconstruct the token array from the BSON stream
-        // and verify the reconstructed stream
-        auto builder=new ScriptBuilder;
-        auto retokens=builder.BSON2Token(stream);
+
+            //
+            // Reconstruct the token array from the BSON stream
+            // and verify the reconstructed stream
+            auto builder=new ScriptBuilder;
+            try {
+                auto retokens=builder.BSON2Token(stream);
+            }
+            catch() {
+            }
+        }
+
+        tokens~=token_endfunc;
 
         assert(retokens.length == tokens.length);
         foreach(i;0..tokens.length) {
@@ -287,6 +296,12 @@ class ScriptBuilder {
         //
         // Function builder
         //
+        assert(!builder.parse_functions(retokens));
+        writeln("End of unittest");
+        writefln("%s",functions.length);
+        foreach(name, ref f; functions) {
+            writefln("\t%s %s\n",name,f.tokens.length);
+        }
 
     }
 

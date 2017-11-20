@@ -2,7 +2,7 @@ module bakery.script.ScriptInterpreter;
 
 import bakery.utils.BSON : R_BSON=BSON;
 import core.exception : RangeError;
-
+import std.conv;
 
 alias R_BSON!true BSON;
 
@@ -49,6 +49,10 @@ class ScriptInterpreter {
         uint line;
         Type type;
         uint jump;
+        string toText() @safe pure const {
+            return "'"~token~"':"~to!string(type)~" line:"~
+                to!string(line)~" jump:"~to!string(jump);
+        }
     };
     this(string source) {
         current = source;
