@@ -295,6 +295,13 @@ class ScriptBuilder {
         tokens~=opcode;
         tokens~=opcode;
         tokens~=token_incloop;
+        tokens~=opcode;
+        tokens~=opcode;
+        tokens~=token_begin;
+        tokens~=opcode;
+        tokens~=opcode;
+        tokens~=token_until;
+
         writefln("tokens.length=%s", tokens.length);
 
 
@@ -397,7 +404,8 @@ class ScriptBuilder {
 
 
             // Check that the number of function tokens is correct
-            assert(func.tokens.length == 35);
+            writefln("func.tokens.lengt=%s",func.tokens.length);
+            assert(func.tokens.length == 41);
 
             //
             // Expand all loop to conditinal and unconditional jumps
@@ -407,6 +415,7 @@ class ScriptBuilder {
             foreach(i,t; loop_expanded_tokens) {
                  writefln("%s]:%s", i, t.toText);
             }
+            assert(func.tokens.length == 77);
 
             // assert(!builder.parse_functions(retokens));
         // writeln("End of unittest");
@@ -465,10 +474,20 @@ private:
       token : ">=",
       type : ScriptType.WORD
     };
+    static immutable(Token) token_invert= {
+        // invert
+      token : "invert",
+      type : ScriptType.WORD
+    };
     static immutable(Token) token_repeat= {
         // repeat
       token : "repeat",
       type : ScriptType.REPEAT
+    };
+    static immutable(Token) token_until= {
+        // until
+      token : "until",
+      type : ScriptType.UNTIL
     };
     static immutable(Token) token_if= {
         // if
@@ -533,6 +552,7 @@ private:
 
     static immutable(Token)[] expand_loop(immutable(Token)[] tokens) @safe {
         uint loop_index;
+        immutable(ScriptType)[] begin_loops;
         //immutable
         immutable(Token)[] scope_tokens;
         foreach(t; tokens) {
@@ -544,6 +564,7 @@ private:
                     scope_tokens~=token_put;
                     scope_tokens~=var_I(loop_index);
                     scope_tokens~=token_put;
+                    begin_loops ~= t.type;
                 case BEGIN:
                     immutable(Token) token={
                       token : t.token,
@@ -553,6 +574,7 @@ private:
                     };
                     scope_tokens~=token;
                     loop_index++;
+                    begin_loops ~= t.type;
                     break;
                 case LOOP:
                 case INCLOOP:
@@ -560,39 +582,103 @@ private:
                     // I_ dup @ 1 + dup ! I_TO @ >=
                     // +loop
                     // >r I_ dup @ <r + dup ! I_TO @ >=
-                    if (t.type == INCLOOP) {
-                        scope_tokens~=token_to_r;
-                    }
-                    scope_tokens~=var_I(loop_index);
-                    scope_tokens~=token_dup;
-                    scope_tokens~=token_get;
-                    if (t.type == INCLOOP) {
-                        scope_tokens~=token_from_r;
+                    if ( begin_loops.length == 0 ) {
+                        immutable(Token) error = {
+                          token : "DO expect before "~to!string(t.type),
+                          line : t.line,
+                          type : ScriptType.ERROR
+                        };
+
+                        scope_tokens~=error;
                     }
                     else {
-                        scope_tokens~=token_inc;
+                        if ( begin_loops[$-1] == DO ) {
+                            if (t.type == INCLOOP) {
+                                scope_tokens~=token_to_r;
+                            }
+                            scope_tokens~=var_I(loop_index);
+                            scope_tokens~=token_dup;
+                            scope_tokens~=token_get;
+                            if (t.type == INCLOOP) {
+                                scope_tokens~=token_from_r;
+                            }
+                            else {
+                                scope_tokens~=token_inc;
+                            }
+                            scope_tokens~=token_dup;
+                            scope_tokens~=token_put;
+                            scope_tokens~=var_to_I(loop_index);
+                            scope_tokens~=token_get;
+                            scope_tokens~=token_gte;
+                            scope_tokens~=token_if;
+                            scope_tokens~=token_repeat;
+                            scope_tokens~=token_endif;
+                        }
+                        else {
+                            immutable(Token) error = {
+                              token : "DO begub loop expect not "~to!string(t.type),
+                              line : t.line,
+                              type : ScriptType.ERROR
+                            };
+                            scope_tokens~=error;
+                        }
+                        begin_loops.length--;
                     }
-                    scope_tokens~=token_dup;
-                    scope_tokens~=token_put;
-                    scope_tokens~=var_to_I(loop_index);
-                    scope_tokens~=token_get;
-                    scope_tokens~=token_gte;
-                    scope_tokens~=token_if;
-                    scope_tokens~=token_repeat;
-                    scope_tokens~=token_endif;
                     break;
                 case WHILE:
-                    scope_tokens~=token_if;
-                    scope_tokens~=token_leave;
-                    scope_tokens~=token_endif;
+                    if ( begin_loops.length == 0 ) {
+                        immutable(Token) error = {
+                          token : "BEGIN expect before "~to!string(t.type),
+                          line : t.line,
+                          type : ScriptType.ERROR
+                        };
+                        scope_tokens~=error;
+
+                    }
+                    else {
+                        if ( begin_loops[$-1] == BEGIN ) {
+                            scope_tokens~=token_if;
+                            scope_tokens~=token_leave;
+                            scope_tokens~=token_endif;
+                        }
+                        else {
+                            immutable(Token) error = {
+                              token : "BEGIN expect before "~to!string(t.type),
+                              line : t.line,
+                              type : ScriptType.ERROR
+                            };
+                            scope_tokens~=error;
+                        }
+                    }
+                    break;
+                case UNTIL:
+                    if ( begin_loops.length == 0 ) {
+                        immutable(Token) error = {
+                          token : "BEGIN expect before "~to!string(t.type),
+                          line : t.line,
+                          type : ScriptType.ERROR
+                        };
+                        scope_tokens~=error;
+                    }
+                    else {
+                        if ( begin_loops[$-1] == BEGIN ) {
+                            scope_tokens~=token_invert;
+                            scope_tokens~=token_if;
+                            scope_tokens~=token_repeat;
+                            scope_tokens~=token_endif;
+                        }
+                        else {
+                            immutable(Token) error = {
+                              token : "BEGIN expect before "~to!string(t.type),
+                              line : t.line,
+                              type : ScriptType.ERROR
+                            };
+                            scope_tokens~=error;
+                        }
+                    }
                     break;
                 case LEAVE:
-                    immutable(Token) token={
-                      token : t.token,
-                      line : t.line,
-                      type : t.type,
-                      jump : loop_index
-                    };
+                    scope_tokens~=t;
                     break;
                 default:
                     scope_tokens~=t;
