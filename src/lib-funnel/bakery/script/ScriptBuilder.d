@@ -21,6 +21,13 @@ class ScriptBuilderException : ScriptException {
     }
 }
 
+@safe
+class ScriptBuilderExceptionIncompte : ScriptException {
+    this( immutable(char)[] msg ) {
+        super( msg );
+    }
+}
+
 
 class ScriptBuilder {
     struct Function {
@@ -44,7 +51,7 @@ class ScriptBuilder {
        Build as script from bson data stream
      */
     @safe
-    immutable(Token)[] BSON2Token(immutable ubyte[] data) {
+    static immutable(Token)[] BSON2Tokens(immutable ubyte[] data) {
         string lowercase(const(char)[] str) @trusted  {
             return toLower(str).idup;
         }
@@ -122,15 +129,16 @@ class ScriptBuilder {
     }
 
     @safe
-    bool parse_functions(immutable(Token)[] tokens, output immutable(Token)[] base_tokens) {
+    bool parse_functions(immutable(Token[]) tokens, out immutable(Token)[] base_tokens) {
         immutable(Token)[] function_tokens;
         string function_name;
         bool fail=false;
         bool inside_function;
         foreach(t; tokens) {
-            writefln("%s",t.toText);
+//            writefln("%s",t.toText);
             if ( t.type == ScriptType.FUNC ) {
-                if ( function_name !is null ) {
+
+                if ( inside_function || (function_name !is null) ) {
                     immutable(Token) error = {
                       token : "Function declaration inside functions not allowed",
                       line : t.line,
@@ -140,6 +148,7 @@ class ScriptBuilder {
                     function_tokens~=error;
                     base_tokens~=error;
                     fail=true;
+
                 }
                 if ( t.token !in functions ) {
                     writefln("%s",t.token);
@@ -158,35 +167,60 @@ class ScriptBuilder {
                     base_tokens~=error;
                     fail=true;
                 }
+                inside_function=true;
             }
             else if ( t.type == ScriptType.ENDFUNC ) {
                 writefln("%s",function_name);
-                immutable(Token) exit = {
-                  token : "$exit",
-                  line : t.line,
-                  type : ScriptType.EXIT
-                };
-                function_tokens~=exit;
-                Function func={
-                  name : function_name,
-                  tokens : function_tokens
-                };
-                functions[function_name]=func;
+                if (inside_function) {
+                    immutable(Token) exit = {
+                      token : "$exit",
+                      line : t.line,
+                      type : ScriptType.EXIT
+                    };
+                    function_tokens~=exit;
+                    Function func={
+                      name : function_name,
+                      tokens : function_tokens
+                    };
+                    functions[function_name]=func;
+                    inside_function=false;
+                }
+                else {
+                    immutable(Token) error = {
+                      token : "Function end with out a function begin declaration",
+                      line : t.line,
+                      type : ScriptType.ERROR
+                    };
+                    base_tokens~=t;
+                    base_tokens~=error;
+                    fail=true;
+                }
                 function_tokens = null;
                 function_name = null;
+
+
             }
             else if ( function_name.length > 0 ) { // Inside function scope
-                function_tokens~=tokens;
+                function_tokens~=t;
             }
             else { //
                 base_tokens~=t;
             }
         }
+        if (inside_function) {
+            writeln("Inside function");
+            immutable(Token) error = {
+              token : "No function end found",
+              type : ScriptType.ERROR
+            };
+            base_tokens~=error;
+            fail=true;
+        }
         return fail;
     }
 
 
-    static BSON BSONToken(const(Token) token) @safe {
+    static BSON Token2BSON(const(Token) token) @safe {
         auto bson=new BSON();
         bson["token"]=token.token;
         bson["type"]=token.type;
@@ -195,7 +229,6 @@ class ScriptBuilder {
         return bson;
     }
     unittest {
-        BSON[] codes;
         immutable(Token) opcode={
           token : "opcode",
           type  : ScriptType.WORD
@@ -262,11 +295,17 @@ class ScriptBuilder {
         tokens~=opcode;
         tokens~=opcode;
         tokens~=token_incloop;
+        writefln("tokens.length=%s", tokens.length);
 
-        {
+
+        { //
+          // Function parse test missing end of function
+          //
+            BSON[] codes;
+
             // Build BSON array of the token list
             foreach(t; tokens) {
-                codes~=BSONToken(t);
+                codes~=Token2BSON(t);
             }
             // Build the BSON stream
             auto bson_stream=new BSON();
@@ -277,32 +316,105 @@ class ScriptBuilder {
             //
             // Reconstruct the token array from the BSON stream
             // and verify the reconstructed stream
+            auto retokens=BSON2Tokens(stream);
+            assert(retokens.length == tokens.length);
+            writefln("tokens.length=%s", tokens.length);
+
+            foreach(i;0..tokens.length) {
+                assert(retokens[i].type == tokens[i].type);
+                assert(retokens[i].token == tokens[i].token);
+            }
+            //
+            // Parse function
+            //
             auto builder=new ScriptBuilder;
-            try {
-                auto retokens=builder.BSON2Token(stream);
-            }
-            catch() {
-            }
+            immutable(Token)[] base_tokens;
+            // parse_function should fail because end of function is missing
+            assert(builder.parse_functions(retokens, base_tokens));
+            // base_tokens.length is non zero because it contains Error tokens
+            assert(base_tokens.length > 0);
+
+            assert(base_tokens[0].type == ScriptType.ERROR);
+            // No function has been declared
+            assert(functions.length == 0);
         }
+
+        //     assert(builder.BSON2Token(stream, retokens));
+        // }
+            writefln("3 tokens.length=%s", tokens.length);
 
         tokens~=token_endfunc;
+            writefln("4 tokens.length=%s", tokens.length);
 
-        assert(retokens.length == tokens.length);
-        foreach(i;0..tokens.length) {
-            assert(retokens[i].type == tokens[i].type);
-            assert(retokens[i].token == tokens[i].token);
-        }
-
+        {
         //
         // Function builder
         //
-        assert(!builder.parse_functions(retokens));
-        writeln("End of unittest");
-        writefln("%s",functions.length);
-        foreach(name, ref f; functions) {
-            writefln("\t%s %s\n",name,f.tokens.length);
-        }
+            BSON[] codes;
 
+            // Build BSON array of the token list
+            foreach(t; tokens) {
+                codes~=Token2BSON(t);
+            }
+            // Build the BSON stream
+            auto bson_stream=new BSON();
+            bson_stream["code"]=codes;
+            auto stream=bson_stream.expand;
+
+
+            //
+            // Reconstruct the token array from the BSON stream
+            // and verify the reconstructed stream
+            writefln("5 tokens.length=%s", tokens.length);
+            auto retokens=BSON2Tokens(stream);
+            assert(retokens.length == tokens.length);
+            foreach(i;0..tokens.length) {
+                assert(retokens[i].type == tokens[i].type);
+                assert(retokens[i].token == tokens[i].token);
+            }
+            writefln("6 tokens.length=%s", tokens.length);
+            writefln("6 retokens.length=%s", retokens.length);
+
+            //
+            // Parse function
+            //
+            auto builder=new ScriptBuilder;
+            immutable(Token)[] base_tokens;
+            // parse_function should NOT fail because end of function is missing
+            assert(!builder.parse_functions(retokens, base_tokens));
+            writefln("7 retokens.length=%s", retokens.length);
+            // base_tokens.length is zero because it should not contain any Error tokens
+            assert(base_tokens.length == 0);
+
+//            assert(base_tokens[0].type == ScriptType.ERROR);
+            // No function has been declared
+            assert(functions.length == 1);
+            // Check if function named "Test" is declared
+            assert("Test" in functions);
+
+            writeln("Unittest end");
+            auto func=functions["Test"];
+
+
+            // Check that the number of function tokens is correct
+            assert(func.tokens.length == 35);
+
+            //
+            // Expand all loop to conditinal and unconditional jumps
+            //
+            auto loop_expanded_tokens = expand_loop(func.tokens);
+            writefln("func.tokens.length=%s", loop_expanded_tokens.length);
+            foreach(i,t; loop_expanded_tokens) {
+                 writefln("%s]:%s", i, t.toText);
+            }
+
+            // assert(!builder.parse_functions(retokens));
+        // writeln("End of unittest");
+        // writefln("%s",functions.length);
+        // foreach(name, ref f; functions) {
+        //     writefln("\t%s %s\n",name,f.tokens.length);
+        // }
+        }
     }
 
 private:
@@ -320,15 +432,15 @@ private:
     };
 
     //
-    immutable(Token) token_put={
+    static immutable(Token) token_put={
       token : "!",
       type : ScriptType.PUT
     };
-    immutable(Token) token_get= {
+    static immutable(Token) token_get= {
       token : "@",
       type : ScriptType.GET
     };
-    immutable(Token) token_inc= {
+    static immutable(Token) token_inc= {
         // Increas by one
       token : "1+",
       type : ScriptType.WORD
@@ -404,22 +516,22 @@ private:
       type : ScriptType.INCLOOP
     };
 
-    immutable(Token) var_I(uint i) @safe pure nothrow const {
+    static immutable(Token) var_I(uint i) @safe pure nothrow {
         immutable(Token) result = {
           token : "I_"~to!string(i),
           type : ScriptType.VAR
         };
         return result;
     };
-    immutable(Token) var_to_I(uint i) @safe pure nothrow const {
+    static immutable(Token) var_to_I(uint i) @safe pure nothrow {
         immutable(Token) result = {
-          token : "I_TO"~to!string(i),
+          token : "I_TO_"~to!string(i),
           type : ScriptType.VAR
         };
         return result;
     };
 
-    immutable(Token)[] expand_loop(immutable(Token)[] tokens) @safe {
+    static immutable(Token)[] expand_loop(immutable(Token)[] tokens) @safe {
         uint loop_index;
         //immutable
         immutable(Token)[] scope_tokens;
