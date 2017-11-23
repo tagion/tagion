@@ -7,9 +7,6 @@ import bakery.script.ScriptInterpreter;
 import bakery.script.Script;
 import bakery.utils.BSON : R_BSON=BSON, Document;
 
-
-
-
 import std.stdio;
 
 alias R_BSON!true BSON;
@@ -29,6 +26,8 @@ class ScriptBuilderExceptionIncompte : ScriptException {
 }
 
 
+
+
 class ScriptBuilder {
     struct Function {
         string name;
@@ -36,7 +35,7 @@ class ScriptBuilder {
         ScriptElement opcode;
         bool compiled;
     }
-    static private Function[string] functions;
+    private Function[string] functions;
     static this() {
 
     }
@@ -50,6 +49,20 @@ class ScriptBuilder {
     /**
        Build as script from bson data stream
      */
+    @safe
+    class ScriptTokenError : ScriptElement {
+        immutable(Token) token;
+        this(immutable(Token) token) {
+            super(0);
+            this.token=token;
+        }
+        override ScriptElement opCall(const Script s, ScriptContext sc) const {
+            check(s, sc);
+            throw new ScriptBuilderException(token.toText);
+            return null;
+        }
+    }
+
     @safe
     static immutable(Token)[] BSON2Tokens(immutable ubyte[] data) {
         string lowercase(const(char)[] str) @trusted  {
@@ -68,6 +81,7 @@ class ScriptBuilder {
             }
         }
         auto range = getRange(doc);
+        bool declare;
         while(!range.empty) {
             auto word=range.front;
             if ( word.isDocument ) {
@@ -75,50 +89,57 @@ class ScriptBuilder {
                 immutable _token = word_doc["token"].get!string;
                 auto _type = cast(ScriptType)(word_doc["type"].get!int);
                 immutable _line = cast(uint)(word_doc["line"].get!int);
-                switch (lowercase(_token)) {
-                case "if":
-                    _type=ScriptType.IF;
+                with (ScriptType) {
+                    _type=NOP;
+                    switch (lowercase(_token)) {
+                    case "if":
+                        _type=IF;
+                        break;
+                    case "else":
+                        _type=ELSE;
+                        break;
+                    case "endif":
+                    case "then":
+                        _type=ENDIF;
                     break;
-                case "else":
-                    _type=ScriptType.ELSE;
-                    break;
-                case "endif":
-                case "then":
-                    _type=ScriptType.ENDIF;
-                    break;
-                case "do":
-                    _type=ScriptType.DO;
-                    break;
-                case "loop":
-                    _type=ScriptType.LOOP;
-                    break;
-                case "begin":
-                    _type=ScriptType.BEGIN;
-                    break;
-                case "until":
-                    _type=ScriptType.UNTIL;
-                    break;
-                case "while":
-                    _type=ScriptType.WHILE;
-                    break;
-                case "repeat":
-                    _type=ScriptType.REPEAT;
-                    break;
-                case "leave":
-                    _type=ScriptType.LEAVE;
-                    break;
-                default:
-                    /*
-
-                     */
-
+                    case "do":
+                        _type=DO;
+                        break;
+                    case "loop":
+                        _type=LOOP;
+                        break;
+                    case "begin":
+                        _type=BEGIN;
+                        break;
+                    case "until":
+                        _type=UNTIL;
+                        break;
+                    case "while":
+                        _type=WHILE;
+                        break;
+                    case "repeat":
+                        _type=REPEAT;
+                        break;
+                    case "leave":
+                        _type=LEAVE;
+                        break;
+                    case "variable":
+                        declare=true;
+                        continue;
+                    default:
+                        /*
+                          Empty
+                        */
+                    }
+                    if ( declare ) {
+                    }
+                    immutable(Token) t={
+                      token : _token,
+                      type : _type,
+                      line : _line
+                    };
+                    tokens~=t;
                 }
-                immutable(Token) t={
-                  token : _token,
-                  type : _type,
-                  line : _line
-                };
-                tokens~=t;
             }
             else {
                 throw new ScriptBuilderException("Malformed Genesys script BSON stream document expected not "~to!string(word.type) );
@@ -258,6 +279,14 @@ class ScriptBuilder {
         //      opcode opcode
         //    +loop
         //  repeat
+        //
+        //  begin
+        //      opcode opcode
+        //      begin
+        //        opcode opcode
+        //      until
+        //  until
+
 
         tokens~=func("Test");
         tokens~=opcode;
@@ -297,7 +326,16 @@ class ScriptBuilder {
         tokens~=token_incloop;
         tokens~=opcode;
         tokens~=opcode;
+        tokens~=token_repeat;
+        tokens~=opcode;
+        tokens~=opcode;
         tokens~=token_begin;
+        tokens~=opcode;
+        tokens~=opcode;
+        tokens~=token_begin;
+        tokens~=opcode;
+        tokens~=opcode;
+        tokens~=token_until;
         tokens~=opcode;
         tokens~=opcode;
         tokens~=token_until;
@@ -343,7 +381,7 @@ class ScriptBuilder {
 
             assert(base_tokens[0].type == ScriptType.ERROR);
             // No function has been declared
-            assert(functions.length == 0);
+            assert(builder.functions.length == 0);
         }
 
         //     assert(builder.BSON2Token(stream, retokens));
@@ -395,28 +433,34 @@ class ScriptBuilder {
 
 //            assert(base_tokens[0].type == ScriptType.ERROR);
             // No function has been declared
-            assert(functions.length == 1);
+            assert(builder.functions.length == 1);
             // Check if function named "Test" is declared
-            assert("Test" in functions);
+            assert("Test" in builder.functions);
 
             writeln("Unittest end");
-            auto func=functions["Test"];
+            auto func=builder.functions["Test"];
 
 
             // Check that the number of function tokens is correct
             writefln("func.tokens.lengt=%s",func.tokens.length);
-            assert(func.tokens.length == 41);
+            assert(func.tokens.length == 50);
 
             //
             // Expand all loop to conditinal and unconditional jumps
             //
-            auto loop_expanded_tokens = expand_loop(func.tokens);
+            auto loop_expanded_tokens = builder.expand_loop(func.tokens);
             writefln("func.tokens.length=%s", loop_expanded_tokens.length);
-            foreach(i,t; loop_expanded_tokens) {
+            // foreach(i,t; loop_expanded_tokens) {
+            //      writefln("%s]:%s", i, t.toText);
+            // }
+
+            assert(loop_expanded_tokens.length == 89);
+
+            auto condition_jump_tokens=builder.add_jump_index(loop_expanded_tokens);
+            assert(builder.error_tokens.length == 0);
+            foreach(i,t; condition_jump_tokens) {
                  writefln("%s]:%s", i, t.toText);
             }
-            assert(func.tokens.length == 77);
-
             // assert(!builder.parse_functions(retokens));
         // writeln("End of unittest");
         // writefln("%s",functions.length);
@@ -427,6 +471,7 @@ class ScriptBuilder {
     }
 
 private:
+    immutable(Token)[] error_tokens;
     // Test aid function
     static immutable(Token) func(string name) {
         immutable(Token) result={
@@ -550,7 +595,7 @@ private:
         return result;
     };
 
-    static immutable(Token)[] expand_loop(immutable(Token)[] tokens) @safe {
+    immutable(Token)[] expand_loop(immutable(Token)[] tokens) @safe {
         uint loop_index;
         immutable(ScriptType)[] begin_loops;
         //immutable
@@ -565,21 +610,16 @@ private:
                     scope_tokens~=var_I(loop_index);
                     scope_tokens~=token_put;
                     begin_loops ~= t.type;
+                    goto case BEGIN;
                 case BEGIN:
-                    immutable(Token) token={
-                      token : t.token,
-                      line : t.line,
-                      type : BEGIN,
-                      jump : loop_index
-                    };
-                    scope_tokens~=token;
+                    scope_tokens~=token_begin;
                     loop_index++;
                     begin_loops ~= t.type;
                     break;
                 case LOOP:
                 case INCLOOP:
                     // loop
-                    // I_ dup @ 1 + dup ! I_TO @ >=
+                    // I_ dup @ 1 + dup ! I_TO @ >= if goto-begin then
                     // +loop
                     // >r I_ dup @ <r + dup ! I_TO @ >=
                     if ( begin_loops.length == 0 ) {
@@ -590,6 +630,7 @@ private:
                         };
 
                         scope_tokens~=error;
+                        error_tokens~=error;
                     }
                     else {
                         if ( begin_loops[$-1] == DO ) {
@@ -613,6 +654,7 @@ private:
                             scope_tokens~=token_if;
                             scope_tokens~=token_repeat;
                             scope_tokens~=token_endif;
+
                         }
                         else {
                             immutable(Token) error = {
@@ -621,8 +663,10 @@ private:
                               type : ScriptType.ERROR
                             };
                             scope_tokens~=error;
+                            error_tokens~=error;
                         }
                         begin_loops.length--;
+                        loop_index--;
                     }
                     break;
                 case WHILE:
@@ -633,6 +677,7 @@ private:
                           type : ScriptType.ERROR
                         };
                         scope_tokens~=error;
+                        error_tokens~=error;
 
                     }
                     else {
@@ -648,6 +693,7 @@ private:
                               type : ScriptType.ERROR
                             };
                             scope_tokens~=error;
+                            error_tokens~=error;
                         }
                     }
                     break;
@@ -659,6 +705,8 @@ private:
                           type : ScriptType.ERROR
                         };
                         scope_tokens~=error;
+                        error_tokens~=error;
+
                     }
                     else {
                         if ( begin_loops[$-1] == BEGIN ) {
@@ -666,6 +714,7 @@ private:
                             scope_tokens~=token_if;
                             scope_tokens~=token_repeat;
                             scope_tokens~=token_endif;
+                            loop_index--;
                         }
                         else {
                             immutable(Token) error = {
@@ -674,6 +723,7 @@ private:
                               type : ScriptType.ERROR
                             };
                             scope_tokens~=error;
+                            error_tokens~=error;
                         }
                     }
                     break;
@@ -686,57 +736,126 @@ private:
         }
         return scope_tokens;
     }
-    immutable(Token)[] expand_condition_jump(immutable(Token)[] tokens) @safe {
-        uint condition_index; // Jump index for the IF ELSE THEN
-        uint[] index_stack;
+    immutable(Token)[] add_jump_index(immutable(Token[]) tokens) @safe {
+        uint jump_index;
+        immutable(uint)[] conditional_index_stack;
+        immutable(uint)[] loop_index_stack;
         immutable(Token)[] scope_tokens;
         foreach(t; tokens) {
             with(ScriptType) switch (t.type) {
                 case IF:
+                    jump_index++;
+                    conditional_index_stack~=jump_index;
                     immutable(Token) token={
-                      token : "$if",
+                      token : t.token,
                       line : t.line,
                       type : t.type,
-                      jump : condition_index
+                      jump : conditional_index_stack[$-1]
                     };
-                    index_stack~=condition_index;
-                    condition_index++;
                     scope_tokens~=token;
                     break;
                 case ELSE:
                     immutable(Token) token_else={
-                      token : "$else",
+                      token : t.token,
                       line : t.line,
-                      type : ELSE,
-                      jump : condition_index
+                      type : LABEL,
+                      jump : conditional_index_stack[$-1]
                     };
-                    scope_tokens~=token_else;
-                    index_stack[$-1]=condition_index;
-                    immutable(Token) token_then={
+                    conditional_index_stack.length--;
+                    jump_index++;
+                    conditional_index_stack~=jump_index;
+                    immutable(Token) token_goto={
                       token : "$if_label", // THEN is us a jump traget of the IF
                       line : t.line,
-                      type : t.type,
-                      jump : index_stack[$-1]
+                      type : GOTO,
+                      jump : conditional_index_stack[$-1]
                     };
-                    scope_tokens~=token_then;
-                    condition_index++;
+                    scope_tokens~=token_goto;
+                    scope_tokens~=token_else;
                     break;
                 case ENDIF:
-                    immutable(Token) token={
-                      token : "$endif",
+                    immutable(Token) token_endif={
+                      token : t.token,
                       line : t.line,
-                      type : t.type,
-                      jump : index_stack[$-1]
+                      type : LABEL,
+                      jump : conditional_index_stack[$-1]
                     };
-                    index_stack.length--;
-                    scope_tokens~=token;
+                    conditional_index_stack.length--;
+                    scope_tokens~=token_endif;
+                    break;
+                case BEGIN:
+                    jump_index++;
+                    loop_index_stack~=jump_index;
+                    immutable(Token) token_begin={
+                      token : t.token,
+                      line : t.line,
+                      type : LABEL,
+                      jump : loop_index_stack[$-1]
+                    };
+                    jump_index++;
+                    loop_index_stack~=jump_index;
+                    scope_tokens~=token_begin;
+                    break;
+                case REPEAT:
+                    if ( loop_index_stack.length > 1 ) {
+                        immutable(Token) token_repeat={
+                          token : t.token,
+                          line : t.line,
+                          type : GOTO,
+                          jump : loop_index_stack[$-2]
+                        };
+                        immutable(Token) token_end={
+                          token : t.token,
+                          line : t.line,
+                          type : LABEL,
+                          jump : loop_index_stack[$-1]
+                        };
+                        loop_index_stack.length-=2;
+                        scope_tokens~=token_begin;
+                        scope_tokens~=token_end;
+                    }
+                    else {
+                        immutable(Token) error={
+                          token : "Repeat unexpected",
+                          line : t.line,
+                          type : ERROR
+                        };
+                        error_tokens~=error;
+                        scope_tokens~=error;
+                    }
+                    break;
+                case LEAVE:
+                    if ( loop_index_stack.length > 1 ) {
+                        immutable(Token) token_leave={
+                          token : t.token,
+                          line : t.line,
+                          type : GOTO,
+                          jump : loop_index_stack[$-1]
+                        };
+                        scope_tokens~=token_leave;
+                    }
+                    else {
+                        immutable(Token) error={
+                          token : "Leave unexpected",
+                          line : t.line,
+                          type : ERROR
+                        };
+                        error_tokens~=error;
+                        scope_tokens~=error;
+                    }
                     break;
                 case DO:
                 case WHILE:
                 case LOOP:
                 case INCLOOP:
-                    assert(0, "The opcode "~to!string(t.type)~
-                        " should be eliminated by loop_expand function");
+                    immutable(Token) error={
+                      token : "The opcode "~to!string(t.type)~
+                      " should be eliminated by loop_expand function",
+                      line : t.line,
+                      type : ERROR
+                    };
+                    scope_tokens~=error;
+                    error_tokens~=error;
                     break;
                 default:
                     scope_tokens~=t;
@@ -745,65 +864,231 @@ private:
         }
         return scope_tokens;
     }
-    immutable(Token)[] add_jump_labels(immutable(Token)[] tokens) @safe {
-        // This table is set to all the forward jump indices for ELSE and THEN
-        uint[uint] if_table;
-        // This table is set to all the begin loop jump indices for BEGIN and DO
-        uint[uint] begin_table;
+    static ScriptElement createElement(immutable(Token) t) {
+        ScriptElement result;
+        ScriptElement createBinaryOp(alias oplist)(string opname) {
+            static if ( oplist.length !=0 ) {
+                if ( opname == oplist[0] ) {
+                    enum op=oplist[0];
+                    return new ScriptBinary!(op);
+                }
+                else {
+                    return createBinaryOp!(oplist[1..$])(opname);
+                }
+            }
+            return null;
+        }
+        ScriptElement createCompare(alias oplist)(string opname) {
+            static if ( oplist.length !=0 ) {
+                if ( opname == oplist[0] ) {
+                    enum op=oplist[0];
+                    return new ScriptCompare!(op);
+                }
+                else {
+                    return createCompare!(oplist[1..$])(opname);
+                }
+            }
+            return null;
+        }
+        ScriptElement createStackOp(alias oplist)(string opname) {
+            static if ( oplist.length !=0 ) {
+                if ( opname == oplist[0] ) {
+                    enum op=oplist[0];
+                    return new ScriptStackOp!(op);
+                }
+                else {
+                    return createStackOp!(oplist[1..$])(opname);
+                }
+            }
+            return null;
+        }
+
+//        result=createBinaryOp!(["+", "-", "*", "/", "%", "|", "&", "^", ">>", "<<", "^^"])(t.token);
+        result=createBinaryOp!(["+", "-", "*", "/", "%", "|", "&", "^" ])(t.token);
+        if ( result is null ) {
+            result=createCompare!(["<", "<=", "==", "!=", ">=", ">"])(t.token);
+        }
+        if ( result is null ) {
+            result=createStackOp!([
+                    "dup", "swap", "drop", "over",
+                    "rot", "-rot", "-rot", "-rot",
+                    "tuck",
+                    "2dup", "2drop", "2swap", "2over",
+                    "2nip", "2tuck"
+                    ])(t.token);
+
+        }
+        return result;
+    }
+    ScriptElement opcode(immutable(Token) t) {
+        with (ScriptType) final switch(t.type) {
+            case NUMBER:
+            case HEX:
+                return new ScriptNumber(t.token);
+            case TEXT:
+                assert(0, "Text object missing");
+//                return new ScriptText(t.token);
+            case EXIT:
+                return new ScriptExit();
+            case ERROR:
+                return new ScriptTokenError(t);
+            case WORD:
+                // Ignore
+                break;
+            case GOTO:
+            case IF:
+                assert(0, "Jump instruction "~to!string(t.type)~" should not be taken care of in this function");
+                break;
+                break;
+            case NOP:
+            case LABEL:
+            case FUNC:
+            case ENDFUNC:
+            case ELSE:
+            case ENDIF:
+            case DO:
+            case LOOP:
+            case INCLOOP:
+            case BEGIN:
+            case UNTIL:
+            case WHILE:
+            case REPEAT:
+            case LEAVE:
+            case THEN:
+            case INDEX:
+            case VAR:
+            case PUT:
+            case GET:
+                //
+            case UNKNOWN:
+            case COMMENT:
+                assert(0, "This "~to!string(t.type)~" pseudo script tokens opcode should have been replace by executing instructions at this point");
+            case EOF:
+                assert(0, "EOF instructions should have been removed at this point");
+
+            }
+        return createElement(t);
+    }
+    @safe
+    class JumpElement : ScriptElement {
+        this(immutable(Token) t) {
+            super(0);
+        }
+        this() {
+            super(0);
+        }
+        override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+            assert(0, "This function can not be executed");
+            return null;
+        }
+    }
+    @safe
+    class IfElement : ScriptElement {
+        this(immutable(Token) t) {
+            super(0);
+        }
+        this() {
+            super(0);
+        }
+        override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+            assert(0, "This function can not be executed");
+            return null;
+        }
+    }
+    @safe
+    class CallElement : ScriptElement {
+        this(immutable(Token) t) {
+            super(0);
+        }
+        this() {
+            super(0);
+        }
+        override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+            assert(0, "This function can not be executed");
+            return null;
+        }
+    }
+
+    void build() {
+        void create_label_jump_table(immutable(Token)[] tokens, out uint[uint] label_jump_table) {
+            foreach(uint target,t; tokens) {
+                if ( t.type == ScriptType.LABEL) {
+                    // Sets the jump index to the target point on the tokens table
+                    label_jump_table[cast(size_t)t.jump]=target;
+                }
+            }
+        }
+        /*
+
+         */
+        ScriptElement[] build_function(const(Function) func) {
+            scope result = new ScriptElement[func.tokens.length];
+            foreach(i,t; func.tokens) {
+                if (result[i] is null) {
+                    with (ScriptType) switch (t.type) {
+                        case IF:
+                        case GOTO:
+                        case LABEL:
+                            // Jump labels
+                            break;
+                        default:
+                            result[i]=opcode(t);
+                            if ( result[i] is null) {
+                                // If opcode is not definde it could be function
+                                result[i]=new CallElement(t);
+                            }
+                    }
+                }
+            }
+            return result;
+        }
+        foreach(f; functions) {
+            if ( f.opcode is null) {
+                uint[uint] label_jump_table;
+                create_label_jump_table(f.tokens, label_jump_table);
+
+                auto scripts=build_function(f);
+
+            }
+        }
+    }
+    version(none)
+    immutable(Token)[] add_jump_targets_index(immutable(Token[]) tokens) @safe {
         // This table is set to all the end loop jump indices for LOOP and REPEAT
         uint[uint] repeat_table;
 
         // Fill the tables up with jump indciese
-        foreach(uint index, t; tokens) {
+        immutable(Token)[] scope_tokens;
+        foreach(t; tokens) {
             with(ScriptType) switch (t.type) {
+                case LABEL:
+                    // immutable(Token) error = {
+                    //   token : "The token "~to!string(t.type),
+                    //   line : t.line,
+                    //   type : ScriptType.ERROR
+                    // };
+                    temp_scope_tokens;
+                    break;
                 case THEN:
                 case ENDIF:
-                    if_table[t.jump]=index;
-                    break;
                 case BEGIN:
-                    begin_table[t.jump]=index;
-                    break;
                 case REPEAT:
-                    repeat_table[t.jump]=index;
-                    break;
-                default:
-                    break;
-                }
-        }
-        immutable(Token)[] scope_tokens;
-        // Change the jump to actual jump index pointers
-        foreach(index, t; tokens) {
-            with(ScriptType) switch (t.type) {
-                case IF:
-                case ELSE:
-                    immutable(Token) token={
-                      token : t.token,
-                      type : t.type,
-                      line : t.line,
-                      jump : if_table[t.jump]
-                    };
-                    scope_tokens~=token;
-                    break;
-                case REPEAT:
-                    immutable(Token) token={
-                      token : t.token,
-                      type : t.type,
-                      line : t.line,
-                      jump : begin_table[t.jump]
-                    };
-                    scope_tokens~=token;
-                    break;
+                case WHILE:
+                case DO:
                 case LEAVE:
-                    immutable(Token) token={
-                      token : t.token,
-                      type : t.type,
-                      line : t.line,
-                      jump : repeat_table[t.jump]
-                    };
-                    scope_tokens~=token;
+                case UNTIL:
+                    assert(0, "Token "~to!string(t.type)~" should be expande out at this state");
+                    // immutable(Token) error = {
+                    //   token : "The token "~to!string(t.type),
+                    //   line : t.line,
+                    //   type : ScriptType.ERROR
+                    // };
+                    // scope_tokens~=error;
+                    // error_tokens~=error;
+                    // scope_tokens~=t;
                     break;
                 default:
-                    scope_tokens~=t;
+                    temp_scope_tokens~=t;
                     break;
                 }
         }

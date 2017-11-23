@@ -1,6 +1,7 @@
 module bakery.script.ScriptInterpreter;
 
 import bakery.utils.BSON : R_BSON=BSON;
+
 import core.exception : RangeError;
 import std.conv;
 
@@ -8,6 +9,7 @@ alias R_BSON!true BSON;
 
 class ScriptInterpreter {
     enum Type {
+        NOP,
         NUMBER,
         HEX,
         TEXT,
@@ -22,6 +24,9 @@ class ScriptInterpreter {
         ELSE,
         THEN, // Used as traget label of IF to ELSE jump
         ENDIF,
+
+        GOTO, // Jump to label
+        LABEL, // Traget for GOTO and IF
 
         // Loop tokens
         DO,
@@ -47,6 +52,7 @@ class ScriptInterpreter {
     struct Token {
         string token;
         uint line;
+        uint pos;
         Type type;
         uint jump;
         string toText() @safe pure const {
