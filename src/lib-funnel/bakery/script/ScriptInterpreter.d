@@ -57,7 +57,7 @@ class ScriptInterpreter {
         uint jump;
         string toText() @safe pure const {
             return "'"~token~"':"~to!string(type)~" line:"~
-                to!string(line)~" jump:"~to!string(jump);
+                to!string(line)~":"~to!string(pos)~" jump:"~to!string(jump);
         }
     };
     this(string source) {

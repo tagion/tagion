@@ -70,7 +70,6 @@ struct Value {
         _type=Type.FUNCTION;
         data.opcode=s;
     }
-
     Type type() pure const nothrow {
         return _type;
     }
@@ -95,6 +94,21 @@ struct Value {
         }
         throw new ScriptException(to!string(Type.FUNCTION)~" expected not "~to!string(type));
     }
+    T get(T)() const {
+
+        static if ( is(T==const(BigInt)) ) {
+            return value;
+        }
+        else static if ( is(T==string) ) {
+            return text;
+        }
+        else static if ( is(T==const(ScriptElement)) ) {
+            return func;
+        }
+        else {
+            static assert(0, "Type "~T.stringof~" not supported");
+        }
+    }
     ~this() {
         // The value is scrambled to reduce the properbility of side channel attack
         data.scramble;
@@ -105,19 +119,23 @@ struct Value {
 class ScriptContext {
     private const(Value)[] data_stack;
     private const(ScriptElement)[] return_stack;
+    package const(Value)* var[];
+
 //    private uint data_stack_index;
 //    private uint return_stack_index;
     private immutable uint data_stack_size;
     private immutable uint return_stack_size;
     private uint iteration_count;
-    this(const uint data_stack_size, const uint return_stack_size ) {
+    this(const uint data_stack_size, const uint return_stack_size, immutable uint var_size,  ) {
         this.data_stack_size=data_stack_size;
         this.return_stack_size=return_stack_size;
+        this.var=new const(Value)*[var_size];
+
 //        data_stack=new const(Value)[data_stack_size];
 //        return_stack=new const(ScriptElement)[return_stack_size];
     }
     @trusted
-    const(BigInt) data_pop() {
+    const(Value) data_pop() {
         scope(exit) {
             if ( data_stack.length > 0 ) {
                 data_stack.length--;
@@ -126,8 +144,12 @@ class ScriptContext {
         if ( data_stack.length == 0 ) {
             throw new ScriptException("Data stack empty");
         }
-        return data_stack[$-1].data.value;
+        return data_stack[$-1];
     }
+    const(BigInt) data_pop_number() {
+        return data_pop.get!(const(BigInt));
+    }
+    /+
     @safe
     void data_push(ref const BigInt v) {
         if ( data_stack.length < data_stack_size ) {
@@ -145,14 +167,33 @@ class ScriptContext {
             throw new ScriptException("Data stack overflow");
         }
     }
-    void data_push(const Value value) {
++/
+    @safe
+    void data_push(T)(T v) {
         if ( data_stack.length < data_stack_size ) {
-            data_stack~=value;
+//            pragma(msg, "data_push "~T.stringof);
+            static if ( is(T:const Value) ) {
+                data_stack~=v;
+            }
+            else {
+                data_stack~=const(Value)(v);
+            }
         }
         else {
             throw new ScriptException("Data stack overflow");
         }
     }
+    version(none)
+    void data_push(T)(ref T v) {
+        if ( data_stack.length < data_stack_size ) {
+            pragma(msg, "data_push "~T.stringof);
+            data_stack~=const(Value)(v);
+        }
+        else {
+            throw new ScriptException("Data stack overflow");
+        }
+    }
+
     const(Value) data_peek(immutable uint i=0) const {
         if ( data_stack.length <= i ) {
             throw new ScriptException("Data stack empty");
@@ -211,7 +252,7 @@ abstract class ScriptElement {
         return _next;
     }
 
-    void set_token(string token, uint line, uint pos) {
+    void set_location(string token, uint line, uint pos) {
         assert(this.token.length == 0);
         this.token = token;
         this.line = line;
@@ -234,7 +275,6 @@ abstract class ScriptElement {
         // }
         // touched = true;
     }
-    string name() /* pure */ const;
 }
 
 @safe
@@ -252,17 +292,13 @@ class ScriptConditionalJump : ScriptElement {
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
         check(s, sc);
-        if ( sc.data_pop != 0 ) {
+        if ( sc.data_pop_number != 0 ) {
             return _next;
         }
         else {
             return _jump;
         }
     }
-    override string name() pure const nothrow {
-        return "IF";
-    }
-
 }
 
 @safe
@@ -282,9 +318,6 @@ class ScriptJump : ScriptElement {
         sc.check_jump();
         return _next; // Points to the jump position
     }
-    override string name() pure const nothrow {
-        return "GOTO";
-    }
 }
 
 @safe
@@ -296,16 +329,14 @@ class ScriptExit : ScriptElement {
         check(s, sc);
         return sc.return_pop;
     }
-    override string name() pure const nothrow {
-        return "EXIT";
-    }
-
 }
 
 @safe
 class ScriptCall : ScriptElement {
     private ScriptElement _call;
-    this() {
+    private string func_name;
+    this(string func_name) {
+        this.func_name=func_name;
         super(0);
     }
     package const(ScriptElement) call(ScriptElement n) {
@@ -320,10 +351,6 @@ class ScriptCall : ScriptElement {
         sc.return_push(next);
         return _call;
     }
-    override string name() pure const nothrow {
-        return "CALL";
-    }
-
 }
 
 
@@ -340,10 +367,6 @@ class ScriptAdd : ScriptElement {
 @safe
 class ScriptNumber : ScriptElement {
     private BigInt x;
-    // this(const ScriptElement next, T x) {
-    //     this.x = x;
-    //     this._next = next;
-    // }
     this(string number) {
         this.x=BigInt(number);
         super(0);
@@ -353,13 +376,58 @@ class ScriptNumber : ScriptElement {
         sc.data_push(x);
         return _next;
     }
-    @trusted
-    override string name() const {
-        return "0x"~x.toHex;
+}
+
+@safe
+class ScriptText : ScriptElement {
+    private string text;
+    this(string text) {
+        this.text=text;
+        super(0);
+    }
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        sc.data_push(text);
+        return _next;
+    }
+}
+
+@safe
+class ScriptGetVar : ScriptElement {
+    private immutable uint var_index;
+    private immutable(char[]) var_name;
+    this(string var_name, uint var_index) {
+        this.var_name = var_name;
+        this.var_index = var_index;
+        super(0);
+    }
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        sc.data_push(*(sc.var[var_index]));
+        return _next;
     }
 
 }
 
+
+@safe
+class ScriptPutVar : ScriptElement {
+    immutable uint var_index;
+    private string var_name;
+    this(string var_name, uint var_index) {
+        this.var_name = var_name;
+        this.var_index = var_index;
+        super(0);
+    }
+    @trusted
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        auto var=sc.data_pop();
+        sc.var[var_index]=&var;
+        return _next;
+    }
+
+}
 /* Arhitmentic opcodes */
 
 @safe
@@ -371,13 +439,9 @@ class ScriptInc : ScriptElement {
     @trusted
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        sc.data_push(sc.data_pop + 1);
+        sc.data_push(sc.data_pop_number + 1);
         return _next;
     }
-    override string name() pure const nothrow {
-        return "1+";
-    }
-
 }
 
 @safe
@@ -389,11 +453,8 @@ class ScriptDec : ScriptElement {
     @trusted
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        sc.data_push(sc.data_pop - 1);
+        sc.data_push(sc.data_pop_number - 1);
         return _next;
-    }
-    override string name() pure const nothrow {
-        return "1-";
     }
 }
 
@@ -408,11 +469,8 @@ class ScriptBinary(string O) : ScriptElement {
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         //sc.data_push(sc.data_pop >> sc.data_pop);
-        mixin("sc.data_push(sc.data_pop" ~ op ~ "sc.data_pop);");
+        mixin("sc.data_push(sc.data_pop_number" ~ op ~ "sc.data_pop_number);");
         return _next;
-    }
-    override string name() pure const nothrow {
-        return op;
     }
 }
 
@@ -426,13 +484,10 @@ class ScriptCompare(string O) : ScriptElement {
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         bool result;
-        mixin("result = sc.data_pop" ~ op ~ "sc.data_pop;");
+        mixin("result = sc.data_pop_number" ~ op ~ "sc.data_pop_number;");
         auto x=BigInt((result)?-1:0);
         sc.data_push(x);
         return _next;
-    }
-    override string name() pure const nothrow {
-        return op;
     }
 }
 
@@ -533,9 +588,6 @@ class ScriptStackOp(string O) : ScriptElement {
             static assert(0, "Stack operator "~op.stringof~" not defined");
         }
         return _next;
-    }
-    override string name() pure const nothrow {
-        return op;
     }
 }
 

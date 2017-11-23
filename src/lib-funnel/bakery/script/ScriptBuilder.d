@@ -32,13 +32,21 @@ class ScriptBuilder {
     struct Function {
         string name;
         immutable(Token)[] tokens;
+        //  private uint[uint] label_jump_table;
         ScriptElement opcode;
         bool compiled;
-    }
-    private Function[string] functions;
-    static this() {
+        version(node)
+        void create_label_jump_table(immutable(Token)[] tokens) {
+            foreach(uint target,t; tokens) {
+                if ( t.type == ScriptType.LABEL) {
+                    // Sets the jump index to the target point on the tokens table
+                    label_jump_table[cast(size_t)t.jump]=target;
+                }
+            }
+        }
 
     }
+    private Function[string] functions;
     alias ScriptInterpreter.Type ScriptType;
     alias ScriptInterpreter.Token Token;
     // struct Token {
@@ -471,6 +479,21 @@ class ScriptBuilder {
     }
 
 private:
+    uint var_count;
+    uint[string] var_indices;
+    uint allocate_var(string var_name) {
+        if ( var_name !in var_indices ) {
+            var_indices[var_name]=var_count;
+            var_count++;
+        }
+        return var_indices[var_name];
+    }
+    bool is_var(string var_name) pure const nothrow {
+        return (var_name in var_indices) !is null;
+    }
+    uint get_var(string var_name) const {
+        return var_indices[var_name];
+    }
     immutable(Token)[] error_tokens;
     // Test aid function
     static immutable(Token) func(string name) {
@@ -864,7 +887,7 @@ private:
         }
         return scope_tokens;
     }
-    static ScriptElement createElement(immutable(Token) t) {
+    static ScriptElement createElement(string opname) {
         ScriptElement result;
         ScriptElement createBinaryOp(alias oplist)(string opname) {
             static if ( oplist.length !=0 ) {
@@ -903,10 +926,9 @@ private:
             return null;
         }
 
-//        result=createBinaryOp!(["+", "-", "*", "/", "%", "|", "&", "^", ">>", "<<", "^^"])(t.token);
-        result=createBinaryOp!(["+", "-", "*", "/", "%", "|", "&", "^" ])(t.token);
+        result=createBinaryOp!(["+", "-", "*", "/", "%", "|", "&", "^" ])(opname);
         if ( result is null ) {
-            result=createCompare!(["<", "<=", "==", "!=", ">=", ">"])(t.token);
+            result=createCompare!(["<", "<=", "==", "!=", ">=", ">"])(opname);
         }
         if ( result is null ) {
             result=createStackOp!([
@@ -915,33 +937,37 @@ private:
                     "tuck",
                     "2dup", "2drop", "2swap", "2over",
                     "2nip", "2tuck"
-                    ])(t.token);
+                    ])(opname);
 
         }
         return result;
     }
+    version(none)
     ScriptElement opcode(immutable(Token) t) {
+        ScriptElement result;
         with (ScriptType) final switch(t.type) {
             case NUMBER:
             case HEX:
-                return new ScriptNumber(t.token);
+                result=new ScriptNumber(t.token);
+                break;
             case TEXT:
-                assert(0, "Text object missing");
-//                return new ScriptText(t.token);
+                result=new ScriptText(t.token);
+                break;
             case EXIT:
-                return new ScriptExit();
+                result=new ScriptExit();
+                break;
             case ERROR:
-                return new ScriptTokenError(t);
+                result=new ScriptTokenError(t);
+                break;
             case WORD:
-                // Ignore
+                result=createElement(t.token);
                 break;
             case GOTO:
             case IF:
-                assert(0, "Jump instruction "~to!string(t.type)~" should not be taken care of in this function");
-                break;
+            case LABEL:
+                // Added in the
                 break;
             case NOP:
-            case LABEL:
             case FUNC:
             case ENDFUNC:
             case ELSE:
@@ -967,8 +993,13 @@ private:
                 assert(0, "EOF instructions should have been removed at this point");
 
             }
-        return createElement(t);
+
+        if ( result !is null ) {
+            result.set_token(t.token, t.line, t.pos);
+        }
+        return result;
     }
+    version(none) {
     @safe
     class JumpElement : ScriptElement {
         this(immutable(Token) t) {
@@ -1008,19 +1039,11 @@ private:
             return null;
         }
     }
+    }
+
 
     void build() {
-        void create_label_jump_table(immutable(Token)[] tokens, out uint[uint] label_jump_table) {
-            foreach(uint target,t; tokens) {
-                if ( t.type == ScriptType.LABEL) {
-                    // Sets the jump index to the target point on the tokens table
-                    label_jump_table[cast(size_t)t.jump]=target;
-                }
-            }
-        }
-        /*
-
-         */
+        version(none)
         ScriptElement[] build_function(const(Function) func) {
             scope result = new ScriptElement[func.tokens.length];
             foreach(i,t; func.tokens) {
@@ -1033,23 +1056,96 @@ private:
                             break;
                         default:
                             result[i]=opcode(t);
-                            if ( result[i] is null) {
-                                // If opcode is not definde it could be function
-                                result[i]=new CallElement(t);
-                            }
-                    }
+                        }
                 }
             }
             return result;
         }
-        foreach(f; functions) {
-            if ( f.opcode is null) {
-                uint[uint] label_jump_table;
-                create_label_jump_table(f.tokens, label_jump_table);
-
-                auto scripts=build_function(f);
-
+        foreach(name,f; functions) {
+            ScriptElement[uint] script_labels;
+            ScriptElement forward(immutable uint i) {
+                ScriptElement result;
+                if ( i < f.tokens.length ) {
+                    auto t=f.tokens[i];
+                    with(ScriptType) final switch (t.type) {
+                        case LABEL:
+                            result=forward(i+1);
+                            script_labels[t.jump]=result;
+                        break;
+                        case GOTO:
+                            result=new ScriptJump;
+                            break;
+                        case IF:
+                            result=new ScriptConditionalJump;
+                            break;
+                        case NUMBER:
+                        case HEX:
+                            result=new ScriptNumber(t.token);
+                            break;
+                        case TEXT:
+                            result=new ScriptText(t.token);
+                            break;
+                        case EXIT:
+                            result=new ScriptExit();
+                            break;
+                        case ERROR:
+                            result=new ScriptTokenError(t);
+                            break;
+                        case WORD:
+                            result=createElement(t.token);
+                            if ( result is null ) {
+                                // Possible function call
+                                result=new ScriptCall(t.token);
+                            }
+                            break;
+                        case PUT:
+                            if ( is_var(t.token) ) {
+                                result=new ScriptPutVar(t.token, get_var(t.token));
+                            }
+                            else {
+                                result=new ScriptTokenError(t);
+                            }
+                            break;
+                        case GET:
+                            if ( is_var(t.token) ) {
+                                result=new ScriptGetVar(t.token, get_var(t.token));
+                            }
+                            else {
+                                result=new ScriptTokenError(t);
+                            }
+                            break;
+                        case VAR:
+                            allocate_var(t.token);
+                            result=forward(i+1);
+                            break;
+                        case NOP:
+                        case FUNC:
+                        case ENDFUNC:
+                        case ELSE:
+                        case ENDIF:
+                        case DO:
+                        case LOOP:
+                        case INCLOOP:
+                        case BEGIN:
+                        case UNTIL:
+                        case WHILE:
+                        case REPEAT:
+                        case LEAVE:
+                        case THEN:
+                        case INDEX:
+                            //
+                        case UNKNOWN:
+                        case COMMENT:
+                            assert(0, "This "~to!string(t.type)~" pseudo script tokens opcode should have been replace by executing instructions at this point");
+                        case EOF:
+                            assert(0, "EOF instructions should have been removed at this point");
+                        }
+                    result.next=forward(i+1);
+                    result.set_location(t.token, t.line, t.pos);
+                }
+                return result;;
             }
+
         }
     }
     version(none)
