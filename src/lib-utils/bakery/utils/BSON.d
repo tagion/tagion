@@ -2422,6 +2422,7 @@ class BSON(bool key_sort_flag=true) {
                 data~=nativeToLittleEndian(cast(uint)value.text.length+1);
                 data~=value.text;
                 data~=zero;
+                break;
             case DOCUMENT:
                 data~=value.document.expand;
                 break;
