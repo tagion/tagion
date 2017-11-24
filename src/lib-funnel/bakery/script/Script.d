@@ -149,29 +149,9 @@ class ScriptContext {
     const(BigInt) data_pop_number() {
         return data_pop.get!(const(BigInt));
     }
-    /+
-    @safe
-    void data_push(ref const BigInt v) {
-        if ( data_stack.length < data_stack_size ) {
-            data_stack~=const(Value)(v);
-        }
-        else {
-            throw new ScriptException("Data stack overflow");
-        }
-    }
-    void data_push(const BigInt v) {
-        if ( data_stack.length < data_stack_size ) {
-            data_stack~=const(Value)(v);
-        }
-        else {
-            throw new ScriptException("Data stack overflow");
-        }
-    }
-+/
     @safe
     void data_push(T)(T v) {
         if ( data_stack.length < data_stack_size ) {
-//            pragma(msg, "data_push "~T.stringof);
             static if ( is(T:const Value) ) {
                 data_stack~=v;
             }
@@ -183,17 +163,6 @@ class ScriptContext {
             throw new ScriptException("Data stack overflow");
         }
     }
-    version(none)
-    void data_push(T)(ref T v) {
-        if ( data_stack.length < data_stack_size ) {
-            pragma(msg, "data_push "~T.stringof);
-            data_stack~=const(Value)(v);
-        }
-        else {
-            throw new ScriptException("Data stack overflow");
-        }
-    }
-
     const(Value) data_peek(immutable uint i=0) const {
         if ( data_stack.length <= i ) {
             throw new ScriptException("Data stack empty");
@@ -268,12 +237,29 @@ abstract class ScriptElement {
         if ( runlevel > s.runlevel ) {
             throw new ScriptException("Opcode not allowed in this runlevel");
         }
-        // else if ( s.runlevel < 2 ) {
-        //     if ( touched ) {
-        //         throw new ScriptException("Opcode has already been executed (loop not allowed in this runlevel)");
-        //     }
-        // }
-        // touched = true;
+    }
+    string toInfo() pure const nothrow {
+        import std.conv;
+        string result;
+        result=token~" "~to!string(line)~":"~to!string(pos);
+        return result;
+    }
+}
+
+@safe
+class ScriptError : ScriptElement {
+    private const(ScriptElement) problem_element;
+    private string error;
+    this(string error, const(ScriptElement) problem_element) {
+        this.error=error;
+        this.problem_element=problem_element;
+        super(0);
+    }
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        import std.stdio;
+        writefln("Aborted: %s", error);
+        writeln(problem_element.toInfo);
+        return null;
     }
 }
 
@@ -354,15 +340,6 @@ class ScriptCall : ScriptElement {
 }
 
 
-/*
-class ScriptAdd : ScriptElement {
-
-    override ScriptElement opCall(const ScriptContext sc) {
-
-    }
-}
-
-*/
 
 @safe
 class ScriptNumber : ScriptElement {
@@ -459,6 +436,7 @@ class ScriptDec : ScriptElement {
 }
 
 
+
 @safe
 class ScriptBinary(string O) : ScriptElement {
     enum op=O;
@@ -468,8 +446,52 @@ class ScriptBinary(string O) : ScriptElement {
     @trusted
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        //sc.data_push(sc.data_pop >> sc.data_pop);
-        mixin("sc.data_push(sc.data_pop_number" ~ op ~ "sc.data_pop_number);");
+        scope BigInt a, b;
+        try {
+            a=sc.data_pop_number;
+            b=sc.data_pop_number;
+        }
+        catch ( Exception e ) {
+            return new ScriptError("Type or operator problem", this);
+        }
+        static if ( (op == "/") || (op == "%" ) ) {
+            if ( a == 0 ) {
+                return new ScriptError("Division by zero", this);
+            }
+        }
+        static if ( op == "<<" ) {
+            if ( a < 0 ) {
+                return new ScriptError("Left shift divisor must be positive", this);
+            }
+            if ( a == 0 ) {
+                sc.data_push(b);
+            }
+            else {
+                auto _a=cast(int)a;
+                if ( a > s.max_shift_left ) {
+                    return new ScriptError("Left shift overflow", this);
+                }
+                auto y=b << _a;
+                sc.data_push(y);
+            }
+        }
+        else static if ( op == ">>" ) {
+            if ( a < 0 ) {
+                return new ScriptError("Left shift divisor must be positive", this);
+            }
+            if ( a == 0 ) {
+                sc.data_push(b);
+            }
+            else {
+                auto _a=cast(uint)a;
+                auto y=b >> _a;
+                sc.data_push(y);
+            }
+        }
+        else {
+
+            mixin("sc.data_push(b" ~ op ~ "a);");
+        }
         return _next;
     }
 }
@@ -596,6 +618,7 @@ class Script {
     private ScriptElement root, last;
     immutable uint runlevel;
     private ScriptContext sc;
+    enum max_shift_left=(1<<12)+(1<<7);
     this(ScriptContext sc, immutable uint runlevel=0, ScriptElement root=null) {
         this.runlevel=runlevel;
         this.sc=sc;

@@ -47,6 +47,8 @@ class ScriptBuilder {
 
     }
     private Function[string] functions;
+    alias ScriptElement function() opcreate;
+    package static opcreate[string] opcreators;
     alias ScriptInterpreter.Type ScriptType;
     alias ScriptInterpreter.Token Token;
     // struct Token {
@@ -887,60 +889,68 @@ private:
         }
         return scope_tokens;
     }
-    static ScriptElement createElement(string opname) {
-        ScriptElement result;
-        ScriptElement createBinaryOp(alias oplist)(string opname) {
-            static if ( oplist.length !=0 ) {
-                if ( opname == oplist[0] ) {
-                    enum op=oplist[0];
+    static this() {
+        enum binaryOp=["+", "-", "*", "/", "%", "|", "&", "^", "<<" ];
+        enum compareOp=["<", "<=", "==", "!=", ">=", ">"];
+        enum stackOp=[
+            "dup", "swap", "drop", "over",
+            "rot", "-rot", "-rot", "-rot",
+            "tuck",
+            "2dup", "2drop", "2swap", "2over",
+            "2nip", "2tuck"
+            ];
+        void build_opcreators(string opname) {
+            void createBinaryOp(alias oplist)(string opname) {
+                static ScriptElement create(string op)() {
                     return new ScriptBinary!(op);
                 }
-                else {
-                    return createBinaryOp!(oplist[1..$])(opname);
+                static if ( oplist.length !=0 ) {
+                    if ( opname == oplist[0] ) {
+                        enum op=oplist[0];
+                        opcreators[op]=&(create!op);
+                    }
+                    else {
+                        createBinaryOp!(oplist[1..$])(opname);
+                    }
                 }
             }
-            return null;
-        }
-        ScriptElement createCompare(alias oplist)(string opname) {
-            static if ( oplist.length !=0 ) {
-                if ( opname == oplist[0] ) {
-                    enum op=oplist[0];
+            void createCompare(alias oplist)(string opname) {
+                static ScriptElement create(string op)() {
                     return new ScriptCompare!(op);
                 }
-                else {
-                    return createCompare!(oplist[1..$])(opname);
+                static if ( oplist.length !=0 ) {
+                    if ( opname == oplist[0] ) {
+                        enum op=oplist[0];
+                        opcreators[op]=&(create!op);
+                    }
+                    else {
+                        createCompare!(oplist[1..$])(opname);
+                    }
                 }
             }
-            return null;
-        }
-        ScriptElement createStackOp(alias oplist)(string opname) {
-            static if ( oplist.length !=0 ) {
-                if ( opname == oplist[0] ) {
-                    enum op=oplist[0];
+            void createStackOp(alias oplist)(string opname) {
+                static ScriptElement create(string op)() {
                     return new ScriptStackOp!(op);
                 }
-                else {
-                    return createStackOp!(oplist[1..$])(opname);
+                static if ( oplist.length !=0 ) {
+                    if ( opname == oplist[0] ) {
+                        enum op=oplist[0];
+                        opcreators[op]=&(create!op);
+                    }
+                    else {
+                        createStackOp!(oplist[1..$])(opname);
+                    }
                 }
             }
-            return null;
+
+            createBinaryOp!(binaryOp)(opname);
+            createCompare!(compareOp)(opname);
+            createStackOp!(stackOp)(opname);
+        };
+        foreach(opname; binaryOp~compareOp~stackOp) {
+            build_opcreators(opname);
         }
 
-        result=createBinaryOp!(["+", "-", "*", "/", "%", "|", "&", "^" ])(opname);
-        if ( result is null ) {
-            result=createCompare!(["<", "<=", "==", "!=", ">=", ">"])(opname);
-        }
-        if ( result is null ) {
-            result=createStackOp!([
-                    "dup", "swap", "drop", "over",
-                    "rot", "-rot", "-rot", "-rot",
-                    "tuck",
-                    "2dup", "2drop", "2swap", "2over",
-                    "2nip", "2tuck"
-                    ])(opname);
-
-        }
-        return result;
     }
     version(none)
     ScriptElement opcode(immutable(Token) t) {
@@ -1041,26 +1051,13 @@ private:
     }
     }
 
-
-    void build() {
-        version(none)
-        ScriptElement[] build_function(const(Function) func) {
-            scope result = new ScriptElement[func.tokens.length];
-            foreach(i,t; func.tokens) {
-                if (result[i] is null) {
-                    with (ScriptType) switch (t.type) {
-                        case IF:
-                        case GOTO:
-                        case LABEL:
-                            // Jump labels
-                            break;
-                        default:
-                            result[i]=opcode(t);
-                        }
-                }
-            }
-            return result;
+    ScriptElement createElement(string op) {
+        if ( op in opcreators ) {
+            return opcreators[op]();
         }
+        return null;
+    }
+    void build() {
         foreach(name,f; functions) {
             ScriptElement[uint] script_labels;
             ScriptElement forward(immutable uint i) {
