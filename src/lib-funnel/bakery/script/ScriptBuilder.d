@@ -1071,6 +1071,7 @@ private:
             ScriptElement target; // Script element to jump to
             ScriptElement[] jumps; // Script element to jump from
         }
+        scope ScriptElement[] function_scripts;
         foreach(name,f; functions) {
             scope ScriptLabel[uint] script_labels;
             ScriptElement forward(immutable uint i=0) {
@@ -1158,7 +1159,9 @@ private:
                 }
                 return result;
             }
-            f.opcode=forward;
+            auto func_script=forward;
+            function_scripts~=func_script;
+            f.opcode=func_script;
             // Connect all the jump labels
             foreach(label; script_labels) {
                 foreach(jump; label.jumps) {
@@ -1167,9 +1170,33 @@ private:
                 }
             }
         }
-        // foreach(f; functions) {
-
-        // }
+        foreach(fs; function_scripts) {
+            for(auto s=fs; s !is null; s=s.next) {
+                auto call_script = cast(ScriptCall)s;
+                if ( call_script !is null ) {
+                    if ( call_script.name in functions) {
+                        // The function is defined in the function tabel
+                        auto func=functions[call_script.name];
+                        if ( func.opcode !is null ) {
+                            // Insert the script element to call Script Element
+                            call_script.set_jump( func.opcode );
+                        }
+                        else {
+                            call_script.set_jump(
+                                new ScriptError("The function "~call_script.name~
+                                    " does not contain any opcodes", call_script)
+                                );
+                        }
+                    }
+                    else {
+                        call_script.set_jump(
+                            new ScriptError("The function named "~call_script.name~
+                                " is not defined ",call_script)
+                            );
+                    }
+                }
+            }
+        }
     }
     version(none)
     immutable(Token)[] add_jump_targets_index(immutable(Token[]) tokens) @safe {

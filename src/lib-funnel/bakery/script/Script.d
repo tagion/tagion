@@ -221,7 +221,7 @@ abstract class ScriptElement {
         _next = n;
         return _next;
     }
-    const(ScriptElement) next() pure nothrow const {
+    inout(ScriptElement) next() inout pure nothrow {
         return _next;
     }
 
@@ -329,17 +329,23 @@ class ScriptExit : ScriptElement {
 }
 
 @safe
-class ScriptCall : ScriptElement {
+class ScriptCall : ScriptJump {
     private ScriptElement _call;
     private string func_name;
     this(string func_name) {
         this.func_name=func_name;
-        super(0);
     }
-    package const(ScriptElement) call(ScriptElement n) {
-        _call = n;
-        return _call;
+    override void set_jump(ScriptElement target)
+        in {
+            assert(_call is null, "Jump target is should not be change");
+        }
+    body {
+        _call=target;
     }
+    // package const(ScriptElement) call(ScriptElement n) {
+    //     _call = n;
+    //     return _call;
+    // }
     const(ScriptElement) call() pure nothrow const {
         return _call;
     }
@@ -347,6 +353,9 @@ class ScriptCall : ScriptElement {
         check(s,sc);
         sc.return_push(next);
         return _call;
+    }
+    string name() const pure nothrow {
+        return func_name;
     }
 }
 
