@@ -182,24 +182,31 @@ private:
         bool is_word_symbol(immutable char c) @safe pure nothrow {
             return !is_white_space(c);
         }
+        uint start_line_pos;
         bool check_newline(ref uint pos, ref uint line) @safe nothrow {
             if ( (current[pos] == '\n' ) ) {
                 line++;
                 pos++;
+                start_line_pos=pos;
                 return true;
             }
             else if ( (current[pos..pos+2] == "\n\r") || (current[pos..pos+2] == "\r\n") ) {
                 line++;
                 pos+=2;
+                start_line_pos=pos;
                 return true;
             }
             return false;
         }
         // Trim line feed and increas line number
+        uint chpos(uint pos) {
+            return pos-start_line_pos;
+        }
         if ( pos >= current.length ) {
             immutable(Token) result= {
               token : "<EOF>",
               line : line,
+              pos  : chpos(cast(uint)current.length),
               type : Type.EOF
             };
             return result;
@@ -227,6 +234,7 @@ private:
                         immutable(Token) result= {
                           token : current[start..pos],
                           line : line,
+                          pos :  chpos(start),
                           type : Type.HEX
                         };
                     }
@@ -237,6 +245,7 @@ private:
                         immutable(Token) result= {
                           token : current[start..pos],
                           line : line,
+                          pos :  chpos(start),
                           type : Type.NUMBER
                         };
                         return result;
@@ -249,6 +258,7 @@ private:
                     immutable(Token) result= {
                       token : current[start+1..pos-1],
                       line : line,
+                      pos :  chpos(start+1),
                       type : Type.TEXT
                     };
                     return result;
@@ -260,6 +270,7 @@ private:
                     immutable(Token) result= {
                       token : current[start..pos],
                       line : line,
+                      pos :  chpos(start),
                       type : Type.WORD
                     };
                     return result;
@@ -273,6 +284,7 @@ private:
                     immutable(Token) result= {
                       token : current[start..pos],
                       line : line,
+                      pos :  chpos(start),
                       type : Type.COMMENT
                     };
                     return result;
@@ -281,6 +293,7 @@ private:
                     immutable(Token) result= {
                       token : current[start..pos],
                       line : line,
+                      pos :  chpos(start),
                       type : Type.UNKNOWN
                     };
                     return result;
@@ -300,6 +313,7 @@ private:
             immutable(Token) result= {
               token : current[pos..$],
               line : line,
+              pos :  chpos(pos),
               type : Type.ERROR
             };
             return result;

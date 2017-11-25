@@ -99,8 +99,9 @@ class ScriptBuilder {
                 immutable _token = word_doc["token"].get!string;
                 auto _type = cast(ScriptType)(word_doc["type"].get!int);
                 immutable _line = cast(uint)(word_doc["line"].get!int);
+                immutable _pos = cast(uint)(word_doc["pos"].get!int);
                 with (ScriptType) {
-                    _type=NOP;
+//                    _type=NOP;
                     switch (lowercase(_token)) {
                     case "if":
                         _type=IF;
@@ -146,7 +147,8 @@ class ScriptBuilder {
                     immutable(Token) t={
                       token : _token,
                       type : _type,
-                      line : _line
+                      line : _line,
+                      pos  : _pos
                     };
                     tokens~=t;
                 }
@@ -376,9 +378,16 @@ class ScriptBuilder {
             writefln("tokens.length=%s", tokens.length);
 
             foreach(i;0..tokens.length) {
-                assert(retokens[i].type == tokens[i].type);
-                assert(retokens[i].token == tokens[i].token);
+                writefln("%s] tokens %s:%s restokens %s:%s",
+                    i,
+                    tokens[i].token, to!string(tokens[i].type),
+                    retokens[i].token, to!string(retokens[i].type)
+                    );
+
+                // assert(retokens[i].type == tokens[i].type);
+                // assert(retokens[i].token == tokens[i].token);
             }
+            assert(0);
             //
             // Parse function
             //
