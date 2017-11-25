@@ -1067,22 +1067,29 @@ private:
         return null;
     }
     void build() {
+        struct ScriptLabel {
+            ScriptElement target; // Script element to jump to
+            ScriptElement[] jumps; // Script element to jump from
+        }
         foreach(name,f; functions) {
-            ScriptElement[uint] script_labels;
-            ScriptElement forward(immutable uint i) {
+            scope ScriptLabel[uint] script_labels;
+            ScriptElement forward(immutable uint i=0) {
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
                             result=forward(i+1);
-                            script_labels[t.jump]=result;
+                            assert(( (t.jump in script_labels) !is null) && (script_labels[t.jump].target !is null) );
+                            script_labels[t.jump].target=result;
                         break;
                         case GOTO:
                             result=new ScriptJump;
+                            script_labels[t.jump].jumps~=result;
                             break;
                         case IF:
                             result=new ScriptConditionalJump;
+                            script_labels[t.jump].jumps~=result;
                             break;
                         case NUMBER:
                         case HEX:
@@ -1149,10 +1156,20 @@ private:
                     result.next=forward(i+1);
                     result.set_location(t.token, t.line, t.pos);
                 }
-                return result;;
+                return result;
             }
-
+            f.opcode=forward;
+            // Connect all the jump labels
+            foreach(label; script_labels) {
+                foreach(jump; label.jumps) {
+                    auto s=cast(ScriptJump)jump;
+                    s.set_jump(label.target);
+                }
+            }
         }
+        // foreach(f; functions) {
+
+        // }
     }
     version(none)
     immutable(Token)[] add_jump_targets_index(immutable(Token[]) tokens) @safe {

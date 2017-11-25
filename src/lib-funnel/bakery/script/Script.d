@@ -207,13 +207,17 @@ abstract class ScriptElement {
         this.runlevel=runlevel;
     }
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const
-        in {
-            assert(sc !is null);
-        }
+    in {
+        assert(sc !is null);
+    }
     body {
         return _next;
     }
-    package const(ScriptElement) next(ScriptElement n) {
+    package const(ScriptElement) next(ScriptElement n)
+    in {
+        assert(_next is null, "Next script element is should not be change");
+    }
+    body {
         _next = n;
         return _next;
     }
@@ -264,14 +268,39 @@ class ScriptError : ScriptElement {
 }
 
 @safe
-class ScriptConditionalJump : ScriptElement {
-    private ScriptElement _jump;
+class ScriptJump : ScriptElement {
+    private bool turing_complete;
     this() {
         super(0);
     }
-    package const(ScriptElement) jump(ScriptElement n) {
-        _jump = n;
-        return _jump;
+    void set_jump(ScriptElement target)
+    in {
+        assert(_next is null, "Jump target is should not be change");
+    }
+    body {
+        _next=target;
+    }
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        if ( turing_complete ) {
+            if ( !s.is_turing_complete) {
+                throw new ScriptException("Illigal command in Turing complete mode");
+            }
+        }
+        sc.check_jump();
+        return _next; // Points to the jump position
+    }
+}
+
+@safe
+class ScriptConditionalJump : ScriptJump {
+    private ScriptElement _jump;
+    override void set_jump(ScriptElement target)
+        in {
+            assert(_jump is null, "Jump target is should not be change");
+        }
+    body {
+        _jump=target;
     }
     const(ScriptElement) jump() pure nothrow const {
         return _jump;
@@ -287,24 +316,6 @@ class ScriptConditionalJump : ScriptElement {
     }
 }
 
-@safe
-class ScriptJump : ScriptElement {
-    private bool turing_complete;
-    this() {
-        super(2);
-//        this._next=next;
-    }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        if ( turing_complete ) {
-            if ( !s.is_turing_complete) {
-                throw new ScriptException("Illigal command in Turing complete mode");
-            }
-        }
-        sc.check_jump();
-        return _next; // Points to the jump position
-    }
-}
 
 @safe
 class ScriptExit : ScriptElement {
