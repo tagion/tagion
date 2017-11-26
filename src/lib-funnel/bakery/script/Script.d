@@ -23,7 +23,7 @@ struct Value {
     }
     union BInt {
         private BigInt value;
-        private ScriptElement opcode;
+        private const(ScriptElement) opcode;
         private string text;
         /* This struct is just read only for the BitInt value */
         immutable struct {
@@ -66,7 +66,7 @@ struct Value {
         _type=Type.TEXT;
         data.text = x;
     }
-    this(ScriptElement s) {
+    this(const(ScriptElement) s) {
         _type=Type.FUNCTION;
         data.opcode=s;
     }
@@ -118,7 +118,7 @@ struct Value {
 @safe
 class ScriptContext {
     private const(Value)[] data_stack;
-    private const(ScriptElement)[] return_stack;
+    private const(Value)[] return_stack;
     package const(Value)* var[];
 
 //    private uint data_stack_index;
@@ -149,7 +149,6 @@ class ScriptContext {
     const(BigInt) data_pop_number() {
         return data_pop.get!(const(BigInt));
     }
-    @safe
     void data_push(T)(T v) {
         if ( data_stack.length < data_stack_size ) {
             static if ( is(T:const Value) ) {
@@ -169,24 +168,54 @@ class ScriptContext {
         }
         return data_stack[$-1-i];
     }
-    const(ScriptElement) return_pop() {
+    // const(Value) return_pop() {
+    //     scope(exit) {
+    //         if ( return_stack.length > 0 ) {
+    //             return_stack.length--;
+    //         }
+    //     }
+    //     if ( return_stack.length == 0 ) {
+    //         throw new ScriptException("Return stack empty");
+    //     }
+    //     return return_stack[$-1];
+    // }
+    @safe
+    void return_push(T)(T v) {
+        if ( return_stack.length < return_stack_size ) {
+            static if ( is(T:const Value) ) {
+                return_stack~=v;
+            }
+            else {
+                return_stack~=const(Value)(v);
+            }
+        }
+        else {
+            throw new ScriptException("Data stack overflow");
+        }
+    }
+    @trusted
+    const(Value) return_pop() {
         scope(exit) {
             if ( return_stack.length > 0 ) {
                 return_stack.length--;
             }
         }
         if ( return_stack.length == 0 ) {
-            throw new ScriptException("Return stack empty");
+            throw new ScriptException("Data stack empty");
         }
         return return_stack[$-1];
     }
-    void return_push(const ScriptElement v) {
-        if ( return_stack.length < return_stack_size ) {
-            return_stack~=v;
+    const(BigInt) return_pop_number() {
+        return return_pop.get!(const(BigInt));
+    }
+    const(ScriptElement) return_pop_element() {
+        return return_pop.get!(const(ScriptElement));
+    }
+    const(Value) return_peek(immutable uint i=0) const {
+        if ( return_stack.length <= i ) {
+            throw new ScriptException("Data stack empty");
         }
-        else {
-            throw new ScriptException("Return stack overflow");
-        }
+        return return_stack[$-1-i];
     }
     void check_jump() {
         if ( iteration_count == 0 ) {
@@ -324,7 +353,14 @@ class ScriptExit : ScriptElement {
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        return sc.return_pop;
+        auto ret=sc.return_pop;
+        if ( ret.type == Value.Type.FUNCTION ) {
+            return ret.get!(const(ScriptElement));
+        }
+        else {
+            return new ScriptError("Return stack type fail, return address expected bot "~to!string(ret.type),this);
+        }
+
     }
 }
 
@@ -647,7 +683,12 @@ class Script {
     void run() {
         void doit(const(ScriptElement) current) {
             if ( current !is null ) {
-                doit(current(this, sc));
+                try {
+                    doit(current(this, sc));
+                }
+                catch (ScriptException e) {
+                    auto error=new ScriptError(e.msg, current);
+                }
             }
         }
         doit(root);

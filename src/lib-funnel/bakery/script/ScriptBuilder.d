@@ -98,8 +98,12 @@ class ScriptBuilder {
                 auto word_doc= word.get!Document;
                 immutable _token = word_doc["token"].get!string;
                 auto _type = cast(ScriptType)(word_doc["type"].get!int);
-                immutable _line = cast(uint)(word_doc["line"].get!int);
-                immutable _pos = cast(uint)(word_doc["pos"].get!int);
+                enum text_line="line";
+                immutable _line = word_doc.hasElement(text_line)?
+                    cast(uint)(word_doc[text_line].get!int):0;
+                enum text_pos="pos";
+                immutable _pos = word_doc.hasElement(text_pos)?
+                    cast(uint)(word_doc[text_pos].get!int):0;
                 with (ScriptType) {
 //                    _type=NOP;
                     switch (lowercase(_token)) {
@@ -378,16 +382,10 @@ class ScriptBuilder {
             writefln("tokens.length=%s", tokens.length);
 
             foreach(i;0..tokens.length) {
-                writefln("%s] tokens %s:%s restokens %s:%s",
-                    i,
-                    tokens[i].token, to!string(tokens[i].type),
-                    retokens[i].token, to!string(retokens[i].type)
-                    );
-
-                // assert(retokens[i].type == tokens[i].type);
-                // assert(retokens[i].token == tokens[i].token);
+                assert(retokens[i].type == tokens[i].type);
+                assert(retokens[i].token == tokens[i].token);
             }
-            assert(0);
+
             //
             // Parse function
             //
