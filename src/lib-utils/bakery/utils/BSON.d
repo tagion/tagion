@@ -624,29 +624,6 @@ struct Element
         }
 
 
-        version(none)
-        immutable(ubyte)[] get(T)() if (is(T == immutable(ubyte)[] ) ) {
-            if ( type == Type.BINARY ) {
-                return binary_buffer;
-            }
-            else {
-                check(type);
-//                throw new BSONException("Byna");
-
-                with ( Type)
-                    switch (type) {
-                    case DOUBLE:
-                        break;
-                    case STRING:
-                        break;
-                    case BOOLEAN:
-                        break;
-                    }
-
-
-            }
-            assert(0, "Unsupported type "~T.stringof);
-        }
     }
 
 
