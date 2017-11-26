@@ -29,23 +29,10 @@ class ScriptBuilderExceptionIncompte : ScriptException {
 
 
 class ScriptBuilder {
-    struct Function {
-        string name;
-        immutable(Token)[] tokens;
-        //  private uint[uint] label_jump_table;
-        ScriptElement opcode;
-        bool compiled;
-    }
-    private Function[string] functions;
     alias ScriptElement function() opcreate;
     package static opcreate[string] opcreators;
     alias ScriptInterpreter.Type ScriptType;
     alias ScriptInterpreter.Token Token;
-    // struct Token {
-    //     string token;
-    //     uint line;
-    //     ScriptType type;
-    // }
     /**
        Build as script from bson data stream
      */
@@ -153,97 +140,6 @@ class ScriptBuilder {
             range.popFront;
         }
         return tokens;
-    }
-
-    @safe
-    bool parse_functions(immutable(Token[]) tokens, out immutable(Token)[] base_tokens) {
-        immutable(Token)[] function_tokens;
-        string function_name;
-        bool fail=false;
-        bool inside_function;
-        foreach(t; tokens) {
-//            writefln("%s",t.toText);
-            if ( t.type == ScriptType.FUNC ) {
-
-                if ( inside_function || (function_name !is null) ) {
-                    immutable(Token) error = {
-                      token : "Function declaration inside functions not allowed",
-                      line : t.line,
-                      type : ScriptType.ERROR
-                    };
-                    function_tokens~=t;
-                    function_tokens~=error;
-                    base_tokens~=error;
-                    fail=true;
-
-                }
-                if ( t.token !in functions ) {
-//                    writefln("%s",t.token);
-                    function_tokens = null;
-                    function_name = t.token;
-                }
-                else {
-                    immutable(Token) error = {
-                      token : "Function "~t.token~" redefined!",
-
-                      line : t.line,
-                      type : ScriptType.ERROR
-                    };
-                    function_tokens~=t;
-                    function_tokens~=error;
-                    base_tokens~=error;
-                    fail=true;
-                }
-                inside_function=true;
-            }
-            else if ( t.type == ScriptType.ENDFUNC ) {
-//                writefln("%s",function_name);
-                if (inside_function) {
-                    immutable(Token) exit = {
-                      token : "$exit",
-                      line : t.line,
-                      type : ScriptType.EXIT
-                    };
-                    function_tokens~=exit;
-                    Function func={
-                      name : function_name,
-                      tokens : function_tokens
-                    };
-                    functions[function_name]=func;
-                    inside_function=false;
-                }
-                else {
-                    immutable(Token) error = {
-                      token : "Function end with out a function begin declaration",
-                      line : t.line,
-                      type : ScriptType.ERROR
-                    };
-                    base_tokens~=t;
-                    base_tokens~=error;
-                    fail=true;
-                }
-                function_tokens = null;
-                function_name = null;
-
-
-            }
-            else if ( function_name.length > 0 ) { // Inside function scope
-                function_tokens~=t;
-            }
-            else { //
-                base_tokens~=t;
-            }
-        }
-        if (inside_function) {
-//            writeln("Inside function");
-            immutable(Token) error = {
-              token : "No function end found",
-              type : ScriptType.ERROR
-            };
-            base_tokens~=error;
-            fail=true;
-        }
-        return fail;
     }
 
 
@@ -381,14 +277,16 @@ class ScriptBuilder {
             //
             auto builder=new ScriptBuilder;
             immutable(Token)[] base_tokens;
+            Script script;
             // parse_function should fail because end of function is missing
-            assert(builder.parse_functions(retokens, base_tokens));
+            assert(builder.parse_functions(script, retokens, base_tokens));
+            assert(script !is null);
             // base_tokens.length is non zero because it contains Error tokens
             assert(base_tokens.length > 0);
 
             assert(base_tokens[0].type == ScriptType.ERROR);
             // No function has been declared
-            assert(builder.functions.length == 0);
+            assert(script.functions.length == 0);
         }
 
         //     assert(builder.BSON2Token(stream, retokens));
@@ -432,50 +330,43 @@ class ScriptBuilder {
             //
             auto builder=new ScriptBuilder;
             immutable(Token)[] base_tokens;
+            Script script;
             // parse_function should NOT fail because end of function is missing
-            assert(!builder.parse_functions(retokens, base_tokens));
-//            writefln("7 retokens.length=%s", retokens.length);
+            assert(!builder.parse_functions(script, retokens, base_tokens));
             // base_tokens.length is zero because it should not contain any Error tokens
             assert(base_tokens.length == 0);
 
 //            assert(base_tokens[0].type == ScriptType.ERROR);
             // No function has been declared
-            assert(builder.functions.length == 1);
+            assert(script.functions.length == 1);
             // Check if function named "Test" is declared
-            assert("Test" in builder.functions);
+            assert("Test" in script.functions);
 
-//            writeln("Unittest end");
-            auto func=builder.functions["Test"];
+            auto func=script.functions["Test"];
 
 
             // Check that the number of function tokens is correct
-//            writefln("func.tokens.lengt=%s",func.tokens.length);
             assert(func.tokens.length == 50);
 
             //
             // Expand all loop to conditinal and unconditional jumps
             //
             auto loop_expanded_tokens = builder.expand_loop(func.tokens);
-//            writefln("func.tokens.length=%s", loop_expanded_tokens.length);
             // foreach(i,t; loop_expanded_tokens) {
             //      writefln("%s]:%s", i, t.toText);
             // }
 
             assert(loop_expanded_tokens.length == 89);
 
-            auto condition_jump_tokens=builder.add_jump_index(loop_expanded_tokens);
+            auto condition_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
             assert(builder.error_tokens.length == 0);
             // foreach(i,t; condition_jump_tokens) {
             //      writefln("%s]:%s", i, t.toText);
             // }
             // assert(!builder.parse_functions(retokens));
-        // writeln("End of unittest");
-        // writefln("%s",functions.length);
-        // foreach(name, ref f; functions) {
-        //     writefln("\t%s %s\n",name,f.tokens.length);
-        // }
         }
     }
+
 
 private:
     uint var_count;
@@ -616,6 +507,102 @@ private:
         };
         return result;
     };
+    @safe
+    bool parse_functions(
+        ref Script script,
+        immutable(Token[]) tokens,
+        out immutable(Token)[] base_tokens) {
+        immutable(Token)[] function_tokens;
+        string function_name;
+        bool fail=false;
+        bool inside_function;
+        if ( script is null ) {
+            script=new Script;
+        }
+        foreach(t; tokens) {
+//            writefln("%s",t.toText);
+            if ( t.type == ScriptType.FUNC ) {
+
+                if ( inside_function || (function_name !is null) ) {
+                    immutable(Token) error = {
+                      token : "Function declaration inside functions not allowed",
+                      line : t.line,
+                      type : ScriptType.ERROR
+                    };
+                    function_tokens~=t;
+                    function_tokens~=error;
+                    base_tokens~=error;
+                    fail=true;
+
+                }
+                if ( t.token !in script.functions ) {
+//                    writefln("%s",t.token);
+                    function_tokens = null;
+                    function_name = t.token;
+                }
+                else {
+                    immutable(Token) error = {
+                      token : "Function "~t.token~" redefined!",
+
+                      line : t.line,
+                      type : ScriptType.ERROR
+                    };
+                    function_tokens~=t;
+                    function_tokens~=error;
+                    base_tokens~=error;
+                    fail=true;
+                }
+                inside_function=true;
+            }
+            else if ( t.type == ScriptType.ENDFUNC ) {
+//                writefln("%s",function_name);
+                if (inside_function) {
+                    immutable(Token) exit = {
+                      token : "$exit",
+                      line : t.line,
+                      type : ScriptType.EXIT
+                    };
+                    function_tokens~=exit;
+                    Script.Function func={
+                      name : function_name,
+                      tokens : function_tokens
+                    };
+                    script.functions[function_name]=func;
+                    inside_function=false;
+                }
+                else {
+                    immutable(Token) error = {
+                      token : "Function end with out a function begin declaration",
+                      line : t.line,
+                      type : ScriptType.ERROR
+                    };
+                    base_tokens~=t;
+                    base_tokens~=error;
+                    fail=true;
+                }
+                function_tokens = null;
+                function_name = null;
+
+
+            }
+            else if ( function_name.length > 0 ) { // Inside function scope
+                function_tokens~=t;
+            }
+            else { //
+                base_tokens~=t;
+            }
+        }
+        if (inside_function) {
+//            writeln("Inside function");
+            immutable(Token) error = {
+              token : "No function end found",
+              type : ScriptType.ERROR
+            };
+            base_tokens~=error;
+            fail=true;
+        }
+        return fail;
+    }
 
     immutable(Token)[] expand_loop(immutable(Token)[] tokens) @safe {
         uint loop_index;
@@ -758,7 +745,8 @@ private:
         }
         return scope_tokens;
     }
-    immutable(Token)[] add_jump_index(immutable(Token[]) tokens) @safe {
+    @safe
+    immutable(Token)[] add_jump_label(immutable(Token[]) tokens) {
         uint jump_index;
         immutable(uint)[] conditional_index_stack;
         immutable(uint)[] loop_index_stack;
@@ -955,13 +943,29 @@ private:
         }
         return null;
     }
-    void build() {
+    immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
+        immutable(Token)[] results;
+        if ( parse_functions(script, tokens, results) ) {
+            return results;
+        }
+        foreach(f; script.functions) {
+            auto loop_tokens=expand_loop(f.tokens);
+            f.tokens=add_jump_label(loop_tokens);
+        }
+        build_functions(script);
+        return null;
+    }
+    immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
+        auto tokens=BSON2Tokens(data);
+        return build(script, tokens);
+    }
+    void build_functions(ref Script script) {
         struct ScriptLabel {
             ScriptElement target; // Script element to jump to
             ScriptElement[] jumps; // Script element to jump from
         }
         scope ScriptElement[] function_scripts;
-        foreach(name,f; functions) {
+        foreach(name,f; script.functions) {
             scope ScriptLabel[uint] script_labels;
             ScriptElement forward(immutable uint i=0) {
                 ScriptElement result;
@@ -1063,9 +1067,9 @@ private:
             for(auto s=fs; s !is null; s=s.next) {
                 auto call_script = cast(ScriptCall)s;
                 if ( call_script !is null ) {
-                    if ( call_script.name in functions) {
+                    if ( call_script.name in script.functions) {
                         // The function is defined in the function tabel
-                        auto func=functions[call_script.name];
+                        auto func=script.functions[call_script.name];
                         if ( func.opcode !is null ) {
                             // Insert the script element to call Script Element
                             call_script.set_jump( func.opcode );

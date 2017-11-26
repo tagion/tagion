@@ -671,16 +671,28 @@ class ScriptStackOp(string O) : ScriptElement {
 
 @safe
 class Script {
-    private ScriptElement root, last;
-    immutable uint runlevel;
-    private ScriptContext sc;
-    enum max_shift_left=(1<<12)+(1<<7);
-    this(ScriptContext sc, immutable uint runlevel=0, ScriptElement root=null) {
-        this.runlevel=runlevel;
-        this.sc=sc;
-        this.root=root;
+    private import bakery.script.ScriptInterpreter : ScriptInterpreter;
+    alias ScriptInterpreter.Type ScriptType;
+    alias ScriptInterpreter.Token Token;
+    struct Function {
+        string name;
+        immutable(Token)[] tokens;
+        //  private uint[uint] label_jump_table;
+        ScriptElement opcode;
+        bool compiled;
     }
-    void run() {
+    package Function[string] functions;
+
+    // private ScriptElement root, last;
+    private uint runlevel;
+    // private ScriptContext sc;
+    enum max_shift_left=(1<<12)+(1<<7);
+    // this(ScriptContext sc, immutable uint runlevel=0, ScriptElement root=null) {
+    //     this.runlevel=runlevel;
+    //     this.sc=sc;
+    //     this.root=root;
+    // }
+    void run(string func, ScriptContext sc) {
         void doit(const(ScriptElement) current) {
             if ( current !is null ) {
                 try {
@@ -691,15 +703,9 @@ class Script {
                 }
             }
         }
-        doit(root);
-    }
-    void append(ScriptElement e) {
-        if ( root is null ) {
-            root = last = e;
-        }
-        else {
-            last.next = e;
-            last = e;
+        if ( func in functions) {
+            auto start=functions[func].opcode;
+            doit(start);
         }
     }
     bool is_turing_complete() pure nothrow const {
