@@ -246,17 +246,14 @@ private:
         bool is_number_symbol(immutable char c) @safe pure nothrow {
             return is_number(c) || ( c == '_' );
         }
-        bool is_hex_number(immutable char c) @safe pure { // { nothrow {
+        bool is_hex_number(immutable char c) @safe pure nothrow {
             immutable lower_c = lower(c);
-            debug {
-                writefln("(%s)(%s) %s", lower_c, c, ((lower_c >= 'a')));
-            }
             return is_number(c) || ((lower_c >= 'a') && (lower_c <= 'f'));
         }
-        bool is_hex_number_and_sign(immutable char c) @safe pure {//nothrow {
+        bool is_hex_number_and_sign(immutable char c) @safe pure nothrow {
             return is_hex_number(c) || is_sign(c);
         }
-        bool is_hex_number_symbol(immutable char c) @safe pure { //nothrow {
+        bool is_hex_number_symbol(immutable char c) @safe pure nothrow {
             return is_hex_number(c) || ( c == '_' );
         }
         bool is_hex_prefix(string str) @safe pure nothrow {
