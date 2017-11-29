@@ -366,8 +366,25 @@ class ScriptBuilder {
             // assert(!builder.parse_functions(retokens));
         }
     }
+    version(none)
+    unittest {
+        string source=
+            ": test\n"~
+            "  * -\n"~
+            ";\n"
+            ;
+        auto src=new ScriptInterpreter(source);
+        auto bson=src.parse;
+        auto data=bson.expand;
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, data);
+        auto func=script["test"];
+        import std.stdio;
+        write(func.toInfo);
 
 
+    }
 private:
     uint var_count;
     uint[string] var_indices;
@@ -520,7 +537,7 @@ private:
             script=new Script;
         }
         foreach(t; tokens) {
-//            writefln("%s",t.toText);
+            writefln("%s",t.toText);
             if ( t.type == ScriptType.FUNC ) {
 
                 if ( inside_function || (function_name !is null) ) {
@@ -945,10 +962,16 @@ private:
     }
     immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
         immutable(Token)[] results;
+        writefln("tokens.length=%s", tokens.length);
+        foreach(i,t;tokens) {
+            writefln("Token %s] %s", i, t.token);
+        }
         if ( parse_functions(script, tokens, results) ) {
             return results;
         }
+        writefln("script.functions.length=%s", script.functions.length);
         foreach(f; script.functions) {
+            writefln("func=%s", f.name);
             auto loop_tokens=expand_loop(f.tokens);
             f.tokens=add_jump_label(loop_tokens);
         }
@@ -957,6 +980,10 @@ private:
     }
     immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
         auto tokens=BSON2Tokens(data);
+        writeln(":::::build");
+        foreach(t;tokens) {
+            writefln("==>%s", t.toText);
+        }
         return build(script, tokens);
     }
     void build_functions(ref Script script) {

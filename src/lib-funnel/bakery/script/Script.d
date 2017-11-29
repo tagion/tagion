@@ -680,6 +680,18 @@ class Script {
         //  private uint[uint] label_jump_table;
         ScriptElement opcode;
         bool compiled;
+        string toInfo() pure const nothrow {
+            string result;
+            void foreach_loop(const ScriptElement s, const uint i) {
+                if ( s !is null) {
+                    result~=to!string(i)~"] ";
+                    result~=s.toInfo;
+                    result~="\n";
+                    foreach_loop(s, i+1);
+                }
+            }
+            return result;
+        }
     }
     package Function[string] functions;
 
@@ -710,5 +722,8 @@ class Script {
     }
     bool is_turing_complete() pure nothrow const {
         return (runlevel > 1);
+    }
+    const(Function)* opIndex(string name) const {
+        return name in functions;
     }
 }
