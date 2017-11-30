@@ -174,13 +174,78 @@ private:
                         break;
                     }
                 }
-                writeln("After loop");
-                foreach(i,t; tokens) {
-                    writefln("%s]%s",i,t.toText);
-                }
+                // writeln("After loop");
+                // foreach(j,t; tokens) {
+                //     writefln("%s]%s",j,t.toText);
+                // }
+                uint i=0;
+                assert(tokens[i++].type == FUNC);
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i++].type == NUMBER);
+                assert(tokens[i++].type == NUMBER);
+                assert(tokens[i++].type == HEX);
+                assert(tokens[i++].type == HEX);
+                assert(tokens[i++].type == EOF);
+                i=1;
+                assert(tokens[i++].token == "test3");
+                assert(tokens[i++].token == "-0");
+                assert(tokens[i++].token == "+1");
+                assert(tokens[i++].token == "-0xF");
+                assert(tokens[i++].token == "+0xA");
+
             }
         }
+        {
+            auto src=
+                ": testA\n"~
+                "- -12_400\n"~
+                "++ +_ -_1\n"~
+                "hugo% %^ \n"~
+                "'text' 100\n"~
+                ";\n";
+            auto preter=new ScriptInterpreter(src);
+            immutable(Token)[] tokens;
+            with(Type) {
+                for(;;) {
+                    auto t=preter.token;
+                    writeln(t.toText);
+                    tokens~=t;
+                    if ( (t.type == EOF) || (t.type == ERROR) ) {
+                        break;
+                    }
+                }
+                writeln("After loop");
+                foreach(j,t; tokens) {
+                    writefln("%s]%s",j,t.toText);
+                }
+                uint i=0;
+                assert(tokens[i++].type == FUNC);
+                assert(tokens[i].line   == 1);
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i].line   == 1);
 
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i].line   == 2);
+                assert(tokens[i++].type == NUMBER);
+                assert(tokens[i].line   == 2);
+
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i].line   == 3);
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i].line   == 3);
+
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i].line   == 4);
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i].line   == 4);
+
+                assert(tokens[i++].type == WORD);
+                assert(tokens[i++].type == EOF);
+                i=1;
+            }
+
+
+        }
 
         writeln("End of unittest");
 //        auto x=preter.token();
@@ -260,7 +325,7 @@ private:
             return (str.length > 1) && ((str[0..2]=="0x") || (str[0..2] == "0X"));
         }
         bool is_white_space(immutable char c) @safe pure nothrow {
-            return ( (c == ' ') || ( c == '\t' ) || (c == '\n') || (c == '\r'));
+            return ( (c == ' ') || ( c == '\t' ) );
         }
         bool is_word_symbol(immutable char c) @safe pure nothrow {
             return (c >='!') && (c<='~');
@@ -271,6 +336,12 @@ private:
         }
         string read_line(ref string src) {
             uint i=0;
+            while ((i < src.length) && (!is_newline(src[i..$]))) {
+                i++;
+            }
+            string result=src[0..i];
+            src=src[i..$];
+            i=0;
             if ( ( src.length > 1) && ( (src[0..2] == "\n\r") || (src[0..2] == "\r\n") ) ) {
                 i+=2;
                 line++;
@@ -279,10 +350,7 @@ private:
                 i++;
                 line++;
             }
-            while ((i < src.length) && (!is_newline(src[i..$]))) {
-                i++;
-            }
-            string result=src[0..i];
+
             src=src[i..$];
             pos=0;
             return result;
@@ -291,14 +359,14 @@ private:
             writefln("TRIM %s", pos);
 
             while ( is_white_space(getch(pos)) ) {
-//                writefln("{%s}", _current_line[pos]);
+                writefln("{%s}", _current_line[pos]);
                 pos++;
             }
         }
         if ( _rest is null ) {
             _rest = source;
             pos=0;
-            line=1;
+            line=0;
         }
         try {
             // writefln("Before trim white '%s'", _current);
@@ -342,7 +410,7 @@ private:
                         immutable(Token) result= {
                           token : _current_line[start..pos],
                           line : line,
-                          pos :  pos,
+                          pos :  start,
                           type : Type.HEX
                         };
                         return result;
@@ -358,7 +426,7 @@ private:
                         immutable(Token) result= {
                           token : _current_line[start..pos],
                           line : line,
-                          pos :  pos,
+                          pos :  start,
                           type : Type.NUMBER
                         };
                         return result;
@@ -372,9 +440,9 @@ private:
                     } while ( (pos < _current_line.length) &&
                         (getch(start) != getch(pos)) );
                     immutable(Token) result= {
-                      token : _current_line[start+1..pos-1],
+                      token : _current_line[start+1..pos],
                       line : line,
-                      pos :  pos,
+                      pos :  start,
                       type : Type.TEXT
                     };
                     return result;
@@ -382,6 +450,7 @@ private:
                 else if ( getch(start) == '(' ) { // Comment start
                     writeln("<COMMENT>");
                     immutable start_comment=pos;
+                    immutable start_line=line;
                     uint end_comment=pos;
                     string comment=_current[pos..$];
 
@@ -401,7 +470,7 @@ private:
                     }
                     immutable(Token) result= {
                       token : comment[start_comment..end_comment],
-                      line : line,
+                      line : start_line,
                       pos :  pos,
                       type : Type.COMMENT
                     };
@@ -419,7 +488,7 @@ private:
                     immutable(Token) result= {
                       token : _current_line[start..pos],
                       line : line,
-                      pos :  pos,
+                      pos :  start,
                       type : Type.WORD
                     };
                     writefln("Return word %s start=%s pos=%s", result.toText, start, pos);
@@ -428,7 +497,11 @@ private:
                 pos++;
 
             }
+            else if ( _rest.length > 0 ) {
+                return token();
+            }
             else {
+                writefln("_rest.length=%s", _rest.length);
                 immutable(Token) result= {
                   token : "$EOF",
                   line : line,
