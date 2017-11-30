@@ -233,16 +233,26 @@ private:
                 assert(tokens[i].line   == 3);
                 assert(tokens[i++].type == WORD);
                 assert(tokens[i].line   == 3);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i++].line   == 3);
 
                 assert(tokens[i].type == WORD);
                 assert(tokens[i++].line   == 4);
                 assert(tokens[i].type == WORD);
                 assert(tokens[i++].line   == 4);
 
-                assert(tokens[i].type == WORD);
-                assert(tokens[i++].line   == 4);
+                assert(tokens[i].type == TEXT);
+                assert(tokens[i++].line   == 5);
 
-                assert(tokens[i++].type == EOF);
+                assert(tokens[i].type == NUMBER);
+                assert(tokens[i++].line   == 5);
+
+                assert(tokens[i].type == EXIT);
+                assert(tokens[i++].line   == 6);
+
+                assert(tokens[i].type == EOF);
+                assert(tokens[i++].line   == 6);
+
                 i=1;
             }
 
@@ -437,17 +447,35 @@ private:
                 else if ( (getch(start) == '"') || (getch(start) == '\'' ) ) {
                     // Text string
                     writeln("<TEXT>");
+                    bool end_text;
                     do {
                         pos++;
-                    } while ( (pos < _current_line.length) &&
-                        (getch(start) != getch(pos)) );
-                    immutable(Token) result= {
-                      token : _current_line[start+1..pos],
-                      line : line,
-                      pos :  start,
-                      type : Type.TEXT
-                    };
-                    return result;
+                        if (pos >= _current_line.length) {
+                            break;
+                        }
+                        end_text=(getch(start) == getch(pos));
+                    } while (!end_text);
+                    if ( end_text ) {
+                        immutable(Token) result= {
+                          token : _current_line[start+1..pos],
+                          line : line,
+                          pos :  start,
+                          type : Type.TEXT
+                        };
+                        pos++;
+                        return result;
+
+                    }
+                    else {
+                        immutable(Token) result= {
+                          token : "End of text missing"~_current_line[start+1..pos],
+                          line  : line,
+                          pos   :  start,
+                          type  : Type.ERROR
+                        };
+                        return result;
+                    }
+
                 }
                 else if ( getch(start) == '(' ) { // Comment start
                     writeln("<COMMENT>");
