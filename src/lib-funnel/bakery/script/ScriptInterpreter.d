@@ -219,27 +219,29 @@ private:
                     writefln("%s]%s",j,t.toText);
                 }
                 uint i=0;
-                assert(tokens[i++].type == FUNC);
-                assert(tokens[i].line   == 1);
-                assert(tokens[i++].type == WORD);
-                assert(tokens[i].line   == 1);
+                assert(tokens[i].type == FUNC);
+                assert(tokens[i++].line   == 1);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i++].line   == 1);
 
-                assert(tokens[i++].type == WORD);
-                assert(tokens[i].line   == 2);
-                assert(tokens[i++].type == NUMBER);
-                assert(tokens[i].line   == 2);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i++].line   == 2);
+                assert(tokens[i].type == NUMBER);
+                assert(tokens[i++].line   == 2);
 
                 assert(tokens[i++].type == WORD);
                 assert(tokens[i].line   == 3);
                 assert(tokens[i++].type == WORD);
                 assert(tokens[i].line   == 3);
 
-                assert(tokens[i++].type == WORD);
-                assert(tokens[i].line   == 4);
-                assert(tokens[i++].type == WORD);
-                assert(tokens[i].line   == 4);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i++].line   == 4);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i++].line   == 4);
 
-                assert(tokens[i++].type == WORD);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i++].line   == 4);
+
                 assert(tokens[i++].type == EOF);
                 i=1;
             }
