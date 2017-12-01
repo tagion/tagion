@@ -140,15 +140,10 @@ private:
             with(Type) {
                 for(;;) {
                     auto t=preter.token;
-                    writeln(t.toText);
                     tokens~=t;
                     if ( (t.type == EOF) || (t.type == ERROR) ) {
                         break;
                     }
-                }
-                writeln("After loop");
-                foreach(i,t; tokens) {
-                    writefln("%s]%s",i,t.toText);
                 }
                 with(Type) {
                     assert(tokens[0].type == FUNC);
@@ -168,7 +163,6 @@ private:
             with(Type) {
                 for(;;) {
                     auto t=preter.token;
-                    writeln(t.toText);
                     tokens~=t;
                     if ( (t.type == EOF) || (t.type == ERROR) ) {
                         break;
@@ -204,7 +198,6 @@ private:
             with(Type) {
                 for(;;) {
                     auto t=preter.token;
-                    writeln(t.toText);
                     tokens~=t;
                     if ( (t.type == EOF) || (t.type == ERROR) ) {
                         break;
@@ -280,17 +273,11 @@ private:
             with(Type) {
                 for(;;) {
                     auto t=preter.token;
-                    writeln(t.toText);
                     tokens~=t;
                     if ( (t.type == EOF) || (t.type == ERROR) ) {
                         break;
                     }
                 }
-                writeln("After loop");
-                foreach(j,t; tokens) {
-                    writefln("%s]%s",j,t.toText);
-                }
-
                 uint i=0;
                 assert(tokens[i].type == FUNC);
                 assert(tokens[i++].line   == 1);
@@ -356,9 +343,6 @@ private:
             }
         }
 
-        writeln("End of unittest");
-//        auto x=preter.token();
-        assert(0);
     }
     immutable(Token) token() {
         auto result=base_token();
@@ -485,7 +469,6 @@ private:
                 immutable start = pos;
                 if ( is_number_and_sign(getch(start)) && is_hex_number(getch(start+1)) ) {
                     // Number
-                    writefln("<NUMBER '%s'>", _current_line[pos..$]);
                     if ( is_sign(getch(pos)) ) {
                         pos++;
                     }
@@ -520,7 +503,6 @@ private:
                 }
                 else if ( (getch(start) == '"') || (getch(start) == '\'' ) ) {
                     // Text string
-                    writeln("<TEXT>");
                     bool end_text;
                     do {
                         pos++;
@@ -552,7 +534,6 @@ private:
 
                 }
                 else if ( getch(start) == '(' ) { // Comment start
-                    writeln("<COMMENT>");
                     immutable start_comment=start;
                     immutable start_line=line;
                     uint pos_comment;
@@ -589,7 +570,6 @@ private:
                 }
                 else {
                     // Word
-                    writeln("<WORD>");
                     // Unexpected comment end
                     immutable unexpected_comment_end=getch(start) == ')';
                     while ( is_word_symbol(getch(pos)) ) {
