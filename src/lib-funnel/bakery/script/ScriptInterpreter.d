@@ -261,17 +261,20 @@ private:
         }
         { // Comment token test
             auto src=
-                ": test_comment ( a b -- )\n"~
-                "+ ( some comment ) ><>A \n"~
-                "( line comment -- ) \n"~
-                "X\n"~
-                "( multi line  \n"~
-                " 0x1222 XX 122 test\n"~
-                ") &  \n"~
-                "___ ( multi line  \n"~
-                " 0xA-- XX 122 test\n"~
-                "  ) &&&  \n"~
-                "; ( end function )";
+                ": test_comment ( a b -- )\n"~ // 1
+                "+ ( some comment ) ><>A \n"~  // 2
+                "( line comment -- ) \n"~      // 3
+                "X\n"~                         // 4
+                "( multi line  \n"~            // 5
+                " 0x1222 XX 122 test\n"~       // 6
+                ") &  \n"~                     // 7
+                "___ ( multi line  \n"~        // 8
+                " 0xA-- XX 122 test\n"~        // 9
+                "  ) &&&\n"~                   // 10
+                "; ( end function )\n"~        // 11
+                "*-&  \n"                    // 12
+
+                ;
             auto preter=new ScriptInterpreter(src);
             immutable(Token)[] tokens;
             with(Type) {
@@ -292,12 +295,64 @@ private:
                 assert(tokens[i].type == FUNC);
                 assert(tokens[i++].line   == 1);
                 assert(tokens[i].type == WORD);
-                assert(tokens[i].token == "test_comment");
-                assert(tokens[i++].line   == 1);
+                assert(tokens[i].line   == 1);
+                assert(tokens[i++].token == "test_comment");
                 assert(tokens[i].type == COMMENT);
-                assert(tokens[i].token == "( a b -- )");
-                assert(tokens[i++].line   == 1);
---- her til
+                assert(tokens[i].line   == 1);
+                assert(tokens[i++].token == "( a b -- )");
+
+                assert(tokens[i].type == WORD);
+                assert(tokens[i].line   == 2);
+                assert(tokens[i++].token == "+");
+                assert(tokens[i].type == COMMENT);
+                assert(tokens[i].line   == 2);
+                assert(tokens[i++].token == "( some comment )");
+                assert(tokens[i].type == WORD);
+                assert(tokens[i].line   == 2);
+                assert(tokens[i++].token == "><>A");
+
+                assert(tokens[i].type == COMMENT);
+                assert(tokens[i].line   == 3);
+                assert(tokens[i++].token == "( line comment -- )");
+
+                assert(tokens[i].type == WORD);
+                assert(tokens[i].line   == 4);
+                assert(tokens[i++].token == "X");
+
+                assert(tokens[i].type == COMMENT);
+                assert(tokens[i].line   == 5);
+                assert(tokens[i++].token.length == 36);
+
+                assert(tokens[i].type    == WORD);
+                assert(tokens[i].line    == 7);
+                assert(tokens[i++].token == "&");
+
+                assert(tokens[i].type    == WORD);
+                assert(tokens[i].line    == 8);
+                assert(tokens[i++].token == "___");
+
+                assert(tokens[i].type == COMMENT);
+                assert(tokens[i].line   == 8);
+                assert(tokens[i++].token.length == 37);
+
+                assert(tokens[i].type    == WORD);
+                assert(tokens[i].line    == 10);
+                assert(tokens[i++].token == "&&&");
+
+                assert(tokens[i].type    == EXIT);
+                assert(tokens[i++].line    == 11);
+
+                assert(tokens[i].type == COMMENT);
+                assert(tokens[i].line   == 11);
+                assert(tokens[i++].token == "( end function )" );
+
+                assert(tokens[i].type    == WORD);
+                assert(tokens[i].line    == 12);
+                assert(tokens[i++].token == "*-&");
+
+                assert(tokens[i].type    == EOF);
+                assert(tokens[i].line    == 12);
+
             }
         }
 
@@ -526,7 +581,7 @@ private:
                     immutable(Token) result= {
                       token : _current[start_comment..pos_comment],
                       line : start_line,
-                      pos :  pos,
+                      pos :  start,
                       type : Type.COMMENT
                     };
                     _current=_current_tmp;
@@ -535,6 +590,8 @@ private:
                 else {
                     // Word
                     writeln("<WORD>");
+                    // Unexpected comment end
+                    immutable unexpected_comment_end=getch(start) == ')';
                     while ( is_word_symbol(getch(pos)) ) {
                         pos++;
                     }
@@ -542,7 +599,7 @@ private:
                       token : _current_line[start..pos],
                       line : line,
                       pos :  start,
-                      type : Type.WORD
+                      type : (unexpected_comment_end)?Type.ERROR:Type.WORD
                     };
                     return result;
                 }
