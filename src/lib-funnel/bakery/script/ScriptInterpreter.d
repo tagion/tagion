@@ -222,41 +222,80 @@ private:
                 assert(tokens[i].type == FUNC);
                 assert(tokens[i++].line   == 1);
                 assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "testA");
                 assert(tokens[i++].line   == 1);
 
                 assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "-");
                 assert(tokens[i++].line   == 2);
                 assert(tokens[i].type == NUMBER);
+                assert(tokens[i].token == "-12_400");
                 assert(tokens[i++].line   == 2);
 
-                assert(tokens[i++].type == WORD);
-                assert(tokens[i].line   == 3);
-                assert(tokens[i++].type == WORD);
-                assert(tokens[i].line   == 3);
                 assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "++");
+                assert(tokens[i++].line   == 3);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "+_");
+                assert(tokens[i++].line   == 3);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "-_1");
                 assert(tokens[i++].line   == 3);
 
                 assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "hugo%");
                 assert(tokens[i++].line   == 4);
                 assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "%^");
                 assert(tokens[i++].line   == 4);
 
                 assert(tokens[i].type == TEXT);
+                assert(tokens[i].token == "text");
                 assert(tokens[i++].line   == 5);
 
                 assert(tokens[i].type == NUMBER);
+                assert(tokens[i].token == "100");
                 assert(tokens[i++].line   == 5);
 
                 assert(tokens[i].type == EXIT);
+                assert(tokens[i].token == ";");
                 assert(tokens[i++].line   == 6);
 
                 assert(tokens[i].type == EOF);
                 assert(tokens[i++].line   == 6);
 
-                i=1;
             }
 
-
+        }
+        { // Comment token test
+            auto src=
+                ": test_comment ( a b -- )\n"~
+                "+ ( some comment ) ><>A \n"~
+                "( line comment -- ) \n"~
+                "X\n"~
+                "( multi line  \n"~
+                " 0x1222 XX 122 test\n"~
+                ") &  \n"~
+                "___ ( multi line  \n"~
+                " 0x1222 XX 122 test\n"~
+                "  ) &&&  \n"~
+                "; ( end function )";
+            auto preter=new ScriptInterpreter(src);
+            immutable(Token)[] tokens;
+            with(Type) {
+                for(;;) {
+                    auto t=preter.token;
+                    writeln(t.toText);
+                    tokens~=t;
+                    if ( (t.type == EOF) || (t.type == ERROR) ) {
+                        break;
+                    }
+                }
+                writeln("After loop");
+                foreach(j,t; tokens) {
+                    writefln("%s]%s",j,t.toText);
+                }
+            }
         }
 
         writeln("End of unittest");
@@ -479,31 +518,53 @@ private:
                 }
                 else if ( getch(start) == '(' ) { // Comment start
                     writeln("<COMMENT>");
-                    immutable start_comment=pos;
+                    immutable start_comment=start;
                     immutable start_line=line;
-                    uint end_comment=pos;
-                    string comment=_current[pos..$];
-
+                    uint pos_comment;
+                    string comment=_current[start..$];
+                    assert(_current[start] == _current_line[start]);
+                    auto _current_tmp=_current;
+                    // writefln("comment=%s", comment);
+                    // writefln("_current=%s", _current);
                   comment:
-                    for(;;) {
-                        for(;;) {
-                            if ( is_newline(_current_line[pos..$]) ) {
-                                break;
-                            }
-                            pos++;
-                            end_comment++;
-                            if (getch(pos) == ')') {
-                                break comment;
-                            }
+                    for(pos_comment=start;
+                        (pos_comment < _current.length);
+                        pos_comment++, pos++) {
+                        writef("<%s>",_current[pos_comment]);
+                        // if ( (pos_comment+1 < _current.length) &&
+                        //     ( (_current[pos_comment..pos_comment] == "\n\r") ||
+                        //         (_current[pos_comment..pos_comment] == "\r\n") ) ) {
+                        //     line++;
+                        //     _current_line=_current[
+                        // }
+                        // if ( _current[pos_comment] == '\n' ) {
+
+                        // }
+                        if ( is_newline(_current[pos_comment..$]) ) {
+                            _current_tmp=_rest;
+                            _current_line=read_line(_rest);
+                            writeln("read_line");
                         }
-                        read_line(_rest);
+                        if (_current[pos_comment] == ')') {
+                            pos_comment++;
+                            pos++;
+                            break;
+                        }
                     }
+
+
+                    trim();
                     immutable(Token) result= {
-                      token : comment[start_comment..end_comment],
+                      token : _current[start_comment..pos_comment],
                       line : start_line,
                       pos :  pos,
                       type : Type.COMMENT
                     };
+
+                    writefln("COMMENT=%s", result.toText);
+                    writefln("_current_line_%s", _current_line);
+                    _current=_current_tmp;
+                    // assert(pos_comment-start_comment < 20);
                     return result;
                 }
                 else {
@@ -522,6 +583,7 @@ private:
                       type : Type.WORD
                     };
                     writefln("Return word %s start=%s pos=%s", result.toText, start, pos);
+
                     return result;
                 }
                 pos++;
@@ -549,6 +611,7 @@ private:
               type : Type.ERROR
             };
             writeln("RETURN ERROR");
+//            assert(0);
             return result;
         }
         assert(0);
