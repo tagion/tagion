@@ -174,10 +174,6 @@ private:
                         break;
                     }
                 }
-                // writeln("After loop");
-                // foreach(j,t; tokens) {
-                //     writefln("%s]%s",j,t.toText);
-                // }
                 uint i=0;
                 assert(tokens[i++].type == FUNC);
                 assert(tokens[i++].type == WORD);
@@ -213,10 +209,6 @@ private:
                     if ( (t.type == EOF) || (t.type == ERROR) ) {
                         break;
                     }
-                }
-                writeln("After loop");
-                foreach(j,t; tokens) {
-                    writefln("%s]%s",j,t.toText);
                 }
                 uint i=0;
                 assert(tokens[i].type == FUNC);
@@ -277,7 +269,7 @@ private:
                 " 0x1222 XX 122 test\n"~
                 ") &  \n"~
                 "___ ( multi line  \n"~
-                " 0x1222 XX 122 test\n"~
+                " 0xA-- XX 122 test\n"~
                 "  ) &&&  \n"~
                 "; ( end function )";
             auto preter=new ScriptInterpreter(src);
@@ -295,6 +287,17 @@ private:
                 foreach(j,t; tokens) {
                     writefln("%s]%s",j,t.toText);
                 }
+
+                uint i=0;
+                assert(tokens[i].type == FUNC);
+                assert(tokens[i++].line   == 1);
+                assert(tokens[i].type == WORD);
+                assert(tokens[i].token == "test_comment");
+                assert(tokens[i++].line   == 1);
+                assert(tokens[i].type == COMMENT);
+                assert(tokens[i].token == "( a b -- )");
+                assert(tokens[i++].line   == 1);
+--- her til
             }
         }
 
@@ -407,10 +410,7 @@ private:
             return result;
         }
         void trim() {
-            writefln("TRIM %s", pos);
-
             while ( is_white_space(getch(pos)) ) {
-                writefln("{%s}", _current_line[pos]);
                 pos++;
             }
         }
@@ -420,42 +420,25 @@ private:
             line=0;
         }
         try {
-            // writefln("Before trim white '%s'", _current);
-            // writefln("pos=%s current_line.length=%s", pos, _current_line.length);
             if ( pos >= _current_line.length ) {
+                // Read new line if when last char is read in the current_line
                 _current=_rest;
                 _current_line = read_line(_rest);
-                // writefln("_current_line '%s'", _current_line);
-
             }
-            writeln("Before trim white");
             trim();
-            writefln("_current_line.pos=%s _current_line.length=%s", pos, _current_line.length);
-//            writefln("_current_line=%s", _current_line[pos..$]);
-//            next();
             if ( (_current_line.length > 0 ) && (pos < _current_line.length) ) {
                 immutable start = pos;
-                writefln("In number start=%s", start);
-                if ( pos < _current_line.length ) {
-                    writefln("[%s]", _current_line[pos..$]);
-                }
-                writefln("is_number_and_sign=%s", is_number_and_sign(getch(start)));
                 if ( is_number_and_sign(getch(start)) && is_hex_number(getch(start+1)) ) {
                     // Number
                     writefln("<NUMBER '%s'>", _current_line[pos..$]);
                     if ( is_sign(getch(pos)) ) {
                         pos++;
                     }
-                    writefln("--<NUMBER '%s'>", _current_line[pos..$]);
-                    writefln("is_hex_prefix=%s", is_hex_prefix(_current_line[pos..$]));
                     if ( is_hex_prefix(_current_line[pos..$]) ) { // ex 0x1234_5678_ABCD_EF09
                         // Hex number
                         string num;
                         pos+=2;
-                        writefln("is_hex_number_symbol(getch(pos)=[%s] %s",is_hex_number_symbol(getch(pos)), getch(pos));
-
                         while ( is_hex_number_symbol(getch(pos)) ) {
-                            writefln("[%s]",getch(pos));
                             pos++;
                         }
                         immutable(Token) result= {
@@ -468,10 +451,7 @@ private:
                     }
                     else {
                         // Decimal number
-                        writeln("Decimal");
-                        writefln("Deciman %s", _current_line[pos..$]);
                         while ( is_number_symbol(getch(pos)) ) {
-                            writefln("*%s",getch(pos));
                             pos++;
                         };
                         immutable(Token) result= {
@@ -530,20 +510,9 @@ private:
                     for(pos_comment=start;
                         (pos_comment < _current.length);
                         pos_comment++, pos++) {
-                        writef("<%s>",_current[pos_comment]);
-                        // if ( (pos_comment+1 < _current.length) &&
-                        //     ( (_current[pos_comment..pos_comment] == "\n\r") ||
-                        //         (_current[pos_comment..pos_comment] == "\r\n") ) ) {
-                        //     line++;
-                        //     _current_line=_current[
-                        // }
-                        // if ( _current[pos_comment] == '\n' ) {
-
-                        // }
                         if ( is_newline(_current[pos_comment..$]) ) {
                             _current_tmp=_rest;
                             _current_line=read_line(_rest);
-                            writeln("read_line");
                         }
                         if (_current[pos_comment] == ')') {
                             pos_comment++;
@@ -560,30 +529,21 @@ private:
                       pos :  pos,
                       type : Type.COMMENT
                     };
-
-                    writefln("COMMENT=%s", result.toText);
-                    writefln("_current_line_%s", _current_line);
                     _current=_current_tmp;
-                    // assert(pos_comment-start_comment < 20);
                     return result;
                 }
                 else {
                     // Word
                     writeln("<WORD>");
                     while ( is_word_symbol(getch(pos)) ) {
-                        writef("<%s>",getch(pos));
                         pos++;
                     }
-                    writefln(" outside=%s", pos < _current_line.length);
-                    writefln("-->%s",_current_line[start..pos]);
                     immutable(Token) result= {
                       token : _current_line[start..pos],
                       line : line,
                       pos :  start,
                       type : Type.WORD
                     };
-                    writefln("Return word %s start=%s pos=%s", result.toText, start, pos);
-
                     return result;
                 }
                 pos++;
@@ -593,7 +553,6 @@ private:
                 return token();
             }
             else {
-                writefln("_rest.length=%s", _rest.length);
                 immutable(Token) result= {
                   token : "$EOF",
                   line : line,
@@ -610,8 +569,6 @@ private:
               pos :  pos,
               type : Type.ERROR
             };
-            writeln("RETURN ERROR");
-//            assert(0);
             return result;
         }
         assert(0);
