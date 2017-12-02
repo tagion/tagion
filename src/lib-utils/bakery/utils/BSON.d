@@ -35,31 +35,31 @@ static import tango.text.convert.Integer;
 import tango.io.Stdout;
 
 enum Type : byte {
-    MIN       = -1,    /// Special type which compares lower than all other possible BSON element values
-        NONE          = 0x00,  /// End Of Document
-        DOUBLE = 0x01,  /// Floating point
-        STRING       = 0x02,  /// UTF8 STRING
-        DOCUMENT     = 0x03,  /// Embedded document
-        ARRAY        = 0x04,  ///
-        BINARY      = 0x05,  /// Binary data
-        UNDEFINED    = 0x06,  /// UNDEFINED - Deprecated
-        OID          = 0x07,  /// ObjectID
-        BOOLEAN      = 0x08,  /// Boolean - true or false
-        DATE         = 0x09,  /// UTC datetime
-        NULL          = 0x0a,  /// Null value
-        REGEX        = 0x0b,  /// Regular expression
-        DBPOINTER    = 0x0c,  /// DBPointer - Deprecated
+        MIN             = -1,    /// Special type which compares lower than all other possible BSON element values
+        NONE            = 0x00,  /// End Of Document
+        DOUBLE          = 0x01,  /// Floating point
+        STRING          = 0x02,  /// UTF8 STRING
+        DOCUMENT        = 0x03,  /// Embedded document
+        ARRAY           = 0x04,  ///
+        BINARY          = 0x05,  /// Binary data
+        UNDEFINED       = 0x06,  /// UNDEFINED - Deprecated
+        OID             = 0x07,  /// ObjectID
+        BOOLEAN         = 0x08,  /// Boolean - true or false
+        DATE            = 0x09,  /// UTC datetime
+        NULL            = 0x0a,  /// Null value
+        REGEX           = 0x0b,  /// Regular expression
+        DBPOINTER       = 0x0c,  /// DBPointer - Deprecated
         JS_CODE         = 0x0d,  /// JavaScript Code
-        SYMBOL       = 0x0e,  ///
-        JS_CODE_W_SCOPE   = 0x0f,  /// JavaScript code w/ scope
-        INT32        = 0x10,  /// 32-bit integer
-        TIMESTAMP    = 0x11,  ///
-        INT64        = 0x12,  /// 64-bit integer,
-        UINT32       = 0x50, // 32 bit unsigend integer
-        UINT64       = 0x52,  // 64 bit unsigned integer
-        FLOAT        = 0x41,  // Float 32
+        SYMBOL          = 0x0e,  ///
+        JS_CODE_W_SCOPE = 0x0f,  /// JavaScript code w/ scope
+        INT32           = 0x10,  /// 32-bit integer
+        TIMESTAMP       = 0x11,  ///
+        INT64           = 0x12,  /// 64-bit integer,
+        UINT32          = 0x50, // 32 bit unsigend integer
+        UINT64          = 0x52,  // 64 bit unsigned integer
+        FLOAT           = 0x41,  // Float 32
 
-        MAX       = 0x7f   /// Special type which compares higher than all other possible BSON element values
+        MAX             = 0x7f   /// Special type which compares higher than all other possible BSON element values
 }
 
 
@@ -72,16 +72,16 @@ enum BinarySubType : ubyte
     md5         = 0x05,  ///
     userDefined = 0x80,   ///
         // Non statdard types
-        INT32_array   = userDefined | Type.INT32,
-        INT64_array   = userDefined | Type.INT64,
-        DOUBLE_array   = userDefined | Type.DOUBLE,
-        STRING_array   = userDefined | Type.STRING,
-        BOOLEAN_array   = userDefined | Type.BOOLEAN,
-        DOCUMENT_array   = userDefined | Type.DOCUMENT,
-        UINT32_array   = userDefined | Type.UINT32,
-        UINT64_array   = userDefined | Type.UINT64,
-        FLOAT_array   = userDefined | Type.FLOAT,
-    non         = 0xFF   /// Not defined
+    INT32_array     = userDefined | Type.INT32,
+    INT64_array     = userDefined | Type.INT64,
+    DOUBLE_array    = userDefined | Type.DOUBLE,
+    STRING_array    = userDefined | Type.STRING,
+    BOOLEAN_array   = userDefined | Type.BOOLEAN,
+    DOCUMENT_array  = userDefined | Type.DOCUMENT,
+    UINT32_array    = userDefined | Type.UINT32,
+    UINT64_array    = userDefined | Type.UINT64,
+    FLOAT_array     = userDefined | Type.FLOAT,
+    non             = 0xFF   /// Not defined
 }
 
 
