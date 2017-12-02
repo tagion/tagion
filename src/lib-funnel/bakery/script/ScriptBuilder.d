@@ -51,7 +51,7 @@ class ScriptBuilder {
     }
 
     @safe
-    static immutable(Token)[] BSON2Tokens(immutable ubyte[] data) {
+    static immutable(Token)[] BSON2Tokens(immutable(ubyte[]) data) {
         string lowercase(const(char)[] str) @trusted  {
             return toLower(str).idup;
         }
@@ -81,6 +81,7 @@ class ScriptBuilder {
                 enum text_pos="pos";
                 immutable _pos = word_doc.hasElement(text_pos)?
                     cast(uint)(word_doc[text_pos].get!int):0;
+                writefln("__token=%s %s", _token, to!string(_type));
                 with (ScriptType) {
 //                    _type=NOP;
                     switch (lowercase(_token)) {
@@ -242,9 +243,6 @@ class ScriptBuilder {
         tokens~=opcode;
         tokens~=token_until;
 
-//        writefln("tokens.length=%s", tokens.length);
-
-
         { //
           // Function parse test missing end of function
           //
@@ -366,14 +364,22 @@ class ScriptBuilder {
             // assert(!builder.parse_functions(retokens));
         }
     }
-    version(none)
     unittest {
         string source=
             ": test\n"~
             "  * -\n"~
             ";\n"
             ;
+        writefln("Start ScriptBuilder unittest");
         auto src=new ScriptInterpreter(source);
+        {
+            auto preter=new ScriptInterpreter(source);
+            writeln("------ tokens ----");
+            foreach(t; preter.tokens) {
+                writefln("t=%s", t.toText);
+            }
+            writeln("------ end tokens ----");
+        }
         auto bson=src.parse;
         auto data=bson.expand;
         Script script;
@@ -381,8 +387,8 @@ class ScriptBuilder {
         auto tokens=builder.build(script, data);
         auto func=script["test"];
         import std.stdio;
-        write(func.toInfo);
-
+        writef("toInfo'%s'",func.toInfo);
+        writeln("Unittest end");
 
     }
 private:
@@ -537,7 +543,7 @@ private:
             script=new Script;
         }
         foreach(t; tokens) {
-            writefln("%s",t.toText);
+            // writefln("%s",t.toText);
             if ( t.type == ScriptType.FUNC ) {
 
                 if ( inside_function || (function_name !is null) ) {
@@ -980,7 +986,7 @@ private:
     }
     immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
         auto tokens=BSON2Tokens(data);
-        writeln(":::::build");
+        // writeln(":::::build");
         foreach(t;tokens) {
             writefln("==>%s", t.toText);
         }

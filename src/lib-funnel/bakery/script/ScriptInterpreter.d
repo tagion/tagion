@@ -1,12 +1,13 @@
 module bakery.script.ScriptInterpreter;
 
-import bakery.utils.BSON : R_BSON=BSON;
+import bakery.utils.BSON : R_BSON=BSON, Document;
 
 import core.exception : RangeError;
 import std.conv;
 import std.stdio;
 
 alias R_BSON!true BSON;
+
 
 class ScriptInterpreter {
     enum Type {
@@ -65,6 +66,36 @@ class ScriptInterpreter {
     this(string source) {
         this.source = source;
     }
+    @safe
+    static immutable(Token) doc2token(const Document doc) {
+        immutable _type = cast(Type)(doc["type"].get!int);
+        auto _token = doc["token"].get!string;
+        enum text_line="line";
+        immutable _line = doc.hasElement(text_line)?
+            cast(uint)(doc[text_line].get!int):0;
+        enum text_pos="pos";
+        immutable _pos = doc.hasElement(text_pos)?
+            cast(uint)(doc[text_pos].get!int):0;
+        immutable(Token) result= {
+          token : _token,
+          line  : _line,
+          pos  : _pos,
+          type : _type
+        };
+        return result;
+    }
+
+    immutable(Token[]) tokens() {
+        immutable(Token)[] result;
+        for(;;) {
+            immutable t=token;
+            result~=t;
+            if ( t.type == Type.EOF ) {
+                break;
+            }
+        };
+        return result;
+    }
     BSON parse() {
         BSON bson_token(immutable(Token) t) {
             auto result=new BSON();
@@ -80,7 +111,8 @@ class ScriptInterpreter {
         bool func_scope;
 
         for(;;) {
-            auto t = token();
+            immutable t = token();
+            writefln("parse %s", t.toText);
             if ( t.type == Type.EOF ) {
                 break;
             }
@@ -94,7 +126,7 @@ class ScriptInterpreter {
                     code~=bson_token(error_token);
                 }
                 func_scope=true;
-                code~=bson_token(token);
+                code~=bson_token(t);
             }
             else if ( t.type == Type.ENDFUNC ) {
                 if ( !func_scope ) {
@@ -106,15 +138,85 @@ class ScriptInterpreter {
                     code~=bson_token(error_token);
                 }
                 func_scope=true;
-                code~=bson_token(token);
+                code~=bson_token(t);
             }
             else {
-                code~=bson_token(token);
+                code~=bson_token(t);
             }
         }
         bson["code"]=code;
+        writefln("##### bson.code.length=%s", code.length);
         return bson;
     }
+    unittest { // parse to bson test
+        string source=
+            ": test\n"~
+            "  * -\n"~
+            ";\n"
+            ;
+        {
+            auto preter=new ScriptInterpreter(source);
+            auto ts=preter.tokens;
+
+            foreach(t; ts) {
+                writefln("t=%s", t.toText);
+            }
+            with(Type) {
+                uint i;
+                assert(ts[i++].type == FUNC);
+
+                assert(ts[i].type == WORD);
+                assert(ts[i++].token == "test");
+
+                assert(ts[i].type == WORD);
+                assert(ts[i++].token == "*");
+
+                assert(ts[i].type == WORD);
+                assert(ts[i++].token == "-");
+
+                assert(ts[i++].type == EXIT);
+                assert(ts[i].type == EOF);
+            }
+        }
+        {
+            auto preter=new ScriptInterpreter(source);
+            writeln("!!!! PARSE");
+            auto bson=preter.parse;
+            auto data=bson.expand;
+            auto doc=Document(data);
+            // auto keys=doc.keys;
+            // writefln("doc.keys=%s", doc.keys);
+            auto code=doc["code"].get!Document;
+            auto keys=code.keys;
+            assert(keys == ["0", "1", "2", "3", "4"]);
+            writefln("code.keys=%s", code.keys);
+            immutable(Token)[] ts;
+            foreach(opcode; code) {
+                ts~=doc2token(opcode.get!Document);
+            }
+            with(Type) {
+                uint i;
+                assert(ts[i++].type == FUNC);
+
+                assert(ts[i].type == WORD);
+                assert(ts[i++].token == "test");
+
+                assert(ts[i].type == WORD);
+                assert(ts[i++].token == "*");
+
+                assert(ts[i].type == WORD);
+                assert(ts[i++].token == "-");
+
+                assert(ts[i++].type == EXIT);
+//                assert(ts[i].type == EOF);
+            }
+
+//            writefln("doc.length=%s", doc.length);
+            writeln("------ end int tokens ----");
+        }
+        assert(0);
+    }
+
 private:
     unittest {
         {
@@ -342,6 +444,7 @@ private:
 
             }
         }
+
 
     }
     immutable(Token) token() {
