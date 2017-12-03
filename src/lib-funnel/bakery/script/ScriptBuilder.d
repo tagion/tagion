@@ -1,7 +1,6 @@
 module bakery.script.ScriptBuilder;
 
 import std.conv;
-import tango.text.Unicode;
 
 import bakery.script.ScriptInterpreter;
 import bakery.script.Script;
@@ -31,7 +30,7 @@ class ScriptBuilderExceptionIncompte : ScriptException {
 class ScriptBuilder {
     alias ScriptElement function() opcreate;
     package static opcreate[string] opcreators;
-    alias ScriptInterpreter.Type ScriptType;
+    alias ScriptInterpreter.ScriptType ScriptType;
     alias ScriptInterpreter.Token Token;
     /**
        Build as script from bson data stream
@@ -49,100 +48,6 @@ class ScriptBuilder {
             return null;
         }
     }
-
-    @safe
-    static immutable(Token)[] BSON2Tokens(immutable(ubyte[]) data) {
-        string lowercase(const(char)[] str) @trusted  {
-            return toLower(str).idup;
-        }
-        immutable(Token)[] tokens;
-
-        auto doc=Document(data);
-        @trusted
-        auto getRange(Document doc) {
-            if ( doc.hasElement("code") ) {
-                return doc["code"].get!Document[];
-            }
-            else {
-                return doc[];
-            }
-        }
-        auto range = getRange(doc);
-        bool declare;
-        while(!range.empty) {
-            auto word=range.front;
-            if ( word.isDocument ) {
-                auto word_doc= word.get!Document;
-                immutable _token = word_doc["token"].get!string;
-                auto _type = cast(ScriptType)(word_doc["type"].get!int);
-                enum text_line="line";
-                immutable _line = word_doc.hasElement(text_line)?
-                    cast(uint)(word_doc[text_line].get!int):0;
-                enum text_pos="pos";
-                immutable _pos = word_doc.hasElement(text_pos)?
-                    cast(uint)(word_doc[text_pos].get!int):0;
-                writefln("__token=%s %s", _token, to!string(_type));
-                with (ScriptType) {
-//                    _type=NOP;
-                    switch (lowercase(_token)) {
-                    case "if":
-                        _type=IF;
-                        break;
-                    case "else":
-                        _type=ELSE;
-                        break;
-                    case "endif":
-                    case "then":
-                        _type=ENDIF;
-                    break;
-                    case "do":
-                        _type=DO;
-                        break;
-                    case "loop":
-                        _type=LOOP;
-                        break;
-                    case "begin":
-                        _type=BEGIN;
-                        break;
-                    case "until":
-                        _type=UNTIL;
-                        break;
-                    case "while":
-                        _type=WHILE;
-                        break;
-                    case "repeat":
-                        _type=REPEAT;
-                        break;
-                    case "leave":
-                        _type=LEAVE;
-                        break;
-                    case "variable":
-                        declare=true;
-                        continue;
-                    default:
-                        /*
-                          Empty
-                        */
-                    }
-                    if ( declare ) {
-                    }
-                    immutable(Token) t={
-                      token : _token,
-                      type : _type,
-                      line : _line,
-                      pos  : _pos
-                    };
-                    tokens~=t;
-                }
-            }
-            else {
-                throw new ScriptBuilderException("Malformed Genesys script BSON stream document expected not "~to!string(word.type) );
-            }
-            range.popFront;
-        }
-        return tokens;
-    }
-
 
     static BSON Token2BSON(const(Token) token) @safe {
         auto bson=new BSON();
@@ -191,7 +96,7 @@ class ScriptBuilder {
         //  until
 
 
-        tokens~=func("Test");
+        tokens~=token_func("Test");
         tokens~=opcode;
         tokens~=token_if;
         tokens~=opcode;
@@ -261,13 +166,42 @@ class ScriptBuilder {
             //
             // Reconstruct the token array from the BSON stream
             // and verify the reconstructed stream
-            auto retokens=BSON2Tokens(stream);
+            auto retokens=ScriptInterpreter.BSON2Tokens(stream);
             assert(retokens.length == tokens.length);
-//            writefln("tokens.length=%s", tokens.length);
+            // Add token types to the token stream
+            retokens=ScriptInterpreter.Tokens2Tokens(retokens);
+            writefln("tokens.length=%s", tokens.length);
+            writefln("retokens.length=%s", retokens.length);
+            // Reconstructed tokens is one less because
+            // : test is converted into one token
+            // {
+            //   token : "Test",
+            //   type  : FUNC
+            // }
+            assert(retokens.length+1 == tokens.length);
 
-            foreach(i;0..tokens.length) {
-                assert(retokens[i].type == tokens[i].type);
-                assert(retokens[i].token == tokens[i].token);
+            // Forth tokens
+            // : Test
+            assert(tokens[0].token==":"); // Function declare symbol
+            assert(tokens[1].token=="Test"); // Function name
+            assert(tokens[0].type==ScriptType.WORD);
+            assert(tokens[1].type==ScriptType.WORD);
+
+            // Reconstructed
+            assert(retokens[0].token=="Test");
+            assert(retokens[0].type==ScriptType.FUNC); // Type change to FUNC
+
+            // Cut out the function declaration
+            immutable tokens_test=tokens[2..$];
+            immutable retokens_test=retokens[1..$];
+            // The reset of the token should be the same
+            foreach(i;0..tokens_test.length) {
+                writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
+                    i,
+                    retokens_test[i].type,
+                    tokens_test[i].type);
+                assert(retokens_test[i].type == tokens_test[i].type);
+                assert(retokens_test[i].token == tokens_test[i].token);
             }
 
             //
@@ -295,9 +229,9 @@ class ScriptBuilder {
 //            writefln("4 tokens.length=%s", tokens.length);
 
         {
-        //
-        // Function builder
-        //
+            //
+            // Function builder
+            //
             BSON[] codes;
 
             // Build BSON array of the token list
@@ -313,16 +247,9 @@ class ScriptBuilder {
             //
             // Reconstruct the token array from the BSON stream
             // and verify the reconstructed stream
-//            writefln("5 tokens.length=%s", tokens.length);
-            auto retokens=BSON2Tokens(stream);
-            assert(retokens.length == tokens.length);
-            foreach(i;0..tokens.length) {
-                assert(retokens[i].type == tokens[i].type);
-                assert(retokens[i].token == tokens[i].token);
-            }
-            //           writefln("6 tokens.length=%s", tokens.length);
-//            writefln("6 retokens.length=%s", retokens.length);
 
+            auto retokens=ScriptInterpreter.BSON2Tokens(stream);
+            retokens=ScriptInterpreter.Tokens2Tokens(retokens);
             //
             // Parse function
             //
@@ -332,6 +259,9 @@ class ScriptBuilder {
             // parse_function should NOT fail because end of function is missing
             assert(!builder.parse_functions(script, retokens, base_tokens));
             // base_tokens.length is zero because it should not contain any Error tokens
+            foreach(i,t; base_tokens) {
+                writefln("base_tokens %s] %s", i, t.toText);
+            }
             assert(base_tokens.length == 0);
 
 //            assert(base_tokens[0].type == ScriptType.ERROR);
@@ -380,11 +310,17 @@ class ScriptBuilder {
             }
             writeln("------ end tokens ----");
         }
-        auto bson=src.parse;
+
+        auto bson=src.toBSON;
+        writeln("After parse");
         auto data=bson.expand;
+        writeln("After expand");
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
+//        tokens=ScriptInterpreter.Tokens2Tokens(tokens);
+        writeln("After build");
+
         auto func=script["test"];
         import std.stdio;
         writef("toInfo'%s'",func.toInfo);
@@ -409,16 +345,23 @@ private:
     }
     immutable(Token)[] error_tokens;
     // Test aid function
-    static immutable(Token) func(string name) {
-        immutable(Token) result={
-          token : name,
-          type  : ScriptType.FUNC
+    static immutable(Token)[] token_func(string name) {
+        immutable(Token)[] result;
+        immutable(Token) func_declare={
+          token : ":",
+          type  : ScriptType.WORD
         };
+        immutable(Token) func_name={
+          token : name,
+          type  : ScriptType.WORD
+        };
+        result~=func_declare;
+        result~=func_name;
         return result;
     };
     static immutable(Token) token_endfunc={
       token : ";",
-      type : ScriptType.ENDFUNC
+      type : ScriptType.WORD
     };
 
     //
@@ -543,14 +486,14 @@ private:
             script=new Script;
         }
         foreach(t; tokens) {
-            // writefln("%s",t.toText);
-            if ( t.type == ScriptType.FUNC ) {
+            writefln("parse_function %s",t.toText);
+            if ( (t.token==":") || (t.type == ScriptType.FUNC) ) {
 
                 if ( inside_function || (function_name !is null) ) {
                     immutable(Token) error = {
                       token : "Function declaration inside functions not allowed",
                       line : t.line,
-                      type : ScriptType.ERROR
+                      type : ScriptType.FUNC
                     };
                     function_tokens~=t;
                     function_tokens~=error;
@@ -577,7 +520,7 @@ private:
                 }
                 inside_function=true;
             }
-            else if ( t.type == ScriptType.ENDFUNC ) {
+            else if ( t.token==";" ) {
 //                writefln("%s",function_name);
                 if (inside_function) {
                     immutable(Token) exit = {
@@ -985,8 +928,14 @@ private:
         return null;
     }
     immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
-        auto tokens=BSON2Tokens(data);
-        // writeln(":::::build");
+        auto tokens=ScriptInterpreter.BSON2Tokens(data);
+        // Add token types
+        writeln(":::::build");
+        foreach(t;tokens) {
+            writefln("-->%s", t.toText);
+        }
+        tokens=ScriptInterpreter.Tokens2Tokens(tokens);
+        writeln("- - - -");
         foreach(t;tokens) {
             writefln("==>%s", t.toText);
         }
@@ -1058,9 +1007,7 @@ private:
                             allocate_var(t.token);
                             result=forward(i+1);
                             break;
-                        case NOP:
                         case FUNC:
-                        case ENDFUNC:
                         case ELSE:
                         case ENDIF:
                         case DO:
@@ -1076,7 +1023,7 @@ private:
                             //
                         case UNKNOWN:
                         case COMMENT:
-                            assert(0, "This "~to!string(t.type)~" pseudo script tokens opcode should have been replace by executing instructions at this point");
+                            assert(0, "This "~to!string(t.type)~" pseudo script tokens '"~t.token~"' should have been replace by an executing instructions at this point");
                         case EOF:
                             assert(0, "EOF instructions should have been removed at this point");
                         }

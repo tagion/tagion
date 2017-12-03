@@ -672,7 +672,7 @@ class ScriptStackOp(string O) : ScriptElement {
 @safe
 class Script {
     private import bakery.script.ScriptInterpreter : ScriptInterpreter;
-    alias ScriptInterpreter.Type ScriptType;
+    alias ScriptInterpreter.ScriptType ScriptType;
     alias ScriptInterpreter.Token Token;
     struct Function {
         string name;
