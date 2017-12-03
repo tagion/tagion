@@ -941,7 +941,7 @@ struct Element
     void check(Type t) const /* pure */
     {
         if (t != type) {
-            string typeName = to!string(t); // why this to! is not pure?
+            string typeName = to!string(t); // why is to! is not pure?
             string message;
             if (isEod)
                 message = "Field not found: expected type = " ~ typeName;
