@@ -6,7 +6,7 @@ import bakery.script.Script : ScriptException;
 import core.exception : RangeError;
 import std.range.primitives;
 import std.conv;
-import std.stdio;
+//import std.stdio;
 
 alias R_BSON!true BSON;
 
@@ -324,9 +324,6 @@ class ScriptInterpreter {
             auto preter=new ScriptInterpreter(source, true);
             auto ts=preter.tokens;
 
-            foreach(t; ts) {
-                writefln("t=%s", t.toText);
-            }
             with(ScriptType) {
                 uint i;
                 assert(ts[i++].type == FUNC);
@@ -357,7 +354,6 @@ class ScriptInterpreter {
             immutable(Token)[] ts;
             foreach(opcode; code) {
                 immutable t=doc2token(opcode.get!Document);
-                writefln("*t=%s",t.toText);
                 ts~=t;
             }
             ts=Tokens2Tokens(ts);
