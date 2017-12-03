@@ -360,11 +360,12 @@ class ScriptInterpreter {
                 writefln("*t=%s",t.toText);
                 ts~=t;
             }
+            ts=Tokens2Tokens(ts);
             with(ScriptType) {
                 uint i;
-                assert(ts[i++].type == FUNC);
+                assert(ts[i].type == FUNC);
 
-                assert(ts[i].type == WORD);
+//                assert(ts[i].type == WORD);
                 assert(ts[i++].token == "test");
 
                 assert(ts[i].type == WORD);
@@ -378,7 +379,7 @@ class ScriptInterpreter {
             }
 
         }
-        assert(0);
+
     }
 
 private:
