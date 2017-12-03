@@ -357,7 +357,7 @@ class ScriptInterpreter {
             immutable(Token)[] ts;
             foreach(opcode; code) {
                 immutable t=doc2token(opcode.get!Document);
-                writefln("t=%s",t.toText);
+                writefln("*t=%s",t.toText);
                 ts~=t;
             }
             with(ScriptType) {
