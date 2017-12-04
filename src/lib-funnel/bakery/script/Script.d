@@ -14,8 +14,8 @@ class ScriptException : Exception {
     }
 }
 
-@safe
-struct Value {
+@trusted
+class Value {
     enum Type {
         INTEGER,
         FUNCTION,
@@ -34,7 +34,7 @@ struct Value {
             private BigDigit[] jam_data;
             private bool jam_sign;
 
-            package void scramble()  @trusted nothrow {
+            package void scramble() nothrow {
                 BigDigit random() nothrow {
                     scamble_value=(scamble_value * 1103515245) + 12345;
                     return scamble_value;
@@ -57,8 +57,11 @@ struct Value {
 
     private BInt data;
     private Type _type;
-    @trusted
-    this(ref const BigInt x) {
+    this(long x) {
+        _type=Type.INTEGER;
+        data.value = BigInt(x);
+    }
+    this(const BigInt x) {
         _type=Type.INTEGER;
         data.value = x;
     }
@@ -70,24 +73,24 @@ struct Value {
         _type=Type.FUNCTION;
         data.opcode=s;
     }
+    static Value opCall(T)(T x) {
+        return new Value(x);
+    }
     Type type() pure const nothrow {
         return _type;
     }
-    @trusted
     const(BigInt) value() const {
         if ( type == Type.INTEGER) {
             return data.value;
         }
         throw new ScriptException(to!string(Type.INTEGER)~" expected not "~to!string(type));
     }
-    @trusted
     string text() const {
         if ( type == Type.TEXT) {
             return data.text;
         }
         throw new ScriptException(to!string(Type.TEXT)~" expected not "~to!string(type));
     }
-    @trusted
     const(ScriptElement) func() const {
         if ( type == Type.FUNCTION) {
             return data.opcode;
@@ -109,10 +112,27 @@ struct Value {
             static assert(0, "Type "~T.stringof~" not supported");
         }
     }
+
     ~this() {
         // The value is scrambled to reduce the properbility of side channel attack
-        data.scramble;
+        // writefln("Scramble before %s", data.value);
+        // data.scramble;
+        // writefln("Scramble after %s", data.value);
     }
+}
+
+unittest {
+    // Numbers
+    auto a=const(Value)(10);
+    assert(a.type == Value.Type.INTEGER);
+    assert(a.value == 10);
+
+    enum num="1234567890_1234567890_1234567890_1234567890";
+    auto b=Value(BigInt(num));
+    assert(b.type == Value.Type.INTEGER);
+    assert(b.value == BigInt(num));
+
+
 }
 
 @safe
@@ -126,6 +146,8 @@ class ScriptContext {
     private immutable uint data_stack_size;
     private immutable uint return_stack_size;
     private uint iteration_count;
+    private int data_stack_index;
+    private int return_stack_index;
     this(const uint data_stack_size, const uint return_stack_size, immutable uint var_size,  ) {
         this.data_stack_size=data_stack_size;
         this.return_stack_size=return_stack_size;
@@ -168,17 +190,6 @@ class ScriptContext {
         }
         return data_stack[$-1-i];
     }
-    // const(Value) return_pop() {
-    //     scope(exit) {
-    //         if ( return_stack.length > 0 ) {
-    //             return_stack.length--;
-    //         }
-    //     }
-    //     if ( return_stack.length == 0 ) {
-    //         throw new ScriptException("Return stack empty");
-    //     }
-    //     return return_stack[$-1];
-    // }
     @safe
     void return_push(T)(T v) {
         if ( return_stack.length < return_stack_size ) {
@@ -190,7 +201,7 @@ class ScriptContext {
             }
         }
         else {
-            throw new ScriptException("Data stack overflow");
+            throw new ScriptException("Return stack overflow");
         }
     }
     @trusted
@@ -222,6 +233,15 @@ class ScriptContext {
             throw new ScriptException("Iteration limit");
         }
         iteration_count--;
+    }
+//    @trusted
+    unittest {
+        auto sc=new ScriptContext(8, 8, 8);
+        enum num="1234567890_1234567890_1234567890_1234567890";
+        // Data stack test
+        sc.data_push(BigInt(num));
+        auto pop_a=sc.data_pop.value;
+        assert(pop_a == BigInt(num));
     }
 }
 
@@ -277,6 +297,9 @@ abstract class ScriptElement {
         result=token~" "~to!string(line)~":"~to!string(pos);
         return result;
     }
+
+    string name() const;
+
 }
 
 @safe
@@ -293,6 +316,9 @@ class ScriptError : ScriptElement {
         writefln("Aborted: %s", error);
         writeln(problem_element.toInfo);
         return null;
+    }
+    override string name() const {
+        return "error";
     }
 }
 
@@ -319,6 +345,10 @@ class ScriptJump : ScriptElement {
         sc.check_jump();
         return _next; // Points to the jump position
     }
+    override string name() const {
+        return "goto "~(next is null)?"null":next.name;
+    }
+
 }
 
 @safe
@@ -343,6 +373,10 @@ class ScriptConditionalJump : ScriptJump {
             return _jump;
         }
     }
+    override string name() const {
+        return "if.goto "~(next is null)?"null":next.name;
+    }
+
 }
 
 
@@ -362,6 +396,10 @@ class ScriptExit : ScriptElement {
         }
 
     }
+    override string name() const {
+        return "exit";
+    }
+
 }
 
 @safe
@@ -390,8 +428,8 @@ class ScriptCall : ScriptJump {
         sc.return_push(next);
         return _call;
     }
-    string name() const pure nothrow {
-        return func_name;
+    override string name() const {
+        return "call "~func_name;
     }
 }
 
@@ -409,6 +447,17 @@ class ScriptNumber : ScriptElement {
         sc.data_push(x);
         return _next;
     }
+    @trusted
+    override string name() const {
+        import std.format : format;
+        if ( x.ulongLength == 1 ) {
+            return format("%d", x);
+        }
+        else {
+            return format("0x%x", x);
+        }
+    }
+
 }
 
 @safe
@@ -422,6 +471,9 @@ class ScriptText : ScriptElement {
         check(s, sc);
         sc.data_push(text);
         return _next;
+    }
+    override string name() const {
+        return '"'~text~'"';
     }
 }
 
@@ -438,6 +490,9 @@ class ScriptGetVar : ScriptElement {
         check(s, sc);
         sc.data_push(*(sc.var[var_index]));
         return _next;
+    }
+    override string name() const {
+        return var_name~" @";
     }
 
 }
@@ -459,12 +514,16 @@ class ScriptPutVar : ScriptElement {
         sc.var[var_index]=&var;
         return _next;
     }
+    override string name() const {
+        return var_name~" !";
+    }
 
 }
 /* Arhitmentic opcodes */
 
 @safe
-class ScriptInc : ScriptElement {
+class ScriptUnitaryOp(string O) : ScriptElement {
+    enum op=O;
     this(ScriptElement next) {
         super(0);
         this._next = next;
@@ -472,29 +531,27 @@ class ScriptInc : ScriptElement {
     @trusted
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        sc.data_push(sc.data_pop_number + 1);
-        return _next;
-    }
-}
+        static if ( op == "1-" ) {
+            sc.data_push(sc.data_pop_number - 1);
+        }
+        else static if ( op == "1+" ) {
+            sc.data_push(sc.data_pop_number + 1);
+        }
+        else {
+            static assert(0, "Unitary operator "~op.stringof~" not defined");
+        }
 
-@safe
-class ScriptDec : ScriptElement {
-    this(ScriptElement next) {
-        super(0);
-        this._next = next;
-    }
-    @trusted
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        sc.data_push(sc.data_pop_number - 1);
         return _next;
+    }
+    override string name() const {
+        return op;
     }
 }
 
 
 
 @safe
-class ScriptBinary(string O) : ScriptElement {
+class ScriptBinaryOp(string O) : ScriptElement {
     enum op=O;
     this() {
         super(0);
@@ -553,7 +610,7 @@ class ScriptBinary(string O) : ScriptElement {
 }
 
 @safe
-class ScriptCompare(string O) : ScriptElement {
+class ScriptCompareOp(string O) : ScriptElement {
     enum op=O;
     this() {
         super(0);
@@ -662,6 +719,15 @@ class ScriptStackOp(string O) : ScriptElement {
             sc.data_push(b);
             sc.data_push(a);
         }
+        else static if ( op == ">r" ) {
+            sc.return_push(sc.data_pop);
+        }
+        else static if ( op == "r>" ) {
+            sc.data_push(sc.return_pop);
+        }
+        else static if ( op == "r@" ) {
+            sc.data_push(sc.return_peek(0));
+        }
         else {
             static assert(0, "Stack operator "~op.stringof~" not defined");
         }
@@ -674,6 +740,7 @@ class Script {
     private import bakery.script.ScriptInterpreter : ScriptInterpreter;
     alias ScriptInterpreter.ScriptType ScriptType;
     alias ScriptInterpreter.Token Token;
+    private bool trace;
     struct Function {
         string name;
         immutable(Token)[] tokens;
@@ -699,15 +766,14 @@ class Script {
     private uint runlevel;
     // private ScriptContext sc;
     enum max_shift_left=(1<<12)+(1<<7);
-    // this(ScriptContext sc, immutable uint runlevel=0, ScriptElement root=null) {
-    //     this.runlevel=runlevel;
-    //     this.sc=sc;
-    //     this.root=root;
-    // }
+
     void run(string func, ScriptContext sc) {
         void doit(const(ScriptElement) current) {
             if ( current !is null ) {
                 try {
+                    if ( trace ) {
+                        writefln("%s", current.name);
+                    }
                     doit(current(this, sc));
                 }
                 catch (ScriptException e) {

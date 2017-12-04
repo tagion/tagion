@@ -170,8 +170,8 @@ class ScriptBuilder {
             assert(retokens.length == tokens.length);
             // Add token types to the token stream
             retokens=ScriptInterpreter.Tokens2Tokens(retokens);
-            writefln("tokens.length=%s", tokens.length);
-            writefln("retokens.length=%s", retokens.length);
+            // writefln("tokens.length=%s", tokens.length);
+            // writefln("retokens.length=%s", retokens.length);
             // Reconstructed tokens is one less because
             // : test is converted into one token
             // {
@@ -196,10 +196,10 @@ class ScriptBuilder {
             immutable retokens_test=retokens[1..$];
             // The reset of the token should be the same
             foreach(i;0..tokens_test.length) {
-                writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
-                    i,
-                    retokens_test[i].type,
-                    tokens_test[i].type);
+                // writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
+                //     i,
+                //     retokens_test[i].type,
+                //     tokens_test[i].type);
                 assert(retokens_test[i].type == tokens_test[i].type);
                 assert(retokens_test[i].token == tokens_test[i].token);
             }
@@ -259,9 +259,9 @@ class ScriptBuilder {
             // parse_function should NOT fail because end of function is missing
             assert(!builder.parse_functions(script, retokens, base_tokens));
             // base_tokens.length is zero because it should not contain any Error tokens
-            foreach(i,t; base_tokens) {
-                writefln("base_tokens %s] %s", i, t.toText);
-            }
+            // foreach(i,t; base_tokens) {
+            //     writefln("base_tokens %s] %s", i, t.toText);
+            // }
             assert(base_tokens.length == 0);
 
 //            assert(base_tokens[0].type == ScriptType.ERROR);
@@ -300,31 +300,55 @@ class ScriptBuilder {
             "  * -\n"~
             ";\n"
             ;
-        writefln("Start ScriptBuilder unittest");
+        // writefln("Start ScriptBuilder unittest");
         auto src=new ScriptInterpreter(source);
-        {
-            auto preter=new ScriptInterpreter(source);
-            writeln("------ tokens ----");
-            foreach(t; preter.tokens) {
-                writefln("t=%s", t.toText);
-            }
-            writeln("------ end tokens ----");
-        }
+        // {
+        //     auto preter=new ScriptInterpreter(source);
+        //     writeln("------ tokens ----");
+        //     foreach(t; preter.tokens) {
+        //         writefln("t=%s", t.toText);
+        //     }
+        //     writeln("------ end tokens ----");
+        // }
 
         auto bson=src.toBSON;
-        writeln("After parse");
+        // writeln("After parse");
         auto data=bson.expand;
-        writeln("After expand");
+        // writeln("After expand");
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
 //        tokens=ScriptInterpreter.Tokens2Tokens(tokens);
-        writeln("After build");
+        // writeln("After build");
 
         auto func=script["test"];
         import std.stdio;
         writef("toInfo'%s'",func.toInfo);
         writeln("Unittest end");
+
+        writeln("------ tokens ----");
+        foreach(t; func.tokens) {
+            writefln("t=%s", t.toText);
+        }
+        writeln("------ end tokens ----");
+        auto sc=new ScriptContext(10, 10, 10);
+        sc.data_push(3);
+        sc.data_push(2);
+        sc.data_push(5);
+        // import std.format : format;
+        // import std.bigint;
+
+        // auto a=sc.data_pop.value; //get!(const(BigInt));
+        // auto b=sc.data_pop.value; //get!(const(BigInt));
+        // auto c=sc.data_pop.value; //get!(const(BigInt));
+
+        // writefln("Result=%s", format("%d", a));
+        // writefln("Result=%s", format("%d", b));
+        // writefln("Result=%s", format("%d", c));
+
+        script.run("test", sc);
+
+        writefln("Result=%s", sc.data_pop_number);
 
     }
 private:
@@ -486,7 +510,7 @@ private:
             script=new Script;
         }
         foreach(t; tokens) {
-            writefln("parse_function %s",t.toText);
+            // writefln("parse_function %s",t.toText);
             if ( (t.token==":") || (t.type == ScriptType.FUNC) ) {
 
                 if ( inside_function || (function_name !is null) ) {
@@ -848,12 +872,14 @@ private:
             "rot", "-rot", "-rot", "-rot",
             "tuck",
             "2dup", "2drop", "2swap", "2over",
-            "2nip", "2tuck"
+            "2nip", "2tuck",
+            ">r", "r>", "r@"
             ];
+        enum unitaryOp=["1-", "1+"];
         void build_opcreators(string opname) {
             void createBinaryOp(alias oplist)(string opname) {
                 static ScriptElement create(string op)() {
-                    return new ScriptBinary!(op);
+                    return new ScriptBinaryOp!(op);
                 }
                 static if ( oplist.length !=0 ) {
                     if ( opname == oplist[0] ) {
@@ -865,9 +891,9 @@ private:
                     }
                 }
             }
-            void createCompare(alias oplist)(string opname) {
+            void createCompareOp(alias oplist)(string opname) {
                 static ScriptElement create(string op)() {
-                    return new ScriptCompare!(op);
+                    return new ScriptCompareOp!(op);
                 }
                 static if ( oplist.length !=0 ) {
                     if ( opname == oplist[0] ) {
@@ -875,7 +901,7 @@ private:
                         opcreators[op]=&(create!op);
                     }
                     else {
-                        createCompare!(oplist[1..$])(opname);
+                        createCompareOp!(oplist[1..$])(opname);
                     }
                 }
             }
@@ -893,12 +919,28 @@ private:
                     }
                 }
             }
+            void createUnitaryOp(alias oplist)(string opname) {
+                static ScriptElement create(string op)() {
+                    return null;
+//                    return new ScriptUnitaryOp!(op);
+                }
+                static if ( oplist.length !=0 ) {
+                    if ( opname == oplist[0] ) {
+                        enum op=oplist[0];
+                        opcreators[op]=&(create!op);
+                    }
+                    else {
+                        createUnitaryOp!(oplist[1..$])(opname);
+                    }
+                }
+            }
 
-            createBinaryOp!(binaryOp)(opname);
-            createCompare!(compareOp)(opname);
+            // createBinaryOp!(binaryOp)(opname);
+            createCompareOp!(compareOp)(opname);
             createStackOp!(stackOp)(opname);
-        };
-        foreach(opname; binaryOp~compareOp~stackOp) {
+            createUnitaryOp!(unitaryOp)(opname);
+        }
+        foreach(opname; compareOp~stackOp) {
             build_opcreators(opname);
         }
 
@@ -911,10 +953,10 @@ private:
     }
     immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
         immutable(Token)[] results;
-        writefln("tokens.length=%s", tokens.length);
-        foreach(i,t;tokens) {
-            writefln("Token %s] %s", i, t.token);
-        }
+        // writefln("tokens.length=%s", tokens.length);
+        // foreach(i,t;tokens) {
+        //     writefln("Token %s] %s", i, t.token);
+        // }
         if ( parse_functions(script, tokens, results) ) {
             return results;
         }
@@ -930,15 +972,7 @@ private:
     immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
         auto tokens=ScriptInterpreter.BSON2Tokens(data);
         // Add token types
-        writeln(":::::build");
-        foreach(t;tokens) {
-            writefln("-->%s", t.toText);
-        }
         tokens=ScriptInterpreter.Tokens2Tokens(tokens);
-        writeln("- - - -");
-        foreach(t;tokens) {
-            writefln("==>%s", t.toText);
-        }
         return build(script, tokens);
     }
     void build_functions(ref Script script) {
@@ -953,6 +987,7 @@ private:
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
+                    writefln(" --> %s", t);
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
                             result=forward(i+1);
@@ -1033,6 +1068,7 @@ private:
                 return result;
             }
             auto func_script=forward;
+            writefln("(func_script is null) == %s, name=%s",  func_script is null, f.name);
             function_scripts~=func_script;
             f.opcode=func_script;
             // Connect all the jump labels

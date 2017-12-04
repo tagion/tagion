@@ -96,7 +96,7 @@ class ScriptInterpreter {
             if ( t.type == ScriptType.EOF ) {
                 break;
             }
-        };
+        }
         return result;
     }
     @trusted
@@ -755,7 +755,7 @@ private:
                         // Decimal number
                         while ( is_number_symbol(getch(pos)) ) {
                             pos++;
-                        };
+                        }
                         immutable(Token) result= {
                           token : _current_line[start..pos],
                           line : line,
