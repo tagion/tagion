@@ -275,7 +275,7 @@ abstract class ScriptElement {
     }
 
     package void set_location(string token, uint line, uint pos) {
-//        assert(this.token.length == 0);
+        assert(this.token.length == 0);
         this.token = token;
         this.line = line;
         this.pos = pos;
@@ -769,6 +769,15 @@ class Script {
                     result~="\n";
                     foreach_loop(s, i+1);
                 }
+            }
+            return result;
+        }
+        string toText() {
+            string result;
+            foreach(i,t; tokens) {
+                result~=to!string(i)~")";
+                result~=t.toText;
+                result~="\n";
             }
             return result;
         }

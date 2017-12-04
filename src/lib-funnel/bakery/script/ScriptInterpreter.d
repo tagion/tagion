@@ -209,61 +209,25 @@ class ScriptInterpreter {
                     declare=true;
                     continue;
                 default:
-                    if ( word.token.length > 1 ) {
-                        if ( is_number_or_sign(word.token[0]) ) {
-                            // Check if the token is a number
-                            bool check_number(string t) {
-                                if (t.length == 0) {
-                                    return true;
-                                }
-                                return is_number_symbol(t[0]) && check_number(t[1..$]);
-                            }
-                            if ( (word.token.length > 2) && check_number(word.token[1..$]) ) {
-                                _type = NUMBER;
-                                break; // Type found and end the case
-                            }
-                        }
-                        if ( word.token.length > 2 ) {
-                            if ( is_hex_prefix(word.token) && is_hex_number_or_sign(word.token[2]) ) {
-                                bool check_hex_number(string t) {
-                                    if (t.length == 0) {
-                                        return true;
-                                    }
-                                    return is_hex_number_symbol(t[0]) && check_hex_number(t[1..$]);
-                                }
-
-                                if ( (word.token.length > 3) && check_hex_number(word.token[3..$]) ) {
-                                    _type = HEX;
-                                    break; // Type is a hex-number and end the case
-                                }
-                            }
-                        }
-                        if ( (word.token[0] == '(') && (word.token[$-1] == ')') ) {
-                            _type = COMMENT;
-                            break; // Type is a Comment and end the case
-                        }
-                        if ( ((word.token[0]=='"') || (word.token[0]=='\'')) && (word.token[$-1] == word.token[0]) ) {
-                            _type = TEXT;
-                            break; // Type is a Text and end the case
-                        }
+                    import std.regex;
+                    enum regex_number = regex("^[-+]?[0-9][0-9_]*$");
+                    enum regex_word   = regex("^[!-~]+$");
+                    enum regex_hex    = regex("^[-+]?0[xX][0-9a-fA-F_][0-9a-fA-F_]*$");
+                    import std.stdio;
+                    if ( match(word.token, regex_number) ) {
+                        _type = NUMBER;
                     }
-                    if ( _type == UNKNOWN ) {
-                        bool check_word(string word) {
-                            // Check the symbols in the word
-                            if ( word.length == 0) {
-                                return true;
-                            }
-                            else if ( is_word_symbol(word[0]) ) {
-                                return check_word(word[1..$]);
-                            }
-                            else {
-                                return false;
-                            }
-                        }
-                        if ( check_word(word.token) ) {
-                            _type = WORD;
-                            break;
-                        }
+                    else if ( match(word.token, regex_hex) ) {
+                        _type = HEX;
+                    }
+                    else if ( ((word.token[0]=='"') || (word.token[0]=='\'')) && (word.token[$-1] == word.token[0]) ) {
+                        _type = TEXT;
+                    }
+                    else if ( (word.token[0] == '(') && (word.token[$-1] == ')') ) {
+                        _type = COMMENT;
+                    }
+                    else if ( match(word.token, regex_word) ) {
+                        _type = WORD;
                     }
                 }
                 if ( func ) {
@@ -289,6 +253,78 @@ class ScriptInterpreter {
             }
         }
         return results;
+    }
+    unittest { // Tokens2Tokens
+//        Token[] tokens;
+        import std.stdio;
+        {  // NUMBER
+            Token[] tokens=[
+                { token : "1"},
+                { token : "12"},
+                { token : "123"},
+                { token : "+1"},
+                { token : "+12"},
+                { token : "+123"},
+                { token : "-1"},
+                { token : "-12"},
+                { token : "-123"},
+
+                ];
+            auto to_tokens=Tokens2Tokens(tokens);
+            foreach(t; to_tokens) {
+                assert(t.type == ScriptType.NUMBER);
+            }
+        }
+        {  // HEX
+            Token[] tokens=[
+                { token : "0xa"},
+                { token : "0x1aF"},
+                { token : "0X1aF"},
+                { token : "-0x1a9"},
+                { token : "+0X1a9"},
+                ];
+            auto to_tokens=Tokens2Tokens(tokens);
+            foreach(t; to_tokens) {
+//                writefln("%s", t);
+                assert(t.type == ScriptType.HEX);
+            }
+        }
+        {  // WORD
+            Token[] tokens=[
+                { token : "0x"},
+                { token : "~!"},
+                { token : "_88"},
+                { token : "8383x!!"},
+                ];
+            auto to_tokens=Tokens2Tokens(tokens);
+            foreach(t; to_tokens) {
+                assert(t.type == ScriptType.WORD);
+            }
+        }
+        {  // COMMENT
+            Token[] tokens=[
+                { token : "()"},
+                { token : "( 88 )"},
+                { token : "(_ d)"},
+                { token : "( -- \n H \n\r --- \r\n )"},
+                ];
+            auto to_tokens=Tokens2Tokens(tokens);
+            foreach(t; to_tokens) {
+                // writefln("%s", t);
+                assert(t.type == ScriptType.COMMENT);
+            }
+        }
+        {  // TEXT
+            Token[] tokens=[
+                { token : "''"},
+                { token : "' 88 '"},
+                { token : "\" 88 \""},
+                ];
+            auto to_tokens=Tokens2Tokens(tokens);
+            foreach(t; to_tokens) {
+                assert(t.type == ScriptType.TEXT);
+            }
+        }
     }
     BSON toBSON() {
         BSON bson_token(immutable(Token) t) {
@@ -643,7 +679,7 @@ private:
             return c;
         }
     }
-        static bool is_letter(immutable char c) @safe pure nothrow {
+    static bool is_letter(immutable char c) @safe pure nothrow {
             immutable lower_c = lower(c);
             return (lower_c >= 'a') && (lower_c <= 'z');
         }

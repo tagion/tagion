@@ -193,10 +193,10 @@ class ScriptBuilder {
             immutable retokens_test=retokens[1..$];
             // The reset of the token should be the same
             foreach(i;0..tokens_test.length) {
-                // writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
-                //     i,
-                //     retokens_test[i].type,
-                //     tokens_test[i].type);
+                writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
+                    i,
+                    retokens_test[i].type,
+                    tokens_test[i].type);
                 assert(retokens_test[i].type == tokens_test[i].type);
                 assert(retokens_test[i].token == tokens_test[i].token);
             }
@@ -343,6 +343,48 @@ class ScriptBuilder {
 
         script.run("test", sc);
         assert(sc.data_pop_number == 111);
+
+    }
+    unittest { // Simple if else test
+
+        string source=
+            ": test\n"~
+            "  if  \n"~
+            "    -1  \n"~
+            "  else  \n"~
+            "    1  \n"~
+            "  then  \n"~
+            ";\n"
+            ;
+
+        // string source=
+        //     ": test\n"~
+        //     "  if  \n"~
+        //     "  111  \n"~
+        //     "  then  \n"~
+        //     ";\n"
+        //     ;
+        auto src=new ScriptInterpreter(source);
+        // Convert to BSON object
+        auto bson=src.toBSON;
+        // Expand to BSON stream
+        auto data=bson.expand;
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, data);
+
+        auto sc=new ScriptContext(10, 10, 10);
+        sc.data_push(10);
+//        sc.data_push(0);
+
+        script.run("test", sc, true);
+        writefln("%d", sc.data_pop_number);
+
+        sc.data_push(0);
+
+        script.run("test", sc, true);
+        writefln("%d", sc.data_pop_number);
+//        assert(sc.data_pop_number == 10);
 
     }
 
@@ -760,7 +802,7 @@ private:
                     jump_index++;
                     conditional_index_stack~=jump_index;
                     immutable(Token) token_goto={
-                      token : "$if_label", // THEN is us a jump traget of the IF
+                      token : "$else_goto", // THEN is us a jump target of the IF
                       line : t.line,
                       type : GOTO,
                       jump : conditional_index_stack[$-1]
@@ -953,7 +995,11 @@ private:
         }
         foreach(ref f; script.functions) {
             auto loop_tokens=expand_loop(f.tokens);
+            writefln("FUNC %s", f.name);
+            writefln("%s", f.toText);
+            writeln("--- ---");
             f.tokens=add_jump_label(loop_tokens);
+            writefln("%s", f.toText);
         }
         build_functions(script);
         return null;
@@ -976,13 +1022,22 @@ private:
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
+
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
-                            result=forward(i+1);
-                            assert(( (t.jump in script_labels) !is null) && (script_labels[t.jump].target is null) );
+                            if (!(((t.jump in script_labels) !is null) && (script_labels[t.jump].target is null)) ) {
+                                writefln("JUMP %s", t);
+                                writefln("%s",(script_labels[t.jump].target.name ));
+
+                            }
+//                            assert(( (t.jump in script_labels) !is null) && (script_labels[t.jump].target is null) );
+                            //result=
+                            forward(i+1);
                             if ( t.jump !in script_labels) {
                                 script_labels[t.jump]=new ScriptLabel;
                             }
+                            writefln("t.jump=%s %s", t.jump, t);
+                            assert(script_labels[t.jump].target is null);
                             script_labels[t.jump].target=result;
                         break;
                         case GOTO:
@@ -1037,7 +1092,8 @@ private:
                             break;
                         case VAR:
                             allocate_var(t.token);
-                            result=forward(i+1);
+                            //result=
+                            forward(i+1);
                             break;
                         case FUNC:
                         case ELSE:
@@ -1059,8 +1115,10 @@ private:
                         case EOF:
                             assert(0, "EOF instructions should have been removed at this point");
                         }
-                    result.next=forward(i+1);
-                    result.set_location(t.token, t.line, t.pos);
+                    if ( result !is null ) {
+                        result.next=forward(i+1);
+                        result.set_location(t.token, t.line, t.pos);
+                    }
                 }
                 return result;
             }
