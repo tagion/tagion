@@ -338,15 +338,11 @@ class ScriptBuilder {
 
         script.run("test", sc);
         assert(sc.data_pop_number == 10);
-//        writefln("%d", sc.data_pop_number);
 
         sc.data_push(10);
 
         script.run("test", sc);
         assert(sc.data_pop_number == 111);
-
-        //       writefln("%d", sc.data_pop_number);
-//        assert( sc.data_pop_number == -7 );
 
     }
 
@@ -945,7 +941,6 @@ private:
 
     }
     ScriptElement createElement(string op) {
-        writefln("createElement %s", op);
         if ( op in opcreators ) {
             return opcreators[op]();
         }
@@ -956,9 +951,7 @@ private:
         if ( parse_functions(script, tokens, results) ) {
             return results;
         }
-        writefln("script.functions.length=%s", script.functions.length);
         foreach(ref f; script.functions) {
-            writefln("func=%s", f.name);
             auto loop_tokens=expand_loop(f.tokens);
             f.tokens=add_jump_label(loop_tokens);
         }
@@ -983,7 +976,6 @@ private:
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
-                    writefln(" --> %s", t);
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
                             result=forward(i+1);
@@ -1073,7 +1065,6 @@ private:
                 return result;
             }
             auto func_script=forward;
-            writefln("(func_script is null) == %s, name=%s",  func_script is null, f.name);
             function_scripts~=func_script;
             f.opcode=func_script;
             // Connect all the jump labels
