@@ -25,8 +25,8 @@ class ScriptInterpreter {
         // Conditional jump tokens
         IF,
         ELSE,
-        THEN, // Used as traget label of IF to ELSE jump
-        ENDIF,
+//        THEN,
+        ENDIF, // Used as target label of IF to ELSE jump
 
         GOTO, // Jump to label
         LABEL, // Traget for GOTO and IF

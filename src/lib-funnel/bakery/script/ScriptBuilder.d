@@ -24,9 +24,6 @@ class ScriptBuilderExceptionIncompte : ScriptException {
     }
 }
 
-
-
-
 class ScriptBuilder {
     alias ScriptElement function() opcreate;
     package static opcreate[string] opcreators;
@@ -294,24 +291,21 @@ class ScriptBuilder {
             // assert(!builder.parse_functions(retokens));
         }
     }
-    unittest {
+    unittest { // Simple function test
         string source=
             ": test\n"~
             "  * -\n"~
             ";\n"
             ;
-        // writefln("Start ScriptBuilder unittest");
         auto src=new ScriptInterpreter(source);
         // Convert to BSON object
         auto bson=src.toBSON;
         // Expand to BSON stream
         auto data=bson.expand;
-        // writeln("After expand");
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
 
-        writeln("------ end tokens ----");
         auto sc=new ScriptContext(10, 10, 10);
         sc.data_push(3);
         sc.data_push(2);
@@ -321,6 +315,41 @@ class ScriptBuilder {
         assert( sc.data_pop_number == -7 );
 
     }
+    unittest { // Simple if test
+        string source=
+            ": test\n"~
+            "  if  \n"~
+            "  111  \n"~
+            "  then  \n"~
+            ";\n"
+            ;
+        auto src=new ScriptInterpreter(source);
+        // Convert to BSON object
+        auto bson=src.toBSON;
+        // Expand to BSON stream
+        auto data=bson.expand;
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, data);
+
+        auto sc=new ScriptContext(10, 10, 10);
+        sc.data_push(10);
+        sc.data_push(0);
+
+        script.run("test", sc);
+        assert(sc.data_pop_number == 10);
+//        writefln("%d", sc.data_pop_number);
+
+        sc.data_push(10);
+
+        script.run("test", sc);
+        assert(sc.data_pop_number == 111);
+
+        //       writefln("%d", sc.data_pop_number);
+//        assert( sc.data_pop_number == -7 );
+
+    }
+
 private:
     uint var_count;
     uint[string] var_indices;
@@ -928,7 +957,7 @@ private:
             return results;
         }
         writefln("script.functions.length=%s", script.functions.length);
-        foreach(f; script.functions) {
+        foreach(ref f; script.functions) {
             writefln("func=%s", f.name);
             auto loop_tokens=expand_loop(f.tokens);
             f.tokens=add_jump_label(loop_tokens);
@@ -949,7 +978,7 @@ private:
         }
         scope ScriptElement[] function_scripts;
         foreach(name,ref f; script.functions) {
-            scope ScriptLabel[uint] script_labels;
+            scope ScriptLabel*[uint] script_labels;
             ScriptElement forward(immutable uint i=0) {
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
@@ -958,15 +987,24 @@ private:
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
                             result=forward(i+1);
-                            assert(( (t.jump in script_labels) !is null) && (script_labels[t.jump].target !is null) );
+                            assert(( (t.jump in script_labels) !is null) && (script_labels[t.jump].target is null) );
+                            if ( t.jump !in script_labels) {
+                                script_labels[t.jump]=new ScriptLabel;
+                            }
                             script_labels[t.jump].target=result;
                         break;
                         case GOTO:
                             result=new ScriptJump;
+                            if ( t.jump !in script_labels) {
+                                script_labels[t.jump]=new ScriptLabel;
+                            }
                             script_labels[t.jump].jumps~=result;
                             break;
                         case IF:
                             result=new ScriptConditionalJump;
+                            if ( t.jump !in script_labels) {
+                                script_labels[t.jump]=new ScriptLabel;
+                            }
                             script_labels[t.jump].jumps~=result;
                             break;
                         case NUMBER:
@@ -1020,7 +1058,7 @@ private:
                         case WHILE:
                         case REPEAT:
                         case LEAVE:
-                        case THEN:
+//                        case THEN:
                         case INDEX:
                             //
                         case UNKNOWN:

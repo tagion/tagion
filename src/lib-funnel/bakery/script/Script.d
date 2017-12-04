@@ -274,8 +274,8 @@ abstract class ScriptElement {
         return _next;
     }
 
-    void set_location(string token, uint line, uint pos) {
-        assert(this.token.length == 0);
+    package void set_location(string token, uint line, uint pos) {
+//        assert(this.token.length == 0);
         this.token = token;
         this.line = line;
         this.pos = pos;
@@ -782,7 +782,6 @@ class Script {
 
     void run(string func, ScriptContext sc, bool trace=false) {
         void doit(const(ScriptElement) current) {
-            writefln("Doit! %s", current is null);
             if ( current !is null ) {
                 try {
                     if ( trace ) {
