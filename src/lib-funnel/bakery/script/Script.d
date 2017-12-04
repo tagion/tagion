@@ -291,6 +291,7 @@ abstract class ScriptElement {
             throw new ScriptException("Opcode not allowed in this runlevel");
         }
     }
+
     string toInfo() pure const nothrow {
         import std.conv;
         string result;
@@ -298,7 +299,10 @@ abstract class ScriptElement {
         return result;
     }
 
-    string name() const;
+    string name() const {
+        assert(0, "name member not implemented");
+    }
+
 
 }
 
@@ -318,7 +322,7 @@ class ScriptError : ScriptElement {
         return null;
     }
     override string name() const {
-        return "error";
+        return "error:"~error;
     }
 }
 
@@ -429,7 +433,7 @@ class ScriptCall : ScriptJump {
         return _call;
     }
     override string name() const {
-        return "call "~func_name;
+        return func_name;
     }
 }
 
@@ -607,6 +611,9 @@ class ScriptBinaryOp(string O) : ScriptElement {
         }
         return _next;
     }
+    override string name() const {
+        return op;
+    }
 }
 
 @safe
@@ -623,6 +630,9 @@ class ScriptCompareOp(string O) : ScriptElement {
         auto x=BigInt((result)?-1:0);
         sc.data_push(x);
         return _next;
+    }
+    override string name() const {
+        return op;
     }
 }
 
@@ -733,6 +743,9 @@ class ScriptStackOp(string O) : ScriptElement {
         }
         return _next;
     }
+    override string name() const {
+        return op;
+    }
 }
 
 @safe
@@ -767,8 +780,9 @@ class Script {
     // private ScriptContext sc;
     enum max_shift_left=(1<<12)+(1<<7);
 
-    void run(string func, ScriptContext sc) {
+    void run(string func, ScriptContext sc, bool trace=false) {
         void doit(const(ScriptElement) current) {
+            writefln("Doit! %s", current is null);
             if ( current !is null ) {
                 try {
                     if ( trace ) {
@@ -781,6 +795,7 @@ class Script {
                 }
             }
         }
+        this.trace=trace;
         if ( func in functions) {
             auto start=functions[func].opcode;
             doit(start);

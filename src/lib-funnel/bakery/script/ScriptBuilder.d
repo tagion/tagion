@@ -302,53 +302,23 @@ class ScriptBuilder {
             ;
         // writefln("Start ScriptBuilder unittest");
         auto src=new ScriptInterpreter(source);
-        // {
-        //     auto preter=new ScriptInterpreter(source);
-        //     writeln("------ tokens ----");
-        //     foreach(t; preter.tokens) {
-        //         writefln("t=%s", t.toText);
-        //     }
-        //     writeln("------ end tokens ----");
-        // }
-
+        // Convert to BSON object
         auto bson=src.toBSON;
-        // writeln("After parse");
+        // Expand to BSON stream
         auto data=bson.expand;
         // writeln("After expand");
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
-//        tokens=ScriptInterpreter.Tokens2Tokens(tokens);
-        // writeln("After build");
 
-        auto func=script["test"];
-        import std.stdio;
-        writef("toInfo'%s'",func.toInfo);
-        writeln("Unittest end");
-
-        writeln("------ tokens ----");
-        foreach(t; func.tokens) {
-            writefln("t=%s", t.toText);
-        }
         writeln("------ end tokens ----");
         auto sc=new ScriptContext(10, 10, 10);
         sc.data_push(3);
         sc.data_push(2);
         sc.data_push(5);
-        // import std.format : format;
-        // import std.bigint;
 
-        // auto a=sc.data_pop.value; //get!(const(BigInt));
-        // auto b=sc.data_pop.value; //get!(const(BigInt));
-        // auto c=sc.data_pop.value; //get!(const(BigInt));
-
-        // writefln("Result=%s", format("%d", a));
-        // writefln("Result=%s", format("%d", b));
-        // writefln("Result=%s", format("%d", c));
-
-        script.run("test", sc);
-
-        writefln("Result=%s", sc.data_pop_number);
+        script.run("test", sc, true);
+        assert( sc.data_pop_number == -7 );
 
     }
 private:
@@ -935,17 +905,18 @@ private:
                 }
             }
 
-            // createBinaryOp!(binaryOp)(opname);
+            createBinaryOp!(binaryOp)(opname);
             createCompareOp!(compareOp)(opname);
             createStackOp!(stackOp)(opname);
             createUnitaryOp!(unitaryOp)(opname);
         }
-        foreach(opname; compareOp~stackOp) {
+        foreach(opname; binaryOp~compareOp~stackOp~unitaryOp) {
             build_opcreators(opname);
         }
 
     }
     ScriptElement createElement(string op) {
+        writefln("createElement %s", op);
         if ( op in opcreators ) {
             return opcreators[op]();
         }
@@ -953,10 +924,6 @@ private:
     }
     immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
         immutable(Token)[] results;
-        // writefln("tokens.length=%s", tokens.length);
-        // foreach(i,t;tokens) {
-        //     writefln("Token %s] %s", i, t.token);
-        // }
         if ( parse_functions(script, tokens, results) ) {
             return results;
         }
@@ -981,7 +948,7 @@ private:
             ScriptElement[] jumps; // Script element to jump from
         }
         scope ScriptElement[] function_scripts;
-        foreach(name,f; script.functions) {
+        foreach(name,ref f; script.functions) {
             scope ScriptLabel[uint] script_labels;
             ScriptElement forward(immutable uint i=0) {
                 ScriptElement result;
