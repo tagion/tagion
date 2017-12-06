@@ -319,7 +319,7 @@ class ScriptBuilder {
 
         sc.trace=true;
         script.run("test", sc);
-        assert( sc.data_pop_number == -7 );
+        assert( sc.data_pop.value == -7 );
 
     }
     unittest { // Simple if test
@@ -344,12 +344,12 @@ class ScriptBuilder {
         sc.data_push(0);
 
         script.run("test", sc);
-        assert(sc.data_pop_number == 10);
+        assert(sc.data_pop.value == 10);
 
         sc.data_push(10);
 
         script.run("test", sc);
-        assert(sc.data_pop_number == 111);
+        assert(sc.data_pop.value == 111);
 
     }
     unittest { // Simple if else test
@@ -379,12 +379,12 @@ class ScriptBuilder {
         // Test IF ELSE true (top != 0)
         sc.data_push(10);
         script.run("test", sc);
-        assert(sc.data_pop_number == -1);
+        assert(sc.data_pop.value == -1);
 
         // Test 'IF ELSE' false (top == 0)
         sc.data_push(0);
         script.run("test", sc);
-        assert(sc.data_pop_number == 1);
+        assert(sc.data_pop.value == 1);
 
     }
 
@@ -397,11 +397,6 @@ class ScriptBuilder {
             ";\n"
             ;
 
-        // auto src=new ScriptInterpreter(source);
-        // // Convert to BSON object
-        // auto bson=src.toBSON;
-        // // Expand to BSON stream
-        // auto data=bson.expand;
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, source);

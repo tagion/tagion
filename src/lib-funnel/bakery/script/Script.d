@@ -218,6 +218,7 @@ class ScriptContext {
         }
         return data_stack[$-1];
     }
+    version(none)
     const(BigInt) data_pop_number() {
         return data_pop.get!(const(BigInt));
     }
@@ -266,6 +267,7 @@ class ScriptContext {
         }
         return return_stack[$-1];
     }
+    version(none)
     const(BigInt) return_pop_number() {
         return return_pop.get!(const(BigInt));
     }
@@ -453,7 +455,7 @@ class ScriptConditionalJump : ScriptJump {
         check(s, sc);
         sc.check_jump();
 
-        if ( sc.data_pop_number != 0 ) {
+        if ( sc.data_pop.value != 0 ) {
             return _next;
         }
         else {
@@ -633,10 +635,10 @@ class ScriptUnitaryOp(string O) : ScriptElement {
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         static if ( op == "1-" ) {
-            sc.data_push(sc.data_pop_number - 1);
+            sc.data_push(sc.data_pop.value - 1);
         }
         else static if ( op == "1+" ) {
-            sc.data_push(sc.data_pop_number + 1);
+            sc.data_push(sc.data_pop.value + 1);
         }
         else {
             static assert(0, "Unitary operator "~op.stringof~" not defined");
@@ -662,8 +664,8 @@ class ScriptBinaryOp(string O) : ScriptElement {
         check(s, sc);
         scope BigInt a, b;
         try {
-            a=sc.data_pop_number;
-            b=sc.data_pop_number;
+            a=sc.data_pop.value;
+            b=sc.data_pop.value;
         }
         catch ( Exception e ) {
             return new ScriptError("Type or operator problem", this);
@@ -723,7 +725,7 @@ class ScriptCompareOp(string O) : ScriptElement {
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         bool result;
-        mixin("result = sc.data_pop_number" ~ op ~ "sc.data_pop_number;");
+        mixin("result = sc.data_pop.value" ~ op ~ "sc.data_pop.value;");
         auto x=BigInt((result)?-1:0);
         sc.data_push(x);
         return _next;
