@@ -397,14 +397,14 @@ class ScriptBuilder {
             ";\n"
             ;
 
-        auto src=new ScriptInterpreter(source);
-        // Convert to BSON object
-        auto bson=src.toBSON;
-        // Expand to BSON stream
-        auto data=bson.expand;
+        // auto src=new ScriptInterpreter(source);
+        // // Convert to BSON object
+        // auto bson=src.toBSON;
+        // // Expand to BSON stream
+        // auto data=bson.expand;
         Script script;
         auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, data);
+        auto tokens=builder.build(script, source);
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
@@ -412,9 +412,19 @@ class ScriptBuilder {
         // Set variable X to 10
         sc.data_push(10);
         script.run("test", sc);
-//        assert(sc.data_pop_number == -1);
+        writefln("var=%s", builder.get_var("X"));
+        auto var=sc[builder.get_var("X")];
+        writefln("var=%s", var is null);
+        auto t=var.type;
+        writefln("var.type=%s", t);
+        writefln("var.value=%s", var.value);
+        assert(var.value == 10);
         writeln("Unittest end");
     }
+    uint get_var(string var_name) const {
+        return var_indices[var_name];
+    }
+
 private:
     uint var_count;
     uint[string] var_indices;
@@ -427,9 +437,6 @@ private:
     }
     bool is_var(string var_name) pure const nothrow {
         return (var_name in var_indices) !is null;
-    }
-    uint get_var(string var_name) const {
-        return var_indices[var_name];
     }
     immutable(Token)[] error_tokens;
     // Test aid function
@@ -1014,6 +1021,14 @@ private:
             return opcreators[op]();
         }
         return null;
+    }
+    immutable(Token)[] build(ref Script script, string source) {
+        auto src=new ScriptInterpreter(source);
+        // Convert to BSON object
+        auto bson=src.toBSON;
+        // Expand to BSON stream
+        auto data=bson.expand;
+        return build(script, data);
     }
     immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
         immutable(Token)[] results;

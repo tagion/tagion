@@ -74,10 +74,54 @@ class Value {
         _type=Type.FUNCTION;
         data.opcode=s;
     }
+    // this(const(Value) v) {
+    //     _type=v.type;
+    //     with(Type) final switch(v.type) {
+    //         case INTEGER:
+    //             data.value=BigInt(v.data.value);
+    //             break;
+    //         case FUNCTION:
+    //             data.opcode=v.data.opcode;
+    //             break;
+    //         case TEXT:
+    //             data.text=v.data.text;
+    //             break;
+    //         }
+    // }
+    // this(const(Value) v) {
+    //     _type=v.type;
+    //     with(Type) final switch(v.type) {
+    //         case INTEGER:
+    //             data.value=v.data.value;
+    //             break;
+    //         case FUNCTION:
+    //             data.opcode=v.data.opcode;
+    //             break;
+    //         case TEXT:
+    //             data.text=v.data.text;
+    //             break;
+    //         }
+    // }
+
     static Value opCall(T)(T x) {
-        return new Value(x);
+        static if ( is(T:const(Value)) || is(T:const(Value)*) ) {
+            with(Type) final switch(x.type) {
+                case INTEGER:
+                    return new Value(x.value);
+                case FUNCTION:
+                    return new Value(x.text);
+                case TEXT:
+                    return new Value(x.opcode);
+                }
+        }
+        // static if (is(T:const(Value)*)) {
+        //     return new Value(x);
+        // }
+        else {
+            return new Value(x);
+        }
     }
-    Type type() pure const nothrow {
+     Type type() pure const nothrow {
         return _type;
     }
     const(BigInt) value() const {
@@ -92,7 +136,7 @@ class Value {
         }
         throw new ScriptException(to!string(Type.TEXT)~" expected not "~to!string(type));
     }
-    const(ScriptElement) func() const {
+    const(ScriptElement) opcode() const {
         if ( type == Type.FUNCTION) {
             return data.opcode;
         }
@@ -107,7 +151,7 @@ class Value {
             return text;
         }
         else static if ( is(T==const(ScriptElement)) ) {
-            return func;
+            return opcode;
         }
         else {
             static assert(0, "Type "~T.stringof~" not supported");
@@ -142,7 +186,7 @@ class ScriptContext {
     private string indent;
     private const(Value)[] data_stack;
     private const(Value)[] return_stack;
-    package const(Value)* var[];
+    package Value[] variables;
 
 //    private uint data_stack_index;
 //    private uint return_stack_index;
@@ -154,10 +198,13 @@ class ScriptContext {
     this(const uint data_stack_size, const uint return_stack_size, immutable uint var_size, const uint iteration_count) {
         this.data_stack_size=data_stack_size;
         this.return_stack_size=return_stack_size;
-        this.var=new const(Value)*[var_size];
+        this.variables=new Value[var_size];
         this.iteration_count=iteration_count;
 //        data_stack=new const(Value)[data_stack_size];
 //        return_stack=new const(ScriptElement)[return_stack_size];
+    }
+    const(Value) opIndex(uint i) {
+        return variables[i];
     }
     @trusted
     const(Value) data_pop() {
@@ -542,7 +589,7 @@ class ScriptGetVar : ScriptElement {
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        sc.data_push(*(sc.var[var_index]));
+        sc.data_push(sc.variables[var_index]);
         return _next;
     }
     override string toText() const {
@@ -565,7 +612,7 @@ class ScriptPutVar : ScriptElement {
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         auto var=sc.data_pop();
-        sc.var[var_index]=&var;
+        sc.variables[var_index]=Value(var);
         return _next;
     }
     override string toText() const {
