@@ -362,13 +362,6 @@ class ScriptBuilder {
             ";\n"
             ;
 
-        // string source=
-        //     ": test\n"~
-        //     "  if  \n"~
-        //     "  111  \n"~
-        //     "  then  \n"~
-        //     ";\n"
-        //     ;
         auto src=new ScriptInterpreter(source);
         // Convert to BSON object
         auto bson=src.toBSON;
@@ -379,18 +372,17 @@ class ScriptBuilder {
         auto tokens=builder.build(script, data);
 
         auto sc=new ScriptContext(10, 10, 10, 10);
-        sc.data_push(10);
-//        sc.data_push(0);
 
         sc.trace=true;
+        // Test IF ELSE true (top != 0)
+        sc.data_push(10);
         script.run("test", sc);
-        writefln("%d", sc.data_pop_number);
+        assert(sc.data_pop_number == -1);
 
+        // Test 'IF ELSE' false (top == 0)
         sc.data_push(0);
-
         script.run("test", sc);
-        writefln("%d", sc.data_pop_number);
-//        assert(sc.data_pop_number == 10);
+        assert(sc.data_pop_number == 1);
 
     }
 
@@ -1029,9 +1021,6 @@ private:
                     // Empty
                 }
             out(result) {
-                    if ( !( (i < f.tokens.length) && ( result !is null) ) ){
-                        writefln("Fail return is null i=%s length=%s %s", i, f.tokens.length, (result !is null));
-                    }
                     if ( i < f.tokens.length ) {
                         assert( result !is null );
                     }
@@ -1043,21 +1032,12 @@ private:
 
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
-                            if (!(((t.jump in script_labels) !is null) && (script_labels[t.jump].target is null)) ) {
-                                writefln("JUMP %s", t);
-                                writefln("%s",(script_labels[t.jump].target.name ));
-
-                            }
-//                            assert(( (t.jump in script_labels) !is null) && (script_labels[t.jump].target is null) );
-                            //result=
                             auto label=forward(i+1, n);
                             if ( t.jump !in script_labels) {
                                 script_labels[t.jump]=new ScriptLabel;
                             }
-                            writefln("t.jump=%s %s", t.jump, t);
                             assert(script_labels[t.jump].target is null);
                             script_labels[t.jump].target=label;
-                            writefln("\tlabel=%s", label);
                             return label;
                         break;
                         case GOTO:
@@ -1145,7 +1125,6 @@ private:
                         result.set_location(n, t.token, t.line, t.pos);
 //                    }
                 }
-                writefln("Return %s %s i=%s, %s", (result !is null)?"name="~result.name:"null", result is null, i, result);
                 return result;
             }
             auto func_script=forward;
@@ -1155,22 +1134,19 @@ private:
             foreach(ref label; script_labels) {
                 foreach(ref jump; label.jumps) {
                     jump.set_jump(label.target);
-                    writef("labels %s %s:%s ", jump, jump.jump.index, jump.jump.name);
-                    writefln("target=%s", label.target.name);
-                    writefln("\t%s %s", typeid(jump.jump()), jump.jump is label.target);
                 }
             }
-            void foreach_script(const(ScriptElement) e, immutable uint j=0) {
-                if ( e !is null ) {
-                    auto e_next_index=(e.next)?to!string(e.next.index):"end";
+            // void foreach_script(const(ScriptElement) e, immutable uint j=0) {
+            //     if ( e !is null ) {
+            //         auto e_next_index=(e.next)?to!string(e.next.index):"end";
 
-                    writefln("i=%s n=%s token=%s name=%s next.index=%s",
-                        j, e.index, e.toInfo, e.name, e_next_index);
-                    writefln("\t%s", typeid(e));
-                    foreach_script(e.next, j+1);
-                }
-            }
-            foreach_script(func_script);
+            //         writefln("i=%s n=%s token=%s name=%s next.index=%s",
+            //             j, e.index, e.toInfo, e.name, e_next_index);
+            //         writefln("\t%s", typeid(e));
+            //         foreach_script(e.next, j+1);
+            //     }
+            // }
+            // foreach_script(func_script);
         }
         foreach(fs; function_scripts) {
             for(auto s=fs; s !is null; s=s.next) {

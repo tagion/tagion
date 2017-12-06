@@ -853,7 +853,7 @@ class Script {
         this.trace=trace;
         if ( func in functions) {
             auto call=functions[func].opcode;
-            auto start=new ScriptCall("$root");
+            auto start=new ScriptCall("$"~func);
             start.set_jump(call);
             doit(start);
         }
