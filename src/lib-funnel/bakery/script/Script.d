@@ -10,6 +10,7 @@ import std.conv;
 @safe
 class ScriptException : Exception {
     this( immutable(char)[] msg ) {
+        writefln("msg=%s", msg);
         super( msg );
     }
 }
@@ -137,6 +138,8 @@ unittest {
 
 @safe
 class ScriptContext {
+    public bool trace;
+    private string indent;
     private const(Value)[] data_stack;
     private const(Value)[] return_stack;
     package const(Value)* var[];
@@ -148,11 +151,11 @@ class ScriptContext {
     private uint iteration_count;
     private int data_stack_index;
     private int return_stack_index;
-    this(const uint data_stack_size, const uint return_stack_size, immutable uint var_size,  ) {
+    this(const uint data_stack_size, const uint return_stack_size, immutable uint var_size, const uint iteration_count) {
         this.data_stack_size=data_stack_size;
         this.return_stack_size=return_stack_size;
         this.var=new const(Value)*[var_size];
-
+        this.iteration_count=iteration_count;
 //        data_stack=new const(Value)[data_stack_size];
 //        return_stack=new const(ScriptElement)[return_stack_size];
     }
@@ -212,7 +215,7 @@ class ScriptContext {
             }
         }
         if ( return_stack.length == 0 ) {
-            throw new ScriptException("Data stack empty");
+            throw new ScriptException("Return stack empty");
         }
         return return_stack[$-1];
     }
@@ -236,7 +239,7 @@ class ScriptContext {
     }
 //    @trusted
     unittest {
-        auto sc=new ScriptContext(8, 8, 8);
+        auto sc=new ScriptContext(8, 8, 8, 8);
         enum num="1234567890_1234567890_1234567890_1234567890";
         // Data stack test
         sc.data_push(BigInt(num));
@@ -247,9 +250,25 @@ class ScriptContext {
 
 
 @safe
-abstract class ScriptElement {
+interface ScriptBasic {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const
+    in {
+        assert(s !is null);
+        assert(sc !is null);
+    }
+    const(ScriptElement) next(ScriptElement n)
+    in {
+        assert(next is null, "Next script element is should not be change");
+    }
+    inout(ScriptElement) next() inout pure nothrow;
+    string name() const;
+}
+
+@safe
+abstract class ScriptElement : ScriptBasic {
     private ScriptElement _next;
     private uint line, pos;
+    private uint n; // Token index
     private string token;
     immutable uint runlevel;
     this(immutable uint runlevel) {
@@ -262,7 +281,7 @@ abstract class ScriptElement {
     body {
         return _next;
     }
-    package const(ScriptElement) next(ScriptElement n)
+    const(ScriptElement) next(ScriptElement n)
     in {
         assert(_next is null, "Next script element is should not be change");
     }
@@ -274,11 +293,12 @@ abstract class ScriptElement {
         return _next;
     }
 
-    package void set_location(string token, uint line, uint pos) {
+    package void set_location(const uint n, string token, const uint line, const uint pos) {
         assert(this.token.length == 0);
         this.token = token;
         this.line = line;
         this.pos = pos;
+        this.n=n;
     }
     void check(const Script s, const ScriptContext sc) const
         in {
@@ -299,10 +319,13 @@ abstract class ScriptElement {
         return result;
     }
 
-    string name() const {
+    string name() const  {
         assert(0, "name member not implemented");
     }
 
+    uint index() const {
+        return n;
+    }
 
 }
 
@@ -329,47 +352,60 @@ class ScriptError : ScriptElement {
 @safe
 class ScriptJump : ScriptElement {
     private bool turing_complete;
+    private ScriptElement _jump;
     this() {
         super(0);
     }
     void set_jump(ScriptElement target)
     in {
-        assert(_next is null, "Jump target is should not be change");
+        assert(target !is null);
+        assert(_jump is null, "Jump target should not be change");
+    }
+    out {
+        assert(this._jump !is null);
     }
     body {
-        _next=target;
+        this._jump=target;
+    }
+    const(ScriptElement) jump() pure nothrow const {
+        return _jump;
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         if ( turing_complete ) {
             if ( !s.is_turing_complete) {
-                throw new ScriptException("Illigal command in Turing complete mode");
+                throw new ScriptException("Illegal command in Turing complete mode");
             }
         }
         sc.check_jump();
-        return _next; // Points to the jump position
+        return _jump; // Points to the jump position
     }
     override string name() const {
-        return "goto "~(next is null)?"null":next.name;
+        auto target=(_jump is null)?"null":to!string(_jump.n);
+        return "goto "~target;
     }
+    // override const(ScriptElement) next(ScriptElement n) {
+    //     // Ignore
+    //     writefln("JUMP set %s %s",n is null, _next is null);
+    //     return _next;
+    // }
 
 }
 
 @safe
 class ScriptConditionalJump : ScriptJump {
-    private ScriptElement _jump;
-    override void set_jump(ScriptElement target)
-        in {
-            assert(_jump is null, "Jump target is should not be change");
-        }
-    body {
-        _jump=target;
-    }
-    const(ScriptElement) jump() pure nothrow const {
-        return _jump;
-    }
+    // override void set_jump(ScriptElement target)
+    //     in {
+    //         assert(target !is null);
+    //         assert(_jump is null, "Jump target is should not be change");
+    //     }
+    // body {
+    //     _jump=target;
+    // }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
         check(s, sc);
+        sc.check_jump();
+
         if ( sc.data_pop_number != 0 ) {
             return _next;
         }
@@ -378,7 +414,9 @@ class ScriptConditionalJump : ScriptJump {
         }
     }
     override string name() const {
-        return "if.goto "~(next is null)?"null":next.name;
+        auto target_false=(_jump is null)?"null":to!string(_jump.n);
+        auto target_true=(_next is null)?"null":to!string(_next.n);
+        return "if.false goto "~target_false;
     }
 
 }
@@ -391,6 +429,11 @@ class ScriptExit : ScriptElement {
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
+        if (sc.trace) {
+            if ( sc.indent.length > 0) {
+                sc.indent.length--;
+            }
+        }
         auto ret=sc.return_pop;
         if ( ret.type == Value.Type.FUNCTION ) {
             return ret.get!(const(ScriptElement));
@@ -408,32 +451,35 @@ class ScriptExit : ScriptElement {
 
 @safe
 class ScriptCall : ScriptJump {
-    private ScriptElement _call;
+//    private ScriptElement _call;
     private string func_name;
     this(string func_name) {
         this.func_name=func_name;
     }
-    override void set_jump(ScriptElement target)
-        in {
-            assert(_call is null, "Jump target is should not be change");
-        }
-    body {
-        _call=target;
-    }
+    // override void set_jump(ScriptElement target)
+    //     in {
+    //         assert(_call is null, "Jump target is should not be change");
+    //     }
+    // body {
+    //     _call=target;
+    // }
     // package const(ScriptElement) call(ScriptElement n) {
     //     _call = n;
     //     return _call;
     // }
-    const(ScriptElement) call() pure nothrow const {
-        return _call;
-    }
+    // const(ScriptElement) call() pure nothrow const {
+    //     return _call;
+    // }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s,sc);
-        sc.return_push(next);
-        return _call;
+        sc.return_push(_next);
+        if (sc.trace) {
+            sc.indent~=" ";
+        }
+        return _jump;
     }
     override string name() const {
-        return func_name;
+        return "call "~func_name;
     }
 }
 
@@ -454,6 +500,7 @@ class ScriptNumber : ScriptElement {
     @trusted
     override string name() const {
         import std.format : format;
+
         if ( x.ulongLength == 1 ) {
             return format("%d", x);
         }
@@ -789,12 +836,12 @@ class Script {
     // private ScriptContext sc;
     enum max_shift_left=(1<<12)+(1<<7);
 
-    void run(string func, ScriptContext sc, bool trace=false) {
+    void run(string func, ScriptContext sc) {
         void doit(const(ScriptElement) current) {
             if ( current !is null ) {
                 try {
-                    if ( trace ) {
-                        writefln("%s", current.name);
+                    if ( sc.trace ) {
+                        writefln("%s%s] %s", sc.indent, current.n, current.name);
                     }
                     doit(current(this, sc));
                 }
@@ -805,7 +852,9 @@ class Script {
         }
         this.trace=trace;
         if ( func in functions) {
-            auto start=functions[func].opcode;
+            auto call=functions[func].opcode;
+            auto start=new ScriptCall("$root");
+            start.set_jump(call);
             doit(start);
         }
     }

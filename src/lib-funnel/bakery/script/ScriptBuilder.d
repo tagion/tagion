@@ -193,10 +193,10 @@ class ScriptBuilder {
             immutable retokens_test=retokens[1..$];
             // The reset of the token should be the same
             foreach(i;0..tokens_test.length) {
-                writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
-                    i,
-                    retokens_test[i].type,
-                    tokens_test[i].type);
+                // writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
+                //     i,
+                //     retokens_test[i].type,
+                //     tokens_test[i].type);
                 assert(retokens_test[i].type == tokens_test[i].type);
                 assert(retokens_test[i].token == tokens_test[i].token);
             }
@@ -306,12 +306,17 @@ class ScriptBuilder {
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
 
-        auto sc=new ScriptContext(10, 10, 10);
+        auto sc=new ScriptContext(10, 10, 10, 10);
         sc.data_push(3);
         sc.data_push(2);
         sc.data_push(5);
 
-        script.run("test", sc, true);
+        writefln("%s", sc.data_peek(0).value);
+        writefln("%s", sc.data_peek(1).value);
+        writefln("%s", sc.data_peek(2).value);
+
+        sc.trace=true;
+        script.run("test", sc);
         assert( sc.data_pop_number == -7 );
 
     }
@@ -332,7 +337,7 @@ class ScriptBuilder {
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
 
-        auto sc=new ScriptContext(10, 10, 10);
+        auto sc=new ScriptContext(10, 10, 10, 10);
         sc.data_push(10);
         sc.data_push(0);
 
@@ -373,16 +378,17 @@ class ScriptBuilder {
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
 
-        auto sc=new ScriptContext(10, 10, 10);
+        auto sc=new ScriptContext(10, 10, 10, 10);
         sc.data_push(10);
 //        sc.data_push(0);
 
-        script.run("test", sc, true);
+        sc.trace=true;
+        script.run("test", sc);
         writefln("%d", sc.data_pop_number);
 
         sc.data_push(0);
 
-        script.run("test", sc, true);
+        script.run("test", sc);
         writefln("%d", sc.data_pop_number);
 //        assert(sc.data_pop_number == 10);
 
@@ -1013,12 +1019,24 @@ private:
     void build_functions(ref Script script) {
         struct ScriptLabel {
             ScriptElement target; // Script element to jump to
-            ScriptElement[] jumps; // Script element to jump from
+            ScriptJump[] jumps; // Script element to jump from
         }
         scope ScriptElement[] function_scripts;
         foreach(name,ref f; script.functions) {
             scope ScriptLabel*[uint] script_labels;
-            ScriptElement forward(immutable uint i=0) {
+            ScriptElement forward(immutable uint i=0, immutable uint n=0)
+                in {
+                    // Empty
+                }
+            out(result) {
+                    if ( !( (i < f.tokens.length) && ( result !is null) ) ){
+                        writefln("Fail return is null i=%s length=%s %s", i, f.tokens.length, (result !is null));
+                    }
+                    if ( i < f.tokens.length ) {
+                        assert( result !is null );
+                    }
+                }
+            body {
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
@@ -1032,27 +1050,31 @@ private:
                             }
 //                            assert(( (t.jump in script_labels) !is null) && (script_labels[t.jump].target is null) );
                             //result=
-                            forward(i+1);
+                            auto label=forward(i+1, n);
                             if ( t.jump !in script_labels) {
                                 script_labels[t.jump]=new ScriptLabel;
                             }
                             writefln("t.jump=%s %s", t.jump, t);
                             assert(script_labels[t.jump].target is null);
-                            script_labels[t.jump].target=result;
+                            script_labels[t.jump].target=label;
+                            writefln("\tlabel=%s", label);
+                            return label;
                         break;
                         case GOTO:
-                            result=new ScriptJump;
+                            auto jump=new ScriptJump;
                             if ( t.jump !in script_labels) {
                                 script_labels[t.jump]=new ScriptLabel;
                             }
-                            script_labels[t.jump].jumps~=result;
+                            script_labels[t.jump].jumps~=jump;
+                            result=jump;
                             break;
                         case IF:
-                            result=new ScriptConditionalJump;
+                            auto jump=new ScriptConditionalJump;
                             if ( t.jump !in script_labels) {
                                 script_labels[t.jump]=new ScriptLabel;
                             }
-                            script_labels[t.jump].jumps~=result;
+                            script_labels[t.jump].jumps~=jump;
+                            result=jump;
                             break;
                         case NUMBER:
                         case HEX:
@@ -1093,7 +1115,8 @@ private:
                         case VAR:
                             allocate_var(t.token);
                             //result=
-                            forward(i+1);
+                            auto var=forward(i+1, n);
+                            return var;
                             break;
                         case FUNC:
                         case ELSE:
@@ -1111,27 +1134,43 @@ private:
                             //
                         case UNKNOWN:
                         case COMMENT:
-                            assert(0, "This "~to!string(t.type)~" pseudo script tokens '"~t.token~"' should have been replace by an executing instructions at this point");
+                            assert(0, "This "~to!string(t.type)~" pseudo script tokens '"~t.token~
+                                "' should have been replace by an executing instructions at this point");
                         case EOF:
                             assert(0, "EOF instructions should have been removed at this point");
                         }
-                    if ( result !is null ) {
-                        result.next=forward(i+1);
-                        result.set_location(t.token, t.line, t.pos);
-                    }
+//                    assert(
+//                    if ( result !is null ) {
+                        result.next=forward(i+1, n+1);
+                        result.set_location(n, t.token, t.line, t.pos);
+//                    }
                 }
+                writefln("Return %s %s i=%s, %s", (result !is null)?"name="~result.name:"null", result is null, i, result);
                 return result;
             }
             auto func_script=forward;
             function_scripts~=func_script;
             f.opcode=func_script;
             // Connect all the jump labels
-            foreach(label; script_labels) {
-                foreach(jump; label.jumps) {
-                    auto s=cast(ScriptJump)jump;
-                    s.set_jump(label.target);
+            foreach(ref label; script_labels) {
+                foreach(ref jump; label.jumps) {
+                    jump.set_jump(label.target);
+                    writef("labels %s %s:%s ", jump, jump.jump.index, jump.jump.name);
+                    writefln("target=%s", label.target.name);
+                    writefln("\t%s %s", typeid(jump.jump()), jump.jump is label.target);
                 }
             }
+            void foreach_script(const(ScriptElement) e, immutable uint j=0) {
+                if ( e !is null ) {
+                    auto e_next_index=(e.next)?to!string(e.next.index):"end";
+
+                    writefln("i=%s n=%s token=%s name=%s next.index=%s",
+                        j, e.index, e.toInfo, e.name, e_next_index);
+                    writefln("\t%s", typeid(e));
+                    foreach_script(e.next, j+1);
+                }
+            }
+            foreach_script(func_script);
         }
         foreach(fs; function_scripts) {
             for(auto s=fs; s !is null; s=s.next) {
@@ -1145,17 +1184,15 @@ private:
                             call_script.set_jump( func.opcode );
                         }
                         else {
-                            call_script.set_jump(
-                                new ScriptError("The function "~call_script.name~
-                                    " does not contain any opcodes", call_script)
-                                );
+                            auto error=new ScriptError("The function "~call_script.name~
+                                " does not contain any opcodes", call_script);
+                            call_script.set_jump(error);
                         }
                     }
                     else {
-                        call_script.set_jump(
-                            new ScriptError("The function named "~call_script.name~
-                                " is not defined ",call_script)
-                            );
+                        auto error=new ScriptError("The function named "~call_script.name~
+                            " is not defined ",call_script);
+                        call_script.set_jump(error);
                     }
                 }
             }

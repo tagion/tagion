@@ -54,12 +54,13 @@ class ScriptInterpreter {
     }
     struct Token {
         string token;
-        uint line;
-        uint pos;
+        uint line; // Source line
+        uint pos;  // Source char position
         ScriptType type;
-        uint jump;
+        uint jump; // Jump label index
+
         string toText() @safe pure const {
-            return "'"~token~"':"~to!string(type)~" line:"~
+            return token~"':"~to!string(type)~" line:"~
                 to!string(line)~":"~to!string(pos)~" jump:"~to!string(jump);
         }
     };
