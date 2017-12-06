@@ -261,7 +261,7 @@ interface ScriptBasic {
         assert(next is null, "Next script element is should not be change");
     }
     inout(ScriptElement) next() inout pure nothrow;
-    string name() const;
+    string toText() const;
 }
 
 @safe
@@ -319,8 +319,8 @@ abstract class ScriptElement : ScriptBasic {
         return result;
     }
 
-    string name() const  {
-        assert(0, "name member not implemented");
+    string toText() const  {
+        assert(0, "toText member not implemented");
     }
 
     uint index() const {
@@ -344,7 +344,7 @@ class ScriptError : ScriptElement {
         writeln(problem_element.toInfo);
         return null;
     }
-    override string name() const {
+    override string toText() const {
         return "error:"~error;
     }
 }
@@ -380,7 +380,7 @@ class ScriptJump : ScriptElement {
         sc.check_jump();
         return _jump; // Points to the jump position
     }
-    override string name() const {
+    override string toText() const {
         auto target=(_jump is null)?"null":to!string(_jump.n);
         return "goto "~target;
     }
@@ -413,7 +413,7 @@ class ScriptConditionalJump : ScriptJump {
             return _jump;
         }
     }
-    override string name() const {
+    override string toText() const {
         auto target_false=(_jump is null)?"null":to!string(_jump.n);
         auto target_true=(_next is null)?"null":to!string(_next.n);
         return "if.false goto "~target_false;
@@ -443,7 +443,7 @@ class ScriptExit : ScriptElement {
         }
 
     }
-    override string name() const {
+    override string toText() const {
         return "exit";
     }
 
@@ -478,8 +478,11 @@ class ScriptCall : ScriptJump {
         }
         return _jump;
     }
-    override string name() const {
+    override string toText() const {
         return "call "~func_name;
+    }
+    string name() const {
+        return func_name;
     }
 }
 
@@ -498,7 +501,7 @@ class ScriptNumber : ScriptElement {
         return _next;
     }
     @trusted
-    override string name() const {
+    override string toText() const {
         import std.format : format;
 
         if ( x.ulongLength == 1 ) {
@@ -523,7 +526,7 @@ class ScriptText : ScriptElement {
         sc.data_push(text);
         return _next;
     }
-    override string name() const {
+    override string toText() const {
         return '"'~text~'"';
     }
 }
@@ -542,7 +545,7 @@ class ScriptGetVar : ScriptElement {
         sc.data_push(*(sc.var[var_index]));
         return _next;
     }
-    override string name() const {
+    override string toText() const {
         return var_name~" @";
     }
 
@@ -565,7 +568,7 @@ class ScriptPutVar : ScriptElement {
         sc.var[var_index]=&var;
         return _next;
     }
-    override string name() const {
+    override string toText() const {
         return var_name~" !";
     }
 
@@ -594,7 +597,7 @@ class ScriptUnitaryOp(string O) : ScriptElement {
 
         return _next;
     }
-    override string name() const {
+    override string toText() const {
         return op;
     }
 }
@@ -658,7 +661,7 @@ class ScriptBinaryOp(string O) : ScriptElement {
         }
         return _next;
     }
-    override string name() const {
+    override string toText() const {
         return op;
     }
 }
@@ -678,7 +681,7 @@ class ScriptCompareOp(string O) : ScriptElement {
         sc.data_push(x);
         return _next;
     }
-    override string name() const {
+    override string toText() const {
         return op;
     }
 }
@@ -790,7 +793,7 @@ class ScriptStackOp(string O) : ScriptElement {
         }
         return _next;
     }
-    override string name() const {
+    override string toText() const {
         return op;
     }
 }
@@ -841,7 +844,7 @@ class Script {
             if ( current !is null ) {
                 try {
                     if ( sc.trace ) {
-                        writefln("%s%s] %s", sc.indent, current.n, current.name);
+                        writefln("%s%s] %s", sc.indent, current.n, current.toText);
                     }
                     doit(current(this, sc));
                 }

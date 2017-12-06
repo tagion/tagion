@@ -386,6 +386,33 @@ class ScriptBuilder {
 
     }
 
+    unittest { // Variable
+        string source=
+            ": test\n"~
+            " 10 \n"~
+            "  variable X\n"~
+            "  X !\n"~
+            ";\n"
+            ;
+
+        auto src=new ScriptInterpreter(source);
+        // Convert to BSON object
+        auto bson=src.toBSON;
+        // Expand to BSON stream
+        auto data=bson.expand;
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, data);
+
+        auto sc=new ScriptContext(10, 10, 10, 10);
+
+        sc.trace=true;
+        // Set variable X to 10
+        sc.data_push(10);
+        script.run("test", sc);
+//        assert(sc.data_pop_number == -1);
+        writeln("Unittest end");
+    }
 private:
     uint var_count;
     uint[string] var_indices;
@@ -1094,7 +1121,7 @@ private:
                             break;
                         case VAR:
                             allocate_var(t.token);
-                            //result=
+
                             auto var=forward(i+1, n);
                             return var;
                             break;
