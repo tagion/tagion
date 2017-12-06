@@ -41,10 +41,13 @@ class ScriptBuilder {
             this.token=token;
             this.msg=msg;
         }
-        override ScriptElement opCall(const Script s, ScriptContext sc) const {
+        ScriptElement opCall(const Script s, ScriptContext sc) const {
             check(s, sc);
             throw new ScriptBuilderException(msg~token.toText);
             return null;
+        }
+        string toText() const {
+            return token.token~" "~msg;
         }
     }
 
@@ -293,6 +296,10 @@ class ScriptBuilder {
             // assert(!builder.parse_functions(retokens));
         }
     }
+    uint get_var(string var_name) const {
+        return var_indices[var_name];
+    }
+
     unittest { // Simple function test
         string source=
             ": test\n"~
@@ -403,27 +410,81 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+//        sc.trace=true;
         // Set variable X to 10
         sc.data_push(10);
         script.run("test", sc);
-        writefln("var=%s", builder.get_var("X"));
         auto var=sc[builder.get_var("X")];
-        writefln("var=%s", var is null);
-        auto t=var.type;
-        writefln("var.type=%s", t);
-        writefln("var.value=%s", var.value);
         assert(var.value == 10);
-        writeln("Unittest end");
-    }
-    uint get_var(string var_name) const {
-        return var_indices[var_name];
     }
 
+    unittest { // Variable get and put
+        string source=
+            ": test\n"~
+            "  variable X\n"~
+            "  variable Y\n"~
+            "  17 X !\n"~
+            "  13 Y !\n"~
+            "  X @ Y @\n"~
+            ";\n"
+            ;
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, source);
+
+        auto sc=new ScriptContext(10, 10, 10, 10);
+
+        sc.trace=true;
+        // Put and Get variable X and Y
+
+        script.run("test", sc);
+        // Check Y value
+        assert(sc.data_pop.value == 13);
+        assert(sc[builder.get_var("Y")].value == 13);
+
+        // Check X value
+        assert(sc.data_pop.value == 17);
+        assert(sc[builder.get_var("X")].value == 17);
+    }
+
+    unittest { // None standard unitary operator in variables
+        string source=
+            ": test\n"~
+            " variable X\n"~
+            " 7 X !\n"~
+            " 3 X !-\n"~
+            " X @\n"~
+            ";"
+            ;
+
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, source);
+
+        auto sc=new ScriptContext(10, 10, 10, 10);
+
+        sc.trace=true;
+        // Put and Get variable X and Y
+
+        script.run("test", sc);
+        assert(sc.data_pop.value == -4);
+//        writefln("X=%s", sc.data_pop.value);
+
+    }
+    unittest { // DO LOOP
+        string source=
+            ": var++\n"~
+            " dup @ 1+ swap !\n"~
+            ";"
+            ;
+
+
+    }
 private:
     uint var_count;
     uint[string] var_indices;
     uint allocate_var(string var_name) {
+        writefln("allocate_var=%s", var_name);
         if ( var_name !in var_indices ) {
             var_indices[var_name]=var_count;
             var_count++;
@@ -1068,7 +1129,6 @@ private:
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
-
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
                             auto label=forward(i+1, n);
@@ -1210,8 +1270,9 @@ private:
                             call_script.set_jump(error);
                         }
                     }
-                    else {
-                        auto error=new ScriptError("The function named "~call_script.name~
+                    else if ( call_script.name !in var_indices) {
+                        // If name is not a variable
+                        auto error=new ScriptError("The function or variable named "~call_script.name~
                             " is not defined ",call_script);
                         call_script.set_jump(error);
                     }

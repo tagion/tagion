@@ -218,10 +218,6 @@ class ScriptContext {
         }
         return data_stack[$-1];
     }
-    version(none)
-    const(BigInt) data_pop_number() {
-        return data_pop.get!(const(BigInt));
-    }
     void data_push(T)(T v) {
         if ( data_stack.length < data_stack_size ) {
             static if ( is(T:const Value) ) {
@@ -266,13 +262,6 @@ class ScriptContext {
             throw new ScriptException("Return stack empty");
         }
         return return_stack[$-1];
-    }
-    version(none)
-    const(BigInt) return_pop_number() {
-        return return_pop.get!(const(BigInt));
-    }
-    const(ScriptElement) return_pop_element() {
-        return return_pop.get!(const(ScriptElement));
     }
     const(Value) return_peek(immutable uint i=0) const {
         if ( return_stack.length <= i ) {
@@ -323,13 +312,13 @@ abstract class ScriptElement : ScriptBasic {
     this(immutable uint runlevel) {
         this.runlevel=runlevel;
     }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const
-    in {
-        assert(sc !is null);
-    }
-    body {
-        return _next;
-    }
+    // const(ScriptElement) opCall(const Script s, ScriptContext sc) const
+    // in {
+    //     assert(sc !is null);
+    // }
+    // body {
+    //     return _next;
+    // }
     const(ScriptElement) next(ScriptElement n)
     in {
         assert(_next is null, "Next script element is should not be change");
@@ -368,9 +357,9 @@ abstract class ScriptElement : ScriptBasic {
         return result;
     }
 
-    string toText() const  {
-        assert(0, "toText member not implemented");
-    }
+    // string toText() const  {
+    //     assert(0, "toText member not implemented");
+    // }
 
     uint index() const {
         return n;
@@ -387,13 +376,13 @@ class ScriptError : ScriptElement {
         this.problem_element=problem_element;
         super(0);
     }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
         import std.stdio;
         writefln("Aborted: %s", error);
         writeln(problem_element.toInfo);
         return null;
     }
-    override string toText() const {
+    string toText() const {
         return "error:"~error;
     }
 }
@@ -419,7 +408,7 @@ class ScriptJump : ScriptElement {
     const(ScriptElement) jump() pure nothrow const {
         return _jump;
     }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         if ( turing_complete ) {
             if ( !s.is_turing_complete) {
@@ -429,7 +418,7 @@ class ScriptJump : ScriptElement {
         sc.check_jump();
         return _jump; // Points to the jump position
     }
-    override string toText() const {
+    string toText() const {
         auto target=(_jump is null)?"null":to!string(_jump.n);
         return "goto "~target;
     }
@@ -476,7 +465,7 @@ class ScriptExit : ScriptElement {
     this() {
         super(0);
     }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         if (sc.trace) {
             if ( sc.indent.length > 0) {
@@ -492,7 +481,7 @@ class ScriptExit : ScriptElement {
         }
 
     }
-    override string toText() const {
+    string toText() const {
         return "exit";
     }
 
@@ -544,13 +533,13 @@ class ScriptNumber : ScriptElement {
         this.x=BigInt(number);
         super(0);
     }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         sc.data_push(x);
         return _next;
     }
     @trusted
-    override string toText() const {
+    string toText() const {
         import std.format : format;
 
         if ( x.ulongLength == 1 ) {
@@ -570,12 +559,12 @@ class ScriptText : ScriptElement {
         this.text=text;
         super(0);
     }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         sc.data_push(text);
         return _next;
     }
-    override string toText() const {
+    string toText() const {
         return '"'~text~'"';
     }
 }
@@ -589,12 +578,12 @@ class ScriptGetVar : ScriptElement {
         this.var_index = var_index;
         super(0);
     }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         sc.data_push(sc.variables[var_index]);
         return _next;
     }
-    override string toText() const {
+    string toText() const {
         return var_name~" @";
     }
 
@@ -611,13 +600,13 @@ class ScriptPutVar : ScriptElement {
         super(0);
     }
     @trusted
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         auto var=sc.data_pop();
         sc.variables[var_index]=Value(var);
         return _next;
     }
-    override string toText() const {
+    string toText() const {
         return var_name~" !";
     }
 
@@ -660,7 +649,7 @@ class ScriptBinaryOp(string O) : ScriptElement {
         super(0);
     }
     @trusted
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         scope BigInt a, b;
         try {
@@ -710,7 +699,7 @@ class ScriptBinaryOp(string O) : ScriptElement {
         }
         return _next;
     }
-    override string toText() const {
+    string toText() const {
         return op;
     }
 }
@@ -722,7 +711,7 @@ class ScriptCompareOp(string O) : ScriptElement {
         super(0);
     }
     @trusted
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         bool result;
         mixin("result = sc.data_pop.value" ~ op ~ "sc.data_pop.value;");
@@ -730,7 +719,7 @@ class ScriptCompareOp(string O) : ScriptElement {
         sc.data_push(x);
         return _next;
     }
-    override string toText() const {
+    string toText() const {
         return op;
     }
 }
@@ -741,7 +730,7 @@ class ScriptStackOp(string O) : ScriptElement {
     this() {
         super(0);
     }
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         static if ( op ==  "dup" ) { // a -- a a
             sc.data_push(sc.data_peek);
         }
@@ -842,7 +831,7 @@ class ScriptStackOp(string O) : ScriptElement {
         }
         return _next;
     }
-    override string toText() const {
+    string toText() const {
         return op;
     }
 }

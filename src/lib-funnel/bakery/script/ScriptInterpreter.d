@@ -245,11 +245,22 @@ class ScriptInterpreter {
                     _type = VAR;
                     declare=false;
                 }
-                if ( (_type == GET ) || (_type == PUT ) ) {
+                immutable unitary=(word.token.length > 1) && (word.token[0] == '!');
+                // Function GET the variable call function and PUT the value back to the variable
+                // Ex.
+                //  variable X
+                //  X !1+
+                // Same as
+                // X @ 1+ X !
+
+                if ( (_type == GET ) || (_type == PUT ) || unitary ) {
                     if ( results.length > 0 ) {
                         // Replace previous token with a variable GET or PUT token
                         auto var_access=results[$-1];
                         results.length--;
+                        if ( unitary ) {
+                            _type = GET;
+                        }
                         immutable(Token) t={
                           token : var_access.token,
                           type : _type,
@@ -257,7 +268,23 @@ class ScriptInterpreter {
                           pos  : var_access.pos
                         };
                         results~=t;
+                        if ( unitary ) {
+                            immutable(Token) opr={
+                              token : word.token[1..$],
+                              type : WORD,
+                              line : word.line,
+                              pos  : word.pos
+                            };
+                            results~=opr;
 
+                            immutable(Token) opr_put={
+                              token : var_access.token,
+                              type : PUT,
+                              line : var_access.line,
+                              pos  : var_access.pos
+                            };
+                            results~=opr_put;
+                        }
                     }
                     else {
                         immutable(Token) err={
