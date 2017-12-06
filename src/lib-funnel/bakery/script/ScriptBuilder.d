@@ -35,13 +35,15 @@ class ScriptBuilder {
     @safe
     class ScriptTokenError : ScriptElement {
         immutable(Token) token;
-        this(immutable(Token) token) {
+        private string msg;
+        this(immutable(Token) token, string msg) {
             super(0);
             this.token=token;
+            this.msg=msg;
         }
         override ScriptElement opCall(const Script s, ScriptContext sc) const {
             check(s, sc);
-            throw new ScriptBuilderException(token.toText);
+            throw new ScriptBuilderException(msg~token.toText);
             return null;
         }
     }
@@ -1094,7 +1096,7 @@ private:
                             result=new ScriptExit();
                             break;
                         case ERROR:
-                            result=new ScriptTokenError(t);
+                            result=new ScriptTokenError(t,"");
                             break;
                         case WORD:
                             result=createElement(t.token);
@@ -1108,7 +1110,8 @@ private:
                                 result=new ScriptPutVar(t.token, get_var(t.token));
                             }
                             else {
-                                result=new ScriptTokenError(t);
+                                auto msg="Variable name '"~t.token~"' not found";
+                                result=new ScriptTokenError(t,msg);
                             }
                             break;
                         case GET:
@@ -1116,14 +1119,19 @@ private:
                                 result=new ScriptGetVar(t.token, get_var(t.token));
                             }
                             else {
-                                result=new ScriptTokenError(t);
+                                auto msg="Variable name '"~t.token~"' not found";
+                                result=new ScriptTokenError(t, msg);
                             }
                             break;
                         case VAR:
-                            allocate_var(t.token);
-
-                            auto var=forward(i+1, n);
-                            return var;
+                            if ( is_var(t.token) ) {
+                                result=new ScriptTokenError(t,
+                                    "Variable "~t.token~" is already defined");
+                            }
+                            else {
+                                allocate_var(t.token);
+                                return forward(i+1, n);
+                            }
                             break;
                         case FUNC:
                         case ELSE:

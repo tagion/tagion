@@ -209,6 +209,12 @@ class ScriptInterpreter {
                 case "variable":
                     declare=true;
                     continue;
+                case "!":
+                    _type=PUT;
+                    break;
+                case "@":
+                    _type=GET;
+                    break;
                 default:
                     import std.regex;
                     enum regex_number = regex("^[-+]?[0-9][0-9_]*$");
@@ -239,7 +245,31 @@ class ScriptInterpreter {
                     _type = VAR;
                     declare=false;
                 }
-                if ( word.type !is _type ) {
+                if ( (_type == GET ) || (_type == PUT ) ) {
+                    if ( results.length > 0 ) {
+                        // Replace previous token with a variable GET or PUT token
+                        auto var_access=results[$-1];
+                        results.length--;
+                        immutable(Token) t={
+                          token : var_access.token,
+                          type : _type,
+                          line : var_access.line,
+                          pos  : var_access.pos
+                        };
+                        results~=t;
+
+                    }
+                    else {
+                        immutable(Token) err={
+                          token : word.token~" is not accepted as the first command in a function",
+                          type : ERROR,
+                          line : word.line,
+                          pos  : word.pos
+                        };
+                        results~=err;
+                    }
+                }
+                else if ( word.type !is _type ) {
                     immutable(Token) t={
                       token : word.token,
                       type : _type,
