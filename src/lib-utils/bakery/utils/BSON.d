@@ -27,7 +27,7 @@ import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
 private import std.bitmanip;
 
-import std.stdio;
+//import std.stdio;
 //private import proton.core.Misc;
 import tango.text.convert.Format;
 private import tango.core.Traits : isStringType;
@@ -2100,7 +2100,8 @@ class BSON(bool key_sort_flag=true) {
                 break;
             case TIMESTAMP:
                 static if (is(T==DateTime)) {
-                    elm.value.int32=x;
+                    auto st=SysTime(x);
+                    elm.value.int64=st.stdTime;
                     result=true;
                 }
                 break;
@@ -2524,7 +2525,7 @@ class BSON(bool key_sort_flag=true) {
     immutable(ubyte)[] expand() {
         immutable(ubyte)[] local_expand() {
             immutable(ubyte)[] data;
-            foreach(e; this) {
+            foreach(e; iterator!key_sort_flag) {
                 data~=e._type;
                 data~=e.key;
                 data~=zero;
@@ -2959,40 +2960,53 @@ class BSON(bool key_sort_flag=true) {
 
     }
 
-    string[] _keys() /*pure*/ const /*nothrow*/ {
+    string[] keys() pure const nothrow {
         string[] result;
-        import std.stdio;
-        void foreach_key(const BSON current, immutable uint max_count=10) /*pure*/ /*nothrow*/ {
-            writefln("max_count=%s %s", max_count, current is null);
-            assert( max_count > 0);
+        void foreach_key(const BSON current) pure nothrow {
             if ( current !is null ) {
-                auto k=current.key;
-                debug {
-                    writefln("%s] current.key=%s current.type=%s",
-                        max_count, k, current.type);
-                }
-                foreach_key(current.members, max_count-1);
-                result~=k;
+                foreach_key(current.members);
+                result~=current.key;
             }
         }
 
         foreach_key(this.members);
-        writefln("Return %s", result);
         return result;
     }
 
-    unittest { // test keys function
-        auto bson=new BSON!true;
-        auto some_keys=["kurt", "abe", "ole"];
-        bson[some_keys[0]]=0;
-        bson[some_keys[1]]=1;
-        bson[some_keys[2]]=2;
-        auto keys=bson._keys;
-        import std.stdio;
-        writefln("keys=%s", keys);
-        auto data=bson.expand;
-        auto doc=Document(data);
-        writefln("doc.keys=%s", doc.keys);
+    unittest {
+        // Test keys function
+        // and the sorted BSON
+        {
+            auto bson=new BSON!true;
+            auto some_keys=["kurt", "abe", "ole"];
+            bson[some_keys[0]]=0;
+            bson[some_keys[1]]=1;
+            bson[some_keys[2]]=2;
+            auto keys=bson.keys;
+            // writefln("keys=%s", keys);
+            auto data=bson.expand;
+            auto doc=Document(data);
+            // writefln("doc.keys=%s", doc.keys);
+            // Check that doc.keys are sorted
+            assert(doc.keys == ["abe", "kurt", "ole"]);
+        }
+        {
+            BSON!true[] array;
+            for(int i=10; i>-7; i--) {
+                auto len=new BSON!true;
+                len["i"]=i;
+                array~=len;
+            }
+            auto bson=new BSON!true;
+            bson["array"]=array;
+            auto data=bson.expand;
+            auto doc=Document(data);
+            auto doc_array=doc["array"].get!Document;
+            foreach(i,k;doc_array.keys) {
+                assert(to!string(i) == k);
+            }
+        }
+
     }
 
     int opApply(scope int delegate(BSON bson) dg) {
@@ -3015,17 +3029,12 @@ class BSON(bool key_sort_flag=true) {
         this(BSON owner) {
             this.owner=owner;
             static if ( key_sort_flag ) {
-                sorted_keys=owner._keys;
+                sorted_keys=owner.keys;
                 sort!("a < b", SwapStrategy.stable)(sorted_keys);
                 current_keys=sorted_keys;
             }
             else {
                 this.current=owner.members;
-            }
-        }
-        this(this) {
-            static if (!key_sort_flag) {
-                writeln("THIS(THIS)");
             }
         }
         void popFront()
