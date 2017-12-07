@@ -121,7 +121,7 @@ class Value {
             return new Value(x);
         }
     }
-     Type type() pure const nothrow {
+    Type type() pure const nothrow {
         return _type;
     }
     const(BigInt) value() const {
@@ -141,6 +141,12 @@ class Value {
             return data.opcode;
         }
         throw new ScriptException(to!string(Type.FUNCTION)~" expected not "~to!string(type));
+    }
+    immutable(ubyte[]) buffer() const {
+        if ( type == Type.INTEGER) {
+            return (cast(ubyte[])data.data).idup;
+        }
+        throw new ScriptException(to!string(Type.INTEGER)~" expected not "~to!string(type));
     }
     T get(T)() const {
 

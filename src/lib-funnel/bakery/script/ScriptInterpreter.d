@@ -113,6 +113,7 @@ class ScriptInterpreter {
         @trusted
         auto getRange(Document doc) {
             if ( doc.hasElement("code") ) {
+//                writefln("code.type=%s", doc["code"].type);
                 return doc["code"].get!Document[];
             }
             else {
@@ -142,7 +143,13 @@ class ScriptInterpreter {
                 results~=t;
             }
             else {
-                throw new ScriptException("Malformed Genesys script BSON stream document expected not "~to!string(word.type) );
+                auto word_str=word.get!string;
+                immutable(Token) t={
+                  token : word_str,
+                  type : ScriptType.UNKNOWN,
+                };
+                results~=t;
+                //                 throw new ScriptException("Malformed Genesys script BSON stream document expected not "~to!string(word.type) );
             }
         }
         return results;
@@ -384,7 +391,7 @@ class ScriptInterpreter {
             }
         }
     }
-    BSON toBSON() {
+    BSON toBSON(immutable bool tokenize=true) {
         BSON bson_token(immutable(Token) t) {
             auto result=new BSON();
             result["token"]=t.token;
@@ -396,16 +403,29 @@ class ScriptInterpreter {
             return result;
         }
         auto bson = new BSON();
-        bson["source"]=source;
-        BSON[] code;
-        for(;;) {
-            immutable t = token();
-            if ( t.type == ScriptType.EOF ) {
-                break;
+        if (tokenize) {
+            bson["source"]=source;
+            BSON[] code;
+            for(;;) {
+                immutable t = token();
+                if ( t.type == ScriptType.EOF ) {
+                    break;
+                }
+                code~=bson_token(t);
             }
-            code~=bson_token(t);
+            bson["code"]=code;
         }
-        bson["code"]=code;
+        else {
+            string[] code;
+            for(;;) {
+                immutable t = token();
+                if ( t.type == ScriptType.EOF ) {
+                    break;
+                }
+                code~=t.token;
+            }
+            bson["code"]=code;
+        }
         return bson;
     }
     unittest { // parse to bson test
