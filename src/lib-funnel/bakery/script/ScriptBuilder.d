@@ -468,17 +468,33 @@ class ScriptBuilder {
 
         script.run("test", sc);
         assert(sc.data_pop.value == -4);
-//        writefln("X=%s", sc.data_pop.value);
 
     }
     unittest { // DO LOOP
         string source=
-            ": var++\n"~
-            " dup @ 1+ swap !\n"~
+            ": test\n"~
+            "variable X\n"~
+            " + \n"~
+//            " do \n"~
+            "  X !1+\n"~
+//            " loop \n"~
+            " X @\n"~
             ";"
             ;
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, source);
 
+        auto sc=new ScriptContext(10, 10, 10, 10);
 
+        sc.trace=true;
+        // Put and Get variable X and Y
+
+        sc.data_push(10);
+        sc.data_push(1);
+        script.run("test", sc);
+
+        writefln("pop=%s", sc.data_pop.value);
     }
 private:
     uint var_count;
@@ -1048,8 +1064,7 @@ private:
             }
             void createUnitaryOp(alias oplist)(string opname) {
                 static ScriptElement create(string op)() {
-                    return null;
-//                    return new ScriptUnitaryOp!(op);
+                    return new ScriptUnitaryOp!(op);
                 }
                 static if ( oplist.length !=0 ) {
                     if ( opname == oplist[0] ) {
@@ -1069,6 +1084,7 @@ private:
         }
         foreach(opname; binaryOp~compareOp~stackOp~unitaryOp) {
             build_opcreators(opname);
+            writefln("opname=%s", opname);
         }
 
     }
@@ -1170,6 +1186,7 @@ private:
                             break;
                         case WORD:
                             result=createElement(t.token);
+                            writefln("t.token=%s", t.token);
                             if ( result is null ) {
                                 // Possible function call
                                 result=new ScriptCall(t.token);

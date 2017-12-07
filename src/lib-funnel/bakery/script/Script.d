@@ -206,8 +206,9 @@ class ScriptContext {
         this.return_stack_size=return_stack_size;
         this.variables=new Value[var_size];
         this.iteration_count=iteration_count;
-//        data_stack=new const(Value)[data_stack_size];
-//        return_stack=new const(ScriptElement)[return_stack_size];
+        foreach(ref v; variables) {
+            v=Value(0);
+        }
     }
     const(Value) opIndex(uint i) {
         return variables[i];
@@ -622,12 +623,11 @@ class ScriptPutVar : ScriptElement {
 @safe
 class ScriptUnitaryOp(string O) : ScriptElement {
     enum op=O;
-    this(ScriptElement next) {
+    this() {
         super(0);
-        this._next = next;
     }
     @trusted
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         static if ( op == "1-" ) {
             sc.data_push(sc.data_pop.value - 1);
@@ -641,7 +641,7 @@ class ScriptUnitaryOp(string O) : ScriptElement {
 
         return _next;
     }
-    override string toText() const {
+    string toText() const {
         return op;
     }
 }
