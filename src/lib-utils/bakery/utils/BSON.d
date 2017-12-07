@@ -27,6 +27,7 @@ import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
 private import std.bitmanip;
 
+import std.stdio;
 //private import proton.core.Misc;
 import tango.text.convert.Format;
 private import tango.core.Traits : isStringType;
@@ -1870,33 +1871,33 @@ class BSON(bool key_sort_flag=true) {
 
     }
     package Value value;
-    package void sort_keys() {
-        if ( (type == Type.DOCUMENT) ) {
-            BSON[] barry;
-            import std.algorithm.mutation : SwapStrategy;
-            for(auto b=members; b !is null; b=b.members) {
-                barry~=b;
-            }
-            if ( barry.length > 1 ) {
-                // Sort by key
-                sort!("a.key < b.key", SwapStrategy.stable)(barry);
-                BSON prev;
-                foreach(i,ref b;barry) {
-                    if ( i > 0 ) {
-                        prev.members=b;
-                    }
-                    prev=b;
-                }
-                prev.members=null;
-                this.members=barry[0];
-            }
-        }
-    }
+    // package void sort_keys() {
+    //     if ( (type == Type.DOCUMENT) ) {
+    //         BSON[] barry;
+    //         import std.algorithm.mutation : SwapStrategy;
+    //         for(auto b=members; b !is null; b=b.members) {
+    //             barry~=b;
+    //         }
+    //         if ( barry.length > 1 ) {
+    //             // Sort by key
+    //             sort!("a.key < b.key", SwapStrategy.stable)(barry);
+    //             BSON prev;
+    //             foreach(i,ref b;barry) {
+    //                 if ( i > 0 ) {
+    //                     prev.members=b;
+    //                 }
+    //                 prev=b;
+    //             }
+    //             prev.members=null;
+    //             this.members=barry[0];
+    //         }
+    //     }
+    // }
     bool isDocument() {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
     @trusted
-    bool append(T)(Type type, immutable(char)[] key, T x, BinarySubType subtype=BinarySubType.generic) {
+    bool append(T)(Type type, in string key, T x, BinarySubType subtype=BinarySubType.generic) {
         bool result=false;
         BSON elm=new BSON;
         with (Type) final switch (type) {
@@ -1995,7 +1996,7 @@ class BSON(bool key_sort_flag=true) {
                         result=true;
                     }
                     else {
-                        static assert(0, "Unsupported type "~T.stringof);
+                        assert(0, "Unsupported type "~T.stringof);
                     }
                 }
                 else {
@@ -2118,7 +2119,7 @@ class BSON(bool key_sort_flag=true) {
         return result;
     }
 
-    void opIndexAssign(T)(T x, in immutable(char)[] key) {
+    void opIndexAssign(T)(T x, in string key) {
         bool result;
         static if (is(T==bool)) {
             result=append(Type.BOOLEAN, key, x);
@@ -2129,14 +2130,23 @@ class BSON(bool key_sort_flag=true) {
         else static if (is(T==BSON)) {
             result=append(Type.DOCUMENT, key, x);
         }
-        else static if (is(T==long)) {
+        else static if (is(T:const(int))) {
+            result=append(Type.INT32, key, x);
+        }
+        else static if (is(T:const(long))) {
             result=append(Type.INT64, key, x);
         }
         else static if (is(T==double)) {
             result=append(Type.DOUBLE, key, x);
         }
-        else static if (is(T:int)) {
-            result=append(Type.INT32, key, x);
+        else static if (is(T:const(ubyte)[])) {
+            result=append(Type.BINARY, key, x);
+        }
+        else static if (is(T:const(Date))) {
+            result=append(Type.DATE, key, x);
+        }
+        else static if (is(T:const(DateTime))) {
+            result=append(Type.TIMESTAMP, key, x);
         }
         else static if (is(T:U[],U)) {
             if (typedarray && is(U : const(double) ) ) {
@@ -2147,6 +2157,7 @@ class BSON(bool key_sort_flag=true) {
             }
         }
         else {
+            writefln("Check %s", is(T:const(ubyte)[]));
             static assert(0, "opIndexAssign does not support type "~T.stringof~" use append member function instead");
         }
 /*
@@ -2163,16 +2174,19 @@ class BSON(bool key_sort_flag=true) {
 
     }
 
-    BSON opIndex(immutable(char)[] key) {
+   BSON opIndex(const(char)[] key) {
         BSON result;
         foreach(b;this) {
             if ( b.key == key ) {
                 result=b;
                 break;
-
             }
         }
-        return result;
+        if ( result ) {
+            return result;
+        }
+        throw new BSONException("Member '"~key.idup~"' not defined");
+        assert(0);
     }
 
     Type type() pure const nothrow {
@@ -2510,9 +2524,6 @@ class BSON(bool key_sort_flag=true) {
     immutable(ubyte)[] expand() {
         immutable(ubyte)[] local_expand() {
             immutable(ubyte)[] data;
-            static if (key_sort_flag ) {
-                sort_keys();
-            }
             foreach(e; this) {
                 data~=e._type;
                 data~=e.key;
@@ -2854,7 +2865,7 @@ class BSON(bool key_sort_flag=true) {
     bool duble() {
         auto iter=iterator;
         for(; !iter.empty; iter.popFront) {
-            Iterator dup_iter=iter;
+            auto dup_iter=iter;
             for(dup_iter.popFront; !dup_iter.empty; dup_iter.popFront) {
                 if (dup_iter.front.key == iter.front.key) {
                     return true;
@@ -2917,11 +2928,8 @@ class BSON(bool key_sort_flag=true) {
 
     }
 
-    Iterator iterator() {
-        Iterator result;
-        result.owner=this;
-        result.current=members;
-        return result;
+    Iterator!F iterator(bool F=false)() {
+        return Iterator!F(this);
     }
 
     const(ubyte)[] subtype_buffer() {
@@ -2951,32 +2959,108 @@ class BSON(bool key_sort_flag=true) {
 
     }
 
-    int opApply(scope int delegate(ref BSON bson) dg) {
+    string[] _keys() /*pure*/ const /*nothrow*/ {
+        string[] result;
+        import std.stdio;
+        void foreach_key(const BSON current, immutable uint max_count=10) /*pure*/ /*nothrow*/ {
+            writefln("max_count=%s %s", max_count, current is null);
+            assert( max_count > 0);
+            if ( current !is null ) {
+                auto k=current.key;
+                debug {
+                    writefln("%s] current.key=%s current.type=%s",
+                        max_count, k, current.type);
+                }
+                foreach_key(current.members, max_count-1);
+                result~=k;
+            }
+        }
+
+        foreach_key(this.members);
+        writefln("Return %s", result);
+        return result;
+    }
+
+    unittest { // test keys function
+        auto bson=new BSON!true;
+        auto some_keys=["kurt", "abe", "ole"];
+        bson[some_keys[0]]=0;
+        bson[some_keys[1]]=1;
+        bson[some_keys[2]]=2;
+        auto keys=bson._keys;
+        import std.stdio;
+        writefln("keys=%s", keys);
+        auto data=bson.expand;
+        auto doc=Document(data);
+        writefln("doc.keys=%s", doc.keys);
+    }
+
+    int opApply(scope int delegate(BSON bson) dg) {
         return iterator.opApply(dg);
     }
 
-    int opApply(scope int delegate(in string key, ref BSON bson) dg) {
+    int opApply(scope int delegate(in string key, BSON bson) dg) {
         return iterator.opApply(dg);
     }
 
-    struct Iterator {
-        private BSON current;
+    struct Iterator(bool key_sort_flag) {
         private BSON owner;
+        static if (key_sort_flag) {
+            private string[] sorted_keys;
+            private string[] current_keys;
+        }
+        else {
+            private BSON current;
+        }
+        this(BSON owner) {
+            this.owner=owner;
+            static if ( key_sort_flag ) {
+                sorted_keys=owner._keys;
+                sort!("a < b", SwapStrategy.stable)(sorted_keys);
+                current_keys=sorted_keys;
+            }
+            else {
+                this.current=owner.members;
+            }
+        }
+        this(this) {
+            static if (!key_sort_flag) {
+                writeln("THIS(THIS)");
+            }
+        }
         void popFront()
             in {
                 assert(owner !is null);
-                assert(current !is owner,"Circular reference member "~current.key~" points to it self");
+                static if ( !key_sort_flag ) {
+                    assert(current !is owner,"Circular reference member "~current.key~" points to it self");
+                }
             }
         body {
-            current=current.members;
+            static if ( key_sort_flag ) {
+                current_keys=current_keys[1..$];
+            }
+            else {
+                current=current.members;
+            }
         }
-        ref BSON front() {
-            return current;
+        BSON front() {
+            static if ( key_sort_flag ) {
+                assert ( current_keys.length > 0 );
+                return owner[current_keys[0]];
+            }
+            else {
+                return current;
+            }
         }
         bool empty() {
-            return current is null;
+            static if ( key_sort_flag ) {
+                return current_keys.length == 0;
+            }
+            else {
+                return current is null;
+            }
         }
-        final int opApply(scope int delegate(ref BSON bson) dg) {
+        final int opApply(scope int delegate(BSON bson) dg) {
             int result;
             for(; !empty; popFront) {
                 if ( (result=dg(front))!=0 ) {
@@ -2985,7 +3069,7 @@ class BSON(bool key_sort_flag=true) {
             }
             return result;
         }
-        final int opApply(scope int delegate(in string key, ref BSON bson) dg) {
+        final int opApply(scope int delegate(in string key, BSON bson) dg) {
             int result;
             for(; !empty; popFront) {
                 if ( (result=dg(front.key, front))!=0 ) {
