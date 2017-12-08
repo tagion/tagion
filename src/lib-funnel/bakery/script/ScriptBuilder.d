@@ -285,8 +285,8 @@ class ScriptBuilder {
             // foreach(i,t; loop_expanded_tokens) {
             //      writefln("%s]:%s", i, t.toText);
             // }
-
-            assert(loop_expanded_tokens.length == 89);
+//            writefln("%s", loop_expanded_tokens.length);
+            assert(loop_expanded_tokens.length == 79);
 
             auto condition_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
             assert(builder.error_tokens.length == 0);
@@ -299,7 +299,9 @@ class ScriptBuilder {
     uint get_var(string var_name) const {
         return var_indices[var_name];
     }
-
+    uint get_loc(string loc_name) const {
+        return loc_indices[loc_name];
+    }
     unittest { // Simple function test
         string source=
             ": test\n"~
@@ -474,7 +476,6 @@ class ScriptBuilder {
         string source=
             ": test\n"~
             "variable X\n"~
-            " + \n"~
 //            " do \n"~
             "  X !1+\n"~
 //            " loop \n"~
@@ -498,9 +499,10 @@ class ScriptBuilder {
     }
 private:
     uint var_count;
+    uint loc_count;
     uint[string] var_indices;
+    uint[string] loc_indices;
     uint allocate_var(string var_name) {
-        writefln("allocate_var=%s", var_name);
         if ( var_name !in var_indices ) {
             var_indices[var_name]=var_count;
             var_count++;
@@ -510,6 +512,25 @@ private:
     bool is_var(string var_name) pure const nothrow {
         return (var_name in var_indices) !is null;
     }
+    uint allocate_loc(string loc_name) {
+        writefln("allocate_loc=%s", loc_name);
+        if ( loc_name !in loc_indices ) {
+            loc_indices[loc_name]=loc_count;
+            loc_count++;
+        }
+        return loc_indices[loc_name];
+    }
+    bool is_loc(string loc_name) pure const nothrow {
+        return (loc_name in loc_indices) !is null;
+    }
+    void reset_loc() {
+        loc_count=0;
+        loc_indices=null;
+    }
+    uint locals() pure const nothrow {
+        return loc_count;
+    }
+
     immutable(Token)[] error_tokens;
     // Test aid function
     static immutable(Token)[] token_func(string name) {
@@ -534,15 +555,15 @@ private:
     //
     static immutable(Token) token_put={
       token : "!",
-      type : ScriptType.PUT
+      type : ScriptType.WORD
     };
     static immutable(Token) token_get= {
       token : "@",
-      type : ScriptType.GET
+      type : ScriptType.WORD
     };
     static immutable(Token) token_inc= {
         // Increas by one
-      token : "1+",
+      token : "!1+",
       type : ScriptType.WORD
     };
     static immutable(Token) token_dup= {
@@ -560,6 +581,17 @@ private:
       token : "<r",
       type : ScriptType.WORD
     };
+    static immutable(Token) token_inc_r= {
+        // r> 1 + dup >r
+      token : "@r1+",
+      type : ScriptType.WORD
+    };
+    static immutable(Token) token_get_r= {
+        // r@
+      token : "r@",
+      type : ScriptType.WORD
+    };
+
     static immutable(Token) token_gte= {
         // duplicate
       token : ">=",
@@ -746,11 +778,10 @@ private:
             with(ScriptType) switch (t.type) {
                 case DO:
                     // Insert forth opcode
-                    // I_FROM_ ! I_ !
-                    scope_tokens~=var_to_I(loop_index);
-                    scope_tokens~=token_put;
-                    scope_tokens~=var_I(loop_index);
-                    scope_tokens~=token_put;
+                    // ( from ) >r
+                    // ( to ) >r
+                    // scope_tokens~=to_r;
+                    // scope_tokens~=to_r;
                     begin_loops ~= t.type;
                     goto case BEGIN;
                 case BEGIN:
@@ -761,6 +792,7 @@ private:
                 case LOOP:
                 case INCLOOP:
                     // loop
+                    // r> 1 + dup >r
                     // I_ dup @ 1 + dup ! I_TO @ >= if goto-begin then
                     // +loop
                     // >r I_ dup @ <r + dup ! I_TO @ >=
@@ -781,7 +813,7 @@ private:
                             }
                             scope_tokens~=var_I(loop_index);
                             scope_tokens~=token_dup;
-                            scope_tokens~=token_get;
+//                            scope_tokens~=token_get_I(loop_index);
                             if (t.type == INCLOOP) {
                                 scope_tokens~=token_from_r;
                             }
@@ -954,7 +986,7 @@ private:
                           jump : loop_index_stack[$-1]
                         };
                         loop_index_stack.length-=2;
-                        scope_tokens~=token_begin;
+                        scope_tokens~=token_repeat;
                         scope_tokens~=token_end;
                     }
                     else {
@@ -1018,7 +1050,7 @@ private:
             "2nip", "2tuck",
             ">r", "r>", "r@"
             ];
-        enum unitaryOp=["1-", "1+"];
+        enum unitaryOp=["1-", "1+", "r@1+"];
         void build_opcreators(string opname) {
             void createBinaryOp(alias oplist)(string opname) {
                 static ScriptElement create(string op)() {
@@ -1084,7 +1116,6 @@ private:
         }
         foreach(opname; binaryOp~compareOp~stackOp~unitaryOp) {
             build_opcreators(opname);
-            writefln("opname=%s", opname);
         }
 
     }
@@ -1132,6 +1163,7 @@ private:
         scope ScriptElement[] function_scripts;
         foreach(name,ref f; script.functions) {
             scope ScriptLabel*[uint] script_labels;
+            reset_loc; // Reset the allocation index for local variable
             ScriptElement forward(immutable uint i=0, immutable uint n=0)
                 in {
                     // Empty
@@ -1196,6 +1228,9 @@ private:
                             if ( is_var(t.token) ) {
                                 result=new ScriptPutVar(t.token, get_var(t.token));
                             }
+                            else if ( is_loc(t.token) ) {
+                                result=new ScriptPutLoc(t.token, get_loc(t.token));
+                            }
                             else {
                                 auto msg="Variable name '"~t.token~"' not found";
                                 result=new ScriptTokenError(t,msg);
@@ -1205,18 +1240,32 @@ private:
                             if ( is_var(t.token) ) {
                                 result=new ScriptGetVar(t.token, get_var(t.token));
                             }
+                            else if ( is_loc(t.token) ) {
+                                result=new ScriptGetLoc(t.token, get_loc(t.token));
+                            }
                             else {
                                 auto msg="Variable name '"~t.token~"' not found";
                                 result=new ScriptTokenError(t, msg);
                             }
                             break;
                         case VAR:
+                            // Allocate variable
                             if ( is_var(t.token) ) {
                                 result=new ScriptTokenError(t,
                                     "Variable "~t.token~" is already defined");
                             }
                             else {
                                 allocate_var(t.token);
+                                return forward(i+1, n);
+                            }
+                            break;
+                        case LOCAL:
+                            if ( is_loc(t.token) ) {
+                                result=new ScriptTokenError(t,
+                                    "Local variable "~t.token~" is already defined");
+                            }
+                            else {
+                                allocate_loc(t.token);
                                 return forward(i+1, n);
                             }
                             break;
@@ -1241,11 +1290,8 @@ private:
                         case EOF:
                             assert(0, "EOF instructions should have been removed at this point");
                         }
-//                    assert(
-//                    if ( result !is null ) {
-                        result.next=forward(i+1, n+1);
-                        result.set_location(n, t.token, t.line, t.pos);
-//                    }
+                    result.next=forward(i+1, n+1);
+                    result.set_location(n, t.token, t.line, t.pos);
                 }
                 return result;
             }
@@ -1258,21 +1304,15 @@ private:
                     jump.set_jump(label.target);
                 }
             }
-            // void foreach_script(const(ScriptElement) e, immutable uint j=0) {
-            //     if ( e !is null ) {
-            //         auto e_next_index=(e.next)?to!string(e.next.index):"end";
+            // Set the number of allocated local variables
+            // in the current function
+            // the local is used for loop parameters also
+            f.locals=locals;
 
-            //         writefln("i=%s n=%s token=%s name=%s next.index=%s",
-            //             j, e.index, e.toInfo, e.name, e_next_index);
-            //         writefln("\t%s", typeid(e));
-            //         foreach_script(e.next, j+1);
-            //     }
-            // }
-            // foreach_script(func_script);
         }
         foreach(fs; function_scripts) {
             for(auto s=fs; s !is null; s=s.next) {
-                auto call_script = cast(ScriptCall)s;
+                ScriptCall call_script = cast(ScriptCall)s;
                 if ( call_script !is null ) {
                     if ( call_script.name in script.functions) {
                         // The function is defined in the function tabel
@@ -1280,6 +1320,8 @@ private:
                         if ( func.opcode !is null ) {
                             // Insert the script element to call Script Element
                             call_script.set_jump( func.opcode );
+                            // Sets then number of local variables in the function
+                            call_script.local_size=func.locals;
                         }
                         else {
                             auto error=new ScriptError("The function "~call_script.name~

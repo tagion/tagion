@@ -43,7 +43,8 @@ class ScriptInterpreter {
         INDEX,
 
         // Memory and variables
-        VAR, // Get the address of the variable
+        VAR, // Allocate a variable
+        LOCAL, // Allocate a local variable
         PUT, // Puts the value to the address
         GET, // Gets the value on the address
 
@@ -164,7 +165,7 @@ class ScriptInterpreter {
             return toLower(str).idup;
         }
         immutable(Token)[] results;
-        bool declare;
+        ScriptType declare;
         bool func;
         while(!tokens.empty) {
             auto word=tokens.front;
@@ -214,7 +215,10 @@ class ScriptInterpreter {
                     _type=LEAVE;
                     break;
                 case "variable":
-                    declare=true;
+                    declare=VAR;
+                    continue;
+                case "local":
+                    declare=LOCAL;
                     continue;
                 case "!":
                     _type=PUT;
@@ -248,9 +252,9 @@ class ScriptInterpreter {
                     _type = FUNC;
                     func=false;
                 }
-                else if ( declare ) {
-                    _type = VAR;
-                    declare=false;
+                else if ( declare != UNKNOWN ) {
+                    _type = declare;
+                    declare=UNKNOWN;
                 }
                 immutable unitary=(word.token.length > 1) && (word.token[0] == '!');
                 // Function GET the variable call function and PUT the value back to the variable

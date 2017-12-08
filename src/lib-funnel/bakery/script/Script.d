@@ -193,7 +193,7 @@ class ScriptContext {
     private const(Value)[] data_stack;
     private const(Value)[] return_stack;
     package Value[] variables;
-
+    package Value[][] locals_stack;
 //    private uint data_stack_index;
 //    private uint return_stack_index;
     private immutable uint data_stack_size;
@@ -281,6 +281,26 @@ class ScriptContext {
             throw new ScriptException("Iteration limit");
         }
         iteration_count--;
+    }
+    void push_locals(Value[] locals) {
+        locals_stack~=locals;
+    }
+    Value[] pop_locals() {
+        scope(exit) {
+            if ( locals_stack.length > 0 ) {
+                locals_stack.length--;
+            }
+        }
+        if ( locals_stack.length == 0 ) {
+            throw new ScriptException("Local stack empty");
+        }
+        return locals_stack[$-1];
+    }
+    Value[] locals() {
+        if ( locals_stack.length == 0 ) {
+            throw new ScriptException("Local stack empty");
+        }
+        return locals_stack[$-1];
     }
 //    @trusted
     unittest {
@@ -481,6 +501,7 @@ class ScriptExit : ScriptElement {
         }
         auto ret=sc.return_pop;
         if ( ret.type == Value.Type.FUNCTION ) {
+            sc.pop_locals;
             return ret.get!(const(ScriptElement));
         }
         else {
@@ -496,31 +517,23 @@ class ScriptExit : ScriptElement {
 
 @safe
 class ScriptCall : ScriptJump {
-//    private ScriptElement _call;
     private string func_name;
-    this(string func_name) {
+    // Number of local variables
+    private uint loc_size;
+    this(string func_name, ) {
         this.func_name=func_name;
     }
-    // override void set_jump(ScriptElement target)
-    //     in {
-    //         assert(_call is null, "Jump target is should not be change");
-    //     }
-    // body {
-    //     _call=target;
-    // }
-    // package const(ScriptElement) call(ScriptElement n) {
-    //     _call = n;
-    //     return _call;
-    // }
-    // const(ScriptElement) call() pure nothrow const {
-    //     return _call;
-    // }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s,sc);
         sc.return_push(_next);
         if (sc.trace) {
             sc.indent~=" ";
         }
+        auto locals=new Value[loc_size];
+        foreach(ref v; locals) {
+            v=Value(0);
+        }
+        sc.push_locals(locals);
         return _jump;
     }
     override string toText() const {
@@ -528,6 +541,13 @@ class ScriptCall : ScriptJump {
     }
     string name() const {
         return func_name;
+    }
+    void local_size(const uint size)
+        in {
+            assert(loc_size == 0);
+        }
+    body {
+        loc_size = size;
     }
 }
 
@@ -618,6 +638,49 @@ class ScriptPutVar : ScriptElement {
     }
 
 }
+
+@safe
+class ScriptGetLoc : ScriptElement {
+    private immutable uint loc_index;
+    private immutable(char[]) loc_name;
+    this(string loc_name, uint loc_index) {
+        this.loc_name = loc_name;
+        this.loc_index = loc_index;
+        super(0);
+    }
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        sc.data_push(sc.locals[loc_index]);
+        return _next;
+    }
+    string toText() const {
+        return loc_name~" @";
+    }
+
+}
+
+@safe
+class ScriptPutLoc : ScriptElement {
+    immutable uint loc_index;
+    private string loc_name;
+    this(string loc_name, uint loc_index) {
+        this.loc_name = loc_name;
+        this.loc_index = loc_index;
+        super(0);
+    }
+    @trusted
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        auto var=sc.data_pop();
+        sc.locals[loc_index]=Value(var);
+        return _next;
+    }
+    string toText() const {
+        return loc_name~" !";
+    }
+
+}
+
 /* Arhitmentic opcodes */
 
 @safe
@@ -634,6 +697,12 @@ class ScriptUnitaryOp(string O) : ScriptElement {
         }
         else static if ( op == "1+" ) {
             sc.data_push(sc.data_pop.value + 1);
+        }
+        else static if ( op == "r@1+" ) {
+            // r@ 1 + dup >r
+            auto r=sc.return_pop.value+1;
+            sc.data_push(r);
+            sc.return_push(r);
         }
         else {
             static assert(0, "Unitary operator "~op.stringof~" not defined");
@@ -854,6 +923,7 @@ class Script {
         //  private uint[uint] label_jump_table;
         ScriptElement opcode;
         bool compiled;
+        uint locals; // Number of local variables in the function
         string toInfo() pure const nothrow {
             string result;
             void foreach_loop(const ScriptElement s, const uint i) {
