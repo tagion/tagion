@@ -529,6 +529,7 @@ class ScriptCall : ScriptJump {
         if (sc.trace) {
             sc.indent~=" ";
         }
+        writefln("loc_size=%s", loc_size);
         auto locals=new Value[loc_size];
         foreach(ref v; locals) {
             v=Value(0);
@@ -547,6 +548,9 @@ class ScriptCall : ScriptJump {
             assert(loc_size == 0);
         }
     body {
+        if ( size != 0 ) {
+            writefln("local_size=%s", size);
+        }
         loc_size = size;
     }
 }
@@ -672,6 +676,7 @@ class ScriptPutLoc : ScriptElement {
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         auto var=sc.data_pop();
+        writefln("sc.locals.length=%s", sc.locals.length);
         sc.locals[loc_index]=Value(var);
         return _next;
     }
@@ -970,6 +975,7 @@ class Script {
         this.trace=trace;
         if ( func in functions) {
             auto call=functions[func].opcode;
+            writefln("call %s %s", func, call !is null);
             auto start=new ScriptCall("$"~func);
             start.set_jump(call);
             doit(start);

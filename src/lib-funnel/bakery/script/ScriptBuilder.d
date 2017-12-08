@@ -326,7 +326,7 @@ class ScriptBuilder {
         writefln("%s", sc.data_peek(1).value);
         writefln("%s", sc.data_peek(2).value);
 
-        sc.trace=true;
+        sc.trace=false;
         script.run("test", sc);
         assert( sc.data_pop.value == -7 );
 
@@ -384,7 +384,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+        sc.trace=false;
         // Test IF ELSE true (top != 0)
         sc.data_push(10);
         script.run("test", sc);
@@ -436,7 +436,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+//        sc.trace=true;
         // Put and Get variable X and Y
 
         script.run("test", sc);
@@ -465,11 +465,44 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+//        sc.trace=true;
         // Put and Get variable X and Y
 
         script.run("test", sc);
         assert(sc.data_pop.value == -4);
+
+    }
+    unittest {
+        string source=
+            ": testA\n"~
+            "  local X\n"~
+            "  1 X !\n"~
+//            "  testB ( call local )\n"~
+            "  X @\n"~
+            ";\n~"~
+/*
+            ": testB\n"~
+            "  local X\n"~
+            "  2 X !\n"~
+            "  X @\n"~
+            ";\n~"
+*/
+            ""
+            ;
+        writeln("########### ---- two functions");
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, source);
+
+        auto sc=new ScriptContext(10, 10, 10, 10);
+
+//        sc.trace=true;
+        // Put and Get variable X and Y
+
+        script.run("testA", sc);
+        writefln("test_1.X=%s", sc.data_pop.value);
+        writefln("test_2.X=%s", sc.data_pop.value);
+
 
     }
     unittest { // DO LOOP
@@ -488,7 +521,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+//        sc.trace=true;
         // Put and Get variable X and Y
 
         sc.data_push(10);
@@ -1177,6 +1210,7 @@ private:
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
+                    writefln("t=%s", t.toText);
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
                             auto label=forward(i+1, n);
@@ -1308,7 +1342,7 @@ private:
             // in the current function
             // the local is used for loop parameters also
             f.locals=locals;
-
+            writefln("Function %s f.opcode %s f.locals=%s", f.name, f.opcode !is null, f.locals);
         }
         foreach(fs; function_scripts) {
             for(auto s=fs; s !is null; s=s.next) {
@@ -1317,11 +1351,12 @@ private:
                     if ( call_script.name in script.functions) {
                         // The function is defined in the function tabel
                         auto func=script.functions[call_script.name];
+                        call_script.local_size=func.locals;
                         if ( func.opcode !is null ) {
                             // Insert the script element to call Script Element
                             call_script.set_jump( func.opcode );
                             // Sets then number of local variables in the function
-                            call_script.local_size=func.locals;
+
                         }
                         else {
                             auto error=new ScriptError("The function "~call_script.name~
