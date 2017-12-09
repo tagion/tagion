@@ -921,14 +921,16 @@ class Script {
     private import bakery.script.ScriptInterpreter : ScriptInterpreter;
     alias ScriptInterpreter.ScriptType ScriptType;
     alias ScriptInterpreter.Token Token;
+
     private bool trace;
     struct Function {
         string name;
         immutable(Token)[] tokens;
-        //  private uint[uint] label_jump_table;
+        private uint loc_count;
+        private uint[string] loc_indices;
+       //  private uint[uint] label_jump_table;
         ScriptElement opcode;
         bool compiled;
-        uint locals; // Number of local variables in the function
         string toInfo() pure const nothrow {
             string result;
             void foreach_loop(const ScriptElement s, const uint i) {
@@ -941,6 +943,26 @@ class Script {
             }
             return result;
         }
+        uint allocate_loc(string loc_name) {
+            writef("allocate_loc=%s", loc_name);
+            if ( loc_name !in loc_indices ) {
+                loc_indices[loc_name]=loc_count;
+                loc_count++;
+            }
+            writefln(" loc_count=%s", loc_count);
+            return loc_indices[loc_name];
+        }
+        bool is_loc(string loc_name) pure const nothrow {
+            return (loc_name in loc_indices) !is null;
+        }
+        // Number of local variables in the function
+        uint locals() pure const nothrow {
+            return loc_count;
+        }
+        uint get_loc(string loc_name) const {
+            return loc_indices[loc_name];
+        }
+
         string toText() {
             string result;
             foreach(i,t; tokens) {
