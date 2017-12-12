@@ -474,34 +474,35 @@ class ScriptBuilder {
             ": testA\n"~
             "  local X\n"~
             "  1 X !\n"~
-//            "  testB ( call local )\n"~
+            "  testB \n"~
             "  X @\n"~
-            ";\n~"~
-/*
+            ";\n"~
+
             ": testB\n"~
             "  local X\n"~
             "  2 X !\n"~
             "  X @\n"~
-            ";\n~"
-*/
-            ""
+            ";\n"~
+
+            "  \n"
             ;
-        writeln("########### ---- two functions");
+
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, source);
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-//        sc.trace=true;
+        sc.trace=true;
         // Put and Get variable X and Y
 
         script.run("testA", sc);
-        writefln("test_1.X=%s", sc.data_pop.value);
-        writefln("test_2.X=%s", sc.data_pop.value);
+        assert(sc.data_pop.value == 1);
+        assert(sc.data_pop.value == 2);
 
 
     }
+    version(none)
     unittest { // DO LOOP
         string source=
             ": test\n"~
@@ -1304,6 +1305,7 @@ private:
                 }
                 return result;
             }
+            writefln("Begin function %s", name);
             auto func_script=forward;
             function_scripts~=func_script;
             f.opcode=func_script;
@@ -1316,7 +1318,7 @@ private:
             // Set the number of allocated local variables
             // in the current function
             // the local is used for loop parameters also
-            writefln("Function %s f.opcode %s f.locals=%s", f.name, f.opcode !is null, f.locals);
+            writefln("Function %s f.opcode %s f.locals=%s", f.name, f.opcode !is null, f.local_size);
         }
         foreach(fs; function_scripts) {
             for(auto s=fs; s !is null; s=s.next) {
@@ -1330,10 +1332,8 @@ private:
                         writefln("Func name=%s", call_script.name);
                         if ( func.opcode !is null ) {
                             // Insert the script element to call Script Element
-                            call_script.set_jump( func.opcode );
                             // Sets then number of local variables in the function
-                            writefln("Set up function %s size %s", call_script.name, func.locals);
-                            call_script.local_size=func.locals;
+                           call_script.set_call( func.opcode, func.local_size );
 
                         }
                         else {
@@ -1351,5 +1351,6 @@ private:
                 }
             }
         }
+
     }
 }

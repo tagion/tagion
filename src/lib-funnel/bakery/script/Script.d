@@ -424,7 +424,7 @@ class ScriptJump : ScriptElement {
     void set_jump(ScriptElement target)
     in {
         assert(target !is null);
-        assert(_jump is null, "Jump target should not be change");
+        assert(_jump is null, "Jump target should not be changed");
     }
     out {
         assert(this._jump !is null);
@@ -522,6 +522,7 @@ class ScriptCall : ScriptJump {
     private uint loc_size;
     this(string func_name, ) {
         this.func_name=func_name;
+        writefln("Create %s", func_name);
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s,sc);
@@ -529,7 +530,6 @@ class ScriptCall : ScriptJump {
         if (sc.trace) {
             sc.indent~=" ";
         }
-        writefln("loc_size=%s", loc_size);
         auto locals=new Value[loc_size];
         foreach(ref v; locals) {
             v=Value(0);
@@ -537,21 +537,23 @@ class ScriptCall : ScriptJump {
         sc.push_locals(locals);
         return _jump;
     }
+    override void set_jump(ScriptElement target) {
+        assert(0, "Use set_call instead of set_jump");
+    }
+    void set_call(ScriptElement target, immutable uint locals)
+        in {
+            assert(loc_size == 0);
+        }
+    body {
+        super.set_jump(target);
+        writefln("ScriptCall.local_size=%s", locals);
+        loc_size = locals;
+    }
     override string toText() const {
         return "call "~func_name;
     }
     string name() const {
         return func_name;
-    }
-    void local_size(const uint size)
-        in {
-            assert(loc_size == 0);
-        }
-    body {
-        if ( size != 0 ) {
-            writefln("local_size=%s", size);
-        }
-        loc_size = size;
     }
 }
 
@@ -676,7 +678,6 @@ class ScriptPutLoc : ScriptElement {
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         auto var=sc.data_pop();
-        writefln("sc.locals.length=%s", sc.locals.length);
         sc.locals[loc_index]=Value(var);
         return _next;
     }
@@ -926,8 +927,8 @@ class Script {
     struct Function {
         string name;
         immutable(Token)[] tokens;
-        private uint loc_count;
-        private uint[string] loc_indices;
+        private uint local_count;
+        private uint[string] local_indices;
        //  private uint[uint] label_jump_table;
         ScriptElement opcode;
         bool compiled;
@@ -945,22 +946,22 @@ class Script {
         }
         uint allocate_loc(string loc_name) {
             writef("allocate_loc=%s", loc_name);
-            if ( loc_name !in loc_indices ) {
-                loc_indices[loc_name]=loc_count;
-                loc_count++;
+            if ( loc_name !in local_indices ) {
+                local_indices[loc_name]=local_count;
+                local_count++;
             }
-            writefln(" loc_count=%s", loc_count);
-            return loc_indices[loc_name];
+            writefln(" loc_count=%s", local_count);
+            return local_indices[loc_name];
         }
         bool is_loc(string loc_name) pure const nothrow {
-            return (loc_name in loc_indices) !is null;
+            return (loc_name in local_indices) !is null;
         }
         // Number of local variables in the function
-        uint locals() pure const nothrow {
-            return loc_count;
+        uint local_size() pure const nothrow {
+            return local_count;
         }
         uint get_loc(string loc_name) const {
-            return loc_indices[loc_name];
+            return local_indices[loc_name];
         }
 
         string toText() {
@@ -996,10 +997,10 @@ class Script {
         }
         this.trace=trace;
         if ( func in functions) {
-            auto call=functions[func].opcode;
-            writefln("call %s %s", func, call !is null);
+            auto f=functions[func]; //.opcode;
+            writefln("call %s %s", func, f.opcode !is null);
             auto start=new ScriptCall("$"~func);
-            start.set_jump(call);
+            start.set_call(f.opcode, f.local_size);
             doit(start);
         }
     }
