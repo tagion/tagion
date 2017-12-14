@@ -24,6 +24,7 @@ class ScriptInterpreter {
 
         // Conditional jump tokens
         IF,
+        NOT_IF,
         ELSE,
 //        THEN,
         ENDIF, // Used as target label of IF to ELSE jump

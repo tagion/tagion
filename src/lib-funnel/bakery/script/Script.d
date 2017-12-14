@@ -459,14 +459,6 @@ class ScriptJump : ScriptElement {
 
 @safe
 class ScriptConditionalJump : ScriptJump {
-    // override void set_jump(ScriptElement target)
-    //     in {
-    //         assert(target !is null);
-    //         assert(_jump is null, "Jump target is should not be change");
-    //     }
-    // body {
-    //     _jump=target;
-    // }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
         check(s, sc);
         sc.check_jump();
@@ -486,6 +478,26 @@ class ScriptConditionalJump : ScriptJump {
 
 }
 
+
+@safe
+class ScriptNotConditionalJump : ScriptConditionalJump {
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        check(s, sc);
+        sc.check_jump();
+
+        if ( sc.data_pop.value == 0 ) {
+            return _next;
+        }
+        else {
+            return _jump;
+        }
+    }
+    override string toText() const {
+        auto target_false=(_jump is null)?"null":to!string(_jump.n);
+        auto target_true=(_next is null)?"null":to!string(_next.n);
+        return "if.true goto "~target_false;
+    }
+}
 
 @safe
 class ScriptExit : ScriptElement {
@@ -522,7 +534,6 @@ class ScriptCall : ScriptJump {
     private uint loc_size;
     this(string func_name, ) {
         this.func_name=func_name;
-        writefln("Create %s", func_name);
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s,sc);
@@ -540,13 +551,12 @@ class ScriptCall : ScriptJump {
     override void set_jump(ScriptElement target) {
         assert(0, "Use set_call instead of set_jump");
     }
-    void set_call(ScriptElement target, immutable uint locals)
+    void set_call(ScriptElement target, immutable uint locals=0)
         in {
             assert(loc_size == 0);
         }
     body {
         super.set_jump(target);
-        writefln("ScriptCall.local_size=%s", locals);
         loc_size = locals;
     }
     override string toText() const {

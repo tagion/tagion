@@ -281,12 +281,12 @@ class ScriptBuilder {
             //
             // Expand all loop to conditinal and unconditional jumps
             //
-            auto loop_expanded_tokens = builder.expand_loop(func.tokens);
+            auto loop_expanded_tokens = builder.expand_loop(func);
             // foreach(i,t; loop_expanded_tokens) {
             //      writefln("%s]:%s", i, t.toText);
             // }
-//            writefln("%s", loop_expanded_tokens.length);
-            assert(loop_expanded_tokens.length == 79);
+            writefln("%s", loop_expanded_tokens.length);
+            assert(loop_expanded_tokens.length == 74);
 
             auto condition_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
             assert(builder.error_tokens.length == 0);
@@ -502,14 +502,14 @@ class ScriptBuilder {
 
 
     }
-    version(none)
+//    version(none)
     unittest { // DO LOOP
         string source=
             ": test\n"~
             "variable X\n"~
-//            " do \n"~
+            " do \n"~
             "  X !1+\n"~
-//            " loop \n"~
+            " loop \n"~
             " X @\n"~
             ";"
             ;
@@ -519,7 +519,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-//        sc.trace=true;
+        sc.trace=true;
         // Put and Get variable X and Y
 
         sc.data_push(10);
@@ -574,6 +574,11 @@ private:
     static immutable(Token) token_inc= {
         // Increas by one
       token : "!1+",
+      type : ScriptType.WORD
+    };
+    static immutable(Token) token_add= {
+        // Increas by one
+      token : "!+",
       type : ScriptType.WORD
     };
     static immutable(Token) token_dup= {
@@ -668,17 +673,20 @@ private:
       type : ScriptType.INCLOOP
     };
 
-    static immutable(Token) var_I(uint i) @safe pure nothrow {
+    enum loc_I="I#";
+    enum loc_to_I="I_TO#";
+    @safe
+    static immutable(Token) local_I(ScriptType type, string loc_name)(Script.Function f, uint i) {
+        static assert( (type == ScriptType.GET) || (type == ScriptType.PUT));
+        string name=loc_name~to!string(i);
+        static if (type == ScriptType.PUT) {
+            if ( !f.is_loc(name) ) {
+                f.allocate_loc(name);
+            }
+        }
         immutable(Token) result = {
-          token : "I_"~to!string(i),
-          type : ScriptType.VAR
-        };
-        return result;
-    };
-    static immutable(Token) var_to_I(uint i) @safe pure nothrow {
-        immutable(Token) result = {
-          token : "I_TO_"~to!string(i),
-          type : ScriptType.VAR
+          token : name,
+          type : type
         };
         return result;
     };
@@ -779,61 +787,58 @@ private:
         return fail;
     }
 
-    immutable(Token)[] expand_loop(immutable(Token)[] tokens) @safe {
+    immutable(Token)[] expand_loop(Script.Function f) @safe {
         uint loop_index;
         immutable(ScriptType)[] begin_loops;
         //immutable
         immutable(Token)[] scope_tokens;
-        foreach(t; tokens) {
+        foreach(t; f.tokens) {
             with(ScriptType) switch (t.type) {
                 case DO:
                     // Insert forth opcode
-                    // ( from ) >r
-                    // ( to ) >r
-                    // scope_tokens~=to_r;
-                    // scope_tokens~=to_r;
+                    // I#i !
+                    // I_TO#i !
+                    scope_tokens~=local_I!(PUT, loc_I)(f, loop_index);
+                    scope_tokens~=local_I!(PUT, loc_to_I)(f, loop_index);
+                    scope_tokens~=token_begin;
                     begin_loops ~= t.type;
-                    goto case BEGIN;
+                    loop_index++;
+                    break;
                 case BEGIN:
                     scope_tokens~=token_begin;
-                    loop_index++;
                     begin_loops ~= t.type;
+                    loop_index++;
                     break;
                 case LOOP:
                 case INCLOOP:
                     // loop
-                    // r> 1 + dup >r
-                    // I_ dup @ 1 + dup ! I_TO @ >= if goto-begin then
+                    // I#i !1+
+                    // I_TO#i @ >= if goto-begin
+                    //
                     // +loop
-                    // >r I_ dup @ <r + dup ! I_TO @ >=
+                    // I#i !+
+                    // I_TO#i @ >= if goto-begin
+                    loop_index--;
                     if ( begin_loops.length == 0 ) {
                         immutable(Token) error = {
                           token : "DO expect before "~to!string(t.type),
                           line : t.line,
                           type : ScriptType.ERROR
                         };
-
                         scope_tokens~=error;
                         error_tokens~=error;
                     }
                     else {
                         if ( begin_loops[$-1] == DO ) {
+                            scope_tokens~=local_I!(GET, loc_I)(f, loop_index);
                             if (t.type == INCLOOP) {
-                                scope_tokens~=token_to_r;
-                            }
-                            scope_tokens~=var_I(loop_index);
-                            scope_tokens~=token_dup;
-//                            scope_tokens~=token_get_I(loop_index);
-                            if (t.type == INCLOOP) {
-                                scope_tokens~=token_from_r;
-                            }
-                            else {
                                 scope_tokens~=token_inc;
                             }
-                            scope_tokens~=token_dup;
-                            scope_tokens~=token_put;
-                            scope_tokens~=var_to_I(loop_index);
-                            scope_tokens~=token_get;
+                            else {
+                                scope_tokens~=token_add;
+                            }
+                            scope_tokens~=local_I!(GET, loc_to_I)(f, loop_index);
+
                             scope_tokens~=token_gte;
                             scope_tokens~=token_if;
                             scope_tokens~=token_repeat;
@@ -842,7 +847,7 @@ private:
                         }
                         else {
                             immutable(Token) error = {
-                              token : "DO begub loop expect not "~to!string(t.type),
+                              token : "DO begin loop expect not "~to!string(t.type),
                               line : t.line,
                               type : ScriptType.ERROR
                             };
@@ -951,9 +956,9 @@ private:
                     conditional_index_stack~=jump_index;
                     immutable(Token) token_goto={
                       token : "$else_goto", // THEN is us a jump target of the IF
-                      line : t.line,
-                      type : GOTO,
-                      jump : conditional_index_stack[$-1]
+                      line  : t.line,
+                      type  : GOTO,
+                      jump  : conditional_index_stack[$-1]
                     };
                     scope_tokens~=token_goto;
                     scope_tokens~=token_else;
@@ -982,11 +987,19 @@ private:
                     scope_tokens~=token_begin;
                     break;
                 case REPEAT:
+                case NOT_IF:
                     if ( loop_index_stack.length > 1 ) {
+                        ScriptType goto_type;
+                        if ( t.type == REPEAT ) {
+                            goto_type = GOTO;
+                        }
+                        else {
+                            goto_type = NOT_IF;
+                        }
                         immutable(Token) token_repeat={
                           token : t.token,
                           line : t.line,
-                          type : GOTO,
+                          type : goto_type,
                           jump : loop_index_stack[$-2]
                         };
                         immutable(Token) token_end={
@@ -1149,7 +1162,7 @@ private:
             return results;
         }
         foreach(ref f; script.functions) {
-            auto loop_tokens=expand_loop(f.tokens);
+            auto loop_tokens=expand_loop(f);
             writefln("FUNC %s", f.name);
             writefln("%s", f.toText);
             writeln("--- ---");
@@ -1186,7 +1199,6 @@ private:
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
-                    writefln("t=%s", t.toText);
                     with(ScriptType) final switch (t.type) {
                         case LABEL:
                             auto label=forward(i+1, n);
@@ -1206,7 +1218,14 @@ private:
                             result=jump;
                             break;
                         case IF:
-                            auto jump=new ScriptConditionalJump;
+                        case NOT_IF:
+                            ScriptConditionalJump jump;
+                            if ( t.type == IF ) {
+                                jump=new ScriptConditionalJump;
+                            }
+                            else {
+                                jump=new ScriptNotConditionalJump;
+                            }
                             if ( t.jump !in script_labels) {
                                 script_labels[t.jump]=new ScriptLabel;
                             }
@@ -1305,7 +1324,6 @@ private:
                 }
                 return result;
             }
-            writefln("Begin function %s", name);
             auto func_script=forward;
             function_scripts~=func_script;
             f.opcode=func_script;
@@ -1318,18 +1336,14 @@ private:
             // Set the number of allocated local variables
             // in the current function
             // the local is used for loop parameters also
-            writefln("Function %s f.opcode %s f.locals=%s", f.name, f.opcode !is null, f.local_size);
         }
         foreach(fs; function_scripts) {
             for(auto s=fs; s !is null; s=s.next) {
-                writefln("#%s", s.toText);
                 auto call_script = cast(ScriptCall)s;
                 if ( call_script !is null ) {
-                    writefln(">>>>Func name=%s", call_script.name);
                     if ( call_script.name in script.functions) {
                         // The function is defined in the function tabel
                         auto func=script.functions[call_script.name];
-                        writefln("Func name=%s", call_script.name);
                         if ( func.opcode !is null ) {
                             // Insert the script element to call Script Element
                             // Sets then number of local variables in the function
@@ -1346,7 +1360,7 @@ private:
                         // If name is not a variable
                         auto error=new ScriptError("The function or variable named "~call_script.name~
                             " is not defined ",call_script);
-                        call_script.set_jump(error);
+                        call_script.set_call(error);
                     }
                 }
             }
