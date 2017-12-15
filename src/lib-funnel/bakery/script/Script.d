@@ -960,7 +960,7 @@ class Script {
                 local_indices[loc_name]=local_count;
                 local_count++;
             }
-            writefln(" loc_count=%s", local_count);
+            writefln(" loc_count=%s in function %s", local_count, name);
             return local_indices[loc_name];
         }
         bool is_loc(string loc_name) pure const nothrow {
