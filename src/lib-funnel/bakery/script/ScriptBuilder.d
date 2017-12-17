@@ -419,7 +419,7 @@ class ScriptBuilder {
 
     unittest { // Variable get and put
         string source=
-            ": test\n"~
+           ": test\n"~
             "  variable X\n"~
             "  variable Y\n"~
             "  17 X !\n"~
@@ -508,7 +508,7 @@ class ScriptBuilder {
             ": test\n"~
             "variable X\n"~
             " do \n"~
-            "  X !1+\n"~
+            "  X @ 1+ X ! \n"~
             " loop \n"~
             " X @\n"~
             ";"
@@ -571,13 +571,33 @@ private:
       token : "@",
       type : ScriptType.WORD
     };
-    static immutable(Token) token_inc= {
-        // Increas by one
-      token : "!1+",
-      type : ScriptType.WORD
-    };
+    @safe
+    static immutable(Token)[] token_loop_progress(immutable ScriptType type, immutable uint i)
+        in {
+            assert( (type == ScriptType.LOOP) || (type == ScriptType.ADDLOOP));
+        }
+    body {
+        // Loop increase
+        auto loc_index=loc_I~to!string(i);
+        immutable(Token)[] result= [
+            {
+              token : loc_index,
+              type  : ScriptType.INDEXGET
+            },
+            {
+                // Increas by one or add
+              token : (type == ScriptType.LOOP)?"1+":"+",
+              type : ScriptType.WORD
+            },
+            {
+              token : loc_index,
+              type  : ScriptType.INDEXPUT
+            }
+        ];
+        return result;
+    }
     static immutable(Token) token_add= {
-        // Increas by one
+        // Increase by one
       token : "!+",
       type : ScriptType.WORD
     };
@@ -621,6 +641,11 @@ private:
         // repeat
       token : "repeat",
       type : ScriptType.REPEAT
+    };
+    static immutable(Token) token_not_if= {
+        // repeat
+      token : "not_if",
+      type : ScriptType.NOT_IF
     };
     static immutable(Token) token_until= {
         // until
@@ -670,7 +695,7 @@ private:
     static immutable(Token) token_incloop= {
         // +loop
       token : "+loop",
-      type : ScriptType.INCLOOP
+      type : ScriptType.ADDLOOP
     };
 
     enum loc_I="I#";
@@ -810,7 +835,7 @@ private:
                     loop_index++;
                     break;
                 case LOOP:
-                case INCLOOP:
+                case ADDLOOP:
                     // loop
                     // I#i !1+
                     // I_TO#i @ >= if goto-begin
@@ -830,19 +855,20 @@ private:
                     }
                     else {
                         if ( begin_loops[$-1] == DO ) {
+                            scope_tokens~=token_loop_progress(t.type, loop_index);
+                            // if (t.type == LOOP) {
+                            //     scope_tokens~=token_inc;
+                            // }
+                            // else {
+                            //     scope_tokens~=token_add;
+                            // }
                             scope_tokens~=local_I!(INDEXGET, loc_I)(f, loop_index);
-                            if (t.type == INCLOOP) {
-                                scope_tokens~=token_inc;
-                            }
-                            else {
-                                scope_tokens~=token_add;
-                            }
                             scope_tokens~=local_I!(INDEXGET, loc_to_I)(f, loop_index);
 
                             scope_tokens~=token_gte;
-                            scope_tokens~=token_if;
-                            scope_tokens~=token_repeat;
-                            scope_tokens~=token_endif;
+//                            scope_tokens~=token_if;
+                            scope_tokens~=token_not_if;
+//                            scope_tokens~=token_endif;
 
                         }
                         else {
@@ -1045,7 +1071,7 @@ private:
                 case DO:
                 case WHILE:
                 case LOOP:
-                case INCLOOP:
+                case ADDLOOP:
                     immutable(Token) error={
                       token : "The opcode "~to!string(t.type)~
                       " should be eliminated by loop_expand function",
@@ -1315,7 +1341,7 @@ private:
                         case ENDIF:
                         case DO:
                         case LOOP:
-                        case INCLOOP:
+                        case ADDLOOP:
                         case BEGIN:
                         case UNTIL:
                         case WHILE:

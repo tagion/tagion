@@ -384,10 +384,6 @@ abstract class ScriptElement : ScriptBasic {
         return result;
     }
 
-    // string toText() const  {
-    //     assert(0, "toText member not implemented");
-    // }
-
     uint index() const {
         return n;
     }

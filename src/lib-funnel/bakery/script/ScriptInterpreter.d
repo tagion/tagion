@@ -35,7 +35,7 @@ class ScriptInterpreter {
         // Loop tokens
         DO,
         LOOP,
-        INCLOOP,
+        ADDLOOP,
         BEGIN,
         UNTIL,
         WHILE,
@@ -200,7 +200,7 @@ class ScriptInterpreter {
                     _type=LOOP;
                     break;
                 case "+loop":
-                    _type=INCLOOP;
+                    _type=ADDLOOP;
                     break;
                 case "begin":
                     _type=BEGIN;
