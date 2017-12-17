@@ -532,7 +532,7 @@ class ScriptCall : ScriptJump {
     private string func_name;
     // Number of local variables
     private uint loc_size;
-    this(string func_name, ) {
+    this(string func_name) {
         this.func_name=func_name;
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
@@ -541,6 +541,7 @@ class ScriptCall : ScriptJump {
         if (sc.trace) {
             sc.indent~=" ";
         }
+        writefln("Call %s loc_size=%s", func_name, loc_size);
         auto locals=new Value[loc_size];
         foreach(ref v; locals) {
             v=Value(0);
@@ -557,6 +558,7 @@ class ScriptCall : ScriptJump {
         }
     body {
         super.set_jump(target);
+        writefln("set_call %s locals=%s", func_name, locals);
         loc_size = locals;
     }
     override string toText() const {
@@ -973,6 +975,12 @@ class Script {
         uint get_loc(string loc_name) const {
             return local_indices[loc_name];
         }
+        uint auto_get_loc(string loc_name) {
+            if ( !is_loc(name) ) {
+                allocate_loc(loc_name);
+            }
+            return get_loc(loc_name);
+        }
 
         string toText() {
             string result;
@@ -1006,9 +1014,12 @@ class Script {
             }
         }
         this.trace=trace;
+        foreach(n, f; functions) {
+            writefln("### FUNC %s %s", n, f.local_size);
+        }
         if ( func in functions) {
             auto f=functions[func]; //.opcode;
-            writefln("call %s %s", func, f.opcode !is null);
+            writefln("call %s local_size=%s %s", func, f.local_size, f.opcode !is null);
             auto start=new ScriptCall("$"~func);
             start.set_call(f.opcode, f.local_size);
             doit(start);

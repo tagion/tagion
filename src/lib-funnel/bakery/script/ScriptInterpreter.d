@@ -41,13 +41,15 @@ class ScriptInterpreter {
         WHILE,
         REPEAT,
         LEAVE,
-        INDEX,
+//        INDEX,
 
         // Memory and variables
         VAR, // Allocate a variable
         LOCAL, // Allocate a local variable
         PUT, // Puts the value to the address
         GET, // Gets the value on the address
+        INDEXPUT, // Loop index put
+        INDEXGET, // Loop index get
 
         COMMENT,
         ERROR,

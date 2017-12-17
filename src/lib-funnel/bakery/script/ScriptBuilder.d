@@ -676,14 +676,14 @@ private:
     enum loc_I="I#";
     enum loc_to_I="I_TO#";
     @safe
-    static immutable(Token) local_I(ScriptType type, string loc_name)(Script.Function f, uint i) {
-        static assert( (type == ScriptType.GET) || (type == ScriptType.PUT));
+    static immutable(Token) local_I(ScriptType type, string loc_name)(ref Script.Function f, uint i) {
+        static assert( (type == ScriptType.INDEXGET) || (type == ScriptType.INDEXPUT));
         string name=loc_name~to!string(i);
-        static if (type == ScriptType.PUT) {
-            if ( !f.is_loc(name) ) {
-                f.allocate_loc(name);
-            }
-        }
+        // static if (type == ScriptType.INDEXPUT) {
+        //     if ( !f.is_loc(name) ) {
+        //         f.allocate_loc(name);
+        //     }
+        // }
         immutable(Token) result = {
           token : name,
           type : type
@@ -798,8 +798,8 @@ private:
                     // Insert forth opcode
                     // I#i !
                     // I_TO#i !
-                    scope_tokens~=local_I!(PUT, loc_I)(f, loop_index);
-                    scope_tokens~=local_I!(PUT, loc_to_I)(f, loop_index);
+                    scope_tokens~=local_I!(INDEXPUT, loc_I)(f, loop_index);
+                    scope_tokens~=local_I!(INDEXPUT, loc_to_I)(f, loop_index);
                     scope_tokens~=token_begin;
                     begin_loops ~= t.type;
                     loop_index++;
@@ -830,14 +830,14 @@ private:
                     }
                     else {
                         if ( begin_loops[$-1] == DO ) {
-                            scope_tokens~=local_I!(GET, loc_I)(f, loop_index);
+                            scope_tokens~=local_I!(INDEXGET, loc_I)(f, loop_index);
                             if (t.type == INCLOOP) {
                                 scope_tokens~=token_inc;
                             }
                             else {
                                 scope_tokens~=token_add;
                             }
-                            scope_tokens~=local_I!(GET, loc_to_I)(f, loop_index);
+                            scope_tokens~=local_I!(INDEXGET, loc_to_I)(f, loop_index);
 
                             scope_tokens~=token_gte;
                             scope_tokens~=token_if;
@@ -1184,7 +1184,7 @@ private:
             ScriptJump[] jumps; // Script element to jump from
         }
         scope ScriptElement[] function_scripts;
-        foreach(name,ref f; script.functions) {
+        foreach(name, ref f; script.functions) {
             scope ScriptLabel*[uint] script_labels;
             ScriptElement forward(immutable uint i=0, immutable uint n=0)
                 in {
@@ -1262,7 +1262,7 @@ private:
                             }
                             else {
                                 auto msg="Variable name '"~t.token~"' not found";
-                                result=new ScriptTokenError(t,msg);
+                                result=new ScriptTokenError(t, msg);
                             }
                             break;
                         case GET:
@@ -1274,6 +1274,18 @@ private:
                             }
                             else {
                                 auto msg="Variable name '"~t.token~"' not found";
+                                result=new ScriptTokenError(t, msg);
+                            }
+                            break;
+                        case INDEXPUT:
+                            result=new ScriptPutLoc(t.token, f.auto_get_loc(t.token));
+                            break;
+                        case INDEXGET:
+                            if ( f.is_loc(t.token) ) {
+                                result=new ScriptGetLoc(t.token, f.get_loc(t.token));
+                            }
+                            else {
+                                auto msg="Loop index '"~t.token~"' not found";
                                 result=new ScriptTokenError(t, msg);
                             }
                             break;
@@ -1310,7 +1322,7 @@ private:
                         case REPEAT:
                         case LEAVE:
 //                        case THEN:
-                        case INDEX:
+//                        case INDEX:
                             //
                         case UNKNOWN:
                         case COMMENT:
@@ -1353,7 +1365,7 @@ private:
                         else {
                             auto error=new ScriptError("The function "~call_script.name~
                                 " does not contain any opcodes", call_script);
-                            call_script.set_jump(error);
+                            call_script.set_call(error);
                         }
                     }
                     else if ( call_script.name !in var_indices) {
