@@ -261,12 +261,8 @@ class ScriptBuilder {
             // parse_function should NOT fail because end of function is missing
             assert(!builder.parse_functions(script, retokens, base_tokens));
             // base_tokens.length is zero because it should not contain any Error tokens
-            // foreach(i,t; base_tokens) {
-            //     writefln("base_tokens %s] %s", i, t.toText);
-            // }
             assert(base_tokens.length == 0);
 
-//            assert(base_tokens[0].type == ScriptType.ERROR);
             // No function has been declared
             assert(script.functions.length == 1);
             // Check if function named "Test" is declared
@@ -290,10 +286,6 @@ class ScriptBuilder {
 
             auto condition_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
             assert(builder.error_tokens.length == 0);
-            // foreach(i,t; condition_jump_tokens) {
-            //      writefln("%s]:%s", i, t.toText);
-            // }
-            // assert(!builder.parse_functions(retokens));
         }
     }
     uint get_var(string var_name) const {
@@ -493,7 +485,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+        // sc.trace=true;
         // Put and Get variable X and Y
 
         script.run("testA", sc);
@@ -502,7 +494,7 @@ class ScriptBuilder {
 
 
     }
-//    version(none)
+
     unittest { // DO LOOP
         string source=
             ": test\n"~
@@ -523,10 +515,38 @@ class ScriptBuilder {
         // Put and Get variable X and Y
 
         sc.data_push(10);
-        sc.data_push(1);
+        sc.data_push(0);
         script.run("test", sc);
+        assert(sc.data_pop.value == 10);
+//        writefln("pop=%s", sc.data_pop.value);
+    }
 
-        writefln("pop=%s", sc.data_pop.value);
+    unittest { // DO +LOOP
+        string source=
+            ": test\n"~
+            "variable X\n"~
+            " do \n"~
+            "  X @ 1+ X ! \n"~
+            " 2 \n"~
+            " +loop \n"~
+            " X @\n"~
+            ";"
+            ;
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, source);
+
+        auto sc=new ScriptContext(10, 10, 10, 10);
+
+        sc.trace=true;
+        // Put and Get variable X and Y
+
+        sc.data_push(10);
+        sc.data_push(0);
+        script.run("test", sc);
+        assert(sc.data_pop.value == 5);
+
+//        writefln("pop=%s", sc.data_pop.value);
     }
 private:
     uint var_count;
@@ -627,9 +647,9 @@ private:
       type : ScriptType.WORD
     };
 
-    static immutable(Token) token_gte= {
-        // duplicate
-      token : ">=",
+    static immutable(Token) token_gt= {
+        // greater than
+      token : ">",
       type : ScriptType.WORD
     };
     static immutable(Token) token_invert= {
@@ -865,10 +885,8 @@ private:
                             scope_tokens~=local_I!(INDEXGET, loc_I)(f, loop_index);
                             scope_tokens~=local_I!(INDEXGET, loc_to_I)(f, loop_index);
 
-                            scope_tokens~=token_gte;
-//                            scope_tokens~=token_if;
+                            scope_tokens~=token_gt;
                             scope_tokens~=token_not_if;
-//                            scope_tokens~=token_endif;
 
                         }
                         else {
@@ -1347,9 +1365,6 @@ private:
                         case WHILE:
                         case REPEAT:
                         case LEAVE:
-//                        case THEN:
-//                        case INDEX:
-                            //
                         case UNKNOWN:
                         case COMMENT:
                             assert(0, "This "~to!string(t.type)~" pseudo script tokens '"~t.token~
