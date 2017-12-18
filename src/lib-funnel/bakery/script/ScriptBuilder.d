@@ -118,6 +118,7 @@ class ScriptBuilder {
         //
         tokens~=opcode;
         tokens~=opcode;
+
         tokens~=token_begin;
         tokens~=opcode;
         tokens~=opcode;
@@ -279,12 +280,19 @@ class ScriptBuilder {
             //
             auto loop_expanded_tokens = builder.expand_loop(func);
             // foreach(i,t; loop_expanded_tokens) {
-            //      writefln("%s]:%s", i, t.toText);
+            //       writefln("%s]:%s", i, t.toText);
             // }
-            writefln("%s", loop_expanded_tokens.length);
-            assert(loop_expanded_tokens.length == 68);
+            // writefln("%s", loop_expanded_tokens.length);
+            assert(loop_expanded_tokens.length == 66);
 
-            auto condition_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
+            auto conditional_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
+            // writeln("conditional_jump_tokens");
+            // foreach(i,t; conditional_jump_tokens) {
+            //       writefln("%s]:%s", i, t.toText);
+            // }
+            // foreach(t; builder.error_tokens) {
+            //     writefln("token=%s", t.token);
+            // }
             assert(builder.error_tokens.length == 0);
         }
     }
@@ -549,7 +557,7 @@ class ScriptBuilder {
 //        writefln("pop=%s", sc.data_pop.value);
     }
 
-    unittest {
+    unittest { // begin until
         string source=": test variable X begin X @ 1 + X !  X @ 10 == until X @ ;";
         Script script;
         auto builder=new ScriptBuilder;
@@ -569,7 +577,7 @@ class ScriptBuilder {
 //        writefln("pop=%s", sc.data_pop.value);
     }
 
-    unittest {
+    unittest { // begin while repeat
         string source=": test begin dup 3 > while  1- repeat ;";
         Script script;
         auto builder=new ScriptBuilder;
@@ -584,9 +592,9 @@ class ScriptBuilder {
         // sc.data_push(0);
 //        writefln("#### %s, ", source);
         script.run("test", sc);
-        //    assert(sc.data_pop.value == 10);
+        assert(sc.data_pop.value == 3);
 
-        writefln("pop=%s", sc.data_pop.value);
+//        writefln("pop=%s", sc.data_pop.value);
     }
 
 private:
@@ -956,9 +964,11 @@ private:
                     }
                     else {
                         if ( begin_loops[$-1] == BEGIN ) {
-                            scope_tokens~=token_if;
-                            scope_tokens~=token_leave;
-                            scope_tokens~=token_endif;
+                            scope_tokens~=t;
+
+                            // scope_tokens~=token_if;
+                            // scope_tokens~=token_leave;
+                            // scope_tokens~=token_endif;
                         }
                         else {
                             immutable(Token) error = {
@@ -987,8 +997,9 @@ private:
                             // scope_tokens~=token_invert;
                             // scope_tokens~=token_if;
                             // scope_tokens~=token_not_if;
-                            scope_tokens~=token_until;
+                            //  scope_tokens~=token_until;
                             // scope_tokens~=token_endif;
+                            scope_tokens~=t;
                             loop_index--;
                         }
                         else {
@@ -1072,10 +1083,21 @@ private:
                     loop_index_stack~=jump_index;
                     scope_tokens~=token_begin;
                     break;
+                case WHILE:
+                    immutable(Token) token_while = {
+                      token : t.token,
+                      line  : t.line,
+                      pos   : t.pos,
+                      type  : IF,
+                      jump  : loop_index_stack[$-1]
+                    };
+                    scope_tokens~=token_while;
+                    break;
                 case UNTIL:
                 case REPEAT:
                 case NOT_IF:
-                    if ( loop_index_stack.length > 1 ) {
+
+                    if ( loop_index_stack.length > 0 ) {
                         ScriptType goto_type;
                         if ( t.type == REPEAT ) {
                             goto_type = GOTO;
@@ -1083,7 +1105,7 @@ private:
                         else if ( t.type == UNTIL ) {
                             goto_type = IF;
                         }
-                        else {
+                        else { // not_if
                             goto_type = NOT_IF;
                         }
                         immutable(Token) token_repeat={
@@ -1104,7 +1126,7 @@ private:
                     }
                     else {
                         immutable(Token) error={
-                          token : "Repeat unexpected",
+                          token : t.token~" unexpected missing loop start",
                           line : t.line,
                           type : ERROR
                         };
@@ -1133,7 +1155,7 @@ private:
                     }
                     break;
                 case DO:
-                case WHILE:
+//                case WHILE:
                 case LOOP:
                 case ADDLOOP:
                     immutable(Token) error={
