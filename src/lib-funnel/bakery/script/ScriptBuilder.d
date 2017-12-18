@@ -282,7 +282,7 @@ class ScriptBuilder {
             //      writefln("%s]:%s", i, t.toText);
             // }
             writefln("%s", loop_expanded_tokens.length);
-            assert(loop_expanded_tokens.length == 74);
+            assert(loop_expanded_tokens.length == 68);
 
             auto condition_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
             assert(builder.error_tokens.length == 0);
@@ -548,6 +548,27 @@ class ScriptBuilder {
 
 //        writefln("pop=%s", sc.data_pop.value);
     }
+
+    unittest {
+        string source=": test variable X begin X @ 1 + X !  X @ 10 == until X @ ;";
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, source);
+
+        auto sc=new ScriptContext(10, 10, 10, 10);
+
+        sc.trace=true;
+        // Put and Get variable X and Y
+
+        // sc.data_push(10);
+        // sc.data_push(0);
+//        writefln("#### %s, ", source);
+        script.run("test", sc);
+        assert(sc.data_pop.value == 10);
+
+//        writefln("pop=%s", sc.data_pop.value);
+    }
+
 private:
     uint var_count;
     uint[string] var_indices;
@@ -943,10 +964,11 @@ private:
                     }
                     else {
                         if ( begin_loops[$-1] == BEGIN ) {
-                            scope_tokens~=token_invert;
-                            scope_tokens~=token_if;
-                            scope_tokens~=token_repeat;
-                            scope_tokens~=token_endif;
+                            // scope_tokens~=token_invert;
+                            // scope_tokens~=token_if;
+                            // scope_tokens~=token_not_if;
+                            scope_tokens~=token_until;
+                            // scope_tokens~=token_endif;
                             loop_index--;
                         }
                         else {
@@ -1030,12 +1052,16 @@ private:
                     loop_index_stack~=jump_index;
                     scope_tokens~=token_begin;
                     break;
+                case UNTIL:
                 case REPEAT:
                 case NOT_IF:
                     if ( loop_index_stack.length > 1 ) {
                         ScriptType goto_type;
                         if ( t.type == REPEAT ) {
                             goto_type = GOTO;
+                        }
+                        else if ( t.type == UNTIL ) {
+                            goto_type = IF;
                         }
                         else {
                             goto_type = NOT_IF;
