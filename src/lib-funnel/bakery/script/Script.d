@@ -803,7 +803,9 @@ class ScriptCompareOp(string O) : ScriptElement {
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         bool result;
-        mixin("result = sc.data_pop.value" ~ op ~ "sc.data_pop.value;");
+        auto b=sc.data_pop.value;
+        auto a=sc.data_pop.value;
+        mixin("result = a" ~ op ~ "b;");
         auto x=BigInt((result)?-1:0);
         sc.data_push(x);
         return _next;

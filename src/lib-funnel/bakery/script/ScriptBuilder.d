@@ -509,7 +509,7 @@ class ScriptBuilder {
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, source);
 
-        auto sc=new ScriptContext(10, 10, 10, 10);
+        auto sc=new ScriptContext(10, 10, 10, 20);
 
         sc.trace=true;
         // Put and Get variable X and Y
@@ -567,6 +567,26 @@ class ScriptBuilder {
         assert(sc.data_pop.value == 10);
 
 //        writefln("pop=%s", sc.data_pop.value);
+    }
+
+    unittest {
+        string source=": test begin dup 3 > while  1- repeat ;";
+        Script script;
+        auto builder=new ScriptBuilder;
+        auto tokens=builder.build(script, source);
+
+        auto sc=new ScriptContext(10, 10, 10, 30);
+
+        sc.trace=true;
+        // Put and Get variable X and Y
+
+        sc.data_push(10);
+        // sc.data_push(0);
+//        writefln("#### %s, ", source);
+        script.run("test", sc);
+        //    assert(sc.data_pop.value == 10);
+
+        writefln("pop=%s", sc.data_pop.value);
     }
 
 private:
@@ -668,9 +688,9 @@ private:
       type : ScriptType.WORD
     };
 
-    static immutable(Token) token_gt= {
+    static immutable(Token) token_gte= {
         // greater than
-      token : ">",
+      token : ">=",
       type : ScriptType.WORD
     };
     static immutable(Token) token_invert= {
@@ -906,8 +926,8 @@ private:
                             scope_tokens~=local_I!(INDEXGET, loc_I)(f, loop_index);
                             scope_tokens~=local_I!(INDEXGET, loc_to_I)(f, loop_index);
 
-                            scope_tokens~=token_gt;
-                            scope_tokens~=token_not_if;
+                            scope_tokens~=token_gte;
+                            scope_tokens~=token_until;
 
                         }
                         else {
