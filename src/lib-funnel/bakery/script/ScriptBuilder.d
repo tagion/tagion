@@ -4,11 +4,10 @@ import std.conv;
 
 import bakery.script.ScriptInterpreter;
 import bakery.script.Script;
-import bakery.utils.BSON : R_BSON=BSON, Document;
 
 import std.stdio;
 
-alias R_BSON!true BSON;
+//alias R_BSON!true BSON;
 
 @safe
 class ScriptBuilderException : ScriptException {
@@ -17,12 +16,12 @@ class ScriptBuilderException : ScriptException {
     }
 }
 
-@safe
-class ScriptBuilderExceptionIncompte : ScriptException {
-    this( immutable(char)[] msg ) {
-        super( msg );
-    }
-}
+// @safe
+// class ScriptBuilderExceptionIncompte : ScriptException {
+//     this( immutable(char)[] msg ) {
+//         super( msg );
+//     }
+// }
 
 class ScriptBuilder {
     alias ScriptElement function() opcreate;
@@ -51,8 +50,8 @@ class ScriptBuilder {
         }
     }
 
-    static BSON Token2BSON(const(Token) token) @safe {
-        auto bson=new BSON();
+    static GBSON Token2BSON(const(Token) token) @safe {
+        auto bson=new GBSON();
         bson["token"]=token.token;
         bson["type"]=token.type;
         bson["line"]=token.line;
@@ -154,14 +153,14 @@ class ScriptBuilder {
         { //
           // Function parse test missing end of function
           //
-            BSON[] codes;
+            GBSON[] codes;
 
             // Build BSON array of the token list
             foreach(t; tokens) {
                 codes~=Token2BSON(t);
             }
             // Build the BSON stream
-            auto bson_stream=new BSON();
+            auto bson_stream=new GBSON();
             bson_stream["code"]=codes;
             auto stream=bson_stream.expand;
 
@@ -235,14 +234,14 @@ class ScriptBuilder {
             //
             // Function builder
             //
-            BSON[] codes;
+            GBSON[] codes;
 
             // Build BSON array of the token list
             foreach(t; tokens) {
                 codes~=Token2BSON(t);
             }
             // Build the BSON stream
-            auto bson_stream=new BSON();
+            auto bson_stream=new GBSON();
             bson_stream["code"]=codes;
             auto stream=bson_stream.expand;
 
@@ -298,6 +297,9 @@ class ScriptBuilder {
     }
     uint get_var(string var_name) const {
         return var_indices[var_name];
+    }
+    uint get_bson(string bson_name) const {
+        return bson_indices[bson_name];
     }
     unittest { // Simple function test
         string source=
@@ -519,7 +521,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 20);
 
-        sc.trace=true;
+//        sc.trace=true;
         // Put and Get variable X and Y
 
         sc.data_push(10);
@@ -546,7 +548,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+//        sc.trace=true;
         // Put and Get variable X and Y
 
         sc.data_push(10);
@@ -565,7 +567,7 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-        sc.trace=true;
+//        sc.trace=true;
         // Put and Get variable X and Y
 
         // sc.data_push(10);
@@ -585,12 +587,8 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 30);
 
-        sc.trace=true;
-        // Put and Get variable X and Y
-
+//        sc.trace=true;
         sc.data_push(10);
-        // sc.data_push(0);
-//        writefln("#### %s, ", source);
         script.run("test", sc);
         assert(sc.data_pop.value == 3);
 
@@ -599,17 +597,36 @@ class ScriptBuilder {
 
 private:
     uint var_count;
+    uint bson_count;
     uint[string] var_indices;
+    uint[string] bson_indices;
     uint allocate_var(string var_name) {
-        if ( var_name !in var_indices ) {
+        if ( is_bson(var_name) ) {
+            throw new ScriptBuilderException(var_name~" is already declared as a bson");
+        }
+        else if ( var_name !in var_indices ) {
             var_indices[var_name]=var_count;
             var_count++;
         }
         return var_indices[var_name];
     }
+    uint allocate_bson(string bson_name) {
+        if ( is_var(bson_name) ) {
+            throw new ScriptBuilderException(bson_name~" is already declared as a variable");
+        }
+        else if ( bson_name !in bson_indices ) {
+            bson_indices[bson_name]=bson_count;
+            bson_count++;
+        }
+        return bson_indices[bson_name];
+    }
     bool is_var(string var_name) pure const nothrow {
         return (var_name in var_indices) !is null;
     }
+    bool is_bson(string bson_name) pure const nothrow {
+        return (bson_name in bson_indices) !is null;
+    }
+
     immutable(Token)[] error_tokens;
     // Test aid function
     static immutable(Token)[] token_func(string name) {
@@ -1355,7 +1372,7 @@ private:
                             result=new ScriptExit();
                             break;
                         case ERROR:
-                            result=new ScriptTokenError(t,"");
+                            result=new ScriptTokenError(t, "Build error");
                             break;
                         case WORD:
                             result=createElement(t.token);
@@ -1366,26 +1383,32 @@ private:
                             }
                             break;
                         case PUT:
-                            if ( is_var(t.token) ) {
-                                result=new ScriptPutVar(t.token, get_var(t.token));
-                            }
-                            else if ( f.is_loc(t.token) ) {
+                            if ( f.is_loc(t.token) ) {
                                 result=new ScriptPutLoc(t.token, f.get_loc(t.token));
                             }
+                            else if ( is_var(t.token) ) {
+                                result=new ScriptPutVar(t.token, get_var(t.token));
+                            }
+                            else if ( is_bson(t.token) ) {
+                                result=new ScriptPutBSON(t.token, get_bson(t.token));
+                            }
                             else {
-                                auto msg="Variable name '"~t.token~"' not found";
+                                auto msg="Variable or object name '"~t.token~"' not found";
                                 result=new ScriptTokenError(t, msg);
                             }
                             break;
                         case GET:
-                            if ( is_var(t.token) ) {
-                                result=new ScriptGetVar(t.token, get_var(t.token));
-                            }
-                            else if ( f.is_loc(t.token) ) {
+                            if ( f.is_loc(t.token) ) {
                                 result=new ScriptGetLoc(t.token, f.get_loc(t.token));
                             }
+                            else if ( is_var(t.token) ) {
+                                result=new ScriptGetVar(t.token, get_var(t.token));
+                            }
+                            else if ( is_bson(t.token) ) {
+                                result=new ScriptGetBSON(t.token, get_bson(t.token));
+                            }
                             else {
-                                auto msg="Variable name '"~t.token~"' not found";
+                                auto msg="Variable or object name '"~t.token~"' not found";
                                 result=new ScriptTokenError(t, msg);
                             }
                             break;
@@ -1409,6 +1432,16 @@ private:
                             }
                             else {
                                 allocate_var(t.token);
+                                return forward(i+1, n);
+                            }
+                            break;
+                        case BSON:
+                            if ( is_bson(t.token) ) {
+                                result=new ScriptTokenError(t,
+                                    "Local variable "~t.token~" is already defined");
+                            }
+                            else {
+                                allocate_bson(t.token);
                                 return forward(i+1, n);
                             }
                             break;

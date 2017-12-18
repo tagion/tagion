@@ -7,6 +7,10 @@ import std.internal.math.biguintnoasm : BigDigit;
 import std.stdio;
 import std.conv;
 
+import bakery.utils.BSON : R_BSON=BSON, Document;
+
+alias R_BSON!true GBSON;
+
 @safe
 class ScriptException : Exception {
     this( immutable(char)[] msg ) {
@@ -21,11 +25,16 @@ class Value {
         INTEGER,
         FUNCTION,
         TEXT,
+        BSON,
+        DOCUMENT
     }
     union BInt {
         private BigInt value;
         private const(ScriptElement) opcode;
         private string text;
+        private uint   bson_index;
+        private Document  doc;
+
         /* This struct is just read only for the BitInt value */
         immutable struct {
             immutable(BigDigit[]) data;
@@ -58,9 +67,16 @@ class Value {
 
     private BInt data;
     private Type _type;
-    this(long x) {
-        _type=Type.INTEGER;
-        data.value = BigInt(x);
+    this(long x, immutable bool bson_type=false) {
+        if ( bson_type ) {
+            _type=Type.BSON;
+            data.bson_index = cast(uint)x;
+        }
+        else {
+            _type=Type.INTEGER;
+            data.value = BigInt(x);
+        }
+
     }
     this(const BigInt x) {
         _type=Type.INTEGER;
@@ -74,6 +90,14 @@ class Value {
         _type=Type.FUNCTION;
         data.opcode=s;
     }
+    this(const Document doc) {
+        _type=Type.DOCUMENT;
+        data.doc=doc;
+    }
+    // this(const uint bson_index) {
+    //     _type=Type.BSON;
+    //     data.bson_index=bson_index;
+    // }
     // this(const(Value) v) {
     //     _type=v.type;
     //     with(Type) final switch(v.type) {
@@ -112,11 +136,12 @@ class Value {
                     return new Value(x.text);
                 case TEXT:
                     return new Value(x.opcode);
+                case BSON:
+                    return new Value(x.bson_index);
+                case DOCUMENT:
+                    return new Value(x.doc);
                 }
         }
-        // static if (is(T:const(Value)*)) {
-        //     return new Value(x);
-        // }
         else {
             return new Value(x);
         }
@@ -141,6 +166,18 @@ class Value {
             return data.opcode;
         }
         throw new ScriptException(to!string(Type.FUNCTION)~" expected not "~to!string(type));
+    }
+    const(Document) doc() const {
+        if ( type == Type.DOCUMENT ) {
+            return data.doc;
+        }
+        throw new ScriptException(to!string(Type.DOCUMENT)~" expected not "~to!string(type));
+    }
+    uint bson_index() const {
+        if ( type == Type.BSON ) {
+            return data.bson_index;
+        }
+        throw new ScriptException(to!string(Type.BSON)~" expected not "~to!string(type));
     }
     immutable(ubyte[]) buffer() const {
         if ( type == Type.INTEGER) {
@@ -201,7 +238,13 @@ class ScriptContext {
     private uint iteration_count;
     private int data_stack_index;
     private int return_stack_index;
-    this(const uint data_stack_size, const uint return_stack_size, immutable uint var_size, const uint iteration_count) {
+    private GBSON[] bsons;
+    private uint bsons_count;
+    this(const uint data_stack_size,
+        const uint return_stack_size,
+        const uint var_size,
+        const uint iteration_count,
+        const uint bsons_size=1) {
         this.data_stack_size=data_stack_size;
         this.return_stack_size=return_stack_size;
         this.variables=new Value[var_size];
@@ -209,9 +252,20 @@ class ScriptContext {
         foreach(ref v; variables) {
             v=Value(0);
         }
+        if ( bsons_size != 0 ) {
+            this.bsons=new GBSON[bsons_size];
+        }
     }
     const(Value) opIndex(uint i) {
         return variables[i];
+    }
+    ref GBSON bson(uint i) {
+        if ( i < bsons.length ) {
+            if ( bsons[i] is null ) {
+                return bsons[i];
+            }
+        }
+        throw new ScriptException("BSON index out of range");
     }
     @trusted
     const(Value) data_pop() {
@@ -225,13 +279,18 @@ class ScriptContext {
         }
         return data_stack[$-1];
     }
-    void data_push(T)(T v) {
+    void data_push(T)(T v, immutable bool bson_type=false) {
         if ( data_stack.length < data_stack_size ) {
             static if ( is(T:const Value) ) {
                 data_stack~=v;
             }
             else {
-                data_stack~=const(Value)(v);
+                static if ( is(v : const(long)) ) {
+                    data_stack~=const(Value)(v, bson_type);
+                }
+                else {
+                    data_stack~=const(Value)(v);
+                }
             }
         }
         else {
@@ -691,6 +750,53 @@ class ScriptPutLoc : ScriptElement {
     }
     string toText() const {
         return loc_name~" !";
+    }
+
+}
+
+@safe
+class ScriptGetBSON : ScriptElement {
+    private immutable uint bson_index;
+    private immutable(char[]) bson_name;
+    this(string bson_name, uint bson_index) {
+        this.bson_name = bson_name;
+        this.bson_index = bson_index;
+        super(0);
+    }
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        sc.data_push(bson_index, true);
+        return _next;
+    }
+    string toText() const {
+        return bson_name~" @";
+    }
+
+}
+
+@safe
+class ScriptPutBSON : ScriptElement {
+    immutable uint bson_index;
+    private string bson_name;
+    this(string bson_name, uint bson_index) {
+        this.bson_name = bson_name;
+        this.bson_index = bson_index;
+        super(0);
+    }
+    @trusted
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        auto a=sc.data_pop();
+        if ( a.type == Value.Type.BSON ) {
+            sc.bsons[bson_index]=sc.bsons[a.bson_index];
+            return _next;
+        }
+        else {
+            return new ScriptError("Type "~to!string(Value.Type.BSON)~" expect and not "~to!string(a.type), this);
+        }
+    }
+    string toText() const {
+        return bson_name~" !";
     }
 
 }
