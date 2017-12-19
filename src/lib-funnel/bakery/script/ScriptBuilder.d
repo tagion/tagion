@@ -321,15 +321,16 @@ class ScriptBuilder {
         sc.data_push(2);
         sc.data_push(5);
 
-        writefln("%s", sc.data_peek(0).value);
-        writefln("%s", sc.data_peek(1).value);
-        writefln("%s", sc.data_peek(2).value);
+        // writefln("%s", sc.data_peek(0).value);
+        // writefln("%s", sc.data_peek(1).value);
+        // writefln("%s", sc.data_peek(2).value);
 
         sc.trace=false;
         script.run("test", sc);
         assert( sc.data_pop.value == -7 );
 
     }
+
     unittest { // Simple if test
         string source=
             ": test\n"~
@@ -361,7 +362,6 @@ class ScriptBuilder {
 
     }
     unittest { // Simple if else test
-
         string source=
             ": test\n"~
             "  if  \n"~
@@ -593,6 +593,15 @@ class ScriptBuilder {
         assert(sc.data_pop.value == 3);
 
 //        writefln("pop=%s", sc.data_pop.value);
+    }
+
+    unittest {
+        string source=
+            ": test\n"~
+            " bson B\n"~
+            " \n"~
+            ";\n"
+            ;
     }
 
 private:
@@ -1376,7 +1385,6 @@ private:
                             break;
                         case WORD:
                             result=createElement(t.token);
-                            writefln("t.token=%s", t.token);
                             if ( result is null ) {
                                 // Possible function call
                                 result=new ScriptCall(t.token);

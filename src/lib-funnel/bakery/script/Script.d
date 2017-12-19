@@ -14,7 +14,7 @@ alias R_BSON!true GBSON;
 @safe
 class ScriptException : Exception {
     this( immutable(char)[] msg ) {
-        writefln("msg=%s", msg);
+//        writefln("msg=%s", msg);
         super( msg );
     }
 }
@@ -370,6 +370,11 @@ class ScriptContext {
         auto pop_a=sc.data_pop.value;
         assert(pop_a == BigInt(num));
     }
+    @trusted
+    immutable(ubyte)[] expand(immutable uint index) {
+        return bsons[index].expand;
+    }
+
 }
 
 
@@ -504,12 +509,6 @@ class ScriptJump : ScriptElement {
         auto target=(_jump is null)?"null":to!string(_jump.n);
         return "goto "~target;
     }
-    // override const(ScriptElement) next(ScriptElement n) {
-    //     // Ignore
-    //     writefln("JUMP set %s %s",n is null, _next is null);
-    //     return _next;
-    // }
-
 }
 
 @safe
@@ -596,7 +595,7 @@ class ScriptCall : ScriptJump {
         if (sc.trace) {
             sc.indent~=" ";
         }
-        writefln("Call %s loc_size=%s", func_name, loc_size);
+        // writefln("Call %s loc_size=%s", func_name, loc_size);
         auto locals=new Value[loc_size];
         foreach(ref v; locals) {
             v=Value(0);
@@ -613,7 +612,7 @@ class ScriptCall : ScriptJump {
         }
     body {
         super.set_jump(target);
-        writefln("set_call %s locals=%s", func_name, locals);
+        // writefln("set_call %s locals=%s", func_name, locals);
         loc_size = locals;
     }
     override string toText() const {
@@ -1034,6 +1033,37 @@ class ScriptStackOp(string O) : ScriptElement {
 }
 
 @safe
+class ScriptExpandBSON : ScriptElement {
+    enum name="expand";
+    this() {
+        super(0);
+    }
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        auto a=sc.data_pop;
+        if ( a.type == Value.Type.BSON ) {
+            sc.data_push(Document(sc.expand(a.bson_index)));
+        }
+        else {
+            auto error=new ScriptError(name~" expect an "~to!string(Value.Type.BSON)~
+                " put got a "~to!string(a.type), this);
+        }
+        return _next;
+    }
+    static ScriptElement create() {
+        return new ScriptExpandBSON;
+    }
+    static this() {
+        import bakery.script.ScriptBuilder;
+        ScriptBuilder.opcreators[name]=&create;
+    }
+    string toText() const {
+        return name;
+    }
+}
+
+
+@safe
 class Script {
     private import bakery.script.ScriptInterpreter : ScriptInterpreter;
     alias ScriptInterpreter.ScriptType ScriptType;
@@ -1061,12 +1091,12 @@ class Script {
             return result;
         }
         uint allocate_loc(string loc_name) {
-            writef("allocate_loc=%s", loc_name);
+            // writef("allocate_loc=%s", loc_name);
             if ( loc_name !in local_indices ) {
                 local_indices[loc_name]=local_count;
                 local_count++;
             }
-            writefln(" loc_count=%s in function %s", local_count, name);
+            // writefln(" loc_count=%s in function %s", local_count, name);
             return local_indices[loc_name];
         }
         bool is_loc(string loc_name) pure const nothrow {
@@ -1118,12 +1148,12 @@ class Script {
             }
         }
         this.trace=trace;
-        foreach(n, f; functions) {
-            writefln("### FUNC %s %s", n, f.local_size);
-        }
+        // foreach(n, f; functions) {
+        //     writefln("### FUNC %s %s", n, f.local_size);
+        // }
         if ( func in functions) {
             auto f=functions[func]; //.opcode;
-            writefln("call %s local_size=%s %s", func, f.local_size, f.opcode !is null);
+            // writefln("call %s local_size=%s %s", func, f.local_size, f.opcode !is null);
             auto start=new ScriptCall("$"~func);
             start.set_call(f.opcode, f.local_size);
             doit(start);
