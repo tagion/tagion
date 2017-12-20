@@ -1,10 +1,10 @@
 module bakery.hashgraph.RoundInfo;
 
-import (
-	"bytes"
-	"encoding/json"
-	"math/big"
-)
+// import (
+// 	"bytes"
+// 	"encoding/json"
+// 	"math/big"
+// )
 
 enum Trilean : int {
     Undefined=-1,
@@ -28,12 +28,13 @@ enum Trilean : int {
 struct RoundEvent {
     bool Witness;
     Trilean Famous;
-    this() {
+    this(bool witness) {
         Famous = Trilean.Undefined;
+        Witness = witness;
     }
 }
 
-struct RoundInfo(H) {
+class RoundInfo(H) {
     RoundEvent[H] Events;
     bool queued;
 
@@ -46,9 +47,7 @@ struct RoundInfo(H) {
 
     void AddEvent(H x, bool witness) {
         if ( x !in Events ) {
-            Events[x] = RoundEvent{
-              Witness: witness,
-            }
+            Events[x].Witness = witness;
 	}
     }
 
@@ -74,8 +73,8 @@ struct RoundInfo(H) {
     }
 
 //return witnesses
-    H[] Witnesses() []string {
-        H[] result;
+    immutable(H[]) Witnesses() const {
+        immutable(H)[] result;
 	foreach(x, e;Events)  {
             if ( e.Witness ) {
                 res~=x;
@@ -85,9 +84,8 @@ struct RoundInfo(H) {
     }
 
 //return famous witnesses
-    H[] FamousWitnesses() []string {
-        H[] result;
-	res := []string{}
+    immutable(H[]) FamousWitnesses() const {
+        immutable(H)[] result;
 	foreach(x, e;Events)  {
             if ( e.Witness && ( e.Famous == True ) ) {
                 result~=x;

@@ -1,6 +1,7 @@
 module bakery.hashgraph.ConsensusSorter;
 
 import std.bigint;
+import bakery.hashgraph.Event;
 struct ConsensusSorter {
     Event[] a;
     RoundInfo[int] r;
@@ -15,12 +16,13 @@ struct ConsensusSorter {
             assert( i != j );
         }
     body {
-        import mutation=std.algorithm.mutation; : swap;
+        import mutation=std.algorithm.mutation;
         mutation.swap(a[i], a[j]);
     }
 
     bool Less(int i, int j) {
-	int irr, jrr := -1, -1;
+	int irr=-1;
+        int jrr=-1;
 	if ( a[i].roundReceived !is null ) {
             irr = a[i].roundReceived;
 	}
@@ -32,7 +34,7 @@ struct ConsensusSorter {
 	}
 
 	if ( !a[i].consensusTimestamp.Equal(a[j].consensusTimestamp) ) {
-            return a[i].consensusTimestamp.Before(a[j].consensusTimestamp)
+            return a[i].consensusTimestamp.Before(a[j].consensusTimestamp);
 	}
 
         auto w = GetPseudoRandomNumber(a[i].roundReceived);

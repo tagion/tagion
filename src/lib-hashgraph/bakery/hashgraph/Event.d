@@ -1,15 +1,15 @@
 module barkery.hashgraph.Event;
 
-import (
-	"bytes"
-	"crypto/ecdsa"
-	"encoding/json"
-	"fmt"
-	"math/big"
-	"time"
+// import (
+// 	"bytes"
+// 	"crypto/ecdsa"
+// 	"encoding/json"
+// 	"fmt"
+// 	"math/big"
+// 	"time"
 
-	"github.com/babbleio/babble/crypto"
-)
+// 	"github.com/babbleio/babble/crypto"
+// )
 
 struct WireBody {
     immutable(ubyte)[] payload; //the payload
@@ -43,15 +43,17 @@ class EventBody(H) {
         WIRES
     }
 
-    this(
-               Transactions: transactions,
-          Parents:      parents,
-          Creator:      creator,
-          Timestamp:    time.Now().UTC(), //strip monotonic time
-          Index:        index,
-
+    this(immutable(ubyte)[] transactions,
+         immutable(H)[]     parents,
+         immutable(ubyte)[] creator,
+         immutable int index) {
+        Timestamp =    time.Now().UTC(); //strip monotonic time
+        Index     =    index;
+        payload   =    transactions;
+        Creator   =    creator;
+    }
 //json encoding of body only
-    immutable(ubyte)[] Marshal() ([]byte, error) {
+    immutable(ubyte)[] Marshal() const {
         auto bson=new GBSON;
         with (recordnames) {
             bson[TIME.stringof]=wirebody.Timestamp;
@@ -79,7 +81,7 @@ class EventBody(H) {
                 payload = doc[PAYLOAD.stringof].get!(immutable(ubyte)[]);
             }
             wirebody.Creator=doc[CREATOR.stringof].get!(immutable(ubyte)[]);
-            auto wires=doc[WIRES.stringof].get(immutable(int)[]);
+            auto wires=doc[WIRES.stringof].get!(immutable(int)[]);
             uint i;
             wirebody.Index=wires[i++];
             wirebody.selfParantIndex=wires[i++];
@@ -124,60 +126,55 @@ class Event(H) {
 
     this(
         immutable(ubyte)[] payload,
-	H[] parents;
-	immutable(ubyte)[] creator
+	H[] parents,
+	immutable(ubyte)[] creator,
 	int index) {
-
-
-        event_body = EventBody {
-          Transactions: transactions,
-          Parents:      parents,
-          Creator:      creator,
-          Timestamp:    time.Now().UTC(), //strip monotonic time
-          Index:        index,
-	}
-	return Event{
-		Body: body,
-	}
+        event_body = new EventBody!H(
+            payload,
+            parents,
+            creator,
+            index);
     }
 
+    /+
     func (e *Event) Creator() string {
 	if e.creator == "" {
 		e.creator = fmt.Sprintf("0x%X", e.event_body.Creator)
             }
 	return e.creator
             }
+            +/
 
-
-    Hash SelfParent() string {
-	return e.event_body.Parents[0];
+    immutable(H) SelfParent() const pure nothrow {
+	return event_body.Parents[0];
     }
 
-    Hash OtherParent() {
+    immutable(H) OtherParent() const pure nothrow {
 	return event_body.Parents[1];
     }
 
-    immutable(ubyte[][]) Transactions() {
-        return e.event_body.Transactions;
+    immutable(ubyte[]) Transactions() const pure nothrow {
+        return event_body.Transactions;
     }
 
-    int Index() int {
-	return e.event_body.Index;
+    int Index() const {
+	return event_body.Index;
     }
 
 //True if Event contains a payload or is the initial Event of its creator
-    bool IsLoaded() bool {
-	if ( e.event_body.Index == 0 ) {
+    bool IsLoaded() const {
+	if ( event_body.Index == 0 ) {
             return true;
 	}
-	return e.event_body.Transactions.length != 0;
+	return event_body.Transactions.length != 0;
     }
 
 //ecdsa sig
-    error Sign(ecdsa.PrivateKey privKey) error {
-	signBytes, err := e.event_body.Hash();
-	if ( err !is nil ) {
-            return err;
+    /+
+    bool Sign(ecdsa.PrivateKey privKey) {
+	signBytes := event_body.Hash();
+	if ( signBytes.length == 0 ) {
+            return true;
 	}
 	R, S, err := crypto.Sign(privKey, signBytes);
         if ( err !is nil ) {
@@ -195,25 +192,26 @@ class Event(H) {
 
 	return crypto.Verify(pubKey, signBytes, &e.R, &e.S);
     };
+    +/
 
 //json encoding of body and signature
-func (e *Event) Marshal() ([]byte, error) {
+    immutable(ubyte)[] Marshal() {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	if err := enc.Encode(e); err != nil {
-        return nil, err;
+            return nil;
 	}
-	return b.Bytes(), nil
-            }
+	return b.Bytes();
+    }
 
-func (e *Event) Unmarshal(data []byte) error {
-	b := bytes.NewBuffer(data)
-	dec := json.NewDecoder(b) //will read from b
-	return dec.Decode(e)
-}
+    const(Event) Unmarshal(data []byte) {
+      auto b = bytes.NewBuffer(data);
+      auto dec = json.NewDecoder(b); //will read from b
+      return dec.Decode(e);
+    }
 
 //sha256 hash of body and signature
-    immutable(ubyte)[] Hash() ([]byte, error) {
+    immutable(ubyte)[] Hash() {
         if ( e.hash.length == 0 ) {
             hashBytes, err := e.Marshal()
                 if ( err !is null )  {
@@ -224,7 +222,7 @@ func (e *Event) Unmarshal(data []byte) error {
         return e.hash;
     }
 
-    func (e *Event) string Hex() {
+    string Hex() const {
         if ( e.hex == "" ) {
             hash, _ := e.Hash();
             e.hex = fmt.Sprintf("0x%X", hash);

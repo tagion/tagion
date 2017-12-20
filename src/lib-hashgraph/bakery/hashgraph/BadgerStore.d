@@ -1,36 +1,36 @@
-package hashgraph
+module bakery.hashgraph.BadgerStore;
 
-import (
-	"fmt"
-	"os"
-	"strconv"
+// import (
+// 	"fmt"
+// 	"os"
+// 	"strconv"
 
-	cm "github.com/babbleio/babble/common"
-	"github.com/dgraph-io/badger"
-)
+// 	cm "github.com/babbleio/babble/common"
+// 	"github.com/dgraph-io/badger"
+// )
 
-var (
-	participantPrefix = "participant"
-	rootSuffix        = "root"
-	roundPrefix       = "round"
-	topoPrefix        = "topo"
-)
+enum {
+    participantPrefix = "participant",
+    rootSuffix        = "root",
+    roundPrefix       = "round",
+    topoPrefix        = "topo"
+};
 
 class BadgerStore(H) {
-    int[string] participants; map[string]int
-	inmemStore   *InmemStore
-	db           *badger.DB
-	path         string
+    int[string] participants;
+    InmemStore inmemStore;
+    badger.DB db;
+    string path;
 
 
 //NewBadgerStore creates a brand new Store with a new database
-    this(int[H] participants, int cacheSize, string path) (*BadgerStore, error) {
-      inmemStore := NewInmemStore(participants, cacheSize);
-      opts := badger.DefaultOptions;
-	opts.Dir = path;
-	opts.ValueDir = path;
-	opts.SyncWrites = false;
-	handle, err := badger.Open(opts);
+    this(int[H] participants, int cacheSize, string path) {
+      auto inmemStore = NewInmemStore(participants, cacheSize);
+      auto opts = badger.DefaultOptions;
+      opts.Dir = path;
+      opts.ValueDir = path;
+      opts.SyncWrites = false;
+      handle, err := badger.Open(opts);
 	if err != nil {
 		return nil, err
 	}

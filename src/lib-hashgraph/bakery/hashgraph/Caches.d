@@ -1,10 +1,10 @@
-module  hashgraph
+module bakery.hashgraph.Caches;
 
-import (
-	"fmt"
+// import (
+// 	"fmt"
 
-	cm "github.com/babbleio/babble/common"
-)
+// 	cm "github.com/babbleio/babble/common"
+// )
 
 struct Key(H) {
     H x;
@@ -29,7 +29,7 @@ struct ParticipantEventsCache(H) {
     int[H] participants; //[public key] => id
     cm.RollingIndex*[H] participantEvents;
     this() {
-      items := make(map[string]*cm.RollingIndex);
+      auto items = make(map[string]*cm.RollingIndex);
         for pk, _ := range participants {
 		items[pk] = cm.NewRollingIndex(size);
 	}

@@ -1,31 +1,33 @@
-module bakery.hashgraph;
+module bakery.hashgraph.HashGraph;
 
-import (
-	"encoding/hex"
-	"fmt"
-	"math"
-	"sort"
-	"time"
+// import (
+// 	"encoding/hex"
+// 	"fmt"
+// 	"math"
+// 	"sort"
+// 	"time"
 
-	"github.com/sirupsen/logrus"
+// 	"github.com/sirupsen/logrus"
 
-	"github.com/babbleio/babble/common"
-)
+// 	"github.com/babbleio/babble/common"
+// )
 
+import bakery.hashgraph.Store;
 
-class Hashgraph(Hash) {
-    uint[string] Participants;  //[public key] => id
-    uint[string] ReverseParticipants;     map[int]string //[id] => public key
-    Store        Store;          //store of Events and Rounds
-    Hash[]       UndeterminedEvents;       //[index] => hash
-    int[]        UndecidedRounds;         []int          //queue of Rounds which have undecided witnesses
-	LastConsensusRound      *int           //index of last round where the fame of all witnesses has been decided
-	LastCommitedRoundEvents int            //number of events in round before LastConsensusRound
-	ConsensusTransactions   int            //number of consensus transactions
-	PendingLoadedEvents     int            //number of loaded events that are not yet committed
-	commitCh                chan []Event   //channel for committing events
-	topologicalIndex        int            //counter used to order events in topological order
-	superMajority           int
+class HashGraph(Hash) {
+    uint[string] Participants;         //[public key] => id
+    uint[string] ReverseParticipants;  //[id] => public key
+    Store        Store;                //store of Events and Rounds
+    Hash[]       UndeterminedEvents;   //[index] => hash
+    int[]        UndecidedRounds;      //queue of Rounds which have undecided witnesses
+    int*         LastConsensusRound;   //index of last round where the fame of all witnesses has been decided
+    int LastCommitedRoundEvents;       //number of events in round before LastConsensusRound
+    int ConsensusTransactions;         //number of consensus transactions
+    int PendingLoadedEvents;           //number of loaded events that are not yet committed
+//	commitCh                chan []Event   //channel for committing events
+    Event[] commitCh;
+    int topologicalIndex;              //counter used to order events in topological order
+    int superMajority;
 
 	ancestorCache           *common.LRU
 	selfAncestorCache       *common.LRU
@@ -37,7 +39,7 @@ class Hashgraph(Hash) {
 	logger *logrus.Logger
 
 
-func NewHashgraph(participants map[string]int, store Store, commitCh chan []Event, logger *logrus.Logger) *Hashgraph {
+        this(participants map[string]int, store Store, commitCh chan []Event, logger *logrus.Logger) *Hashgraph {
 	if logger == nil {
 		logger = logrus.New()
 		logger.Level = logrus.DebugLevel

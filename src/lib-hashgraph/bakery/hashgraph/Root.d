@@ -1,9 +1,9 @@
-package hashgraph
+module bakery.hashgraph.Root;
 
-import (
-	"bytes"
-	"encoding/json"
-)
+// import (
+// 	"bytes"
+// 	"encoding/json"
+// )
 
 /*
 Roots constitute the base of a Hashgraph. Each Participant is assigned a Root on
@@ -60,16 +60,16 @@ ex 2:
 -----------------
 */
 
-class Root(Hash) {
+class Root(H) {
     Hash X, Y; //   string
     int Index;
     int Round;
-    Others map[string]string;
+    H[H] Others;
     this() {
         Index = -1;
         Round = -1;
     }
-}
+
 
 // func NewBaseRoot() Root {
 // 	return Root{
@@ -79,18 +79,20 @@ class Root(Hash) {
 // 		Round: -1,
 // 	}
 // }
-
-func (root *Root) Marshal() ([]byte, error) {
+/+
+    immutable(ubyte)[] Marshal() {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b) //will write to b
 	if err := enc.Encode(root); err != nil {
 		return nil, err
 	}
-	return b.Bytes(), nil
-}
+	return b.Bytes();
+            }
 
-func (root *Root) Unmarshal(data []byte) error {
-	b := bytes.NewBuffer(data)
-	dec := json.NewDecoder(b) //will read from b
-	return dec.Decode(root)
+    func (root *Root) Unmarshal(data []byte) error {
+      b := bytes.NewBuffer(data)
+            dec := json.NewDecoder(b) //will read from b
+            return dec.Decode(root)
+            }
++/
 }
