@@ -1054,8 +1054,7 @@ class ScriptExpandBSON : ScriptElement {
         return new ScriptExpandBSON;
     }
     static this() {
-        import bakery.script.ScriptBuilder;
-        ScriptBuilder.opcreators[name]=&create;
+        Script.opcreators[name]=&create;
     }
     string toText() const {
         return name;
@@ -1065,6 +1064,8 @@ class ScriptExpandBSON : ScriptElement {
 
 @safe
 class Script {
+    alias ScriptElement function() opcreate;
+    package static opcreate[string] opcreators;
     private import bakery.script.ScriptInterpreter : ScriptInterpreter;
     alias ScriptInterpreter.ScriptType ScriptType;
     alias ScriptInterpreter.Token Token;
@@ -1125,6 +1126,12 @@ class Script {
             }
             return result;
         }
+    }
+    static ScriptElement createElement(string op) {
+        if ( op in opcreators ) {
+            return Script.opcreators[op]();
+        }
+        return null;
     }
     package Function[string] functions;
 

@@ -24,8 +24,6 @@ class ScriptBuilderException : ScriptException {
 // }
 
 class ScriptBuilder {
-    alias ScriptElement function() opcreate;
-    package static opcreate[string] opcreators;
     alias ScriptInterpreter.ScriptType ScriptType;
     alias ScriptInterpreter.Token Token;
     /**
@@ -1220,7 +1218,7 @@ private:
                 static if ( oplist.length !=0 ) {
                     if ( opname == oplist[0] ) {
                         enum op=oplist[0];
-                        opcreators[op]=&(create!op);
+                        Script.opcreators[op]=&(create!op);
                     }
                     else {
                         createBinaryOp!(oplist[1..$])(opname);
@@ -1234,7 +1232,7 @@ private:
                 static if ( oplist.length !=0 ) {
                     if ( opname == oplist[0] ) {
                         enum op=oplist[0];
-                        opcreators[op]=&(create!op);
+                        Script.opcreators[op]=&(create!op);
                     }
                     else {
                         createCompareOp!(oplist[1..$])(opname);
@@ -1248,7 +1246,7 @@ private:
                 static if ( oplist.length !=0 ) {
                     if ( opname == oplist[0] ) {
                         enum op=oplist[0];
-                        opcreators[op]=&(create!op);
+                        Script.opcreators[op]=&(create!op);
                     }
                     else {
                         createStackOp!(oplist[1..$])(opname);
@@ -1262,7 +1260,7 @@ private:
                 static if ( oplist.length !=0 ) {
                     if ( opname == oplist[0] ) {
                         enum op=oplist[0];
-                        opcreators[op]=&(create!op);
+                        Script.opcreators[op]=&(create!op);
                     }
                     else {
                         createUnitaryOp!(oplist[1..$])(opname);
@@ -1279,12 +1277,6 @@ private:
             build_opcreators(opname);
         }
 
-    }
-    ScriptElement createElement(string op) {
-        if ( op in opcreators ) {
-            return opcreators[op]();
-        }
-        return null;
     }
     immutable(Token)[] build(ref Script script, string source) {
         auto src=new ScriptInterpreter(source);
@@ -1384,7 +1376,7 @@ private:
                             result=new ScriptTokenError(t, "Build error");
                             break;
                         case WORD:
-                            result=createElement(t.token);
+                            result=Script.createElement(t.token);
                             if ( result is null ) {
                                 // Possible function call
                                 result=new ScriptCall(t.token);
