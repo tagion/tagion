@@ -1,6 +1,6 @@
 module bakery.utils.DList;
 
-import std.stdio;
+//import std.stdio;
 
 @safe
 class UtilException : Exception {
@@ -73,7 +73,6 @@ class DList(E) {
             count++;
         }
         else {
-            writefln("pop head is null %s", head is null);
             throw new UtilException("Pop from an empty list");
         }
         return result.entry;
@@ -119,7 +118,6 @@ class DList(E) {
     }
 
     void moveToFront(Element* e) {
-        writefln("moveToFront e=%x", e);
         remove(e);
         unshift(e.entry);
     }
@@ -127,7 +125,6 @@ class DList(E) {
     uint length()
         out(result) {
             uint internal_count(Element* e, uint i=0) {
-                writef("%s", i);
                 if ( e is null ) {
                     return i;
                 }
@@ -136,7 +133,6 @@ class DList(E) {
                 }
 
             }
-            writefln("<");
             assert(result == internal_count(head));
         }
     body {
@@ -151,7 +147,6 @@ class DList(E) {
     }
 
     Iterator iterator(bool revert=false) {
-        writefln("count=%d %x %x",count, cast(size_t)head, cast(size_t)tail);
         auto result=Iterator(this, revert);
         return result;
     }
@@ -178,15 +173,12 @@ class DList(E) {
     struct Iterator {
         private Element* cursor;
         this(DList l, bool revert) {
-            writefln("count=%d %x %x",l.count, cast(size_t)l.head, cast(size_t)l.tail);
-
             if (revert) {
                 cursor = l.tail;
             }
             else {
                 cursor = l.head;
             }
-            writefln("cursor=%x", cursor);
         }
 
         bool empty() const pure nothrow {
@@ -211,10 +203,7 @@ class DList(E) {
             return cursor.entry;
         }
 
-        Element* current() pure {
-            debug {
-                writefln("cursor=%x", cursor);
-            }
+        Element* current() pure nothrow {
             return cursor;
         }
     }
@@ -319,7 +308,6 @@ unittest {
             for(i=0; !I.empty; I.popFront, i++) {
                 assert(I.front == i);
             }
-            writefln("i=%s",i);
             assert(i == amount);
             i=0;
             I=l.iterator(false);
@@ -327,7 +315,6 @@ unittest {
                 assert(entry == i);
                 i++;
             }
-            writefln("i=%s",i);
             assert(i == amount);
         }
 
@@ -340,13 +327,11 @@ unittest {
                 i--;
                 assert(I.front == i);
             }
-            writefln("i=%s",i);
             assert(i == 0);
             i=amount;
 //            I=l.iterator(true);
             foreach_reverse(entry; l) {
                 i--;
-                writefln("entry=%s i=%s", entry, i);
                 assert(entry == i);
             }
             assert(i == 0);
