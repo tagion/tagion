@@ -159,11 +159,21 @@ class DList(E) {
     int opApply(scope int delegate(E e) dg) {
         auto I=iterator;
         int result;
-        for(; (!I.empty) || (result == 0); I.popFront) {
+        for(; (!I.empty) && (result == 0); I.popFront) {
             result=dg(I.front);
         }
         return result;
     }
+
+    int opApplyReverse(scope int delegate(E e) dg) {
+        auto I=iterator(true);
+        int result;
+        for(; (!I.empty) && (result == 0); I.popBack) {
+            result=dg(I.front);
+        }
+        return result;
+    }
+
 
     struct Iterator {
         private Element* cursor;
@@ -183,16 +193,18 @@ class DList(E) {
             return cursor is null;
         }
 
-        void popFront() {
+        Iterator* popFront() {
             if ( cursor !is null) {
                 cursor = cursor.next;
             }
+            return &this;
         }
 
-        void popBack() {
+        Iterator* popBack() {
             if ( cursor !is null) {
                 cursor = cursor.prev;
             }
+            return &this;
         }
 
         E front() {
@@ -301,25 +313,46 @@ unittest {
         }
         assert(l.length == amount);
 
-        {
-            auto current=l.first;
-            foreach(i;0..amount) {
-                assert(current.entry == i);
-                current=current.next;
+        { // Forward iteration test
+            auto I=l.iterator(false);
+            uint i;
+            for(i=0; !I.empty; I.popFront, i++) {
+                assert(I.front == i);
             }
+            writefln("i=%s",i);
+            assert(i == amount);
+            i=0;
+            I=l.iterator(false);
+            foreach(entry; I) {
+                assert(entry == i);
+                i++;
+            }
+            writefln("i=%s",i);
+            assert(i == amount);
         }
 
         assert(l.length == amount);
 
-        {
-            auto current=l.last;
-            foreach(i;amount..0) {
-                assert(current.entry == i);
-                current=current.prev;
+        {  // Backward iteration test
+            auto I=l.iterator(true);
+            uint i;
+            for(i=amount; !I.empty; I.popBack) {
+                i--;
+                assert(I.front == i);
             }
+            writefln("i=%s",i);
+            assert(i == 0);
+            i=amount;
+//            I=l.iterator(true);
+            foreach_reverse(entry; l) {
+                i--;
+                writefln("entry=%s i=%s", entry, i);
+                assert(entry == i);
+            }
+            assert(i == 0);
         }
 
-        // moveToFront for the first element
+        // moveToFront for the second element ( element number 1 )
 
         {
             auto I=l.iterator;
@@ -333,20 +366,16 @@ unittest {
             assert(equal(I, [1, 0, 2, 3]));
         }
 
-        // foreach(i;0..amount) {
-        //     assert(current.entry == i);
-        //     current=current.next;
-        // }
-
         {
-        // moveToFront
             auto I=l.iterator;
-            I.popFront;
+            I.popFront.popFront;
             auto current = I.current;
             l.moveToFront(current);
-            current = l.first;
-            assert(current.entry == 0);
-
+            assert(l.length == amount);
+            // The element shoud now be ordred as
+            // [1, 0, 2, 3]
+            I=l.iterator;
+            assert(equal(I, [2, 1, 0, 3]));
         }
 
         // foreach(i;0..amount) {
@@ -354,14 +383,7 @@ unittest {
         //     current=current.next;
         // }
 
-        // l.remove(current);
-
-
-        // uint i;
-
-        // l.push(1);
-        // l.push(2);
-        // l.push(3);
+        // moveToFront second element( enumber 1 )
 
 
     }
