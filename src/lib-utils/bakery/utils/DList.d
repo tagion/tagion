@@ -10,6 +10,7 @@ class UtilException : Exception {
     }
 }
 
+@safe
 class DList(E) {
     struct Element {
         E entry;
@@ -23,7 +24,7 @@ class DList(E) {
     private Element* tail;
     // Number of element in the DList
     private uint count;
-    void unshift(E e) {
+    Element* unshift(E e) {
         auto element=new Element(e);
         if ( head is null ) {
             head = tail =  element;
@@ -35,7 +36,7 @@ class DList(E) {
             head = element;
             count++;
         }
-
+        return element;
     }
 
     E shift() {
@@ -50,7 +51,7 @@ class DList(E) {
         return head.entry;
     }
 
-    void push(E e) {
+    Element* push(E e) {
         auto element=new Element(e);
         if ( head is null ) {
             head = tail = element;
@@ -61,6 +62,7 @@ class DList(E) {
             tail = element;
         }
         count++;
+        return element;
     }
 
     ref E pop() {
@@ -122,9 +124,9 @@ class DList(E) {
         unshift(e.entry);
     }
 
-    uint length()
+    uint length() pure const
         out(result) {
-            uint internal_count(Element* e, uint i=0) {
+            uint internal_count(const(Element)* e, uint i=0) pure {
                 if ( e is null ) {
                     return i;
                 }
@@ -151,7 +153,7 @@ class DList(E) {
         return result;
     }
 
-    int opApply(scope int delegate(E e) dg) {
+    int opApply(scope int delegate(E e) @safe dg) {
         auto I=iterator;
         int result;
         for(; (!I.empty) && (result == 0); I.popFront) {
@@ -160,7 +162,7 @@ class DList(E) {
         return result;
     }
 
-    int opApplyReverse(scope int delegate(E e) dg) {
+    int opApplyReverse(scope int delegate(E e) @safe  dg) {
         auto I=iterator(true);
         int result;
         for(; (!I.empty) && (result == 0); I.popBack) {
