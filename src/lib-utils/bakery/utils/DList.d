@@ -1,6 +1,6 @@
 module bakery.utils.DList;
 
-//import std.stdio;
+import std.stdio;
 
 @safe
 class UtilException : Exception {
@@ -28,14 +28,13 @@ class DList(E) {
         auto element=new Element(e);
         if ( head is null ) {
             head = tail =  element;
-            count=1;
         }
         else {
             element.next=head;
             head.prev=element;
             head = element;
-            count++;
         }
+        count++;
         return element;
     }
 
@@ -68,11 +67,15 @@ class DList(E) {
     ref E pop() {
         Element* result;
         if ( tail !is null ) {
-            result = tail.prev;
-            result.next = null;
-            tail.prev = null;
-            tail = result;
-            count++;
+            result = tail;
+            tail=tail.prev;
+            if ( tail is null ) {
+                head = null;
+            }
+            else {
+                tail.next=null;
+            }
+            count--;
         }
         else {
             throw new UtilException("Pop from an empty list");
@@ -133,9 +136,19 @@ class DList(E) {
                 else {
                     return internal_count(e.next, i+1);
                 }
-
+                debug {
+                    writef("%s ", i);
+                }
             }
-            assert(result == internal_count(head));
+            immutable _count=internal_count(head);
+            debug {
+                writefln("result=%s", result);
+                if (result != _count) {
+                    write("##########");
+                    writefln("result=%s _count=%s", result, _count);
+                }
+            }
+            assert(result == _count);
         }
     body {
         return count;
@@ -280,7 +293,9 @@ unittest {
     }
     { // two element test
         auto l=new DList!int;
+        assert(l.length == 0);
         l.unshift(7);
+        assert(l.length == 1);
         l.unshift(4);
         assert(l.length == 2);
         auto first=l.first;
@@ -294,6 +309,29 @@ unittest {
         last=l.last;
         assert(first.entry == 7);
         assert(last.entry == 4);
+    }
+    { // pop
+        import std.algorithm.comparison : equal;
+        auto l=new DList!int;
+        enum amount=4;
+        int[] test;
+        foreach(i;0..amount) {
+            l.push(i);
+            test~=i;
+        }
+        auto I=l.iterator;
+        assert(equal(I, test));
+
+        auto pop_size=l.length;
+        foreach_reverse(i;0..amount) {
+            auto _pop=l.pop;
+            writefln("pop=%s, i=%s", _pop, i);
+            pop_size--;
+//            assert(l.pop == i);
+            assert(l.length == pop_size);
+        }
+        assert(l.length == 0);
+
     }
     { // More elements test
         import std.algorithm.comparison : equal;
