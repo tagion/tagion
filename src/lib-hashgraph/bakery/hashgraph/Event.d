@@ -37,7 +37,7 @@ struct EventBody {
     immutable(ubyte[]) father; // Hash of the event-parent
 
     immutable(ubyte[]) creator; //creator's public key
-    immutable DateTime timeStamp;
+    immutable ulong timeStamp;
     immutable uint index;
 
     // int Index;
@@ -72,21 +72,18 @@ struct EventBody {
 
     this(immutable(ubyte)[] data) {
         auto doc=Document(data);
-        import std.string;
         foreach(i, m; this.tupleof) {
             alias typeof(m) type;
             enum name=EventBody.tupleof[i].stringof;
-            auto test=this.tupleof[i];
-            auto test2=doc[name];
-//            auto test2=doc[name].get!type;
-            //     this.tupleof[i]=doc(name).get!type;
+            this.tupleof[i]=doc[name].get!type;
         }
     }
 
 //json encoding of body only
     version(none)
-    immutable(ubyte)[] stearmout() const {
+    immutable(ubyte)[] serialize() const {
         auto bson=new GBSON;
+
         foreach(rec; Recordnames.min..Recordnames.max) {
             immutable name=to!string(rec);
             with(Recordnames) final switch(rec) {
