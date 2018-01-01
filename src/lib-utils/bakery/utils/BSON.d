@@ -547,48 +547,47 @@ struct Element
         }
 
 
-        bool get(T)() if (is(T == bool))
+        T get(T)() if (is(T == bool) || is(T == const(bool)) || is(T == immutable(bool)))
         {
             check(Type.BOOLEAN);
-            return _boolean();
+            return cast(T)_boolean();
         }
 
-
-        int get(T)() if (is(T == int))
+        T get(T)() if (is(T == int) || is(T == const(int)) || is(T == immutable(int))||
+            is(T == uint) || is(T == const(uint)) || is(T == immutable(uint)))
         {
             check(Type.INT32);
-            return _int32();
+            return cast(T)_int32();
         }
 
-
-        long get(T)() if (is(T == long))
+        T get(T)() if (is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
+            is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong)))
         {
             check(Type.INT64);
-            return _int64();
+            return cast(T)_int64();
         }
 
-
-        double get(T)() if (is(T == double))
+        T get(T)() if (is(T == double) || is(T == const(double)) || is(T == immutable(double)))
         {
             check(Type.DOUBLE);
-            return _double();
+            return cast(T)_double();
         }
 
 
-        Date get(T)() if (is(T == Date))
+        T get(T)() if (is(T : const(Date)))
         {
             check(Type.DATE);
-            return cast(Date)SysTime(_int64());
+            return cast(T)SysTime(_int64());
         }
 
 
-        DateTime get(T)() if (is(T == DateTime))
+        T get(T)() if (is(T : const(DateTime)))
         {
             check(Type.TIMESTAMP);
-            return cast(DateTime)SysTime(_int64());
+            return cast(T)SysTime(_int64());
         }
 
-        ObjectId get(T)() if (is(T == ObjectId))
+        T get(T)() if (is(T : const(ObjectId)))
         {
             check(Type.OID);
             return ObjectId(value);
@@ -606,9 +605,9 @@ struct Element
             return Document(value);
         }
 
-        immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
-            return value.idup;
-        }
+        // immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
+        //     return value.idup;
+        // }
 
         T get(T)() if (!is(T == string) && is(T == immutable(U)[], U)) {
             static if ( is(T == immutable(U)[], U) ) {
