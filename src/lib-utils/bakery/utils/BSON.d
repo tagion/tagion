@@ -588,7 +588,6 @@ struct Element
             return cast(DateTime)SysTime(_int64());
         }
 
-
         ObjectId get(T)() if (is(T == ObjectId))
         {
             check(Type.OID);
@@ -605,6 +604,10 @@ struct Element
                 check(Type.DOCUMENT);
             }
             return Document(value);
+        }
+
+        immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
+            return value.idup;
         }
 
         T get(T)() if (!is(T == string) && is(T == immutable(U)[], U)) {
@@ -1683,6 +1686,9 @@ BinarySubType getSubtype(T)() {
         }
         else static if (is(T:const(BSON!true)[]) || is(T:const(BSON!false)[])) {
             return DOCUMENT_array;
+        }
+        else static if (is(T:const(ubyte)[])) {
+            return generic;
         }
         else  {
             static assert(0, "Unsupport type "~T.stringof);
