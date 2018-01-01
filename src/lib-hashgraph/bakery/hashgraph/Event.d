@@ -72,7 +72,7 @@ struct EventBody {
 
     this(immutable(ubyte)[] data) {
         auto doc=Document(data);
-        foreach(i, m; this.tupleof) {
+        foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=EventBody.tupleof[i].stringof;
             this.tupleof[i]=doc[name].get!type;
@@ -80,32 +80,12 @@ struct EventBody {
     }
 
 //json encoding of body only
-    version(none)
+//    version(none)
     immutable(ubyte)[] serialize() const {
         auto bson=new GBSON;
-
-        foreach(rec; Recordnames.min..Recordnames.max) {
-            immutable name=to!string(rec);
-            with(Recordnames) final switch(rec) {
-                case TIME:
-                    bson[name]=time;
-                    break;
-                case PAYLOAD:
-                    bson[name]=payload;
-                    break;
-                case MOTHER:
-                    bson[name]=mother;
-                    break;
-                case FATHER:
-                    bson[name]=father;
-                    break;
-                case CREATOR:
-                    bson[name]=creator;
-                    break;
-                case INDEX:
-                    bson[name]=index;
-                    break;
-                }
+        foreach(i, m; this.tupleof) {
+            enum name=EventBody.tupleof[i].stringof;
+            bson[name]=m;
         }
         return bson.expand;
     }
