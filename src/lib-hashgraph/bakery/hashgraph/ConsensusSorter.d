@@ -2,8 +2,8 @@ module bakery.hashgraph.ConsensusSorter;
 
 import std.bigint;
 import bakery.hashgraph.Event;
-struct ConsensusSorter {
-    Event[] a;
+struct ConsensusSorter(H) {
+    Event!H[] a;
     RoundInfo[int] r;
     const(BigInt)*[int] cache;
     uint Len() const pure nothrow {

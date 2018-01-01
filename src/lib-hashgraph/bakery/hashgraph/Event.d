@@ -1,5 +1,11 @@
 module barkery.hashgraph.Event;
 
+import std.datetime;   // Date, DateTime
+import bakery.utils.BSON : R_BSON=BSON, Document;
+import std.conv;
+
+alias R_BSON!true GBSON;
+
 // import (
 // 	"bytes"
 // 	"crypto/ecdsa"
@@ -11,6 +17,7 @@ module barkery.hashgraph.Event;
 // 	"github.com/babbleio/babble/crypto"
 // )
 
+version(none)
 struct WireBody {
     immutable(ubyte)[] payload; //the payload
     //wire
@@ -20,80 +27,150 @@ struct WireBody {
     int OtherParentIndex;
     int CreatorID;
 
-    time.Time Timestamp ; //creator's claimed timestamp of the event's creation
+    DateTime Timestamp ; //creator's claimed timestamp of the event's creation
     int Index;//index in the sequence of events created by Creator
 }
 
-class EventBody(H) {
-    immutable(ubyte)[] payload;
-    H[] Parents;  //hashes of the event's parents, self-parent first
-    immutable(ubyte)[] Creator; //creator's public key
-    // time.Time Timestamp;
+struct EventBody {
+    immutable(ubyte[]) payload;
+    immutable(ubyte[]) mother;  // Hash of the self-parent
+    immutable(ubyte[]) father; // Hash of the event-parent
+
+    immutable(ubyte[]) creator; //creator's public key
+    immutable DateTime timeStamp;
+    immutable uint index;
+
     // int Index;
     // int selfParentIndex;
     // int otherParentCreatorID;
     // int otherParentIndex;
     // int creatorID;
-    WireBody wirebody;
+//    WireBody wirebody;
 
-    enum recordnames {
+    enum Recordnames {
         TIME,
         PAYLOAD,
+        MOTHER,
+        FATHER,
         CREATOR,
-        WIRES
+        INDEX
     }
 
-    this(immutable(ubyte)[] transactions,
-         immutable(H)[]     parents,
-         immutable(ubyte)[] creator,
-         immutable int index) {
-        Timestamp =    time.Now().UTC(); //strip monotonic time
-        Index     =    index;
-        payload   =    transactions;
-        Creator   =    creator;
-    }
-//json encoding of body only
-    immutable(ubyte)[] Marshal() const {
-        auto bson=new GBSON;
-        with (recordnames) {
-            bson[TIME.stringof]=wirebody.Timestamp;
-            bson[CREATOR.stringof]=wirebody.Creator;
-            if ( payload ) {
-                bson[PAYLOAD.stringof]=wirebody.payload;
-            }
-            const(int)[] wire=[
-                wirebody.Index,
-                wirebody.selfParantIndex,
-                wirebody.otherParentCreatorID,
-                wirebody.otherParentIndex,
-                wirebody.creatorID
-                ];
-            bson[WIRES.stringof]=wires;
-            return bson.expand;
-        }
+    this(
+        immutable(ubyte)[] payload,
+        immutable(ubyte)[] mother,
+        immutable(ubyte)[] father,
+        immutable(ubyte)[] creator,
+        immutable uint index) {
+        //this.time      =    time.Now().UTC(); //strip monotonic time
+        this.index     =    index;
+        //this.index     =    index;
+        this.father    =    father;
+        this.mother    =    mother;
+        this.creator   =    creator;
     }
 
-    void Unmarshal(immutable(ubyte)[] data) {
+    this(immutable(ubyte)[] data) {
         auto doc=Document(data);
-        with (recordnames) {
-            wirebody.Timestamp=doc[TIME.stringof].get!Time;
-            if ( doc.has(PAYLOAD.stringof) ) {
-                payload = doc[PAYLOAD.stringof].get!(immutable(ubyte)[]);
-            }
-            wirebody.Creator=doc[CREATOR.stringof].get!(immutable(ubyte)[]);
-            auto wires=doc[WIRES.stringof].get!(immutable(int)[]);
-            uint i;
-            wirebody.Index=wires[i++];
-            wirebody.selfParantIndex=wires[i++];
-            wirebody.otherParentCreatorID=wires[i++];
-            wirebody.otherParentIndex=wires[i++];
-            wirebody.creatorID=wires[i++];
+        import std.string;
+        foreach(i, m; this.tupleof) {
+            alias typeof(m) type;
+            enum name=EventBody.tupleof[i].stringof;
+            auto test=this.tupleof[i];
+            auto test2=doc[name];
+//            auto test2=doc[name].get!type;
+            //     this.tupleof[i]=doc(name).get!type;
         }
     }
 
-    immutable(H) hash() {
-        return H(Marshal);
+//json encoding of body only
+    version(none)
+    immutable(ubyte)[] stearmout() const {
+        auto bson=new GBSON;
+        foreach(rec; Recordnames.min..Recordnames.max) {
+            immutable name=to!string(rec);
+            with(Recordnames) final switch(rec) {
+                case TIME:
+                    bson[name]=time;
+                    break;
+                case PAYLOAD:
+                    bson[name]=payload;
+                    break;
+                case MOTHER:
+                    bson[name]=mother;
+                    break;
+                case FATHER:
+                    bson[name]=father;
+                    break;
+                case CREATOR:
+                    bson[name]=creator;
+                    break;
+                case INDEX:
+                    bson[name]=index;
+                    break;
+                }
+        }
+        return bson.expand;
     }
+
+    /+
+    version(none)
+    static ref EventBody streamin(immutable(ubyte)[] data) {
+        auto doc=Document(data);
+        import std.string;
+        string expand(Recordnames rec)() {
+            static if ( rec < Recordnames.max ) {
+                enum name=toLower(to!string(rec));
+                return name~" : doc(\""~name~"\"), "~expand!(cast(Recordnames)(rec+1))();
+            }
+            return "";
+        }
+        enum expand_stream=
+            "EventBody result={"~
+            expand!(Recordnames.min)()~
+            "};";
+
+        pragma(msg, expand_stream);
+        with(Recordnames) {
+            mixin(expand_stream);
+        }
+        return result;
+    }
+    +/
+        // foreach(rec; Recordnames.min..Recordnames.max) {
+        //     immutable name=to!string(rec);
+        //     with(Recordnames) final switch(rec) {
+        //         case TIME:
+        //             time=doc[name].get!Time;
+        //             break;
+        //         case PAYLOAD:
+        //             payload=doc[name].get!(immutable(ubyte)[]);
+        //             break;
+        //         case MOTHER:
+        //             mother=doc[name].get!(immutable(ubyte)[]);
+        //             break;
+        //         case FATHER:
+        //             father=doc[name].get!(immutable(ubyte)[]);
+        //             break;
+        //         case CREATOR:
+        //             creator=doc[name].get!(immutable(ubyte)[]);
+        //             break;
+        //         case INDEX:
+        //             bson[name]=doc[name].get!(uint);
+        //             break;
+        //         }
+        // }
+        //}
+
+
+    invariant {
+        assert(mother.length == 0);
+        assert(mother.length == father.length);
+
+    }
+    // immutable(H) hash() {
+    //     return H(Marshal);
+    // }
 }
 
 /+ ++++/
@@ -108,7 +185,7 @@ class Event(H) {
         WireBody wire_body;
         BigInt R, S; //creator's digital signature of body
     }
-    WireEvent wire_event;
+//    WireEvent wire_event;
     // EventBody eventBody;
     // BigInt R, S;
     int topologicalIndex;
@@ -119,17 +196,22 @@ class Event(H) {
     EventCoordinates[] lastAncestors;   //[participant fake id] => last ancestor
     EventCoordinates[] firstDescendants; //[participant fake id] => first descendant
 
-    string creator;
-    H hash;
+    immutable(ubyte)[] creator; // Public key
+    H[2] parents;
     string hex;
+    enum recordnames {
+        PARENTS,
+        TIME,
+        CREATOR,
+        WIRES
+    }
 
 
     this(
-        immutable(ubyte)[] payload,
-	H[] parents,
-	immutable(ubyte)[] creator,
-	int index) {
-        event_body = new EventBody!H(
+        ref const(Event!H) event_father,
+        ref const(Event!H) event_mother,
+        immutable(ubyte)[] payload ) {
+        event_body = new EventBody(
             payload,
             parents,
             creator,
@@ -195,7 +277,9 @@ class Event(H) {
     +/
 
 //json encoding of body and signature
+/++
     immutable(ubyte)[] Marshal() {
+        auto bson=new BSON;
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	if err := enc.Encode(e); err != nil {
@@ -204,13 +288,17 @@ class Event(H) {
 	return b.Bytes();
     }
 
+
+
     const(Event) Unmarshal(data []byte) {
-      auto b = bytes.NewBuffer(data);
-      auto dec = json.NewDecoder(b); //will read from b
-      return dec.Decode(e);
+        auto b = bytes.NewBuffer(data);
+        auto dec = json.NewDecoder(b); //will read from b
+        return dec.Decode(e);
     }
++/
 
 //sha256 hash of body and signature
+    /+
     immutable(ubyte)[] Hash() {
         if ( e.hash.length == 0 ) {
             hashBytes, err := e.Marshal()
@@ -229,14 +317,15 @@ class Event(H) {
         }
         return e.hex;
     }
-
++/
     void SetRoundReceived(int rr) {
         if ( roundReceived is null ) {
-            roundReceived = new(int);
+            roundReceived = new int;
 	}
 	*roundReceived = rr;
     }
 
+    /+
     void  SetWireInfo(int selfParentIndex,
         int otherParentCreatorID,
         int otherParentIndex,
@@ -248,7 +337,7 @@ class Event(H) {
             creatorID = creatorID;
         }
     }
-
++/
     const(WireEvent) ToWire() const {
         return wire_event;
 	// return WireEvent{
@@ -324,7 +413,7 @@ class Event(H) {
             return a[i].topologicalIndex < a[j].topologicalIndex;
         }
     }
-
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // WireEvent
