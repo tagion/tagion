@@ -1,6 +1,6 @@
 module bakery.utils.DList;
 
-import std.stdio;
+//import std.stdio;
 
 @safe
 class UtilException : Exception {
@@ -136,18 +136,8 @@ class DList(E) {
                 else {
                     return internal_count(e.next, i+1);
                 }
-                debug {
-                    writef("%s ", i);
-                }
             }
             immutable _count=internal_count(head);
-            debug {
-                writefln("result=%s", result);
-                if (result != _count) {
-                    write("##########");
-                    writefln("result=%s _count=%s", result, _count);
-                }
-            }
             assert(result == _count);
         }
     body {
@@ -324,10 +314,7 @@ unittest {
 
         auto pop_size=l.length;
         foreach_reverse(i;0..amount) {
-            auto _pop=l.pop;
-            writefln("pop=%s, i=%s", _pop, i);
-            pop_size--;
-//            assert(l.pop == i);
+            assert(l.pop == i);
             assert(l.length == pop_size);
         }
         assert(l.length == 0);
