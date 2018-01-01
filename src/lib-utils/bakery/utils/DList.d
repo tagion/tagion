@@ -1,6 +1,6 @@
 module bakery.utils.DList;
 
-import std.stdio;
+//import std.stdio;
 
 @safe
 class UtilException : Exception {
@@ -93,9 +93,6 @@ class DList(E) {
                 assert(count == 0);
             }
             if ( e.next is null ) {
-                if ( e !is tail ) {
-                    writeln("Bad element should be a tail element");
-                }
                 assert(e is tail);
             }
             if ( e.prev is null ) {
