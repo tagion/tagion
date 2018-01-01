@@ -1,6 +1,6 @@
 module bakery.utils.DList;
 
-//import std.stdio;
+import std.stdio;
 
 @safe
 class UtilException : Exception {
@@ -27,12 +27,15 @@ class DList(E) {
     Element* unshift(E e) {
         auto element=new Element(e);
         if ( head is null ) {
+            element.prev=null;
+            element.next=null;
             head = tail =  element;
         }
         else {
             element.next=head;
             head.prev=element;
             head = element;
+            head.prev=null;
         }
         count++;
         return element;
@@ -89,6 +92,15 @@ class DList(E) {
             if ( head is null ) {
                 assert(count == 0);
             }
+            if ( e.next is null ) {
+                if ( e !is tail ) {
+                    writeln("Bad element should be a tail element");
+                }
+                assert(e is tail);
+            }
+            if ( e.prev is null ) {
+                assert(e is head);
+            }
         }
     body {
         if ( head is null ) {
@@ -122,9 +134,28 @@ class DList(E) {
         count--;
     }
 
-    void moveToFront(Element* e) {
-        remove(e);
-        unshift(e.entry);
+    void moveToFront(Element* e)
+        in {
+            assert(e !is null);
+        }
+    body {
+        if ( e !is head ) {
+            if ( e == tail ) {
+                tail=tail.prev;
+                tail.next=null;
+            }
+            else {
+                e.next.prev = e.prev;
+                e.prev.next = e.next;
+            }
+            e.next=head;
+            head.prev=e;
+            head=e;
+            head.prev=null;
+        }
+        // remove(e);
+        // unshift(e.entry);
+
     }
 
     uint length() pure const
@@ -312,13 +343,10 @@ unittest {
         auto I=l.iterator;
         assert(equal(I, test));
 
-        auto pop_size=l.length;
         foreach_reverse(i;0..amount) {
             assert(l.pop == i);
-            assert(l.length == pop_size);
+            assert(l.length == i);
         }
-        assert(l.length == 0);
-
     }
     { // More elements test
         import std.algorithm.comparison : equal;
