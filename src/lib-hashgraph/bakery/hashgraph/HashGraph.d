@@ -14,7 +14,175 @@ module bakery.hashgraph.HashGraph;
 
 import bakery.hashgraph.Store;
 
-class HashGraph(Hash) {
+debug(RoundWarpTest) {
+    alias byte Round;
+}
+else {
+    alias int Round;
+}
+class HashGraph {
+    alias immutable(ubyte)[] Pubkey;
+    alias immutable(ubyte)[] HashPointer;
+    static LRU!(HashPointer, Event) event_cache;
+    class Node {
+
+        //DList!(Event) queue;
+        immutable uint node_id;
+        immutable ulong discovery_time;
+        immutable Pubkey pubkey;
+        uint index() {
+            return queue.iterator.front.key;
+        }
+        const(Event) event() {
+            return queue.iterator.front.value;
+        }
+        this(Pubkey pubkey, uint node_id, ulong time) {
+            this.pubkey=pubkey;
+            this.node_id=node_id;
+            this.time=time;
+        }
+        void updateRound(Round round) {
+            this.round=round;
+        }
+        bool passed; // Indicates that the graphs has passed this point
+        bool seeing; // See a witness
+        uint voting;
+        uint seeing;
+        Event event; // Last witness
+    private:
+        Round round;
+    }
+
+    Round round; // Current round
+    Node[uint] nodes; // List of participating nodes T
+    uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
+    uint[] unused_node_ids; // Stack of unused node ids
+
+    static ulong time;
+    static ulong current_time() {
+        time+=100;
+        return current_time;
+    }
+
+    // Returns the number of active nodes in the network
+    uint active_nodes() {
+        return cast(uint)(nodes_ids.length-unused_node_ids.length);
+    }
+
+    Event registrateEvent(
+        ref Pubkey pubkey,
+        ref EventBody eventbody,
+        Hash delegate(immutable(ubyte)[]) hfunc) {
+        auto get_node_id=pubkey in node_ids;
+        uint node_id;
+        Node node;
+        // Find a resuable node id if possible
+        if ( get_node_id is null ) {
+            if ( unused_node_ids.length ) {
+                node_id=unused_node_ids[0];
+                unused_node_ids=unused_node_ids[1..$];
+                node_ids[node_id]=pubkey;
+            }
+            else {
+                node_id=node_ids.length;
+                node_ids~=pubkey;
+            }
+            node=new Node(pubkey, node_id, current_time);
+
+        }
+        else {
+            node_id=*get_node_id;
+            node=nodes[node_id];
+        }
+        node.round=round;
+        auto event=new Event(eventbody, node_id);
+        // Add the event to the event cache
+        event_cache.add(hfunc(eventbody.serialize), event);
+        return event;
+    }
+    private static uint strong_see_marker;
+    bool strongSee(Event event) {
+        // Clear the node log
+        foreach(ref n; nodes) {
+            if ( n !is null ) {
+                n.passed=false;
+                n.seeing=0;
+                n.fork=false;
+//                n.famous=false;
+                n.event=null;
+                n.voting=0;
+            }
+        }
+        strong_see_marker++;
+        immutable theashold=(active_nodes*2)/3+1;
+
+        bool isMajority(uint voting) pure {
+            return voring > theashold;
+        }
+
+        void search(Event event) {
+            if (event !is null ) {
+                auto n=nodes[event.node_id];
+                assert(node !is null);
+                if ( event.witness ) {
+                    if ( isMajority(n.voring) ) {
+                        n.famous=true;
+                        if ( n.event !is event ) {
+                            if ( n.event.round < event.round ) {
+                                n.seeing=1;
+                                n.event=event;
+                            }
+                        }
+                        else {
+                            n.seeing++;
+                        }
+
+                        return;
+                    }
+                }
+                else if ( !n.passed ) {
+                    n.passed=true;
+                    n.voting++;
+                }
+                auto mother=event.mother;
+                if ( mother.marker != strong_see_marker ) {
+                    // marker secures that the
+                    mother.marker=strong_see_marker;
+                    search(mother);
+                    search(event.father);
+                }
+                else {
+                    n.fork=true;
+                }
+            }
+        }
+        uint voting;
+        foreach(ref n; nodes) {
+            if ( n.event && !n.fork ) {
+                n.event.famous=isMajority(n.seeing);
+                if ( e.event.famous ) {
+                    voting++;
+                }
+            }
+        }
+        bool strong=isMajority(voting);
+        if ( strong ) {
+            event.witness=true;
+            Event e;
+            for(e=event.mother; !event.witness; e=e.mother) {
+                /* empty */
+            }
+            if ( round == e.round+1 ) {
+                round++;
+            }
+            event.round=round;
+            assert(event.round == e.round+1);
+        }
+        return strong;
+    }
+
+
+
     uint[string] Participants;         //[public key] => id
     uint[string] ReverseParticipants;  //[id] => public key
     Store        Store;                //store of Events and Rounds
@@ -69,9 +237,9 @@ class HashGraph(Hash) {
 }
 
     }
-func (h *Hashgraph) SuperMajority() int {
-	return h.superMajority
-}
+// func (h *Hashgraph) SuperMajority() int {
+// 	return h.superMajority
+// }
 
 //true if y is an ancestor of x
 func (h *Hashgraph) Ancestor(x, y string) bool {
@@ -198,7 +366,7 @@ func (h *Hashgraph) stronglySee(x, y string) bool {
 			c++
 		}
 	}
-	return c >= h.SuperMajority()
+    return c >= superMajority;
 }
 
 //PRI.round: max of parent rounds
