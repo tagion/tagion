@@ -25,7 +25,7 @@ class SHA256 : Hash {
         _hashed=cast(hash_array_t)createSha256()[0..hash_size];
     }
     static immutable(uint) buffer_size() pure nothrow {
-        return 32;
+        return hash_size;
     }
     @trusted
     static immutable(SHA256) opCall(scope const(ubyte)[] data) {
