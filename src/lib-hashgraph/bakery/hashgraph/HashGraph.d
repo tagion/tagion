@@ -12,42 +12,40 @@ module bakery.hashgraph.HashGraph;
 // 	"github.com/babbleio/babble/common"
 // )
 
-import bakery.hashgraph.Store;
+//import bakery.hashgraph.Store;
+import bakery.hashgraph.Event;
+import bakery.utils.LRU;
+import bakery.crypto.Hash;
 
-debug(RoundWarpTest) {
-    alias byte Round;
-}
-else {
-    alias int Round;
-}
 class HashGraph {
     alias immutable(ubyte)[] Pubkey;
     alias immutable(ubyte)[] HashPointer;
-    static LRU!(HashPointer, Event) event_cache;
+    alias LRU!(HashPointer, Event) EventCache;
+    alias LRU!(Round, uint*) RoundCounter;
+    static EventCache event_cache;
+    static RoundCounter round_counter;
+    static this() {
+        event_cache=new EventCache(null);
+        round_counter=new RoundCounter(null);
+    }
     class Node {
 
         //DList!(Event) queue;
         immutable uint node_id;
         immutable ulong discovery_time;
         immutable Pubkey pubkey;
-        uint index() {
-            return queue.iterator.front.key;
-        }
-        const(Event) event() {
-            return queue.iterator.front.value;
-        }
         this(Pubkey pubkey, uint node_id, ulong time) {
             this.pubkey=pubkey;
             this.node_id=node_id;
-            this.time=time;
+            this.discovery_time=time;
         }
         void updateRound(Round round) {
             this.round=round;
         }
         bool passed; // Indicates that the graphs has passed this point
-        bool seeing; // See a witness
+        uint seeing; // See a witness
         uint voting;
-        uint seeing;
+        bool fork; // Fork detected in the hashgraph
         Event event; // Last witness
     private:
         Round round;
@@ -65,11 +63,43 @@ class HashGraph {
     }
 
     // Returns the number of active nodes in the network
-    uint active_nodes() {
-        return cast(uint)(nodes_ids.length-unused_node_ids.length);
+    uint active_nodes() const pure nothrow {
+        return cast(uint)(node_ids.length-unused_node_ids.length);
     }
 
-    Event registrateEvent(
+    uint threshold() const pure nothrow {
+        return (active_nodes*2)/3+1;
+    }
+
+    bool isMajority(uint voting) const pure nothrow {
+        return voting > threshold;
+    }
+
+    private void remove_node(Node n)
+        in {
+            assert(n !is null);
+            assert(n.node_id < nodes.length);
+        }
+    out {
+        assert(node_ids.length == active_nodes);
+    }
+    body {
+        nodes[n.node_id]=null;
+        node_ids.remove(n.pubkey);
+        unused_node_ids~=n.node_id;
+    }
+
+    uint countRound(Round round) {
+        uint* count;
+        if ( !round_counter.get(round, count) ) {
+            count=new uint;
+            round_counter.add(round, count);
+        }
+        (*count)++;
+        return (*count);
+    }
+
+    Event registerEvent(
         ref Pubkey pubkey,
         ref EventBody eventbody,
         Hash delegate(immutable(ubyte)[]) hfunc) {
@@ -81,11 +111,11 @@ class HashGraph {
             if ( unused_node_ids.length ) {
                 node_id=unused_node_ids[0];
                 unused_node_ids=unused_node_ids[1..$];
-                node_ids[node_id]=pubkey;
+                node_ids[pubkey]=node_id;
             }
             else {
-                node_id=node_ids.length;
-                node_ids~=pubkey;
+                node_id=cast(uint)node_ids.length;
+                node_ids[pubkey]=node_id;
             }
             node=new Node(pubkey, node_id, current_time);
 
@@ -97,9 +127,10 @@ class HashGraph {
         node.round=round;
         auto event=new Event(eventbody, node_id);
         // Add the event to the event cache
-        event_cache.add(hfunc(eventbody.serialize), event);
+        event_cache.add(hfunc(eventbody.serialize).signed, event);
         return event;
     }
+
     private static uint strong_see_marker;
     bool strongSee(Event event) {
         // Clear the node log
@@ -107,26 +138,22 @@ class HashGraph {
             if ( n !is null ) {
                 n.passed=false;
                 n.seeing=0;
-                n.fork=false;
+//                n.fork=false;
 //                n.famous=false;
                 n.event=null;
                 n.voting=0;
             }
         }
         strong_see_marker++;
-        immutable theashold=(active_nodes*2)/3+1;
-
-        bool isMajority(uint voting) pure {
-            return voring > theashold;
-        }
-
+        bool forked;
         void search(Event event) {
             if (event !is null ) {
                 auto n=nodes[event.node_id];
-                assert(node !is null);
+                assert(n !is null);
+                if ( n.fork ) return;
                 if ( event.witness ) {
-                    if ( isMajority(n.voring) ) {
-                        n.famous=true;
+                    if ( isMajority(n.voting) ) {
+//                        n.famous=true;
                         if ( n.event !is event ) {
                             if ( n.event.round < event.round ) {
                                 n.seeing=1;
@@ -153,17 +180,27 @@ class HashGraph {
                 }
                 else {
                     n.fork=true;
+                    n.event=null;
+                    n.seeing=0;
                 }
             }
         }
         uint voting;
+        Node[] forks;
         foreach(ref n; nodes) {
-            if ( n.event && !n.fork ) {
+            if (n.fork ) {
+                forks~=n;
+            }
+            else if ( n.event ) {
                 n.event.famous=isMajority(n.seeing);
-                if ( e.event.famous ) {
+                if ( n.event.famous ) {
                     voting++;
                 }
             }
+        }
+        // If we have a forks the nodes is removed
+        foreach(f; forks) {
+            remove_node(f);
         }
         bool strong=isMajority(voting);
         if ( strong ) {
@@ -182,7 +219,7 @@ class HashGraph {
     }
 
 
-
+/++
     uint[string] Participants;         //[public key] => id
     uint[string] ReverseParticipants;  //[id] => public key
     Store        Store;                //store of Events and Rounds
@@ -1207,4 +1244,6 @@ func setVote(votes map[string]map[string]bool, x, y string, vote bool) {
 		votes[x] = make(map[string]bool)
 	}
 	votes[x][y] = vote
+
++/
 }

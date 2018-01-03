@@ -160,6 +160,14 @@ struct EventBody {
     // }
 }
 
+debug(RoundWarpTest) {
+    alias byte Round;
+}
+else {
+    alias int Round;
+}
+
+
 /+ ++++/
 @safe
 class HashGraphException : Exception {
@@ -197,17 +205,34 @@ class Event {
     // BigInt R, S;
     int topologicalIndex;
 
-    private bool round_set;
-    private int  round;
+    private bool _round_set;
+    private Round  _round;
     private bool _witness;
+    private bool _famous;
 
-    void setRound(int round)
+    void round(Round round)
         in {
-            assert(!round_set);
+            assert(!_round_set);
         }
     body {
-        this.round_set=true;
-        this.round=round;
+        this._round_set=true;
+        this._round=round;
+    }
+
+    Round round() pure const nothrow {
+        return _round;
+    }
+
+    void famous(bool f)
+        in {
+            assert(!_famous);
+        }
+    body {
+        _famous=f;
+    }
+
+    bool famous() pure const nothrow {
+        return _famous;
     }
 
     void witness(bool w)
