@@ -33,8 +33,8 @@ class LRU(K,V)  {
 
 
 // NewLRU constructs an LRU of the given size
-
-    this(immutable uint size, EvictCallback onEvict) {
+    // size zero means unlimited
+    this( EvictCallback onEvict, immutable uint size=0) {
         this.size=      size;
         evictList = new EvictList;
             //	items:     make(map[interface{}]*list.Element),
@@ -69,7 +69,7 @@ class LRU(K,V)  {
         auto element=evictList.unshift(entry);
         items[key] = element;
 
-        bool evict = evictList.length > size;
+        bool evict = (size!=0) && (evictList.length > size);
         // Verify size not exceeded
         if (evict) {
             // Remove the oldest element
@@ -202,7 +202,7 @@ unittest {
         evictCounter++;
     }
     enum amount = 8;
-    auto l = new TestLRU(amount, &onEvicted);
+    auto l = new TestLRU(&onEvicted, amount);
     foreach(i;0..amount) {
         l.add(i, i);
     }
@@ -217,7 +217,7 @@ unittest {
         evictCounter++;
     }
     enum amount = 8;
-    auto l = new TestLRU(amount, &onEvicted);
+    auto l = new TestLRU(&onEvicted, amount);
     foreach(i;0..amount*2) {
         l.add(i, i);
         if ( i < amount ) {
@@ -280,7 +280,7 @@ unittest { // getOldest removeOldest
         evictCounter++;
     }
     enum amount = 8;
-    auto l = new TestLRU(amount, &onEvicted);
+    auto l = new TestLRU(&onEvicted, amount);
     bool ok;
     foreach(i;0..amount*2) {
         l.add(i, i);
@@ -327,7 +327,7 @@ unittest { // add
         evictCounter++;
     }
     bool ok;
-    auto l = new TestLRU(1, &onEvicted);
+    auto l = new TestLRU(&onEvicted, 1);
 	// evictCounter := 0
 	// onEvicted := func(k interface{}, v interface{}) {
 	// 	evictCounter += 1
@@ -349,7 +349,7 @@ unittest {
     void onEvicted(TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
     }
-    auto l = new TestLRU(2, &onEvicted);
+    auto l = new TestLRU(&onEvicted, 2);
 	// l := NewLRU(2, nil)
 
     l.add(1, 1);
@@ -367,7 +367,7 @@ unittest {
     void onEvicted(TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
     }
-    auto l = new TestLRU(2, &onEvicted);
+    auto l = new TestLRU(&onEvicted, 2);
 //	l := NewLRU(2, nil)
 
     l.add(1, 1);
