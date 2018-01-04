@@ -113,7 +113,7 @@ class HashGraph {
         return (*count);
     }
 
-    static void check(bool flag, string msg) {
+    static void check(immutable bool flag, string msg) @safe {
         if (!flag) {
             throw new EventConsensusException(msg);
         }
@@ -145,8 +145,8 @@ class HashGraph {
     }
 
     package Event registerEvent(
-        ref Pubkey pubkey,
-        ref EventBody eventbody,
+        ref const(Pubkey) pubkey,
+        ref const(EventBody) eventbody,
         Hfunc hfunc) {
         auto get_node_id=pubkey in node_ids;
         uint node_id;
