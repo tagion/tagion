@@ -4,6 +4,8 @@ import std.datetime;   // Date, DateTime
 import bakery.utils.BSON : R_BSON=BSON, Document;
 import std.conv;
 
+import std.stdio;
+
 alias R_BSON!true GBSON;
 
 // import (
@@ -16,20 +18,23 @@ alias R_BSON!true GBSON;
 
 // 	"github.com/babbleio/babble/crypto"
 // )
-
-version(none)
-struct WireBody {
-    immutable(ubyte)[] payload; //the payload
-    //wire
-    //It is cheaper to send ints then hashes over the wire
-    int SelfParentIndex;
-    int OtherParentCreatorID;
-    int OtherParentIndex;
-    int CreatorID;
-
-    DateTime Timestamp ; //creator's claimed timestamp of the event's creation
-    int Index;//index in the sequence of events created by Creator
+@safe
+class ConsensusException : Exception {
+    this( immutable(char)[] msg ) {
+        writefln("msg=%s", msg);
+        super( msg );
+    }
 }
+
+@safe
+class EventConsensusException : ConsensusException {
+    this( immutable(char)[] msg ) {
+//        writefln("msg=%s", msg);
+        super( msg );
+    }
+}
+
+
 
 struct EventBody {
     immutable(ubyte[]) payload;
@@ -77,6 +82,8 @@ struct EventBody {
         //this.index     =    index;
         this.father    =    father;
         this.mother    =    mother;
+        this.payload   =    payload;
+        consensus();
         //this.creator   =    creator;
     }
 
@@ -85,17 +92,48 @@ struct EventBody {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=EventBody.tupleof[i].stringof;
-            this.tupleof[i]=doc[name].get!type;
+            if ( doc.hasElement(name) ) {
+                this.tupleof[i]=doc[name].get!type;
+            }
         }
+        consensus();
     }
 
+    void consensus() {
+        void check(bool flag, string msg) {
+            if (!flag) {
+                throw new EventConsensusException(msg);
+            }
+        }
+        if ( mother.length == 0 ) {
+            // Seed event first event in the chain
+            writefln("father.length=%s", father.length);
+            check(father.length == 0, "If an event has no mother it can not have a father");
+            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
+        }
+        else {
+            if ( father.length != 0 ) {
+                // If the Event has a father
+                check(mother.length == father.length, "Mother and Father must user the same hash function");
+            }
+            check(index == 0, "The this event is not an Eva event so the index mush be greater than zero");
+            check(mother != father, "The mother and father can not be the same event");
+        }
+    }
 //json encoding of body only
 //    version(none)
     immutable(ubyte)[] serialize() const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
             enum name=EventBody.tupleof[i].stringof;
-            bson[name]=m;
+            static if ( __traits(compiles, m.length) ) {
+                if ( m.length != 0 ) {
+                    bson[name]=m;
+                }
+            }
+            else {
+                bson[name]=m;
+            }
         }
         return bson.expand;
     }
@@ -150,11 +188,13 @@ struct EventBody {
         //}
 
 
-    invariant {
-        assert(mother.length != 0);
-        assert(mother.length == father.length);
+    // invariant {
+    //     assert(mother.length != 0);
+    //     if ( mother.length != 0 ) {
+    //         assert(mother.length == father.length);
+    //     }
 
-    }
+//    }
     // immutable(H) hash() {
     //     return H(Marshal);
     // }

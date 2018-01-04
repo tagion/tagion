@@ -12,10 +12,21 @@ module bakery.hashgraph.HashGraph;
 // 	"github.com/babbleio/babble/common"
 // )
 
+import std.stdio;
+import std.conv;
 //import bakery.hashgraph.Store;
 import bakery.hashgraph.Event;
 import bakery.utils.LRU;
+import bakery.utils.BSON : Document;
 import bakery.crypto.Hash;
+
+@safe
+class HashGraphConsensusException : ConsensusException {
+    this( immutable(char)[] msg ) {
+//        writefln("msg=%s", msg);
+        super( msg );
+    }
+}
 
 class HashGraph {
     alias immutable(ubyte)[] Pubkey;
@@ -42,9 +53,12 @@ class HashGraph {
         void updateRound(Round round) {
             this.round=round;
         }
-        bool passed; // Indicates that the graphs has passed this point
+        // Counts the number of times that a search has
+        // passed this node in the graph search
+        int passed;
         uint seeing; // See a witness
-        uint voting;
+        bool voted;
+        // uint voting;
         bool fork; // Fork detected in the hashgraph
         Event event; // Last witness
     private:
@@ -59,7 +73,7 @@ class HashGraph {
     static ulong time;
     static ulong current_time() {
         time+=100;
-        return current_time;
+        return time;
     }
 
     // Returns the number of active nodes in the network
@@ -99,10 +113,41 @@ class HashGraph {
         return (*count);
     }
 
+    static void check(bool flag, string msg) {
+        if (!flag) {
+            throw new EventConsensusException(msg);
+        }
+    }
+
+    enum max_package_size=0x1000;
+    alias Hash delegate(immutable(ubyte)[]) Hfunc;
+    Event receive(
+        immutable(ubyte)[] data,
+        bool delegate(ref const(Pubkey) pubkey, immutable(ubyte[]) msg, Hfunc hfunc) signed,
+        Hfunc hfunc) {
+        auto doc=Document(data);
+        Pubkey pubkey;
+        Event event;
+        enum pubk=pubkey.stringof;
+        enum event_label=event.stringof;
+        check((data.length <= max_package_size), "The package size exceeds the max of "~to!string(max_package_size));
+        check(doc.hasElement(pubk), "Event package is missing public key");
+        check(doc.hasElement(event_label), "Event package missing the actual event");
+        pubkey=doc[pubk].get!(immutable(ubyte)[]);
+        auto eventbody_data=doc[event_label].get!(immutable(ubyte[]));
+        check(signed(pubkey, eventbody_data, hfunc), "Invalid signature on event");
+        // Now we come this far so we can register the event
+        auto eventbody=EventBody(eventbody_data);
+        event=registerEvent(pubkey, eventbody, hfunc);
+        // See if the node is strong seeing the hashgraph
+        auto strong_seeing=strongSee(event);
+        return event;
+    }
+
     Event registerEvent(
         ref Pubkey pubkey,
         ref EventBody eventbody,
-        Hash delegate(immutable(ubyte)[]) hfunc) {
+        Hfunc hfunc) {
         auto get_node_id=pubkey in node_ids;
         uint node_id;
         Node node;
@@ -118,7 +163,7 @@ class HashGraph {
                 node_ids[pubkey]=node_id;
             }
             node=new Node(pubkey, node_id, current_time);
-
+            nodes[node_id]=node;
         }
         else {
             node_id=*get_node_id;
@@ -133,43 +178,67 @@ class HashGraph {
 
     private static uint strong_see_marker;
     bool strongSee(Event event) {
+        import std.bitmanip;
+        BitArray[] vote_mask=new BitArray[nodes.length];
         // Clear the node log
-        foreach(ref n; nodes) {
+        foreach(i,ref n; nodes) {
             if ( n !is null ) {
-                n.passed=false;
+                n.passed=0;
                 n.seeing=0;
 //                n.fork=false;
 //                n.famous=false;
                 n.event=null;
-                n.voting=0;
+                n.voted=false;
+                vote_mask[i].length=nodes.length;
             }
         }
+
         strong_see_marker++;
         bool forked;
         void search(Event event) {
-            if (event !is null ) {
-                auto n=nodes[event.node_id];
-                assert(n !is null);
-                if ( n.fork ) return;
-                if ( event.witness ) {
-                    if ( isMajority(n.voting) ) {
-//                        n.famous=true;
-                        if ( n.event !is event ) {
-                            if ( n.event.round < event.round ) {
-                                n.seeing=1;
-                                n.event=event;
-                            }
+            uint vote(ref BitArray mask) {
+                uint votes;
+                foreach(i, n; nodes) {
+                    if (i != event.index) {
+                        if ( n.passed > 0 ) {
+                            mask[i]=true;
                         }
-                        else {
-                            n.seeing++;
+                        if (mask[i]) {
+                            votes++;
                         }
-
-                        return;
                     }
                 }
-                else if ( !n.passed ) {
-                    n.passed=true;
-                    n.voting++;
+                return votes;
+            }
+            if ( (event !is null) && (!event.famous) ) {
+                auto n=nodes[event.node_id];
+                assert(n !is null);
+                n.passed++;
+                scope(exit) {
+                    n.passed--;
+                    assert(n.passed >= 0);
+                }
+                if ( n.fork ) return;
+                if ( event.witness ) {
+                    if ( n.event !is event ) {
+                        if ( n.event is null ) {
+                            n.event=event;
+                        }
+                        else if ( n.event.round < event.round ) {
+                            n.event=event;
+                            // Clear the vote_mask
+                            vote_mask[event.node_id].length=0;
+                            vote_mask[event.node_id].length=nodes.length;
+                        }
+                        n.seeing=1;
+                        n.voted=false;
+                    }
+                    auto votes=vote(vote_mask[event.index]);
+                    if ( isMajority(votes) ) {
+                        n.seeing++;
+                        n.voted=true;
+                    }
+                    return;
                 }
                 auto mother=event.mother;
                 if ( mother.marker != strong_see_marker ) {
@@ -181,7 +250,7 @@ class HashGraph {
                 else {
                     n.fork=true;
                     n.event=null;
-                    n.seeing=0;
+//                    n.seeing=0;
                 }
             }
         }
@@ -189,18 +258,14 @@ class HashGraph {
         Node[] forks;
         foreach(ref n; nodes) {
             if (n.fork ) {
-                forks~=n;
+                // If we have a forks the nodes is removed
+                remove_node(n);
             }
             else if ( n.event ) {
-                n.event.famous=isMajority(n.seeing);
                 if ( n.event.famous ) {
                     voting++;
                 }
             }
-        }
-        // If we have a forks the nodes is removed
-        foreach(f; forks) {
-            remove_node(f);
         }
         bool strong=isMajority(voting);
         if ( strong ) {
@@ -218,6 +283,122 @@ class HashGraph {
         return strong;
     }
 
+    unittest { // strongSee
+        // This is the example taken from
+        // HASHGRAPH CONSENSUS
+        // SWIRLDS TECH REPORT TR-2016-01
+        import bakery.crypto.SHA256;
+        import std.traits;
+        import std.conv;
+        enum NodeLable {
+            Alice,
+            Bob,
+            Carol,
+            Dave,
+            Elisa
+        };
+        struct Emitter {
+            Pubkey pubkey;
+        }
+        auto h=new HashGraph;
+        Emitter[NodeLable.max+1] emitters;
+        writefln("Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
+        foreach (immutable l; [EnumMembers!NodeLable]) {
+            writefln("label=%s", l);
+            emitters[l].pubkey=cast(Pubkey)to!string(l);
+        }
+        ulong current_time;
+        ulong dummy_time() {
+            current_time+=1;
+            return current_time;
+        }
+        Hash hash(immutable(ubyte)[] data) {
+            return new SHA256(data);
+        }
+        EventBody* newbody(const(EventBody)* mother, const(EventBody)* father) {
+            if ( father is null ) {
+                auto hm=hash(mother.serialize).signed;
+                return new EventBody(null, hm, null, dummy_time, 0);
+            }
+            else {
+                auto hm=hash(mother.serialize).signed;
+                auto hf=hash(father.serialize).signed;
+                return new EventBody(null, hm, hf, dummy_time, 0);
+            }
+        }
+        // Row number zero
+        EventBody* a,b,c,d,e;
+        with(NodeLable) {
+            a=new EventBody(hash(emitters[Alice].pubkey).signed, null, null, 0, 0);
+            b=new EventBody(hash(emitters[Bob].pubkey).signed, null, null, 0, 0);
+            c=new EventBody(hash(emitters[Carol].pubkey).signed, null, null, 0, 0);
+            d=new EventBody(hash(emitters[Dave].pubkey).signed, null, null, 0, 0);
+            e=new EventBody(hash(emitters[Elisa].pubkey).signed, null, null, 0, 0);
+        }
+        //
+        with(NodeLable) {
+            h.registerEvent(emitters[Bob].pubkey,   *b, &hash);
+            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
+            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
+            h.registerEvent(emitters[Dave].pubkey,  *d, &hash);
+        }
+        // Row number one
+        c=newbody(c, d);
+        e=newbody(e, b);
+        with(NodeLable) {
+            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
+        }
+        // Row number two
+        b=newbody(b, c);
+        c=newbody(c, e);
+        e=newbody(e, null);
+        with(NodeLable) {
+            h.registerEvent(emitters[Bob].pubkey,   *b, &hash);
+            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
+        }
+        // Row number 2 1/2
+        d=newbody(d, c);
+        //
+        with(NodeLable) {
+            h.registerEvent(emitters[Dave].pubkey,  *d, &hash);
+        }
+        // Row number 3
+        a=newbody(a, b);
+        b=newbody(b, c);
+        c=newbody(c, d);
+        e=newbody(e, null);
+        //
+        with(NodeLable) {
+            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
+            h.registerEvent(emitters[Bob].pubkey,   *b, &hash);
+            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
+        }
+        // Row number 4
+        a=newbody(a, null);
+        e=newbody(e, null);
+        //
+        with(NodeLable) {
+            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
+        }
+        // Row number 5
+        c=newbody(c, e);
+        //
+        with(NodeLable) {
+            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
+        }
+        // Row number 5
+        c=newbody(c, a);
+        //
+        with(NodeLable) {
+            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
+        }
+
+    }
 
 /++
     uint[string] Participants;         //[public key] => id
