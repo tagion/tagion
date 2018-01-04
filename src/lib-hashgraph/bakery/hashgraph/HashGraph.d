@@ -144,7 +144,7 @@ class HashGraph {
         return event;
     }
 
-    Event registerEvent(
+    package Event registerEvent(
         ref Pubkey pubkey,
         ref EventBody eventbody,
         Hfunc hfunc) {
@@ -177,7 +177,7 @@ class HashGraph {
     }
 
     private static uint strong_see_marker;
-    bool strongSee(Event event) {
+    package bool strongSee(Event event) {
         import std.bitmanip;
         BitArray[] vote_mask=new BitArray[nodes.length];
         // Clear the node log
