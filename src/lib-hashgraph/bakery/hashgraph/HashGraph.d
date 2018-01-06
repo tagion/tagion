@@ -39,6 +39,27 @@ class HashGraph {
         event_cache=new EventCache(null);
         round_counter=new RoundCounter(null);
     }
+    struct EventPackage{
+        Pubkey pubkey;
+        EventBody eventbody;
+        GBSON toBSON() {
+            auto bson=new GBSON;
+            foreach(i, m; this.tupleof) {
+                enum name=EventBody.tupleof[i].stringof;
+                static if ( __traits(compiles, m.toBSON) ) {
+                    bson[name]=m.toBSON;
+                }
+                else {
+                    bson[name]=m;
+                }
+            }
+            return bson;
+        }
+        immutable(ubyte)[] serialize() {
+            return toBSON.expand;
+        }
+    }
+
     class Node {
 
         //DList!(Event) queue;
@@ -172,7 +193,9 @@ class HashGraph {
         node.round=round;
         auto event=new Event(eventbody, node_id);
         // Add the event to the event cache
-        event_cache.add(hfunc(eventbody.serialize).signed, event);
+        auto ee=eventbody.serialize;
+        auto hf=hfunc(eventbody.serialize);
+        event_cache.add(hfunc(eventbody.serialize).digits, event);
         return event;
     }
 
@@ -317,23 +340,23 @@ class HashGraph {
         }
         EventBody* newbody(const(EventBody)* mother, const(EventBody)* father) {
             if ( father is null ) {
-                auto hm=hash(mother.serialize).signed;
+                auto hm=hash(mother.serialize).digits;
                 return new EventBody(null, hm, null, dummy_time, 0);
             }
             else {
-                auto hm=hash(mother.serialize).signed;
-                auto hf=hash(father.serialize).signed;
+                auto hm=hash(mother.serialize).digits;
+                auto hf=hash(father.serialize).digits;
                 return new EventBody(null, hm, hf, dummy_time, 0);
             }
         }
         // Row number zero
         EventBody* a,b,c,d,e;
         with(NodeLable) {
-            a=new EventBody(hash(emitters[Alice].pubkey).signed, null, null, 0, 0);
-            b=new EventBody(hash(emitters[Bob].pubkey).signed, null, null, 0, 0);
-            c=new EventBody(hash(emitters[Carol].pubkey).signed, null, null, 0, 0);
-            d=new EventBody(hash(emitters[Dave].pubkey).signed, null, null, 0, 0);
-            e=new EventBody(hash(emitters[Elisa].pubkey).signed, null, null, 0, 0);
+            a=new EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0, 0);
+            b=new EventBody(hash(emitters[Bob].pubkey).digits, null, null, 0, 0);
+            c=new EventBody(hash(emitters[Carol].pubkey).digits, null, null, 0, 0);
+            d=new EventBody(hash(emitters[Dave].pubkey).digits, null, null, 0, 0);
+            e=new EventBody(hash(emitters[Elisa].pubkey).digits, null, null, 0, 0);
         }
         //
         with(NodeLable) {

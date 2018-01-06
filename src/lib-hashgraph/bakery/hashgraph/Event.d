@@ -122,7 +122,7 @@ struct EventBody {
     }
 //json encoding of body only
 //    version(none)
-    immutable(ubyte)[] serialize() const {
+    GBSON toBSON() const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
             enum name=EventBody.tupleof[i].stringof;
@@ -135,7 +135,11 @@ struct EventBody {
                 bson[name]=m;
             }
         }
-        return bson.expand;
+        return bson;
+    }
+
+    immutable(ubyte)[] serialize() const {
+        return toBSON.expand;
     }
 
     /+
@@ -568,8 +572,8 @@ class Event {
 unittest { // Serialize and unserialize EventBody
     import bakery.crypto.SHA256;
     auto payload=cast(immutable(ubyte)[])"Some payload";
-    auto mother=SHA256("self").signed;
-    auto father=SHA256("other").signed;
+    auto mother=SHA256("self").digits;
+    auto father=SHA256("other").digits;
 //    auto creator=cast(immutable(ubyte)[])"creator";
     auto seed_body=EventBody(payload, mother, father, 0, 0);
 
