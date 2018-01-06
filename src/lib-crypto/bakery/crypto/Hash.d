@@ -26,6 +26,6 @@ interface Hash {
     static immutable(Hash) opCall(const(Hash) left, const(Hash) right) pure nothrow;
     static immutable(Hash) opCall(const(char)[] str) pure nothrow;
     static immutable(uint) buffer_size() pure nothrow;
-    immutable(ubyte)[] signed() const pure nothrow;
+    immutable(ubyte)[] digits() const pure nothrow;
     immutable(char)[] hex() const pure nothrow;
 }

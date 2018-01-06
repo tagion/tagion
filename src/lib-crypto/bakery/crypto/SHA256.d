@@ -40,8 +40,8 @@ class SHA256 : Hash {
     }
     static immutable(SHA256) opCall(const(SHA256) left, const(SHA256) right) {
         scope immutable(ubyte)[] data;
-        data~=left.signed;
-        data~=right.signed;
+        data~=left.digits;
+        data~=right.digits;
         return SHA256(data);
     }
     version(node)
@@ -50,14 +50,14 @@ class SHA256 : Hash {
         return assumeUnique(sha256_core.hexDigest(buffer));
     }
 
-    override immutable(ubyte)[] signed() const pure nothrow {
+    override immutable(ubyte)[] digits() const pure nothrow {
         return _hashed;
     }
     override immutable(char)[] hex() const pure nothrow {
         return .hex(_hashed);
     }
     bool isEqual(const(SHA256) h) pure const nothrow {
-        return h.signed == signed;
+        return h.digits == digits;
     }
     /*
     override bool opEquals(Object h) {
