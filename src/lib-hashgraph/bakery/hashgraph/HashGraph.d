@@ -39,9 +39,11 @@ class HashGraph {
         event_cache=new EventCache(null);
         round_counter=new RoundCounter(null);
     }
+
     struct EventPackage{
         Pubkey pubkey;
-        EventBody eventbody;
+        immutable(ubyte)[] signature;
+        EventBody* eventbody;
         GBSON toBSON() {
             auto bson=new GBSON;
             foreach(i, m; this.tupleof) {
