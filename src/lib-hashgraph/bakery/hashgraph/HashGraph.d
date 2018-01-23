@@ -30,9 +30,11 @@ class HashGraphConsensusException : ConsensusException {
 
 class HashGraph {
     alias immutable(ubyte)[] Pubkey;
+    alias immutable(ubyte)[] Privkey;
     alias immutable(ubyte)[] HashPointer;
     alias LRU!(HashPointer, Event) EventCache;
     alias LRU!(Round, uint*) RoundCounter;
+    alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
     static EventCache event_cache;
     static RoundCounter round_counter;
     static this() {
@@ -42,8 +44,45 @@ class HashGraph {
 
     struct EventPackage{
         Pubkey pubkey;
+//        Privkey privkey;
+//        Sign sign;
         immutable(ubyte)[] signature;
-        EventBody* eventbody;
+        EventBody eventbody;
+        this(
+            Pubkey pubkey,
+            Privkey privkey,
+            Sign sign,
+//            immutable(ubyte)[] signature,
+            ref EventBody eventbody
+            ) {
+            this.pubkey=pubkey;
+            this.signature=sign(pubkey, privkey, eventbody.serialize);
+            this.eventbody=eventbody;
+        }
+        // Create from an BSON stream
+        this(immutable(ubyte)[] data) {
+            auto doc=Document(data);
+            this(doc);
+        }
+
+        this(Document doc) {
+            foreach(i, ref m; this.tupleof) {
+                alias typeof(m) type;
+                enum name=EventPackage.tupleof[i].stringof;
+                static if ( __traits(compiles, m.toBSON) ) {
+                    // this.tupleof[i]=new type(doc[name].get!(immutable(ubyte)[]));
+                    pragma(msg, type.stringof);
+                    // static assert(is(EventBody == type));
+                    // auto x=new type(doc[name].get!(Document));
+                    // pragma(msg, typeof(x).stringof);
+
+                    this.tupleof[i]=type(doc[name].get!(Document));
+                }
+                else {
+                    this.tupleof[i]=doc[name].get!type;
+                }
+            }
+        }
         GBSON toBSON() {
             auto bson=new GBSON;
             foreach(i, m; this.tupleof) {
@@ -327,12 +366,13 @@ class HashGraph {
         }
         auto h=new HashGraph;
         Emitter[NodeLable.max+1] emitters;
-        writefln("Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
+        writefln("@@@ Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
         foreach (immutable l; [EnumMembers!NodeLable]) {
             writefln("label=%s", l);
             emitters[l].pubkey=cast(Pubkey)to!string(l);
         }
         ulong current_time;
+        uint dummy_index;
         ulong dummy_time() {
             current_time+=1;
             return current_time;
@@ -341,17 +381,19 @@ class HashGraph {
             return new SHA256(data);
         }
         EventBody* newbody(const(EventBody)* mother, const(EventBody)* father) {
+            dummy_index++;
             if ( father is null ) {
                 auto hm=hash(mother.serialize).digits;
-                return new EventBody(null, hm, null, dummy_time, 0);
+                return new EventBody(null, hm, null, dummy_time, dummy_index);
             }
             else {
                 auto hm=hash(mother.serialize).digits;
                 auto hf=hash(father.serialize).digits;
-                return new EventBody(null, hm, hf, dummy_time, 0);
+                return new EventBody(null, hm, hf, dummy_time, dummy_index);
             }
         }
         // Row number zero
+        writeln("Row 0");
         EventBody* a,b,c,d,e;
         with(NodeLable) {
             a=new EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0, 0);
@@ -369,6 +411,7 @@ class HashGraph {
             h.registerEvent(emitters[Dave].pubkey,  *d, &hash);
         }
         // Row number one
+        writeln("Row 1");
         c=newbody(c, d);
         e=newbody(e, b);
         with(NodeLable) {
@@ -376,6 +419,8 @@ class HashGraph {
             h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
         }
         // Row number two
+        writeln("Row 2");
+
         b=newbody(b, c);
         c=newbody(c, e);
         e=newbody(e, null);
@@ -385,12 +430,16 @@ class HashGraph {
             h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
         }
         // Row number 2 1/2
+        writeln("Row 2 1/2");
+
         d=newbody(d, c);
         //
         with(NodeLable) {
             h.registerEvent(emitters[Dave].pubkey,  *d, &hash);
         }
         // Row number 3
+        writeln("Row 3");
+
         a=newbody(a, b);
         b=newbody(b, c);
         c=newbody(c, d);
@@ -403,6 +452,8 @@ class HashGraph {
             h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
         }
         // Row number 4
+        writeln("Row 4");
+
         a=newbody(a, null);
         e=newbody(e, null);
         //
@@ -411,17 +462,22 @@ class HashGraph {
             h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
         }
         // Row number 5
+        writeln("Row 5");
+
         c=newbody(c, e);
         //
         with(NodeLable) {
             h.registerEvent(emitters[Carol].pubkey, *c, &hash);
         }
-        // Row number 5
+        // Row number 6
+        writeln("Row 6");
+
         c=newbody(c, a);
         //
         with(NodeLable) {
             h.registerEvent(emitters[Alice].pubkey, *a, &hash);
         }
+        writeln("Row end");
 
     }
 

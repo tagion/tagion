@@ -54,7 +54,7 @@ struct EventBody {
         }
     }
     // int Index;
-    // int selfParentIndex;
+//    // int selfParentIndex;
     // int otherParentCreatorID;
     // int otherParentIndex;
     // int creatorID;
@@ -89,6 +89,10 @@ struct EventBody {
 
     this(immutable(ubyte)[] data) {
         auto doc=Document(data);
+        this(doc);
+    }
+
+    this(Document doc) {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=EventBody.tupleof[i].stringof;
@@ -107,7 +111,7 @@ struct EventBody {
         }
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
-            writefln("father.length=%s", father.length);
+            writefln("father.length=%s index=%s", father.length, index);
             check(father.length == 0, "If an event has no mother it can not have a father");
             check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
         }
@@ -116,7 +120,8 @@ struct EventBody {
                 // If the Event has a father
                 check(mother.length == father.length, "Mother and Father must user the same hash function");
             }
-            check(index == 0, "The this event is not an Eva event so the index mush be greater than zero");
+            writefln("Non Eva father.length=%s index=%s", father.length, index);
+            check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
             check(mother != father, "The mother and father can not be the same event");
         }
     }
@@ -574,8 +579,9 @@ unittest { // Serialize and unserialize EventBody
     auto payload=cast(immutable(ubyte)[])"Some payload";
     auto mother=SHA256("self").digits;
     auto father=SHA256("other").digits;
+    writeln("Serialize event");
 //    auto creator=cast(immutable(ubyte)[])"creator";
-    auto seed_body=EventBody(payload, mother, father, 0, 0);
+    auto seed_body=EventBody(payload, mother, father, 0, 1);
 
     auto raw=seed_body.serialize;
 
