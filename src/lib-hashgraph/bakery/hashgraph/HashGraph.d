@@ -1,17 +1,5 @@
 module bakery.hashgraph.HashGraph;
 
-// import (
-// 	"encoding/hex"
-// 	"fmt"
-// 	"math"
-// 	"sort"
-// 	"time"
-
-// 	"github.com/sirupsen/logrus"
-
-// 	"github.com/babbleio/babble/common"
-// )
-
 import std.stdio;
 import std.conv;
 //import bakery.hashgraph.Store;
@@ -47,17 +35,16 @@ class HashGraph {
 //        Privkey privkey;
 //        Sign sign;
         immutable(ubyte)[] signature;
-        EventBody eventbody;
+        immutable(EventBody) eventbody;
         this(
             Pubkey pubkey,
             Privkey privkey,
             Sign sign,
-//            immutable(ubyte)[] signature,
-            ref EventBody eventbody
+            const ref EventBody e
             ) {
             this.pubkey=pubkey;
             this.signature=sign(pubkey, privkey, eventbody.serialize);
-            this.eventbody=eventbody;
+            this.eventbody=e;
         }
         // Create from an BSON stream
         this(immutable(ubyte)[] data) {
@@ -70,19 +57,16 @@ class HashGraph {
                 alias typeof(m) type;
                 enum name=EventPackage.tupleof[i].stringof;
                 static if ( __traits(compiles, m.toBSON) ) {
-                    // this.tupleof[i]=new type(doc[name].get!(immutable(ubyte)[]));
-                    pragma(msg, type.stringof);
-                    // static assert(is(EventBody == type));
-                    // auto x=new type(doc[name].get!(Document));
-                    // pragma(msg, typeof(x).stringof);
-
-                    this.tupleof[i]=type(doc[name].get!(Document));
+                    static if ( is(type T : immutable(T)) ) {
+                        this.tupleof[i]=T(doc[name].get!(Document));
+                    }
                 }
                 else {
                     this.tupleof[i]=doc[name].get!type;
                 }
             }
         }
+
         GBSON toBSON() {
             auto bson=new GBSON;
             foreach(i, m; this.tupleof) {
@@ -199,16 +183,16 @@ class HashGraph {
         auto eventbody_data=doc[event_label].get!(immutable(ubyte[]));
         check(signed(pubkey, eventbody_data, hfunc), "Invalid signature on event");
         // Now we come this far so we can register the event
-        auto eventbody=EventBody(eventbody_data);
+        immutable(EventBody) eventbody=EventBody(eventbody_data);
         event=registerEvent(pubkey, eventbody, hfunc);
         // See if the node is strong seeing the hashgraph
-        auto strong_seeing=strongSee(event);
+        event.strongly_seeing=strongSee(event);
         return event;
     }
 
     package Event registerEvent(
         ref const(Pubkey) pubkey,
-        ref const(EventBody) eventbody,
+        ref immutable(EventBody) eventbody,
         Hfunc hfunc) {
         auto get_node_id=pubkey in node_ids;
         uint node_id;
@@ -234,8 +218,8 @@ class HashGraph {
         node.round=round;
         auto event=new Event(eventbody, node_id);
         // Add the event to the event cache
-        auto ee=eventbody.serialize;
-        auto hf=hfunc(eventbody.serialize);
+        // auto ee=eventbody.serialize;
+        //       auto hf=hfunc(eventbody.serialize);
         event_cache.add(hfunc(eventbody.serialize).digits, event);
         return event;
     }
@@ -380,102 +364,112 @@ class HashGraph {
         Hash hash(immutable(ubyte)[] data) {
             return new SHA256(data);
         }
-        EventBody* newbody(const(EventBody)* mother, const(EventBody)* father) {
+        immutable(EventBody) newbody(immutable(EventBody)* mother, immutable(EventBody)* father) {
             dummy_index++;
             if ( father is null ) {
                 auto hm=hash(mother.serialize).digits;
-                return new EventBody(null, hm, null, dummy_time, dummy_index);
+                return EventBody(null, hm, null, dummy_time);
             }
             else {
                 auto hm=hash(mother.serialize).digits;
                 auto hf=hash(father.serialize).digits;
-                return new EventBody(null, hm, hf, dummy_time, dummy_index);
+                return EventBody(null, hm, hf, dummy_time);
             }
         }
         // Row number zero
         writeln("Row 0");
-        EventBody* a,b,c,d,e;
+        // EventBody* a,b,c,d,e;
         with(NodeLable) {
-            a=new EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0, 0);
-            b=new EventBody(hash(emitters[Bob].pubkey).digits, null, null, 0, 0);
-            c=new EventBody(hash(emitters[Carol].pubkey).digits, null, null, 0, 0);
-            d=new EventBody(hash(emitters[Dave].pubkey).digits, null, null, 0, 0);
-            e=new EventBody(hash(emitters[Elisa].pubkey).digits, null, null, 0, 0);
-        }
-        //
-        with(NodeLable) {
-            h.registerEvent(emitters[Bob].pubkey,   *b, &hash);
-            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
-            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
-            h.registerEvent(emitters[Dave].pubkey,  *d, &hash);
-        }
+            immutable a0=EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0);
+            immutable b0=EventBody(hash(emitters[Bob].pubkey).digits, null, null, 0);
+            immutable c0=EventBody(hash(emitters[Carol].pubkey).digits, null, null, 0);
+            immutable d0=EventBody(hash(emitters[Dave].pubkey).digits, null, null, 0);
+            immutable e0=EventBody(hash(emitters[Elisa].pubkey).digits, null, null, 0);
+            h.registerEvent(emitters[Bob].pubkey,   b0, &hash);
+            h.registerEvent(emitters[Carol].pubkey, c0, &hash);
+            h.registerEvent(emitters[Alice].pubkey, a0, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e0, &hash);
+            h.registerEvent(emitters[Dave].pubkey,  d0, &hash);
+
         // Row number one
-        writeln("Row 1");
-        c=newbody(c, d);
-        e=newbody(e, b);
-        with(NodeLable) {
-            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
-        }
+            writeln("Row 1");
+            alias a0 a1;
+            alias b0 b1;
+            immutable c1=newbody(&c0, &d0);
+            immutable e1=newbody(&e0, &b0);
+            alias d0 d1;
+        //with(NodeLable) {
+            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
+
         // Row number two
-        writeln("Row 2");
+            writeln("Row 2");
+            alias a1 a2;
+            immutable b2=newbody(&b1, &c1);
+            immutable c2=newbody(&c1, &e1);
+            alias d1 d2;
+            immutable e2=newbody(&e1, null);
+            h.registerEvent(emitters[Bob].pubkey,   b1, &hash);
+            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
+            // Row number 2 1/2
+            writeln("Row 2 1/2");
 
-        b=newbody(b, c);
-        c=newbody(c, e);
-        e=newbody(e, null);
-        with(NodeLable) {
-            h.registerEvent(emitters[Bob].pubkey,   *b, &hash);
-            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
-        }
-        // Row number 2 1/2
-        writeln("Row 2 1/2");
+            alias a2 a2a;
+            alias b2 b2a;
+            alias c2 c2a;
+            immutable d2a=newbody(&d2, &c2);
+            alias e2 e2a;
+            h.registerEvent(emitters[Dave].pubkey,  d2a, &hash);
+            // Row number 3
+            writeln("Row 3");
 
-        d=newbody(d, c);
+            immutable a3=newbody(&a2, &b2);
+            immutable b3=newbody(&b2, &c2);
+            immutable c3=newbody(&c2, &d2);
+            alias d2a d3;
+            immutable e3=newbody(&e2, null);
         //
-        with(NodeLable) {
-            h.registerEvent(emitters[Dave].pubkey,  *d, &hash);
-        }
-        // Row number 3
-        writeln("Row 3");
+            h.registerEvent(emitters[Alice].pubkey, a3, &hash);
+            h.registerEvent(emitters[Bob].pubkey,   b3, &hash);
+            h.registerEvent(emitters[Carol].pubkey, c3, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e3, &hash);
+            // Row number 4
+            writeln("Row 4");
 
-        a=newbody(a, b);
-        b=newbody(b, c);
-        c=newbody(c, d);
-        e=newbody(e, null);
-        //
-        with(NodeLable) {
-            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
-            h.registerEvent(emitters[Bob].pubkey,   *b, &hash);
-            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
-        }
-        // Row number 4
-        writeln("Row 4");
 
-        a=newbody(a, null);
-        e=newbody(e, null);
-        //
-        with(NodeLable) {
-            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, *e, &hash);
-        }
-        // Row number 5
-        writeln("Row 5");
+            immutable a4=newbody(&a3, null);
+            alias b3 b4;
+            alias c3 c4;
+            alias d3 d4;
+            immutable e4=newbody(&e3, null);
+            //
+            h.registerEvent(emitters[Alice].pubkey, a4, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e4, &hash);
+            // Row number 5
+            writeln("Row 5");
+            alias a4 a5;
+            alias b4 b5;
+            immutable c5=newbody(&c4, &e4);
+            alias d4 d5;
+            alias e4 e5;
 
-        c=newbody(c, e);
-        //
-        with(NodeLable) {
-            h.registerEvent(emitters[Carol].pubkey, *c, &hash);
-        }
-        // Row number 6
-        writeln("Row 6");
 
-        c=newbody(c, a);
+
         //
-        with(NodeLable) {
-            h.registerEvent(emitters[Alice].pubkey, *a, &hash);
+
+            h.registerEvent(emitters[Carol].pubkey, c5, &hash);
+            // Row number 6
+            writeln("Row 6");
+
+            alias a5 a6;
+            alias b5 b6;
+            immutable c6=newbody(&c5, &a5);
+            alias d5 d6;
+            alias e5 e6;
+
+        //
+            h.registerEvent(emitters[Alice].pubkey, a6, &hash);
         }
         writeln("Row end");
 

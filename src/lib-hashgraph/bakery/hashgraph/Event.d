@@ -42,15 +42,15 @@ struct EventBody {
     immutable(ubyte[]) father; // Hash of the event-parent
 
 //    immutable(ubyte[]) creator; //creator's public key
-    immutable ulong time;
-    immutable uint index;
-
-    immutable uint next_index() {
-        if ( index == int.max ) {
+    ulong time;
+    uint index;
+    private static uint index_counter;
+    static immutable(uint) next_index() {
+        if ( index_counter == int.max ) {
             return 1;
         }
         else {
-            return index+1;
+            return index_counter;
         }
     }
     // int Index;
@@ -60,24 +60,22 @@ struct EventBody {
     // int creatorID;
 //    WireBody wirebody;
 
-    enum Recordnames {
-        TIME,
-        PAYLOAD,
-        MOTHER,
-        FATHER,
-//        CREATOR,
-        INDEX
-    }
+//     enum Recordnames {
+//         TIME,
+//         PAYLOAD,
+//         MOTHER,
+//         FATHER,
+// //        CREATOR,
+//         INDEX
+//     }
 
     this(
         immutable(ubyte)[] payload,
         immutable(ubyte)[] mother,
         immutable(ubyte)[] father,
 //        immutable(ubyte)[] creator,
-        immutable ulong time,
-        immutable uint index) {
+        immutable ulong time) {
         //this.time      =    time.Now().UTC(); //strip monotonic time
-        this.index     =    index;
         this.time      =    time;
         //this.index     =    index;
         this.father    =    father;
@@ -227,10 +225,17 @@ class HashGraphException : Exception {
 }
 
 @safe
+interface EventCallbacks {
+    void witness(const(Event) e);
+    void strongly_seeing(const(Event) e);
+    void famous(const(Event) e);
+}
+
+@safe
 class Event {
     alias Event delegate(immutable(ubyte)[] fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
-
+    static EventCallbacks callbacks;
     // Delegate function to load or find an Event in the event pool
     static Lookup lookup;
     // Deleagte function to assign an Event to event pool
@@ -245,7 +250,7 @@ class Event {
     //     BigInt R, S; //creator's digital signature of body
     // }
 //    WireEvent wire_event;
-    private const(EventBody)* event_body;
+    private immutable(EventBody)* event_body;
     // This is the internal pointer to the
     private Event _mother;
     private Event _father;
@@ -258,6 +263,7 @@ class Event {
     private Round  _round;
     private bool _witness;
     private bool _famous;
+    private bool _strongly_seeing;
 
     void round(Round round)
         in {
@@ -272,28 +278,48 @@ class Event {
         return _round;
     }
 
-    void famous(bool f)
+    bool famous(bool f)
         in {
             assert(!_famous);
         }
     body {
-        _famous=f;
+        if ( callbacks && f ) {
+            if ( !_witness ) {
+                this.witness=true;
+            }
+            callbacks.famous(this);
+        }
+        return _famous=f;
     }
 
     bool famous() pure const nothrow {
         return _famous;
     }
 
-    void witness(bool w)
+    bool witness(bool w)
         in {
             assert(!_witness);
         }
     body {
-        _witness=w;
+        if ( callbacks && w ) {
+            callbacks.witness(this);
+        }
+        return _witness=w;
     }
 
     bool witness() pure const nothrow {
         return _witness;
+    }
+
+    bool strongly_seeing(bool s)
+        in {
+            assert(!_strongly_seeing);
+        }
+    body {
+        if ( callbacks && s ) {
+            callbacks.strongly_seeing(this);
+        }
+        return _strongly_seeing;
     }
 
 //    time.Time consensusTimestamp;
@@ -314,7 +340,7 @@ class Event {
     immutable uint node_id;
     uint marker;
     @trusted
-    this(ref const(EventBody) ebody, uint node_id=0) {
+    this(ref immutable(EventBody) ebody, uint node_id=0) {
         event_body=&ebody;
         this.node_id=node_id;
         if ( assign !is null ) {
@@ -581,7 +607,7 @@ unittest { // Serialize and unserialize EventBody
     auto father=SHA256("other").digits;
     writeln("Serialize event");
 //    auto creator=cast(immutable(ubyte)[])"creator";
-    auto seed_body=EventBody(payload, mother, father, 0, 1);
+    auto seed_body=EventBody(payload, mother, father, 0);
 
     auto raw=seed_body.serialize;
 
