@@ -247,7 +247,7 @@ class HashGraph {
             uint vote(ref BitArray mask) {
                 uint votes;
                 foreach(i, n; nodes) {
-                    if (i != event.node_id) {
+                    if (i != event.index) {
                         if ( n.passed > 0 ) {
                             mask[i]=true;
                         }
@@ -281,7 +281,7 @@ class HashGraph {
                         n.seeing=1;
                         n.voted=false;
                     }
-                    auto votes=vote(vote_mask[event.node_id]);
+                    auto votes=vote(vote_mask[event.index]);
                     if ( isMajority(votes) ) {
                         n.seeing++;
                         n.voted=true;
