@@ -43,16 +43,16 @@ struct EventBody {
 
 //    immutable(ubyte[]) creator; //creator's public key
     ulong time;
-    uint index;
-    private static uint index_counter;
-    static immutable(uint) next_index() {
-        if ( index_counter == int.max ) {
-            return 1;
-        }
-        else {
-            return index_counter;
-        }
-    }
+    // private static uint index_counter;
+    // private static immutable(uint) next_index() {
+    //     if ( index_counter == int.max ) {
+    //         index_counter = 1;
+    //     }
+    //     else {
+    //         index_counter++;
+    //     }
+    //     return index_counter;
+    // }
     // int Index;
 //    // int selfParentIndex;
     // int otherParentCreatorID;
@@ -77,7 +77,6 @@ struct EventBody {
         immutable ulong time) {
         //this.time      =    time.Now().UTC(); //strip monotonic time
         this.time      =    time;
-        //this.index     =    index;
         this.father    =    father;
         this.mother    =    mother;
         this.payload   =    payload;
@@ -109,17 +108,17 @@ struct EventBody {
         }
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
-            writefln("father.length=%s index=%s", father.length, index);
+//            writefln("father.length=%s index=%s", father.length, index);
             check(father.length == 0, "If an event has no mother it can not have a father");
-            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
+//            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
         }
         else {
             if ( father.length != 0 ) {
                 // If the Event has a father
                 check(mother.length == father.length, "Mother and Father must user the same hash function");
             }
-            writefln("Non Eva father.length=%s index=%s", father.length, index);
-            check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
+//            writefln("Non Eva father.length=%s index=%s", father.length, index);
+            //          check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
             check(mother != father, "The mother and father can not be the same event");
         }
     }
@@ -129,10 +128,8 @@ struct EventBody {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
             enum name=EventBody.tupleof[i].stringof;
-            static if ( __traits(compiles, m.length) ) {
-                if ( m.length != 0 ) {
-                    bson[name]=m;
-                }
+            static if ( __traits(compiles, m.toBSON) ) {
+                bson[name]=m.toBSON;
             }
             else {
                 bson[name]=m;
@@ -264,6 +261,17 @@ class Event {
     private bool _witness;
     private bool _famous;
     private bool _strongly_seeing;
+    private immutable uint id;
+    private static uint id_count;
+    private static immutable(uint) next_id() {
+        if ( id_count == id_count.max ) {
+            id_count = 1;
+        }
+        else {
+            id_count++;
+        }
+        return id_count;
+    }
 
     void round(Round round)
         in {
@@ -343,6 +351,7 @@ class Event {
     this(ref immutable(EventBody) ebody, uint node_id=0) {
         event_body=&ebody;
         this.node_id=node_id;
+        this.id=next_id;
         if ( assign !is null ) {
             assign(this);
         }
@@ -368,36 +377,20 @@ class Event {
         return _child;
     }
 
-    Event mother()
-        in {
-            assert(index != 0);
-        }
-    body {
+    Event mother() {
         if ( _mother is null ) {
             _mother = lookup(mother_hash, this);
         }
         return _mother;
     }
 
-    Event father()
-        in {
-            assert(index != 0);
-        }
-    body {
+    Event father() {
         if ( _father is null ) {
             _father = lookup(father_hash, this);
         }
         return _father;
     }
 
-    /+
-    func (e *Event) Creator() string {
-	if e.creator == "" {
-		e.creator = fmt.Sprintf("0x%X", e.event_body.Creator)
-            }
-	return e.creator
-            }
-            +/
 
     immutable(ubyte[]) father_hash() const pure nothrow {
 	return event_body.father;
@@ -411,15 +404,8 @@ class Event {
         return event_body.payload;
     }
 
-    immutable(uint) index() const {
-	return event_body.index;
-    }
-
 //True if Event contains a payload or is the initial Event of its creator
-    bool IsLoaded() const {
-	if ( index == 0 ) {
-            return true;
-	}
+    bool containPayload() const {
 	return payload.length != 0;
     }
 
