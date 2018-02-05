@@ -35,7 +35,6 @@ class EventConsensusException : ConsensusException {
 }
 
 
-
 struct EventBody {
     immutable(ubyte)[] payload;
     immutable(ubyte)[] mother;  // Hash of the self-parent
