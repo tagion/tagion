@@ -70,7 +70,7 @@ class HashGraph {
         GBSON toBSON() {
             auto bson=new GBSON;
             foreach(i, m; this.tupleof) {
-                enum name=EventBody.tupleof[i].stringof;
+                enum name=this.tupleof[i].stringof["this.".length..$];
                 static if ( __traits(compiles, m.toBSON) ) {
                     bson[name]=m.toBSON;
                 }
