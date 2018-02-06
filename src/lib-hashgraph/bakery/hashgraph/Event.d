@@ -35,14 +35,18 @@ class EventConsensusException : ConsensusException {
 }
 
 
-
 struct EventBody {
-    immutable(ubyte[]) payload;
-    immutable(ubyte[]) mother;  // Hash of the self-parent
-    immutable(ubyte[]) father; // Hash of the event-parent
+    immutable(ubyte)[] payload;
+    immutable(ubyte)[] mother;  // Hash of the self-parent
+    immutable(ubyte)[] father; // Hash of the event-parent
 
 //    immutable(ubyte[]) creator; //creator's public key
     ulong time;
+    invariant {
+        if ( (mother.length != 0) && (father.length != 0 ) ) {
+            assert( mother.length == father.length );
+        }
+    }
     // private static uint index_counter;
     // private static immutable(uint) next_index() {
     //     if ( index_counter == int.max ) {
@@ -127,7 +131,7 @@ struct EventBody {
     GBSON toBSON() const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
-            enum name=EventBody.tupleof[i].stringof;
+            enum name=this.tupleof[i].stringof["this.".length..$];
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
