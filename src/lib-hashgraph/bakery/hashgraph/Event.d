@@ -20,17 +20,17 @@ alias R_BSON!true GBSON;
 // )
 @safe
 class ConsensusException : Exception {
-    this( immutable(char)[] msg ) {
+    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
         writefln("msg=%s", msg);
-        super( msg );
+        super( msg, file, line );
     }
 }
 
 @safe
 class EventConsensusException : ConsensusException {
-    this( immutable(char)[] msg ) {
+    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
 //        writefln("msg=%s", msg);
-        super( msg );
+        super( msg, file, line );
     }
 }
 
@@ -78,7 +78,7 @@ struct EventBody {
         immutable(ubyte)[] mother,
         immutable(ubyte)[] father,
 //        immutable(ubyte)[] creator,
-        immutable ulong time) {
+        immutable ulong time) inout {
         //this.time      =    time.Now().UTC(); //strip monotonic time
         this.time      =    time;
         this.father    =    father;
@@ -88,26 +88,27 @@ struct EventBody {
         //this.creator   =    creator;
     }
 
-    this(immutable(ubyte)[] data) {
+    this(immutable(ubyte)[] data) inout {
         auto doc=Document(data);
         this(doc);
     }
 
-    this(Document doc) {
+    this(Document doc) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
-            enum name=EventBody.tupleof[i].stringof;
+            enum name=this.tupleof[i].stringof["this.".length..$];
             if ( doc.hasElement(name) ) {
+                pragma(msg, "Name "~name~" type "~type.stringof);
                 this.tupleof[i]=doc[name].get!type;
             }
         }
         consensus();
     }
 
-    void consensus() {
-        void check(bool flag, string msg) {
+    void consensus() inout {
+        void check(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
             if (!flag) {
-                throw new EventConsensusException(msg);
+                throw new EventConsensusException(msg, file, line);
             }
         }
         if ( mother.length == 0 ) {
