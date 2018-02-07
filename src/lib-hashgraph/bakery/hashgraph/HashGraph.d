@@ -10,9 +10,8 @@ import bakery.crypto.Hash;
 
 @safe
 class HashGraphConsensusException : ConsensusException {
-    this( immutable(char)[] msg ) {
-//        writefln("msg=%s", msg);
-        super( msg );
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, code, file, line );
     }
 }
 
@@ -159,11 +158,11 @@ class HashGraph {
         return (*count);
     }
 
-    static void check(immutable bool flag, string msg) @safe {
-        if (!flag) {
-            throw new EventConsensusException(msg);
-        }
-    }
+    // static void check(immutable bool flag, ConcensusFailCode code, string msg) @safe {
+    //     if (!flag) {
+    //         throw new EventConsensusException(msg, code);
+    //     }
+    // }
 
     enum max_package_size=0x1000;
     alias Hash delegate(immutable(ubyte)[]) Hfunc;
@@ -176,12 +175,15 @@ class HashGraph {
         Event event;
         enum pubk=pubkey.stringof;
         enum event_label=event.stringof;
-        check((data.length <= max_package_size), "The package size exceeds the max of "~to!string(max_package_size));
-        check(doc.hasElement(pubk), "Event package is missing public key");
-        check(doc.hasElement(event_label), "Event package missing the actual event");
-        pubkey=doc[pubk].get!(immutable(ubyte)[]);
-        auto eventbody_data=doc[event_label].get!(immutable(ubyte[]));
-        check(signed(pubkey, eventbody_data, hfunc), "Invalid signature on event");
+        immutable(ubyte)[] eventbody_data;
+        with ( ConcensusFailCode ) {
+            check((data.length <= max_package_size), PACKAGE_SIZE_OVERFLOW, "The package size exceeds the max of "~to!string(max_package_size));
+            check(doc.hasElement(pubk), EVENT_PACKAGE_MISSING_PUBLIC_KEY, "Event package is missing public key");
+            check(doc.hasElement(event_label), EVENT_PACKAGE_MISSING_EVENT, "Event package missing the actual event");
+            pubkey=doc[pubk].get!(immutable(ubyte)[]);
+            eventbody_data=doc[event_label].get!(immutable(ubyte[]));
+            check(signed(pubkey, eventbody_data, hfunc), EVENT_PACKAGE_BAD_SIGNATURE, "Invalid signature on event");
+        }
         // Now we come this far so we can register the event
         immutable(EventBody) eventbody=EventBody(eventbody_data);
         event=registerEvent(pubkey, eventbody, hfunc);

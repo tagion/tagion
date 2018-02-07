@@ -18,22 +18,39 @@ alias R_BSON!true GBSON;
 
 // 	"github.com/babbleio/babble/crypto"
 // )
+enum ConcensusFailCode {
+    NON,
+    NO_MOTHER,
+    MOTHER_AND_FATHER_SAME_SIZE,
+    MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME,
+    PACKAGE_SIZE_OVERFLOW,
+    EVENT_PACKAGE_MISSING_PUBLIC_KEY,
+    EVENT_PACKAGE_MISSING_EVENT,
+    EVENT_PACKAGE_BAD_SIGNATURE
+}
+
 @safe
 class ConsensusException : Exception {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
-        writefln("msg=%s", msg);
+    immutable ConcensusFailCode code;
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
         super( msg, file, line );
+        this.code=code;
     }
 }
 
 @safe
 class EventConsensusException : ConsensusException {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
 //        writefln("msg=%s", msg);
-        super( msg, file, line );
+        super( msg, code, file, line );
     }
 }
 
+void check(bool flag, ConcensusFailCode code, string msg, string file = __FILE__, size_t line = __LINE__) {
+    if (!flag) {
+        throw new EventConsensusException(msg, code, file, line);
+    }
+}
 
 struct EventBody {
     immutable(ubyte)[] payload;
@@ -106,25 +123,20 @@ struct EventBody {
     }
 
     void consensus() inout {
-        void check(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
-            if (!flag) {
-                throw new EventConsensusException(msg, file, line);
-            }
-        }
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
 //            writefln("father.length=%s index=%s", father.length, index);
-            check(father.length == 0, "If an event has no mother it can not have a father");
+            check(father.length == 0, ConcensusFailCode.NO_MOTHER, "If an event has no mother it can not have a father");
 //            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
         }
         else {
             if ( father.length != 0 ) {
                 // If the Event has a father
-                check(mother.length == father.length, "Mother and Father must user the same hash function");
+                check(mother.length == father.length, ConcensusFailCode.MOTHER_AND_FATHER_SAME_SIZE, "Mother and Father must user the same hash function");
             }
 //            writefln("Non Eva father.length=%s index=%s", father.length, index);
             //          check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
-            check(mother != father, "The mother and father can not be the same event");
+            check(mother != father, ConcensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME, "The mother and father can not be the same event");
         }
     }
 //json encoding of body only
