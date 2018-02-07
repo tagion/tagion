@@ -149,7 +149,13 @@ struct EventBody {
                 bson[name]=m.toBSON;
             }
             else {
-                bson[name]=m;
+                bool flag=true;
+                static if ( __traits(compiles, m !is null) ) {
+                    flag=m !is null;
+                }
+                if (flag) {
+                    bson[name]=m;
+                }
             }
         }
         return bson;
