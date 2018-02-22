@@ -275,11 +275,6 @@ unittest
 
         auto numElem = doc["num"];
         assert(numElem.get!int == 10);
-        assert(numElem.get!(const(int)) == 10);
-        assert(numElem.get!(immutable(int)) == 10);
-        assert(numElem.get!uint == 10);
-        assert(numElem.get!(const(uint)) == 10);
-        assert(numElem.get!(immutable(uint)) == 10);
 
         auto boolElem = doc["bool"];
         assert(boolElem.get!bool);
@@ -545,49 +540,55 @@ struct Element
 
     @property const /* pure: check is not pure */
     {
-        string get(T)() inout if (is(T == string))
+        string get(T)() if (is(T == string))
         {
             check(Type.STRING);
             return str;
         }
 
 
-        T get(T)() inout if (is(T == inout(bool)) || is(T == bool) || is(T == const(bool)) || is(T == immutable(bool)))
+        T get(T)() if (is(T == bool) || is(T == const(bool)) || is(T == immutable(bool)))
         {
             check(Type.BOOLEAN);
             return cast(T)_boolean();
         }
 
-        inout(T) get(T)() inout if (is(T == inout(int)) || is(T == int) || is(T == const(int)) || is(T == immutable(int))||
-            is(T == inout(uint)) || is(T == uint) || is(T == const(uint)) || is(T == immutable(uint))) {
+        T get(T)() if (is(T == int) || is(T == const(int)) || is(T == immutable(int))||
+            is(T == uint) || is(T == const(uint)) || is(T == immutable(uint)))
+        {
             check(Type.INT32);
             return cast(T)_int32();
         }
 
-        inout(T) get(T)() inout if (is(T == inout(long)) || is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
-            is(T == inout(ulong)) || is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong))) {
+        T get(T)() if (is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
+            is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong)))
+        {
             check(Type.INT64);
             return cast(T)_int64();
         }
 
-        T get(T)() inout if (is(T == inout(double)) || is(T == double) || is(T == const(double)) || is(T == immutable(double))) {
+        T get(T)() if (is(T == double) || is(T == const(double)) || is(T == immutable(double)))
+        {
             check(Type.DOUBLE);
             return cast(T)_double();
         }
 
 
-        T get(T)() inout if (is(T : const(Date))) {
+        T get(T)() if (is(T : const(Date)))
+        {
             check(Type.DATE);
             return cast(T)SysTime(_int64());
         }
 
 
-        T get(T)() inout if (is(T : const(DateTime))) {
+        T get(T)() if (is(T : const(DateTime)))
+        {
             check(Type.TIMESTAMP);
             return cast(T)SysTime(_int64());
         }
 
-        T get(T)() inout if (is(T : const(ObjectId))) {
+        T get(T)() if (is(T : const(ObjectId)))
+        {
             check(Type.OID);
             return ObjectId(value);
         }
@@ -596,7 +597,8 @@ struct Element
         /**
          * Returns an DOCUMENT document.
          */
-        Document get(T)() inout if (is(T == Document)) {
+        Document get(T)() if (is(T == Document))
+        {
             if ( (type != Type.DOCUMENT) && (type != Type.ARRAY) ) {
                 check(Type.DOCUMENT);
             }
@@ -607,7 +609,7 @@ struct Element
         //     return value.idup;
         // }
 
-        T get(T)() inout if (!is(T == string) && is(T == immutable(U)[], U)) {
+        T get(T)() if (!is(T == string) && is(T == immutable(U)[], U)) {
             static if ( is(T == immutable(U)[], U) ) {
                 if ( type == Type.BINARY)  {
                     static if ( is(T == immutable(ubyte)[] ) ) {
