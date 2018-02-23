@@ -18,22 +18,39 @@ alias R_BSON!true GBSON;
 
 // 	"github.com/babbleio/babble/crypto"
 // )
+enum ConcensusFailCode {
+    NON,
+    NO_MOTHER,
+    MOTHER_AND_FATHER_SAME_SIZE,
+    MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME,
+    PACKAGE_SIZE_OVERFLOW,
+    EVENT_PACKAGE_MISSING_PUBLIC_KEY,
+    EVENT_PACKAGE_MISSING_EVENT,
+    EVENT_PACKAGE_BAD_SIGNATURE
+}
+
 @safe
 class ConsensusException : Exception {
-    this( immutable(char)[] msg ) {
-        writefln("msg=%s", msg);
-        super( msg );
+    immutable ConcensusFailCode code;
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, file, line );
+        this.code=code;
     }
 }
 
 @safe
 class EventConsensusException : ConsensusException {
-    this( immutable(char)[] msg ) {
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
 //        writefln("msg=%s", msg);
-        super( msg );
+        super( msg, code, file, line );
     }
 }
 
+void check(bool flag, ConcensusFailCode code, string msg, string file = __FILE__, size_t line = __LINE__) {
+    if (!flag) {
+        throw new EventConsensusException(msg, code, file, line);
+    }
+}
 
 struct EventBody {
     immutable(ubyte)[] payload;
@@ -78,7 +95,7 @@ struct EventBody {
         immutable(ubyte)[] mother,
         immutable(ubyte)[] father,
 //        immutable(ubyte)[] creator,
-        immutable ulong time) {
+        immutable ulong time) inout {
         //this.time      =    time.Now().UTC(); //strip monotonic time
         this.time      =    time;
         this.father    =    father;
@@ -88,42 +105,38 @@ struct EventBody {
         //this.creator   =    creator;
     }
 
-    this(immutable(ubyte)[] data) {
+    this(immutable(ubyte)[] data) inout {
         auto doc=Document(data);
         this(doc);
     }
 
-    this(Document doc) {
+    this(Document doc) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
-            enum name=EventBody.tupleof[i].stringof;
+            enum name=this.tupleof[i].stringof["this.".length..$];
             if ( doc.hasElement(name) ) {
+                pragma(msg, "Name "~name~" type "~type.stringof);
                 this.tupleof[i]=doc[name].get!type;
             }
         }
         consensus();
     }
 
-    void consensus() {
-        void check(bool flag, string msg) {
-            if (!flag) {
-                throw new EventConsensusException(msg);
-            }
-        }
+    void consensus() inout {
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
 //            writefln("father.length=%s index=%s", father.length, index);
-            check(father.length == 0, "If an event has no mother it can not have a father");
+            check(father.length == 0, ConcensusFailCode.NO_MOTHER, "If an event has no mother it can not have a father");
 //            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
         }
         else {
             if ( father.length != 0 ) {
                 // If the Event has a father
-                check(mother.length == father.length, "Mother and Father must user the same hash function");
+                check(mother.length == father.length, ConcensusFailCode.MOTHER_AND_FATHER_SAME_SIZE, "Mother and Father must user the same hash function");
             }
 //            writefln("Non Eva father.length=%s index=%s", father.length, index);
             //          check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
-            check(mother != father, "The mother and father can not be the same event");
+            check(mother != father, ConcensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME, "The mother and father can not be the same event");
         }
     }
 //json encoding of body only
@@ -136,7 +149,13 @@ struct EventBody {
                 bson[name]=m.toBSON;
             }
             else {
-                bson[name]=m;
+                bool flag=true;
+                static if ( __traits(compiles, m !is null) ) {
+                    flag=m !is null;
+                }
+                if (flag) {
+                    bson[name]=m;
+                }
             }
         }
         return bson;
