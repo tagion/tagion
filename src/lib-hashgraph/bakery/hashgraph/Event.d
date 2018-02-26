@@ -209,9 +209,8 @@ else {
 /+ ++++/
 @safe
 class HashGraphException : Exception {
-    this( immutable(char)[] msg ) {
-//        writefln("msg=%s", msg);
-        super( msg );
+    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, file, line );
     }
 }
 
