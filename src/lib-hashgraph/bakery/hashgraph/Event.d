@@ -57,52 +57,23 @@ struct EventBody {
     immutable(ubyte)[] mother;  // Hash of the self-parent
     immutable(ubyte)[] father; // Hash of the event-parent
 
-//    immutable(ubyte[]) creator; //creator's public key
     ulong time;
     invariant {
         if ( (mother.length != 0) && (father.length != 0 ) ) {
             assert( mother.length == father.length );
         }
     }
-    // private static uint index_counter;
-    // private static immutable(uint) next_index() {
-    //     if ( index_counter == int.max ) {
-    //         index_counter = 1;
-    //     }
-    //     else {
-    //         index_counter++;
-    //     }
-    //     return index_counter;
-    // }
-    // int Index;
-//    // int selfParentIndex;
-    // int otherParentCreatorID;
-    // int otherParentIndex;
-    // int creatorID;
-//    WireBody wirebody;
-
-//     enum Recordnames {
-//         TIME,
-//         PAYLOAD,
-//         MOTHER,
-//         FATHER,
-// //        CREATOR,
-//         INDEX
-//     }
 
     this(
         immutable(ubyte)[] payload,
         immutable(ubyte)[] mother,
         immutable(ubyte)[] father,
-//        immutable(ubyte)[] creator,
         immutable ulong time) inout {
-        //this.time      =    time.Now().UTC(); //strip monotonic time
         this.time      =    time;
         this.father    =    father;
         this.mother    =    mother;
         this.payload   =    payload;
         consensus();
-        //this.creator   =    creator;
     }
 
     this(immutable(ubyte)[] data) inout {
@@ -246,9 +217,11 @@ class HashGraphException : Exception {
 
 @safe
 interface EventCallbacks {
+    void create(const(Event) e);
     void witness(const(Event) e);
     void strongly_seeing(const(Event) e);
     void famous(const(Event) e);
+
 }
 
 @safe
@@ -375,9 +348,13 @@ class Event {
         event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
-        if ( assign !is null ) {
+        if ( assign ) {
             assign(this);
         }
+        if ( callbacks ) {
+            callbacks.create(this);
+        }
+
     }
 
     // Disconnect the Event from the graph
