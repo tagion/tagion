@@ -86,7 +86,6 @@ struct EventBody {
             alias typeof(m) type;
             enum name=this.tupleof[i].stringof["this.".length..$];
             if ( doc.hasElement(name) ) {
-                pragma(msg, "Name "~name~" type "~type.stringof);
                 this.tupleof[i]=doc[name].get!type;
             }
         }
@@ -136,66 +135,6 @@ struct EventBody {
         return toBSON.expand;
     }
 
-    /+
-    version(none)
-    static ref EventBody streamin(immutable(ubyte)[] data) {
-        auto doc=Document(data);
-        import std.string;
-        string expand(Recordnames rec)() {
-            static if ( rec < Recordnames.max ) {
-                enum name=toLower(to!string(rec));
-                return name~" : doc(\""~name~"\"), "~expand!(cast(Recordnames)(rec+1))();
-            }
-            return "";
-        }
-        enum expand_stream=
-            "EventBody result={"~
-            expand!(Recordnames.min)()~
-            "};";
-
-        pragma(msg, expand_stream);
-        with(Recordnames) {
-            mixin(expand_stream);
-        }
-        return result;
-    }
-    +/
-        // foreach(rec; Recordnames.min..Recordnames.max) {
-        //     immutable name=to!string(rec);
-        //     with(Recordnames) final switch(rec) {
-        //         case TIME:
-        //             time=doc[name].get!Time;
-        //             break;
-        //         case PAYLOAD:
-        //             payload=doc[name].get!(immutable(ubyte)[]);
-        //             break;
-        //         case MOTHER:
-        //             mother=doc[name].get!(immutable(ubyte)[]);
-        //             break;
-        //         case FATHER:
-        //             father=doc[name].get!(immutable(ubyte)[]);
-        //             break;
-        //         case CREATOR:
-        //             creator=doc[name].get!(immutable(ubyte)[]);
-        //             break;
-        //         case INDEX:
-        //             bson[name]=doc[name].get!(uint);
-        //             break;
-        //         }
-        // }
-        //}
-
-
-    // invariant {
-    //     assert(mother.length != 0);
-    //     if ( mother.length != 0 ) {
-    //         assert(mother.length == father.length);
-    //     }
-
-//    }
-    // immutable(H) hash() {
-    //     return H(Marshal);
-    // }
 }
 
 debug(RoundWarpTest) {
