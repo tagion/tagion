@@ -338,7 +338,7 @@ class HashGraph {
         }
         return strong;
     }
-
+    version(none)
     unittest { // strongSee
         // This is the example taken from
         // HASHGRAPH CONSENSUS
