@@ -340,6 +340,16 @@ class Event {
         return _father;
     }
 
+    const(Event) father() const pure
+        in {
+            if ( father_hash ) {
+                assert(_father);
+            }
+        }
+    body {
+        return _father;
+    }
+
 
     immutable(ubyte[]) father_hash() const pure nothrow {
 	return event_body.father;
