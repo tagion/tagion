@@ -271,8 +271,10 @@ class HashGraph {
                         }
                     }
                 }
+                writefln("voting=%d", votes);
                 return votes;
             }
+            writefln("Search for famous");
             if ( (event !is null) && (!event.famous) ) {
                 auto n=nodes[event.node_id];
                 assert(n !is null);
@@ -319,7 +321,9 @@ class HashGraph {
         }
         uint voting;
         Node[] forks;
+        writefln("Nodes %d", nodes.length);
         foreach(ref n; nodes) {
+            writefln("Node fork=%s", n.fork);
             if (n.fork ) {
                 // If we have a forks the nodes is removed
                 remove_node(n);
@@ -343,8 +347,10 @@ class HashGraph {
             event.round=round;
             assert(event.round == e.round+1);
         }
+        writefln("Strongly Seeing test return %s", strong);
         return strong;
     }
+
     version(none)
     unittest { // strongSee
         // This is the example taken from
