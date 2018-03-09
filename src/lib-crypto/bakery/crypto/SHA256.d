@@ -54,7 +54,7 @@ class SHA256 : Hash {
         return _hashed;
     }
     override immutable(char)[] hex() const pure nothrow {
-        return .hex(_hashed);
+        return _hashed.toHexString;
     }
     bool isEqual(const(SHA256) h) pure const nothrow {
         return h.digits == digits;
