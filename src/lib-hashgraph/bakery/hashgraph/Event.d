@@ -195,7 +195,7 @@ class Event {
     private bool _witness;
     private bool _famous;
     private bool _strongly_seeing;
-    private immutable uint id;
+    private immutable uint _id;
     private static uint id_count;
     private static immutable(uint) next_id() {
         if ( id_count == id_count.max ) {
@@ -285,11 +285,10 @@ class Event {
     this(ref immutable(EventBody) ebody, uint node_id=0) {
         event_body=&ebody;
         this.node_id=node_id;
-        this.id=next_id;
+        this._id=next_id;
         if ( assign ) {
             assign(this);
         }
-        writefln("Create Event");
         if ( callbacks ) {
             callbacks.create(this);
         }
@@ -312,55 +311,56 @@ class Event {
         _child=_mother=_father=null;
     }
 
-    Event child() {
+    @property Event child() {
         return _child;
     }
 
-    Event mother() {
+    @property Event mother() {
         if ( _mother is null ) {
             _mother = lookup(mother_hash, this);
         }
         return _mother;
     }
 
-    const(Event) mother() const pure
+    @property const(Event) mother() const pure 
         in {
-            if ( mother_hash ) {
-                assert(_mother);
-            }
+            assert(_mother !is null);
         }
-    body {
-        return _mother;
-    }
 
-    Event father() {
+        body {
+            return _mother;
+        }
+    
+    @property Event father() {
         if ( _father is null ) {
             _father = lookup(father_hash, this);
         }
         return _father;
     }
 
-    const(Event) father() const pure
+    @property const(Event) father() const pure
         in {
-            if ( father_hash ) {
-                assert(_father);
-            }
+            assert(_father !is null);
         }
-    body {
-        return _father;
+
+        body {
+            return _father;
+        }
+
+    @property immutable(ubyte[]) father_hash() const pure nothrow {
+	    return event_body.father;
     }
 
-
-    immutable(ubyte[]) father_hash() const pure nothrow {
-	return event_body.father;
+    @property immutable(ubyte[]) mother_hash() const pure nothrow {
+	    return event_body.mother;
     }
 
-    immutable(ubyte[]) mother_hash() const pure nothrow {
-	return event_body.mother;
-    }
-
-    immutable(ubyte[]) payload() const pure nothrow {
+    @property immutable(ubyte[]) payload() const pure nothrow {
         return event_body.payload;
+    }
+
+    @property immutable(uint) id() const pure nothrow {
+        return _id;
     }
 
 //True if Event contains a payload or is the initial Event of its creator
