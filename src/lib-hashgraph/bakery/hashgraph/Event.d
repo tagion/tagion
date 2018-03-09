@@ -289,6 +289,7 @@ class Event {
         if ( assign ) {
             assign(this);
         }
+        writefln("Create Event");
         if ( callbacks ) {
             callbacks.create(this);
         }
@@ -319,6 +320,16 @@ class Event {
         if ( _mother is null ) {
             _mother = lookup(mother_hash, this);
         }
+        return _mother;
+    }
+
+    const(Event) mother() const pure
+        in {
+            if ( mother_hash ) {
+                assert(_mother);
+            }
+        }
+    body {
         return _mother;
     }
 

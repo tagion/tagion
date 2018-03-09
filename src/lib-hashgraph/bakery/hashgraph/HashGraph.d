@@ -171,7 +171,7 @@ class HashGraph {
     // }
 
     enum max_package_size=0x1000;
-    alias Hash delegate(immutable(ubyte)[]) Hfunc;
+    alias immutable(Hash) function(immutable(ubyte)[]) Hfunc;
     Event receive(
         immutable(ubyte)[] data,
         bool delegate(ref const(Pubkey) pubkey, immutable(ubyte[]) msg, Hfunc hfunc) signed,
@@ -193,13 +193,18 @@ class HashGraph {
         // Now we come this far so we can register the event
         immutable(EventBody) eventbody=EventBody(eventbody_data);
         event=registerEvent(pubkey, eventbody, hfunc);
-        // See if the node is strong seeing the hashgraph
-        event.strongly_seeing=strongSee(event);
         return event;
     }
 
-    package Event registerEvent(
-        ref const(Pubkey) pubkey,
+    // Event registerEvent(
+    //     immutable(Pubkey) pubkey,
+    //     ref immutable(EventBody) eventbody,
+    //     Hfunc hfunc) {
+    //     return null;
+    // }
+
+    Event registerEvent(
+        immutable(Pubkey) pubkey,
         ref immutable(EventBody) eventbody,
         Hfunc hfunc) {
         auto get_node_id=pubkey in node_ids;
@@ -229,6 +234,8 @@ class HashGraph {
         // auto ee=eventbody.serialize;
         //       auto hf=hfunc(eventbody.serialize);
         event_cache.add(hfunc(eventbody.serialize).digits, event);
+        // See if the node is strong seeing the hashgraph
+        event.strongly_seeing=strongSee(event);
         return event;
     }
 
