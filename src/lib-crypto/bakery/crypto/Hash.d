@@ -1,7 +1,7 @@
 module bakery.crypto.Hash;
 
 @safe
-immutable(char)[] hex(alias ucase=false)(const(ubyte)[] buffer) pure nothrow {
+immutable(char)[] toHexString(alias ucase=false)(const(ubyte)[] buffer) pure nothrow {
     static if ( ucase ) {
         immutable immutable(char)[] hexdigits = "0123456789ABCDEF";
     }
