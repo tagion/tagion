@@ -13,42 +13,7 @@ import std.conv : to;
 import std.stdio : writeln;
 
 import bakery.hashgraph.Event;
-
-enum EventProperty {
-	STRONGLY_SEEING,
-	IS_FAMOUS,
-	IS_WITNESS
-};
-
-immutable struct InterfaceEventUpdate {
-    uint id;
-	EventProperty property;
-	bool value;
-
-    this(uint id, EventProperty property, bool value) {
-        this.id = id;
-        this.property = property;
-        this.value = value;
-    }
-}
-
-immutable struct InterfaceEventBody {
-    uint id;
-    uint motherId;
-	uint fatherId;
-	ubyte[] payload;
-
-    this(immutable(uint) id, 
-	immutable(ubyte[]) payload,
-	immutable(uint) motherId = 0, 
-	immutable(uint) fatherId = 0
-	) {
-        this.id = id;
-        this.motherId = motherId;
-		this.fatherId = fatherId;
-		this.payload = payload;
-    }
-}
+import bakery.Base;
 
 void startWebserver() {
     auto router = new URLRouter;
@@ -63,11 +28,31 @@ void startWebserver() {
 
 	scope(exit) listener.stopListening;
 
-    for (;;) {
+	bool runBackend = true;
+
+	void handleState (SetThreadState ts) {
+		with(SetThreadState) final switch(ts) {
+					case KILL:
+						writeln("Kill webserver");
+						runBackend = false;
+					break;
+
+					case LIVE:
+						runBackend = true;
+					break;
+				}
+	}
+
+    while(runBackend) {
         receive(
-            (string msg) {
+			//Control the thread
+			&handleState,
+
+			(string msg) {
              writeln("Received the message: " , msg);
             }
+
+
 			
         );
     }
