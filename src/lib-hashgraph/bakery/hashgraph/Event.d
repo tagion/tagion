@@ -3,6 +3,7 @@ module bakery.hashgraph.Event;
 import std.datetime;   // Date, DateTime
 import bakery.utils.BSON : R_BSON=BSON, Document;
 import bakery.crypto.Hash;
+import bakery.hashgraph.GossipNet;
 //import bakery.hashgraph.HashGraph : HashGraph;
 import std.conv;
 
@@ -48,12 +49,14 @@ class EventConsensusException : ConsensusException {
     }
 }
 
+@safe
 void check(bool flag, ConcensusFailCode code, string msg, string file = __FILE__, size_t line = __LINE__) {
     if (!flag) {
         throw new EventConsensusException(msg, code, file, line);
     }
 }
 
+@safe
 struct EventBody {
     immutable(ubyte)[] payload;
     immutable(ubyte)[] mother; // Hash of the self-parent
@@ -83,6 +86,7 @@ struct EventBody {
         this(doc);
     }
 
+    @trusted
     this(Document doc) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
@@ -133,6 +137,7 @@ struct EventBody {
         return bson;
     }
 
+    @trusted
     immutable(ubyte)[] serialize() const {
         return toBSON.expand;
     }
@@ -289,10 +294,22 @@ class Event {
         _mother=_father=null;
     }
 
-    Event mother(H)(H h)
+    Event mother(H)(H h, GossipNet gossip_net) {
+        Event result;
+        result=mother!true(h);
+        if ( !result && motherExists ) {
+            gossip_net.request(h, mother_hash);
+            result=mother(h);
+        }
+        return result;
+    }
+
+    Event mother(bool ignore_null_check=false, H)(H h)
         out(result) {
-            if ( mother_hash ) {
-                assert(result, "the mother is not found");
+            static if ( !ignore_null_check) {
+                if ( mother_hash ) {
+                    assert(result, "the mother is not found");
+                }
             }
         }
     body {
@@ -305,20 +322,22 @@ class Event {
     inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            //assert(_mother);
+            assert(_mother);
         }
     }
     out(result) {
-        //assert(result);
+        assert(result);
     }
     body {
         return _mother;
     }
 
-    Event father(H)(H h)
+    Event father(bool ignore_null_check=false, H)(H h)
     out(result) {
-        if ( father_hash ) {
-            assert(result, "the father is not found");
+        static if ( !ignore_null_check) {
+            if ( father_hash ) {
+                assert(result, "the father is not found");
+            }
         }
     }
     body {
@@ -328,14 +347,24 @@ class Event {
         return _father;
     }
 
+    Event father(H)(H h, GossipNet gossip_net) {
+        Event result;
+        result=father!true(h);
+        if ( !result && fatherExists ) {
+            gossip_net.request(h, father_hash);
+            result=father(h);
+        }
+        return result;
+    }
+
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
-            //assert(_father);
+            assert(_father);
         }
     }
     out(result) {
-        //assert(result);
+        assert(result);
     }
     body {
         return _father;
@@ -358,7 +387,14 @@ class Event {
 	return payload.length != 0;
     }
 
-    // immutable(ubyte[]) toHash() {
+    bool motherExists() const pure nothrow {
+        return event_body.mother !is null;
+    }
+
+    bool fatherExists() const pure nothrow {
+        return event_body.father !is null;
+    }
+// immutable(ubyte[]) toHash() {
     //     if ( !_hash ) {
     //         _hash = fhash(event_body.serialize);
     //     }
