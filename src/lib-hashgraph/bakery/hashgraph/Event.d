@@ -2,8 +2,6 @@ module bakery.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
 import bakery.utils.BSON : R_BSON=BSON, Document;
-import bakery.crypto.Hash;
-//import bakery.hashgraph.HashGraph : HashGraph;
 import std.conv;
 
 import std.stdio;
@@ -56,8 +54,8 @@ void check(bool flag, ConcensusFailCode code, string msg, string file = __FILE__
 
 struct EventBody {
     immutable(ubyte)[] payload;
-    immutable(ubyte)[] mother; // Hash of the self-parent
-    immutable(ubyte)[] father; // Hash of the parent-parent
+    immutable(ubyte)[] mother;  // Hash of the self-parent
+    immutable(ubyte)[] father; // Hash of the event-parent
 
     ulong time;
     invariant {
@@ -166,23 +164,28 @@ interface EventCallbacks {
 
 @safe
 class Event {
-    alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
+    alias Event delegate(immutable(ubyte)[] fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
-    alias immutable(Hash) function(immutable(ubyte)[] data) @safe FHash;
     static EventCallbacks callbacks;
     // Delegate function to load or find an Event in the event pool
-//    static Lookup lookup;
+    static Lookup lookup;
     // Deleagte function to assign an Event to event pool
-//    static Assign assign;
-    // Hash function
-    static FHash fhash;
-    // WireEvent wire_event;
+    static Assign assign;
+    // struct EventCoordinates(H) {
+    //     H hash;
+    //     int index;
+    // }
+
+    // struct WireEvent {
+    //     WireBody wire_body;
+    //     BigInt R, S; //creator's digital signature of body
+    // }
+//    WireEvent wire_event;
     private immutable(EventBody)* event_body;
-    private immutable(immutable(ubyte[])) event_body_data;
-    private immutable(ubyte[]) _hash;
     // This is the internal pointer to the
     private Event _mother;
     private Event _father;
+    private Event _child;
 
     // BigInt R, S;
     int topologicalIndex;
@@ -192,7 +195,7 @@ class Event {
     private bool _witness;
     private bool _famous;
     private bool _strongly_seeing;
-    immutable uint id;
+    private immutable uint id;
     private static uint id_count;
     private static immutable(uint) next_id() {
         if ( id_count == id_count.max ) {
@@ -261,6 +264,20 @@ class Event {
         return _strongly_seeing;
     }
 
+//    time.Time consensusTimestamp;
+
+    // EventCoordinates[] lastAncestors;   //[participant fake id] => last ancestor
+    // EventCoordinates[] firstDescendants; //[participant fake id] => first descendant
+
+    // immutable(ubyte)[] creator; // Public key
+    // H[2] parents;
+    // string hex;
+    // enum recordnames {
+    //     PARENTS,
+    //     TIME,
+    //     CREATOR,
+    //     WIRES
+    // }
 
     immutable uint node_id;
     uint marker;
@@ -269,77 +286,78 @@ class Event {
         event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
-        event_body_data = event_body.serialize;
-//        if ( _hash ) {
-        _hash=fhash(event_body_data).digits;
-//        }
-//        if ( assign ) {
-//        h.assign(this);
-//        }
+        if ( assign ) {
+            assign(this);
+        }
+        writefln("Create Event");
         if ( callbacks ) {
             callbacks.create(this);
         }
-//        if ( fhash ) {
-        assert(_hash);
-//        }
+
     }
 
     // Disconnect the Event from the graph
     void diconnect() {
-        _mother=_father=null;
+        if ( _child ) {
+            if ( child._mother is this ) {
+                child._mother = null;
+            }
+            else if ( child._father is this ) {
+                child._father = null;
+            }
+            else {
+                throw new HashGraphException("Child does not have a parent");
+            }
+        }
+        _child=_mother=_father=null;
     }
 
-    Event mother(H)(H h)
-        out(result) {
+    Event child() {
+        return _child;
+    }
+
+    Event mother() {
+        if ( _mother is null ) {
+            _mother = lookup(mother_hash, this);
+        }
+        return _mother;
+    }
+
+    const(Event) mother() const pure
+        in {
             if ( mother_hash ) {
-                assert(result, "the mother is not found");
+                assert(_mother);
             }
         }
     body {
-        if ( _mother is null ) {
-            _mother = h.lookup(mother_hash, this);
-        }
         return _mother;
     }
 
-    inout(Event) mother() inout pure nothrow
-    in {
-        if ( mother_hash ) {
-            assert(_mother);
-        }
-    }
-    out(result) {
-        assert(result);
-    }
-    body {
-        return _mother;
-    }
-
-    Event father(H)(H h)
-    out(result) {
-        if ( father_hash ) {
-            assert(result, "the father is not found");
-        }
-    }
-    body {
+    Event father() {
         if ( _father is null ) {
-            _father = h.lookup(father_hash, this);
+            _father = lookup(father_hash, this);
         }
         return _father;
     }
 
-    inout(Event) father() inout pure nothrow
-    in {
-        if ( father_hash ) {
-            assert(_father);
+    const(Event) father() const pure
+        in {
+            if ( father_hash ) {
+                assert(_father);
+            }
         }
-    }
-    out(result) {
-        assert(result);
-    }
     body {
         return _father;
     }
+
+    immutable(uint) id() const pure 
+        in {
+            assert(id);
+        }
+
+        body {
+            return id;
+        }
 
     immutable(ubyte[]) father_hash() const pure nothrow {
 	return event_body.father;
@@ -354,40 +372,119 @@ class Event {
     }
 
 //True if Event contains a payload or is the initial Event of its creator
-    bool containPayload() const pure nothrow {
+    bool containPayload() const {
 	return payload.length != 0;
     }
 
-    // immutable(ubyte[]) toHash() {
-    //     if ( !_hash ) {
-    //         _hash = fhash(event_body.serialize);
+//ecdsa sig
+    /+
+    bool Sign(ecdsa.PrivateKey privKey) {
+	signBytes := event_body.Hash();
+	if ( signBytes.length == 0 ) {
+            return true;
+	}
+	R, S, err := crypto.Sign(privKey, signBytes);
+        if ( err !is nil ) {
+            return err;
+        }
+	e.R, e.S = *R, *S;
+        return err;
+    }
+
+    bool Verify()  {
+        pubBytes = e.event_body.Creator;
+        pubKey = crypto.ToECDSAPub(pubBytes);
+
+	signBytes = e.event_body.Hash();
+
+	return crypto.Verify(pubKey, signBytes, &e.R, &e.S);
+    };
+    +/
+
+//json encoding of body and signature
+/++
+    immutable(ubyte)[] Marshal() {
+        auto bson=new BSON;
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	if err := enc.Encode(e); err != nil {
+            return nil;
+	}
+	return b.Bytes();
+    }
+
+
+
+    const(Event) Unmarshal(data []byte) {
+        auto b = bytes.NewBuffer(data);
+        auto dec = json.NewDecoder(b); //will read from b
+        return dec.Decode(e);
+    }
++/
+
+//sha256 hash of body and signature
+    /+
+    immutable(ubyte)[] Hash() {
+        if ( e.hash.length == 0 ) {
+            hashBytes, err := e.Marshal()
+                if ( err !is null )  {
+                    return nil, err
+                }
+            e.hash = crypto.SHA256(hashBytes);
+        }
+        return e.hash;
+    }
+
+    string Hex() const {
+        if ( e.hex == "" ) {
+            hash, _ := e.Hash();
+            e.hex = fmt.Sprintf("0x%X", hash);
+        }
+        return e.hex;
+    }
++/
+    // void SetRoundReceived(int rr) {
+    //     if ( roundReceived is null ) {
+    //         roundReceived = new int;
     //     }
-    //     return _hash;
+    //     *roundReceived = rr;
     // }
 
-    immutable(ubyte[]) toCryptoHash() const pure nothrow
-    in {
-        assert(_hash, "Hash has not been calculated");
-    }
-    body {
-        return _hash;
-    }
-
-    immutable(ubyte[]) toData() const pure nothrow
-    in {
-        if ( event_body ) {
-            assert(event_body_data, "Event body is not expanded");
+    /+
+    void  SetWireInfo(int selfParentIndex,
+        int otherParentCreatorID,
+        int otherParentIndex,
+        int creatorID int) {
+        with (event_body.wire_body) {
+            selfParentIndex = selfParentIndex;
+            otherParentCreatorID = otherParentCreatorID;
+            otherParentIndex = otherParentIndex;
+            creatorID = creatorID;
         }
     }
-    body {
-        return event_body_data;
++/
+    version(none)
+    const(WireEvent) ToWire() const {
+        return wire_event;
+	// return WireEvent{
+        //   Body: WireBody{
+        //       Transactions:         e.Body.Transactions,
+        //             SelfParentIndex:      e.Body.selfParentIndex,
+        //             OtherParentCreatorID: e.Body.otherParentCreatorID,
+        //             OtherParentIndex:     e.Body.otherParentIndex,
+        //             CreatorID:            e.Body.creatorID,
+        //             Timestamp:            e.Body.Timestamp,
+        //             Index:                e.Body.Index,
+        //             },
+	// 	R: e.R,
+	// 	S: e.S,
+        //         };
     }
 
+//Sorting
 
-    //Sorting
-
-    // ByTimestamp implements sort.Interface for []Event based on
-    // the timestamp field.
+// ByTimestamp implements sort.Interface for []Event based on
+// the timestamp field.
     struct ByTimestamp {
         Event[] a;
 
@@ -473,3 +570,153 @@ unittest { // Serialize and unserialize EventBody
     assert(seed_body == replicate_body);
 //    auto seed_event=new Event(seed_body);
 }
+
+/++
+    EventBody createDummyEventBody() EventBody {
+	body := EventBody{}
+	body.Transactions = [][]byte{[]byte("abc"), []byte("def")}
+	body.Parents = []string{"self", "other"}
+	body.Creator = []byte("public key")
+	body.Timestamp = time.Now().UTC()
+	return body
+                 }
+
+func TestMarshallBody(t *testing.T) {
+	body := createDummyEventBody()
+
+	raw, err := body.Marshal()
+	if err != nil {
+		t.Fatalf("Error marshalling EventBody: %s", err)
+	}
+
+	newBody := new(EventBody)
+	if err := newBody.Unmarshal(raw); err != nil {
+		t.Fatalf("Error unmarshalling EventBody: %s", err)
+	}
+
+	if !reflect.DeepEqual(body.Transactions, newBody.Transactions) {
+		t.Fatalf("Payloads do not match. Expected %#v, got %#v", body.Transactions, newBody.Transactions)
+	}
+	if !reflect.DeepEqual(body.Parents, newBody.Parents) {
+		t.Fatalf("Parents do not match. Expected %#v, got %#v", body.Parents, newBody.Parents)
+	}
+	if !reflect.DeepEqual(body.Creator, newBody.Creator) {
+		t.Fatalf("Creators do not match. Expected %#v, got %#v", body.Creator, newBody.Creator)
+	}
+	if body.Timestamp != newBody.Timestamp {
+		t.Fatalf("Timestamps do not match. Expected %#v, got %#v", body.Timestamp, newBody.Timestamp)
+	}
+
+}
++/
+/+
+func TestSignEvent(t *testing.T) {
+	privateKey, _ := crypto.GenerateECDSAKey()
+	publicKeyBytes := crypto.FromECDSAPub(&privateKey.PublicKey)
+
+	body := createDummyEventBody()
+	body.Creator = publicKeyBytes
+
+	event := Event{Body: body}
+	if err := event.Sign(privateKey); err != nil {
+		t.Fatalf("Error signing Event: %s", err)
+	}
+
+	res, err := event.Verify()
+	if err != nil {
+		t.Fatalf("Error verifying signature: %s", err)
+	}
+	if !res {
+		t.Fatalf("Verify returned false")
+	}
+}
+
+
+func TestMarshallEvent(t *testing.T) {
+	privateKey, _ := crypto.GenerateECDSAKey()
+	publicKeyBytes := crypto.FromECDSAPub(&privateKey.PublicKey)
+
+	body := createDummyEventBody()
+	body.Creator = publicKeyBytes
+
+	event := Event{Body: body}
+	if err := event.Sign(privateKey); err != nil {
+		t.Fatalf("Error signing Event: %s", err)
+	}
+
+	raw, err := event.Marshal()
+	if err != nil {
+		t.Fatalf("Error marshalling Event: %s", err)
+	}
+
+	newEvent := new(Event)
+	if err := newEvent.Unmarshal(raw); err != nil {
+		t.Fatalf("Error unmarshalling Event: %s", err)
+	}
+
+	if !reflect.DeepEqual(*newEvent, event) {
+		t.Fatalf("Events are not deeply equal")
+	}
+}
+
+func TestWireEvent(t *testing.T) {
+	privateKey, _ := crypto.GenerateECDSAKey()
+	publicKeyBytes := crypto.FromECDSAPub(&privateKey.PublicKey)
+
+	body := createDummyEventBody()
+	body.Creator = publicKeyBytes
+
+	event := Event{Body: body}
+	if err := event.Sign(privateKey); err != nil {
+		t.Fatalf("Error signing Event: %s", err)
+	}
+
+	event.SetWireInfo(1, 66, 2, 67)
+
+	expectedWireEvent := WireEvent{
+		Body: WireBody{
+			Transactions:         event.Body.Transactions,
+			SelfParentIndex:      1,
+			OtherParentCreatorID: 66,
+			OtherParentIndex:     2,
+			CreatorID:            67,
+			Timestamp:            event.Body.Timestamp,
+			Index:                event.Body.Index,
+		},
+		R: event.R,
+		S: event.S,
+	}
+
+	wireEvent := event.ToWire()
+
+	if !reflect.DeepEqual(expectedWireEvent, wireEvent) {
+		t.Fatalf("WireEvent should be %#v, not %#v", expectedWireEvent, wireEvent)
+	}
+}
+
+func TestIsLoaded(t *testing.T) {
+	//nil payload
+	event := NewEvent(nil, []string{"p1", "p2"}, []byte("creator"), 1)
+	if event.IsLoaded() {
+		t.Fatalf("IsLoaded() should return false for nil Body.Transactions")
+	}
+
+	//empty payload
+	event.Body.Transactions = [][]byte{}
+	if event.IsLoaded() {
+		t.Fatalf("IsLoaded() should return false for empty Body.Transactions")
+	}
+
+	//initial event
+	event.Body.Index = 0
+	if !event.IsLoaded() {
+		t.Fatalf("IsLoaded() should return true for initial event")
+	}
+
+	//non-empty payload
+	event.Body.Transactions = [][]byte{[]byte("abc")}
+	if !event.IsLoaded() {
+		t.Fatalf("IsLoaded() should return true for non-empty payload")
+	}
+}
++/
