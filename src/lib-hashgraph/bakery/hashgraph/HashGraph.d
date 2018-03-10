@@ -305,13 +305,15 @@ class HashGraph {
                 writefln("voting=%d", votes);
                 return votes;
             }
-            writefln("Search for famous");
+            writefln("Search for famous ");
             if ( (event !is null) && (!event.famous) ) {
                 auto n=nodes[event.node_id];
                 assert(n !is null);
                 n.passed++;
+                writefln("\tn.passed=%d node=%d", n.passed, event.node_id);
                 scope(exit) {
                     n.passed--;
+                    writefln("\texit n.passed=%d node=%d", n.passed, event.node_id);
                     assert(n.passed >= 0);
                 }
                 if ( n.fork ) return;
