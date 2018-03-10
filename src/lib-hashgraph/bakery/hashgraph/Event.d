@@ -289,12 +289,10 @@ class Event {
         _mother=_father=null;
     }
 
-    Event mother(H, bool ignore_null_check=false)(H h)
+    Event mother(H)(H h)
         out(result) {
-            static if ( !ignore_null_check) {
-                if ( mother_hash ) {
-                    assert(result, "the mother is not found");
-                }
+            if ( mother_hash ) {
+                assert(result, "the mother is not found");
             }
         }
     body {
@@ -307,39 +305,37 @@ class Event {
     inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            assert(_mother);
+            //assert(_mother);
         }
     }
     out(result) {
-        assert(result);
+        //assert(result);
     }
     body {
         return _mother;
     }
 
-    Event father(H, bool ignore_null_check=false)(H h)
+    Event father(H)(H h)
     out(result) {
         if ( father_hash ) {
             assert(result, "the father is not found");
         }
     }
     body {
-        static if ( !ignore_null_check) {
-            if ( _father is null ) {
-                _father = h.lookup(father_hash, this);
-            }
-            return _father;
+        if ( _father is null ) {
+            _father = h.lookup(father_hash, this);
         }
+        return _father;
     }
 
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
-            assert(_father);
+            //assert(_father);
         }
     }
     out(result) {
-        assert(result);
+        //assert(result);
     }
     body {
         return _father;
@@ -362,14 +358,7 @@ class Event {
 	return payload.length != 0;
     }
 
-    bool motherExists() const pure nothrow {
-        return event_body.mother !is null;
-    }
-
-    bool fatherExists() const pure nothrow {
-        return event_body.father !is null;
-    }
-// immutable(ubyte[]) toHash() {
+    // immutable(ubyte[]) toHash() {
     //     if ( !_hash ) {
     //         _hash = fhash(event_body.serialize);
     //     }
