@@ -11,6 +11,7 @@ module bakery.utils.LRU;
 import bakery.utils.DList;
 import std.conv;
 
+
 // LRU implements a non-thread safe fixed size LRU cache
 @safe
 class LRU(K,V)  {
@@ -75,6 +76,11 @@ class LRU(K,V)  {
             // Remove the oldest element
             removeOldest;
         }
+        static if ( is (K:const(ubyte)[]) ) {
+            import std.stdio;
+            import bakery.crypto.Hash : toHexString;
+            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
+        }
         return evict;
     }
 
@@ -91,6 +97,15 @@ class LRU(K,V)  {
         return false;
     }
 
+    V opIndex(const(K) key) {
+        V value;
+        get(key, value);
+        return value;
+    }
+
+    void opIndexAssign(ref V value, const(K) key) {
+        add(key, value);
+    }
 // Check if a key is in the cache, without updating the recent-ness
 // or deleting it for being stale.
     bool contains(const(K) key) const {
