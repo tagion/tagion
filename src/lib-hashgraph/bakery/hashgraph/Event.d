@@ -308,6 +308,9 @@ class Event {
             assert(_mother);
         }
     }
+    out(result) {
+        assert(result);
+    }
     body {
         return _mother;
     }
@@ -330,6 +333,9 @@ class Event {
         if ( father_hash ) {
             assert(_father);
         }
+    }
+    out(result) {
+        assert(result);
     }
     body {
         return _father;
