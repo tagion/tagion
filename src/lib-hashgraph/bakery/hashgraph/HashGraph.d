@@ -127,6 +127,16 @@ class HashGraph {
         return time;
     }
 
+    void assign(Event event) {
+        event_cache[event.toCryptoHash]=event;
+    }
+    Event lookup(immutable(ubyte[]) fingerprint, Event child) @safe {
+//        Event result;
+        writefln("Lookup %s", fingerprint.toHexString);
+        return event_cache[fingerprint];
+    }
+
+
     // Returns the number of active nodes in the network
     uint active_nodes() const pure nothrow {
         return cast(uint)(node_ids.length-unused_node_ids.length);
@@ -171,7 +181,7 @@ class HashGraph {
     // }
 
     enum max_package_size=0x1000;
-    alias immutable(Hash) function(immutable(ubyte)[]) Hfunc;
+    alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
     Event receive(
         immutable(ubyte)[] data,
         bool delegate(ref const(Pubkey) pubkey, immutable(ubyte[]) msg, Hfunc hfunc) signed,
@@ -233,7 +243,8 @@ class HashGraph {
         // Add the event to the event cache
         // auto ee=eventbody.serialize;
         //       auto hf=hfunc(eventbody.serialize);
-        event_cache.add(hfunc(eventbody.serialize).digits, event);
+        assign(event);
+//        event_cache.add(hfunc(eventbody.serialize).digits, event);
         // See if the node is strong seeing the hashgraph
         event.strongly_seeing=strongSee(event);
         return event;
@@ -305,7 +316,7 @@ class HashGraph {
                     }
                     return;
                 }
-                auto mother=event.mother;
+                auto mother=event.mother(this);
                 if ( mother.marker != strong_see_marker ) {
                     // marker secures that the
                     mother.marker=strong_see_marker;
@@ -321,6 +332,7 @@ class HashGraph {
         }
         uint voting;
         Node[] forks;
+        search(event);
         writefln("Nodes %d", nodes.length);
         foreach(ref n; nodes) {
             writefln("Node fork=%s", n.fork);
@@ -334,6 +346,7 @@ class HashGraph {
                 }
             }
         }
+        writefln("Voting %d", voting);
         bool strong=isMajority(voting);
         if ( strong ) {
             event.witness=true;
