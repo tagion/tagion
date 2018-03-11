@@ -198,6 +198,7 @@ class Event {
     private bool _famous;
     private bool _strongly_seeing;
     private bool _strongly_seeing_checked;
+    private bool _loaded;
     immutable uint id;
     private static uint id_count;
     private static immutable(uint) next_id() {
@@ -405,6 +406,8 @@ class Event {
     bool fatherExists() const pure nothrow {
         return event_body.father !is null;
     }
+
+
 // immutable(ubyte[]) toHash() {
     //     if ( !_hash ) {
     //         _hash = fhash(event_body.serialize);

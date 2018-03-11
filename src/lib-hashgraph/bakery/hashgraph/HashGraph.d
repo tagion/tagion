@@ -144,14 +144,18 @@ class HashGraph {
     }
     Event lookup(immutable(ubyte[]) fingerprint, Event child) @safe {
 //        Event result;
-        writefln("Lookup %s", fingerprint.toHexString);
+//        writefln("Lookup %s", fingerprint.toHexString);
         return _event_cache[fingerprint];
     }
 
 
     // Returns the number of active nodes in the network
     uint active_nodes() const pure nothrow {
-        return cast(uint)(node_ids.length-unused_node_ids.length);
+        return cast(uint)(node_ids.length);
+    }
+
+    uint total_nodes() const pure nothrow {
+        return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
     uint threshold() const pure nothrow {
@@ -165,15 +169,18 @@ class HashGraph {
     private void remove_node(Node n)
         in {
             assert(n !is null);
-            assert(n.node_id < nodes.length);
+            assert(n.node_id < total_nodes);
+            assert(n.node_id in nodes, "Node id "~to!string(n.node_id)~" is not removable because it does not exist");
         }
     out {
         writefln("node_ids.length=%d active_nodes=%d unused_node_ids.length=%d",
             node_ids.length, active_nodes, unused_node_ids.length);
-        assert(node_ids.length == active_nodes);
+//        assert(node_ids.length == active_nodes + unused_node_ids.length);
     }
     body {
-        nodes[n.node_id]=null;
+        writefln("******* REMOVE %d", n.node_id);
+        n.event=null;
+        nodes.remove(n.node_id);//=null;
         node_ids.remove(n.pubkey);
         unused_node_ids~=n.node_id;
     }
@@ -236,6 +243,9 @@ class HashGraph {
         auto get_node_id=pubkey in node_ids;
         uint node_id;
         Node node;
+        foreach(i, ref n; node_ids) {
+            writefln(" n[%s]", i);
+        }
         // Find a resuable node id if possible
         if ( get_node_id is null ) {
             if ( unused_node_ids.length ) {
@@ -267,7 +277,7 @@ class HashGraph {
         return event;
     }
 
-    private static uint strong_see_marker;
+    private uint strong_see_marker;
     /**
        This function makes sure that the HashGraph has all the events connected to this event
      */
@@ -282,10 +292,10 @@ class HashGraph {
     package void strongSee(Event event) {
         void checkStrongSeeing(Event event) {
             import std.bitmanip;
-            BitArray[] vote_mask=new BitArray[nodes.length];
+            BitArray[] vote_mask=new BitArray[total_nodes];
             @trusted void reset_bitarray(ref BitArray b) {
                 b.length=0;
-                b.length=nodes.length;
+                b.length=total_nodes;
             }
 
             // Clear the node log
@@ -293,16 +303,15 @@ class HashGraph {
                 if ( n !is null ) {
                     n.passed=0;
                     n.seeing=0;
-//                n.fork=false;
-//                n.famous=false;
                     n.event=null;
                     n.voted=false;
+                    writefln("Index %d vote_mask.length=%d", i, vote_mask.length);
                     reset_bitarray(vote_mask[i]);
-//                vote_mask[i].length=nodes.length;
                 }
             }
 
             strong_see_marker++;
+            writefln("######################## STRONG SEEING %d ############################", strong_see_marker);
 //        bool forked;
             uint count;
             void search(Event event, string indent="") @safe {
@@ -323,60 +332,64 @@ class HashGraph {
                 }
                 count++;
                 writefln("%sSearch for famous count=%d ", indent,count);
-                immutable not_famous_yet=(event !is null) && (!event.famous);
-                if ( not_famous_yet ) {
-                    auto n=nodes[event.node_id];
-                    assert(n !is null);
-                    n.passed++;
-//                immutable decrease_passed=true;
-                    writefln("\t%sn.passed=%d node=%d count=%d", indent, n.passed, event.node_id, count);
-                    scope(exit) {
-                        n.passed--;
-                        writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
-                        assert(n.passed >= 0);
-                    }
-                    if ( n.fork ) return;
-                    if ( event.witness ) {
-                        if ( n.event !is event ) {
-                            if ( n.event is null ) {
-                                n.event=event;
-                            }
-                            else if ( n.event.round < event.round ) {
-                                n.event=event;
-                                // Clear the vote_mask
-                            reset_bitarray(vote_mask[event.node_id]);
-                            // vote_mask[event.node_id].length=0;
-                            // vote_mask[event.node_id].length=nodes.length;
-                            }
-                            n.seeing=1;
-                            n.voted=false;
-                        }
-                        auto votes=vote(vote_mask[event.node_id]);
-                        immutable majority=isMajority(votes);
-                        if ( majority ) {
-                            n.seeing++;
-                            n.voted=true;
-                        }
-                        writefln("\t%witness n.seeing=%d n.voted=%s count=%d", indent, n.seeing, n.voted, count);
-                        return;
-                    }
-                    auto mother=event.mother;
 
-                    if ( mother ) {
-                        if ( mother.marker != strong_see_marker ) {
-                            // marker secures that the search is not called again
-                            // for the same Strong Seeing check
-                            mother.marker=strong_see_marker;
+                // Finde the node for the event
+                auto pnode=event.node_id in nodes;
+                immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous);
+                if ( not_famous_yet ) {
+                    auto n=*pnode;
+//                    assert(n !is null);
+                    writefln("EVENT %d NODE %d marker %d %s", event.id, event.node_id, event.marker, event.toCryptoHash.toHexString );
+                    if ( event.marker == strong_see_marker ) {
+                        n.fork=true;
+
+                    }
+                    else {
+                        // marker secures that the search is not called again
+                        // for the same Strong Seeing check
+                        event.marker=strong_see_marker;
+                        n.passed++;
+//                immutable decrease_passed=true;
+                        writefln("\t%sn.passed=%d node=%d count=%d", indent, n.passed, event.node_id, count);
+                        scope(exit) {
+                            n.passed--;
+                            writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
+                            assert(n.passed >= 0);
+                        }
+
+                        if ( event.witness ) {
+                            if ( n.event !is event ) {
+                                if ( n.event is null ) {
+                                    n.event=event;
+                                }
+                                else if ( n.event.round < event.round ) {
+                                    n.event=event;
+                                    // Clear the vote_mask
+                                    reset_bitarray(vote_mask[event.node_id]);
+                                    // vote_mask[event.node_id].length=0;
+                                    // vote_mask[event.node_id].length=nodes.length;
+                                }
+                                n.seeing=1;
+                                n.voted=false;
+                            }
+                            auto votes=vote(vote_mask[event.node_id]);
+                            immutable majority=isMajority(votes);
+                            if ( majority ) {
+                                n.seeing++;
+                                n.voted=true;
+                            }
+                            writefln("\t%witness n.seeing=%d n.voted=%s count=%d", indent, n.seeing, n.voted, count);
+                            return;
+                        }
+                        auto mother=event.mother;
+
+                        if ( mother ) {
+//                            mother.marker=strong_see_marker;
                             search(mother, indent~"M ");
                             if ( event.fatherExists ) {
                                 auto father=event.father;
                                 search(father, indent~"F ");
-                        }
-                        }
-                        else {
-                            n.fork=true;
-                            n.event=null;
-//                    n.seeing=0;
+                            }
                         }
                     }
                 }
@@ -385,7 +398,7 @@ class HashGraph {
             Node[] forks;
             search(event);
             writefln("Nodes %d", nodes.length);
-            foreach(ref n; nodes) {
+            foreach(i, ref n; nodes) {
                 writefln("Node fork=%s", n.fork);
                 if (n.fork ) {
                     // If we have a forks the nodes is removed
