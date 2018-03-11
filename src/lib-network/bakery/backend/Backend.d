@@ -13,13 +13,48 @@ import std.conv : to;
 import std.stdio : writeln;
 
 import bakery.hashgraph.Event;
-import bakery.Base;
 
-void startWebserver(SetThreadState threadState) {	
+enum EventProperty {
+	STRONGLY_SEEING,
+	IS_FAMOUS,
+	IS_WITNESS
+};
+
+immutable struct InterfaceEventUpdate {
+    uint id;
+	EventProperty property;
+	bool value;
+
+    this(uint id, EventProperty property, bool value) {
+        this.id = id;
+        this.property = property;
+        this.value = value;
+    }
+}
+
+immutable struct InterfaceEventBody {
+    uint id;
+    uint motherId;
+	uint fatherId;
+	ubyte[] payload;
+
+    this(immutable(uint) id, 
+	immutable(ubyte[]) payload,
+	immutable(uint) motherId = 0, 
+	immutable(uint) fatherId = 0
+	) {
+        this.id = id;
+        this.motherId = motherId;
+		this.fatherId = fatherId;
+		this.payload = payload;
+    }
+}
+
+void startWebserver() {
     auto router = new URLRouter;
 	router.get("/", staticRedirect("/index.html"));
 	router.get("/ws", handleWebSockets(&handleWebSocketConnection));
-	router.get("*", serveStaticFiles("/../../backend_tools/public/"));
+	router.get("*", serveStaticFiles("../../backend_tools/public/"));
 
 	auto settings = new HTTPServerSettings;
 	settings.port = 8080;
@@ -28,34 +63,11 @@ void startWebserver(SetThreadState threadState) {
 
 	scope(exit) listener.stopListening;
 
-	bool runBackend = false;
-	void handleState (SetThreadState ts) {
-		with(SetThreadState) final switch(ts) {
-					case KILL:
-						writeln("Kill webserver");
-						runBackend = false;
-					break;
-
-					case LIVE:
-						runBackend = true;
-					break;
-				}
-	}
-	
-	handleState(threadState);
-
-    while(runBackend) {
+    for (;;) {
         receive(
-			//Control the thread
-			&handleState,
-
-			(string msg) {
+            (string msg) {
              writeln("Received the message: " , msg);
-            },
-
-			(immutable(InterfaceEventBody) event) {
-				writeln("Event recieved: ", event.id);
-			}
+            }
 			
         );
     }
