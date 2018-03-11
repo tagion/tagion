@@ -168,6 +168,8 @@ class HashGraph {
             assert(n.node_id < nodes.length);
         }
     out {
+        writefln("node_ids.length=%d active_nodes=%d unused_node_ids.length=%d",
+            node_ids.length, active_nodes, unused_node_ids.length);
         assert(node_ids.length == active_nodes);
     }
     body {
@@ -329,11 +331,9 @@ class HashGraph {
 //                immutable decrease_passed=true;
                     writefln("\t%sn.passed=%d node=%d count=%d", indent, n.passed, event.node_id, count);
                     scope(exit) {
-                        if ( not_famous_yet ) {
-                            n.passed--;
-                            writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
-                            assert(n.passed >= 0);
-                        }
+                        n.passed--;
+                        writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
+                        assert(n.passed >= 0);
                     }
                     if ( n.fork ) return;
                     if ( event.witness ) {
@@ -367,10 +367,10 @@ class HashGraph {
                             // marker secures that the search is not called again
                             // for the same Strong Seeing check
                             mother.marker=strong_see_marker;
-                            search(mother, indent~"m*");
+                            search(mother, indent~"M ");
                             if ( event.fatherExists ) {
                                 auto father=event.father;
-                                search(father, indent~"f*");
+                                search(father, indent~"F ");
                         }
                         }
                         else {
