@@ -256,142 +256,174 @@ class HashGraph {
         auto event=new Event(eventbody, node_id);
         // Add the event to the event cache
         assign(event);
-//        event_cache.add(hfunc(eventbody.serialize).digits, event);
+//        event_cache.add(hfunc(eventbody.serialize).digits,
+
+        // Makes sure that we have the tree before the graph is checked
+        requestEventTree(gossip_net, event);
         // See if the node is strong seeing the hashgraph
-        event.strongly_seeing=strongSee(gossip_net, event);
+        strongSee(event);
         return event;
     }
 
     private static uint strong_see_marker;
-    package bool strongSee(GossipNet gossip_net, Event event) {
-        import std.bitmanip;
-        BitArray[] vote_mask=new BitArray[nodes.length];
-        @trusted void reset_bitarray(ref BitArray b) {
-            b.length=0;
-            b.length=nodes.length;
+    /**
+       This function makes sure that the HashGraph has all the events connected to this event
+     */
+    package void requestEventTree(GossipNet gossip_net, Event event) {
+        if ( event ) {
+            auto mother=event.mother(this, gossip_net);
+            requestEventTree(gossip_net, mother);
+            auto father=event.father(this, gossip_net);
+            requestEventTree(gossip_net, father);
         }
+    }
+    package void strongSee(Event event) {
+        void checkStrongSeeing(Event event) {
+            import std.bitmanip;
+            BitArray[] vote_mask=new BitArray[nodes.length];
+            @trusted void reset_bitarray(ref BitArray b) {
+                b.length=0;
+                b.length=nodes.length;
+            }
 
-        // Clear the node log
-        foreach(i,ref n; nodes) {
-            if ( n !is null ) {
-                n.passed=0;
-                n.seeing=0;
+            // Clear the node log
+            foreach(i,ref n; nodes) {
+                if ( n !is null ) {
+                    n.passed=0;
+                    n.seeing=0;
 //                n.fork=false;
 //                n.famous=false;
-                n.event=null;
-                n.voted=false;
-                reset_bitarray(vote_mask[i]);
+                    n.event=null;
+                    n.voted=false;
+                    reset_bitarray(vote_mask[i]);
 //                vote_mask[i].length=nodes.length;
+                }
             }
-        }
 
-        strong_see_marker++;
-        bool forked;
-        @safe
-        void search(Event event) {
-            @trusted
-            uint vote(ref BitArray mask) {
-                uint votes;
-                foreach(i, n; nodes) {
-                    if (i != event.node_id) {
-                        if ( n.passed > 0 ) {
-                            mask[i]=true;
-                        }
-                        if (mask[i]) {
-                            votes++;
+            strong_see_marker++;
+//        bool forked;
+            uint count;
+            void search(Event event, string indent="") @safe {
+                uint vote(ref BitArray mask) @trusted {
+                    uint votes;
+                    foreach(i, n; nodes) {
+                        if (i != event.node_id) {
+                            if ( n.passed > 0 ) {
+                                mask[i]=true;
+                            }
+                            if (mask[i]) {
+                                votes++;
+                            }
                         }
                     }
+                    writefln("voting=%d", votes);
+                    return votes;
                 }
-                writefln("voting=%d", votes);
-                return votes;
-            }
-            writefln("Search for famous ");
-            if ( (event !is null) && (!event.famous) ) {
-                auto n=nodes[event.node_id];
-                assert(n !is null);
-                n.passed++;
-                writefln("\tn.passed=%d node=%d", n.passed, event.node_id);
-                scope(exit) {
-                    n.passed--;
-                    writefln("\texit n.passed=%d node=%d", n.passed, event.node_id);
-                    assert(n.passed >= 0);
-                }
-                if ( n.fork ) return;
-                if ( event.witness ) {
-                    if ( n.event !is event ) {
-                        if ( n.event is null ) {
-                            n.event=event;
+                count++;
+                writefln("%sSearch for famous count=%d ", indent,count);
+                immutable not_famous_yet=(event !is null) && (!event.famous);
+                if ( not_famous_yet ) {
+                    auto n=nodes[event.node_id];
+                    assert(n !is null);
+                    n.passed++;
+//                immutable decrease_passed=true;
+                    writefln("\t%sn.passed=%d node=%d count=%d", indent, n.passed, event.node_id, count);
+                    scope(exit) {
+                        if ( not_famous_yet ) {
+                            n.passed--;
+                            writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
+                            assert(n.passed >= 0);
                         }
-                        else if ( n.event.round < event.round ) {
-                            n.event=event;
-                            // Clear the vote_mask
+                    }
+                    if ( n.fork ) return;
+                    if ( event.witness ) {
+                        if ( n.event !is event ) {
+                            if ( n.event is null ) {
+                                n.event=event;
+                            }
+                            else if ( n.event.round < event.round ) {
+                                n.event=event;
+                                // Clear the vote_mask
                             reset_bitarray(vote_mask[event.node_id]);
                             // vote_mask[event.node_id].length=0;
                             // vote_mask[event.node_id].length=nodes.length;
+                            }
+                            n.seeing=1;
+                            n.voted=false;
                         }
-                        n.seeing=1;
-                        n.voted=false;
+                        auto votes=vote(vote_mask[event.node_id]);
+                        immutable majority=isMajority(votes);
+                        if ( majority ) {
+                            n.seeing++;
+                            n.voted=true;
+                        }
+                        writefln("\t%witness n.seeing=%d n.voted=%s count=%d", indent, n.seeing, n.voted, count);
+                        return;
                     }
-                    auto votes=vote(vote_mask[event.node_id]);
-                    if ( isMajority(votes) ) {
-                        n.seeing++;
-                        n.voted=true;
-                    }
-                    return;
-                }
-                auto mother=event.mother(this, gossip_net);
+                    auto mother=event.mother;
 
-                if ( mother ) {
-                    if ( mother.marker != strong_see_marker ) {
-                        // marker secures that the search is not called again
-                        // for the same Strong Seeing check
-                        mother.marker=strong_see_marker;
-                        search(mother);
-                        if ( event.fatherExists ) {
-                            auto father=event.father(this, gossip_net);
-                            search(father);
+                    if ( mother ) {
+                        if ( mother.marker != strong_see_marker ) {
+                            // marker secures that the search is not called again
+                            // for the same Strong Seeing check
+                            mother.marker=strong_see_marker;
+                            search(mother, indent~"m*");
+                            if ( event.fatherExists ) {
+                                auto father=event.father;
+                                search(father, indent~"f*");
+                        }
+                        }
+                        else {
+                            n.fork=true;
+                            n.event=null;
+//                    n.seeing=0;
                         }
                     }
-                    else {
-                        n.fork=true;
-                        n.event=null;
-//                    n.seeing=0;
+                }
+            }
+            uint voting;
+            Node[] forks;
+            search(event);
+            writefln("Nodes %d", nodes.length);
+            foreach(ref n; nodes) {
+                writefln("Node fork=%s", n.fork);
+                if (n.fork ) {
+                    // If we have a forks the nodes is removed
+                    remove_node(n);
+                }
+                else if ( n.event ) {
+                    if ( n.event.famous ) {
+                        voting++;
                     }
                 }
             }
-        }
-        uint voting;
-        Node[] forks;
-        search(event);
-        writefln("Nodes %d", nodes.length);
-        foreach(ref n; nodes) {
-            writefln("Node fork=%s", n.fork);
-            if (n.fork ) {
-                // If we have a forks the nodes is removed
-                remove_node(n);
-            }
-            else if ( n.event ) {
-                if ( n.event.famous ) {
-                    voting++;
+            writefln("Voting %d", voting);
+            bool strong=isMajority(voting);
+            if ( strong ) {
+                event.witness=true;
+                Event e;
+                for(e=event.mother; !event.witness; e=e.mother) {
+                    /* empty */
                 }
+                if ( round == e.round+1 ) {
+                    round++;
+                }
+                event.round=round;
+                assert(event.round == e.round+1);
             }
+            writefln("Strongly Seeing test return %s", strong);
+            event.strongly_seeing=strong;
+            event.strongly_seeing_checked;
+
+//            return strong;
         }
-        writefln("Voting %d", voting);
-        bool strong=isMajority(voting);
-        if ( strong ) {
-            event.witness=true;
-            Event e;
-            for(e=event.mother; !event.witness; e=e.mother) {
-                /* empty */
-            }
-            if ( round == e.round+1 ) {
-                round++;
-            }
-            event.round=round;
-            assert(event.round == e.round+1);
+        if ( event && !event.is_strogly_seeing_checked ) {
+            auto mother=event.mother;
+            strongSee(mother);
+            auto father=event.father;
+            strongSee(father);
+            checkStrongSeeing(event);
         }
-        writefln("Strongly Seeing test return %s", strong);
-        return strong;
     }
 
     version(none)

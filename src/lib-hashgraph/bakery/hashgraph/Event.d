@@ -197,6 +197,7 @@ class Event {
     private bool _witness;
     private bool _famous;
     private bool _strongly_seeing;
+    private bool _strongly_seeing_checked;
     immutable uint id;
     private static uint id_count;
     private static immutable(uint) next_id() {
@@ -255,17 +256,33 @@ class Event {
         return _witness;
     }
 
-    bool strongly_seeing(bool s)
+    void strongly_seeing_checked()
         in {
-            assert(!_strongly_seeing);
+            assert(!_strongly_seeing_checked);
         }
     body {
+        _strongly_seeing_checked=true;
+    }
+
+    bool is_strogly_seeing_checked() const pure nothrow {
+        return _strongly_seeing_checked;
+    }
+
+    void strongly_seeing(bool s)
+        in {
+            assert(!_strongly_seeing);
+            assert(!_strongly_seeing_checked);
+        }
+    body {
+        _strongly_seeing=s;
         if ( callbacks && s ) {
             callbacks.strongly_seeing(this);
         }
-        return _strongly_seeing;
     }
 
+    bool strongly_seeing() const pure nothrow {
+        return _strongly_seeing;
+    }
 
     immutable uint node_id;
     uint marker;
@@ -325,9 +342,6 @@ class Event {
             assert(_mother);
         }
     }
-    out(result) {
-        assert(result);
-    }
     body {
         return _mother;
     }
@@ -362,9 +376,6 @@ class Event {
         if ( father_hash ) {
             assert(_father);
         }
-    }
-    out(result) {
-        assert(result);
     }
     body {
         return _father;
