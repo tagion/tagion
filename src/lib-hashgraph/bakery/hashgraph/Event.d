@@ -224,33 +224,33 @@ class Event {
         return _round;
     }
 
-    bool famous(bool f)
+    void famous(bool f)
         in {
             assert(!_famous);
         }
     body {
+        _famous=f;
         if ( callbacks && f ) {
             if ( !_witness ) {
                 this.witness=true;
             }
             callbacks.famous(this);
-        }
-        return _famous=f;
+        } 
     }
 
     bool famous() pure const nothrow {
         return _famous;
     }
 
-    bool witness(bool w)
+    void witness(bool w)
         in {
             assert(!_witness);
         }
     body {
+        _witness=w;
         if ( callbacks && w ) {
             callbacks.witness(this);
         }
-        return _witness=w;
     }
 
     bool witness() pure const nothrow {
