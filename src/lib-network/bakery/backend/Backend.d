@@ -18,15 +18,17 @@ import tango.io.FilePath;
 
 class Backend {
 
-	immutable FilePath public_repository;
+	immutable(FilePath) public_repository;
+	private ThreadState _thread_state;
+	private HTTPListener _listener;
 
-
-	this(FilePath public_repository ) {
-		this.public_repository = cast(immutable)public_repository.dup;
+	this(immutable(FilePath) public_repository) {
+		this.public_repository = public_repository;
+		writeln("Public path to webserver files: ", public_repository.toString);
 	}
 
 
-	void startWebserver(SetThreadState threadState) {	
+	void startWebserver() {	
 		auto router = new URLRouter;
 		router.get("/", staticRedirect("/index.html"));
 		router.get("/ws", handleWebSockets(&handleWebSocketConnection));
@@ -35,44 +37,12 @@ class Backend {
 		auto settings = new HTTPServerSettings;
 		settings.port = 8080;
 		settings.bindAddresses = ["::1", "127.0.0.1"];
-		auto listener = listenHTTP(settings, router);
+		_listener = listenHTTP(settings, router);
 
-		scope(exit) listener.stopListening;
+	}
 
-		bool runBackend = false;
-		void handleState (SetThreadState ts) {
-			with(SetThreadState) final switch(ts) {
-						case KILL:
-							writeln("Kill webserver");
-							runBackend = false;
-						break;
-
-						case LIVE:
-							runBackend = true;
-						break;
-					}
-		}
-		
-		handleState(threadState);
-
-		while(runBackend) {
-			receive(
-				//Control the thread
-				&handleState,
-
-				(string msg) {
-				writeln("Received the message: " , msg);
-				},
-
-				(immutable(InterfaceEventBody) event) {
-					writeln("Event recieved: ", event.id);
-				}
-				
-			);
-		}
-
-		
-
+	void stopWebserver() {
+		_listener.stopListening;
 	}
 
 
