@@ -340,7 +340,7 @@ class Event {
     inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            assert(_mother);
+            //assert(_mother);
         }
     }
     body {
@@ -375,7 +375,7 @@ class Event {
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
-            assert(_father);
+            //assert(_father);
         }
     }
     body {

@@ -158,13 +158,12 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    // uint threshold() const pure nothrow {
-    //     return (active_nodes*2)/3;
-    // }
+    uint threshold() const pure nothrow {
+        return (active_nodes*2)/3+1;
+    }
 
-    enum minimum_nodes = 4;
     bool isMajority(uint voting) const pure nothrow {
-        return (active_nodes >= minimum_nodes) && (3*voting > 2*active_nodes);
+        return voting > threshold;
     }
 
     private void remove_node(Node n)
@@ -290,9 +289,8 @@ class HashGraph {
             requestEventTree(gossip_net, father);
         }
     }
-
     package void strongSee(Event event) {
-        void checkStrongSeeing(Event top_event) {
+        void checkStrongSeeing(Event event) {
             import std.bitmanip;
             BitArray[] vote_mask=new BitArray[total_nodes];
             @trusted void reset_bitarray(ref BitArray b) {
@@ -307,7 +305,7 @@ class HashGraph {
                     n.seeing=0;
                     n.event=null;
                     n.voted=false;
-                    //      writefln("Index %d vote_mask.length=%d", i, vote_mask.length);
+                    writefln("Index %d vote_mask.length=%d", i, vote_mask.length);
                     reset_bitarray(vote_mask[i]);
                 }
             }
@@ -316,15 +314,11 @@ class HashGraph {
             writefln("######################## STRONG SEEING %d ############################", strong_see_marker);
 //        bool forked;
             uint count;
-            // Seeing is counting the number of witness which can bee seen by top_event
-            uint seeing;
             void search(Event event, string indent="") @safe {
                 uint vote(ref BitArray mask) @trusted {
                     uint votes;
-                    enum self_voting=true;
-
                     foreach(i, n; nodes) {
-                        if ( self_voting || (i != event.node_id) ) {
+                        if (i != event.node_id) {
                             if ( n.passed > 0 ) {
                                 mask[i]=true;
                             }
@@ -333,11 +327,8 @@ class HashGraph {
                             }
                         }
                     }
-                    writefln("\tvoting = %d mask = %s", votes, mask);
+                    writefln("voting=%d", votes);
                     return votes;
-                }
-                immutable(char)[] masks(ref const BitArray mask) @trusted {
-                    return to!string(mask);
                 }
                 count++;
                 writefln("%sSearch for famous count=%d ", indent,count);
@@ -348,17 +339,12 @@ class HashGraph {
                 if ( not_famous_yet ) {
                     auto n=*pnode;
 //                    assert(n !is null);
-                    writefln("EVENT %d NODE %d marker %d M=%s F=%s '%s' %s",
-                        event.id, event.node_id, event.marker,
-                        (event.mother)?to!string(event.mother.id):"#",
-                        (event.father)?to!string(event.father.id):"#",
-                        cast(string)(event.payload),
-                        event.toCryptoHash.toHexString );
-                    // if ( event.marker == strong_see_marker ) {
-                    //     n.fork=true;
-                    //     writefln("FORKED EVENT %d", event.id);
-                    // }
-                    // else {
+                    writefln("EVENT %d NODE %d marker %d %s", event.id, event.node_id, event.marker, event.toCryptoHash.toHexString );
+                    if ( event.marker == strong_see_marker ) {
+                        n.fork=true;
+
+                    }
+                    else {
                         // marker secures that the search is not called again
                         // for the same Strong Seeing check
                         event.marker=strong_see_marker;
@@ -383,19 +369,16 @@ class HashGraph {
                                     // vote_mask[event.node_id].length=0;
                                     // vote_mask[event.node_id].length=nodes.length;
                                 }
-                                //n.seeing=1;
+                                n.seeing=1;
                                 n.voted=false;
                             }
-                            if (!n.voted) {
-                                auto votes=vote(vote_mask[event.node_id]);
-                                immutable majority=isMajority(votes);
-                                if ( majority ) {
-                                    writefln("Majority !!!!");
-                                    seeing++;
-                                    n.voted=true;
-                                }
+                            auto votes=vote(vote_mask[event.node_id]);
+                            immutable majority=isMajority(votes);
+                            if ( majority ) {
+                                n.seeing++;
+                                n.voted=true;
                             }
-                            writefln("\t%sWITNESS seeing=%d n.voted=%s mask=%s count=%d", indent, seeing, n.voted, masks(vote_mask[event.node_id]), count);
+                            writefln("\t%witness n.seeing=%d n.voted=%s count=%d", indent, n.seeing, n.voted, count);
                             return;
                         }
                         auto mother=event.mother;
@@ -408,43 +391,42 @@ class HashGraph {
                                 search(father, indent~"F ");
                             }
                         }
-                        //}
+                    }
                 }
             }
-            //uint voting;
-            //Node[] forks;
-            // Search to the number of witness
-            search(top_event);
-            //top_event.seeing=seeing;
-            // writefln("Nodes %d", nodes.length);
-            // foreach(i, ref n; nodes) {
-            //     if ( n.event ) {
-            //         if ( n.event.famous ) {
-            //             voting++;
-            //         }
-            //     }
-            // }
-            // writefln("Voting %d", voting);
-            bool strong=isMajority(seeing);
+            uint voting;
+            Node[] forks;
+            search(event);
+            writefln("Nodes %d", nodes.length);
+            foreach(i, ref n; nodes) {
+                writefln("Node fork=%s", n.fork);
+                if (n.fork ) {
+                    // If we have a forks the nodes is removed
+                    remove_node(n);
+                }
+                else if ( n.event ) {
+                    if ( n.event.famous ) {
+                        voting++;
+                    }
+                }
+            }
+            writefln("Voting %d", voting);
+            bool strong=isMajority(voting);
             if ( strong ) {
-                //assert(top_event.witness);
-
+                event.witness=true;
                 Event e;
-                // Crawl down to the next witness
-                for(e=top_event; !e.witness; e=e.mother) {
+                for(e=event.mother; !event.witness; e=e.mother) {
                     /* empty */
                 }
-                // if ( round == e.round+1 ) {
-                //     round++;
-                // }
-                assert(top_event !is e);
-                top_event.round=e.round+1;
-                top_event.witness=true;
-//                assert(top_event.round == e.round+1);
+                if ( round == e.round+1 ) {
+                    round++;
+                }
+                event.round=round;
+                assert(event.round == e.round+1);
             }
             writefln("Strongly Seeing test return %s", strong);
-            top_event.strongly_seeing=strong;
-            top_event.strongly_seeing_checked;
+            event.strongly_seeing=strong;
+            event.strongly_seeing_checked;
 
 //            return strong;
         }
@@ -453,9 +435,6 @@ class HashGraph {
             strongSee(mother);
             auto father=event.father;
             strongSee(father);
-            if ( !mother && !father ) {
-                event.witness=true;
-            }
             checkStrongSeeing(event);
         }
     }
