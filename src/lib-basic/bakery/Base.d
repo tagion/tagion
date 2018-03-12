@@ -4,7 +4,7 @@ import bakery.crypto.Hash;
 
 //Common components for bakery
 
-enum SetThreadState {
+enum ThreadState {
     KILL = 9,
     LIVE = 1
 }
