@@ -338,7 +338,7 @@ class Event {
     }
 
     immutable uint node_id;
-    uint marker;
+//    uint marker;
     @trusted
     this(ref immutable(EventBody) ebody, uint node_id=0) {
         event_body=&ebody;
