@@ -79,7 +79,7 @@ class LRU(K,V)  {
         static if ( is (K:const(ubyte)[]) ) {
             import std.stdio;
             import bakery.crypto.Hash : toHexString;
-            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
+//            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
         }
         return evict;
     }
