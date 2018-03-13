@@ -10,17 +10,24 @@ enum ThreadState {
 }
 
 enum EventProperty {
-	STRONGLY_SEEING,
+	IS_STRONGLY_SEEING,
 	IS_FAMOUS,
 	IS_WITNESS
 };
 
+enum EventType {
+    EVENT_BODY,
+    EVENT_UPDATE
+};
+
 struct InterfaceEventUpdate {
-    immutable(uint) id;
-	immutable(EventProperty) property;
-	immutable(bool) value;
+    EventType eventType;
+    uint id;
+	EventProperty property;
+	bool value;
 
     this (const uint id, const EventProperty property, const bool value) {
+        this.eventType = EventType.EVENT_BODY;
         this.id = id;
         this.property = property;
         this.value = value;
@@ -28,20 +35,24 @@ struct InterfaceEventUpdate {
 }
 
 struct InterfaceEventBody {
-    immutable(uint) id;
-    immutable(uint) motherId;
-	immutable(uint) fatherId;
+    EventType eventType;
+    uint id;
+    uint mother_id;
+	uint father_id;
 	immutable(ubyte[]) payload;
+    //string test;
 
     this(const(uint) id, 
 	immutable(ubyte[]) payload,
-	const(uint) motherId = 0, 
-	const(uint) fatherId = 0
+	const(uint) mother_id = 0, 
+	const(uint) father_id = 0
 	) {
+        this.eventType = EventType.EVENT_UPDATE;
         this.id = id;
-        this.motherId = motherId;
-		this.fatherId = fatherId;
+        this.mother_id = mother_id;
+		this.father_id = father_id;
 		this.payload = payload;
+        //this.test = "Hej";
     }
 }
 
