@@ -6,8 +6,10 @@ import bakery.crypto.Hash;
 import bakery.hashgraph.GossipNet;
 //import bakery.hashgraph.HashGraph : HashGraph;
 import std.conv;
+import std.bitmanip;
 
 import std.stdio;
+import std.format;
 
 alias R_BSON!true GBSON;
 
@@ -166,6 +168,8 @@ interface EventCallbacks {
     void witness(const(Event) e);
     void strongly_seeing(const(Event) e);
     void famous(const(Event) e);
+    void round(const(Event) e);
+    void forked(const(Event) e);
 
 }
 
@@ -188,17 +192,24 @@ class Event {
     // This is the internal pointer to the
     private Event _mother;
     private Event _father;
+    private Event _daughter;
+    private Event _son;
 
     // BigInt R, S;
     int topologicalIndex;
 
-    private bool _round_set;
+//    private bool _round_set;
     private Round  _round;
+    // The withness mask contains the mask of the nodes
+    // Which can be seen by the next rounds witness
+    private BitArray* _witness_mask;
     private bool _witness;
     private bool _famous;
     private bool _strongly_seeing;
     private bool _strongly_seeing_checked;
     private bool _loaded;
+    // This indicates that the hashgraph aften this event
+    private bool _forked;
     immutable uint id;
     private static uint id_count;
     private static immutable(uint) next_id() {
@@ -213,48 +224,71 @@ class Event {
 
     void round(Round round)
         in {
-            assert(!_round_set);
+            assert(_round == 0, "Round is already set");
         }
     body {
-        this._round_set=true;
-        this._round=round;
+//        this._round_set=true;
+        this._round=(round != 0)?round:1;
+        if ( callbacks ) {
+            callbacks.round(this);
+        }
     }
 
-    Round round() pure const nothrow {
+    Round round() pure const nothrow
+        in {
+            assert(_round != 0, "Round is not set for this Event");
+        }
+    body {
         return _round;
     }
 
-    void famous(bool f)
+    bool famous(bool f)
         in {
             assert(!_famous);
         }
     body {
-        _famous=f;
         if ( callbacks && f ) {
             if ( !_witness ) {
                 this.witness=true;
             }
             callbacks.famous(this);
-        } 
+        }
+        return _famous=f;
     }
 
     bool famous() pure const nothrow {
         return _famous;
     }
 
-    void witness(bool w)
+    bool witness(bool w)
         in {
             assert(!_witness);
         }
     body {
-        _witness=w;
         if ( callbacks && w ) {
             callbacks.witness(this);
         }
+        return _witness=w;
     }
 
     bool witness() pure const nothrow {
         return _witness;
+    }
+
+    @trusted
+    void create_witness_mask(immutable uint size)
+        in {
+            assert(_witness, "Witness mask can not be created for a none witness event");
+            assert(_witness_mask is null, "Witness mask has already been created");
+        }
+    body {
+        _witness_mask=new BitArray;
+        _witness_mask.length=size;
+    }
+
+    @trusted
+    void set_mask_witness(uint index) {
+        (*_witness_mask)[index]=true;
     }
 
     void strongly_seeing_checked()
@@ -285,6 +319,24 @@ class Event {
         return _strongly_seeing;
     }
 
+    void forked(bool s)
+        in {
+            if ( s ) {
+                assert(!_forked, "An event can not unforked");
+            }
+        }
+    body {
+        _forked = s;
+        if ( callbacks && _forked ) {
+            callbacks.forked(this);
+        }
+    }
+
+
+    bool forked() const pure nothrow {
+        return _forked;
+    }
+
     immutable uint node_id;
     uint marker;
     @trusted
@@ -310,6 +362,7 @@ class Event {
     // Disconnect the Event from the graph
     void diconnect() {
         _mother=_father=null;
+        _daughter=_son=null;
     }
 
     Event mother(H)(H h, GossipNet gossip_net) {
@@ -332,7 +385,7 @@ class Event {
         }
     body {
         if ( _mother is null ) {
-            _mother = h.lookup(mother_hash, this);
+            _mother = h.lookup(mother_hash);
         }
         return _mother;
     }
@@ -340,7 +393,7 @@ class Event {
     inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            //assert(_mother);
+            assert(_mother);
         }
     }
     body {
@@ -357,7 +410,7 @@ class Event {
     }
     body {
         if ( _father is null ) {
-            _father = h.lookup(father_hash, this);
+            _father = h.lookup(father_hash);
         }
         return _father;
     }
@@ -375,11 +428,63 @@ class Event {
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
-            //assert(_father);
+            assert(_father);
         }
     }
     body {
         return _father;
+    }
+
+    inout(Event) daughter() inout pure nothrow {
+        return _daughter;
+    }
+
+    void daughter(Event c)
+        in {
+            if ( _daughter !is null ) {
+                assert( c !is null, "Daughter can not be set to null");
+                // assert(_daughter is c,
+                //     format(
+                //         "Daughter pointer can not be change\n"~
+                //         "mother           id=%d\n"~
+                //         "current daughter id=%d\n"~
+                //         "new daughter     id=%d",
+                //         id, _daughter.id, c.id));
+            }
+        }
+    body {
+        if ( _daughter && (_daughter !is c) && !_forked ) {
+            forked=true;
+        }
+        else {
+            _daughter=c;
+        }
+    }
+
+    inout(Event) son() inout pure nothrow {
+        return _son;
+    }
+
+    void son(Event c)
+        in {
+            if ( _son !is null ) {
+                assert( c !is null, "Son can not be set to null");
+                // assert(_son is c,
+                //     format(
+                //         "Son pointer can not be change\n"~
+                //         "father      id=%d\n"~
+                //         "current son id=%d\n"~
+                //         "new son     id=%d",
+                //         id, _son.id, c.id));
+            }
+        }
+    body {
+        if ( _son && (_son !is c) && !_forked ) {
+            forked=true;
+        }
+        else {
+            _son=c;
+        }
     }
 
     immutable(ubyte[]) father_hash() const pure nothrow {
@@ -433,6 +538,26 @@ class Event {
         return event_body_data;
     }
 
+    version(none)
+    invariant {
+        if ( (_mother) && (_mother._daughter) ) {
+            if ( _mother._daughter !is this ) {
+                writefln("Bad daughter=%d this=%d", _mother.daughter.id, id);
+            }
+            assert(_mother._daughter is this);
+
+        }
+        if ( (_father) && (_father._son) ) {
+            if ( _father._son !is this ) {
+                writefln("Bad son=%d this=%d", _father._son.id, id);
+                writefln("\tfather=%s", _father._hash.toHexString);
+
+                writefln("\tbad son=%s", _father._son._hash.toHexString);
+                writefln("\t   this=%s", _hash.toHexString);
+            }
+            assert(_father._son is this);
+        }
+    }
 
     //Sorting
 

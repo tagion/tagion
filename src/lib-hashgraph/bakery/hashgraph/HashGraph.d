@@ -142,7 +142,8 @@ class HashGraph {
     void assign(Event event) {
         _event_cache[event.toCryptoHash]=event;
     }
-    Event lookup(immutable(ubyte[]) fingerprint, Event child) @safe {
+
+    Event lookup(immutable(ubyte[]) fingerprint) @safe {
 //        Event result;
 //        writefln("Lookup %s", fingerprint.toHexString);
         return _event_cache[fingerprint];
@@ -241,40 +242,44 @@ class HashGraph {
         GossipNet gossip_net,
         immutable(Pubkey) pubkey,
         ref immutable(EventBody) eventbody) {
-        auto get_node_id=pubkey in node_ids;
-        uint node_id;
-        Node node;
-        foreach(i, ref n; node_ids) {
-            writefln(" n[%s]", i);
-        }
-        // Find a resuable node id if possible
-        if ( get_node_id is null ) {
-            if ( unused_node_ids.length ) {
-                node_id=unused_node_ids[0];
-                unused_node_ids=unused_node_ids[1..$];
-                node_ids[pubkey]=node_id;
+        Event event=lookup(Event.fhash(eventbody.serialize).digits);
+        if ( !event ) {
+            auto get_node_id=pubkey in node_ids;
+            uint node_id;
+            Node node;
+
+            foreach(i, ref n; node_ids) {
+                writefln(" n[%s]", i);
+            }
+            // Find a resuable node id if possible
+            if ( get_node_id is null ) {
+                if ( unused_node_ids.length ) {
+                    node_id=unused_node_ids[0];
+                    unused_node_ids=unused_node_ids[1..$];
+                    node_ids[pubkey]=node_id;
+                }
+                else {
+                    node_id=cast(uint)node_ids.length;
+                    node_ids[pubkey]=node_id;
+                }
+                node=new Node(pubkey, node_id, current_time);
+                nodes[node_id]=node;
             }
             else {
-                node_id=cast(uint)node_ids.length;
-                node_ids[pubkey]=node_id;
+                node_id=*get_node_id;
+                node=nodes[node_id];
             }
-            node=new Node(pubkey, node_id, current_time);
-            nodes[node_id]=node;
-        }
-        else {
-            node_id=*get_node_id;
-            node=nodes[node_id];
-        }
-        node.round=round;
-        auto event=new Event(eventbody, node_id);
-        // Add the event to the event cache
-        assign(event);
+            node.round=round;
+            event=new Event(eventbody, node_id);
+            // Add the event to the event cache
+            assign(event);
 //        event_cache.add(hfunc(eventbody.serialize).digits,
 
         // Makes sure that we have the tree before the graph is checked
-        requestEventTree(gossip_net, event);
-        // See if the node is strong seeing the hashgraph
-        strongSee(event);
+            requestEventTree(gossip_net, event);
+            // See if the node is strong seeing the hashgraph
+            strongSee(event);
+        }
         return event;
     }
 
@@ -282,12 +287,23 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
      */
-    package void requestEventTree(GossipNet gossip_net, Event event) {
+    package void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
+            if ( child ) {
+                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
+                if ( is_father ) {
+                    writeln("\tset son");
+                    event.son=child;
+                }
+                else {
+                    writeln("\tset daughter");
+                    event.daughter=child;
+                }
+            }
             auto mother=event.mother(this, gossip_net);
-            requestEventTree(gossip_net, mother);
+            requestEventTree(gossip_net, mother, event, false);
             auto father=event.father(this, gossip_net);
-            requestEventTree(gossip_net, father);
+            requestEventTree(gossip_net, father, event, true);
         }
     }
 
@@ -438,8 +454,8 @@ class HashGraph {
                 //     round++;
                 // }
                 assert(top_event !is e);
-                top_event.round=e.round+1;
                 top_event.witness=true;
+                top_event.round=e.round+1;
 //                assert(top_event.round == e.round+1);
             }
             writefln("Strongly Seeing test return %s", strong);
@@ -455,6 +471,7 @@ class HashGraph {
             strongSee(father);
             if ( !mother && !father ) {
                 event.witness=true;
+                event.round=1;
             }
             checkStrongSeeing(event);
         }
