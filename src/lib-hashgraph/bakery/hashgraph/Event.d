@@ -443,9 +443,9 @@ class Event {
 //        if ( assign ) {
 //        h.assign(this);
 //        }
-        if ( callbacks ) {
-            callbacks.create(this);
-        }
+        // if ( callbacks ) {
+        //     callbacks.create(this);
+        // }
 //        if ( fhash ) {
         assert(_hash);
 //        }

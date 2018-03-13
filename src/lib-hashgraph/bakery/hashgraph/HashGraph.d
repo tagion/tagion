@@ -346,6 +346,9 @@ class HashGraph {
             requestEventTree(gossip_net, mother, event, false);
             auto father=event.father(this, gossip_net);
             requestEventTree(gossip_net, father, event, true);
+            if ( Event.callbacks ) {
+                Event.callbacks.create(event);
+            }
         }
     }
 
