@@ -307,6 +307,28 @@ class HashGraph {
         }
     }
 
+    // This function makes the votes for famous event
+    package void searchFamous(Event top_event)
+    in {
+        assert(top_event.witness, "Event should be a witness");
+    }
+    body {
+        void findWitness(Event event) {
+            if ( event ) {
+                if ( event.witness ) {
+                    event.set_witness_mask(top_event.node_id);
+                    event.famous=isMajority(event.famous_votes);
+                }
+                else {
+                    findWitness(event.mother);
+                    findWitness(event.mother);
+                }
+            }
+        }
+        findWitness(top_event.mother);
+        findWitness(top_event.father);
+    }
+
     package void strongSee(Event event) {
         void checkStrongSeeing(Event top_event) {
             import std.bitmanip;
