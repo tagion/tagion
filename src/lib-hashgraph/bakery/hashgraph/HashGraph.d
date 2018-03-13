@@ -22,10 +22,14 @@ class HashGraph {
     alias immutable(ubyte)[] Privkey;
     alias immutable(ubyte)[] HashPointer;
     alias LRU!(HashPointer, Event) EventCache;
-    alias LRU!(Round, uint*) RoundCounter;
+
+    //alias LRU!(Round, uint*) RoundCounter;
     alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
     private EventCache _event_cache;
-    private RoundCounter _round_counter;
+    // List of rounds
+    private Round _rounds;
+
+    //private RoundCounter _round_counter;
 //    private GossipNet _gossip_net;
     // static this() {
     //     event_cache=new EventCache(null);
@@ -34,7 +38,7 @@ class HashGraph {
 
     this() {
         _event_cache=new EventCache(null);
-        _round_counter=new RoundCounter(null);
+        //_round_counter=new RoundCounter(null);
     }
 
     struct EventPackage{
@@ -102,8 +106,15 @@ class HashGraph {
         }
     }
 
-    class Node {
+    package static Round find_previous_round(Event event) {
+        Event e;
+        for (e=event; e && !e.round; e=e.mother) {
+            // Empty
+        }
+        return e.round;
+    }
 
+    class Node {
         //DList!(Event) queue;
         immutable uint node_id;
         immutable ulong discovery_time;
@@ -113,9 +124,9 @@ class HashGraph {
             this.node_id=node_id;
             this.discovery_time=time;
         }
-        void updateRound(Round round) {
-            this.round=round;
-        }
+        // void updateRound(Round round) {
+        //     this.round=round;
+        // }
         // Counts the number of times that a search has
         // passed this node in the graph search
         int passed;
@@ -124,11 +135,11 @@ class HashGraph {
         // uint voting;
         bool fork; // Fork detected in the hashgraph
         Event event; // Last witness
-    private:
-        Round round;
+    // private:
+    //     Round round;
     }
 
-    Round round; // Current round
+//    Round round; // Current round
     Node[uint] nodes; // List of participating nodes T
     uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
     uint[] unused_node_ids; // Stack of unused node ids
@@ -174,28 +185,28 @@ class HashGraph {
             assert(n.node_id < total_nodes);
             assert(n.node_id in nodes, "Node id "~to!string(n.node_id)~" is not removable because it does not exist");
         }
-    out {
-        writefln("node_ids.length=%d active_nodes=%d unused_node_ids.length=%d",
-            node_ids.length, active_nodes, unused_node_ids.length);
-//        assert(node_ids.length == active_nodes + unused_node_ids.length);
-    }
+//     out {
+//         writefln("node_ids.length=%d active_nodes=%d unused_node_ids.length=%d",
+//             node_ids.length, active_nodes, unused_node_ids.length);
+// //        assert(node_ids.length == active_nodes + unused_node_ids.length);
+//     }
     body {
-        writefln("******* REMOVE %d", n.node_id);
+//        writefln("******* REMOVE %d", n.node_id);
         n.event=null;
         nodes.remove(n.node_id);//=null;
         node_ids.remove(n.pubkey);
         unused_node_ids~=n.node_id;
     }
 
-    uint countRound(Round round) {
-        uint* count;
-        if ( !_round_counter.get(round, count) ) {
-            count=new uint;
-            _round_counter.add(round, count);
-        }
-        (*count)++;
-        return (*count);
-    }
+    // uint countRound(Round round) {
+    //     uint* count;
+    //     if ( !_round_counter.get(round, count) ) {
+    //         count=new uint;
+    //         _round_counter.add(round, count);
+    //     }
+    //     (*count)++;
+    //     return (*count);
+    // }
 
     // static void check(immutable bool flag, ConcensusFailCode code, string msg) @safe {
     //     if (!flag) {
@@ -231,6 +242,37 @@ class HashGraph {
         return event;
     }
 
+    Round nextRound(Event event)
+        out(result) {
+            assert(result);
+        }
+    body {
+        auto previous=find_previous_round(event);
+        auto number=Round.increase_number(previous);
+        if ( _rounds ) {
+            assert(number <= _rounds.number+1);
+            if ( number == _rounds.number+1 ) {
+                auto new_round = new Round(_rounds, total_nodes);
+                _rounds = new_round;
+            }
+            else {
+                Round search(Round r) {
+                    if ( r ) {
+                        if ( r.number == number ) {
+                            return r;
+                        }
+                    }
+                    return search(r.previous);
+                }
+                return search(_rounds);
+            }
+        }
+        else {
+            _rounds = new Round(previous, total_nodes);
+        }
+        return _rounds;
+    }
+
     // Event registerEvent(
     //     immutable(Pubkey) pubkey,
     //     ref immutable(EventBody) eventbody,
@@ -248,9 +290,9 @@ class HashGraph {
             uint node_id;
             Node node;
 
-            foreach(i, ref n; node_ids) {
-                writefln(" n[%s]", i);
-            }
+            // foreach(i, ref n; node_ids) {
+            //     writefln(" n[%s]", i);
+            // }
             // Find a resuable node id if possible
             if ( get_node_id is null ) {
                 if ( unused_node_ids.length ) {
@@ -269,7 +311,7 @@ class HashGraph {
                 node_id=*get_node_id;
                 node=nodes[node_id];
             }
-            node.round=round;
+//            node.round=round;
             event=new Event(eventbody, node_id);
             // Add the event to the event cache
             assign(event);
@@ -283,20 +325,20 @@ class HashGraph {
         return event;
     }
 
-    private uint strong_see_marker;
+//    private uint strong_see_marker;
     /**
        This function makes sure that the HashGraph has all the events connected to this event
      */
     package void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
             if ( child ) {
-                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
+//                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
                 if ( is_father ) {
-                    writeln("\tset son");
+//                    writeln("\tset son");
                     event.son=child;
                 }
                 else {
-                    writeln("\tset daughter");
+//                    writeln("\tset daughter");
                     event.daughter=child;
                 }
             }
@@ -305,6 +347,28 @@ class HashGraph {
             auto father=event.father(this, gossip_net);
             requestEventTree(gossip_net, father, event, true);
         }
+    }
+
+    // This function makes the votes for famous event
+    package void searchFamous(Event top_event)
+    in {
+        assert(top_event.witness, "Event should be a witness");
+    }
+    body {
+        void findWitness(Event event) {
+            if ( event ) {
+                if ( event.witness ) {
+                    event.set_witness_mask(top_event.node_id);
+                    event.famous=isMajority(event.famous_votes);
+                }
+                else {
+                    findWitness(event.mother);
+                    findWitness(event.mother);
+                }
+            }
+        }
+        findWitness(top_event.mother);
+        findWitness(top_event.father);
     }
 
     package void strongSee(Event event) {
@@ -328,8 +392,8 @@ class HashGraph {
                 }
             }
 
-            strong_see_marker++;
-            writefln("######################## STRONG SEEING %d ############################", strong_see_marker);
+            //        strong_see_marker++;
+//            writefln("######################## STRONG SEEING %d ############################", strong_see_marker);
 //        bool forked;
             uint count;
             // Seeing is counting the number of witness which can bee seen by top_event
@@ -349,14 +413,14 @@ class HashGraph {
                             }
                         }
                     }
-                    writefln("\tvoting = %d mask = %s", votes, mask);
+//                    writefln("\tvoting = %d mask = %s", votes, mask);
                     return votes;
                 }
                 immutable(char)[] masks(ref const BitArray mask) @trusted {
                     return to!string(mask);
                 }
                 count++;
-                writefln("%sSearch for famous count=%d ", indent,count);
+//                writefln("%sSearch for famous count=%d ", indent,count);
 
                 // Finde the node for the event
                 auto pnode=event.node_id in nodes;
@@ -364,12 +428,12 @@ class HashGraph {
                 if ( not_famous_yet ) {
                     auto n=*pnode;
 //                    assert(n !is null);
-                    writefln("EVENT %d NODE %d marker %d M=%s F=%s '%s' %s",
-                        event.id, event.node_id, event.marker,
-                        (event.mother)?to!string(event.mother.id):"#",
-                        (event.father)?to!string(event.father.id):"#",
-                        cast(string)(event.payload),
-                        event.toCryptoHash.toHexString );
+                    // writefln("EVENT %d NODE %d marker %d M=%s F=%s '%s' %s",
+                    //     event.id, event.node_id, event.marker,
+                    //     (event.mother)?to!string(event.mother.id):"#",
+                    //     (event.father)?to!string(event.father.id):"#",
+                    //     cast(string)(event.payload),
+                    //     event.toCryptoHash.toHexString );
                     // if ( event.marker == strong_see_marker ) {
                     //     n.fork=true;
                     //     writefln("FORKED EVENT %d", event.id);
@@ -377,13 +441,13 @@ class HashGraph {
                     // else {
                         // marker secures that the search is not called again
                         // for the same Strong Seeing check
-                        event.marker=strong_see_marker;
+//                        event.marker=strong_see_marker;
                         n.passed++;
 //                immutable decrease_passed=true;
-                        writefln("\t%sn.passed=%d node=%d count=%d", indent, n.passed, event.node_id, count);
+                        // writefln("\t%sn.passed=%d node=%d count=%d", indent, n.passed, event.node_id, count);
                         scope(exit) {
                             n.passed--;
-                            writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
+                            // writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
                             assert(n.passed >= 0);
                         }
 
@@ -392,7 +456,7 @@ class HashGraph {
                                 if ( n.event is null ) {
                                     n.event=event;
                                 }
-                                else if ( n.event.round < event.round ) {
+                                else if ( n.event.round.number < event.round.number ) {
                                     n.event=event;
                                     // Clear the vote_mask
                                     reset_bitarray(vote_mask[event.node_id]);
@@ -406,12 +470,12 @@ class HashGraph {
                                 auto votes=vote(vote_mask[event.node_id]);
                                 immutable majority=isMajority(votes);
                                 if ( majority ) {
-                                    writefln("Majority !!!!");
+//                                    writefln("Majority !!!!");
                                     seeing++;
                                     n.voted=true;
                                 }
                             }
-                            writefln("\t%sWITNESS seeing=%d n.voted=%s mask=%s count=%d", indent, seeing, n.voted, masks(vote_mask[event.node_id]), count);
+//                            writefln("\t%sWITNESS seeing=%d n.voted=%s mask=%s count=%d", indent, seeing, n.voted, masks(vote_mask[event.node_id]), count);
                             return;
                         }
                         auto mother=event.mother;
@@ -455,7 +519,8 @@ class HashGraph {
                 // }
                 assert(top_event !is e);
                 top_event.witness=true;
-                top_event.round=e.round+1;
+
+                top_event.round=nextRound(top_event);
 //                assert(top_event.round == e.round+1);
             }
             writefln("Strongly Seeing test return %s", strong);
@@ -469,9 +534,9 @@ class HashGraph {
             strongSee(mother);
             auto father=event.father;
             strongSee(father);
-            if ( !mother && !father ) {
+            if ( event.isEva ) {
                 event.witness=true;
-                event.round=1;
+                event.round=Round.undefined;
             }
             checkStrongSeeing(event);
         }
@@ -497,9 +562,9 @@ class HashGraph {
         }
         auto h=new HashGraph;
         Emitter[NodeLable.max+1] emitters;
-        writefln("@@@ Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
+//        writefln("@@@ Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
         foreach (immutable l; [EnumMembers!NodeLable]) {
-            writefln("label=%s", l);
+//            writefln("label=%s", l);
             emitters[l].pubkey=cast(Pubkey)to!string(l);
         }
         ulong current_time;
