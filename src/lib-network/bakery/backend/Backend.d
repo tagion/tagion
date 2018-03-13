@@ -6,76 +6,88 @@ import vibe.http.fileserver : serveStaticFiles;
 import vibe.http.router : URLRouter;
 import vibe.http.server;
 import vibe.http.websockets : WebSocket, handleWebSockets;
-import vibe.data.json;
 
 import core.time;
 import std.concurrency;
 import std.conv : to;
-import std.stdio : writeln, writefln;
+import std.stdio : writeln;
 
 import bakery.hashgraph.Event;
-import bakery.Base;
-import tango.io.FilePath;
 
-class Backend {
+enum EventProperty {
+	STRONGLY_SEEING,
+	IS_FAMOUS,
+	IS_WITNESS
+};
 
-	immutable(FilePath) public_repository;
-	private ushort _webserver_port;
-	private string[] _webserver_address;
-	private ThreadState _thread_state;
-	private HTTPListener _listener;
-	private const _WEBSOCKET_INTERVALS_MS = 100.msecs;
+immutable struct InterfaceEventUpdate {
+    uint id;
+	EventProperty property;
+	bool value;
 
-	//Assumed it is a backend portal with only one connection.
-	private WebSocket _currentSocket;
+    this(uint id, EventProperty property, bool value) {
+        this.id = id;
+        this.property = property;
+        this.value = value;
+    }
+}
 
-	this(immutable(FilePath) public_repository, ushort webserver_port, string[] webserver_address) {
-		this.public_repository = public_repository;
-		writeln("Public path to webserver files: ", public_repository.toString);
-		this._webserver_address = webserver_address;
-		this._webserver_port = webserver_port;
+immutable struct InterfaceEventBody {
+    uint id;
+    uint motherId;
+	uint fatherId;
+	ubyte[] payload;
+
+    this(immutable(uint) id, 
+	immutable(ubyte[]) payload,
+	immutable(uint) motherId = 0, 
+	immutable(uint) fatherId = 0
+	) {
+        this.id = id;
+        this.motherId = motherId;
+		this.fatherId = fatherId;
+		this.payload = payload;
+    }
+}
+
+void startWebserver() {
+    auto router = new URLRouter;
+	router.get("/", staticRedirect("/index.html"));
+	router.get("/ws", handleWebSockets(&handleWebSocketConnection));
+	router.get("*", serveStaticFiles("../../backend_tools/public/"));
+
+	auto settings = new HTTPServerSettings;
+	settings.port = 8080;
+	settings.bindAddresses = ["::1", "127.0.0.1"];
+	auto listener = listenHTTP(settings, router);
+
+	scope(exit) listener.stopListening;
+
+    for (;;) {
+        receive(
+            (string msg) {
+             writeln("Received the message: " , msg);
+            }
+			
+        );
+    }
+
+    
+
+}
+
+
+
+void handleWebSocketConnection(scope WebSocket socket)
+{
+	int counter = 0;
+	logInfo("Got new web socket connection.");
+	while (true) {
+		sleep(1.seconds);
+		if (!socket.connected) break;
+		counter++;
+		logInfo("Sending '%s'.", counter);
+		socket.send(counter.to!string);
 	}
-
-
-	void startWebserver() {	
-		auto router = new URLRouter;
-		router.get("/", staticRedirect("/index.html"));
-		router.get("/ws", handleWebSockets(&handleWebSocketConnection));
-		router.get("*", serveStaticFiles(public_repository.toString));
-
-		auto settings = new HTTPServerSettings;
-		settings.port = _webserver_port;
-		settings.bindAddresses = _webserver_address;
-		_listener = listenHTTP(settings, router);
-	}
-
-	void stopWebserver() {
-		_listener.stopListening;
-	}
-
-	void handleWebSocketConnection(scope WebSocket socket)
-	{
-		_currentSocket = socket;
-		int counter = 0;
-		logInfo("Got new web socket connection.");
-		while (true) {
-			sleep(_WEBSOCKET_INTERVALS_MS);
-			if (!socket.connected) break;
-		}
-		logInfo("Client disconnected.");
-	}
-
-	void eventCreated (InterfaceEventBody eventBody) {
-		if(_currentSocket) {
-			auto json = serializeToJsonString(eventBody);
-			_currentSocket.send(json);
-		}	
-	}
-
-	void eventUpdated (InterfaceEventUpdate eventUpdate) {
-		if(_currentSocket) {
-			auto json = serializeToJsonString(eventUpdate);
-			_currentSocket.send(json);
-		}
-	}
+	logInfo("Client disconnected.");
 }
