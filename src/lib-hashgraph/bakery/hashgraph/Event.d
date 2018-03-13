@@ -169,8 +169,7 @@ interface EventCallbacks {
     void strongly_seeing(const(Event) e);
     void famous(const(Event) e);
     void round(const(Event) e);
-    void forked(const(Event) e);
-    void famous_votes(const(Event) e);
+
 }
 
 @safe
@@ -205,12 +204,9 @@ class Event {
     private BitArray* _witness_mask;
     private bool _witness;
     private bool _famous;
-    private uint _famous_votes;
     private bool _strongly_seeing;
     private bool _strongly_seeing_checked;
     private bool _loaded;
-    // This indicates that the hashgraph aften this event
-    private bool _forked;
     immutable uint id;
     private static uint id_count;
     private static immutable(uint) next_id() {
@@ -243,48 +239,45 @@ class Event {
         return _round;
     }
 
-    void famous(bool f)
+    bool famous(bool f)
         in {
             assert(!_famous);
         }
     body {
-        _famous=f;
         if ( callbacks && f ) {
             if ( !_witness ) {
                 this.witness=true;
             }
             callbacks.famous(this);
         }
+        return _famous=f;
     }
 
     bool famous() pure const nothrow {
         return _famous;
     }
 
-    private void increase_famous_votes() {
-        _famous_votes++;
-        if ( callbacks ) {
-            callbacks.famous_votes(this);
-        }
-    }
-
-    uint famous_votes() pure const nothrow {
-        return _famous_votes;
-    }
-
-    void witness(bool w)
+    bool witness(bool w)
         in {
             assert(!_witness);
         }
     body {
-        _witness=w;
         if ( callbacks && w ) {
             callbacks.witness(this);
         }
+        return _witness=w;
     }
 
     bool witness() pure const nothrow {
         return _witness;
+    }
+
+    void strongly_seeing_checked()
+        in {
+            assert(!_strongly_seeing_checked);
+        }
+    body {
+        _strongly_seeing_checked=true;
     }
 
     @trusted
@@ -299,20 +292,8 @@ class Event {
     }
 
     @trusted
-    void set_witness_mask(uint index) {
-        if (!(*_witness_mask)[index]) {
-            increase_famous_votes();
-        }
+    void set_mask_witness(uint index) {
         (*_witness_mask)[index]=true;
-    }
-
-
-    void strongly_seeing_checked()
-        in {
-            assert(!_strongly_seeing_checked);
-        }
-    body {
-        _strongly_seeing_checked=true;
     }
 
     bool is_strogly_seeing_checked() const pure nothrow {
@@ -335,26 +316,8 @@ class Event {
         return _strongly_seeing;
     }
 
-    void forked(bool s)
-        in {
-            if ( s ) {
-                assert(!_forked, "An event can not unforked");
-            }
-        }
-    body {
-        _forked = s;
-        if ( callbacks && _forked ) {
-            callbacks.forked(this);
-        }
-    }
-
-
-    bool forked() const pure nothrow {
-        return _forked;
-    }
-
     immutable uint node_id;
-//    uint marker;
+    uint marker;
     @trusted
     this(ref immutable(EventBody) ebody, uint node_id=0) {
         event_body=&ebody;
@@ -409,7 +372,7 @@ class Event {
     inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            assert(_mother);
+            //assert(_mother);
         }
     }
     body {
@@ -444,7 +407,7 @@ class Event {
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
-            assert(_father);
+            //assert(_father);
         }
     }
     body {
@@ -459,22 +422,17 @@ class Event {
         in {
             if ( _daughter !is null ) {
                 assert( c !is null, "Daughter can not be set to null");
-                // assert(_daughter is c,
-                //     format(
-                //         "Daughter pointer can not be change\n"~
-                //         "mother           id=%d\n"~
-                //         "current daughter id=%d\n"~
-                //         "new daughter     id=%d",
-                //         id, _daughter.id, c.id));
+                assert(_daughter is c,
+                    format(
+                        "Daughter pointer can not be change\n"~
+                        "mother           id=%d\n"~
+                        "current daughter id=%d\n"~
+                        "new daughter     id=%d",
+                        id, _daughter.id, c.id));
             }
         }
     body {
-        if ( _daughter && (_daughter !is c) && !_forked ) {
-            forked=true;
-        }
-        else {
-            _daughter=c;
-        }
+        _daughter=c;
     }
 
     inout(Event) son() inout pure nothrow {
@@ -485,22 +443,17 @@ class Event {
         in {
             if ( _son !is null ) {
                 assert( c !is null, "Son can not be set to null");
-                // assert(_son is c,
-                //     format(
-                //         "Son pointer can not be change\n"~
-                //         "father      id=%d\n"~
-                //         "current son id=%d\n"~
-                //         "new son     id=%d",
-                //         id, _son.id, c.id));
+                assert(_son is c,
+                    format(
+                        "Son pointer can not be change\n"~
+                        "father      id=%d\n"~
+                        "current son id=%d\n"~
+                        "new son     id=%d",
+                        id, _son.id, c.id));
             }
         }
     body {
-        if ( _son && (_son !is c) && !_forked ) {
-            forked=true;
-        }
-        else {
-            _son=c;
-        }
+        _son=c;
     }
 
     immutable(ubyte[]) father_hash() const pure nothrow {
@@ -554,7 +507,6 @@ class Event {
         return event_body_data;
     }
 
-    version(none)
     invariant {
         if ( (_mother) && (_mother._daughter) ) {
             if ( _mother._daughter !is this ) {
