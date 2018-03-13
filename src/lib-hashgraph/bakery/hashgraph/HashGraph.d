@@ -322,6 +322,9 @@ class HashGraph {
             // See if the node is strong seeing the hashgraph
             strongSee(event);
         }
+        if ( Event.callbacks && event ) {
+            Event.callbacks.create(event);
+        }
         return event;
     }
 
@@ -346,9 +349,6 @@ class HashGraph {
             requestEventTree(gossip_net, mother, event, false);
             auto father=event.father(this, gossip_net);
             requestEventTree(gossip_net, father, event, true);
-            if ( Event.callbacks ) {
-                Event.callbacks.create(event);
-            }
         }
     }
 
