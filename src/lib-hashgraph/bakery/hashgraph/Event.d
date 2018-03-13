@@ -579,6 +579,18 @@ class Event {
         }
     }
 
+    void loaded(bool c)
+        in {
+            assert(!_loaded, "Event can only be loaded once");
+        }
+    body {
+        _loaded=c;
+    }
+
+    bool loaded() const pure nothrow {
+        return _loaded;
+    }
+
     immutable(ubyte[]) father_hash() const pure nothrow {
 	return event_body.father;
     }

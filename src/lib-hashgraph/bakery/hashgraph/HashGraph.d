@@ -157,6 +157,7 @@ class HashGraph {
     Event lookup(immutable(ubyte[]) fingerprint) @safe {
 //        Event result;
 //        writefln("Lookup %s", fingerprint.toHexString);
+
         return _event_cache[fingerprint];
     }
 
@@ -313,6 +314,7 @@ class HashGraph {
             }
 //            node.round=round;
             event=new Event(eventbody, node_id);
+
             // Add the event to the event cache
             assign(event);
 //        event_cache.add(hfunc(eventbody.serialize).digits,
@@ -321,9 +323,6 @@ class HashGraph {
             requestEventTree(gossip_net, event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
-        }
-        if ( Event.callbacks && event ) {
-            Event.callbacks.create(event);
         }
         return event;
     }
@@ -349,6 +348,10 @@ class HashGraph {
             requestEventTree(gossip_net, mother, event, false);
             auto father=event.father(this, gossip_net);
             requestEventTree(gossip_net, father, event, true);
+            if ( Event.callbacks && !event.loaded) {
+                event.loaded=true;
+                Event.callbacks.create(event);
+            }
         }
     }
 
