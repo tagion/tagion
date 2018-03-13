@@ -307,7 +307,7 @@ class Event {
         }
     }
 
-    Round round() {
+    inout(Round) round() inout {
         return _round;
     }
 
