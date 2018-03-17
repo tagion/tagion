@@ -405,21 +405,21 @@ class HashGraph {
             //        strong_see_marker++;
 //            writefln("######################## STRONG SEEING %d ############################", strong_see_marker);
 //        bool forked;
-            uint count;
+//            uint count;
             // Seeing is counting the number of witness which can bee seen by top_event
             uint seeing;
             void search(Event event, string indent="") @safe {
                 uint vote(ref BitArray mask) @trusted {
                     uint votes;
                     foreach(i, n; nodes) {
-                        if ( i != event.node_id ) {
-                            if ( n.passed > 0 ) {
-                                mask[i]=true;
-                            }
-                            if (mask[i]) {
-                                votes++;
-                            }
+                        //if ( i != event.node_id ) {
+                        if ( n.passed > 0 ) {
+                            mask[i]=true;
                         }
+                        if (mask[i]) {
+                            votes++;
+                        }
+                            // }
                     }
 //                    writefln("\tvoting = %d mask = %s", votes, mask);
                     return votes;
@@ -427,12 +427,12 @@ class HashGraph {
                 immutable(char)[] masks(ref const BitArray mask) @trusted {
                     return to!string(mask);
                 }
-                count++;
+//                count++;
 //                writefln("%sSearch for famous count=%d ", indent,count);
 
                 // Finde the node for the event
                 auto pnode=event.node_id in nodes;
-                immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous);
+                immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
                 if ( not_famous_yet ) {
                     auto n=*pnode;
                         n.passed++;
@@ -443,7 +443,15 @@ class HashGraph {
                         }
 
                         // Check if the current event is a withness and if the round is lower or equal to the expected previous round.
-                        if ( event.witness && (event.round.number == round.number)  ) {
+                        if ( event.witness ) {
+                            writefln("### event.round=%d top.round=%d event=%s top_event=%s %s",
+                                event.round.number, round.number, cast(string)event.payload, cast(string)top_event.payload, masks(vote_mask[event.node_id])
+                                );
+                        }
+                        if ( (event !is top_event) && (round.number > event.round.number) ) {
+                            return;
+                        }
+                        if ( event.witness && ( (round.number - event.round.number) >= 0 )  ) {
 
                             if ( n.event !is event ) {
                                 if ( n.event is null ) {
