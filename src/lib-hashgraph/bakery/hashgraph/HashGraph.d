@@ -378,6 +378,9 @@ class HashGraph {
     }
 
     package void strongSee(Event event) {
+        if ( event && !event.is_strogly_seeing_checked ) {
+
+           const(Round) round=event.currentRound;
         void checkStrongSeeing(Event top_event) {
             import std.bitmanip;
             BitArray[] vote_mask=new BitArray[total_nodes];
@@ -407,10 +410,8 @@ class HashGraph {
             void search(Event event, string indent="") @safe {
                 uint vote(ref BitArray mask) @trusted {
                     uint votes;
-                    enum self_voting=true;
-
                     foreach(i, n; nodes) {
-                        if ( self_voting || (i != event.node_id) ) {
+                        if ( i != event.node_id ) {
                             if ( n.passed > 0 ) {
                                 mask[i]=true;
                             }
@@ -433,31 +434,16 @@ class HashGraph {
                 immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous);
                 if ( not_famous_yet ) {
                     auto n=*pnode;
-//                    assert(n !is null);
-                    // writefln("EVENT %d NODE %d marker %d M=%s F=%s '%s' %s",
-                    //     event.id, event.node_id, event.marker,
-                    //     (event.mother)?to!string(event.mother.id):"#",
-                    //     (event.father)?to!string(event.father.id):"#",
-                    //     cast(string)(event.payload),
-                    //     event.toCryptoHash.toHexString );
-                    // if ( event.marker == strong_see_marker ) {
-                    //     n.fork=true;
-                    //     writefln("FORKED EVENT %d", event.id);
-                    // }
-                    // else {
-                        // marker secures that the search is not called again
-                        // for the same Strong Seeing check
-//                        event.marker=strong_see_marker;
                         n.passed++;
-//                immutable decrease_passed=true;
-                        // writefln("\t%sn.passed=%d node=%d count=%d", indent, n.passed, event.node_id, count);
                         scope(exit) {
                             n.passed--;
                             // writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
                             assert(n.passed >= 0);
                         }
 
-                        if ( event.witness ) {
+                        // Check if the current event is a withness and if the round is lower or equal to the expected previous round.
+                        if ( event.witness && (event.round.number == round.number)  ) {
+
                             if ( n.event !is event ) {
                                 if ( n.event is null ) {
                                     n.event=event;
@@ -512,7 +498,10 @@ class HashGraph {
             // }
             // writefln("Voting %d", voting);
             bool strong=isMajority(seeing);
-            if ( strong ) {
+            if ( Event.callbacks ) {
+                    Event.callbacks.strong_vote(top_event,seeing);
+            }
+              if ( strong ) {
                 //assert(top_event.witness);
 
                 Event e;
@@ -529,13 +518,15 @@ class HashGraph {
                 top_event.round=nextRound(top_event);
 //                assert(top_event.round == e.round+1);
             }
-            writefln("Strongly Seeing test return %s", strong);
+//            writefln("Strongly Seeing test return %s", strong);
             top_event.strongly_seeing=strong;
             top_event.strongly_seeing_checked;
 
 //            return strong;
         }
-        if ( event && !event.is_strogly_seeing_checked ) {
+        //             checkStrongSeeing(event);
+        // }
+        // if ( event && !event.is_strogly_seeing_checked ) {
             auto mother=event.mother;
             strongSee(mother);
             auto father=event.father;
