@@ -350,7 +350,7 @@ class HashGraph {
     }
 
     // This function makes the votes for famous event
-    package void searchFamous(Event top_event)
+    private void votingFamous(Event top_event)
     in {
         assert(top_event.witness, "Event should be a witness");
     }
@@ -422,27 +422,25 @@ class HashGraph {
 
                         // Check if the current event is a withness and if the round is lower or equal to the expected previous round.
                         if ( !((event !is top_event) && (round.number > event.round.number)) ) {
-                        //     return;
-                        // }
-                        if ( event.witness ) {
-                            if (!n.voted) {
-                                auto votes=vote(vote_mask[event.node_id]);
-                                immutable majority=isMajority(votes);
-                                if ( majority ) {
-                                    seeing++;
-                                    n.voted=true;
+                            if ( event.witness ) {
+                                if (!n.voted) {
+                                    auto votes=vote(vote_mask[event.node_id]);
+                                    immutable majority=isMajority(votes);
+                                    if ( majority ) {
+                                        seeing++;
+                                        n.voted=true;
+                                    }
                                 }
                             }
-                        }
-                        auto mother=event.mother;
+                            auto mother=event.mother;
 
-                        if ( mother ) {
-                            search(mother);
-                            if ( event.fatherExists ) {
-                                auto father=event.father;
-                                search(father);
+                            if ( mother ) {
+                                search(mother);
+                                if ( event.fatherExists ) {
+                                    auto father=event.father;
+                                    search(father);
+                                }
                             }
-                        }
                         }
                     }
                 }
