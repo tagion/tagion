@@ -387,42 +387,28 @@ class HashGraph {
                 foreach(i,ref n; nodes) {
                     if ( n !is null ) {
                         n.passed=0;
-                        //n.seeing=0;
-                        //n.event=null;
                         n.voted=false;
-                        //      writefln("Index %d vote_mask.length=%d", i, vote_mask.length);
                         reset_bitarray(vote_mask[i]);
                     }
                 }
 
-                //        strong_see_marker++;
-//            writefln("######################## STRONG SEEING %d ############################", strong_see_marker);
-//        bool forked;
-//            uint count;
-                // Seeing is counting the number of witness which can bee seen by top_event
                 uint seeing;
                 void search(Event event) @safe {
                     uint vote(ref BitArray mask) @trusted {
                         uint votes;
                         foreach(i, n; nodes) {
-                            //if ( i != event.node_id ) {
                             if ( n.passed > 0 ) {
                                 mask[i]=true;
                             }
                             if (mask[i]) {
                                 votes++;
                             }
-                            // }
                         }
-//                    writefln("\tvoting = %d mask = %s", votes, mask);
                         return votes;
                     }
                     immutable(char)[] masks(ref const BitArray mask) @trusted {
                         return to!string(mask);
                     }
-//                count++;
-//                writefln("%sSearch for famous count=%d ", indent,count);
-
                     // Finde the node for the event
                     auto pnode=event.node_id in nodes;
                     immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
@@ -431,32 +417,14 @@ class HashGraph {
                         n.passed++;
                         scope(exit) {
                             n.passed--;
-                            // writefln("\t%sexit n.passed=%d n.fork=%s node=%d count=%d", indent, n.passed, n.fork, event.node_id, count);
                             assert(n.passed >= 0);
                         }
 
                         // Check if the current event is a withness and if the round is lower or equal to the expected previous round.
-                        if ( (event !is top_event) && (round.number > event.round.number) ) {
-                            return;
-                        }
+                        if ( !((event !is top_event) && (round.number > event.round.number)) ) {
+                        //     return;
+                        // }
                         if ( event.witness ) {
-/+
-                            if ( n.event !is event ) {
-                                if ( n.event is null ) {
-                                    n.event=event;
-                                }
-                                else if ( n.event.round.number < event.round.number ) {
-                                    n.event=event;
-                                    // Clear the vote_mask
-                                    writefln("CLEAR Voting masks %s", cast(string)event.payload);
-                                    reset_bitarray(vote_mask[event.node_id]);
-                                    // vote_mask[event.node_id].length=0;
-                                    // vote_mask[event.node_id].length=nodes.length;
-                                }
-                                //n.seeing=1;
-                                n.voted=false;
-                            }
-+/
                             if (!n.voted) {
                                 auto votes=vote(vote_mask[event.node_id]);
                                 immutable majority=isMajority(votes);
@@ -474,6 +442,7 @@ class HashGraph {
                                 auto father=event.father;
                                 search(father);
                             }
+                        }
                         }
                     }
                 }
