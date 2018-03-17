@@ -237,7 +237,7 @@ class Round {
         return this is _undefined;
     }
 
-    static Round undefined() {
+    static Round undefined() nothrow {
         return _undefined;
     }
 
@@ -298,6 +298,7 @@ class Event {
 
     void round(Round round)
         in {
+            assert(round !is null, "Round must be defined");
             assert(_round is null, "Round is already set");
         }
     body {
@@ -308,7 +309,11 @@ class Event {
         }
     }
 
-    inout(Round) round() inout {
+    inout(Round) round() inout pure nothrow
+    out(result) {
+        assert(result, "Round should be defined before it is used");
+    }
+    body {
         return _round;
     }
 
@@ -320,21 +325,18 @@ class Event {
         return _round.number;
     }
 
-    const(Round) currentRound() const
+    Round motherRound() nothrow
     out(result) {
-        assert(result, "Should contain a round");
-    }
-    body {
-        const(Round) search(const(Event) e ) {
-            if ( !e ) {
-                return Round.undefined;
-            }
-            else if ( !e.round ) {
-                return search(e.mother);
-            }
-            return e.round;
+            assert(result, "Round must be set to none null");
         }
-        return search(this);
+    body {
+        if ( mother ) {
+            return mother.round;
+        }
+        else {
+            // Eva event get an undefined round
+            return Round.undefined;
+        }
     }
 
     void famous(bool f)
@@ -457,6 +459,11 @@ class Event {
         event_body_data = event_body.serialize;
 //        if ( _hash ) {
         _hash=fhash(event_body_data).digits;
+        if ( isEva ) {
+            // If the event is a Eva event the round is undefined
+            _round = Round.undefined;
+            witness = true;
+        }
 //        }
 //        if ( assign ) {
 //        h.assign(this);
@@ -473,8 +480,12 @@ class Event {
     void diconnect() {
         _mother=_father=null;
         _daughter=_son=null;
+        _round = null;
     }
 
+    ~this() {
+        diconnect();
+    }
     Event mother(H)(H h, GossipNet gossip_net) {
         Event result;
         result=mother!true(h);

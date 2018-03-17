@@ -243,12 +243,12 @@ class HashGraph {
         return event;
     }
 
-    Round nextRound(Event event)
+    package Round nextRound(Event event)
         out(result) {
             assert(result);
         }
     body {
-        auto previous=find_previous_round(event);
+        auto previous=event.motherRound;
         auto number=Round.increase_number(previous);
         if ( _rounds ) {
             assert(number <= _rounds.number+1);
@@ -349,6 +349,7 @@ class HashGraph {
             auto father=event.father(this, gossip_net);
             requestEventTree(gossip_net, father, event, true);
             if ( Event.callbacks && !event.loaded) {
+//                event.getRoundForMother;
                 event.loaded=true;
                 Event.callbacks.create(event);
             }
@@ -380,7 +381,7 @@ class HashGraph {
     package void strongSee(Event event) {
         if ( event && !event.is_strogly_seeing_checked ) {
 
-           const(Round) round=event.currentRound;
+           const(Round) round=event.motherRound;
         void checkStrongSeeing(Event top_event) {
             import std.bitmanip;
             BitArray[] vote_mask=new BitArray[total_nodes];
@@ -513,11 +514,15 @@ class HashGraph {
                 //     round++;
                 // }
                 assert(top_event !is e);
+                top_event.round=nextRound(top_event);
                 top_event.witness=true;
 
-                top_event.round=nextRound(top_event);
+
 //                assert(top_event.round == e.round+1);
             }
+              else if ( !top_event.isEva ) {
+                  top_event.round=top_event.motherRound;
+              }
 //            writefln("Strongly Seeing test return %s", strong);
             top_event.strongly_seeing=strong;
             top_event.strongly_seeing_checked;
@@ -531,10 +536,10 @@ class HashGraph {
             strongSee(mother);
             auto father=event.father;
             strongSee(father);
-            if ( event.isEva ) {
-                event.witness=true;
-                event.round=Round.undefined;
-            }
+            // if ( event.isEva ) {
+            //     event.witness=true;
+            //     event.round=Round.undefined;
+            // }
             checkStrongSeeing(event);
         }
     }
