@@ -160,6 +160,7 @@ interface EventCallbacks {
     void create(const(Event) e);
     void witness(const(Event) e);
     void strongly_seeing(const(Event) e);
+    void strong_vote(const(Event) e, immutable uint vote);
     void famous(const(Event) e);
     void round(const(Event) e);
     void forked(const(Event) e);
@@ -317,6 +318,23 @@ class Event {
         }
     body {
         return _round.number;
+    }
+
+    const(Round) currentRound() const
+    out(result) {
+        assert(result, "Should contain a round");
+    }
+    body {
+        const(Round) search(const(Event) e ) {
+            if ( !e ) {
+                return Round.undefined;
+            }
+            else if ( !e.round ) {
+                return search(e.mother);
+            }
+            return e.round;
+        }
+        return search(this);
     }
 
     void famous(bool f)

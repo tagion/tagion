@@ -175,7 +175,7 @@ class HashGraph {
     //     return (active_nodes*2)/3;
     // }
 
-    enum minimum_nodes = 4;
+    enum minimum_nodes = 3;
     bool isMajority(uint voting) const pure nothrow {
         return (active_nodes >= minimum_nodes) && (3*voting > 2*active_nodes);
     }
