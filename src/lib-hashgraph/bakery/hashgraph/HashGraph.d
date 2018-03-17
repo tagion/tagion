@@ -451,7 +451,7 @@ class HashGraph {
                         if ( (event !is top_event) && (round.number > event.round.number) ) {
                             return;
                         }
-                        if ( event.witness && ( (round.number - event.round.number) >= 0 )  ) {
+                        if ( event.witness ) {
 
                             if ( n.event !is event ) {
                                 if ( n.event is null ) {
@@ -477,7 +477,7 @@ class HashGraph {
                                 }
                             }
 //                            writefln("\t%sWITNESS seeing=%d n.voted=%s mask=%s count=%d", indent, seeing, n.voted, masks(vote_mask[event.node_id]), count);
-                            return;
+//                            return;
                         }
                         auto mother=event.mother;
 
