@@ -130,7 +130,7 @@ class HashGraph {
         // Counts the number of times that a search has
         // passed this node in the graph search
         int passed;
-        uint seeing; // See a witness
+//        uint seeing; // See a witness
         bool voted;
         // uint voting;
         bool fork; // Fork detected in the hashgraph
@@ -387,7 +387,7 @@ class HashGraph {
                 foreach(i,ref n; nodes) {
                     if ( n !is null ) {
                         n.passed=0;
-                        n.seeing=0;
+                        //n.seeing=0;
                         //n.event=null;
                         n.voted=false;
                         //      writefln("Index %d vote_mask.length=%d", i, vote_mask.length);
