@@ -135,8 +135,8 @@ class HashGraph {
         // uint voting;
         bool fork; // Fork detected in the hashgraph
         Event event; // Last witness
-    // private:
-    //     Round round;
+        // private:
+        //     Round round;
     }
 
 //    Round round; // Current round
@@ -244,9 +244,9 @@ class HashGraph {
     }
 
     package Round nextRound(Event event)
-        out(result) {
-            assert(result);
-        }
+    out(result) {
+        assert(result);
+    }
     body {
         auto previous=event.motherRound;
         auto number=Round.increase_number(previous);
@@ -319,7 +319,7 @@ class HashGraph {
             assign(event);
 //        event_cache.add(hfunc(eventbody.serialize).digits,
 
-        // Makes sure that we have the tree before the graph is checked
+            // Makes sure that we have the tree before the graph is checked
             requestEventTree(gossip_net, event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
@@ -330,7 +330,7 @@ class HashGraph {
 //    private uint strong_see_marker;
     /**
        This function makes sure that the HashGraph has all the events connected to this event
-     */
+    */
     package void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
             if ( child ) {
@@ -381,60 +381,60 @@ class HashGraph {
     package void strongSee(Event event) {
         if ( event && !event.is_strogly_seeing_checked ) {
 
-           const(Round) round=event.motherRound;
-        void checkStrongSeeing(Event top_event) {
-            import std.bitmanip;
-            BitArray[] vote_mask=new BitArray[total_nodes];
-            @trusted void reset_bitarray(ref BitArray b) {
-                b.length=0;
-                b.length=total_nodes;
-            }
-
-            // Clear the node log
-            foreach(i,ref n; nodes) {
-                if ( n !is null ) {
-                    n.passed=0;
-                    n.seeing=0;
-                    n.event=null;
-                    n.voted=false;
-                    //      writefln("Index %d vote_mask.length=%d", i, vote_mask.length);
-                    reset_bitarray(vote_mask[i]);
+            const(Round) round=event.motherRound;
+            void checkStrongSeeing(Event top_event) {
+                import std.bitmanip;
+                BitArray[] vote_mask=new BitArray[total_nodes];
+                @trusted void reset_bitarray(ref BitArray b) {
+                    b.length=0;
+                    b.length=total_nodes;
                 }
-            }
 
-            //        strong_see_marker++;
+                // Clear the node log
+                foreach(i,ref n; nodes) {
+                    if ( n !is null ) {
+                        n.passed=0;
+                        n.seeing=0;
+                        n.event=null;
+                        n.voted=false;
+                        //      writefln("Index %d vote_mask.length=%d", i, vote_mask.length);
+                        reset_bitarray(vote_mask[i]);
+                    }
+                }
+
+                //        strong_see_marker++;
 //            writefln("######################## STRONG SEEING %d ############################", strong_see_marker);
 //        bool forked;
 //            uint count;
-            // Seeing is counting the number of witness which can bee seen by top_event
-            uint seeing;
-            void search(Event event, string indent="") @safe {
-                uint vote(ref BitArray mask) @trusted {
-                    uint votes;
-                    foreach(i, n; nodes) {
-                        //if ( i != event.node_id ) {
-                        if ( n.passed > 0 ) {
-                            mask[i]=true;
-                        }
-                        if (mask[i]) {
-                            votes++;
-                        }
+                // Seeing is counting the number of witness which can bee seen by top_event
+                uint seeing;
+                void search(Event event, string indent="") @safe {
+                    uint vote(ref BitArray mask) @trusted {
+                        uint votes;
+                        foreach(i, n; nodes) {
+                            //if ( i != event.node_id ) {
+                            if ( n.passed > 0 ) {
+                                mask[i]=true;
+                            }
+                            if (mask[i]) {
+                                votes++;
+                            }
                             // }
-                    }
+                        }
 //                    writefln("\tvoting = %d mask = %s", votes, mask);
-                    return votes;
-                }
-                immutable(char)[] masks(ref const BitArray mask) @trusted {
-                    return to!string(mask);
-                }
+                        return votes;
+                    }
+                    immutable(char)[] masks(ref const BitArray mask) @trusted {
+                        return to!string(mask);
+                    }
 //                count++;
 //                writefln("%sSearch for famous count=%d ", indent,count);
 
-                // Finde the node for the event
-                auto pnode=event.node_id in nodes;
-                immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
-                if ( not_famous_yet ) {
-                    auto n=*pnode;
+                    // Finde the node for the event
+                    auto pnode=event.node_id in nodes;
+                    immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
+                    if ( not_famous_yet ) {
+                        auto n=*pnode;
                         n.passed++;
                         scope(exit) {
                             n.passed--;
@@ -443,11 +443,6 @@ class HashGraph {
                         }
 
                         // Check if the current event is a withness and if the round is lower or equal to the expected previous round.
-                        if ( event.witness ) {
-                            writefln("### event.round=%d top.round=%d event=%s top_event=%s %s",
-                                event.round.number, round.number, cast(string)event.payload, cast(string)top_event.payload, masks(vote_mask[event.node_id])
-                                );
-                        }
                         if ( (event !is top_event) && (round.number > event.round.number) ) {
                             return;
                         }
@@ -476,8 +471,6 @@ class HashGraph {
                                     n.voted=true;
                                 }
                             }
-//                            writefln("\t%sWITNESS seeing=%d n.voted=%s mask=%s count=%d", indent, seeing, n.voted, masks(vote_mask[event.node_id]), count);
-//                            return;
                         }
                         auto mother=event.mother;
 
@@ -490,56 +483,34 @@ class HashGraph {
                             }
                         }
                         //}
+                    }
                 }
-            }
-            //uint voting;
-            //Node[] forks;
-            // Search to the number of witness
-            search(top_event);
-            //top_event.seeing=seeing;
-            // writefln("Nodes %d", nodes.length);
-            // foreach(i, ref n; nodes) {
-            //     if ( n.event ) {
-            //         if ( n.event.famous ) {
-            //             voting++;
-            //         }
-            //     }
-            // }
-            // writefln("Voting %d", voting);
-            bool strong=isMajority(seeing);
-            if ( Event.callbacks ) {
+                search(top_event);
+                bool strong=isMajority(seeing);
+                if ( Event.callbacks ) {
                     Event.callbacks.strong_vote(top_event,seeing);
-            }
-              if ( strong ) {
-                //assert(top_event.witness);
-
-                Event e;
-                // Crawl down to the next witness
-                for(e=top_event; !e.witness; e=e.mother) {
-                    /* empty */
                 }
-                // if ( round == e.round+1 ) {
-                //     round++;
-                // }
-                assert(top_event !is e);
-                top_event.round=nextRound(top_event);
-                top_event.witness=true;
+                if ( strong ) {
+                    Event e;
+                    // Crawl down to the next witness
+                    for(e=top_event; !e.witness; e=e.mother) {
+                        /* empty */
+                    }
+                    assert(top_event !is e);
+                    top_event.round=nextRound(top_event);
+                    top_event.witness=true;
 
 
-//                assert(top_event.round == e.round+1);
-            }
-              else if ( !top_event.isEva ) {
-                  top_event.round=top_event.motherRound;
-              }
+                }
+                else if ( !top_event.isEva ) {
+                    top_event.round=top_event.motherRound;
+                }
 //            writefln("Strongly Seeing test return %s", strong);
-            top_event.strongly_seeing=strong;
-            top_event.strongly_seeing_checked;
+                top_event.strongly_seeing=strong;
+                top_event.strongly_seeing_checked;
 
 //            return strong;
-        }
-        //             checkStrongSeeing(event);
-        // }
-        // if ( event && !event.is_strogly_seeing_checked ) {
+            }
             auto mother=event.mother;
             strongSee(mother);
             auto father=event.father;
