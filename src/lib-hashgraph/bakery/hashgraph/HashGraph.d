@@ -357,7 +357,7 @@ class HashGraph {
     body {
         void findWitness(Event event) {
             if ( event ) {
-                if ( event.witness ) {
+                if ( event.witness && !event.round.isUndefined ) {
                     event.set_witness_mask(top_event.node_id);
                     event.famous=isMajority(event.famous_votes);
                 }
@@ -461,6 +461,11 @@ class HashGraph {
                     top_event.strongly_seeing=true;
      //               top_event.strongly_seeing_checked;
 
+//                    if (top_event.strongly_seeing) {
+                    votingFamous(top_event);
+                    // Create witness mask to count famous witness
+                    top_event.create_witness_mask(total_nodes);
+//                    }
 
                 }
                 else if ( !top_event.isEva ) {

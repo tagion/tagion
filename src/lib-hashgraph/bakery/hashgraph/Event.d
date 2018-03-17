@@ -341,15 +341,17 @@ class Event {
 
     void famous(bool f)
         in {
-            assert(!_famous);
+            if ( !f ) {
+                assert(!_famous);
+            }
         }
     body {
-        _famous=f;
-        if ( callbacks && f ) {
-            if ( !_witness ) {
-                this.witness=true;
-            }
+        if ( callbacks && !_famous && f) {
+            _famous=true;
             callbacks.famous(this);
+        }
+        else {
+            _famous=f;
         }
     }
 
