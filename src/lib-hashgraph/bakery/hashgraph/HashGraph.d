@@ -458,6 +458,8 @@ class HashGraph {
                     assert(top_event !is e);
                     top_event.round=nextRound(top_event);
                     top_event.witness=true;
+                    top_event.strongly_seeing=true;
+     //               top_event.strongly_seeing_checked;
 
 
                 }
@@ -465,7 +467,7 @@ class HashGraph {
                     top_event.round=top_event.motherRound;
                 }
 //            writefln("Strongly Seeing test return %s", strong);
-                top_event.strongly_seeing=strong;
+       //         top_event.strongly_seeing=strong;
                 top_event.strongly_seeing_checked;
 
 //            return strong;
