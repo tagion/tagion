@@ -355,11 +355,13 @@ class HashGraph {
         assert(top_event.witness, "Event should be a witness");
     }
     body {
+        const round=top_event.mother.round;
         void findWitness(Event event) {
-            if ( event ) {
-                if ( event.witness && !event.round.isUndefined ) {
+            if ( event && !event.round.isUndefined ) {
+                if ( event.witness && event.round is round ) {
                     event.set_witness_mask(top_event.node_id);
                     event.famous=isMajority(event.famous_votes);
+
                 }
                 else {
                     findWitness(event.mother);
@@ -420,7 +422,7 @@ class HashGraph {
                             assert(n.passed >= 0);
                         }
 
-                        // Check if the current event is a withness and if the round is lower or equal to the expected previous round.
+                        // Check if the current event is a witness and if the round is lower or equal to the expected previous round.
                         if ( !((event !is top_event) && (round.number > event.round.number)) ) {
                             if ( event.witness ) {
                                 if (!n.voted) {
@@ -459,12 +461,11 @@ class HashGraph {
                     top_event.round=nextRound(top_event);
                     top_event.witness=true;
                     top_event.strongly_seeing=true;
-     //               top_event.strongly_seeing_checked;
+                    // Create witness mask to count famous witness
+                    top_event.create_witness_mask(total_nodes);
 
 //                    if (top_event.strongly_seeing) {
                     votingFamous(top_event);
-                    // Create witness mask to count famous witness
-                    top_event.create_witness_mask(total_nodes);
 //                    }
 
                 }

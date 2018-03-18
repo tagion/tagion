@@ -397,13 +397,25 @@ class Event {
     }
 
     @trusted
-    void set_witness_mask(uint index) {
+    void set_witness_mask(uint index)
+        in {
+            assert(_witness, "To set a witness mask the event must be a witness");
+        }
+    body {
         if (!(*_witness_mask)[index]) {
             increase_famous_votes();
         }
         (*_witness_mask)[index]=true;
     }
 
+    ref const(BitArray) witness_mask() const pure nothrow
+        in {
+            assert(_witness, "Event is not a witness");
+            assert(_witness_mask, "Witness mask should be set of a witness");
+        }
+    body {
+        return *_witness_mask;
+    }
 
     void strongly_seeing_checked()
         in {
