@@ -191,6 +191,17 @@ class Round {
         }
     }
 
+
+    static uint countVotes(ref const(BitArray) mask) @trusted {
+        uint votes;
+        foreach(vote; mask) {
+            if (vote) {
+                votes++;
+            }
+        }
+        return votes;
+    }
+
     private static Round _undefined;
     static this() {
         _undefined=new Round();
@@ -311,10 +322,6 @@ class Event {
 
     inout(Round) round() inout pure nothrow
     out(result) {
-        if ( result ) {
-
-            writeln("Round should be defined before it is used");
-        }
         assert(result, "Round should be defined before it is used");
     }
     body {
@@ -441,10 +448,11 @@ class Event {
             assert(_witness, "To set a witness mask the event must be a witness");
         }
     body {
+
         if (!(*_witness_mask)[index]) {
+            (*_witness_mask)[index]=true;
             increase_famous_votes();
         }
-        (*_witness_mask)[index]=true;
     }
 
     ref const(BitArray) witness_mask() const pure nothrow

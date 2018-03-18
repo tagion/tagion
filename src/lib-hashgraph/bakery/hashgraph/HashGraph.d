@@ -355,12 +355,12 @@ class HashGraph {
         assert(top_event.witness, "Event should be a witness");
     }
     body {
-        const round=top_event.mother.round;
+        const round=top_event.previousRound;
         void findWitness(Event event) {
             if ( event && !event.isEva ) {
                 if ( event.witness && event.round is round ) {
                     event.set_witness_mask(top_event.node_id);
-                    event.famous=isMajority(event.famous_votes);
+                    //      event.famous=isMajority(event.famous_votes);
 
                 }
                 else {
@@ -369,6 +369,7 @@ class HashGraph {
                 }
             }
         }
+        //   writefln("voteFamous for %s", cast(string)(top_event.payload));
         findWitness(top_event.mother);
         findWitness(top_event.father);
     }
@@ -413,7 +414,7 @@ class HashGraph {
                     }
                     // Finde the node for the event
                     auto pnode=event.node_id in nodes;
-                    immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.isEva) && (!event.famous) ;
+                    immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
                     if ( not_famous_yet ) {
                         auto n=*pnode;
                         n.passed++;
