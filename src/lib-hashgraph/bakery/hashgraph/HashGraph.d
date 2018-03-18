@@ -248,7 +248,7 @@ class HashGraph {
         assert(result);
     }
     body {
-        auto previous=event.motherRound;
+        auto previous=event.previousRound;
         auto number=Round.increase_number(previous);
         if ( _rounds ) {
             assert(number <= _rounds.number+1);
@@ -357,7 +357,7 @@ class HashGraph {
     body {
         const round=top_event.mother.round;
         void findWitness(Event event) {
-            if ( event && !event.round.isUndefined ) {
+            if ( event && !event.isEva ) {
                 if ( event.witness && event.round is round ) {
                     event.set_witness_mask(top_event.node_id);
                     event.famous=isMajority(event.famous_votes);
@@ -376,7 +376,7 @@ class HashGraph {
     package void strongSee(Event check_event) {
         if ( check_event && !check_event.is_strogly_seeing_checked ) {
 
-            const(Round) round=check_event.motherRound;
+            const(Round) round=check_event.previousRound;
             void checkStrongSeeing(Event top_event) {
                 import std.bitmanip;
                 BitArray[] vote_mask=new BitArray[total_nodes];
@@ -413,7 +413,7 @@ class HashGraph {
                     }
                     // Finde the node for the event
                     auto pnode=event.node_id in nodes;
-                    immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
+                    immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.isEva) && (!event.famous) ;
                     if ( not_famous_yet ) {
                         auto n=*pnode;
                         n.passed++;
@@ -423,27 +423,28 @@ class HashGraph {
                         }
 
                         // Check if the current event is a witness and if the round is lower or equal to the expected previous round.
-                        if ( !((event !is top_event) && (round.number > event.round.number)) ) {
-                            if ( event.witness ) {
-                                if (!n.voted) {
-                                    auto votes=vote(vote_mask[event.node_id]);
-                                    immutable majority=isMajority(votes);
-                                    if ( majority ) {
-                                        seeing++;
+//                        if ( !((event !is top_event) && (round.number > event.round.number)) ) {
+//                        if ( event !is top_event) && (round.number > event.round.number)) ) {
+                        if ( event.witness && (round.number <= event.round.number) ) {
+                            if (!n.voted) {
+                                auto votes=vote(vote_mask[event.node_id]);
+                                immutable majority=isMajority(votes);
+                                if ( majority ) {
+                                    seeing++;
                                         n.voted=true;
-                                    }
-                                }
-                            }
-                            auto mother=event.mother;
-
-                            if ( mother ) {
-                                search(mother);
-                                if ( event.fatherExists ) {
-                                    auto father=event.father;
-                                    search(father);
                                 }
                             }
                         }
+                        auto mother=event.mother;
+
+                        if ( mother ) {
+                            search(mother);
+                            if ( event.fatherExists ) {
+                                auto father=event.father;
+                                search(father);
+                            }
+                        }
+                        //}
                     }
                 }
                 search(check_event);
@@ -459,19 +460,19 @@ class HashGraph {
                     }
                     assert(top_event !is e);
                     top_event.round=nextRound(top_event);
-                    top_event.witness=true;
+                    top_event.witness=total_nodes;
                     top_event.strongly_seeing=true;
                     // Create witness mask to count famous witness
-                    top_event.create_witness_mask(total_nodes);
+//                    top_event.create_witness_mask(total_nodes);
 
 //                    if (top_event.strongly_seeing) {
                     votingFamous(top_event);
 //                    }
 
                 }
-                else if ( !top_event.isEva ) {
-                    top_event.round=top_event.motherRound;
-                }
+                // else if ( !top_event.isEva ) {
+                //     top_event.round=top_event.motherRound;
+                // }
 //            writefln("Strongly Seeing test return %s", strong);
        //         top_event.strongly_seeing=strong;
                 top_event.strongly_seeing_checked;

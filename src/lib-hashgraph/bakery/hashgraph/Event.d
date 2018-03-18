@@ -60,9 +60,9 @@ void check(bool flag, ConcensusFailCode code, string msg, string file = __FILE__
 
 @safe
 struct EventBody {
-    immutable(ubyte)[] payload;
+    immutable(ubyte)[] payload; // Transaction
     immutable(ubyte)[] mother; // Hash of the self-parent
-    immutable(ubyte)[] father; // Hash of the parent-parent
+    immutable(ubyte)[] father; // Hash of the other-parent
 
     ulong time;
     invariant {
@@ -311,6 +311,10 @@ class Event {
 
     inout(Round) round() inout pure nothrow
     out(result) {
+        if ( result ) {
+
+            writeln("Round should be defined before it is used");
+        }
         assert(result, "Round should be defined before it is used");
     }
     body {
@@ -325,6 +329,29 @@ class Event {
         return _round.number;
     }
 
+    bool hasRound() const pure nothrow {
+        return (_round !is null);
+    }
+
+    Round previousRound() // nothrow
+        out(result) {
+            assert(result, "Round must be set to none null");
+        }
+    body {
+        Round search(Event event) {
+            if (event) {
+                if ( event.witness ) {
+                    return event.round;
+                }
+                return search(event.mother);
+
+            }
+            return Round.undefined;
+        }
+        return search(mother);
+    }
+
+    version(none)
     Round motherRound() nothrow
     out(result) {
             assert(result, "Round must be set to none null");
@@ -370,23 +397,35 @@ class Event {
         return _famous_votes;
     }
 
-    void witness(bool w)
+    void witness(immutable uint size)
         in {
             assert(!_witness);
         }
     body {
-        _witness=w;
-        if ( callbacks && w ) {
+        _witness=true;
+        if ( !_witness_mask ) {
+            create_witness_mask(size);
+        }
+        if ( callbacks ) {
             callbacks.witness(this);
         }
     }
 
     bool witness() pure const nothrow {
+    //     in {
+    //         if ( _round || _witness_mask ) {
+    //             writeln("False rounds");
+    //         }
+    //         assert(_round, "Round must ne defined for a witness");
+    //         assert(_witness_mask, "Witness mask should be define for a witness");
+    //     }
+    // body
+    // {
         return _witness;
     }
 
     @trusted
-    void create_witness_mask(immutable uint size)
+    private void create_witness_mask(immutable uint size)
         in {
             assert(_witness, "Witness mask can not be created for a none witness event");
             assert(_witness_mask is null, "Witness mask has already been created");
@@ -476,7 +515,7 @@ class Event {
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             _round = Round.undefined;
-            witness = true;
+            _witness = true;
         }
 //        }
 //        if ( assign ) {
@@ -563,7 +602,7 @@ class Event {
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
-            //assert(_father);
+            assert(_father);
         }
     }
     body {
