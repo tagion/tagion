@@ -448,7 +448,6 @@ class Event {
             assert(_witness, "To set a witness mask the event must be a witness");
         }
     body {
-
         if (!(*_witness_mask)[index]) {
             (*_witness_mask)[index]=true;
             increase_famous_votes();

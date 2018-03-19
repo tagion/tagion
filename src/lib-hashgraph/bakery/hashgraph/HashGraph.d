@@ -358,15 +358,19 @@ class HashGraph {
         const round=top_event.previousRound;
         void findWitness(Event event) {
             if ( event && !event.isEva ) {
-                if ( event.witness && event.round is round ) {
-                    event.set_witness_mask(top_event.node_id);
+                if ( event.witness ) {
+                    if ( event.round is round ) {
+                        event.set_witness_mask(top_event.node_id);
+                    }
+                    else if ( event.round.number+1 == round.number ) {
+                        return;
+                    }
+
                     //      event.famous=isMajority(event.famous_votes);
 
                 }
-                else {
-                    findWitness(event.mother);
-                    findWitness(event.mother);
-                }
+                findWitness(event.mother);
+                findWitness(event.father);
             }
         }
         //   writefln("voteFamous for %s", cast(string)(top_event.payload));
