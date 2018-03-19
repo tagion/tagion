@@ -502,8 +502,61 @@ class HashGraph {
         }
     }
 
-    immutable(Event[]) whatIsNotKnownBy(immutable uint node, immutable uint home_node=0) {
-        return null;
+    enum default_limit=1000;
+    /**
+       This function returns a list of event wich home_node this is unknown by node
+       home_node is the
+     */
+    immutable(Event[]) whatIsNotKnownBy(immutable uint node_id, immutable uint home_node_id=0, immutable uint limit=default_limit) {
+        class EventChain {
+//            static uint count;
+            EventChain next;
+            Event current;
+            this(Event e, EventChain chain=null) {
+                current=e;
+                next=chain;
+            }
+        }
+        EventChain push(EventChain chain, Event e) {
+            EventChain result=new EventChain(e, chain);
+//                result.current=e;
+//                result.next=this;
+//            count++;
+            return result;
+
+        }
+        EventChain chain;
+        void collectEvents(Event e) {
+            if ( e ) {
+                if ( e.node_id != node_id ) {
+                    chain=push(chain, e);
+                    collectEvents(e.father);
+                    collectEvents(e.mother);
+                }
+            }
+//            return chain;
+        }
+        auto node=nodes[home_node_id];
+        collectEvents(node.event);
+        Event[] events;
+
+        void iterate(EventChain c, immutable uint i=0) {
+            if ( c ) {
+                iterate(c.next, i+1);
+                events[i]=c.current;
+                c=null;
+            }
+            else {
+                events=new Event[i];
+            }
+        }
+        @trusted
+        immutable(Event[]) result() {
+            import std.exception : assumeUnique;
+            return assumeUnique(events);
+
+        }
+        return result;
     }
 
     version(none)
