@@ -134,7 +134,7 @@ class HashGraph {
         bool voted;
         // uint voting;
         bool fork; // Fork detected in the hashgraph
-//        Event event; // Last witness
+        Event event; // Latest event
         // private:
         //     Round round;
     }
@@ -324,7 +324,7 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    package void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
+    protected void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
@@ -345,6 +345,11 @@ class HashGraph {
 //                event.getRoundForMother;
                 event.loaded=true;
                 Event.callbacks.create(event);
+            }
+            if ( !event.daughter ) {
+                // This is latest event
+                auto node=nodes[event.node_id];
+                node.event=event;
             }
         }
     }
@@ -495,6 +500,10 @@ class HashGraph {
             // }
             checkStrongSeeing(check_event);
         }
+    }
+
+    immutable(Event[]) whatIsNotKnownBy(immutable uint node, immutable uint home_node=0) {
+        return null;
     }
 
     version(none)
