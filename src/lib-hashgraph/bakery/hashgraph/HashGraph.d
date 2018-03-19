@@ -362,7 +362,8 @@ class HashGraph {
                     if ( event.round is round ) {
                         event.set_witness_mask(top_event.node_id);
                     }
-                    else if ( event.round.number+1 == round.number ) {
+                    else if ( event.round.number < round.number ) {
+                        // If the round is one lower the search is stopped
                         return;
                     }
 
