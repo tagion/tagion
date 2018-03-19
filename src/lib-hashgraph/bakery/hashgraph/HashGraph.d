@@ -512,24 +512,16 @@ class HashGraph {
 //            static uint count;
             EventChain next;
             Event current;
-            this(Event e, EventChain chain=null) {
+            this(Event e, EventChain chain) {
                 current=e;
                 next=chain;
             }
-        }
-        EventChain push(EventChain chain, Event e) {
-            EventChain result=new EventChain(e, chain);
-//                result.current=e;
-//                result.next=this;
-//            count++;
-            return result;
-
         }
         EventChain chain;
         void collectEvents(Event e) {
             if ( e ) {
                 if ( e.node_id != node_id ) {
-                    chain=push(chain, e);
+                    chain=new EventChain(e, chain);
                     collectEvents(e.father);
                     collectEvents(e.mother);
                 }
@@ -539,7 +531,6 @@ class HashGraph {
         auto node=nodes[home_node_id];
         collectEvents(node.event);
         Event[] events;
-
         void iterate(EventChain c, immutable uint i=0) {
             if ( c ) {
                 iterate(c.next, i+1);
