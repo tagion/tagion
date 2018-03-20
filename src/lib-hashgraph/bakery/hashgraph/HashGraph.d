@@ -508,39 +508,26 @@ class HashGraph {
        home_node is the
      */
     immutable(Event[]) whatIsNotKnownBy(immutable uint node_id, immutable uint home_node_id=0, immutable uint limit=default_limit) {
-        class EventChain {
-//            static uint count;
-            EventChain next;
-            Event current;
-            this(Event e, EventChain chain) {
-                current=e;
-                next=chain;
-            }
-        }
-        EventChain chain;
-        void collectEvents(Event e) {
+        Event[] events;
+        uint index;
+        void collectEvents(bool count_only)(Event e) {
             if ( e ) {
                 if ( e.node_id != node_id ) {
-                    chain=new EventChain(e, chain);
-                    collectEvents(e.father);
-                    collectEvents(e.mother);
+                    static if ( !count_only ) {
+                        events[index]=e;
+                    }
+                    index++;
+                    collectEvents!count_only(e.father);
+                    collectEvents!count_only(e.mother);
                 }
             }
-//            return chain;
         }
         auto node=nodes[home_node_id];
-        collectEvents(node.event);
-        Event[] events;
-        void iterate(EventChain c, immutable uint i=0) {
-            if ( c ) {
-                iterate(c.next, i+1);
-                events[i]=c.current;
-                c=null;
-            }
-            else {
-                events=new Event[i];
-            }
-        }
+        index=0;
+        collectEvents!true(node.event);
+        events=new Event[index];
+        index=0;
+        collectEvents!false(node.event);
         @trusted
         immutable(Event[]) result() {
             import std.exception : assumeUnique;
