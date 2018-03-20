@@ -502,23 +502,26 @@ class HashGraph {
         }
     }
 
-    enum default_limit=1000;
+    enum default_depth=6;
     /**
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
      */
-    immutable(Event[]) whatIsNotKnownBy(immutable uint node_id, immutable uint home_node_id=0, immutable uint limit=default_limit) {
+    immutable(Event[]) whatIsNotKnownBy(
+        immutable uint node_id,
+        immutable uint home_node_id=0,
+        immutable uint max_depth=default_depth) {
         Event[] events;
         uint index;
-        void collectEvents(bool count_only)(Event e) {
-            if ( e && (index < limit ) ) {
+        void collectEvents(bool count_only)(Event e, immutable uint depth=0) {
+            if ( e && (depth < max_depth ) ) {
                 if ( e.node_id != node_id ) {
                     static if ( !count_only ) {
                         events[index]=e;
                     }
                     index++;
-                    collectEvents!count_only(e.father);
-                    collectEvents!count_only(e.mother);
+                    collectEvents!count_only(e.father, depth+1);
+                    collectEvents!count_only(e.mother, depth+1);
                 }
             }
         }
