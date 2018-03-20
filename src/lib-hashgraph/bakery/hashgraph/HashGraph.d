@@ -511,7 +511,7 @@ class HashGraph {
         Event[] events;
         uint index;
         void collectEvents(bool count_only)(Event e) {
-            if ( e ) {
+            if ( e && (index < limit ) ) {
                 if ( e.node_id != node_id ) {
                     static if ( !count_only ) {
                         events[index]=e;
@@ -523,9 +523,11 @@ class HashGraph {
             }
         }
         auto node=nodes[home_node_id];
+        // Count the number of events
         index=0;
         collectEvents!true(node.event);
         events=new Event[index];
+        // Puts the events into the array of events
         index=0;
         collectEvents!false(node.event);
         @trusted
