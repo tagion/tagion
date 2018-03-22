@@ -556,7 +556,7 @@ class HashGraph {
             Carol,
             Dave,
             Elisa
-        };
+        }
         struct Emitter {
             Pubkey pubkey;
         }
