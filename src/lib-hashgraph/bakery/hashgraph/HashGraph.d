@@ -41,6 +41,7 @@ class HashGraph {
         //_round_counter=new RoundCounter(null);
     }
 
+    version(none)
     struct EventPackage{
         Pubkey pubkey;
 //        Privkey privkey;
@@ -80,11 +81,12 @@ class HashGraph {
             }
         }
 
-        GBSON toBSON() {
+        GBSON toBSON(const(Event) use_event=null) {
             auto bson=new GBSON;
             foreach(i, m; this.tupleof) {
                 enum name=this.tupleof[i].stringof["this.".length..$];
                 static if ( __traits(compiles, m.toBSON) ) {
+//                    if ( name ==
                     bson[name]=m.toBSON;
                 }
                 else {
@@ -507,39 +509,23 @@ class HashGraph {
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
      */
-    immutable(Event[]) whatIsNotKnownBy(
+    void whatIsNotKnownBy(
+        GossipNet gossipnet,
         immutable uint node_id,
         immutable uint home_node_id=0,
         immutable uint max_depth=default_depth) {
-        Event[] events;
-        uint index;
-        void collectEvents(bool count_only)(Event e, immutable uint depth=0) {
-            if ( e && (depth < max_depth ) ) {
+        void collect_events(Event e, immutable uint depth=0) {
+            if ( e ) {
                 if ( e.node_id != node_id ) {
-                    static if ( !count_only ) {
-                        events[index]=e;
+                    if ( gossipnet.collect(e, depth) ) {
+                        collect_events(e.father, depth+1);
+                        collect_events(e.mother, depth+1);
                     }
-                    index++;
-                    collectEvents!count_only(e.father, depth+1);
-                    collectEvents!count_only(e.mother, depth+1);
                 }
             }
         }
         auto node=nodes[home_node_id];
-        // Count the number of events
-        index=0;
-        collectEvents!true(node.event);
-        events=new Event[index];
-        // Puts the events into the array of events
-        index=0;
-        collectEvents!false(node.event);
-        @trusted
-        immutable(Event[]) result() {
-            import std.exception : assumeUnique;
-            return assumeUnique(events);
-
-        }
-        return result;
+        collect_events(node.event);
     }
 
     version(none)
@@ -556,7 +542,7 @@ class HashGraph {
             Carol,
             Dave,
             Elisa
-        };
+        }
         struct Emitter {
             Pubkey pubkey;
         }
