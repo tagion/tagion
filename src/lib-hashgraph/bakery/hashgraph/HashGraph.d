@@ -28,16 +28,12 @@ class HashGraph {
     private EventCache _event_cache;
     // List of rounds
     private Round _rounds;
+    private GossipNet _gossip_net;
 
-    //private RoundCounter _round_counter;
-//    private GossipNet _gossip_net;
-    // static this() {
-    //     event_cache=new EventCache(null);
-    //     round_counter=new RoundCounter(null);
-//    }
 
-    this() {
+    this(GossipNet gossip_net) {
         _event_cache=new EventCache(null);
+        _gossip_net=gossip_net;
         //_round_counter=new RoundCounter(null);
     }
 
@@ -221,7 +217,7 @@ class HashGraph {
     alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
     @trusted
     Event receive(
-        GossipNet gossip_net,
+//        GossipNet gossip_net,
         immutable(ubyte)[] data,
         bool delegate(ref const(Pubkey) pubkey, immutable(ubyte[]) msg, Hfunc hfunc) signed,
         Hfunc hfunc) {
@@ -241,7 +237,7 @@ class HashGraph {
         }
         // Now we come this far so we can register the event
         immutable eventbody=EventBody(eventbody_data);
-        event=registerEvent(gossip_net, pubkey, eventbody);
+        event=registerEvent(pubkey, eventbody);
         return event;
     }
 
@@ -277,7 +273,7 @@ class HashGraph {
     }
 
     Event registerEvent(
-        GossipNet gossip_net,
+//        GossipNet gossip_net,
         immutable(Pubkey) pubkey,
         ref immutable(EventBody) eventbody) {
         Event event=lookup(Event.fhash(eventbody.serialize).digits);
@@ -315,7 +311,7 @@ class HashGraph {
 //        event_cache.add(hfunc(eventbody.serialize).digits,
 
             // Makes sure that we have the tree before the graph is checked
-            requestEventTree(gossip_net, event);
+            requestEventTree(event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
         }
@@ -326,7 +322,7 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
+    protected void requestEventTree(Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
@@ -339,10 +335,10 @@ class HashGraph {
                     event.daughter=child;
                 }
             }
-            auto mother=event.mother(this, gossip_net);
-            requestEventTree(gossip_net, mother, event, false);
-            auto father=event.father(this, gossip_net);
-            requestEventTree(gossip_net, father, event, true);
+            auto mother=event.mother(this, _gossip_net);
+            requestEventTree(mother, event, false);
+            auto father=event.father(this, _gossip_net);
+            requestEventTree(father, event, true);
             if ( Event.callbacks && !event.loaded) {
 //                event.getRoundForMother;
                 event.loaded=true;
@@ -510,14 +506,14 @@ class HashGraph {
        home_node is the
      */
     void whatIsNotKnownBy(
-        GossipNet gossipnet,
+//        GossipNet gossipnet,
         immutable uint node_id,
         immutable uint home_node_id=0,
         immutable uint max_depth=default_depth) {
         void collect_events(Event e, immutable uint depth=0) {
             if ( e ) {
                 if ( e.node_id != node_id ) {
-                    if ( gossipnet.collect(e, depth) ) {
+                    if ( _gossip_net.collect(e, depth) ) {
                         collect_events(e.father, depth+1);
                         collect_events(e.mother, depth+1);
                     }

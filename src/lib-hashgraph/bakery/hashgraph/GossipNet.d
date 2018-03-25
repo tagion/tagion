@@ -5,6 +5,7 @@ import bakery.hashgraph.Event;
 
 @safe interface EventPackage {
 }
+
 @safe
 interface GossipNet {
 //    alias HashGraph.EventPackage EventPackage;
