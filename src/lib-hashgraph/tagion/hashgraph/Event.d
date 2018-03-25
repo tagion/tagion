@@ -2,7 +2,7 @@ module bakery.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
 import bakery.utils.BSON : R_BSON=BSON, Document;
-import bakery.crypto.Hash;
+//import bakery.crypto.Hash;
 import bakery.hashgraph.GossipNet;
 //import bakery.hashgraph.HashGraph : HashGraph;
 import std.conv;
@@ -89,12 +89,24 @@ struct EventBody {
     }
 
     @trusted
-    this(Document doc) inout {
+    this(Document doc, GossipNet gossipnet=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=this.tupleof[i].stringof["this.".length..$];
             if ( doc.hasElement(name) ) {
-                this.tupleof[i]=doc[name].get!type;
+                static if ( name == mother.stringof || name == father.stringof ) {
+                    if ( gossipnet ) {
+                        immutable event_id=doc[name].get!uint;
+                        pragma(msg, "Name "~name~" type "~type.stringof);
+                        this.tupleof[i]=gossipnet.eventHashFromId(event_id);
+                    }
+                    else {
+                        this.tupleof[i]=doc[name].get!type;
+                    }
+                }
+                else {
+                    this.tupleof[i]=doc[name].get!type;
+                }
             }
         }
         consensus();
@@ -119,7 +131,8 @@ struct EventBody {
     }
 //json encoding of body only
 //    version(none)
-    GBSON toBSON() const {
+    // @use_event_will used evnet-ids instead of hashs
+    GBSON toBSON(const(Event) use_event=null) const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
             enum name=this.tupleof[i].stringof["this.".length..$];
@@ -132,7 +145,15 @@ struct EventBody {
                     flag=m !is null;
                 }
                 if (flag) {
-                    bson[name]=m;
+                    if ( use_event && name == mother.stringof &&  use_event.mother ) {
+                        bson[name]=use_event.mother.id;
+                    }
+                    else if ( use_event && name == father.stringof && use_event.father ) {
+                        bson[name]=use_event.father.id;
+                    }
+                    else {
+                        bson[name]=m;
+                    }
                 }
             }
         }
@@ -140,8 +161,8 @@ struct EventBody {
     }
 
     @trusted
-    immutable(ubyte)[] serialize() const {
-        return toBSON.expand;
+    immutable(ubyte)[] serialize(const(Event) use_event=null) const {
+        return toBSON(use_event).expand;
     }
 
 }
@@ -261,18 +282,20 @@ class Round {
 class Event {
     alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
-    alias immutable(Hash) function(immutable(ubyte)[] data) @safe FHash;
+//    alias immutable(Hash) function(immutable(ubyte)[] data) @safe FHash;
     static EventCallbacks callbacks;
+    alias GossipNet.HashPointer HashPointer;
+    alias GossipNet.Pubkey Pubkey;
     // Delegate function to load or find an Event in the event pool
 //    static Lookup lookup;
     // Deleagte function to assign an Event to event pool
 //    static Assign assign;
     // Hash function
-    static FHash fhash;
+//    static FHash fhash;
     // WireEvent wire_event;
-    private immutable(EventBody)* event_body;
-    private immutable(immutable(ubyte[])) event_body_data;
-    private immutable(ubyte[]) _hash;
+    private immutable(EventBody)* _event_body;
+//    private immutable(immutable(ubyte[])) event_body_data;
+    private HashPointer _hash;
     // This is the internal pointer to the
     private Event _mother;
     private Event _father;
@@ -512,13 +535,13 @@ class Event {
     immutable uint node_id;
 //    uint marker;
     @trusted
-    this(ref immutable(EventBody) ebody, uint node_id=0) {
-        event_body=&ebody;
+    this(ref immutable(EventBody) ebody, GossipNet gossip_net, uint node_id=0) {
+        _event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
-        event_body_data = event_body.serialize;
+        //event_body_data = event_body.serialize;
 //        if ( _hash ) {
-        _hash=fhash(event_body_data).digits;
+        //_hash=fhash(event_body_data).digits;
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             _round = Round.undefined;
@@ -532,6 +555,7 @@ class Event {
         //     callbacks.create(this);
         // }
 //        if ( fhash ) {
+        _hash=toCryptoHash(gossip_net);
         assert(_hash);
 //        }
     }
@@ -681,15 +705,15 @@ class Event {
     }
 
     immutable(ubyte[]) father_hash() const pure nothrow {
-	return event_body.father;
+	return _event_body.father;
     }
 
     immutable(ubyte[]) mother_hash() const pure nothrow {
-	return event_body.mother;
+	return _event_body.mother;
     }
 
     immutable(ubyte[]) payload() const pure nothrow {
-        return event_body.payload;
+        return _event_body.payload;
     }
 
 //True if Event contains a payload or is the initial Event of its creator
@@ -698,11 +722,11 @@ class Event {
     }
 
     bool motherExists() const pure nothrow {
-        return event_body.mother !is null;
+        return _event_body.mother !is null;
     }
 
     bool fatherExists() const pure nothrow {
-        return event_body.father !is null;
+        return _event_body.father !is null;
     }
 
     // is true if the event does not have a mother or a father
@@ -717,7 +741,8 @@ class Event {
     //     return _hash;
     // }
 
-    immutable(ubyte[]) toCryptoHash() const pure nothrow
+
+    immutable(HashPointer) toCryptoHash() const pure nothrow
     in {
         assert(_hash, "Hash has not been calculated");
     }
@@ -725,15 +750,41 @@ class Event {
         return _hash;
     }
 
-    immutable(ubyte[]) toData() const pure nothrow
+//     @trusted
+//     static immutable(HashPointer) cryptoHash(
+//         GossipNet gossip_net,
+// //        Pubkey pubkey,
+//         ref immutable(EventBody) event_body ) {
+//         auto bson=event_body.toBSON;
+//         bson[pubkey.stringof]=pubkey;
+//         return gossip_net.calcHash(bson.expand);
+//     }
+
+    immutable(HashPointer) toCryptoHash(
+        GossipNet gossip_net)
     in {
-        if ( event_body ) {
-            assert(event_body_data, "Event body is not expanded");
+        if ( _hash ) {
+            assert( _hash == gossip_net.calcHash(_event_body.serialize));
         }
     }
     body {
-        return event_body_data;
+        if ( _hash ) {
+            return _hash;
+        }
+        _hash=gossip_net.calcHash(_event_body.serialize);
+        return _hash;
     }
+
+
+    // immutable(ubyte[]) toData() const pure nothrow
+    // in {
+    //     if ( event_body ) {
+    //         assert(event_body_data, "Event body is not expanded");
+    //     }
+    // }
+    // body {
+    //     return event_body_data;
+    // }
 
     version(none)
     invariant {
@@ -788,7 +839,7 @@ class Event {
             //being called in the same process that made the time object.
             //that is why we strip out the monotonic time reading from the Timestamp at
             //the time of creating the Event
-            return a[i].event_body.time < a[j].event_body.time;
+            return a[i]._event_body.time < a[j]._event_body.time;
         }
     }
 
