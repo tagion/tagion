@@ -89,24 +89,12 @@ struct EventBody {
     }
 
     @trusted
-    this(Document doc, GossipNet gossipnet=null) inout {
+    this(Document doc) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=this.tupleof[i].stringof["this.".length..$];
             if ( doc.hasElement(name) ) {
-                static if ( name == mother.stringof || name == father.stringof ) {
-                    if ( gossipnet ) {
-                        immutable event_id=doc[name].get!uint;
-                        pragma(msg, "Name "~name~" type "~type.stringof);
-                        this.tupleof[i]=gossipnet.eventHashFromId(event_id);
-                    }
-                    else {
-                        this.tupleof[i]=doc[name].get!type;
-                    }
-                }
-                else {
-                    this.tupleof[i]=doc[name].get!type;
-                }
+                this.tupleof[i]=doc[name].get!type;
             }
         }
         consensus();
@@ -131,8 +119,7 @@ struct EventBody {
     }
 //json encoding of body only
 //    version(none)
-    // @use_event_will used evnet-ids instead of hashs
-    GBSON toBSON(const(Event) use_event=null) const {
+    GBSON toBSON() const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
             enum name=this.tupleof[i].stringof["this.".length..$];
@@ -145,15 +132,7 @@ struct EventBody {
                     flag=m !is null;
                 }
                 if (flag) {
-                    if ( use_event && name == mother.stringof &&  use_event.mother ) {
-                        bson[name]=use_event.mother.id;
-                    }
-                    else if ( use_event && name == father.stringof && use_event.father ) {
-                        bson[name]=use_event.father.id;
-                    }
-                    else {
-                        bson[name]=m;
-                    }
+                    bson[name]=m;
                 }
             }
         }
@@ -161,8 +140,8 @@ struct EventBody {
     }
 
     @trusted
-    immutable(ubyte)[] serialize(const(Event) use_event=null) const {
-        return toBSON(use_event).expand;
+    immutable(ubyte)[] serialize() const {
+        return toBSON.expand;
     }
 
 }
