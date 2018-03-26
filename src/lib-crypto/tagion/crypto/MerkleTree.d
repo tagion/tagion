@@ -1,6 +1,6 @@
-module bakery.crypto.MerkleTree;
+module tagion.crypto.MerkleTree;
 
-import bakery.crypto.Hash;
+import tagion.crypto.Hash;
 import std.exception : assumeUnique;
 import tango.core.Traits;
 

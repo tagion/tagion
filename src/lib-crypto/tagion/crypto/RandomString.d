@@ -1,5 +1,5 @@
 
-module Bakery.Crypto.RandomString;
+module Tagion.Crypto.RandomString;
 
 import tango.math.random.Random;
 
