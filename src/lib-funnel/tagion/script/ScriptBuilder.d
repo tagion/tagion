@@ -1,9 +1,9 @@
-module bakery.script.ScriptBuilder;
+module tagion.script.ScriptBuilder;
 
 import std.conv;
 
-import bakery.script.ScriptInterpreter;
-import bakery.script.Script;
+import tagion.script.ScriptInterpreter;
+import tagion.script.Script;
 
 import std.stdio;
 
