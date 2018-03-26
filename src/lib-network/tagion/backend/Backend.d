@@ -1,4 +1,4 @@
-module bakery.backend.Backend;
+module tagion.backend.Backend;
 
 import vibe.core.core : sleep;
 import vibe.core.log;
@@ -13,8 +13,8 @@ import std.concurrency;
 import std.conv : to;
 import std.stdio : writeln, writefln;
 
-import bakery.hashgraph.Event;
-import bakery.Base;
+import tagion.hashgraph.Event;
+import tagion.Base;
 import tango.io.FilePath;
 
 class Backend {
