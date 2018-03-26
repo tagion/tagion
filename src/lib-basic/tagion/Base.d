@@ -1,8 +1,8 @@
-module bakery.Base;
+module tagion.Base;
 
-import bakery.crypto.Hash;
+import tagion.crypto.Hash;
 
-//Common components for bakery
+//Common components for tagion
 
 enum ThreadState {
     KILL = 9,
@@ -58,6 +58,6 @@ struct InterfaceEventBody {
 
 @safe
 immutable(Hash) hfuncSHA256(immutable(ubyte)[] data) {
-    import bakery.crypto.SHA256;
+    import tagion.crypto.SHA256;
     return SHA256(data);
 }
