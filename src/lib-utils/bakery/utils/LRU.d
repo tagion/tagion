@@ -1,4 +1,4 @@
-module tagion.utils.LRU;
+module bakery.utils.LRU;
 
 //TAKEN FROM HASHICORP LRU
 
@@ -8,7 +8,7 @@ module tagion.utils.LRU;
 
 //import tango.util.container.LinkedList;
 //import std.stdio;
-import tagion.utils.DList;
+import bakery.utils.DList;
 import std.conv;
 
 
@@ -78,7 +78,7 @@ class LRU(K,V)  {
         }
         static if ( is (K:const(ubyte)[]) ) {
             import std.stdio;
-            import tagion.crypto.Hash : toHexString;
+            import bakery.crypto.Hash : toHexString;
 //            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
         }
         return evict;
