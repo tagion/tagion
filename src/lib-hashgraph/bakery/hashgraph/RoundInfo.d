@@ -1,4 +1,4 @@
-module tagion.hashgraph.RoundInfo;
+module bakery.hashgraph.RoundInfo;
 
 // import (
 // 	"bytes"

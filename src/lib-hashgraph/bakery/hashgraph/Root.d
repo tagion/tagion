@@ -1,4 +1,4 @@
-module tagion.hashgraph.Root;
+module bakery.hashgraph.Root;
 
 // import (
 // 	"bytes"
