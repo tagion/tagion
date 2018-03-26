@@ -115,12 +115,12 @@ class HashGraph {
     class Node {
         //DList!(Event) queue;
         immutable uint node_id;
-        immutable ulong discovery_time;
+//        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
-        this(Pubkey pubkey, uint node_id, ulong time) {
+        this(Pubkey pubkey, uint node_id) {
             this.pubkey=pubkey;
             this.node_id=node_id;
-            this.discovery_time=time;
+//            this.discovery_time=time;
         }
         // void updateRound(Round round) {
         //     this.round=round;
@@ -142,11 +142,11 @@ class HashGraph {
     uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
     uint[] unused_node_ids; // Stack of unused node ids
 
-    static ulong time;
-    static ulong current_time() {
-        time+=100;
-        return time;
-    }
+    // static ulong time;
+    // static ulong current_time() {
+    //     time+=100;
+    //     return time;
+    // }
 
     void assign(Event event) {
         _event_cache[event.toCryptoHash]=event;
@@ -297,7 +297,7 @@ class HashGraph {
                     node_id=cast(uint)node_ids.length;
                     node_ids[pubkey]=node_id;
                 }
-                node=new Node(pubkey, node_id, current_time);
+                node=new Node(pubkey, node_id);
                 nodes[node_id]=node;
             }
             else {
