@@ -1,6 +1,6 @@
-module tagion.crypto.SHA256;
+module bakery.crypto.SHA256;
 
-import tagion.crypto.Hash;
+import bakery.crypto.Hash;
 import tango.util.digest.Sha256 : Sha256;
 import std.exception : assumeUnique;
 

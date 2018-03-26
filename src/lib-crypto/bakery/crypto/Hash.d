@@ -1,4 +1,4 @@
-module tagion.crypto.Hash;
+module bakery.crypto.Hash;
 
 @safe
 immutable(char)[] toHexString(alias ucase=false)(const(ubyte)[] buffer) pure nothrow {
