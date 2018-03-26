@@ -37,73 +37,6 @@ class HashGraph {
         //_round_counter=new RoundCounter(null);
     }
 
-    version(none)
-    struct EventPackage{
-        Pubkey pubkey;
-//        Privkey privkey;
-//        Sign sign;
-        immutable(ubyte)[] signature;
-        immutable(EventBody) eventbody;
-        this(
-            Pubkey pubkey,
-            Privkey privkey,
-            Sign sign,
-            const ref EventBody e
-            ) {
-
-            this.pubkey=pubkey;
-            this.signature=sign(pubkey, privkey, eventbody.serialize);
-            this.eventbody=e;
-        }
-        // Create from an BSON stream
-        this(immutable(ubyte)[] data) {
-            auto doc=Document(data);
-            this(doc);
-        }
-
-        @trusted
-        this(Document doc) {
-            foreach(i, ref m; this.tupleof) {
-                alias typeof(m) type;
-                enum name=EventPackage.tupleof[i].stringof;
-                static if ( __traits(compiles, m.toBSON) ) {
-                    static if ( is(type T : immutable(T)) ) {
-                        this.tupleof[i]=T(doc[name].get!(Document));
-                    }
-                }
-                else {
-                    this.tupleof[i]=doc[name].get!type;
-                }
-            }
-        }
-
-        GBSON toBSON(const(Event) use_event=null) {
-            auto bson=new GBSON;
-            foreach(i, m; this.tupleof) {
-                enum name=this.tupleof[i].stringof["this.".length..$];
-                static if ( __traits(compiles, m.toBSON) ) {
-//                    if ( name ==
-                    bson[name]=m.toBSON;
-                }
-                else {
-                    bool flag=true;
-                    static if ( __traits(compiles, m !is null) ) {
-                        flag=m !is null;
-                    }
-                    if (flag) {
-                        bson[name]=m;
-                    }
-                }
-            }
-            return bson;
-        }
-
-        @trusted
-        immutable(ubyte)[] serialize() {
-            return toBSON.expand;
-        }
-    }
-
     package static Round find_previous_round(Event event) {
         Event e;
         for (e=event; e && !e.round; e=e.mother) {
@@ -215,6 +148,7 @@ class HashGraph {
 
     enum max_package_size=0x1000;
     alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
+    version(none)
     @trusted
     Event receive(
 //        GossipNet gossip_net,
