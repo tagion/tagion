@@ -1,6 +1,6 @@
-module bakery.crypto.MerkleTree;
+module tagion.crypto.MerkleTree;
 
-import bakery.crypto.Hash;
+import tagion.crypto.Hash;
 import std.exception : assumeUnique;
 import tango.core.Traits;
 
@@ -225,7 +225,7 @@ bool validateSignatures(
             nnodesSz = num_of_nodes.sizeof,
 //            siglengthSz = siglength.sizeof,
             hdrSz = magicHeaderSz + nnodesSz // + siglengthSz,
-        };
+        }
         result = new ubyte[hdrSz + num_of_nodes * Node.payload_size];
         // buffer points into result
         buffer = result;
