@@ -1,13 +1,13 @@
-module bakery.hashgraph.HashGraph;
+module tagion.hashgraph.HashGraph;
 
 import std.stdio;
 import std.conv;
-//import bakery.hashgraph.Store;
-import bakery.hashgraph.Event;
-import bakery.hashgraph.GossipNet;
-import bakery.utils.LRU;
-import bakery.utils.BSON : Document;
-import bakery.crypto.Hash;
+//import tagion.hashgraph.Store;
+import tagion.hashgraph.Event;
+import tagion.hashgraph.GossipNet;
+import tagion.utils.LRU;
+import tagion.utils.BSON : Document;
+import tagion.crypto.Hash;
 
 @safe
 class HashGraphConsensusException : ConsensusException {
@@ -530,7 +530,7 @@ class HashGraph {
         // This is the example taken from
         // HASHGRAPH CONSENSUS
         // SWIRLDS TECH REPORT TR-2016-01
-        import bakery.crypto.SHA256;
+        import tagion.crypto.SHA256;
         import std.traits;
         import std.conv;
         enum NodeLable {

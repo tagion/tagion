@@ -1,7 +1,7 @@
-module bakery.hashgraph.GossipNet;
+module tagion.hashgraph.GossipNet;
 
-import bakery.hashgraph.HashGraph;
-import bakery.hashgraph.Event;
+import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.Event;
 
 @safe interface EventPackage {
 }

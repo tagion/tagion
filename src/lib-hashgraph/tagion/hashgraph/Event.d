@@ -1,10 +1,10 @@
-module bakery.hashgraph.Event;
+module tagion.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
-import bakery.utils.BSON : R_BSON=BSON, Document;
-//import bakery.crypto.Hash;
-import bakery.hashgraph.GossipNet;
-//import bakery.hashgraph.HashGraph : HashGraph;
+import tagion.utils.BSON : R_BSON=BSON, Document;
+//import tagion.crypto.Hash;
+import tagion.hashgraph.GossipNet;
+//import tagion.hashgraph.HashGraph : HashGraph;
 import std.conv;
 import std.bitmanip;
 
@@ -869,7 +869,7 @@ class Event {
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // WireEvent
-//module bakery.hashgraph.EventEvent;
+//module tagion.hashgraph.EventEvent;
 
 // import (
 // 	"reflect"
@@ -880,7 +880,7 @@ class Event {
 // )
 
 unittest { // Serialize and unserialize EventBody
-    import bakery.crypto.SHA256;
+    import tagion.crypto.SHA256;
     auto payload=cast(immutable(ubyte)[])"Some payload";
     auto mother=SHA256("self").digits;
     auto father=SHA256("other").digits;

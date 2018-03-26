@@ -1,4 +1,4 @@
-module bakery.hashgraph.Store;
+module tagion.hashgraph.Store;
 
 interface Store(H) {
     int CacheSize();

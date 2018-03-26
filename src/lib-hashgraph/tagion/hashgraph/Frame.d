@@ -1,7 +1,7 @@
-module bakery.hashgraph.Frame;
+module tagion.hashgraph.Frame;
 
-import bakery.hashgraph.Root;
-import bakery.hashgraph.Event;
+import tagion.hashgraph.Root;
+import tagion.hashgraph.Event;
 
 struct Frame(H) {
     Root[H] Roots;
