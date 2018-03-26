@@ -1,4 +1,4 @@
-module bakery.utils.DList;
+module tagion.utils.DList;
 
 //import std.stdio;
 

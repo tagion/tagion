@@ -16,7 +16,7 @@
  *    (See accompanying file LICENSE_1_0.txt or copy at
  *            http://www.apache.org/licenses/)
  */
-module bakery.utils.BSON;
+module tagion.utils.BSON;
 
 import core.stdc.string;  // Some operations in Phobos not safe, pure and nothrow, e.g. cmp
 
