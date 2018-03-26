@@ -1,7 +1,7 @@
-module bakery.hashgraph.ConsensusSorter;
+module tagion.hashgraph.ConsensusSorter;
 
 import std.bigint;
-import bakery.hashgraph.Event;
+import tagion.hashgraph.Event;
 struct ConsensusSorter(H) {
     Event!H[] a;
     RoundInfo[int] r;
