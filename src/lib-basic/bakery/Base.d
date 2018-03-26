@@ -1,8 +1,8 @@
-module tagion.Base;
+module bakery.Base;
 
-import tagion.crypto.Hash;
+import bakery.crypto.Hash;
 
-//Common components for tagion
+//Common components for bakery
 
 enum ThreadState {
     KILL = 9,
@@ -27,7 +27,7 @@ struct InterfaceEventUpdate {
 	bool value;
 
     this (const uint id, const EventProperty property, const bool value) {
-        this.eventType = EventType.EVENT_BODY;
+        this.eventType = EventType.EVENT_UPDATE;
         this.id = id;
         this.property = property;
         this.value = value;
@@ -39,25 +39,29 @@ struct InterfaceEventBody {
     uint id;
     uint mother_id;
 	uint father_id;
-	immutable(ubyte[]) payload;
-    //string test;
+	//immutable(ubyte)[] payload;
+    uint node_id;
+    bool witness;
 
     this(const(uint) id, 
-	immutable(ubyte[]) payload,
-	const(uint) mother_id = 0, 
-	const(uint) father_id = 0
-	) {
-        this.eventType = EventType.EVENT_UPDATE;
+	/*immutable(ubyte)[] payload,*/
+    const(uint) node_id,
+	const(uint) mother_id, 
+	const(uint) father_id,
+    const(bool) witness
+	) inout {
+        this.eventType = EventType.EVENT_BODY;
         this.id = id;
         this.mother_id = mother_id;
 		this.father_id = father_id;
-		this.payload = payload;
-        //this.test = "Hej";
+		//this.payload = payload;
+        this.node_id = node_id;
+        this.witness = witness;
     }
 }
 
 @safe
 immutable(Hash) hfuncSHA256(immutable(ubyte)[] data) {
-    import tagion.crypto.SHA256;
+    import bakery.crypto.SHA256;
     return SHA256(data);
 }

@@ -2,7 +2,7 @@
    This the block in the chain called the BitcuitBlock
  */
 
-module tagion.owen.BitcuitBlock;
+module bakery.owen.BitcuitBlock;
 
 
 /**

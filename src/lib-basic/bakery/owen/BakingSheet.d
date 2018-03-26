@@ -3,10 +3,10 @@
    In the Bitcuits network
  */
 
-module tagion.owen.BakingSheet;
+module bakery.owen.BakingSheet;
 
 import tango.time.Time;
-private import tagion.owen.BitcuitBlock;
+private import bakery.owen.BitcuitBlock;
 
 @safe
 interface CoockieSheet {

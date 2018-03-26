@@ -3,11 +3,11 @@
    called the baker
  */
 
-module tagion.owen.Baker;
+module bakery.owen.Baker;
 
 import tango.time.Time;
-private import tagion.owen.BitcuitBlock;
-private import tagion.owen.ConcensusBase;
+private import bakery.owen.BitcuitBlock;
+private import bakery.owen.ConcensusBase;
 
 @safe
 class Baker(H) {
