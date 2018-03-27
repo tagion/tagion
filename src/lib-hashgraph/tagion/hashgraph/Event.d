@@ -162,7 +162,7 @@ struct EventBody {
 
     @trusted
     immutable(ubyte)[] serialize(const(Event) use_event=null) const {
-        return toBSON(use_event).serialize;
+        return toBSON(use_event).expand;
     }
 
 }
@@ -757,7 +757,7 @@ class Event {
 //         ref immutable(EventBody) event_body ) {
 //         auto bson=event_body.toBSON;
 //         bson[pubkey.stringof]=pubkey;
-//         return gossip_net.calcHash(bson.serialize);
+//         return gossip_net.calcHash(bson.expand);
 //     }
 
     immutable(HashPointer) toCryptoHash(
@@ -775,6 +775,16 @@ class Event {
         return _hash;
     }
 
+
+    // immutable(ubyte[]) toData() const pure nothrow
+    // in {
+    //     if ( event_body ) {
+    //         assert(event_body_data, "Event body is not expanded");
+    //     }
+    // }
+    // body {
+    //     return event_body_data;
+    // }
 
     version(none)
     invariant {

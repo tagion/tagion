@@ -37,6 +37,73 @@ class HashGraph {
         //_round_counter=new RoundCounter(null);
     }
 
+    version(none)
+    struct EventPackage{
+        Pubkey pubkey;
+//        Privkey privkey;
+//        Sign sign;
+        immutable(ubyte)[] signature;
+        immutable(EventBody) eventbody;
+        this(
+            Pubkey pubkey,
+            Privkey privkey,
+            Sign sign,
+            const ref EventBody e
+            ) {
+
+            this.pubkey=pubkey;
+            this.signature=sign(pubkey, privkey, eventbody.serialize);
+            this.eventbody=e;
+        }
+        // Create from an BSON stream
+        this(immutable(ubyte)[] data) {
+            auto doc=Document(data);
+            this(doc);
+        }
+
+        @trusted
+        this(Document doc) {
+            foreach(i, ref m; this.tupleof) {
+                alias typeof(m) type;
+                enum name=EventPackage.tupleof[i].stringof;
+                static if ( __traits(compiles, m.toBSON) ) {
+                    static if ( is(type T : immutable(T)) ) {
+                        this.tupleof[i]=T(doc[name].get!(Document));
+                    }
+                }
+                else {
+                    this.tupleof[i]=doc[name].get!type;
+                }
+            }
+        }
+
+        GBSON toBSON(const(Event) use_event=null) {
+            auto bson=new GBSON;
+            foreach(i, m; this.tupleof) {
+                enum name=this.tupleof[i].stringof["this.".length..$];
+                static if ( __traits(compiles, m.toBSON) ) {
+//                    if ( name ==
+                    bson[name]=m.toBSON;
+                }
+                else {
+                    bool flag=true;
+                    static if ( __traits(compiles, m !is null) ) {
+                        flag=m !is null;
+                    }
+                    if (flag) {
+                        bson[name]=m;
+                    }
+                }
+            }
+            return bson;
+        }
+
+        @trusted
+        immutable(ubyte)[] serialize() {
+            return toBSON.expand;
+        }
+    }
+
     package static Round find_previous_round(Event event) {
         Event e;
         for (e=event; e && !e.round; e=e.mother) {
@@ -48,12 +115,12 @@ class HashGraph {
     class Node {
         //DList!(Event) queue;
         immutable uint node_id;
-//        immutable ulong discovery_time;
+        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
-        this(Pubkey pubkey, uint node_id) {
+        this(Pubkey pubkey, uint node_id, ulong time) {
             this.pubkey=pubkey;
             this.node_id=node_id;
-//            this.discovery_time=time;
+            this.discovery_time=time;
         }
         // void updateRound(Round round) {
         //     this.round=round;
@@ -75,11 +142,11 @@ class HashGraph {
     uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
     uint[] unused_node_ids; // Stack of unused node ids
 
-    // static ulong time;
-    // static ulong current_time() {
-    //     time+=100;
-    //     return time;
-    // }
+    static ulong time;
+    static ulong current_time() {
+        time+=100;
+        return time;
+    }
 
     void assign(Event event) {
         _event_cache[event.toCryptoHash]=event;
@@ -92,7 +159,6 @@ class HashGraph {
         return _event_cache[fingerprint];
     }
 
-//    immutable(ubyte[]) eventPackage(Event event,
 
     // Returns the number of active nodes in the network
     uint active_nodes() const pure nothrow {
@@ -149,7 +215,6 @@ class HashGraph {
 
     enum max_package_size=0x1000;
     alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
-    version(none)
     @trusted
     Event receive(
 //        GossipNet gossip_net,
@@ -232,7 +297,7 @@ class HashGraph {
                     node_id=cast(uint)node_ids.length;
                     node_ids[pubkey]=node_id;
                 }
-                node=new Node(pubkey, node_id);
+                node=new Node(pubkey, node_id, current_time);
                 nodes[node_id]=node;
             }
             else {
