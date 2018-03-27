@@ -1283,7 +1283,7 @@ private:
         // Convert to BSON object
         auto bson=src.toBSON;
         // Expand to BSON stream
-        auto data=bson.serialize;
+        auto data=bson.expand;
         return build(script, data);
     }
     immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
