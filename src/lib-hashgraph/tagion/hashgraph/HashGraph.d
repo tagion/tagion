@@ -92,6 +92,7 @@ class HashGraph {
         return _event_cache[fingerprint];
     }
 
+//    immutable(ubyte[]) eventPackage(Event event,
 
     // Returns the number of active nodes in the network
     uint active_nodes() const pure nothrow {
