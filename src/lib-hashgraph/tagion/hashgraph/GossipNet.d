@@ -2,6 +2,8 @@ module tagion.hashgraph.GossipNet;
 
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
+import tagion.utils.BSON : R_BSON=BSON, Document;
+alias R_BSON!true GBSON;
 
 @safe interface EventPackage {
 }
@@ -23,5 +25,12 @@ interface GossipNet {
     bool collect(Event e, immutable uint depth);
     HashPointer eventHashFromId(immutable uint id);
     HashPointer calcHash(immutable(HashPointer) hash_pointer) inout;
+
+    immutable(ubyte[]) evaPackage(Pubkey pubkey);
+
+    void buildPackage(HashGraph hashgraph, GBSON bson, Event event);
+
+    ulong time();
+
 //    HashPointer calcHash(const(Event) e);
 }
