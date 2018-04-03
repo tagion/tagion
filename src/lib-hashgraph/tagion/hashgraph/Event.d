@@ -293,6 +293,7 @@ class Event {
     // Hash function
 //    static FHash fhash;
     // WireEvent wire_event;
+    immutable(ubyte[]) signature;
     private immutable(EventBody)* _event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
     private HashPointer _hash;
@@ -535,10 +536,11 @@ class Event {
     immutable uint node_id;
 //    uint marker;
     @trusted
-    this(ref immutable(EventBody) ebody, GossipNet gossip_net, uint node_id=0) {
+    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  GossipNet gossip_net, uint node_id=0) {
         _event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
+        this.signature=signature;
         //event_body_data = event_body.serialize;
 //        if ( _hash ) {
         //_hash=fhash(event_body_data).digits;

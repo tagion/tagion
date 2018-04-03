@@ -32,5 +32,10 @@ interface GossipNet {
 
     ulong time();
 
+    bool verify(immutable(ubyte[]) message, Pubkey pubkey);
+
+    immutable(ubyte[]) sign(immutable(ubyte[]) message, Privkey privkey);
+
+
 //    HashPointer calcHash(const(Event) e);
 }

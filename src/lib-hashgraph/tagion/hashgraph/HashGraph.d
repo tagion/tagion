@@ -210,6 +210,7 @@ class HashGraph {
     Event registerEvent(
         GossipNet gossip_net,
         Pubkey pubkey,
+        immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
         immutable fingerprint=gossip_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
@@ -240,7 +241,7 @@ class HashGraph {
                 node=nodes[node_id];
             }
 //            node.round=round;
-            event=new Event(eventbody, gossip_net, node_id);
+            event=new Event(eventbody, signature, gossip_net, node_id);
 
             // Add the event to the event cache
             assign(event);
