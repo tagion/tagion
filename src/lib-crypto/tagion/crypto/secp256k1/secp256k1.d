@@ -1,11 +1,10 @@
-module tagion.crypto.secp256k1;
+module tagion.crypto.secp256k1.secp256k1;
 
-//extern (C) struct secp256k1_ecmult_context;
-extern(C) struct secp256k1_context;
+package extern(C) struct secp256k1_context;
 
-extern(C) struct secp256k1_callback;
+package extern(C) struct secp256k1_callback;
 
-extern (C) {
+package extern (C) {
 
 /* These rules specify the order of arguments in API calls:
  *
@@ -121,6 +120,7 @@ extern (C) {
  */
     struct secp256k1_pubkey {
         ubyte[64] data;
+
     };
 
 /** Opaque data structured that holds a parsed ECDSA signature.
@@ -219,30 +219,30 @@ extern (C) {
 +/
 
 /** All flags' lower 8 bits indicate what they're for. Do not use directly. */
-    enum {
-        SECP256K1_FLAGS_TYPE_MASK = ((1 << 8) - 1),
-        SECP256K1_FLAGS_TYPE_CONTEXT = (1 << 0),
-        SECP256K1_FLAGS_TYPE_COMPRESSION = (1 << 1),
+    enum SECP256K1 : uint {
+        FLAGS_TYPE_MASK = ((1 << 8) - 1),
+        FLAGS_TYPE_CONTEXT = (1 << 0),
+        FLAGS_TYPE_COMPRESSION = (1 << 1),
 /** The higher bits contain the actual data. Do not use directly. */
-        SECP256K1_FLAGS_BIT_CONTEXT_VERIFY = (1 << 8),
-        SECP256K1_FLAGS_BIT_CONTEXT_SIGN = (1 << 9),
-        SECP256K1_FLAGS_BIT_COMPRESSION = (1 << 8),
+        FLAGS_BIT_CONTEXT_VERIFY = (1 << 8),
+        FLAGS_BIT_CONTEXT_SIGN = (1 << 9),
+        FLAGS_BIT_COMPRESSION = (1 << 8),
 
 /** Flags to pass to secp256k1_context_create. */
-        SECP256K1_CONTEXT_VERIFY = (SECP256K1_FLAGS_TYPE_CONTEXT | SECP256K1_FLAGS_BIT_CONTEXT_VERIFY),
-        SECP256K1_CONTEXT_SIGN = (SECP256K1_FLAGS_TYPE_CONTEXT | SECP256K1_FLAGS_BIT_CONTEXT_SIGN),
-        SECP256K1_CONTEXT_NONE = (SECP256K1_FLAGS_TYPE_CONTEXT),
+        CONTEXT_VERIFY = (FLAGS_TYPE_CONTEXT | FLAGS_BIT_CONTEXT_VERIFY),
+        CONTEXT_SIGN = (FLAGS_TYPE_CONTEXT | FLAGS_BIT_CONTEXT_SIGN),
+        CONTEXT_NONE = (FLAGS_TYPE_CONTEXT),
 
 /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
-        SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION),
-        SECP256K1_EC_UNCOMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION),
+        EC_COMPRESSED = (FLAGS_TYPE_COMPRESSION | FLAGS_BIT_COMPRESSION),
+        EC_UNCOMPRESSED = (FLAGS_TYPE_COMPRESSION),
 
 /** Prefix byte used to tag various encoded curvepoints for specific purposes */
-        SECP256K1_TAG_PUBKEY_EVEN = 0x02,
-        SECP256K1_TAG_PUBKEY_ODD = 0x03,
-        SECP256K1_TAG_PUBKEY_UNCOMPRESSED = 0x04,
-        SECP256K1_TAG_PUBKEY_HYBRID_EVEN = 0x06,
-        SECP256K1_TAG_PUBKEY_HYBRID_ODD = 0x07
+        TAG_PUBKEY_EVEN = 0x02,
+        TAG_PUBKEY_ODD = 0x03,
+        TAG_PUBKEY_UNCOMPRESSED = 0x04,
+        TAG_PUBKEY_HYBRID_EVEN = 0x06,
+        TAG_PUBKEY_HYBRID_ODD = 0x07
     };
 
 /** Create a secp256k1 context object.
@@ -637,7 +637,7 @@ extern (C) {
  */
     int secp256k1_ec_seckey_verify(
         const(secp256k1_context)* ctx,
-        const(char)* seckey
+        const(ubyte)* seckey
         );
         // in {
         //     assert(ctx);
@@ -820,4 +820,22 @@ extern (C) {
 //             assert(out_);
 //             assert(ins);
 //         };
+
+
+    /** Compute an EC Diffie-Hellman secret in constant time
+ *  Returns: 1: exponentiation was successful
+ *           0: scalar was invalid (zero or overflow)
+ *  Args:    ctx:        pointer to a context object (cannot be NULL)
+ *  Out:     result:     a 32-byte array which will be populated by an ECDH
+ *                       secret computed from the point and scalar
+ *  In:      pubkey:     a pointer to a secp256k1_pubkey containing an
+ *                       initialized public key
+ *           privkey:    a 32-byte scalar with which to multiply the point
+ */
+    int secp256k1_ecdh(
+        const(secp256k1_context)* ctx,
+        ubyte* result,
+        const(secp256k1_pubkey)* pubkey,
+        const(ubyte)* privkey
+        );
 }
