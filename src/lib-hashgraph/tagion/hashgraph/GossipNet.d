@@ -32,7 +32,7 @@ interface GossipNet {
 
     ulong time();
 
-    bool verify(immutable(ubyte[]) message, Pubkey pubkey);
+    bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey);
 
     immutable(ubyte[]) sign(immutable(ubyte[]) message, Privkey privkey);
 
