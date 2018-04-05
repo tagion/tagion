@@ -657,12 +657,6 @@ package extern (C) {
         secp256k1_pubkey* pubkey,
         const(ubyte)* seckey
         );
-        // in {
-        //     assert(ctx);
-        //     assert(pubkey);
-        //     assert(seckey);
-
-        // };
 
 /** Negates a private key in place.
  *
@@ -674,10 +668,6 @@ package extern (C) {
         const(secp256k1_context)* ctx,
         ubyte* seckey
         );
-        // in {
-        //     assert(ctx);
-        //     assert(seckey);
-        // };
 
 /** Negates a public key in place.
  *
@@ -689,10 +679,6 @@ package extern (C) {
         const(secp256k1_context)* ctx,
         secp256k1_pubkey* pubkey
         );
-        // in {
-        //     assert(ctx);
-        //     assert(pubkey);
-        // };
 
 /** Tweak a private key by adding tweak to it.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -708,11 +694,6 @@ package extern (C) {
         ubyte* seckey,
         const(ubyte)* tweak
         );
-        // in {
-        //     assert(ctx);
-        //     assert(seckey);
-        //     assert(tweak);
-        // };
 
 /** Tweak a public key by adding tweak times the generator to it.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -729,11 +710,6 @@ package extern (C) {
         secp256k1_pubkey* pubkey,
         const(ubyte)* tweak
         );
-        // in {
-        //     assert(ctx);
-        //     assert(pubkey);
-        //     assert(tweak);
-        // };
 
 /** Tweak a private key by multiplying it by a tweak.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -747,11 +723,6 @@ package extern (C) {
         ubyte *seckey,
         const(ubyte)* tweak
         );
-        // in {
-        //     assert(ctx);
-        //     assert(seckey);
-        //     assert(tweak);
-        // };
 
 /** Tweak a public key by multiplying it by a tweak value.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
@@ -766,11 +737,6 @@ package extern (C) {
         secp256k1_pubkey* pubkey,
         const(ubyte)* tweak
         );
-        // in {
-        //     assert(ctx);
-        //     assert(pubkey);
-        //     assert(tweak);
-        // };
 
 
 /** Updates the context randomization to protect against side-channel leakage.
@@ -796,9 +762,6 @@ package extern (C) {
         secp256k1_context* ctx,
         const(ubyte)* seed32
         );
-        // in {
-        //     assert(ctx);
-        // };
 
 /** Add a number of public keys together.
  *  Returns: 1: the sum of the public keys is valid.
@@ -815,14 +778,8 @@ package extern (C) {
         const(secp256k1_pubkey**) ins,
         size_t n
         );
-//         in {
-// //            assert(ctx);
-//             assert(out_);
-//             assert(ins);
-//         };
 
-
-    /** Compute an EC Diffie-Hellman secret in constant time
+/** Compute an EC Diffie-Hellman secret in constant time
  *  Returns: 1: exponentiation was successful
  *           0: scalar was invalid (zero or overflow)
  *  Args:    ctx:        pointer to a context object (cannot be NULL)

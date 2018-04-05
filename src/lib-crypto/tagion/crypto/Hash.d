@@ -19,6 +19,23 @@ immutable(char)[] toHexString(alias ucase=false)(const(ubyte)[] buffer) pure not
     return text.idup;
 }
 
+unittest {
+    {
+        enum value="CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90";
+        auto buf=decode(value);
+        assert(buf.length*2 == value.length);
+        assert(buf.toHexString!true == value);
+    }
+    {
+        enum value="30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9";
+        auto buf=decode(value);
+        assert(buf.length*2 == value.length);
+        assert(buf.toHexString!true == value);
+    }
+
+}
+
+
 @safe
 immutable(ubyte[]) decode(string hex)
 in {
