@@ -20,6 +20,46 @@ immutable(char)[] toHexString(alias ucase=false)(const(ubyte)[] buffer) pure not
 }
 
 @safe
+immutable(ubyte[]) decode(string hex)
+in {
+    assert(hex.length % 2 == 0);
+}
+body {
+    int to_hex(const(char) c) {
+        if ( (c >= '0') && (c <= '9') ) {
+            return cast(ubyte)(c-'0');
+        }
+        else if ( (c >= 'a') && (c <= 'f') ) {
+            return c-'a'+10;
+        }
+        else if ( (c >= 'A') && (c <= 'F') ) {
+            return cast(ubyte)(c-'A')+10;
+        }
+        assert(0, "Bad char '"~c~"'");
+    }
+    immutable buf_size=hex.length / 2;
+    ubyte[] result=new ubyte[buf_size];
+    uint j;
+    bool event;
+    ubyte part;
+    foreach(c; hex) {
+        if ( c != '_' ) {
+//            writefln("j=%d len=%d", j, result.length);
+            part <<=4;
+            part |=to_hex(c);
+
+            if ( event ) {
+                result[j]=part;
+                part=0;
+                j++;
+            }
+            event=!event;
+        }
+    }
+    return result.idup;
+}
+
+@safe
 interface Hash {
     static immutable(Hash) opCall(const(ubyte)[] buffer) pure nothrow;
     static immutable(Hash) opCall(const(Hash) left, const(Hash) right) pure nothrow;

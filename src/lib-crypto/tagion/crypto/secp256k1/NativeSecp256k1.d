@@ -16,6 +16,8 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  * limitations under the License.
  */
 
+import std.stdio;
+
 private import tagion.crypto.secp256k1.secp256k1;
 
 /**
@@ -66,8 +68,15 @@ class NativeSecp256k1 {
         return *result;
     }
 
+    private static secp256k1_context* _ctx;
+
+    static this() {
+        _ctx = secp256k1_context_create(SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY);
+    }
+
     private static secp256k1_context* getContext() {
-        assert(0, "Must be implemented");
+        return _ctx;
+//        assert(0, "Must be implemented");
     }
 
     // private static final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
@@ -94,7 +103,7 @@ class NativeSecp256k1 {
         auto ctx=getContext();
         int result;
         immutable(ubyte)* sigdata=signature.ptr;
-        auto siglen=data.length;
+        auto siglen=signature.length;
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
