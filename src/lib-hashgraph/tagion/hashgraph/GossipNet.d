@@ -21,14 +21,14 @@ interface GossipNet {
     // add
     void request(HashGraph h, immutable(ubyte[]) event_hash);
     // This function is call by the HashGraph.whatIsNotKnowBy
-    // and is use to collect node to be send to anotehr node
+    // and is use to collect node to be send to another node
     bool collect(Event e, immutable uint depth);
     HashPointer eventHashFromId(immutable uint id);
     HashPointer calcHash(immutable(HashPointer) hash_pointer) inout;
 
     immutable(ubyte[]) evaPackage();
 
-    void buildPackage(HashGraph hashgraph, GBSON bson, Event event);
+    void buildPackage(HashGraph hashgraph, GBSON bson, Event event, immutable uint node_id);
 
     ulong time();
 

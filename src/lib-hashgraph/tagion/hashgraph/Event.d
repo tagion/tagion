@@ -718,6 +718,9 @@ class Event {
         return _event_body.payload;
     }
 
+    ref immutable(EventBody) eventbody() const pure {
+        return *_event_body;
+    }
 //True if Event contains a payload or is the initial Event of its creator
     bool containPayload() const pure nothrow {
 	return payload.length != 0;

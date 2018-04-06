@@ -71,10 +71,19 @@ class HashGraph {
     }
 
 //    Round round; // Current round
-    Node[uint] nodes; // List of participating nodes T
-    uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
-    uint[] unused_node_ids; // Stack of unused node ids
+    private Node[uint] nodes; // List of participating nodes T
+    private uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
+    private uint[] unused_node_ids; // Stack of unused node ids
 
+    Pubkey nodePubkey(immutable uint node_id) pure const nothrow {
+        auto node=node_id in nodes;
+        if ( node ) {
+            return node.pubkey;
+        }
+        else {
+            return null;
+        }
+    }
     // static ulong time;
     // static ulong current_time() {
     //     time+=100;
@@ -437,7 +446,7 @@ class HashGraph {
         }
     }
 
-    alias bool delegate(Event event, immutable uint depth) Collect;
+    alias bool delegate(Event event, immutable uint depth, immutable uint current_node_id) Collect;
     /*
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
@@ -449,7 +458,7 @@ class HashGraph {
         void collect_events(Event e, immutable uint depth=0) {
             if ( e ) {
                 if ( e.node_id != node_id ) {
-                    if ( collect(e, depth) ) {
+                    if ( collect(e, depth, e.node_id) ) {
                         collect_events(e.father, depth+1);
                         collect_events(e.mother, depth+1);
                     }
