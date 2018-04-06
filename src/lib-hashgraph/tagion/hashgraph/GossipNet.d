@@ -32,9 +32,12 @@ interface GossipNet {
 
     ulong time();
 
+
     bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey);
 
-    immutable(ubyte[]) sign(immutable(ubyte[]) message, Privkey privkey);
+    // The private should be added implicite by the GossipNet
+    // The message is a hash of the 'real' message
+    immutable(ubyte[]) sign(immutable(ubyte[]) message);
 
 
 //    HashPointer calcHash(const(Event) e);
