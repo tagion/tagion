@@ -2,8 +2,6 @@ module tagion.hashgraph.GossipNet;
 
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
-import tagion.utils.BSON : R_BSON=BSON, Document;
-alias R_BSON!true GBSON;
 
 @safe interface EventPackage {
 }
@@ -25,20 +23,5 @@ interface GossipNet {
     bool collect(Event e, immutable uint depth);
     HashPointer eventHashFromId(immutable uint id);
     HashPointer calcHash(immutable(HashPointer) hash_pointer) inout;
-
-    immutable(ubyte[]) evaPackage(Pubkey pubkey);
-
-    void buildPackage(HashGraph hashgraph, GBSON bson, Event event);
-
-    ulong time();
-
-
-    bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey);
-
-    // The private should be added implicite by the GossipNet
-    // The message is a hash of the 'real' message
-    immutable(ubyte[]) sign(immutable(ubyte[]) message);
-
-
 //    HashPointer calcHash(const(Event) e);
 }

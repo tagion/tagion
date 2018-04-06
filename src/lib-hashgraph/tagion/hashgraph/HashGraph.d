@@ -28,13 +28,80 @@ class HashGraph {
     private EventCache _event_cache;
     // List of rounds
     private Round _rounds;
-    // private GossipNet _gossip_net;
+    private GossipNet _gossip_net;
 
 
-    this() {
+    this(GossipNet gossip_net) {
         _event_cache=new EventCache(null);
-//        _gossip_net=gossip_net;
+        _gossip_net=gossip_net;
         //_round_counter=new RoundCounter(null);
+    }
+
+    version(none)
+    struct EventPackage{
+        Pubkey pubkey;
+//        Privkey privkey;
+//        Sign sign;
+        immutable(ubyte)[] signature;
+        immutable(EventBody) eventbody;
+        this(
+            Pubkey pubkey,
+            Privkey privkey,
+            Sign sign,
+            const ref EventBody e
+            ) {
+
+            this.pubkey=pubkey;
+            this.signature=sign(pubkey, privkey, eventbody.serialize);
+            this.eventbody=e;
+        }
+        // Create from an BSON stream
+        this(immutable(ubyte)[] data) {
+            auto doc=Document(data);
+            this(doc);
+        }
+
+        @trusted
+        this(Document doc) {
+            foreach(i, ref m; this.tupleof) {
+                alias typeof(m) type;
+                enum name=EventPackage.tupleof[i].stringof;
+                static if ( __traits(compiles, m.toBSON) ) {
+                    static if ( is(type T : immutable(T)) ) {
+                        this.tupleof[i]=T(doc[name].get!(Document));
+                    }
+                }
+                else {
+                    this.tupleof[i]=doc[name].get!type;
+                }
+            }
+        }
+
+        GBSON toBSON(const(Event) use_event=null) {
+            auto bson=new GBSON;
+            foreach(i, m; this.tupleof) {
+                enum name=this.tupleof[i].stringof["this.".length..$];
+                static if ( __traits(compiles, m.toBSON) ) {
+//                    if ( name ==
+                    bson[name]=m.toBSON;
+                }
+                else {
+                    bool flag=true;
+                    static if ( __traits(compiles, m !is null) ) {
+                        flag=m !is null;
+                    }
+                    if (flag) {
+                        bson[name]=m;
+                    }
+                }
+            }
+            return bson;
+        }
+
+        @trusted
+        immutable(ubyte)[] serialize() {
+            return toBSON.expand;
+        }
     }
 
     package static Round find_previous_round(Event event) {
@@ -48,12 +115,12 @@ class HashGraph {
     class Node {
         //DList!(Event) queue;
         immutable uint node_id;
-//        immutable ulong discovery_time;
+        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
-        this(Pubkey pubkey, uint node_id) {
+        this(Pubkey pubkey, uint node_id, ulong time) {
             this.pubkey=pubkey;
             this.node_id=node_id;
-//            this.discovery_time=time;
+            this.discovery_time=time;
         }
         // void updateRound(Round round) {
         //     this.round=round;
@@ -75,11 +142,11 @@ class HashGraph {
     uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
     uint[] unused_node_ids; // Stack of unused node ids
 
-    // static ulong time;
-    // static ulong current_time() {
-    //     time+=100;
-    //     return time;
-    // }
+    static ulong time;
+    static ulong current_time() {
+        time+=100;
+        return time;
+    }
 
     void assign(Event event) {
         _event_cache[event.toCryptoHash]=event;
@@ -92,7 +159,6 @@ class HashGraph {
         return _event_cache[fingerprint];
     }
 
-//    immutable(ubyte[]) eventPackage(Event event,
 
     // Returns the number of active nodes in the network
     uint active_nodes() const pure nothrow {
@@ -149,7 +215,6 @@ class HashGraph {
 
     enum max_package_size=0x1000;
     alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
-    version(none)
     @trusted
     Event receive(
 //        GossipNet gossip_net,
@@ -208,11 +273,10 @@ class HashGraph {
     }
 
     Event registerEvent(
-        GossipNet gossip_net,
+//        GossipNet gossip_net,
         Pubkey pubkey,
-        immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
-        immutable fingerprint=gossip_net.calcHash(eventbody.serialize);
+        immutable fingerprint=_gossip_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;
@@ -233,7 +297,7 @@ class HashGraph {
                     node_id=cast(uint)node_ids.length;
                     node_ids[pubkey]=node_id;
                 }
-                node=new Node(pubkey, node_id);
+                node=new Node(pubkey, node_id, current_time);
                 nodes[node_id]=node;
             }
             else {
@@ -241,14 +305,14 @@ class HashGraph {
                 node=nodes[node_id];
             }
 //            node.round=round;
-            event=new Event(eventbody, signature, gossip_net, node_id);
+            event=new Event(eventbody, _gossip_net, node_id);
 
             // Add the event to the event cache
             assign(event);
 //        event_cache.add(hfunc(eventbody.serialize).digits,
 
             // Makes sure that we have the tree before the graph is checked
-            requestEventTree(gossip_net, event);
+            requestEventTree(event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
         }
@@ -259,7 +323,7 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
+    protected void requestEventTree(Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
@@ -272,10 +336,10 @@ class HashGraph {
                     event.daughter=child;
                 }
             }
-            auto mother=event.mother(this, gossip_net);
-            requestEventTree(gossip_net, mother, event, false);
-            auto father=event.father(this, gossip_net);
-            requestEventTree(gossip_net, father, event, true);
+            auto mother=event.mother(this, _gossip_net);
+            requestEventTree(mother, event, false);
+            auto father=event.father(this, _gossip_net);
+            requestEventTree(father, event, true);
             if ( Event.callbacks && !event.loaded) {
 //                event.getRoundForMother;
                 event.loaded=true;
@@ -437,19 +501,20 @@ class HashGraph {
         }
     }
 
-    alias bool delegate(Event event, immutable uint depth) Collect;
-    /*
+    enum default_depth=6;
+    /**
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
      */
     void whatIsNotKnownBy(
-        Collect collect,
+//        GossipNet gossipnet,
         immutable uint node_id,
-        immutable uint home_node_id=0) {
+        immutable uint home_node_id=0,
+        immutable uint max_depth=default_depth) {
         void collect_events(Event e, immutable uint depth=0) {
             if ( e ) {
                 if ( e.node_id != node_id ) {
-                    if ( collect(e, depth) ) {
+                    if ( _gossip_net.collect(e, depth) ) {
                         collect_events(e.father, depth+1);
                         collect_events(e.mother, depth+1);
                     }
