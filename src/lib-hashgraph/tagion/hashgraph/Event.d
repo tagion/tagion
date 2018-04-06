@@ -1,7 +1,7 @@
 module tagion.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
-import tagion.utils.BSON : R_BSON=BSON, Document;
+import tagion.utils.BSON : Document;
 //import tagion.crypto.Hash;
 import tagion.hashgraph.GossipNet;
 //import tagion.hashgraph.HashGraph : HashGraph;
@@ -11,7 +11,7 @@ import std.bitmanip;
 import std.stdio;
 import std.format;
 
-alias R_BSON!true GBSON;
+//alias R_BSON!true GBSON;
 
 // import (
 // 	"bytes"
@@ -162,7 +162,7 @@ struct EventBody {
 
     @trusted
     immutable(ubyte)[] serialize(const(Event) use_event=null) const {
-        return toBSON(use_event).expand;
+        return toBSON(use_event).serialize;
     }
 
 }
@@ -293,6 +293,7 @@ class Event {
     // Hash function
 //    static FHash fhash;
     // WireEvent wire_event;
+    immutable(ubyte[]) signature;
     private immutable(EventBody)* _event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
     private HashPointer _hash;
@@ -535,10 +536,11 @@ class Event {
     immutable uint node_id;
 //    uint marker;
     @trusted
-    this(ref immutable(EventBody) ebody, GossipNet gossip_net, uint node_id=0) {
+    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  GossipNet gossip_net, uint node_id=0) {
         _event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
+        this.signature=signature;
         //event_body_data = event_body.serialize;
 //        if ( _hash ) {
         //_hash=fhash(event_body_data).digits;
@@ -757,7 +759,7 @@ class Event {
 //         ref immutable(EventBody) event_body ) {
 //         auto bson=event_body.toBSON;
 //         bson[pubkey.stringof]=pubkey;
-//         return gossip_net.calcHash(bson.expand);
+//         return gossip_net.calcHash(bson.serialize);
 //     }
 
     immutable(HashPointer) toCryptoHash(
@@ -775,16 +777,6 @@ class Event {
         return _hash;
     }
 
-
-    // immutable(ubyte[]) toData() const pure nothrow
-    // in {
-    //     if ( event_body ) {
-    //         assert(event_body_data, "Event body is not expanded");
-    //     }
-    // }
-    // body {
-    //     return event_body_data;
-    // }
 
     version(none)
     invariant {
