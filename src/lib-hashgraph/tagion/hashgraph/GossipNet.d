@@ -26,7 +26,7 @@ interface GossipNet {
     HashPointer eventHashFromId(immutable uint id);
     HashPointer calcHash(immutable(HashPointer) hash_pointer) inout;
 
-    immutable(ubyte[]) evaPackage(Pubkey pubkey);
+    immutable(ubyte[]) evaPackage();
 
     void buildPackage(HashGraph hashgraph, GBSON bson, Event event);
 
