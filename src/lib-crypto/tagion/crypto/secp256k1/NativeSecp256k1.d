@@ -31,16 +31,22 @@ private import tagion.crypto.secp256k1.secp256k1;
  * or point the JVM to the folder containing it with -Djava.library.path
  * </p>
  */
+@safe
 class NativeSecp256k1 {
     struct Context {
         private secp256k1_context* _ctx;
+        @trusted
         this(SECP256K1 flag) {
             _ctx=secp256k1_context_create(cast(uint)flag);
         }
         // Clones the context
+
+        @trusted
         this(ref const(Context) context) {
             _ctx=secp256k1_context_clone(context._ctx);
         }
+
+        @trusted
         ~this() {
             secp256k1_context_destroy(_ctx);
         }
@@ -70,6 +76,7 @@ class NativeSecp256k1 {
 
     private static secp256k1_context* _ctx;
 
+    @trusted
     static this() {
         _ctx = secp256k1_context_create(SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY);
     }
@@ -93,6 +100,7 @@ class NativeSecp256k1 {
      * @param signature The signature
      * @param pub The public key which did the signing
      */
+    @trusted
     static bool verify(immutable(ubyte[]) data, immutable(ubyte[]) signature, immutable(ubyte[]) pub)
         in {
             assert(data.length == 32);
@@ -130,6 +138,7 @@ class NativeSecp256k1 {
      * @param sig byte array of signature
      */
     enum SIGNATURE_SIZE=72;
+    @trusted
     public static immutable(ubyte[]) sign(immutable(ubyte[]) data, immutable(ubyte[]) sec)
         in {
             assert(data.length == 32);
@@ -162,13 +171,14 @@ class NativeSecp256k1 {
      *
      * @param seckey ECDSA Secret key, 32 bytes
      */
-    static bool secKeyVerify(immutable(ubyte[]) seckey)
+    @trusted
+    static bool secKeyVerify(const(ubyte[]) seckey)
         in {
             assert(seckey.length == 32);
         }
     body {
         auto ctx=getContext();
-        immutable(ubyte)* sec=seckey.ptr;
+        const(ubyte)* sec=seckey.ptr;
         return secp256k1_ec_seckey_verify(ctx, sec) == 1;
     }
 
@@ -183,6 +193,7 @@ class NativeSecp256k1 {
      */
     //TODO add a 'compressed' arg
     enum PUBKEY_SIZE=65;
+    @trusted
     static immutable(ubyte[]) computePubkey(immutable(ubyte[]) seckey)
         in {
             assert(seckey.length == 32);
@@ -211,13 +222,14 @@ class NativeSecp256k1 {
      * libsecp256k1 Cleanup - This destroys the secp256k1 context object
      * This should be called at the end of the program for proper cleanup of the context.
      */
+    @trusted
     ~this() {
-        secp256k1_context_destroy(getContext());
+        secp256k1_context_destroy(_ctx);
     }
 
-
+    @trusted
     static secp256k1_context* cloneContext() {
-        return secp256k1_context_clone(getContext());
+        return secp256k1_context_clone(_ctx);
     }
 
     /**
@@ -226,6 +238,7 @@ class NativeSecp256k1 {
      * @param tweak some bytes to tweak with
      * @param seckey 32-byte seckey
      */
+    @trusted
     static immutable(ubyte[]) privKeyTweakMul(immutable(ubyte[]) privkey, immutable(ubyte[]) tweak)
         in {
             assert(privkey.length == 32);
@@ -249,6 +262,7 @@ class NativeSecp256k1 {
      * @param tweak some bytes to tweak with
      * @param seckey 32-byte seckey
      */
+    @trusted
     static immutable(ubyte[]) privKeyTweakAdd(immutable(ubyte[]) privkey, immutable(ubyte[]) tweak)
         in {
             assert(privkey.length == 32);
@@ -271,6 +285,7 @@ class NativeSecp256k1 {
      * @param tweak some bytes to tweak with
      * @param pubkey 32-byte seckey
      */
+    @trusted
     static immutable(ubyte[]) pubKeyTweakAdd(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
         in {
             assert(pubkey.length == 33 || pubkey.length == 65);
@@ -308,7 +323,8 @@ class NativeSecp256k1 {
      * @param tweak some bytes to tweak with
      * @param pubkey 32-byte seckey
      */
-    public static immutable(ubyte[]) pubKeyTweakMul(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
+    @trusted
+    static immutable(ubyte[]) pubKeyTweakMul(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
         in {
             assert(pubkey.length == 33 || pubkey.length == 65);
         }
@@ -344,7 +360,8 @@ class NativeSecp256k1 {
      * @param seckey byte array of secret key used in exponentiaion
      * @param pubkey byte array of public key used in exponentiaion
      */
-    public static immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(ubyte[]) pubkey)
+    @trusted
+    static immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(ubyte[]) pubkey)
         in {
             assert(seckey.length <= 32);
             assert(pubkey.length <= 65);
@@ -374,7 +391,8 @@ class NativeSecp256k1 {
      *
      * @param seed 32-byte random seed
      */
-    public static bool randomize(immutable(ubyte[]) seed)
+    @trusted
+    static bool randomize(immutable(ubyte[]) seed)
         in {
             assert(seed.length == 32 || seed is null);
         }
@@ -384,8 +402,10 @@ class NativeSecp256k1 {
         return secp256k1_context_randomize(ctx, _seed) == 1;
     }
 
+
 }
 
+@safe
 unittest {
     import tagion.crypto.Hash : toHexString, decode;
 /*

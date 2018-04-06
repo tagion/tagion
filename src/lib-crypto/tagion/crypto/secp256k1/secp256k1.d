@@ -4,6 +4,7 @@ package extern(C) struct secp256k1_context;
 
 package extern(C) struct secp256k1_callback;
 
+
 package extern (C) {
 
 /* These rules specify the order of arguments in API calls:
