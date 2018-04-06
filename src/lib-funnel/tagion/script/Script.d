@@ -371,8 +371,8 @@ class ScriptContext {
         assert(pop_a == BigInt(num));
     }
     @trusted
-    immutable(ubyte)[] serialize(immutable uint index) {
-        return bsons[index].serialize;
+    immutable(ubyte)[] expand(immutable uint index) {
+        return bsons[index].expand;
     }
 
 }
@@ -1042,7 +1042,7 @@ class ScriptExpandBSON : ScriptElement {
         check(s, sc);
         auto a=sc.data_pop;
         if ( a.type == Value.Type.BSON ) {
-            sc.data_push(Document(sc.serialize(a.bson_index)));
+            sc.data_push(Document(sc.expand(a.bson_index)));
         }
         else {
             auto error=new ScriptError(name~" expect an "~to!string(Value.Type.BSON)~
