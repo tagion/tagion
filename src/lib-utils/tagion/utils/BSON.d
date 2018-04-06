@@ -2387,7 +2387,7 @@ class BSON(bool key_sort_flag=true) {
             data~=zero;
         }
         else static if (is(T:BSON)) {
-            data~=x.serialize;
+            data~=x.expand;
         }
         else {
             static assert(0, "Unsupported type "~T.stringof);
@@ -2419,15 +2419,15 @@ class BSON(bool key_sort_flag=true) {
                 data~=zero;
                 break;
             case DOCUMENT:
-                data~=value.document.serialize;
+                data~=value.document.expand;
                 break;
             case ARRAY:
                 if ( (subtype & BinarySubType.userDefined) == 0 ) {
-                    data~=value.document.serialize;
+                    data~=value.document.expand;
                 }
                 else {
                     immutable(ubyte)[] local;
-                    void local_array_serialize(T)(Type type) {
+                    void local_array_expand(T)(Type type) {
                         foreach(i,a;get!T) {
                             local~=subtype & 0x7F;
                             local~=tango.text.convert.Integer.toString(i);
@@ -2438,31 +2438,31 @@ class BSON(bool key_sort_flag=true) {
                     }
                     with(BinarySubType) switch(subtype) {
                         case BOOLEAN_array:
-                            local_array_serialize!(const(bool)[])(_type);
+                            local_array_expand!(const(bool)[])(_type);
                             break;
                         case INT32_array:
-                            local_array_serialize!(const(int)[])(_type);
+                            local_array_expand!(const(int)[])(_type);
                             break;
                         case UINT32_array:
-                            local_array_serialize!(const(uint)[])(_type);
+                            local_array_expand!(const(uint)[])(_type);
                             break;
                         case INT64_array:
-                            local_array_serialize!(const(long)[])(_type);
+                            local_array_expand!(const(long)[])(_type);
                             break;
                         case UINT64_array:
-                            local_array_serialize!(const(ulong)[])(_type);
+                            local_array_expand!(const(ulong)[])(_type);
                             break;
                         case DOUBLE_array:
-                            local_array_serialize!(const(double)[])(_type);
+                            local_array_expand!(const(double)[])(_type);
                             break;
                         case FLOAT_array:
-                            local_array_serialize!(const(float)[])(_type);
+                            local_array_expand!(const(float)[])(_type);
                             break;
                         case STRING_array:
-                            local_array_serialize!(string[])(_type);
+                            local_array_expand!(string[])(_type);
                             break;
                         case DOCUMENT_array:
-                            local_array_serialize!(BSON[])(_type);
+                            local_array_expand!(BSON[])(_type);
                             break;
                         default:
                             throw new BSONException("Subtype "~to!string(subtype)~" not supported by "~to!string(_type));
@@ -2500,7 +2500,7 @@ class BSON(bool key_sort_flag=true) {
             case DBPOINTER:
                 break;
             case JS_CODE_W_SCOPE:
-                immutable(ubyte)[] local=serialize();
+                immutable(ubyte)[] local=expand();
                 // Size of block
                 data~=nativeToLittleEndian(cast(uint)(local.length+uint.sizeof+value.text.length+1));
                 data~=nativeToLittleEndian(cast(uint)(value.text.length+1));
@@ -2525,8 +2525,8 @@ class BSON(bool key_sort_flag=true) {
             }
     }
 
-    immutable(ubyte)[] serialize() {
-        immutable(ubyte)[] local_serialize() {
+    immutable(ubyte)[] expand() {
+        immutable(ubyte)[] local_expand() {
             immutable(ubyte)[] data;
             foreach(e; iterator!key_sort_flag) {
                 data~=e._type;
@@ -2551,7 +2551,7 @@ class BSON(bool key_sort_flag=true) {
                         //dgelm(data);
                         break;
                     case DOCUMENT:
-                        data~=e.value.document.serialize;
+                        data~=e.value.document.expand;
                         break;
                     case ARRAY:
                         e.appendData(data);
@@ -2581,7 +2581,7 @@ class BSON(bool key_sort_flag=true) {
                     case DBPOINTER:
                         break;
                     case JS_CODE_W_SCOPE:
-                        immutable(ubyte)[] local=e.serialize();
+                        immutable(ubyte)[] local=e.expand();
                         // Size of block
                         data~=nativeToLittleEndian(cast(uint)(local.length+uint.sizeof+e.value.text.length+1));
                         data~=nativeToLittleEndian(cast(uint)(e.value.text.length+1));
@@ -2612,7 +2612,7 @@ class BSON(bool key_sort_flag=true) {
             return data;
         }
         immutable(ubyte)[] data;
-        scope immutable(ubyte)[] local=local_serialize();
+        scope immutable(ubyte)[] local=local_expand();
         data~=nativeToLittleEndian(cast(uint)(local.length+uint.sizeof+zero.sizeof));
         data~=local;
         data~=zero;
@@ -2647,7 +2647,7 @@ class BSON(bool key_sort_flag=true) {
         }
 
         immutable(ubyte)[] data1;
-        data1=bson1.serialize();
+        data1=bson1.expand();
 
         {
             auto doc=Document(data1);
@@ -2667,7 +2667,7 @@ class BSON(bool key_sort_flag=true) {
         bson2["x"] = 10;
         bson1["obj"]=bson2;
 
-        data1=bson1.serialize();
+        data1=bson1.expand();
         {
             auto doc1b=Document(data1);
             assert(doc1b.hasElement("obj"));
@@ -2688,7 +2688,7 @@ class BSON(bool key_sort_flag=true) {
             immutable bools=[true, false, true];
             bson=new BSON;
             bson["bools"]=bools;
-            auto doc=Document(bson.serialize);
+            auto doc=Document(bson.expand);
             assert(doc.hasElement("bools"));
             auto subarray=doc["bools"].get!Document;
 
@@ -2701,7 +2701,7 @@ class BSON(bool key_sort_flag=true) {
             bson=new BSON;
             bson["int32s"]=int32s;
 
-            auto doc=Document(bson.serialize);
+            auto doc=Document(bson.expand);
             assert(doc.hasElement("int32s"));
             auto subarray=doc["int32s"].get!Document;
 
@@ -2715,7 +2715,7 @@ class BSON(bool key_sort_flag=true) {
             bson=new BSON;
             bson["int64s"]=int64s;
 
-            auto doc=Document(bson.serialize);
+            auto doc=Document(bson.expand);
             assert(doc.hasElement("int64s"));
             auto subarray=doc["int64s"].get!Document;
 
@@ -2728,7 +2728,7 @@ class BSON(bool key_sort_flag=true) {
             bson=new BSON;
             bson["doubles"]=doubles;
 
-            auto doc=Document(bson.serialize);
+            auto doc=Document(bson.expand);
             assert(doc.hasElement("doubles"));
             auto subarray=doc["doubles"].get!Document;
 
@@ -2741,7 +2741,7 @@ class BSON(bool key_sort_flag=true) {
             bson=new BSON;
             bson["strings"]=strings;
 
-            auto doc=Document(bson.serialize);
+            auto doc=Document(bson.expand);
             assert(doc.hasElement("strings"));
             auto subarray=doc["strings"].get!Document;
 
@@ -2764,9 +2764,9 @@ class BSON(bool key_sort_flag=true) {
 
             bson["bsons"]=bsons;
 
-            auto data=bson.serialize;
+            auto data=bson.expand;
 
-            auto doc=Document(bson.serialize);
+            auto doc=Document(bson.expand);
 
             assert(doc.hasElement("bsons"));
 
@@ -2788,7 +2788,7 @@ class BSON(bool key_sort_flag=true) {
             { // Typedarray int32
                 immutable(int[]) int32s= [ -7, 9, -13];
                 bson["int32s"]=int32s;
-                auto doc = Document(bson.serialize);
+                auto doc = Document(bson.expand);
 
 
                 assert(doc.hasElement("int32s"));
@@ -2801,7 +2801,7 @@ class BSON(bool key_sort_flag=true) {
             { // Typedarray uint32
                 immutable(uint[]) uint32s= [ 7, 9, 13];
                 bson["uint32s"]=uint32s;
-                auto doc = Document(bson.serialize);
+                auto doc = Document(bson.expand);
 
                 assert(doc.hasElement("uint32s"));
                 auto element=doc["uint32s"];
@@ -2813,7 +2813,7 @@ class BSON(bool key_sort_flag=true) {
             { // Typedarray int64
                 immutable(long[]) int64s= [ -7_000_000_000_000, 9_000_000_000_000, -13_000_000_000_000];
                 bson["int64s"]=int64s;
-                auto doc = Document(bson.serialize);
+                auto doc = Document(bson.expand);
 
                 assert(doc.hasElement("int64s"));
                 auto element=doc["int64s"];
@@ -2826,7 +2826,7 @@ class BSON(bool key_sort_flag=true) {
             { // Typedarray uint64
                 immutable(long[]) uint64s= [ -7_000_000_000_000, 9_000_000_000_000, -13_000_000_000_000];
                 bson["uint64s"]=uint64s;
-                auto doc = Document(bson.serialize);
+                auto doc = Document(bson.expand);
 
                 assert(doc.hasElement("uint64s"));
                 auto element=doc["uint64s"];
@@ -2838,7 +2838,7 @@ class BSON(bool key_sort_flag=true) {
             { // Typedarray number64
                 immutable(double[]) number64s= [ -7.7e9, 9.9e-4, -13e200];
                 bson["number64s"]=number64s;
-                auto doc = Document(bson.serialize);
+                auto doc = Document(bson.expand);
 
                 assert(doc.hasElement("number64s"));
                 auto element=doc["number64s"];
@@ -2851,7 +2851,7 @@ class BSON(bool key_sort_flag=true) {
             { // Typedarray number32
                 immutable(float[]) number32s= [ -7.7e9, 9.9e-4, -13e20];
                 bson["number32s"]=number32s;
-                auto doc = Document(bson.serialize);
+                auto doc = Document(bson.expand);
 
                 assert(doc.hasElement("number32s"));
                 auto element=doc["number32s"];
@@ -2987,7 +2987,7 @@ class BSON(bool key_sort_flag=true) {
             bson[some_keys[2]]=2;
             auto keys=bson.keys;
             // writefln("keys=%s", keys);
-            auto data=bson.serialize;
+            auto data=bson.expand;
             auto doc=Document(data);
             // writefln("doc.keys=%s", doc.keys);
             // Check that doc.keys are sorted
@@ -3002,7 +3002,7 @@ class BSON(bool key_sort_flag=true) {
             }
             auto bson=new BSON!true;
             bson["array"]=array;
-            auto data=bson.serialize;
+            auto data=bson.expand;
             auto doc=Document(data);
             auto doc_array=doc["array"].get!Document;
             foreach(i,k;doc_array.keys) {
