@@ -160,7 +160,7 @@ class ScriptBuilder {
             // Build the BSON stream
             auto bson_stream=new GBSON();
             bson_stream["code"]=codes;
-            auto stream=bson_stream.expand;
+            auto stream=bson_stream.serialize;
 
 
             //
@@ -241,7 +241,7 @@ class ScriptBuilder {
             // Build the BSON stream
             auto bson_stream=new GBSON();
             bson_stream["code"]=codes;
-            auto stream=bson_stream.expand;
+            auto stream=bson_stream.serialize;
 
 
             //
@@ -309,7 +309,7 @@ class ScriptBuilder {
         // Convert to BSON object
         auto bson=src.toBSON;
         // Expand to BSON stream
-        auto data=bson.expand;
+        auto data=bson.serialize;
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
@@ -341,7 +341,7 @@ class ScriptBuilder {
         // Convert to BSON object
         auto bson=src.toBSON;
         // Expand to BSON stream
-        auto data=bson.expand;
+        auto data=bson.serialize;
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
@@ -374,7 +374,7 @@ class ScriptBuilder {
         // Convert to BSON object
         auto bson=src.toBSON;
         // Expand to BSON stream
-        auto data=bson.expand;
+        auto data=bson.serialize;
         Script script;
         auto builder=new ScriptBuilder;
         auto tokens=builder.build(script, data);
@@ -1283,7 +1283,7 @@ private:
         // Convert to BSON object
         auto bson=src.toBSON;
         // Expand to BSON stream
-        auto data=bson.expand;
+        auto data=bson.serialize;
         return build(script, data);
     }
     immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
