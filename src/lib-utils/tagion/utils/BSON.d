@@ -3028,30 +3028,22 @@ class BSON(bool key_sort_flag=true) {
             this.owner=owner;
             static if ( key_sort_flag ) {
                 bool less_than(string a, string b) {
-                    bool is_number(string s) {
-                        bool result;
-                        if ( s.length < 9 ) {
-                            // only numbers less than 1e9
-                            result=true;
-                            foreach(c; s) {
-                                if ( (c<'0') || (c>'9') ) {
-                                    result=false;
-                                    break;
-//                                    return -1; // Break the foreach
-                                }
+                    import std.math : isNaN;
+                    try {
+                        auto a_value=to!double(a);
+                        if ( !isNaN(a_value) ) {
+                            auto b_value=to!double(b);
+                            if ( !isNaN(b_value) ) {
+                                return (a_value < b_value);
                             }
                         }
-                        return result;
                     }
-                    if ( is_number(a) && is_number(b) ) {
-                        return a.to!uint < b.to!uint;
+                    catch (ConvException e) {
+                        /** Ignore conversion a or be is not a number */
                     }
-                    else {
-                        return a < b;
-                    }
+                    return a < b;
                 }
                 sorted_keys=owner.keys;
-//                sort!("a < b", SwapStrategy.stable)(sorted_keys);
                 sort!(less_than, SwapStrategy.stable)(sorted_keys);
                 current_keys=sorted_keys;
             }
