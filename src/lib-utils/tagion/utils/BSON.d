@@ -89,6 +89,7 @@ enum BinarySubType : ubyte
 /**
  * BSON document representation, which is called "BSONObj" in C++.
  */
+@safe
 struct Document
 {
   private:
@@ -96,7 +97,6 @@ struct Document
 
 
   public:
-    @safe
     nothrow this(immutable ubyte[] data)
     {
         data_ = data;
@@ -223,22 +223,17 @@ struct Document
     }
 
 
-    bool opEquals(ref const Document other) const
-    {
-        return true;
-    }
+    // bool opEquals(ref const Document other) const
+    // {
+    //     return true;
+    // }
 
-
-    version(none)
-    int opCmp(ref const Document other) const
-    {
-        return 0;
-    }
 
     immutable(ubyte)[] data() const pure nothrow {
         return data_;
     }
-    @safe
+
+
     string toString() const
     {
         if (empty)
@@ -3032,8 +3027,32 @@ class BSON(bool key_sort_flag=true) {
         this(BSON owner) {
             this.owner=owner;
             static if ( key_sort_flag ) {
+                bool less_than(string a, string b) {
+                    bool is_number(string s) {
+                        bool result;
+                        if ( s.length < 9 ) {
+                            // only numbers less than 1e9
+                            result=true;
+                            foreach(c; s) {
+                                if ( (c<'0') || (c>'9') ) {
+                                    result=false;
+                                    break;
+//                                    return -1; // Break the foreach
+                                }
+                            }
+                        }
+                        return result;
+                    }
+                    if ( is_number(a) && is_number(b) ) {
+                        return a.to!uint < b.to!uint;
+                    }
+                    else {
+                        return a < b;
+                    }
+                }
                 sorted_keys=owner.keys;
-                sort!("a < b", SwapStrategy.stable)(sorted_keys);
+//                sort!("a < b", SwapStrategy.stable)(sorted_keys);
+                sort!(less_than, SwapStrategy.stable)(sorted_keys);
                 current_keys=sorted_keys;
             }
             else {
