@@ -107,7 +107,7 @@ class ScriptInterpreter {
     }
     @trusted
     static immutable(Token)[] BSON2Tokens(BSON bson) {
-        return BSON2Tokens(bson.serialize);
+        return BSON2Tokens(bson.expand);
     }
     @safe
     static immutable(Token)[] BSON2Tokens(immutable(ubyte[]) data) {
@@ -469,7 +469,7 @@ class ScriptInterpreter {
         {
             auto preter=new ScriptInterpreter(source, true);
             auto bson=preter.toBSON;
-            auto data=bson.serialize;
+            auto data=bson.expand;
             auto doc=Document(data);
             // auto keys=doc.keys;
             // writefln("doc.keys=%s", doc.keys);
