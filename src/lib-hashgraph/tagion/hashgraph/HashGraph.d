@@ -45,6 +45,7 @@ class HashGraph {
         return e.round;
     }
 
+    @safe
     class Node {
         //DList!(Event) queue;
         immutable uint node_id;
@@ -64,17 +65,73 @@ class HashGraph {
 //        uint seeing; // See a witness
         bool voted;
         // uint voting;
-        bool fork; // Fork detected in the hashgraph
+        //bool fork; // Fork detected in the hashgraph
         Event event; // Latest event
         // private:
         //     Round round;
+
+
+        int opApply(scope int delegate(const(Event) e) @safe dg) const {
+            int iterate(const(Event) e) @safe {
+                int result;
+                if ( e ) {
+                    result=dg(e);
+                    if ( result == 0 ) {
+                        iterate(e.mother);
+                    }
+                }
+                return result;
+
+            }
+            return iterate(event);
+        }
+
+
     }
 
 //    Round round; // Current round
-    Node[uint] nodes; // List of participating nodes T
-    uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
-    uint[] unused_node_ids; // Stack of unused node ids
+    private Node[uint] nodes; // List of participating nodes T
+    private uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
+    private uint[] unused_node_ids; // Stack of unused node ids
 
+
+    NodeIterator!(const(Node)) nodeiterator() {
+        return NodeIterator!(const(Node))(this);
+    }
+
+    // protected NodeIterator!false nodeiterator_() {
+    //     return NodeIterator!false(this);
+    // }
+
+    @safe
+    private struct NodeIterator(N) {
+        static assert(is(N : const(Node)), "N must be a Node type");
+        private HashGraph _owner;
+        this(HashGraph owner) {
+            _owner = owner;
+        }
+
+        int opApply(scope int delegate(ref N node) @safe dg) {
+            int result;
+            foreach(ref N n; _owner.nodes) {
+                result=dg(n);
+                if ( result ) {
+                    break;
+                }
+            }
+            return result;
+        }
+    }
+
+    Pubkey nodePubkey(immutable uint node_id) pure const nothrow {
+        auto node=node_id in nodes;
+        if ( node ) {
+            return node.pubkey;
+        }
+        else {
+            return null;
+        }
+    }
     // static ulong time;
     // static ulong current_time() {
     //     time+=100;
@@ -103,6 +160,9 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
+    const(Node) getNode(immutable uint node_id) {
+        return nodes[node_id];
+    }
     // uint threshold() const pure nothrow {
     //     return (active_nodes*2)/3;
     // }
@@ -437,7 +497,7 @@ class HashGraph {
         }
     }
 
-    alias bool delegate(Event event, immutable uint depth) Collect;
+    alias bool delegate(Event event, immutable uint depth, immutable uint current_node_id) Collect;
     /*
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
@@ -449,7 +509,7 @@ class HashGraph {
         void collect_events(Event e, immutable uint depth=0) {
             if ( e ) {
                 if ( e.node_id != node_id ) {
-                    if ( collect(e, depth) ) {
+                    if ( collect(e, depth, e.node_id) ) {
                         collect_events(e.father, depth+1);
                         collect_events(e.mother, depth+1);
                     }
