@@ -1,7 +1,7 @@
 module tagion.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
-import tagion.utils.BSON : Document;
+import tagion.utils.BSON : R_BSON=BSON, Document;
 //import tagion.crypto.Hash;
 import tagion.hashgraph.GossipNet;
 //import tagion.hashgraph.HashGraph : HashGraph;
@@ -11,8 +11,18 @@ import std.bitmanip;
 import std.stdio;
 import std.format;
 
-import tagion.Base : this_dot;
+alias R_BSON!true GBSON;
 
+// import (
+// 	"bytes"
+// 	"crypto/ecdsa"
+// 	"encoding/json"
+// 	"fmt"
+// 	"math/big"
+// 	"time"
+
+// 	"github.com/babbleio/babble/crypto"
+// )
 enum ConcensusFailCode {
     NON,
     NO_MOTHER,
@@ -82,7 +92,7 @@ struct EventBody {
     this(Document doc, GossipNet gossipnet=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
-            enum name=this.tupleof[i].stringof[this_dot.length..$];
+            enum name=this.tupleof[i].stringof["this.".length..$];
             if ( doc.hasElement(name) ) {
                 static if ( name == mother.stringof || name == father.stringof ) {
                     if ( gossipnet ) {
@@ -125,7 +135,7 @@ struct EventBody {
     GBSON toBSON(const(Event) use_event=null) const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
-            enum name=this.tupleof[i].stringof[this_dot.length..$];
+            enum name=this.tupleof[i].stringof["this.".length..$];
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
@@ -151,8 +161,8 @@ struct EventBody {
     }
 
     @trusted
-    immutable(ubyte[]) serialize(const(Event) use_event=null) const {
-        return toBSON(use_event).serialize;
+    immutable(ubyte)[] serialize(const(Event) use_event=null) const {
+        return toBSON(use_event).expand;
     }
 
 }
@@ -283,7 +293,6 @@ class Event {
     // Hash function
 //    static FHash fhash;
     // WireEvent wire_event;
-    immutable(ubyte[]) signature;
     private immutable(EventBody)* _event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
     private HashPointer _hash;
@@ -526,11 +535,10 @@ class Event {
     immutable uint node_id;
 //    uint marker;
     @trusted
-    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  GossipNet gossip_net, uint node_id=0) {
+    this(ref immutable(EventBody) ebody, GossipNet gossip_net, uint node_id=0) {
         _event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
-        this.signature=signature;
         //event_body_data = event_body.serialize;
 //        if ( _hash ) {
         //_hash=fhash(event_body_data).digits;
@@ -708,9 +716,6 @@ class Event {
         return _event_body.payload;
     }
 
-    ref immutable(EventBody) eventbody() const pure {
-        return *_event_body;
-    }
 //True if Event contains a payload or is the initial Event of its creator
     bool containPayload() const pure nothrow {
 	return payload.length != 0;
@@ -752,7 +757,7 @@ class Event {
 //         ref immutable(EventBody) event_body ) {
 //         auto bson=event_body.toBSON;
 //         bson[pubkey.stringof]=pubkey;
-//         return gossip_net.calcHash(bson.serialize);
+//         return gossip_net.calcHash(bson.expand);
 //     }
 
     immutable(HashPointer) toCryptoHash(
@@ -770,6 +775,16 @@ class Event {
         return _hash;
     }
 
+
+    // immutable(ubyte[]) toData() const pure nothrow
+    // in {
+    //     if ( event_body ) {
+    //         assert(event_body_data, "Event body is not expanded");
+    //     }
+    // }
+    // body {
+    //     return event_body_data;
+    // }
 
     version(none)
     invariant {
