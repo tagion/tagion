@@ -285,6 +285,7 @@ unittest
 /**
  * BSON element representation
  */
+@safe
 struct Element
 {
   private:
@@ -485,6 +486,7 @@ struct Element
 
     }
     //Binary buffer
+    @trusted
     immutable(ubyte[]) binary_buffer() const  {
         auto v=value();
         immutable len=*cast(int*)(v.ptr);
@@ -602,6 +604,7 @@ struct Element
         //     return value.idup;
         // }
 
+        @trusted
         T get(T)() inout if (!is(T == string) && is(T == immutable(U)[], U)) {
             static if ( is(T == immutable(U)[], U) ) {
                 if ( type == Type.BINARY)  {
@@ -1399,6 +1402,7 @@ unittest
 /**
  * Exception type used by mongo.bson module
  */
+@safe
 class BSONException : Exception
 {
     this(string msg)
@@ -1708,6 +1712,7 @@ unittest
 }
 
 
+@safe
 class BSON(bool key_sort_flag=true) {
     package Type _type;
     package BinarySubType subtype;
@@ -1773,9 +1778,11 @@ class BSON(bool key_sort_flag=true) {
         _type=Type.DOCUMENT;
     }
     @property
+    @trusted
     size_t id() const pure nothrow {
         return cast(size_t)(cast(void*)this);
     }
+    @trusted
     auto get(T)() {
         static if (is(T==double)) {
             assert(_type == Type.DOUBLE);
@@ -2156,7 +2163,6 @@ class BSON(bool key_sort_flag=true) {
             }
         }
         else {
-            writefln("Check %s", is(T:const(ubyte)[]));
             static assert(0, "opIndexAssign does not support type "~T.stringof~" use append member function instead");
         }
 /*
@@ -2192,6 +2198,7 @@ class BSON(bool key_sort_flag=true) {
         return _type;
     }
 
+    @trusted
     immutable(char)[] toInfo() const {
         immutable(char)[] result;
         with(Type) final switch(_type) {
@@ -2393,6 +2400,7 @@ class BSON(bool key_sort_flag=true) {
     enum zero=cast(ubyte)0;
     enum one=cast(ubyte)1;
 
+    @trusted
     void appendData(ref immutable(ubyte)[] data) {
         with(Type) final switch(_type) {
             case NULL:
@@ -2874,6 +2882,7 @@ class BSON(bool key_sort_flag=true) {
         return false;
     }
 
+
     bool remove(string key) {
         auto iter=iterator;
         bool result;
@@ -2881,7 +2890,7 @@ class BSON(bool key_sort_flag=true) {
         for(; !iter.empty; iter.popFront) {
             if ( iter.front.key == key ) {
                 // If the key is found then remove it from the change
-                if ( members == iter.front ) {
+                if ( members is iter.front ) {
                     // Remove the root member
                     members=members.members;
                 }
@@ -2931,6 +2940,7 @@ class BSON(bool key_sort_flag=true) {
         return Iterator!F(this);
     }
 
+    @trusted
     const(ubyte)[] subtype_buffer() {
         with(BinarySubType) switch(subtype) {
             case generic:
@@ -3007,14 +3017,15 @@ class BSON(bool key_sort_flag=true) {
 
     }
 
-    int opApply(scope int delegate(BSON bson) dg) {
+    int opApply(scope int delegate(BSON bson) @safe dg) {
         return iterator.opApply(dg);
     }
 
-    int opApply(scope int delegate(in string key, BSON bson) dg) {
+    int opApply(scope int delegate(in string key, BSON bson) @safe dg) {
         return iterator.opApply(dg);
     }
 
+    @safe
     struct Iterator(bool key_sort_flag) {
         private BSON owner;
         static if (key_sort_flag) {
@@ -3083,7 +3094,7 @@ class BSON(bool key_sort_flag=true) {
                 return current is null;
             }
         }
-        final int opApply(scope int delegate(BSON bson) dg) {
+        final int opApply(scope int delegate(BSON bson) @safe dg) {
             int result;
             for(; !empty; popFront) {
                 if ( (result=dg(front))!=0 ) {
@@ -3092,7 +3103,7 @@ class BSON(bool key_sort_flag=true) {
             }
             return result;
         }
-        final int opApply(scope int delegate(in string key, BSON bson) dg) {
+        final int opApply(scope int delegate(in string key, BSON bson) @safe dg) {
             int result;
             for(; !empty; popFront) {
                 if ( (result=dg(front.key, front))!=0 ) {
