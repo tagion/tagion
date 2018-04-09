@@ -11,18 +11,8 @@ import std.bitmanip;
 import std.stdio;
 import std.format;
 
-//alias R_BSON!true GBSON;
+import tagion.Base : this_dot;
 
-// import (
-// 	"bytes"
-// 	"crypto/ecdsa"
-// 	"encoding/json"
-// 	"fmt"
-// 	"math/big"
-// 	"time"
-
-// 	"github.com/babbleio/babble/crypto"
-// )
 enum ConcensusFailCode {
     NON,
     NO_MOTHER,
@@ -92,7 +82,7 @@ struct EventBody {
     this(Document doc, GossipNet gossipnet=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
-            enum name=this.tupleof[i].stringof["this.".length..$];
+            enum name=this.tupleof[i].stringof[this_dot.length..$];
             if ( doc.hasElement(name) ) {
                 static if ( name == mother.stringof || name == father.stringof ) {
                     if ( gossipnet ) {
@@ -135,7 +125,7 @@ struct EventBody {
     GBSON toBSON(const(Event) use_event=null) const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
-            enum name=this.tupleof[i].stringof["this.".length..$];
+            enum name=this.tupleof[i].stringof[this_dot.length..$];
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
@@ -161,7 +151,7 @@ struct EventBody {
     }
 
     @trusted
-    immutable(ubyte)[] serialize(const(Event) use_event=null) const {
+    immutable(ubyte[]) serialize(const(Event) use_event=null) const {
         return toBSON(use_event).serialize;
     }
 

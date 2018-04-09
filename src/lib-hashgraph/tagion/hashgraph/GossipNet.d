@@ -36,6 +36,7 @@ interface GossipNet {
     // The message is a hash of the 'real' message
     immutable(ubyte[]) sign(immutable(ubyte[]) message);
 
+    Pubkey pubkey() pure const nothrow;
 
 //    HashPointer calcHash(const(Event) e);
 }

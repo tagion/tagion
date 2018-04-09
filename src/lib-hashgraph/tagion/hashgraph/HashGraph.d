@@ -75,6 +75,30 @@ class HashGraph {
     private uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
     private uint[] unused_node_ids; // Stack of unused node ids
 
+
+    NodeIterator nodeiterator() {
+        return NodeIterator(this);
+    }
+
+    @safe
+    struct NodeIterator {
+        private HashGraph _owner;
+        this(HashGraph owner) {
+            _owner = owner;
+        }
+        int opApply(scope int delegate(Pubkey pubkey, Node node) @safe dg) {
+            int result;
+            foreach(i, n; _owner.nodes) {
+//                auto n=nodes[i];
+                result=dg(n.pubkey, n);
+                if ( result ) {
+                    break;
+                }
+            }
+            return result;
+        }
+    }
+
     Pubkey nodePubkey(immutable uint node_id) pure const nothrow {
         auto node=node_id in nodes;
         if ( node ) {
