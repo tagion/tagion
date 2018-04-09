@@ -2,6 +2,8 @@ module tagion.Base;
 
 import tagion.crypto.Hash;
 
+enum this_dot="this.";
+
 //Common components for tagion
 
 enum ThreadState {
@@ -43,10 +45,10 @@ struct InterfaceEventBody {
     uint node_id;
     bool witness;
 
-    this(const(uint) id, 
+    this(const(uint) id,
 	/*immutable(ubyte)[] payload,*/
     const(uint) node_id,
-	const(uint) mother_id, 
+	const(uint) mother_id,
 	const(uint) father_id,
     const(bool) witness
 	) inout {
