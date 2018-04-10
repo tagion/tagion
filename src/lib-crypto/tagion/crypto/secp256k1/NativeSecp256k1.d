@@ -83,7 +83,14 @@ class NativeSecp256k1 {
 
     private static secp256k1_context* getContext() {
         return _ctx;
+//        assert(0, "Must be implemented");
     }
+
+    // private static final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+    // private static final Lock r = rwl.readLock();
+    // private static final Lock w = rwl.writeLock();
+    // private static ThreadLocal<ByteBuffer> nativeECDSABuffer = new ThreadLocal<ByteBuffer>();
+
 
     /**
      * Verifies the given secp256k1 signature in native code.
