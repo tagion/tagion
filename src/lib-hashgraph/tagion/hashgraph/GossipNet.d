@@ -5,17 +5,14 @@ import tagion.hashgraph.Event;
 import tagion.utils.BSON : R_BSON=BSON, Document;
 alias R_BSON!true GBSON;
 
-@safe interface EventPackage {
-}
-
 @safe
 interface GossipNet {
     alias immutable(ubyte)[] Pubkey;
     alias immutable(ubyte)[] Privkey;
     alias immutable(ubyte)[] HashPointer;
 //    alias HashGraph.EventPackage EventPackage;
-    void receive(ref immutable(EventPackage) epack);
-    void send(ref immutable(EventPackage) epack);
+    void receive(immutable(ubyte[]) data);
+    void send(immutable(ubyte[]) data);
     alias bool delegate(immutable(ubyte[])) Request;
     // Request a missing event from the network
     // add
@@ -26,9 +23,9 @@ interface GossipNet {
     HashPointer eventHashFromId(immutable uint id);
     HashPointer calcHash(immutable(HashPointer) hash_pointer) inout;
 
-    immutable(ubyte[]) evaPackage(Pubkey pubkey);
+//    immutable(ubyte[]) evaPackage();
 
-    void buildPackage(HashGraph hashgraph, GBSON bson, Event event);
+//    void buildPackage(HashGraph hashgraph, GBSON bson, Event event, immutable uint node_id);
 
     ulong time();
 
@@ -39,6 +36,7 @@ interface GossipNet {
     // The message is a hash of the 'real' message
     immutable(ubyte[]) sign(immutable(ubyte[]) message);
 
+    Pubkey pubkey() pure const nothrow;
 
 //    HashPointer calcHash(const(Event) e);
 }
