@@ -11,8 +11,18 @@ import std.bitmanip;
 import std.stdio;
 import std.format;
 
-import tagion.Base : this_dot;
+//alias R_BSON!true GBSON;
 
+// import (
+// 	"bytes"
+// 	"crypto/ecdsa"
+// 	"encoding/json"
+// 	"fmt"
+// 	"math/big"
+// 	"time"
+
+// 	"github.com/babbleio/babble/crypto"
+// )
 enum ConcensusFailCode {
     NON,
     NO_MOTHER,
@@ -53,7 +63,6 @@ struct EventBody {
     immutable(ubyte)[] payload; // Transaction
     immutable(ubyte)[] mother; // Hash of the self-parent
     immutable(ubyte)[] father; // Hash of the other-parent
-    int altitude;
 
     ulong time;
     invariant {
@@ -66,10 +75,8 @@ struct EventBody {
         immutable(ubyte)[] payload,
         immutable(ubyte)[] mother,
         immutable(ubyte)[] father,
-        immutable ulong time,
-        immutable int altitude) inout {
+        immutable ulong time) inout {
         this.time      =    time;
-        this.altitude  =    altitude;
         this.father    =    father;
         this.mother    =    mother;
         this.payload   =    payload;
@@ -85,7 +92,7 @@ struct EventBody {
     this(Document doc, GossipNet gossipnet=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
-            enum name=this.tupleof[i].stringof[this_dot.length..$];
+            enum name=this.tupleof[i].stringof["this.".length..$];
             if ( doc.hasElement(name) ) {
                 static if ( name == mother.stringof || name == father.stringof ) {
                     if ( gossipnet ) {
@@ -128,7 +135,7 @@ struct EventBody {
     GBSON toBSON(const(Event) use_event=null) const {
         auto bson=new GBSON;
         foreach(i, m; this.tupleof) {
-            enum name=this.tupleof[i].stringof[this_dot.length..$];
+            enum name=this.tupleof[i].stringof["this.".length..$];
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
@@ -154,7 +161,7 @@ struct EventBody {
     }
 
     @trusted
-    immutable(ubyte[]) serialize(const(Event) use_event=null) const {
+    immutable(ubyte)[] serialize(const(Event) use_event=null) const {
         return toBSON(use_event).serialize;
     }
 
@@ -287,7 +294,6 @@ class Event {
 //    static FHash fhash;
     // WireEvent wire_event;
     immutable(ubyte[]) signature;
-    // The altitude increases by one from mother to daughter
     private immutable(EventBody)* _event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
     private HashPointer _hash;
@@ -296,7 +302,6 @@ class Event {
     private Event _father;
     private Event _daughter;
     private Event _son;
-
 
     // BigInt R, S;
     int topologicalIndex;
@@ -528,28 +533,30 @@ class Event {
         return _forked;
     }
 
-
-    immutable(int) altitude() const pure nothrow {
-        return _event_body.altitude;
-    }
-
     immutable uint node_id;
 //    uint marker;
     @trusted
-    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  GossipNet gossip_net, uint node_id=0, ) {
+    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  GossipNet gossip_net, uint node_id=0) {
         _event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
         this.signature=signature;
-
+        //event_body_data = event_body.serialize;
+//        if ( _hash ) {
+        //_hash=fhash(event_body_data).digits;
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             _round = Round.undefined;
             _witness = true;
         }
-        else {
-
-        }
+//        }
+//        if ( assign ) {
+//        h.assign(this);
+//        }
+        // if ( callbacks ) {
+        //     callbacks.create(this);
+        // }
+//        if ( fhash ) {
         _hash=toCryptoHash(gossip_net);
         assert(_hash);
 //        }
@@ -593,8 +600,7 @@ class Event {
     inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            assert(_mother);
-            assert(altitude == _mother.altitude+1);
+            //assert(_mother);
         }
     }
     body {
@@ -670,6 +676,13 @@ class Event {
         in {
             if ( _son !is null ) {
                 assert( c !is null, "Son can not be set to null");
+                // assert(_son is c,
+                //     format(
+                //         "Son pointer can not be change\n"~
+                //         "father      id=%d\n"~
+                //         "current son id=%d\n"~
+                //         "new son     id=%d",
+                //         id, _son.id, c.id));
             }
         }
     body {
@@ -705,9 +718,6 @@ class Event {
         return _event_body.payload;
     }
 
-    ref immutable(EventBody) eventbody() const pure {
-        return *_event_body;
-    }
 //True if Event contains a payload or is the initial Event of its creator
     bool containPayload() const pure nothrow {
 	return payload.length != 0;
@@ -726,6 +736,13 @@ class Event {
         return !motherExists && !fatherExists;
     }
 
+// immutable(ubyte[]) toHash() {
+    //     if ( !_hash ) {
+    //         _hash = fhash(event_body.serialize);
+    //     }
+    //     return _hash;
+    // }
+
 
     immutable(HashPointer) toCryptoHash() const pure nothrow
     in {
@@ -734,6 +751,16 @@ class Event {
     body {
         return _hash;
     }
+
+//     @trusted
+//     static immutable(HashPointer) cryptoHash(
+//         GossipNet gossip_net,
+// //        Pubkey pubkey,
+//         ref immutable(EventBody) event_body ) {
+//         auto bson=event_body.toBSON;
+//         bson[pubkey.stringof]=pubkey;
+//         return gossip_net.calcHash(bson.serialize);
+//     }
 
     immutable(HashPointer) toCryptoHash(
         GossipNet gossip_net)
@@ -749,6 +776,7 @@ class Event {
         _hash=gossip_net.calcHash(_event_body.serialize);
         return _hash;
     }
+
 
     version(none)
     invariant {
@@ -850,7 +878,7 @@ unittest { // Serialize and unserialize EventBody
     auto father=SHA256("other").digits;
     writeln("Serialize event");
 //    auto creator=cast(immutable(ubyte)[])"creator";
-    auto seed_body=EventBody(payload, mother, father, 0, 0);
+    auto seed_body=EventBody(payload, mother, father, 0);
 
     auto raw=seed_body.serialize;
 
