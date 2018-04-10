@@ -19,7 +19,7 @@ interface GossipNet {
     void request(HashGraph h, immutable(ubyte[]) event_hash);
     // This function is call by the HashGraph.whatIsNotKnowBy
     // and is use to collect node to be send to anotehr node
-    bool collect(Event e, immutable uint depth);
+//    bool collect(Event e, immutable uint depth);
     HashPointer eventHashFromId(immutable uint id);
     HashPointer calcHash(immutable(HashPointer) hash_pointer) inout;
 
