@@ -223,13 +223,7 @@ struct Document
     }
 
 
-    // bool opEquals(ref const Document other) const
-    // {
-    //     return true;
-    // }
-
-
-    immutable(ubyte)[] data() const pure nothrow {
+    immutable(ubyte[]) data() const pure nothrow {
         return data_;
     }
 
