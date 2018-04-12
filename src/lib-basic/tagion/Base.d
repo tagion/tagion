@@ -1,8 +1,6 @@
 module tagion.Base;
-import tagion.utils.BSON : R_BSON=BSON, Document;
-alias R_BSON!true GBSON;
+
 import tagion.crypto.Hash;
-import std.string : format;
 
 enum this_dot="this.";
 
@@ -103,7 +101,6 @@ enum EventType {
     EVENT_UPDATE
 };
 
-@safe
 struct InterfaceEventUpdate {
     EventType eventType;
     uint id;
@@ -116,39 +113,8 @@ struct InterfaceEventUpdate {
         this.property = property;
         this.value = value;
     }
-
-    GBSON toBSON () const {
-        auto bson = new GBSON();
-        foreach(i, m; this.tupleof) {
-            enum name = this.tupleof[i].stringof["this.".length..$];
-            static if ( __traits(compiles, m.toBSON) ) {
-                bson[name] = m.toBSON;
-                pragma(msg, format("Associated member type %s implements toBSON." , m.name));
-            }
-
-            bool include_member = true;
-            static if ( __traits(compiles, m.length ) ) {
-                include_member = m.length != 0;
-                pragma(msg, format("The member %s is an array type", name) );
-            }
-
-            if( include_member ) {
-                bson[name] = m;
-                pragma(msg, format("Member %s included.", name) );
-            }
-
-        }
-        return bson;
-    }
-
-    @trusted
-    immutable(ubyte)[] serialize() const {
-        return toBSON().serialize;
-    }
-
 }
 
-@safe
 struct InterfaceEventBody {
     EventType eventType;
     uint id;
@@ -172,35 +138,6 @@ struct InterfaceEventBody {
 		//this.payload = payload;
         this.node_id = node_id;
         this.witness = witness;
-    }
-
-    GBSON toBSON () const {
-        auto bson = new GBSON();
-        foreach(i, m; this.tupleof) {
-            enum name = this.tupleof[i].stringof["this.".length..$];
-            static if ( __traits(compiles, m.toBSON) ) {
-                bson[name] = m.toBSON;
-                pragma(msg, format("Associated member type %s implements toBSON." , m.name));
-            }
-
-            bool include_member = true;
-            static if ( __traits(compiles, m.length ) ) {
-                include_member = m.length != 0;
-                pragma(msg, format("The member %s is an array type", name) );
-            }
-
-            if( include_member ) {
-                bson[name] = m;
-                pragma(msg, format("Member %s included.", name) );
-            }
-
-        }
-        return bson;
-    }
-
-    @trusted
-    immutable(ubyte)[] serialize() const {
-        return toBSON().serialize;
     }
 }
 
