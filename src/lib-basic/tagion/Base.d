@@ -117,14 +117,14 @@ struct InterfaceEventUpdate {
         this.property = property;
         this.value = value;
     }
-    
+
     this(immutable(ubyte)[] data) inout {
         auto doc=Document(data);
         this(doc);
     }
 
     this(Document doc) inout {
-        foreach(i, ref m; this.tupleof) {           
+        foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             writeln("Type for member: ", type.stringof);
             enum name=basename!(this.tupleof[i]);
@@ -133,13 +133,14 @@ struct InterfaceEventUpdate {
                     auto value = doc[name].get!uint;
                     if(value <= type.max) {
                         this.tupleof[i]=cast(type)value;
-                    } 
+                    }
                     else {
-                        throw new BsonCastException("The chosen enum element is out of range"); 
-                    }                    
+                        throw new BsonCastException("The chosen enum element is out of range");
+                    }
                 }
                 else {
-                    writefln("Inserting value for : %s with the value: %s and casted value: %s", name, doc[name], doc[name].get!type);
+                    writefln("Inserting value for : %s with the value: %s and casted value: %s", name, doc[name], doc[name].type);
+
                     this.tupleof[i]=doc[name].get!type;
                 }
 
@@ -151,6 +152,7 @@ struct InterfaceEventUpdate {
         auto bson = new GBSON();
         foreach(i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
+            alias typeof(m) type;
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name] = m.toBSON;
                 //pragma(msg, format("Associated member type %s implements toBSON." , name));
@@ -163,16 +165,15 @@ struct InterfaceEventUpdate {
                 //pragma(msg, format("The member %s is an array type", name) );
             }
 
-            enum member_is_enum = is(typeof (m) == enum );
-
+            enum member_is_enum = is(type == enum );
             if( include_member ) {
                 static if(member_is_enum) {
                     bson[name] = cast(uint)m;
-                } 
+                }
                 else {
                     bson[name] = m;
                 }
-                
+
                 //pragma(msg, format("Member %s included.", name) );
             }
         }
