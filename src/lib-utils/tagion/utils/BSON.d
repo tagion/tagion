@@ -1399,9 +1399,8 @@ unittest
 @safe
 class BSONException : Exception
 {
-    this(string msg)
-    {
-        super(msg);
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, file, line );
     }
 }
 
@@ -2049,15 +2048,15 @@ class BSON(bool key_sort_flag=true) {
                 }
                 break;
             case BOOLEAN:
-                static if (is(T:long) || is(T:ulong) ) {
+                static if (is(T:const(long)) || is(T:const(ulong)) ) {
                     elm.value.boolean=x!=0;
                     result=true;
                 }
-                else static if (is(T:real)) {
+                else static if (is(T:const(real))) {
                     elm.value.boolean=x!=0.0;
                     result=true;
                 }
-                else static if (is(T:bool)) {
+                else static if (is(T:const(bool))) {
                     elm.value.boolean=cast(bool)x;
                     result=true;
                 }
@@ -2121,7 +2120,7 @@ class BSON(bool key_sort_flag=true) {
 
     void opIndexAssign(T)(T x, in string key) {
         bool result;
-        static if (is(T==bool)) {
+        static if (is(T:const(bool))) {
             result=append(Type.BOOLEAN, key, x);
         }
         else static if (is(T:const(char)[])) {
@@ -2136,7 +2135,7 @@ class BSON(bool key_sort_flag=true) {
         else static if (is(T:const(long))) {
             result=append(Type.INT64, key, x);
         }
-        else static if (is(T==double)) {
+        else static if (is(T:const(double))) {
             result=append(Type.DOUBLE, key, x);
         }
         else static if (is(T:const(ubyte)[])) {
@@ -2173,7 +2172,19 @@ class BSON(bool key_sort_flag=true) {
 
     }
 
-   BSON opIndex(const(char)[] key) {
+    unittest { // bool bug-fix test
+        auto bson=new BSON;
+        const x=true;
+        bson["bool"]=x;
+        immutable data=bson.serialize;
+
+        auto doc=Document(data);
+        auto value=doc["bool"];
+        assert(value.type == Type.BOOLEAN);
+        assert(value.get!bool == true);
+    }
+
+    BSON opIndex(const(char)[] key) {
         BSON result;
         foreach(b;this) {
             if ( b.key == key ) {
