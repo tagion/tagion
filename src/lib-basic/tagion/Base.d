@@ -1,9 +1,6 @@
 module tagion.Base;
-import tagion.utils.BSON : R_BSON=BSON, Document;
-alias R_BSON!true GBSON;
+
 import tagion.crypto.Hash;
-import std.string : format;
-import std.stdio : writefln;
 
 enum this_dot="this.";
 
@@ -53,8 +50,7 @@ unittest {
     struct Something {
         mixin("int "~name_another~";");
         void check() {
-            assert(find_dot!(this.another.stringof) == this_dot.length);
-            writefln("Basename from function: %s and the name of the member: %s", basename!(this.another), name_another);
+            assert(find_dot!(another.stringof) == this_dot.length);
             assert(basename!(this.another) == name_another);
         }
     }
@@ -105,7 +101,6 @@ enum EventType {
     EVENT_UPDATE
 };
 
-@safe
 struct InterfaceEventUpdate {
     EventType eventType;
     uint id;
@@ -118,67 +113,8 @@ struct InterfaceEventUpdate {
         this.property = property;
         this.value = value;
     }
-    
-    this(immutable(ubyte)[] data) inout {
-        auto doc=Document(data);
-        this(doc);
-    }
-
-    this(Document doc) inout {
-        foreach(i, ref m; this.tupleof) {
-            alias typeof(m) type;
-            enum name=basename!(this.tupleof[i]);
-            if ( doc.hasElement(name) ) {
-                this.tupleof[i]=doc[name].get!type;
-            }
-        }
-    }
-
-    GBSON toBSON () const {
-        auto bson = new GBSON();
-        foreach(i, m; this.tupleof) {
-            enum name = basename!(this.tupleof[i]);
-            static if ( __traits(compiles, m.toBSON) ) {
-                bson[name] = m.toBSON;
-                pragma(msg, format("Associated member type %s implements toBSON." , name));
-            }
-
-            bool include_member = true;
-            static if ( __traits(compiles, m.length ) ) {
-                include_member = m.length != 0;
-                pragma(msg, format("The member %s is an array type", name) );
-            }
-
-            if( include_member ) {
-                bson[name] = m;
-                pragma(msg, format("Member %s included.", name) );
-            }
-        }
-        return bson;
-    }
-
-    immutable(ubyte)[] serialize() const {
-        return toBSON().serialize;
-    }
-
-
-
 }
 
-unittest { // Serialize and unserialize InterfaceEventUpdate
-
-    auto seed_body=InterfaceEventUpdate(1, EventProperty.IS_FAMOUS, true);
-
-    auto raw=seed_body.serialize;
-
-    auto replicate_body=InterfaceEventUpdate(raw);
-
-    // Raw and repicate shoud be the same
-    assert(seed_body == replicate_body);
-//    auto seed_event=new Event(seed_body);
-}
-
-@safe
 struct InterfaceEventBody {
     EventType eventType;
     uint id;
@@ -202,33 +138,6 @@ struct InterfaceEventBody {
 		//this.payload = payload;
         this.node_id = node_id;
         this.witness = witness;
-    }
-
-    GBSON toBSON () const {
-        auto bson = new GBSON();
-        foreach(i, m; this.tupleof) {
-            enum name = basename!(this.tupleof[i]);
-            static if ( __traits(compiles, m.toBSON) ) {
-                bson[name] = m.toBSON;
-                pragma(msg, format("Associated member type %s implements toBSON." , name));
-            }
-
-            bool include_member = true;
-            static if ( __traits(compiles, m.length ) ) {
-                include_member = m.length != 0;
-                pragma(msg, format("The member %s is an array type", name) );
-            }
-
-            if( include_member ) {
-                bson[name] = m;
-                pragma(msg, format("Member %s included.", name) );
-            }
-        }
-        return bson;
-    }
-
-    immutable(ubyte)[] serialize() const {
-        return toBSON().serialize;
     }
 }
 
