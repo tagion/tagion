@@ -934,6 +934,10 @@ struct Element
     void check(Type t) const /* pure */
     {
         if (t != type) {
+            //TODO: Carsten, added check for boolean types, which is stores as INT32 in document. Make unittest. 
+            if(t == Type.BOOLEAN && type == Type.INT32) {
+                return;
+            }
             string typeName = to!string(t); // why is to! is not pure?
             string message;
             if (isEod)
