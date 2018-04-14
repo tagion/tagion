@@ -187,13 +187,13 @@ class NativeSecp256k1 {
     //TODO add a 'compressed' arg
     enum PUBKEY_SIZE=65;
     @trusted
-    static immutable(ubyte[]) computePubkey(immutable(ubyte[]) seckey)
+    static immutable(ubyte[]) computePubkey(const(ubyte[]) seckey)
         in {
             assert(seckey.length == 32);
         }
     body {
         auto ctx=getContext();
-        immutable(ubyte)* sec=seckey.ptr;
+        const(ubyte)* sec=seckey.ptr;
 
         secp256k1_pubkey pubkey;
 
