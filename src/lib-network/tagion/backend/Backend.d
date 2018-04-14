@@ -38,6 +38,7 @@ class Backend {
 
 
 	void startWebserver() {	
+		writeln("port: ", _webserver_port);
 		auto router = new URLRouter;
 		router.get("/", staticRedirect("/index.html"));
 		router.get("/ws", handleWebSockets(&handleWebSocketConnection));
