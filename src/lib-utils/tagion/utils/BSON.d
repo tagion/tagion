@@ -2126,7 +2126,7 @@ class BSON(bool key_sort_flag=true) {
         else static if (is(T:const(char)[])) {
             result=append(Type.STRING, key, x);
         }
-        else static if (is(T==BSON)) {
+        else static if (is(T:const(BSON))) {
             result=append(Type.DOCUMENT, key, x);
         }
         else static if (is(T:const(int))) {
@@ -2541,7 +2541,6 @@ class BSON(bool key_sort_flag=true) {
             }
     }
 
-    import std.stdio;
     immutable(ubyte)[] serialize() const {
         immutable(ubyte)[] local_serialize() {
             immutable(ubyte)[] data;
@@ -2694,6 +2693,33 @@ class BSON(bool key_sort_flag=true) {
             assert(subobj.hasElement("x"));
             assert(subobj["x"].isNumber);
             assert(subobj["x"].get!int == 10);
+        }
+
+    }
+
+    unittest { // Test of serializing of a cost(BSON)
+        auto stream(const(BSON) b) {
+            return b.serialize;
+        }
+        {
+            auto bson = new BSON;
+            bson["x"] = 10;
+            bson["s"] = "text";
+            auto data_const=stream(bson);
+            assert(data_const == bson.serialize);
+        }
+        { // const(BSON) member
+            auto bson1=new BSON;
+            auto bson2=new BSON;
+            auto sub_bson=new BSON;
+            sub_bson["x"]=10;
+            bson1["num"]=42;
+            bson2["num"]=42;
+            bson1["obj"]=cast(BSON)sub_bson;
+            bson2["obj"]=sub_bson;
+            assert(bson1.serialize == bson2.serialize);
+            assert(stream(bson1) == bson2.serialize);
+            assert(bson1.serialize == stream(bson2));
         }
 
     }
