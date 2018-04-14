@@ -1776,7 +1776,7 @@ class BSON(bool key_sort_flag=true) {
         return cast(size_t)(cast(void*)this);
     }
     @trusted
-    auto get(T)() {
+    auto get(T)() inout {
         static if (is(T==double)) {
             assert(_type == Type.DOUBLE);
             return value.number;
@@ -2184,16 +2184,24 @@ class BSON(bool key_sort_flag=true) {
         assert(value.get!bool == true);
     }
 
-    BSON opIndex(const(char)[] key) {
-        BSON result;
-        foreach(b;this) {
+    const(BSON) opIndex(const(char)[] key) const {
+        auto iter=Iterator!(const(BSON), false)(this);
+        foreach(b;iter) {
             if ( b.key == key ) {
-                result=b;
+                return b;
                 break;
             }
         }
-        if ( result ) {
-            return result;
+        throw new BSONException("Member '"~key.idup~"' not defined");
+        assert(0);
+    }
+
+    BSON opIndex(const(char)[] key) {
+        foreach(b;this) {
+            if ( b.key == key ) {
+                return b;
+                break;
+            }
         }
         throw new BSONException("Member '"~key.idup~"' not defined");
         assert(0);
@@ -2393,7 +2401,7 @@ class BSON(bool key_sort_flag=true) {
             data~=x;
             data~=zero;
         }
-        else static if (is(T:BSON)) {
+        else static if (is(T:const(BSON))) {
             data~=x.serialize;
         }
         else {
@@ -2406,7 +2414,7 @@ class BSON(bool key_sort_flag=true) {
     enum one=cast(ubyte)1;
 
     @trusted
-    void appendData(ref immutable(ubyte)[] data) {
+    void appendData(ref immutable(ubyte)[] data) const {
         with(Type) final switch(_type) {
             case NULL:
                 data~=zero;
@@ -2533,7 +2541,8 @@ class BSON(bool key_sort_flag=true) {
             }
     }
 
-    immutable(ubyte)[] serialize() {
+    import std.stdio;
+    immutable(ubyte)[] serialize() const {
         immutable(ubyte)[] local_serialize() {
             immutable(ubyte)[] data;
             foreach(e; iterator!key_sort_flag) {
@@ -2941,12 +2950,17 @@ class BSON(bool key_sort_flag=true) {
 
     }
 
-    Iterator!F iterator(bool F=false)() {
-        return Iterator!F(this);
+    Iterator!(BSON, F) iterator(bool F=false)() {
+        return Iterator!(BSON, F)(this);
     }
 
+    Iterator!(const(BSON), F) iterator(bool F=false)() const {
+        return Iterator!(const(BSON), F)(this);
+    }
+
+
     @trusted
-    const(ubyte)[] subtype_buffer() {
+    const(ubyte)[] subtype_buffer() const {
         with(BinarySubType) switch(subtype) {
             case generic:
             case func:
@@ -3031,75 +3045,122 @@ class BSON(bool key_sort_flag=true) {
     }
 
     @safe
-    struct Iterator(bool key_sort_flag) {
-        private BSON owner;
+    struct Iterator(TBSON, bool key_sort_flag) {
+        static assert( is (TBSON:const(BSON)), format("Iterator only supports %s ",BSON.stringof));
+        private TBSON owner;
+        enum owner_is_mutable=is(TBSON==BSON);
         static if (key_sort_flag) {
             private string[] sorted_keys;
             private string[] current_keys;
         }
         else {
-            private BSON current;
-        }
-        this(BSON owner) {
-            this.owner=owner;
-            static if ( key_sort_flag ) {
-                bool less_than(string a, string b) {
-                    import std.math : isNaN;
-                    try {
-                        auto a_value=to!double(a);
-                        if ( !isNaN(a_value) ) {
-                            auto b_value=to!double(b);
-                            if ( !isNaN(b_value) ) {
-                                return (a_value < b_value);
-                            }
-                        }
-                    }
-                    catch (ConvException e) {
-                        /** Ignore conversion a or be is not a number */
-                    }
-                    return a < b;
-                }
-                sorted_keys=owner.keys;
-                sort!(less_than, SwapStrategy.stable)(sorted_keys);
-                current_keys=sorted_keys;
+//            static assert(is(TBSON==BSON), format("Non sorted BSON does not support %s", TBSON.stringof));
+            static if ( owner_is_mutable ) {
+                private BSON current;
             }
             else {
-                this.current=owner.members;
+                private TBSON* current;
+            }
+        }
+        this(TBSON owner) {
+            this.owner=owner;
+            static if ( key_sort_flag ) {
+                void keylist(const(BSON) owner) {
+                    bool less_than(string a, string b) {
+                        import std.math : isNaN;
+                        try {
+                            auto a_value=to!double(a);
+                            if ( !isNaN(a_value) ) {
+                                auto b_value=to!double(b);
+                                if ( !isNaN(b_value) ) {
+                                    return (a_value < b_value);
+                                }
+                            }
+                        }
+                        catch (ConvException e) {
+                            /** Ignore conversion a or be is not a number */
+                        }
+                        return a < b;
+                    }
+                    sorted_keys=owner.keys;
+                    sort!(less_than, SwapStrategy.stable)(sorted_keys);
+                    current_keys=sorted_keys;
+                }
+                keylist(owner);
+            }
+            else static if ( owner_is_mutable ) {
+                current=owner.members;
+            }
+            else {
+                current=&(owner.members);
             }
         }
         void popFront()
             in {
-                assert(owner !is null);
                 static if ( !key_sort_flag ) {
-                    assert(current !is owner,"Circular reference member "~current.key~" points to it self");
+                    assert(owner !is null);
+                    static if ( owner_is_mutable ) {
+                        assert(current !is owner,"Circular reference member "~current.key~" points to it self");
+                    }
+                    else {
+                        if ( current ) {
+                            assert(*current !is owner,"Circular reference member "~current.key~" points to it self");
+                        }
+                    }
                 }
             }
         body {
             static if ( key_sort_flag ) {
                 current_keys=current_keys[1..$];
             }
-            else {
+            else static if ( owner_is_mutable ) {
                 current=current.members;
             }
+            else {
+                auto result() @trusted {
+                    if ( current !is null ) {
+                        return &(current.members);
+                    }
+                    else {
+                        return null;
+                    }
+                }
+                current=result();
+            }
         }
-        BSON front() {
+
+        TBSON front() {
             static if ( key_sort_flag ) {
                 assert ( current_keys.length > 0 );
                 return owner[current_keys[0]];
             }
-            else {
+            else static if ( owner_is_mutable ) {
                 return current;
             }
+            else {
+                return *current;
+            }
         }
+
         bool empty() {
             static if ( key_sort_flag ) {
                 return current_keys.length == 0;
             }
-            else {
+            else static if ( owner_is_mutable ) {
                 return current is null;
             }
+            else {
+                auto result=(current is null) || (*current is null);
+                scope(exit) {
+                    if ( result ) {
+                        current = null;
+                    }
+                }
+                return result;
+            }
         }
-        final int opApply(scope int delegate(BSON bson) @safe dg) {
+
+        final int opApply(scope int delegate(TBSON bson) @safe dg) {
             int result;
             for(; !empty; popFront) {
                 if ( (result=dg(front))!=0 ) {
@@ -3108,7 +3169,8 @@ class BSON(bool key_sort_flag=true) {
             }
             return result;
         }
-        final int opApply(scope int delegate(in string key, BSON bson) @safe dg) {
+
+        final int opApply(scope int delegate(in string key, TBSON bson) @safe dg) {
             int result;
             for(; !empty; popFront) {
                 if ( (result=dg(front.key, front))!=0 ) {
