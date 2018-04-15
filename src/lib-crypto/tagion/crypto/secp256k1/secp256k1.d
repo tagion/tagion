@@ -263,6 +263,11 @@ package extern (C) {
     secp256k1_context* secp256k1_context_clone(
         const(secp256k1_context)* ctx
         );
+        /++
+        in {
+            assert(ctx);
+        };
+        +/
 
 /** Destroy a secp256k1 context object.
  *
@@ -298,6 +303,9 @@ package extern (C) {
         void function(const char* message, void* data) fun,
         const void* data
         );
+        // in {
+        //     assert(ctx);
+        // }
 
 /** Set a callback function to be called when an internal consistency check
  *  fails. The default is crashing.
@@ -320,6 +328,9 @@ package extern (C) {
         void function(const(char)* message, void* data) fun,
         const(void)* data
         );
+        // in {
+        //     assert(ctx);
+        // }
 
 /** Create a secp256k1 scratch space object.
  *
@@ -333,6 +344,9 @@ package extern (C) {
         size_t init_size,
         size_t max_size
         );
+        // in {
+        //     assert(ctx);
+        // }
 
 /** Destroy a secp256k1 scratch space.
  *
@@ -363,6 +377,11 @@ package extern (C) {
         const(ubyte)* input,
         size_t inputlen
         );
+        // in {
+        //     assert(ctx);
+        //     assert(pubkey);
+        //     assert(input);
+        // };
 
 /** Serialize a pubkey object into a serialized byte sequence.
  *
@@ -386,6 +405,11 @@ package extern (C) {
         const(secp256k1_pubkey)* pubkey,
         uint flags
         );
+        // in {
+        //     assert(ctx);
+        //     assert(output);
+        //     assert(outputlen);
+        // };
 
 /** Parse an ECDSA signature in compact (64 bytes) format.
  *
@@ -407,6 +431,12 @@ package extern (C) {
         secp256k1_ecdsa_signature* sig,
         const(ubyte)* input64
         );
+        // in {
+        //     assert(ctx);
+        //     assert(sig);
+        //     assert(input64);
+        // };
+
 
 /** Parse a DER ECDSA signature.
  *
@@ -429,6 +459,11 @@ package extern (C) {
         const(ubyte)* input,
         size_t inputlen
         );
+        // in {
+        //     assert(ctx);
+        //     assert(sig);
+        //     assert(input);
+        // };
 
 /** Serialize an ECDSA signature in DER format.
  *
@@ -447,6 +482,11 @@ package extern (C) {
         size_t* outputlen,
         const(secp256k1_ecdsa_signature)* sig
         );
+        // in {
+        //     assert(ctx);
+        //     assert(output);
+        //     assert(outputlen);
+        // };
 
 
 /** Serialize an ECDSA signature in compact (64 byte) format.
@@ -463,6 +503,11 @@ package extern (C) {
         ubyte* output64,
         const(secp256k1_ecdsa_signature)* sig
         );
+        // in {
+        //     assert(ctx);
+        //     assert(output64);
+        //     assert(sig);
+        // };
 
 /** Verify an ECDSA signature.
  *
@@ -488,6 +533,11 @@ package extern (C) {
         const(ubyte)* msg32,
         const(secp256k1_pubkey)* pubkey
         );
+        // in {
+        //     assert(ctx);
+        //     assert(sig);
+        //     assert(msg32);
+        // };
 
 /** Convert a signature to a normalized lower-S form.
  *
@@ -536,6 +586,10 @@ package extern (C) {
         secp256k1_ecdsa_signature* sigout,
         const(secp256k1_ecdsa_signature)* sigin
         );
+        // in {
+        //     assert(ctx);
+        //     assert(sigin);
+        // };
 
 /** An implementation of RFC6979 (using HMAC-SHA256) as nonce generation function.
  * If a data pointer is passed, it is assumed to be a pointer to 32 bytes of
@@ -568,6 +622,12 @@ package extern (C) {
         secp256k1_nonce_function noncefp,
         const void *ndata
         );
+        // in {
+        //     assert(ctx);
+        //     assert(sig);
+        //     assert(msg32);
+        //     assert(seckey);
+        // };
 
 /** Verify an ECDSA secret key.
  *
