@@ -20,6 +20,9 @@ import std.stdio;
 
 private import tagion.crypto.secp256k1.secp256k1;
 
+alias Secp256k1=NativeSecp256k1!true;
+alias Secp256k1_Uncompressed=NativeSecp256k1!false;
+
 /**
  * <p>This class holds native methods to handle ECDSA verification.</p>
  *
@@ -32,58 +35,68 @@ private import tagion.crypto.secp256k1.secp256k1;
  * </p>
  */
 @safe
-class NativeSecp256k1 {
-    struct Context {
-        private secp256k1_context* _ctx;
-        @trusted
-        this(SECP256K1 flag) {
-            _ctx=secp256k1_context_create(cast(uint)flag);
-        }
-        // Clones the context
+class NativeSecp256k1(bool COMPRESS) {
 
-        @trusted
-        this(ref const(Context) context) {
-            _ctx=secp256k1_context_clone(context._ctx);
-        }
-
-        @trusted
-        ~this() {
-            secp256k1_context_destroy(_ctx);
-        }
-        protected const(secp256k1_context)* ctx() {
-            return _ctx;
-        }
+    static if ( COMPRESS ) {
+        enum flag = SECP256K1.EC_COMPRESSED;
+        enum pubkey_size=COMPRESSED_PUBKEY_SIZE;
     }
-
-    static ref Context context_none() {
-        auto result=new Context(SECP256K1.CONTEXT_NONE);
-        return *result;
+    else {
+        enum flag = SECP256K1.EC_UNCOMPRESSED;
+        enum pubkey_size=PUBKEY_SIZE;
     }
-    static ref Context context_sign() {
-        auto result=new Context(SECP256K1.CONTEXT_SIGN);
-        return *result;
-    }
+    // struct Context {
+    //     private secp256k1_context* _ctx;
+    //     @trusted
+    //     this(SECP256K1 flag) {
+    //         _ctx=secp256k1_context_create(cast(uint)flag);
+    //     }
+    //     // Clones the context
 
-    static ref Context context_veryfy() {
-        auto result=new Context(SECP256K1.CONTEXT_VERIFY);
-        return *result;
-    }
+    //     @trusted
+    //     this(ref const(Context) context) {
+    //         _ctx=secp256k1_context_clone(context._ctx);
+    //     }
 
-    static ref Context context_both() {
-        auto result=new Context(SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY);
-        return *result;
-    }
+    //     @trusted
+    //     ~this() {
+    //         secp256k1_context_destroy(_ctx);
+    //     }
+    //     protected const(secp256k1_context)* ctx() {
+    //         return _ctx;
+    //     }
+    // }
 
-    private static secp256k1_context* _ctx;
+    // static ref Context context_none() {
+    //     auto result=new Context(SECP256K1.CONTEXT_NONE);
+    //     return *result;
+    // }
+
+    // static ref Context context_sign() {
+    //     auto result=new Context(SECP256K1.CONTEXT_SIGN);
+    //     return *result;
+    // }
+
+    // static ref Context context_verify() {
+    //     auto result=new Context(SECP256K1.CONTEXT_VERIFY);
+    //     return *result;
+    // }
+
+    // static ref Context context_both() {
+    //     auto result=new Context(SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY);
+    //     return *result;
+    // }
+
+    private secp256k1_context* _ctx;
 
     @trusted
-    static this() {
-        _ctx = secp256k1_context_create(SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY);
+    this(SECP256K1 flag=SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) {
+        _ctx = secp256k1_context_create(flag);
     }
 
-    private static secp256k1_context* getContext() {
-        return _ctx;
-    }
+    // private static secp256k1_context* getContext() {
+    //     return _ctx;
+    // }
 
     /**
      * Verifies the given secp256k1 signature in native code.
@@ -94,28 +107,31 @@ class NativeSecp256k1 {
      * @param pub The public key which did the signing
      */
     @trusted
-    static bool verify(immutable(ubyte[]) data, immutable(ubyte[]) signature, immutable(ubyte[]) pub)
+    bool verify(immutable(ubyte[]) data, immutable(ubyte[]) signature, const(ubyte[]) pub)
         in {
             assert(data.length == 32);
             assert(signature.length <= 520);
             assert(pub.length <= 520);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         int result;
         immutable(ubyte)* sigdata=signature.ptr;
         auto siglen=signature.length;
+        const(ubyte)* pubdata=pub.ptr;
+        immutable(ubyte)* msgdata=data.ptr;
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
-        result = secp256k1_ecdsa_signature_parse_der(ctx, &sig, sigdata, siglen);
+        result = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
+        writefln("1) result %d", result);
         if ( result ) {
-            immutable(ubyte)* pubdata=pub.ptr;
             auto publen=pub.length;
-            result = secp256k1_ec_pubkey_parse(ctx, &pubkey, pubdata, publen);
+            result = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
+            writefln("2) result %d", result);
             if ( result ) {
-                immutable(ubyte)* msgdata=data.ptr;
-                result = secp256k1_ecdsa_verify(ctx, &sig, msgdata, &pubkey);
+                result = secp256k1_ecdsa_verify(_ctx, &sig, msgdata, &pubkey);
+                writefln("3) result %d", result);
             }
         }
         return result == 1;
@@ -132,30 +148,33 @@ class NativeSecp256k1 {
      */
     enum SIGNATURE_SIZE=72;
     @trusted
-    public static immutable(ubyte[]) sign(immutable(ubyte[]) data, immutable(ubyte[]) sec)
+    immutable(ubyte[]) sign(immutable(ubyte[]) data, const(ubyte[]) sec)
         in {
             assert(data.length == 32);
             assert(sec.length <= 32);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         immutable(ubyte)* msgdata=data.ptr;
-        immutable(ubyte)* secKey=sec.ptr;
+        const(ubyte)*     secKey=sec.ptr;
 
         secp256k1_ecdsa_signature[SIGNATURE_SIZE] sig_array;
         secp256k1_ecdsa_signature* sig=sig_array.ptr;
 
-        int ret = secp256k1_ecdsa_sign(ctx, sig, msgdata, secKey, null, null );
+        int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null );
 
         ubyte[SIGNATURE_SIZE] outputSer_array;
         ubyte* outputSer = outputSer_array.ptr;
         size_t outputLen = outputSer_array.length;
 
         if ( ret ) {
-            int ret2=secp256k1_ecdsa_signature_serialize_der(ctx, outputSer, &outputLen, sig);
+            int ret2=secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
         }
 
-        immutable(ubyte[]) result=outputSer_array.idup;
+        // TODO; CBR 15-apr-2018
+        // For some reason the signature is too long
+        // So is cut to length of 70
+        immutable(ubyte[]) result=outputSer_array[0..70].idup;
         return result;
     }
 
@@ -165,14 +184,14 @@ class NativeSecp256k1 {
      * @param seckey ECDSA Secret key, 32 bytes
      */
     @trusted
-    static bool secKeyVerify(const(ubyte[]) seckey)
+    bool secKeyVerify(const(ubyte[]) seckey)
         in {
             assert(seckey.length == 32);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         const(ubyte)* sec=seckey.ptr;
-        return secp256k1_ec_seckey_verify(ctx, sec) == 1;
+        return secp256k1_ec_seckey_verify(_ctx, sec) == 1;
     }
 
 
@@ -186,25 +205,26 @@ class NativeSecp256k1 {
      */
     //TODO add a 'compressed' arg
     enum PUBKEY_SIZE=65;
+    enum COMPRESSED_PUBKEY_SIZE=33;
     @trusted
-    static immutable(ubyte[]) computePubkey(immutable(ubyte[]) seckey)
+    immutable(ubyte[]) computePubkey(const(ubyte[]) seckey)
         in {
             assert(seckey.length == 32);
         }
     body {
-        auto ctx=getContext();
-        immutable(ubyte)* sec=seckey.ptr;
+//        auto ctx=getContext();
+        const(ubyte)* sec=seckey.ptr;
 
         secp256k1_pubkey pubkey;
 
-        int ret = secp256k1_ec_pubkey_create(ctx, &pubkey, sec);
+        int ret = secp256k1_ec_pubkey_create(_ctx, &pubkey, sec);
 
-        ubyte[PUBKEY_SIZE] outputSer_array;
+        ubyte[pubkey_size] outputSer_array;
         ubyte* outputSer = outputSer_array.ptr;
         size_t outputLen = outputSer_array.length;
 
         if( ret ) {
-            int ret2 = secp256k1_ec_pubkey_serialize(ctx, outputSer, &outputLen, &pubkey, SECP256K1.EC_UNCOMPRESSED );
+            int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey, flag );
         }
 
         immutable(ubyte[]) result = outputSer_array.idup;
@@ -221,7 +241,7 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    static secp256k1_context* cloneContext() {
+    secp256k1_context* cloneContext() {
         return secp256k1_context_clone(_ctx);
     }
 
@@ -232,18 +252,18 @@ class NativeSecp256k1 {
      * @param seckey 32-byte seckey
      */
     @trusted
-    static immutable(ubyte[]) privKeyTweakMul(immutable(ubyte[]) privkey, immutable(ubyte[]) tweak)
+    immutable(ubyte[]) privKeyTweakMul(immutable(ubyte[]) privkey, immutable(ubyte[]) tweak)
         in {
             assert(privkey.length == 32);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         ubyte[] privkey_array=privkey.dup;
         ubyte* _privkey=privkey_array.ptr;
 //        immutable(ubyte)* _privkey=privkey.ptr;
         immutable(ubyte)* _tweak=tweak.ptr;
 
-        int ret = secp256k1_ec_privkey_tweak_mul(ctx, _privkey, _tweak);
+        int ret = secp256k1_ec_privkey_tweak_mul(_ctx, _privkey, _tweak);
 
         immutable(ubyte[]) result=privkey_array.idup;
         return result;
@@ -256,17 +276,17 @@ class NativeSecp256k1 {
      * @param seckey 32-byte seckey
      */
     @trusted
-    static immutable(ubyte[]) privKeyTweakAdd(immutable(ubyte[]) privkey, immutable(ubyte[]) tweak)
+    immutable(ubyte[]) privKeyTweakAdd(immutable(ubyte[]) privkey, immutable(ubyte[]) tweak)
         in {
             assert(privkey.length == 32);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         ubyte[] privkey_array=privkey.dup;
         ubyte* _privkey=privkey_array.ptr;
         immutable(ubyte)* _tweak=tweak.ptr;
 
-        int ret = secp256k1_ec_privkey_tweak_add(ctx, _privkey, _tweak);
+        int ret = secp256k1_ec_privkey_tweak_add(_ctx, _privkey, _tweak);
 
         immutable(ubyte[]) result=privkey_array.idup;
         return result;
@@ -279,22 +299,22 @@ class NativeSecp256k1 {
      * @param pubkey 32-byte seckey
      */
     @trusted
-    static immutable(ubyte[]) pubKeyTweakAdd(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
+    immutable(ubyte[]) pubKeyTweakAdd(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
         in {
             assert(pubkey.length == 33 || pubkey.length == 65);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         ubyte[] pubkey_array=pubkey.dup;
         ubyte* _pubkey=pubkey_array.ptr;
         immutable(ubyte)* _tweak=tweak.ptr;
         size_t publen = pubkey.length;
 
         secp256k1_pubkey pubkey_result;
-        int ret = secp256k1_ec_pubkey_parse(ctx, &pubkey_result, _pubkey, publen);
+        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
 
         if( ret ) {
-            ret = secp256k1_ec_pubkey_tweak_add(ctx, &pubkey_result, _tweak);
+            ret = secp256k1_ec_pubkey_tweak_add(_ctx, &pubkey_result, _tweak);
         }
 
         ubyte[65] outputSer_array;
@@ -303,7 +323,7 @@ class NativeSecp256k1 {
 
 
         if( ret ) {
-            int ret2 = secp256k1_ec_pubkey_serialize(ctx, outputSer, &outputLen, &pubkey_result, SECP256K1.EC_UNCOMPRESSED );
+            int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
         }
 
         immutable(ubyte[]) result=outputSer_array.idup;
@@ -317,22 +337,22 @@ class NativeSecp256k1 {
      * @param pubkey 32-byte seckey
      */
     @trusted
-    static immutable(ubyte[]) pubKeyTweakMul(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
+    immutable(ubyte[]) pubKeyTweakMul(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
         in {
             assert(pubkey.length == 33 || pubkey.length == 65);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         ubyte[] pubkey_array=pubkey.dup;
         ubyte* _pubkey=pubkey_array.ptr;
         immutable(ubyte)* _tweak=tweak.ptr;
         size_t publen = pubkey.length;
 
           secp256k1_pubkey pubkey_result;
-          int ret = secp256k1_ec_pubkey_parse(ctx, &pubkey_result, _pubkey, publen);
+          int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
 
           if ( ret ) {
-              ret = secp256k1_ec_pubkey_tweak_mul(ctx, &pubkey_result, _tweak);
+              ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
           }
 
           ubyte[65] outputSer_array;
@@ -340,7 +360,7 @@ class NativeSecp256k1 {
           size_t outputLen = outputSer_array.length;
 
           if( ret ) {
-              int ret2 = secp256k1_ec_pubkey_serialize(ctx, outputSer, &outputLen, &pubkey_result, SECP256K1.EC_UNCOMPRESSED );
+              int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
           }
 
           immutable(ubyte[]) result=outputSer_array.idup;
@@ -354,13 +374,14 @@ class NativeSecp256k1 {
      * @param pubkey byte array of public key used in exponentiaion
      */
     @trusted
-    static immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(ubyte[]) pubkey)
+    version(none)
+    immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(ubyte[]) pubkey)
         in {
             assert(seckey.length <= 32);
             assert(pubkey.length <= 65);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         immutable(ubyte)* secdata=seckey.ptr;
         immutable(ubyte)* pubdata=pubkey.ptr;
         size_t publen=pubkey.length;
@@ -369,10 +390,10 @@ class NativeSecp256k1 {
         ubyte[32] nonce_res_array;
         ubyte* nonce_res = nonce_res_array.ptr;
 
-        int ret = secp256k1_ec_pubkey_parse(ctx, &pubkey_result, pubdata, publen);
+        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
 
         if (ret) {
-            ret = secp256k1_ecdh(ctx, nonce_res, &pubkey_result, secdata);
+            ret = secp256k1_ecdh(_ctx, nonce_res, &pubkey_result, secdata);
         }
 
         immutable(ubyte[]) result=nonce_res_array.idup;
@@ -385,14 +406,14 @@ class NativeSecp256k1 {
      * @param seed 32-byte random seed
      */
     @trusted
-    static bool randomize(immutable(ubyte[]) seed)
+    bool randomize(immutable(ubyte[]) seed)
         in {
             assert(seed.length == 32 || seed is null);
         }
     body {
-        auto ctx=getContext();
+//        auto ctx=getContext();
         immutable(ubyte)* _seed=seed.ptr;
-        return secp256k1_context_randomize(ctx, _seed) == 1;
+        return secp256k1_context_randomize(_ctx, _seed) == 1;
     }
 
 
@@ -401,14 +422,17 @@ class NativeSecp256k1 {
 @safe
 unittest {
     import tagion.crypto.Hash : toHexString, decode;
+    alias Crypt=NativeSecp256k1!false;
 /*
  * This tests verify() for a valid signature
  */
+    version(none) {
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        auto result = NativeSecp256k1.verify( data, sig, pub);
+        auto crypt = new Crypt;
+        auto result = crypt.verify( data, sig, pub);
         assert(result);
     }
 
@@ -419,7 +443,8 @@ unittest {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A91"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        auto result = NativeSecp256k1.verify( data, sig, pub);
+        auto crypt = new Crypt;
+        auto result = crypt.verify( data, sig, pub);
         assert(!result);
     }
 
@@ -428,7 +453,8 @@ unittest {
  */
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        auto result = NativeSecp256k1.secKeyVerify( sec );
+        auto crypt = new Crypt;
+        auto result = crypt.secKeyVerify( sec );
         assert(result);
     }
 
@@ -437,7 +463,8 @@ unittest {
  */
     {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-        auto result = NativeSecp256k1.secKeyVerify( sec );
+        auto crypt = new Crypt;
+        auto result = crypt.secKeyVerify( sec );
         assert(!result);
     }
 
@@ -446,7 +473,8 @@ unittest {
  */
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        auto resultArr = NativeSecp256k1.computePubkey( sec);
+        auto crypt = new Crypt;
+        auto resultArr = crypt.computePubkey(sec);
         auto pubkeyString = resultArr.toHexString!true;
         assert( pubkeyString == "04C591A8FF19AC9C4E4E5793673B83123437E975285E7B442F4EE2654DFFCA5E2D2103ED494718C697AC9AEBCFD19612E224DB46661011863ED2FC54E71861E2A6" );
     }
@@ -456,7 +484,8 @@ unittest {
  */
     {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-        auto resultArr = NativeSecp256k1.computePubkey( sec);
+        auto crypt = new Crypt;
+        auto resultArr = crypt.computePubkey(sec);
         auto pubkeyString = resultArr.toHexString!true;
         assert( pubkeyString == "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     }
@@ -467,9 +496,10 @@ unittest {
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        auto resultArr = NativeSecp256k1.sign(data, sec);
+        auto crypt = new Crypt;
+        auto resultArr = crypt.sign(data, sec);
         auto sigString = resultArr.toHexString!true;
-        assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E90000" );
+        assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9" );
     }
 
 /**
@@ -478,9 +508,10 @@ unittest {
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-        auto resultArr = NativeSecp256k1.sign(data, sec);
+        auto crypt = new Crypt;
+        auto resultArr = crypt.sign(data, sec);
         auto sigString = resultArr.toHexString!true;
-        assert( sigString == "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" );
+        assert( sigString == "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" );
     }
 
 /**
@@ -489,7 +520,8 @@ unittest {
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        auto resultArr = NativeSecp256k1.privKeyTweakAdd( sec , data );
+        auto crypt = new Crypt;
+        auto resultArr = crypt.privKeyTweakAdd( sec , data );
         auto sigString = resultArr.toHexString!true;
         assert( sigString == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3" );
     }
@@ -500,7 +532,8 @@ unittest {
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        auto resultArr = NativeSecp256k1.privKeyTweakMul( sec , data );
+        auto crypt = new Crypt;
+        auto resultArr = crypt.privKeyTweakMul( sec , data );
         auto sigString = resultArr.toHexString!true;
         assert( sigString == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC" );
     }
@@ -511,7 +544,8 @@ unittest {
     {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        auto resultArr = NativeSecp256k1.pubKeyTweakAdd( pub , data );
+        auto crypt = new Crypt;
+        auto resultArr = crypt.pubKeyTweakAdd( pub , data );
         auto sigString = resultArr.toHexString!true;
         assert( sigString == "0411C6790F4B663CCE607BAAE08C43557EDC1A4D11D88DFCB3D841D0C6A941AF525A268E2A863C148555C48FB5FBA368E88718A46E205FABC3DBA2CCFFAB0796EF" );
     }
@@ -522,7 +556,8 @@ unittest {
     {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        auto resultArr = NativeSecp256k1.pubKeyTweakMul( pub , data );
+        auto crypt = new Crypt;
+        auto resultArr = crypt.pubKeyTweakMul( pub , data );
         auto sigString = resultArr.toHexString!true;
         assert( sigString == "04E0FE6FE55EBCA626B98A807F6CAF654139E14E5E3698F01A9A658E21DC1D2791EC060D4F412A794D5370F672BC94B722640B5F76914151CFCA6E712CA48CC589" );
     }
@@ -532,18 +567,38 @@ unittest {
  */
     {
         auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
-        auto result = NativeSecp256k1.randomize(seed);
+        auto crypt = new Crypt;
+        auto result = crypt.randomize(seed);
         assert( result, __FUNCTION__ );
     }
+    }
+    {
+        auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
+        //auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A9A");
+        auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
+        import tagion.crypto.Hash : toHexString;
+        import std.digest.sha;
+        auto crypt=new Crypt;
+        auto data=seed.dup;
+        do {
+            data=sha256Of(data).dup;
+        } while (!crypt.secKeyVerify(data));
+        immutable privkey=data.idup;
+        immutable pubkey=crypt.computePubkey(privkey);
 
+        immutable signature=crypt.sign(message, privkey);
+        assert(crypt.verify( message, signature, pubkey));
+
+    }
     //Test ECDH
     version(none)
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
 
-        auto resultArr = NativeSecp256k1.createECDHSecret(sec, pub);
+        auto resultArr = Crypt.createECDHSecret(sec, pub);
         auto ecdhString = resultArr.toHexString;
         assert( ecdhString == "2A2A67007A926E6594AF3EB564FC74005B37A9C8AEF2033C4552051B5C87F043" );
     }
+
 }
