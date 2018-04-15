@@ -16,7 +16,7 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  * limitations under the License.
  */
 
-//import std.stdio;
+import std.stdio;
 
 private import tagion.crypto.secp256k1.secp256k1;
 
@@ -124,11 +124,14 @@ class NativeSecp256k1(bool COMPRESS) {
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
         result = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
+        writefln("1) result %d", result);
         if ( result ) {
             auto publen=pub.length;
             result = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
+            writefln("2) result %d", result);
             if ( result ) {
                 result = secp256k1_ecdsa_verify(_ctx, &sig, msgdata, &pubkey);
+                writefln("3) result %d", result);
             }
         }
         return result == 1;
@@ -423,6 +426,7 @@ unittest {
 /*
  * This tests verify() for a valid signature
  */
+    version(none) {
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
@@ -567,10 +571,10 @@ unittest {
         auto result = crypt.randomize(seed);
         assert( result, __FUNCTION__ );
     }
-
+    }
     {
-        //auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A9A");
+        auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
+        //auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A9A");
         auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
         import tagion.crypto.Hash : toHexString;
         import std.digest.sha;
