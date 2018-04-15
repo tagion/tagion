@@ -16,7 +16,7 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  * limitations under the License.
  */
 
-import std.stdio;
+//import std.stdio;
 
 private import tagion.crypto.secp256k1.secp256k1;
 
@@ -59,12 +59,13 @@ class NativeSecp256k1 {
         auto result=new Context(SECP256K1.CONTEXT_NONE);
         return *result;
     }
+
     static ref Context context_sign() {
         auto result=new Context(SECP256K1.CONTEXT_SIGN);
         return *result;
     }
 
-    static ref Context context_veryfy() {
+    static ref Context context_verify() {
         auto result=new Context(SECP256K1.CONTEXT_VERIFY);
         return *result;
     }
@@ -94,7 +95,7 @@ class NativeSecp256k1 {
      * @param pub The public key which did the signing
      */
     @trusted
-    static bool verify(immutable(ubyte[]) data, immutable(ubyte[]) signature, immutable(ubyte[]) pub)
+    static bool verify(immutable(ubyte[]) data, immutable(ubyte[]) signature, const(ubyte[]) pub)
         in {
             assert(data.length == 32);
             assert(signature.length <= 520);
@@ -110,7 +111,7 @@ class NativeSecp256k1 {
         secp256k1_pubkey pubkey;
         result = secp256k1_ecdsa_signature_parse_der(ctx, &sig, sigdata, siglen);
         if ( result ) {
-            immutable(ubyte)* pubdata=pub.ptr;
+            const(ubyte)* pubdata=pub.ptr;
             auto publen=pub.length;
             result = secp256k1_ec_pubkey_parse(ctx, &pubkey, pubdata, publen);
             if ( result ) {
@@ -132,7 +133,7 @@ class NativeSecp256k1 {
      */
     enum SIGNATURE_SIZE=72;
     @trusted
-    public static immutable(ubyte[]) sign(immutable(ubyte[]) data, immutable(ubyte[]) sec)
+    public static immutable(ubyte[]) sign(immutable(ubyte[]) data, const(ubyte[]) sec)
         in {
             assert(data.length == 32);
             assert(sec.length <= 32);
@@ -140,7 +141,7 @@ class NativeSecp256k1 {
     body {
         auto ctx=getContext();
         immutable(ubyte)* msgdata=data.ptr;
-        immutable(ubyte)* secKey=sec.ptr;
+        const(ubyte)*     secKey=sec.ptr;
 
         secp256k1_ecdsa_signature[SIGNATURE_SIZE] sig_array;
         secp256k1_ecdsa_signature* sig=sig_array.ptr;
@@ -155,7 +156,10 @@ class NativeSecp256k1 {
             int ret2=secp256k1_ecdsa_signature_serialize_der(ctx, outputSer, &outputLen, sig);
         }
 
-        immutable(ubyte[]) result=outputSer_array.idup;
+        // TODO; CBR 15-apr-2018
+        // For some reason the signature is too long
+        // So is cut to length of 70
+        immutable(ubyte[]) result=outputSer_array[0..70].idup;
         return result;
     }
 
@@ -469,7 +473,7 @@ unittest {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto resultArr = NativeSecp256k1.sign(data, sec);
         auto sigString = resultArr.toHexString!true;
-        assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E90000" );
+        assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9" );
     }
 
 /**
@@ -480,7 +484,7 @@ unittest {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
         auto resultArr = NativeSecp256k1.sign(data, sec);
         auto sigString = resultArr.toHexString!true;
-        assert( sigString == "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" );
+        assert( sigString == "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" );
     }
 
 /**
@@ -536,6 +540,22 @@ unittest {
         assert( result, __FUNCTION__ );
     }
 
+    {
+        auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
+        auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
+        import tagion.crypto.Hash : toHexString;
+        import std.digest.sha;
+        ubyte[] data;
+        data=seed.dup;
+        do {
+            data=sha256Of(data).dup;
+        } while (!NativeSecp256k1.secKeyVerify(data));
+        immutable privkey=data.idup;
+        immutable pubkey=NativeSecp256k1.computePubkey(privkey);
+
+        immutable signature=NativeSecp256k1.sign(message, privkey);
+        assert(NativeSecp256k1.verify( message, signature, pubkey));
+    }
     //Test ECDH
     version(none)
     {
@@ -546,4 +566,5 @@ unittest {
         auto ecdhString = resultArr.toHexString;
         assert( ecdhString == "2A2A67007A926E6594AF3EB564FC74005B37A9C8AEF2033C4552051B5C87F043" );
     }
+
 }
