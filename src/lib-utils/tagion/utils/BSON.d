@@ -25,13 +25,17 @@ import std.conv;
 import std.exception;  // assumeUnique
 import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
+import std.format;
+import std.traits : isSomeString;
 private import std.bitmanip;
+
+import tagion.crypto.Hash : toHexString;
 
 //import std.stdio;
 //private import proton.core.Misc;
-import tango.text.convert.Format;
-private import tango.core.Traits : isStringType;
-static import tango.text.convert.Integer;
+//import tango.text.convert.Format;
+//private import tango.core.Traits : isStringType;
+//static import tango.text.convert.Integer;
 
 import tango.io.Stdout;
 
@@ -193,7 +197,6 @@ struct Document
 
     @trusted const
     {
-        import Integer=tango.text.convert.Integer ;
         // TODO: Replace with opIn?
         bool hasElement(in string key)
         {
@@ -202,7 +205,7 @@ struct Document
 
 
         bool hasElement(in size_t index) {
-            return hasElement(Integer.toString(index).idup);
+            return hasElement(index.to!string);
         }
 
         Element opIndex(in string key)
@@ -216,7 +219,7 @@ struct Document
         }
 
         Element opIndex(in size_t index) {
-            return opIndex(Integer.toString(index).idup);
+            return opIndex(index.to!string);
         }
 
 
@@ -799,23 +802,24 @@ struct Element
 
 
     @safe
-    bool opEquals(ref const Element other) const pure nothrow
-    {
+    bool opEquals(ref const Element other) const pure nothrow {
         size_t s = size;
-        if (s != other.size)
+        if (s != other.size) {
             return false;
+        }
         return data_[0..s] == other.data_[0..s];
     }
 
 
     @safe
-    int opCmp(ref const Element other) const pure nothrow
-    {
+    int opCmp(ref const Element other) const pure nothrow {
         int typeDiff = canonicalType - other.canonicalType;
-        if (typeDiff < 0)
+        if (typeDiff < 0) {
             return -1;
-        else if (typeDiff > 0)
+        }
+        else if (typeDiff > 0) {
             return 1;
+        }
         return compareValue(this, other);
     }
 
@@ -828,11 +832,11 @@ struct Element
 
 
     @trusted
-    string toFormatString(bool includeKey = false, bool full = false) const
-    {
+    string toFormatString(bool includeKey = false, bool full = false) const {
         string result;
-        if (!isEod)
+        if (!isEod && includeKey) {
             result = key ~ ": ";
+        }
 
         final switch (type) {
         case Type.MIN:
@@ -896,8 +900,15 @@ struct Element
             result ~= '"' ~ str ~ '"';
             break;
         case Type.BINARY:
-            result ~= "binData";
-            // need content?
+            enum max_display_size=80;
+            if ( binary_buffer.length > max_display_size ) {
+                result ~= binary_buffer[0..max_display_size/2].toHexString~
+                    "..."~
+                    binary_buffer[max_display_size/2+1..$].toHexString;
+            }
+            else {
+                result ~= binary_buffer.toHexString;
+            }
             break;
         case Type.DBPOINTER:
             result ~= "DBRef(" ~ str ~ ")";
@@ -934,7 +945,7 @@ struct Element
     void check(Type t) const /* pure */
     {
         if (t != type) {
-            string typeName = to!string(t); // why is to! is not pure?
+            string typeName = to!string(t); // why is to! not pure?
             string message;
             if (isEod)
                 message = "Field not found: expected type = " ~ typeName;
@@ -1852,7 +1863,7 @@ class BSON(bool key_sort_flag=true) {
             assert(subtype == BinarySubType.DOUBLE_array);
             return value.double_array;
         }
-        else static if (is(T:U[],U) && isStringType!U) {
+        else static if (is(T:U[],U) && isSomeString!U) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.STRING_array);
             return value.text_array;
@@ -1960,7 +1971,7 @@ class BSON(bool key_sort_flag=true) {
                     elm.value.document=x;
                     result=true;
                 }
-                else static if (is(T:U[],U) && !isStringType!T) {
+                else static if (is(T:U[],U) && !isSomeString!T) {
                     static if (is(U:const(bool))) {
 //                        elm.subtype=BinarySubType.BOOLEAN_array;
                         elm.value.bool_array=x;
@@ -2007,7 +2018,7 @@ class BSON(bool key_sort_flag=true) {
                         elm.value.binary=x;
                     }
                     else static if (is(immutable U==immutable int)) {
-                        elm.value.int32_array=x; //(cast(immutable(ubyte)*)x.ptr)[0..x.length/int.sizeof];
+                        elm.value.int32_array=x;
                     }
                     else static if (is(immutable U==immutable uint)) {
                         elm.value.uint32_array=x;
@@ -2033,9 +2044,7 @@ class BSON(bool key_sort_flag=true) {
                         elm.value.binary=((cast(ubyte*)&x)[0..T.sizeof]).idup;
                     }
                 }
-//                Stdout.formatln("Again before subtype Append int[] length={}",elm.value.int32_array.length);
                 elm.subtype=subtype;
-//                Stdout.formatln("Again Append int[] length={}",elm.value.int32_array.length);
                 result=true;
                 break;
             case UNDEFINED:
@@ -2158,18 +2167,6 @@ class BSON(bool key_sort_flag=true) {
         else {
             static assert(0, "opIndexAssign does not support type "~T.stringof~" use append member function instead");
         }
-/*
-        else static if (is(T.length) && is(T.opApply) {
-           BSON[] bsons=new BSON[x.length];
-           size_t i;
-           foreach(v;x) {
-               BSON elm=new BSON;
-               elm[
-               bson[i]=new BSON;
-           }
-        }
-*/
-
     }
 
     unittest { // bool bug-fix test
@@ -2223,54 +2220,54 @@ class BSON(bool key_sort_flag=true) {
                 result=to!string(_type);
                 break;
             case DOUBLE:
-                result~=Format("{} {}", to!string(_type), value.number);
+                result~=format("%s %s", to!string(_type), value.number);
                 break;
             case FLOAT:
-                result~=Format("{} {}", to!string(_type), value.number32);
+                result~=format("%s %s", to!string(_type), value.number32);
                 break;
             case STRING:
             case REGEX:
             case JS_CODE:
             case SYMBOL:
-                result~=Format("**{} {}", to!string(_type), value.text);
+                result~=format("**%s %s", to!string(_type), value.text);
                 break;
             case JS_CODE_W_SCOPE:
-                result~=Format("{} {} {:X}", to!string(_type), value.codescope.code, value.codescope.document.id);
+                result~=format("%s %s :%X", to!string(_type), value.codescope.code, value.codescope.document.id);
                 break;
             case DOCUMENT:
             case ARRAY:
-                result~=Format("##{} {:X}", to!string(_type), this.id);
+                result~=format("##%s :%X", to!string(_type), this.id);
                 break;
             case BINARY:
-
+                result~=format("%s.%s", to!string(_type), to!string(subtype));
                 // Todo
                 break;
             case OID:
-                result~=Format("{} {:X}", to!string(_type), value.oid.id);
+                result~=format("%s :%X ", to!string(_type), value.oid.id);
                 break;
             case BOOLEAN:
-                result~=Format("{} {}", to!string(_type), value.boolean);
+                result~=format("%s %s", to!string(_type), value.boolean);
                 break;
             case DATE:
-                result~=Format("{} {}", to!string(_type), value.date);
+                result~=format("%s %s", to!string(_type), value.date);
                 break;
             case DBPOINTER:
                 result=to!string(_type);
                 break;
             case INT32:
-                result~=Format("{} {}", to!string(_type), value.int32);
+                result~=format("%s %s", to!string(_type), value.int32);
                 break;
             case UINT32:
-                result~=Format("{} {}", to!string(_type), value.uint32);
+                result~=format("%s %s", to!string(_type), value.uint32);
                 break;
             case INT64:
-                result~=Format("{} {}", to!string(_type), value.int64);
+                result~=format("%s %s", to!string(_type), value.int64);
                 break;
             case UINT64:
-                result~=Format("{} {}", to!string(_type), value.uint64);
+                result~=format("%s %s", to!string(_type), value.uint64);
                 break;
             case TIMESTAMP:
-                result~=Format("{} {}", to!string(_type), value.int64);
+                result~=format("%s %s", to!string(_type), value.int64);
                 break;
 
             }
@@ -2446,7 +2443,7 @@ class BSON(bool key_sort_flag=true) {
                     void local_array_serialize(T)(Type type) {
                         foreach(i,a;get!T) {
                             local~=subtype & 0x7F;
-                            local~=tango.text.convert.Integer.toString(i);
+                            local~=i.to!string;
                             local~=zero;
                             native_append(a, local);
                         }
