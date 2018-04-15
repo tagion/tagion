@@ -109,13 +109,13 @@ struct InterfaceEventUpdate {
     EventType eventType;
     uint id;
 	EventProperty property;
-	//bool value;
+	bool value;
 
     this (const uint id, const EventProperty property, const bool value) {
         this.eventType = EventType.EVENT_UPDATE;
         this.id = id;
         this.property = property;
-        //this.value = value;
+        this.value = value;
     }
     
     this(immutable(ubyte)[] data) inout {
