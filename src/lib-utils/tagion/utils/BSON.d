@@ -198,7 +198,7 @@ struct Document
     @trusted const
     {
         // TODO: Replace with opIn?
-        bool hasElement(const(char)[] key)
+        bool hasElement(in string key)
         {
             return !opIndex(key).isEod();
         }
@@ -208,7 +208,7 @@ struct Document
             return hasElement(index.to!string);
         }
 
-        Element opIndex(const(char)[] key)
+        Element opIndex(in string key)
         {
             foreach (ref element; Range(data_)) {
                 if (element.key == key)
