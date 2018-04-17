@@ -1738,12 +1738,15 @@ class BSON(bool key_sort_flag=true) {
         return _key;
     }
 
+    bool const_pointer;
+
     union Value {
         double number;
         float number32;
         immutable(char)[] text;
         bool boolean;
         BSON document;
+        const(BSON)* document_ptr;
         ObjectId oid;
         private _Date _date;
         @property final Date date() const {
@@ -1803,6 +1806,11 @@ class BSON(bool key_sort_flag=true) {
         else static if (is(T==BSON)) {
             assert(_type == Type.DOCUMENT);
             return value.document;
+        }
+        else static if (is(T:const(BSON))) {
+            assert(_type == Type.DOCUMENT);
+            assert(const_pointer);
+            return *(value.document_ptr);
         }
         else static if (is(T==ObjectId)) {
             assert(_type == Type.OID);
@@ -1962,6 +1970,11 @@ class BSON(bool key_sort_flag=true) {
                     elm.value.document=x;
                     result=true;
                 }
+                else static if (is(T:const(BSON))) {
+                    elm.value.document_ptr=&x;
+                    elm.const_pointer=true;
+                    result=true;
+                }
                 else {
                     assert(0, "Unsupported type "~T.stringof~" not a valid "~to!string(type));
                 }
@@ -1969,6 +1982,11 @@ class BSON(bool key_sort_flag=true) {
             case ARRAY:
                 static if (is(T==BSON)) {
                     elm.value.document=x;
+                    result=true;
+                }
+                else static if (is(T:const(BSON))) {
+                    elm.value.document_ptr=&x;
+                    const_pointer=true;
                     result=true;
                 }
                 else static if (is(T:U[],U) && !isSomeString!T) {
@@ -2289,7 +2307,12 @@ class BSON(bool key_sort_flag=true) {
                     buf ~= " : ";
                 }
                 if ( b.isDocument ) {
-                    buf~=object_toText(b.value.document);
+                    if ( const_pointer ) {
+                        buf~=object_toText(*(b.value.document));
+                    }
+                    else {
+                        buf~=object_toText(b.value.document);
+                    }
                 }
                 else {
                     buf~=b.toText!string_t;
@@ -2432,11 +2455,21 @@ class BSON(bool key_sort_flag=true) {
                 data~=zero;
                 break;
             case DOCUMENT:
-                data~=value.document.serialize;
+                if ( const_pointer ) {
+                    data~=value.document_ptr.serialize;
+                }
+                else {
+                    data~=value.document.serialize;
+                }
                 break;
             case ARRAY:
                 if ( (subtype & BinarySubType.userDefined) == 0 ) {
-                    data~=value.document.serialize;
+                    if ( const_pointer ) {
+                        data~=value.document_ptr.serialize;
+                    }
+                    else {
+                        data~=value.document.serialize;
+                    }
                 }
                 else {
                     immutable(ubyte)[] local;
@@ -2564,7 +2597,12 @@ class BSON(bool key_sort_flag=true) {
                         //dgelm(data);
                         break;
                     case DOCUMENT:
-                        data~=e.value.document.serialize;
+                        if ( const_pointer ) {
+                            data~=e.value.document_ptr.serialize;
+                        }
+                        else {
+                            data~=e.value.document.serialize;
+                        }
                         break;
                     case ARRAY:
                         e.appendData(data);
