@@ -16,6 +16,7 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_CREATE_FAULT,
     SECURITY_PUBLIC_KEY_PARSE_FAULT,
     SECURITY_DER_SIGNATURE_PARSE_FAULT,
+    SECURITY_SIGNATURE_SIZE_FAULT,
 
     SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT,
     SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT,
@@ -69,6 +70,7 @@ static this() {
             SECURITY_PUBLIC_KEY_CREATE_FAULT : "Failed to create public key",
             SECURITY_PUBLIC_KEY_PARSE_FAULT : "Failed to parse public key",
             SECURITY_DER_SIGNATURE_PARSE_FAULT : "Failed to parse DER signature",
+            SECURITY_SIGNATURE_SIZE_FAULT : "The size of the signature is wrong",
 
             SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT : "Failed to tweak add private key",
             SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT : "Failed to tweak mult private key",
@@ -93,15 +95,3 @@ static this() {
 
 
 static public immutable(string[ConsensusFailCode]) consensus_error_messages;
-
-// static assert(
-//     ConsensusFailCode.max+1 == consensus_error_messages.length,
-//     "Some error messages in "~consensus_error_messages.stringof~" is missing");
-
-
-// @safe
-// class TypeConsensusException : ConsensusException {
-//     this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
-//         super( code, file, line );
-//     }
-// }
