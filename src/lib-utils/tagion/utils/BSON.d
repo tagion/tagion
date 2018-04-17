@@ -2102,6 +2102,7 @@ class BSON(bool key_sort_flag=true) {
                 result=true;
                 break;
             case DBPOINTER:
+                throw new BSONException(format("Unsupported BSON type '%s' for key '%s' '",type.to!string, key.idup));
                 break;
             case INT32:
                 static if (is(T:int)) {
