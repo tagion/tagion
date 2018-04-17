@@ -40,6 +40,8 @@ class NativeSecp256k1 {
             throw new SecurityConsensusException(code, file, line);
         }
     }
+    enum DER_SIGNATURE_SIZE=72;
+    enum SIGNATURE_SIZE=64;
 
     // struct Context {
     //     private secp256k1_context* _ctx;
@@ -122,9 +124,15 @@ class NativeSecp256k1 {
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
-        ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
-        check(ret == 1, ConsensusFailCode.SECURITY_DER_SIGNATURE_PARSE_FAULT);
-
+        if ( _DER_format ) {
+            ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
+            check(ret == 1, ConsensusFailCode.SECURITY_DER_SIGNATURE_PARSE_FAULT);
+        }
+        else {
+            check(siglen == SIGNATURE_SIZE, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+            import core.stdc.string : memcpy;
+            memcpy(&(sig.data), sigdata,  siglen);
+        }
         auto publen=pub.length;
         ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
         check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
@@ -142,8 +150,6 @@ class NativeSecp256k1 {
      * Return values
      * @param sig byte array of signature
      */
-    enum DER_SIGNATURE_SIZE=72;
-    enum SIGNATURE_SIZE=64;
     @trusted
     immutable(ubyte[]) sign(immutable(ubyte[]) data, const(ubyte[]) sec)
         in {
