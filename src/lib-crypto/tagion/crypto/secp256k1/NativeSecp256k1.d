@@ -20,9 +20,6 @@ import std.stdio;
 
 private import tagion.crypto.secp256k1.secp256k1;
 
-alias Secp256k1=NativeSecp256k1!true;
-alias Secp256k1_Uncompressed=NativeSecp256k1!false;
-
 /**
  * <p>This class holds native methods to handle ECDSA verification.</p>
  *
@@ -36,15 +33,13 @@ alias Secp256k1_Uncompressed=NativeSecp256k1!false;
  */
 @safe
 class NativeSecp256k1 {
+    @safe
+    static void check(bool flag, ConsensusFailCode code, string msg, string file = __FILE__, size_t line = __LINE__) {
+        if (!flag) {
+            throw new SecurityConsensusException(msg, code, file, line);
+        }
+    }
 
-    static if ( COMPRESS ) {
-        enum flag = SECP256K1.EC_COMPRESSED;
-        enum pubkey_size=COMPRESSED_PUBKEY_SIZE;
-    }
-    else {
-        enum flag = SECP256K1.EC_UNCOMPRESSED;
-        enum pubkey_size=PUBKEY_SIZE;
-    }
     // struct Context {
     //     private secp256k1_context* _ctx;
     //     @trusted
@@ -89,10 +84,13 @@ class NativeSecp256k1 {
 
     private secp256k1_context* _ctx;
 
+    private bool _DER_format;
     @trusted
-    this(SECP256K1 flag=SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) {
+    this(const bool DER_format=false, const SECP256K1 flag=SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) {
         _ctx = secp256k1_context_create(flag);
+        _DER_format=DER_format;
     }
+
 
     // private static secp256k1_context* getContext() {
     //     return _ctx;
@@ -115,7 +113,7 @@ class NativeSecp256k1 {
         }
     body {
 //        auto ctx=getContext();
-        int result;
+        int ret;
         immutable(ubyte)* sigdata=signature.ptr;
         auto siglen=signature.length;
         const(ubyte)* pubdata=pub.ptr;
@@ -123,18 +121,15 @@ class NativeSecp256k1 {
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
-        result = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
-        writefln("1) result %d", result);
-        if ( result ) {
-            auto publen=pub.length;
-            result = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
-            writefln("2) result %d", result);
-            if ( result ) {
-                result = secp256k1_ecdsa_verify(_ctx, &sig, msgdata, &pubkey);
-                writefln("3) result %d", result);
-            }
-        }
-        return result == 1;
+        ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
+        check(ret == 1, ConsensusFailCode.SECURITY_DER_SIGNATURE_PARSE_FAULT);
+
+        auto publen=pub.length;
+        result = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
+        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
+
+        ret = secp256k1_ecdsa_verify(_ctx, &sig, msgdata, &pubkey);
+        return ret == 1;
     }
 
     /**
@@ -146,7 +141,8 @@ class NativeSecp256k1 {
      * Return values
      * @param sig byte array of signature
      */
-    enum SIGNATURE_SIZE=72;
+    enum DER_SIGNATURE_SIZE=72;
+    enum SIGNATURE_SIZE=64;
     @trusted
     immutable(ubyte[]) sign(immutable(ubyte[]) data, const(ubyte[]) sec)
         in {
@@ -154,28 +150,27 @@ class NativeSecp256k1 {
             assert(sec.length <= 32);
         }
     body {
-//        auto ctx=getContext();
         immutable(ubyte)* msgdata=data.ptr;
         const(ubyte)*     secKey=sec.ptr;
-
-        secp256k1_ecdsa_signature[SIGNATURE_SIZE] sig_array;
-        secp256k1_ecdsa_signature* sig=sig_array.ptr;
+        secp256k1_ecdsa_signature sig_array;
+        secp256k1_ecdsa_signature* sig=&sig_array;
 
         int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null );
+        check(ret == 1, SECURITY_SIGN_FAULT);
 
-        ubyte[SIGNATURE_SIZE] outputSer_array;
-        ubyte* outputSer = outputSer_array.ptr;
-        size_t outputLen = outputSer_array.length;
-
-        if ( ret ) {
+        if ( _DER_format ) {
+            ubyte[SIGNATURE_SIZE] outputSer_array;
+            ubyte* outputSer = outputSer_array.ptr;
+            size_t outputLen = outputSer_array.length;
             int ret2=secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
-        }
+            immutable(ubyte[]) result=outputSer_array.idup;
 
-        // TODO; CBR 15-apr-2018
-        // For some reason the signature is too long
-        // So is cut to length of 70
-        immutable(ubyte[]) result=outputSer_array[0..70].idup;
-        return result;
+            return result;
+        }
+        else {
+            immutable(ubyte[]) result=(sig.data.ptr)[0..SIGNATURE_SIZE].idup;
+            return result;
+        }
     }
 
     /**
@@ -189,7 +184,6 @@ class NativeSecp256k1 {
             assert(seckey.length == 32);
         }
     body {
-//        auto ctx=getContext();
         const(ubyte)* sec=seckey.ptr;
         return secp256k1_ec_seckey_verify(_ctx, sec) == 1;
     }
@@ -207,10 +201,18 @@ class NativeSecp256k1 {
     enum PUBKEY_SIZE=65;
     enum COMPRESSED_PUBKEY_SIZE=33;
     @trusted
-    immutable(ubyte[]) computePubkey(const(ubyte[]) seckey)
+    immutable(ubyte[]) computePubkey(const(ubyte[]) seckey, immutable bool compress=true)
         in {
             assert(seckey.length == 32);
         }
+    out(result) {
+        if ( compress ) {
+            assert(result.length == COMPRESSED_PUBKEY_SIZE);
+        }
+        else {
+            assert(result.length == PUBKEY_SIZE);
+        }
+    }
     body {
 //        auto ctx=getContext();
         const(ubyte)* sec=seckey.ptr;
@@ -218,16 +220,24 @@ class NativeSecp256k1 {
         secp256k1_pubkey pubkey;
 
         int ret = secp256k1_ec_pubkey_create(_ctx, &pubkey, sec);
-
-        ubyte[pubkey_size] outputSer_array;
+        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
+        // ubyte[pubkey_size] outputSer_array;
+        ubyte[] outputSer_array;
+        SECP256K1 flag;
+        if ( compress ) {
+            outputSer_array=new ubyte[COMPRESSED_PUBKEY_SIZE];
+            flag=SECP256K1.EC_COMPRESSED;
+        }
+        else {
+            outputSer_array=new ubyte[PUBKEY_SIZE];
+            flag=SECP256K1.EC_UNCOMPRESSED;
+        }
         ubyte* outputSer = outputSer_array.ptr;
         size_t outputLen = outputSer_array.length;
 
-        if( ret ) {
-            int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey, flag );
-        }
+        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey, flag );
 
-        immutable(ubyte[]) result = outputSer_array.idup;
+        immutable(ubyte[]) result = outputSer_array[0..outputLen].idup;
         return result;
     }
 
@@ -264,6 +274,7 @@ class NativeSecp256k1 {
         immutable(ubyte)* _tweak=tweak.ptr;
 
         int ret = secp256k1_ec_privkey_tweak_mul(_ctx, _privkey, _tweak);
+        check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT);
 
         immutable(ubyte[]) result=privkey_array.idup;
         return result;
@@ -287,7 +298,7 @@ class NativeSecp256k1 {
         immutable(ubyte)* _tweak=tweak.ptr;
 
         int ret = secp256k1_ec_privkey_tweak_add(_ctx, _privkey, _tweak);
-
+        check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT);
         immutable(ubyte[]) result=privkey_array.idup;
         return result;
     }
@@ -299,9 +310,14 @@ class NativeSecp256k1 {
      * @param pubkey 32-byte seckey
      */
     @trusted
-    immutable(ubyte[]) pubKeyTweakAdd(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
+    immutable(ubyte[]) pubKeyTweakAdd(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak, immutable bool compress=true)
         in {
-            assert(pubkey.length == 33 || pubkey.length == 65);
+            if ( compress ) {
+                assert(pubkey.length == 33);
+            }
+            else {
+                assert(pubkey.length == 65);
+            }
         }
     body {
 //        auto ctx=getContext();
@@ -312,10 +328,11 @@ class NativeSecp256k1 {
 
         secp256k1_pubkey pubkey_result;
         int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
+        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
-        if( ret ) {
-            ret = secp256k1_ec_pubkey_tweak_add(_ctx, &pubkey_result, _tweak);
-        }
+        ret = secp256k1_ec_pubkey_tweak_add(_ctx, &pubkey_result, _tweak);
+        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT);
+
 
         ubyte[65] outputSer_array;
         ubyte* outputSer=outputSer_array.ptr;
@@ -348,12 +365,12 @@ class NativeSecp256k1 {
         immutable(ubyte)* _tweak=tweak.ptr;
         size_t publen = pubkey.length;
 
-          secp256k1_pubkey pubkey_result;
-          int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
+        secp256k1_pubkey pubkey_result;
+        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
+        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
-          if ( ret ) {
-              ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
-          }
+        ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
+        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
 
           ubyte[65] outputSer_array;
           ubyte* outputSer=outputSer_array.ptr;
@@ -391,6 +408,7 @@ class NativeSecp256k1 {
         ubyte* nonce_res = nonce_res_array.ptr;
 
         int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
+        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
         if (ret) {
             ret = secp256k1_ecdh(_ctx, nonce_res, &pubkey_result, secdata);
