@@ -4,7 +4,7 @@ import std.datetime;   // Date, DateTime
 import tagion.utils.BSON : Document;
 //import tagion.crypto.Hash;
 import tagion.hashgraph.GossipNet;
-import tagion.hashgraph.ConsensusException;
+import tagion.hashgraph.ConsensusExceptions;
 //import tagion.hashgraph.HashGraph : HashGraph;
 import std.conv;
 import std.bitmanip;
@@ -82,17 +82,18 @@ struct EventBody {
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
 //            writefln("father.length=%s index=%s", father.length, index);
-            check(father.length == 0, ConcensusFailCode.NO_MOTHER);
+
+            check(father.length == 0, ConsensusFailCode.NO_MOTHER);
 //            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
         }
         else {
             if ( father.length != 0 ) {
                 // If the Event has a father
-                check(mother.length == father.length, ConcensusFailCode.MOTHER_AND_FATHER_SAME_SIZE);
+                check(mother.length == father.length, ConsensusFailCode.MOTHER_AND_FATHER_SAME_SIZE);
             }
 //            writefln("Non Eva father.length=%s index=%s", father.length, index);
             //          check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
-            check(mother != father, ConcensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
+            check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
         }
     }
 //json encoding of body only
