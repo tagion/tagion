@@ -11,8 +11,8 @@ import tagion.crypto.Hash;
 
 @safe
 class HashGraphConsensusException : ConsensusException {
-    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
-        super( msg, code, file, line );
+    this( ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+        super( code, file, line );
     }
 }
 
