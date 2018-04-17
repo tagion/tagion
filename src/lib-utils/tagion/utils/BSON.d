@@ -31,7 +31,7 @@ private import std.bitmanip;
 
 import tagion.crypto.Hash : toHexString;
 
-//import std.stdio;
+import std.stdio;
 //private import proton.core.Misc;
 //import tango.text.convert.Format;
 //private import tango.core.Traits : isStringType;
@@ -86,7 +86,7 @@ enum BinarySubType : ubyte
     UINT32_array    = userDefined | Type.UINT32,
     UINT64_array    = userDefined | Type.UINT64,
     FLOAT_array     = userDefined | Type.FLOAT,
-    non             = 0xFF   /// Not defined
+    not_defined     = 0xFF   /// Not defined
 }
 
 
@@ -208,11 +208,11 @@ struct Document
             return hasElement(index.to!string);
         }
 
-        Element opIndex(in string key)
-        {
+        Element opIndex(in string key) {
             foreach (ref element; Range(data_)) {
-                if (element.key == key)
+                if (element.key == key) {
                     return element;
+                }
             }
 
             return Element();
@@ -378,7 +378,7 @@ struct Element
                 return cast(BinarySubType)value[4];
             }
             else {
-                return BinarySubType.non;
+                return BinarySubType.not_defined;
             }
             //return ((4<data_.length) )?data_[4]:BinarySubType.non;
         }
@@ -615,7 +615,9 @@ struct Element
                     }
                 }
             }
-            throw new BSONException("Invalide type expected "~to!string(subtype)~" but the type used is "~T.stringof);
+
+            writefln("convert %s  getSubtype=%s type=%s", U.stringof, getSubtype!T, type.to!string );
+            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
             assert(0, "Unsupported type "~T.stringof);
         }
 
@@ -1738,7 +1740,7 @@ class BSON(bool key_sort_flag=true) {
         return _key;
     }
 
-    bool const_pointer;
+    private bool const_pointer;
 
     union Value {
         double number;
@@ -1972,6 +1974,7 @@ class BSON(bool key_sort_flag=true) {
                 }
                 else static if (is(T:const(BSON))) {
                     elm.value.document_ptr=&x;
+                    writefln("Set.key=%s type=%s T=%s",  key, type.to!string, T.stringof);
                     elm.const_pointer=true;
                     result=true;
                 }
@@ -1986,7 +1989,8 @@ class BSON(bool key_sort_flag=true) {
                 }
                 else static if (is(T:const(BSON))) {
                     elm.value.document_ptr=&x;
-                    const_pointer=true;
+                    writefln("Set.key=%s type=%s T=%s",  key, type.to!string, T.stringof);
+                    elm.const_pointer=true;
                     result=true;
                 }
                 else static if (is(T:U[],U) && !isSomeString!T) {
@@ -2307,7 +2311,7 @@ class BSON(bool key_sort_flag=true) {
                     buf ~= " : ";
                 }
                 if ( b.isDocument ) {
-                    if ( const_pointer ) {
+                    if ( b.const_pointer ) {
                         buf~=object_toText(*(b.value.document));
                     }
                     else {
@@ -2597,7 +2601,7 @@ class BSON(bool key_sort_flag=true) {
                         //dgelm(data);
                         break;
                     case DOCUMENT:
-                        if ( const_pointer ) {
+                        if ( e.const_pointer ) {
                             data~=e.value.document_ptr.serialize;
                         }
                         else {
