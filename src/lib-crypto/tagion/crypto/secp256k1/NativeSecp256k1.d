@@ -35,7 +35,7 @@ alias Secp256k1_Uncompressed=NativeSecp256k1!false;
  * </p>
  */
 @safe
-class NativeSecp256k1(bool COMPRESS) {
+class NativeSecp256k1 {
 
     static if ( COMPRESS ) {
         enum flag = SECP256K1.EC_COMPRESSED;
