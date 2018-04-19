@@ -22,6 +22,8 @@ enum ConsensusFailCode {
     SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT,
     SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT,
     SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT,
+    SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT,
+    SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
 
     NETWORK_BAD_PACKAGE_TYPE
 };
@@ -29,6 +31,10 @@ enum ConsensusFailCode {
 @safe
 class ConsensusException : Exception {
     immutable ConsensusFailCode code;
+    string toText() pure const nothrow {
+        return consensus_error_messages[code];
+    }
+
     this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
         super( consensus_error_messages[code], file, line );
         this.code=code;
@@ -56,6 +62,13 @@ class GossipConsensusException : ConsensusException {
     }
 }
 
+@safe
+class HashGraphConsensusException : ConsensusException {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+        super( code, file, line );
+    }
+}
+
 
 @trusted
 static this() {
@@ -71,6 +84,9 @@ static this() {
             SECURITY_PUBLIC_KEY_PARSE_FAULT : "Failed to parse public key",
             SECURITY_DER_SIGNATURE_PARSE_FAULT : "Failed to parse DER signature",
             SECURITY_SIGNATURE_SIZE_FAULT : "The size of the signature is wrong",
+
+            SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT : "Wrong size of compressed Public key",
+            SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT : "Wrong size of uncompressed Public key",
 
             SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT : "Failed to tweak add private key",
             SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT : "Failed to tweak mult private key",
