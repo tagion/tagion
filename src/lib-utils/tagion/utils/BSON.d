@@ -94,8 +94,7 @@ enum BinarySubType : ubyte
  * BSON document representation, which is called "BSONObj" in C++.
  */
 @safe
-struct Document
-{
+struct Document {
   private:
     immutable ubyte[] data_;
 
@@ -2202,6 +2201,23 @@ class BSON(bool key_sort_flag=true) {
         auto value=doc["bool"];
         assert(value.type == Type.BOOLEAN);
         assert(value.get!bool == true);
+    }
+
+    unittest {
+        auto send_payload=new BSON;
+        send_payload["t"]="Some data";
+        auto pack=new BSON;
+        pack["o"]=send_payload;
+
+        writefln("send_payload=%s", send_payload.serialize);
+        writefln("        pack=%s", pack.serialize);
+
+        auto doc=Document(pack.serialize);
+        auto send_doc=doc["o"].get!Document;
+        writefln("    doc['o']=%s", send_doc.data);
+
+        writefln("         doc=%s", doc.data);
+
     }
 
     const(BSON) opIndex(const(char)[] key) const {
