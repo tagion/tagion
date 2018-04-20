@@ -86,7 +86,7 @@ enum BinarySubType : ubyte
     UINT32_array    = userDefined | Type.UINT32,
     UINT64_array    = userDefined | Type.UINT64,
     FLOAT_array     = userDefined | Type.FLOAT,
-    not_defined     = 0xFF   /// Not defined
+    non             = 0xFF   /// Not defined
 }
 
 
@@ -94,7 +94,8 @@ enum BinarySubType : ubyte
  * BSON document representation, which is called "BSONObj" in C++.
  */
 @safe
-struct Document {
+struct Document
+{
   private:
     immutable ubyte[] data_;
 
@@ -197,7 +198,7 @@ struct Document {
     @trusted const
     {
         // TODO: Replace with opIn?
-        bool hasElement(in string key)
+        bool hasElement(const(char)[] key)
         {
             return !opIndex(key).isEod();
         }
@@ -207,11 +208,11 @@ struct Document {
             return hasElement(index.to!string);
         }
 
-        Element opIndex(in string key) {
+        Element opIndex(const(char)[] key)
+        {
             foreach (ref element; Range(data_)) {
-                if (element.key == key) {
+                if (element.key == key)
                     return element;
-                }
             }
 
             return Element();
@@ -377,7 +378,7 @@ struct Element
                 return cast(BinarySubType)value[4];
             }
             else {
-                return BinarySubType.not_defined;
+                return BinarySubType.non;
             }
             //return ((4<data_.length) )?data_[4]:BinarySubType.non;
         }
@@ -614,8 +615,7 @@ struct Element
                     }
                 }
             }
-
-            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
+            throw new BSONException("Invalide type expected "~to!string(subtype)~" but the type used is "~T.stringof);
             assert(0, "Unsupported type "~T.stringof);
         }
 
@@ -1738,15 +1738,12 @@ class BSON(bool key_sort_flag=true) {
         return _key;
     }
 
-//    private bool const_pointer;
-
     union Value {
         double number;
         float number32;
         immutable(char)[] text;
         bool boolean;
         BSON document;
-//        const(BSON)* document_ptr;
         ObjectId oid;
         private _Date _date;
         @property final Date date() const {
@@ -1806,11 +1803,6 @@ class BSON(bool key_sort_flag=true) {
         else static if (is(T==BSON)) {
             assert(_type == Type.DOCUMENT);
             return value.document;
-        }
-        else static if (is(T:const(BSON))) {
-            assert(_type == Type.DOCUMENT);
-//            assert(const_pointer);
-            return cast(T)(value.document);
         }
         else static if (is(T==ObjectId)) {
             assert(_type == Type.OID);
@@ -1970,10 +1962,6 @@ class BSON(bool key_sort_flag=true) {
                     elm.value.document=x;
                     result=true;
                 }
-                else static if (is(T:const(BSON))) {
-                    elm.value.document=cast(BSON)x;
-                    result=true;
-                }
                 else {
                     assert(0, "Unsupported type "~T.stringof~" not a valid "~to!string(type));
                 }
@@ -1981,10 +1969,6 @@ class BSON(bool key_sort_flag=true) {
             case ARRAY:
                 static if (is(T==BSON)) {
                     elm.value.document=x;
-                    result=true;
-                }
-                else static if (is(T:const(BSON))) {
-                    elm.value.document=cast(BSON)x;
                     result=true;
                 }
                 else static if (is(T:U[],U) && !isSomeString!T) {
@@ -2096,7 +2080,6 @@ class BSON(bool key_sort_flag=true) {
                 result=true;
                 break;
             case DBPOINTER:
-                throw new BSONException(format("Unsupported BSON type '%s' for key '%s' '",type.to!string, key.idup));
                 break;
             case INT32:
                 static if (is(T:int)) {
@@ -2306,12 +2289,7 @@ class BSON(bool key_sort_flag=true) {
                     buf ~= " : ";
                 }
                 if ( b.isDocument ) {
-                    if ( b.const_pointer ) {
-                        buf~=object_toText(*(b.value.document));
-                    }
-                    else {
-                        buf~=object_toText(b.value.document);
-                    }
+                    buf~=object_toText(b.value.document);
                 }
                 else {
                     buf~=b.toText!string_t;
@@ -3244,41 +3222,4 @@ double[] doc2doubles(Document doc) {
         result~=elm.as!double;
     }
     return result;
-}
-
-
-unittest { // BSON with const member
-    alias GBSON=BSON!true;
-    auto bson1=new GBSON;
-    auto bson2=new GBSON;
-    bson1["hugh"]="Some data";
-    bson1["age"]=42;
-    bson1["height"]=155.7;
-
-    bson2["obj"]=bson1;
-    immutable bson1_data=bson1.serialize;
-    immutable bson2_data=bson2.serialize;
-
-    auto doc1=Document(bson1_data);
-    auto doc2=Document(bson2_data);
-
-    assert(bson1_data.length == doc1.data.length);
-    assert(bson1_data == doc1.data);
-
-    assert(bson2_data.length == doc2.data.length);
-    assert(bson2_data == doc2.data);
-
-    void doc_bson_const(GBSON bson, const(GBSON) b) {
-
-        bson["obj"]=b;
-    }
-
-    auto bson2c=new GBSON;
-    doc_bson_const(bson2c, bson1);
-
-    immutable bson2c_data=bson2c.serialize;
-    auto doc2c=Document(bson2c_data);
-    assert(bson2c_data == doc2c.data);
-    assert(doc2c.data == doc2.data);
-
 }
