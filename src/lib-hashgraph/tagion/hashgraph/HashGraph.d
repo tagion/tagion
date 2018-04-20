@@ -8,8 +8,13 @@ import tagion.hashgraph.GossipNet;
 import tagion.utils.LRU;
 import tagion.utils.BSON : Document;
 import tagion.crypto.Hash;
-import tagion.hashgraph.ConsensusExceptions;
 
+@safe
+class HashGraphConsensusException : ConsensusException {
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, code, file, line );
+    }
+}
 
 @safe
 class HashGraph {

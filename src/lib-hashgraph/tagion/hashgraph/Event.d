@@ -4,7 +4,6 @@ import std.datetime;   // Date, DateTime
 import tagion.utils.BSON : Document;
 //import tagion.crypto.Hash;
 import tagion.hashgraph.GossipNet;
-import tagion.hashgraph.ConsensusExceptions;
 //import tagion.hashgraph.HashGraph : HashGraph;
 import std.conv;
 import std.bitmanip;
@@ -14,10 +13,39 @@ import std.format;
 
 import tagion.Base : this_dot, basename;
 
+enum ConcensusFailCode {
+    NON,
+    NO_MOTHER,
+    MOTHER_AND_FATHER_SAME_SIZE,
+    MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME,
+    PACKAGE_SIZE_OVERFLOW,
+    EVENT_PACKAGE_MISSING_PUBLIC_KEY,
+    EVENT_PACKAGE_MISSING_EVENT,
+    EVENT_PACKAGE_BAD_SIGNATURE,
+    NETWORK_BAD_PACKAGE_TYPE
+}
+
 @safe
-void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+class ConsensusException : Exception {
+    immutable ConcensusFailCode code;
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, file, line );
+        this.code=code;
+    }
+}
+
+@safe
+class EventConsensusException : ConsensusException {
+    this( immutable(char)[] msg, ConcensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+//        writefln("msg=%s", msg);
+        super( msg, code, file, line );
+    }
+}
+
+@safe
+void check(bool flag, ConcensusFailCode code, string msg, string file = __FILE__, size_t line = __LINE__) {
     if (!flag) {
-        throw new EventConsensusException(code, file, line);
+        throw new EventConsensusException(msg, code, file, line);
     }
 }
 
@@ -82,18 +110,17 @@ struct EventBody {
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
 //            writefln("father.length=%s index=%s", father.length, index);
-
-            check(father.length == 0, ConsensusFailCode.NO_MOTHER);
+            check(father.length == 0, ConcensusFailCode.NO_MOTHER, "If an event has no mother it can not have a father");
 //            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
         }
         else {
             if ( father.length != 0 ) {
                 // If the Event has a father
-                check(mother.length == father.length, ConsensusFailCode.MOTHER_AND_FATHER_SAME_SIZE);
+                check(mother.length == father.length, ConcensusFailCode.MOTHER_AND_FATHER_SAME_SIZE, "Mother and Father must user the same hash function");
             }
 //            writefln("Non Eva father.length=%s index=%s", father.length, index);
             //          check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
-            check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
+            check(mother != father, ConcensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME, "The mother and father can not be the same event");
         }
     }
 //json encoding of body only
