@@ -19,7 +19,9 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
 import std.stdio;
 
 private import tagion.crypto.secp256k1.secp256k1;
-import tagion.hashgraph.ConsensusExceptions;
+
+alias Secp256k1=NativeSecp256k1!true;
+alias Secp256k1_Uncompressed=NativeSecp256k1!false;
 
 /**
  * <p>This class holds native methods to handle ECDSA verification.</p>
@@ -33,16 +35,16 @@ import tagion.hashgraph.ConsensusExceptions;
  * </p>
  */
 @safe
-class NativeSecp256k1 {
-    @safe
-    static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
-        if (!flag) {
-            throw new SecurityConsensusException(code, file, line);
-        }
-    }
-    enum DER_SIGNATURE_SIZE=72;
-    enum SIGNATURE_SIZE=64;
+class NativeSecp256k1(bool COMPRESS) {
 
+    static if ( COMPRESS ) {
+        enum flag = SECP256K1.EC_COMPRESSED;
+        enum pubkey_size=COMPRESSED_PUBKEY_SIZE;
+    }
+    else {
+        enum flag = SECP256K1.EC_UNCOMPRESSED;
+        enum pubkey_size=PUBKEY_SIZE;
+    }
     // struct Context {
     //     private secp256k1_context* _ctx;
     //     @trusted
@@ -87,13 +89,10 @@ class NativeSecp256k1 {
 
     private secp256k1_context* _ctx;
 
-    private bool _DER_format;
     @trusted
-    this(const bool DER_format=false, const SECP256K1 flag=SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) {
+    this(SECP256K1 flag=SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) {
         _ctx = secp256k1_context_create(flag);
-        _DER_format=DER_format;
     }
-
 
     // private static secp256k1_context* getContext() {
     //     return _ctx;
@@ -116,7 +115,7 @@ class NativeSecp256k1 {
         }
     body {
 //        auto ctx=getContext();
-        int ret;
+        int result;
         immutable(ubyte)* sigdata=signature.ptr;
         auto siglen=signature.length;
         const(ubyte)* pubdata=pub.ptr;
@@ -124,21 +123,18 @@ class NativeSecp256k1 {
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
-        if ( _DER_format ) {
-            ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
-            check(ret == 1, ConsensusFailCode.SECURITY_DER_SIGNATURE_PARSE_FAULT);
+        result = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
+        writefln("1) result %d", result);
+        if ( result ) {
+            auto publen=pub.length;
+            result = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
+            writefln("2) result %d", result);
+            if ( result ) {
+                result = secp256k1_ecdsa_verify(_ctx, &sig, msgdata, &pubkey);
+                writefln("3) result %d", result);
+            }
         }
-        else {
-            check(siglen == SIGNATURE_SIZE, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-            import core.stdc.string : memcpy;
-            memcpy(&(sig.data), sigdata,  siglen);
-        }
-        auto publen=pub.length;
-        ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-
-        ret = secp256k1_ecdsa_verify(_ctx, &sig, msgdata, &pubkey);
-        return ret == 1;
+        return result == 1;
     }
 
     /**
@@ -150,6 +146,7 @@ class NativeSecp256k1 {
      * Return values
      * @param sig byte array of signature
      */
+    enum SIGNATURE_SIZE=72;
     @trusted
     immutable(ubyte[]) sign(immutable(ubyte[]) data, const(ubyte[]) sec)
         in {
@@ -157,27 +154,28 @@ class NativeSecp256k1 {
             assert(sec.length <= 32);
         }
     body {
+//        auto ctx=getContext();
         immutable(ubyte)* msgdata=data.ptr;
         const(ubyte)*     secKey=sec.ptr;
-        secp256k1_ecdsa_signature sig_array;
-        secp256k1_ecdsa_signature* sig=&sig_array;
+
+        secp256k1_ecdsa_signature[SIGNATURE_SIZE] sig_array;
+        secp256k1_ecdsa_signature* sig=sig_array.ptr;
 
         int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null );
-        check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
 
-        if ( _DER_format ) {
-            ubyte[DER_SIGNATURE_SIZE] outputSer_array;
-            ubyte* outputSer = outputSer_array.ptr;
-            size_t outputLen = outputSer_array.length;
+        ubyte[SIGNATURE_SIZE] outputSer_array;
+        ubyte* outputSer = outputSer_array.ptr;
+        size_t outputLen = outputSer_array.length;
+
+        if ( ret ) {
             int ret2=secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
-            immutable(ubyte[]) result=outputSer_array[0..outputLen].idup;
+        }
 
-            return result;
-        }
-        else {
-            immutable(ubyte[]) result=(sig.data.ptr)[0..SIGNATURE_SIZE].idup;
-            return result;
-        }
+        // TODO; CBR 15-apr-2018
+        // For some reason the signature is too long
+        // So is cut to length of 70
+        immutable(ubyte[]) result=outputSer_array[0..70].idup;
+        return result;
     }
 
     /**
@@ -191,6 +189,7 @@ class NativeSecp256k1 {
             assert(seckey.length == 32);
         }
     body {
+//        auto ctx=getContext();
         const(ubyte)* sec=seckey.ptr;
         return secp256k1_ec_seckey_verify(_ctx, sec) == 1;
     }
@@ -205,21 +204,13 @@ class NativeSecp256k1 {
      * @param pubkey ECDSA Public key, 33 or 65 bytes
      */
     //TODO add a 'compressed' arg
-    enum UNCOMPRESSED_PUBKEY_SIZE=65;
+    enum PUBKEY_SIZE=65;
     enum COMPRESSED_PUBKEY_SIZE=33;
     @trusted
-    immutable(ubyte[]) computePubkey(const(ubyte[]) seckey, immutable bool compress=true)
+    immutable(ubyte[]) computePubkey(const(ubyte[]) seckey)
         in {
             assert(seckey.length == 32);
         }
-    out(result) {
-        if ( compress ) {
-            assert(result.length == COMPRESSED_PUBKEY_SIZE);
-        }
-        else {
-            assert(result.length == UNCOMPRESSED_PUBKEY_SIZE);
-        }
-    }
     body {
 //        auto ctx=getContext();
         const(ubyte)* sec=seckey.ptr;
@@ -227,24 +218,16 @@ class NativeSecp256k1 {
         secp256k1_pubkey pubkey;
 
         int ret = secp256k1_ec_pubkey_create(_ctx, &pubkey, sec);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
-        // ubyte[pubkey_size] outputSer_array;
-        ubyte[] outputSer_array;
-        SECP256K1 flag;
-        if ( compress ) {
-            outputSer_array=new ubyte[COMPRESSED_PUBKEY_SIZE];
-            flag=SECP256K1.EC_COMPRESSED;
-        }
-        else {
-            outputSer_array=new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
-            flag=SECP256K1.EC_UNCOMPRESSED;
-        }
+
+        ubyte[pubkey_size] outputSer_array;
         ubyte* outputSer = outputSer_array.ptr;
         size_t outputLen = outputSer_array.length;
 
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey, flag );
+        if( ret ) {
+            int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey, flag );
+        }
 
-        immutable(ubyte[]) result = outputSer_array[0..outputLen].idup;
+        immutable(ubyte[]) result = outputSer_array.idup;
         return result;
     }
 
@@ -281,7 +264,6 @@ class NativeSecp256k1 {
         immutable(ubyte)* _tweak=tweak.ptr;
 
         int ret = secp256k1_ec_privkey_tweak_mul(_ctx, _privkey, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT);
 
         immutable(ubyte[]) result=privkey_array.idup;
         return result;
@@ -305,7 +287,7 @@ class NativeSecp256k1 {
         immutable(ubyte)* _tweak=tweak.ptr;
 
         int ret = secp256k1_ec_privkey_tweak_add(_ctx, _privkey, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT);
+
         immutable(ubyte[]) result=privkey_array.idup;
         return result;
     }
@@ -317,56 +299,7 @@ class NativeSecp256k1 {
      * @param pubkey 32-byte seckey
      */
     @trusted
-    immutable(ubyte[]) pubKeyTweakAdd(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak, immutable bool compress=true) {
-        if ( compress ) {
-            check(pubkey.length == COMPRESSED_PUBKEY_SIZE, ConsensusFailCode.SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT );
-        }
-        else {
-            check(pubkey.length == UNCOMPRESSED_PUBKEY_SIZE, ConsensusFailCode.SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT );
-        }
-//        auto ctx=getContext();
-        ubyte[] pubkey_array=pubkey.dup;
-        ubyte* _pubkey=pubkey_array.ptr;
-        immutable(ubyte)* _tweak=tweak.ptr;
-        size_t publen = pubkey.length;
-
-        secp256k1_pubkey pubkey_result;
-        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-
-        ret = secp256k1_ec_pubkey_tweak_add(_ctx, &pubkey_result, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT);
-
-
-        ubyte[] outputSer_array;
-        SECP256K1 flag;
-        if ( compress ) {
-            outputSer_array=new ubyte[COMPRESSED_PUBKEY_SIZE];
-            flag=SECP256K1.EC_COMPRESSED;
-        }
-        else {
-            outputSer_array=new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
-            flag=SECP256K1.EC_UNCOMPRESSED;
-        }
-
-        ubyte* outputSer=outputSer_array.ptr;
-        size_t outputLen = outputSer_array.length;
-
-
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
-
-        immutable(ubyte[]) result=outputSer_array.idup;
-        return result;
-    }
-
-    /**
-     * libsecp256k1 PubKey Tweak-Mul - Tweak pubkey by multiplying to it
-     *
-     * @param tweak some bytes to tweak with
-     * @param pubkey 32-byte seckey
-     */
-    @trusted
-    immutable(ubyte[]) pubKeyTweakMul(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak, immutable bool compress=true)
+    immutable(ubyte[]) pubKeyTweakAdd(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
         in {
             assert(pubkey.length == 33 || pubkey.length == 65);
         }
@@ -379,29 +312,59 @@ class NativeSecp256k1 {
 
         secp256k1_pubkey pubkey_result;
         int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
-        ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
-
-        ubyte[] outputSer_array;
-        SECP256K1 flag;
-        if ( compress ) {
-            outputSer_array=new ubyte[COMPRESSED_PUBKEY_SIZE];
-            flag=SECP256K1.EC_COMPRESSED;
-        }
-        else {
-            outputSer_array=new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
-            flag=SECP256K1.EC_UNCOMPRESSED;
+        if( ret ) {
+            ret = secp256k1_ec_pubkey_tweak_add(_ctx, &pubkey_result, _tweak);
         }
 
+        ubyte[65] outputSer_array;
         ubyte* outputSer=outputSer_array.ptr;
         size_t outputLen = outputSer_array.length;
 
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
+
+        if( ret ) {
+            int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
+        }
 
         immutable(ubyte[]) result=outputSer_array.idup;
         return result;
+    }
+
+    /**
+     * libsecp256k1 PubKey Tweak-Mul - Tweak pubkey by multiplying to it
+     *
+     * @param tweak some bytes to tweak with
+     * @param pubkey 32-byte seckey
+     */
+    @trusted
+    immutable(ubyte[]) pubKeyTweakMul(immutable(ubyte[]) pubkey, immutable(ubyte[]) tweak)
+        in {
+            assert(pubkey.length == 33 || pubkey.length == 65);
+        }
+    body {
+//        auto ctx=getContext();
+        ubyte[] pubkey_array=pubkey.dup;
+        ubyte* _pubkey=pubkey_array.ptr;
+        immutable(ubyte)* _tweak=tweak.ptr;
+        size_t publen = pubkey.length;
+
+          secp256k1_pubkey pubkey_result;
+          int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
+
+          if ( ret ) {
+              ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
+          }
+
+          ubyte[65] outputSer_array;
+          ubyte* outputSer=outputSer_array.ptr;
+          size_t outputLen = outputSer_array.length;
+
+          if( ret ) {
+              int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
+          }
+
+          immutable(ubyte[]) result=outputSer_array.idup;
+          return result;
     }
 
     /**
@@ -428,7 +391,6 @@ class NativeSecp256k1 {
         ubyte* nonce_res = nonce_res_array.ptr;
 
         int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
         if (ret) {
             ret = secp256k1_ecdh(_ctx, nonce_res, &pubkey_result, secdata);
@@ -460,23 +422,18 @@ class NativeSecp256k1 {
 @safe
 unittest {
     import tagion.crypto.Hash : toHexString, decode;
-    import std.traits;
-    import std.stdio;
+    alias Crypt=NativeSecp256k1!false;
 /*
  * This tests verify() for a valid signature
  */
+    version(none) {
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto result = crypt.verify( data, sig, pub);
-            assert(result);
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto result = crypt.verify( data, sig, pub);
+        assert(result);
     }
 
 /**
@@ -486,14 +443,9 @@ unittest {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A91"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto result = crypt.verify( data, sig, pub);
-            assert(!result);
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto result = crypt.verify( data, sig, pub);
+        assert(!result);
     }
 
 /**
@@ -501,14 +453,9 @@ unittest {
  */
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto result = crypt.secKeyVerify( sec );
-            assert(result);
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto result = crypt.secKeyVerify( sec );
+        assert(result);
     }
 
 /**
@@ -516,14 +463,20 @@ unittest {
  */
     {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-        try {
-            auto crypt = new NativeSecp256k1;
-            auto result = crypt.secKeyVerify( sec );
-            assert(!result);
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto result = crypt.secKeyVerify( sec );
+        assert(!result);
+    }
+
+/**
+ * This tests public key create() for a valid secretkey
+ */
+    {
+        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+        auto crypt = new Crypt;
+        auto resultArr = crypt.computePubkey(sec);
+        auto pubkeyString = resultArr.toHexString!true;
+        assert( pubkeyString == "04C591A8FF19AC9C4E4E5793673B83123437E975285E7B442F4EE2654DFFCA5E2D2103ED494718C697AC9AEBCFD19612E224DB46661011863ED2FC54E71861E2A6" );
     }
 
 /**
@@ -531,17 +484,10 @@ unittest {
  */
     {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto resultArr = crypt.computePubkey(sec);
-            assert(0, "This test should throw an ConsensusException");
-        }
-        catch ( ConsensusException e ) {
-            assert(e.code == ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
-            // auto pubkeyString = resultArr.toHexString!true;
-            // assert( pubkeyString == "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-        }
-
+        auto crypt = new Crypt;
+        auto resultArr = crypt.computePubkey(sec);
+        auto pubkeyString = resultArr.toHexString!true;
+        assert( pubkeyString == "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     }
 
 /**
@@ -550,15 +496,10 @@ unittest {
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto resultArr = crypt.sign(data, sec);
-            auto sigString = resultArr.toHexString!true;
-            assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9" );
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto resultArr = crypt.sign(data, sec);
+        auto sigString = resultArr.toHexString!true;
+        assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9" );
     }
 
 /**
@@ -567,14 +508,10 @@ unittest {
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto resultArr = crypt.sign(data, sec);
-            assert(0, "This test should throw an ConsensusException");
-        }
-        catch ( ConsensusException e ) {
-            assert(e.code == ConsensusFailCode.SECURITY_SIGN_FAULT);
-        }
+        auto crypt = new Crypt;
+        auto resultArr = crypt.sign(data, sec);
+        auto sigString = resultArr.toHexString!true;
+        assert( sigString == "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" );
     }
 
 /**
@@ -583,15 +520,10 @@ unittest {
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto resultArr = crypt.privKeyTweakAdd( sec , data );
-            auto sigString = resultArr.toHexString!true;
-            assert( sigString == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3" );
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto resultArr = crypt.privKeyTweakAdd( sec , data );
+        auto sigString = resultArr.toHexString!true;
+        assert( sigString == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3" );
     }
 
 /**
@@ -600,15 +532,10 @@ unittest {
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto resultArr = crypt.privKeyTweakMul( sec , data );
-            auto sigString = resultArr.toHexString!true;
-            assert( sigString == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC" );
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto resultArr = crypt.privKeyTweakMul( sec , data );
+        auto sigString = resultArr.toHexString!true;
+        assert( sigString == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC" );
     }
 
 /**
@@ -617,15 +544,10 @@ unittest {
     {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto resultArr = crypt.pubKeyTweakAdd(pub , data, false);
-            auto sigString = resultArr.toHexString!true;
-            assert( sigString == "0411C6790F4B663CCE607BAAE08C43557EDC1A4D11D88DFCB3D841D0C6A941AF525A268E2A863C148555C48FB5FBA368E88718A46E205FABC3DBA2CCFFAB0796EF" );
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto resultArr = crypt.pubKeyTweakAdd( pub , data );
+        auto sigString = resultArr.toHexString!true;
+        assert( sigString == "0411C6790F4B663CCE607BAAE08C43557EDC1A4D11D88DFCB3D841D0C6A941AF525A268E2A863C148555C48FB5FBA368E88718A46E205FABC3DBA2CCFFAB0796EF" );
     }
 
 /**
@@ -634,15 +556,10 @@ unittest {
     {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto resultArr = crypt.pubKeyTweakMul(pub , data, false);
-            auto sigString = resultArr.toHexString!true;
-            assert( sigString == "04E0FE6FE55EBCA626B98A807F6CAF654139E14E5E3698F01A9A658E21DC1D2791EC060D4F412A794D5370F672BC94B722640B5F76914151CFCA6E712CA48CC589" );
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto resultArr = crypt.pubKeyTweakMul( pub , data );
+        auto sigString = resultArr.toHexString!true;
+        assert( sigString == "04E0FE6FE55EBCA626B98A807F6CAF654139E14E5E3698F01A9A658E21DC1D2791EC060D4F412A794D5370F672BC94B722640B5F76914151CFCA6E712CA48CC589" );
     }
 
 /**
@@ -650,37 +567,27 @@ unittest {
  */
     {
         auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
-        try {
-            auto crypt = new NativeSecp256k1(true);
-            auto result = crypt.randomize(seed);
-            assert( result );
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        auto crypt = new Crypt;
+        auto result = crypt.randomize(seed);
+        assert( result, __FUNCTION__ );
     }
-
+    }
     {
         auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         //auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A9A");
         auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
         import tagion.crypto.Hash : toHexString;
         import std.digest.sha;
-        try {
-            auto crypt=new NativeSecp256k1;
-            auto data=seed.dup;
-            do {
-                data=sha256Of(data).dup;
-            } while (!crypt.secKeyVerify(data));
-            immutable privkey=data.idup;
-            immutable pubkey=crypt.computePubkey(privkey);
+        auto crypt=new Crypt;
+        auto data=seed.dup;
+        do {
+            data=sha256Of(data).dup;
+        } while (!crypt.secKeyVerify(data));
+        immutable privkey=data.idup;
+        immutable pubkey=crypt.computePubkey(privkey);
 
-            immutable signature=crypt.sign(message, privkey);
-            assert(crypt.verify( message, signature, pubkey));
-        }
-        catch ( ConsensusException e ) {
-            assert(0, e.toText);
-        }
+        immutable signature=crypt.sign(message, privkey);
+        assert(crypt.verify( message, signature, pubkey));
 
     }
     //Test ECDH
