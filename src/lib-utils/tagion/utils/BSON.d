@@ -31,7 +31,7 @@ private import std.bitmanip;
 
 import tagion.crypto.Hash : toHexString;
 
-//import std.stdio;
+import std.stdio;
 //private import proton.core.Misc;
 //import tango.text.convert.Format;
 //private import tango.core.Traits : isStringType;
@@ -86,7 +86,7 @@ enum BinarySubType : ubyte
     UINT32_array    = userDefined | Type.UINT32,
     UINT64_array    = userDefined | Type.UINT64,
     FLOAT_array     = userDefined | Type.FLOAT,
-    non             = 0xFF   /// Not defined
+    not_defined     = 0xFF   /// Not defined
 }
 
 
@@ -94,8 +94,7 @@ enum BinarySubType : ubyte
  * BSON document representation, which is called "BSONObj" in C++.
  */
 @safe
-struct Document
-{
+struct Document {
   private:
     immutable ubyte[] data_;
 
@@ -198,7 +197,7 @@ struct Document
     @trusted const
     {
         // TODO: Replace with opIn?
-        bool hasElement(const(char)[] key)
+        bool hasElement(in string key)
         {
             return !opIndex(key).isEod();
         }
@@ -208,11 +207,11 @@ struct Document
             return hasElement(index.to!string);
         }
 
-        Element opIndex(const(char)[] key)
-        {
+        Element opIndex(in string key) {
             foreach (ref element; Range(data_)) {
-                if (element.key == key)
+                if (element.key == key) {
                     return element;
+                }
             }
 
             return Element();
@@ -378,7 +377,7 @@ struct Element
                 return cast(BinarySubType)value[4];
             }
             else {
-                return BinarySubType.non;
+                return BinarySubType.not_defined;
             }
             //return ((4<data_.length) )?data_[4]:BinarySubType.non;
         }
@@ -615,7 +614,9 @@ struct Element
                     }
                 }
             }
-            throw new BSONException("Invalide type expected "~to!string(subtype)~" but the type used is "~T.stringof);
+
+            writefln("convert %s  getSubtype=%s type=%s", U.stringof, getSubtype!T, type.to!string );
+            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
             assert(0, "Unsupported type "~T.stringof);
         }
 
@@ -1738,12 +1739,15 @@ class BSON(bool key_sort_flag=true) {
         return _key;
     }
 
+    private bool const_pointer;
+
     union Value {
         double number;
         float number32;
         immutable(char)[] text;
         bool boolean;
         BSON document;
+        const(BSON)* document_ptr;
         ObjectId oid;
         private _Date _date;
         @property final Date date() const {
@@ -1803,6 +1807,11 @@ class BSON(bool key_sort_flag=true) {
         else static if (is(T==BSON)) {
             assert(_type == Type.DOCUMENT);
             return value.document;
+        }
+        else static if (is(T:const(BSON))) {
+            assert(_type == Type.DOCUMENT);
+            assert(const_pointer);
+            return *(value.document_ptr);
         }
         else static if (is(T==ObjectId)) {
             assert(_type == Type.OID);
@@ -1962,6 +1971,12 @@ class BSON(bool key_sort_flag=true) {
                     elm.value.document=x;
                     result=true;
                 }
+                else static if (is(T:const(BSON))) {
+                    elm.value.document_ptr=&x;
+                    writefln("Set.key=%s type=%s T=%s",  key, type.to!string, T.stringof);
+                    elm.const_pointer=true;
+                    result=true;
+                }
                 else {
                     assert(0, "Unsupported type "~T.stringof~" not a valid "~to!string(type));
                 }
@@ -1969,6 +1984,12 @@ class BSON(bool key_sort_flag=true) {
             case ARRAY:
                 static if (is(T==BSON)) {
                     elm.value.document=x;
+                    result=true;
+                }
+                else static if (is(T:const(BSON))) {
+                    elm.value.document_ptr=&x;
+                    writefln("Set.key=%s type=%s T=%s",  key, type.to!string, T.stringof);
+                    elm.const_pointer=true;
                     result=true;
                 }
                 else static if (is(T:U[],U) && !isSomeString!T) {
@@ -2080,6 +2101,7 @@ class BSON(bool key_sort_flag=true) {
                 result=true;
                 break;
             case DBPOINTER:
+                throw new BSONException(format("Unsupported BSON type '%s' for key '%s' '",type.to!string, key.idup));
                 break;
             case INT32:
                 static if (is(T:int)) {
@@ -2179,6 +2201,23 @@ class BSON(bool key_sort_flag=true) {
         auto value=doc["bool"];
         assert(value.type == Type.BOOLEAN);
         assert(value.get!bool == true);
+    }
+
+    unittest {
+        auto send_payload=new BSON;
+        send_payload["t"]="Some data";
+        auto pack=new BSON;
+        pack["o"]=send_payload;
+
+        writefln("send_payload=%s", send_payload.serialize);
+        writefln("        pack=%s", pack.serialize);
+
+        auto doc=Document(pack.serialize);
+        auto send_doc=doc["o"].get!Document;
+        writefln("    doc['o']=%s", send_doc.data);
+
+        writefln("         doc=%s", doc.data);
+
     }
 
     const(BSON) opIndex(const(char)[] key) const {
@@ -2289,7 +2328,12 @@ class BSON(bool key_sort_flag=true) {
                     buf ~= " : ";
                 }
                 if ( b.isDocument ) {
-                    buf~=object_toText(b.value.document);
+                    if ( b.const_pointer ) {
+                        buf~=object_toText(*(b.value.document));
+                    }
+                    else {
+                        buf~=object_toText(b.value.document);
+                    }
                 }
                 else {
                     buf~=b.toText!string_t;
@@ -2432,11 +2476,21 @@ class BSON(bool key_sort_flag=true) {
                 data~=zero;
                 break;
             case DOCUMENT:
-                data~=value.document.serialize;
+                if ( const_pointer ) {
+                    data~=value.document_ptr.serialize;
+                }
+                else {
+                    data~=value.document.serialize;
+                }
                 break;
             case ARRAY:
                 if ( (subtype & BinarySubType.userDefined) == 0 ) {
-                    data~=value.document.serialize;
+                    if ( const_pointer ) {
+                        data~=value.document_ptr.serialize;
+                    }
+                    else {
+                        data~=value.document.serialize;
+                    }
                 }
                 else {
                     immutable(ubyte)[] local;
@@ -2564,7 +2618,12 @@ class BSON(bool key_sort_flag=true) {
                         //dgelm(data);
                         break;
                     case DOCUMENT:
-                        data~=e.value.document.serialize;
+                        if ( e.const_pointer ) {
+                            data~=e.value.document_ptr.serialize;
+                        }
+                        else {
+                            data~=e.value.document.serialize;
+                        }
                         break;
                     case ARRAY:
                         e.appendData(data);
