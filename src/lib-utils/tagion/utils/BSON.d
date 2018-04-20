@@ -2203,6 +2203,23 @@ class BSON(bool key_sort_flag=true) {
         assert(value.get!bool == true);
     }
 
+<<<<<<< HEAD
+    unittest { // bool bug-fix test
+        auto bson=new BSON;
+        const x=true;
+        bson["bool"]=x;
+        immutable data=bson.serialize;
+
+        auto doc=Document(data);
+        auto value=doc["bool"];
+        assert(value.type == Type.BOOLEAN);
+        assert(value.get!bool == true);
+    }
+
+    BSON opIndex(const(char)[] key) {
+        BSON result;
+        foreach(b;this) {
+=======
     unittest {
         auto send_payload=new BSON;
         send_payload["t"]="Some data";
@@ -2223,6 +2240,7 @@ class BSON(bool key_sort_flag=true) {
     const(BSON) opIndex(const(char)[] key) const {
         auto iter=Iterator!(const(BSON), false)(this);
         foreach(b;iter) {
+>>>>>>> tsimonsen
             if ( b.key == key ) {
                 return b;
                 break;
