@@ -94,6 +94,13 @@ enum BinarySubType : ubyte
         }
 
 
+private {
+    alias BSON_FF=BSON!(false, false);
+    alias BSON_TF=BSON!(true, false);
+    alias BSON_FT=BSON!(false, true);
+    alias BSON_TT=BSON!(true, true);
+}
+
 /**
  * BSON document representation, which is called "BSONObj" in C++.
  */
@@ -1687,7 +1694,11 @@ BinarySubType getSubtype(T)() {
         else static if (is(T:string[])) {
             return STRING_array;
         }
-        else static if (is(T:const(BSON!true)[]) || is(T:const(BSON!false)[])) {
+        else static if (
+            is(T:const(BSON_FF)[]) ||
+            is(T:const(BSON_TF)[]) ||
+            is(T:const(BSON_FT)[]) ||
+            is(T:const(BSON_TT)[]) ) {
             return DOCUMENT_array;
         }
         else static if (is(T:const(ubyte)[])) {
@@ -1720,7 +1731,8 @@ unittest
 
 
 @safe
-class BSON(bool key_sort_flag=true, bool one_time_write=true) {
+class BSON(bool key_sort_flag=true, bool one_time_write=false) {
+
     package Type _type;
     package BinarySubType subtype;
     private BSON members; // List of members
@@ -2983,35 +2995,36 @@ class BSON(bool key_sort_flag=true, bool one_time_write=true) {
     }
 
     unittest {
-        // Remove and duble check
-        BSON bson;
-        bson=new BSON;
-        bson["a"]=3;
-        bson["b"]=13;
+        static if (!one_time_write) {
+            // Remove and duble check
+            BSON bson;
+            bson=new BSON;
+            bson["a"]=3;
+            bson["b"]=13;
 
-        assert(bson["a"].get!int == 3);
-        bson["a"] = 4;
+            assert(bson["a"].get!int == 3);
+            bson["a"] = 4;
 
-        uint i;
-        foreach(b; bson) {
-            if ( b.key == "a" ) {
-                i++;
+            uint i;
+            foreach(b; bson) {
+                if ( b.key == "a" ) {
+                    i++;
+                }
             }
+            assert(i == 2);
+            assert(bson.duble);
+
+            bson=new BSON;
+            bson.no_duble=true;
+
+            bson["a"] = 3;
+            bson["b"] = 13;
+            bson["a"] = 4;
+
+            assert(!bson.duble);
+
+            assert(bson["a"].get!int==4);
         }
-        assert(i == 2);
-        assert(bson.duble);
-
-        bson=new BSON;
-        bson.no_duble=true;
-
-        bson["a"] = 3;
-        bson["b"] = 13;
-        bson["a"] = 4;
-
-        assert(!bson.duble);
-
-        assert(bson["a"].get!int==4);
-
     }
 
     Iterator!(BSON, F) iterator(bool F=false)() {
