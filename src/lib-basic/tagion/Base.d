@@ -135,7 +135,12 @@ struct EventUpdateMessage {
                     }
                 }
                 else {
+<<<<<<< HEAD
+                    writefln("Inserting value for : %s with the value: %s and casted value: %s", name, doc[name], doc[name].type);
+
+=======
                     writefln("Inserting value for : %s with the value: %s and doc type: %s", name, doc[name], doc[name].type);
+>>>>>>> tsimonsen
                     this.tupleof[i]=doc[name].get!type;
                 }
             }
@@ -146,6 +151,7 @@ struct EventUpdateMessage {
         auto bson = new GBSON();
         foreach(i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
+            alias typeof(m) type;
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name] = m.toBSON;
                 //pragma(msg, format("Associated member type %s implements toBSON." , name));
@@ -158,8 +164,7 @@ struct EventUpdateMessage {
                 //pragma(msg, format("The member %s is an array type", name) );
             }
 
-            enum member_is_enum = is(typeof (m) == enum );
-
+            enum member_is_enum = is(type == enum );
             if( include_member ) {
                 static if(member_is_enum) {
                     bson[name] = cast(uint)m;
