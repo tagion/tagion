@@ -1,8 +1,8 @@
 module tagion.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
-import tagion.utils.BSON : Document;
-//import tagion.crypto.Hash;
+import tagion.utils.BSON : HBSON, Document;
+
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.ConsensusExceptions;
 //import tagion.hashgraph.HashGraph : HashGraph;
@@ -99,8 +99,8 @@ struct EventBody {
 //json encoding of body only
 //    version(none)
     // @use_event_will used evnet-ids instead of hashs
-    GBSON toBSON(const(Event) use_event=null) const {
-        auto bson=new GBSON;
+    HBSON toBSON(const(Event) use_event=null) const {
+        auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
             static if ( __traits(compiles, m.toBSON) ) {
