@@ -2,7 +2,8 @@ module tagion.hashgraph.GossipNet;
 
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
-import tagion.utils.BSON : HBSON, Document;
+import tagion.utils.BSON : R_BSON=BSON, Document;
+alias R_BSON!true GBSON;
 
 @safe
 interface GossipNet {
@@ -24,7 +25,7 @@ interface GossipNet {
 
 //    immutable(ubyte[]) evaPackage();
 
-//    void buildPackage(HashGraph hashgraph, HBSON bson, Event event, immutable uint node_id);
+//    void buildPackage(HashGraph hashgraph, GBSON bson, Event event, immutable uint node_id);
 
     ulong time();
 
