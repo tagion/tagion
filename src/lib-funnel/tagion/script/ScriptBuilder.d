@@ -4,10 +4,9 @@ import std.conv;
 
 import tagion.script.ScriptInterpreter;
 import tagion.script.Script;
+import tagion.utils.BSON : HBSON;
 
 import std.stdio;
-
-//alias R_BSON!true BSON;
 
 @safe
 class ScriptBuilderException : ScriptException {
@@ -48,8 +47,8 @@ class ScriptBuilder {
         }
     }
 
-    static GBSON Token2BSON(const(Token) token) @safe {
-        auto bson=new GBSON();
+    static HBSON Token2BSON(const(Token) token) @safe {
+        auto bson=new HBSON();
         bson["token"]=token.token;
         bson["type"]=token.type;
         bson["line"]=token.line;
@@ -151,14 +150,14 @@ class ScriptBuilder {
         { //
           // Function parse test missing end of function
           //
-            GBSON[] codes;
+            HBSON[] codes;
 
             // Build BSON array of the token list
             foreach(t; tokens) {
                 codes~=Token2BSON(t);
             }
             // Build the BSON stream
-            auto bson_stream=new GBSON();
+            auto bson_stream=new HBSON();
             bson_stream["code"]=codes;
             auto stream=bson_stream.serialize;
 
@@ -232,14 +231,14 @@ class ScriptBuilder {
             //
             // Function builder
             //
-            GBSON[] codes;
+            HBSON[] codes;
 
             // Build BSON array of the token list
             foreach(t; tokens) {
                 codes~=Token2BSON(t);
             }
             // Build the BSON stream
-            auto bson_stream=new GBSON();
+            auto bson_stream=new HBSON();
             bson_stream["code"]=codes;
             auto stream=bson_stream.serialize;
 
