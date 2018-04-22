@@ -1,10 +1,8 @@
 module tagion.Base;
-import tagion.utils.BSON : R_BSON=BSON, Document;
-alias R_BSON!true GBSON;
+
 import tagion.crypto.Hash;
-import tagion.BSONType;
+import tagion.bson.BSONType;
 import std.string : format;
-import std.stdio : writefln, writeln;
 
 enum this_dot="this.";
 
