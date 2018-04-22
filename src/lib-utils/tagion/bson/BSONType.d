@@ -29,9 +29,9 @@ template bsonType(T) {
     EventUpdateMessage);
 }
 
-T getBsonType(Document doc) {
+// T getBsonType(Document doc) {
 
-}
+// }
 
 // //convert from bson to type
 // public static immutable(string[BsonType]) bson_types;
