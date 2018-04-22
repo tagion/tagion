@@ -94,6 +94,15 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
+    const(uint) nodeId(const(ubyte[]) pubkey) {
+        auto result=pubkey in node_ids;
+        check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+        return *result;
+    }
+
+    bool isNodeIdKnown(const(ubyte[]) pubkey) const pure nothrow {
+        return (pubkey in node_ids) !is null;
+    }
     // protected NodeIterator!false nodeiterator_() {
     //     return NodeIterator!false(this);
     // }
@@ -493,6 +502,7 @@ class HashGraph {
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
      */
+    version(none)
     void whatIsNotKnownBy(
         Collect collect,
         immutable uint node_id,
