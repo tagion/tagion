@@ -15,8 +15,8 @@ import tagion.hashgraph.ConsensusExceptions;
 class HashGraph {
     alias GossipNet.Pubkey Pubkey;
     alias GossipNet.Privkey Privkey;
-    alias GossipNet.HashPointer HashPointer;
-    alias LRU!(HashPointer, Event) EventCache;
+    //alias GossipNet.HashPointer HashPointer;
+    alias LRU!(immutable(ubyte)[], Event) EventCache;
 
     //alias LRU!(Round, uint*) RoundCounter;
     alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
@@ -94,6 +94,15 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
+    const(uint) nodeId(const(ubyte[]) pubkey) {
+        auto result=pubkey in node_ids;
+        check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+        return *result;
+    }
+
+    bool isNodeIdKnown(const(ubyte[]) pubkey) const pure nothrow {
+        return (pubkey in node_ids) !is null;
+    }
     // protected NodeIterator!false nodeiterator_() {
     //     return NodeIterator!false(this);
     // }
@@ -118,7 +127,7 @@ class HashGraph {
         }
     }
 
-    Pubkey nodePubkey(immutable uint node_id) pure const nothrow {
+    Pubkey nodePubkey(const uint node_id) pure const nothrow {
         auto node=node_id in nodes;
         if ( node ) {
             return node.pubkey;
@@ -127,6 +136,11 @@ class HashGraph {
             return null;
         }
     }
+
+    bool isNodeActive(const uint node_id) {
+        return (node_id in nodes) !is null;
+    }
+
     // static ulong time;
     // static ulong current_time() {
     //     time+=100;
@@ -155,7 +169,7 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    const(Node) getNode(immutable uint node_id) {
+    const(Node) getNode(const uint node_id) {
         return nodes[node_id];
     }
     // uint threshold() const pure nothrow {
@@ -493,6 +507,7 @@ class HashGraph {
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
      */
+    version(none)
     void whatIsNotKnownBy(
         Collect collect,
         immutable uint node_id,
