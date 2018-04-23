@@ -200,7 +200,7 @@ struct EventCreateMessage {
     this(Document doc) inout {
         foreach(i, ref m; this.tupleof) {
             alias type = typeof(m);
-            writeln("Type for member: ", type.stringof);
+            //writeln("Type for member: ", type.stringof);
             enum name=basename!(this.tupleof[i]);
             if ( doc.hasElement(name) ) {
                 static if(is(type == enum)) {
@@ -213,7 +213,7 @@ struct EventCreateMessage {
                     }
                 }
                 else {
-                    writefln("Inserting value for : %s with the value: %s and doc type: %s", name, doc[name], doc[name].type);
+                    //writefln("Inserting value for : %s with the value: %s and doc type: %s", name, doc[name], doc[name].type);
                     this.tupleof[i]=doc[name].get!type;
                 }
             }
