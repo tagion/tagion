@@ -7,9 +7,8 @@ import std.internal.math.biguintnoasm : BigDigit;
 import std.stdio;
 import std.conv;
 
-import tagion.utils.BSON : R_BSON=BSON, Document;
+import tagion.utils.BSON : HBSON, Document;
 
-alias R_BSON!true GBSON;
 
 @safe
 class ScriptException : Exception {
@@ -238,7 +237,7 @@ class ScriptContext {
     private uint iteration_count;
     private int data_stack_index;
     private int return_stack_index;
-    private GBSON[] bsons;
+    private HBSON[] bsons;
     private uint bsons_count;
     this(const uint data_stack_size,
         const uint return_stack_size,
@@ -253,13 +252,13 @@ class ScriptContext {
             v=Value(0);
         }
         if ( bsons_size != 0 ) {
-            this.bsons=new GBSON[bsons_size];
+            this.bsons=new HBSON[bsons_size];
         }
     }
     const(Value) opIndex(uint i) {
         return variables[i];
     }
-    ref GBSON bson(uint i) {
+    ref HBSON bson(uint i) {
         if ( i < bsons.length ) {
             if ( bsons[i] is null ) {
                 return bsons[i];
