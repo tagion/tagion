@@ -13,10 +13,10 @@ import tagion.hashgraph.ConsensusExceptions;
 
 @safe
 class HashGraph {
-    alias GossipNet.Pubkey Pubkey;
-    alias GossipNet.Privkey Privkey;
-    //alias GossipNet.HashPointer HashPointer;
-    alias LRU!(immutable(ubyte)[], Event) EventCache;
+    alias Pubkey=GossipNet.Pubkey;
+    alias Privkey=GossipNet.Privkey;
+    alias HashPointer=RequestNet.HashPointer;
+    alias LRU!(HashPointer, Event) EventCache;
 
     //alias LRU!(Round, uint*) RoundCounter;
     alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
@@ -277,11 +277,11 @@ class HashGraph {
     }
 
     Event registerEvent(
-        GossipNet gossip_net,
+        RequestNet request_net,
         Pubkey pubkey,
         immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
-        immutable fingerprint=gossip_net.calcHash(eventbody.serialize);
+        immutable fingerprint=request_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;
@@ -307,13 +307,13 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-            event=new Event(eventbody, signature, gossip_net, node_id);
+            event=new Event(eventbody, signature, request_net, node_id);
 
             // Add the event to the event cache
             assign(event);
 
             // Makes sure that we have the tree before the graph is checked
-            requestEventTree(gossip_net, event);
+            requestEventTree(request_net, event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
         }
@@ -324,7 +324,7 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
+    protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
@@ -337,10 +337,10 @@ class HashGraph {
                     event.daughter=child;
                 }
             }
-            auto mother=event.mother(this, gossip_net);
-            requestEventTree(gossip_net, mother, event, false);
-            auto father=event.father(this, gossip_net);
-            requestEventTree(gossip_net, father, event, true);
+            auto mother=event.mother(this, request_net);
+            requestEventTree(request_net, mother, event, false);
+            auto father=event.father(this, request_net);
+            requestEventTree(request_net, father, event, true);
             if ( Event.callbacks && !event.loaded) {
 //                event.getRoundForMother;
                 event.loaded=true;

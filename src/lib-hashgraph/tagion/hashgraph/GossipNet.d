@@ -5,18 +5,19 @@ import tagion.hashgraph.Event;
 import tagion.utils.BSON : HBSON, Document;
 
 @safe
-interface RequistNet {
-    alias immutable(ubyte)[] HashPointer;
+interface RequestNet {
+    alias HashPointer=immutable(ubyte)[];
     immutable(HashPointer) calcHash(immutable(HashPointer) hash_pointer) inout;
     // Request a missing event from the network
     // add
     void request(HashGraph h, immutable(HashPointer) event_hash);
+    HashPointer eventHashFromId(immutable uint id);
 }
 
 
 @safe
-interface GossipNet : RequistNet {
-    alias immutable(ubyte)[] Pubkey;
+interface GossipNet : RequestNet {
+    alias Pubkey=immutable(ubyte)[] ;
     alias immutable(ubyte)[] Privkey;
 
 //    alias HashGraph.EventPackage EventPackage;
@@ -26,7 +27,6 @@ interface GossipNet : RequistNet {
     // This function is call by the HashGraph.whatIsNotKnowBy
     // and is use to collect node to be send to anotehr node
 //    bool collect(Event e, immutable uint depth);
-    HashPointer eventHashFromId(immutable uint id);
 
 //    immutable(ubyte[]) evaPackage();
 
