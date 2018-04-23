@@ -170,7 +170,6 @@ class NativeSecp256k1 {
             ubyte* outputSer = outputSer_array.ptr;
             size_t outputLen = outputSer_array.length;
             int ret2=secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
-            writefln("outputLen=%d", outputLen);
             immutable(ubyte[]) result=outputSer_array[0..outputLen].idup;
 
             return result;
@@ -555,7 +554,6 @@ unittest {
             auto crypt = new NativeSecp256k1(true);
             auto resultArr = crypt.sign(data, sec);
             auto sigString = resultArr.toHexString!true;
-            writefln("sigString =%s len=%d", sigString, resultArr.length);
             assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9" );
         }
         catch ( ConsensusException e ) {
@@ -573,8 +571,6 @@ unittest {
             auto crypt = new NativeSecp256k1(true);
             auto resultArr = crypt.sign(data, sec);
             assert(0, "This test should throw an ConsensusException");
-             // auto sigString = resultArr.toHexString!true;
-            // assert( sigString == "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" );
         }
         catch ( ConsensusException e ) {
             assert(e.code == ConsensusFailCode.SECURITY_SIGN_FAULT);
