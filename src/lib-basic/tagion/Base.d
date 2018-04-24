@@ -1,14 +1,11 @@
 module tagion.Base;
 
 import tagion.crypto.Hash;
-import tagion.bson.BSONType;
 import std.string : format;
 
 enum this_dot="this.";
 
 import std.conv;
-
-
 /**
    Return the position of first '.' in string and
  */
