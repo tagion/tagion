@@ -13,9 +13,9 @@ import tagion.hashgraph.ConsensusExceptions;
 
 @safe
 class HashGraph {
-    alias Pubkey=GossipNet.Pubkey;
-    alias Privkey=GossipNet.Privkey;
-    alias HashPointer=RequestNet.HashPointer;
+    alias GossipNet.Pubkey Pubkey;
+    alias GossipNet.Privkey Privkey;
+    alias GossipNet.HashPointer HashPointer;
     alias LRU!(HashPointer, Event) EventCache;
 
     //alias LRU!(Round, uint*) RoundCounter;
@@ -94,15 +94,6 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
-    const(uint) nodeId(const(ubyte[]) pubkey) {
-        auto result=pubkey in node_ids;
-        check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-        return *result;
-    }
-
-    bool isNodeIdKnown(const(ubyte[]) pubkey) const pure nothrow {
-        return (pubkey in node_ids) !is null;
-    }
     // protected NodeIterator!false nodeiterator_() {
     //     return NodeIterator!false(this);
     // }
@@ -127,7 +118,7 @@ class HashGraph {
         }
     }
 
-    Pubkey nodePubkey(const uint node_id) pure const nothrow {
+    Pubkey nodePubkey(immutable uint node_id) pure const nothrow {
         auto node=node_id in nodes;
         if ( node ) {
             return node.pubkey;
@@ -136,11 +127,6 @@ class HashGraph {
             return null;
         }
     }
-
-    bool isNodeActive(const uint node_id) {
-        return (node_id in nodes) !is null;
-    }
-
     // static ulong time;
     // static ulong current_time() {
     //     time+=100;
@@ -169,7 +155,7 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    const(Node) getNode(const uint node_id) {
+    const(Node) getNode(immutable uint node_id) {
         return nodes[node_id];
     }
     // uint threshold() const pure nothrow {
@@ -277,11 +263,11 @@ class HashGraph {
     }
 
     Event registerEvent(
-        RequestNet request_net,
+        GossipNet gossip_net,
         Pubkey pubkey,
         immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
-        immutable fingerprint=request_net.calcHash(eventbody.serialize);
+        immutable fingerprint=gossip_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;
@@ -307,13 +293,13 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-            event=new Event(eventbody, signature, request_net, node_id);
+            event=new Event(eventbody, signature, gossip_net, node_id);
 
             // Add the event to the event cache
             assign(event);
 
             // Makes sure that we have the tree before the graph is checked
-            requestEventTree(request_net, event);
+            requestEventTree(gossip_net, event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
         }
@@ -324,7 +310,7 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
+    protected void requestEventTree(GossipNet gossip_net, Event event, Event child=null, immutable bool is_father=false) {
         if ( event ) {
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
@@ -337,10 +323,10 @@ class HashGraph {
                     event.daughter=child;
                 }
             }
-            auto mother=event.mother(this, request_net);
-            requestEventTree(request_net, mother, event, false);
-            auto father=event.father(this, request_net);
-            requestEventTree(request_net, father, event, true);
+            auto mother=event.mother(this, gossip_net);
+            requestEventTree(gossip_net, mother, event, false);
+            auto father=event.father(this, gossip_net);
+            requestEventTree(gossip_net, father, event, true);
             if ( Event.callbacks && !event.loaded) {
 //                event.getRoundForMother;
                 event.loaded=true;
@@ -507,7 +493,6 @@ class HashGraph {
        This function returns a list of event wich home_node this is unknown by node
        home_node is the
      */
-    version(none)
     void whatIsNotKnownBy(
         Collect collect,
         immutable uint node_id,
