@@ -1,10 +1,7 @@
 module tagion.Base;
-
 import tagion.crypto.Hash;
 import std.string : format;
-
 enum this_dot="this.";
-
 import std.conv;
 
 
