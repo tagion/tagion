@@ -1,8 +1,8 @@
 module tagion.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
-import tagion.utils.BSON : Document;
-//import tagion.crypto.Hash;
+import tagion.utils.BSON : HBSON, Document;
+
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.ConsensusExceptions;
 //import tagion.hashgraph.HashGraph : HashGraph;
@@ -23,9 +23,10 @@ void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t lin
 
 @safe
 struct EventBody {
+    alias HashPointer=RequestNet.HashPointer;
     immutable(ubyte)[] payload; // Transaction
-    immutable(ubyte)[] mother; // Hash of the self-parent
-    immutable(ubyte)[] father; // Hash of the other-parent
+    HashPointer mother; // Hash of the self-parent
+    HashPointer father; // Hash of the other-parent
     int altitude;
 
     ulong time;
@@ -37,8 +38,8 @@ struct EventBody {
 
     this(
         immutable(ubyte)[] payload,
-        immutable(ubyte)[] mother,
-        immutable(ubyte)[] father,
+        HashPointer mother,
+        HashPointer father,
         immutable ulong time,
         immutable int altitude) inout {
         this.time      =    time;
@@ -55,7 +56,7 @@ struct EventBody {
     }
 
     @trusted
-    this(Document doc, GossipNet gossipnet=null) inout {
+    this(Document doc, RequestNet gossipnet=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=this.tupleof[i].stringof[this_dot.length..$];
@@ -99,8 +100,8 @@ struct EventBody {
 //json encoding of body only
 //    version(none)
     // @use_event_will used evnet-ids instead of hashs
-    GBSON toBSON(const(Event) use_event=null) const {
-        auto bson=new GBSON;
+    HBSON toBSON(const(Event) use_event=null) const {
+        auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
             static if ( __traits(compiles, m.toBSON) ) {
@@ -510,7 +511,7 @@ class Event {
     immutable uint node_id;
 //    uint marker;
     @trusted
-    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  GossipNet gossip_net, uint node_id=0, ) {
+    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  RequestNet request_net, uint node_id=0, ) {
         _event_body=&ebody;
         this.node_id=node_id;
         this.id=next_id;
@@ -524,7 +525,7 @@ class Event {
         else {
 
         }
-        _hash=toCryptoHash(gossip_net);
+        _hash=toCryptoHash(request_net);
         assert(_hash);
 
         if(callbacks) {
@@ -543,11 +544,11 @@ class Event {
     ~this() {
         diconnect();
     }
-    Event mother(H)(H h, GossipNet gossip_net) {
+    Event mother(H)(H h, RequestNet request_net) {
         Event result;
         result=mother!true(h);
         if ( !result && motherExists ) {
-            gossip_net.request(h, mother_hash);
+            request_net.request(h, mother_hash);
             result=mother(h);
         }
         return result;
@@ -594,11 +595,11 @@ class Event {
         return _father;
     }
 
-    Event father(H)(H h, GossipNet gossip_net) {
+    Event father(H)(H h, RequestNet request_net) {
         Event result;
         result=father!true(h);
         if ( !result && fatherExists ) {
-            gossip_net.request(h, father_hash);
+            request_net.request(h, father_hash);
             result=father(h);
         }
         return result;
@@ -714,17 +715,17 @@ class Event {
     }
 
     immutable(HashPointer) toCryptoHash(
-        GossipNet gossip_net)
+        RequestNet request_net)
     in {
         if ( _hash ) {
-            assert( _hash == gossip_net.calcHash(_event_body.serialize));
+            assert( _hash == request_net.calcHash(_event_body.serialize));
         }
     }
     body {
         if ( _hash ) {
             return _hash;
         }
-        _hash=gossip_net.calcHash(_event_body.serialize);
+        _hash=request_net.calcHash(_event_body.serialize);
         return _hash;
     }
 
