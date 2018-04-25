@@ -4,8 +4,8 @@ import tagion.Base : EnumText, basename;
 import std.conv;
 import std.string : format;
 import std.stdio : writefln, writeln;
-import tagion.utils.BSON : R_BSON=BSON, Document;
-alias GBSON = R_BSON!true;
+import tagion.utils.BSON : HBSON, Document;
+
 enum BSON_TYPE_CODE = "bson_type_code";
 
 @safe
@@ -129,7 +129,7 @@ struct EventUpdateMessage {
     this(Document doc) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
-            writeln("Type for member: ", type.stringof);
+            //writeln("Type for member: ", type.stringof);
             enum name=basename!(this.tupleof[i]);
             checkBsonType!(typeof(this), name, this.tupleof)(doc);
             if ( doc.hasElement(name) ) {
@@ -143,15 +143,15 @@ struct EventUpdateMessage {
                     }
                 }
                 else {
-                    writefln("Inserting value for : %s with the value: %s and doc type: %s", name, doc[name], doc[name].type);
+                    //writefln("Inserting value for : %s with the value: %s and doc type: %s", name, doc[name], doc[name].type);
                     this.tupleof[i]=doc[name].get!type;
                 }
             }
         }
     }
 
-    GBSON toBSON () const {
-        auto bson = new GBSON();
+    HBSON toBSON () const {
+        auto bson = new HBSON();
         foreach(i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
@@ -190,7 +190,7 @@ struct EventUpdateMessage {
 unittest { // Serialize and unserialize EventCreateMessage
 
     auto seed_body=EventUpdateMessage(1, EventProperty.IS_FAMOUS, true);
-    writefln("Event id: %s,  Event property: %s : %s  ,   bson_type_code: %s", seed_body.id, seed_body.property.stringof, seed_body.value, seed_body.bson_type_code);
+    //writefln("Event id: %s,  Event property: %s : %s  ,   bson_type_code: %s", seed_body.id, seed_body.property.stringof, seed_body.value, seed_body.bson_type_code);
     auto raw=seed_body.serialize;
 
     auto replicate_body=EventUpdateMessage(raw);
@@ -256,8 +256,8 @@ struct EventCreateMessage {
         }
     }
 
-    GBSON toBSON () const {
-        auto bson = new GBSON();
+    HBSON toBSON () const {
+        auto bson = new HBSON();
         foreach(i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             static if ( __traits(compiles, m.toBSON) ) {
@@ -297,7 +297,7 @@ unittest {
     auto payload = cast(immutable(ubyte)[])"Test payload";
     auto sig = cast(immutable(ubyte)[])"signature goes here";
     auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig);
-    writefln("Event id: %s,  bson_type_code: %s", seed_body.id, seed_body.bson_type_code);
+    //writefln("Event id: %s,  bson_type_code: %s", seed_body.id, seed_body.bson_type_code);
     auto raw = seed_body.serialize;
 
     auto replicate_body = EventCreateMessage(raw);
