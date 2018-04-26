@@ -527,10 +527,6 @@ class Event {
         }
         _hash=toCryptoHash(request_net);
         assert(_hash);
-
-        if(callbacks) {
-            callbacks.create(this);
-        }
 //        }
     }
 
