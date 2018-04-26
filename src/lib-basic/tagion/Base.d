@@ -1,7 +1,13 @@
 module tagion.Base;
+
 import tagion.crypto.Hash;
-import std.string : format;
+import tagion.bson.BSONType;
+private import std.string : format, join, strip;
+private import std.traits;
+// private import std.algorithm : splitter;
+
 enum this_dot="this.";
+
 import std.conv;
 
 
@@ -97,3 +103,78 @@ immutable(Hash) hfuncSHA256(immutable(ubyte)[] data) {
 }
 
 
+
+@safe
+string view(S)(ref S s, string param) {
+    auto sparam=param.strip;
+    string result=sparam~"=";
+  EndCase : switch (sparam) {
+        foreach(index, ref m; s.tupleof) {
+            // System bug
+            // foreach(index, ref m; s.tupleof)
+            // m does not always point to the correct memory locate
+            // ERRROR: out of memory
+            // s.tupleof[index] is used instead here
+            alias T = typeof(m);
+            enum name=basename!(s.tupleof[index]);
+
+        case name:
+            static if ( is( T : const(ubyte[]) ) ) {
+                result~=s.tupleof[index].toHexString;
+            }
+            else static if ( is( T : string ) ) {
+                result~=s.tupleof[index];
+            }
+            else static if ( is( T==class ) || is(T==struct) ) {
+                result~=typeid(s.tupleof[index]).toString;
+            }
+            else static if ( __traits(compiles, s.tupleof[index].to!string) ) {
+                result~=s.tupleof[index].to!string;
+            }
+            else {
+                static assert(0, format("View of %s type is not supported", T.stringof, name));
+            }
+            break EndCase;
+        }
+    default:
+        assert(0, format("Member %s does not exist in %s", sparam, typeid(S)));
+    }
+    return result;
+}
+
+@safe
+string views(S)(ref S s, string params, string separator=",", string eol="\n") {
+    import std.algorithm : each, splitter;
+    string[] results;
+    params.splitter(separator).each!(e =>  results~=s.view(e));
+
+    return results.join(eol);
+}
+
+@safe
+unittest { // view and views
+    class C {
+        int x;
+    }
+    struct S {
+        string name;
+        immutable(ubyte[]) buf;
+        C c;
+        int y;
+    }
+    immutable(ubyte[]) b=['A','B','C','D'];
+    auto c=new C;
+    auto s=S("Hugo", b, c, 42);
+
+    assert(s.view("name") == "name=Hugo");
+
+    auto results=[
+        "name=Hugo",
+        "buf="~b.toHexString,
+        "y=42",
+        "c="~typeid(c).toString
+        ].join("\n");
+    assert(s.views("name, buf, y, c") == results);
+//    assert(s.view("name") == "name=Hugo");
+
+}
