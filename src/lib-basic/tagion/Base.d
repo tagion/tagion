@@ -1,7 +1,13 @@
 module tagion.Base;
+
 import tagion.crypto.Hash;
-import std.string : format;
+import tagion.bson.BSONType;
+private import std.string : format, join, strip;
+private import std.traits;
+// private import std.algorithm : splitter;
+
 enum this_dot="this.";
+
 import std.conv;
 
 
