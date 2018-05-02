@@ -107,19 +107,6 @@ class HashGraph {
     //     return NodeIterator!false(this);
     // }
 
-    void dumpNodes() {
-        import std.stdio;
-        foreach(i, n; nodes) {
-            writef("%d:%s:", i, n !is null);
-            if ( n !is null ) {
-                writef("%s ",n.pubkey[0..7].toHexString);
-            }
-            else {
-                write("Non ");
-            }
-        }
-        writefln("");
-    }
     @safe
     private struct NodeIterator(N) {
         static assert(is(N : const(Node)), "N must be a Node type");
