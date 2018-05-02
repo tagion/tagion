@@ -193,7 +193,7 @@ struct EventUpdateMessage {
 immutable(ubyte[]) generateHoleThroughBsonMsg(string msg) {
     auto doc = new HBSON;
     doc[BSON_TYPE_CODE]=BSON_TEST_MSG_CODE;
-    doc["Message"]=msg;
+    doc["message"]=msg;
     return doc.serialize;
 }
 
