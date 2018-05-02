@@ -6,6 +6,8 @@ import std.string : format;
 import std.stdio : writefln, writeln;
 import tagion.utils.BSON : HBSON, Document;
 
+enum BSON_TEST_MSG = "bson_test_msg";
+enum BSON_TEST_MSG_CODE = 10_000;
 enum BSON_TYPE_CODE = "bson_type_code";
 
 @safe
@@ -43,7 +45,8 @@ static immutable string[uint] bson_Types;
 static this() {
     string[uint] _bson_Types=[
         0 : EventCreateMessage.stringof,
-        1 : EventUpdateMessage.stringof
+        1 : EventUpdateMessage.stringof,
+        BSON_TEST_MSG_CODE : BSON_TEST_MSG
     ];
     import std.exception : assumeUnique;
     bson_Types = assumeUnique(_bson_Types);
@@ -185,6 +188,13 @@ struct EventUpdateMessage {
     immutable(ubyte)[] serialize() const {
         return toBSON().serialize;
     }
+}
+
+immutable(ubyte[]) generateHoleThroughBsonMsg(string msg) {
+    auto doc = new HBSON;
+    doc[BSON_TYPE_CODE]=BSON_TEST_MSG_CODE;
+    doc["message"]=msg;
+    return doc.serialize;
 }
 
 unittest { // Serialize and unserialize EventCreateMessage
