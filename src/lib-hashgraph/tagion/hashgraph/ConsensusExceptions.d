@@ -33,7 +33,17 @@ enum ConsensusFailCode {
 class ConsensusException : Exception {
     immutable ConsensusFailCode code;
     string toText() pure const nothrow {
-        return consensus_error_messages[code];
+        if ( code == ConsensusFailCode.NON ) {
+            return msg;
+        }
+        else {
+            return consensus_error_messages[code];
+        }
+    }
+
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+        code=ConsensusFailCode.NON;
+        super( msg, file, line );
     }
 
     this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
