@@ -101,12 +101,6 @@ private {
     alias BSON_TT=BSON!(true, true);
 }
 
-@safe
-interface DocumentCallbacks {
-    //bool check(bool flag, string msg, uint code=0);
-    void not_found(string msg, string file = __FILE__, size_t line = __LINE__ );
-}
-
 /**
  * BSON document representation, which is called "BSONObj" in C++.
  */
@@ -117,8 +111,6 @@ private:
 
 
 public:
-    static DocumentCallbacks callbacks;
-
     nothrow this(immutable ubyte[] data)
         {
             data_ = data;
@@ -218,7 +210,7 @@ public:
             // TODO: Replace with opIn?
             bool hasElement(in string key)
             {
-                return !opIn_r(key).isEod();
+                return !opIndex(key).isEod();
             }
 
 
@@ -226,24 +218,17 @@ public:
                 return hasElement(index.to!string);
             }
 
-            inout(Element) opIn_r(in string key) inout {
+            Element opIndex(in string key) {
                 foreach (ref element; Range(data_)) {
                     if (element.key == key) {
                         return element;
                     }
                 }
+
                 return Element();
             }
 
-            inout(Element) opIndex(in string key) inout {
-                auto result=key in this;
-                if ((callbacks !is null) && result.isEod) {
-                    callbacks.not_found(format("Member named '%s' not found", key));
-                }
-                return result;
-            }
-
-            inout(Element) opIndex(in size_t index) inout{
+            Element opIndex(in size_t index) {
                 return opIndex(index.to!string);
             }
 
@@ -266,7 +251,8 @@ public:
 }
 
 
-unittest {
+unittest
+{
     // {foo: "bar", bool: true, num: 10}
     immutable ubyte[] data = [0x22, 0x00, 0x00, 0x00, 0x02, 0x66, 0x6f, 0x6f, 0x00, 0x04, 0x00, 0x00, 0x00, 0x62, 0x61, 0x72, 0x00,
         0x08, 0x62, 0x6f, 0x6f, 0x6c, 0x00, 0x01, 0x10, 0x6e, 0x75, 0x6d, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00];
@@ -965,61 +951,62 @@ public:
     }
 
 private:
-//    @trusted
-    void check(Type t) const /* pure */ {
-        if (t != type) {
-            string typeName = to!string(t); // why is to! not pure?
-            string message;
-            if (isEod) {
-                message = "Field not found: expected type = " ~ typeName;
+    @trusted
+    void check(Type t) const /* pure */
+        {
+            if (t != type) {
+                string typeName = to!string(t); // why is to! not pure?
+                string message;
+                if (isEod)
+                    message = "Field not found: expected type = " ~ typeName;
+                else
+                    message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
+
+                throw new BSONException(message);
             }
-            else {
-                message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
+        }
+
+
+    @trusted const pure nothrow
+        {
+            bool _boolean()
+            {
+                return value[0] == 0 ? false : true;
             }
-            throw new BSONException(message);
+
+
+            int _int32()
+            {
+                return *cast(int*)(value.ptr);
+            }
+
+            uint _uint32()
+            {
+                return *cast(uint*)(value.ptr);
+            }
+
+
+            long _int64()
+            {
+                return *cast(long*)(value.ptr);
+            }
+
+            ulong _uint64()
+            {
+                return *cast(ulong*)(value.ptr);
+            }
+
+
+            double _double()
+            {
+                return *cast(double*)(value.ptr);
+            }
+
+            float _float()
+            {
+                return *cast(float*)(value.ptr);
+            }
         }
-    }
-
-
-    @trusted const pure nothrow {
-        bool _boolean()
-        {
-            return value[0] == 0 ? false : true;
-        }
-
-
-        int _int32()
-        {
-            return *cast(int*)(value.ptr);
-        }
-
-        uint _uint32()
-        {
-            return *cast(uint*)(value.ptr);
-        }
-
-
-        long _int64()
-        {
-            return *cast(long*)(value.ptr);
-        }
-
-        ulong _uint64()
-        {
-            return *cast(ulong*)(value.ptr);
-        }
-
-
-        double _double()
-        {
-            return *cast(double*)(value.ptr);
-        }
-
-        float _float()
-        {
-            return *cast(float*)(value.ptr);
-        }
-    }
 
 
     @property const pure nothrow
