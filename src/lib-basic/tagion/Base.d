@@ -1,7 +1,15 @@
 module tagion.Base;
+
 import tagion.crypto.Hash;
-import std.string : format;
+import tagion.bson.BSONType;
+private import tagion.hashgraph.ConsensusExceptions : ConsensusException, ConsensusFailCode;
+private import std.string : format, join, strip;
+private import std.traits;
+
+// private import std.algorithm : splitter;
+
 enum this_dot="this.";
+
 import std.conv;
 
 
@@ -96,4 +104,26 @@ immutable(Hash) hfuncSHA256(immutable(ubyte)[] data) {
     return SHA256(data);
 }
 
+@safe
+template convertEnum(Enum, Consensus) {
+    //   static if ( (is(Enum==enum)) && (is(Consensus:ConsensusException)) ) {
+        const(Enum) convertEnum(uint enum_number) {
+            if ( enum_number <= Enum.max) {
+                return cast(Enum)enum_number;
+            }
+            throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE);
+            assert(0);
+        }
+    // }
+}
 
+@safe
+template consensusCheck(Consensus) {
+    static if ( is(Consensus:ConsensusException) ) {
+        void consensusCheck(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+            if (!flag) {
+                throw new Consensus(code, file, line);
+            }
+        }
+    }
+}
