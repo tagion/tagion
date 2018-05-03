@@ -706,6 +706,12 @@ class Event {
     }
 
 
+
+    ref immutable(EventBody) eventBody() const {
+        check(_event_body is null, ConsensusFailCode.EVENT_MISSING_BODY);
+        return *_event_body;
+    }
+
     immutable(HashPointer) toCryptoHash() const pure nothrow
     in {
         assert(_hash, "Hash has not been calculated");
