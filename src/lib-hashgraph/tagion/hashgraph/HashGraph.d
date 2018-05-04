@@ -94,10 +94,6 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
-    bool isOnline(const(ubyte[]) pubkey) {
-        return (pubkey in node_ids) !is null;
-    }
-
     const(uint) nodeId(const(ubyte[]) pubkey) {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
@@ -111,19 +107,6 @@ class HashGraph {
     //     return NodeIterator!false(this);
     // }
 
-    void dumpNodes() {
-        import std.stdio;
-        foreach(i, n; nodes) {
-            writef("%d:%s:", i, n !is null);
-            if ( n !is null ) {
-                writef("%s ",n.pubkey[0..7].toHexString);
-            }
-            else {
-                write("Non ");
-            }
-        }
-        writefln("");
-    }
     @safe
     private struct NodeIterator(N) {
         static assert(is(N : const(Node)), "N must be a Node type");

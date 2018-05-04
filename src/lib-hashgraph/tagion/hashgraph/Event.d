@@ -13,7 +13,6 @@ import std.stdio;
 import std.format;
 
 import tagion.Base : this_dot, basename;
-import tagion.Keywords;
 
 @safe
 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
@@ -101,11 +100,10 @@ struct EventBody {
 //json encoding of body only
 //    version(none)
     // @use_event_will used evnet-ids instead of hashs
-    HBSON toBSON(File fout, const(Event) use_event=null) const {
+    HBSON toBSON(const(Event) use_event=null) const {
         auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
-            fout.writefln("EventBody %s", name);
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
@@ -132,7 +130,7 @@ struct EventBody {
 
     @trusted
     immutable(ubyte[]) serialize(const(Event) use_event=null) const {
-        return toBSON(stdout, use_event).serialize;
+        return toBSON(use_event).serialize;
     }
 
 }
@@ -302,30 +300,6 @@ class Event {
         }
         return id_count;
     }
-
-    HBSON toBSON(File fout) const {
-//        check(_event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
-        auto bson=new HBSON;
-        foreach(i, m; this.tupleof) {
-            enum member_name=basename!(this.tupleof[i]);
-            fout.writefln("Member %s", member_name);
-            static if ( member_name == basename!(_event_body) ) {
-                enum name=Keywords.ebody;
-            }
-            else {
-                enum name=member_name;
-            }
-            static if ( name[0] != '_' ) {
-                static if ( __traits(compiles, m.toBSON) ) {
-                    bson[name]=m.toBSON(fout);
-                }
-                else {
-                    bson[name]=m;
-                }
-            }
-        }
-        return bson;
-   }
 
     void round(Round round)
         in {
@@ -731,12 +705,6 @@ class Event {
         return !motherExists && !fatherExists;
     }
 
-
-
-    ref immutable(EventBody) eventBody() const {
-//        check(_event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
-        return *_event_body;
-    }
 
     immutable(HashPointer) toCryptoHash() const pure nothrow
     in {
