@@ -13,6 +13,7 @@ import std.stdio;
 import std.format;
 
 import tagion.Base : this_dot, basename;
+import tagion.Keyword;
 
 @safe
 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
@@ -300,6 +301,28 @@ class Event {
         }
         return id_count;
     }
+
+    HBSON toBSON(const(Event) use_event=null) const {
+        auto bson=new HBSON;
+        foreach(i, m; this.tupleof) {
+            enum member_name=basename!(this.tupleof[i]);
+            static if ( member_name == basename!(_event_body) ) {
+                enum name=Keywords.ebody;
+            }
+            else {
+                enum name=member_name;
+            }
+            static if ( name[0] != '_' ) {
+                static if ( __traits(compiles, m.toBSON) ) {
+                    bson[name]=m.toBSON;
+                }
+                else {
+                    bson[name]=m;
+                }
+            }
+        }
+        return bson;
+   }
 
     void round(Round round)
         in {
