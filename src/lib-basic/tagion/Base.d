@@ -107,11 +107,11 @@ immutable(Hash) hfuncSHA256(immutable(ubyte)[] data) {
 @safe
 template convertEnum(Enum, Consensus) {
     //   static if ( (is(Enum==enum)) && (is(Consensus:ConsensusException)) ) {
-        const(Enum) convertEnum(uint enum_number) {
+    const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
             if ( enum_number <= Enum.max) {
                 return cast(Enum)enum_number;
             }
-            throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE);
+            throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
             assert(0);
         }
     // }
