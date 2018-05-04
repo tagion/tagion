@@ -255,6 +255,7 @@ public:
         return data_;
     }
 
+    alias serialize=data;
 
     string toString() const
         {
