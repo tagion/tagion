@@ -12,7 +12,7 @@ enum ConsensusFailCode {
     // EVENT_PACKAGE_MISSING_EVENT,
     // EVENT_PACKAGE_BAD_SIGNATURE,
     EVENT_NODE_ID_UNKNOWN,
-    EVENT_MISSING_BODY,
+//    EVENT_MISSING_BODY,
 
     SECURITY_SIGN_FAULT,
     SECURITY_PUBLIC_KEY_CREATE_FAULT,
@@ -92,7 +92,7 @@ static this() {
             MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME : "The mother and father can not be the same event",
 
             EVENT_NODE_ID_UNKNOWN : "Public is not mapped to a Node ID",
-            EVENT_MISSING_BODY : "Event is missing eventbody",
+//            EVENT_MISSING_BODY : "Event is missing eventbody",
 
             SECURITY_SIGN_FAULT : "Sign of message failed",
             SECURITY_PUBLIC_KEY_CREATE_FAULT : "Failed to create public key",
