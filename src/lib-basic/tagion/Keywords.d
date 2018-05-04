@@ -1,4 +1,4 @@
-module tagion.Keyword;
+module tagion.Keywords;
 
 private import tagion.Base : EnumText;
 
