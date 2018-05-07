@@ -15,14 +15,31 @@ import std.conv;
 // LRU implements a non-thread safe fixed size LRU cache
 @safe
 class LRU(K,V)  {
+    enum value_is_immutable=is(V == struct);
+    static if ( value_is_immutable ) {
+        alias Value=V*;
+    }
+    else {
+        alias Value=V;
+    }
+    @safe
     struct Entry {
         K key;
-        V value;
-        this(K key, V value) {
-            this.key=key;
-            this.value=value;
+        Value value;
+        static if ( value_is_immutable ) {
+            @trusted
+            this(K key, ref V value) {
+                this.key=key;
+                this.value=&value;
+            }
         }
-    };
+        else {
+            this(K key, ref V value) {
+                this.key=key;
+                this.value=value;
+            }
+        }
+    }
     alias DList!(Entry*)  EvictList;
     alias EvictList.Element Element;
     private EvictList evictList;
@@ -55,7 +72,7 @@ class LRU(K,V)  {
 
 // add adds a value to the cache.  Returns true if an eviction occurred.
     @trusted // <--- only in debug
-    bool add(const(K) key, V value ) {
+    bool add(const(K) key, ref V value ) {
         // Check for existing item
         auto ent = key in items;
         if ( ent !is null ) {
@@ -76,29 +93,29 @@ class LRU(K,V)  {
             // Remove the oldest element
             removeOldest;
         }
-        static if ( is (K:const(ubyte)[]) ) {
-            import std.stdio;
-            import tagion.crypto.Hash : toHexString;
-//            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
-        }
+//         static if ( is (K:const(ubyte)[]) ) {
+//             import std.stdio;
+//             import tagion.crypto.Hash : toHexString;
+// //            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
+//         }
         return evict;
     }
 
 // Get looks up a key's value from the cache.
-    bool get(const(K) key, ref V value) {
+    bool get(const(K) key, ref Value value) {
         auto ent = key in items;
         if ( ent !is null ) {
             auto element=*ent;
             evictList.moveToFront(element);
-//            onEvict(element, CallbackType.MOVEFRONT);
+            pragma(msg, "Value "~typeof(element.entry.value).stringof~" type "~Value.stringof);
             value=element.entry.value;
             return true;
         }
         return false;
     }
 
-    V opIndex(const(K) key) {
-        V value;
+    Value opIndex(const(K) key) {
+        Value value;
         get(key, value);
         return value;
     }
@@ -114,7 +131,7 @@ class LRU(K,V)  {
 
 // Returns the key value (or undefined if not found) without updating
 // the "recently used"-ness of the key.
-    bool peek(const(K) key, ref V value) {
+    bool peek(const(K) key, ref Value value) {
         auto ent = key in items;
 	if ( ent !is null ) {
             value=(*ent).entry.value;
@@ -349,10 +366,12 @@ unittest { // add
 	// }
 
 	// l := NewLRU(1, onEvicted)
-    ok = l.add(1, 1);
+    int x=1;
+    ok = l.add(1, x);
     assert(!ok);
     assert(evictCounter == 0, "should not have an eviction");
-    ok = l.add(2, 2);
+    x++;
+    ok = l.add(2, x);
     assert(ok);
     assert(evictCounter == 1, "should have an eviction");
 }
@@ -367,10 +386,14 @@ unittest {
     auto l = new TestLRU(&onEvicted, 2);
 	// l := NewLRU(2, nil)
 
-    l.add(1, 1);
-    l.add(2, 2);
+    int x=1;
+
+    l.add(1, x);
+    x++;
+    l.add(2, x);
+    x++;
     assert(l.contains(1), "1 should be contained");
-    l.add(3, 3);
+    l.add(3, x);
     assert(!l.contains(1), "Contains should not have updated recent-ness of 1");
 
 }
@@ -384,14 +407,41 @@ unittest {
     }
     auto l = new TestLRU(&onEvicted, 2);
 //	l := NewLRU(2, nil)
+    int x=1;
 
-    l.add(1, 1);
-    l.add(2, 2);
+    l.add(1, x);
+    x++;
+    l.add(2, x);
+    x++;
     int v;
     bool ok;
     ok = l.peek(1, v);
     assert(ok);
     assert(v == 1, "1 should be set to 1 not "~to!string(v));
-    l.add(3, 3);
+    l.add(3, x);
     assert( !l.contains(1), "should not have updated recent-ness of 1");
+}
+
+unittest { // immutable struct
+    struct E {
+        int x;
+        // this(int x) inout {
+        //     this.x=x;
+        // }
+    }
+    alias TestLRU=LRU!(int,immutable(E));
+    void onEvicted(TestLRU.Element* e) @safe {
+        assert(0, "Not used");
+    }
+
+
+    auto l=new TestLRU(&onEvicted);
+
+    enum N=4;
+    foreach(int i; 0..N) {
+        auto e=immutable(E)(i);
+        l[i]=e;
+    }
+
+
 }
