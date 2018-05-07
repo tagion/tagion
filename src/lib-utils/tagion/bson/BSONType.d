@@ -1,4 +1,4 @@
-module tagion.bson.BSONType;
+module tagion.bson.BsonType;
 
 import tagion.Base : EnumText, basename;
 import std.conv;
