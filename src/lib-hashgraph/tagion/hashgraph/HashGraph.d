@@ -10,7 +10,6 @@ import tagion.utils.BSON : Document;
 import tagion.crypto.Hash;
 import tagion.hashgraph.ConsensusExceptions;
 
-
 @safe
 class HashGraph {
     alias Pubkey=GossipNet.Pubkey;
@@ -60,11 +59,27 @@ class HashGraph {
 //        uint seeing; // See a witness
         bool voted;
         // uint voting;
-        //bool fork; // Fork detected in the hashgraph
-        Event event; // Latest event
-        // private:
-        //     Round round;
+        private Event _event; // Latest event
 
+        void event(Event event) {
+            altitude=event.altitude;
+            _event=event;
+        }
+
+        // This is the altiude of the cache Event
+        private int _cache_altitude;
+
+        void altitude(int a) {
+            int result=_cache_altitude;
+            if ( _event ) {
+                _cache_altitude=highest(_event.altitude, _cache_altitude);
+            }
+            _cache_altitude=highest(a, _cache_altitude);
+        }
+
+        int altitude() pure const nothrow {
+            return _cache_altitude;
+        }
 
         int opApply(scope int delegate(const(Event) e) @safe dg) const {
             int iterate(const(Event) e) @safe {
@@ -78,7 +93,7 @@ class HashGraph {
                 return result;
 
             }
-            return iterate(event);
+            return iterate(_event);
         }
 
 
@@ -94,11 +109,36 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
+    bool isOnline(const(ubyte[]) pubkey) {
+        return (pubkey in node_ids) !is null;
+    }
+
     const(uint) nodeId(const(ubyte[]) pubkey) {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
     }
+
+    void setAltitude(const(ubyte[]) pubkey, const(int) altitude) {
+        auto nid=pubkey in node_ids;
+        check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+        auto n=nodes[*nid];
+        n.altitude=altitude;
+    }
+
+    const(int) getAltitude(const(ubyte[]) pubkey) const {
+        auto nid=pubkey in node_ids;
+        check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+        auto n=nodes[*nid];
+        return n.altitude;
+    }
+
+    // const(int) nodeAltitude(const(ubyte[]) pubkey) {
+    //     auto n=pubkey in node_ids;
+    //     check(n !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+    //     auto result=max(*n, n.event.altitude);
+    //     return result;
+    // }
 
     bool isNodeIdKnown(const(ubyte[]) pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
@@ -107,6 +147,19 @@ class HashGraph {
     //     return NodeIterator!false(this);
     // }
 
+    void dumpNodes() {
+        import std.stdio;
+        foreach(i, n; nodes) {
+            writef("%d:%s:", i, n !is null);
+            if ( n !is null ) {
+                writef("%s ",n.pubkey[0..7].toHexString);
+            }
+            else {
+                write("Non ");
+            }
+        }
+        writefln("");
+    }
     @safe
     private struct NodeIterator(N) {
         static assert(is(N : const(Node)), "N must be a Node type");

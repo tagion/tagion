@@ -12,6 +12,10 @@ enum ConsensusFailCode {
     // EVENT_PACKAGE_MISSING_EVENT,
     // EVENT_PACKAGE_BAD_SIGNATURE,
     EVENT_NODE_ID_UNKNOWN,
+    EVENT_SIGNATURE_BAD,
+
+    GOSSIPNET_EVNET_HAS_BEEN_CACHED,
+//    EVENT_MISSING_BODY,
 
     SECURITY_SIGN_FAULT,
     SECURITY_PUBLIC_KEY_CREATE_FAULT,
@@ -33,7 +37,17 @@ enum ConsensusFailCode {
 class ConsensusException : Exception {
     immutable ConsensusFailCode code;
     string toText() pure const nothrow {
-        return consensus_error_messages[code];
+        if ( code == ConsensusFailCode.NON ) {
+            return msg;
+        }
+        else {
+            return consensus_error_messages[code];
+        }
+    }
+
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+        code=ConsensusFailCode.NON;
+        super( msg, file, line );
     }
 
     this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
@@ -81,6 +95,10 @@ static this() {
             MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME : "The mother and father can not be the same event",
 
             EVENT_NODE_ID_UNKNOWN : "Public is not mapped to a Node ID",
+            EVENT_SIGNATURE_BAD : "Bad signature for event",
+//            EVENT_MISSING_BODY : "Event is missing eventbody",
+
+            GOSSIPNET_EVNET_HAS_BEEN_CACHED : "Gossipt net has already cached event",
 
             SECURITY_SIGN_FAULT : "Sign of message failed",
             SECURITY_PUBLIC_KEY_CREATE_FAULT : "Failed to create public key",
