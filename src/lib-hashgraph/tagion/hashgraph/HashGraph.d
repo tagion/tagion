@@ -70,7 +70,11 @@ class HashGraph {
         private int _cache_altitude;
 
         void altitude(int a) {
-            _cache_altitude=highest(highest(a, _event.altitude), _cache_altitude);
+            int result=_cache_altitude;
+            if ( _event ) {
+                _cache_altitude=highest(_event.altitude, _cache_altitude);
+            }
+            _cache_altitude=highest(a, _cache_altitude);
         }
 
         int altitude() pure const nothrow {
