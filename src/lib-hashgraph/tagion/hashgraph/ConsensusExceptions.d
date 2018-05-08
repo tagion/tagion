@@ -94,7 +94,7 @@ static this() {
             MOTHER_AND_FATHER_SAME_SIZE : "Mother and Father must user the same hash function",
             MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME : "The mother and father can not be the same event",
 
-            EVENT_NODE_ID_UNKNOWN : "Public is not mapped to a Node ID",
+            EVENT_NODE_ID_UNKNOWN : "Public key is not mapped to a Node ID",
             EVENT_SIGNATURE_BAD : "Bad signature for event",
 //            EVENT_MISSING_BODY : "Event is missing eventbody",
 

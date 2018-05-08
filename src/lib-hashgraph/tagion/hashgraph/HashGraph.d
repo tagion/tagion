@@ -116,6 +116,17 @@ class HashGraph {
         return (pubkey in node_ids) !is null;
     }
 
+    bool createNode(immutable(ubyte[]) pubkey) {
+        if ( pubkey !in node_ids ) {
+            return false;
+        }
+        auto node_id=cast(uint)node_ids.length;
+        node_ids[pubkey]=node_id;
+        auto node=new Node(pubkey, node_id);
+        nodes[node_id]=node;
+        return true;
+    }
+
     const(uint) nodeId(const(ubyte[]) pubkey) {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
