@@ -66,6 +66,9 @@ class HashGraph {
             _event=event;
         }
 
+        bool isOnline() pure const nothrow {
+            return (_event !is null);
+        }
         // This is the altiude of the cache Event
         private int _cache_altitude;
 
@@ -126,12 +129,12 @@ class HashGraph {
         n.altitude=altitude;
     }
 
-    const(int) getAltitude(const(ubyte[]) pubkey) const {
-        auto nid=pubkey in node_ids;
-        check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-        auto n=nodes[*nid];
-        return n.altitude;
-    }
+    // const(int) getAltitude(const(ubyte[]) pubkey) const {
+    //     auto nid=pubkey in node_ids;
+    //     check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+    //     auto n=nodes[*nid];
+    //     return n.altitude;
+    // }
 
     // const(int) nodeAltitude(const(ubyte[]) pubkey) {
     //     auto n=pubkey in node_ids;
