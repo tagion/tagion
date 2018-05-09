@@ -10,6 +10,7 @@ import tagion.utils.BSON : Document;
 import tagion.crypto.Hash;
 import tagion.hashgraph.ConsensusExceptions;
 
+
 @safe
 class HashGraph {
     alias Pubkey=GossipNet.Pubkey;
@@ -41,8 +42,6 @@ class HashGraph {
 
     @safe
     class Node {
-        ExchangeState state;
-
         //DList!(Event) queue;
         immutable uint node_id;
 //        immutable ulong discovery_time;
@@ -61,30 +60,11 @@ class HashGraph {
 //        uint seeing; // See a witness
         bool voted;
         // uint voting;
-        private Event _event; // Latest event
+        //bool fork; // Fork detected in the hashgraph
+        Event event; // Latest event
+        // private:
+        //     Round round;
 
-        void event(Event event) {
-            altitude=event.altitude;
-            _event=event;
-        }
-
-        bool isOnline() pure const nothrow {
-            return (_event !is null);
-        }
-        // This is the altiude of the cache Event
-        private int _cache_altitude;
-
-        void altitude(int a) {
-            int result=_cache_altitude;
-            if ( _event ) {
-                _cache_altitude=highest(_event.altitude, _cache_altitude);
-            }
-            _cache_altitude=highest(a, _cache_altitude);
-        }
-
-        int altitude() pure const nothrow {
-            return _cache_altitude;
-        }
 
         int opApply(scope int delegate(const(Event) e) @safe dg) const {
             int iterate(const(Event) e) @safe {
@@ -98,7 +78,7 @@ class HashGraph {
                 return result;
 
             }
-            return iterate(_event);
+            return iterate(event);
         }
 
 
@@ -114,47 +94,11 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
-    bool isOnline(const(ubyte[]) pubkey) {
-        return (pubkey in node_ids) !is null;
-    }
-
-    bool createNode(immutable(ubyte[]) pubkey) {
-        if ( pubkey in node_ids ) {
-            return false;
-        }
-        auto node_id=cast(uint)node_ids.length;
-        node_ids[pubkey]=node_id;
-        auto node=new Node(pubkey, node_id);
-        nodes[node_id]=node;
-        return true;
-    }
-
-    const(uint) nodeId(const(ubyte[]) pubkey) inout {
+    const(uint) nodeId(const(ubyte[]) pubkey) {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
     }
-
-    void setAltitude(const(ubyte[]) pubkey, const(int) altitude) {
-        auto nid=pubkey in node_ids;
-        check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-        auto n=nodes[*nid];
-        n.altitude=altitude;
-    }
-
-    // const(int) getAltitude(const(ubyte[]) pubkey) const {
-    //     auto nid=pubkey in node_ids;
-    //     check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-    //     auto n=nodes[*nid];
-    //     return n.altitude;
-    // }
-
-    // const(int) nodeAltitude(const(ubyte[]) pubkey) {
-    //     auto n=pubkey in node_ids;
-    //     check(n !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-    //     auto result=max(*n, n.event.altitude);
-    //     return result;
-    // }
 
     bool isNodeIdKnown(const(ubyte[]) pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
@@ -163,19 +107,6 @@ class HashGraph {
     //     return NodeIterator!false(this);
     // }
 
-    void dumpNodes() {
-        import std.stdio;
-        foreach(i, n; nodes) {
-            writef("%d:%s:", i, n !is null);
-            if ( n !is null ) {
-                writef("%s ",n.pubkey[0..7].toHexString);
-            }
-            else {
-                write("Non ");
-            }
-        }
-        writefln("");
-    }
     @safe
     private struct NodeIterator(N) {
         static assert(is(N : const(Node)), "N must be a Node type");
@@ -206,7 +137,7 @@ class HashGraph {
         }
     }
 
-    bool isNodeActive(const uint node_id) pure const nothrow {
+    bool isNodeActive(const uint node_id) {
         return (node_id in nodes) !is null;
     }
 
@@ -238,14 +169,10 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    inout(Node) getNode(const uint node_id) inout {
+    const(Node) getNode(const uint node_id) {
         return nodes[node_id];
     }
-
-    inout(Node) getNode(const(ubyte[]) pubkey) inout {
-        return getNode(nodeId(pubkey));
-    }
-// uint threshold() const pure nothrow {
+    // uint threshold() const pure nothrow {
     //     return (active_nodes*2)/3;
     // }
 
