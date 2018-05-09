@@ -41,6 +41,8 @@ class HashGraph {
 
     @safe
     class Node {
+        ExchangeState state;
+
         //DList!(Event) queue;
         immutable uint node_id;
 //        immutable ulong discovery_time;
@@ -117,7 +119,7 @@ class HashGraph {
     }
 
     bool createNode(immutable(ubyte[]) pubkey) {
-        if ( pubkey !in node_ids ) {
+        if ( pubkey in node_ids ) {
             return false;
         }
         auto node_id=cast(uint)node_ids.length;
@@ -127,7 +129,7 @@ class HashGraph {
         return true;
     }
 
-    const(uint) nodeId(const(ubyte[]) pubkey) {
+    const(uint) nodeId(const(ubyte[]) pubkey) inout {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
@@ -204,7 +206,7 @@ class HashGraph {
         }
     }
 
-    bool isNodeActive(const uint node_id) {
+    bool isNodeActive(const uint node_id) pure const nothrow {
         return (node_id in nodes) !is null;
     }
 
@@ -236,10 +238,14 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    const(Node) getNode(const uint node_id) {
+    inout(Node) getNode(const uint node_id) inout {
         return nodes[node_id];
     }
-    // uint threshold() const pure nothrow {
+
+    inout(Node) getNode(const(ubyte[]) pubkey) inout {
+        return getNode(nodeId(pubkey));
+    }
+// uint threshold() const pure nothrow {
     //     return (active_nodes*2)/3;
     // }
 

@@ -15,6 +15,8 @@ enum ConsensusFailCode {
     EVENT_SIGNATURE_BAD,
 
     GOSSIPNET_EVNET_HAS_BEEN_CACHED,
+    GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
+    GOSSIPNET_BAD_EXCHNAGE_STATE,
 //    EVENT_MISSING_BODY,
 
     SECURITY_SIGN_FAULT,
@@ -98,7 +100,9 @@ static this() {
             EVENT_SIGNATURE_BAD : "Bad signature for event",
 //            EVENT_MISSING_BODY : "Event is missing eventbody",
 
-            GOSSIPNET_EVNET_HAS_BEEN_CACHED : "Gossipt net has already cached event",
+            GOSSIPNET_EVNET_HAS_BEEN_CACHED : "Gossip net has already cached event",
+            GOSSIPNET_ILLEGAL_EXCHANGE_STATE : "Gossip exchange state is illegal",
+            GOSSIPNET_BAD_EXCHNAGE_STATE : "Gossip exchange state is not in the correct sequency order",
 
             SECURITY_SIGN_FAULT : "Sign of message failed",
             SECURITY_PUBLIC_KEY_CREATE_FAULT : "Failed to create public key",

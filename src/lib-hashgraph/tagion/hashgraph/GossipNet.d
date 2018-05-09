@@ -4,6 +4,14 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.utils.BSON : HBSON, Document;
 
+enum ExchangeState : uint {
+    NON,
+    FIRST_WAVE,
+        TIDE_WAVE,
+        SECOND_WAVE
+        }
+
+
 @safe
 interface RequestNet {
     alias HashPointer=immutable(ubyte)[];
