@@ -223,6 +223,7 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
                         client = listener.accept;
                         assert(client.isAlive);
                         assert(listener.isAlive);
+                        client.setKeepAlive(2, 1);
                     }
                     catch (SocketAcceptException ex) {
                         writeln(ex);
