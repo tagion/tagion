@@ -18,6 +18,7 @@ enum ConsensusFailCode {
     GOSSIPNET_EVNET_HAS_BEEN_CACHED,
     GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
     GOSSIPNET_BAD_EXCHNAGE_STATE,
+    GOSSIPNET_REPLICATED_PUBKEY,
 //    EVENT_MISSING_BODY,
 
     SECURITY_SIGN_FAULT,
@@ -106,6 +107,7 @@ static this() {
             GOSSIPNET_EVNET_HAS_BEEN_CACHED : "Gossip net has already cached event",
             GOSSIPNET_ILLEGAL_EXCHANGE_STATE : "Gossip exchange state is illegal",
             GOSSIPNET_BAD_EXCHNAGE_STATE : "Gossip exchange state is not in the correct sequency order",
+            GOSSIPNET_REPLICATED_PUBKEY : "The public key of the received package is the same as the nodes public key",
 
             SECURITY_SIGN_FAULT : "Sign of message failed",
             SECURITY_PUBLIC_KEY_CREATE_FAULT : "Failed to create public key",

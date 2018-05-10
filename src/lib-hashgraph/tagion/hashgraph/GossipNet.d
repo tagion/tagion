@@ -30,7 +30,7 @@ interface GossipNet : RequestNet {
 
 //    alias HashGraph.EventPackage EventPackage;
     void receive(immutable(ubyte[]) data);
-    void send(const uint node_id, immutable(ubyte[]) data);
+    void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
     alias bool delegate(immutable(ubyte[])) Request;
     // This function is call by the HashGraph.whatIsNotKnowBy
     // and is use to collect node to be send to anotehr node
