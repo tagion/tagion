@@ -7,6 +7,8 @@ module tagion.utils.LRU;
 //import std.stdio;
 import tagion.utils.DList;
 import std.conv;
+import std.format;
+import std.traits;
 
 
 // LRU implements a non-thread safe fixed size LRU cache
@@ -19,6 +21,18 @@ class LRU(K,V)  {
     // else {
     //     alias Value=V;
     // }
+    enum does_not_have_immutable_members=__traits(compiles, {
+            V v;
+            void f(ref V _v) {
+                _v=v;
+            }
+        });
+
+    static if (!does_not_have_immutable_members) {
+        static assert(hasMember!(V, "undefined"), format("%s must have a static member named 'undefined'", V.stringof));
+    }
+
+    // pragma(msg, format("%s does not have immutable members %s", V.stringof, does_not_have_immutable_members));
     @safe
     struct Entry {
         K key;
@@ -97,23 +111,40 @@ class LRU(K,V)  {
         return evict;
     }
 
+
 // Get looks up a key's value from the cache.
     bool get(const(K) key, ref V value) {
-        auto ent = key in items;
-        if ( ent !is null ) {
-            auto element=*ent;
-            evictList.moveToFront(element);
-            value=element.entry.value;
-            return true;
+        static if (does_not_have_immutable_members) {
+            auto ent = key in items;
+            if ( ent !is null ) {
+                auto element=*ent;
+                evictList.moveToFront(element);
+                value=element.entry.value;
+                return true;
+            }
+            return false;
         }
-        return false;
+        assert(0,
+            format("%s has immutable members, use %s instead", V.stringof, opIndex(key).stringof));
     }
 
     V opIndex(const(K) key) {
-        V value;
-        get(key, value);
-        return value;
+        static if (does_not_have_immutable_members) {
+            V value;
+            get(key, value);
+            return value;
+        }
+        else {
+            auto ent = key in items;
+            if ( ent !is null ) {
+                auto element=*ent;
+                evictList.moveToFront(element);
+                return element.entry.value;
+            }
+            return V.undefined;
+        }
     }
+
 
     void opIndexAssign(ref V value, const(K) key) {
         add(key, value);
@@ -128,12 +159,31 @@ class LRU(K,V)  {
 // Returns the key value (or undefined if not found) without updating
 // the "recently used"-ness of the key.
     bool peek(const(K) key, ref V value) {
-        auto ent = key in items;
-	if ( ent !is null ) {
-            value=(*ent).entry.value;
-            return true;
-	}
-	return false;
+        static if (does_not_have_immutable_members) {
+            auto ent = key in items;
+            if ( ent !is null ) {
+                value=(*ent).entry.value;
+                return true;
+            }
+            return false;
+        }
+        assert(0,
+            format("%s has immutable members, use %s instead", V.stringof, peek(key).stringof));
+    }
+
+    V peek(const(K) key) {
+        static if (does_not_have_immutable_members) {
+            V value;
+            peek(key, value);
+            return value;
+        }
+        else {
+            auto ent = key in items;
+            if ( ent !is null ) {
+                return (*ent).entry.value;
+            }
+            return V.undefined;
+        }
     }
 
 // Remove removes the provided key from the cache, returning if the
@@ -175,8 +225,8 @@ class LRU(K,V)  {
 //}
 
 // keys returns a slice of the keys in the cache, from oldest to newest.
-    immutable(K[]) keys() {
-        immutable(K)[] result;
+    const(K[]) keys() {
+        const(K)[] result;
 	uint i;
         foreach_reverse(entry; evictList) {
             result~=entry.key;
