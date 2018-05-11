@@ -15,6 +15,8 @@ enum ExchangeState : uint {
 @safe
 interface RequestNet {
     alias HashPointer=immutable(ubyte)[];
+    alias Pubkey=immutable(ubyte)[] ;
+    alias immutable(ubyte)[] Privkey;
     immutable(HashPointer) calcHash(immutable(HashPointer) hash_pointer) inout;
     // Request a missing event from the network
     // add
@@ -25,8 +27,6 @@ interface RequestNet {
 
 @safe
 interface GossipNet : RequestNet {
-    alias Pubkey=immutable(ubyte)[] ;
-    alias immutable(ubyte)[] Privkey;
 
 //    alias HashGraph.EventPackage EventPackage;
     void receive(immutable(ubyte[]) data);
