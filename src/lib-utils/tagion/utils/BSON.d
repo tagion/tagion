@@ -119,28 +119,22 @@ private:
 public:
     static DocumentCallbacks callbacks;
 
-    nothrow this(immutable ubyte[] data)
-        {
-            data_ = data;
+    nothrow this(immutable ubyte[] data) {
+        data_ = data;
+    }
+
+
+    @property nothrow pure const {
+        @safe bool empty() {
+            return data_.length < 5;
         }
 
 
-    @property nothrow pure const
-        {
-            @safe
-                bool empty()
-            {
-                return data_.length < 5;
-            }
-
-
-            @trusted
-                size_t size()
-            {
-                return *cast(size_t*)(data_[0..4].ptr);
-            }
-            alias size length;
+        @trusted uint size() {
+            return *cast(uint*)(data_[0..4].ptr);
         }
+        alias size length;
+    }
 
 
     struct Range {
