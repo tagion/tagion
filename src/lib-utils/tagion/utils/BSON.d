@@ -43,6 +43,9 @@ public alias HBSON=BSON!(true,true);
 
 import tango.io.Stdout;
 
+static assert(uint.sizeof == 4);
+
+
 enum Type : byte {
     MIN             = -1,    /// Special type which compares lower than all other possible BSON element values
         NONE            = 0x00,  /// End Of Document
@@ -131,7 +134,7 @@ public:
 
 
         @trusted uint size() {
-            return *cast(uint*)(data_[0..4].ptr);
+            return *cast(uint*)(data_[0..uint.sizeof].ptr);
         }
         alias size length;
     }

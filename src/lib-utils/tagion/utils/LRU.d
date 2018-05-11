@@ -1,8 +1,5 @@
 module tagion.utils.LRU;
 
-//TAKEN FROM HASHICORP LRU
-
-//import "container/list"
 
 // EvictCallback is used to get a callback when a cache entry is evicted
 
@@ -15,29 +12,28 @@ import std.conv;
 // LRU implements a non-thread safe fixed size LRU cache
 @safe
 class LRU(K,V)  {
-    enum value_is_immutable=is(V == struct);
-    static if ( value_is_immutable ) {
-        alias Value=V*;
-    }
-    else {
-        alias Value=V;
-    }
+//    enum value_is_immutable=is(V == struct);
+    // static if ( value_is_immutable ) {
+    //     alias Value=V*;
+    // }
+    // else {
+    //     alias Value=V;
+    // }
     @safe
     struct Entry {
         K key;
-        Value value;
-        static if ( value_is_immutable ) {
-            @trusted
-            this(K key, ref V value) {
-                this.key=key;
-                this.value=&value;
-            }
-        }
-        else {
-            this(K key, ref V value) {
-                this.key=key;
-                this.value=value;
-            }
+        V value;
+        // static if ( value_is_immutable ) {
+        //     @trusted
+        //     this(K key, ref V value) {
+        //         this.key=key;
+        //         this.value=&value;
+        //     }
+        // }
+        // else {
+        this(K key, ref V value) {
+            this.key=key;
+            this.value=value;
         }
     }
     alias DList!(Entry*)  EvictList;
@@ -71,7 +67,7 @@ class LRU(K,V)  {
     }
 
 // add adds a value to the cache.  Returns true if an eviction occurred.
-    @trusted // <--- only in debug
+//    @trusted // <--- only in debug
     bool add(const(K) key, ref V value ) {
         // Check for existing item
         auto ent = key in items;
@@ -102,20 +98,19 @@ class LRU(K,V)  {
     }
 
 // Get looks up a key's value from the cache.
-    bool get(const(K) key, ref Value value) {
+    bool get(const(K) key, ref V value) {
         auto ent = key in items;
         if ( ent !is null ) {
             auto element=*ent;
             evictList.moveToFront(element);
-            pragma(msg, "Value "~typeof(element.entry.value).stringof~" type "~Value.stringof);
             value=element.entry.value;
             return true;
         }
         return false;
     }
 
-    Value opIndex(const(K) key) {
-        Value value;
+    V opIndex(const(K) key) {
+        V value;
         get(key, value);
         return value;
     }
@@ -123,6 +118,7 @@ class LRU(K,V)  {
     void opIndexAssign(ref V value, const(K) key) {
         add(key, value);
     }
+
 // Check if a key is in the cache, without updating the recent-ness
 // or deleting it for being stale.
     bool contains(const(K) key) const {
@@ -131,7 +127,7 @@ class LRU(K,V)  {
 
 // Returns the key value (or undefined if not found) without updating
 // the "recently used"-ness of the key.
-    bool peek(const(K) key, ref Value value) {
+    bool peek(const(K) key, ref V value) {
         auto ent = key in items;
 	if ( ent !is null ) {
             value=(*ent).entry.value;
@@ -281,7 +277,7 @@ unittest {
     enum amount2=(amount+amount/2);
     foreach(j; amount..amount2) {
         ok = l.remove(j);
-        assert(ok, "should be contained");
+        assert(ok, "should contain j");
         ok = l.remove(j);
         assert(!ok, "should not be contained");
         ok = l.get(j, v);
@@ -429,7 +425,7 @@ unittest { // immutable struct
         //     this.x=x;
         // }
     }
-    alias TestLRU=LRU!(int,immutable(E));
+    alias TestLRU=LRU!(int,E);
     void onEvicted(TestLRU.Element* e) @safe {
         assert(0, "Not used");
     }
@@ -439,7 +435,7 @@ unittest { // immutable struct
 
     enum N=4;
     foreach(int i; 0..N) {
-        auto e=immutable(E)(i);
+        auto e=E(i);
         l[i]=e;
     }
 
