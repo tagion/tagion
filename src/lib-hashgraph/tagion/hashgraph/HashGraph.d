@@ -68,6 +68,10 @@ class HashGraph {
             _event=event;
         }
 
+        const(Event) event() pure const nothrow {
+            return _event;
+        }
+
         bool isOnline() pure const nothrow {
             return (_event !is null);
         }
@@ -189,6 +193,17 @@ class HashGraph {
             int result;
             foreach(ref N n; _owner.nodes) {
                 result=dg(n);
+                if ( result ) {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        int opApply(scope int delegate(size_t i, ref N node) @safe dg) {
+            int result;
+            foreach(i, ref N n; _owner.nodes) {
+                result=dg(i, n);
                 if ( result ) {
                     break;
                 }
