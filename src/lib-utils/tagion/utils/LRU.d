@@ -469,8 +469,12 @@ unittest {
 }
 
 unittest { // immutable struct
+    @safe
     struct E {
-        int x;
+        immutable(char[]) x;
+        static E undefined() {
+            return E("Not found");
+        }
         // this(int x) inout {
         //     this.x=x;
         // }
@@ -485,9 +489,16 @@ unittest { // immutable struct
 
     enum N=4;
     foreach(int i; 0..N) {
-        auto e=E(i);
+        auto e=E(i.to!string);
         l[i]=e;
     }
 
-
+    assert(l[N] == E.undefined);
+    assert(l.length == N);
+    assert(l.remove(2));
+    assert(l.length == N-1);
+    auto l1=l[1];
+    import std.stdio;
+    writefln("l.length=%d", l.length);
+    assert(0, "Stop");
 }
