@@ -294,6 +294,7 @@ class Event {
 //    static FHash fhash;
     // WireEvent wire_event;
     immutable(ubyte[]) signature;
+    immutable(ubyte[]) pubkey;
     // The altitude increases by one from mother to daughter
     private immutable(EventBody) _event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
@@ -306,7 +307,7 @@ class Event {
 
 
     // BigInt R, S;
-    int topologicalIndex;
+//    int topologicalIndex;
 
 //    private bool _round_set;
     private Round  _round;
@@ -566,12 +567,13 @@ class Event {
 
     immutable uint node_id;
 //    uint marker;
-    @trusted
+//    @trusted
     this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  RequestNet request_net, uint node_id=0, ) {
         _event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
         this.signature=signature;
+        this.pubkey=request_net.pubkey;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
@@ -581,7 +583,7 @@ class Event {
         else {
 
         }
-        _hash=toCryptoHash(request_net);
+        _hash=request_net.calcHash(_event_body.serialize); //toCryptoHash(request_net);
         assert(_hash);
 
         if(callbacks) {
@@ -777,6 +779,7 @@ class Event {
         return _hash;
     }
 
+    version(node)
     immutable(HashPointer) toCryptoHash(
         RequestNet request_net)
     in {
@@ -851,6 +854,7 @@ class Event {
 
 // ByTopologicalOrder implements sort.Interface for []Event based on
 // the topologicalIndex field.
+    version(none)
     struct ByTopologicalOrder {
         Event[] a;
 
