@@ -14,7 +14,7 @@ enum ExchangeState : uint {
 
 @safe
 interface RequestNet {
-    alias HashPointer=immutable(ubyte[]);
+    alias HashPointer=immutable(ubyte)[];
     alias Pubkey=immutable(ubyte[]);
     alias immutable(ubyte)[] Privkey;
     immutable(HashPointer) calcHash(immutable(HashPointer) hash_pointer) inout;
