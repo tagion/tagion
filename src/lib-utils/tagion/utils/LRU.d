@@ -54,7 +54,7 @@ class LRU(K,V)  {
     alias EvictList.Element Element;
     private EvictList evictList;
     private Element*[K] items;
-    alias void delegate(Element*) @safe EvictCallback;
+    alias void delegate(const(K), Element*) @safe EvictCallback;
     immutable uint      size;
     private EvictCallback onEvict;
 
@@ -62,7 +62,7 @@ class LRU(K,V)  {
 
 // NewLRU constructs an LRU of the given size
     // size zero means unlimited
-    this( EvictCallback onEvict, immutable uint size=0) {
+    this( EvictCallback onEvict=null, immutable uint size=0) {
         this.size=      size;
         evictList = new EvictList;
             //	items:     make(map[interface{}]*list.Element),
@@ -73,7 +73,7 @@ class LRU(K,V)  {
     void purge() {
         foreach(ref k, ref e; items)  {
             if (onEvict !is null) {
-                onEvict(e);
+                onEvict(k, e);
             }
 	}
         items = null;
@@ -188,13 +188,24 @@ class LRU(K,V)  {
 
 // Remove removes the provided key from the cache, returning if the
 // key was contained.
+    import std.stdio;
+    static bool display;
+    static File fout;
+
+
     bool remove(const(K) key) {
         auto ent=key in items;
+        if ( display ) fout.writefln("Aften remove %s", ent !is null);
         if ( ent !is null ) {
             auto element=*ent;
-            onEvict(element);
+            if (onEvict !is null) {
+                onEvict(key, element);
+            }
+            if ( display ) fout.writefln("Aften onEvict(element)");
             evictList.remove(element);
+            if ( display ) fout.writefln("Aften evictList.remove(element)");
             items.remove(key);
+            if ( display ) fout.writefln("Aften item.remove(element)");
             return true;
         }
         return false;
@@ -207,7 +218,9 @@ class LRU(K,V)  {
         if (ent !is null) {
             auto element=items[ent.key];
             items.remove(ent.key);
-            onEvict(element);
+            if (onEvict !is null) {
+                onEvict(ent.key, element);
+            }
         }
         return ent;
     }
@@ -275,7 +288,7 @@ unittest {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
 
-    void onEvicted(TestLRU.Element* e) @safe {
+    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
         evictCounter++;
     }
@@ -290,7 +303,7 @@ unittest {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
 
-    void onEvicted(TestLRU.Element* e) @safe {
+    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
         evictCounter++;
     }
@@ -353,7 +366,7 @@ unittest {
 unittest { // getOldest removeOldest
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
-    void onEvicted(TestLRU.Element* e) @safe {
+    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
         evictCounter++;
     }
@@ -400,7 +413,7 @@ unittest { // add
 //func TestLRU_Add(t *testing.T) {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
-    void onEvicted(TestLRU.Element* e) @safe {
+    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
         evictCounter++;
     }
@@ -426,7 +439,7 @@ unittest { // add
 //func TestLRU_Contains(t *testing.T) {
 unittest {
     alias LRU!(int,int) TestLRU;
-    void onEvicted(TestLRU.Element* e) @safe {
+    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
     }
     auto l = new TestLRU(&onEvicted, 2);
@@ -448,7 +461,7 @@ unittest {
 //func TestLRU_Peek(t *testing.T) {
 unittest {
     alias LRU!(int,int) TestLRU;
-    void onEvicted(TestLRU.Element* e) @safe {
+    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
     }
     auto l = new TestLRU(&onEvicted, 2);
@@ -480,7 +493,7 @@ unittest { // immutable struct
         // }
     }
     alias TestLRU=LRU!(int,E);
-    void onEvicted(TestLRU.Element* e) @safe {
+    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
         assert(0, "Not used");
     }
 
