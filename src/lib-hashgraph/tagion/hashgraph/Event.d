@@ -298,7 +298,7 @@ class Event {
     // The altitude increases by one from mother to daughter
     immutable(EventBody) event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
-    private HashPointer _hash;
+    private HashPointer _fingerprint;
     // This is the internal pointer to the
     private Event _mother;
     private Event _father;
@@ -568,12 +568,13 @@ class Event {
     immutable uint node_id;
 //    uint marker;
 //    @trusted
-    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  RequestNet request_net, uint node_id=0, ) {
+    this(ref immutable(EventBody) ebody, SecureNet secure_net, uint node_id=0, ) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
-        this.signature=signature;
-        this.pubkey=request_net.pubkey;
+        _fingerprint=secure_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
+        this.signature=secure_net.sign(_fingerprint);
+        this.pubkey=secure_net.pubkey;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
@@ -583,8 +584,7 @@ class Event {
         else {
 
         }
-        _hash=request_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
-        assert(_hash);
+        assert(_fingerprint);
 
         if(callbacks) {
             callbacks.create(this);
@@ -771,28 +771,12 @@ class Event {
 //         return event_body;
 //     }
 
-    immutable(HashPointer) toCryptoHash() const pure nothrow
+    immutable(HashPointer) fingerprint() const pure nothrow
     in {
-        assert(_hash, "Hash has not been calculated");
+        assert(_fingerprint, "Hash has not been calculated");
     }
     body {
-        return _hash;
-    }
-
-    version(node)
-    immutable(HashPointer) toCryptoHash(
-        RequestNet request_net)
-    in {
-        if ( _hash ) {
-            assert( _hash == request_net.calcHash(event_body.serialize));
-        }
-    }
-    body {
-        if ( _hash ) {
-            return _hash;
-        }
-        _hash=request_net.calcHash(event_body.serialize);
-        return _hash;
+        return _fingerprint;
     }
 
     version(none)

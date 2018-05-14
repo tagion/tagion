@@ -12,8 +12,8 @@ import tagion.hashgraph.ConsensusExceptions;
 
 @safe
 class HashGraph {
-    alias Pubkey=GossipNet.Pubkey;
-    alias Privkey=GossipNet.Privkey;
+    alias Pubkey=SecureNet.Pubkey;
+    alias Privkey=SecureNet.Privkey;
     alias HashPointer=RequestNet.HashPointer;
     alias LRU!(HashPointer, Event) EventCache;
 
@@ -233,7 +233,7 @@ class HashGraph {
     // }
 
     void assign(Event event) {
-        _event_cache[event.toCryptoHash]=event;
+        _event_cache[event.fingerprint]=event;
     }
 
     Event lookup(immutable(ubyte[]) fingerprint) {
@@ -366,14 +366,14 @@ class HashGraph {
     }
 
     Event registerEvent(
-        RequestNet request_net,
-        Pubkey pubkey,
-        immutable(ubyte[]) signature,
+        SecureNet secure_net,
+        // Pubkey pubkey,
+        // immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
-        immutable fingerprint=request_net.calcHash(eventbody.serialize);
+        immutable fingerprint=secure_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
         if ( !event ) {
-            auto get_node_id=pubkey in node_ids;
+            auto get_node_id=secure_net.pubkey in node_ids;
             uint node_id;
             Node node;
 
@@ -382,13 +382,13 @@ class HashGraph {
                 if ( unused_node_ids.length ) {
                     node_id=unused_node_ids[0];
                     unused_node_ids=unused_node_ids[1..$];
-                    node_ids[pubkey]=node_id;
+                    node_ids[secure_net.pubkey]=node_id;
                 }
                 else {
                     node_id=cast(uint)node_ids.length;
-                    node_ids[pubkey]=node_id;
+                    node_ids[secure_net.pubkey]=node_id;
                 }
-                node=new Node(pubkey, node_id);
+                node=new Node(secure_net.pubkey, node_id);
                 nodes[node_id]=node;
             }
             else {
@@ -396,13 +396,13 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-            event=new Event(eventbody, signature, request_net, node_id);
+            event=new Event(eventbody, secure_net, node_id);
 
             // Add the event to the event cache
             assign(event);
 
             // Makes sure that we have the tree before the graph is checked
-            requestEventTree(request_net, event);
+            requestEventTree(secure_net, event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
         }

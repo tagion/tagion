@@ -15,20 +15,29 @@ enum ExchangeState : uint {
 @safe
 interface RequestNet {
     alias HashPointer=immutable(ubyte)[];
-    alias Pubkey=immutable(ubyte[]);
-    alias immutable(ubyte)[] Privkey;
     immutable(HashPointer) calcHash(immutable(HashPointer) hash_pointer) inout;
     // Request a missing event from the network
     // add
     void request(HashGraph h, immutable(HashPointer) event_hash);
 //    immutable(ubyte[]) pubkey()
-    immutable(ubyte[]) pubkey() pure const nothrow;
+
     HashPointer eventHashFromId(immutable uint id);
 }
 
+@safe
+interface SecureNet : RequestNet {
+    alias Pubkey=immutable(ubyte[]);
+    alias Privkey=immutable(ubyte)[];
+    immutable(ubyte[]) pubkey() pure const nothrow;
+    bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey);
+
+    // The private should be added implicite by the GossipNet
+    // The message is a hash of the 'real' message
+    immutable(ubyte[]) sign(immutable(ubyte[]) message);
+}
 
 @safe
-interface GossipNet : RequestNet {
+interface GossipNet : SecureNet {
 
 //    alias HashGraph.EventPackage EventPackage;
     void receive(immutable(ubyte[]) data);
@@ -45,11 +54,6 @@ interface GossipNet : RequestNet {
     ulong time();
 
 
-    bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey);
-
-    // The private should be added implicite by the GossipNet
-    // The message is a hash of the 'real' message
-    immutable(ubyte[]) sign(immutable(ubyte[]) message);
 
 
 //    HashPointer calcHash(const(Event) e);
