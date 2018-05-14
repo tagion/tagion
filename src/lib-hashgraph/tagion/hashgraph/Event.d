@@ -296,7 +296,7 @@ class Event {
     immutable(ubyte[]) signature;
     immutable(ubyte[]) pubkey;
     // The altitude increases by one from mother to daughter
-    private immutable(EventBody) _event_body;
+    immutable(EventBody) event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
     private HashPointer _hash;
     // This is the internal pointer to the
@@ -335,12 +335,12 @@ class Event {
     }
 
     HBSON toBSON() const {
-//        check(_event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
+//        check(event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
         auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum member_name=basename!(this.tupleof[i]);
 //            fout.writefln("Member %s", member_name);
-            static if ( member_name == basename!(_event_body) ) {
+            static if ( member_name == basename!(event_body) ) {
                 enum name=Keywords.ebody;
             }
             else {
@@ -562,14 +562,14 @@ class Event {
 
 
     immutable(int) altitude() const pure nothrow {
-        return _event_body.altitude;
+        return event_body.altitude;
     }
 
     immutable uint node_id;
 //    uint marker;
 //    @trusted
     this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  RequestNet request_net, uint node_id=0, ) {
-        _event_body=ebody;
+        event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
         this.signature=signature;
@@ -583,7 +583,7 @@ class Event {
         else {
 
         }
-        _hash=request_net.calcHash(_event_body.serialize); //toCryptoHash(request_net);
+        _hash=request_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
         assert(_hash);
 
         if(callbacks) {
@@ -731,19 +731,19 @@ class Event {
     }
 
     immutable(ubyte[]) father_hash() const pure nothrow {
-	return _event_body.father;
+	return event_body.father;
     }
 
     immutable(ubyte[]) mother_hash() const pure nothrow {
-	return _event_body.mother;
+	return event_body.mother;
     }
 
     immutable(ubyte[]) payload() const pure nothrow {
-        return _event_body.payload;
+        return event_body.payload;
     }
 
     ref immutable(EventBody) eventbody() const pure {
-        return _event_body;
+        return event_body;
     }
 
 //True if Event contains a payload or is the initial Event of its creator
@@ -752,11 +752,11 @@ class Event {
     }
 
     bool motherExists() const pure nothrow {
-        return _event_body.mother !is null;
+        return event_body.mother !is null;
     }
 
     bool fatherExists() const pure nothrow {
-        return _event_body.father !is null;
+        return event_body.father !is null;
     }
 
     // is true if the event does not have a mother or a father
@@ -766,10 +766,10 @@ class Event {
 
 
 
-    ref immutable(EventBody) eventBody() const {
-//        check(_event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
-        return _event_body;
-    }
+//     ref immutable(EventBody) eventBody() const {
+// //        check(event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
+//         return event_body;
+//     }
 
     immutable(HashPointer) toCryptoHash() const pure nothrow
     in {
@@ -784,14 +784,14 @@ class Event {
         RequestNet request_net)
     in {
         if ( _hash ) {
-            assert( _hash == request_net.calcHash(_event_body.serialize));
+            assert( _hash == request_net.calcHash(event_body.serialize));
         }
     }
     body {
         if ( _hash ) {
             return _hash;
         }
-        _hash=request_net.calcHash(_event_body.serialize);
+        _hash=request_net.calcHash(event_body.serialize);
         return _hash;
     }
 
@@ -848,7 +848,7 @@ class Event {
             //being called in the same process that made the time object.
             //that is why we strip out the monotonic time reading from the Timestamp at
             //the time of creating the Event
-            return a[i]._event_body.time < a[j]._event_body.time;
+            return a[i].event_body.time < a[j].event_body.time;
         }
     }
 
