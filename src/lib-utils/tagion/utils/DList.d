@@ -13,28 +13,28 @@ class UtilException : Exception {
 class DList(E) {
     struct Element {
         E entry;
-        protected Element* next;
-        protected Element* prev;
+        Element* next;
+        Element* prev;
         this(E e) {
             entry=e;
         }
     }
-    private Element* _head;
-    private Element* _tail;
+    private Element* head;
+    private Element* tail;
     // Number of element in the DList
     private uint count;
     Element* unshift(E e) {
         auto element=new Element(e);
-        if ( _head is null ) {
+        if ( head is null ) {
             element.prev=null;
             element.next=null;
-            _head = _tail =  element;
+            head = tail =  element;
         }
         else {
-            element.next=_head;
-            _head.prev=element;
-            _head = element;
-            _head.prev=null;
+            element.next=head;
+            head.prev=element;
+            head = element;
+            head.prev=null;
         }
         count++;
         return element;
@@ -42,25 +42,25 @@ class DList(E) {
 
     E shift() {
         scope(success) {
-            _head=_head.next;
-            _head.prev = null;
+            head=head.next;
+            head.prev = null;
             count--;
         }
-        if ( _head is null ) {
+        if ( head is null ) {
             throw new UtilException(this.stringof~" is empty");
         }
-        return _head.entry;
+        return head.entry;
     }
 
     Element* push(E e) {
         auto element=new Element(e);
-        if ( _head is null ) {
-            _head = _tail = element;
+        if ( head is null ) {
+            head = tail = element;
         }
         else {
-            _tail.next = element;
-            element.prev = _tail;
-            _tail = element;
+            tail.next = element;
+            element.prev = tail;
+            tail = element;
         }
         count++;
         return element;
@@ -68,14 +68,14 @@ class DList(E) {
 
     ref E pop() {
         Element* result;
-        if ( _tail !is null ) {
-            result = _tail;
-            _tail=_tail.prev;
-            if ( _tail is null ) {
-                _head = null;
+        if ( tail !is null ) {
+            result = tail;
+            tail=tail.prev;
+            if ( tail is null ) {
+                head = null;
             }
             else {
-                _tail.next=null;
+                tail.next=null;
             }
             count--;
         }
@@ -88,39 +88,39 @@ class DList(E) {
     void remove(Element* e)
         in {
             assert(e !is null);
-            if ( _head is null ) {
+            if ( head is null ) {
                 assert(count == 0);
             }
             if ( e.next is null ) {
-                assert(e is _tail);
+                assert(e is tail);
             }
             if ( e.prev is null ) {
-                assert(e is _head);
+                assert(e is head);
             }
         }
     body {
-        if ( _head is null ) {
+        if ( head is null ) {
             throw new UtilException("Remove from an empty list");
         }
-        if ( _head is e ) {
-            if ( _head.next is null ) {
-                _head = _tail =  null;
+        if ( head is e ) {
+            if ( head.next is null ) {
+                head = tail =  null;
             }
             else {
-                _head = _head.next;
-                _head.prev = null;
-                if ( _head is _tail ) {
-                    _tail.prev = null;
+                head = head.next;
+                head.prev = null;
+                if ( head is tail ) {
+                    tail.prev = null;
                 }
             }
         }
-        else if ( _tail is e ) {
-            _tail = _tail.prev;
-            if ( _tail is null ) {
-                _head = null;
+        else if ( tail is e ) {
+            tail = tail.prev;
+            if ( tail is null ) {
+                head = null;
             }
             else {
-                _tail.next = null;
+                tail.next = null;
             }
         }
         else {
@@ -135,19 +135,19 @@ class DList(E) {
             assert(e !is null);
         }
     body {
-        if ( e !is _head ) {
-            if ( e == _tail ) {
-                _tail=_tail.prev;
-                _tail.next=null;
+        if ( e !is head ) {
+            if ( e == tail ) {
+                tail=tail.prev;
+                tail.next=null;
             }
             else {
                 e.next.prev = e.prev;
                 e.prev.next = e.next;
             }
-            e.next=_head;
-            _head.prev=e;
-            _head=e;
-            _head.prev=null;
+            e.next=head;
+            head.prev=e;
+            head=e;
+            head.prev=null;
         }
         // remove(e);
         // unshift(e.entry);
@@ -164,7 +164,7 @@ class DList(E) {
                     return internal_count(e.next, i+1);
                 }
             }
-            immutable _count=internal_count(_head);
+            immutable _count=internal_count(head);
             assert(result == _count);
         }
     body {
@@ -172,10 +172,10 @@ class DList(E) {
     }
 
     Element* first() {
-        return _head;
+        return head;
     }
     Element* last() {
-        return _tail;
+        return tail;
     }
 
     Iterator iterator(bool revert=false) {
@@ -206,10 +206,10 @@ class DList(E) {
         private Element* cursor;
         this(DList l, bool revert) {
             if (revert) {
-                cursor = l._tail;
+                cursor = l.tail;
             }
             else {
-                cursor = l._head;
+                cursor = l.head;
             }
         }
 
@@ -249,20 +249,20 @@ class DList(E) {
             }
             return null;
         }
-        clear(_head);
-        _tail=null;
+        clear(head);
+        tail=null;
     }
 
     invariant {
-        if ( _head is null ) {
-            assert(_tail is null);
+        if ( head is null ) {
+            assert(tail is null);
         }
         else {
-            assert(_head.prev is null);
-            assert(_tail.next is null);
-            if ( _head is _tail ) {
-                assert(_head.next is null);
-                assert(_tail.prev is null);
+            assert(head.prev is null);
+            assert(tail.next is null);
+            if ( head is tail ) {
+                assert(head.next is null);
+                assert(tail.prev is null);
             }
         }
 
