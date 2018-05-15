@@ -10,11 +10,10 @@ import tagion.utils.BSON : Document;
 import tagion.crypto.Hash;
 import tagion.hashgraph.ConsensusExceptions;
 
-
 @safe
 class HashGraph {
-    alias Pubkey=GossipNet.Pubkey;
-    alias Privkey=GossipNet.Privkey;
+    alias Pubkey=SecureNet.Pubkey;
+    alias Privkey=SecureNet.Privkey;
     alias HashPointer=RequestNet.HashPointer;
     alias LRU!(HashPointer, Event) EventCache;
 
@@ -42,6 +41,8 @@ class HashGraph {
 
     @safe
     class Node {
+        ExchangeState state;
+
         //DList!(Event) queue;
         immutable uint node_id;
 //        immutable ulong discovery_time;
@@ -60,11 +61,34 @@ class HashGraph {
 //        uint seeing; // See a witness
         bool voted;
         // uint voting;
-        //bool fork; // Fork detected in the hashgraph
-        Event event; // Latest event
-        // private:
-        //     Round round;
+        private Event _event; // Latest event
 
+        void event(Event event) {
+            altitude=event.altitude;
+            _event=event;
+        }
+
+        const(Event) event() pure const nothrow {
+            return _event;
+        }
+
+        bool isOnline() pure const nothrow {
+            return (_event !is null);
+        }
+        // This is the altiude of the cache Event
+        private int _cache_altitude;
+
+        void altitude(int a) {
+            int result=_cache_altitude;
+            if ( _event ) {
+                _cache_altitude=highest(_event.altitude, _cache_altitude);
+            }
+            _cache_altitude=highest(a, _cache_altitude);
+        }
+
+        int altitude() pure const nothrow {
+            return _cache_altitude;
+        }
 
         int opApply(scope int delegate(const(Event) e) @safe dg) const {
             int iterate(const(Event) e) @safe {
@@ -78,7 +102,7 @@ class HashGraph {
                 return result;
 
             }
-            return iterate(event);
+            return iterate(_event);
         }
 
 
@@ -94,11 +118,47 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
-    const(uint) nodeId(const(ubyte[]) pubkey) {
+    bool isOnline(const(ubyte[]) pubkey) {
+        return (pubkey in node_ids) !is null;
+    }
+
+    bool createNode(immutable(ubyte[]) pubkey) {
+        if ( pubkey in node_ids ) {
+            return false;
+        }
+        auto node_id=cast(uint)node_ids.length;
+        node_ids[pubkey]=node_id;
+        auto node=new Node(pubkey, node_id);
+        nodes[node_id]=node;
+        return true;
+    }
+
+    const(uint) nodeId(const(ubyte[]) pubkey) inout {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
     }
+
+    void setAltitude(const(ubyte[]) pubkey, const(int) altitude) {
+        auto nid=pubkey in node_ids;
+        check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+        auto n=nodes[*nid];
+        n.altitude=altitude;
+    }
+
+    // const(int) getAltitude(const(ubyte[]) pubkey) const {
+    //     auto nid=pubkey in node_ids;
+    //     check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+    //     auto n=nodes[*nid];
+    //     return n.altitude;
+    // }
+
+    // const(int) nodeAltitude(const(ubyte[]) pubkey) {
+    //     auto n=pubkey in node_ids;
+    //     check(n !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+    //     auto result=max(*n, n.event.altitude);
+    //     return result;
+    // }
 
     bool isNodeIdKnown(const(ubyte[]) pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
@@ -106,6 +166,20 @@ class HashGraph {
     // protected NodeIterator!false nodeiterator_() {
     //     return NodeIterator!false(this);
     // }
+
+    void dumpNodes() {
+        import std.stdio;
+        foreach(i, n; nodes) {
+            writef("%d:%s:", i, n !is null);
+            if ( n !is null ) {
+                writef("%s ",n.pubkey[0..7].toHexString);
+            }
+            else {
+                write("Non ");
+            }
+        }
+        writefln("");
+    }
 
     @safe
     private struct NodeIterator(N) {
@@ -125,6 +199,17 @@ class HashGraph {
             }
             return result;
         }
+
+        int opApply(scope int delegate(size_t i, ref N node) @safe dg) {
+            int result;
+            foreach(i, ref N n; _owner.nodes) {
+                result=dg(i, n);
+                if ( result ) {
+                    break;
+                }
+            }
+            return result;
+        }
     }
 
     Pubkey nodePubkey(const uint node_id) pure const nothrow {
@@ -137,7 +222,7 @@ class HashGraph {
         }
     }
 
-    bool isNodeActive(const uint node_id) {
+    bool isNodeActive(const uint node_id) pure const nothrow {
         return (node_id in nodes) !is null;
     }
 
@@ -148,10 +233,10 @@ class HashGraph {
     // }
 
     void assign(Event event) {
-        _event_cache[event.toCryptoHash]=event;
+        _event_cache[event.fingerprint]=event;
     }
 
-    Event lookup(immutable(ubyte[]) fingerprint) @safe {
+    Event lookup(immutable(ubyte[]) fingerprint) {
 //        Event result;
 //        writefln("Lookup %s", fingerprint.toHexString);
 
@@ -169,10 +254,14 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    const(Node) getNode(const uint node_id) {
+    inout(Node) getNode(const uint node_id) inout {
         return nodes[node_id];
     }
-    // uint threshold() const pure nothrow {
+
+    inout(Node) getNode(const(ubyte[]) pubkey) inout {
+        return getNode(nodeId(pubkey));
+    }
+// uint threshold() const pure nothrow {
     //     return (active_nodes*2)/3;
     // }
 
@@ -277,14 +366,14 @@ class HashGraph {
     }
 
     Event registerEvent(
-        RequestNet request_net,
-        Pubkey pubkey,
-        immutable(ubyte[]) signature,
+        SecureNet secure_net,
+        // Pubkey pubkey,
+        // immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
-        immutable fingerprint=request_net.calcHash(eventbody.serialize);
+        immutable fingerprint=secure_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
         if ( !event ) {
-            auto get_node_id=pubkey in node_ids;
+            auto get_node_id=secure_net.pubkey in node_ids;
             uint node_id;
             Node node;
 
@@ -293,13 +382,13 @@ class HashGraph {
                 if ( unused_node_ids.length ) {
                     node_id=unused_node_ids[0];
                     unused_node_ids=unused_node_ids[1..$];
-                    node_ids[pubkey]=node_id;
+                    node_ids[secure_net.pubkey]=node_id;
                 }
                 else {
                     node_id=cast(uint)node_ids.length;
-                    node_ids[pubkey]=node_id;
+                    node_ids[secure_net.pubkey]=node_id;
                 }
-                node=new Node(pubkey, node_id);
+                node=new Node(secure_net.pubkey, node_id);
                 nodes[node_id]=node;
             }
             else {
@@ -307,13 +396,13 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-            event=new Event(eventbody, signature, request_net, node_id);
+            event=new Event(eventbody, secure_net, node_id);
 
             // Add the event to the event cache
             assign(event);
 
             // Makes sure that we have the tree before the graph is checked
-            requestEventTree(request_net, event);
+            requestEventTree(secure_net, event);
             // See if the node is strong seeing the hashgraph
             strongSee(event);
         }
@@ -341,10 +430,12 @@ class HashGraph {
             requestEventTree(request_net, mother, event, false);
             auto father=event.father(this, request_net);
             requestEventTree(request_net, father, event, true);
-            if ( Event.callbacks && !event.loaded) {
+            if ( !event.loaded) {
 //                event.getRoundForMother;
                 event.loaded=true;
-                Event.callbacks.create(event);
+                if ( Event.callbacks ) {
+                    Event.callbacks.create(event);
+                }
             }
             if ( !event.daughter ) {
                 // This is latest event

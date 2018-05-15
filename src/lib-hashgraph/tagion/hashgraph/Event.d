@@ -13,12 +13,38 @@ import std.stdio;
 import std.format;
 
 import tagion.Base : this_dot, basename;
+import tagion.Keywords;
 
 @safe
 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
     if (!flag) {
         throw new EventConsensusException(code, file, line);
     }
+}
+
+// Returns the highest altitude
+@safe
+int highest(int a, int b) pure nothrow {
+    if ( (a-b) > 0 ) {
+        return a;
+    }
+    else {
+        return b;
+    }
+}
+
+// Is a higher or equal to b
+@safe
+bool higher(int a, int b) pure nothrow {
+    return highest(a,b) >= 0;
+}
+
+unittest { // Test of the altitude measure function
+    int x=int.max-10;
+    int y=x+20;
+    assert(x>0);
+    assert(y<0);
+    assert(highest(y,x));
 }
 
 @safe
@@ -55,24 +81,29 @@ struct EventBody {
         this(doc);
     }
 
-    @trusted
+//    @trusted
     this(Document doc, RequestNet gossipnet=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
-            enum name=this.tupleof[i].stringof[this_dot.length..$];
+            enum name=basename!(this.tupleof[i]);
             if ( doc.hasElement(name) ) {
                 static if ( name == mother.stringof || name == father.stringof ) {
                     if ( gossipnet ) {
                         immutable event_id=doc[name].get!uint;
-                        pragma(msg, "Name "~name~" type "~type.stringof);
                         this.tupleof[i]=gossipnet.eventHashFromId(event_id);
+                    }
+                    else {
+                        this.tupleof[i]=(doc[name].get!type).idup;
+                    }
+                }
+                else {
+                    pragma(msg, "EventBody " ~ name ~ " type=" ~is(type : immutable(ubyte[])).to!string);
+                    static if ( is(type : immutable(ubyte[])) ) {
+                        this.tupleof[i]=(doc[name].get!type).idup;
                     }
                     else {
                         this.tupleof[i]=doc[name].get!type;
                     }
-                }
-                else {
-                    this.tupleof[i]=doc[name].get!type;
                 }
             }
         }
@@ -104,6 +135,7 @@ struct EventBody {
         auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
+//            fout.writefln("EventBody %s", name);
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
@@ -262,10 +294,11 @@ class Event {
 //    static FHash fhash;
     // WireEvent wire_event;
     immutable(ubyte[]) signature;
+    immutable(ubyte[]) pubkey;
     // The altitude increases by one from mother to daughter
-    private immutable(EventBody)* _event_body;
+    immutable(EventBody) event_body;
 //    private immutable(immutable(ubyte[])) event_body_data;
-    private HashPointer _hash;
+    private HashPointer _fingerprint;
     // This is the internal pointer to the
     private Event _mother;
     private Event _father;
@@ -274,7 +307,7 @@ class Event {
 
 
     // BigInt R, S;
-    int topologicalIndex;
+//    int topologicalIndex;
 
 //    private bool _round_set;
     private Round  _round;
@@ -300,6 +333,30 @@ class Event {
         }
         return id_count;
     }
+
+    HBSON toBSON() const {
+//        check(event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
+        auto bson=new HBSON;
+        foreach(i, m; this.tupleof) {
+            enum member_name=basename!(this.tupleof[i]);
+//            fout.writefln("Member %s", member_name);
+            static if ( member_name == basename!(event_body) ) {
+                enum name=Keywords.ebody;
+            }
+            else {
+                enum name=member_name;
+            }
+            static if ( name[0] != '_' ) {
+                static if ( __traits(compiles, m.toBSON) ) {
+                    bson[name]=m.toBSON;
+                }
+                else {
+                    bson[name]=m;
+                }
+            }
+        }
+        return bson;
+   }
 
     void round(Round round)
         in {
@@ -505,17 +562,19 @@ class Event {
 
 
     immutable(int) altitude() const pure nothrow {
-        return _event_body.altitude;
+        return event_body.altitude;
     }
 
     immutable uint node_id;
 //    uint marker;
-    @trusted
-    this(ref immutable(EventBody) ebody, immutable(ubyte[]) signature,  RequestNet request_net, uint node_id=0, ) {
-        _event_body=&ebody;
+//    @trusted
+    this(ref immutable(EventBody) ebody, SecureNet secure_net, uint node_id=0, ) {
+        event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
-        this.signature=signature;
+        _fingerprint=secure_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
+        this.signature=secure_net.sign(_fingerprint);
+        this.pubkey=secure_net.pubkey;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
@@ -525,8 +584,7 @@ class Event {
         else {
 
         }
-        _hash=toCryptoHash(request_net);
-        assert(_hash);
+        assert(_fingerprint);
 
         if(callbacks) {
             callbacks.create(this);
@@ -673,31 +731,32 @@ class Event {
     }
 
     immutable(ubyte[]) father_hash() const pure nothrow {
-	return _event_body.father;
+	return event_body.father;
     }
 
     immutable(ubyte[]) mother_hash() const pure nothrow {
-	return _event_body.mother;
+	return event_body.mother;
     }
 
     immutable(ubyte[]) payload() const pure nothrow {
-        return _event_body.payload;
+        return event_body.payload;
     }
 
     ref immutable(EventBody) eventbody() const pure {
-        return *_event_body;
+        return event_body;
     }
+
 //True if Event contains a payload or is the initial Event of its creator
     bool containPayload() const pure nothrow {
 	return payload.length != 0;
     }
 
     bool motherExists() const pure nothrow {
-        return _event_body.mother !is null;
+        return event_body.mother !is null;
     }
 
     bool fatherExists() const pure nothrow {
-        return _event_body.father !is null;
+        return event_body.father !is null;
     }
 
     // is true if the event does not have a mother or a father
@@ -706,27 +765,18 @@ class Event {
     }
 
 
-    immutable(HashPointer) toCryptoHash() const pure nothrow
-    in {
-        assert(_hash, "Hash has not been calculated");
-    }
-    body {
-        return _hash;
-    }
 
-    immutable(HashPointer) toCryptoHash(
-        RequestNet request_net)
+//     ref immutable(EventBody) eventBody() const {
+// //        check(event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
+//         return event_body;
+//     }
+
+    immutable(HashPointer) fingerprint() const pure nothrow
     in {
-        if ( _hash ) {
-            assert( _hash == request_net.calcHash(_event_body.serialize));
-        }
+        assert(_fingerprint, "Hash has not been calculated");
     }
     body {
-        if ( _hash ) {
-            return _hash;
-        }
-        _hash=request_net.calcHash(_event_body.serialize);
-        return _hash;
+        return _fingerprint;
     }
 
     version(none)
@@ -782,12 +832,13 @@ class Event {
             //being called in the same process that made the time object.
             //that is why we strip out the monotonic time reading from the Timestamp at
             //the time of creating the Event
-            return a[i]._event_body.time < a[j]._event_body.time;
+            return a[i].event_body.time < a[j].event_body.time;
         }
     }
 
 // ByTopologicalOrder implements sort.Interface for []Event based on
 // the topologicalIndex field.
+    version(none)
     struct ByTopologicalOrder {
         Event[] a;
 
