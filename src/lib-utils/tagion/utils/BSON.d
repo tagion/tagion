@@ -43,6 +43,9 @@ public alias HBSON=BSON!(true,true);
 
 import tango.io.Stdout;
 
+static assert(uint.sizeof == 4);
+
+
 enum Type : byte {
     MIN             = -1,    /// Special type which compares lower than all other possible BSON element values
         NONE            = 0x00,  /// End Of Document
@@ -101,42 +104,43 @@ private {
     alias BSON_TT=BSON!(true, true);
 }
 
+@safe
+interface DocumentCallbacks {
+    //bool check(bool flag, string msg, uint code=0);
+    void not_found(string msg, string file = __FILE__, size_t line = __LINE__ );
+}
+
 /**
  * BSON document representation, which is called "BSONObj" in C++.
  */
 @safe
 struct Document {
 private:
-    immutable ubyte[] data_;
+    immutable(ubyte[]) data_;
 
 
 public:
-    nothrow this(immutable ubyte[] data)
-        {
-            data_ = data;
+    static DocumentCallbacks callbacks;
+
+    nothrow this(immutable ubyte[] data) {
+        data_ = data;
+    }
+
+
+    @property nothrow pure const {
+        @safe bool empty() {
+            return data_.length < 5;
         }
 
 
-    @property nothrow pure const
-        {
-            @safe
-                bool empty()
-            {
-                return data_.length < 5;
-            }
-
-
-            @trusted
-                size_t size()
-            {
-                return *cast(size_t*)(data_[0..4].ptr);
-            }
-            alias size length;
+        @trusted uint size() {
+            return *cast(uint*)(data_[0..uint.sizeof].ptr);
         }
+        alias size length;
+    }
 
 
-    struct Range
-    {
+    struct Range {
     private:
         immutable ubyte[] data_;
         size_t            index_;
@@ -190,69 +194,71 @@ public:
     }
 
 
-    Range opSlice()
-        {
-            return Range(data_);
-        }
+    Range opSlice() {
+        return Range(data_);
+    }
 
 
     @property @trusted
-    string[] keys() const
-        {
-            import std.array;
+    string[] keys() const {
+        import std.array;
 
-            return array(map!"a.key"(Range(data_)));
+        return array(map!"a.key"(Range(data_)));
+    }
+
+
+    @trusted const {
+        // TODO: Replace with opIn?
+        bool hasElement(in string key) {
+            return !opIn_r(key).isEod();
         }
 
 
-    @trusted const
-        {
-            // TODO: Replace with opIn?
-            bool hasElement(in string key)
-            {
-                return !opIndex(key).isEod();
-            }
+        bool hasElement(in size_t index) {
+            return hasElement(index.to!string);
+        }
 
-
-            bool hasElement(in size_t index) {
-                return hasElement(index.to!string);
-            }
-
-            Element opIndex(in string key) {
-                foreach (ref element; Range(data_)) {
-                    if (element.key == key) {
-                        return element;
-                    }
+        inout(Element) opIn_r(in string key) inout {
+            foreach (ref element; Range(data_)) {
+                if (element.key == key) {
+                    return element;
                 }
-
-                return Element();
             }
-
-            Element opIndex(in size_t index) {
-                return opIndex(index.to!string);
-            }
-
-
+            return Element();
         }
+
+        inout(Element) opIndex(in string key) inout {
+            auto result=key in this;
+            if ((callbacks !is null) && result.isEod) {
+                callbacks.not_found(format("Member named '%s' not found", key));
+            }
+            return result;
+        }
+
+        inout(Element) opIndex(in size_t index) inout{
+            return opIndex(index.to!string);
+        }
+
+
+    }
 
 
     immutable(ubyte[]) data() const pure nothrow {
         return data_;
     }
 
+    alias serialize=data;
 
-    string toString() const
-        {
-            if (empty)
-                return "{}";
-
-            return "";
+    string toString() const {
+        if (empty) {
+            return "{}";
         }
+        return "";
+    }
 }
 
 
-unittest
-{
+unittest {
     // {foo: "bar", bool: true, num: 10}
     immutable ubyte[] data = [0x22, 0x00, 0x00, 0x00, 0x02, 0x66, 0x6f, 0x6f, 0x00, 0x04, 0x00, 0x00, 0x00, 0x62, 0x61, 0x72, 0x00,
         0x08, 0x62, 0x6f, 0x6f, 0x6c, 0x00, 0x01, 0x10, 0x6e, 0x75, 0x6d, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00];
@@ -311,176 +317,161 @@ private:
 
 
 public:
-    this(immutable ubyte[] data)
-        {
-            // In this time, Element does not parse a binary data.
-            // This is lazy initialization for some efficient.
-            data_ = data;
+    this(immutable ubyte[] data) {
+        // In this time, Element does not parse a binary data.
+        // This is lazy initialization for some efficient.
+        data_ = data;
+    }
+
+
+    @property @safe const pure nothrow {
+        bool isEod() {
+            return data_.length == 0;
         }
 
 
-    @property @safe const pure nothrow
-        {
-            bool isEod()
-            {
-                return data_.length == 0;
+        bool isNumber() {
+            switch (type) {
+            case Type.INT32, Type.INT64, Type.DOUBLE:
+                return true;
+            default:
+                return false;
             }
+        }
 
 
-            bool isNumber()
-            {
-                switch (type) {
-                case Type.INT32, Type.INT64, Type.DOUBLE:
-                    return true;
-                default:
-                    return false;
-                }
+        bool isSimple() {
+            switch (type) {
+            case Type.INT32, Type.INT64, Type.DOUBLE, Type.STRING, Type.BOOLEAN, Type.DATE, Type.OID:
+                return true;
+            default:
+                return false;
             }
+        }
 
 
-            bool isSimple()
-            {
-                switch (type) {
-                case Type.INT32, Type.INT64, Type.DOUBLE, Type.STRING, Type.BOOLEAN, Type.DATE, Type.OID:
-                    return true;
-                default:
-                    return false;
-                }
+        bool isTrue() {
+            switch (type) {
+            case Type.INT32:
+                return _int32() != 0;
+            case Type.INT64:
+                return _int64() != 0L;
+            case Type.DOUBLE:
+                return _double() != 0.0;
+            case Type.BOOLEAN:
+                return _boolean();
+            case Type.NONE, Type.NULL, Type.UNDEFINED:
+                return false;
+            default:
+                return true;
             }
+        }
 
 
-            bool isTrue()
-            {
-                switch (type) {
-                case Type.INT32:
-                    return _int32() != 0;
-                case Type.INT64:
-                    return _int64() != 0L;
-                case Type.DOUBLE:
-                    return _double() != 0.0;
-                case Type.BOOLEAN:
-                    return _boolean();
-                case Type.NONE, Type.NULL, Type.UNDEFINED:
-                    return false;
-                default:
-                    return true;
-                }
+        bool isDocument() {
+            switch (type) {
+            case Type.DOCUMENT, Type.ARRAY:
+                return true;
+            default:
+                return false;
             }
+        }
 
-
-            bool isDocument()
-            {
-                switch (type) {
-                case Type.DOCUMENT, Type.ARRAY:
-                    return true;
-                default:
-                    return false;
-                }
-            }
-
-            bool isBinary() {
+        bool isBinary() {
                 return type == Type.BINARY;
-            }
-
-            BinarySubType subtype() {
-                if ( (type == Type.BINARY) && (4<value.length) ) {
-                    return cast(BinarySubType)value[4];
-                }
-                else {
-                    return BinarySubType.not_defined;
-                }
-                //return ((4<data_.length) )?data_[4]:BinarySubType.non;
-            }
-
-
-
-            // need mayEncapsulate?
         }
 
-    @property @safe const pure nothrow
-        {
-            Type type()
-            {
-                if (isEod)
-                    return Type.NONE;
-                return cast(Type)data_[0];
+        BinarySubType subtype() {
+            if ( (type == Type.BINARY) && (4<value.length) ) {
+                return cast(BinarySubType)value[4];
             }
-
-
-            byte canonicalType()
-            {
-                Type t = type;
-
-                final switch (t) {
-                case Type.MIN, Type.MAX:
-                    return t;
-                case Type.NONE, Type.UNDEFINED:
-                    return 0;
-                case Type.NULL:
-                    return 5;
-                case Type.DOUBLE, Type.INT32, Type.INT64:
-                    return 10;
-                case Type.STRING, Type.SYMBOL:
-                    return 15;
-                case Type.DOCUMENT:
-                    return 20;
-                case Type.ARRAY:
-                    return 25;
-                case Type.BINARY:
-                    return 30;
-                case Type.OID:
-                    return 35;
-                case Type.BOOLEAN:
-                    return 40;
-                case Type.DATE, Type.TIMESTAMP:
-                    return 45;
-                case Type.REGEX:
-                    return 50;
-                case Type.DBPOINTER:
-                    return 55;
-                case Type.JS_CODE:
-                    return 60;
-                case Type.JS_CODE_W_SCOPE:
-                    return 65;
-                case Type.FLOAT, Type.UINT32, Type.UINT64:
-                    return 70;
-
-                }
+            else {
+                return BinarySubType.not_defined;
             }
+            //return ((4<data_.length) )?data_[4]:BinarySubType.non;
         }
 
 
-    @property const pure nothrow
-        {
-            @trusted
-                string key()
-            {
-                if (isEod)
-                    return null;
 
-                immutable k = cast(string)data_[1..$];
-                immutable strsize=strlen(k.ptr);
-                immutable len=(strsize<k.length)?strsize:k.length;
-                return k[0..len];
+        // need mayEncapsulate?
+    }
+
+    @property @safe const pure nothrow {
+        Type type() {
+            if (isEod) {
+                return Type.NONE;
             }
-
-
-            @safe
-                size_t keySize()
-            {
-                return key.length;
-            }
-
+            return cast(Type)data_[0];
         }
 
 
-    @property @safe const pure nothrow
-        {
-            immutable(ubyte[]) value()
-            {
-                if (isEod)
-                    return null;
+        byte canonicalType() {
+            Type t = type;
 
+            final switch (t) {
+            case Type.MIN, Type.MAX:
+                return t;
+            case Type.NONE, Type.UNDEFINED:
+                return 0;
+            case Type.NULL:
+                return 5;
+            case Type.DOUBLE, Type.INT32, Type.INT64:
+                return 10;
+            case Type.STRING, Type.SYMBOL:
+                return 15;
+            case Type.DOCUMENT:
+                return 20;
+            case Type.ARRAY:
+                return 25;
+            case Type.BINARY:
+                return 30;
+            case Type.OID:
+                return 35;
+            case Type.BOOLEAN:
+                return 40;
+            case Type.DATE, Type.TIMESTAMP:
+                return 45;
+            case Type.REGEX:
+                return 50;
+            case Type.DBPOINTER:
+                return 55;
+            case Type.JS_CODE:
+                return 60;
+            case Type.JS_CODE_W_SCOPE:
+                return 65;
+            case Type.FLOAT, Type.UINT32, Type.UINT64:
+                return 70;
+
+            }
+        }
+    }
+
+
+    @property const pure nothrow {
+
+        string key() @trusted {
+            if (isEod) {
+                return null;
+            }
+            immutable k = cast(string)data_[1..$];
+            immutable strsize=strlen(k.ptr);
+            immutable len=(strsize<k.length)?strsize:k.length;
+            return k[0..len];
+        }
+
+
+        size_t keySize() {
+            return key.length;
+        }
+
+    }
+
+
+    @property @safe const pure nothrow {
+        immutable(ubyte[]) value() {
+            if (isEod) {
+                return null;
+            }
                 return data_[1 + rawKeySize..size];
             }
 
@@ -951,62 +942,61 @@ public:
     }
 
 private:
-    @trusted
-    void check(Type t) const /* pure */
-        {
-            if (t != type) {
-                string typeName = to!string(t); // why is to! not pure?
-                string message;
-                if (isEod)
-                    message = "Field not found: expected type = " ~ typeName;
-                else
-                    message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
-
-                throw new BSONException(message);
+//    @trusted
+    void check(Type t) const /* pure */ {
+        if (t != type) {
+            string typeName = to!string(t); // why is to! not pure?
+            string message;
+            if (isEod) {
+                message = "Field not found: expected type = " ~ typeName;
             }
+            else {
+                message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
+            }
+            throw new BSONException(message);
+        }
+    }
+
+
+    @trusted const pure nothrow {
+        bool _boolean()
+        {
+            return value[0] == 0 ? false : true;
         }
 
 
-    @trusted const pure nothrow
+        int _int32()
         {
-            bool _boolean()
-            {
-                return value[0] == 0 ? false : true;
-            }
-
-
-            int _int32()
-            {
-                return *cast(int*)(value.ptr);
-            }
-
-            uint _uint32()
-            {
-                return *cast(uint*)(value.ptr);
-            }
-
-
-            long _int64()
-            {
-                return *cast(long*)(value.ptr);
-            }
-
-            ulong _uint64()
-            {
-                return *cast(ulong*)(value.ptr);
-            }
-
-
-            double _double()
-            {
-                return *cast(double*)(value.ptr);
-            }
-
-            float _float()
-            {
-                return *cast(float*)(value.ptr);
-            }
+            return *cast(int*)(value.ptr);
         }
+
+        uint _uint32()
+        {
+            return *cast(uint*)(value.ptr);
+        }
+
+
+        long _int64()
+        {
+            return *cast(long*)(value.ptr);
+        }
+
+        ulong _uint64()
+        {
+            return *cast(ulong*)(value.ptr);
+        }
+
+
+        double _double()
+        {
+            return *cast(double*)(value.ptr);
+        }
+
+        float _float()
+        {
+            return *cast(float*)(value.ptr);
+        }
+    }
 
 
     @property const pure nothrow
