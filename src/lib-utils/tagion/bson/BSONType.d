@@ -5,6 +5,7 @@ import std.conv;
 import std.string : format;
 import std.stdio : writefln, writeln;
 import tagion.utils.BSON : HBSON, Document;
+alias Pubkey = immutable(ubyte[]);
 
 enum BSON_TEST_MSG = "bson_test_msg";
 enum BSON_TEST_MSG_CODE = 10_000;
@@ -219,6 +220,7 @@ struct EventCreateMessage {
     immutable(ubyte)[] signature;
     uint node_id;
     bool witness;
+    Pubkey pubkey;
 
     this(const(uint) id,
 	immutable(ubyte)[] payload,
@@ -226,7 +228,8 @@ struct EventCreateMessage {
 	const(uint) mother_id,
 	const(uint) father_id,
     const(bool) witness,
-    immutable(ubyte)[] signature
+    immutable(ubyte)[] signature,
+    Pubkey pubkey
 	) inout {
         this.id = id;
         this.mother_id = mother_id;
@@ -235,6 +238,7 @@ struct EventCreateMessage {
         this.node_id = node_id;
         this.witness = witness;
         this.signature = signature;
+        this.pubkey = pubkey;
     }
 
     this(immutable(ubyte)[] data) inout {
@@ -306,7 +310,7 @@ struct EventCreateMessage {
 unittest {
     auto payload = cast(immutable(ubyte)[])"Test payload";
     auto sig = cast(immutable(ubyte)[])"signature goes here";
-    auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig);
+    auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig, cast(Pubkey)"Test");
     //writefln("Event id: %s,  bson_type_code: %s", seed_body.id, seed_body.bson_type_code);
     auto raw = seed_body.serialize;
 
