@@ -221,6 +221,7 @@ struct EventCreateMessage {
     uint node_id;
     bool witness;
     Pubkey pubkey;
+    immutable(ubyte[]) event_body;
 
     this(const(uint) id,
 	immutable(ubyte)[] payload,
@@ -229,7 +230,8 @@ struct EventCreateMessage {
 	const(uint) father_id,
     const(bool) witness,
     immutable(ubyte)[] signature,
-    Pubkey pubkey
+    Pubkey pubkey,
+    immutable(ubyte[]) event_body
 	) inout {
         this.id = id;
         this.mother_id = mother_id;
@@ -239,6 +241,7 @@ struct EventCreateMessage {
         this.witness = witness;
         this.signature = signature;
         this.pubkey = pubkey;
+        this.event_body = event_body;
     }
 
     this(immutable(ubyte)[] data) inout {
@@ -310,7 +313,7 @@ struct EventCreateMessage {
 unittest {
     auto payload = cast(immutable(ubyte)[])"Test payload";
     auto sig = cast(immutable(ubyte)[])"signature goes here";
-    auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig, cast(Pubkey)"Test");
+    auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig, cast(Pubkey)"Test", cast(immutable(ubyte[]))"Event Body");
     //writefln("Event id: %s,  bson_type_code: %s", seed_body.id, seed_body.bson_type_code);
     auto raw = seed_body.serialize;
 
