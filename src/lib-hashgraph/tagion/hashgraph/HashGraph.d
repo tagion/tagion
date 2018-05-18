@@ -376,7 +376,7 @@ class HashGraph {
         ref immutable(EventBody) eventbody) {
         immutable fingerprint=secure_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
-        writefln("HASH %s registerEvent=%s",
+        writefln("PUB %s registerEvent=%s",
             secure_net.pubkey[0..7].toHexString,
             fingerprint[0..7].toHexString);
         if ( !event ) {
