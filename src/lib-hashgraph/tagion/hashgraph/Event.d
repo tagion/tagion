@@ -804,6 +804,22 @@ class Event {
         }
     }
 
+    int opApply(scope int delegate(immutable uint level,
+            immutable bool mother ,const(Event) e) @safe dg) const {
+        int iterator(const(Event) e, immutable bool mother=true, immutable uint level=0) @safe {
+            int result;
+            if ( e ) {
+                result = dg(level, mother, e);
+                if ( result == 0 ) {
+                    iterator(e.mother, true, level+1);
+                    iterator(e.father, false, level+1);
+                }
+            }
+            return result;
+        }
+        return iterator(this);
+    }
+
     //Sorting
 
     // ByTimestamp implements sort.Interface for []Event based on
