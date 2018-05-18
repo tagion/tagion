@@ -38,9 +38,7 @@ class MonitorCallBacks : EventCallbacks {
             e.mother !is null ? e.mother.id : 0,
             e.father !is null ? e.father.id : 0,
             e.witness,
-            e.signature,
-            e.pubkey,
-            e.event_body.serialize
+            e.signature
         );
         writefln("The event %s has been created and send to the socket: %s", newEvent.id, _socket_thread_id);
         auto bson = newEvent.serialize;
