@@ -243,6 +243,10 @@ class HashGraph {
         return _event_cache[fingerprint];
     }
 
+    bool isRegistered(immutable(ubyte[]) fingerprint) {
+        return _event_cache.contains(fingerprint);
+    }
+
 //    immutable(ubyte[]) eventPackage(Event event,
 
     // Returns the number of active nodes in the network
@@ -372,6 +376,9 @@ class HashGraph {
         ref immutable(EventBody) eventbody) {
         immutable fingerprint=secure_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
+        writefln("HASH %s registerEvent=%s",
+            secure_net.pubkey[0..7].toHexString,
+            fingerprint[0..7].toHexString);
         if ( !event ) {
             auto get_node_id=secure_net.pubkey in node_ids;
             uint node_id;
@@ -437,11 +444,13 @@ class HashGraph {
                     Event.callbacks.create(event);
                 }
             }
-            if ( !event.daughter ) {
+//            if ( !event.daughter ) {
                 // This is latest event
-                auto node=nodes[event.node_id];
+            auto node=nodes[event.node_id];
+            if ( (node.event is null) || (highest(event.altitude, node.event.altitude) ) ) {
                 node.event=event;
             }
+//            }
         }
     }
 

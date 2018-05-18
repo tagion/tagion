@@ -3,6 +3,8 @@ module tagion.hashgraph.Event;
 import std.datetime;   // Date, DateTime
 import tagion.utils.BSON : HBSON, Document;
 
+import tagion.crypto.Hash;
+
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.ConsensusExceptions;
 //import tagion.hashgraph.HashGraph : HashGraph;
@@ -606,6 +608,7 @@ class Event {
         Event result;
         result=mother!true(h);
         if ( !result && motherExists ) {
+            writefln("Event.moter=%s",mother_hash[0..7].toHexString);
             request_net.request(h, mother_hash);
             result=mother(h);
         }
@@ -657,6 +660,7 @@ class Event {
         Event result;
         result=father!true(h);
         if ( !result && fatherExists ) {
+            writefln("Event.father=%s", father_hash[0..7].toHexString);
             request_net.request(h, father_hash);
             result=father(h);
         }
