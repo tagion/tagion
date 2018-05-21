@@ -84,22 +84,22 @@ struct EventBody {
     }
 
 //    @trusted
-    this(Document doc, RequestNet gossipnet=null) inout {
+    this(Document doc, RequestNet request_net=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=basename!(this.tupleof[i]);
             if ( doc.hasElement(name) ) {
                 static if ( name == mother.stringof || name == father.stringof ) {
-                    if ( gossipnet ) {
+                    if ( request_net ) {
                         immutable event_id=doc[name].get!uint;
-                        this.tupleof[i]=gossipnet.eventHashFromId(event_id);
+                        this.tupleof[i]=request_net.eventHashFromId(event_id);
                     }
                     else {
                         this.tupleof[i]=(doc[name].get!type).idup;
                     }
                 }
                 else {
-                    pragma(msg, "EventBody " ~ name ~ " type=" ~is(type : immutable(ubyte[])).to!string);
+//                    pragma(msg, "EventBody " ~ name ~ " type=" ~is(type : immutable(ubyte[])).to!string);
                     static if ( is(type : immutable(ubyte[])) ) {
                         this.tupleof[i]=(doc[name].get!type).idup;
                     }
@@ -570,13 +570,21 @@ class Event {
     immutable uint node_id;
 //    uint marker;
 //    @trusted
-    this(ref immutable(EventBody) ebody, SecureNet secure_net, uint node_id=0, ) {
+    // FixMe: CBR 19-may-2018
+    // Note pubkey is redundent information
+    // The node_id should be enought this will be changed later
+    this(
+        ref immutable(EventBody) ebody,
+        RequestNet request_net,
+        immutable(ubyte[]) signature,
+        immutable(ubyte[]) pubkey,
+        uint node_id) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
-        _fingerprint=secure_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
-        this.signature=secure_net.sign(_fingerprint);
-        this.pubkey=secure_net.pubkey;
+        _fingerprint=request_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
+        this.signature=signature;
+        this.pubkey=pubkey;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
@@ -586,7 +594,7 @@ class Event {
         else {
 
         }
-        assert(_fingerprint);
+        //      assert(_fingerprint);
 
         if(callbacks) {
             callbacks.create(this);
@@ -660,7 +668,7 @@ class Event {
         Event result;
         result=father!true(h);
         if ( !result && fatherExists ) {
-            writefln("Event.father=%s", father_hash[0..7].toHexString);
+//            writefln("Event.father=%s", father_hash[0..7].toHexString);
             request_net.request(h, father_hash);
             result=father(h);
         }
