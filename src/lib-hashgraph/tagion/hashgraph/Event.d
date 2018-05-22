@@ -3,8 +3,6 @@ module tagion.hashgraph.Event;
 import std.datetime;   // Date, DateTime
 import tagion.utils.BSON : HBSON, Document;
 
-import tagion.crypto.Hash;
-
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.ConsensusExceptions;
 //import tagion.hashgraph.HashGraph : HashGraph;
@@ -27,7 +25,7 @@ void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t lin
 // Returns the highest altitude
 @safe
 int highest(int a, int b) pure nothrow {
-    if ( higher(a,b) ) {
+    if ( (a-b) > 0 ) {
         return a;
     }
     else {
@@ -38,12 +36,7 @@ int highest(int a, int b) pure nothrow {
 // Is a higher or equal to b
 @safe
 bool higher(int a, int b) pure nothrow {
-    return a-b > 0;
-}
-
-@safe
-bool lower(int a, int b) pure nothrow {
-    return a-b < 0;
+    return highest(a,b) >= 0;
 }
 
 unittest { // Test of the altitude measure function
@@ -89,22 +82,22 @@ struct EventBody {
     }
 
 //    @trusted
-    this(Document doc, RequestNet request_net=null) inout {
+    this(Document doc, RequestNet gossipnet=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
             enum name=basename!(this.tupleof[i]);
             if ( doc.hasElement(name) ) {
                 static if ( name == mother.stringof || name == father.stringof ) {
-                    if ( request_net ) {
+                    if ( gossipnet ) {
                         immutable event_id=doc[name].get!uint;
-                        this.tupleof[i]=request_net.eventHashFromId(event_id);
+                        this.tupleof[i]=gossipnet.eventHashFromId(event_id);
                     }
                     else {
                         this.tupleof[i]=(doc[name].get!type).idup;
                     }
                 }
                 else {
-//                    pragma(msg, "EventBody " ~ name ~ " type=" ~is(type : immutable(ubyte[])).to!string);
+                    pragma(msg, "EventBody " ~ name ~ " type=" ~is(type : immutable(ubyte[])).to!string);
                     static if ( is(type : immutable(ubyte[])) ) {
                         this.tupleof[i]=(doc[name].get!type).idup;
                     }
@@ -575,21 +568,13 @@ class Event {
     immutable uint node_id;
 //    uint marker;
 //    @trusted
-    // FixMe: CBR 19-may-2018
-    // Note pubkey is redundent information
-    // The node_id should be enought this will be changed later
-    this(
-        ref immutable(EventBody) ebody,
-        RequestNet request_net,
-        immutable(ubyte[]) signature,
-        immutable(ubyte[]) pubkey,
-        uint node_id) {
+    this(ref immutable(EventBody) ebody, SecureNet secure_net, uint node_id=0, ) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
-        _fingerprint=request_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
-        this.signature=signature;
-        this.pubkey=pubkey;
+        _fingerprint=secure_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
+        this.signature=secure_net.sign(_fingerprint);
+        this.pubkey=secure_net.pubkey;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
@@ -599,7 +584,7 @@ class Event {
         else {
 
         }
-        //      assert(_fingerprint);
+        assert(_fingerprint);
 
         if(callbacks) {
             callbacks.create(this);
@@ -621,7 +606,6 @@ class Event {
         Event result;
         result=mother!true(h);
         if ( !result && motherExists ) {
-            writefln("Event.moter=%s",mother_hash[0..7].toHexString);
             request_net.request(h, mother_hash);
             result=mother(h);
         }
@@ -673,7 +657,6 @@ class Event {
         Event result;
         result=father!true(h);
         if ( !result && fatherExists ) {
-//            writefln("Event.father=%s", father_hash[0..7].toHexString);
             request_net.request(h, father_hash);
             result=father(h);
         }
@@ -815,22 +798,6 @@ class Event {
             }
             assert(_father._son is this);
         }
-    }
-
-    int opApply(scope int delegate(immutable uint level,
-            immutable bool mother ,const(Event) e) @safe dg) const {
-        int iterator(const(Event) e, immutable bool mother=true, immutable uint level=0) @safe {
-            int result;
-            if ( e ) {
-                result = dg(level, mother, e);
-                if ( result == 0 ) {
-                    iterator(e.mother, true, level+1);
-                    iterator(e.father, false, level+1);
-                }
-            }
-            return result;
-        }
-        return iterator(this);
     }
 
     //Sorting

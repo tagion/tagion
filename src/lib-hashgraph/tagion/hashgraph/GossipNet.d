@@ -40,7 +40,7 @@ interface SecureNet : RequestNet {
 interface GossipNet : SecureNet {
 
 //    alias HashGraph.EventPackage EventPackage;
-    void receive(immutable(ubyte[]) data, out immutable(ubyte)[] leading_event_hash);
+    void receive(immutable(ubyte[]) data);
     void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
     alias bool delegate(immutable(ubyte[])) Request;
     // This function is call by the HashGraph.whatIsNotKnowBy
