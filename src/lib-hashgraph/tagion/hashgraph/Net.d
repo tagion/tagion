@@ -2,6 +2,8 @@ module tagion.hashgraph.Net;
 
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.ConsensusExceptions;
+import tagion.Base : consensusCheck;
 
 @safe
 class StdRequestNet : RequestNet {
@@ -26,7 +28,6 @@ class StdRequestNet : RequestNet {
 class StdSecureNet : StdRequestNet, SecureNet {
 
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import tagion.hashgraph.ConsensusExceptions;
     import std.digest.hmac;
 
     //    private immutable(ubyte)[] _privkey;
@@ -47,7 +48,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
     bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) {
 
         if ( signature.length == 0 && signature.length <= 520) {
-            throw new SecurityConsensusException(ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+            consensusCheck!SecurityConsensusException(0, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         }
         return _crypt.verify(message, signature, pubkey);
     }
