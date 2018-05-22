@@ -27,7 +27,7 @@ void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t lin
 // Returns the highest altitude
 @safe
 int highest(int a, int b) pure nothrow {
-    if ( (a-b) > 0 ) {
+    if ( higher(a,b) ) {
         return a;
     }
     else {
@@ -38,7 +38,12 @@ int highest(int a, int b) pure nothrow {
 // Is a higher or equal to b
 @safe
 bool higher(int a, int b) pure nothrow {
-    return highest(a,b) >= 0;
+    return a-b > 0;
+}
+
+@safe
+bool lower(int a, int b) pure nothrow {
+    return a-b < 0;
 }
 
 unittest { // Test of the altitude measure function
