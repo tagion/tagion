@@ -189,23 +189,23 @@ class LRU(K,V)  {
 // Remove removes the provided key from the cache, returning if the
 // key was contained.
     import std.stdio;
-    static bool display;
-    static File fout;
+    // static bool display;
+    // static File fout;
 
 
     bool remove(const(K) key) {
         auto ent=key in items;
-        if ( display ) fout.writefln("Aften remove %s", ent !is null);
+        // if ( display ) fout.writefln("Aften remove %s", ent !is null);
         if ( ent !is null ) {
             auto element=*ent;
             if (onEvict !is null) {
                 onEvict(key, element);
             }
-            if ( display ) fout.writefln("Aften onEvict(element)");
+            // if ( display ) fout.writefln("Aften onEvict(element)");
             evictList.remove(element);
-            if ( display ) fout.writefln("Aften evictList.remove(element)");
+            // if ( display ) fout.writefln("Aften evictList.remove(element)");
             items.remove(key);
-            if ( display ) fout.writefln("Aften item.remove(element)");
+            // if ( display ) fout.writefln("Aften item.remove(element)");
             return true;
         }
         return false;
