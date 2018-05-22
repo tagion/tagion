@@ -180,9 +180,9 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
 
 
         void sendBytes(immutable(ubyte)[] data) {
-
+             writeln("In send bytes");
             if( client  && client.isAlive) {
-                writeln("In send bytes");
+                writeln("after client check");
                 if(data.length > socket_max_data_size) {
                     throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
                 }
@@ -201,6 +201,7 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
         }
 
         while(runBackend) {
+            writeln("in the backend loop");
             receiveTimeout(300.msecs,
                 //Control the thread
                 &handleState,
@@ -222,7 +223,6 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
                 Socket.select(socketSet, null, null);
                 if ( socketSet.isSet(listener) ) {
                     try {
-                        writeln(listener);
                         client = listener.accept;
                         assert(client.isAlive);
                         assert(listener.isAlive);
