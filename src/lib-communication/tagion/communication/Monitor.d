@@ -181,7 +181,8 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
 
         void sendBytes(immutable(ubyte)[] data) {
 
-            if(client !is null && client.isAlive) {
+            if( client  && client.isAlive) {
+                writeln("In send bytes");
                 if(data.length > socket_max_data_size) {
                     throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
                 }
@@ -215,13 +216,13 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
             );
 
 
-            if( client is null ) {
+            if ( !client ) {
 
                 socketSet.add(listener);
-                Socket.select(socketSet, null, null, dur!"seconds"(1));
-
-                if( socketSet.isSet(listener) ) {
+                Socket.select(socketSet, null, null);
+                if ( socketSet.isSet(listener) ) {
                     try {
+                        writeln(listener);
                         client = listener.accept;
                         assert(client.isAlive);
                         assert(listener.isAlive);
@@ -231,11 +232,11 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
                     }
                 }
 
-                if(client !is null) {
+                if ( client ) {
                     writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
                 }
 
-                if(client !is null && !client.isAlive) {
+                if ( client  && !client.isAlive) {
                     writefln("Backend client connection disrupted.");
                     client.close;
                     client.destroy;
