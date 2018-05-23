@@ -5,10 +5,11 @@ import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventPrope
 import tagion.Base : ThreadState;
 
 import core.thread : dur, msecs;
-import std.concurrency : Tid, spawn, send, ownerTid, receiveTimeout;
+import std.concurrency : Tid, spawn, send, ownerTid, receiveTimeout, LinkTerminated;
 import std.stdio : writeln, writefln;
 import std.format : format;
 import std.bitmanip : write;
+import std.socket;
 
 
 @safe
@@ -110,16 +111,88 @@ class MonitorCallBacks : EventCallbacks {
     }
 }
 
+
+void createListenerSocket (const ushort port, string address ) {
+    auto listener = new TcpSocket();
+    auto add = new InternetAddress(address, port);
+    listener.bind(add);
+    listener.listen(10);
+
+    writefln("Listening for backend connection on %s:%s", address, port);
+
+    Socket client;
+    auto socketSet = new SocketSet(1);
+    socketSet.add(listener);
+
+    bool run = true;
+    while ( run ) {
+        Socket.select(socketSet, null, null);
+        if ( socketSet.isSet(listener) ) {
+            try {
+                client = listener.accept;
+                assert(client.isAlive);
+                assert(listener.isAlive);
+            }
+            catch (SocketAcceptException ex) {
+                writeln(ex);
+            }
+        }
+
+        if ( client ) {
+            writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
+            ownerTid.send(cast(immutable)client);
+        }
+
+        if ( client  && !client.isAlive) {
+            writeln("Backend client connection disrupted.");
+            client.close;
+            client.destroy;
+        }
+    }
+
+    scope(exit) {
+        if(listener !is null) {
+            writeln("Close listener socket");
+            listener.close;
+            listener.destroy;
+        }
+    }
+}
+
 //Create flat webserver start class function - create Backend class.
 void createSocketThread(immutable(ThreadState) thread_state, const ushort port, string address, bool test_flag=false) {
-    import std.socket;
     enum socket_buffer_size = 0x1000;
     enum socket_max_data_size = 0x10000;
+    //TO-DO no max connection limit impl.
+    enum max_connections = 3;
 
-    Socket listener;
-    Socket client;
+    Socket[] clients;
 
     bool runBackend = false;
+    shared static bool run_listener_socket = true;
+
+    scope(failure) {
+        if(test_flag) {
+            ownerTid.send(false);
+        }
+    }
+
+    scope(success) {
+        if ( test_flag ) {
+            ownerTid.send(true);
+        }
+    }
+
+    scope(exit) {
+        if ( clients ) {
+            writeln("Close clients.");
+            foreach ( c; clients) {
+                c.close;
+                c.destroy;
+            }
+        }
+        run_listener_socket = false;
+    }
 
     void handleState (immutable ThreadState ts) {
         with(ThreadState) final switch(ts) {
@@ -134,77 +207,53 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
         }
     }
 
-    scope(failure) {
-        if(test_flag) {
-            ownerTid.send(false);
-        }
-    }
-
-    scope(success) {
-        if(test_flag) {
-            ownerTid.send(true);
-        }
-    }
-
-    scope(exit) {
-        if(listener !is null) {
-            writeln("Close listener socket");
-            listener.close;
-            listener.destroy;
-        }
-        if( client !is null) {
-            writeln("Close client socket.");
-            client.close;
-            client.destroy;
-        }
-    }
-
     handleState(thread_state);
+
+
+    void handleClient (immutable Socket client) {
+        writeln("received client");
+        clients ~= cast(Socket)client;
+    }
     //Start backend socket, send BSON through the socket
     if(runBackend) {
-
-        enum max_connections = 1;
-        enum max_package_size = 1024u;
-
-        auto socketSet = new SocketSet(max_connections);
-
-        listener = new TcpSocket();
-        assert(listener.isAlive);
-        listener.blocking = false;
-        listener.bind(new InternetAddress(address, port));
-
-        listener.listen(1);
-
-        writefln("Listening for backend connection on %s:%s", address, port);
-
-
+        spawn(&createListenerSocket, port, address);
 
         void sendBytes(immutable(ubyte)[] data) {
-             writeln("In send bytes");
-            if( client  && client.isAlive) {
-                writeln("after client check");
-                if(data.length > socket_max_data_size) {
-                    throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
-                }
-                auto buffer_length = new ubyte[uint.sizeof];
-                immutable data_length = cast(uint)data.length;
-                writeln("Bytes to send: ", data_length);
-                buffer_length.write(data_length, 0);
+            writeln("In send bytes");
+            foreach ( i, client; clients) {
+                if( client ) {
+                    if ( client.isAlive) {
+                        writeln("after client check");
+                        if(data.length > socket_max_data_size) {
+                            throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
+                        }
+                        auto buffer_length = new ubyte[uint.sizeof];
+                        immutable data_length = cast(uint)data.length;
+                        writeln("Bytes to send: ", data_length);
+                        buffer_length.write(data_length, 0);
 
-                client.send(buffer_length);
+                        client.send(buffer_length);
 
-                for (uint start_pos = 0; start_pos < data_length; start_pos += socket_buffer_size) {
-                    immutable end_pos = (start_pos+socket_buffer_size < data_length) ? start_pos+socket_buffer_size : data_length;
-                    client.send(data[start_pos..end_pos]);
+                        for (uint start_pos = 0; start_pos < data_length; start_pos += socket_buffer_size) {
+                            immutable end_pos = (start_pos+socket_buffer_size < data_length) ? start_pos+socket_buffer_size : data_length;
+                            client.send(data[start_pos..end_pos]);
+                        }
+                    }
+                    else {
+                        client.close;
+                        client.destroy;
+                        clients[i] = null;
+                    }
                 }
             }
         }
 
         while(runBackend) {
-            writeln("in the backend loop");
-            receiveTimeout(300.msecs,
+            receiveTimeout(500.msecs,
                 //Control the thread
                 &handleState,
+
+                &handleClient,
 
                 (string msg) {
                     writeln("The backend socket thread received the message and sends to client socket: " , msg);
@@ -216,34 +265,6 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
                 }
             );
 
-
-            if ( !client ) {
-
-                socketSet.add(listener);
-                Socket.select(socketSet, null, null);
-                if ( socketSet.isSet(listener) ) {
-                    try {
-                        client = listener.accept;
-                        assert(client.isAlive);
-                        assert(listener.isAlive);
-                    }
-                    catch (SocketAcceptException ex) {
-                        writeln(ex);
-                    }
-                }
-
-                if ( client ) {
-                    writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
-                }
-
-                if ( client  && !client.isAlive) {
-                    writefln("Backend client connection disrupted.");
-                    client.close;
-                    client.destroy;
-                }
-
-                socketSet.reset;
-            }
         }
     }
 }
