@@ -114,6 +114,10 @@ class MonitorCallBacks : EventCallbacks {
 
 
 void createListenerSocket (const ushort port, string address, shared(bool) * run_listener ) {
+
+    scope(exit) {
+        writeln("Outside try in listener socket exit");
+    }
     try {
         writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
         auto listener = new TcpSocket();
@@ -121,10 +125,21 @@ void createListenerSocket (const ushort port, string address, shared(bool) * run
         listener.bind(add);
         listener.listen(10);
 
+        scope(exit) {
+            writeln("In scope exit listener socket.");
+            if(listener !is null) {
+                writeln("Close listener socket");
+                listener.close;
+                listener.destroy;
+            }
+
+            ownerTid.send(true);
+        }
+
         writefln("Listening for backend connection on %s:%s", address, port);
 
         Socket client;
-        auto socketSet = new SocketSet(10);
+        auto socketSet = new SocketSet(1);
 
         bool getRunListenerCtrl() {
             bool result;
@@ -157,26 +172,9 @@ void createListenerSocket (const ushort port, string address, shared(bool) * run
 
             socketSet.reset;
 
-            // receiveTimeout(50.msecs,
-            // (immutable ThreadState ts) {
-            //     writeln("Received kill listener mess: ", ts);
-            //     if ( ts == ThreadState.KILL ) {
-            //         writeln("Killing listener socket");
-            //         run = false;
-            //     }
-            // }
-            //);
         }
         writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
-        scope(exit) {
-            if(listener !is null) {
-                writeln("Close listener socket");
-                listener.close;
-                listener.destroy;
-            }
 
-            ownerTid.send(true);
-        }
     } catch(Throwable t) {
         writeln(t.toString);
         t.msg ~= " - From listener thread";
@@ -187,18 +185,21 @@ void createListenerSocket (const ushort port, string address, shared(bool) * run
 //Create flat webserver start class function - create Backend class.
 void createSocketThread(immutable(ThreadState) thread_state, const ushort port, string address, bool test_flag=false) {
 
-    enum max_connections = 3;
+    //enum max_connections = 3;
     Socket[] clients;
     Tid listener_socket_tid;
-    shared(bool) run_listener = true;
+    auto run_listener = new shared(bool);
+    *run_listener = true;
 
     scope(failure) {
+        writefln("In failure of soc. th., flag %s:", test_flag);
         if(test_flag) {
             ownerTid.send(false);
         }
     }
 
     scope(success) {
+        writefln("In success of soc. th., flag %s:", test_flag);
         if ( test_flag ) {
             ownerTid.send(true);
         }
@@ -214,10 +215,10 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
         }
 
         if ( listener_socket_tid != Tid.init ) {
-             writeln("Kill listener socket.");
+            writeln("Kill listener socket.");
 
             synchronized{
-                run_listener = false;
+                *run_listener = false;
             }
             receiveOnly!bool;
             writeln("Listener socket closed");
@@ -254,7 +255,7 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
     //Start backend socket, send BSON through the socket
     if(runBackend) {
 
-        listener_socket_tid = spawn(&createListenerSocket, port, address, &run_listener);
+        listener_socket_tid = spawn(&createListenerSocket, port, address, run_listener);
 
         void sendBytes(immutable(ubyte)[] data) {
             foreach ( i, client; clients) {
