@@ -4,12 +4,13 @@ import tagion.hashgraph.Event : Event, EventCallbacks;
 import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventProperty, generateHoleThroughBsonMsg;
 import tagion.Base : ThreadState;
 
-import core.thread : dur, msecs;
-import std.concurrency : Tid, spawn, send, ownerTid, receiveTimeout, LinkTerminated;
+import core.thread : dur, msecs, seconds;
+import std.concurrency : Tid, spawn, send, ownerTid, receiveTimeout, receiveOnly;
 import std.stdio : writeln, writefln;
 import std.format : format;
 import std.bitmanip : write;
 import std.socket;
+import core.thread : thread_joinAll;
 
 
 @safe
@@ -112,64 +113,84 @@ class MonitorCallBacks : EventCallbacks {
 }
 
 
-void createListenerSocket (const ushort port, string address ) {
-    auto listener = new TcpSocket();
-    auto add = new InternetAddress(address, port);
-    listener.bind(add);
-    listener.listen(10);
+void createListenerSocket (const ushort port, string address, shared(bool) * run_listener ) {
+    try {
+        writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
+        auto listener = new TcpSocket();
+        auto add = new InternetAddress(address, port);
+        listener.bind(add);
+        listener.listen(10);
 
-    writefln("Listening for backend connection on %s:%s", address, port);
+        writefln("Listening for backend connection on %s:%s", address, port);
 
-    Socket client;
-    auto socketSet = new SocketSet(1);
-    socketSet.add(listener);
+        Socket client;
+        auto socketSet = new SocketSet(10);
 
-    bool run = true;
-    while ( run ) {
-        Socket.select(socketSet, null, null);
-        if ( socketSet.isSet(listener) ) {
-            try {
-                client = listener.accept;
-                assert(client.isAlive);
-                assert(listener.isAlive);
+        bool getRunListenerCtrl() {
+            bool result;
+            synchronized {
+                result = * run_listener;
             }
-            catch (SocketAcceptException ex) {
-                writeln(ex);
+            return result;
+        }
+
+        while ( getRunListenerCtrl ) {
+            writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
+            client = null;
+            socketSet.add(listener);
+            Socket.select(socketSet, null, null, 500.msecs);
+            if ( socketSet.isSet(listener) ) {
+                try {
+                    client = listener.accept;
+                    assert(client.isAlive);
+                    assert(listener.isAlive);
+                }
+                catch (SocketAcceptException ex) {
+                    writeln(ex);
+                }
             }
-        }
 
-        if ( client ) {
-            writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
-            ownerTid.send(cast(immutable)client);
-        }
+            if ( client ) {
+                writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
+                ownerTid.send(cast(immutable)client);
+            }
 
-        if ( client  && !client.isAlive) {
-            writeln("Backend client connection disrupted.");
-            client.close;
-            client.destroy;
-        }
-    }
+            socketSet.reset;
 
-    scope(exit) {
-        if(listener !is null) {
-            writeln("Close listener socket");
-            listener.close;
-            listener.destroy;
+            // receiveTimeout(50.msecs,
+            // (immutable ThreadState ts) {
+            //     writeln("Received kill listener mess: ", ts);
+            //     if ( ts == ThreadState.KILL ) {
+            //         writeln("Killing listener socket");
+            //         run = false;
+            //     }
+            // }
+            //);
         }
+        writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
+        scope(exit) {
+            if(listener !is null) {
+                writeln("Close listener socket");
+                listener.close;
+                listener.destroy;
+            }
+
+            ownerTid.send(true);
+        }
+    } catch(Throwable t) {
+        writeln(t.toString);
+        t.msg ~= " - From listener thread";
+        ownerTid.send(cast(immutable)t);
     }
 }
 
 //Create flat webserver start class function - create Backend class.
 void createSocketThread(immutable(ThreadState) thread_state, const ushort port, string address, bool test_flag=false) {
-    enum socket_buffer_size = 0x1000;
-    enum socket_max_data_size = 0x10000;
-    //TO-DO no max connection limit impl.
+
     enum max_connections = 3;
-
     Socket[] clients;
-
-    bool runBackend = false;
-    shared static bool run_listener_socket = true;
+    Tid listener_socket_tid;
+    shared(bool) run_listener = true;
 
     scope(failure) {
         if(test_flag) {
@@ -191,9 +212,19 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
                 c.destroy;
             }
         }
-        run_listener_socket = false;
+
+        if ( listener_socket_tid != Tid.init ) {
+             writeln("Kill listener socket.");
+
+            synchronized{
+                run_listener = false;
+            }
+            receiveOnly!bool;
+            writeln("Listener socket closed");
+        }
     }
 
+    bool runBackend = false;
     void handleState (immutable ThreadState ts) {
         with(ThreadState) final switch(ts) {
             case KILL:
@@ -211,19 +242,24 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
 
 
     void handleClient (immutable Socket client) {
-        writeln("received client");
         clients ~= cast(Socket)client;
     }
+
+    enum socket_buffer_size = 0x1000;
+    enum socket_max_data_size = 0x10000;
+    //TO-DO no max connection limit impl.
+
+
+
     //Start backend socket, send BSON through the socket
     if(runBackend) {
-        spawn(&createListenerSocket, port, address);
+
+        listener_socket_tid = spawn(&createListenerSocket, port, address, &run_listener);
 
         void sendBytes(immutable(ubyte)[] data) {
-            writeln("In send bytes");
             foreach ( i, client; clients) {
                 if( client ) {
                     if ( client.isAlive) {
-                        writeln("after client check");
                         if(data.length > socket_max_data_size) {
                             throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
                         }
@@ -262,9 +298,11 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
 
                 (immutable(ubyte)[] bson_bytes) {
                     sendBytes(bson_bytes);
+                },
+                (immutable(Throwable) t) {
+                    writeln(t);
                 }
             );
-
         }
     }
 }
