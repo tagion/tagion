@@ -147,32 +147,26 @@ struct ListenerSocket {
 
             writefln("Listening for backend connection on %s:%s", address, port);
 
-            Socket client;
             auto socketSet = new SocketSet(1);
 
             while ( *run_listener ) {
                 writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
-                client = null;
                 socketSet.add(listener);
                 Socket.select(socketSet, null, null, 500.msecs);
                 if ( socketSet.isSet(listener) ) {
                     try {
-                        client = listener.accept;
+                        auto client = listener.accept;
+                        writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
                         assert(client.isAlive);
                         assert(listener.isAlive);
+                        ownerTid.send(cast(immutable)client);
                     }
                     catch (SocketAcceptException ex) {
                         writeln(ex);
                     }
                 }
 
-                if ( client ) {
-                    writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
-                    ownerTid.send(cast(immutable)client);
-                }
-
                 socketSet.reset;
-
             }
 
             writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
@@ -188,23 +182,25 @@ struct ListenerSocket {
 
 
 //Create flat webserver start class function - create Backend class.
-void createSocketThread(immutable(ThreadState) thread_state, const ushort port, string address, bool test_flag=false) {
+void createSocketThread(immutable(ThreadState) thread_state, const ushort port, string address, bool exit_flag=false) {
 
+    try{
     //enum max_connections = 3;
+    //TO-DO: Impl. ass. array instead of array.
     Socket[] clients;
     Thread listener_socket_t;
     shared(bool) run_listener = true;
 
     scope(failure) {
-        writefln("In failure of soc. th., flag %s:", test_flag);
-        if(test_flag) {
+        writefln("In failure of soc. th., flag %s:", exit_flag);
+        if(exit_flag) {
             ownerTid.send(false);
         }
     }
 
     scope(success) {
-        writefln("In success of soc. th., flag %s:", test_flag);
-        if ( test_flag ) {
+        writefln("In success of soc. th., flag %s:", exit_flag);
+        if ( exit_flag ) {
             ownerTid.send(true);
         }
     }
@@ -220,19 +216,18 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
 
         if ( listener_socket_t !is null ) {
             writeln("Kill listener socket.");
-
             run_listener = false;
-            receiveOnly!bool;
-            writeln("Listener socket closed");
+            listener_socket_t.join();
         }
     }
 
     bool runBackend = false;
-    void handleState (immutable ThreadState ts) {
+    void handleState (ThreadState ts) {
         with(ThreadState) final switch(ts) {
             case KILL:
                 writeln("Kill socket thread.");
                 runBackend = false;
+
             break;
 
             case LIVE:
@@ -263,8 +258,6 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
         ls.ptr = &lso;
 
         listener_socket_t = new Thread( ls ).start();
-
-
 
         void sendBytes(immutable(ubyte)[] data) {
             foreach ( i, client; clients) {
@@ -312,5 +305,8 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
                 }
             );
         }
+    }
+    }catch(Throwable t) {
+        writeln(t);
     }
 }
