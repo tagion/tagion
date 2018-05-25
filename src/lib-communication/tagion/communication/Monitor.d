@@ -5,7 +5,7 @@ import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventPrope
 import tagion.Base : ThreadState;
 
 import core.thread : dur, msecs, seconds;
-import std.concurrency : Tid, spawn, send, ownerTid, receiveTimeout, receiveOnly, thisTid;
+import std.concurrency : Tid, spawn, send, ownerTid, receiveTimeout, receiveOnly, thisTid, receive;
 import std.stdio : writeln, writefln;
 import std.format : format;
 import std.bitmanip : write;
@@ -124,11 +124,7 @@ struct ListenerSocket {
 
     void run () {
 
-        scope(exit) {
-            writeln("Outside try in listener socket exit");
-        }
         try {
-            writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
             auto listener = new TcpSocket();
             auto add = new InternetAddress(address, port);
             listener.bind(add);
@@ -139,10 +135,7 @@ struct ListenerSocket {
                 if(listener !is null) {
                     writeln("Close listener socket");
                     listener.close;
-                    listener.destroy;
                 }
-
-                ownerTid.send(true);
             }
 
             writefln("Listening for backend connection on %s:%s", address, port);
@@ -150,9 +143,8 @@ struct ListenerSocket {
             auto socketSet = new SocketSet(1);
 
             while ( *run_listener ) {
-                writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
                 socketSet.add(listener);
-                Socket.select(socketSet, null, null, 500.msecs);
+                Socket.select(socketSet, null, null, 2.seconds);
                 if ( socketSet.isSet(listener) ) {
                     try {
                         auto client = listener.accept;
@@ -169,8 +161,6 @@ struct ListenerSocket {
                 socketSet.reset;
             }
 
-            writefln("Run list. var add: %s and value: %s", run_listener, *run_listener);
-
         } catch(Throwable t) {
             writeln(t.toString);
             t.msg ~= " - From listener thread";
@@ -180,14 +170,12 @@ struct ListenerSocket {
 }
 
 
-
 //Create flat webserver start class function - create Backend class.
-void createSocketThread(immutable(ThreadState) thread_state, const ushort port, string address, bool exit_flag=false) {
+void createSocketThread(ThreadState thread_state, const ushort port, string address, bool exit_flag=false) {
 
     try{
     //enum max_connections = 3;
-    //TO-DO: Impl. ass. array instead of array.
-    Socket[] clients;
+    Socket[uint] clients;
     Thread listener_socket_t;
     shared(bool) run_listener = true;
 
@@ -205,19 +193,28 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
         }
     }
 
+    uint client_counter;
+    void handleClient (immutable Socket client) {
+        client_counter++;
+        clients[client_counter] = cast(Socket)client;
+    }
+
     scope(exit) {
+        if ( listener_socket_t !is null ) {
+            writeln("Kill listener socket.");
+            //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
+            new TcpSocket(new InternetAddress(address, port));
+            receive( &handleClient);
+            Thread.sleep(500.msecs);
+            run_listener = false;
+            listener_socket_t.join();
+        }
+
         if ( clients ) {
             writeln("Close clients.");
             foreach ( c; clients) {
                 c.close;
-                c.destroy;
             }
-        }
-
-        if ( listener_socket_t !is null ) {
-            writeln("Kill listener socket.");
-            run_listener = false;
-            listener_socket_t.join();
         }
     }
 
@@ -239,14 +236,9 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
     handleState(thread_state);
 
 
-    void handleClient (immutable Socket client) {
-        clients ~= cast(Socket)client;
-    }
 
     enum socket_buffer_size = 0x1000;
     enum socket_max_data_size = 0x10000;
-    //TO-DO no max connection limit impl.
-
 
 
     //Start backend socket, send BSON through the socket
@@ -260,7 +252,7 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
         listener_socket_t = new Thread( ls ).start();
 
         void sendBytes(immutable(ubyte)[] data) {
-            foreach ( i, client; clients) {
+            foreach ( key, client; clients) {
                 if ( client.isAlive) {
                     if(data.length > socket_max_data_size) {
                         throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
@@ -279,8 +271,7 @@ void createSocketThread(immutable(ThreadState) thread_state, const ushort port, 
                 }
                 else {
                     client.close;
-                    client.destroy;
-                    clients[i] = null;
+                    clients.remove(key);
                 }
             }
         }
