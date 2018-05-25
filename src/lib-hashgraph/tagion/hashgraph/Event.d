@@ -600,10 +600,6 @@ class Event {
 
         }
         //      assert(_fingerprint);
-
-        if(callbacks) {
-            callbacks.create(this);
-        }
 //        }
     }
 
