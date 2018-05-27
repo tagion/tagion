@@ -198,7 +198,8 @@ class StdSecureNet : StdRequestNet, SecureNet {
 
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {
-    abstract void receive(immutable(ubyte[]) data, out immutable(ubyte)[] leading_event_hash);
+    import tagion.hashgraph.Event : Event;
+    abstract Event receive(immutable(ubyte[]) data, Event delegate(immutable(ubyte)[] leading_event_fingerprint) @safe register_leading_event );
     abstract void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
 
     import tagion.crypto.secp256k1.NativeSecp256k1 : NativeSecp256k1;

@@ -7,9 +7,9 @@ import tagion.utils.BSON : HBSON, Document;
 enum ExchangeState : uint {
     NON,
     FIRST_WAVE,
-        TIDE_WAVE,
-        SECOND_WAVE
-        }
+    TIDE_WAVE,
+    SECOND_WAVE
+}
 
 
 @safe
@@ -40,7 +40,7 @@ interface SecureNet : RequestNet {
 interface GossipNet : SecureNet {
 
 //    alias HashGraph.EventPackage EventPackage;
-    void receive(immutable(ubyte[]) data, out immutable(ubyte)[] leading_event_hash);
+    Event receive(immutable(ubyte[]) data, Event delegate(immutable(ubyte)[] leading_event_fingerprint) @safe register_leading_event );
     void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
     alias bool delegate(immutable(ubyte[])) Request;
     // This function is call by the HashGraph.whatIsNotKnowBy
