@@ -46,12 +46,17 @@ bool lower(int a, int b) pure nothrow {
     return a-b < 0;
 }
 
+@safe
 unittest { // Test of the altitude measure function
     int x=int.max-10;
     int y=x+20;
     assert(x>0);
     assert(y<0);
-    assert(highest(y,x));
+    assert(highest(x,y) == y);
+    assert(higher(y,x));
+    assert(lower(x,y));
+    assert(!lower(x,x));
+    assert(!higher(x,x));
 }
 
 @safe
