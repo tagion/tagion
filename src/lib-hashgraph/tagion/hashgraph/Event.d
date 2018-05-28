@@ -65,7 +65,7 @@ struct EventBody {
     immutable(ubyte)[] payload; // Transaction
     HashPointer mother; // Hash of the self-parent
     HashPointer father; // Hash of the other-parent
-    int altitude;
+    immutable int altitude;
 
     ulong time;
     invariant {
