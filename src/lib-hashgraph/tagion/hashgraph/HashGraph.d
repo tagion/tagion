@@ -1,6 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
-import std.stdio;
+//import std.stdio;
 import std.conv;
 //import tagion.hashgraph.Store;
 import tagion.hashgraph.Event;
@@ -262,8 +262,8 @@ class HashGraph {
     // }
 
     void assign(Event event) {
-        writefln("ASSIGN event=%s", event !is null);
-        writefln("ASSIGN %s", event.fingerprint[0..7].toHexString);
+        // writefln("ASSIGN event=%s", event !is null);
+        // writefln("ASSIGN %s", event.fingerprint[0..7].toHexString);
         auto node=getNode(event.pubkey);
         node.event=event;
         _event_cache[event.fingerprint]=event;
@@ -409,9 +409,9 @@ class HashGraph {
         ref immutable(EventBody) eventbody) {
         immutable fingerprint=request_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
-        writefln("PUB %s registerEvent=%s",
-            pubkey[0..7].toHexString,
-            fingerprint[0..7].toHexString);
+        // writefln("PUB %s registerEvent=%s",
+        //     pubkey[0..7].toHexString,
+        //     fingerprint[0..7].toHexString);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;
             uint node_id;
@@ -437,19 +437,19 @@ class HashGraph {
             }
 
 
-            writeln("Before new Event");
+            // writeln("Before new Event");
             event=new Event(eventbody, request_net, signature, pubkey, node_id);
 
 
-            writeln("Before assign");
+            // writeln("Before assign");
             // Add the event to the event cache
             assign(event);
 
-            writeln("Before requestEventTree");
+            // writeln("Before requestEventTree");
             // Makes sure that we have the tree before the graph is checked
             requestEventTree(request_net, event);
             // See if the node is strong seeing the hashgraph
-            writeln("Before strong See");
+            // writeln("Before strong See");
             strongSee(event);
         }
 
