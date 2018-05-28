@@ -368,7 +368,11 @@ class Event {
             }
         }
         return bson;
-   }
+    }
+
+    bool isFront() pure const nothrow {
+        return _daughter is null;
+    }
 
     void round(Round round)
         in {

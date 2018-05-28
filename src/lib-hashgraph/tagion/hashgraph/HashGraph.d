@@ -64,9 +64,17 @@ class HashGraph {
         // uint voting;
         private Event _event; // Latest event
 
-        void event(Event event) {
-            altitude=event.altitude;
-            _event=event;
+        package void event(Event e)
+        in {
+            assert(e);
+            assert(e.son is null);
+            assert(e.daughter is null);
+        }
+        body {
+            if ( (_event is null) || lower(_event.altitude, e.altitude) ) {
+                altitude=e.altitude;
+                _event=e;
+            }
         }
 
         const(Event) event() pure const nothrow {
@@ -79,7 +87,14 @@ class HashGraph {
         // This is the altiude of the cache Event
         private int _cache_altitude;
 
-        void altitude(int a) {
+        void altitude(int a)
+            in {
+                if ( _event ) {
+//                    assert(_event.son is null);
+                    assert(_event.daughter is null);
+                }
+            }
+        body {
             int result=_cache_altitude;
             if ( _event ) {
                 _cache_altitude=highest(_event.altitude, _cache_altitude);
@@ -91,7 +106,14 @@ class HashGraph {
             return _cache_altitude;
         }
 
-        int opApply(scope int delegate(const(Event) e) @safe dg) const {
+        int opApply(scope int delegate(const(Event) e) @safe dg) const
+            in {
+                if ( _event ) {
+                    //                  assert(_event.son is null);
+                    assert(_event.daughter is null);
+                }
+            }
+        body {
             int iterate(const(Event) e) @safe {
                 int result;
                 if ( e ) {
@@ -106,7 +128,13 @@ class HashGraph {
             return iterate(_event);
         }
 
-
+        private void invariant_event() {
+            if ( _event ) {
+                // Front event does not have a daugther or son yet
+//                assert(_event.son is null);
+                assert(_event.daughter is null);
+            }
+        }
     }
 
 //    Round round; // Current round
@@ -236,6 +264,8 @@ class HashGraph {
     void assign(Event event) {
         writefln("ASSIGN event=%s", event !is null);
         writefln("ASSIGN %s", event.fingerprint[0..7].toHexString);
+        auto node=getNode(event.pubkey);
+        node.event=event;
         _event_cache[event.fingerprint]=event;
     }
 
@@ -456,10 +486,10 @@ class HashGraph {
             }
 //            if ( !event.daughter ) {
                 // This is latest event
-            auto node=nodes[event.node_id];
-            if ( (node.event is null) || (highest(event.altitude, node.event.altitude) ) ) {
-                node.event=event;
-            }
+            // auto node=nodes[event.node_id];
+            // if ( (node.event is null) || (highest(event.altitude, node.event.altitude) ) ) {
+            //     node.event=event;
+            // }
 //            }
         }
     }
