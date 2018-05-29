@@ -45,16 +45,5 @@ interface GossipNet : SecureNet {
     alias bool delegate(immutable(ubyte[])) Request;
     // This function is call by the HashGraph.whatIsNotKnowBy
     // and is use to collect node to be send to anotehr node
-//    bool collect(Event e, immutable uint depth);
-
-//    immutable(ubyte[]) evaPackage();
-
-//    void buildPackage(HashGraph hashgraph, HBSON bson, Event event, immutable uint node_id);
-
     ulong time();
-
-
-
-
-//    HashPointer calcHash(const(Event) e);
 }
