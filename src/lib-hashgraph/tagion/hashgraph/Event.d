@@ -125,18 +125,13 @@ struct EventBody {
     void consensus() inout {
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
-//            writefln("father.length=%s index=%s", father.length, index);
-
             check(father.length == 0, ConsensusFailCode.NO_MOTHER);
-//            check(index == 0, "Because Eva does not have a mother the index of an Eva event must be zero");
         }
         else {
             if ( father.length != 0 ) {
                 // If the Event has a father
                 check(mother.length == father.length, ConsensusFailCode.MOTHER_AND_FATHER_SAME_SIZE);
             }
-//            writefln("Non Eva father.length=%s index=%s", father.length, index);
-            //          check(index != 0, "This event is not an Eva event so the index mush be greater than zero");
             check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
         }
     }
@@ -299,17 +294,11 @@ class Event {
     alias GossipNet.HashPointer HashPointer;
     alias GossipNet.Pubkey Pubkey;
     // Delegate function to load or find an Event in the event pool
-//    static Lookup lookup;
-    // Deleagte function to assign an Event to event pool
-//    static Assign assign;
-    // Hash function
-//    static FHash fhash;
-    // WireEvent wire_event;
+    // Delegate function to assign an Event to event pool
     immutable(ubyte[]) signature;
     immutable(ubyte[]) pubkey;
     // The altitude increases by one from mother to daughter
     immutable(EventBody) event_body;
-//    private immutable(immutable(ubyte[])) event_body_data;
     private HashPointer _fingerprint;
     // This is the internal pointer to the
     private Event _mother;
@@ -318,10 +307,7 @@ class Event {
     private Event _son;
 
 
-    // BigInt R, S;
-//    int topologicalIndex;
-
-//    private bool _round_set;
+    //    private bool _round_set;
     private Round  _round;
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
@@ -347,11 +333,9 @@ class Event {
     }
 
     HBSON toBSON() const {
-//        check(event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
         auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum member_name=basename!(this.tupleof[i]);
-//            fout.writefln("Member %s", member_name);
             static if ( member_name == basename!(event_body) ) {
                 enum name=Keywords.ebody;
             }
@@ -380,7 +364,6 @@ class Event {
             assert(_round is null, "Round is already set");
         }
     body {
-//        this._round_set=true;
         this._round=round;
         if ( callbacks ) {
             callbacks.round(this);
@@ -486,15 +469,6 @@ class Event {
     }
 
     bool witness() pure const nothrow {
-    //     in {
-    //         if ( _round || _witness_mask ) {
-    //             writeln("False rounds");
-    //         }
-    //         assert(_round, "Round must ne defined for a witness");
-    //         assert(_witness_mask, "Witness mask should be define for a witness");
-    //     }
-    // body
-    // {
         return _witness;
     }
 
@@ -582,8 +556,6 @@ class Event {
     }
 
     immutable uint node_id;
-//    uint marker;
-//    @trusted
     // FixMe: CBR 19-may-2018
     // Note pubkey is redundent information
     // The node_id should be enought this will be changed later
@@ -678,7 +650,6 @@ class Event {
         Event result;
         result=father!true(h);
         if ( !result && fatherExists ) {
-//            writefln("Event.father=%s", father_hash[0..7].toHexString);
             request_net.request(h, father_hash);
             result=father(h);
         }
@@ -703,13 +674,6 @@ class Event {
         in {
             if ( _daughter !is null ) {
                 assert( c !is null, "Daughter can not be set to null");
-                // assert(_daughter is c,
-                //     format(
-                //         "Daughter pointer can not be change\n"~
-                //         "mother           id=%d\n"~
-                //         "current daughter id=%d\n"~
-                //         "new daughter     id=%d",
-                //         id, _daughter.id, c.id));
             }
         }
     body {
@@ -786,40 +750,12 @@ class Event {
         return !motherExists && !fatherExists;
     }
 
-
-
-//     ref immutable(EventBody) eventBody() const {
-// //        check(event_body !is null, ConsensusFailCode.EVENT_MISSING_BODY);
-//         return event_body;
-//     }
-
     immutable(HashPointer) fingerprint() const pure nothrow
     in {
         assert(_fingerprint, "Hash has not been calculated");
     }
     body {
         return _fingerprint;
-    }
-
-    version(none)
-    invariant {
-        if ( (_mother) && (_mother._daughter) ) {
-            if ( _mother._daughter !is this ) {
-                writefln("Bad daughter=%d this=%d", _mother.daughter.id, id);
-            }
-            assert(_mother._daughter is this);
-
-        }
-        if ( (_father) && (_father._son) ) {
-            if ( _father._son !is this ) {
-                writefln("Bad son=%d this=%d", _father._son.id, id);
-                writefln("\tfather=%s", _father._hash.toHexString);
-
-                writefln("\tbad son=%s", _father._son._hash.toHexString);
-                writefln("\t   this=%s", _hash.toHexString);
-            }
-            assert(_father._son is this);
-        }
     }
 
     int opApply(scope int delegate(immutable uint level,
@@ -838,78 +774,10 @@ class Event {
         return iterator(this);
     }
 
-    //Sorting
-
-    // ByTimestamp implements sort.Interface for []Event based on
-    // the timestamp field.
-    struct ByTimestamp {
-        Event[] a;
-
-        uint Len() {
-            return cast(uint)a.length;
-        }
-        void Swap(uint i, uint j)
-            in {
-                assert(i < a.length);
-                assert(j < a.length);
-                assert( i != j );
-            }
-        body {
-            import mutation=std.algorithm.mutation;
-            mutation.swap(a[i], a[j]);
-        }
-
-        bool Less(uint i, uint j)
-            in {
-                assert(i < a.length);
-                assert(j < a.length);
-                assert( i != j );
-            }
-        body {
-            //normally, time.Sub uses monotonic time which only makes sense if it is
-            //being called in the same process that made the time object.
-            //that is why we strip out the monotonic time reading from the Timestamp at
-            //the time of creating the Event
-            return a[i].event_body.time < a[j].event_body.time;
-        }
-    }
-
-// ByTopologicalOrder implements sort.Interface for []Event based on
-// the topologicalIndex field.
-    version(none)
-    struct ByTopologicalOrder {
-        Event[] a;
-
-        uint Len() {
-            return cast(uint)a.length;
-        }
-        void Swap(uint i, uint j)
-            in {
-                assert(i < a.length);
-                assert(j < a.length);
-                assert( i != j );
-            }
-        body {
-            import mutation=std.algorithm.mutation;
-            mutation.swap(a[i], a[j]);
-        }
-        bool Less(uint i, uint j) {
-            return a[i].topologicalIndex < a[j].topologicalIndex;
-        }
-    }
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // WireEvent
-//module tagion.hashgraph.EventEvent;
-
-// import (
-// 	"reflect"
-// 	"testing"
-// 	"time"
-
-// 	"github.com/babbleio/babble/crypto"
-// )
 
 unittest { // Serialize and unserialize EventBody
     import tagion.crypto.SHA256;
