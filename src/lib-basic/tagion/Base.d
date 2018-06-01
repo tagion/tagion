@@ -127,3 +127,15 @@ template consensusCheck(Consensus) {
         }
     }
 }
+
+@safe
+string cutHex(const(ubyte[]) buf) {
+    import std.format;
+    enum LEN=8;
+    if ( buf.length <= LEN ) {
+        return format("EMPTY[%s]",buf.length);
+    }
+    else {
+        return buf[0..LEN].toHexString;
+    }
+}
