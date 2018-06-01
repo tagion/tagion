@@ -1,6 +1,8 @@
 module tagion.communication.Monitor;
 
-import tagion.hashgraph.Event : Event, EventCallbacks;
+import tagion.hashgraph.Event : Event;
+import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraph.Net : StdGossipNet, NetCallbacks;;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
 
 import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventProperty, generateHoleThroughBsonMsg;
@@ -26,7 +28,7 @@ class Lock {
 }
 
 @safe
-class MonitorCallBacks : EventCallbacks {
+class MonitorCallBacks : NetCallbacks {
     private Tid _socket_thread_id;
     private Event _currentEvent;
 
@@ -110,6 +112,16 @@ class MonitorCallBacks : EventCallbacks {
     void consensus_failure(const(ConsensusException) e) {
         writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
     }
+
+    void wavefront_state(const(HashGraph.Node) n) {
+        import tagion.Base : cutHex;
+        writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
+    }
+
+    void wavefront(const(StdGossipNet.Tides) tides) {
+        writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
+    }
+
 
     this(Tid socket_thread_id) {
         this._socket_thread_id = socket_thread_id;
