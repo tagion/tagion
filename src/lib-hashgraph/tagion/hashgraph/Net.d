@@ -26,6 +26,9 @@ class StdRequestNet : RequestNet {
 
 @safe
 class StdSecureNet : StdRequestNet, SecureNet {
+    // The Eva value is set up a low negative number
+    // to check the two-complement round wrapping if the altitude.
+    enum int eva_altitude=-77;
 
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.hmac;

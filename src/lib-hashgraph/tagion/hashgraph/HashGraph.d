@@ -71,7 +71,11 @@ class HashGraph {
             assert(e.daughter is null);
         }
         body {
-            if ( (_event is null) || lower(_event.altitude, e.altitude) ) {
+            if ( _event is null ) {
+                altitude=e.altitude;
+                _event=e;
+            }
+            else if ( lower(_event.altitude, e.altitude) ) {
                 altitude=e.altitude;
                 _event=e;
             }
@@ -102,7 +106,11 @@ class HashGraph {
             _cache_altitude=highest(a, _cache_altitude);
         }
 
-        int altitude() pure const nothrow {
+        int altitude() pure const nothrow
+            in {
+                assert(_event !is null, "This node has no events so the altitude is not set yet");
+            }
+        body {
             return _cache_altitude;
         }
 

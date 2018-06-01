@@ -193,6 +193,7 @@ interface EventCallbacks {
     void round(const(Event) e);
     void forked(const(Event) e);
     void famous_votes(const(Event) e);
+    void consensus_failure(const(ConsensusException) e);
 }
 
 @safe
