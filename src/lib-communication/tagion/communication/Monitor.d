@@ -1,6 +1,8 @@
 module tagion.communication.Monitor;
 
 import tagion.hashgraph.Event : Event, EventCallbacks;
+import tagion.hashgraph.ConsensusExceptions : ConsensusException;
+
 import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventProperty, generateHoleThroughBsonMsg;
 import tagion.Base : ThreadState;
 
@@ -105,6 +107,10 @@ class MonitorCallBacks : EventCallbacks {
         writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
     }
 
+    void consensus_failure(const(ConsensusException) e) {
+        writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
+    }
+
     this(Tid socket_thread_id) {
         this._socket_thread_id = socket_thread_id;
     }
@@ -181,16 +187,18 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
 
     scope(failure) {
         writefln("In failure of soc. th., flag %s:", exit_flag);
-        if(exit_flag) {
-            ownerTid.send(false);
-        }
+        ownerTid.send(exit_flag);
+        // if(exit_flag) {
+        //     ownerTid.send(false);
+        // }
     }
 
     scope(success) {
         writefln("In success of soc. th., flag %s:", exit_flag);
-        if ( exit_flag ) {
-            ownerTid.send(true);
-        }
+        ownerTid.send(exit_flag);
+        // if ( exit_flag ) {
+        //     ownerTid.send(true);
+        // }
     }
 
     uint client_counter;
