@@ -2,6 +2,7 @@ module tagion.hashgraph.Net;
 
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.Event : EventCallbacks;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.Base : consensusCheck;
 
@@ -202,6 +203,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {
     import tagion.hashgraph.Event : Event;
+    alias Tides=int[immutable(ubyte[])];
     abstract Event receive(immutable(ubyte[]) data, Event delegate(immutable(ubyte)[] leading_event_fingerprint) @safe register_leading_event );
     abstract void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
 
@@ -209,4 +211,10 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     this(NativeSecp256k1 crypt) {
         super(crypt);
     }
+}
+
+@safe
+interface NetCallbacks : EventCallbacks {
+    void wavefront_state(const(HashGraph.Node) n);
+    void wavefront(const(StdGossipNet.Tides) tides);
 }
