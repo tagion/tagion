@@ -72,7 +72,7 @@ class HashGraph {
         }
         body {
             if ( _event is null ) {
-                altitude=e.altitude;
+                _cache_altitude=e.altitude;
                 _event=e;
             }
             else if ( lower(_event.altitude, e.altitude) ) {
