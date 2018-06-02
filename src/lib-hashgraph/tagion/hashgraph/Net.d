@@ -202,27 +202,6 @@ class StdSecureNet : StdRequestNet, SecureNet {
 
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {
-    static private shared uint _next_global_id;
-    static private shared uint[immutable(ubyte[])] _node_id_pair;
-
-    static uint globalNodeId(immutable(ubyte[]) channel) {
-        if ( channel in _node_id_pair ) {
-            return _node_id_pair[channel];
-        }
-        else {
-            return setGlobalNodeId(channel);
-        }
-    }
-
-    @trusted
-    static private uint setGlobalNodeId(immutable(ubyte[]) channel) {
-        import core.atomic;
-        auto result = _next_global_id;
-        _node_id_pair[channel] = _next_global_id;
-        atomicOp!"+="(_next_global_id, 1);
-        return result;
-    }
-
     import tagion.hashgraph.Event : Event;
     alias Tides=int[immutable(ubyte[])];
     abstract Event receive(immutable(ubyte[]) data, Event delegate(immutable(ubyte)[] leading_event_fingerprint) @safe register_leading_event );
@@ -235,11 +214,10 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 }
 
 @safe
-interface NetCallbacks : EventCallbacks{
+interface NetCallbacks : EventCallbacks {
     void wavefront_state_receive(const(HashGraph.Node) n);
     //void wavefront_state_send(const(HashGraph.Node) n);
-    void sent_tidewave(immutable(ubyte[]) receiving_channel, const(StdGossipNet.Tides) tides);
-    void received_tidewave(immutable(ubyte[]) sending_channel, const(StdGossipNet.Tides) tides);
+    void tidewave(const(StdGossipNet.Tides) tides);
     void receive(immutable(ubyte[]) data);
     void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
     void consensus_failure(const(ConsensusException) e);
