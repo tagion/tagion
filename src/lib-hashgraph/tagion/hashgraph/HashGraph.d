@@ -41,10 +41,9 @@ class HashGraph {
 
     @safe
     class Node {
-        ExchangeState receive_state;
-        ExchangeState send_state;
+        ExchangeState state;
         // Is set if local has initiated an communication with this node
-        //bool initiator;
+//        bool initiator;
         //DList!(Event) queue;
         immutable uint node_id;
 //        immutable ulong discovery_time;
