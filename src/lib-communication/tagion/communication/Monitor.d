@@ -30,7 +30,7 @@ class Lock {
 @safe
 class MonitorCallBacks : NetCallbacks {
     private Tid _socket_thread_id;
-    private Event _currentEvent;
+    private const uint _node_id;
 
     //Implementations of callbacks
     @trusted
@@ -123,7 +123,11 @@ class MonitorCallBacks : NetCallbacks {
     //     writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     // }
 
-    void tidewave(const(StdGossipNet.Tides) tides) {
+    void received_tidewave(const(StdGossipNet.Tides) tides) {
+        writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
+    }
+
+    void sent_tidewave(const(StdGossipNet.Tides) tides, const uint node_id) {
         writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
@@ -142,9 +146,9 @@ class MonitorCallBacks : NetCallbacks {
     }
 
 
-
-    this(Tid socket_thread_id) {
+    this(Tid socket_thread_id, const uint node_id) {
         this._socket_thread_id = socket_thread_id;
+        this._node_id = node_id;
     }
 
     @trusted
@@ -219,18 +223,16 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
 
     scope(failure) {
         writefln("In failure of soc. th., flag %s:", exit_flag);
-        ownerTid.send(exit_flag);
-        // if(exit_flag) {
-        //     ownerTid.send(false);
-        // }
+        if(exit_flag) {
+            ownerTid.send(false);
+        }
     }
 
     scope(success) {
         writefln("In success of soc. th., flag %s:", exit_flag);
-        ownerTid.send(exit_flag);
-        // if ( exit_flag ) {
-        //     ownerTid.send(true);
-        // }
+        if ( exit_flag ) {
+            ownerTid.send(true);
+        }
     }
 
     uint client_counter;
