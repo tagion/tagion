@@ -217,8 +217,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 interface NetCallbacks : EventCallbacks {
     void wavefront_state_receive(const(HashGraph.Node) n);
     //void wavefront_state_send(const(HashGraph.Node) n);
-    void received_tidewave(const(StdGossipNet.Tides) tides);
-    void sent_tidewave(const(StdGossipNet.Tides) tides, const uint node_id);
+    void tidewave(const(StdGossipNet.Tides) tides);
     void receive(immutable(ubyte[]) data);
     void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
     void consensus_failure(const(ConsensusException) e);
