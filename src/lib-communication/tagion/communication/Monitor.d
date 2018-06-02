@@ -113,14 +113,34 @@ class MonitorCallBacks : NetCallbacks {
         writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
     }
 
-    void wavefront_state(const(HashGraph.Node) n) {
+    void wavefront_state_receive(const(HashGraph.Node) n) {
         import tagion.Base : cutHex;
         writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     }
 
-    void wavefront(const(StdGossipNet.Tides) tides) {
+    // void wavefront_state_send(const(HashGraph.Node) n) {
+    //     import tagion.Base : cutHex;
+    //     writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
+    // }
+
+    void tidewave(const(StdGossipNet.Tides) tides) {
         writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
+
+    void receive(immutable(ubyte[]) data) {
+        writefln("Impl. needed. %s  ",  __FUNCTION__);
+    }
+
+    void send(immutable(ubyte[]) channel, immutable(ubyte[]) data) {
+        import tagion.Base : cutHex;
+        writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
+    }
+
+    void exiting(const(HashGraph.Node) n) {
+        import tagion.Base : cutHex;
+        writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
+    }
+
 
 
     this(Tid socket_thread_id) {
