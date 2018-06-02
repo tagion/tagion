@@ -9,7 +9,7 @@ import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventPrope
 import tagion.Base : ThreadState;
 
 import core.thread : dur, msecs, seconds;
-import std.concurrency;
+import std.concurrency : Tid, spawn, send, ownerTid, receiveTimeout, receiveOnly, thisTid, receive;
 import std.stdio : writeln, writefln;
 import std.format : format;
 import std.bitmanip : write;
@@ -27,15 +27,10 @@ class SocketMaxDataSize : Exception {
 class Lock {
 }
 
-
-
-
 @safe
 class MonitorCallBacks : NetCallbacks {
     private Tid _socket_thread_id;
-    private Tid _network_socket_tread_id;
-    private const uint _local_node_id;
-    private const uint _global_node_id;
+    private Event _currentEvent;
 
     //Implementations of callbacks
     @trusted
@@ -128,11 +123,7 @@ class MonitorCallBacks : NetCallbacks {
     //     writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     // }
 
-    void sent_tidewave(immutable(ubyte[]) receiving_channel, const(StdGossipNet.Tides) tides) {
-        writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
-    }
-
-    void received_tidewave(immutable(ubyte[]) sending_channel, const(StdGossipNet.Tides) tides) {
+    void tidewave(const(StdGossipNet.Tides) tides) {
         writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
@@ -150,15 +141,10 @@ class MonitorCallBacks : NetCallbacks {
         writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     }
 
-    @trusted
-    this(Tid socket_thread_id,
-    const uint local_node_id,
-    const uint global_node_id) {
+
+
+    this(Tid socket_thread_id) {
         this._socket_thread_id = socket_thread_id;
-        this._network_socket_tread_id = locate("network_socket_thread");
-        this._local_node_id = local_node_id;
-        this._global_node_id = global_node_id;
-        writefln("Created monitor socket with local node id: %s and global node id: %s. Has network socket %s", this._local_node_id, this._global_node_id, this._network_socket_tread_id != Tid.init);
     }
 
     @trusted
@@ -233,16 +219,18 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
 
     scope(failure) {
         writefln("In failure of soc. th., flag %s:", exit_flag);
-        if(exit_flag) {
-            ownerTid.send(false);
-        }
+        ownerTid.send(exit_flag);
+        // if(exit_flag) {
+        //     ownerTid.send(false);
+        // }
     }
 
     scope(success) {
         writefln("In success of soc. th., flag %s:", exit_flag);
-        if ( exit_flag ) {
-            ownerTid.send(true);
-        }
+        ownerTid.send(exit_flag);
+        // if ( exit_flag ) {
+        //     ownerTid.send(true);
+        // }
     }
 
     uint client_counter;
