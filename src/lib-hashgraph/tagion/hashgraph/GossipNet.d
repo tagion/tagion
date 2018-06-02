@@ -6,8 +6,9 @@ import tagion.utils.BSON : HBSON, Document;
 
 enum ExchangeState : uint {
     NON,
-    FIRST_WAVE,
+//    INIT_TIDE,
     TIDE_WAVE,
+    FIRST_WAVE,
     SECOND_WAVE
 }
 
