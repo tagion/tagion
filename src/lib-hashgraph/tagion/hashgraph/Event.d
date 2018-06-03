@@ -11,7 +11,7 @@ import tagion.hashgraph.ConsensusExceptions;
 import std.conv;
 import std.bitmanip;
 
-import std.stdio;
+//import std.stdio;
 import std.format;
 
 import tagion.Base : this_dot, basename;
@@ -598,7 +598,6 @@ class Event {
         Event result;
         result=mother!true(h);
         if ( !result && motherExists ) {
-            writefln("Event.mother=%s",mother_hash.cutHex);
             request_net.request(h, mother_hash);
             result=mother(h);
         }
@@ -784,7 +783,6 @@ unittest { // Serialize and unserialize EventBody
     auto payload=cast(immutable(ubyte)[])"Some payload";
     auto mother=SHA256("self").digits;
     auto father=SHA256("other").digits;
-    writeln("Serialize event");
 //    auto creator=cast(immutable(ubyte)[])"creator";
     auto seed_body=EventBody(payload, mother, father, 0, 0);
 
