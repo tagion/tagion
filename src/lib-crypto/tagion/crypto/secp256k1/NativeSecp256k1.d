@@ -475,7 +475,7 @@ unittest {
             assert(result);
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -492,7 +492,7 @@ unittest {
             assert(!result);
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -507,7 +507,7 @@ unittest {
             assert(result);
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -522,7 +522,7 @@ unittest {
             assert(!result);
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -557,7 +557,7 @@ unittest {
             assert( sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9" );
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -590,7 +590,7 @@ unittest {
             assert( sigString == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3" );
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -607,7 +607,7 @@ unittest {
             assert( sigString == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC" );
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -624,7 +624,7 @@ unittest {
             assert( sigString == "0411C6790F4B663CCE607BAAE08C43557EDC1A4D11D88DFCB3D841D0C6A941AF525A268E2A863C148555C48FB5FBA368E88718A46E205FABC3DBA2CCFFAB0796EF" );
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -641,7 +641,7 @@ unittest {
             assert( sigString == "04E0FE6FE55EBCA626B98A807F6CAF654139E14E5E3698F01A9A658E21DC1D2791EC060D4F412A794D5370F672BC94B722640B5F76914151CFCA6E712CA48CC589" );
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -656,7 +656,7 @@ unittest {
             assert( result );
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
     }
 
@@ -679,7 +679,7 @@ unittest {
             assert(crypt.verify( message, signature, pubkey));
         }
         catch ( ConsensusException e ) {
-            assert(0, e.msg);
+            assert(0, e.toText);
         }
 
     }
