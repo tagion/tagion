@@ -11,6 +11,7 @@ enum _keywords = [
     "wavefront",  // Wave front is the list of events hashs
     "ebody",      // Event body
     "event",      // Event including the eventbody
+    "message",
 //        "events",     // List of event
     "type",       // Package type
     "block"     // block
