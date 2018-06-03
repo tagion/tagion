@@ -2,7 +2,7 @@ module kdf.pbkdf2;
 
 import std.digest.sha : SHA1;
 static if (__VERSION__ >= 2080) import std.digest : isDigest, digestLength;
-else import std.digest : isDigest, digestLength;
+else import std.digest.digest : isDigest, digestLength;
 
 /**
  * Returns a binary digest for the PBKDF2 hash algorithm of `data` with the given `salt`.
