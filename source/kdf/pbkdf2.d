@@ -64,11 +64,11 @@ unittest
 {
 	import std.string : representation;
 	import std.format : format;
-	import std.digest : toHexString, LetterCase;
+	static if (__VERSION__ >= 2080) import std.digest : toHexString, LetterCase;
+	else import std.digest.digest : toHexString, LetterCase;
 	import std.range : repeat, take;
 	import std.array;
-	static if (__VERSION__ >= 2080) import std.digest.sha;
-	else import std.digest.digest.sha;
+	import std.digest.sha;
 
 	// Test vectors from rfc6070
 
