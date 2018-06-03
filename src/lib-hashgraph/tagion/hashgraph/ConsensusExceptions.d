@@ -17,8 +17,7 @@ enum ConsensusFailCode {
 
     GOSSIPNET_EVNET_HAS_BEEN_CACHED,
     GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
-    GOSSIPNET_EXPECTED_EXCHANGE_STATE,
-//    GOSSIPNET_BAD_EXCHNAGE_STATE,
+    GOSSIPNET_BAD_EXCHNAGE_STATE,
     GOSSIPNET_REPLICATED_PUBKEY,
     GOSSIPNET_EVENTPACKAGE_NOT_FOUND,
     GOSSIPNET_MISSING_EVENTS,
@@ -43,17 +42,17 @@ enum ConsensusFailCode {
 @safe
 class ConsensusException : Exception {
     immutable ConsensusFailCode code;
-    // string toText() pure const nothrow {
-    //     if ( code == ConsensusFailCode.NON ) {
-    //         return msg;
-    //     }
-    //     else {
-    //         return consensus_error_messages[code];
-    //     }
-    // }
+    string toText() pure const nothrow {
+        if ( code == ConsensusFailCode.NON ) {
+            return msg;
+        }
+        else {
+            return consensus_error_messages[code];
+        }
+    }
 
-    this(string msg, ConsensusFailCode code=ConsensusFailCode.NON, string file = __FILE__, size_t line = __LINE__ ) {
-        this.code=code;
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+        code=ConsensusFailCode.NON;
         super( msg, file, line );
     }
 
@@ -61,7 +60,6 @@ class ConsensusException : Exception {
         super( consensus_error_messages[code], file, line );
         this.code=code;
     }
-
 }
 
 @safe
@@ -82,9 +80,6 @@ class SecurityConsensusException : ConsensusException {
 class GossipConsensusException : ConsensusException {
     this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
         super( code, file, line );
-    }
-    this( string msg, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
-        super( msg, code, file, line );
     }
 }
 
@@ -112,8 +107,8 @@ static this() {
 //            EVENT_MISSING_BODY : "Event is missing eventbody",
 
             GOSSIPNET_EVNET_HAS_BEEN_CACHED : "Gossip net has already cached event",
-            GOSSIPNET_ILLEGAL_EXCHANGE_STATE : "Gossip exchange state is illegal %s",
-            GOSSIPNET_EXPECTED_EXCHANGE_STATE : "Gossip exchange state is illegal %s expected %s",
+            GOSSIPNET_ILLEGAL_EXCHANGE_STATE : "Gossip exchange state is illegal %s expected %s",
+            GOSSIPNET_BAD_EXCHNAGE_STATE : "Gossip exchange state is not in the correct sequency order",
             GOSSIPNET_REPLICATED_PUBKEY : "The public key of the received package is the same as the nodes public key",
             GOSSIPNET_EVENTPACKAGE_NOT_FOUND : "Event package not found in the event package cache",
             GOSSIPNET_MISSING_EVENTS : "Gossip network missing events",
