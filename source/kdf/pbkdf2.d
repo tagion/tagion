@@ -1,7 +1,7 @@
 module kdf.pbkdf2;
 
 import std.digest.sha : SHA1;
-import std.digest.digest : isDigest, digestLength;
+import std.digest : isDigest, digestLength;
 
 /**
  * Returns a binary digest for the PBKDF2 hash algorithm of `data` with the given `salt`.
@@ -63,7 +63,7 @@ unittest
 {
 	import std.string : representation;
 	import std.format : format;
-	import std.digest.digest : toHexString, LetterCase;
+	import std.digest : toHexString, LetterCase;
 	import std.range : repeat, take;
 	import std.array;
 	import std.digest.sha;

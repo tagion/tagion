@@ -4,6 +4,7 @@ __dummy.html
 *.o
 *.obj
 __test__*
+*-test-*
 dub.selections.json
 dub.userprefs
 libpbkdf2.*
