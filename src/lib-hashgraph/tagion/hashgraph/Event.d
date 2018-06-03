@@ -598,7 +598,7 @@ class Event {
         Event result;
         result=mother!true(h);
         if ( !result && motherExists ) {
-            writefln("Event.moter=%s",mother_hash[0..7].toHexString);
+            writefln("Event.mother=%s",mother_hash.cutHex);
             request_net.request(h, mother_hash);
             result=mother(h);
         }

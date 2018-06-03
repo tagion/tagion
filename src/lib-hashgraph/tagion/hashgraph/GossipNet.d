@@ -9,7 +9,8 @@ enum ExchangeState : uint {
     INIT_TIDE,
     TIDE_WAVE,
     FIRST_WAVE,
-    SECOND_WAVE
+    SECOND_WAVE,
+    BREAK_WAVE
 }
 
 
