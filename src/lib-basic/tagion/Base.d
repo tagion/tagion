@@ -2,7 +2,7 @@ module tagion.Base;
 
 import tagion.crypto.Hash;
 import tagion.bson.BSONType;
-private import tagion.hashgraph.ConsensusExceptions : ConsensusException, ConsensusFailCode;
+private import tagion.hashgraph.ConsensusExceptions;
 private import std.string : format, join, strip;
 private import std.traits;
 
@@ -124,6 +124,24 @@ template consensusCheck(Consensus) {
             if (!flag) {
                 throw new Consensus(code, file, line);
             }
+        }
+    }
+}
+
+@safe
+template consensusCheckArguments(Consensus) {
+    static if ( is(Consensus:ConsensusException) ) {
+        ref auto consensusCheckArguments(A...)(A args) {
+            struct Arguments {
+                A args;
+                void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) const {
+                    if ( !flag ) {
+                        immutable msg=format(consensus_error_messages[code], args);
+                        throw new Consensus(msg, code, file, line);
+                    }
+                }
+            }
+            return const(Arguments)(args);
         }
     }
 }
