@@ -1,7 +1,8 @@
 module kdf.pbkdf2;
 
 import std.digest.sha : SHA1;
-import std.digest : isDigest, digestLength;
+static if (__VERSION__ >= 2080) import std.digest : isDigest, digestLength;
+else import std.digest : isDigest, digestLength;
 
 /**
  * Returns a binary digest for the PBKDF2 hash algorithm of `data` with the given `salt`.
@@ -66,7 +67,8 @@ unittest
 	import std.digest : toHexString, LetterCase;
 	import std.range : repeat, take;
 	import std.array;
-	import std.digest.sha;
+	static if (__VERSION__ >= 2080) import std.digest.sha;
+	else import std.digest.digest.sha;
 
 	// Test vectors from rfc6070
 
