@@ -1,3 +1,8 @@
+[![Build Status](https://travis-ci.org/tchaloupka/vibe-mqtt.svg?branch=master)](https://travis-ci.org/tchaloupka/pbkdf2)
+[![Dub downloads](https://img.shields.io/dub/dt/vibe-mqtt.svg)](http://code.dlang.org/packages/pbkdf2)
+[![License](https://img.shields.io/dub/l/vibe-mqtt.svg)](http://code.dlang.org/packages/pbkdf2)
+[![Latest version](https://img.shields.io/dub/v/vibe-mqtt.svg)](http://code.dlang.org/packages/pbkdf2)
+
 PBKDF2 for D
 ============
 
