@@ -26,6 +26,8 @@ struct Options {
     bool trace_gossip;
     // Directory for the trace files
     string tmp;
+    //Port for network socket
+    ushort network_socket_port;
 }
 
 __gshared static Options options;
