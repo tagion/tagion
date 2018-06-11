@@ -40,9 +40,9 @@ class MonitorCallBacks : NetCallbacks {
     //Implementations of callbacks
     @trusted
     void create(const(Event) e) {
-        // writefln("Event created, id: %s", e.id);
+        writefln("Event created, id: %s", e.id);
         if(e.mother !is null) {
-            // writeln("Mother id", e.mother.id);
+            writeln("Mother id", e.mother.id);
         }
 
         auto newEvent = immutable(EventCreateMessage) (
@@ -56,7 +56,7 @@ class MonitorCallBacks : NetCallbacks {
             e.pubkey,
             e.event_body.serialize
         );
-        // writefln("The event %s has been created and send to the socket: %s", newEvent.id, _socket_thread_id);
+        writefln("The event %s has been created and send to the socket: %s", newEvent.id, _socket_thread_id);
         auto bson = newEvent.serialize;
 
         _socket_thread_id.send(bson);
@@ -64,7 +64,7 @@ class MonitorCallBacks : NetCallbacks {
 
     @trusted
     void witness(const(Event) e) {
-        // writefln("Event witness, id: %s", e.id);
+        writefln("Event witness, id: %s", e.id);
         immutable updateEvent = EventUpdateMessage(
             e.id,
             EventProperty.IS_WITNESS,
@@ -76,7 +76,7 @@ class MonitorCallBacks : NetCallbacks {
 
     @trusted
     void strongly_seeing(const(Event) e) {
-        // writefln("Event strongly seeing, id: %s", e.id);
+        writefln("Event strongly seeing, id: %s", e.id);
         immutable updateEvent = EventUpdateMessage(
             e.id,
             EventProperty.IS_STRONGLY_SEEING,
@@ -88,7 +88,7 @@ class MonitorCallBacks : NetCallbacks {
 
     @trusted
     void famous(const(Event) e) {
-        // writefln("Event famous, id: %s", e.id);
+        writefln("Event famous, id: %s", e.id);
         immutable updateEvent = EventUpdateMessage(
             e.id,
             EventProperty.IS_FAMOUS,
@@ -99,28 +99,28 @@ class MonitorCallBacks : NetCallbacks {
     }
 
     void round(const(Event) e) {
-        // writeln("Impl. needed");
+        writeln("Impl. needed");
     }
 
     void forked(const(Event) e) {
-        // writefln("Impl. needed. Event %d forked %s ", e.id, e.forked);
+        writefln("Impl. needed. Event %d forked %s ", e.id, e.forked);
     }
 
     void famous_votes(const(Event) e) {
-        // writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
+        writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
     }
 
     void strong_vote(const(Event) e, immutable uint vote) {
-        // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
+        writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
     }
 
     void consensus_failure(const(ConsensusException) e) {
-        // writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
+        writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
     }
 
     void wavefront_state_receive(const(HashGraph.Node) n) {
         import tagion.Base : cutHex;
-        // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
+        writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     }
 
     // void wavefront_state_send(const(HashGraph.Node) n) {
@@ -129,25 +129,25 @@ class MonitorCallBacks : NetCallbacks {
     // }
 
     void sent_tidewave(immutable(ubyte[]) receiving_channel, const(StdGossipNet.Tides) tides) {
-        // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
+        writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
     void received_tidewave(immutable(ubyte[]) sending_channel, const(StdGossipNet.Tides) tides) {
-        // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
+        writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
     void receive(immutable(ubyte[]) data) {
-        // writefln("Impl. needed. %s  ",  __FUNCTION__);
+        writefln("Impl. needed. %s  ",  __FUNCTION__);
     }
 
     void send(immutable(ubyte[]) channel, immutable(ubyte[]) data) {
         import tagion.Base : cutHex;
-        // writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
+        writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
     }
 
     void exiting(const(HashGraph.Node) n) {
         import tagion.Base : cutHex;
-        // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
+        writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     }
 
     @trusted
@@ -158,7 +158,7 @@ class MonitorCallBacks : NetCallbacks {
         this._network_socket_tread_id = locate("network_socket_thread");
         this._local_node_id = local_node_id;
         this._global_node_id = global_node_id;
-        // writefln("Created monitor socket with local node id: %s and global node id: %s. Has network socket %s", this._local_node_id, this._global_node_id, this._network_socket_tread_id != Tid.init);
+        writefln("Created monitor socket with local node id: %s and global node id: %s. Has network socket %s", this._local_node_id, this._global_node_id, this._network_socket_tread_id != Tid.init);
     }
 
     @trusted
@@ -190,7 +190,7 @@ struct ListenerSocket {
                 }
             }
 
-            // writefln("Listening for backend connection on %s:%s", address, port);
+            writefln("Listening for backend connection on %s:%s", address, port);
 
             auto socketSet = new SocketSet(1);
 
@@ -232,14 +232,14 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
     shared(bool) run_listener = true;
 
     scope(failure) {
-        // writefln("In failure of soc. th., flag %s:", exit_flag);
+        writefln("In failure of soc. th., flag %s:", exit_flag);
         if(exit_flag) {
             ownerTid.send(false);
         }
     }
 
     scope(success) {
-        // writefln("In success of soc. th., flag %s:", exit_flag);
+        writefln("In success of soc. th., flag %s:", exit_flag);
         if ( exit_flag ) {
             ownerTid.send(true);
         }
@@ -253,7 +253,7 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
 
     scope(exit) {
         if ( listener_socket_t !is null ) {
-            // writeln("Kill listener socket.");
+            writeln("Kill listener socket.");
             //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
             new TcpSocket(new InternetAddress(address, port));
             receive( &handleClient);
@@ -274,7 +274,7 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
     void handleState (ThreadState ts) {
         with(ThreadState) final switch(ts) {
             case KILL:
-                // writeln("Kill socket thread.");
+                writeln("Kill socket thread.");
                 runBackend = false;
 
             break;
@@ -311,7 +311,7 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
                     }
                     auto buffer_length = new ubyte[uint.sizeof];
                     immutable data_length = cast(uint)data.length;
-                    // writeln("Bytes to send: ", data_length);
+                    writeln("Bytes to send: ", data_length);
                     buffer_length.write(data_length, 0);
 
                     client.send(buffer_length);
@@ -336,7 +336,7 @@ void createSocketThread(ThreadState thread_state, const ushort port, string addr
                 &handleClient,
 
                 (string msg) {
-                    // writeln("The backend socket thread received the message and sends to client socket: " , msg);
+                    writeln("The backend socket thread received the message and sends to client socket: " , msg);
                     sendBytes(generateHoleThroughBsonMsg(msg));
                 },
 
