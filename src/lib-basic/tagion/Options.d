@@ -28,9 +28,6 @@ struct Options {
     string tmp;
     //Port for network socket
     ushort network_socket_port;
-    // Sequential test mode
-    // all the
-    bool sequential;
 }
 
 __gshared static Options options;
