@@ -93,10 +93,21 @@ unittest {
     static assert(Colour.blue == list[2]);
 
 }
-enum ThreadState {
-    KILL = 9,
-    LIVE = 1
-}
+
+// enum ThreadState {
+//     KILL = 9,
+//     LIVE = 1
+// }
+
+enum Control{
+    KILL=9,
+    LIVE=1,
+    STOP,
+    FAIL,
+    ACK,
+    REQUEST,
+    END
+};
 
 @safe
 immutable(Hash) hfuncSHA256(immutable(ubyte)[] data) {
