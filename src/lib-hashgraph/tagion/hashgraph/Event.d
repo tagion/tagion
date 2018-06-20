@@ -299,6 +299,7 @@ class Event {
     immutable(ubyte[]) pubkey;
     // The altitude increases by one from mother to daughter
     immutable(EventBody) event_body;
+    package uint visit;
     private HashPointer _fingerprint;
     // This is the internal pointer to the
     private Event _mother;

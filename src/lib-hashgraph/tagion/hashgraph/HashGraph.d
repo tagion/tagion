@@ -1,6 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
-//import std.stdio;
+import std.stdio;
 import std.conv;
 //import tagion.hashgraph.Store;
 import tagion.hashgraph.Event;
@@ -16,7 +16,9 @@ class HashGraph {
     alias Privkey=SecureNet.Privkey;
     alias HashPointer=RequestNet.HashPointer;
     alias LRU!(HashPointer, Event) EventCache;
+    private uint visit;
 
+    private uint iterative_count;
     //alias LRU!(Round, uint*) RoundCounter;
     alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
     private EventCache _event_cache;
@@ -455,10 +457,15 @@ class HashGraph {
 
             // writeln("Before requestEventTree");
             // Makes sure that we have the tree before the graph is checked
+            iterative_count=0;
+            visit++;
             requestEventTree(request_net, event);
+            writefln("After requestEventTree=%d", iterative_count);
             // See if the node is strong seeing the hashgraph
             // writeln("Before strong See");
+            iterative_count=0;
             strongSee(event);
+            writefln("After strongSee=%d", iterative_count);
         }
 
         return event;
@@ -469,7 +476,9 @@ class HashGraph {
        This function makes sure that the HashGraph has all the events connected to this event
     */
     protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
-        if ( event ) {
+        iterative_count++;
+        if ( event && (event.visit != visit) ) {
+            event.visit = visit;
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
                 if ( is_father ) {
@@ -533,6 +542,7 @@ class HashGraph {
     }
 
     package void strongSee(Event check_event) {
+        iterative_count++;
         if ( check_event && !check_event.is_strogly_seeing_checked ) {
 
             const(Round) round=check_event.previousRound;
