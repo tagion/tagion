@@ -18,7 +18,8 @@ class HashGraph {
     alias LRU!(HashPointer, Event) EventCache;
     private uint visit;
 
-    private uint iterative_count;
+    private uint iterative_tree_count;
+    private uint iterative_strong_count;
     //alias LRU!(Round, uint*) RoundCounter;
     alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
     private EventCache _event_cache;
@@ -457,15 +458,15 @@ class HashGraph {
 
             // writeln("Before requestEventTree");
             // Makes sure that we have the tree before the graph is checked
-            iterative_count=0;
+            iterative_tree_count=0;
             visit++;
             requestEventTree(request_net, event);
-            writefln("After requestEventTree=%d", iterative_count);
+            writefln("After requestEventTree=%d", iterative_tree_count);
             // See if the node is strong seeing the hashgraph
             // writeln("Before strong See");
-            iterative_count=0;
+            iterative_strong_count=0;
             strongSee(event);
-            writefln("After strongSee=%d", iterative_count);
+            writefln("After strongSee=%d", iterative_strong_count);
         }
 
         return event;
@@ -476,7 +477,7 @@ class HashGraph {
        This function makes sure that the HashGraph has all the events connected to this event
     */
     protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
-        iterative_count++;
+        iterative_tree_count++;
         if ( event && (event.visit != visit) ) {
             event.visit = visit;
             if ( child ) {
@@ -542,7 +543,7 @@ class HashGraph {
     }
 
     package void strongSee(Event check_event) {
-        iterative_count++;
+
         if ( check_event && !check_event.is_strogly_seeing_checked ) {
 
             const(Round) round=check_event.previousRound;
@@ -565,6 +566,7 @@ class HashGraph {
 
                 uint seeing;
                 void search(Event event) @safe {
+                    iterative_strong_count++;
                     uint vote(ref BitArray mask) @trusted {
                         uint votes;
                         foreach(i, n; nodes) {
