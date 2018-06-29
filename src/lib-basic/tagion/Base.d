@@ -100,7 +100,7 @@ unittest {
 // }
 
 enum Control{
-    KILL=9,
+//    KILL=9,
     LIVE=1,
     STOP,
     FAIL,
