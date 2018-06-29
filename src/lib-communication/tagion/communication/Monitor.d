@@ -252,14 +252,14 @@ struct ListenerSocket {
             //auto clients=stack.clients.dup;
             writefln("number of clients=%s data=%d", clients.length, data.length);
             foreach ( key, client; clients) {
-                writefln("key=%s client.isAlive=%s", key, client.isAlive);
+                // writefln("key=%s client.isAlive=%s", key, client.isAlive);
                 if ( client.isAlive) {
                     if(data.length > socket_max_data_size) {
                         throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
                     }
                     auto buffer_length = new ubyte[uint.sizeof];
                     immutable data_length = cast(uint)data.length;
-                    writeln("Bytes to send: ", data_length);
+                    // writeln("Bytes to send: ", data_length);
                     buffer_length.write(data_length, 0);
 
                     client.send(buffer_length);
