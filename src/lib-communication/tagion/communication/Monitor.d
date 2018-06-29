@@ -212,8 +212,8 @@ struct ListenerSocket {
     }
 
     void stop() {
-        stop_listener=true;
         writeln("STOP!!!!!!!");
+        stop_listener=true;
     }
 
     enum socket_buffer_size = 0x1000;
@@ -234,14 +234,15 @@ struct ListenerSocket {
             }
         out {
             assert(locate_clients !is null);
+            client_counter=cast(uint)_clients.length;
         }
         body {
             locate_clients=cast(typeof(locate_clients))&_clients;
         }
         void add(ref Socket client) {
             auto clients=cast(Socket[uint]) *locate_clients;
-            client_counter=client_counter + 1;
             clients[client_counter] = client;
+            client_counter=client_counter + 1;
         }
         bool active() const pure {
             return (locate_clients !is null);
@@ -249,15 +250,16 @@ struct ListenerSocket {
         void sendBytes(immutable(ubyte)[] data) {
             auto clients=cast(Socket[uint]) *locate_clients;
             //auto clients=stack.clients.dup;
-            writefln("number of clients=%s", clients.length);
+            writefln("number of clients=%s data=%d", clients.length, data.length);
             foreach ( key, client; clients) {
+                writefln("key=%s client.isAlive=%s", key, client.isAlive);
                 if ( client.isAlive) {
                     if(data.length > socket_max_data_size) {
                         throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
                     }
                     auto buffer_length = new ubyte[uint.sizeof];
-                    immutable data_length = data.length;
-                    // writeln("Bytes to send: ", data_length);
+                    immutable data_length = cast(uint)data.length;
+                    writeln("Bytes to send: ", data_length);
                     buffer_length.write(data_length, 0);
 
                     client.send(buffer_length);
@@ -273,15 +275,23 @@ struct ListenerSocket {
                 }
             }
         }
+        void close() {
+            if ( locate_clients !is null ) {
+                auto clients=cast(Socket[uint]) *locate_clients;
+                foreach ( key, client; clients) {
+                    client.close;
+//                clients.remove(key);
+                }
+                locate_clients=null;
+            }
+        }
     }
 
 
-    void sendBytes(immutable(ubyte)[] data)
-        in {
-            assert(shared_clients !is null);
+    void sendBytes(immutable(ubyte)[] data) {
+        if ( active ) {
+            shared_clients.sendBytes(data);
         }
-    body {
-        shared_clients.sendBytes(data);
     }
 
     bool active() pure const {
@@ -295,6 +305,12 @@ struct ListenerSocket {
         }
         else {
             shared_clients.add(client);
+        }
+    }
+
+    void close() {
+        if ( active ) {
+            shared_clients.close;
         }
     }
 
@@ -356,6 +372,52 @@ struct ListenerSocket {
 
 //Create flat webserver start class function - create Backend class.
 void createSocketThread(const ushort port, string address, bool exit_flag=false) {
+    scope(failure) {
+        writefln("In failure of soc. th., flag %s:", exit_flag);
+//            if(exit_flag) {
+        ownerTid.prioritySend(Control.FAIL);
+//            }
+    }
+
+    scope(success) {
+        writefln("In success of soc. th., flag %s:", exit_flag);
+//            if ( exit_flag ) {
+        ownerTid.prioritySend(Control.END);
+//            }
+    }
+
+    auto lso = ListenerSocket(port, address, thisTid);
+    void delegate() ls;
+    ls.funcptr = &ListenerSocket.run;
+    ls.ptr = &lso;
+    auto listener_socket_thread = new Thread( ls ).start();
+
+    scope(exit) {
+        if ( listener_socket_thread !is null ) {
+            lso.close;
+            writefln("Kill listener socket. %d", port);
+            //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
+//            if ( ldo.active ) {
+            auto ping=new TcpSocket(new InternetAddress(address, port));
+//                receive( &handleClient);
+//                Thread.sleep(500.msecs);
+            // run_listener = false;
+            writeln("After tcpsocket");
+            writefln("run_listerner %s", lso.active);
+//            }
+            lso.stop;
+
+
+            listener_socket_thread.join();
+            ping.close;
+//            Thread.sleep(2.seconds);
+            writefln("Thread joined %d", port);
+        }
+
+    }
+
+
+
 
     try{
         //enum max_connections = 3;
@@ -369,37 +431,17 @@ void createSocketThread(const ushort port, string address, bool exit_flag=false)
         //     clients[client_counter] = cast(Socket)client;
         // }
 
-        scope(failure) {
-            writefln("In failure of soc. th., flag %s:", exit_flag);
-//            if(exit_flag) {
-            ownerTid.prioritySend(Control.FAIL);
-//            }
-        }
-
-        scope(success) {
-            writefln("In success of soc. th., flag %s:", exit_flag);
-//            if ( exit_flag ) {
-            ownerTid.prioritySend(Control.END);
-//            }
-        }
-
         bool runBackend = true;
         void handleState (Control ts) {
-            with(Control) final switch(ts) {
-                case KILL:
+            with(Control) switch(ts) {
+                case STOP:
                     writefln("Kill socket thread. %d", port);
                     runBackend = false;
-
                     break;
-
                 case LIVE:
                     runBackend = true;
                     break;
-                case STOP:
-                case FAIL:
-                case ACK:
-                case REQUEST:
-                case END:
+                default:
                     writefln("Bad Control command %s", ts);
                     runBackend = false;
                 }
@@ -409,100 +451,70 @@ void createSocketThread(const ushort port, string address, bool exit_flag=false)
 
 
 
-        enum socket_buffer_size = 0x1000;
-        enum socket_max_data_size = 0x10000;
+        // enum socket_buffer_size = 0x1000;
+        // enum socket_max_data_size = 0x10000;
 
 
         //Start backend socket, send BSON through the socket
-        if(runBackend) {
+        // if(runBackend) {
 
 
-            auto lso = ListenerSocket(port, address, thisTid);
-            void delegate() ls;
-            ls.funcptr = &ListenerSocket.run;
-            ls.ptr = &lso;
-            auto listener_socket_thread = new Thread( ls ).start();
 
-            scope(exit) {
-                if ( listener_socket_thread !is null ) {
-                    writefln("Kill listener socket. %d", port);
-                    //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-                    auto ping=new TcpSocket(new InternetAddress(address, port));
-//                receive( &handleClient);
-//                Thread.sleep(500.msecs);
-                    // run_listener = false;
-                    // writefln("run_listerner %s", run_listener);
-                    lso.stop;
-                    listener_socket_thread.join();
-                    ping.close;
-                    writefln("Thread joined %d", port);
-                }
 
-                // if ( clients ) {
-                //     writeln("Close clients.");
-                //     foreach ( c; clients) {
-                //         c.close;
+        // version(none)
+        //     void sendBytes(immutable(ubyte)[] data) {
+        //     foreach ( key, client; clients) {
+        //         if ( client.isAlive) {
+        //             if(data.length > socket_max_data_size) {
+        //                 throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
+        //             }
+        //             auto buffer_length = new ubyte[uint.sizeof];
+        //             immutable data_length = cast(uint)data.length;
+        //             // writeln("Bytes to send: ", data_length);
+        //             buffer_length.write(data_length, 0);
+
+        //             client.send(buffer_length);
+
+        //             for (uint start_pos = 0; start_pos < data_length; start_pos += socket_buffer_size) {
+        //                 immutable end_pos = (start_pos+socket_buffer_size < data_length) ? start_pos+socket_buffer_size : data_length;
+        //                 client.send(data[start_pos..end_pos]);
+        //             }
+        //         }
+        //         else {
+        //             client.close;
+        //             clients.remove(key);
+        //         }
+        //     }
+        // }
+
+
+        while(runBackend) {
+            receiveTimeout(500.msecs,
+                //Control the thread
+                &handleState,
+
+                // &handleClient,
+
+                // (string msg) {
+                //     writeln("The backend socket thread received the message and sends to client socket: " , msg);
+                //     if ( lso.active ) {
+                //         lso.sendBytes(generateHoleThroughBsonMsg(msg));
                 //     }
-                // }
-            }
+                // },
 
-
-
-
-            version(none)
-            void sendBytes(immutable(ubyte)[] data) {
-                foreach ( key, client; clients) {
-                    if ( client.isAlive) {
-                        if(data.length > socket_max_data_size) {
-                            throw new SocketMaxDataSize(format("The maximum data size to send over a socket is %sbytes.", socket_max_data_size));
-                        }
-                        auto buffer_length = new ubyte[uint.sizeof];
-                        immutable data_length = cast(uint)data.length;
-                        // writeln("Bytes to send: ", data_length);
-                        buffer_length.write(data_length, 0);
-
-                        client.send(buffer_length);
-
-                        for (uint start_pos = 0; start_pos < data_length; start_pos += socket_buffer_size) {
-                            immutable end_pos = (start_pos+socket_buffer_size < data_length) ? start_pos+socket_buffer_size : data_length;
-                            client.send(data[start_pos..end_pos]);
-                        }
-                    }
-                    else {
-                        client.close;
-                        clients.remove(key);
-                    }
+                (immutable(ubyte)[] bson_bytes) {
+                    lso.sendBytes(bson_bytes);
+                },
+                (immutable(Throwable) t) {
+                    writefln("Throwable -------------------- %d", port);
+                    writeln(t);
+                    runBackend=false;
                 }
-            }
-
-            while(runBackend) {
-                receiveTimeout(500.msecs,
-                    //Control the thread
-                    &handleState,
-
-                    // &handleClient,
-
-                    (string msg) {
-                        // writeln("The backend socket thread received the message and sends to client socket: " , msg);
-                        if ( lso.active ) {
-                            lso.sendBytes(generateHoleThroughBsonMsg(msg));
-                        }
-                    },
-
-                    (immutable(ubyte)[] bson_bytes) {
-                        if ( lso.active ) {
-                            lso.sendBytes(bson_bytes);
-                        }
-                    },
-                    (immutable(Throwable) t) {
-                        writeln(t);
-                        runBackend=false;
-                    }
-                    );
-            }
+                );
         }
     }
     catch(Throwable t) {
+        writefln(":::::::::: Throwable %d",port);
         writeln(t);
     }
 }
