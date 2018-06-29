@@ -478,7 +478,7 @@ class HashGraph {
     */
     protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
         iterative_tree_count++;
-        if ( event ) {
+        if ( event && ( !event.loaded ) ) {
             event.visit = visit;
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
@@ -545,8 +545,8 @@ class HashGraph {
     package void strongSee(Event check_event) {
 
         if ( check_event && !check_event.is_strogly_seeing_checked ) {
-
-            const(Round) round=check_event.previousRound;
+            writefln("Strong %d", check_event.id);
+            const round=check_event.previousRound;
             void checkStrongSeeing(Event top_event) {
                 import std.bitmanip;
                 BitArray[] vote_mask=new BitArray[total_nodes];
@@ -565,7 +565,7 @@ class HashGraph {
                 }
 
                 uint seeing;
-                void search(Event event) @safe {
+                void search(Event event, immutable uint level=0, immutable bool is_father=false) @safe {
                     iterative_strong_count++;
                     uint vote(ref BitArray mask) @trusted {
                         uint votes;
@@ -579,13 +579,18 @@ class HashGraph {
                         }
                         return votes;
                     }
-                    immutable(char)[] masks(ref const BitArray mask) @trusted {
-                        return to!string(mask);
-                    }
+                    // immutable(char)[] masks(ref const BitArray mask) @trusted {
+                    //     return to!string(mask);
+                    // }
                     // Finde the node for the event
                     auto pnode=event.node_id in nodes;
                     immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
                     if ( not_famous_yet ) {
+                        string indent;
+                        foreach(i;0..level) {
+                            indent~="  ";
+                        }
+                        writefln("%s id=%d %s %s", indent, event.id, is_father?"F":"M", event.witness?"W":"_");
                         auto n=*pnode;
                         n.passed++;
                         scope(exit) {
@@ -596,7 +601,7 @@ class HashGraph {
                         // Check if the current event is a witness and if the round is lower or equal to the expected previous round.
 //                        if ( !((event !is top_event) && (round.number > event.round.number)) ) {
 //                        if ( event !is top_event) && (round.number > event.round.number)) ) {
-                        if ( event.witness && (round.number <= event.round.number) ) {
+                        if ( event.witness && round.lessOrEqual(event.round) ) {
                             if (!n.voted) {
                                 auto votes=vote(vote_mask[event.node_id]);
                                 immutable majority=isMajority(votes);
@@ -606,13 +611,16 @@ class HashGraph {
                                 }
                             }
                         }
+                        if ( event.hasRound && (round.number > event.round.number) ) {
+                            return;
+                        }
                         auto mother=event.mother;
 
                         if ( mother ) {
-                            search(mother);
+                            search(mother, level+1);
                             if ( event.fatherExists ) {
                                 auto father=event.father;
-                                search(father);
+                                search(father, level+1, true);
                             }
                         }
                         //}

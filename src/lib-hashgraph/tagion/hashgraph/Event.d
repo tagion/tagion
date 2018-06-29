@@ -207,12 +207,7 @@ class Round {
 
     static int increase_number(const(Round) r) {
         if ( !r.isUndefined && r ) {
-            if ( r.number == int.max ) {
-                return 1;
-            }
-            else {
-                return r.number+1;
-            }
+            return r.number+1;
         }
         else {
             return 1;
@@ -238,6 +233,10 @@ class Round {
     private this() {
         number=-1;
         _previous=null;
+    }
+
+    bool lessOrEqual(const Round rhs) pure const {
+        return (number - rhs.number) <= 0;
     }
 
     @trusted
