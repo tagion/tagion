@@ -461,12 +461,12 @@ class HashGraph {
             iterative_tree_count=0;
             visit++;
             requestEventTree(request_net, event);
-            writefln("After requestEventTree=%d", iterative_tree_count);
+//            writefln("After requestEventTree=%d", iterative_tree_count);
             // See if the node is strong seeing the hashgraph
             // writeln("Before strong See");
             iterative_strong_count=0;
             strongSee(event);
-            writefln("After strongSee=%d", iterative_strong_count);
+//            writefln("After strongSee=%d", iterative_strong_count);
         }
 
         return event;
