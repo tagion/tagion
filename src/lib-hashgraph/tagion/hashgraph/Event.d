@@ -187,6 +187,7 @@ class HashGraphException : Exception {
 interface EventCallbacks {
     void create(const(Event) e);
     void witness(const(Event) e);
+    void witness_mask(const(Event) e);
     void strongly_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
     void famous(const(Event) e);
@@ -434,6 +435,9 @@ class Event {
                     }
                     else {
                         _witness_mask=check_witness_mask(event.mother) | check_witness_mask(event.father);
+                        if ( callbacks ) {
+                            callbacks.witness_mask(event);
+                        }
                     }
                     _witness_mask_checked=true;
                 }
