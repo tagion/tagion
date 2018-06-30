@@ -513,6 +513,7 @@ class HashGraph {
     }
 
     // This function makes the votes for famous event
+    version(none)
     private void votingFamous(Event top_event)
     in {
         assert(top_event.witness, "Event should be a witness");
@@ -541,6 +542,24 @@ class HashGraph {
         findWitness(top_event.mother);
         findWitness(top_event.father);
     }
+
+    // package void witnessSee(Event check_event) {
+    //     const round=check_event.previousRound;
+    //     ref BitArray checkWitnessSeeing(Event event) {
+    //         BitArray result;
+    //         if ( event && !event.is_witness_seeing_checked ) {
+    //             event.witness_mask=checWitnessSeeing(event.mother) | checWitnessSeeing(event.father);
+    //             parent.witness_seeing_checked;
+    //             if ( event.witness && round.lessOrEqual(event.round) ) {
+    //                 result[event.node_id]=true;
+    //             }
+    //             else {
+    //                 return parent.witness_mask;
+    //             }
+    //         }
+    //         return result;
+    //     }
+    // }
 
     package void strongSee(Event check_event) {
 
@@ -586,11 +605,11 @@ class HashGraph {
                     auto pnode=event.node_id in nodes;
                     immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
                     if ( not_famous_yet ) {
-                        string indent;
-                        foreach(i;0..level) {
-                            indent~="  ";
-                        }
-                        writefln("%s id=%d %s %s", indent, event.id, is_father?"F":"M", event.witness?"W":"_");
+                        // string indent;
+                        // foreach(i;0..level) {
+                        //     indent~="  ";
+                        // }
+                        // writefln("%s id=%d %s %s", indent, event.id, is_father?"F":"M", event.witness?"W":"_");
                         auto n=*pnode;
                         n.passed++;
                         scope(exit) {
@@ -611,9 +630,9 @@ class HashGraph {
                                 }
                             }
                         }
-                        if ( event.hasRound && (round.number > event.round.number) ) {
-                            return;
-                        }
+                        // if ( event.hasRound && (round.number > event.round.number) ) {
+                        //     return;
+                        // }
                         auto mother=event.mother;
 
                         if ( mother ) {
@@ -645,7 +664,7 @@ class HashGraph {
 //                    top_event.create_witness_mask(total_nodes);
 
 //                    if (top_event.strongly_seeing) {
-                    votingFamous(top_event);
+//                    votingFamous(top_event);
 //                    }
 
                 }

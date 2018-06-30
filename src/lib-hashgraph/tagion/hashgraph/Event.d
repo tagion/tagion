@@ -309,9 +309,10 @@ class Event {
 
     //    private bool _round_set;
     private Round  _round;
-    // The withness mask contains the mask of the nodes
-    // Which can be seen by the next rounds witness
-    private BitArray* _witness_mask;
+    // The withness mask contains the mask of the witness
+    // Which can be seen by this event
+    private BitArray _witness_mask;
+    private bool _witness_mask_checked;
     private bool _witness;
     private bool _famous;
     private uint _famous_votes;
@@ -423,6 +424,28 @@ class Event {
         }
     }
 
+    ref const(BitArray) witness_mask() {
+        BitArray zero;
+        ref BitArray check_witness_mask(Event event) @trusted {
+            if ( event ) {
+                if ( !_witness_mask_checked ) {
+                    if ( _witness ) {
+                        _witness_mask[event.node_id]=true;
+                    }
+                    else {
+                        _witness_mask=check_witness_mask(event.mother) | check_witness_mask(event.father);
+                    }
+                    _witness_mask_checked=true;
+                }
+            }
+            else {
+                return zero;
+            }
+            return _witness_mask;
+        }
+        return check_witness_mask(this);
+    }
+
     void famous(bool f)
         in {
             if ( !f ) {
@@ -460,9 +483,9 @@ class Event {
         }
     body {
         _witness=true;
-        if ( !_witness_mask ) {
-            create_witness_mask(size);
-        }
+        // if ( !_witness_mask ) {
+        //     create_witness_mask(size);
+        // }
         if ( callbacks ) {
             callbacks.witness(this);
         }
@@ -472,37 +495,37 @@ class Event {
         return _witness;
     }
 
-    @trusted
-    private void create_witness_mask(immutable uint size)
-        in {
-            assert(_witness, "Witness mask can not be created for a none witness event");
-            assert(_witness_mask is null, "Witness mask has already been created");
-        }
-    body {
-        _witness_mask=new BitArray;
-        _witness_mask.length=size;
-    }
+    // @trusted
+    // private void create_witness_mask(immutable uint size)
+    //     in {
+    //         assert(_witness, "Witness mask can not be created for a none witness event");
+    //         assert(_witness_mask is null, "Witness mask has already been created");
+    //     }
+    // body {
+    //     _witness_mask=new BitArray;
+    //     _witness_mask.length=size;
+    // }
 
-    @trusted
-    void set_witness_mask(uint index)
-        in {
-            assert(_witness, "To set a witness mask the event must be a witness");
-        }
-    body {
-        if (!(*_witness_mask)[index]) {
-            (*_witness_mask)[index]=true;
-            increase_famous_votes();
-        }
-    }
+    // @trusted
+    // void set_witness_mask(uint index)
+    //     in {
+    //         assert(_witness, "To set a witness mask the event must be a witness");
+    //     }
+    // body {
+    //     if (!(*_witness_mask)[index]) {
+    //         (*_witness_mask)[index]=true;
+    //         increase_famous_votes();
+    //     }
+    // }
 
-    ref const(BitArray) witness_mask() const pure nothrow
-        in {
-            assert(_witness, "Event is not a witness");
-            assert(_witness_mask, "Witness mask should be set of a witness");
-        }
-    body {
-        return *_witness_mask;
-    }
+    // ref const(BitArray) witness_mask() const pure nothrow
+    //     in {
+    //         assert(_witness, "Event is not a witness");
+    //         assert(_witness_mask, "Witness mask should be set of a witness");
+    //     }
+    // body {
+    //     return *_witness_mask;
+    // }
 
     void strongly_seeing_checked()
         in {
