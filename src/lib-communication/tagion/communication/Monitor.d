@@ -74,6 +74,9 @@ class MonitorCallBacks : NetCallbacks {
         _socket_thread_id.send(bson);
     }
 
+    void witness_mask(const(Event) e) {
+    }
+
     @trusted
     void strongly_seeing(const(Event) e) {
         // writefln("Event strongly seeing, id: %s", e.id);
