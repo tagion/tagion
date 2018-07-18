@@ -425,6 +425,10 @@ class Event {
         }
     }
 
+    bool is_witness_mask_checked() pure const nothrow {
+        return _witness_mask_checked;
+    }
+
     ref const(BitArray) witness_mask() {
         BitArray zero;
         ref BitArray check_witness_mask(Event event) @trusted {
@@ -448,6 +452,10 @@ class Event {
             return _witness_mask;
         }
         return check_witness_mask(this);
+    }
+
+    package void witness_mask(BitArray mask) {
+        _witness_mask = mask;
     }
 
     void famous(bool f)

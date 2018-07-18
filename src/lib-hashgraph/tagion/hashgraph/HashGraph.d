@@ -543,23 +543,24 @@ class HashGraph {
         findWitness(top_event.father);
     }
 
-    // package void witnessSee(Event check_event) {
-    //     const round=check_event.previousRound;
-    //     ref BitArray checkWitnessSeeing(Event event) {
-    //         BitArray result;
-    //         if ( event && !event.is_witness_seeing_checked ) {
-    //             event.witness_mask=checWitnessSeeing(event.mother) | checWitnessSeeing(event.father);
-    //             parent.witness_seeing_checked;
-    //             if ( event.witness && round.lessOrEqual(event.round) ) {
-    //                 result[event.node_id]=true;
-    //             }
-    //             else {
-    //                 return parent.witness_mask;
-    //             }
-    //         }
-    //         return result;
-    //     }
-    // }
+    package void witnessSee(Event check_event) {
+        const round=check_event.previousRound;
+        import std.bitmanip : BitArray;
+        ref BitArray checkWitnessSeeing(Event event) {
+            BitArray result;
+            if ( event && !event.is_witness_mask_checked ) {
+                event.witness_mask=checkWitnessSeeing(event.mother) | checkWitnessSeeing(event.father);
+                parent.witness_seeing_checked;
+                if ( event.witness && round.lessOrEqual(event.round) ) {
+                    result[event.node_id]=true;
+                }
+                else {
+                    return parent.witness_mask;
+                }
+            }
+            return result;
+        }
+    }
 
     package void strongSee(Event check_event) {
 
