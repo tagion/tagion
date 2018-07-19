@@ -610,6 +610,8 @@ class HashGraph {
             //     event.round=Round.undefined;
             // }
             checkStrongSeeing(check_event);
+            check_event.strongly_seeing_checked;
+
             /* to be added after NP problem fix
             if ( Event.callbacks ) {
                 Event.callbacks.strong_vote(top_event,seeing);
@@ -622,6 +624,7 @@ class HashGraph {
     package void strongSee(Event check_event) {
 
         if ( check_event && !check_event.is_strongly_seeing_checked ) {
+
             // writefln("Strong %d", check_event.id);
             const round=check_event.previousRound;
             void checkStrongSeeing(Event top_event) {
@@ -717,7 +720,6 @@ class HashGraph {
                     assert(top_event !is e);
                     top_event.round=nextRound(top_event);
                     top_event.witness=total_nodes;
-                    top_event.strongly_seeing=true;
                     // Create witness mask to count famous witness
 //                    top_event.create_witness_mask(total_nodes);
 
@@ -726,6 +728,8 @@ class HashGraph {
 //                    }
 
                 }
+                top_event.strongly_seeing=strong;
+
                 // else if ( !top_event.isEva ) {
                 //     top_event.round=top_event.motherRound;
                 // }
@@ -734,6 +738,7 @@ class HashGraph {
                 //top_event.strongly_seeing_checked;
 
 //            return strong;
+                check_event.strongly_seeing_checked;
             }
             auto mother=check_event.mother;
             strongSee(mother);
@@ -744,6 +749,7 @@ class HashGraph {
             //     event.round=Round.undefined;
             // }
             checkStrongSeeing(check_event);
+
         }
     }
 

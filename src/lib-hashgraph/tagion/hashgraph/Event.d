@@ -597,6 +597,10 @@ class Event {
         return _strongly_seeing_checked;
     }
 
+    void strongly_seeing_checked() nothrow {
+        _strongly_seeing_checked=true;
+    }
+
     void strongly_seeing(bool s)
         in {
             assert(!_strongly_seeing);
@@ -605,9 +609,9 @@ class Event {
     body {
         _strongly_seeing=s;
         if ( callbacks && s ) {
-            _strongly_seeing_checked=true;
             callbacks.strongly_seeing(this);
         }
+        // _strongly_seeing_checked=true;
     }
 
     bool strongly_seeing() const pure nothrow {
