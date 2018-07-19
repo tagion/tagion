@@ -469,7 +469,7 @@ class HashGraph {
             strongSee(event);
             writefln("After strongSee=%d", iterative_strong_count);
             iterative_strong_count=0;
-//            strongSee2(event);
+            strongSee2(event);
             writefln("After strongSee2=%d", iterative_strong_count);
         }
 
@@ -584,14 +584,16 @@ class HashGraph {
             uint seeing;
             void checkStrongSeeing(Event top_event) @trusted {
                 if ( top_event && !strong_witness_mask[top_event.node_id] ) {
+                    iterative_strong_count++;
+                    strong_witness_mask[top_event.node_id]=true;
                     if ( isMajority(top_event.witness_votes) ) {
-                        if ( !strong_witness_mask[top_event.node_id] ) {
-                            strong_witness_mask[top_event.node_id]=true;
-                            seeing++;
-                            if ( isMajority( seeing ) ) {
-                                top_event.strongly2_seeing=true;
-                            }
+                        // if ( !strong_witness_mask[top_event.node_id] ) {
+
+                        seeing++;
+                        if ( isMajority( seeing ) ) {
+                            top_event.strongly2_seeing=true;
                         }
+                            // }
                     }
                     else {
                         checkStrongSeeing(top_event.mother);
@@ -620,7 +622,7 @@ class HashGraph {
     package void strongSee(Event check_event) {
 
         if ( check_event && !check_event.is_strongly_seeing_checked ) {
-            writefln("Strong %d", check_event.id);
+            // writefln("Strong %d", check_event.id);
             const round=check_event.previousRound;
             void checkStrongSeeing(Event top_event) {
                 import std.bitmanip;
