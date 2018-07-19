@@ -89,6 +89,19 @@ class MonitorCallBacks : NetCallbacks {
         _socket_thread_id.send(bson);
     }
 
+
+    @trusted
+    void strongly2_seeing(const(Event) e) {
+        // writefln("Event strongly seeing, id: %s", e.id);
+        // immutable updateEvent = EventUpdateMessage(
+        //     e.id,
+        //     EventProperty.IS_STRONGLY_SEEING,
+        //     e.strongly_seeing
+        //     );
+        // auto bson = updateEvent.serialize;
+        // _socket_thread_id.send(bson);
+    }
+
     @trusted
     void famous(const(Event) e) {
         // writefln("Event famous, id: %s", e.id);
