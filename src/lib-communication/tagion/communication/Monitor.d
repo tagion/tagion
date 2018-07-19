@@ -92,14 +92,14 @@ class MonitorCallBacks : NetCallbacks {
 
     @trusted
     void strongly2_seeing(const(Event) e) {
-        // writefln("Event strongly seeing, id: %s", e.id);
-        // immutable updateEvent = EventUpdateMessage(
-        //     e.id,
-        //     EventProperty.IS_STRONGLY_SEEING,
-        //     e.strongly_seeing
-        //     );
-        // auto bson = updateEvent.serialize;
-        // _socket_thread_id.send(bson);
+        writefln("Event strongly seeing, id: %s", e.id);
+        immutable updateEvent = EventUpdateMessage(
+            e.id,
+            EventProperty.IS_STRONGLY2_SEEING,
+            e.strongly2_seeing
+            );
+        auto bson = updateEvent.serialize;
+        _socket_thread_id.send(bson);
     }
 
     @trusted
