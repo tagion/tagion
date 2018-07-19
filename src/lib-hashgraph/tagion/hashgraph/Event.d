@@ -189,6 +189,7 @@ interface EventCallbacks {
     void witness(const(Event) e);
     void witness_mask(const(Event) e);
     void strongly_seeing(const(Event) e);
+    void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
     void famous(const(Event) e);
     void round(const(Event) e);
@@ -215,16 +216,6 @@ class Round {
         }
     }
 
-
-    static uint countVotes(ref const(BitArray) mask) @trusted {
-        uint votes;
-        foreach(vote; mask) {
-            if (vote) {
-                votes++;
-            }
-        }
-        return votes;
-    }
 
     private static Round _undefined;
     static this() {
@@ -314,11 +305,14 @@ class Event {
     // Which can be seen by this event
     private BitArray _witness_mask;
     private bool _witness_mask_checked;
+    private uint _witness_votes;
     private bool _witness;
     private bool _famous;
     private uint _famous_votes;
     private bool _strongly_seeing;
     private bool _strongly_seeing_checked;
+    private bool _strongly2_seeing;
+    private bool _strongly2_seeing_checked;
     private bool _loaded;
     // This indicates that the hashgraph aften this event
     private bool _forked;
@@ -359,6 +353,17 @@ class Event {
     bool isFront() pure const nothrow {
         return _daughter is null;
     }
+
+    static uint countVotes(ref const(BitArray) mask) @trusted {
+        uint votes;
+        foreach(vote; mask) {
+            if (vote) {
+                votes++;
+            }
+        }
+        return votes;
+    }
+
 
     void round(Round round)
         in {
@@ -425,8 +430,23 @@ class Event {
         }
     }
 
+    uint witness_votes() {
+        if ( _witness_mask_checked ) {
+            witness_mask;
+        }
+        return _witness_votes;
+    }
+
     bool is_witness_mask_checked() pure const nothrow {
         return _witness_mask_checked;
+    }
+
+    void witness_mask_checked()
+        in {
+            assert(!_witness_mask_checked);
+        }
+    body {
+        _witness_mask_checked=true;
     }
 
     ref const(BitArray) witness_mask() {
@@ -435,10 +455,14 @@ class Event {
             if ( event ) {
                 if ( !_witness_mask_checked ) {
                     if ( _witness ) {
+                        if ( !_witness_mask[event.node_id] ) {
+                            _witness_votes++;
+                        }
                         _witness_mask[event.node_id]=true;
                     }
                     else {
                         _witness_mask=check_witness_mask(event.mother) | check_witness_mask(event.father);
+                        _witness_votes=countVotes(_witness_mask);
                         if ( callbacks ) {
                             callbacks.witness_mask(event);
                         }
@@ -454,9 +478,9 @@ class Event {
         return check_witness_mask(this);
     }
 
-    package void witness_mask(BitArray mask) {
-        _witness_mask = mask;
-    }
+    // package void witness_mask(BitArray mask) {
+    //     _witness_mask = mask;
+    // }
 
     void famous(bool f)
         in {
@@ -539,15 +563,37 @@ class Event {
     //     return *_witness_mask;
     // }
 
-    void strongly_seeing_checked()
-        in {
-            assert(!_strongly_seeing_checked);
-        }
-    body {
-        _strongly_seeing_checked=true;
+    // void strongly_seeing_checked()
+    //     in {
+    //         assert(!_strongly_seeing_checked);
+    //     }
+    // body {
+    //     _strongly_seeing_checked=true;
+    // }
+    bool is_strongly2_seeing_checked() const pure nothrow {
+        return _strongly2_seeing_checked;
     }
 
-    bool is_strogly_seeing_checked() const pure nothrow {
+    void strongly2_seeing(bool s)
+        in {
+            assert(!_strongly2_seeing);
+            assert(!_strongly2_seeing_checked);
+        }
+    body {
+        _strongly2_seeing=s;
+        if ( callbacks && s ) {
+            _strongly2_seeing_checked=true;
+            callbacks.strongly2_seeing(this);
+        }
+    }
+
+    bool strongly2_seeing() const pure nothrow {
+        return _strongly2_seeing;
+    }
+
+
+
+    bool is_strongly_seeing_checked() const pure nothrow {
         return _strongly_seeing_checked;
     }
 
@@ -559,6 +605,7 @@ class Event {
     body {
         _strongly_seeing=s;
         if ( callbacks && s ) {
+            _strongly_seeing_checked=true;
             callbacks.strongly_seeing(this);
         }
     }

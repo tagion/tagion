@@ -388,8 +388,9 @@ class HashGraph {
     }
     body {
         auto previous=event.previousRound;
-        auto number=Round.increase_number(previous);
+        immutable number=Round.increase_number(previous);
         if ( _rounds ) {
+            // TO DO: CBR Overflow problem in this assert statement
             assert(number <= _rounds.number+1);
             if ( number == _rounds.number+1 ) {
                 auto new_round = new Round(_rounds, total_nodes);
@@ -467,6 +468,9 @@ class HashGraph {
             iterative_strong_count=0;
             strongSee(event);
             writefln("After strongSee=%d", iterative_strong_count);
+            iterative_strong_count=0;
+//            strongSee2(event);
+            writefln("After strongSee2=%d", iterative_strong_count);
         }
 
         return event;
@@ -543,28 +547,79 @@ class HashGraph {
         findWitness(top_event.father);
     }
 
-    package void witnessSee(Event check_event) {
-        const round=check_event.previousRound;
-        import std.bitmanip : BitArray;
-        ref BitArray checkWitnessSeeing(Event event) {
-            BitArray result;
-            if ( event && !event.is_witness_mask_checked ) {
-                event.witness_mask=checkWitnessSeeing(event.mother) | checkWitnessSeeing(event.father);
-                parent.witness_seeing_checked;
-                if ( event.witness && round.lessOrEqual(event.round) ) {
-                    result[event.node_id]=true;
-                }
-                else {
-                    return parent.witness_mask;
+    // package void witnessSee(Event check_event) {
+    //     const round=check_event.previousRound;
+    //     import std.bitmanip : BitArray;
+
+    //     const(BitArray) checkWitnessSeeing(Event event) @trusted {
+    //         BitArray result;
+    //         if ( event && !event.is_witness_mask_checked ) {
+    //             event.witness_mask=checkWitnessSeeing(event.mother) | checkWitnessSeeing(event.father);
+    //             event.witness_mask_checked;
+    //             if ( event.witness && round.lessOrEqual(event.round) ) {
+    //                 result[event.node_id]=true;
+    //             }
+    //             else {
+    //                 return event.witness_mask;
+    //             }
+    //             if ( Event.callbacks ) {
+    //                 Event.callbacks.witness_mask(event);
+    //             }
+    //         }
+    //         return result;
+    //     }
+    //     checkWitnessSeeing(check_event);
+    // }
+
+    package void strongSee2(Event check_event) {
+        if ( check_event && !check_event.is_strongly2_seeing_checked ) {
+            import std.bitmanip;
+            BitArray strong_witness_mask;
+
+            void set_bitarray() @trusted {
+                strong_witness_mask.length=total_nodes;
+
+            }
+            set_bitarray;
+            uint seeing;
+            void checkStrongSeeing(Event top_event) @trusted {
+                if ( top_event && !strong_witness_mask[top_event.node_id] ) {
+                    if ( isMajority(top_event.witness_votes) ) {
+                        if ( !strong_witness_mask[top_event.node_id] ) {
+                            strong_witness_mask[top_event.node_id]=true;
+                            seeing++;
+                            if ( isMajority( seeing ) ) {
+                                top_event.strongly2_seeing=true;
+                            }
+                        }
+                    }
+                    else {
+                        checkStrongSeeing(top_event.mother);
+                        checkStrongSeeing(top_event.father);
+                    }
                 }
             }
-            return result;
+            auto mother=check_event.mother;
+            strongSee2(mother);
+            auto father=check_event.father;
+            strongSee2(father);
+            // if ( event.isEva ) {
+            //     event.witness=true;
+            //     event.round=Round.undefined;
+            // }
+            checkStrongSeeing(check_event);
+            /* to be added after NP problem fix
+            if ( Event.callbacks ) {
+                Event.callbacks.strong_vote(top_event,seeing);
+            }
+            */
+
         }
     }
 
     package void strongSee(Event check_event) {
 
-        if ( check_event && !check_event.is_strogly_seeing_checked ) {
+        if ( check_event && !check_event.is_strongly_seeing_checked ) {
             writefln("Strong %d", check_event.id);
             const round=check_event.previousRound;
             void checkStrongSeeing(Event top_event) {
@@ -674,7 +729,7 @@ class HashGraph {
                 // }
 //            writefln("Strongly Seeing test return %s", strong);
        //         top_event.strongly_seeing=strong;
-                top_event.strongly_seeing_checked;
+                //top_event.strongly_seeing_checked;
 
 //            return strong;
             }
