@@ -109,7 +109,9 @@ class BsonCastException : Exception {
 enum EventProperty {
 	IS_STRONGLY_SEEING,
 	IS_FAMOUS,
-	IS_WITNESS
+	IS_WITNESS,
+        IS_STRONGLY2_SEEING,
+
 }
 
 @safe
