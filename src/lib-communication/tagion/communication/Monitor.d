@@ -90,6 +90,7 @@ class MonitorCallBacks : NetCallbacks {
     }
 
 
+    version(none)
     @trusted
     void strongly2_seeing(const(Event) e) {
         writefln("Event strongly seeing, id: %s", e.id);
