@@ -187,9 +187,9 @@ class HashGraphException : Exception {
 interface EventCallbacks {
     void create(const(Event) e);
     void witness(const(Event) e);
-    void witness_mask(const(Event) e);
+//    void witness_mask(const(Event) e);
     void strongly_seeing(const(Event) e);
-    void strongly2_seeing(const(Event) e);
+//    void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
     void famous(const(Event) e);
     void round(const(Event) e);
@@ -301,18 +301,16 @@ class Event {
 
     //    private bool _round_set;
     private Round  _round;
-    // The withness mask contains the mask of the witness
-    // Which can be seen by this event
-    private BitArray _witness_mask;
-    private bool _witness_mask_checked;
-    private uint _witness_votes;
+    // The withness mask contains the mask of the nodes
+    // Which can be seen by the next rounds witness
+    private BitArray* _witness_mask;
     private bool _witness;
     private bool _famous;
     private uint _famous_votes;
     private bool _strongly_seeing;
     private bool _strongly_seeing_checked;
-    private bool _strongly2_seeing;
-    private bool _strongly2_seeing_checked;
+ //   private bool _strongly2_seeing;
+ //   private bool _strongly2_seeing_checked;
     private bool _loaded;
     // This indicates that the hashgraph aften this event
     private bool _forked;
@@ -430,6 +428,7 @@ class Event {
         }
     }
 
+version(none) {
     uint witness_votes() {
         if ( _witness_mask_checked ) {
             witness_mask;
@@ -481,7 +480,7 @@ class Event {
     // package void witness_mask(BitArray mask) {
     //     _witness_mask = mask;
     // }
-
+}
     void famous(bool f)
         in {
             if ( !f ) {
@@ -519,9 +518,9 @@ class Event {
         }
     body {
         _witness=true;
-        // if ( !_witness_mask ) {
-        //     create_witness_mask(size);
-        // }
+        if ( !_witness_mask ) {
+            create_witness_mask(size);
+        }
         if ( callbacks ) {
             callbacks.witness(this);
         }
@@ -531,74 +530,48 @@ class Event {
         return _witness;
     }
 
-    // @trusted
-    // private void create_witness_mask(immutable uint size)
-    //     in {
-    //         assert(_witness, "Witness mask can not be created for a none witness event");
-    //         assert(_witness_mask is null, "Witness mask has already been created");
-    //     }
-    // body {
-    //     _witness_mask=new BitArray;
-    //     _witness_mask.length=size;
-    // }
-
-    // @trusted
-    // void set_witness_mask(uint index)
-    //     in {
-    //         assert(_witness, "To set a witness mask the event must be a witness");
-    //     }
-    // body {
-    //     if (!(*_witness_mask)[index]) {
-    //         (*_witness_mask)[index]=true;
-    //         increase_famous_votes();
-    //     }
-    // }
-
-    // ref const(BitArray) witness_mask() const pure nothrow
-    //     in {
-    //         assert(_witness, "Event is not a witness");
-    //         assert(_witness_mask, "Witness mask should be set of a witness");
-    //     }
-    // body {
-    //     return *_witness_mask;
-    // }
-
-    // void strongly_seeing_checked()
-    //     in {
-    //         assert(!_strongly_seeing_checked);
-    //     }
-    // body {
-    //     _strongly_seeing_checked=true;
-    // }
-    bool is_strongly2_seeing_checked() const pure nothrow {
-        return _strongly2_seeing_checked;
-    }
-
-    void strongly2_seeing(bool s)
+    @trusted
+    private void create_witness_mask(immutable uint size)
         in {
-            assert(!_strongly2_seeing);
-            assert(!_strongly2_seeing_checked);
+            assert(_witness, "Witness mask can not be created for a none witness event");
+            assert(_witness_mask is null, "Witness mask has already been created");
         }
     body {
-        _strongly2_seeing=s;
-        if ( callbacks && s ) {
-            _strongly2_seeing_checked=true;
-            callbacks.strongly2_seeing(this);
+        _witness_mask=new BitArray;
+        _witness_mask.length=size;
+    }
+
+    @trusted
+    void set_witness_mask(uint index)
+        in {
+            assert(_witness, "To set a witness mask the event must be a witness");
+        }
+    body {
+        if (!(*_witness_mask)[index]) {
+            (*_witness_mask)[index]=true;
+            increase_famous_votes();
         }
     }
 
-    bool strongly2_seeing() const pure nothrow {
-        return _strongly2_seeing;
+    ref const(BitArray) witness_mask() const pure nothrow
+        in {
+            assert(_witness, "Event is not a witness");
+            assert(_witness_mask, "Witness mask should be set of a witness");
+        }
+    body {
+        return *_witness_mask;
     }
 
-
+    void strongly_seeing_checked()
+        in {
+            assert(!_strongly_seeing_checked);
+        }
+    body {
+        _strongly_seeing_checked=true;
+    }
 
     bool is_strongly_seeing_checked() const pure nothrow {
         return _strongly_seeing_checked;
-    }
-
-    void strongly_seeing_checked() nothrow {
-        _strongly_seeing_checked=true;
     }
 
     void strongly_seeing(bool s)

@@ -468,9 +468,9 @@ class HashGraph {
             iterative_strong_count=0;
             strongSee(event);
             writefln("After strongSee=%d", iterative_strong_count);
-            iterative_strong_count=0;
-            strongSee2(event);
-            writefln("After strongSee2=%d", iterative_strong_count);
+  //          iterative_strong_count=0;
+  //          strongSee2(event);
+   //         writefln("After strongSee2=%d", iterative_strong_count);
         }
 
         return event;
@@ -517,7 +517,6 @@ class HashGraph {
     }
 
     // This function makes the votes for famous event
-    version(none)
     private void votingFamous(Event top_event)
     in {
         assert(top_event.witness, "Event should be a witness");
@@ -547,6 +546,7 @@ class HashGraph {
         findWitness(top_event.father);
     }
 
+version(none) {
     // package void witnessSee(Event check_event) {
     //     const round=check_event.previousRound;
     //     import std.bitmanip : BitArray;
@@ -620,6 +620,7 @@ class HashGraph {
 
         }
     }
+}
 
     package void strongSee(Event check_event) {
 
@@ -720,25 +721,26 @@ class HashGraph {
                     assert(top_event !is e);
                     top_event.round=nextRound(top_event);
                     top_event.witness=total_nodes;
+                    top_event.strongly_seeing=true;
                     // Create witness mask to count famous witness
 //                    top_event.create_witness_mask(total_nodes);
 
 //                    if (top_event.strongly_seeing) {
-//                    votingFamous(top_event);
+                    votingFamous(top_event);
 //                    }
 
                 }
-                top_event.strongly_seeing=strong;
+ //               top_event.strongly_seeing=strong;
 
                 // else if ( !top_event.isEva ) {
                 //     top_event.round=top_event.motherRound;
                 // }
 //            writefln("Strongly Seeing test return %s", strong);
        //         top_event.strongly_seeing=strong;
-                //top_event.strongly_seeing_checked;
+                top_event.strongly_seeing_checked;
 
 //            return strong;
-                check_event.strongly_seeing_checked;
+//                check_event.strongly_seeing_checked;
             }
             auto mother=check_event.mother;
             strongSee(mother);
