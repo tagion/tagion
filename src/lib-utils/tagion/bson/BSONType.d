@@ -5,7 +5,9 @@ import std.conv;
 import std.string : format;
 import std.stdio : writefln, writeln;
 import tagion.utils.BSON : HBSON, Document;
-alias Pubkey = immutable(ubyte[]);
+import tagion.hashgraph.GossipNet : Pubkey;
+
+//alias Pubkey = immutable(ubyte[]);
 
 enum BSON_TEST_MSG = "bson_test_msg";
 enum BSON_TEST_MSG_CODE = 10_000;

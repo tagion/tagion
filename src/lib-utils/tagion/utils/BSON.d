@@ -291,6 +291,11 @@ unittest {
 
         auto boolElem = doc["bool"];
         assert(boolElem.get!bool);
+
+        // Typedef check
+        alias NewInt=Typedef!int;
+        assert(numElem.get!NewInt == 10);
+
     }
 }
 
@@ -539,58 +544,60 @@ public:
 
     @property const /* pure: check is not pure */
         {
-            string get(T)() inout if (is(T == string))
-            {
+            template isGeneralType(T, Type) {
+                alias BaseT=TypedefType!T;
+                enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
+            }
+
+            T get(T)() inout if (is(TypedefType!T == string)) {
                 check(Type.STRING);
-                return str;
+                return cast(T)str;
             }
 
 
-            T get(T)() inout if (is(T == inout(bool)) || is(T == bool) || is(T == const(bool)) || is(T == immutable(bool)))
-            {
+            T get(T)() inout if ( isGeneralType!(T,bool) ) {
                 check(Type.BOOLEAN);
-                return cast(T)_boolean();
+                return cast(T)(_boolean());
             }
 
-            inout(T) get(T)() inout if (is(T == inout(int)) || is(T == int) || is(T == const(int)) || is(T == immutable(int))||
-                is(T == inout(uint)) || is(T == uint) || is(T == const(uint)) || is(T == immutable(uint))) {
+            T get(T)() inout if (isGeneralType!(T,int) || isGeneralType!(T,uint) ) {
                 check(Type.INT32);
-                return cast(T)_int32();
+                return cast(T)(_int32());
             }
 
-            inout(T) get(T)() inout if (is(T == inout(long)) || is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
-                is(T == inout(ulong)) || is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong))) {
+            // inout(T) get(T)() inout if (is(T == inout(long)) || is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
+            //     is(T == inout(ulong)) || is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong))) {
+            T get(T)() inout if (isGeneralType!(T,long) ||  isGeneralType!(T,ulong) ) {
                 check(Type.INT64);
-                return cast(T)_int64();
+                return cast(T)(_int64());
             }
 
-            T get(T)() inout if (is(T == inout(double)) || is(T == double) || is(T == const(double)) || is(T == immutable(double))) {
+//            T get(T)() inout if (is(T == inout(double)) || is(T == double) || is(T == const(double)) || is(T == immutable(double))) {
+            T get(T)() inout if (isGeneralType!(T,double)) {
                 check(Type.DOUBLE);
-                return cast(T)_double();
+                return cast(T)(_double());
             }
 
 
-            T get(T)() inout if (is(T : const(Date))) {
+            T get(T)() inout if (is(TypedefType!T : const(Date))) {
                 check(Type.DATE);
                 return cast(T)SysTime(_int64());
             }
 
-
-            T get(T)() inout if (is(T : const(DateTime))) {
+            T get(T)() inout if (is(TypedefType!T : const(DateTime))) {
                 check(Type.TIMESTAMP);
                 return cast(T)SysTime(_int64());
             }
 
-            T get(T)() inout if (is(T : const(ObjectId))) {
+            T get(T)() inout if (is(TypedefType!T : const(ObjectId))) {
                 check(Type.OID);
-                return ObjectId(value);
+                return cast(T)(ObjectId(value));
             }
-
 
             /**
              * Returns an DOCUMENT document.
              */
-            Document get(T)() inout if (is(T == Document)) {
+            Document get(T)() inout if (is(TypedefType!T == Document)) {
                 if ( (type != Type.DOCUMENT) && (type != Type.ARRAY) ) {
                     check(Type.DOCUMENT);
                 }
@@ -601,17 +608,35 @@ public:
             //     return value.idup;
             // }
 
-            @trusted
-                T get(T)() inout if (!is(T == string) && is(T == immutable(U)[], U)) {
-                static if ( is(T == immutable(U)[], U) ) {
+            @trusted auto get(T)() inout if (!is(TypedefType!T == string) && is(TypedefType!T == immutable(U)[], U)) {
+                alias BaseType=TypedefType!T;
+                enum isTypedef=!is(BaseType == T);
+                static if ( is(BaseType == immutable(U)[], U) ) {
                     if ( type == Type.BINARY)  {
-                        static if ( is(T == immutable(ubyte)[] ) ) {
-                            return binary_buffer;
+                        static if ( is(BaseType : immutable(ubyte[]) ) ) {
+                            immutable buffer=binary_buffer();
+                            //inout T result=binary_buffer;
+                            pragma(msg, "T.stringof="~T.stringof);
+                            pragma(msg, "BaseType.stringof="~BaseType.stringof);
+                            alias IT=immutable T;
+                            pragma(msg, "IT.stringof="~IT.stringof);
+                            pragma(msg, "typeof buffer ="~typeof(buffer).stringof);
 
+                            static if ( isTypedef ) {
+                                import std.stdio;
+                                immutable result=immutable(IT)(buffer); //=binary_buffer;
+                                writefln("a=%s", result.a);
+                                return result;
+                                //   return cast(T)(binary_buffer());
+                            }
+                            else {
+                                return binary_buffer;
+                            }
                         }
                         else if ( subtype == getSubtype!T ) {
                             auto buf=binary_buffer;
-                            return (cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
+                            T result=(cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
+                            return result;
                         }
                     }
                 }
@@ -1796,95 +1821,96 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     }
     @trusted
     auto get(T)() inout {
-        static if (is(T==double)) {
+        alias BaseType=TypedefType!T;
+        static if (is(BaseType==double)) {
             assert(_type == Type.DOUBLE);
-            return value.number;
+            return cast(T)(value.number);
         }
-        else static if (is(T==string)) {
+        else static if (is(BaseType==string)) {
             assert(_type == Type.STRING);
-            return value.text;
+            return cast(T)(value.text);
         }
-        else static if (is(T==bool)) {
+        else static if (is(BaseType==bool)) {
             assert(_type == Type.BOOLEAN);
-            return value.boolean;
+            return cast(T)(value.boolean);
         }
-        else static if (is(T==BSON)) {
+        else static if (is(BaseType==BSON)) {
             assert(_type == Type.DOCUMENT);
-            return value.document;
+            return cast(T)(value.document);
         }
-        else static if (is(T:const(BSON))) {
+        else static if (is(BaseType:const(BSON))) {
             assert(_type == Type.DOCUMENT);
 //            assert(const_pointer);
             return cast(T)(value.document);
         }
-        else static if (is(T==ObjectId)) {
+        else static if (is(BaseType==ObjectId)) {
             assert(_type == Type.OID);
-            return value.oid;
+            return cast(T)(value.oid);
         }
-        else static if (is(T==int)) {
+        else static if (is(BaseType==int)) {
             assert(_type == Type.INT32);
-            return value.int32;
+            return cast(T)(value.int32);
         }
-        else static if (is(T==long)) {
+        else static if (is(BaseType==long)) {
             assert(_type == Type.INT64);
-            return value.int64;
+            return cast(T)(value.int64);
         }
-        else static if (is(T==Date)) {
+        else static if (is(BaseType==Date)) {
             assert(_type == Type.DATE);
-            return value.date;
+            return cast(T)(value.date);
         }
-        else static if (is(T==CodeScope)) {
+        else static if (is(BaseType==CodeScope)) {
             assert(_type == Type.JS_CODE_SCOPE);
-            return value.codescope;
+            return cast(T)(value.codescope);
         }
-        else static if (is(T:const(ubyte)[])) {
+        else static if (is(BaseType:const(ubyte)[])) {
             assert(_type == Type.BINARY);
-            return value.binary;
+            return cast(T)(value.binary);
         }
-        else static if (is(T:const(bool)[])) {
+        else static if (is(BaseType:const(bool)[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.BOOLEAN_array);
-            return value.bool_array;
+            return cast(T)(value.bool_array);
         }
-        else static if (is(T:const(int)[])) {
+        else static if (is(BaseType:const(int)[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.INT32_array);
-            return value.int32_array;
+            return cast(T)(value.int32_array);
         }
-        else static if (is(T:const(uint)[])) {
+        else static if (is(BaseType:const(uint)[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.UINT32_array);
-            return value.uint32_array;
+            return cast(T)(value.uint32_array);
         }
-        else static if (is(T:const(ulong)[])) {
+        else static if (is(BaseType:const(ulong)[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.UINT64_array);
-            return value.uint64_array;
+            return cast(T)(value.uint64_array);
         }
-        else static if (is(T:const(long)[])) {
+        else static if (is(BaseType:const(long)[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.INT64_array);
-            return value.int64_array;
+            return cast(T)(value.int64_array);
         }
-        else static if (is(T:const(float)[])) {
+        else static if (is(BaseType:const(float)[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.FLOAT_array);
-            return value.float_array;
+            return cast(T)(value.float_array);
         }
-        else static if (is(T:const(double)[])) {
+        else static if (is(BaseType:const(double)[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.DOUBLE_array);
-            return value.double_array;
+            return cast(T)(value.double_array);
         }
-        else static if (is(T:U[],U) && isSomeString!U) {
+        else static if (is(BaseType:U[],U) && isSomeString!U) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.STRING_array);
-            return value.text_array;
+            return cast(T)(value.text_array);
         }
-        else static if (is(T==BSON[])) {
+        else static if (is(BaseType==BSON[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.DOCUMENT_array);
-            return value.bson_array;
+            return cast(T)(value.bson_array);
         }
         else {
             static assert(0, "Type "~T.stringof~ "is not supported by this function");
@@ -2156,39 +2182,40 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     void opIndexAssign(T)(T x, in string key) {
         bool result;
-        static if (is(T:const(bool))) {
+        alias BaseType=TypedefType!T;
+        static if (is(BaseType:const(bool))) {
             result=append(Type.BOOLEAN, key, x);
         }
-        else static if (is(T:const(char)[])) {
+        else static if (is(BaseType:const(char)[])) {
             result=append(Type.STRING, key, x);
         }
-        else static if (is(T:const(BSON))) {
+        else static if (is(BaseType:const(BSON))) {
             result=append(Type.DOCUMENT, key, x);
         }
-        else static if (is(T:const(int))) {
+        else static if (is(BaseType:const(int))) {
             result=append(Type.INT32, key, x);
         }
-        else static if (is(T:const(long))) {
+        else static if (is(BaseType:const(long))) {
             result=append(Type.INT64, key, x);
         }
-        else static if (is(T:const(double))) {
+        else static if (is(BaseType:const(double))) {
             result=append(Type.DOUBLE, key, x);
         }
-        else static if (is(T:const(ubyte)[])) {
+        else static if (is(BaseType:const(ubyte)[])) {
             result=append(Type.BINARY, key, x);
         }
-        else static if (is(T:const(Date))) {
+        else static if (is(BaseType:const(Date))) {
             result=append(Type.DATE, key, x);
         }
-        else static if (is(T:const(DateTime))) {
+        else static if (is(BaseType:const(DateTime))) {
             result=append(Type.TIMESTAMP, key, x);
         }
-        else static if (is(T:U[],U)) {
+        else static if (is(BaseType:U[],U)) {
             if (typedarray && is(U : const(double) ) ) {
-                result=append(Type.BINARY, key, x, getSubtype!T);
+                result=append(Type.BINARY, key, x, getSubtype!BaseType);
             }
             else {
-                result=append(Type.ARRAY, key, x, getSubtype!T);
+                result=append(Type.ARRAY, key, x, getSubtype!BaseType);
             }
         }
         else {
