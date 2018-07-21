@@ -157,8 +157,10 @@ template consensusCheckArguments(Consensus) {
     }
 }
 
+private import tagion.hashgraph.GossipNet : isBufferType;
+
 @safe
-string cutHex(const(ubyte[]) buf) {
+string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
     enum LEN=8;
     if ( buf.length <= LEN ) {
