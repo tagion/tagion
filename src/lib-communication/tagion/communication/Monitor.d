@@ -32,6 +32,7 @@ class SocketMaxDataSize : Exception {
 
 @safe
 class MonitorCallBacks : NetCallbacks {
+    private import tagion.hashgraph.GossipNet : Pubkey;
     private Tid _socket_thread_id;
     private Tid _network_socket_tread_id;
     private const uint _local_node_id;
@@ -145,11 +146,11 @@ class MonitorCallBacks : NetCallbacks {
     //     writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     // }
 
-    void sent_tidewave(immutable(ubyte[]) receiving_channel, const(StdGossipNet.Tides) tides) {
+    void sent_tidewave(immutable(Pubkey) receiving_channel, const(StdGossipNet.Tides) tides) {
         // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
-    void received_tidewave(immutable(ubyte[]) sending_channel, const(StdGossipNet.Tides) tides) {
+    void received_tidewave(immutable(Pubkey) sending_channel, const(StdGossipNet.Tides) tides) {
         // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
@@ -157,7 +158,7 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  ",  __FUNCTION__);
     }
 
-    void send(immutable(ubyte[]) channel, immutable(ubyte[]) data) {
+    void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
         import tagion.Base : cutHex;
         // writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
     }
