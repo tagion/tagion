@@ -61,10 +61,10 @@ unittest { // Test of the altitude measure function
 
 @safe
 struct EventBody {
-    alias HashPointer=RequestNet.HashPointer;
+    //alias HashPointer=RequestNet.HashPointer;
     immutable(ubyte)[] payload; // Transaction
-    HashPointer mother; // Hash of the self-parent
-    HashPointer father; // Hash of the other-parent
+    immutable(ubyte)[] mother; // Hash of the self-parent
+    immutable(ubyte)[] father; // Hash of the other-parent
     int altitude;
 
     ulong time;
@@ -76,8 +76,8 @@ struct EventBody {
 
     this(
         immutable(ubyte)[] payload,
-        HashPointer mother,
-        HashPointer father,
+        Buffer mother,
+        Buffer father,
         immutable ulong time,
         immutable int altitude) inout {
         this.time      =    time;
@@ -282,16 +282,19 @@ class Event {
     alias bool delegate(Event) @safe Assign;
 //    alias immutable(Hash) function(immutable(ubyte)[] data) @safe FHash;
     static EventCallbacks callbacks;
-    alias GossipNet.HashPointer HashPointer;
-    alias GossipNet.Pubkey Pubkey;
+//    alias GossipNet.HashPointer HashPointer;
+    //alias GossipNet.Pubkey Pubkey;
     // Delegate function to load or find an Event in the event pool
     // Delegate function to assign an Event to event pool
     immutable(ubyte[]) signature;
-    immutable(ubyte[]) pubkey;
+    immutable(Buffer) _pubkey;
+    Pubkey pubkey() pure const nothrow {
+        return cast(Pubkey)_pubkey;
+    }
     // The altitude increases by one from mother to daughter
     immutable(EventBody) event_body;
     package uint visit;
-    private HashPointer _fingerprint;
+    private Buffer _fingerprint;
     // This is the internal pointer to the
     private Event _mother;
     private Event _father;
@@ -622,14 +625,14 @@ version(none) {
         ref immutable(EventBody) ebody,
         RequestNet request_net,
         immutable(ubyte[]) signature,
-        immutable(ubyte[]) pubkey,
+        Pubkey pubkey,
         uint node_id) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
         _fingerprint=request_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
         this.signature=signature;
-        this.pubkey=pubkey;
+        this._pubkey=cast(immutable(ubyte)[])pubkey;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
@@ -808,7 +811,7 @@ version(none) {
         return !motherExists && !fatherExists;
     }
 
-    immutable(HashPointer) fingerprint() const pure nothrow
+    immutable(Buffer) fingerprint() const pure nothrow
     in {
         assert(_fingerprint, "Hash has not been calculated");
     }

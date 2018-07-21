@@ -12,10 +12,10 @@ import tagion.hashgraph.ConsensusExceptions;
 
 @safe
 class HashGraph {
-    alias Pubkey=SecureNet.Pubkey;
-    alias Privkey=SecureNet.Privkey;
-    alias HashPointer=RequestNet.HashPointer;
-    alias LRU!(HashPointer, Event) EventCache;
+    //alias Pubkey=immutable(ubyte)[];
+    alias Privkey=immutable(ubyte)[];
+    //alias HashPointer=RequestNet.HashPointer;
+    alias LRU!(Buffer, Event) EventCache;
     private uint visit;
 
     private uint iterative_tree_count;
@@ -158,11 +158,11 @@ class HashGraph {
         return NodeIterator!(const(Node))(this);
     }
 
-    bool isOnline(const(ubyte[]) pubkey) {
+    bool isOnline(Pubkey pubkey) {
         return (pubkey in node_ids) !is null;
     }
 
-    bool createNode(immutable(ubyte[]) pubkey) {
+    bool createNode(Pubkey pubkey) {
         if ( pubkey in node_ids ) {
             return false;
         }
@@ -173,13 +173,13 @@ class HashGraph {
         return true;
     }
 
-    const(uint) nodeId(const(ubyte[]) pubkey) inout {
+    const(uint) nodeId(Pubkey pubkey) inout {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
     }
 
-    void setAltitude(const(ubyte[]) pubkey, const(int) altitude) {
+    void setAltitude(Pubkey pubkey, const(int) altitude) {
         auto nid=pubkey in node_ids;
         check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         auto n=nodes[*nid];
@@ -200,7 +200,7 @@ class HashGraph {
     //     return result;
     // }
 
-    bool isNodeIdKnown(const(ubyte[]) pubkey) const pure nothrow {
+    bool isNodeIdKnown(Pubkey pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
     }
     // protected NodeIterator!false nodeiterator_() {
@@ -258,7 +258,8 @@ class HashGraph {
             return node.pubkey;
         }
         else {
-            return null;
+            Pubkey _null;
+            return _null;
         }
     }
 
@@ -306,7 +307,7 @@ class HashGraph {
         return nodes[node_id];
     }
 
-    inout(Node) getNode(const(ubyte[]) pubkey) inout {
+    inout(Node) getNode(Pubkey pubkey) inout {
         return getNode(nodeId(pubkey));
     }
 // uint threshold() const pure nothrow {

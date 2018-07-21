@@ -9,7 +9,7 @@ import tagion.Base : consensusCheck;
 @safe
 class StdRequestNet : RequestNet {
 
-    HashPointer calcHash(const(ubyte[]) data) const {
+    Buffer calcHash(const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest.digest;
         return digest!SHA256(data).idup;
@@ -19,7 +19,7 @@ class StdRequestNet : RequestNet {
     abstract void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint);
 
     //TO-DO: Implement
-    HashPointer eventHashFromId(immutable uint id) {
+    Buffer eventHashFromId(immutable uint id) {
         assert(0, "Not implement for this test");
     }
 
@@ -35,10 +35,10 @@ class StdSecureNet : StdRequestNet, SecureNet {
     import std.digest.hmac;
 
     //    private immutable(ubyte)[] _privkey;
-    private immutable(ubyte)[] _pubkey;
+    private Pubkey _pubkey;
     private immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
 
-    immutable(ubyte[]) pubkey() pure const nothrow {
+    immutable(Pubkey) pubkey() pure const nothrow {
         return _pubkey;
     }
 
@@ -54,7 +54,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
         if ( signature.length == 0 && signature.length <= 520) {
             consensusCheck!SecurityConsensusException(0, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         }
-        return _crypt.verify(message, signature, pubkey);
+        return _crypt.verify(message, signature, cast(Buffer)pubkey);
     }
 
     immutable(ubyte[]) sign(T)(T pack) if ( __traits(compiles, pack.serialize) ) {
@@ -203,9 +203,9 @@ class StdSecureNet : StdRequestNet, SecureNet {
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {
     static private shared uint _next_global_id;
-    static private shared uint[immutable(ubyte[])] _node_id_pair;
+    static private shared uint[immutable(Pubkey)] _node_id_pair;
 
-    static uint globalNodeId(immutable(ubyte[]) channel) {
+    static uint globalNodeId(immutable(Pubkey) channel) {
         if ( channel in _node_id_pair ) {
             return _node_id_pair[channel];
         }
@@ -215,7 +215,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     }
 
     @trusted
-    static private uint setGlobalNodeId(immutable(ubyte[]) channel) {
+    static private uint setGlobalNodeId(immutable(Pubkey) channel) {
         import core.atomic;
         auto result = _next_global_id;
         _node_id_pair[channel] = _next_global_id;
@@ -224,9 +224,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     }
 
     import tagion.hashgraph.Event : Event;
-    alias Tides=int[immutable(ubyte[])];
+    alias Tides=int[immutable(Pubkey)];
     abstract Event receive(immutable(ubyte[]) data, Event delegate(immutable(ubyte)[] leading_event_fingerprint) @safe register_leading_event );
-    abstract void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
+    abstract void send(Pubkey channel, immutable(ubyte[]) data);
 
     import tagion.crypto.secp256k1.NativeSecp256k1 : NativeSecp256k1;
     this(NativeSecp256k1 crypt) {
@@ -238,10 +238,10 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 interface NetCallbacks : EventCallbacks{
     void wavefront_state_receive(const(HashGraph.Node) n);
     //void wavefront_state_send(const(HashGraph.Node) n);
-    void sent_tidewave(immutable(ubyte[]) receiving_channel, const(StdGossipNet.Tides) tides);
-    void received_tidewave(immutable(ubyte[]) sending_channel, const(StdGossipNet.Tides) tides);
+    void sent_tidewave(immutable(Pubkey) receiving_channel, const(StdGossipNet.Tides) tides);
+    void received_tidewave(immutable(Pubkey) sending_channel, const(StdGossipNet.Tides) tides);
     void receive(immutable(ubyte[]) data);
-    void send(immutable(ubyte[]) channel, immutable(ubyte[]) data);
+    void send(Pubkey channel, immutable(ubyte[]) data);
     void consensus_failure(const(ConsensusException) e);
     void exiting(const(HashGraph.Node) n);
 }
