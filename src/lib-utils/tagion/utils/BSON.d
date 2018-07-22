@@ -544,10 +544,13 @@ public:
 
     @property const /* pure: check is not pure */
         {
+
             template isGeneralType(T, Type) {
                 alias BaseT=TypedefType!T;
                 enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
             }
+
+            enum isTypedef(T)=!is(TypedefType!T == T);
 
             T get(T)() inout if (is(TypedefType!T == string)) {
                 check(Type.STRING);
@@ -608,35 +611,37 @@ public:
             //     return value.idup;
             // }
 
-            @trusted auto get(T)() inout if (!is(TypedefType!T == string) && is(TypedefType!T == immutable(U)[], U)) {
-                alias BaseType=TypedefType!T;
-                enum isTypedef=!is(BaseType == T);
-                static if ( is(BaseType == immutable(U)[], U) ) {
+            @trusted
+                auto get(T)() inout if (!is(TypedefType!T == string) && isTypedef!T && is(TypedefType!T : immutable(U[]), U)) {
+                alias BaseT=TypedefType!T;
+                static if ( is(BaseT : immutable(U[]), U) ) {
                     if ( type == Type.BINARY)  {
-                        static if ( is(BaseType : immutable(ubyte[]) ) ) {
-                            immutable buffer=binary_buffer();
-                            //inout T result=binary_buffer;
-                            pragma(msg, "T.stringof="~T.stringof);
-                            pragma(msg, "BaseType.stringof="~BaseType.stringof);
-                            alias IT=immutable T;
-                            pragma(msg, "IT.stringof="~IT.stringof);
-                            pragma(msg, "typeof buffer ="~typeof(buffer).stringof);
+                        static if ( is(BaseT : immutable(ubyte[]) ) ) {
+                            return binary_buffer;
 
-                            static if ( isTypedef ) {
-                                import std.stdio;
-                                immutable result=immutable(IT)(buffer); //=binary_buffer;
-                                writefln("a=%s", result.a);
-                                return result;
-                                //   return cast(T)(binary_buffer());
-                            }
-                            else {
-                                return binary_buffer;
-                            }
+                        }
+                        else if ( subtype == getSubtype!BaseT ) {
+                            auto buf=binary_buffer;
+                            return (cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
+                        }
+                    }
+                }
+
+                throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
+                assert(0, "Unsupported type "~T.stringof);
+            }
+
+            @trusted
+                T get(T)() inout if (!is(T == string) && is(T == immutable(U)[], U)) {
+                static if ( is(T == immutable(U)[], U) ) {
+                    if ( type == Type.BINARY)  {
+                        static if ( is(T == immutable(ubyte)[] ) ) {
+                            return binary_buffer;
+
                         }
                         else if ( subtype == getSubtype!T ) {
                             auto buf=binary_buffer;
-                            T result=(cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
-                            return result;
+                            return (cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
                         }
                     }
                 }

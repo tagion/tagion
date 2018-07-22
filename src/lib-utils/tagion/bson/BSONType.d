@@ -5,7 +5,7 @@ import std.conv;
 import std.string : format;
 import std.stdio : writefln, writeln;
 import tagion.utils.BSON : HBSON, Document;
-import tagion.hashgraph.GossipNet : Pubkey;
+import tagion.Base : Pubkey, Buffer;
 
 //alias Pubkey = immutable(ubyte[]);
 
@@ -219,36 +219,36 @@ struct EventCreateMessage {
     immutable uint bson_type_code=bsonTypeCode!(typeof(this));
     uint id;
     uint mother_id;
-	uint father_id;
-	immutable(ubyte)[] payload;
+    uint father_id;
+    immutable(ubyte)[] payload;
     immutable(ubyte)[] signature;
     uint node_id;
     bool witness;
-    Pubkey pubkey;
+    Buffer pubkey;
     immutable(ubyte[]) event_body;
 
-    this(const(uint) id,
+    this(
+        const(uint) id,
 	immutable(ubyte)[] payload,
-    const(uint) node_id,
+        const(uint) node_id,
 	const(uint) mother_id,
 	const(uint) father_id,
-    const(bool) witness,
-    immutable(ubyte)[] signature,
-    Pubkey pubkey,
-    immutable(ubyte[]) event_body
-	) inout {
+        const(bool) witness,
+        immutable(ubyte)[] signature,
+        Pubkey pubkey,
+        immutable(ubyte[]) event_body) inout {
         this.id = id;
         this.mother_id = mother_id;
-		this.father_id = father_id;
-		this.payload = payload;
+        this.father_id = father_id;
+        this.payload = payload;
         this.node_id = node_id;
         this.witness = witness;
         this.signature = signature;
-        this.pubkey = pubkey;
+        this.pubkey = cast(Buffer)pubkey;
         this.event_body = event_body;
     }
 
-    this(immutable(ubyte)[] data) inout {
+    this(immutable(ubyte[]) data) inout {
         auto doc=Document(data);
         this(doc);
     }
@@ -270,7 +270,6 @@ struct EventCreateMessage {
                     }
                 }
                 else {
-                    //writefln("Inserting value for : %s with the value: %s and doc type: %s", name, doc[name], doc[name].type);
                     this.tupleof[i]=doc[name].get!type;
                 }
             }
@@ -319,9 +318,9 @@ unittest {
     auto sig = cast(immutable(ubyte)[])"signature goes here";
     auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig, cast(Pubkey)"Test", cast(immutable(ubyte[]))"Event Body");
     //writefln("Event id: %s,  bson_type_code: %s", seed_body.id, seed_body.bson_type_code);
-    auto raw = seed_body.serialize;
+    immutable raw = seed_body.serialize;
 
-    auto replicate_body = EventCreateMessage(raw);
+    auto replicate_body = immutable EventCreateMessage(raw);
     assert(replicate_body == seed_body);
 
 }
