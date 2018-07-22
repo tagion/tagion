@@ -419,8 +419,8 @@ class HashGraph {
 
     Event registerEvent(
         RequestNet request_net,
-        immutable(ubyte[]) signature,
         Pubkey pubkey,
+        immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
         immutable fingerprint=request_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
