@@ -226,7 +226,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     import tagion.hashgraph.Event : Event;
     alias Tides=int[immutable(Pubkey)];
     abstract Event receive(immutable(ubyte[]) data, Event delegate(immutable(ubyte)[] leading_event_fingerprint) @safe register_leading_event );
-    abstract void send(Pubkey channel, immutable(ubyte[]) data);
+//    abstract void send(Pubkey channel, immutable(ubyte[]) data);
 
     import tagion.crypto.secp256k1.NativeSecp256k1 : NativeSecp256k1;
     this(NativeSecp256k1 crypt) {
@@ -241,7 +241,7 @@ interface NetCallbacks : EventCallbacks{
     void sent_tidewave(immutable(Pubkey) receiving_channel, const(StdGossipNet.Tides) tides);
     void received_tidewave(immutable(Pubkey) sending_channel, const(StdGossipNet.Tides) tides);
     void receive(immutable(ubyte[]) data);
-    void send(Pubkey channel, immutable(ubyte[]) data);
+    void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
     void consensus_failure(const(ConsensusException) e);
     void exiting(const(HashGraph.Node) n);
 }
