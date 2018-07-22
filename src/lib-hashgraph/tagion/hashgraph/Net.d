@@ -38,7 +38,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
     private Pubkey _pubkey;
     private immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
 
-    immutable(Pubkey) pubkey() pure const nothrow {
+    Pubkey pubkey() pure const nothrow {
         return _pubkey;
     }
 

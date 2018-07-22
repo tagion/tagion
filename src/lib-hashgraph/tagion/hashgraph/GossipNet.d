@@ -28,7 +28,7 @@ interface RequestNet {
 
 @safe
 interface SecureNet : RequestNet {
-    immutable(Pubkey) pubkey() pure const nothrow;
+    Pubkey pubkey() pure const nothrow;
     bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey);
 
     // The private should be added implicite by the GossipNet
