@@ -314,12 +314,14 @@ struct EventCreateMessage {
 }
 
 unittest {
+    import std.stdio;
     auto payload = cast(immutable(ubyte)[])"Test payload";
     auto sig = cast(immutable(ubyte)[])"signature goes here";
-    auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig, cast(Pubkey)"Test", cast(immutable(ubyte[]))"Event Body");
-    //writefln("Event id: %s,  bson_type_code: %s", seed_body.id, seed_body.bson_type_code);
+    Pubkey pubkey; //=cast(Pubkey)"Test";
+    auto seed_body = EventCreateMessage(1, payload, 2, 3, 5, false, sig, pubkey, cast(immutable(ubyte[]))"Event Body");
+    writefln("Event id: %s,  bson_type_code: %s", seed_body.id, seed_body.bson_type_code);
     immutable raw = seed_body.serialize;
-
+    writefln("Before replicate");
     auto replicate_body = immutable EventCreateMessage(raw);
     assert(replicate_body == seed_body);
 
