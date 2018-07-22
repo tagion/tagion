@@ -14,7 +14,7 @@ import std.bitmanip;
 //import std.stdio;
 import std.format;
 
-import tagion.Base : this_dot, basename;
+import tagion.Base : this_dot, basename, Pubkey, Buffer;
 import tagion.Keywords;
 
 @safe

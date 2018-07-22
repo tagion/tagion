@@ -10,6 +10,8 @@ import tagion.utils.BSON : Document;
 import tagion.crypto.Hash;
 import tagion.hashgraph.ConsensusExceptions;
 
+import tagion.Base : Pubkey, Buffer;
+
 @safe
 class HashGraph {
     //alias Pubkey=immutable(ubyte)[];

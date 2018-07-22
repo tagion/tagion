@@ -4,7 +4,7 @@ import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event : EventCallbacks;
 import tagion.hashgraph.ConsensusExceptions;
-import tagion.Base : consensusCheck;
+import tagion.Base : consensusCheck, Pubkey, Buffer;
 
 @safe
 class StdRequestNet : RequestNet {
