@@ -158,7 +158,7 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  ",  __FUNCTION__);
     }
 
-    void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
+    void send(Pubkey channel, immutable(ubyte[]) data) {
         import tagion.Base : cutHex;
         // writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
     }
