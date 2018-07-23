@@ -5,6 +5,7 @@ import tagion.bson.BSONType;
 private import tagion.hashgraph.ConsensusExceptions;
 private import std.string : format, join, strip;
 private import std.traits;
+import std.bitmanip : BitArray;
 
 // private import std.algorithm : splitter;
 
@@ -69,6 +70,14 @@ template find_dot(string str, size_t index=0) {
     else {
         alias find_dot!(str, index+1) find_dot;
     }
+}
+
+void set_bitarray(out BitArray bits, uint length) @trusted {
+    bits.length=length;
+}
+
+string toText(const(BitArray) bits) @trusted {
+    return bits.to!string;
 }
 
 /**
