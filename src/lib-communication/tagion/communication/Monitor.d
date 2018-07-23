@@ -54,7 +54,7 @@ class MonitorCallBacks : NetCallbacks {
             e.father !is null ? e.father.id : 0,
             e.witness,
             e.signature,
-            e.pubkey,
+            e.channel,
             e.event_body.serialize
             );
         // writefln("The event %s has been created and send to the socket: %s", newEvent.id, _socket_thread_id);
@@ -78,6 +78,9 @@ class MonitorCallBacks : NetCallbacks {
     void witness_mask(const(Event) e) {
     }
 
+    void witness2_mask(const(Event) e) {
+    }
+
     @trusted
     void strongly_seeing(const(Event) e) {
         // writefln("Event strongly seeing, id: %s", e.id);
@@ -91,7 +94,7 @@ class MonitorCallBacks : NetCallbacks {
     }
 
 
-    version(none)
+//    version(none)
     @trusted
     void strongly2_seeing(const(Event) e) {
         writefln("Event strongly seeing, id: %s", e.id);
