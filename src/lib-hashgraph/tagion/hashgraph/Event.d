@@ -14,7 +14,8 @@ import std.bitmanip;
 //import std.stdio;
 import std.format;
 
-import tagion.Base : this_dot, basename, Pubkey, Buffer;
+import tagion.Base : this_dot, basename, Pubkey, Buffer, set_bitarray;
+
 import tagion.Keywords;
 
 @safe
@@ -187,9 +188,10 @@ class HashGraphException : Exception {
 interface EventCallbacks {
     void create(const(Event) e);
     void witness(const(Event) e);
-//    void witness_mask(const(Event) e);
+    void witness_mask(const(Event) e);
+    void witness2_mask(const(Event) e);
     void strongly_seeing(const(Event) e);
-//    void strongly2_seeing(const(Event) e);
+    void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
     void famous(const(Event) e);
     void round(const(Event) e);
@@ -287,13 +289,13 @@ class Event {
     // Delegate function to load or find an Event in the event pool
     // Delegate function to assign an Event to event pool
     immutable(ubyte[]) signature;
-    immutable(Buffer) _pubkey;
-    Pubkey pubkey() pure const nothrow {
-        return cast(Pubkey)_pubkey;
+    immutable(Buffer) pubkey;
+    Pubkey channel() pure const nothrow {
+        return cast(Pubkey)pubkey;
     }
     // The altitude increases by one from mother to daughter
     immutable(EventBody) event_body;
-    package uint visit;
+//    package uint visit;
     private Buffer _fingerprint;
     // This is the internal pointer to the
     private Event _mother;
@@ -312,8 +314,12 @@ class Event {
     private uint _famous_votes;
     private bool _strongly_seeing;
     private bool _strongly_seeing_checked;
- //   private bool _strongly2_seeing;
- //   private bool _strongly2_seeing_checked;
+
+    private bool _witness2_mask_checked;
+    private uint _witness2_votes;
+    private BitArray _witness2_mask;
+    private bool _strongly2_seeing;
+    private bool _strongly2_seeing_checked;
     private bool _loaded;
     // This indicates that the hashgraph aften this event
     private bool _forked;
@@ -431,59 +437,78 @@ class Event {
         }
     }
 
-version(none) {
-    uint witness_votes() {
-        if ( _witness_mask_checked ) {
-            witness_mask;
-        }
-        return _witness_votes;
-    }
-
-    bool is_witness_mask_checked() pure const nothrow {
-        return _witness_mask_checked;
-    }
-
-    void witness_mask_checked()
+//version(none) {
+    uint witness2_votes() pure const
         in {
-            assert(!_witness_mask_checked);
+            assert(_witness2_mask_checked);
         }
     body {
-        _witness_mask_checked=true;
+        return _witness2_votes;
     }
 
-    ref const(BitArray) witness_mask() {
+    bool is_witness2_mask_checked() pure const nothrow {
+        return _witness2_mask_checked;
+    }
+
+    // void witness2_mask_checked()
+    //     in {
+    //         assert(!_witness2_mask_checked);
+    //     }
+    // body {
+    //     _witness2_mask_checked=true;
+    // }
+
+    ref const(BitArray) witness2_mask() {
+        import std.stdio;
+        immutable node_size=cast(uint)(_witness2_mask.length);
         BitArray zero;
-        ref BitArray check_witness_mask(Event event) @trusted {
+        writefln("node_size=%d", node_size);
+        set_bitarray(zero, node_size);
+        ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted {
             if ( event ) {
-                if ( !_witness_mask_checked ) {
+                if ( !_witness2_mask_checked ) {
                     if ( _witness ) {
-                        if ( !_witness_mask[event.node_id] ) {
-                            _witness_votes++;
-                        }
-                        _witness_mask[event.node_id]=true;
+                        //if ( !_witness2_mask[event.node_id] ) {
+                        _witness2_votes++;
+                            //}
+                        _witness2_mask[event.node_id]=true;
                     }
                     else {
-                        _witness_mask=check_witness_mask(event.mother) | check_witness_mask(event.father);
-                        _witness_votes=countVotes(_witness_mask);
+                        _witness2_mask=check_witness_mask(event.mother, level+1) | check_witness_mask(event.father, level+1);
+                        _witness2_votes=countVotes(_witness2_mask);
                         if ( callbacks ) {
-                            callbacks.witness_mask(event);
+                            callbacks.witness2_mask(event);
                         }
                     }
-                    _witness_mask_checked=true;
+                    _witness2_mask_checked=true;
                 }
             }
             else {
                 return zero;
             }
-            return _witness_mask;
+            import tagion.Base : toText;
+
+            string str_level;
+            foreach(i; 0..level) {
+                str_level~="  ";
+            }
+            writefln("\t%switness2_mask=%s", str_level, _witness2_mask.toText);
+            return _witness2_mask;
         }
         return check_witness_mask(this);
     }
 
+    ref const(BitArray) witness2_mask() pure const
+        in {
+            assert(_witness2_mask_checked);
+        }
+    body {
+        return _witness2_mask;
+    }
     // package void witness_mask(BitArray mask) {
     //     _witness_mask = mask;
     // }
-}
+//}
     void famous(bool f)
         in {
             if ( !f ) {
@@ -544,6 +569,36 @@ version(none) {
         _witness_mask.length=size;
     }
 
+    void strongly2_seeing(bool s)
+        in {
+            assert(!_strongly2_seeing);
+            assert(!_strongly2_seeing_checked);
+        }
+    body {
+        _strongly2_seeing=s;
+        if ( callbacks && s ) {
+            _strongly2_seeing_checked=true;
+            callbacks.strongly2_seeing(this);
+        }
+    }
+
+    bool strongly2_seeing() const pure nothrow {
+        return _strongly2_seeing;
+    }
+
+    void strongly2_seeing_checked()
+        in {
+            assert(!_strongly2_seeing_checked);
+        }
+    body {
+        _strongly2_seeing_checked=true;
+    }
+
+    bool is_strongly2_seeing_checked() const pure nothrow {
+        return _strongly2_seeing_checked;
+    }
+
+
     @trusted
     void set_witness_mask(uint index)
         in {
@@ -576,6 +631,10 @@ version(none) {
     bool is_strongly_seeing_checked() const pure nothrow {
         return _strongly_seeing_checked;
     }
+
+    // void strongly_seeing_checked() nothrow {
+    //     _strongly_seeing_checked=true;
+    // }
 
     void strongly_seeing(bool s)
         in {
@@ -626,22 +685,25 @@ version(none) {
         RequestNet request_net,
         immutable(ubyte[]) signature,
         Pubkey pubkey,
-        uint node_id) {
+        uint node_id,
+        const uint node_size) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
         _fingerprint=request_net.calcHash(event_body.serialize); //toCryptoHash(request_net);
         this.signature=signature;
-        this._pubkey=cast(immutable(ubyte)[])pubkey;
+        this.pubkey=cast(Buffer)pubkey;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             _round = Round.undefined;
             _witness = true;
         }
-        else {
 
-        }
+        set_bitarray(_witness2_mask, node_size);
+        // else {
+
+        // }
         //      assert(_fingerprint);
 //        }
     }

@@ -18,7 +18,7 @@ class HashGraph {
     alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
     alias LRU!(Buffer, Event) EventCache;
-    private uint visit;
+//    private uint visit;
 
     private uint iterative_tree_count;
     private uint iterative_strong_count;
@@ -278,7 +278,7 @@ class HashGraph {
     void assign(Event event) {
         // writefln("ASSIGN event=%s", event !is null);
         // writefln("ASSIGN %s", event.fingerprint[0..7].toHexString);
-        auto node=getNode(event.pubkey);
+        auto node=getNode(event.channel);
         node.event=event;
         _event_cache[event.fingerprint]=event;
     }
@@ -453,7 +453,7 @@ class HashGraph {
 
 
             // writeln("Before new Event");
-            event=new Event(eventbody, request_net, signature, pubkey, node_id);
+            event=new Event(eventbody, request_net, signature, pubkey, node_id, total_nodes);
 
 
             // writeln("Before assign");
@@ -463,16 +463,18 @@ class HashGraph {
             // writeln("Before requestEventTree");
             // Makes sure that we have the tree before the graph is checked
             iterative_tree_count=0;
-            visit++;
+//            visit++;
             requestEventTree(request_net, event);
             writefln("After requestEventTree=%d", iterative_tree_count);
             // See if the node is strong seeing the hashgraph
             // writeln("Before strong See");
             iterative_strong_count=0;
+//            visit++;
             strongSee(event);
             writefln("After strongSee=%d", iterative_strong_count);
-  //          iterative_strong_count=0;
-  //          strongSee2(event);
+            iterative_strong_count=0;
+
+            //  strongSee2(event);
    //         writefln("After strongSee2=%d", iterative_strong_count);
         }
 
@@ -486,7 +488,9 @@ class HashGraph {
     protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
         iterative_tree_count++;
         if ( event && ( !event.loaded ) ) {
-            event.visit = visit;
+            event.loaded=true;
+
+//            event.visit = visit;
             if ( child ) {
 //                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
                 if ( is_father ) {
@@ -502,13 +506,17 @@ class HashGraph {
             requestEventTree(request_net, mother, event, false);
             auto father=event.father(this, request_net);
             requestEventTree(request_net, father, event, true);
-            if ( !event.loaded) {
+//            if ( !event.loaded) {
 //                event.getRoundForMother;
-                event.loaded=true;
-                if ( Event.callbacks ) {
-                    Event.callbacks.create(event);
-                }
+            event.witness2_mask();
+            if ( Event.callbacks ) {
+                Event.callbacks.create(event);
+                Event.callbacks.witness2_mask(event);
             }
+
+
+
+//            }
 //            if ( !event.daughter ) {
                 // This is latest event
             // auto node=nodes[event.node_id];
@@ -549,47 +557,23 @@ class HashGraph {
         findWitness(top_event.father);
     }
 
-version(none) {
-    // package void witnessSee(Event check_event) {
-    //     const round=check_event.previousRound;
-    //     import std.bitmanip : BitArray;
-
-    //     const(BitArray) checkWitnessSeeing(Event event) @trusted {
-    //         BitArray result;
-    //         if ( event && !event.is_witness_mask_checked ) {
-    //             event.witness_mask=checkWitnessSeeing(event.mother) | checkWitnessSeeing(event.father);
-    //             event.witness_mask_checked;
-    //             if ( event.witness && round.lessOrEqual(event.round) ) {
-    //                 result[event.node_id]=true;
-    //             }
-    //             else {
-    //                 return event.witness_mask;
-    //             }
-    //             if ( Event.callbacks ) {
-    //                 Event.callbacks.witness_mask(event);
-    //             }
-    //         }
-    //         return result;
-    //     }
-    //     checkWitnessSeeing(check_event);
-    // }
-
     package void strongSee2(Event check_event) {
         if ( check_event && !check_event.is_strongly2_seeing_checked ) {
-            import std.bitmanip;
+            import std.bitmanip : BitArray;
+            import tagion.Base : set_bitarray;
             BitArray strong_witness_mask;
+            set_bitarray(strong_witness_mask, total_nodes);
+            // void set_bitarray() @trusted {
+            //     strong_witness_mask.length=total_nodes;
 
-            void set_bitarray() @trusted {
-                strong_witness_mask.length=total_nodes;
-
-            }
-            set_bitarray;
+            // }
+            // set_bitarray;
             uint seeing;
             void checkStrongSeeing(Event top_event) @trusted {
                 if ( top_event && !strong_witness_mask[top_event.node_id] ) {
                     iterative_strong_count++;
                     strong_witness_mask[top_event.node_id]=true;
-                    if ( isMajority(top_event.witness_votes) ) {
+                    if ( isMajority(top_event.witness2_votes) ) {
                         // if ( !strong_witness_mask[top_event.node_id] ) {
 
                         seeing++;
@@ -613,7 +597,7 @@ version(none) {
             //     event.round=Round.undefined;
             // }
             checkStrongSeeing(check_event);
-            check_event.strongly_seeing_checked;
+            check_event.strongly2_seeing_checked;
 
             /* to be added after NP problem fix
             if ( Event.callbacks ) {
@@ -623,7 +607,7 @@ version(none) {
 
         }
     }
-}
+//}
 
     package void strongSee(Event check_event) {
 
@@ -710,6 +694,7 @@ version(none) {
                         //}
                     }
                 }
+
                 search(check_event);
                 bool strong=isMajority(seeing);
                 if ( Event.callbacks ) {
