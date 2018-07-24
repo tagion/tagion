@@ -315,7 +315,7 @@ class Event {
     private bool _strongly_seeing;
     private bool _strongly_seeing_checked;
 
-    private bool _witness2_mask_checked;
+//    private bool _witness2_mask_checked;
     private uint _witness2_votes;
     private BitArray _witness2_mask;
     private bool _strongly2_seeing;
@@ -440,14 +440,14 @@ class Event {
 //version(none) {
     uint witness2_votes() pure const
         in {
-            assert(_witness2_mask_checked);
+            assert(is_witness2_mask_checked);
         }
     body {
         return _witness2_votes;
     }
 
     bool is_witness2_mask_checked() pure const nothrow {
-        return _witness2_mask_checked;
+        return _witness2_mask.length != 0;
     }
 
     // void witness2_mask_checked()
@@ -458,49 +458,77 @@ class Event {
     //     _witness2_mask_checked=true;
     // }
 
-    ref const(BitArray) witness2_mask() {
-        import std.stdio;
-        immutable node_size=cast(uint)(_witness2_mask.length);
-        BitArray zero;
-        writefln("node_size=%d", node_size);
-        set_bitarray(zero, node_size);
-        ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted {
-            if ( event ) {
-                if ( !_witness2_mask_checked ) {
-                    if ( _witness ) {
-                        //if ( !_witness2_mask[event.node_id] ) {
-                        _witness2_votes++;
-                            //}
-                        _witness2_mask[event.node_id]=true;
+    ref const(BitArray) witness2_mask(immutable uint node_size) {
+        // import std.stdio;
+        // immutable node_size=cast(uint)(_witness2_mask.length);
+        // BitArray zero;
+        // writefln("node_size=%d", node_size);
+        // set_bitarray(zero, node_size);
+        ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted
+            in {
+                assert(event);
+            }
+        body {
+            import std.stdio;
+            //  if ( event ) {
+            scope(exit) {
+                import tagion.Base : toText;
+
+                string str_level;
+                foreach(i; 0..level) {
+                    str_level~="  ";
+                }
+                writefln("\t%switness2_mask=%s witness=%s votes=%d", str_level, _witness2_mask.toText, _witness, _witness2_votes);
+            }
+            if ( !event.is_witness2_mask_checked ) {
+//                event._witness2_mask_checked=true;
+                set_bitarray(event._witness2_mask, node_size);
+                if ( event._witness ) {
+                    if ( !event._witness2_mask[event.node_id] ) {
+                        event._witness2_votes++;
                     }
-                    else {
-                        _witness2_mask=check_witness_mask(event.mother, level+1) | check_witness_mask(event.father, level+1);
-                        _witness2_votes=countVotes(_witness2_mask);
-                        if ( callbacks ) {
-                            callbacks.witness2_mask(event);
+                    event._witness2_mask[event.node_id]=true;
+                }
+                else {
+                    if ( event.mother ) {
+                        auto mask=check_witness_mask(event.mother, level+1);
+                        writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
+                        if ( mask.length < event._witness2_mask.length ) {
+                            mask.length = event._witness2_mask.length;
                         }
+                        else if ( mask.length > event._witness2_mask.length ) {
+                            event._witness2_mask.length = mask.length;
+                        }
+
+                        event._witness2_mask|=mask;
+
                     }
-                    _witness2_mask_checked=true;
+                    if ( event.father ) {
+                        auto mask=check_witness_mask(event.father, level+1);
+                        writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
+                        if ( mask.length < event._witness2_mask.length ) {
+                            mask.length = event._witness2_mask.length;
+                        }
+                        else if ( mask.length > event._witness2_mask.length ) {
+                            event._witness2_mask.length = mask.length;
+                        }
+
+                        event._witness2_mask|=mask;
+                    }
+                    event._witness2_votes=countVotes(_witness2_mask);
+                }
+                if ( callbacks ) {
+                    callbacks.witness2_mask(event);
                 }
             }
-            else {
-                return zero;
-            }
-            import tagion.Base : toText;
-
-            string str_level;
-            foreach(i; 0..level) {
-                str_level~="  ";
-            }
-            writefln("\t%switness2_mask=%s", str_level, _witness2_mask.toText);
-            return _witness2_mask;
+            return event._witness2_mask;
         }
         return check_witness_mask(this);
     }
 
     ref const(BitArray) witness2_mask() pure const
         in {
-            assert(_witness2_mask_checked);
+            assert(is_witness2_mask_checked);
         }
     body {
         return _witness2_mask;
@@ -546,6 +574,8 @@ class Event {
         }
     body {
         _witness=true;
+//        _witness2_mask_checked=false;
+        set_bitarray(_witness2_mask,0);
         if ( !_witness_mask ) {
             create_witness_mask(size);
         }
@@ -685,8 +715,7 @@ class Event {
         RequestNet request_net,
         immutable(ubyte[]) signature,
         Pubkey pubkey,
-        uint node_id,
-        const uint node_size) {
+        uint node_id) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
@@ -700,7 +729,6 @@ class Event {
             _witness = true;
         }
 
-        set_bitarray(_witness2_mask, node_size);
         // else {
 
         // }
@@ -827,15 +855,15 @@ class Event {
         }
     }
 
-    void loaded(bool c)
+    void loaded()
         in {
             assert(!_loaded, "Event can only be loaded once");
         }
     body {
-        _loaded=c;
+        _loaded=true;
     }
 
-    bool loaded() const pure nothrow {
+    bool is_loaded() const pure nothrow {
         return _loaded;
     }
 

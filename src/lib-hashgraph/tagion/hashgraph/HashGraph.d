@@ -453,7 +453,7 @@ class HashGraph {
 
 
             // writeln("Before new Event");
-            event=new Event(eventbody, request_net, signature, pubkey, node_id, total_nodes);
+            event=new Event(eventbody, request_net, signature, pubkey, node_id);
 
 
             // writeln("Before assign");
@@ -487,8 +487,8 @@ class HashGraph {
     */
     protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
         iterative_tree_count++;
-        if ( event && ( !event.loaded ) ) {
-            event.loaded=true;
+        if ( event && ( !event.is_loaded ) ) {
+            event.loaded;
 
 //            event.visit = visit;
             if ( child ) {
@@ -508,7 +508,7 @@ class HashGraph {
             requestEventTree(request_net, father, event, true);
 //            if ( !event.loaded) {
 //                event.getRoundForMother;
-            event.witness2_mask();
+            event.witness2_mask(total_nodes);
             if ( Event.callbacks ) {
                 Event.callbacks.create(event);
                 Event.callbacks.witness2_mask(event);
