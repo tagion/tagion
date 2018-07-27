@@ -193,6 +193,7 @@ interface EventCallbacks {
     void strongly_seeing(const(Event) e);
     void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
+    void strong2_vote(const(Event) e, immutable uint vote);
     void famous(const(Event) e);
     void round(const(Event) e);
     void forked(const(Event) e);
@@ -250,6 +251,11 @@ class Round {
             _nodes++;
         }
         nodes_mask[index]=true;
+    }
+
+    Round next() {
+        immutable uint size=cast(uint)(nodes_mask.length);
+        return new Round(this, size);
     }
 
     @trusted
@@ -316,6 +322,8 @@ class Event {
     private bool _strongly_seeing_checked;
 
 //    private bool _witness2_mask_checked;
+    private Round _round2;
+    private bool _witness2;
     private uint _witness2_votes;
     private BitArray _witness2_mask;
     private bool _strongly2_seeing;
@@ -437,9 +445,20 @@ class Event {
         }
     }
 
+    uint witness2_votes(immutable uint node_size) {
+        witness2_mask(node_size);
+        return _witness2_votes;
+    }
+
 //version(none) {
-    uint witness2_votes() pure const
+    uint witness2_votes() pure const // nothrow
         in {
+            debug {
+                import std.stdio;
+                if (!is_witness2_mask_checked) {
+                    writefln("witness2_votes !!!");
+                }
+            }
             assert(is_witness2_mask_checked);
         }
     body {
@@ -478,12 +497,13 @@ class Event {
                 foreach(i; 0..level) {
                     str_level~="  ";
                 }
-                writefln("\t%switness2_mask=%s witness=%s votes=%d", str_level, _witness2_mask.toText, _witness, _witness2_votes);
+                writefln("\t%switness2_mask=%s witness2=%s votes=%d %s",
+                    str_level, _witness2_mask.toText, _witness2, _witness2_votes, cast(string)payload);
             }
             if ( !event.is_witness2_mask_checked ) {
 //                event._witness2_mask_checked=true;
                 set_bitarray(event._witness2_mask, node_size);
-                if ( event._witness ) {
+                if ( event._witness2 ) {
                     if ( !event._witness2_mask[event.node_id] ) {
                         event._witness2_votes++;
                     }
@@ -528,6 +548,13 @@ class Event {
 
     ref const(BitArray) witness2_mask() pure const
         in {
+            debug {
+                import std.stdio;
+                if ( !is_witness2_mask_checked ) {
+                    writefln("Check witness2_mask %s", cast(string)payload );
+                }
+            }
+
             assert(is_witness2_mask_checked);
         }
     body {
@@ -568,6 +595,17 @@ class Event {
         return _famous_votes;
     }
 
+    // void witness2(immutable bool flag)
+    //     in {
+    //         assert(_witness2);
+    //     }
+    // body {
+    //     _witness2 = flag;
+    // }
+    bool witness2() pure const nothrow {
+        return _witness2;
+    }
+
     void witness(immutable uint size)
         in {
             assert(!_witness);
@@ -599,6 +637,27 @@ class Event {
         _witness_mask.length=size;
     }
 
+    @trusted
+    void strongly2_seeing(const bool strong)
+        in {
+            assert(!_strongly2_seeing_checked);
+            //assert(!_witness2);
+            assert(_witness2_mask.length != 0);
+        }
+    body {
+        _strongly2_seeing_checked=true;
+        if ( strong ) {
+            set_bitarray(_witness2_mask, cast(uint)(_witness2_mask.length));
+            _witness2_mask[node_id]=true;
+            _witness2=true;
+            _round2=mother._round2.next;
+            if ( callbacks ) {
+                callbacks.strongly2_seeing(this);
+            }
+        }
+    }
+
+    version(none)
     void strongly2_seeing(bool s)
         in {
             assert(!_strongly2_seeing);
@@ -727,6 +786,8 @@ class Event {
             // If the event is a Eva event the round is undefined
             _round = Round.undefined;
             _witness = true;
+            _round2 = Round.undefined;
+            _witness2 = true;
         }
 
         // else {
@@ -771,9 +832,16 @@ class Event {
         return _mother;
     }
 
-    inout(Event) mother() inout pure nothrow
+    inout(Event) mother() inout pure // nothrow
     in {
         if ( mother_hash ) {
+            debug {
+                import std.stdio;
+                if ( _mother is null ) {
+                    writefln("Mother is null");
+                }
+            }
+
             assert(_mother);
             assert( (altitude-_mother.altitude) == 1 );
         }
@@ -897,8 +965,17 @@ class Event {
     }
 
     // is true if the event does not have a mother or a father
-    bool isEva() const pure nothrow {
-        return !motherExists && !fatherExists;
+    bool isEva() const nothrow
+        out (result) {
+            if (result) {
+                assert(father_hash is null);
+                if ( _round2 ) {
+                    assert(_round2.isUndefined );
+                }
+            }
+        }
+    body {
+        return mother_hash is null;
     }
 
     immutable(Buffer) fingerprint() const pure nothrow

@@ -9,8 +9,8 @@ import tagion.utils.LRU;
 import tagion.utils.BSON : Document;
 import tagion.crypto.Hash;
 import tagion.hashgraph.ConsensusExceptions;
-
-import tagion.Base : Pubkey, Buffer;
+import std.bitmanip : BitArray;
+import tagion.Base : Pubkey, Buffer, set_bitarray;
 
 @safe
 class HashGraph {
@@ -474,8 +474,8 @@ class HashGraph {
             writefln("After strongSee=%d", iterative_strong_count);
             iterative_strong_count=0;
 
-            //  strongSee2(event);
-   //         writefln("After strongSee2=%d", iterative_strong_count);
+            strongSee2(event);
+            writefln("After strongSee2=%d", iterative_strong_count);
         }
 
         return event;
@@ -506,9 +506,11 @@ class HashGraph {
             requestEventTree(request_net, mother, event, false);
             auto father=event.father(this, request_net);
             requestEventTree(request_net, father, event, true);
+//            event.witness2_mask(total_nodes);
+
 //            if ( !event.loaded) {
 //                event.getRoundForMother;
-            event.witness2_mask(total_nodes);
+
             if ( Event.callbacks ) {
                 Event.callbacks.create(event);
                 Event.callbacks.witness2_mask(event);
@@ -559,52 +561,54 @@ class HashGraph {
 
     package void strongSee2(Event check_event) {
         if ( check_event && !check_event.is_strongly2_seeing_checked ) {
-            import std.bitmanip : BitArray;
-            import tagion.Base : set_bitarray;
-            BitArray strong_witness_mask;
-            set_bitarray(strong_witness_mask, total_nodes);
-            // void set_bitarray() @trusted {
-            //     strong_witness_mask.length=total_nodes;
-
-            // }
-            // set_bitarray;
             uint seeing;
-            void checkStrongSeeing(Event top_event) @trusted {
-                if ( top_event && !strong_witness_mask[top_event.node_id] ) {
-                    iterative_strong_count++;
-                    strong_witness_mask[top_event.node_id]=true;
-                    if ( isMajority(top_event.witness2_votes) ) {
-                        // if ( !strong_witness_mask[top_event.node_id] ) {
-
-                        seeing++;
-                        if ( isMajority( seeing ) ) {
-                            top_event.strongly2_seeing=true;
+            BitArray seeing_mask;
+            @trusted
+            void checkStrongSeeing (Event top_event, const BitArray path_mask, immutable uint vote=0) {
+                iterative_strong_count++;
+                if ( top_event && !top_event.witness && !isMajority(seeing) ) {
+                    if ( isMajority(vote) ) {
+                        // Possible strong seeing witness.
+                        if ( !seeing_mask[top_event.node_id] ) {
+                            // Vote for this nodes as strong seeing
+                            seeing_mask[top_event.node_id]=true;
+                            seeing++;
                         }
-                            // }
                     }
                     else {
-                        checkStrongSeeing(top_event.mother);
-                        checkStrongSeeing(top_event.father);
+                        if ( path_mask[top_event.node_id] ) {
+                            // This nodes has already been voted for
+                            checkStrongSeeing(top_event.mother, path_mask, vote);
+                            checkStrongSeeing(top_event.father, path_mask, vote);
+                        }
+                        else {
+                            // The vote is increased because it is the first time
+                            // this node_id is seen in this path
+                            BitArray sub_path_mask=path_mask.dup;
+                            sub_path_mask[top_event.node_id]=true;
+                            checkStrongSeeing(top_event.mother, sub_path_mask, vote+1);
+                            checkStrongSeeing(top_event.father, sub_path_mask, vote+1);
+                        }
                     }
                 }
             }
-            auto mother=check_event.mother;
-            strongSee2(mother);
-            auto father=check_event.father;
-            strongSee2(father);
-            // if ( event.isEva ) {
-            //     event.witness=true;
-            //     event.round=Round.undefined;
-            // }
-            checkStrongSeeing(check_event);
-            check_event.strongly2_seeing_checked;
 
-            /* to be added after NP problem fix
-            if ( Event.callbacks ) {
-                Event.callbacks.strong_vote(top_event,seeing);
+            strongSee2(check_event.mother);
+            strongSee2(check_event.father);
+
+
+            if ( isMajority(check_event.witness2_votes(total_nodes)) ) {
+                BitArray path_mask;
+                set_bitarray(path_mask, total_nodes);
+                set_bitarray(seeing_mask, total_nodes);
+                checkStrongSeeing(check_event, path_mask);
             }
-            */
-
+            // check_event.strongly2_seeing_checked;
+            immutable strong=isMajority(seeing);
+            if ( Event.callbacks ) {
+                Event.callbacks.strong2_vote(check_event, seeing);
+            }
+            check_event.strongly2_seeing=strong;
         }
     }
 //}
@@ -616,7 +620,7 @@ class HashGraph {
             // writefln("Strong %d", check_event.id);
             const round=check_event.previousRound;
             void checkStrongSeeing(Event top_event) {
-                import std.bitmanip;
+
                 BitArray[] vote_mask=new BitArray[total_nodes];
                 @trusted void reset_bitarray(ref BitArray b) {
                     b.length=0;
