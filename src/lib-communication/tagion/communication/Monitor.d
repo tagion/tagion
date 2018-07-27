@@ -135,6 +135,10 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
     }
 
+    void strong2_vote(const(Event) e, immutable uint vote) {
+        // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
+    }
+
     void consensus_failure(const(ConsensusException) e) {
         // writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
     }
