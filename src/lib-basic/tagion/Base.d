@@ -76,6 +76,16 @@ void set_bitarray(out BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
+
+unittest {
+    BitArray test;
+    immutable uint size=7;
+    test.length=size;
+    test[4]=true;
+    set_bitarray(test, size);
+    assert(!test[4]);
+}
+
 string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
 }
