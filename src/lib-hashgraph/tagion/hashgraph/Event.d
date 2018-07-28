@@ -430,6 +430,37 @@ class Event {
         return search(mother);
     }
 
+    Round round2() pure nothrow
+        in {
+            if ( motherExists ) {
+                assert(_mother, "Graph has not been resolved");
+            }
+        }
+    body {
+        if ( !_round2 ) {
+            _round2=_mother.round2;
+        }
+        return _round2;
+    }
+
+    Round previousRound2() // nothrow
+        in {
+            if ( !isEva ) {
+                assert(_mother);
+            }
+        }
+        out(result) {
+            assert(result, "Round must be set to none null");
+        }
+    body {
+        if ( isEva ) {
+            return _round2;
+        }
+        else {
+            return _mother.round2;
+        }
+    }
+
     version(none)
     Round motherRound() nothrow
     out(result) {
@@ -789,7 +820,6 @@ class Event {
             _round2 = Round.undefined;
             _witness2 = true;
         }
-
         // else {
 
         // }
@@ -807,17 +837,19 @@ class Event {
     ~this() {
         diconnect();
     }
+
     Event mother(H)(H h, RequestNet request_net) {
         Event result;
         result=mother!true(h);
         if ( !result && motherExists ) {
             request_net.request(h, mother_hash);
             result=mother(h);
+//            _round2=result._round2;
         }
         return result;
     }
 
-    Event mother(bool ignore_null_check=false, H)(H h)
+    private Event mother(bool ignore_null_check=false, H)(H h)
         out(result) {
             static if ( !ignore_null_check) {
                 if ( mother_hash ) {
@@ -965,18 +997,21 @@ class Event {
     }
 
     // is true if the event does not have a mother or a father
-    bool isEva() const nothrow
-        out (result) {
-            if (result) {
-                assert(father_hash is null);
-                if ( _round2 ) {
-                    assert(_round2.isUndefined );
-                }
-            }
-        }
-    body {
-        return mother_hash is null;
+    bool isEva() pure const nothrow {
+        return !motherExists;
     }
+    // bool isEva() const nothrow
+    //     out (result) {
+    //         if (result) {
+    //             assert(father_hash is null);
+    //             if ( _round2 ) {
+    //                 assert(_round2.isUndefined );
+    //             }
+    //         }
+    //     }
+    // body {
+    //     return mother_hash is null;
+    // }
 
     immutable(Buffer) fingerprint() const pure nothrow
     in {

@@ -559,56 +559,62 @@ class HashGraph {
         findWitness(top_event.father);
     }
 
-    package void strongSee2(Event check_event) {
-        if ( check_event && !check_event.is_strongly2_seeing_checked ) {
+    package void strongSee2(Event top_event) {
+        import tagion.Base : toText;
+
+        if ( top_event && !top_event.is_strongly2_seeing_checked ) {
             uint seeing;
             BitArray seeing_mask;
+            const round=top_event.previousRound2;
             @trusted
-            void checkStrongSeeing (Event top_event, const BitArray path_mask, immutable uint vote=0) {
+            void checkStrongSeeing (Event check_event, const BitArray path_mask, immutable uint vote=0) {
                 iterative_strong_count++;
-                if ( top_event && !top_event.witness && !isMajority(seeing) ) {
+                if ( vote > 0 ) {
+                    writefln("---Strong vote=%d seeing=%d path_mask=%s", vote, seeing, path_mask.toText);
+                }
+                if ( check_event && round.lessOrEqual(check_event.round2) && !isMajority(seeing) ) {
                     if ( isMajority(vote) ) {
                         // Possible strong seeing witness.
-                        if ( !seeing_mask[top_event.node_id] ) {
+                        if ( !seeing_mask[check_event.node_id] ) {
                             // Vote for this nodes as strong seeing
-                            seeing_mask[top_event.node_id]=true;
+                            seeing_mask[check_event.node_id]=true;
                             seeing++;
                         }
                     }
                     else {
-                        if ( path_mask[top_event.node_id] ) {
+                        if ( path_mask[check_event.node_id] ) {
                             // This nodes has already been voted for
-                            checkStrongSeeing(top_event.mother, path_mask, vote);
-                            checkStrongSeeing(top_event.father, path_mask, vote);
+                            checkStrongSeeing(check_event.mother, path_mask, vote);
+                            checkStrongSeeing(check_event.father, path_mask, vote);
                         }
                         else {
                             // The vote is increased because it is the first time
                             // this node_id is seen in this path
                             BitArray sub_path_mask=path_mask.dup;
-                            sub_path_mask[top_event.node_id]=true;
-                            checkStrongSeeing(top_event.mother, sub_path_mask, vote+1);
-                            checkStrongSeeing(top_event.father, sub_path_mask, vote+1);
+                            sub_path_mask[check_event.node_id]=true;
+                            checkStrongSeeing(check_event.mother, sub_path_mask, vote+1);
+                            checkStrongSeeing(check_event.father, sub_path_mask, vote+1);
                         }
                     }
                 }
             }
 
-            strongSee2(check_event.mother);
-            strongSee2(check_event.father);
+            strongSee2(top_event.mother);
+            strongSee2(top_event.father);
 
 
-            if ( isMajority(check_event.witness2_votes(total_nodes)) ) {
+            if ( isMajority(top_event.witness2_votes(total_nodes)) ) {
                 BitArray path_mask;
                 set_bitarray(path_mask, total_nodes);
                 set_bitarray(seeing_mask, total_nodes);
-                checkStrongSeeing(check_event, path_mask);
+                checkStrongSeeing(top_event, path_mask);
             }
-            // check_event.strongly2_seeing_checked;
+            // top_event.strongly2_seeing_checked;
             immutable strong=isMajority(seeing);
             if ( Event.callbacks ) {
-                Event.callbacks.strong2_vote(check_event, seeing);
+                Event.callbacks.strong2_vote(top_event, seeing);
             }
-            check_event.strongly2_seeing=strong;
+            top_event.strongly2_seeing=strong;
         }
     }
 //}
