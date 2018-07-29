@@ -10,7 +10,7 @@ import tagion.utils.BSON : Document;
 import tagion.crypto.Hash;
 import tagion.hashgraph.ConsensusExceptions;
 import std.bitmanip : BitArray;
-import tagion.Base : Pubkey, Buffer, set_bitarray;
+import tagion.Base : Pubkey, Buffer, bitarray_clear, countVotes;
 
 @safe
 class HashGraph {
@@ -68,6 +68,7 @@ class HashGraph {
         bool voted;
         // uint voting;
         private Event _event; // Latest event
+        package Event last_witness;
 
         package void event(Event e)
         in {
@@ -86,9 +87,16 @@ class HashGraph {
             }
         }
 
-        const(Event) event() pure const nothrow {
+        const(Event) event() pure const nothrow
+        in {
+            if ( _event.witness2 ) {
+                assert(_event is last_witness);
+            }
+        }
+        body {
             return _event;
         }
+
 
         bool isOnline() pure const nothrow {
             return (_event !is null);
@@ -148,6 +156,16 @@ class HashGraph {
                 assert(_event.daughter is null);
             }
         }
+
+
+        // // Notify the Node about the last event
+        // // set the last_witness if the event is a witness
+        // void notify_event(Event event) {
+        //     if ( event.witness2 ) {
+        //         _last_witness=event;
+        //     }
+        // }
+
     }
 
 //    Round round; // Current round
@@ -281,6 +299,9 @@ class HashGraph {
         auto node=getNode(event.channel);
         node.event=event;
         _event_cache[event.fingerprint]=event;
+        if ( event.isEva ) {
+            node.last_witness=event;
+        }
     }
 
     Event lookup(immutable(ubyte[]) fingerprint) {
@@ -396,7 +417,7 @@ class HashGraph {
             // TO DO: CBR Overflow problem in this assert statement
             assert(number <= _rounds.number+1);
             if ( number == _rounds.number+1 ) {
-                auto new_round = new Round(_rounds, total_nodes);
+                auto new_round = new Round(_rounds); //, total_nodes);
                 _rounds = new_round;
             }
             else {
@@ -412,7 +433,7 @@ class HashGraph {
             }
         }
         else {
-            _rounds = new Round(previous, total_nodes);
+            _rounds = new Round(previous); //, total_nodes);
         }
         return _rounds;
     }
@@ -559,7 +580,81 @@ class HashGraph {
         findWitness(top_event.father);
     }
 
+    @trusted
     package void strongSee2(Event top_event) {
+        if ( top_event && !top_event.is_strongly2_seeing_checked ) {
+
+            strongSee2(top_event.mother);
+            strongSee2(top_event.father);
+            if ( isMajority(top_event.witness2_votes(total_nodes)) ) {
+//                immutable node_size=tolal_nodes;
+//                uint[total_nodes] witness_votes;
+//                const witness_mask = top_event.witness2_mask(total_nodes);
+                scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
+                scope BitArray strong_vote_mask;
+                uint seeing;
+                bool strong;
+                const round=top_event.previousRound2;
+                @trusted
+                void checkStrongSeeing(Event check_event, const BitArray path_mask) {
+                    iterative_strong_count++;
+                    if ( check_event && round.lessOrEqual(check_event.round2) ) {
+                        //       immutable node_id=check_event.node_id;
+                        if ( !strong_vote_mask[check_event.node_id] ) {
+                            immutable votes_before=countVotes(witness_vote_matrix[check_event.node_id]);
+                            witness_vote_matrix[check_event.node_id]|=path_mask;
+
+                            immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
+                            if ( votes > votes_before ) {
+                                writefln("Node %d votes=%d votes_before=%d mask=%s path_mask=%s",
+                                    check_event.node_id, votes, votes_before, witness_vote_matrix[check_event.node_id], path_mask);
+                            }
+                            if ( isMajority(votes) ) {
+                                strong_vote_mask[check_event.node_id]=true;
+                                seeing++;
+                                if ( isMajority(seeing) ) {
+                                    strong=true;
+                                    return;
+                                }
+                            }
+                        }
+                        // The father event is searched first to cross as many nodes as fast as possible
+                        if ( path_mask[check_event.node_id] ) {
+                            checkStrongSeeing(check_event.father, path_mask);
+                            checkStrongSeeing(check_event.mother, path_mask);
+                        }
+                        else {
+                            scope BitArray sub_path_mask=path_mask.dup;
+                            sub_path_mask[check_event.node_id]=true;
+
+                            checkStrongSeeing(check_event.father, sub_path_mask);
+                            checkStrongSeeing(check_event.mother, sub_path_mask);
+                        }
+                    }
+                }
+
+                BitArray path_mask;
+                bitarray_clear(path_mask, total_nodes);
+                bitarray_clear(strong_vote_mask, total_nodes);
+                foreach(ref mask; witness_vote_matrix) {
+                    bitarray_clear(mask, total_nodes);
+                }
+                checkStrongSeeing(top_event, path_mask);
+                if ( strong ) {
+                    top_event.strongly2_seeing;
+                    nodes[top_event.node_id].last_witness=top_event;
+                    writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
+                }
+                top_event.strongly2_seeing_checked;
+                if ( Event.callbacks ) {
+                    Event.callbacks.strong2_vote(top_event, seeing);
+                }
+            }
+        }
+    }
+
+    version(none)
+    package void strongSee2_2(Event top_event) {
         import tagion.Base : toText;
 
         if ( top_event && !top_event.is_strongly2_seeing_checked ) {
@@ -605,8 +700,8 @@ class HashGraph {
 
             if ( isMajority(top_event.witness2_votes(total_nodes)) ) {
                 BitArray path_mask;
-                set_bitarray(path_mask, total_nodes);
-                set_bitarray(seeing_mask, total_nodes);
+                bitarray_clear(path_mask, total_nodes);
+                bitarray_clear(seeing_mask, total_nodes);
                 checkStrongSeeing(top_event, path_mask);
             }
             // top_event.strongly2_seeing_checked;

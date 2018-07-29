@@ -14,7 +14,7 @@ import std.bitmanip;
 //import std.stdio;
 import std.format;
 
-import tagion.Base : this_dot, basename, Pubkey, Buffer, set_bitarray;
+import tagion.Base : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes;
 
 import tagion.Keywords;
 
@@ -203,8 +203,8 @@ interface EventCallbacks {
 @safe
 class Round {
     private Round _previous;
-    // This indicates wish events belongs to this round
-    private BitArray nodes_mask;
+    // // This indicates wish events belongs to this round
+    // private BitArray nodes_mask;
     // Counts the number of nodes in this round
     private uint _nodes;
     // Round number
@@ -235,37 +235,37 @@ class Round {
     }
 
     @trusted
-    this(Round r, immutable uint node_size) {
+    this(Round r) { //, immutable uint node_size) {
         _previous=r;
         number=increase_number(r);
-        nodes_mask.length=node_size;
+//        nodes_mask.length=node_size;
     }
 
-    @trusted
-    void setNode(immutable uint index)
-        in {
-            assert(!isUndefined);
-        }
-    body {
-        if ( !nodes_mask[index] ) {
-            _nodes++;
-        }
-        nodes_mask[index]=true;
-    }
+    // @trusted
+    // void setNode(immutable uint index)
+    //     in {
+    //         assert(!isUndefined);
+    //     }
+    // body {
+    //     if ( !nodes_mask[index] ) {
+    //         _nodes++;
+    //     }
+    //     nodes_mask[index]=true;
+    // }
 
     Round next() {
-        immutable uint size=cast(uint)(nodes_mask.length);
-        return new Round(this, size);
+        //     immutable uint size=cast(uint)(nodes_mask.length);
+         return new Round(this);
     }
 
-    @trusted
-    bool containNode(immutable uint index) const
-        in {
-            assert(!isUndefined);
-        }
-    body {
-        return nodes_mask[index];
-    }
+    // @trusted
+    // bool containNode(immutable uint index) const
+    //     in {
+    //         assert(!isUndefined);
+    //     }
+    // body {
+    //     return nodes_mask[index];
+    // }
 
     uint nodes() const pure nothrow {
         return _nodes;
@@ -282,6 +282,51 @@ class Round {
     Round previous() {
         return _previous;
     }
+}
+
+@safe
+class Witness {
+    // This object hold a vector for which nodes can see this witness
+    //
+    // Node which are seeing this vitness
+    private BitArray _seeing_mask;
+    private uint _votes;
+    // this(const uint node_size) {
+    //     set_bitarray(_seeing_mask, node_size);
+    // }
+    @trusted
+    void vote(const uint node_id, const uint node_size) {
+        if (_seeing_mask.length < node_size) {
+            bitarray_change(_seeing_mask, node_size);
+        }
+        if ( !_seeing_mask[node_id] ) {
+            _seeing_mask[node_id]=true;
+            _votes++;
+        }
+    }
+
+    uint votes() pure const nothrow {
+        return _votes;
+    }
+
+    ref const(BitArray) seeing_mask() pure const nothrow {
+        return _seeing_mask;
+    }
+
+    @trusted
+    bool seen(const uint node_id) pure const {
+        if ( node_id < _seeing_mask.length ) {
+            return seeing_mask[node_id];
+        }
+        return false;
+    }
+    // void set_node_size(const uint node_size)
+    //     in {
+    //         assert((_seeing_mask.length == 0) || (_seeing_mask.length == node_size), "Node size can not be change for a wintess event");
+    //     }
+    // body {
+    //     bitarray_clear(_seeing_mask, node_size);
+    // }
 }
 
 @safe
@@ -323,7 +368,7 @@ class Event {
 
 //    private bool _witness2_mask_checked;
     private Round _round2;
-    private bool _witness2;
+    private Witness _witness2;
     private uint _witness2_votes;
     private BitArray _witness2_mask;
     private bool _strongly2_seeing;
@@ -369,16 +414,6 @@ class Event {
         return _daughter is null;
     }
 
-    static uint countVotes(ref const(BitArray) mask) @trusted {
-        uint votes;
-        foreach(vote; mask) {
-            if (vote) {
-                votes++;
-            }
-        }
-        return votes;
-    }
-
 
     void round(Round round)
         in {
@@ -392,8 +427,14 @@ class Event {
         }
     }
 
-    inout(Round) round() inout pure nothrow
+    inout(Round) round() inout pure // nothrow
     out(result) {
+        debug {
+            import std.stdio;
+            if ( !result ) {
+                writefln("Eva %s mother=%s", isEva, _mother !is null);
+            }
+        }
         assert(result, "Round should be defined before it is used");
     }
     body {
@@ -428,6 +469,14 @@ class Event {
             return Round.undefined;
         }
         return search(mother);
+    }
+
+    const(Round) round2() pure const nothrow
+        out(result) {
+            assert(result, "Round must be set before this function is called");
+        }
+    body {
+        return _round2;
     }
 
     Round round2() pure nothrow
@@ -476,12 +525,56 @@ class Event {
         }
     }
 
+    version(node)
+    uint witness2_votes()
+        in {
+            assert(_witness2, "witness_votes can not be called from a non witness event");
+        }
+    body {
+        return _witness2.votes;
+    }
+
+    version(node)
+    void vote_for_witness2(const uint node_id, const uint node_size)
+        in {
+            assert(_witness2, "Voting is only allowed from a witness event");
+        }
+    body {
+        _witness2.vote(node_id, node_size);
+        import std.stdio;
+        import tagion.Base : toText;
+        writefln("@@ Wintess vote node_id=%d seeing=%s votes=%d %s", node_id, _witness2._seeing_mask.toText, _witness2.votes, cast(string)payload);
+
+    }
+
+
+    version(node)
+
+    ref const(BitArray) seeing_mask()
+        in {
+            assert(_witness2, "seeing_mask can not be called from a non witness");
+        }
+    body {
+        return _witness2.seeing_mask;
+    }
+
+
+    version(node)
+    bool seen(const uint node_id)
+        in {
+            assert(_witness2, "seen can not be called from a non witness");
+        }
+    body {
+        return _witness2.seen(node_id);
+    }
+
+//    version(none)
     uint witness2_votes(immutable uint node_size) {
         witness2_mask(node_size);
         return _witness2_votes;
     }
 
-//version(none) {
+//    version(none)
     uint witness2_votes() pure const // nothrow
         in {
             debug {
@@ -528,12 +621,12 @@ class Event {
                 foreach(i; 0..level) {
                     str_level~="  ";
                 }
-                writefln("\t%switness2_mask=%s witness2=%s votes=%d %s",
-                    str_level, _witness2_mask.toText, _witness2, _witness2_votes, cast(string)payload);
+                writefln("\t%switness2_mask=%s witness2=%s %s",
+                    str_level, _witness2_mask.toText, _witness2, cast(string)payload);
             }
             if ( !event.is_witness2_mask_checked ) {
 //                event._witness2_mask_checked=true;
-                set_bitarray(event._witness2_mask, node_size);
+                bitarray_clear(event._witness2_mask, node_size);
                 if ( event._witness2 ) {
                     if ( !event._witness2_mask[event.node_id] ) {
                         event._witness2_votes++;
@@ -577,7 +670,7 @@ class Event {
         return check_witness_mask(this);
     }
 
-    ref const(BitArray) witness2_mask() pure const
+    ref const(BitArray) witness2_mask() pure const // nothrow
         in {
             debug {
                 import std.stdio;
@@ -634,7 +727,7 @@ class Event {
     //     _witness2 = flag;
     // }
     bool witness2() pure const nothrow {
-        return _witness2;
+        return _witness2 !is null;
     }
 
     void witness(immutable uint size)
@@ -644,7 +737,7 @@ class Event {
     body {
         _witness=true;
 //        _witness2_mask_checked=false;
-        set_bitarray(_witness2_mask,0);
+        bitarray_clear(_witness2_mask,0);
         if ( !_witness_mask ) {
             create_witness_mask(size);
         }
@@ -668,23 +761,25 @@ class Event {
         _witness_mask.length=size;
     }
 
+
     @trusted
-    void strongly2_seeing(const bool strong)
+    void strongly2_seeing()
         in {
             assert(!_strongly2_seeing_checked);
             //assert(!_witness2);
+
             assert(_witness2_mask.length != 0);
         }
     body {
-        _strongly2_seeing_checked=true;
-        if ( strong ) {
-            set_bitarray(_witness2_mask, cast(uint)(_witness2_mask.length));
-            _witness2_mask[node_id]=true;
-            _witness2=true;
-            _round2=mother._round2.next;
-            if ( callbacks ) {
-                callbacks.strongly2_seeing(this);
-            }
+//        _strongly2_seeing_checked=true;
+//        if ( strong ) {
+        immutable size=cast(uint)(_witness2_mask.length);
+        bitarray_clear(_witness2_mask, size);
+        _witness2_mask[node_id]=true;
+        _witness2=new Witness;
+        _round2=mother.round2.next;
+        if ( callbacks ) {
+            callbacks.strongly2_seeing(this);
         }
     }
 
@@ -818,7 +913,7 @@ class Event {
             _round = Round.undefined;
             _witness = true;
             _round2 = Round.undefined;
-            _witness2 = true;
+            _witness2 = new Witness;
         }
         // else {
 
