@@ -72,19 +72,46 @@ template find_dot(string str, size_t index=0) {
     }
 }
 
-void set_bitarray(out BitArray bits, uint length) @trusted {
+// Creates a new clean bitarray
+void  bitarray_clear(out BitArray bits, uint length) @trusted {
+    bits.length=length;
+}
+
+// Change the size of the bitarray
+void bitarray_change(ref BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
 
 unittest {
-    BitArray test;
-    immutable uint size=7;
-    test.length=size;
-    test[4]=true;
-    set_bitarray(test, size);
-    assert(!test[4]);
+    {
+        BitArray test;
+        immutable uint size=7;
+        test.length=size;
+        test[4]=true;
+        bitarray_clear(test, size);
+        assert(!test[4]);
+    }
+    {
+        BitArray test;
+        immutable uint size=7;
+        test.length=size;
+        test[4]=true;
+        bitarray_change(test, size);
+        assert(test[4]);
+    }
 }
+
+uint countVotes(ref const(BitArray) mask) @trusted {
+    uint votes;
+    foreach(vote; mask) {
+        if (vote) {
+            votes++;
+        }
+    }
+    return votes;
+}
+
 
 string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
