@@ -599,45 +599,65 @@ class HashGraph {
                 void checkStrongSeeing(Event check_event, const BitArray path_mask) {
                     iterative_strong_count++;
                     if ( check_event && round.lessOrEqual(check_event.round2) ) {
-                        //       immutable node_id=check_event.node_id;
-                        if ( !strong_vote_mask[check_event.node_id] ) {
-                            immutable votes_before=countVotes(witness_vote_matrix[check_event.node_id]);
-                            witness_vote_matrix[check_event.node_id]|=path_mask;
+                        const BitArray checked_mask=strong_vote_mask & check_event.witness2_mask(total_nodes);
+                        const check=(checked_mask != check_event.witness2_mask);
+                        if ( check ) {
 
-                            immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
-                            if ( votes > votes_before ) {
-                                writefln("Node %d votes=%d votes_before=%d mask=%s path_mask=%s",
-                                    check_event.node_id, votes, votes_before, witness_vote_matrix[check_event.node_id], path_mask);
-                            }
-                            if ( isMajority(votes) ) {
-                                strong_vote_mask[check_event.node_id]=true;
-                                seeing++;
-                                if ( isMajority(seeing) ) {
-                                    strong=true;
-                                    return;
+                        // if ( path_mask != checked_mask ) {
+                            writef("Node %d path_mask=%s %s ", check_event.node_id, path_mask, cast(string)(check_event.payload));
+                            //       immutable node_id=check_event.node_id;
+                            if ( !strong_vote_mask[check_event.node_id] ) {
+                                scope BitArray common=witness_vote_matrix[check_event.node_id] | path_mask;
+                                if ( common != witness_vote_matrix[check_event.node_id] ) {
+//                            immutable votes_before=countVotes(witness_vote_matrix[check_event.node_id]);
+                                    witness_vote_matrix[check_event.node_id]=common;
+
+                                    immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
+                                    // if ( votes > votes_before ) {
+                                    writef("votes=%d mask=%s ",
+                                        votes, witness_vote_matrix[check_event.node_id]);
+
+                                    // }
+                                    if ( isMajority(votes) ) {
+                                        strong_vote_mask[check_event.node_id]=true;
+                                        seeing++;
+                                        if ( isMajority(seeing) ) {
+                                            writeln("Strong");
+                                            strong=true;
+                                            return;
+                                        }
+                                        else {
+                                            writeln("Seen");
+                                        }
+                                    }
                                 }
                             }
-                        }
-                        // The father event is searched first to cross as many nodes as fast as possible
-                        if ( path_mask[check_event.node_id] ) {
-                            checkStrongSeeing(check_event.father, path_mask);
-                            checkStrongSeeing(check_event.mother, path_mask);
-                        }
-                        else {
-                            scope BitArray sub_path_mask=path_mask.dup;
-                            sub_path_mask[check_event.node_id]=true;
+                            writefln(" checked=(%s != %s) %s", checked_mask, check_event.witness2_mask, check );
+                            //      if ( check ) {
+                            // The father event is searched first to cross as many nodes as fast as possible
 
-                            checkStrongSeeing(check_event.father, sub_path_mask);
-                            checkStrongSeeing(check_event.mother, sub_path_mask);
+                            if ( path_mask[check_event.node_id] ) {
+                                checkStrongSeeing(check_event.father, path_mask);
+                                checkStrongSeeing(check_event.mother, path_mask);
+                            }
+                            else {
+                                scope BitArray sub_path_mask=path_mask.dup;
+                                sub_path_mask[check_event.node_id]=true;
+
+                                checkStrongSeeing(check_event.father, sub_path_mask);
+                                checkStrongSeeing(check_event.mother, sub_path_mask);
+                            }
+                            }
                         }
-                    }
+//                    }
                 }
 
                 BitArray path_mask;
                 bitarray_clear(path_mask, total_nodes);
                 bitarray_clear(strong_vote_mask, total_nodes);
-                foreach(ref mask; witness_vote_matrix) {
+                foreach(node_id, ref mask; witness_vote_matrix) {
                     bitarray_clear(mask, total_nodes);
+                    mask[node_id]=true;
                 }
                 checkStrongSeeing(top_event, path_mask);
                 if ( strong ) {

@@ -601,7 +601,7 @@ class Event {
     //     _witness2_mask_checked=true;
     // }
 
-    ref const(BitArray) witness2_mask(immutable uint node_size) {
+    package ref const(BitArray) witness2_mask(immutable uint node_size) {
         // import std.stdio;
         // immutable node_size=cast(uint)(_witness2_mask.length);
         // BitArray zero;
@@ -612,18 +612,18 @@ class Event {
                 assert(event);
             }
         body {
-            import std.stdio;
+            // import std.stdio;
             //  if ( event ) {
-            scope(exit) {
-                import tagion.Base : toText;
+            // scope(exit) {
+            //     import tagion.Base : toText;
 
-                string str_level;
-                foreach(i; 0..level) {
-                    str_level~="  ";
-                }
-                writefln("\t%switness2_mask=%s witness2=%s %s",
-                    str_level, _witness2_mask.toText, _witness2, cast(string)payload);
-            }
+            //     string str_level;
+            //     foreach(i; 0..level) {
+            //         str_level~="  ";
+            //     }
+            //     writefln("\t%switness2_mask=%s witness2=%s %s",
+            //         str_level, _witness2_mask.toText, _witness2, cast(string)payload);
+            // }
             if ( !event.is_witness2_mask_checked ) {
 //                event._witness2_mask_checked=true;
                 bitarray_clear(event._witness2_mask, node_size);
@@ -636,7 +636,7 @@ class Event {
                 else {
                     if ( event.mother ) {
                         auto mask=check_witness_mask(event.mother, level+1);
-                        writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
+                        // writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
                         if ( mask.length < event._witness2_mask.length ) {
                             mask.length = event._witness2_mask.length;
                         }
@@ -649,7 +649,7 @@ class Event {
                     }
                     if ( event.father ) {
                         auto mask=check_witness_mask(event.father, level+1);
-                        writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
+                        //writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
                         if ( mask.length < event._witness2_mask.length ) {
                             mask.length = event._witness2_mask.length;
                         }
@@ -665,6 +665,7 @@ class Event {
                     callbacks.witness2_mask(event);
                 }
             }
+            bitarray_change(event._witness2_mask, node_size);
             return event._witness2_mask;
         }
         return check_witness_mask(this);
