@@ -87,11 +87,15 @@ class HashGraph {
             }
         }
 
+
+
+
         const(Event) event() pure const nothrow
         in {
-            if ( _event.witness2 ) {
-                assert(_event is last_witness);
-            }
+            version(FAST_AND_STRONG)
+                if ( _event.witness ) {
+                    assert(_event is last_witness);
+                }
         }
         body {
             return _event;
@@ -406,38 +410,6 @@ class HashGraph {
         return event;
     }
 
-    package Round nextRound(Event event)
-    out(result) {
-        assert(result);
-    }
-    body {
-        auto previous=event.previousRound;
-        immutable number=Round.increase_number(previous);
-        if ( _rounds ) {
-            // TO DO: CBR Overflow problem in this assert statement
-            assert(number <= _rounds.number+1);
-            if ( number == _rounds.number+1 ) {
-                auto new_round = new Round(_rounds); //, total_nodes);
-                _rounds = new_round;
-            }
-            else {
-                Round search(Round r) {
-                    if ( r ) {
-                        if ( r.number == number ) {
-                            return r;
-                        }
-                    }
-                    return search(r.previous);
-                }
-                return search(_rounds);
-            }
-        }
-        else {
-            _rounds = new Round(previous); //, total_nodes);
-        }
-        return _rounds;
-    }
-
     Event registerEvent(
         RequestNet request_net,
         Pubkey pubkey,
@@ -486,23 +458,25 @@ class HashGraph {
             iterative_tree_count=0;
 //            visit++;
             requestEventTree(request_net, event);
-            writefln("After requestEventTree=%d", iterative_tree_count);
+            writefln("After requestEventTree iterations=%d", iterative_tree_count);
             // See if the node is strong seeing the hashgraph
             // writeln("Before strong See");
             iterative_strong_count=0;
 //            visit++;
-            strongSee(event);
-            writefln("After strongSee=%d", iterative_strong_count);
-            iterative_strong_count=0;
+            version(FAST_AND_STRONG) {
+                strongSee2(event);
+                writefln("After strongSee2 iterations=%d", iterative_strong_count);
+            }
+            else {
+                strongSee(event);
+                writefln("After strongSee iterations=%d", iterative_strong_count);
+            }
 
-            strongSee2(event);
-            writefln("After strongSee2=%d", iterative_strong_count);
         }
 
         return event;
     }
 
-//    private uint strong_see_marker;
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
@@ -511,15 +485,11 @@ class HashGraph {
         if ( event && ( !event.is_loaded ) ) {
             event.loaded;
 
-//            event.visit = visit;
             if ( child ) {
-//                writefln("REQUEST EVENT TREE %d.%s %s", event.id, (child)?to!string(child.id):"#", is_father);
                 if ( is_father ) {
-//                    writeln("\tset son");
                     event.son=child;
                 }
                 else {
-//                    writeln("\tset daughter");
                     event.daughter=child;
                 }
             }
@@ -527,369 +497,253 @@ class HashGraph {
             requestEventTree(request_net, mother, event, false);
             auto father=event.father(this, request_net);
             requestEventTree(request_net, father, event, true);
-//            event.witness2_mask(total_nodes);
-
-//            if ( !event.loaded) {
-//                event.getRoundForMother;
 
             if ( Event.callbacks ) {
                 Event.callbacks.create(event);
-                Event.callbacks.witness2_mask(event);
+                Event.callbacks.witness_mask(event);
             }
 
-
-
-//            }
-//            if ( !event.daughter ) {
-                // This is latest event
-            // auto node=nodes[event.node_id];
-            // if ( (node.event is null) || (highest(event.altitude, node.event.altitude) ) ) {
-            //     node.event=event;
-            // }
-//            }
         }
     }
 
-    // This function makes the votes for famous event
-    private void votingFamous(Event top_event)
-    in {
-        assert(top_event.witness, "Event should be a witness");
-    }
-    body {
-        const round=top_event.previousRound;
-        void findWitness(Event event) {
-            if ( event && !event.isEva ) {
-                if ( event.witness ) {
-                    if ( event.round is round ) {
-                        event.set_witness_mask(top_event.node_id);
-                    }
-                    else if ( event.round.number < round.number ) {
-                        // If the round is one lower the search is stopped
-                        return;
-                    }
 
-                    //      event.famous=isMajority(event.famous_votes);
+    version(FAST_AND_STRONG) {
+        @trusted
+            package void strongSee2(Event top_event) {
+            if ( top_event && !top_event.is_strongly2_seeing_checked ) {
 
-                }
-                findWitness(event.mother);
-                findWitness(event.father);
-            }
-        }
-        //   writefln("voteFamous for %s", cast(string)(top_event.payload));
-        findWitness(top_event.mother);
-        findWitness(top_event.father);
-    }
+                strongSee2(top_event.mother);
+                strongSee2(top_event.father);
+                if ( isMajority(top_event.witness2_votes(total_nodes)) ) {
+                    scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
+                    scope BitArray strong_vote_mask;
+                    uint seeing;
+                    bool strong;
+                    const round=top_event.previousRound2;
+                    @trusted
+                        void checkStrongSeeing(Event check_event, const BitArray path_mask) {
+                        iterative_strong_count++;
+                        if ( check_event && round.lessOrEqual(check_event.round2) ) {
+                            const BitArray checked_mask=strong_vote_mask & check_event.witness2_mask(total_nodes);
+                            const check=(checked_mask != check_event.witness_mask);
+                            if ( check ) {
 
-    @trusted
-    package void strongSee2(Event top_event) {
-        if ( top_event && !top_event.is_strongly2_seeing_checked ) {
+                                if ( !strong_vote_mask[check_event.node_id] ) {
+                                    scope BitArray common=witness_vote_matrix[check_event.node_id] | path_mask;
+                                    if ( common != witness_vote_matrix[check_event.node_id] ) {
+                                        witness_vote_matrix[check_event.node_id]=common;
 
-            strongSee2(top_event.mother);
-            strongSee2(top_event.father);
-            if ( isMajority(top_event.witness2_votes(total_nodes)) ) {
-//                immutable node_size=tolal_nodes;
-//                uint[total_nodes] witness_votes;
-//                const witness_mask = top_event.witness2_mask(total_nodes);
-                scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
-                scope BitArray strong_vote_mask;
-                uint seeing;
-                bool strong;
-                const round=top_event.previousRound2;
-                @trusted
-                void checkStrongSeeing(Event check_event, const BitArray path_mask) {
-                    iterative_strong_count++;
-                    if ( check_event && round.lessOrEqual(check_event.round2) ) {
-                        const BitArray checked_mask=strong_vote_mask & check_event.witness2_mask(total_nodes);
-                        const check=(checked_mask != check_event.witness2_mask);
-                        if ( check ) {
-
-                        // if ( path_mask != checked_mask ) {
-                            writef("Node %d path_mask=%s %s ", check_event.node_id, path_mask, cast(string)(check_event.payload));
-                            //       immutable node_id=check_event.node_id;
-                            if ( !strong_vote_mask[check_event.node_id] ) {
-                                scope BitArray common=witness_vote_matrix[check_event.node_id] | path_mask;
-                                if ( common != witness_vote_matrix[check_event.node_id] ) {
-//                            immutable votes_before=countVotes(witness_vote_matrix[check_event.node_id]);
-                                    witness_vote_matrix[check_event.node_id]=common;
-
-                                    immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
-                                    // if ( votes > votes_before ) {
-                                    writef("votes=%d mask=%s ",
-                                        votes, witness_vote_matrix[check_event.node_id]);
-
-                                    // }
-                                    if ( isMajority(votes) ) {
-                                        strong_vote_mask[check_event.node_id]=true;
-                                        seeing++;
-                                        if ( isMajority(seeing) ) {
-                                            writeln("Strong");
-                                            strong=true;
-                                            return;
-                                        }
-                                        else {
-                                            writeln("Seen");
+                                        immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
+                                        if ( isMajority(votes) ) {
+                                            strong_vote_mask[check_event.node_id]=true;
+                                            seeing++;
+                                            if ( isMajority(seeing) ) {
+                                                strong=true;
+                                                return;
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            writefln(" checked=(%s != %s) %s", checked_mask, check_event.witness2_mask, check );
-                            //      if ( check ) {
-                            // The father event is searched first to cross as many nodes as fast as possible
+                                /+
+                                 The father event is searched first to cross as many nodes as fast as possible
+                                 +/
+                                if ( path_mask[check_event.node_id] ) {
+                                    checkStrongSeeing(check_event.father, path_mask);
+                                    checkStrongSeeing(check_event.mother, path_mask);
+                                }
+                                else {
+                                    scope BitArray sub_path_mask=path_mask.dup;
+                                    sub_path_mask[check_event.node_id]=true;
 
-                            if ( path_mask[check_event.node_id] ) {
-                                checkStrongSeeing(check_event.father, path_mask);
-                                checkStrongSeeing(check_event.mother, path_mask);
-                            }
-                            else {
-                                scope BitArray sub_path_mask=path_mask.dup;
-                                sub_path_mask[check_event.node_id]=true;
-
-                                checkStrongSeeing(check_event.father, sub_path_mask);
-                                checkStrongSeeing(check_event.mother, sub_path_mask);
-                            }
-                            }
-                        }
-//                    }
-                }
-
-                BitArray path_mask;
-                bitarray_clear(path_mask, total_nodes);
-                bitarray_clear(strong_vote_mask, total_nodes);
-                foreach(node_id, ref mask; witness_vote_matrix) {
-                    bitarray_clear(mask, total_nodes);
-                    mask[node_id]=true;
-                }
-                checkStrongSeeing(top_event, path_mask);
-                if ( strong ) {
-                    top_event.strongly2_seeing;
-                    nodes[top_event.node_id].last_witness=top_event;
-                    writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
-                }
-                top_event.strongly2_seeing_checked;
-                if ( Event.callbacks ) {
-                    Event.callbacks.strong2_vote(top_event, seeing);
-                }
-            }
-        }
-    }
-
-    version(none)
-    package void strongSee2_2(Event top_event) {
-        import tagion.Base : toText;
-
-        if ( top_event && !top_event.is_strongly2_seeing_checked ) {
-            uint seeing;
-            BitArray seeing_mask;
-            const round=top_event.previousRound2;
-            @trusted
-            void checkStrongSeeing (Event check_event, const BitArray path_mask, immutable uint vote=0) {
-                iterative_strong_count++;
-                if ( vote > 0 ) {
-                    writefln("---Strong vote=%d seeing=%d path_mask=%s", vote, seeing, path_mask.toText);
-                }
-                if ( check_event && round.lessOrEqual(check_event.round2) && !isMajority(seeing) ) {
-                    if ( isMajority(vote) ) {
-                        // Possible strong seeing witness.
-                        if ( !seeing_mask[check_event.node_id] ) {
-                            // Vote for this nodes as strong seeing
-                            seeing_mask[check_event.node_id]=true;
-                            seeing++;
-                        }
-                    }
-                    else {
-                        if ( path_mask[check_event.node_id] ) {
-                            // This nodes has already been voted for
-                            checkStrongSeeing(check_event.mother, path_mask, vote);
-                            checkStrongSeeing(check_event.father, path_mask, vote);
-                        }
-                        else {
-                            // The vote is increased because it is the first time
-                            // this node_id is seen in this path
-                            BitArray sub_path_mask=path_mask.dup;
-                            sub_path_mask[check_event.node_id]=true;
-                            checkStrongSeeing(check_event.mother, sub_path_mask, vote+1);
-                            checkStrongSeeing(check_event.father, sub_path_mask, vote+1);
-                        }
-                    }
-                }
-            }
-
-            strongSee2(top_event.mother);
-            strongSee2(top_event.father);
-
-
-            if ( isMajority(top_event.witness2_votes(total_nodes)) ) {
-                BitArray path_mask;
-                bitarray_clear(path_mask, total_nodes);
-                bitarray_clear(seeing_mask, total_nodes);
-                checkStrongSeeing(top_event, path_mask);
-            }
-            // top_event.strongly2_seeing_checked;
-            immutable strong=isMajority(seeing);
-            if ( Event.callbacks ) {
-                Event.callbacks.strong2_vote(top_event, seeing);
-            }
-            top_event.strongly2_seeing=strong;
-        }
-    }
-//}
-
-    package void strongSee(Event check_event) {
-
-        if ( check_event && !check_event.is_strongly_seeing_checked ) {
-
-            // writefln("Strong %d", check_event.id);
-            const round=check_event.previousRound;
-            void checkStrongSeeing(Event top_event) {
-
-                BitArray[] vote_mask=new BitArray[total_nodes];
-                @trusted void reset_bitarray(ref BitArray b) {
-                    b.length=0;
-                    b.length=total_nodes;
-                }
-
-                // Clear the node log
-                foreach(i,ref n; nodes) {
-                    if ( n !is null ) {
-                        n.passed=0;
-                        n.voted=false;
-                        reset_bitarray(vote_mask[i]);
-                    }
-                }
-
-                uint seeing;
-                void search(Event event, immutable uint level=0, immutable bool is_father=false) @safe {
-                    iterative_strong_count++;
-                    uint vote(ref BitArray mask) @trusted {
-                        uint votes;
-                        foreach(i, n; nodes) {
-                            if ( n.passed > 0 ) {
-                                mask[i]=true;
-                            }
-                            if (mask[i]) {
-                                votes++;
-                            }
-                        }
-                        return votes;
-                    }
-                    // immutable(char)[] masks(ref const BitArray mask) @trusted {
-                    //     return to!string(mask);
-                    // }
-                    // Finde the node for the event
-                    auto pnode=event.node_id in nodes;
-                    immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
-                    if ( not_famous_yet ) {
-                        // string indent;
-                        // foreach(i;0..level) {
-                        //     indent~="  ";
-                        // }
-                        // writefln("%s id=%d %s %s", indent, event.id, is_father?"F":"M", event.witness?"W":"_");
-                        auto n=*pnode;
-                        n.passed++;
-                        scope(exit) {
-                            n.passed--;
-                            assert(n.passed >= 0);
-                        }
-
-                        // Check if the current event is a witness and if the round is lower or equal to the expected previous round.
-//                        if ( !((event !is top_event) && (round.number > event.round.number)) ) {
-//                        if ( event !is top_event) && (round.number > event.round.number)) ) {
-                        if ( event.witness && round.lessOrEqual(event.round) ) {
-                            if (!n.voted) {
-                                auto votes=vote(vote_mask[event.node_id]);
-                                immutable majority=isMajority(votes);
-                                if ( majority ) {
-                                    seeing++;
-                                        n.voted=true;
+                                    checkStrongSeeing(check_event.father, sub_path_mask);
+                                    checkStrongSeeing(check_event.mother, sub_path_mask);
                                 }
                             }
                         }
-                        // if ( event.hasRound && (round.number > event.round.number) ) {
-                        //     return;
-                        // }
-                        auto mother=event.mother;
+                    }
 
-                        if ( mother ) {
-                            search(mother, level+1);
-                            if ( event.fatherExists ) {
-                                auto father=event.father;
-                                search(father, level+1, true);
+                    BitArray path_mask;
+                    bitarray_clear(path_mask, total_nodes);
+                    bitarray_clear(strong_vote_mask, total_nodes);
+                    foreach(node_id, ref mask; witness_vote_matrix) {
+                        bitarray_clear(mask, total_nodes);
+                        mask[node_id]=true;
+                    }
+                    checkStrongSeeing(top_event, path_mask);
+                    if ( strong ) {
+                        top_event.strongly2_seeing;
+                        nodes[top_event.node_id].last_witness=top_event;
+                        writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
+                    }
+                    top_event.strongly2_seeing_checked;
+                    if ( Event.callbacks ) {
+                        Event.callbacks.strong_vote(top_event, seeing);
+                    }
+                }
+            }
+        }
+    } else { //  version !FAST_AND_STRONG
+        // This function makes the votes for famous event
+        private void votingFamous(Event top_event)
+            in {
+                assert(top_event.witness, "Event should be a witness");
+            }
+        body {
+            const round=top_event.previousRound;
+            void findWitness(Event event) {
+                if ( event && !event.isEva ) {
+                    if ( event.witness ) {
+                        if ( event.round is round ) {
+                            event.set_witness_mask(top_event.node_id);
+                        }
+                        else if ( event.round.number < round.number ) {
+                            // If the round is one lower the search is stopped
+                            return;
+                        }
+
+                        //      event.famous=isMajority(event.famous_votes);
+
+                    }
+                    findWitness(event.mother);
+                    findWitness(event.father);
+                }
+            }
+            //   writefln("voteFamous for %s", cast(string)(top_event.payload));
+            findWitness(top_event.mother);
+            findWitness(top_event.father);
+        }
+
+        package Round nextRound(Event event)
+            out(result) {
+                    assert(result);
+                }
+        body {
+            auto previous=event.previousRound;
+            immutable number=Round.increase_number(previous);
+            if ( _rounds ) {
+                // TO DO: CBR Overflow problem in this assert statement
+                assert(number <= _rounds.number+1);
+                if ( number == _rounds.number+1 ) {
+                    auto new_round = new Round(_rounds); //, total_nodes);
+                    _rounds = new_round;
+                }
+                else {
+                    Round search(Round r) {
+                        if ( r ) {
+                            if ( r.number == number ) {
+                                return r;
                             }
                         }
-                        //}
+                        return search(r.previous);
                     }
-                }
-
-                search(check_event);
-                bool strong=isMajority(seeing);
-                if ( Event.callbacks ) {
-                    Event.callbacks.strong_vote(top_event,seeing);
-                }
-                if ( strong ) {
-                    Event e;
-                    // Crawl down to the next witness
-                    for(e=top_event; !e.witness; e=e.mother) {
-                        /* empty */
-                    }
-                    assert(top_event !is e);
-                    top_event.round=nextRound(top_event);
-                    top_event.witness=total_nodes;
-                    top_event.strongly_seeing=true;
-                    // Create witness mask to count famous witness
-//                    top_event.create_witness_mask(total_nodes);
-
-//                    if (top_event.strongly_seeing) {
-                    votingFamous(top_event);
-//                    }
-
-                }
- //               top_event.strongly_seeing=strong;
-
-                // else if ( !top_event.isEva ) {
-                //     top_event.round=top_event.motherRound;
-                // }
-//            writefln("Strongly Seeing test return %s", strong);
-       //         top_event.strongly_seeing=strong;
-                top_event.strongly_seeing_checked;
-
-//            return strong;
-//                check_event.strongly_seeing_checked;
-            }
-            auto mother=check_event.mother;
-            strongSee(mother);
-            auto father=check_event.father;
-            strongSee(father);
-            // if ( event.isEva ) {
-            //     event.witness=true;
-            //     event.round=Round.undefined;
-            // }
-            checkStrongSeeing(check_event);
-
-        }
-    }
-
-    alias bool delegate(Event event, immutable uint depth, immutable uint current_node_id) Collect;
-    /*
-       This function returns a list of event wich home_node this is unknown by node
-       home_node is the
-     */
-    version(none)
-    void whatIsNotKnownBy(
-        Collect collect,
-        immutable uint node_id,
-        immutable uint home_node_id=0) {
-        void collect_events(Event e, immutable uint depth=0) {
-            if ( e ) {
-                if ( e.node_id != node_id ) {
-                    if ( collect(e, depth, e.node_id) ) {
-                        collect_events(e.father, depth+1);
-                        collect_events(e.mother, depth+1);
-                    }
+                    return search(_rounds);
                 }
             }
+            else {
+                _rounds = new Round(previous); //, total_nodes);
+            }
+            return _rounds;
         }
-        auto node=nodes[home_node_id];
-        collect_events(node.event);
+
+        package void strongSee(Event check_event) {
+            if ( check_event && !check_event.is_strongly_seeing_checked ) {
+                const round=check_event.previousRound;
+                void checkStrongSeeing(Event top_event) {
+
+                    BitArray[] vote_mask=new BitArray[total_nodes];
+                    @trusted void reset_bitarray(ref BitArray b) {
+                        b.length=0;
+                        b.length=total_nodes;
+                    }
+
+                    // Clear the node log
+                    foreach(i,ref n; nodes) {
+                        if ( n !is null ) {
+                            n.passed=0;
+                            n.voted=false;
+                            reset_bitarray(vote_mask[i]);
+                        }
+                    }
+
+                    uint seeing;
+                    void search(Event event, immutable uint level=0, immutable bool is_father=false) @safe {
+                        iterative_strong_count++;
+                        uint vote(ref BitArray mask) @trusted {
+                            uint votes;
+                            foreach(i, n; nodes) {
+                                if ( n.passed > 0 ) {
+                                    mask[i]=true;
+                                }
+                                if (mask[i]) {
+                                    votes++;
+                                }
+                            }
+                            return votes;
+                        }
+                        // Finde the node for the event
+                        auto pnode=event.node_id in nodes;
+                        immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
+                        if ( not_famous_yet ) {
+                            auto n=*pnode;
+                            n.passed++;
+                            scope(exit) {
+                                n.passed--;
+                                assert(n.passed >= 0);
+                            }
+
+                            // Check if the current event is a witness and if the round is lower or equal to the expected previous round.
+                            if ( event.witness && round.lessOrEqual(event.round) ) {
+                                if (!n.voted) {
+                                    auto votes=vote(vote_mask[event.node_id]);
+                                    immutable majority=isMajority(votes);
+                                    if ( majority ) {
+                                        seeing++;
+                                        n.voted=true;
+                                    }
+                                }
+                            }
+
+                            auto mother=event.mother;
+
+                            if ( mother ) {
+                                search(mother, level+1);
+                                if ( event.fatherExists ) {
+                                    auto father=event.father;
+                                    search(father, level+1, true);
+                                }
+                            }
+                        }
+                    }
+
+                    search(check_event);
+                    bool strong=isMajority(seeing);
+                    if ( Event.callbacks ) {
+                        Event.callbacks.strong_vote(top_event,seeing);
+                    }
+                    if ( strong ) {
+                        Event e;
+                        // Crawl down to the next witness
+                        for(e=top_event; !e.witness; e=e.mother) {
+                            /* empty */
+                        }
+                        assert(top_event !is e);
+                        top_event.round=nextRound(top_event);
+                        top_event.witness=total_nodes;
+                        top_event.strongly_seeing=true;
+                        // Create witness mask to count famous witness
+                        votingFamous(top_event);
+
+                    }
+                    top_event.strongly_seeing_checked;
+
+                }
+                auto mother=check_event.mother;
+                strongSee(mother);
+                auto father=check_event.father;
+                strongSee(father);
+                checkStrongSeeing(check_event);
+            }
+        }
     }
 
     version(none)

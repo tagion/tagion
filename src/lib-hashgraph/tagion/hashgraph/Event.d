@@ -189,11 +189,11 @@ interface EventCallbacks {
     void create(const(Event) e);
     void witness(const(Event) e);
     void witness_mask(const(Event) e);
-    void witness2_mask(const(Event) e);
+//    void witness2_mask(const(Event) e);
     void strongly_seeing(const(Event) e);
-    void strongly2_seeing(const(Event) e);
+//    void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
-    void strong2_vote(const(Event) e, immutable uint vote);
+//    void strong2_vote(const(Event) e, immutable uint vote);
     void famous(const(Event) e);
     void round(const(Event) e);
     void forked(const(Event) e);
@@ -255,7 +255,7 @@ class Round {
 
     Round next() {
         //     immutable uint size=cast(uint)(nodes_mask.length);
-         return new Round(this);
+        return new Round(this);
     }
 
     // @trusted
@@ -346,7 +346,7 @@ class Event {
     }
     // The altitude increases by one from mother to daughter
     immutable(EventBody) event_body;
-//    package uint visit;
+
     private Buffer _fingerprint;
     // This is the internal pointer to the
     private Event _mother;
@@ -359,20 +359,25 @@ class Event {
     private Round  _round;
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
-    private BitArray* _witness_mask;
-    private bool _witness;
-    private bool _famous;
-    private uint _famous_votes;
-    private bool _strongly_seeing;
-    private bool _strongly_seeing_checked;
 
-//    private bool _witness2_mask_checked;
-    private Round _round2;
-    private Witness _witness2;
-    private uint _witness2_votes;
-    private BitArray _witness2_mask;
-    private bool _strongly2_seeing;
-    private bool _strongly2_seeing_checked;
+    version(FAST_AND_STRONG) {
+        //    private bool _witness2_mask_checked;
+//        private Round _round2;
+        private Witness _witness2;
+        private uint _witness2_votes;
+        private BitArray _witness2_mask;
+        private bool _strongly2_seeing;
+        private bool _strongly2_seeing_checked;
+    }
+    else {
+        private BitArray* _witness_mask;
+        private bool _witness;
+        private bool _strongly_seeing;
+        private bool _strongly_seeing_checked;
+    }
+    private uint _famous_votes;
+    private bool _famous;
+
     private bool _loaded;
     // This indicates that the hashgraph aften this event
     private bool _forked;
@@ -453,258 +458,6 @@ class Event {
         return (_round !is null);
     }
 
-    Round previousRound() // nothrow
-        out(result) {
-            assert(result, "Round must be set to none null");
-        }
-    body {
-        Round search(Event event) {
-            if (event) {
-                if ( event.witness ) {
-                    return event.round;
-                }
-                return search(event.mother);
-
-            }
-            return Round.undefined;
-        }
-        return search(mother);
-    }
-
-    const(Round) round2() pure const nothrow
-        out(result) {
-            assert(result, "Round must be set before this function is called");
-        }
-    body {
-        return _round2;
-    }
-
-    Round round2() pure nothrow
-        in {
-            if ( motherExists ) {
-                assert(_mother, "Graph has not been resolved");
-            }
-        }
-    body {
-        if ( !_round2 ) {
-            _round2=_mother.round2;
-        }
-        return _round2;
-    }
-
-    Round previousRound2() // nothrow
-        in {
-            if ( !isEva ) {
-                assert(_mother);
-            }
-        }
-        out(result) {
-            assert(result, "Round must be set to none null");
-        }
-    body {
-        if ( isEva ) {
-            return _round2;
-        }
-        else {
-            return _mother.round2;
-        }
-    }
-
-    version(none)
-    Round motherRound() nothrow
-    out(result) {
-            assert(result, "Round must be set to none null");
-        }
-    body {
-        if ( mother ) {
-            return mother.round;
-        }
-        else {
-            // Eva event get an undefined round
-            return Round.undefined;
-        }
-    }
-
-    version(node)
-    uint witness2_votes()
-        in {
-            assert(_witness2, "witness_votes can not be called from a non witness event");
-        }
-    body {
-        return _witness2.votes;
-    }
-
-    version(node)
-    void vote_for_witness2(const uint node_id, const uint node_size)
-        in {
-            assert(_witness2, "Voting is only allowed from a witness event");
-        }
-    body {
-        _witness2.vote(node_id, node_size);
-        import std.stdio;
-        import tagion.Base : toText;
-        writefln("@@ Wintess vote node_id=%d seeing=%s votes=%d %s", node_id, _witness2._seeing_mask.toText, _witness2.votes, cast(string)payload);
-
-    }
-
-
-    version(node)
-
-    ref const(BitArray) seeing_mask()
-        in {
-            assert(_witness2, "seeing_mask can not be called from a non witness");
-        }
-    body {
-        return _witness2.seeing_mask;
-    }
-
-
-    version(node)
-    bool seen(const uint node_id)
-        in {
-            assert(_witness2, "seen can not be called from a non witness");
-        }
-    body {
-        return _witness2.seen(node_id);
-    }
-
-//    version(none)
-    uint witness2_votes(immutable uint node_size) {
-        witness2_mask(node_size);
-        return _witness2_votes;
-    }
-
-//    version(none)
-    uint witness2_votes() pure const // nothrow
-        in {
-            debug {
-                import std.stdio;
-                if (!is_witness2_mask_checked) {
-                    writefln("witness2_votes !!!");
-                }
-            }
-            assert(is_witness2_mask_checked);
-        }
-    body {
-        return _witness2_votes;
-    }
-
-    bool is_witness2_mask_checked() pure const nothrow {
-        return _witness2_mask.length != 0;
-    }
-
-    // void witness2_mask_checked()
-    //     in {
-    //         assert(!_witness2_mask_checked);
-    //     }
-    // body {
-    //     _witness2_mask_checked=true;
-    // }
-
-    package ref const(BitArray) witness2_mask(immutable uint node_size) {
-        // import std.stdio;
-        // immutable node_size=cast(uint)(_witness2_mask.length);
-        // BitArray zero;
-        // writefln("node_size=%d", node_size);
-        // set_bitarray(zero, node_size);
-        ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted
-            in {
-                assert(event);
-            }
-        body {
-            // import std.stdio;
-            //  if ( event ) {
-            // scope(exit) {
-            //     import tagion.Base : toText;
-
-            //     string str_level;
-            //     foreach(i; 0..level) {
-            //         str_level~="  ";
-            //     }
-            //     writefln("\t%switness2_mask=%s witness2=%s %s",
-            //         str_level, _witness2_mask.toText, _witness2, cast(string)payload);
-            // }
-            if ( !event.is_witness2_mask_checked ) {
-//                event._witness2_mask_checked=true;
-                bitarray_clear(event._witness2_mask, node_size);
-                if ( event._witness2 ) {
-                    if ( !event._witness2_mask[event.node_id] ) {
-                        event._witness2_votes++;
-                    }
-                    event._witness2_mask[event.node_id]=true;
-                }
-                else {
-                    if ( event.mother ) {
-                        auto mask=check_witness_mask(event.mother, level+1);
-                        // writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
-                        if ( mask.length < event._witness2_mask.length ) {
-                            mask.length = event._witness2_mask.length;
-                        }
-                        else if ( mask.length > event._witness2_mask.length ) {
-                            event._witness2_mask.length = mask.length;
-                        }
-
-                        event._witness2_mask|=mask;
-
-                    }
-                    if ( event.father ) {
-                        auto mask=check_witness_mask(event.father, level+1);
-                        //writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
-                        if ( mask.length < event._witness2_mask.length ) {
-                            mask.length = event._witness2_mask.length;
-                        }
-                        else if ( mask.length > event._witness2_mask.length ) {
-                            event._witness2_mask.length = mask.length;
-                        }
-
-                        event._witness2_mask|=mask;
-                    }
-                    event._witness2_votes=countVotes(_witness2_mask);
-                }
-                if ( callbacks ) {
-                    callbacks.witness2_mask(event);
-                }
-            }
-            bitarray_change(event._witness2_mask, node_size);
-            return event._witness2_mask;
-        }
-        return check_witness_mask(this);
-    }
-
-    ref const(BitArray) witness2_mask() pure const // nothrow
-        in {
-            debug {
-                import std.stdio;
-                if ( !is_witness2_mask_checked ) {
-                    writefln("Check witness2_mask %s", cast(string)payload );
-                }
-            }
-
-            assert(is_witness2_mask_checked);
-        }
-    body {
-        return _witness2_mask;
-    }
-    // package void witness_mask(BitArray mask) {
-    //     _witness_mask = mask;
-    // }
-//}
-    void famous(bool f)
-        in {
-            if ( !f ) {
-                assert(!_famous);
-            }
-        }
-    body {
-        if ( callbacks && !_famous && f) {
-            _famous=true;
-            callbacks.famous(this);
-        }
-        else {
-            _famous=f;
-        }
-    }
-
     bool famous() pure const nothrow {
         return _famous;
     }
@@ -720,154 +473,323 @@ class Event {
         return _famous_votes;
     }
 
-    // void witness2(immutable bool flag)
-    //     in {
-    //         assert(_witness2);
-    //     }
-    // body {
-    //     _witness2 = flag;
-    // }
-    bool witness2() pure const nothrow {
-        return _witness2 !is null;
-    }
-
-    void witness(immutable uint size)
-        in {
-            assert(!_witness);
+    version(FAST_AND_STRONG) {
+        const(Round) round2() pure const nothrow
+            out(result) {
+                    assert(result, "Round must be set before this function is called");
+                }
+        body {
+            return _round;
         }
-    body {
-        _witness=true;
-//        _witness2_mask_checked=false;
-        bitarray_clear(_witness2_mask,0);
-        if ( !_witness_mask ) {
-            create_witness_mask(size);
+
+        Round round2() pure nothrow
+            in {
+                if ( motherExists ) {
+                    assert(_mother, "Graph has not been resolved");
+                }
+            }
+        body {
+            if ( !_round ) {
+                _round=_mother.round2;
+            }
+            return _round;
         }
-        if ( callbacks ) {
-            callbacks.witness(this);
+
+        Round previousRound2() // nothrow
+            in {
+                if ( !isEva ) {
+                    assert(_mother);
+                }
+            }
+        out(result) {
+                assert(result, "Round must be set to none null");
+            }
+        body {
+            if ( isEva ) {
+                return _round;
+            }
+            else {
+                return _mother.round2;
+            }
         }
-    }
 
-    bool witness() pure const nothrow {
-        return _witness;
-    }
 
-    @trusted
-    private void create_witness_mask(immutable uint size)
-        in {
-            assert(_witness, "Witness mask can not be created for a none witness event");
-            assert(_witness_mask is null, "Witness mask has already been created");
+        uint witness2_votes(immutable uint node_size) {
+            witness2_mask(node_size);
+            return _witness2_votes;
         }
-    body {
-        _witness_mask=new BitArray;
-        _witness_mask.length=size;
-    }
 
-
-    @trusted
-    void strongly2_seeing()
-        in {
-            assert(!_strongly2_seeing_checked);
-            //assert(!_witness2);
-
-            assert(_witness2_mask.length != 0);
+        uint witness2_votes() pure const // nothrow
+            in {
+                debug {
+                    import std.stdio;
+                    if (!is_witness2_mask_checked) {
+                        writefln("witness2_votes !!!");
+                    }
+                }
+                assert(is_witness2_mask_checked);
+            }
+        body {
+            return _witness2_votes;
         }
-    body {
+
+        bool is_witness2_mask_checked() pure const nothrow {
+            return _witness2_mask.length != 0;
+        }
+
+
+        package ref const(BitArray) witness2_mask(immutable uint node_size) {
+            // import std.stdio;
+            // immutable node_size=cast(uint)(_witness2_mask.length);
+            // BitArray zero;
+            // writefln("node_size=%d", node_size);
+            // set_bitarray(zero, node_size);
+            ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted
+                in {
+                    assert(event);
+                }
+            body {
+                // import std.stdio;
+                //  if ( event ) {
+                // scope(exit) {
+                //     import tagion.Base : toText;
+
+                //     string str_level;
+                //     foreach(i; 0..level) {
+                //         str_level~="  ";
+                //     }
+                //     writefln("\t%switness2_mask=%s witness2=%s %s",
+                //         str_level, _witness2_mask.toText, _witness2, cast(string)payload);
+                // }
+                if ( !event.is_witness2_mask_checked ) {
+//                event._witness2_mask_checked=true;
+                    bitarray_clear(event._witness2_mask, node_size);
+                    if ( event._witness2 ) {
+                        if ( !event._witness2_mask[event.node_id] ) {
+                            event._witness2_votes++;
+                        }
+                        event._witness2_mask[event.node_id]=true;
+                    }
+                    else {
+                        if ( event.mother ) {
+                            auto mask=check_witness_mask(event.mother, level+1);
+                            // writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
+                            if ( mask.length < event._witness2_mask.length ) {
+                                mask.length = event._witness2_mask.length;
+                            }
+                            else if ( mask.length > event._witness2_mask.length ) {
+                                event._witness2_mask.length = mask.length;
+                            }
+
+                            event._witness2_mask|=mask;
+
+                        }
+                        if ( event.father ) {
+                            auto mask=check_witness_mask(event.father, level+1);
+                            //writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
+                            if ( mask.length < event._witness2_mask.length ) {
+                                mask.length = event._witness2_mask.length;
+                            }
+                            else if ( mask.length > event._witness2_mask.length ) {
+                                event._witness2_mask.length = mask.length;
+                            }
+
+                            event._witness2_mask|=mask;
+                        }
+                        event._witness2_votes=countVotes(_witness2_mask);
+                    }
+                    if ( callbacks ) {
+                        callbacks.witness_mask(event);
+                    }
+                }
+                bitarray_change(event._witness2_mask, node_size);
+                return event._witness2_mask;
+            }
+            return check_witness_mask(this);
+        }
+
+        ref const(BitArray) witness_mask() pure const // nothrow
+            in {
+                debug {
+                    import std.stdio;
+                    if ( !is_witness2_mask_checked ) {
+                        writefln("Check witness2_mask %s", cast(string)payload );
+                    }
+                }
+
+                assert(is_witness2_mask_checked);
+            }
+        body {
+            return _witness2_mask;
+        }
+
+
+        bool witness() pure const nothrow {
+            return _witness2 !is null;
+        }
+
+
+        @trusted
+            void strongly2_seeing()
+            in {
+                assert(!_strongly2_seeing_checked);
+                //assert(!_witness2);
+
+                assert(_witness2_mask.length != 0);
+            }
+        body {
 //        _strongly2_seeing_checked=true;
 //        if ( strong ) {
-        immutable size=cast(uint)(_witness2_mask.length);
-        bitarray_clear(_witness2_mask, size);
-        _witness2_mask[node_id]=true;
-        _witness2=new Witness;
-        _round2=mother.round2.next;
-        if ( callbacks ) {
-            callbacks.strongly2_seeing(this);
+            immutable size=cast(uint)(_witness2_mask.length);
+            bitarray_clear(_witness2_mask, size);
+            _witness2_mask[node_id]=true;
+            _witness2=new Witness;
+            _round=mother.round2.next;
+            if ( callbacks ) {
+                callbacks.strongly_seeing(this);
+            }
         }
-    }
 
-    version(none)
-    void strongly2_seeing(bool s)
-        in {
-            assert(!_strongly2_seeing);
-            assert(!_strongly2_seeing_checked);
+        bool strongly_seeing() const pure nothrow {
+            return _strongly2_seeing;
         }
-    body {
-        _strongly2_seeing=s;
-        if ( callbacks && s ) {
+
+        void strongly2_seeing_checked()
+            in {
+                assert(!_strongly2_seeing_checked);
+            }
+        body {
             _strongly2_seeing_checked=true;
-            callbacks.strongly2_seeing(this);
+        }
+
+        bool is_strongly2_seeing_checked() const pure nothrow {
+            return _strongly2_seeing_checked;
+        }
+
+    } else {
+
+        Round previousRound() // nothrow
+            out(result) {
+                    assert(result, "Round must be set to none null");
+                }
+        body {
+            Round search(Event event) {
+                if (event) {
+                    if ( event.witness ) {
+                        return event.round;
+                    }
+                    return search(event.mother);
+
+                }
+                return Round.undefined;
+            }
+            return search(mother);
+        }
+
+
+        void witness(immutable uint size)
+            in {
+                assert(!_witness);
+            }
+        body {
+            _witness=true;
+//        _witness2_mask_checked=false;
+//            bitarray_clear(_witness2_mask,0);
+            if ( !_witness_mask ) {
+                create_witness_mask(size);
+            }
+            if ( callbacks ) {
+                callbacks.witness(this);
+            }
+        }
+
+        bool witness() pure const nothrow {
+            return _witness;
+        }
+
+        @trusted
+            private void create_witness_mask(immutable uint size)
+            in {
+                assert(_witness, "Witness mask can not be created for a none witness event");
+                assert(_witness_mask is null, "Witness mask has already been created");
+            }
+        body {
+            _witness_mask=new BitArray;
+            _witness_mask.length=size;
+        }
+
+
+        @trusted
+            void set_witness_mask(uint index)
+            in {
+                assert(_witness, "To set a witness mask the event must be a witness");
+            }
+        body {
+            if (!(*_witness_mask)[index]) {
+                (*_witness_mask)[index]=true;
+                increase_famous_votes();
+            }
+        }
+
+        ref const(BitArray) witness_mask() const pure nothrow
+            in {
+                assert(_witness, "Event is not a witness");
+                assert(_witness_mask, "Witness mask should be set of a witness");
+            }
+        body {
+            return *_witness_mask;
+        }
+
+        void strongly_seeing_checked()
+            in {
+                assert(!_strongly_seeing_checked);
+            }
+        body {
+            _strongly_seeing_checked=true;
+        }
+
+        bool is_strongly_seeing_checked() const pure nothrow {
+            return _strongly_seeing_checked;
+        }
+
+        // void strongly_seeing_checked() nothrow {
+        //     _strongly_seeing_checked=true;
+        // }
+
+        void strongly_seeing(bool s)
+            in {
+                assert(!_strongly_seeing);
+                assert(!_strongly_seeing_checked);
+            }
+        body {
+            _strongly_seeing=s;
+            if ( callbacks && s ) {
+                callbacks.strongly_seeing(this);
+            }
+            // _strongly_seeing_checked=true;
+        }
+
+        bool strongly_seeing() const pure nothrow {
+            return _strongly_seeing;
+        }
+
+        void famous(bool f)
+            in {
+                if ( !f ) {
+                    assert(!_famous);
+                }
+            }
+        body {
+            if ( callbacks && !_famous && f) {
+                _famous=true;
+                callbacks.famous(this);
+            }
+            else {
+                _famous=f;
+            }
         }
     }
 
-    bool strongly2_seeing() const pure nothrow {
-        return _strongly2_seeing;
-    }
-
-    void strongly2_seeing_checked()
-        in {
-            assert(!_strongly2_seeing_checked);
-        }
-    body {
-        _strongly2_seeing_checked=true;
-    }
-
-    bool is_strongly2_seeing_checked() const pure nothrow {
-        return _strongly2_seeing_checked;
-    }
-
-
-    @trusted
-    void set_witness_mask(uint index)
-        in {
-            assert(_witness, "To set a witness mask the event must be a witness");
-        }
-    body {
-        if (!(*_witness_mask)[index]) {
-            (*_witness_mask)[index]=true;
-            increase_famous_votes();
-        }
-    }
-
-    ref const(BitArray) witness_mask() const pure nothrow
-        in {
-            assert(_witness, "Event is not a witness");
-            assert(_witness_mask, "Witness mask should be set of a witness");
-        }
-    body {
-        return *_witness_mask;
-    }
-
-    void strongly_seeing_checked()
-        in {
-            assert(!_strongly_seeing_checked);
-        }
-    body {
-        _strongly_seeing_checked=true;
-    }
-
-    bool is_strongly_seeing_checked() const pure nothrow {
-        return _strongly_seeing_checked;
-    }
-
-    // void strongly_seeing_checked() nothrow {
-    //     _strongly_seeing_checked=true;
-    // }
-
-    void strongly_seeing(bool s)
-        in {
-            assert(!_strongly_seeing);
-            assert(!_strongly_seeing_checked);
-        }
-    body {
-        _strongly_seeing=s;
-        if ( callbacks && s ) {
-            callbacks.strongly_seeing(this);
-        }
-        // _strongly_seeing_checked=true;
-    }
-
-    bool strongly_seeing() const pure nothrow {
-        return _strongly_seeing;
-    }
 
     void forked(bool s)
         in {
@@ -893,9 +815,9 @@ class Event {
     }
 
     immutable uint node_id;
-    // FixMe: CBR 19-may-2018
-    // Note pubkey is redundent information
-    // The node_id should be enought this will be changed later
+// FixMe: CBR 19-may-2018
+// Note pubkey is redundent information
+// The node_id should be enought this will be changed later
     this(
         ref immutable(EventBody) ebody,
         RequestNet request_net,
@@ -911,19 +833,18 @@ class Event {
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
+            version(FAST_AND_STRONG) {
+                _witness2 = new Witness;
+            }
+            else {
+                _witness = true;
+            }
             _round = Round.undefined;
-            _witness = true;
-            _round2 = Round.undefined;
-            _witness2 = new Witness;
-        }
-        // else {
 
-        // }
-        //      assert(_fingerprint);
-//        }
+        }
     }
 
-    // Disconnect the Event from the graph
+// Disconnect the Event from the graph
     void diconnect() {
         _mother=_father=null;
         _daughter=_son=null;
@@ -979,13 +900,13 @@ class Event {
     }
 
     Event father(bool ignore_null_check=false, H)(H h)
-    out(result) {
-        static if ( !ignore_null_check) {
-            if ( father_hash ) {
-                assert(result, "the father is not found");
+        out(result) {
+            static if ( !ignore_null_check) {
+                if ( father_hash ) {
+                    assert(result, "the father is not found");
+                }
             }
         }
-    }
     body {
         if ( _father is null ) {
             _father = h.lookup(father_hash);
@@ -1064,11 +985,11 @@ class Event {
     }
 
     immutable(ubyte[]) father_hash() const pure nothrow {
-	return event_body.father;
+        return event_body.father;
     }
 
     immutable(ubyte[]) mother_hash() const pure nothrow {
-	return event_body.mother;
+        return event_body.mother;
     }
 
     immutable(ubyte[]) payload() const pure nothrow {
@@ -1081,7 +1002,7 @@ class Event {
 
 //True if Event contains a payload or is the initial Event of its creator
     bool containPayload() const pure nothrow {
-	return payload.length != 0;
+        return payload.length != 0;
     }
 
     bool motherExists() const pure nothrow {
@@ -1092,22 +1013,22 @@ class Event {
         return event_body.father !is null;
     }
 
-    // is true if the event does not have a mother or a father
+// is true if the event does not have a mother or a father
     bool isEva() pure const nothrow {
         return !motherExists;
     }
-    // bool isEva() const nothrow
-    //     out (result) {
-    //         if (result) {
-    //             assert(father_hash is null);
-    //             if ( _round2 ) {
-    //                 assert(_round2.isUndefined );
-    //             }
-    //         }
-    //     }
-    // body {
-    //     return mother_hash is null;
-    // }
+// bool isEva() const nothrow
+//     out (result) {
+//         if (result) {
+//             assert(father_hash is null);
+//             if ( _round2 ) {
+//                 assert(_round2.isUndefined );
+//             }
+//         }
+//     }
+// body {
+//     return mother_hash is null;
+// }
 
     immutable(Buffer) fingerprint() const pure nothrow
     in {
