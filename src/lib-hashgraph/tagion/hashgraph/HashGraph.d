@@ -93,7 +93,7 @@ class HashGraph {
         const(Event) event() pure const nothrow
         in {
             version(FAST_AND_STRONG)
-                if ( _event.witness ) {
+                if ( _event && _event.witness ) {
                     assert(_event is last_witness);
                 }
         }
@@ -510,7 +510,7 @@ class HashGraph {
     version(FAST_AND_STRONG) {
         @trusted
             package void strongSee2(Event top_event) {
-            if ( top_event && !top_event.is_strongly2_seeing_checked ) {
+            if ( top_event && !top_event.is_strongly_seeing_checked ) {
 
                 strongSee2(top_event.mother);
                 strongSee2(top_event.father);
@@ -575,7 +575,7 @@ class HashGraph {
                         nodes[top_event.node_id].last_witness=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }
-                    top_event.strongly2_seeing_checked;
+                    top_event.strongly_seeing_checked;
                     if ( Event.callbacks ) {
                         Event.callbacks.strong_vote(top_event, seeing);
                     }
