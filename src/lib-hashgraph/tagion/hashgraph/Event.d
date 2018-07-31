@@ -365,7 +365,7 @@ class Event {
 //        private Round _round2;
         private Witness _witness2;
         private uint _witness2_votes;
-        private BitArray _witness2_mask;
+        private BitArray _witness_mask;
         private bool _strongly2_seeing;
         private bool _strongly2_seeing_checked;
     }
@@ -534,7 +534,7 @@ class Event {
         }
 
         bool is_witness2_mask_checked() pure const nothrow {
-            return _witness2_mask.length != 0;
+            return _witness_mask.length != 0;
         }
 
 
@@ -563,64 +563,57 @@ class Event {
                 // }
                 if ( !event.is_witness2_mask_checked ) {
 //                event._witness2_mask_checked=true;
-                    bitarray_clear(event._witness2_mask, node_size);
+                    bitarray_clear(event._witness_mask, node_size);
                     if ( event._witness2 ) {
-                        if ( !event._witness2_mask[event.node_id] ) {
+                        if ( !event._witness_mask[event.node_id] ) {
                             event._witness2_votes++;
                         }
-                        event._witness2_mask[event.node_id]=true;
+                        event._witness_mask[event.node_id]=true;
                     }
                     else {
                         if ( event.mother ) {
                             auto mask=check_witness_mask(event.mother, level+1);
                             // writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
-                            if ( mask.length < event._witness2_mask.length ) {
-                                mask.length = event._witness2_mask.length;
+                            if ( mask.length < event._witness_mask.length ) {
+                                mask.length = event._witness_mask.length;
                             }
-                            else if ( mask.length > event._witness2_mask.length ) {
-                                event._witness2_mask.length = mask.length;
+                            else if ( mask.length > event._witness_mask.length ) {
+                                event._witness_mask.length = mask.length;
                             }
 
-                            event._witness2_mask|=mask;
+                            event._witness_mask|=mask;
 
                         }
                         if ( event.father ) {
                             auto mask=check_witness_mask(event.father, level+1);
                             //writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
-                            if ( mask.length < event._witness2_mask.length ) {
-                                mask.length = event._witness2_mask.length;
+                            if ( mask.length < event._witness_mask.length ) {
+                                mask.length = event._witness_mask.length;
                             }
-                            else if ( mask.length > event._witness2_mask.length ) {
-                                event._witness2_mask.length = mask.length;
+                            else if ( mask.length > event._witness_mask.length ) {
+                                event._witness_mask.length = mask.length;
                             }
 
-                            event._witness2_mask|=mask;
+                            event._witness_mask|=mask;
                         }
-                        event._witness2_votes=countVotes(_witness2_mask);
+                        event._witness_votes=countVotes(_witness_mask);
                     }
                     if ( callbacks ) {
                         callbacks.witness_mask(event);
                     }
                 }
-                bitarray_change(event._witness2_mask, node_size);
-                return event._witness2_mask;
+                bitarray_change(event._witness_mask, node_size);
+                return event._witness_mask;
             }
             return check_witness_mask(this);
         }
 
         ref const(BitArray) witness_mask() pure const // nothrow
             in {
-                debug {
-                    import std.stdio;
-                    if ( !is_witness2_mask_checked ) {
-                        writefln("Check witness2_mask %s", cast(string)payload );
-                    }
-                }
-
                 assert(is_witness2_mask_checked);
             }
         body {
-            return _witness2_mask;
+            return _witness_mask;
         }
 
 
@@ -635,14 +628,14 @@ class Event {
                 assert(!_strongly2_seeing_checked);
                 //assert(!_witness2);
 
-                assert(_witness2_mask.length != 0);
+                assert(_witness_mask.length != 0);
             }
         body {
 //        _strongly2_seeing_checked=true;
 //        if ( strong ) {
-            immutable size=cast(uint)(_witness2_mask.length);
-            bitarray_clear(_witness2_mask, size);
-            _witness2_mask[node_id]=true;
+            immutable size=cast(uint)(_witness_mask.length);
+            bitarray_clear(_witness_mask, size);
+            _witness_mask[node_id]=true;
             _witness2=new Witness;
             _round=mother.round2.next;
             if ( callbacks ) {
@@ -693,7 +686,7 @@ class Event {
             }
         body {
             _witness=true;
-//        _witness2_mask_checked=false;
+//        _witness_mask_checked=false;
 //            bitarray_clear(_witness2_mask,0);
             if ( !_witness_mask ) {
                 create_witness_mask(size);
