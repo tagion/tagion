@@ -50,6 +50,8 @@ class HashGraph {
         // Is set if local has initiated an communication with this node
 //        bool initiator;
         //DList!(Event) queue;
+        private BitArray _famous_mask;
+        private uint _famous_votes;
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
@@ -162,15 +164,38 @@ class HashGraph {
         }
 
 
-        // // Notify the Node about the last event
-        // // set the last_witness if the event is a witness
-        // void notify_event(Event event) {
-        //     if ( event.witness2 ) {
-        //         _last_witness=event;
-        //     }
-        // }
 
     }
+    void vote_famous(const Evnet witness_event)
+        in {
+            assert(witness_event);
+            assert(witness_event.witness);
+            assert(wintess_event.mother);
+        }
+    body {
+        @trusted const(BitArray) build_famous_mask(const(Event) event, const(BitArray) mask) {
+            if ( event ) {
+                if ( event.witness ) {
+                    return famous_mask(event.father, mask);
+                }
+                else {
+                    return (event.witness_mask | mask);
+                }
+            }
+            return mask;
+        }
+
+        BitArray zero_mask;
+        immutable node_size = cast(uint)(nodes.length);
+        bitarray_clear(zero_mask, node_size);
+        auto famous_mask=build_famous_mask(witness_event, zero_mask);
+        foreach(node_id, ref node; nodes) {
+            if ( famous_mask[node_id] ) {
+                node.famous_vote(top_event.node_id);
+            }
+        }
+    }
+
 
 //    Round round; // Current round
     private Node[uint] nodes; // List of participating nodes T
@@ -464,8 +489,8 @@ class HashGraph {
             iterative_strong_count=0;
 //            visit++;
             version(FAST_AND_STRONG) {
-                strongSee2(event);
-                writefln("After strongSee2 iterations=%d", iterative_strong_count);
+                strongSee(event);
+                writefln("After strongSee iterations=%d", iterative_strong_count);
             }
             else {
                 strongSee(event);
@@ -509,11 +534,11 @@ class HashGraph {
 
     version(FAST_AND_STRONG) {
         @trusted
-            package void strongSee2(Event top_event) {
+            package void strongSee(Event top_event) {
             if ( top_event && !top_event.is_strongly_seeing_checked ) {
 
-                strongSee2(top_event.mother);
-                strongSee2(top_event.father);
+                strongSee(top_event.mother);
+                strongSee(top_event.father);
                 if ( isMajority(top_event.witness_votes(total_nodes)) ) {
                     scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
                     scope BitArray strong_vote_mask;
@@ -572,7 +597,8 @@ class HashGraph {
                     }
                     checkStrongSeeing(top_event, path_mask);
                     if ( strong ) {
-                        top_event.strongly_seeing;
+                        const previous_witness_event=nodes[top_event.node_id].last_witness;
+                        top_event.strongly_seeing(nodes, top_event);
                         nodes[top_event.node_id].last_witness=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }

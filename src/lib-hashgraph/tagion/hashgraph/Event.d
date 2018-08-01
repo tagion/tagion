@@ -286,47 +286,15 @@ class Round {
 
 @safe
 class Witness {
-    // This object hold a vector for which nodes can see this witness
-    //
-    // Node which are seeing this vitness
-    private BitArray _seeing_mask;
-    private uint _votes;
-    // this(const uint node_size) {
-    //     set_bitarray(_seeing_mask, node_size);
-    // }
-    @trusted
-    void vote(const uint node_id, const uint node_size) {
-        if (_seeing_mask.length < node_size) {
-            bitarray_change(_seeing_mask, node_size);
-        }
-        if ( !_seeing_mask[node_id] ) {
-            _seeing_mask[node_id]=true;
-            _votes++;
-        }
+    private Event _previous_witness_event;
+    private BitArray _famous_mask;
+    private uint     _famous_votes;
+    this(Event previous_witness_event) {
+        _previous_witness_event=previous_witness_event;
     }
-
-    uint votes() pure const nothrow {
-        return _votes;
+    const(Event) event() pure const nothrow {
+        return _previous_witness_event;
     }
-
-    ref const(BitArray) seeing_mask() pure const nothrow {
-        return _seeing_mask;
-    }
-
-    @trusted
-    bool seen(const uint node_id) pure const {
-        if ( node_id < _seeing_mask.length ) {
-            return seeing_mask[node_id];
-        }
-        return false;
-    }
-    // void set_node_size(const uint node_size)
-    //     in {
-    //         assert((_seeing_mask.length == 0) || (_seeing_mask.length == node_size), "Node size can not be change for a wintess event");
-    //     }
-    // body {
-    //     bitarray_clear(_seeing_mask, node_size);
-    // }
 }
 
 @safe
@@ -614,16 +582,14 @@ class Event {
 
 
         @trusted
-            void strongly_seeing()
+            void strongly_seeing(Event previous_witness_event)
             in {
                 assert(!_strongly_seeing_checked);
-                //assert(!_witness2);
-
                 assert(_witness_mask.length != 0);
+                assert(previous_witness_event);
+                assert(previous_witness_event._witness);
             }
         body {
-//        _strongly_seeing_checked=true;
-//        if ( strong ) {
             immutable size=cast(uint)(_witness_mask.length);
             bitarray_clear(_witness_mask, size);
             _witness_mask[node_id]=true;
@@ -631,7 +597,7 @@ class Event {
                 // If father is a witness then the wintess is seen through this event
                 _witness_mask|=_father.witness_mask;
             }
-            _witness=new Witness;
+            _witness=new Witness(previous_witness_event);
             _round=mother.round.next;
             if ( callbacks ) {
                 callbacks.strongly_seeing(this);
@@ -822,7 +788,7 @@ class Event {
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             version(FAST_AND_STRONG) {
-                _witness = new Witness;
+                _witness = new Witness(null);
             }
             else {
                 _witness = true;
