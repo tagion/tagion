@@ -279,7 +279,7 @@ class Round {
         return _undefined;
     }
 
-    Round previous() {
+    Round previous() pure nothrow {
         return _previous;
     }
 }
@@ -475,7 +475,7 @@ class Event {
     }
 
     version(FAST_AND_STRONG) {
-        const(Round) round2() pure const nothrow
+        const(Round) round() pure const nothrow
             out(result) {
                     assert(result, "Round must be set before this function is called");
                 }
@@ -483,7 +483,7 @@ class Event {
             return _round;
         }
 
-        Round round2() pure nothrow
+        Round round() pure nothrow
             in {
                 if ( motherExists ) {
                     assert(_mother, "Graph has not been resolved");
@@ -491,41 +491,31 @@ class Event {
             }
         body {
             if ( !_round ) {
-                _round=_mother.round2;
+                _round=_mother.round;
             }
             return _round;
         }
 
-        Round previousRound2() // nothrow
+        Round previousRound() pure nothrow
             in {
-                if ( !isEva ) {
-                    assert(_mother);
-                }
-            }
-        out(result) {
-                assert(result, "Round must be set to none null");
+                assert(_round);
             }
         body {
-            if ( isEva ) {
-                return _round;
-            }
-            else {
-                return _mother.round2;
-            }
+            return _round.previous;
         }
 
 
-        uint witness2_votes(immutable uint node_size) {
-            witness2_mask(node_size);
+        uint witness_votes(immutable uint node_size) {
+            witness_mask(node_size);
             return _witness_votes;
         }
 
-        uint witness2_votes() pure const // nothrow
+        uint witness_votes() pure const // nothrow
             in {
                 debug {
                     import std.stdio;
                     if (!is_witness_mask_checked) {
-                        writefln("witness2_votes !!!");
+                        writefln("witness_votes !!!");
                     }
                 }
                 assert(is_witness_mask_checked);
@@ -539,7 +529,7 @@ class Event {
         }
 
 
-        package ref const(BitArray) witness2_mask(immutable uint node_size) {
+        package ref const(BitArray) witness_mask(immutable uint node_size) {
             // import std.stdio;
             // immutable node_size=cast(uint)(_witness2_mask.length);
             // BitArray zero;
@@ -624,7 +614,7 @@ class Event {
 
 
         @trusted
-            void strongly2_seeing()
+            void strongly_seeing()
             in {
                 assert(!_strongly_seeing_checked);
                 //assert(!_witness2);
@@ -637,8 +627,12 @@ class Event {
             immutable size=cast(uint)(_witness_mask.length);
             bitarray_clear(_witness_mask, size);
             _witness_mask[node_id]=true;
+            if ( _father && _father._witness !is null ) {
+                // If father is a witness then the wintess is seen through this event
+                _witness_mask|=_father.witness_mask;
+            }
             _witness=new Witness;
-            _round=mother.round2.next;
+            _round=mother.round.next;
             if ( callbacks ) {
                 callbacks.strongly_seeing(this);
             }

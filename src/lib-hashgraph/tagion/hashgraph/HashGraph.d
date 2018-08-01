@@ -514,17 +514,18 @@ class HashGraph {
 
                 strongSee2(top_event.mother);
                 strongSee2(top_event.father);
-                if ( isMajority(top_event.witness2_votes(total_nodes)) ) {
+                if ( isMajority(top_event.witness_votes(total_nodes)) ) {
                     scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
                     scope BitArray strong_vote_mask;
                     uint seeing;
                     bool strong;
-                    const round=top_event.previousRound2;
+//                    const round=top_event.previousRound;
+                    const round=top_event.round;
                     @trusted
                         void checkStrongSeeing(Event check_event, const BitArray path_mask) {
                         iterative_strong_count++;
-                        if ( check_event && round.lessOrEqual(check_event.round2) ) {
-                            const BitArray checked_mask=strong_vote_mask & check_event.witness2_mask(total_nodes);
+                        if ( check_event && round.lessOrEqual(check_event.round) ) {
+                            const BitArray checked_mask=strong_vote_mask & check_event.witness_mask(total_nodes);
                             const check=(checked_mask != check_event.witness_mask);
                             if ( check ) {
 
@@ -571,7 +572,7 @@ class HashGraph {
                     }
                     checkStrongSeeing(top_event, path_mask);
                     if ( strong ) {
-                        top_event.strongly2_seeing;
+                        top_event.strongly_seeing;
                         nodes[top_event.node_id].last_witness=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }
