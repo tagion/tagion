@@ -11,7 +11,7 @@ import tagion.crypto.Hash;
 import tagion.hashgraph.ConsensusExceptions;
 import std.bitmanip : BitArray;
 import tagion.Base : Pubkey, Buffer, bitarray_clear, countVotes;
-
+import Base=tagion.Base;
 @safe
 class HashGraph {
     //alias Pubkey=immutable(ubyte)[];
@@ -90,8 +90,6 @@ class HashGraph {
         }
 
 
-
-
         const(Event) event() pure const nothrow
         in {
             version(FAST_AND_STRONG)
@@ -155,6 +153,16 @@ class HashGraph {
             return iterate(_event);
         }
 
+        protected void vote_famous(const(Event) witness_event)
+            in {
+                assert((witness_event.round.number-last_witness.round.number) == 1);
+                assert(last_witness.witness);
+            }
+        body {
+            last_witness.witness.vote_famous(witness_event.node_id);
+        }
+
+
         private void invariant_event() {
             if ( _event ) {
                 // Front event does not have a daugther or son yet
@@ -166,17 +174,20 @@ class HashGraph {
 
 
     }
-    void vote_famous(const Evnet witness_event)
+
+    version(FAST_AND_STRONG) {
+    @trusted
+    void vote_famous(const Event witness_event)
         in {
             assert(witness_event);
             assert(witness_event.witness);
-            assert(wintess_event.mother);
+            assert(witness_event.mother);
         }
     body {
-        @trusted const(BitArray) build_famous_mask(const(Event) event, const(BitArray) mask) {
+        const(BitArray) build_famous_mask(const(Event) event, const(BitArray) mask) {
             if ( event ) {
                 if ( event.witness ) {
-                    return famous_mask(event.father, mask);
+                    return build_famous_mask(event.father, mask);
                 }
                 else {
                     return (event.witness_mask | mask);
@@ -191,11 +202,11 @@ class HashGraph {
         auto famous_mask=build_famous_mask(witness_event, zero_mask);
         foreach(node_id, ref node; nodes) {
             if ( famous_mask[node_id] ) {
-                node.famous_vote(top_event.node_id);
+                node.vote_famous(witness_event);
             }
         }
     }
-
+    }
 
 //    Round round; // Current round
     private Node[uint] nodes; // List of participating nodes T
@@ -366,9 +377,8 @@ class HashGraph {
     //     return (active_nodes*2)/3;
     // }
 
-    enum minimum_nodes = 3;
-    bool isMajority(uint voting) const pure nothrow {
-        return (active_nodes >= minimum_nodes) && (3*voting > 2*active_nodes);
+    bool isMajority(const uint voting) const pure nothrow {
+        return Base.isMajority(voting, active_nodes);
     }
 
     private void remove_node(Node n)
@@ -598,7 +608,7 @@ class HashGraph {
                     checkStrongSeeing(top_event, path_mask);
                     if ( strong ) {
                         const previous_witness_event=nodes[top_event.node_id].last_witness;
-                        top_event.strongly_seeing(nodes, top_event);
+                        top_event.strongly_seeing(top_event);
                         nodes[top_event.node_id].last_witness=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }

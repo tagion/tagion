@@ -14,7 +14,7 @@ import std.bitmanip;
 //import std.stdio;
 import std.format;
 
-import tagion.Base : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes;
+import tagion.Base : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, isMajority;
 
 import tagion.Keywords;
 
@@ -289,11 +289,33 @@ class Witness {
     private Event _previous_witness_event;
     private BitArray _famous_mask;
     private uint     _famous_votes;
-    this(Event previous_witness_event) {
+    @trusted
+    this(Event previous_witness_event, const uint nodes) {
+        _famous_mask.length=nodes;
         _previous_witness_event=previous_witness_event;
     }
     const(Event) event() pure const nothrow {
         return _previous_witness_event;
+    }
+    @trusted
+    void vote_famous(const uint node_id) {
+        if ( _famous_mask[node_id] ) {
+            _famous_votes++;
+            _famous_mask[node_id]=true;
+        }
+    }
+
+    uint famous_votes() pure const nothrow {
+        return _famous_votes;
+    }
+
+    bool famous() pure const nothrow {
+        immutable node_size=cast(uint)_famous_mask.length;
+        return isMajority(_famous_votes, node_size);
+    }
+
+    ref const(BitArray) famous_mask() pure const nothrow {
+        return _famous_mask;
     }
 }
 
@@ -336,16 +358,16 @@ class Event {
         private BitArray _witness_mask;
 //        private bool _strongly2_seeing;
 //        private bool _strongly2_seeing_checked;
+
     }
     else {
         private BitArray* _witness_mask;
         private bool _witness;
         private bool _strongly_seeing;
-
+        private uint _famous_votes;
+        private bool _famous;
     }
     private bool _strongly_seeing_checked;
-    private uint _famous_votes;
-    private bool _famous;
 
     private bool _loaded;
     // This indicates that the hashgraph aften this event
@@ -427,22 +449,32 @@ class Event {
         return (_round !is null);
     }
 
-    bool famous() pure const nothrow {
-        return _famous;
-    }
-
-    private void increase_famous_votes() {
-        _famous_votes++;
-        if ( callbacks ) {
-            callbacks.famous_votes(this);
-        }
-    }
-
-    uint famous_votes() pure const nothrow {
-        return _famous_votes;
-    }
 
     version(FAST_AND_STRONG) {
+        uint famous_votes() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        body {
+            return _witness.famous_votes;
+        }
+
+        ref const(BitArray) famous_mask() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        body {
+            return _witness.famous_mask;
+        }
+
+        bool famous() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        body {
+            return _witness.famous;
+        }
+
         const(Round) round() pure const nothrow
             out(result) {
                     assert(result, "Round must be set before this function is called");
@@ -576,10 +608,13 @@ class Event {
         }
 
 
-        bool witness() pure const nothrow {
-            return _witness !is null;
+        const(Witness) witness() pure const nothrow {
+            return _witness;
         }
 
+        package Witness witness() {
+            return _witness;
+        }
 
         @trusted
             void strongly_seeing(Event previous_witness_event)
@@ -590,14 +625,14 @@ class Event {
                 assert(previous_witness_event._witness);
             }
         body {
-            immutable size=cast(uint)(_witness_mask.length);
-            bitarray_clear(_witness_mask, size);
+            immutable node_size=cast(uint)(_witness_mask.length);
+            bitarray_clear(_witness_mask, node_size);
             _witness_mask[node_id]=true;
             if ( _father && _father._witness !is null ) {
                 // If father is a witness then the wintess is seen through this event
                 _witness_mask|=_father.witness_mask;
             }
-            _witness=new Witness(previous_witness_event);
+            _witness=new Witness(previous_witness_event, node_size);
             _round=mother.round.next;
             if ( callbacks ) {
                 callbacks.strongly_seeing(this);
@@ -621,6 +656,21 @@ class Event {
         }
 
     } else {
+
+        private void increase_famous_votes() {
+            _famous_votes++;
+            if ( callbacks ) {
+                callbacks.famous_votes(this);
+            }
+        }
+
+        uint famous_votes() pure const nothrow {
+            return _famous_votes;
+        }
+
+        bool famous() pure const nothrow {
+            return _famous;
+        }
 
         Round previousRound() // nothrow
             out(result) {
@@ -788,7 +838,7 @@ class Event {
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             version(FAST_AND_STRONG) {
-                _witness = new Witness(null);
+                _witness = new Witness(null, 0);
             }
             else {
                 _witness = true;
