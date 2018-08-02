@@ -117,6 +117,13 @@ string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
 }
 
+enum minimum_nodes = 3;
+@safe
+bool isMajority(const uint voting, const uint node_size) pure nothrow {
+    return (node_size >= minimum_nodes) && (3*voting > 2*node_size);
+}
+
+
 /**
    Template function for removing the "this." prefix
  */
