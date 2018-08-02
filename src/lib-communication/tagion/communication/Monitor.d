@@ -46,13 +46,19 @@ class MonitorCallBacks : NetCallbacks {
             // writeln("Mother id", e.mother.id);
         }
 
+        version(FAST_AND_STRONG) {
+            immutable _witness=e.witness !is null;
+        }
+        else {
+            immutable _witness=e.witness;
+        }
         auto newEvent = immutable(EventCreateMessage) (
             e.id,
             e.payload,
             e.node_id,
             e.mother !is null ? e.mother.id : 0,
             e.father !is null ? e.father.id : 0,
-            e.witness,
+            _witness,
             e.signature,
             e.channel,
             e.event_body.serialize
@@ -66,19 +72,22 @@ class MonitorCallBacks : NetCallbacks {
     @trusted
     void witness(const(Event) e) {
         // writefln("Event witness, id: %s", e.id);
+        version(FAST_AND_STRONG) {
+            immutable _witness=e.witness !is null;
+        }
+        else {
+            immutable _witness=e.witness;
+        }
         immutable updateEvent = EventUpdateMessage(
             e.id,
             EventProperty.IS_WITNESS,
-            e.witness
+            _witness
             );
         auto bson = updateEvent.serialize;
         _socket_thread_id.send(bson);
     }
 
     void witness_mask(const(Event) e) {
-    }
-
-    void witness2_mask(const(Event) e) {
     }
 
     @trusted
@@ -93,19 +102,6 @@ class MonitorCallBacks : NetCallbacks {
         _socket_thread_id.send(bson);
     }
 
-
-    version(none)
-    @trusted
-    void strongly2_seeing(const(Event) e) {
-        writefln("Event strongly seeing, id: %s", e.id);
-        immutable updateEvent = EventUpdateMessage(
-            e.id,
-            EventProperty.IS_STRONGLY2_SEEING,
-            e.strongly2_seeing
-            );
-        auto bson = updateEvent.serialize;
-        _socket_thread_id.send(bson);
-    }
 
     @trusted
     void famous(const(Event) e) {
