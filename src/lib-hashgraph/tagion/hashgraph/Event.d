@@ -622,7 +622,7 @@ class Event {
                 assert(!_strongly_seeing_checked);
                 assert(_witness_mask.length != 0);
                 assert(previous_witness_event);
-                assert(previous_witness_event._witness);
+                //       assert(previous_witness_event._witness);
             }
         body {
             immutable node_size=cast(uint)(_witness_mask.length);

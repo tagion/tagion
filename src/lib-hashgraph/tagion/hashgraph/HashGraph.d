@@ -159,7 +159,7 @@ class HashGraph {
                 assert(last_witness.witness);
             }
         body {
-            last_witness.witness.vote_famous(witness_event.node_id);
+            last_witness.witness.vote_famous=witness_event.node_id;
         }
 
 
