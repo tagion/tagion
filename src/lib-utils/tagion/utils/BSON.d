@@ -1649,8 +1649,7 @@ unittest
 
 
 @trusted
-string toHex(in ubyte[] nums) pure nothrow
-{
+string toHex(in ubyte[] nums) pure nothrow {
     immutable static lowerHexDigits = "0123456789abcdef";
 
     char[] result = new char[](nums.length * 2);
