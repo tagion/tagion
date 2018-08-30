@@ -5,8 +5,10 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.Net : StdGossipNet, NetCallbacks;;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
 
-import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventProperty, generateHoleThroughBsonMsg;
-import tagion.Base : Control;
+//import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventProperty, generateHoleThroughBsonMsg;
+import tagion.Base : Control, basename;
+import tagion.utils.BSON : HBSON;
+import tagion.Keywords;
 
 import core.thread : dur, msecs, seconds;
 import std.concurrency;
@@ -40,6 +42,10 @@ class MonitorCallBacks : NetCallbacks {
 
     //Implementations of callbacks
     @trusted
+    void socket_send(immutable(ubyte[]) buffer) {
+        _socket_thread_id.send(buffer);
+    }
+
     void create(const(Event) e) {
         // writefln("Event created, id: %s", e.id);
         if(e.mother !is null) {
@@ -52,21 +58,37 @@ class MonitorCallBacks : NetCallbacks {
         else {
             immutable _witness=e.witness;
         }
-        auto newEvent = immutable(EventCreateMessage) (
-            e.id,
-            e.payload,
-            e.node_id,
-            e.mother !is null ? e.mother.id : 0,
-            e.father !is null ? e.father.id : 0,
-            _witness,
-            e.signature,
-            e.channel,
-            e.event_body.serialize
-            );
-        // writefln("The event %s has been created and send to the socket: %s", newEvent.id, _socket_thread_id);
-        auto bson = newEvent.serialize;
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[basename!(e.node_id)]=e.node_id;
+        if ( e.mother !is null ) {
+            bson[Keywords.mother]=e.mother.id;
+        }
+        if ( e.father !is null ) {
+            bson[Keywords.father]=e.father.id;
+        }
+        if ( e.payload !is null ) {
+            bson[Keywords.payload]=e.payload;
+        }
+        bson[basename!(e.signature)]=e.signature;
+        bson[Keywords.channel]=e.channel;
 
-        _socket_thread_id.send(bson);
+
+        // auto newEvent = immutable(EventCreateMessage) (
+        //     e.id,
+        //     e.payload,
+        //     e.node_id,
+        //     e.mother !is null ? e.mother.id : 0,
+        //     e.father !is null ? e.father.id : 0,
+        //     _witness,
+        //     e.signature,
+        //     e.channel,
+        //     e.event_body.serialize
+        //     );
+        // // writefln("The event %s has been created and send to the socket: %s", newEvent.id, _socket_thread_id);
+        // auto bson = newEvent.serialize;
+
+        socket_send(bson.serialize);
     }
 
     @trusted
@@ -78,62 +100,86 @@ class MonitorCallBacks : NetCallbacks {
         else {
             immutable _witness=e.witness;
         }
-        immutable updateEvent = EventUpdateMessage(
-            e.id,
-            EventProperty.IS_WITNESS,
-            _witness
-            );
-        auto bson = updateEvent.serialize;
-        _socket_thread_id.send(bson);
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[Keywords.witness]=_witness;
+
+        // immutable updateEvent = EventUpdateMessage(
+        //     e.id,
+        //     EventProperty.IS_WITNESS,
+        //     _witness
+        //     );
+        // auto bson = updateEvent.serialize;
+        socket_send(bson.serialize);
     }
 
     void witness_mask(const(Event) e) {
     }
 
-    @trusted
     void strongly_seeing(const(Event) e) {
         // writefln("Event strongly seeing, id: %s", e.id);
-        immutable updateEvent = EventUpdateMessage(
-            e.id,
-            EventProperty.IS_STRONGLY_SEEING,
-            e.strongly_seeing
-            );
-        auto bson = updateEvent.serialize;
-        _socket_thread_id.send(bson);
+        // immutable updateEvent = EventUpdateMessage(
+        //     e.id,
+        //     EventProperty.IS_STRONGLY_SEEING,
+        //     e.strongly_seeing
+        //     );
+        // auto bson = updateEvent.serialize;
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[Keywords.strongly_seeing]=e.strongly_seeing;
+        socket_send(bson.serialize);
     }
 
 
-    @trusted
     void famous(const(Event) e) {
         // writefln("Event famous, id: %s", e.id);
-        immutable updateEvent = EventUpdateMessage(
-            e.id,
-            EventProperty.IS_FAMOUS,
-            e.famous
-            );
-        auto bson = updateEvent.serialize;
-        _socket_thread_id.send(bson);
+        // immutable updateEvent = EventUpdateMessage(
+        //     e.id,
+        //     EventProperty.IS_FAMOUS,
+        //     e.famous
+        //     );
+        // auto bson = updateEvent.serialize;
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[Keywords.famous]=e.famous;
+        socket_send(bson.serialize);
     }
 
     void round(const(Event) e) {
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[Keywords.round]=e.round.number;
+        socket_send(bson.serialize);
         // writeln("Impl. needed");
     }
 
     void forked(const(Event) e) {
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[Keywords.forked]=e.forked;
+        socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d forked %s ", e.id, e.forked);
     }
 
     void famous_votes(const(Event) e) {
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[Keywords.famous_votes]=e.famous_votes;
+        socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
     }
 
-    void strong_vote(const(Event) e, immutable uint vote) {
+    void strong_vote(const(Event) e, immutable uint votes) {
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        bson[Keywords.strong_votes]=votes;
+        socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
     }
 
-    void strong2_vote(const(Event) e, immutable uint vote) {
-        // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
-    }
+    // void strong2_vote(const(Event) e, immutable uint vote) {
+    //     // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
+    // }
 
     void consensus_failure(const(ConsensusException) e) {
         // writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
