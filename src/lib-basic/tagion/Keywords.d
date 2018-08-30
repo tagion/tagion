@@ -12,6 +12,17 @@ enum _keywords = [
     "ebody",      // Event body
     "event",      // Event including the eventbody
     "message",
+    "mother",
+    "father",
+    "payload",
+    "channel",
+    "witness",
+    "famous",
+    "round",
+    "forked",
+    "strongly_seeing",
+    "strong_votes",
+    "famous_votes",
 //        "events",     // List of event
     "type",       // Package type
     "block"     // block
