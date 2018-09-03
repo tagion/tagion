@@ -92,10 +92,9 @@ class HashGraph {
 
         const(Event) event() pure const nothrow
         in {
-            version(FAST_AND_STRONG)
-                if ( _event && _event.witness ) {
-                    assert(_event is last_witness);
-                }
+            if ( _event && _event.witness ) {
+                assert(_event is last_witness);
+            }
         }
         body {
             return _event;
@@ -175,7 +174,6 @@ class HashGraph {
 
     }
 
-    version(FAST_AND_STRONG) {
     @trusted
     void vote_famous(const Event witness_event)
         in {
@@ -205,7 +203,6 @@ class HashGraph {
                 node.vote_famous(witness_event);
             }
         }
-    }
     }
 
 //    Round round; // Current round
@@ -491,22 +488,13 @@ class HashGraph {
             // writeln("Before requestEventTree");
             // Makes sure that we have the tree before the graph is checked
             iterative_tree_count=0;
-//            visit++;
             requestEventTree(request_net, event);
             writefln("After requestEventTree iterations=%d", iterative_tree_count);
             // See if the node is strong seeing the hashgraph
             // writeln("Before strong See");
             iterative_strong_count=0;
-//            visit++;
-            version(FAST_AND_STRONG) {
-                strongSee(event);
-                writefln("After strongSee iterations=%d", iterative_strong_count);
-            }
-            else {
-                strongSee(event);
-                writefln("After strongSee iterations=%d", iterative_strong_count);
-            }
-
+            strongSee(event);
+            writefln("After strongSee iterations=%d", iterative_strong_count);
         }
 
         return event;
@@ -542,7 +530,6 @@ class HashGraph {
     }
 
 
-    version(FAST_AND_STRONG) {
         @trusted
             package void strongSee(Event top_event) {
             if ( top_event && !top_event.is_strongly_seeing_checked ) {
@@ -619,170 +606,6 @@ class HashGraph {
                 }
             }
         }
-    } else { //  version !FAST_AND_STRONG
-        // This function makes the votes for famous event
-        private void votingFamous(Event top_event)
-            in {
-                assert(top_event.witness, "Event should be a witness");
-            }
-        body {
-            const round=top_event.previousRound;
-            void findWitness(Event event) {
-                if ( event && !event.isEva ) {
-                    if ( event.witness ) {
-                        if ( event.round is round ) {
-                            event.set_witness_mask(top_event.node_id);
-                        }
-                        else if ( event.round.number < round.number ) {
-                            // If the round is one lower the search is stopped
-                            return;
-                        }
-
-                        //      event.famous=isMajority(event.famous_votes);
-
-                    }
-                    findWitness(event.mother);
-                    findWitness(event.father);
-                }
-            }
-            //   writefln("voteFamous for %s", cast(string)(top_event.payload));
-            findWitness(top_event.mother);
-            findWitness(top_event.father);
-        }
-
-        package Round nextRound(Event event)
-            out(result) {
-                    assert(result);
-                }
-        body {
-            auto previous=event.previousRound;
-            immutable number=Round.increase_number(previous);
-            if ( _rounds ) {
-                // TO DO: CBR Overflow problem in this assert statement
-                assert(number <= _rounds.number+1);
-                if ( number == _rounds.number+1 ) {
-                    auto new_round = new Round(_rounds); //, total_nodes);
-                    _rounds = new_round;
-                }
-                else {
-                    Round search(Round r) {
-                        if ( r ) {
-                            if ( r.number == number ) {
-                                return r;
-                            }
-                        }
-                        return search(r.previous);
-                    }
-                    return search(_rounds);
-                }
-            }
-            else {
-                _rounds = new Round(previous); //, total_nodes);
-            }
-            return _rounds;
-        }
-
-        package void strongSee(Event check_event) {
-            if ( check_event && !check_event.is_strongly_seeing_checked ) {
-                const round=check_event.previousRound;
-                void checkStrongSeeing(Event top_event) {
-
-                    BitArray[] vote_mask=new BitArray[total_nodes];
-                    @trusted void reset_bitarray(ref BitArray b) {
-                        b.length=0;
-                        b.length=total_nodes;
-                    }
-
-                    // Clear the node log
-                    foreach(i,ref n; nodes) {
-                        if ( n !is null ) {
-                            n.passed=0;
-                            n.voted=false;
-                            reset_bitarray(vote_mask[i]);
-                        }
-                    }
-
-                    uint seeing;
-                    void search(Event event, immutable uint level=0, immutable bool is_father=false) @safe {
-                        iterative_strong_count++;
-                        uint vote(ref BitArray mask) @trusted {
-                            uint votes;
-                            foreach(i, n; nodes) {
-                                if ( n.passed > 0 ) {
-                                    mask[i]=true;
-                                }
-                                if (mask[i]) {
-                                    votes++;
-                                }
-                            }
-                            return votes;
-                        }
-                        // Finde the node for the event
-                        auto pnode=event.node_id in nodes;
-                        immutable not_famous_yet=(pnode !is null) && (event !is null) && (!event.famous) ;
-                        if ( not_famous_yet ) {
-                            auto n=*pnode;
-                            n.passed++;
-                            scope(exit) {
-                                n.passed--;
-                                assert(n.passed >= 0);
-                            }
-
-                            // Check if the current event is a witness and if the round is lower or equal to the expected previous round.
-                            if ( event.witness && round.lessOrEqual(event.round) ) {
-                                if (!n.voted) {
-                                    auto votes=vote(vote_mask[event.node_id]);
-                                    immutable majority=isMajority(votes);
-                                    if ( majority ) {
-                                        seeing++;
-                                        n.voted=true;
-                                    }
-                                }
-                            }
-
-                            auto mother=event.mother;
-
-                            if ( mother ) {
-                                search(mother, level+1);
-                                if ( event.fatherExists ) {
-                                    auto father=event.father;
-                                    search(father, level+1, true);
-                                }
-                            }
-                        }
-                    }
-
-                    search(check_event);
-                    bool strong=isMajority(seeing);
-                    if ( Event.callbacks ) {
-                        Event.callbacks.strong_vote(top_event,seeing);
-                    }
-                    if ( strong ) {
-                        Event e;
-                        // Crawl down to the next witness
-                        for(e=top_event; !e.witness; e=e.mother) {
-                            /* empty */
-                        }
-                        assert(top_event !is e);
-                        top_event.round=nextRound(top_event);
-                        top_event.witness=total_nodes;
-                        top_event.strongly_seeing=true;
-                        // Create witness mask to count famous witness
-                        votingFamous(top_event);
-
-                    }
-                    top_event.strongly_seeing_checked;
-
-                }
-                auto mother=check_event.mother;
-                strongSee(mother);
-                auto father=check_event.father;
-                strongSee(father);
-                checkStrongSeeing(check_event);
-            }
-        }
-    }
-
     version(none)
     unittest { // strongSee
         // This is the example taken from
