@@ -52,12 +52,8 @@ class MonitorCallBacks : NetCallbacks {
             // writeln("Mother id", e.mother.id);
         }
 
-        version(FAST_AND_STRONG) {
-            immutable _witness=e.witness !is null;
-        }
-        else {
-            immutable _witness=e.witness;
-        }
+        immutable _witness=e.witness !is null;
+
         auto bson=new HBSON;
         bson[basename!(e.id)]=e.id;
         bson[basename!(e.node_id)]=e.node_id;
@@ -94,12 +90,8 @@ class MonitorCallBacks : NetCallbacks {
     @trusted
     void witness(const(Event) e) {
         // writefln("Event witness, id: %s", e.id);
-        version(FAST_AND_STRONG) {
-            immutable _witness=e.witness !is null;
-        }
-        else {
-            immutable _witness=e.witness;
-        }
+        immutable _witness=e.witness !is null;
+
         auto bson=new HBSON;
         bson[basename!(e.id)]=e.id;
         bson[Keywords.witness]=_witness;
