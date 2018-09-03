@@ -139,6 +139,7 @@ class MonitorCallBacks : NetCallbacks {
 
     void round(const(Event) e) {
         auto bson=new HBSON;
+        writefln("Round send %s", e.round.number);
         bson[basename!(e.id)]=e.id;
         bson[Keywords.round]=e.round.number;
         socket_send(bson.serialize);
@@ -404,8 +405,11 @@ struct ListenerSocket {
                         auto client = listener.accept;
                         writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
                         assert(client.isAlive);
+                        writefln("Before listener.isAlive");
                         assert(listener.isAlive);
+                        writefln("Before add client");
                         this.add(client);
+                        writefln("After add client");
                         // client_counter++;
                         // clients[client_counter] = client;
 
@@ -430,18 +434,19 @@ struct ListenerSocket {
 
 
 //Create flat webserver start class function - create Backend class.
-void createSocketThread(const ushort port, string address, bool exit_flag=false) {
+void createSocketThread(const ushort port, string address) {
     scope(failure) {
-        writefln("In failure of soc. th., flag %s:", exit_flag);
+        writefln("In failure of soc. th., flag %s:", Control.FAIL);
 //            if(exit_flag) {
         ownerTid.prioritySend(Control.FAIL);
 //            }
     }
 
     scope(success) {
-        writefln("In success of soc. th., flag %s:", exit_flag);
+        writefln("In success of soc. th., flag %s:", Control.END);
 //            if ( exit_flag ) {
         ownerTid.prioritySend(Control.END);
+        writefln("After send ownerTid");
 //            }
     }
 
