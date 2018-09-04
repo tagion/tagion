@@ -407,17 +407,8 @@ struct ListenerSocket {
                         auto client = listener.accept;
                         writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
                         assert(client.isAlive);
-                        writefln("After client.isAlive %s", port);
                         assert(listener.isAlive);
-                        writefln("After listener.isAlive %s stop_listerner=%s", port, stop_listener);
                         this.add(client);
-
-                        writefln("After add(client) %s", port);
-
-                        // client_counter++;
-                        // clients[client_counter] = client;
-
-                        //ownerTid.send(cast(immutable)client);
                     }
                     catch (SocketAcceptException ex) {
                         writeln(ex);
@@ -469,18 +460,11 @@ void createSocketThread(const ushort port, string address) {
 //                receive( &handleClient);
 //                Thread.sleep(500.msecs);
             // run_listener = false;
-            writefln("After tcpsocket %s", port);
             writefln("run_listerner %s %s", lso.active, port);
 //            }
             lso.stop;
-
-            writefln("After lso.stop %s",port);
-//            Thread.sleep(2.seconds);
             listener_socket_thread.join();
-            writefln("After  listener_socket_thread.join() %s",port);
-//            Thread.sleep(2.seconds);
             ping.close;
-//            Thread.sleep(2.seconds);
             writefln("Thread joined %d", port);
         }
 
