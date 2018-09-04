@@ -212,12 +212,13 @@ class Round {
     immutable int number;
 
     static int increase_number(const(Round) r) {
-        if ( !r.isUndefined && r ) {
-            return r.number+1;
-        }
-        else {
-            return 1;
-        }
+        return r.number+1;
+        // if ( !r.isUndefined && r ) {
+        //     return r.number+1;
+        // }
+        // else {
+        //     return 1;
+        // }
     }
 
 
@@ -241,18 +242,6 @@ class Round {
         number=increase_number(r);
 //        nodes_mask.length=node_size;
     }
-
-    // @trusted
-    // void setNode(immutable uint index)
-    //     in {
-    //         assert(!isUndefined);
-    //     }
-    // body {
-    //     if ( !nodes_mask[index] ) {
-    //         _nodes++;
-    //     }
-    //     nodes_mask[index]=true;
-    // }
 
     Round next() {
         //     immutable uint size=cast(uint)(nodes_mask.length);
@@ -497,14 +486,8 @@ class Event {
         return _witness_votes;
     }
 
-    uint witness_votes() pure const // nothrow
+    uint witness_votes() pure const nothrow
         in {
-            debug {
-                import std.stdio;
-                if (!is_witness_mask_checked) {
-                    writefln("witness_votes !!!");
-                }
-            }
             assert(is_witness_mask_checked);
         }
     body {
@@ -527,20 +510,7 @@ class Event {
                 assert(event);
             }
         body {
-            // import std.stdio;
-            //  if ( event ) {
-            // scope(exit) {
-            //     import tagion.Base : toText;
-
-            //     string str_level;
-            //     foreach(i; 0..level) {
-            //         str_level~="  ";
-            //     }
-            //     writefln("\t%switness2_mask=%s witness2=%s %s",
-            //         str_level, _witness2_mask.toText, _witness2, cast(string)payload);
-            // }
             if ( !event.is_witness_mask_checked ) {
-//                event._witness2_mask_checked=true;
                 bitarray_clear(event._witness_mask, node_size);
                 if ( event._witness ) {
                     if ( !event._witness_mask[event.node_id] ) {
@@ -576,9 +546,6 @@ class Event {
                     }
                     event._witness_votes=countVotes(_witness_mask);
                 }
-                if ( callbacks ) {
-                    callbacks.witness_mask(event);
-                }
             }
             bitarray_change(event._witness_mask, node_size);
             return event._witness_mask;
@@ -586,7 +553,7 @@ class Event {
         return check_witness_mask(this);
     }
 
-    ref const(BitArray) witness_mask() pure const // nothrow
+    ref const(BitArray) witness_mask() pure const nothrow
         in {
             assert(is_witness_mask_checked);
         }

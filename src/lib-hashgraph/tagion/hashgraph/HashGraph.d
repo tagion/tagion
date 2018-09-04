@@ -501,6 +501,12 @@ class HashGraph {
                 if ( iterative_strong_count != 0 ) {
                     Event.callbacks.iterations(event, iterative_strong_count);
                 }
+//                                    if ( callbacks ) {
+                // if ( event.) {
+                Event.callbacks.witness_mask(event);
+                // }
+//                    }
+
             }
         }
 
@@ -530,7 +536,8 @@ class HashGraph {
 
             if ( Event.callbacks ) {
                 Event.callbacks.create(event);
-                Event.callbacks.witness_mask(event);
+                // event.witness_mask;
+                // Event.callbacks.witness_mask(event);
             }
 
         }
