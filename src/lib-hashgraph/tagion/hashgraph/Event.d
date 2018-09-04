@@ -398,17 +398,17 @@ class Event {
     }
 
 
-    // void round(Round round)
-    //     in {
-    //         assert(round !is null, "Round must be defined");
-    //         assert(_round is null, "Round is already set");
-    //     }
-    // body {
-    //     this._round=round;
-    //     if ( callbacks ) {
-    //         callbacks.round(this);
-    //     }
-    // }
+    void round(Round round)
+        in {
+            assert(round !is null, "Round must be defined");
+            assert(_round is null, "Round is already set");
+        }
+    body {
+        this._round=round;
+        if ( callbacks ) {
+            callbacks.round(this);
+        }
+    }
 
     inout(Round) round() inout pure // nothrow
     out(result) {
@@ -622,8 +622,6 @@ class Event {
         _round=mother.round.next;
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
-            callbacks.round(this);
-
         }
     }
 
