@@ -23,6 +23,7 @@ enum _keywords = [
     "strongly_seeing",
     "strong_votes",
     "famous_votes",
+    "iterations",
 //        "events",     // List of event
     "type",       // Package type
     "block"     // block
