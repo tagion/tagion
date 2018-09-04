@@ -87,21 +87,19 @@ class MonitorCallBacks : NetCallbacks {
         socket_send(bson.serialize);
     }
 
+    static HBSON createBSON(const(Event) e) {
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        return bson;
+    }
+
     @trusted
     void witness(const(Event) e) {
         // writefln("Event witness, id: %s", e.id);
         immutable _witness=e.witness !is null;
 
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[Keywords.witness]=_witness;
-
-        // immutable updateEvent = EventUpdateMessage(
-        //     e.id,
-        //     EventProperty.IS_WITNESS,
-        //     _witness
-        //     );
-        // auto bson = updateEvent.serialize;
         socket_send(bson.serialize);
     }
 
@@ -109,66 +107,51 @@ class MonitorCallBacks : NetCallbacks {
     }
 
     void strongly_seeing(const(Event) e) {
-        // writefln("Event strongly seeing, id: %s", e.id);
-        // immutable updateEvent = EventUpdateMessage(
-        //     e.id,
-        //     EventProperty.IS_STRONGLY_SEEING,
-        //     e.strongly_seeing
-        //     );
-        // auto bson = updateEvent.serialize;
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[Keywords.strongly_seeing]=e.strongly_seeing;
         socket_send(bson.serialize);
     }
 
 
     void famous(const(Event) e) {
-        // writefln("Event famous, id: %s", e.id);
-        // immutable updateEvent = EventUpdateMessage(
-        //     e.id,
-        //     EventProperty.IS_FAMOUS,
-        //     e.famous
-        //     );
-        // auto bson = updateEvent.serialize;
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[Keywords.famous]=e.famous;
         socket_send(bson.serialize);
     }
 
     void round(const(Event) e) {
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[Keywords.round]=e.round.number;
         socket_send(bson.serialize);
         // writeln("Impl. needed");
     }
 
     void forked(const(Event) e) {
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[Keywords.forked]=e.forked;
         socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d forked %s ", e.id, e.forked);
     }
 
     void famous_votes(const(Event) e) {
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[Keywords.famous_votes]=e.famous_votes;
         socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
     }
 
     void strong_vote(const(Event) e, immutable uint votes) {
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[Keywords.strong_votes]=votes;
         socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
     }
 
+    void iterations(const(Event) e, const uint count) {
+        auto bson=createBSON(e);
+        bson[Keywords.iterations]=count;
+        socket_send(bson.serialize);
+    }
     // void strong2_vote(const(Event) e, immutable uint vote) {
     //     // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
     // }
