@@ -45,6 +45,12 @@ class MonitorCallBacks : NetCallbacks {
         _socket_thread_id.send(buffer);
     }
 
+    static HBSON createBSON(const(Event) e) {
+        auto bson=new HBSON;
+        bson[basename!(e.id)]=e.id;
+        return bson;
+    }
+
     void create(const(Event) e) {
         // writefln("Event created, id: %s", e.id);
         if(e.mother !is null) {
@@ -53,8 +59,7 @@ class MonitorCallBacks : NetCallbacks {
 
         immutable _witness=e.witness !is null;
 
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
+        auto bson=createBSON(e);
         bson[basename!(e.node_id)]=e.node_id;
         if ( e.mother !is null ) {
             bson[Keywords.mother]=e.mother.id;
@@ -65,34 +70,16 @@ class MonitorCallBacks : NetCallbacks {
         if ( e.payload !is null ) {
             bson[Keywords.payload]=e.payload;
         }
+        /*
         bson[basename!(e.signature)]=e.signature;
         bson[Keywords.channel]=e.channel;
-
-
-        // auto newEvent = immutable(EventCreateMessage) (
-        //     e.id,
-        //     e.payload,
-        //     e.node_id,
-        //     e.mother !is null ? e.mother.id : 0,
-        //     e.father !is null ? e.father.id : 0,
-        //     _witness,
-        //     e.signature,
-        //     e.channel,
-        //     e.event_body.serialize
-        //     );
-        // // writefln("The event %s has been created and send to the socket: %s", newEvent.id, _socket_thread_id);
-        // auto bson = newEvent.serialize;
+        */
 
         socket_send(bson.serialize);
     }
 
-    static HBSON createBSON(const(Event) e) {
-        auto bson=new HBSON;
-        bson[basename!(e.id)]=e.id;
-        return bson;
-    }
 
-    @trusted
+//    @trusted
     void witness(const(Event) e) {
         // writefln("Event witness, id: %s", e.id);
         immutable _witness=e.witness !is null;
@@ -102,12 +89,33 @@ class MonitorCallBacks : NetCallbacks {
         socket_send(bson.serialize);
     }
 
+    @trusted
     void witness_mask(const(Event) e) {
+
+        auto bson=createBSON(e);
+        auto mask=new bool[e.witness_mask.length];
+        foreach(i, m; e.witness_mask) {
+            if (m) {
+                mask[i]=true;
+            }
+        }
+        bson[Keywords.witness_mask]=mask;
+        socket_send(bson.serialize);
     }
+
 
     void strongly_seeing(const(Event) e) {
         auto bson=createBSON(e);
         bson[Keywords.strongly_seeing]=e.strongly_seeing;
+        /*
+        auto mask=new bool[e.witness_mask.length];
+        foreach(i, m; e.witness_mask) {
+            if (m) {
+                mask[i]=true;
+            }
+        }
+        bson[Keywords.witness_mask]=mask;
+        */
         socket_send(bson.serialize);
     }
 
