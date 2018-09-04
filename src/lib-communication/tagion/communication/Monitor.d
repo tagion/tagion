@@ -5,7 +5,6 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.Net : StdGossipNet, NetCallbacks;;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
 
-//import tagion.bson.BSONType : EventCreateMessage, EventUpdateMessage, EventProperty, generateHoleThroughBsonMsg;
 import tagion.Base : Control, basename;
 import tagion.utils.BSON : HBSON;
 import tagion.Keywords;
