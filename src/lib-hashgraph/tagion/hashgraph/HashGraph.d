@@ -495,6 +495,12 @@ class HashGraph {
             iterative_strong_count=0;
             strongSee(event);
             writefln("After strongSee iterations=%d", iterative_strong_count);
+            if ( Event.callbacks ) {
+                Event.callbacks.round(event);
+                if ( iterative_strong_count != 0 ) {
+                    Event.callbacks.iterations(event, iterative_strong_count);
+                }
+            }
         }
 
         return event;

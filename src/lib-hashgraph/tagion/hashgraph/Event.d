@@ -198,6 +198,7 @@ interface EventCallbacks {
     void round(const(Event) e);
     void forked(const(Event) e);
     void famous_votes(const(Event) e);
+    void iterations(const(Event) e, const uint count);
 }
 
 @safe
@@ -622,8 +623,6 @@ class Event {
         _round=mother.round.next;
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
-            callbacks.round(this);
-
         }
     }
 
