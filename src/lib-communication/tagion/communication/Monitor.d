@@ -139,6 +139,7 @@ class MonitorCallBacks : NetCallbacks {
 
     void round(const(Event) e) {
         auto bson=new HBSON;
+        writefln("Round send %s", e.round.number);
         bson[basename!(e.id)]=e.id;
         bson[Keywords.round]=e.round.number;
         socket_send(bson.serialize);
@@ -299,12 +300,9 @@ struct ListenerSocket {
             locate_clients=cast(typeof(locate_clients))&_clients;
         }
         void add(ref Socket client) {
-            writefln("locate_client is null %s", locate_clients is null);
-            if ( locate_clients !is null ) {
-                auto clients=cast(Socket[uint]) *locate_clients;
-                clients[client_counter] = client;
-                client_counter=client_counter + 1;
-            }
+            auto clients=cast(Socket[uint]) *locate_clients;
+            clients[client_counter] = client;
+            client_counter=client_counter + 1;
         }
         bool active() const pure {
             return (locate_clients !is null);
@@ -338,7 +336,7 @@ struct ListenerSocket {
             }
         }
         void close() {
-            if ( active ) {
+            if ( locate_clients !is null ) {
                 auto clients=cast(Socket[uint]) *locate_clients;
                 foreach ( key, client; clients) {
                     client.close;
@@ -407,8 +405,15 @@ struct ListenerSocket {
                         auto client = listener.accept;
                         writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
                         assert(client.isAlive);
+                        writefln("Before listener.isAlive");
                         assert(listener.isAlive);
+                        writefln("Before add client");
                         this.add(client);
+                        writefln("After add client");
+                        // client_counter++;
+                        // clients[client_counter] = client;
+
+                        //ownerTid.send(cast(immutable)client);
                     }
                     catch (SocketAcceptException ex) {
                         writeln(ex);
@@ -441,6 +446,7 @@ void createSocketThread(const ushort port, string address) {
         writefln("In success of soc. th., flag %s:", Control.END);
 //            if ( exit_flag ) {
         ownerTid.prioritySend(Control.END);
+        writefln("After send ownerTid");
 //            }
     }
 
@@ -460,11 +466,15 @@ void createSocketThread(const ushort port, string address) {
 //                receive( &handleClient);
 //                Thread.sleep(500.msecs);
             // run_listener = false;
-            writefln("run_listerner %s %s", lso.active, port);
+            writeln("After tcpsocket");
+            writefln("run_listerner %s", lso.active);
 //            }
             lso.stop;
+
+
             listener_socket_thread.join();
             ping.close;
+//            Thread.sleep(2.seconds);
             writefln("Thread joined %d", port);
         }
 
