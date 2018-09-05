@@ -41,7 +41,7 @@ immutable(ubyte[]) decode(string hex)
 in {
     assert(hex.length % 2 == 0);
 }
-body {
+do {
     int to_hex(const(char) c) {
         if ( (c >= '0') && (c <= '9') ) {
             return cast(ubyte)(c-'0');
