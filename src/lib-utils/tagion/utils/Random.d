@@ -26,7 +26,7 @@ struct Random {
         in {
             assert(to>from);
         }
-    body {
+    do {
         immutable range=to-from;
         return (value % range)+from;
     }
