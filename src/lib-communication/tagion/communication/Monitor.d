@@ -5,7 +5,7 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.Net : StdGossipNet, NetCallbacks;;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
 
-import tagion.Base : Control, basename;
+import tagion.Base : Control, basename, bitarray2bool;
 import tagion.utils.BSON : HBSON;
 import tagion.Keywords;
 
@@ -93,13 +93,13 @@ class MonitorCallBacks : NetCallbacks {
     void witness_mask(const(Event) e) {
 
         auto bson=createBSON(e);
-        auto mask=new bool[e.witness_mask.length];
-        foreach(i, m; e.witness_mask) {
-            if (m) {
-                mask[i]=true;
-            }
-        }
-        bson[Keywords.witness_mask]=mask;
+        // auto mask=new bool[e.witness_mask.length];
+        // foreach(i, m; e.witness_mask) {
+        //     if (m) {
+        //         mask[i]=true;
+        //     }
+        // }
+        bson[Keywords.witness_mask]=bitarray2bool(e.witness_mask);
         socket_send(bson.serialize);
     }
 
@@ -302,7 +302,7 @@ struct ListenerSocket {
         void sendBytes(immutable(ubyte)[] data) {
             auto clients=cast(Socket[uint]) *locate_clients;
             //auto clients=stack.clients.dup;
-            writefln("number of clients=%s data=%d", clients.length, data.length);
+//            writefln("number of clients=%s data=%d", clients.length, data.length);
             foreach ( key, client; clients) {
                 // writefln("key=%s client.isAlive=%s", key, client.isAlive);
                 if ( client.isAlive) {
