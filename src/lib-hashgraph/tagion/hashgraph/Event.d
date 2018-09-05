@@ -236,7 +236,7 @@ class Round {
         return (number - rhs.number) <= 0;
     }
 
-    @trusted
+//    @trusted
     this(Round r) { //, immutable uint node_size) {
         _previous=r;
         number=increase_number(r);

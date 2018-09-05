@@ -489,12 +489,12 @@ class HashGraph {
             // Makes sure that we have the tree before the graph is checked
             iterative_tree_count=0;
             requestEventTree(request_net, event);
-            writefln("After requestEventTree iterations=%d", iterative_tree_count);
+
             // See if the node is strong seeing the hashgraph
             // writeln("Before strong See");
             iterative_strong_count=0;
             strongSee(event);
-            writefln("After strongSee iterations=%d", iterative_strong_count);
+
             if ( Event.callbacks ) {
                 event.round; // Make sure that the round exists
                 Event.callbacks.round(event);
