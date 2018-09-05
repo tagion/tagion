@@ -78,7 +78,7 @@ class HashGraph {
             assert(e.son is null);
             assert(e.daughter is null);
         }
-        body {
+        do {
             if ( _event is null ) {
                 _cache_altitude=e.altitude;
                 _event=e;
@@ -96,7 +96,7 @@ class HashGraph {
                 assert(_event is last_witness);
             }
         }
-        body {
+        do {
             return _event;
         }
 
@@ -114,7 +114,7 @@ class HashGraph {
                     assert(_event.daughter is null);
                 }
             }
-        body {
+        do {
             int result=_cache_altitude;
             if ( _event ) {
                 _cache_altitude=highest(_event.altitude, _cache_altitude);
@@ -126,7 +126,7 @@ class HashGraph {
             in {
                 assert(_event !is null, "This node has no events so the altitude is not set yet");
             }
-        body {
+        do {
             return _cache_altitude;
         }
 
@@ -137,7 +137,7 @@ class HashGraph {
                     assert(_event.daughter is null);
                 }
             }
-        body {
+        do {
             int iterate(const(Event) e) @safe {
                 int result;
                 if ( e ) {
@@ -152,13 +152,13 @@ class HashGraph {
             return iterate(_event);
         }
 
-        protected void vote_famous(const(Event) witness_event)
+        protected void vote_famous(const(Event) witness_event, const bool famous)
             in {
                 assert((witness_event.round.number-last_witness.round.number) == 1);
                 assert(last_witness.witness);
             }
-        body {
-            last_witness.witness.vote_famous=witness_event.node_id;
+        do {
+            last_witness.witness.vote_famous(witness_event, witness_event.node_id, famous);
         }
 
 
@@ -181,7 +181,7 @@ class HashGraph {
             assert(witness_event.witness);
             assert(witness_event.mother);
         }
-    body {
+    do {
         const(BitArray) build_famous_mask(const(Event) event, const(BitArray) mask) {
             if ( event ) {
                 if ( event.witness ) {
@@ -389,7 +389,7 @@ class HashGraph {
 //             node_ids.length, active_nodes, unused_node_ids.length);
 // //        assert(node_ids.length == active_nodes + unused_node_ids.length);
 //     }
-    body {
+    do {
 //        writefln("******* REMOVE %d", n.node_id);
         //n.event=null;
         nodes.remove(n.node_id);//=null;

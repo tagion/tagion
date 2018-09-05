@@ -253,7 +253,7 @@ class Round {
     //     in {
     //         assert(!isUndefined);
     //     }
-    // body {
+    // do {
     //     return nodes_mask[index];
     // }
 
@@ -279,6 +279,7 @@ class Witness {
     private Event _previous_witness_event;
     private BitArray _famous_mask;
     private uint     _famous_votes;
+    private uint     _famous_count;
     @trusted
     this(Event previous_witness_event, const uint nodes) {
         _famous_mask.length=nodes;
@@ -287,12 +288,24 @@ class Witness {
     const(Event) event() pure const nothrow {
         return _previous_witness_event;
     }
+
     @trusted
-    void vote_famous(const uint node_id) {
+    void vote_famous(Event e, immutable uint node_id, const(bool) famous) {
         if ( _famous_mask[node_id] ) {
-            _famous_votes++;
+            if ( famous ) {
+                _famous_votes++;
+            }
+            _famous_count++;
             _famous_mask[node_id]=true;
+            // if ( famous_decided ) {
+            //     e.round.famous[
+            // }
         }
+    }
+
+    bool famous_decided() pure const nothrow {
+        immutable node_size=cast(uint)_famous_mask.length;
+        return node_size == _famous_count;
     }
 
     uint famous_votes() pure const nothrow {
@@ -337,6 +350,8 @@ class Event {
 
     //    private bool _round_set;
     private Round  _round;
+    private Round  _recieved_round;
+
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
 
@@ -393,7 +408,7 @@ class Event {
     //         assert(round !is null, "Round must be defined");
     //         assert(_round is null, "Round is already set");
     //     }
-    // body {
+    // do {
     //     this._round=round;
     //     if ( callbacks ) {
     //         callbacks.round(this);
@@ -402,15 +417,9 @@ class Event {
 
     inout(Round) round() inout pure // nothrow
     out(result) {
-        debug {
-            import std.stdio;
-            if ( !result ) {
-                writefln("Eva %s mother=%s", isEva, _mother !is null);
-            }
-        }
         assert(result, "Round should be defined before it is used");
     }
-    body {
+    do {
         return _round;
     }
 
@@ -418,7 +427,7 @@ class Event {
         in {
             assert(_round !is null, "Round is not set for this Event");
         }
-    body {
+    do {
         return _round.number;
     }
 
@@ -427,11 +436,28 @@ class Event {
     }
 
 
+    void recieved_round(Round r)
+        in {
+            assert(r !is null, "Received round can not be null");
+            assert(_recieved_round is null, "Received round has already been set");
+        }
+    do {
+        _recieved_round=r;
+    }
+
+    int received_round_number() pure const nothrow
+        in {
+            assert(_recieved_round !is null);
+        }
+    do {
+        return _recieved_round.number;
+    }
+
     uint famous_votes() pure const nothrow
         in {
             assert(_witness);
         }
-    body {
+    do {
         return _witness.famous_votes;
     }
 
@@ -439,7 +465,7 @@ class Event {
         in {
             assert(_witness);
         }
-    body {
+    do {
         return _witness.famous_mask;
     }
 
@@ -447,7 +473,7 @@ class Event {
         in {
             assert(_witness);
         }
-    body {
+    do {
         return _witness.famous;
     }
 
@@ -455,7 +481,7 @@ class Event {
     out(result) {
         assert(result, "Round must be set before this function is called");
     }
-    body {
+    do {
         return _round;
     }
 
@@ -465,7 +491,7 @@ class Event {
                 assert(_mother, "Graph has not been resolved");
             }
         }
-    body {
+    do {
         if ( !_round ) {
             _round=_mother.round;
         }
@@ -476,7 +502,7 @@ class Event {
         in {
             assert(_round);
         }
-    body {
+    do {
         return _round.previous;
     }
 
@@ -490,7 +516,7 @@ class Event {
         in {
             assert(is_witness_mask_checked);
         }
-    body {
+    do {
         return _witness_votes;
     }
 
@@ -509,7 +535,7 @@ class Event {
             in {
                 assert(event);
             }
-        body {
+        do {
             if ( !event.is_witness_mask_checked ) {
                 bitarray_clear(event._witness_mask, node_size);
                 if ( event._witness ) {
@@ -557,7 +583,7 @@ class Event {
         in {
             assert(is_witness_mask_checked);
         }
-    body {
+    do {
         return _witness_mask;
     }
 
@@ -578,7 +604,7 @@ class Event {
             assert(previous_witness_event);
             //       assert(previous_witness_event._witness);
         }
-    body {
+    do {
         immutable node_size=cast(uint)(_witness_mask.length);
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
@@ -601,7 +627,7 @@ class Event {
         in {
             assert(!_strongly_seeing_checked);
         }
-    body {
+    do {
         _strongly_seeing_checked=true;
     }
 
@@ -616,7 +642,7 @@ class Event {
                 assert(!_forked, "An event can not unforked");
             }
         }
-    body {
+    do {
         _forked = s;
         if ( callbacks && _forked ) {
             callbacks.forked(this);
@@ -688,7 +714,7 @@ class Event {
                 }
             }
         }
-    body {
+    do {
         if ( _mother is null ) {
             _mother = h.lookup(mother_hash);
         }
@@ -709,7 +735,7 @@ class Event {
             assert( (altitude-_mother.altitude) == 1 );
         }
     }
-    body {
+    do {
         return _mother;
     }
 
@@ -721,7 +747,7 @@ class Event {
                 }
             }
         }
-    body {
+    do {
         if ( _father is null ) {
             _father = h.lookup(father_hash);
         }
@@ -744,7 +770,7 @@ class Event {
             assert(_father);
         }
     }
-    body {
+    do {
         return _father;
     }
 
@@ -758,7 +784,7 @@ class Event {
                 assert( c !is null, "Daughter can not be set to null");
             }
         }
-    body {
+    do {
         if ( _daughter && (_daughter !is c) && !_forked ) {
             forked=true;
         }
@@ -777,7 +803,7 @@ class Event {
                 assert( c !is null, "Son can not be set to null");
             }
         }
-    body {
+    do {
         if ( _son && (_son !is c) && !_forked ) {
             forked=true;
         }
@@ -790,7 +816,7 @@ class Event {
         in {
             assert(!_loaded, "Event can only be loaded once");
         }
-    body {
+    do {
         _loaded=true;
     }
 
@@ -840,7 +866,7 @@ class Event {
 //             }
 //         }
 //     }
-// body {
+// do {
 //     return mother_hash is null;
 // }
 
@@ -848,7 +874,7 @@ class Event {
     in {
         assert(_fingerprint, "Hash has not been calculated");
     }
-    body {
+    do {
         return _fingerprint;
     }
 
