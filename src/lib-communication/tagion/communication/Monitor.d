@@ -285,7 +285,7 @@ struct ListenerSocket {
             assert(locate_clients !is null);
             client_counter=cast(uint)_clients.length;
         }
-        body {
+        do {
             locate_clients=cast(typeof(locate_clients))&_clients;
         }
         void add(ref Socket client) {
