@@ -285,21 +285,26 @@ class Witness {
         _famous_mask.length=nodes;
         _previous_witness_event=previous_witness_event;
     }
-    const(Event) event() pure const nothrow {
+
+    Event event() pure nothrow {
         return _previous_witness_event;
     }
 
     @trusted
-    void vote_famous(Event e, immutable uint node_id, const(bool) famous) {
+    void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
+        import std.stdio;
         if ( _famous_mask[node_id] ) {
             if ( famous ) {
                 _famous_votes++;
             }
             _famous_count++;
             _famous_mask[node_id]=true;
-            // if ( famous_decided ) {
+            writefln("famous_mask =%s %d", _famous_mask, _famous_count);
+            if ( famous_decided ) {
+
+                writefln("Decided famous %s!!!", _famous_mask);
             //     e.round.famous[
-            // }
+            }
         }
     }
 
@@ -320,6 +325,7 @@ class Witness {
     ref const(BitArray) famous_mask() pure const nothrow {
         return _famous_mask;
     }
+
 }
 
 @safe
@@ -635,6 +641,11 @@ class Event {
         return _strongly_seeing_checked;
     }
 
+    @trusted
+    bool seeing_witness(const uint node_id) const pure {
+        return  (mother && mother.witness_mask[node_id] ) ||
+            ( father && father.witness_mask[node_id] );
+    }
 
     void forked(bool s)
         in {

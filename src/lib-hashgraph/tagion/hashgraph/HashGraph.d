@@ -70,7 +70,15 @@ class HashGraph {
         bool voted;
         // uint voting;
         private Event _event; // Latest event
-        package Event last_witness;
+        package Event latest_witness_event; // Latest witness event
+
+        package Event previous_witness()
+        in {
+            assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
+        }
+        do {
+            return latest_witness_event.witness.event;
+        }
 
         package void event(Event e)
         in {
@@ -87,13 +95,16 @@ class HashGraph {
                 altitude=e.altitude;
                 _event=e;
             }
+            if ( _event.witness ) {
+                latest_witness_event=_event;
+            }
         }
 
 
         const(Event) event() pure const nothrow
         in {
             if ( _event && _event.witness ) {
-                assert(_event is last_witness);
+                assert(_event is latest_witness_event);
             }
         }
         do {
@@ -152,28 +163,36 @@ class HashGraph {
             return iterate(_event);
         }
 
-        protected void vote_famous(const(Event) witness_event, const bool famous)
+        protected void vote_famous(const(Event) witness_event)
             in {
-                assert((witness_event.round.number-last_witness.round.number) == 1);
-                assert(last_witness.witness);
+                writefln("collect_round=%s latest_witness=%s isEva=%s", witness_event.round.number,  previous_witness.round.number, witness_event.isEva);
+                assert(!witness_event.isEva );
+                assert((witness_event.round.number-previous_witness.round.number) == 1);
+                assert(latest_witness_event.witness);
             }
         do {
-            last_witness.witness.vote_famous(witness_event, witness_event.node_id, famous);
+            previous_witness.witness.vote_famous(witness_event, witness_event.node_id, witness_event.seeing_witness(node_id));
         }
 
 
-        private void invariant_event() {
-            if ( _event ) {
-                // Front event does not have a daugther or son yet
-//                assert(_event.son is null);
-                assert(_event.daughter is null);
+        invariant {
+            if ( latest_witness_event ) {
+                assert(latest_witness_event.witness);
             }
         }
+//         private void invariant_event() {
+//             if ( _event ) {
+//                 // Front event does not have a daugther or son yet
+// //                assert(_event.son is null);
+//                 assert(_event.daughter is null);
+//             }
+//         }
 
 
 
     }
 
+    version(none)
     @trusted
     void vote_famous(const Event witness_event)
         in {
@@ -337,7 +356,7 @@ class HashGraph {
         node.event=event;
         _event_cache[event.fingerprint]=event;
         if ( event.isEva ) {
-            node.last_witness=event;
+            node.latest_witness_event=event;
         }
     }
 
@@ -494,9 +513,18 @@ class HashGraph {
             // writeln("Before strong See");
             iterative_strong_count=0;
             strongSee(event);
+            event.round; // Make sure that the round exists
+
+            collect_witness_votes(event);
+
+            // if ( event.witness ) {
+            //     // Collect votes from this witness to the previous witness
+            //     // previous round
+
+            // }
+//            vote_famous(event);
 
             if ( Event.callbacks ) {
-                event.round; // Make sure that the round exists
                 Event.callbacks.round(event);
                 if ( iterative_strong_count != 0 ) {
                     Event.callbacks.iterations(event, iterative_strong_count);
@@ -608,9 +636,9 @@ class HashGraph {
                     }
                     checkStrongSeeing(top_event, path_mask);
                     if ( strong ) {
-                        const previous_witness_event=nodes[top_event.node_id].last_witness;
-                        top_event.strongly_seeing(top_event);
-                        nodes[top_event.node_id].last_witness=top_event;
+                        auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
+                        top_event.strongly_seeing(previous_witness_event);
+                        nodes[top_event.node_id].latest_witness_event=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }
                     top_event.strongly_seeing_checked;
@@ -620,6 +648,21 @@ class HashGraph {
                 }
             }
         }
+
+    // This function collected the vote from this witness
+    // to the previous in the previous round
+    void collect_witness_votes(Event event) {
+        import std.stdio;
+        writefln("collect_witness_votes");
+        if ( event.witness && !event.isEva ) {
+
+            // This Event is a witness
+            foreach(node_id, ref node; nodes) {
+                node.vote_famous(event);
+            }
+        }
+    }
+
     version(none)
     unittest { // strongSee
         // This is the example taken from
