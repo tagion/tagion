@@ -50,8 +50,8 @@ class HashGraph {
         // Is set if local has initiated an communication with this node
 //        bool initiator;
         //DList!(Event) queue;
-        private BitArray _famous_mask;
-        private uint _famous_votes;
+        // private BitArray _famous_mask;
+        // private uint _famous_votes;
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
@@ -513,9 +513,18 @@ class HashGraph {
             // writeln("Before strong See");
             iterative_strong_count=0;
             strongSee(event);
+            event.round; // Make sure that the round exists
+
+//            collect_witness_votes(event);
+
+            // if ( event.witness ) {
+            //     // Collect votes from this witness to the previous witness
+            //     // previous round
+
+            // }
+//            vote_famous(event);
 
             if ( Event.callbacks ) {
-                event.round; // Make sure that the round exists
                 Event.callbacks.round(event);
                 if ( iterative_strong_count != 0 ) {
                     Event.callbacks.iterations(event, iterative_strong_count);
