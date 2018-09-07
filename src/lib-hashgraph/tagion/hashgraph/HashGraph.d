@@ -75,7 +75,6 @@ class HashGraph {
         package Event previous_witness()
         in {
             assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
-            assert(latest_witness_event.witness, "Lastest witness is not marked as witness");
         }
         do {
             return latest_witness_event.witness.event;
@@ -172,9 +171,7 @@ class HashGraph {
                 assert(latest_witness_event.witness);
             }
         do {
-            writefln("Before previous_witness");
             previous_witness.witness.vote_famous(witness_event, witness_event.node_id, witness_event.seeing_witness(node_id));
-            writefln("After previous_witness");
         }
 
 
@@ -217,7 +214,7 @@ class HashGraph {
         }
 
         BitArray zero_mask;
-
+        immutable node_size = cast(uint)(nodes.length);
         bitarray_clear(zero_mask, node_size);
         auto famous_mask=build_famous_mask(witness_event, zero_mask);
         foreach(node_id, ref node; nodes) {
@@ -227,10 +224,6 @@ class HashGraph {
         }
     }
 
-    uint node_size() const pure nothrow {
-        const result=cast(uint)(nodes.length);
-        return result;
-    }
 //    Round round; // Current round
     private Node[uint] nodes; // List of participating nodes T
     private uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
@@ -644,7 +637,7 @@ class HashGraph {
                     checkStrongSeeing(top_event, path_mask);
                     if ( strong ) {
                         auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
-                        top_event.strongly_seeing(previous_witness_event, node_size);
+                        top_event.strongly_seeing(previous_witness_event);
                         nodes[top_event.node_id].latest_witness_event=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }
@@ -658,11 +651,7 @@ class HashGraph {
 
     // This function collected the vote from this witness
     // to the previous in the previous round
-    void collect_witness_votes(Event event)
-        in {
-            assert(event, "The event needs to exist to collect votes from it");
-        }
-    do {
+    void collect_witness_votes(Event event) {
         import std.stdio;
         writefln("collect_witness_votes");
         if ( event.witness && !event.isEva ) {

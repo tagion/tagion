@@ -281,13 +281,7 @@ class Witness {
     private uint     _famous_votes;
     private uint     _famous_count;
     @trusted
-    this(Event previous_witness_event, const uint nodes)
-        in {
-            if ( previous_witness_event ) {
-                assert(nodes > 0);
-            }
-        }
-    do {
+    this(Event previous_witness_event, const uint nodes) {
         _famous_mask.length=nodes;
         _previous_witness_event=previous_witness_event;
     }
@@ -299,10 +293,6 @@ class Witness {
     @trusted
     void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
         import std.stdio;
-        writefln("begin vote_famous %s %d eva=%s", famous, _famous_mask.length, e.isEva);
-        if ( e.isEva  && (node_id >= _famous_mask.length) ) {
-            _famous_mask.length = node_id;
-        }
         if ( _famous_mask[node_id] ) {
             if ( famous ) {
                 _famous_votes++;
@@ -316,7 +306,6 @@ class Witness {
             //     e.round.famous[
             }
         }
-        writefln("end vote_famous");
     }
 
     bool famous_decided() pure const nothrow {
@@ -614,7 +603,7 @@ class Event {
     }
 
     @trusted
-    void strongly_seeing(Event previous_witness_event, immutable uint node_size)
+    void strongly_seeing(Event previous_witness_event)
         in {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
@@ -622,7 +611,7 @@ class Event {
             //       assert(previous_witness_event._witness);
         }
     do {
-//        immutable node_size=cast(uint)(_witness_mask.length);
+        immutable node_size=cast(uint)(_witness_mask.length);
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
         if ( _father && _father._witness !is null ) {
