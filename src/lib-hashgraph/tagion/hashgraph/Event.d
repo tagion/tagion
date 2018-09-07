@@ -207,10 +207,11 @@ class Round {
     // // This indicates wish events belongs to this round
     // private BitArray nodes_mask;
     // Counts the number of nodes in this round
-    private uint _nodes;
+//    private uint _nodes;
     // Round number
     immutable int number;
-
+//    private BitArray _famous_decided_votes;
+//    private uint _famous_decided_votes_count;
     static int increase_number(const(Round) r) {
         return r.number+1;
         // if ( !r.isUndefined && r ) {
@@ -222,6 +223,11 @@ class Round {
     }
 
 
+    // Events contained in this round
+    private Event[] _events;
+    // List of rounds created
+    private static Round _rounds;
+
     private static Round _undefined;
     static this() {
         _undefined=new Round();
@@ -232,33 +238,91 @@ class Round {
         _previous=null;
     }
 
-    bool lessOrEqual(const Round rhs) pure const {
+    bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
-//    @trusted
-    this(Round r) { //, immutable uint node_size) {
+    this(Round r, const uint node_size) {
         _previous=r;
+        _rounds=this;
         number=increase_number(r);
+        _events=new Event[node_size];
+//        bitarray_change(_famous_decided_votes, node_size);
 //        nodes_mask.length=node_size;
     }
 
-    Round next() {
-        //     immutable uint size=cast(uint)(nodes_mask.length);
-        return new Round(this);
+    private Round next(const uint node_size) {
+        //      immutable uint node_size=cast(uint)(_famous_decided_votes.length);
+        return new Round(this, node_size);
     }
 
-    // @trusted
-    // bool containNode(immutable uint index) const
+    // bool consecutive(const Round r) const pure nothrow
     //     in {
-    //         assert(!isUndefined);
+    //         assert(r, "Round has exist to be check that it is consecutive");
     //     }
     // do {
-    //     return nodes_mask[index];
+    //     return (r.number - number) == 1;
     // }
 
-    uint nodes() const pure nothrow {
-        return _nodes;
+    void add(Event event)
+        in {
+            assert(_undefined, "Event can not be added to the undefined round");
+            assert(_events[event.node_id] is null, "An event has already been added to this round");
+        }
+    do {
+        _events[event.node_id]=event;
+    }
+
+    package void remove(Event event)
+        in {
+            assert(event.round is this, "Event can not be removed from a round it does not belong to it");
+        }
+    do {
+        if ( _events[event.node_id] is event ) {
+            _events[event.node_id]=null;
+        }
+    }
+
+    const(uint) node_size() pure const nothrow {
+        auto result=cast(uint)_events.length;
+        return result;
+    }
+
+    static Round opCall(const uint round_number)
+        in {
+            assert(_rounds, "No round has beed created yet");
+        }
+    do {
+        Round find_round(Round r) {
+            if ( r ) {
+                if ( r.number == round_number ) {
+                    return r;
+                }
+                return find_round(r._previous);
+            }
+            assert(0, "Round does not exist");
+        }
+        immutable round_space = round_number - _rounds.number;
+        if ( round_space == 1 ) {
+            return _rounds.next(_rounds.node_size);
+        }
+        else if ( round_space <= 0 ) {
+            return find_round(_rounds);
+        }
+        assert(0, "No round found");
+    }
+
+
+
+    int opApply(scope int delegate(const uint node_id, Event event) @safe dg) {
+        int result;
+        foreach(uint i, e; _events) {
+            result=dg(i, e);
+            if ( dg(i, e) ) {
+                break;
+            }
+        }
+        return result;
     }
 
     bool isUndefined() const nothrow {
@@ -272,27 +336,48 @@ class Round {
     Round previous() pure nothrow {
         return _previous;
     }
+
+    invariant {
+        void check_round_order(const Round r, const Round p) @safe {
+            if ( (r !is null) && (p !is null) ) {
+                assert( (r.number - r._previous.number) == 1, "The difference between two consecutive rounds (numbers) has to increase by one");
+                check_round_order(r._previous, p._previous);
+            }
+        }
+        check_round_order(this, _previous);
+    }
 }
 
 @safe
 class Witness {
     private Event _previous_witness_event;
-    private BitArray _famous_mask;
-    private uint     _famous_votes;
-    private uint     _famous_count;
+    // This markes the witness in the next round which see this witness
+    private BitArray _famous_vote_seeing;
+    // private uint     _famous_votes;
+    // private uint     _famous_count;
     @trusted
-    this(Event previous_witness_event, const uint nodes) {
-        _famous_mask.length=nodes;
+    this(Event previous_witness_event, const uint node_size)
+    in {
+        assert(node_size > 0);
+    }
+    do {
+        _famous_vote_seeing.length=node_size;
         _previous_witness_event=previous_witness_event;
+    }
+
+    ~this() {
+        _previous_witness_event=null;
     }
 
     Event event() pure nothrow {
         return _previous_witness_event;
     }
 
+    version(node) {
     @trusted
     void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
         import std.stdio;
+        writefln("vote_famous node_id=%d famouns=%s len=%d", node_id, famous, famous_mask.length);
         if ( _famous_mask[node_id] ) {
             if ( famous ) {
                 _famous_votes++;
@@ -325,7 +410,7 @@ class Witness {
     ref const(BitArray) famous_mask() pure const nothrow {
         return _famous_mask;
     }
-
+    }
 }
 
 @safe
@@ -409,19 +494,7 @@ class Event {
     }
 
 
-    // void round(Round round)
-    //     in {
-    //         assert(round !is null, "Round must be defined");
-    //         assert(_round is null, "Round is already set");
-    //     }
-    // do {
-    //     this._round=round;
-    //     if ( callbacks ) {
-    //         callbacks.round(this);
-    //     }
-    // }
-
-    inout(Round) round() inout pure // nothrow
+    inout(Round) round() inout pure nothrow
     out(result) {
         assert(result, "Round should be defined before it is used");
     }
@@ -459,6 +532,7 @@ class Event {
         return _recieved_round.number;
     }
 
+    version(node) {
     uint famous_votes() pure const nothrow
         in {
             assert(_witness);
@@ -466,6 +540,7 @@ class Event {
     do {
         return _witness.famous_votes;
     }
+
 
     ref const(BitArray) famous_mask() pure const nothrow
         in {
@@ -481,6 +556,7 @@ class Event {
         }
     do {
         return _witness.famous;
+    }
     }
 
     const(Round) round() pure const nothrow
@@ -504,9 +580,9 @@ class Event {
         return _round;
     }
 
-    Round previousRound() pure nothrow
+    Round previous_round() pure nothrow
         in {
-            assert(_round);
+            assert(_round, "No round has been defined for this event");
         }
     do {
         return _round.previous;
@@ -603,7 +679,7 @@ class Event {
     }
 
     @trusted
-    void strongly_seeing(Event previous_witness_event)
+    void strongly_seeing(Event previous_witness_event, const uint node_size)
         in {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
@@ -611,7 +687,7 @@ class Event {
             //       assert(previous_witness_event._witness);
         }
     do {
-        immutable node_size=cast(uint)(_witness_mask.length);
+//        immutable node_size=cast(uint)(_witness_mask.length);
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
         if ( _father && _father._witness !is null ) {
@@ -619,7 +695,10 @@ class Event {
             _witness_mask|=_father.witness_mask;
         }
         _witness=new Witness(previous_witness_event, node_size);
-        _round=mother.round.next;
+        // Create add next round from the mothers round
+        _round=Round(mother.round_number);
+        // Add the event to the round
+        _round.add(this);
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
         }
@@ -679,7 +758,8 @@ class Event {
         RequestNet request_net,
         immutable(ubyte[]) signature,
         Pubkey pubkey,
-        uint node_id) {
+        const uint node_id,
+        const uint node_size) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
@@ -689,17 +769,21 @@ class Event {
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
-            _witness = new Witness(null, 0);
+            _witness = new Witness(null, node_size);
             _round = Round.undefined;
 
         }
     }
 
 // Disconnect the Event from the graph
-    void diconnect() {
+    @trusted
+    package void diconnect() {
         _mother=_father=null;
         _daughter=_son=null;
+        _round.remove(this);
         _round = null;
+        _recieved_round=null;
+        _witness.destroy;
     }
 
     ~this() {

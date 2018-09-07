@@ -25,8 +25,8 @@ class HashGraph {
     //alias LRU!(Round, uint*) RoundCounter;
     alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
     private EventCache _event_cache;
-    // List of rounds
-    private Round _rounds;
+    // // List of rounds
+    // private Round _rounds;
     // private GossipNet _gossip_net;
 
 
@@ -50,8 +50,8 @@ class HashGraph {
         // Is set if local has initiated an communication with this node
 //        bool initiator;
         //DList!(Event) queue;
-        private BitArray _famous_mask;
-        private uint _famous_votes;
+        // private BitArray _famous_mask;
+        // private uint _famous_votes;
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
@@ -163,15 +163,18 @@ class HashGraph {
             return iterate(_event);
         }
 
-        protected void vote_famous(const(Event) witness_event)
+        version(node)
+        protected void vote_famous(Event witness_event)
             in {
-                writefln("collect_round=%s latest_witness=%s isEva=%s", witness_event.round.number,  previous_witness.round.number, witness_event.isEva);
+                writefln("collect_round=%s latest_witness.round=%s isEva=%s", witness_event.round.number,  previous_witness.round.number, witness_event.isEva);
                 assert(!witness_event.isEva );
                 assert((witness_event.round.number-previous_witness.round.number) == 1);
                 assert(latest_witness_event.witness);
             }
         do {
-            previous_witness.witness.vote_famous(witness_event, witness_event.node_id, witness_event.seeing_witness(node_id));
+            writefln("Before  previous_witness");
+            witness_event.witness.vote_famous(witness_event, witness_event.node_id, witness_event.seeing_witness(node_id));
+            writefln("After  previous_witness");
         }
 
 
@@ -190,6 +193,11 @@ class HashGraph {
 
 
 
+    }
+
+    uint node_size() const pure nothrow {
+        const result = cast(uint)(nodes.length);
+        return result;
     }
 
     version(none)
@@ -214,7 +222,7 @@ class HashGraph {
         }
 
         BitArray zero_mask;
-        immutable node_size = cast(uint)(nodes.length);
+//        immutable node_size = cast(uint)(nodes.length);
         bitarray_clear(zero_mask, node_size);
         auto famous_mask=build_famous_mask(witness_event, zero_mask);
         foreach(node_id, ref node; nodes) {
@@ -497,7 +505,7 @@ class HashGraph {
 
 
             // writeln("Before new Event");
-            event=new Event(eventbody, request_net, signature, pubkey, node_id);
+            event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
 
 
             // writeln("Before assign");
@@ -637,7 +645,7 @@ class HashGraph {
                     checkStrongSeeing(top_event, path_mask);
                     if ( strong ) {
                         auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
-                        top_event.strongly_seeing(previous_witness_event);
+                        top_event.strongly_seeing(previous_witness_event, node_size);
                         nodes[top_event.node_id].latest_witness_event=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }
@@ -653,12 +661,17 @@ class HashGraph {
     // to the previous in the previous round
     void collect_witness_votes(Event event) {
         import std.stdio;
-        writefln("collect_witness_votes");
         if ( event.witness && !event.isEva ) {
-
+            writefln("collect_witness_votes event.round=%d", event.round_number);
+            immutable previous_round_number=event.round_number-1;
             // This Event is a witness
             foreach(node_id, ref node; nodes) {
-                node.vote_famous(event);
+//                writefln("node hash event %s", node.latest_witness_event !is null);
+
+                if ( node.latest_witness_event ) {
+                    writefln("Latest witness event node_id=%d round=%d", node_id, node.latest_witness_event.round_number);
+                }
+//                node.vote_famous(event);
             }
         }
     }
