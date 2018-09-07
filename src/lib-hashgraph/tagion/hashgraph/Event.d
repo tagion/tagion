@@ -207,10 +207,11 @@ class Round {
     // // This indicates wish events belongs to this round
     // private BitArray nodes_mask;
     // Counts the number of nodes in this round
-    private uint _nodes;
+//    private uint _nodes;
     // Round number
     immutable int number;
-
+    // private BitArray _famous_decided_votes;
+    // private uint _famous_decided_votes_count;
     static int increase_number(const(Round) r) {
         return r.number+1;
         // if ( !r.isUndefined && r ) {
@@ -261,10 +262,6 @@ class Round {
     //         _famous_decided_votes_count++;
     //     }
     // }
-
-    uint nodes() const pure nothrow {
-        return _nodes;
-    }
 
     bool isUndefined() const nothrow {
         return this is _undefined;

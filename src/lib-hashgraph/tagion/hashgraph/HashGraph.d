@@ -95,6 +95,9 @@ class HashGraph {
                 altitude=e.altitude;
                 _event=e;
             }
+            if ( _event.witness ) {
+                latest_witness_event=_event;
+            }
         }
 
 
