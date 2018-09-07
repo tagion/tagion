@@ -71,7 +71,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
     out (signature) {
         assert(verify(message, signature, pubkey));
     }
-    do {
+    body {
         return _sign(message);
     }
 
@@ -88,7 +88,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
                 assert(indata.length == outdata.length);
                 assert(indata.length % _aes.blockSize == 0);
             }
-        do {
+        body {
             for(size_t i=0; i<indata.length; i+=_aes.blockSize) {
                 immutable last=i+_aes.blockSize;
                 _aes.update(indata[i..last], outdata[i..last]);
@@ -99,7 +99,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
                 assert(indata);
                 assert(indata.length == outdata.length);
             }
-        do {
+        body {
             _aes.init(true, key.dup);
             cipher_stream(indata, outdata);
         }
@@ -108,7 +108,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
                 assert(indata);
                 assert(indata.length == outdata.length);
             }
-        do {
+        body {
             _aes.init(false, key.dup);
             cipher_stream(indata, outdata);
         }
@@ -118,7 +118,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
         in {
             assert(_sign is null);
         }
-    do {
+    body {
         import std.digest.sha : SHA256;
         import std.string : representation;
 

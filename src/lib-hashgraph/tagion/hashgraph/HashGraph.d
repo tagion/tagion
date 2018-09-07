@@ -50,8 +50,8 @@ class HashGraph {
         // Is set if local has initiated an communication with this node
 //        bool initiator;
         //DList!(Event) queue;
-        // private BitArray _famous_mask;
-        // private uint _famous_votes;
+        private BitArray _famous_mask;
+        private uint _famous_votes;
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
@@ -70,15 +70,7 @@ class HashGraph {
         bool voted;
         // uint voting;
         private Event _event; // Latest event
-        package Event latest_witness_event; // Latest witness event
-
-        package Event previous_witness()
-        in {
-            assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
-        }
-        do {
-            return latest_witness_event.witness.event;
-        }
+        package Event last_witness;
 
         package void event(Event e)
         in {
@@ -86,7 +78,7 @@ class HashGraph {
             assert(e.son is null);
             assert(e.daughter is null);
         }
-        do {
+        body {
             if ( _event is null ) {
                 _cache_altitude=e.altitude;
                 _event=e;
@@ -95,19 +87,16 @@ class HashGraph {
                 altitude=e.altitude;
                 _event=e;
             }
-            if ( _event.witness ) {
-                latest_witness_event=_event;
-            }
         }
 
 
         const(Event) event() pure const nothrow
         in {
             if ( _event && _event.witness ) {
-                assert(_event is latest_witness_event);
+                assert(_event is last_witness);
             }
         }
-        do {
+        body {
             return _event;
         }
 
@@ -125,7 +114,7 @@ class HashGraph {
                     assert(_event.daughter is null);
                 }
             }
-        do {
+        body {
             int result=_cache_altitude;
             if ( _event ) {
                 _cache_altitude=highest(_event.altitude, _cache_altitude);
@@ -137,7 +126,7 @@ class HashGraph {
             in {
                 assert(_event !is null, "This node has no events so the altitude is not set yet");
             }
-        do {
+        body {
             return _cache_altitude;
         }
 
@@ -148,7 +137,7 @@ class HashGraph {
                     assert(_event.daughter is null);
                 }
             }
-        do {
+        body {
             int iterate(const(Event) e) @safe {
                 int result;
                 if ( e ) {
@@ -163,44 +152,28 @@ class HashGraph {
             return iterate(_event);
         }
 
-        version(node)
-        protected void vote_famous(Event witness_event)
+        protected void vote_famous(const(Event) witness_event)
             in {
-                writefln("collect_round=%s latest_witness.round=%s isEva=%s", witness_event.round.number,  previous_witness.round.number, witness_event.isEva);
-                assert(!witness_event.isEva );
-                assert((witness_event.round.number-previous_witness.round.number) == 1);
-                assert(latest_witness_event.witness);
+                assert((witness_event.round.number-last_witness.round.number) == 1);
+                assert(last_witness.witness);
             }
-        do {
-            writefln("Before  previous_witness");
-            witness_event.witness.vote_famous(witness_event, witness_event.node_id, witness_event.seeing_witness(node_id));
-            writefln("After  previous_witness");
+        body {
+            last_witness.witness.vote_famous=witness_event.node_id;
         }
 
 
-        invariant {
-            if ( latest_witness_event ) {
-                assert(latest_witness_event.witness);
+        private void invariant_event() {
+            if ( _event ) {
+                // Front event does not have a daugther or son yet
+//                assert(_event.son is null);
+                assert(_event.daughter is null);
             }
         }
-//         private void invariant_event() {
-//             if ( _event ) {
-//                 // Front event does not have a daugther or son yet
-// //                assert(_event.son is null);
-//                 assert(_event.daughter is null);
-//             }
-//         }
 
 
 
     }
 
-    uint node_size() const pure nothrow {
-        const result = cast(uint)(nodes.length);
-        return result;
-    }
-
-    version(none)
     @trusted
     void vote_famous(const Event witness_event)
         in {
@@ -208,7 +181,7 @@ class HashGraph {
             assert(witness_event.witness);
             assert(witness_event.mother);
         }
-    do {
+    body {
         const(BitArray) build_famous_mask(const(Event) event, const(BitArray) mask) {
             if ( event ) {
                 if ( event.witness ) {
@@ -222,7 +195,7 @@ class HashGraph {
         }
 
         BitArray zero_mask;
-//        immutable node_size = cast(uint)(nodes.length);
+        immutable node_size = cast(uint)(nodes.length);
         bitarray_clear(zero_mask, node_size);
         auto famous_mask=build_famous_mask(witness_event, zero_mask);
         foreach(node_id, ref node; nodes) {
@@ -364,7 +337,7 @@ class HashGraph {
         node.event=event;
         _event_cache[event.fingerprint]=event;
         if ( event.isEva ) {
-            node.latest_witness_event=event;
+            node.last_witness=event;
         }
     }
 
@@ -416,7 +389,7 @@ class HashGraph {
 //             node_ids.length, active_nodes, unused_node_ids.length);
 // //        assert(node_ids.length == active_nodes + unused_node_ids.length);
 //     }
-    do {
+    body {
 //        writefln("******* REMOVE %d", n.node_id);
         //n.event=null;
         nodes.remove(n.node_id);//=null;
@@ -505,7 +478,7 @@ class HashGraph {
 
 
             // writeln("Before new Event");
-            event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
+            event=new Event(eventbody, request_net, signature, pubkey, node_id);
 
 
             // writeln("Before assign");
@@ -521,18 +494,9 @@ class HashGraph {
             // writeln("Before strong See");
             iterative_strong_count=0;
             strongSee(event);
-            event.round; // Make sure that the round exists
-
-            collect_witness_votes(event);
-
-            // if ( event.witness ) {
-            //     // Collect votes from this witness to the previous witness
-            //     // previous round
-
-            // }
-//            vote_famous(event);
 
             if ( Event.callbacks ) {
+                event.round; // Make sure that the round exists
                 Event.callbacks.round(event);
                 if ( iterative_strong_count != 0 ) {
                     Event.callbacks.iterations(event, iterative_strong_count);
@@ -644,9 +608,9 @@ class HashGraph {
                     }
                     checkStrongSeeing(top_event, path_mask);
                     if ( strong ) {
-                        auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
-                        top_event.strongly_seeing(previous_witness_event, node_size);
-                        nodes[top_event.node_id].latest_witness_event=top_event;
+                        const previous_witness_event=nodes[top_event.node_id].last_witness;
+                        top_event.strongly_seeing(top_event);
+                        nodes[top_event.node_id].last_witness=top_event;
                         writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
                     }
                     top_event.strongly_seeing_checked;
@@ -656,26 +620,6 @@ class HashGraph {
                 }
             }
         }
-
-    // This function collected the vote from this witness
-    // to the previous in the previous round
-    void collect_witness_votes(Event event) {
-        import std.stdio;
-        if ( event.witness && !event.isEva ) {
-            writefln("collect_witness_votes event.round=%d", event.round_number);
-            immutable previous_round_number=event.round_number-1;
-            // This Event is a witness
-            foreach(node_id, ref node; nodes) {
-//                writefln("node hash event %s", node.latest_witness_event !is null);
-
-                if ( node.latest_witness_event ) {
-                    writefln("Latest witness event node_id=%d round=%d", node_id, node.latest_witness_event.round_number);
-                }
-//                node.vote_famous(event);
-            }
-        }
-    }
-
     version(none)
     unittest { // strongSee
         // This is the example taken from
