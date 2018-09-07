@@ -335,7 +335,7 @@ body
     out {
         assert(parents.length == node_size(leafs.length));
     }
-    do {
+    body {
         /**
          * Constructs an internal level of the tree
          */
@@ -515,7 +515,7 @@ body
             in {
                 assert(child1 !is null);
             }
-        do {
+        body {
             this.type = sigType.internal;
             if ( child2 is null ) {
                 this.signature = child1.signature;
@@ -576,7 +576,7 @@ body
             in {
                 assert(A !is null);
             }
-        do {
+        body {
             if ( B is null ) {
                 return A.signature;
             }
