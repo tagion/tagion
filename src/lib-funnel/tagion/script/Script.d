@@ -406,14 +406,14 @@ abstract class ScriptElement : ScriptBasic {
     // in {
     //     assert(sc !is null);
     // }
-    // do {
+    // body {
     //     return _next;
     // }
     const(ScriptElement) next(ScriptElement n)
     in {
         assert(_next is null, "Next script element is should not be change");
     }
-    do {
+    body {
         _next = n;
         return _next;
     }
@@ -433,7 +433,7 @@ abstract class ScriptElement : ScriptBasic {
             assert( sc !is null);
             assert( s !is null);
         }
-    do {
+    body {
 
         if ( runlevel > s.runlevel ) {
             throw new ScriptException("Opcode not allowed in this runlevel");
@@ -488,7 +488,7 @@ class ScriptJump : ScriptElement {
     out {
         assert(this._jump !is null);
     }
-    do {
+    body {
         this._jump=target;
     }
     const(ScriptElement) jump() pure nothrow const {
@@ -609,7 +609,7 @@ class ScriptCall : ScriptJump {
         in {
             assert(loc_size == 0);
         }
-    do {
+    body {
         super.set_jump(target);
         // writefln("set_call %s locals=%s", func_name, locals);
         loc_size = locals;

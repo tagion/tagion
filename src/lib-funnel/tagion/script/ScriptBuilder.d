@@ -668,7 +668,7 @@ private:
         in {
             assert( (type == ScriptType.LOOP) || (type == ScriptType.ADDLOOP));
         }
-    do {
+    body {
         // Loop increase
         auto loc_index=loc_I~to!string(i);
         immutable(Token)[] result= [
@@ -1324,7 +1324,7 @@ private:
                         assert( result !is null );
                     }
                 }
-            do {
+            body {
                 ScriptElement result;
                 if ( i < f.tokens.length ) {
                     auto t=f.tokens[i];
