@@ -289,15 +289,34 @@ class Witness {
         _famous_mask.length=nodes;
         _previous_witness_event=previous_witness_event;
     }
-    const(Event) event() pure const nothrow {
+
+    Event event() pure nothrow {
         return _previous_witness_event;
     }
+
+    version(node) {
     @trusted
-    void vote_famous(const uint node_id) {
+    void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
+        import std.stdio;
+        writefln("vote_famous node_id=%d famouns=%s len=%d", node_id, famous, famous_mask.length);
         if ( _famous_mask[node_id] ) {
-            _famous_votes++;
+            if ( famous ) {
+                _famous_votes++;
+            }
+            _famous_count++;
             _famous_mask[node_id]=true;
+            writefln("famous_mask =%s %d", _famous_mask, _famous_count);
+            if ( famous_decided ) {
+
+                writefln("Decided famous %s!!!", _famous_mask);
+            //     e.round.famous[
+            }
         }
+    }
+
+    bool famous_decided() pure const nothrow {
+        immutable node_size=cast(uint)_famous_mask.length;
+        return node_size == _famous_count;
     }
 
     uint famous_votes() pure const nothrow {
@@ -311,6 +330,7 @@ class Witness {
 
     ref const(BitArray) famous_mask() pure const nothrow {
         return _famous_mask;
+    }
     }
 }
 
@@ -431,6 +451,7 @@ class Event {
         return (_round !is null);
     }
 
+    version(none) {
 
     uint famous_votes() pure const nothrow
         in {
@@ -454,6 +475,7 @@ class Event {
         }
     do {
         return _witness.famous;
+    }
     }
 
     const(Round) round() pure const nothrow
@@ -576,7 +598,7 @@ class Event {
     }
 
     @trusted
-    void strongly_seeing(Event previous_witness_event)
+    void strongly_seeing(Event previous_witness_event, const uint node_size)
         in {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
@@ -584,7 +606,7 @@ class Event {
             //       assert(previous_witness_event._witness);
         }
     do {
-        immutable node_size=cast(uint)(_witness_mask.length);
+//        immutable node_size=cast(uint)(_witness_mask.length);
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
         if ( _father && _father._witness !is null ) {
