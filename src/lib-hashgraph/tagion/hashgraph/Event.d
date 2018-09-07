@@ -210,8 +210,8 @@ class Round {
 //    private uint _nodes;
     // Round number
     immutable int number;
-//    private BitArray _famous_decided_votes;
-//    private uint _famous_decided_votes_count;
+    // private BitArray _famous_decided_votes;
+    // private uint _famous_decided_votes_count;
     static int increase_number(const(Round) r) {
         return r.number+1;
         // if ( !r.isUndefined && r ) {
@@ -222,10 +222,7 @@ class Round {
         // }
     }
 
-
-    // Events contained in this round
     private Event[] _events;
-    // List of rounds created
     private static Round _rounds;
 
     private static Round _undefined;
@@ -238,61 +235,25 @@ class Round {
         _previous=null;
     }
 
-    bool lessOrEqual(const Round rhs) pure const nothrow {
+    bool lessOrEqual(const Round rhs) pure const {
         return (number - rhs.number) <= 0;
     }
 
-    this(Round r, const uint node_size) {
+    private this(Round r, const uint node_size) {
         _previous=r;
-        _rounds=this;
         number=increase_number(r);
         _events=new Event[node_size];
-//        bitarray_change(_famous_decided_votes, node_size);
+        //bitarray_change(_famous_decided_votes, node_size);
 //        nodes_mask.length=node_size;
     }
 
-    private Round next(const uint node_size) {
-        //      immutable uint node_size=cast(uint)(_famous_decided_votes.length);
-        return new Round(this, node_size);
+    private Round next_consecutive() {
+        immutable uint node_size=cast(uint)_events.length;
+        _rounds=new Round(_rounds, node_size);
+        return _rounds;
     }
 
-    // bool consecutive(const Round r) const pure nothrow
-    //     in {
-    //         assert(r, "Round has exist to be check that it is consecutive");
-    //     }
-    // do {
-    //     return (r.number - number) == 1;
-    // }
-
-    void add(Event event)
-        in {
-            assert(_undefined, "Event can not be added to the undefined round");
-            assert(_events[event.node_id] is null, "An event has already been added to this round");
-        }
-    do {
-        _events[event.node_id]=event;
-    }
-
-    package void remove(Event event)
-        in {
-            assert(event.round is this, "Event can not be removed from a round it does not belong to it");
-        }
-    do {
-        if ( _events[event.node_id] is event ) {
-            _events[event.node_id]=null;
-        }
-    }
-
-    const(uint) node_size() pure const nothrow {
-        auto result=cast(uint)_events.length;
-        return result;
-    }
-
-    static Round opCall(const uint round_number)
-        in {
-            assert(_rounds, "No round has beed created yet");
-        }
-    do {
+    static Round opCall(const uint round_number) {
         Round find_round(Round r) {
             if ( r ) {
                 if ( r.number == round_number ) {
@@ -300,30 +261,37 @@ class Round {
                 }
                 return find_round(r._previous);
             }
-            assert(0, "Round does not exist");
+            assert(0, "No round found");
         }
-        immutable round_space = round_number - _rounds.number;
-        if ( round_space == 1 ) {
-            return _rounds.next(_rounds.node_size);
+        immutable round_space=_rounds.number - round_number;
+        if ( round_space == 1) {
+            return _rounds.next_consecutive;
         }
         else if ( round_space <= 0 ) {
             return find_round(_rounds);
         }
-        assert(0, "No round found");
+        assert(0, "Round number must increase by one");
     }
 
+    // bool famous_decided() const pure nothrow
+    //     in {
+    //         assert(_famous_decided_votes.length > 0);
+    //     }
+    // do {
+    //     return _famous_decided_votes.length == _famous_decided_votes_count;
+    // }
 
-
-    int opApply(scope int delegate(const uint node_id, Event event) @safe dg) {
-        int result;
-        foreach(uint i, e; _events) {
-            result=dg(i, e);
-            if ( dg(i, e) ) {
-                break;
-            }
-        }
-        return result;
-    }
+    // @trusted
+    // void famous_decide(const uint node_id)
+    //     in {
+    //         assert(!isUndefined, "The state of the undefined round is not allowed to be changed");
+    //     }
+    // do {
+    //     if ( !_famous_decided_votes[node_id] ) {
+    //         _famous_decided_votes[node_id] = true;
+    //         _famous_decided_votes_count++;
+    //     }
+    // }
 
     bool isUndefined() const nothrow {
         return this is _undefined;
@@ -336,23 +304,12 @@ class Round {
     Round previous() pure nothrow {
         return _previous;
     }
-
-    invariant {
-        void check_round_order(const Round r, const Round p) @safe {
-            if ( (r !is null) && (p !is null) ) {
-                assert( (r.number - r._previous.number) == 1, "The difference between two consecutive rounds (numbers) has to increase by one");
-                check_round_order(r._previous, p._previous);
-            }
-        }
-        check_round_order(this, _previous);
-    }
 }
 
 @safe
 class Witness {
     private Event _previous_witness_event;
-    // This markes the witness in the next round which see this witness
-    private BitArray _famous_vote_seeing;
+    private BitArray _famous_mask;
     // private uint     _famous_votes;
     // private uint     _famous_count;
     @trusted
@@ -361,12 +318,8 @@ class Witness {
         assert(node_size > 0);
     }
     do {
-        _famous_vote_seeing.length=node_size;
+        _famous_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
-    }
-
-    ~this() {
-        _previous_witness_event=null;
     }
 
     Event event() pure nothrow {
@@ -532,7 +485,7 @@ class Event {
         return _recieved_round.number;
     }
 
-    version(node) {
+    version(none) {
     uint famous_votes() pure const nothrow
         in {
             assert(_witness);
@@ -540,7 +493,6 @@ class Event {
     do {
         return _witness.famous_votes;
     }
-
 
     ref const(BitArray) famous_mask() pure const nothrow
         in {
@@ -582,7 +534,7 @@ class Event {
 
     Round previous_round() pure nothrow
         in {
-            assert(_round, "No round has been defined for this event");
+            assert(_round);
         }
     do {
         return _round.previous;
@@ -695,10 +647,7 @@ class Event {
             _witness_mask|=_father.witness_mask;
         }
         _witness=new Witness(previous_witness_event, node_size);
-        // Create add next round from the mothers round
         _round=Round(mother.round_number);
-        // Add the event to the round
-        _round.add(this);
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
         }
@@ -776,14 +725,10 @@ class Event {
     }
 
 // Disconnect the Event from the graph
-    @trusted
-    package void diconnect() {
+    void diconnect() {
         _mother=_father=null;
         _daughter=_son=null;
-        _round.remove(this);
         _round = null;
-        _recieved_round=null;
-        _witness.destroy;
     }
 
     ~this() {
