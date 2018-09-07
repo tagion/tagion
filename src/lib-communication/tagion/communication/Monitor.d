@@ -121,12 +121,9 @@ class MonitorCallBacks : NetCallbacks {
 
 
     void famous(const(Event) e) {
-        writeln("Not implemented %s", __FUNCTION__);
-
-        // auto bson=createBSON(e);
-
-        // bson[Keywords.famous]=e.famous;
-        // socket_send(bson.serialize);
+        auto bson=createBSON(e);
+        bson[Keywords.famous]=e.famous;
+        socket_send(bson.serialize);
     }
 
     void round(const(Event) e) {
@@ -144,10 +141,9 @@ class MonitorCallBacks : NetCallbacks {
     }
 
     void famous_votes(const(Event) e) {
-        writeln("Not implemented %s", __FUNCTION__);
-        // auto bson=createBSON(e);
-        // bson[Keywords.famous_votes]=e.famous_votes;
-        // socket_send(bson.serialize);
+        auto bson=createBSON(e);
+        bson[Keywords.famous_votes]=e.famous_votes;
+        socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
     }
 
@@ -289,7 +285,7 @@ struct ListenerSocket {
             assert(locate_clients !is null);
             client_counter=cast(uint)_clients.length;
         }
-        do {
+        body {
             locate_clients=cast(typeof(locate_clients))&_clients;
         }
         void add(ref Socket client) {
