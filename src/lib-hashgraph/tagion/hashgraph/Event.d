@@ -239,17 +239,58 @@ class Round {
         return (number - rhs.number) <= 0;
     }
 
+    private this(Round r, const uint node_size) {
+        _previous=r;
+        number=increase_number(r);
+        _events=new Event[node_size];
+        //bitarray_change(_famous_decided_votes, node_size);
+//        nodes_mask.length=node_size;
+    }
+
 //    @trusted
     this(Round r) { //, immutable uint node_size) {
         _previous=r;
         number=increase_number(r);
 //        nodes_mask.length=node_size;
     }
+    private Round next_consecutive() {
+        immutable uint node_size=cast(uint)_events.length;
+        _rounds=new Round(_rounds, node_size);
+        return _rounds;
+    }
 
     Round next() {
         //     immutable uint size=cast(uint)(nodes_mask.length);
         return new Round(this);
     }
+
+    static Round opCall(const uint round_number) {
+        Round find_round(Round r) {
+            if ( r ) {
+                if ( r.number == round_number ) {
+                    return r;
+                }
+                return find_round(r._previous);
+            }
+            assert(0, "No round found");
+        }
+        immutable round_space=_rounds.number - round_number;
+        if ( round_space == 1) {
+            return _rounds.next_consecutive;
+        }
+        else if ( round_space <= 0 ) {
+            return find_round(_rounds);
+        }
+        assert(0, "Round number must increase by one");
+    }
+
+    // bool famous_decided() const pure nothrow
+    //     in {
+    //         assert(_famous_decided_votes.length > 0);
+    //     }
+    // do {
+    //     return _famous_decided_votes.length == _famous_decided_votes_count;
+    // }
 
     // @trusted
     // void famous_decide(const uint node_id)
@@ -410,26 +451,8 @@ class Event {
     }
 
 
-    // void round(Round round)
-    //     in {
-    //         assert(round !is null, "Round must be defined");
-    //         assert(_round is null, "Round is already set");
-    //     }
-    // body {
-    //     this._round=round;
-    //     if ( callbacks ) {
-    //         callbacks.round(this);
-    //     }
-    // }
-
-    inout(Round) round() inout pure // nothrow
+    inout(Round) round() inout pure nothrow
     out(result) {
-        debug {
-            import std.stdio;
-            if ( !result ) {
-                writefln("Eva %s mother=%s", isEva, _mother !is null);
-            }
-        }
         assert(result, "Round should be defined before it is used");
     }
     do {
