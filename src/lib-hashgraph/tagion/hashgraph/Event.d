@@ -253,6 +253,7 @@ class Round {
         number=increase_number(r);
 //        nodes_mask.length=node_size;
     }
+
     private Round next_consecutive() {
         immutable uint node_size=cast(uint)_events.length;
         _rounds=new Round(_rounds, node_size);
@@ -689,7 +690,8 @@ class Event {
         RequestNet request_net,
         immutable(ubyte[]) signature,
         Pubkey pubkey,
-        uint node_id) {
+        const uint node_id,
+        const uint node_size) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
@@ -699,7 +701,7 @@ class Event {
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
-            _witness = new Witness(null, 0);
+            _witness = new Witness(null, node_size);
             _round = Round.undefined;
 
         }

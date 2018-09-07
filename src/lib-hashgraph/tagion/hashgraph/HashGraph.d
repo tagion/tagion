@@ -497,7 +497,7 @@ class HashGraph {
 
 
             // writeln("Before new Event");
-            event=new Event(eventbody, request_net, signature, pubkey, node_id);
+            event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
 
 
             // writeln("Before assign");
