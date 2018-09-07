@@ -98,7 +98,7 @@ class DList(E) {
                 assert(e is _head);
             }
         }
-    do {
+    body {
         if ( _head is null ) {
             throw new UtilException("Remove from an empty list");
         }
@@ -134,7 +134,7 @@ class DList(E) {
         in {
             assert(e !is null);
         }
-    do {
+    body {
         if ( e !is _head ) {
             if ( e == _tail ) {
                 _tail=_tail.prev;
@@ -167,7 +167,7 @@ class DList(E) {
             immutable _count=internal_count(_head);
             assert(result == _count);
         }
-    do {
+    body {
         return count;
     }
 

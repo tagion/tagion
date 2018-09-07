@@ -33,7 +33,7 @@ class Queue(T) {
         in {
             assert(_tail, "Data queue is empty");
         }
-    do {
+    body {
         auto entry=_tail;
         scope(exit) {
             entry._previous=null;

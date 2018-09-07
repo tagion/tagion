@@ -3207,7 +3207,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     }
                 }
             }
-        do {
+        body {
             static if ( key_sort_flag ) {
                 current_keys=current_keys[1..$];
             }
