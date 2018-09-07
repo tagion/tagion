@@ -121,9 +121,12 @@ class MonitorCallBacks : NetCallbacks {
 
 
     void famous(const(Event) e) {
-        auto bson=createBSON(e);
-        bson[Keywords.famous]=e.famous;
-        socket_send(bson.serialize);
+        writeln("Not implemented %s", __FUNCTION__);
+
+        // auto bson=createBSON(e);
+
+        // bson[Keywords.famous]=e.famous;
+        // socket_send(bson.serialize);
     }
 
     void round(const(Event) e) {
@@ -141,9 +144,10 @@ class MonitorCallBacks : NetCallbacks {
     }
 
     void famous_votes(const(Event) e) {
-        auto bson=createBSON(e);
-        bson[Keywords.famous_votes]=e.famous_votes;
-        socket_send(bson.serialize);
+        writeln("Not implemented %s", __FUNCTION__);
+        // auto bson=createBSON(e);
+        // bson[Keywords.famous_votes]=e.famous_votes;
+        // socket_send(bson.serialize);
         // writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
     }
 
