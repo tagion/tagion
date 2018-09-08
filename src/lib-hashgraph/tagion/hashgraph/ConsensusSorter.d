@@ -15,7 +15,7 @@ struct ConsensusSorter(H) {
             assert(j < a.length);
             assert( i != j );
         }
-    body {
+    do {
         import mutation=std.algorithm.mutation;
         mutation.swap(a[i], a[j]);
     }
