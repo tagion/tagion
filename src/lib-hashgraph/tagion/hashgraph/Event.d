@@ -267,30 +267,53 @@ class Round {
         return _rounds;
     }
 
-    static Round opCall(const uint round_number)
+    static void connect(Event witness_event, const uint round_number)
         in {
+            assert(witness_event.witness, "An none witness event can not create a new round");
             assert(_rounds, "Seed round has to exists before the operation is used");
         }
     do {
-        Round find_round(Round r) {
-            if ( r ) {
-                if ( r.number == round_number ) {
-                    return r;
+        Round result;
+        Round find_round() {
+            Round local_find_round(Round r) {
+                if ( r ) {
+                    if ( r.number == round_number ) {
+                        return r;
+                    }
+                    return local_find_round(r._previous);
                 }
-                return find_round(r._previous);
+                assert(0, "No round found");
             }
-            assert(0, "No round found");
+            immutable round_space=round_number - _rounds.number;
+            if ( round_space == 1) {
+                return _rounds.next_consecutive;
+            }
+            else if ( round_space <= 0 ) {
+                return local_find_round(_rounds);
+            }
+            assert(0, "Round number must increase by one");
         }
-        immutable round_space=round_number - _rounds.number;
-        if ( round_space == 1) {
-            return _rounds.next_consecutive;
-        }
-        else if ( round_space <= 0 ) {
-            return find_round(_rounds);
-        }
-        assert(0, "Round number must increase by one");
+        witness_event.round=find_round;
     }
 
+    void add(Event witness_event)
+        in {
+            assert( witness_event.witness, "Only a witness event can be added to a round");
+            assert( witness_event.round is this, "For a round to be added to the round list, the round of the event need to be the same as the round it is added to");
+            assert( _events[witness_event.node_id] is null, "An event should only be added to round once");
+        }
+    do {
+        _events[witness_event.node_id]=witness_event;
+    }
+
+    package void remove(const Event event)
+        in {
+            assert(_events[event.node_id] !is null, "The event list does not have an event at that node_id");
+            assert(_events[event.node_id] is event, "This event is not contained in the event list");
+        }
+    do {
+        _events[event.node_id]=null;
+    }
     // bool famous_decided() const pure nothrow
     //     in {
     //         assert(_famous_decided_votes.length > 0);
@@ -560,14 +583,14 @@ class Event {
         return _round;
     }
 
-    Round previous_round() pure nothrow
+    package void round(Round round)
         in {
-            assert(_round);
+            assert(_witness, "This event need to be a witness");
         }
     do {
-        return _round.previous;
+        _round=round;
+        _round.add(this);
     }
-
 
     uint witness_votes(immutable uint node_size) {
         witness_mask(node_size);
@@ -649,7 +672,6 @@ class Event {
         return _witness_mask;
     }
 
-
     const(Witness) witness() pure const nothrow {
         return _witness;
     }
@@ -676,7 +698,7 @@ class Event {
         }
         _witness=new Witness(previous_witness_event, node_size);
         // The round number is increased by one
-        _round=Round(mother.round_number+1);
+        Round.connect(this, mother.round_number+1);
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
         }
@@ -756,10 +778,18 @@ class Event {
     }
 
 // Disconnect the Event from the graph
+    @trusted
     void diconnect() {
         _mother=_father=null;
         _daughter=_son=null;
+        if ( _witness ) {
+            // If the event is a witness the event has to be removed from the
+            // Round when the event goes out of scope
+            _round.remove(this);
+        }
         _round = null;
+        _recieved_round= null;
+//        _witness.destroy;
     }
 
     ~this() {
