@@ -114,7 +114,7 @@ class NativeSecp256k1 {
             assert(signature.length <= 520);
             assert(pub.length <= 520);
         }
-    body {
+    do {
 //        auto ctx=getContext();
         int ret;
         immutable(ubyte)* sigdata=signature.ptr;
@@ -156,7 +156,7 @@ class NativeSecp256k1 {
             assert(data.length == 32);
             assert(sec.length <= 32);
         }
-    body {
+    do {
         immutable(ubyte)* msgdata=data.ptr;
         const(ubyte)*     secKey=sec.ptr;
         secp256k1_ecdsa_signature sig_array;
@@ -190,7 +190,7 @@ class NativeSecp256k1 {
         in {
             assert(seckey.length == 32);
         }
-    body {
+    do {
         const(ubyte)* sec=seckey.ptr;
         return secp256k1_ec_seckey_verify(_ctx, sec) == 1;
     }
@@ -220,7 +220,7 @@ class NativeSecp256k1 {
             assert(result.length == UNCOMPRESSED_PUBKEY_SIZE);
         }
     }
-    body {
+    do {
 //        auto ctx=getContext();
         const(ubyte)* sec=seckey.ptr;
 
@@ -273,7 +273,7 @@ class NativeSecp256k1 {
         in {
             assert(privkey.length == 32);
         }
-    body {
+    do {
 //        auto ctx=getContext();
         ubyte[] privkey_array=privkey.dup;
         ubyte* _privkey=privkey_array.ptr;
@@ -298,7 +298,7 @@ class NativeSecp256k1 {
         in {
             assert(privkey.length == 32);
         }
-    body {
+    do {
 //        auto ctx=getContext();
         ubyte[] privkey_array=privkey.dup;
         ubyte* _privkey=privkey_array.ptr;
@@ -370,7 +370,7 @@ class NativeSecp256k1 {
         in {
             assert(pubkey.length == 33 || pubkey.length == 65);
         }
-    body {
+    do {
 //        auto ctx=getContext();
         ubyte[] pubkey_array=pubkey.dup;
         ubyte* _pubkey=pubkey_array.ptr;
@@ -417,7 +417,7 @@ class NativeSecp256k1 {
             assert(seckey.length <= 32);
             assert(pubkey.length <= 65);
         }
-    body {
+    do {
 //        auto ctx=getContext();
         immutable(ubyte)* secdata=seckey.ptr;
         immutable(ubyte)* pubdata=pubkey.ptr;
@@ -448,7 +448,7 @@ class NativeSecp256k1 {
         in {
             assert(seed.length == 32 || seed is null);
         }
-    body {
+    do {
 //        auto ctx=getContext();
         immutable(ubyte)* _seed=seed.ptr;
         return secp256k1_context_randomize(_ctx, _seed) == 1;

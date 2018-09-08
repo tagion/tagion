@@ -17,7 +17,7 @@ class SHA256 : Hash {
             out(result) {
                     assert(result.length == hash_size);
                 }
-        body {
+        do {
             auto sha256_core = new Sha256;
             sha256_core.update(data);
             return sha256_core.binaryDigest.idup;
