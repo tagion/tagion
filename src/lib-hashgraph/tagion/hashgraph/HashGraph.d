@@ -36,13 +36,13 @@ class HashGraph {
         //_round_counter=new RoundCounter(null);
     }
 
-    package static Round find_previous_round(Event event) {
-        Event e;
-        for (e=event; e && !e.round; e=e.mother) {
-            // Empty
-        }
-        return e.round;
-    }
+    // package static Round find_previous_round(Event event) {
+    //     Event e;
+    //     for (e=event; e && !e.round; e=e.mother) {
+    //         // Empty
+    //     }
+    //     return e.round;
+    // }
 
     @safe
     class Node {
@@ -110,6 +110,7 @@ class HashGraph {
         do {
             return _event;
         }
+
 
         bool isOnline() pure const nothrow {
             return (_event !is null);
@@ -214,7 +215,7 @@ class HashGraph {
         }
 
         BitArray zero_mask;
-        immutable node_size = cast(uint)(nodes.length);
+//        immutable node_size = cast(uint)(nodes.length);
         bitarray_clear(zero_mask, node_size);
         auto famous_mask=build_famous_mask(witness_event, zero_mask);
         foreach(node_id, ref node; nodes) {
@@ -496,7 +497,7 @@ class HashGraph {
             }
 
 
-            // writeln("Before new Event");
+//            writefln("Before new Event isEva=%s", eventbody.isEva);
             event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
 
 
@@ -648,6 +649,26 @@ class HashGraph {
                 }
             }
         }
+
+    // This function collected the vote from this witness
+    // to the previous in the previous round
+    void collect_witness_votes(Event event) {
+        import std.stdio;
+        if ( event.witness && !event.isEva ) {
+            writefln("collect_witness_votes event.round=%d", event.round_number);
+            immutable previous_round_number=event.round_number-1;
+            // This Event is a witness
+            foreach(node_id, ref node; nodes) {
+//                writefln("node hash event %s", node.latest_witness_event !is null);
+
+                if ( node.latest_witness_event ) {
+                    writefln("Latest witness event node_id=%d round=%d", node_id, node.latest_witness_event.round_number);
+                }
+//                node.vote_famous(event);
+            }
+        }
+    }
+
     version(none)
     unittest { // strongSee
         // This is the example taken from

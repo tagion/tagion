@@ -94,6 +94,9 @@ struct EventBody {
         this(doc);
     }
 
+    bool isEva() pure const nothrow {
+        return (mother.length == 0);
+    }
 //    @trusted
     this(Document doc, RequestNet request_net=null) inout {
         foreach(i, ref m; this.tupleof) {
@@ -225,47 +228,50 @@ class Round {
     private Event[] _events;
     private static Round _rounds;
 
-    private static Round _undefined;
-    static this() {
-        _undefined=new Round();
-    }
+    // private static Round _undefined;
+    // static this() {
+    //     _undefined=new Round();
+    // }
 
-    private this() {
-        number=-1;
-        _previous=null;
-    }
+    // private this() {
+    //     number=-1;
+    //     _previous=null;
+    // }
 
     bool lessOrEqual(const Round rhs) pure const {
         return (number - rhs.number) <= 0;
     }
 
-    private this(Round r, const uint node_size) {
+    private this(Round r, const uint node_size, immutable int round_number) {
         _previous=r;
-        number=increase_number(r);
+        number=round_number;
         _events=new Event[node_size];
-        //bitarray_change(_famous_decided_votes, node_size);
-//        nodes_mask.length=node_size;
-    }
-
-//    @trusted
-    this(Round r) { //, immutable uint node_size) {
-        _previous=r;
-        number=increase_number(r);
-//        nodes_mask.length=node_size;
     }
 
     private Round next_consecutive() {
         immutable uint node_size=cast(uint)_events.length;
-        _rounds=new Round(_rounds, node_size);
+        _rounds=new Round(_rounds, node_size, _rounds.number+1);
         return _rounds;
     }
 
-    Round next() {
-        //     immutable uint size=cast(uint)(nodes_mask.length);
-        return new Round(this);
+    // Round next() {
+    //     immutable uint size=cast(uint)(_events.length);
+    //     return new Round(this, size);
+    // }
+
+    package static Round seed_round(const uint node_size) {
+        if ( _rounds is null ) {
+            _rounds = new Round(null, node_size, -1);
+        }
+        // Use the latest round as seed round
+        return _rounds;
     }
 
-    static Round opCall(const uint round_number) {
+    static Round opCall(const uint round_number)
+        in {
+            assert(_rounds, "Seed round has to exists before the operation is used");
+        }
+    do {
         Round find_round(Round r) {
             if ( r ) {
                 if ( r.number == round_number ) {
@@ -275,7 +281,7 @@ class Round {
             }
             assert(0, "No round found");
         }
-        immutable round_space=_rounds.number - round_number;
+        immutable round_space=round_number - _rounds.number;
         if ( round_space == 1) {
             return _rounds.next_consecutive;
         }
@@ -305,16 +311,26 @@ class Round {
     //     }
     // }
 
-    bool isUndefined() const nothrow {
-        return this is _undefined;
-    }
+    // bool isUndefined() const nothrow {
+    //     return this is _undefined;
+    // }
 
-    static Round undefined() nothrow {
-        return _undefined;
-    }
+    // static Round undefined() nothrow {
+    //     return _undefined;
+    // }
 
     Round previous() pure nothrow {
         return _previous;
+    }
+
+    invariant {
+        void check_round_order(const Round r, const Round p) {
+            if ( ( r !is null) && ( p !is null ) ) {
+                assert( (r.number-p.number) == 1, "Consecutive round-numbers has to increase by one");
+                check_round_order(r._previous, p._previous);
+            }
+        }
+        check_round_order(this, _previous);
     }
 }
 
@@ -322,10 +338,15 @@ class Round {
 class Witness {
     private Event _previous_witness_event;
     private BitArray _famous_mask;
-    private uint     _famous_votes;
+    // private uint     _famous_votes;
+    // private uint     _famous_count;
     @trusted
-    this(Event previous_witness_event, const uint nodes) {
-        _famous_mask.length=nodes;
+    this(Event previous_witness_event, const uint node_size)
+    in {
+        assert(node_size > 0);
+    }
+    do {
+        _famous_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
     }
 
@@ -401,6 +422,8 @@ class Event {
 
     //    private bool _round_set;
     private Round  _round;
+    private Round  _recieved_round;
+
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
 
@@ -472,8 +495,25 @@ class Event {
         return (_round !is null);
     }
 
-    version(none) {
 
+    void recieved_round(Round r)
+        in {
+            assert(r !is null, "Received round can not be null");
+            assert(_recieved_round is null, "Received round has already been set");
+        }
+    do {
+        _recieved_round=r;
+    }
+
+    int received_round_number() pure const nothrow
+        in {
+            assert(_recieved_round !is null);
+        }
+    do {
+        return _recieved_round.number;
+    }
+
+    version(none) {
     uint famous_votes() pure const nothrow
         in {
             assert(_witness);
@@ -635,7 +675,8 @@ class Event {
             _witness_mask|=_father.witness_mask;
         }
         _witness=new Witness(previous_witness_event, node_size);
-        _round=mother.round.next;
+        // The round number is increased by one
+        _round=Round(mother.round_number+1);
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
         }
@@ -657,6 +698,11 @@ class Event {
         return _strongly_seeing_checked;
     }
 
+    @trusted
+    bool seeing_witness(const uint node_id) const pure {
+        return  (mother && mother.witness_mask[node_id] ) ||
+            ( father && father.witness_mask[node_id] );
+    }
 
     void forked(bool s)
         in {
@@ -701,8 +747,10 @@ class Event {
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
+            import std.stdio;
+            writefln("EVA EVENT !!!!!!!!!!");
             _witness = new Witness(null, node_size);
-            _round = Round.undefined;
+            _round = Round.seed_round(node_size);
 
         }
     }
