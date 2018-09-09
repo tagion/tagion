@@ -7,11 +7,9 @@ import tagion.crypto.Hash;
 
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.ConsensusExceptions;
-//import tagion.hashgraph.HashGraph : HashGraph;
 import std.conv;
 import std.bitmanip;
 
-//import std.stdio;
 import std.format;
 
 import tagion.Base : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, isMajority;
@@ -62,7 +60,6 @@ unittest { // Test of the altitude measure function
 
 @safe
 struct EventBody {
-    //alias HashPointer=RequestNet.HashPointer;
     immutable(ubyte)[] payload; // Transaction
     immutable(ubyte)[] mother; // Hash of the self-parent
     immutable(ubyte)[] father; // Hash of the other-parent
@@ -97,7 +94,7 @@ struct EventBody {
     bool isEva() pure const nothrow {
         return (mother.length == 0);
     }
-//    @trusted
+
     this(Document doc, RequestNet request_net=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
@@ -113,7 +110,6 @@ struct EventBody {
                     }
                 }
                 else {
-//                    pragma(msg, "EventBody " ~ name ~ " type=" ~is(type : immutable(ubyte[])).to!string);
                     static if ( is(type : immutable(ubyte[])) ) {
                         this.tupleof[i]=(doc[name].get!type).idup;
                     }
@@ -139,14 +135,11 @@ struct EventBody {
             check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
         }
     }
-//json encoding of body only
-//    version(none)
-    // @use_event_will used evnet-ids instead of hashs
+
     HBSON toBSON(const(Event) use_event=null) const {
         auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
-//            fout.writefln("EventBody %s", name);
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
@@ -179,7 +172,6 @@ struct EventBody {
 }
 
 
-/+ ++++/
 @safe
 class HashGraphException : Exception {
     this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
@@ -208,36 +200,18 @@ interface EventCallbacks {
 @safe
 class Round {
     private Round _previous;
-    // // This indicates wish events belongs to this round
+    // This indicates wish events belongs to this round
     // private BitArray nodes_mask;
     // Counts the number of nodes in this round
-//    private uint _nodes;
-    // Round number
     immutable int number;
     // private BitArray _famous_decided_votes;
     // private uint _famous_decided_votes_count;
     static int increase_number(const(Round) r) {
         return r.number+1;
-        // if ( !r.isUndefined && r ) {
-        //     return r.number+1;
-        // }
-        // else {
-        //     return 1;
-        // }
     }
 
     private Event[] _events;
     private static Round _rounds;
-
-    // private static Round _undefined;
-    // static this() {
-    //     _undefined=new Round();
-    // }
-
-    // private this() {
-    //     number=-1;
-    //     _previous=null;
-    // }
 
     bool lessOrEqual(const Round rhs) pure const {
         return (number - rhs.number) <= 0;
@@ -254,11 +228,6 @@ class Round {
         _rounds=new Round(_rounds, node_size, _rounds.number+1);
         return _rounds;
     }
-
-    // Round next() {
-    //     immutable uint size=cast(uint)(_events.length);
-    //     return new Round(this, size);
-    // }
 
     package static Round seed_round(const uint node_size) {
         if ( _rounds is null ) {
@@ -375,7 +344,7 @@ class Round {
 @safe
 class Witness {
     private Event _previous_witness_event;
-    private BitArray _famous_mask;
+//    private BitArray _famous_mask;
     private BitArray _seen_mask;
     // private uint     _famous_votes;
     // private uint     _famous_count;
@@ -404,43 +373,43 @@ class Witness {
     }
 
     version(node) {
-    @trusted
-    void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
-        import std.stdio;
-        writefln("vote_famous node_id=%d famouns=%s len=%d", node_id, famous, famous_mask.length);
-        if ( _famous_mask[node_id] ) {
-            if ( famous ) {
-                _famous_votes++;
-            }
-            _famous_count++;
-            _famous_mask[node_id]=true;
-            writefln("famous_mask =%s %d", _famous_mask, _famous_count);
-            if ( famous_decided ) {
+        @trusted
+            void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
+            import std.stdio;
+            writefln("vote_famous node_id=%d famouns=%s len=%d", node_id, famous, famous_mask.length);
+            if ( _famous_mask[node_id] ) {
+                if ( famous ) {
+                    _famous_votes++;
+                }
+                _famous_count++;
+                _famous_mask[node_id]=true;
+                writefln("famous_mask =%s %d", _famous_mask, _famous_count);
+                if ( famous_decided ) {
 
-                writefln("Decided famous %s!!!", _famous_mask);
-            //     e.round.famous[
+                    writefln("Decided famous %s!!!", _famous_mask);
+                    //     e.round.famous[
+                }
             }
         }
-    }
 
-    bool famous_decided() pure const nothrow {
-        immutable node_size=cast(uint)_famous_mask.length;
-        return node_size == _famous_count;
-    }
+        bool famous_decided() pure const nothrow {
+            immutable node_size=cast(uint)_famous_mask.length;
+            return node_size == _famous_count;
+        }
 
-    uint famous_votes() pure const nothrow {
-        return _famous_votes;
-    }
+        uint famous_votes() pure const nothrow {
+            return _famous_votes;
+        }
 
-    bool famous() pure const nothrow {
-        immutable node_size=cast(uint)_famous_mask.length;
-        return isMajority(_famous_votes, node_size);
-    }
+        bool famous() pure const nothrow {
+            immutable node_size=cast(uint)_famous_mask.length;
+            return isMajority(_famous_votes, node_size);
+        }
 
 
-    ref const(BitArray) famous_mask() pure const nothrow {
-        return _famous_mask;
-    }
+        ref const(BitArray) famous_mask() pure const nothrow {
+            return _famous_mask;
+        }
     }
 }
 
@@ -448,10 +417,7 @@ class Witness {
 class Event {
     alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
-//    alias immutable(Hash) function(immutable(ubyte)[] data) @safe FHash;
     static EventCallbacks callbacks;
-//    alias GossipNet.HashPointer HashPointer;
-    //alias GossipNet.Pubkey Pubkey;
     // Delegate function to load or find an Event in the event pool
     // Delegate function to assign an Event to event pool
     immutable(ubyte[]) signature;
@@ -469,8 +435,6 @@ class Event {
     private Event _daughter;
     private Event _son;
 
-
-    //    private bool _round_set;
     private Round  _round;
     private Round  _recieved_round;
 
@@ -524,7 +488,6 @@ class Event {
         return _daughter is null;
     }
 
-
     inout(Round) round() inout pure nothrow
     out(result) {
         assert(result, "Round should be defined before it is used");
@@ -544,23 +507,20 @@ class Event {
     bool hasRound() const pure nothrow {
         return (_round !is null);
     }
+
     // This function collected the vote from this witness
     // to the previous in the previous round
     package void collect_witness_seen_votes() {
         import std.stdio;
         if ( _witness && !isEva ) {
-            writefln("collect_witness_votes event.round=%d", round_number);
             foreach(seen_node_id, ref e; _round.previous) {
-                writef("event is null %s ", e is null);
                 if ( seeing_witness(seen_node_id) ) {
-                    writef(" %d->%d ",node_id,seen_node_id);
                     e.witness.seen(node_id);
                     if ( callbacks ) {
                         callbacks.round_mask(e);
                     }
                 }
             }
-            writeln("*");
         }
     }
 
@@ -583,29 +543,29 @@ class Event {
     }
 
     version(none) {
-    uint famous_votes() pure const nothrow
-        in {
-            assert(_witness);
+        uint famous_votes() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        do {
+            return _witness.famous_votes;
         }
-    do {
-        return _witness.famous_votes;
-    }
 
-    ref const(BitArray) famous_mask() pure const nothrow
-        in {
-            assert(_witness);
+        ref const(BitArray) famous_mask() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        do {
+            return _witness.famous_mask;
         }
-    do {
-        return _witness.famous_mask;
-    }
 
-    bool famous() pure const nothrow
-        in {
-            assert(_witness);
+        bool famous() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        do {
+            return _witness.famous;
         }
-    do {
-        return _witness.famous;
-    }
     }
 
     const(Round) round() pure const nothrow
@@ -657,11 +617,6 @@ class Event {
 
 
     package ref const(BitArray) witness_mask(immutable uint node_size) {
-        // import std.stdio;
-        // immutable node_size=cast(uint)(_witness2_mask.length);
-        // BitArray zero;
-        // writefln("node_size=%d", node_size);
-        // set_bitarray(zero, node_size);
         ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted
             in {
                 assert(event);
@@ -678,7 +633,6 @@ class Event {
                 else {
                     if ( event.mother ) {
                         auto mask=check_witness_mask(event.mother, level+1);
-                        // writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
                         if ( mask.length < event._witness_mask.length ) {
                             mask.length = event._witness_mask.length;
                         }
@@ -691,7 +645,6 @@ class Event {
                     }
                     if ( event.father ) {
                         auto mask=check_witness_mask(event.father, level+1);
-                        //writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
                         if ( mask.length < event._witness_mask.length ) {
                             mask.length = event._witness_mask.length;
                         }
@@ -741,10 +694,8 @@ class Event {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
             assert(previous_witness_event);
-            //       assert(previous_witness_event._witness);
         }
     do {
-//        immutable node_size=cast(uint)(_witness_mask.length);
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
         if ( _father && _father._witness !is null ) {
@@ -855,7 +806,6 @@ class Event {
         if ( !result && motherExists ) {
             request_net.request(h, mother_hash);
             result=mother(h);
-//            _round2=result._round2;
         }
         return result;
     }
@@ -875,16 +825,9 @@ class Event {
         return _mother;
     }
 
-    inout(Event) mother() inout pure // nothrow
+    inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            debug {
-                import std.stdio;
-                if ( _mother is null ) {
-                    writefln("Mother is null");
-                }
-            }
-
             assert(_mother);
             assert( (altitude-_mother.altitude) == 1 );
         }
@@ -1011,18 +954,6 @@ class Event {
     bool isEva() pure const nothrow {
         return !motherExists;
     }
-// bool isEva() const nothrow
-//     out (result) {
-//         if (result) {
-//             assert(father_hash is null);
-//             if ( _round2 ) {
-//                 assert(_round2.isUndefined );
-//             }
-//         }
-//     }
-// do {
-//     return mother_hash is null;
-// }
 
     immutable(Buffer) fingerprint() const pure nothrow
     in {

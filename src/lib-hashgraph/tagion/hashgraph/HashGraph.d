@@ -193,39 +193,6 @@ class HashGraph {
         return result;
     }
 
-    version(none)
-    @trusted
-    void vote_famous(const Event witness_event)
-        in {
-            assert(witness_event);
-            assert(witness_event.witness);
-            assert(witness_event.mother);
-        }
-    do {
-        const(BitArray) build_famous_mask(const(Event) event, const(BitArray) mask) {
-            if ( event ) {
-                if ( event.witness ) {
-                    return build_famous_mask(event.father, mask);
-                }
-                else {
-                    return (event.witness_mask | mask);
-                }
-            }
-            return mask;
-        }
-
-        BitArray zero_mask;
-//        immutable node_size = cast(uint)(nodes.length);
-        bitarray_clear(zero_mask, node_size);
-        auto famous_mask=build_famous_mask(witness_event, zero_mask);
-        foreach(node_id, ref node; nodes) {
-            if ( famous_mask[node_id] ) {
-                node.vote_famous(witness_event);
-            }
-        }
-    }
-
-//    Round round; // Current round
     private Node[uint] nodes; // List of participating nodes T
     private uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
     private uint[] unused_node_ids; // Stack of unused node ids
@@ -263,26 +230,10 @@ class HashGraph {
         n.altitude=altitude;
     }
 
-    // const(int) getAltitude(const(ubyte[]) pubkey) const {
-    //     auto nid=pubkey in node_ids;
-    //     check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-    //     auto n=nodes[*nid];
-    //     return n.altitude;
-    // }
-
-    // const(int) nodeAltitude(const(ubyte[]) pubkey) {
-    //     auto n=pubkey in node_ids;
-    //     check(n !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-    //     auto result=max(*n, n.event.altitude);
-    //     return result;
-    // }
 
     bool isNodeIdKnown(Pubkey pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
     }
-    // protected NodeIterator!false nodeiterator_() {
-    //     return NodeIterator!false(this);
-    // }
 
     void dumpNodes() {
         import std.stdio;
@@ -344,15 +295,7 @@ class HashGraph {
         return (node_id in nodes) !is null;
     }
 
-    // static ulong time;
-    // static ulong current_time() {
-    //     time+=100;
-    //     return time;
-    // }
-
     void assign(Event event) {
-        // writefln("ASSIGN event=%s", event !is null);
-        // writefln("ASSIGN %s", event.fingerprint[0..7].toHexString);
         auto node=getNode(event.channel);
         node.event=event;
         _event_cache[event.fingerprint]=event;
@@ -362,17 +305,12 @@ class HashGraph {
     }
 
     Event lookup(immutable(ubyte[]) fingerprint) {
-//        Event result;
-//        writefln("Lookup %s", fingerprint.toHexString);
-
         return _event_cache[fingerprint];
     }
 
     bool isRegistered(immutable(ubyte[]) fingerprint) {
         return _event_cache.contains(fingerprint);
     }
-
-//    immutable(ubyte[]) eventPackage(Event event,
 
     // Returns the number of active nodes in the network
     uint active_nodes() const pure nothrow {
@@ -390,9 +328,6 @@ class HashGraph {
     inout(Node) getNode(Pubkey pubkey) inout {
         return getNode(nodeId(pubkey));
     }
-// uint threshold() const pure nothrow {
-    //     return (active_nodes*2)/3;
-    // }
 
     bool isMajority(const uint voting) const pure nothrow {
         return Base.isMajority(voting, active_nodes);
@@ -404,34 +339,11 @@ class HashGraph {
             assert(n.node_id < total_nodes);
             assert(n.node_id in nodes, "Node id "~to!string(n.node_id)~" is not removable because it does not exist");
         }
-//     out {
-//         writefln("node_ids.length=%d active_nodes=%d unused_node_ids.length=%d",
-//             node_ids.length, active_nodes, unused_node_ids.length);
-// //        assert(node_ids.length == active_nodes + unused_node_ids.length);
-//     }
     do {
-//        writefln("******* REMOVE %d", n.node_id);
-        //n.event=null;
         nodes.remove(n.node_id);//=null;
         node_ids.remove(n.pubkey);
         unused_node_ids~=n.node_id;
     }
-
-    // uint countRound(Round round) {
-    //     uint* count;
-    //     if ( !_round_counter.get(round, count) ) {
-    //         count=new uint;
-    //         _round_counter.add(round, count);
-    //     }
-    //     (*count)++;
-    //     return (*count);
-    // }
-
-    // static void check(immutable bool flag, ConcensusFailCode code, string msg) @safe {
-    //     if (!flag) {
-    //         throw new EventConsensusException(msg, code);
-    //     }
-    // }
 
     enum max_package_size=0x1000;
     alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
@@ -649,26 +561,6 @@ class HashGraph {
                 }
             }
         }
-
-    // This function collected the vote from this witness
-    // to the previous in the previous round
-    version(none)
-    void collect_witness_votes(Event event) {
-        import std.stdio;
-        if ( event.witness && !event.isEva ) {
-            writefln("collect_witness_votes event.round=%d", event.round_number);
-            immutable previous_round_number=event.round_number-1;
-            // This Event is a witness
-            foreach(node_id, ref node; nodes) {
-//                writefln("node hash event %s", node.latest_witness_event !is null);
-
-                if ( node.latest_witness_event ) {
-                    writefln("Latest witness event node_id=%d round=%d", node_id, node.latest_witness_event.round_number);
-                }
-//                node.vote_famous(event);
-            }
-        }
-    }
 
     version(none)
     unittest { // strongSee
