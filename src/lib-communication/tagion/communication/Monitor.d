@@ -93,13 +93,13 @@ class MonitorCallBacks : NetCallbacks {
     void witness_mask(const(Event) e) {
 
         auto bson=createBSON(e);
-        // auto mask=new bool[e.witness_mask.length];
-        // foreach(i, m; e.witness_mask) {
-        //     if (m) {
-        //         mask[i]=true;
-        //     }
-        // }
         bson[Keywords.witness_mask]=bitarray2bool(e.witness_mask);
+        socket_send(bson.serialize);
+    }
+
+    void round_mask(const(Event) e) {
+        auto bson=createBSON(e);
+        bson[Keywords.round_mask]=bitarray2bool(e.round_mask);
         socket_send(bson.serialize);
     }
 
