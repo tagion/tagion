@@ -18,6 +18,7 @@ enum _keywords = [
     "channel",
     "witness",
     "witness_mask",
+    "round_mask",
     "famous",
     "round",
     "forked",

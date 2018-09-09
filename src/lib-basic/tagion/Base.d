@@ -82,7 +82,7 @@ void bitarray_change(ref BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
-const(bool)[] bitarray2bool(ref const(BitArray) bits) {
+const(bool)[] bitarray2bool(ref const(BitArray) bits) @trusted {
     bool[] mask=new bool[bits.length];
     foreach(i, m; bits) {
         if (m) {
