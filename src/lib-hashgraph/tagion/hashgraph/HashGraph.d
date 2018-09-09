@@ -516,7 +516,7 @@ class HashGraph {
             strongSee(event);
             event.round; // Make sure that the round exists
 
-//            collect_witness_votes(event);
+            event.collect_witness_seen_votes;
 
             // if ( event.witness ) {
             //     // Collect votes from this witness to the previous witness
@@ -652,6 +652,7 @@ class HashGraph {
 
     // This function collected the vote from this witness
     // to the previous in the previous round
+    version(none)
     void collect_witness_votes(Event event) {
         import std.stdio;
         if ( event.witness && !event.isEva ) {

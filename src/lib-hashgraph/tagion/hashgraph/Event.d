@@ -197,6 +197,7 @@ interface EventCallbacks {
 //    void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
 //    void strong2_vote(const(Event) e, immutable uint vote);
+    void round_mask(const(Event) e);
     void famous(const(Event) e);
     void round(const(Event) e);
     void forked(const(Event) e);
@@ -383,6 +384,10 @@ class Witness {
         _seen_mask[node_id]=true;
     }
 
+    ref const(BitArray) seen_mask() pure const nothrow {
+        return _seen_mask;
+    }
+
     version(node) {
     @trusted
     void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
@@ -526,15 +531,20 @@ class Event {
     }
     // This function collected the vote from this witness
     // to the previous in the previous round
-    package void collect_witness_votes() {
+    package void collect_witness_seen_votes() {
         import std.stdio;
         if ( _witness && !isEva ) {
             writefln("collect_witness_votes event.round=%d", round_number);
             foreach(seen_node_id, ref e; _round) {
                 if ( seeing_witness(seen_node_id) ) {
                     e.witness.seen(node_id);
+                    writef(" %d->%d ",node_id,seen_node_id);
+                    if ( callbacks ) {
+                        callbacks.round_mask(e);
+                    }
                 }
             }
+            writeln("*");
         }
     }
 
@@ -692,6 +702,14 @@ class Event {
         return _witness_mask;
     }
 
+    ref const(BitArray) round_mask() pure const nothrow
+        in {
+            assert(_witness);
+        }
+    do {
+        return _witness.seen_mask;
+    }
+
 
     const(Witness) witness() pure const nothrow {
         return _witness;
@@ -791,7 +809,6 @@ class Event {
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             import std.stdio;
-            writefln("EVA EVENT !!!!!!!!!!");
             _witness = new Witness(null, node_size);
             _round = Round.seed_round(node_size);
 
