@@ -295,12 +295,27 @@ class Round {
     int opApply(scope int delegate(const uint node_id, ref Event event) @safe dg) {
         int result;
         foreach(uint node_id, e; _events) {
-            result=dg(node_id, e);
-            if ( result ) {
-                break;
+            if ( e ) {
+                result=dg(node_id, e);
+                if ( result ) {
+                    break;
+                }
             }
         }
         return result;
+    }
+
+    void add(Event event)
+        in {
+            assert(event.witness, "Event added to a round should be a witness");
+            assert(_events[event.node_id] is null, "Evnet should only be added once");
+        }
+    do {
+        _events[event.node_id]=event;
+    }
+
+    void remove(Event event) {
+        _events[event.node_id]=null;
     }
 
     // bool famous_decided() const pure nothrow
@@ -535,10 +550,11 @@ class Event {
         import std.stdio;
         if ( _witness && !isEva ) {
             writefln("collect_witness_votes event.round=%d", round_number);
-            foreach(seen_node_id, ref e; _round) {
+            foreach(seen_node_id, ref e; _round.previous) {
+                writef("event is null %s ", e is null);
                 if ( seeing_witness(seen_node_id) ) {
-                    e.witness.seen(node_id);
                     writef(" %d->%d ",node_id,seen_node_id);
+                    e.witness.seen(node_id);
                     if ( callbacks ) {
                         callbacks.round_mask(e);
                     }
@@ -738,6 +754,8 @@ class Event {
         _witness=new Witness(previous_witness_event, node_size);
         // The round number is increased by one
         _round=Round(mother.round_number+1);
+        // Event added to round
+        _round.add(this);
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
         }
@@ -816,9 +834,14 @@ class Event {
     }
 
 // Disconnect the Event from the graph
+    @trusted
     void diconnect() {
         _mother=_father=null;
         _daughter=_son=null;
+        if ( _witness ) {
+            _round.remove(this);
+            _witness.destroy;
+        }
         _round = null;
     }
 
