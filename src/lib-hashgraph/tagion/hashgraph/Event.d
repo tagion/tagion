@@ -288,17 +288,18 @@ class Round {
         else if ( round_space <= 0 ) {
             return find_round(_rounds);
         }
-        @trusted
-        void dump() {
-            import std.stdio;
-            writefln("Space %d", round_space);
-            writefln("Search for round number %d", round_number);
-            for (Round r=_rounds; r !is null; r=r._previous) {
-                writefln("\tround=%d", r.number);
+        assert(0, "Round number must increase by one");
+    }
+
+    int opApply(scope int delegate(const uint node_id, ref Event event) @safe dg) {
+        int result;
+        foreach(uint node_id, e; _events) {
+            result=dg(node_id, e);
+            if ( result ) {
+                break;
             }
         }
-        dump;
-        assert(0, "Round number must increase by one");
+        return result;
     }
 
     // bool famous_decided() const pure nothrow
@@ -329,6 +330,17 @@ class Round {
     //     return _undefined;
     // }
 
+    // The function collectes votes on the witness in this round which are seen by the seen_by_node_id
+    // void seen(const uint node_id, const uint seen_by_node_id)
+    //     in {
+    //         assert(_events[node_id] !is null, "This round does not have an event in from this node");
+    //     }
+    // do {
+    //     pragma(msg, "typeof(_events[node_id].witness)="~typeof(_events[node_id].witness).stringof);
+    //     pragma(msg, "typeof(_events[node_id].witness)="~typeof(_events[node_id].witness.seen).stringof);
+    //     _events[node_id].witness.seen(seen_by_node_id);
+    // }
+
     Round previous() pure nothrow {
         return _previous;
     }
@@ -348,6 +360,7 @@ class Round {
 class Witness {
     private Event _previous_witness_event;
     private BitArray _famous_mask;
+    private BitArray _seen_mask;
     // private uint     _famous_votes;
     // private uint     _famous_count;
     @trusted
@@ -357,11 +370,17 @@ class Witness {
     }
     do {
         _famous_mask.length=node_size;
+        _seen_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
     }
 
     Event event() pure nothrow {
         return _previous_witness_event;
+    }
+
+    @trusted
+    void seen(const uint node_id) {
+        _seen_mask[node_id]=true;
     }
 
     version(node) {
@@ -397,6 +416,7 @@ class Witness {
         immutable node_size=cast(uint)_famous_mask.length;
         return isMajority(_famous_votes, node_size);
     }
+
 
     ref const(BitArray) famous_mask() pure const nothrow {
         return _famous_mask;
@@ -503,6 +523,19 @@ class Event {
 
     bool hasRound() const pure nothrow {
         return (_round !is null);
+    }
+    // This function collected the vote from this witness
+    // to the previous in the previous round
+    package void collect_witness_votes() {
+        import std.stdio;
+        if ( _witness && !isEva ) {
+            writefln("collect_witness_votes event.round=%d", round_number);
+            foreach(seen_node_id, ref e; _round) {
+                if ( seeing_witness(seen_node_id) ) {
+                    e.witness.seen(node_id);
+                }
+            }
+        }
     }
 
 
