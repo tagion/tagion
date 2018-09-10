@@ -7,11 +7,9 @@ import tagion.crypto.Hash;
 
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.ConsensusExceptions;
-//import tagion.hashgraph.HashGraph : HashGraph;
 import std.conv;
 import std.bitmanip;
 
-//import std.stdio;
 import std.format;
 
 import tagion.Base : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, isMajority;
@@ -62,7 +60,6 @@ unittest { // Test of the altitude measure function
 
 @safe
 struct EventBody {
-    //alias HashPointer=RequestNet.HashPointer;
     immutable(ubyte)[] payload; // Transaction
     immutable(ubyte)[] mother; // Hash of the self-parent
     immutable(ubyte)[] father; // Hash of the other-parent
@@ -94,7 +91,10 @@ struct EventBody {
         this(doc);
     }
 
-//    @trusted
+    bool isEva() pure const nothrow {
+        return (mother.length == 0);
+    }
+
     this(Document doc, RequestNet request_net=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias typeof(m) type;
@@ -110,7 +110,6 @@ struct EventBody {
                     }
                 }
                 else {
-//                    pragma(msg, "EventBody " ~ name ~ " type=" ~is(type : immutable(ubyte[])).to!string);
                     static if ( is(type : immutable(ubyte[])) ) {
                         this.tupleof[i]=(doc[name].get!type).idup;
                     }
@@ -136,14 +135,11 @@ struct EventBody {
             check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
         }
     }
-//json encoding of body only
-//    version(none)
-    // @use_event_will used evnet-ids instead of hashs
+
     HBSON toBSON(const(Event) use_event=null) const {
         auto bson=new HBSON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
-//            fout.writefln("EventBody %s", name);
             static if ( __traits(compiles, m.toBSON) ) {
                 bson[name]=m.toBSON;
             }
@@ -176,7 +172,6 @@ struct EventBody {
 }
 
 
-/+ ++++/
 @safe
 class HashGraphException : Exception {
     this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
@@ -194,6 +189,7 @@ interface EventCallbacks {
 //    void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
 //    void strong2_vote(const(Event) e, immutable uint vote);
+    void round_mask(const(Event) e);
     void famous(const(Event) e);
     void round(const(Event) e);
     void forked(const(Event) e);
@@ -204,85 +200,162 @@ interface EventCallbacks {
 @safe
 class Round {
     private Round _previous;
-    // // This indicates wish events belongs to this round
+    // This indicates wish events belongs to this round
     // private BitArray nodes_mask;
     // Counts the number of nodes in this round
-    private uint _nodes;
-    // Round number
     immutable int number;
-
+    // private BitArray _famous_decided_votes;
+    // private uint _famous_decided_votes_count;
     static int increase_number(const(Round) r) {
         return r.number+1;
-        // if ( !r.isUndefined && r ) {
-        //     return r.number+1;
-        // }
-        // else {
-        //     return 1;
-        // }
     }
 
-
-    private static Round _undefined;
-    static this() {
-        _undefined=new Round();
-    }
-
-    private this() {
-        number=-1;
-        _previous=null;
-    }
+    private Event[] _events;
+    private static Round _rounds;
 
     bool lessOrEqual(const Round rhs) pure const {
         return (number - rhs.number) <= 0;
     }
 
-//    @trusted
-    this(Round r) { //, immutable uint node_size) {
+    private this(Round r, const uint node_size, immutable int round_number) {
         _previous=r;
-        number=increase_number(r);
-//        nodes_mask.length=node_size;
+        number=round_number;
+        _events=new Event[node_size];
     }
 
-    Round next() {
-        //     immutable uint size=cast(uint)(nodes_mask.length);
-        return new Round(this);
+    private Round next_consecutive() {
+        immutable uint node_size=cast(uint)_events.length;
+        _rounds=new Round(_rounds, node_size, _rounds.number+1);
+        return _rounds;
     }
 
-    // @trusted
-    // bool containNode(immutable uint index) const
+    package static Round seed_round(const uint node_size) {
+        if ( _rounds is null ) {
+            _rounds = new Round(null, node_size, -1);
+        }
+        // Use the latest round as seed round
+        return _rounds;
+    }
+
+    static Round opCall(const int round_number)
+        in {
+            assert(_rounds, "Seed round has to exists before the operation is used");
+        }
+    do {
+        Round find_round(Round r) {
+            if ( r ) {
+                if ( r.number == round_number ) {
+                    return r;
+                }
+                return find_round(r._previous);
+            }
+            assert(0, "No round found");
+        }
+        immutable round_space=round_number - _rounds.number;
+        if ( round_space == 1) {
+            return _rounds.next_consecutive;
+        }
+        else if ( round_space <= 0 ) {
+            return find_round(_rounds);
+        }
+        assert(0, "Round number must increase by one");
+    }
+
+    int opApply(scope int delegate(const uint node_id, ref Event event) @safe dg) {
+        int result;
+        foreach(uint node_id, e; _events) {
+            if ( e ) {
+                result=dg(node_id, e);
+                if ( result ) {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    void add(Event event)
+        in {
+            assert(event.witness, "Event added to a round should be a witness");
+            assert(_events[event.node_id] is null, "Evnet should only be added once");
+        }
+    do {
+        _events[event.node_id]=event;
+    }
+
+    void remove(Event event) {
+        _events[event.node_id]=null;
+    }
+
+    // bool famous_decided() const pure nothrow
     //     in {
-    //         assert(!isUndefined);
+    //         assert(_famous_decided_votes.length > 0);
     //     }
     // do {
-    //     return nodes_mask[index];
+    //     return _famous_decided_votes.length == _famous_decided_votes_count;
     // }
 
-    uint nodes() const pure nothrow {
-        return _nodes;
-    }
+    // @trusted
+    // void famous_decide(const uint node_id)
+    //     in {
+    //         assert(!isUndefined, "The state of the undefined round is not allowed to be changed");
+    //     }
+    // do {
+    //     if ( !_famous_decided_votes[node_id] ) {
+    //         _famous_decided_votes[node_id] = true;
+    //         _famous_decided_votes_count++;
+    //     }
+    // }
 
-    bool isUndefined() const nothrow {
-        return this is _undefined;
-    }
+    // bool isUndefined() const nothrow {
+    //     return this is _undefined;
+    // }
 
-    static Round undefined() nothrow {
-        return _undefined;
-    }
+    // static Round undefined() nothrow {
+    //     return _undefined;
+    // }
+
+    // The function collectes votes on the witness in this round which are seen by the seen_by_node_id
+    // void seen(const uint node_id, const uint seen_by_node_id)
+    //     in {
+    //         assert(_events[node_id] !is null, "This round does not have an event in from this node");
+    //     }
+    // do {
+    //     pragma(msg, "typeof(_events[node_id].witness)="~typeof(_events[node_id].witness).stringof);
+    //     pragma(msg, "typeof(_events[node_id].witness)="~typeof(_events[node_id].witness.seen).stringof);
+    //     _events[node_id].witness.seen(seen_by_node_id);
+    // }
 
     Round previous() pure nothrow {
         return _previous;
+    }
+
+    invariant {
+        void check_round_order(const Round r, const Round p) {
+            if ( ( r !is null) && ( p !is null ) ) {
+                assert( (r.number-p.number) == 1, "Consecutive round-numbers has to increase by one");
+                check_round_order(r._previous, p._previous);
+            }
+        }
+        check_round_order(this, _previous);
     }
 }
 
 @safe
 class Witness {
     private Event _previous_witness_event;
-    private BitArray _famous_mask;
-    private uint     _famous_votes;
-    private uint     _famous_count;
+//    private BitArray _famous_mask;
+    private BitArray _seen_mask;
+    // private uint     _famous_votes;
+    // private uint     _famous_count;
     @trusted
-    this(Event previous_witness_event, const uint nodes) {
-        _famous_mask.length=nodes;
+    this(Event previous_witness_event, const uint node_size)
+    in {
+        assert(node_size > 0);
+    }
+    do {
+        _famous_mask.length=node_size;
+        _seen_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
     }
 
@@ -291,51 +364,60 @@ class Witness {
     }
 
     @trusted
-    void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
-        import std.stdio;
-        if ( _famous_mask[node_id] ) {
-            if ( famous ) {
-                _famous_votes++;
-            }
-            _famous_count++;
-            _famous_mask[node_id]=true;
-            writefln("famous_mask =%s %d", _famous_mask, _famous_count);
-            if ( famous_decided ) {
+    void seen(const uint node_id) {
+        _seen_mask[node_id]=true;
+    }
 
-                writefln("Decided famous %s!!!", _famous_mask);
-            //     e.round.famous[
+    ref const(BitArray) seen_mask() pure const nothrow {
+        return _seen_mask;
+    }
+
+    version(node) {
+        @trusted
+            void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
+            import std.stdio;
+            writefln("vote_famous node_id=%d famouns=%s len=%d", node_id, famous, famous_mask.length);
+            if ( _famous_mask[node_id] ) {
+                if ( famous ) {
+                    _famous_votes++;
+                }
+                _famous_count++;
+                _famous_mask[node_id]=true;
+                writefln("famous_mask =%s %d", _famous_mask, _famous_count);
+                if ( famous_decided ) {
+
+                    writefln("Decided famous %s!!!", _famous_mask);
+                    //     e.round.famous[
+                }
             }
         }
-    }
 
-    bool famous_decided() pure const nothrow {
-        immutable node_size=cast(uint)_famous_mask.length;
-        return node_size == _famous_count;
-    }
+        bool famous_decided() pure const nothrow {
+            immutable node_size=cast(uint)_famous_mask.length;
+            return node_size == _famous_count;
+        }
 
-    uint famous_votes() pure const nothrow {
-        return _famous_votes;
-    }
+        uint famous_votes() pure const nothrow {
+            return _famous_votes;
+        }
 
-    bool famous() pure const nothrow {
-        immutable node_size=cast(uint)_famous_mask.length;
-        return isMajority(_famous_votes, node_size);
-    }
+        bool famous() pure const nothrow {
+            immutable node_size=cast(uint)_famous_mask.length;
+            return isMajority(_famous_votes, node_size);
+        }
 
-    ref const(BitArray) famous_mask() pure const nothrow {
-        return _famous_mask;
-    }
 
+        ref const(BitArray) famous_mask() pure const nothrow {
+            return _famous_mask;
+        }
+    }
 }
 
 @safe
 class Event {
     alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
-//    alias immutable(Hash) function(immutable(ubyte)[] data) @safe FHash;
     static EventCallbacks callbacks;
-//    alias GossipNet.HashPointer HashPointer;
-    //alias GossipNet.Pubkey Pubkey;
     // Delegate function to load or find an Event in the event pool
     // Delegate function to assign an Event to event pool
     immutable(ubyte[]) signature;
@@ -353,8 +435,6 @@ class Event {
     private Event _daughter;
     private Event _son;
 
-
-    //    private bool _round_set;
     private Round  _round;
     private Round  _recieved_round;
 
@@ -408,20 +488,7 @@ class Event {
         return _daughter is null;
     }
 
-
-    // void round(Round round)
-    //     in {
-    //         assert(round !is null, "Round must be defined");
-    //         assert(_round is null, "Round is already set");
-    //     }
-    // do {
-    //     this._round=round;
-    //     if ( callbacks ) {
-    //         callbacks.round(this);
-    //     }
-    // }
-
-    inout(Round) round() inout pure // nothrow
+    inout(Round) round() inout pure nothrow
     out(result) {
         assert(result, "Round should be defined before it is used");
     }
@@ -439,6 +506,22 @@ class Event {
 
     bool hasRound() const pure nothrow {
         return (_round !is null);
+    }
+
+    // This function collected the vote from this witness
+    // to the previous in the previous round
+    package void collect_witness_seen_votes() {
+        import std.stdio;
+        if ( _witness && !isEva ) {
+            foreach(seen_node_id, ref e; _round.previous) {
+                if ( seeing_witness(seen_node_id) ) {
+                    e.witness.seen(node_id);
+                    if ( callbacks ) {
+                        callbacks.round_mask(e);
+                    }
+                }
+            }
+        }
     }
 
 
@@ -459,28 +542,30 @@ class Event {
         return _recieved_round.number;
     }
 
-    uint famous_votes() pure const nothrow
-        in {
-            assert(_witness);
+    version(none) {
+        uint famous_votes() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        do {
+            return _witness.famous_votes;
         }
-    do {
-        return _witness.famous_votes;
-    }
 
-    ref const(BitArray) famous_mask() pure const nothrow
-        in {
-            assert(_witness);
+        ref const(BitArray) famous_mask() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        do {
+            return _witness.famous_mask;
         }
-    do {
-        return _witness.famous_mask;
-    }
 
-    bool famous() pure const nothrow
-        in {
-            assert(_witness);
+        bool famous() pure const nothrow
+            in {
+                assert(_witness);
+            }
+        do {
+            return _witness.famous;
         }
-    do {
-        return _witness.famous;
     }
 
     const(Round) round() pure const nothrow
@@ -504,7 +589,7 @@ class Event {
         return _round;
     }
 
-    Round previousRound() pure nothrow
+    Round previous_round() pure nothrow
         in {
             assert(_round);
         }
@@ -532,11 +617,6 @@ class Event {
 
 
     package ref const(BitArray) witness_mask(immutable uint node_size) {
-        // import std.stdio;
-        // immutable node_size=cast(uint)(_witness2_mask.length);
-        // BitArray zero;
-        // writefln("node_size=%d", node_size);
-        // set_bitarray(zero, node_size);
         ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted
             in {
                 assert(event);
@@ -553,7 +633,6 @@ class Event {
                 else {
                     if ( event.mother ) {
                         auto mask=check_witness_mask(event.mother, level+1);
-                        // writefln("\t** dauhter=%s:%d mask=%s:%d", _witness2_mask, _witness2_mask.length, mask, mask.length);
                         if ( mask.length < event._witness_mask.length ) {
                             mask.length = event._witness_mask.length;
                         }
@@ -566,7 +645,6 @@ class Event {
                     }
                     if ( event.father ) {
                         auto mask=check_witness_mask(event.father, level+1);
-                        //writefln("\t** son    =%s mask=%s", _witness2_mask, mask);
                         if ( mask.length < event._witness_mask.length ) {
                             mask.length = event._witness_mask.length;
                         }
@@ -593,6 +671,14 @@ class Event {
         return _witness_mask;
     }
 
+    ref const(BitArray) round_mask() pure const nothrow
+        in {
+            assert(_witness);
+        }
+    do {
+        return _witness.seen_mask;
+    }
+
 
     const(Witness) witness() pure const nothrow {
         return _witness;
@@ -603,15 +689,13 @@ class Event {
     }
 
     @trusted
-    void strongly_seeing(Event previous_witness_event)
+    void strongly_seeing(Event previous_witness_event, const uint node_size)
         in {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
             assert(previous_witness_event);
-            //       assert(previous_witness_event._witness);
         }
     do {
-        immutable node_size=cast(uint)(_witness_mask.length);
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
         if ( _father && _father._witness !is null ) {
@@ -619,7 +703,10 @@ class Event {
             _witness_mask|=_father.witness_mask;
         }
         _witness=new Witness(previous_witness_event, node_size);
-        _round=mother.round.next;
+        // The round number is increased by one
+        _round=Round(mother.round_number+1);
+        // Event added to round
+        _round.add(this);
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
         }
@@ -679,7 +766,8 @@ class Event {
         RequestNet request_net,
         immutable(ubyte[]) signature,
         Pubkey pubkey,
-        uint node_id) {
+        const uint node_id,
+        const uint node_size) {
         event_body=ebody;
         this.node_id=node_id;
         this.id=next_id;
@@ -689,16 +777,22 @@ class Event {
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
-            _witness = new Witness(null, 0);
-            _round = Round.undefined;
+            import std.stdio;
+            _witness = new Witness(null, node_size);
+            _round = Round.seed_round(node_size);
 
         }
     }
 
 // Disconnect the Event from the graph
+    @trusted
     void diconnect() {
         _mother=_father=null;
         _daughter=_son=null;
+        if ( _witness ) {
+            _round.remove(this);
+            _witness.destroy;
+        }
         _round = null;
     }
 
@@ -712,7 +806,6 @@ class Event {
         if ( !result && motherExists ) {
             request_net.request(h, mother_hash);
             result=mother(h);
-//            _round2=result._round2;
         }
         return result;
     }
@@ -732,16 +825,9 @@ class Event {
         return _mother;
     }
 
-    inout(Event) mother() inout pure // nothrow
+    inout(Event) mother() inout pure nothrow
     in {
         if ( mother_hash ) {
-            debug {
-                import std.stdio;
-                if ( _mother is null ) {
-                    writefln("Mother is null");
-                }
-            }
-
             assert(_mother);
             assert( (altitude-_mother.altitude) == 1 );
         }
@@ -868,18 +954,6 @@ class Event {
     bool isEva() pure const nothrow {
         return !motherExists;
     }
-// bool isEva() const nothrow
-//     out (result) {
-//         if (result) {
-//             assert(father_hash is null);
-//             if ( _round2 ) {
-//                 assert(_round2.isUndefined );
-//             }
-//         }
-//     }
-// do {
-//     return mother_hash is null;
-// }
 
     immutable(Buffer) fingerprint() const pure nothrow
     in {
