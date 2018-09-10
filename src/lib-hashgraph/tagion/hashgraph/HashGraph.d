@@ -25,8 +25,8 @@ class HashGraph {
     //alias LRU!(Round, uint*) RoundCounter;
     alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
     private EventCache _event_cache;
-    // List of rounds
-    private Round _rounds;
+    // // List of rounds
+    // private Round _rounds;
     // private GossipNet _gossip_net;
 
 
