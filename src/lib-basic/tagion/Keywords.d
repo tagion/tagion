@@ -20,11 +20,11 @@ enum _keywords = [
     "witness_mask",
     "round_mask",
     "famous",
+    "famous_votes",
     "round",
     "forked",
     "strongly_seeing",
     "strong_votes",
-    "famous_votes",
     "iterations",
 //        "events",     // List of event
     "type",       // Package type
