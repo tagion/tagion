@@ -77,7 +77,7 @@ class HashGraph {
             assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
         }
         do {
-            return latest_witness_event.witness.event;
+            return latest_witness_event.witness.previous_witness_event;
         }
 
         package void event(Event e)
@@ -428,7 +428,8 @@ class HashGraph {
             strongSee(event);
             event.round; // Make sure that the round exists
 
-            event.collect_witness_seen_votes;
+            event.mark_round_seeing;
+//            event.collect_witness_seen_votes;
 
             // if ( event.witness ) {
             //     // Collect votes from this witness to the previous witness
