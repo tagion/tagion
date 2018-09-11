@@ -121,12 +121,12 @@ class MonitorCallBacks : NetCallbacks {
 
 
     void famous(const(Event) e) {
-        writeln("Not implemented %s", __FUNCTION__);
-
-        // auto bson=createBSON(e);
-
-        // bson[Keywords.famous]=e.famous;
-        // socket_send(bson.serialize);
+//        writeln("Not implemented %s", __FUNCTION__);
+        auto bson=createBSON(e);
+        auto w=e.witness;
+        bson[Keywords.famous]=w.famous;
+        bson[Keywords.famous_votes]=w.famous_votes;
+        socket_send(bson.serialize);
     }
 
     void round(const(Event) e) {
@@ -143,13 +143,13 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. Event %d forked %s ", e.id, e.forked);
     }
 
-    void famous_votes(const(Event) e) {
-        writeln("Not implemented %s", __FUNCTION__);
-        // auto bson=createBSON(e);
-        // bson[Keywords.famous_votes]=e.famous_votes;
-        // socket_send(bson.serialize);
-        // writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
-    }
+    // void famous_votes(const(Event) e) {
+    //     writeln("Not implemented %s", __FUNCTION__);
+    //     // auto bson=createBSON(e);
+    //     // bson[Keywords.famous_votes]=e.famous_votes;
+    //     // socket_send(bson.serialize);
+    //     // writefln("Impl. needed. Event %d famous votes %d ", e.id, e.famous_votes);
+    // }
 
     void strong_vote(const(Event) e, immutable uint votes) {
         auto bson=createBSON(e);
