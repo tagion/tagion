@@ -348,7 +348,7 @@ class Witness {
     private BitArray _seen_mask;
     private uint     _famous_votes;
     private uint     _famous_counts;
-
+    immutable uint   node_size;
     @trusted
     this(Event previous_witness_event, const uint node_size)
     in {
@@ -356,6 +356,7 @@ class Witness {
     }
     do {
 //        _famous_mask.length=node_size;
+        this.node_size=node_size;
         _seen_mask.length=node_size;
         _famous_decided_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
@@ -375,7 +376,7 @@ class Witness {
     }
 
     bool famous_decided() pure const nothrow {
-        immutable node_size=cast(uint)_famous_decided_mask.length;
+//        immutable node_size=cast(uint)_famous_decided_mask.length;
         return node_size == _famous_counts;
     }
 
@@ -392,65 +393,26 @@ class Witness {
     }
 
     bool famous() pure const nothrow {
-        immutable node_size=cast(uint)_famous_decided_mask.length;
+//        immutable node_size=cast(uint)_famous_decided_mask.length;
         return isMajority(_famous_votes, node_size);
     }
 
     @trusted
-    bool confirm_famous_vote(const uint node_id) {
+    bool confirm_famous_vote(const uint node_id)
+        out {
+            assert(_famous_counts <= node_size);
+        }
+    do {
         if ( !_famous_decided_mask[node_id] ) {
             _famous_decided_mask[node_id]=true;
+            _famous_counts++;
             if ( _seen_mask[node_id] ) {
                 _famous_votes++;
             }
-            // if ( callbacks ) {
-            //     if ( famous_decided ) {
-            //         callbacks.famous(
-            //     }
-            // }
         }
         return famous_decided;
     }
 
-    version(node) {
-        @trusted
-            void vote_famous(const(Event) e, immutable uint node_id, const(bool) famous) {
-            import std.stdio;
-            writefln("vote_famous node_id=%d famouns=%s len=%d", node_id, famous, famous_mask.length);
-            if ( _famous_mask[node_id] ) {
-                if ( famous ) {
-                    _famous_votes++;
-                }
-                _famous_counts++;
-                _famous_mask[node_id]=true;
-                writefln("famous_mask =%s %d", _famous_mask, _famous_counts);
-                if ( famous_decided ) {
-
-                    writefln("Decided famous %s!!!", _famous_mask);
-                    //     e.round.famous[
-                }
-            }
-        }
-
-        bool famous_decided() pure const nothrow {
-            immutable node_size=cast(uint)_famous_mask.length;
-            return node_size == _famous_count;
-        }
-
-        uint famous_votes() pure const nothrow {
-            return _famous_votes;
-        }
-
-        bool famous() pure const nothrow {
-            immutable node_size=cast(uint)_famous_mask.length;
-            return isMajority(_famous_votes, node_size);
-        }
-
-
-        ref const(BitArray) famous_mask() pure const nothrow {
-            return _famous_mask;
-        }
-    }
 }
 
 @safe
@@ -574,16 +536,18 @@ class Event {
         if ( _witness && !isEva ) {
             foreach(seen_node_id, ref e; _round.previous) {
                 if ( seeing_witness(seen_node_id) ) {
-                    if ( e.witness.previous_witness_event && !e.witness.previous_witness_event.witness.famous_decided ) {
+                    auto witness_event=e.witness.previous_witness_event;
+                    if ( witness_event && !witness_event.witness.famous_decided && !witness_event.isEva) {
                         writefln("\t%scollect_famous_votes id=%d round=%d %s counts=%d", indent,e.id, e.round_number, e.witness.famous_decided_mask, e.witness.famous_counts);
                         e.collect_famous_votes(indent~"\t");
                     }
                     else {
-                        immutable famous_decided=e.witness.confirm_famous_vote(seen_node_id);
-                        writefln("\t\tconfirm_famous_vote id=%d node_id=%d",e.id,seen_node_id);
+                        immutable famous_decided=e.witness.confirm_famous_vote(node_id);
+                        writefln("\t\t%sconfirm_famous_vote id=%d round=%d node_id=%d %s decided=%s",
+                            indent, e.id, e.round_number, seen_node_id,e.witness.famous_decided_mask, famous_decided);
 
                         if ( callbacks && famous_decided ) {
-                            callbacks.famous(this);
+                            callbacks.famous(e);
                         }
                     }
                 }

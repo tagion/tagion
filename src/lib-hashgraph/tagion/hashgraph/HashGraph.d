@@ -430,7 +430,7 @@ class HashGraph {
 
             event.mark_round_seeing;
             if ( event.witness ) {
-                writefln("Collect famous for id=%d", event.id);
+                writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
             }
             event.collect_famous_votes;
 //            event.collect_witness_seen_votes;
@@ -557,7 +557,7 @@ class HashGraph {
                         auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
                         top_event.strongly_seeing(previous_witness_event, node_size);
                         nodes[top_event.node_id].latest_witness_event=top_event;
-                        writefln("Strong votes=%d %s", seeing, cast(string)(top_event.payload));
+                        writefln("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
                     }
                     top_event.strongly_seeing_checked;
                     if ( Event.callbacks ) {
