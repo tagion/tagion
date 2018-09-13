@@ -25,6 +25,7 @@ enum _keywords = [
     "forked",
     "strongly_seeing",
     "strong_votes",
+    "strong_mask",
     "iterations",
 //        "events",     // List of event
     "type",       // Package type
