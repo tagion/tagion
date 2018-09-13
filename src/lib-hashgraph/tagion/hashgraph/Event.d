@@ -346,17 +346,19 @@ class Witness {
     private Event _previous_witness_event;
     private BitArray _famous_decided_mask;
     private BitArray _seen_mask;
+    private BitArray _strong_seeing_mask;
     private uint     _famous_votes;
     private uint     _famous_counts;
     immutable uint   node_size;
     @trusted
-    this(Event previous_witness_event, const uint node_size)
+    this(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
     in {
-        assert(node_size > 0);
+        assert(strong_seeing_mask.length > 0);
     }
     do {
 //        _famous_mask.length=node_size;
-        this.node_size=node_size;
+        this.node_size=cast(uint)strong_seeing_mask.length;
+        _strong_seeing_mask=strong_seeing_mask.dup;
         _seen_mask.length=node_size;
         _famous_decided_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
@@ -364,6 +366,10 @@ class Witness {
 
     Event previous_witness_event() pure nothrow {
         return _previous_witness_event;
+    }
+
+    ref const(BitArray) strong_seeing_mask() pure const nothrow {
+        return _strong_seeing_mask;
     }
 
     @trusted
@@ -723,7 +729,7 @@ class Event {
     }
 
     @trusted
-    void strongly_seeing(Event previous_witness_event, const uint node_size)
+    void strongly_seeing(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
         in {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
@@ -736,7 +742,7 @@ class Event {
             // If father is a witness then the wintess is seen through this event
             _witness_mask|=_father.witness_mask;
         }
-        _witness=new Witness(previous_witness_event, node_size);
+        _witness=new Witness(previous_witness_event, strong_seeing_mask);
         // The round number is increased by one
         _round=Round(mother.round_number+1);
         // Event added to round
@@ -824,8 +830,9 @@ class Event {
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
-            import std.stdio;
-            _witness = new Witness(null, node_size);
+            BitArray strong_mask;
+            bitarray_clear(strong_mask, node_size);
+            _witness = new Witness(null, strong_mask);
             _round = Round.seed_round(node_size);
 
         }

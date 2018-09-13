@@ -427,6 +427,7 @@ class HashGraph {
             iterative_strong_count=0;
             strongSee(event);
             event.round; // Make sure that the round exists
+               writefln("After strongSee2 iterations=%d", iterative_strong_count);
 
             event.mark_round_seeing;
             version(node) {
@@ -522,10 +523,10 @@ class HashGraph {
                                         if ( isMajority(votes) ) {
                                             strong_vote_mask[check_event.node_id]=true;
                                             seeing++;
-                                            if ( isMajority(seeing) ) {
-                                                strong=true;
-                                                return;
-                                            }
+                                            // if ( isMajority(seeing) ) {
+                                            //     strong=true;
+                                            //     return;
+                                            // }
                                         }
                                     }
                                 }
@@ -555,9 +556,10 @@ class HashGraph {
                         mask[node_id]=true;
                     }
                     checkStrongSeeing(top_event, path_mask);
+                    strong=isMajority(seeing);
                     if ( strong ) {
                         auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
-                        top_event.strongly_seeing(previous_witness_event, node_size);
+                        top_event.strongly_seeing(previous_witness_event, strong_vote_mask);
                         nodes[top_event.node_id].latest_witness_event=top_event;
                         writefln("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
                     }
