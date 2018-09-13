@@ -204,7 +204,7 @@ class Round {
     // private BitArray nodes_mask;
     // Counts the number of nodes in this round
     immutable int number;
-    // private BitArray _famous_decided_votes;
+    // m vgprivate BitArray _famous_decided_votes;
     // private uint _famous_decided_votes_count;
     static int increase_number(const(Round) r) {
         return r.number+1;
@@ -283,9 +283,9 @@ class Round {
         _events[event.node_id]=event;
     }
 
-    void remove(Event event) {
-        _events[event.node_id]=null;
-    }
+//     void remove(Event event) {
+// //        _events[event.node_id]=null;
+//     }
 
     // bool famous_decided() const pure nothrow
     //     in {
@@ -531,20 +531,21 @@ class Event {
 
 
     @trusted // FIXME: trusted should be removed after debugging
-    package void collect_famous_votes(immutable string indent="") {
-        import std.stdio;
-        if ( _witness && !isEva ) {
-            foreach(seen_node_id, ref e; _round.previous) {
-                if ( seeing_witness(seen_node_id) ) {
+    package void collect_famous_votes() {
+        @trusted
+        void collect (Event event, immutable string indent="") {
+            import std.stdio;
+            foreach(seen_node_id, ref e; event._round.previous) {
+                if ( event.seeing_witness(seen_node_id) ) {
                     auto witness_event=e.witness.previous_witness_event;
                     if ( witness_event && !witness_event.witness.famous_decided && !witness_event.isEva) {
-                        writefln("\t%scollect_famous_votes id=%d round=%d %s counts=%d", indent,e.id, e.round_number, e.witness.famous_decided_mask, e.witness.famous_counts);
-                        e.collect_famous_votes(indent~"\t");
+                        writefln("\t%scollect_famous_votes id=%d node_id=%d round=%d %s counts=%d", indent, e.id, e.node_id, e.round_number, e.witness.famous_decided_mask, e.witness.famous_counts);
+                        collect(e, indent~"\t");
                     }
                     else {
                         immutable famous_decided=e.witness.confirm_famous_vote(node_id);
-                        writefln("\t\t%sconfirm_famous_vote id=%d round=%d node_id=%d %s decided=%s",
-                            indent, e.id, e.round_number, seen_node_id,e.witness.famous_decided_mask, famous_decided);
+                        writefln("\t\t%sconfirm_famous_vote id=%d node_id=%d round=%d node_id=%d %s decided=%s",
+                            indent, e.id, e.node_id, e.round_number, seen_node_id,e.witness.famous_decided_mask, famous_decided);
 
                         if ( callbacks && famous_decided ) {
                             callbacks.famous(e);
@@ -552,6 +553,9 @@ class Event {
                     }
                 }
             }
+        }
+        if ( _witness && !isEva ) {
+            collect(this);
         }
     }
 
@@ -764,6 +768,19 @@ class Event {
             ( father && father.witness_mask[node_id] );
     }
 
+    version(node)
+    @trusted
+    ref const(BitArray) seeing_witness_mask() const pure {
+        if ( father ) {
+            BitArray* result=new BitArray;
+            *result=mother.witness_mask | father.witness_mask;
+            return *result;
+        }
+        else {
+            return mother.witness_mask;
+        }
+    }
+
     void forked(bool s)
         in {
             if ( s ) {
@@ -820,7 +837,7 @@ class Event {
         _mother=_father=null;
         _daughter=_son=null;
         if ( _witness ) {
-            _round.remove(this);
+            //   _round.remove(this);
             _witness.destroy;
         }
         _round = null;

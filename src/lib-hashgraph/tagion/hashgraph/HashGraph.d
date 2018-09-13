@@ -429,10 +429,12 @@ class HashGraph {
             event.round; // Make sure that the round exists
 
             event.mark_round_seeing;
-            if ( event.witness ) {
-                writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
+            version(node) {
+                if ( event.witness ) {
+                    writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
+                }
+                event.collect_famous_votes;
             }
-            event.collect_famous_votes;
 //            event.collect_witness_seen_votes;
 
             // if ( event.witness ) {
