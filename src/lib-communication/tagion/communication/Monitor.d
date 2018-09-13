@@ -107,6 +107,7 @@ class MonitorCallBacks : NetCallbacks {
     void strongly_seeing(const(Event) e) {
         auto bson=createBSON(e);
         bson[Keywords.strongly_seeing]=e.strongly_seeing;
+        bson[Keywords.strong_mask]=bitarray2bool(e.witness.strong_seeing_mask);
         /*
         auto mask=new bool[e.witness_mask.length];
         foreach(i, m; e.witness_mask) {
