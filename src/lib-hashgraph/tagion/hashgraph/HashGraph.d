@@ -427,15 +427,12 @@ class HashGraph {
             iterative_strong_count=0;
             strongSee(event);
             event.round; // Make sure that the round exists
-               writefln("After strongSee2 iterations=%d", iterative_strong_count);
 
             event.mark_round_seeing;
-            version(node) {
-                if ( event.witness ) {
-                    writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
-                }
-                event.collect_famous_votes;
+            if ( event.witness ) {
+                writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
             }
+            event.collect_famous_votes;
 //            event.collect_witness_seen_votes;
 
             // if ( event.witness ) {
