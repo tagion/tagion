@@ -288,6 +288,7 @@ class Round {
         }
     }
 
+    // Whole round decided
     bool famous_decided() pure const nothrow {
         if ( _previous ) {
             return _famous_events_decided_count == _activte_events_count;
@@ -295,6 +296,12 @@ class Round {
         else {
             return true;
         }
+    }
+
+    // Return true if the event on node_id has been decided
+    @trusted
+    bool famous_decided(const uint node_id) pure const nothrow {
+        return _famous_events_decided[node_id];
     }
 
     @trusted
@@ -381,11 +388,11 @@ class Round {
 @safe
 class Witness {
     private Event _previous_witness_event;
-    private BitArray _famous_vote_mask;
+//    private BitArray _famous_vote_mask;
     private BitArray _seen_mask;
     private BitArray _strong_seeing_mask;
     private uint     _famous_votes;
-    private uint     _famous_counts;
+//    private uint     _famous_counts;
     immutable uint   node_size;
     @trusted
     this(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
@@ -397,7 +404,7 @@ class Witness {
         this.node_size=cast(uint)strong_seeing_mask.length;
         _strong_seeing_mask=strong_seeing_mask.dup;
         _seen_mask.length=node_size;
-        _famous_vote_mask.length=node_size;
+//        _famous_vote_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
     }
 
@@ -410,8 +417,11 @@ class Witness {
     }
 
     @trusted
-    void seen(const uint node_id) {
-        _seen_mask[node_id]=true;
+    package void seen(const uint node_id) {
+        if ( !_seen_mask[node_id] ) {
+            _seen_mask[node_id]=true;
+            _famous_votes++;
+        }
     }
 
     ref const(BitArray) seen_mask() pure const nothrow {
@@ -423,12 +433,22 @@ class Witness {
 //         return node_size == _famous_counts;
 //     }
 
-    ref const(BitArray) famous_vote_mask() pure const nothrow {
-        return _famous_vote_mask;
-    }
+    // ref const(BitArray) famous_vote_mask() pure const nothrow {
+    //     return _famous_vote_mask;
+    // }
 
     // uint famous_counts() pure const nothrow {
     //     return _famous_counts;
+    // }
+
+    // void famous_votes(const uint votes) nothrow
+    //     in {
+    //         assert(votes <= node_size);
+    //     }
+    // do {
+    //     if ( _famous_votes < votes ) {
+    //         _famous_votes = votes;
+    //     }
     // }
 
     uint famous_votes() pure const nothrow {
@@ -440,17 +460,20 @@ class Witness {
         return isMajority(_famous_votes, node_size);
     }
 
-    @trusted
-    bool confirm_famous_vote(const uint node_id) {
-        if ( !_famous_vote_mask[node_id] ) {
-            _famous_vote_mask[node_id]=true;
-            _famous_counts++;
-            if ( _seen_mask[node_id] ) {
-                _famous_votes++;
-            }
-        }
-        return _famous_counts == _famous_vote_mask.length;
-    }
+    // ref const(BitArray) seen_mask(const uint node_id) pure const {
+    //     return seen_mask[node_id];
+    // }
+    // @trusted
+    // bool confirm_famous_vote(const uint node_id) {
+    //     if ( !_famous_vote_mask[node_id] ) {
+    //         _famous_vote_mask[node_id]=true;
+    //         _famous_counts++;
+    //         if ( _seen_mask[node_id] ) {
+    //             _famous_votes++;
+    //         }
+    //     }
+    //     return _famous_counts == _famous_vote_mask.length;
+    // }
 
 }
 
@@ -555,19 +578,33 @@ class Event {
 
     // This function markes the witness in the previous round which
     // See this the witness
+    @trusted // FIXME: remove after debug
     package void mark_round_seeing() {
+        import std.stdio;
+
         if ( _witness && !isEva ) {
             foreach(seen_node_id, ref e; _round.previous) {
+                writefln("Search %d seeing=%s", seen_node_id,  seeing_witness(seen_node_id) );
                 if ( seeing_witness(seen_node_id) ) {
-                    e.witness.seen(node_id);
+                    e._witness.seen(node_id);
                     if ( callbacks ) {
                         callbacks.round_mask(e);
                     }
+                    writefln("mark_round_seeing node_id=%d seen_node_id=%d %s", node_id, seen_node_id, e._witness.seen_mask);
+
                 }
+
             }
         }
     }
 
+    // bool famous_decided(const uint node_id) pure const
+    //     in {
+    //         assert(_witness, "This event is not a witness so it can not be decided if it is famous or not");
+    //     }
+    // do {
+    //     return _round.famous
+    // }
 
     @trusted // FIXME: trusted should be removed after debugging
     package void collect_famous_votes() {
@@ -607,21 +644,27 @@ class Event {
 
                 writefln("UNDECIDED ROUND %d", undecided.number);
                 foreach(seen_node_id, ref e; undecided) {
-                    foreach(collecting_node_id;0..node_size) {
-                        if ( _witness.strong_seeing_mask[collecting_node_id] ) {
-                            const famous_decided=e._witness.confirm_famous_vote(collecting_node_id);
-                            writefln("\tconfirm_famous_vote id=%d node_id=%d round=%d node_id=%d %s decided=%s",
-                                e.id, e.node_id, e.round_number, seen_node_id, e.witness.famous_vote_mask, famous_decided);
-                            if ( famous_decided  ) {
+                    if ( !e._round.famous_decided(seen_node_id) ) {
+                        if ( e._witness.famous ) {
+                            // Masks the strongly seen witness votes in the undecided round
+                            BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
+                            immutable votes=countVotes(vote_mask);
+                            immutable majority=isMajority(votes, node_size);
+                            if ( majority ) {
                                 undecided.famous_decide(seen_node_id);
-                                break;
                             }
 
                         }
+                        else {
+                            // Not a famous witness
+                            undecided.famous_decide(seen_node_id);
+                        }
+                        writefln("\tconfirm_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s famous=%s votes=%d",
+                                e.id, e.node_id, e.round_number, seen_node_id, e.round_mask, e._witness.famous, e._witness.famous_votes);
                     }
                 }
                 if ( undecided.famous_decided ) {
-
+                    writefln("Round %d decided ", undecided.number);
                     if ( callbacks ) {
                         foreach(seen_node_id, ref e; undecided) {
                             callbacks.famous(e);
@@ -647,32 +690,6 @@ class Event {
         }
     do {
         return _recieved_round.number;
-    }
-
-    version(none) {
-        uint famous_votes() pure const nothrow
-            in {
-                assert(_witness);
-            }
-        do {
-            return _witness.famous_votes;
-        }
-
-        ref const(BitArray) famous_mask() pure const nothrow
-            in {
-                assert(_witness);
-            }
-        do {
-            return _witness.famous_mask;
-        }
-
-        bool famous() pure const nothrow
-            in {
-                assert(_witness);
-            }
-        do {
-            return _witness.famous;
-        }
     }
 
     const(Round) round() pure const nothrow

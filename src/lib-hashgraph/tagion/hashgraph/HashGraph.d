@@ -429,6 +429,7 @@ class HashGraph {
             event.round; // Make sure that the round exists
 
             event.mark_round_seeing;
+
             if ( event.witness ) {
                 writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
             }
