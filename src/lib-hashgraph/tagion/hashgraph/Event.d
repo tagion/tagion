@@ -292,7 +292,9 @@ class Round {
 
     void add(Event event)
         in {
-            assert(!_decided, "FIXME: An event has been added after this round has been decided!");
+            version(DECIDED_PROBLEM) {
+                assert(!_decided, "FIXME: An event has been added after this round has been decided!");
+            }
             assert(event.witness, "Event added to a round should be a witness");
             assert(_events[event.node_id] is null, "Evnet should only be added once");
         }
@@ -303,6 +305,14 @@ class Round {
     // Whole round decided
     bool famous_decided()  {
         import std.stdio;
+        version(DECIDED_PROBLEM) {
+            // empty
+        }
+        else {
+            if ( _decided ) {
+                Round.undo_decision(this);
+            }
+        }
         if ( !_decided ) {
             if ( _previous ) {
                 foreach(node_id, e; this) {
@@ -352,6 +362,21 @@ class Round {
         return null;
     }
 
+    package static void undo_decision(Round until) {
+        import std.stdio;
+        void undo(Round r) {
+            if ( r ) {
+                if ( r._decided ) {
+                    writefln("Undo decides for round %d", r.number);
+                }
+                r._decided = false;
+                if ( r !is until ) {
+                    undo(r._previous);
+                }
+            }
+        }
+        undo(_rounds);
+    }
 //     void remove(Event event) {
 // //        _events[event.node_id]=null;
 //     }
