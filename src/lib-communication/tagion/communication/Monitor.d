@@ -48,6 +48,7 @@ class MonitorCallBacks : NetCallbacks {
     static HBSON createBSON(const(Event) e) {
         auto bson=new HBSON;
         bson[basename!(e.id)]=e.id;
+        bson[basename!(e.node_id)]=e.node_id;
         return bson;
     }
 
@@ -144,6 +145,9 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. Event %d forked %s ", e.id, e.forked);
     }
 
+    void remove(const(Event) e) {
+        writefln("Remove %d", e.id);
+    }
     // void famous_votes(const(Event) e) {
     //     writeln("Not implemented %s", __FUNCTION__);
     //     // auto bson=createBSON(e);
