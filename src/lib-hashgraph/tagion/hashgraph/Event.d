@@ -193,6 +193,7 @@ interface EventCallbacks {
     void famous(const(Event) e);
     void round(const(Event) e);
     void forked(const(Event) e);
+    void remove(const(Event) e);
 //    void famous_votes(const(Event) e);
     void iterations(const(Event) e, const uint count);
 }
@@ -321,7 +322,6 @@ class Round {
                     }
                     else {
                         _decided=false;
-                        writefln("Not decide break at %d", node_id);
                         break;
                     }
                 }
@@ -377,9 +377,10 @@ class Round {
         }
         undo(_rounds);
     }
-//     void remove(Event event) {
-// //        _events[event.node_id]=null;
-//     }
+
+    void disconnect(Event event) {
+        _events[event.node_id]=null;
+    }
 
     // bool famous_decided() const pure nothrow
     //     in {
@@ -634,13 +635,13 @@ class Event {
         return _round;
     }
 
-    int round_number() pure const nothrow
-        in {
-            assert(_round !is null, "Round is not set for this Event");
-        }
-    do {
-        return _round.number;
-    }
+    // int round_number() pure const nothrow
+    //     in {
+    //         assert(_round !is null, "Round is not set for this Event");
+    //     }
+    // do {
+    //     return _round.number;
+    // }
 
     bool hasRound() const pure nothrow {
         return (_round !is null);
@@ -650,17 +651,17 @@ class Event {
     // See this the witness
     @trusted // FIXME: remove after debug
     package void mark_round_seeing() {
-        import std.stdio;
+//        import std.stdio;
 
         if ( _witness && !isEva ) {
             foreach(seen_node_id, ref e; _round.previous) {
-                writefln("Search %d seeing=%s", seen_node_id,  seeing_witness(seen_node_id) );
+//                writefln("Search %d seeing=%s", seen_node_id,  seeing_witness(seen_node_id) );
                 if ( seeing_witness(seen_node_id) ) {
                     e._witness.seen(node_id);
                     if ( callbacks ) {
                         callbacks.round_mask(e);
                     }
-                    writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d %s votes=%d", node_id, seen_node_id, e.id, e._witness.seen_mask, e._witness.famous_votes);
+//                    writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d %s votes=%d", node_id, seen_node_id, e.id, e._witness.seen_mask, e._witness.famous_votes);
 
                 }
 
@@ -694,15 +695,15 @@ class Event {
                             // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
                             // immutable votes=countVotes(vote_mask);
                             // immutable majority=isMajority(votes, node_size);
-                            writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s", _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.seen_mask, e._witness.famous_votes, e._witness.famous);
+                            // writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s", _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.seen_mask, e._witness.famous_votes, e._witness.famous);
 
                         }
-                        if ( e._witness.famous_decided ) {
-                            writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
-//                            undecided.famous_decide(seen_node_id);
-                        }
-                        writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s famous=%s votes=%d",
-                                e.id, e.node_id, e.round_number, seen_node_id, e.round_mask, e._witness.famous, e._witness.famous_votes);
+//                         if ( e._witness.famous_decided ) {
+//                             writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
+// //                            undecided.famous_decide(seen_node_id);
+//                         }
+//                         writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s famous=%s votes=%d",
+//                                 e.id, e.node_id, e.round.number, seen_node_id, e.round_mask, e._witness.famous, e._witness.famous_votes);
                     }
                 }
                 if ( undecided.famous_decided ) {
@@ -758,13 +759,13 @@ class Event {
         return _round;
     }
 
-    Round previous_round() pure nothrow
-        in {
-            assert(_round);
-        }
-    do {
-        return _round.previous;
-    }
+    // Round previous_round() pure nothrow
+    //     in {
+    //         assert(_round);
+    //     }
+    // do {
+    //     return _round.previous;
+    // }
 
 
     uint witness_votes(immutable uint node_size) {
@@ -873,7 +874,7 @@ class Event {
         }
         _witness=new Witness(previous_witness_event, strong_seeing_mask);
         // The round number is increased by one
-        _round=Round(mother.round_number+1);
+        _round=Round(mother.round.number+1);
         // Event added to round
         _round.add(this);
         if ( callbacks ) {
@@ -969,7 +970,7 @@ class Event {
 
 // Disconnect the Event from the graph
     @trusted
-    void diconnect() {
+    void disconnect() {
         // if ( _son ) {
         //     _son._father=null;
         // }
@@ -979,14 +980,14 @@ class Event {
         _mother=_father=null;
         _daughter=_son=null;
         if ( _witness ) {
-            //   _round.remove(this);
-            _witness.destroy;
+            _round.disconnect(this);
+            _witness=null;
         }
         _round = null;
     }
 
     ~this() {
-        diconnect();
+        disconnect();
     }
 
     Event mother(H)(H h, RequestNet request_net) {
