@@ -322,6 +322,7 @@ class Round {
                     }
                     else {
                         _decided=false;
+//                        writefln("Not decide break at %d", node_id);
                         break;
                     }
                 }
@@ -333,6 +334,20 @@ class Round {
         return _decided;
     }
 
+    void ground(H)(H h) {
+        foreach(node_id, ref e; this) {
+            e.ground(h);
+        }
+        void grounding(Round r) @safe {
+            if ( r ) {
+                if ( r._previous !is this ) {
+                    grounding(r._previous);
+                }
+                r._previous=null;
+            }
+        }
+        grounding(_rounds);
+    }
     // Return true if the event on node_id has been decided
     // @trusted
     // bool famous_decided(const uint node_id) pure const nothrow {
@@ -569,6 +584,7 @@ class Event {
     private Event _father;
     private Event _daughter;
     private Event _son;
+    private bool _grounded;
 
     private Round  _round;
     private Round  _recieved_round;
@@ -651,17 +667,17 @@ class Event {
     // See this the witness
     @trusted // FIXME: remove after debug
     package void mark_round_seeing() {
-//        import std.stdio;
+        import std.stdio;
 
         if ( _witness && !isEva ) {
             foreach(seen_node_id, ref e; _round.previous) {
-//                writefln("Search %d seeing=%s", seen_node_id,  seeing_witness(seen_node_id) );
+                writefln("Search %d seeing=%s", seen_node_id,  seeing_witness(seen_node_id) );
                 if ( seeing_witness(seen_node_id) ) {
                     e._witness.seen(node_id);
                     if ( callbacks ) {
                         callbacks.round_mask(e);
                     }
-//                    writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d %s votes=%d", node_id, seen_node_id, e.id, e._witness.seen_mask, e._witness.famous_votes);
+                    writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d %s votes=%d", node_id, seen_node_id, e.id, e._witness.seen_mask, e._witness.famous_votes);
 
                 }
 
@@ -695,15 +711,15 @@ class Event {
                             // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
                             // immutable votes=countVotes(vote_mask);
                             // immutable majority=isMajority(votes, node_size);
-                            // writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s", _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.seen_mask, e._witness.famous_votes, e._witness.famous);
+                            writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s", _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.seen_mask, e._witness.famous_votes, e._witness.famous);
 
                         }
-//                         if ( e._witness.famous_decided ) {
-//                             writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
-// //                            undecided.famous_decide(seen_node_id);
-//                         }
-//                         writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s famous=%s votes=%d",
-//                                 e.id, e.node_id, e.round.number, seen_node_id, e.round_mask, e._witness.famous, e._witness.famous_votes);
+                        if ( e._witness.famous_decided ) {
+                            writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
+//                            undecided.famous_decide(seen_node_id);
+                        }
+                        writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s famous=%s votes=%d",
+                                e.id, e.node_id, e.round.number, seen_node_id, e.round_mask, e._witness.famous, e._witness.famous_votes);
                     }
                 }
                 if ( undecided.famous_decided ) {
@@ -971,12 +987,14 @@ class Event {
 // Disconnect the Event from the graph
     @trusted
     void disconnect() {
-        // if ( _son ) {
-        //     _son._father=null;
-        // }
-        // if ( _daughter ) {
-        //     _daughter._mother=null;
-        // }
+        if ( _son ) {
+            _son._grounded=true;
+            _son._father=null;
+        }
+        if ( _daughter ) {
+            _daughter._grounded=true;
+            _daughter._mother=null;
+        }
         _mother=_father=null;
         _daughter=_son=null;
         if ( _witness ) {
@@ -984,6 +1002,20 @@ class Event {
             _witness=null;
         }
         _round = null;
+    }
+
+    package void ground(H)(H h) {
+        void grounding(Event e) @safe {
+            if ( e ) {
+                local_ground(e._mother);
+                h.eliminate(e.fingerprint);
+                if ( callbacks ) {
+                    callbacks.remove(e);
+                }
+                e.disconnect;
+            }
+        }
+        grouding(this);
     }
 
     ~this() {
@@ -1021,6 +1053,7 @@ class Event {
             assert(_mother);
             assert( (altitude-_mother.altitude) == 1 );
         }
+        assert(!_grounded, "This event is grounded");
     }
     do {
         return _mother;
@@ -1033,6 +1066,7 @@ class Event {
                     assert(result, "the father is not found");
                 }
             }
+            assert(!_grounded, "This event is grounded");
         }
     do {
         if ( _father is null ) {
@@ -1141,7 +1175,11 @@ class Event {
     }
 
 // is true if the event does not have a mother or a father
-    bool isEva() pure const nothrow {
+    bool isEva() pure const nothrow
+        in {
+            assert(!_grounded, "This event is gounded");
+        }
+    do {
         return !motherExists;
     }
 

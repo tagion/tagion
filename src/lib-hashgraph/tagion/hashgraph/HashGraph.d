@@ -72,7 +72,6 @@ class HashGraph {
         private Event _event; // Latest event
         package Event latest_witness_event; // Latest witness event
 
-
         package Event previous_witness()
         in {
             assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
@@ -306,30 +305,18 @@ class HashGraph {
     }
 
     Event lookup(immutable(ubyte[]) fingerprint) {
+        // scope(exit) {
+        //     _event_cache.remove(fingerprint);
+        // }
         return _event_cache[fingerprint];
+    }
+
+    void elininate(immutable(ubyte[]) fingerprint) {
+        _event_cache.remove(fingerprint);
     }
 
     bool isRegistered(immutable(ubyte[]) fingerprint) {
         return _event_cache.contains(fingerprint);
-    }
-
-    void clear(const int round_number) {
-
-        void crawl(const(EventCache.Entry)* event_entry) {
-            if (  event_entry && ( (event_entry.value.round.number - round_number) < 0 ) ) {
-                _event_cache.removeOldest;
-                crawl(_event_cache.getOldest);
-            }
-        }
-        void remove_event(immutable(ubyte)[] fingerprint, EventCache.Element* element) {
-            Event event=element.entry.value;
-            if ( Event.callbacks ) {
-                Event.callbacks.remove(event);
-            }
-            event.disconnect;
-        }
-        _event_cache.setEvict(&remove_event);
-        crawl(_event_cache.getOldest);
     }
 
     // Returns the number of active nodes in the network
@@ -394,13 +381,6 @@ class HashGraph {
         return event;
     }
 
-    enum int round_remove_threashold=7;
-    private static int round_remove;
-    enum int round_delta=2;
-    static this() {
-        round_remove=round_remove_threashold;
-    }
-
     Event registerEvent(
         RequestNet request_net,
         Pubkey pubkey,
@@ -457,23 +437,31 @@ class HashGraph {
 
             event.mark_round_seeing;
 
+            if ( event.witness ) {
+                writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
+            }
             event.collect_famous_votes;
+//            event.collect_witness_seen_votes;
+
+            // if ( event.witness ) {
+            //     // Collect votes from this witness to the previous witness
+            //     // previous round
+
+            // }
+//            vote_famous(event);
 
             if ( Event.callbacks ) {
                 Event.callbacks.round(event);
                 if ( iterative_strong_count != 0 ) {
                     Event.callbacks.iterations(event, iterative_strong_count);
                 }
+//                                    if ( callbacks ) {
+                // if ( event.) {
                 Event.callbacks.witness_mask(event);
+                // }
+//                    }
 
             }
-
-            if ( (event.round.number - round_remove) > (round_remove_threashold+round_delta) ) {
-//                clear(round_remove);
-                round_remove+=round_delta;
-                writefln("REMOVE from %d current round %d",  round_remove, event.round.number);
-            }
-
         }
 
         return event;
