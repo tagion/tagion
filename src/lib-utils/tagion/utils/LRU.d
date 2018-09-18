@@ -211,6 +211,9 @@ class LRU(K,V)  {
         return false;
     }
 
+    void setEvict(EvictCallback evict) {
+        onEvict=evict;
+    }
 // RemoveOldest removes the oldest item from the cache.
     const(Entry)* removeOldest() {
 
