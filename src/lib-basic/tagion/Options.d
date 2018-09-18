@@ -18,6 +18,8 @@ struct Options {
     uint timeout;
     // Number of heart-beats until the program stops
     uint loops;
+    // Runs forever
+    bool infinity;
     // The port number of the first socket port
     uint port;
     // Url to be used for the sockets
