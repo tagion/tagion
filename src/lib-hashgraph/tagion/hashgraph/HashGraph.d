@@ -311,7 +311,7 @@ class HashGraph {
         return _event_cache[fingerprint];
     }
 
-    void elininate(immutable(ubyte[]) fingerprint) {
+    void eliminate(immutable(ubyte[]) fingerprint) {
         _event_cache.remove(fingerprint);
     }
 
@@ -381,6 +381,8 @@ class HashGraph {
         return event;
     }
 
+    private static Event event_cleaner;
+    enum round_clean_limit=10;
     Event registerEvent(
         RequestNet request_net,
         Pubkey pubkey,
@@ -437,9 +439,9 @@ class HashGraph {
 
             event.mark_round_seeing;
 
-            if ( event.witness ) {
-                writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
-            }
+            // if ( event.witness ) {
+            //     writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
+            // }
             event.collect_famous_votes;
 //            event.collect_witness_seen_votes;
 
@@ -462,6 +464,16 @@ class HashGraph {
 //                    }
 
             }
+
+            if ( !event_cleaner ) {
+                event_cleaner=event;
+            }
+            else if ( ( event.round.number - event_cleaner.round.number ) > round_clean_limit ) {
+                writefln("CLEAN ROUND %d", event_cleaner.round.number);
+//                event_cleaner.ground(this);
+                event_cleaner=event;
+            }
+
         }
 
         return event;

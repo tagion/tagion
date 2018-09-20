@@ -300,20 +300,23 @@ class Round {
             assert(_events[event.node_id] is null, "Evnet should only be added once");
         }
     do {
-        _events[event.node_id]=event;
-    }
-
-    // Whole round decided
-    bool famous_decided()  {
-        import std.stdio;
+        version(none) {
         version(DECIDED_PROBLEM) {
             // empty
         }
         else {
             if ( _decided ) {
                 Round.undo_decision(this);
+//                _decided=false;
             }
         }
+        }
+        _events[event.node_id]=event;
+    }
+
+    // Whole round decided
+    package bool famous_decided()  {
+//        import std.stdio;
         if ( !_decided ) {
             if ( _previous ) {
                 foreach(node_id, e; this) {
@@ -328,9 +331,10 @@ class Round {
                 }
             }
             else {
-                _decided=true;
+                 _decided=true;
             }
         }
+
         return _decided;
     }
 
@@ -448,6 +452,11 @@ class Round {
             }
         }
         check_round_order(this, _previous);
+        // bool decided_flag;
+        // for(Round r=_rounds; r !is null; r=r._previous) {
+        //     if ( r.famous_decided ) {
+        //     }
+        // }
     }
 }
 
@@ -455,6 +464,7 @@ class Round {
 class Witness {
     private Event _previous_witness_event;
     private BitArray _famous_decided_mask;
+//    private bool     _famous_decided;
     private BitArray _seen_mask;
     private BitArray _strong_seeing_mask;
     private uint     _famous_votes;
@@ -702,10 +712,10 @@ class Event {
             if ( undecided ) {
                 assert(!undecided.famous_decided, "False. Undecided round is decided");
 
-                writefln("UNDECIDED ROUND %d", undecided.number);
+                writefln("UNDECIDED ROUND %d %s", undecided.number, undecided.famous_decided);
                 foreach(seen_node_id, ref e; undecided) {
                     if ( !e._witness.famous_decided ) {
-                        if ( e._witness.famous ) {
+//                        if ( e._witness.famous ) {
                             // Masks the strongly seen witness votes in the undecided round
                             e._witness.famous_vote(_witness.strong_seeing_mask);
                             // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
@@ -713,7 +723,7 @@ class Event {
                             // immutable majority=isMajority(votes, node_size);
                             writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s", _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.seen_mask, e._witness.famous_votes, e._witness.famous);
 
-                        }
+//                        }
                         if ( e._witness.famous_decided ) {
                             writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
 //                            undecided.famous_decide(seen_node_id);
@@ -1007,7 +1017,7 @@ class Event {
     package void ground(H)(H h) {
         void grounding(Event e) @safe {
             if ( e ) {
-                local_ground(e._mother);
+                grounding(e._mother);
                 h.eliminate(e.fingerprint);
                 if ( callbacks ) {
                     callbacks.remove(e);
@@ -1015,7 +1025,7 @@ class Event {
                 e.disconnect;
             }
         }
-        grouding(this);
+        grounding(this);
     }
 
     ~this() {
