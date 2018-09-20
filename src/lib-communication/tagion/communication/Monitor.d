@@ -48,6 +48,7 @@ class MonitorCallBacks : NetCallbacks {
     static HBSON createBSON(const(Event) e) {
         auto bson=new HBSON;
         bson[basename!(e.id)]=e.id;
+        bson[basename!(e.node_id)]=e.node_id;
         return bson;
     }
 
@@ -60,7 +61,7 @@ class MonitorCallBacks : NetCallbacks {
         immutable _witness=e.witness !is null;
 
         auto bson=createBSON(e);
-        bson[basename!(e.node_id)]=e.node_id;
+//        bson[basename!(e.node_id)]=e.node_id;
         if ( e.mother !is null ) {
             bson[Keywords.mother]=e.mother.id;
         }
@@ -146,6 +147,9 @@ class MonitorCallBacks : NetCallbacks {
 
     void remove(const(Event) e) {
         writefln("Remove %d", e.id);
+        auto bson=new HBSON;
+        bson[Keywords.remove]=e.id;
+        socket_send(bson.serialize);
     }
     // void famous_votes(const(Event) e) {
     //     writeln("Not implemented %s", __FUNCTION__);
