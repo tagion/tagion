@@ -216,6 +216,14 @@ class Round {
     private Event[] _events;
     private static Round _rounds;
 
+    static void dump() {
+        import std.stdio;
+        writefln("ROUND dump");
+        for(Round r=_rounds; r !is null; r=r._previous) {
+            writefln("\tRound %d %s", r.number, r.famous_decided);
+        }
+    }
+
     bool lessOrEqual(const Round rhs) pure const {
         return (number - rhs.number) <= 0;
     }
@@ -265,7 +273,7 @@ class Round {
         assert(0, "Round number must increase by one");
     }
 
-    package int opApply(scope int delegate(const uint node_id, ref Event event) @safe dg) {
+    package int opApply(scope int delegate(const uint node_id, Event event) @safe dg) {
         int result;
         foreach(uint node_id, e; _events) {
             if ( e ) {
@@ -300,22 +308,30 @@ class Round {
             assert(_events[event.node_id] is null, "Evnet should only be added once");
         }
     do {
-        version(none) {
+//        version(none) {
         version(DECIDED_PROBLEM) {
             // empty
         }
         else {
             if ( _decided ) {
+                import std.stdio;
+                writeln("--------------- ------------- ----------");
+                Round.dump;
                 Round.undo_decision(this);
+                Round.dump;
 //                _decided=false;
             }
-        }
         }
         _events[event.node_id]=event;
     }
 
     // Whole round decided
-    package bool famous_decided()  {
+    package bool famous_decided() pure const nothrow {
+        return _decided;
+//        import std.stdio;
+    }
+
+    package bool update_decision()  {
 //        import std.stdio;
         if ( !_decided ) {
             if ( _previous ) {
@@ -505,7 +521,9 @@ class Witness {
         return _seen_mask;
     }
 
-
+    ref const(BitArray) famous_decided_mask() pure const nothrow {
+        return _famous_decided_mask;
+    }
 
 //     bool famous_decided() pure const nothrow {
 // //        immutable node_size=cast(uint)_famous_decided_mask.length;
@@ -680,14 +698,16 @@ class Event {
         import std.stdio;
 
         if ( _witness && !isEva ) {
-            foreach(seen_node_id, ref e; _round.previous) {
+            foreach(seen_node_id, e; _round.previous) {
                 writefln("Search %d seeing=%s", seen_node_id,  seeing_witness(seen_node_id) );
                 if ( seeing_witness(seen_node_id) ) {
                     e._witness.seen(node_id);
                     if ( callbacks ) {
                         callbacks.round_mask(e);
                     }
-                    writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d %s votes=%d", node_id, seen_node_id, e.id, e._witness.seen_mask, e._witness.famous_votes);
+                    writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d seen=%s decided=%s:%s votes=%d ",
+                        node_id, seen_node_id, e.id, e._witness.seen_mask, e._witness.famous_decided_mask,
+                        e._witness.famous_decided, e._witness.famous_votes);
 
                 }
 
@@ -713,11 +733,12 @@ class Event {
                 assert(!undecided.famous_decided, "False. Undecided round is decided");
 
                 writefln("UNDECIDED ROUND %d %s", undecided.number, undecided.famous_decided);
-                foreach(seen_node_id, ref e; undecided) {
-                    if ( !e._witness.famous_decided ) {
+                foreach(seen_node_id, e; undecided) {
+//                    if ( !e._witness.famous_decided ) {
 //                        if ( e._witness.famous ) {
                             // Masks the strongly seen witness votes in the undecided round
                             e._witness.famous_vote(_witness.strong_seeing_mask);
+                            //update_decision
                             // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
                             // immutable votes=countVotes(vote_mask);
                             // immutable majority=isMajority(votes, node_size);
@@ -728,14 +749,15 @@ class Event {
                             writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
 //                            undecided.famous_decide(seen_node_id);
                         }
-                        writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s famous=%s votes=%d",
-                                e.id, e.node_id, e.round.number, seen_node_id, e.round_mask, e._witness.famous, e._witness.famous_votes);
-                    }
+                        writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s:%s decided=%s famous=%s votes=%d",
+                            e.id, e.node_id, e.round.number, seen_node_id, e.round_mask,  e._witness.famous_decided_mask, e._witness.famous_decided, e._witness.famous, e._witness.famous_votes);
+                        //                  }
                 }
-                if ( undecided.famous_decided ) {
+
+                if ( undecided.update_decision ) {
                     writefln("Round %d decided ", undecided.number);
                     if ( callbacks ) {
-                        foreach(seen_node_id, ref e; undecided) {
+                        foreach(seen_node_id, e; undecided) {
                             callbacks.famous(e);
                         }
                     }
