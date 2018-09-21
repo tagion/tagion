@@ -61,7 +61,7 @@ class MonitorCallBacks : NetCallbacks {
         immutable _witness=e.witness !is null;
 
         auto bson=createBSON(e);
-//        bson[basename!(e.node_id)]=e.node_id;
+        bson[basename!(e.altitude)]=e.altitude;
         if ( e.mother !is null ) {
             bson[Keywords.mother]=e.mother.id;
         }
@@ -100,7 +100,8 @@ class MonitorCallBacks : NetCallbacks {
 
     void round_mask(const(Event) e) {
         auto bson=createBSON(e);
-        bson[Keywords.round_mask]=bitarray2bool(e.round_mask);
+        bson[Keywords.round_mask]=bitarray2bool(e.witness.seen_mask);
+        bson[Keywords.decided_mask]=bitarray2bool(e.witness.famous_decided_mask);
         socket_send(bson.serialize);
     }
 
