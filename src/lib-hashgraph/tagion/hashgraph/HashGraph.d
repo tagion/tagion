@@ -166,15 +166,15 @@ class HashGraph {
         version(node)
         protected void vote_famous(Event witness_event)
             in {
-                writefln("collect_round=%s latest_witness.round=%s isEva=%s", witness_event.round.number,  previous_witness.round.number, witness_event.isEva);
+                Event.fout.writefln("collect_round=%s latest_witness.round=%s isEva=%s", witness_event.round.number,  previous_witness.round.number, witness_event.isEva);
                 assert(!witness_event.isEva );
                 assert((witness_event.round.number-previous_witness.round.number) == 1);
                 assert(latest_witness_event.witness);
             }
         do {
-            writefln("Before  previous_witness");
+            Event.fout.writefln("Before  previous_witness");
             witness_event.witness.vote_famous(witness_event, witness_event.node_id, witness_event.seeing_witness(node_id));
-            writefln("After  previous_witness");
+            Event.fout.writefln("After  previous_witness");
         }
 
 
@@ -238,15 +238,15 @@ class HashGraph {
     void dumpNodes() {
         import std.stdio;
         foreach(i, n; nodes) {
-            writef("%d:%s:", i, n !is null);
+            Event.fout.writef("%d:%s:", i, n !is null);
             if ( n !is null ) {
-                writef("%s ",n.pubkey[0..7].toHexString);
+                Event.fout.writef("%s ",n.pubkey[0..7].toHexString);
             }
             else {
-                write("Non ");
+                Event.fout.write("Non ");
             }
         }
-        writefln("");
+        Event.fout.writefln("");
     }
 
     @safe
