@@ -487,6 +487,8 @@ class Witness {
     private BitArray _strong_seeing_mask;
     // This vector show what we can see in the previous witness round
     private BitArray _seeing_witness_mask;
+    // Round seeing masks
+    private BitArray _round_seen_mask;
     private uint     _famous_votes;
 //    private uint     _famous_counts;
     immutable uint   node_size;
@@ -501,6 +503,7 @@ class Witness {
         _strong_seeing_mask=strong_seeing_mask.dup;
         _seen_mask.length=node_size;
         _famous_decided_mask.length=node_size;
+        _round_seen_mask.length=node_size;
 //        _famous_vote_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
     }
@@ -527,6 +530,12 @@ class Witness {
 
     ref const(BitArray) famous_decided_mask() pure const nothrow {
         return _famous_decided_mask;
+    }
+
+    package ref const(BitArray) round_seen_mask(Event wintess_event) {
+        if ( wintness_event.mother ) {
+            _round_seen_mask|=
+        }
     }
 
 //     package ref const(BitArray) seeing_witness_mask(Event witness_event) {
