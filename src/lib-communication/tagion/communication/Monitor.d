@@ -61,7 +61,7 @@ class MonitorCallBacks : NetCallbacks {
         immutable _witness=e.witness !is null;
 
         auto bson=createBSON(e);
-        bson[basename!(e.altitude)]=e.altitude;
+//        bson[basename!(e.altitude)]=e.altitude;
         if ( e.mother !is null ) {
             bson[Keywords.mother]=e.mother.id;
         }
