@@ -532,11 +532,11 @@ class Witness {
         return _famous_decided_mask;
     }
 
-    package ref const(BitArray) round_seen_mask(Event wintess_event) {
-        if ( wintness_event.mother ) {
-            _round_seen_mask|=
-        }
-    }
+    // package ref const(BitArray) round_seen_mask(Event wintess_event) {
+    //     if ( wintness_event.mother ) {
+    //         _round_seen_mask|=
+    //     }
+    // }
 
 //     package ref const(BitArray) seeing_witness_mask(Event witness_event) {
 //         BitArray zeros;
