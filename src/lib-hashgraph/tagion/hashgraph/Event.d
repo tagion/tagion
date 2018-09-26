@@ -485,15 +485,14 @@ class Witness {
 //    private bool     _famous_decided;
     private BitArray _seen_mask;
     private BitArray _strong_seeing_mask;
-    // This vector show what we can see in the previous witness round
-    private BitArray _seeing_witness_mask;
-    // Round seeing masks
+    // This vector shows what we can see in the previous witness round
+    // Round seeing masks from next round
     private BitArray _round_seen_mask;
     private uint     _famous_votes;
 //    private uint     _famous_counts;
     immutable uint   node_size;
     @trusted
-    this(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
+    this(const Event owner, Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
     in {
         assert(strong_seeing_mask.length > 0);
     }
@@ -503,9 +502,12 @@ class Witness {
         _strong_seeing_mask=strong_seeing_mask.dup;
         _seen_mask.length=node_size;
         _famous_decided_mask.length=node_size;
-        _round_seen_mask.length=node_size;
+//        _round_seen_mask.length=node_size;
 //        _famous_vote_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
+
+        // Updates _round_seen_mask
+        seeing_previous_round(owner);
     }
 
     Event previous_witness_event() pure nothrow {
@@ -515,6 +517,36 @@ class Witness {
     ref const(BitArray) strong_seeing_mask() pure const nothrow {
         return _strong_seeing_mask;
     }
+
+    @trusted
+    private void seeing_previous_round(Event owner_event)
+        in {
+            assert(owner_event.wintess, "Only witness event can update Seeing Previous Round");
+        }
+    do {
+        void update_round_seeing(Event event) {
+            if ( event ) {
+                if ( event.witness ) {
+                    if ( ( owner_event.round.number - event.round.number ) == 1 ) {
+                        // owner event sees witness in preivous round
+                        event.witness._round_seen_mask[owner.node_id]=true;
+                    }
+                    update_round_seeing(event.mother);
+                    update_round_seeing(event.father);
+                }
+                else if ( ( owner_event.round.number - event.round.number ) >= 1 ) {
+                    foreach(seeing_node_id, e; event.round) {
+                        if ( event.witness_mask[seeing_node_id] && !_round_seen_mask[seeing_node_id] ) {
+                            update_round_seeing(e);
+                        }
+                    }
+                }
+            }
+        }
+        update_round_seeing(owner_event.mother);
+        update_round_seeing(owner_event.father);
+    }
+
 
     @trusted
     package void seen(const uint node_id) {
@@ -531,6 +563,7 @@ class Witness {
     ref const(BitArray) famous_decided_mask() pure const nothrow {
         return _famous_decided_mask;
     }
+
 
     // package ref const(BitArray) round_seen_mask(Event wintess_event) {
     //     if ( wintness_event.mother ) {
@@ -1000,7 +1033,7 @@ class Event {
                 result=true;
             }
             else if ( _round.lessOrEqual(mother._round) ) {
-                result=_round.event(mother.node_id).seeing_witness(node_id);
+                result=mother._round.event(mother.node_id).seeing_witness(node_id);
             }
         }
         else if ( father ) {
@@ -1008,7 +1041,7 @@ class Event {
                 result=true;
             }
             else if ( _round.lessOrEqual(father._round) ) {
-                result=_round.event(father.node_id).seeing_witness(node_id);
+                result=father._round.event(father.node_id).seeing_witness(node_id);
             }
         }
         return result;
