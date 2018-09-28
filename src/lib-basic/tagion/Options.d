@@ -33,6 +33,17 @@ struct Options {
     // Sequential test mode
     // all the
     bool sequential;
+
+    struct ScriptingEngine {
+        // Ip address
+        string listener_ip_address;
+        //Port
+        ushort listener_port;
+        //Listener max. incomming connection req. queue length
+        uint listener_max_queue_lenght;
+        //Max simultanious connections for the scripting engine
+        uint max_connections;
+    }
 }
 
 __gshared static Options options;

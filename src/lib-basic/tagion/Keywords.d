@@ -29,7 +29,6 @@ enum _keywords = [
     "strong_votes",
     "strong_mask",
     "iterations",
-    "altenative",
 //        "events",     // List of event
     "type",       // Package type
     "block"     // block
