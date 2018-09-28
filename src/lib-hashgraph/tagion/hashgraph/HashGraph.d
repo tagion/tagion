@@ -12,7 +12,6 @@ import tagion.hashgraph.ConsensusExceptions;
 import std.bitmanip : BitArray;
 import tagion.Base : Pubkey, Buffer, bitarray_clear, countVotes;
 import Base=tagion.Base;
-
 @safe
 class HashGraph {
     //alias Pubkey=immutable(ubyte)[];

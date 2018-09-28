@@ -485,14 +485,15 @@ class Witness {
 //    private bool     _famous_decided;
     private BitArray _seen_mask;
     private BitArray _strong_seeing_mask;
-    // This vector shows what we can see in the previous witness round
-    // Round seeing masks from next round
+    // This vector show what we can see in the previous witness round
+    private BitArray _seeing_witness_mask;
+    // Round seeing masks
     private BitArray _round_seen_mask;
     private uint     _famous_votes;
 //    private uint     _famous_counts;
     immutable uint   node_size;
     @trusted
-    this(Event owner, Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
+    this(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
     in {
         assert(strong_seeing_mask.length > 0);
     }
@@ -502,14 +503,9 @@ class Witness {
         _strong_seeing_mask=strong_seeing_mask.dup;
         _seen_mask.length=node_size;
         _famous_decided_mask.length=node_size;
-//        _round_seen_mask.length=node_size;
+        _round_seen_mask.length=node_size;
 //        _famous_vote_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
-
-        // Updates _round_seen_mask
-        if ( !owner.isEva ) {
-            seeing_previous_round(owner);
-        }
     }
 
     Event previous_witness_event() pure nothrow {
@@ -519,32 +515,6 @@ class Witness {
     ref const(BitArray) strong_seeing_mask() pure const nothrow {
         return _strong_seeing_mask;
     }
-
-    @trusted
-    private void seeing_previous_round(Event owner_event) {
-        void update_round_seeing(Event event) @trusted {
-            if ( event ) {
-                if ( event.witness ) {
-                    if ( ( owner_event.round.number - event.round.number ) == 1 ) {
-                        // owner event sees witness in preivous round
-                        event.witness._round_seen_mask[owner_event.node_id]=true;
-                    }
-                    update_round_seeing(event.mother);
-                    update_round_seeing(event.father);
-                }
-                else if ( ( owner_event.round.number - event.round.number ) >= 1 ) {
-                    foreach(seeing_node_id, e; event.round) {
-                        if ( event.witness_mask[seeing_node_id] && !_round_seen_mask[seeing_node_id] ) {
-                            update_round_seeing(e);
-                        }
-                    }
-                }
-            }
-        }
-        update_round_seeing(owner_event.mother);
-        update_round_seeing(owner_event.father);
-    }
-
 
     @trusted
     package void seen(const uint node_id) {
@@ -561,7 +531,6 @@ class Witness {
     ref const(BitArray) famous_decided_mask() pure const nothrow {
         return _famous_decided_mask;
     }
-
 
     // package ref const(BitArray) round_seen_mask(Event wintess_event) {
     //     if ( wintness_event.mother ) {
@@ -993,7 +962,7 @@ class Event {
             // If father is a witness then the wintess is seen through this event
             _witness_mask|=_father.witness_mask;
         }
-        _witness=new Witness(this, previous_witness_event, strong_seeing_mask);
+        _witness=new Witness(previous_witness_event, strong_seeing_mask);
         // The round number is increased by one
         _round=Round(mother.round.number+1);
         // Event added to round
@@ -1031,7 +1000,7 @@ class Event {
                 result=true;
             }
             else if ( _round.lessOrEqual(mother._round) ) {
-                result=mother._round.event(mother.node_id).seeing_witness(node_id);
+                result=_round.event(mother.node_id).seeing_witness(node_id);
             }
         }
         else if ( father ) {
@@ -1039,7 +1008,7 @@ class Event {
                 result=true;
             }
             else if ( _round.lessOrEqual(father._round) ) {
-                result=father._round.event(father.node_id).seeing_witness(node_id);
+                result=_round.event(father.node_id).seeing_witness(node_id);
             }
         }
         return result;
@@ -1103,7 +1072,7 @@ class Event {
             // If the event is a Eva event the round is undefined
             BitArray strong_mask;
             bitarray_clear(strong_mask, node_size);
-            _witness = new Witness(this, null, strong_mask);
+            _witness = new Witness(null, strong_mask);
             _round = Round.seed_round(node_size);
 
         }
