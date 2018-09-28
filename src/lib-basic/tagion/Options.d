@@ -44,6 +44,8 @@ struct Options {
         //Max simultanious connections for the scripting engine
         uint max_connections;
     }
+
+    ScriptingEngine scripting_engine;
 }
 
 __gshared static Options options;
