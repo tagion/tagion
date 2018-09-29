@@ -108,7 +108,7 @@ class MonitorCallBacks : NetCallbacks {
 
     void round_seen(const(Event) e) {
         auto bson=createBSON(e);
-        bson[Keywords.round_seen]=bitarray2bool(e.witness.seen_mask);
+        bson[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
         socket_send(bson.serialize);
     }
 
