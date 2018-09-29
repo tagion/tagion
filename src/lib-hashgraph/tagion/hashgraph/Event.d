@@ -489,6 +489,7 @@ class Witness {
     // This vector shows what we can see in the previous witness round
     // Round seeing masks from next round
     private BitArray _round_seen_mask;
+    private uint     _round_seen_count;
     private uint     _famous_votes;
 //    private uint     _famous_counts;
     immutable uint   node_size;
@@ -538,16 +539,19 @@ class Witness {
                     event.witness !is null
                     );
                 if ( event.witness ) {
-                    if ( round_distance == 1 ) {
-                        // owner event sees witness in preivous round
-                        event.witness._round_seen_mask[owner_event.node_id]=true;
-                        Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
-                        if ( Event.callbacks ) {
-                            Event.callbacks.round_seen(event);
+                    if ( !event.witness.round_seen_completed ) {
+                        if ( round_distance == 1 ) {
+                            // owner event sees witness in preivous round
+                            event.witness.round_seen_vote(owner_event.node_id);
+//                            event.witness._round_seen_mask[owner_event.node_id]=true;
+                            Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
+                            if ( Event.callbacks ) {
+                                Event.callbacks.round_seen(event);
+                            }
                         }
+                        update_round_seeing(event.mother, indent~"  ");
+                        update_round_seeing(event.father, indent~"  ");
                     }
-                    update_round_seeing(event.mother, indent~"  ");
-                    update_round_seeing(event.father, indent~"  ");
                 }
                 else if ( round_distance  <= 1 ) {
                     Event.fout.writef("%s  ", indent);
@@ -598,6 +602,17 @@ class Witness {
         return _famous_decided_mask;
     }
 
+    @trusted
+    package void round_seen_vote(const uint node_id) {
+        if ( !_round_seen_mask[node_id] ) {
+            _round_seen_mask[node_id] = true;
+            _round_seen_count++;
+        }
+    }
+
+    bool round_seen_completed() pure const nothrow {
+        return _round_seen_mask.length == _round_seen_count;
+    }
 
     // package ref const(BitArray) round_seen_mask(Event wintess_event) {
     //     if ( wintness_event.mother ) {
