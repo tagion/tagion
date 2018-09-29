@@ -528,16 +528,20 @@ class Witness {
         import std.stdio;
         void update_round_seeing(Event event, string indent="") @trusted {
             if ( event && !event.visit ) {
-                Event.fout.writefln("%snode_id=%d id=%d event.round.number %d",
+                immutable round_distance = owner_event.round.number - event.round.number;
+                Event.fout.writefln("%snode_id=%d id=%d event.round.number %d distance=%d witness=%s",
                     indent,
                     event.node_id,
                     event.id,
-                    event.round.number);
+                    event.round.number,
+                    round_distance,
+                    event.witness !is null
+                    );
                 if ( event.witness ) {
-                    if ( ( owner_event.round.number - event.round.number ) == 1 ) {
+                    if ( round_distance == 1 ) {
                         // owner event sees witness in preivous round
                         event.witness._round_seen_mask[owner_event.node_id]=true;
-                        Event.fout.writefln("%s\t round_seen %s", indent, event.witness._round_seen_mask);
+                        Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
                         if ( Event.callbacks ) {
                             Event.callbacks.round_seen(event);
                         }
@@ -545,15 +549,17 @@ class Witness {
                     update_round_seeing(event.mother, indent~"  ");
                     update_round_seeing(event.father, indent~"  ");
                 }
-                else if ( ( owner_event.round.number - event.round.number )  <= 1 ) {
-                    Event.fout.writef("%s ", indent);
+                else if ( round_distance  <= 1 ) {
+                    Event.fout.writef("%s  ", indent);
                     foreach(seeing_node_id, e; event.round) {
                         Event.fout.writef(" %d", seeing_node_id);
-                        if ( event.witness_mask[seeing_node_id] && !_round_seen_mask[seeing_node_id] ) {
+                        if ( event.witness_mask[seeing_node_id] ) {
                             Event.fout.writeln("->");
-                            if ( e !is owner_event ) {
-                                update_round_seeing(e, indent~"  ");
-                            }
+//                            if ( e !is owner_event ) {
+                            Event.fout.writefln("%s\t call node_id=%d id=%d witness=%s",
+                                indent, e.node_id, e.id, e.witness !is null);
+                            update_round_seeing(e, indent~"  ");
+//                            }
                             Event.fout.writefln("<<");
 
                         }
