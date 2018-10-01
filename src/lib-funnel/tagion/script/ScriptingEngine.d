@@ -4,14 +4,16 @@ import std.stdio : writeln, writefln;
 import tagion.Options;
 import tagion.Base : Control;
 import core.thread;
+import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown;
+import std.algorithm : remove;
 
+// //Wrapper struct for Scripting engine to help handle scripting engine thread.
+// //Default global options for scripting engine is chosen.
+// -----Not allowed to make a delegate from a struct outside the struct...
+// struct ScriptingEngineController {
 
-//Wrapper struct for Scripting engine to help handle scripting engine thread.
-//Default global options for scripting engine is chosen.
-// struct ScriptingEngineThread {
 //     ScriptingEngine scripting_engine;
 //     Thread scripting_engine_tread;
-
 
 //     void start () {
 //         scripting_engine = ScriptingEngine(options.scripting_engine);
@@ -23,36 +25,133 @@ import core.thread;
 //     }
 // }
 
-
 struct ScriptingEngine {
 
-    string _listener_ip_address;
-    immutable ushort _listener_port;
+    private:
 
-    this (Options.ScriptingEngine se_options) {
-        _listener_ip_address = se_options.listener_ip_address;
-        _listener_port = se_options.listener_port;
-    }
+        immutable char[] _listener_ip_address;
+        immutable ushort _listener_port;
+        immutable uint _max_connections;
+        immutable uint _listener_max_queue_length;
+        TcpSocket _listener;
+        enum _buffer_size = 1024;
 
-    ~this () {
-        //Implement desct. to free network res. Maybe call close function.
-    }
+    public:
 
-    bool run_scripting_engine = true;
-
-    void stop () {
-        writeln("Stops scripting engine API");
-        run_scripting_engine = false;
-    }
-
-    void run () {
-
-        writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
-
-        while ( run_scripting_engine ) {
-            Thread.sleep(500.msecs);
+        this (Options.ScriptingEngine se_options) {
+            _listener_ip_address = se_options.listener_ip_address;
+            _listener_port = se_options.listener_port;
+            _listener_max_queue_length = se_options.listener_max_queue_lenght;
+            _max_connections = se_options.max_connections;
         }
-    }
 
+        ~this () {
+            //Implement desct. to free network res. Maybe call close function.
+        }
+
+        bool run_scripting_engine = true;
+
+        void stop () {
+            writeln("Stops scripting engine API");
+            run_scripting_engine = false;
+            auto ping = new TcpSocket( new InternetAddress ( _listener_ip_address, _listener_port ) );
+        }
+
+        void run () {
+
+            scope ( exit ) {
+                writeln( "Closing listener socket." );
+                _listener.shutdown(SocketShutdown.BOTH);
+                Thread.sleep( dur!("seconds") (2));
+                _listener.close();
+                Thread.sleep( dur!("seconds") (2));
+            }
+
+            _listener = new TcpSocket();
+            assert(_listener.isAlive);
+            _listener.blocking = false;
+            _listener.bind( new InternetAddress( _listener_ip_address, _listener_port ) );
+            _listener.listen( _listener_max_queue_length );
+            writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
+
+            auto socketSet = new SocketSet(_max_connections + 1);
+            Socket[] reads;
+
+            while ( run_scripting_engine ) {
+
+                socketSet.add( _listener );
+
+                foreach ( sock; reads ) {
+                    socketSet.add ( sock );
+                }
+
+                Socket.select( socketSet, null, null);
+
+                for ( size_t i = 0; i < reads.length; i++ ) {
+
+                    if( socketSet.isSet(reads[i]) )  {
+                        char[1024] buffer;
+                        auto data_length = reads[i].receive( buffer[] );
+
+                        if ( data_length == Socket.ERROR ) {
+                            writeln( "Connection error" );
+                        }
+
+                        else if ( data_length != 0) {
+                            writefln ( "Received %d bytes from %s: \"%s\"", data_length, reads[i].remoteAddress.toString, buffer[0..data_length] );
+                            reads[i].send(buffer[0..data_length] );
+                        }
+
+                        else {
+                            try {
+                                writefln("Connection from %s closed.", reads[i].remoteAddress().toString());
+                            }
+                            catch ( SocketException ) {
+                                writeln("Connection closed.");
+                            }
+                        }
+
+                        reads[i].close();
+
+                        reads = reads.remove(i);
+                        i--;
+
+                        writefln("\tTotal connections: %d", reads.length);
+                    }
+                }
+
+                if (socketSet.isSet(_listener)) {     // connection request
+
+                    Socket sn = null;
+                    scope ( failure )
+                    {
+                        writefln( "Error accepting" );
+
+                        if ( sn )
+                            sn.close();
+                    }
+                    sn = _listener.accept();
+                    assert( sn.isAlive );
+                    assert( _listener.isAlive );
+
+                    if ( reads.length < _max_connections )
+                    {
+                        writefln( "Connection from %s established.", sn.remoteAddress().toString() );
+                        reads ~= sn;
+                        writefln( "\tTotal connections: %d", reads.length );
+                    }
+                    else
+                    {
+                        writefln( "Rejected connection from %s; too many connections.", sn.remoteAddress().toString() );
+                        sn.close();
+                        assert( !sn.isAlive );
+                        assert( _listener.isAlive );
+                    }
+                }
+
+                socketSet.reset();
+
+            }
+        }
 }
 
