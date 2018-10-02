@@ -100,6 +100,10 @@ public:
                     else if ( data_length != 0) {
                         writefln ( "Received %d bytes from %s: \"%s\"", data_length, reads[i].remoteAddress.toString, buffer[0..data_length] );
                         reads[i].send(buffer[0..data_length] );
+
+                        //Check dataformat
+                        //Call scripting engine
+                        //Send response back
                     }
 
                     else {
