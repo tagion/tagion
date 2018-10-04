@@ -90,7 +90,7 @@ class MonitorCallBacks : NetCallbacks {
         socket_send(bson.serialize);
     }
 
-    @trusted
+
     void witness_mask(const(Event) e) {
 
         auto bson=createBSON(e);
@@ -105,6 +105,20 @@ class MonitorCallBacks : NetCallbacks {
         socket_send(bson.serialize);
     }
 
+
+    void round_seen(const(Event) e) {
+        auto bson=createBSON(e);
+        bson[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
+        socket_send(bson.serialize);
+    }
+
+
+    void looked_at(const(Event) e) {
+        auto bson=createBSON(e);
+        bson[Keywords.looked_at_mask]=bitarray2bool(e.round.looked_at_mask);
+        bson[Keywords.looked_at_count]=e.round.looked_at_count;
+        socket_send(bson.serialize);
+    }
 
     void strongly_seeing(const(Event) e) {
         auto bson=createBSON(e);
