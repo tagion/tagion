@@ -592,13 +592,14 @@ class Witness {
                             // }
                             if ( round_distance == 1 ) {
                                 // owner event sees witness in preivous round
-                                _round.previous._round.looked_at(owner_event,node_id);
                                 event.witness.round_seen_vote(owner_event.node_id);
+                                event.round.looked_at(owner_event.node_id);
+
 //                            event.witness._round_seen_mask[owner_event.node_id]=true;
                                 Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
                                 if ( Event.callbacks ) {
                                     Event.callbacks.round_seen(event);
-                                    callbacks.looked_at(_round.previous);
+                                    Event.callbacks.looked_at(event);
                                 }
                             }
                             update_round_seeing(event.mother, indent~"  ");
