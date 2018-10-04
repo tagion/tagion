@@ -357,6 +357,7 @@ class Round {
     inout(Event) event(const uint node_id) pure inout {
         return _events[node_id];
     }
+
     // Whole round decided
     package bool famous_decided() pure const nothrow {
         return _decided;
@@ -364,8 +365,7 @@ class Round {
     }
 
     package bool update_decision()  {
-//        import std.stdio;
-        if ( !_decided ) {
+        if ( !_decided && !seeing_completed ) {
             if ( _previous ) {
                 foreach(node_id, e; this) {
                     if ( e._witness.famous_decided ) {
@@ -382,7 +382,6 @@ class Round {
                  _decided=true;
             }
         }
-
         return _decided;
     }
 
@@ -807,7 +806,7 @@ class Event {
     private bool _grounded;
 
     private Round  _round;
-    private Round  _recieved_round;
+    private Round  _received_round;
 
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
@@ -962,21 +961,13 @@ class Event {
         }
     }
 
-    void recieved_round(Round r)
+    package void received_round(Round r)
         in {
             assert(r !is null, "Received round can not be null");
-            assert(_recieved_round is null, "Received round has already been set");
+            assert(_received_round is null, "Received round has already been set");
         }
     do {
-        _recieved_round=r;
-    }
-
-    int received_round_number() pure const nothrow
-        in {
-            assert(_recieved_round !is null);
-        }
-    do {
-        return _recieved_round.number;
+        _received_round=r;
     }
 
     const(Round) round() pure const nothrow
