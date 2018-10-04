@@ -117,6 +117,7 @@ class MonitorCallBacks : NetCallbacks {
         auto bson=createBSON(e);
         bson[Keywords.looked_at_mask]=bitarray2bool(e.round.looked_at_mask);
         bson[Keywords.looked_at_count]=e.round.looked_at_count;
+        bson[Keywords.seeing_completed]=e.round.seeing_completed;
         socket_send(bson.serialize);
     }
 
