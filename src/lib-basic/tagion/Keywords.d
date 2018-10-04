@@ -19,6 +19,7 @@ enum _keywords = [
     "witness",
     "witness_mask",
     "round_mask",
+    "round_seen",
     "decided_mask",
     "famous",
     "famous_votes",
@@ -30,6 +31,8 @@ enum _keywords = [
     "strong_mask",
     "iterations",
     "altenative",
+    "looked_at_mask",
+    "looked_at_count",
 //        "events",     // List of event
     "type",       // Package type
     "block"     // block
