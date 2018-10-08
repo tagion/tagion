@@ -225,7 +225,7 @@ class Round {
     static void dump() {
         Event.fout.writefln("ROUND dump");
         for(Round r=_rounds; r !is null; r=r._previous) {
-            Event.fout.writefln("\tRound %d %s", r.number, r.famous_decided);
+            Event.fout.writefln("\tRound %d %s", r.number, r.decided);
         }
     }
 
@@ -359,7 +359,7 @@ class Round {
     }
 
     // Whole round decided
-    package bool famous_decided() pure const nothrow {
+    package bool decided() pure const nothrow {
         return _decided;
 //        import std.stdio;
     }
@@ -416,13 +416,13 @@ class Round {
     // Find collecting round from which the famous votes is collected from the previous round
     package Round undecided_round() {
         Round search(Round r) {
-            if ( r && r._previous && !r._previous.famous_decided ) {
+            if ( r && r._previous && !r._previous.decided ) {
                 return search(r._previous);
             }
             return r;
         }
         Round result=search(_previous);
-        if ( result && !result.famous_decided ) {
+        if ( result && !result.decided ) {
             return result;
         }
         return null;
@@ -584,8 +584,8 @@ class Witness {
                         event.witness !is null
                         );
                     if ( event.witness ) {
-                        if ( !event.witness.round_seen_completed ) {
-//                        if ( !event.round.seeing_completed ) {
+//                      if ( !event.witness.round_seen_completed ) {
+                        if ( !event.round.seeing_completed ) {
                                         // Marked that this witness has been looked at from the next round at node_id
                             // if ( callbacks ) {
 
@@ -664,9 +664,9 @@ class Witness {
         }
     }
 
-    bool round_seen_completed() pure const nothrow {
-        return _round_seen_mask.length == _round_seen_count;
-    }
+    // bool round_seen_completed() pure const nothrow {
+    //     return _round_seen_mask.length == _round_seen_count;
+    // }
 
     // package ref const(BitArray) round_seen_mask(Event wintess_event) {
     //     if ( wintness_event.mother ) {
@@ -724,7 +724,7 @@ class Witness {
     // }
 
     @trusted
-    package void famous_vote(ref const(BitArray) strong_seeing_mask) {
+    package void famous_vote(ref const(BitArray) strong_seeing_mask, const bool round_seeing_completed) {
 //        BitArray vote_mask=strong_seeing_mask & _seen_mask;
         if ( !_famous_decided ) {
             const BitArray vote_mask=strong_seeing_mask & _round_seen_mask;
@@ -733,7 +733,7 @@ class Witness {
                 _famous_votes = votes;
                 _famous_decided=famous;
             }
-            if ( !_famous_decided && round_seen_completed && ( _round_seen_mask == vote_mask ) ) {
+            if ( !_famous_decided && round_seeing_completed && ( _round_seen_mask == vote_mask ) ) {
                 _famous_decided=true;
             }
         }
@@ -928,15 +928,15 @@ class Event {
             auto undecided=_round.undecided_round; //collecting_round;
             fout.writefln("**** Undecided %s exists", undecided  !is null);
             if ( undecided ) {
-                assert(!undecided.famous_decided, "False. Undecided round is decided");
+                assert(!undecided.decided, "False. Undecided round is decided");
 
-                fout.writefln("UNDECIDED ROUND %d %s", undecided.number, undecided.famous_decided);
+                fout.writefln("UNDECIDED ROUND %d %s", undecided.number, undecided.decided);
                 foreach(seen_node_id, e; undecided) {
 //                    if ( !e._witness.famous_decided ) {
 //                        if ( e._witness.famous ) {
                             // Masks the strongly seen witness votes in the undecided round
 
-                    e._witness.famous_vote(_witness.strong_seeing_mask);
+                    e._witness.famous_vote(_witness.strong_seeing_mask, _round.seeing_completed);
                             //update_decision
                             // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
                             // immutable votes=countVotes(vote_mask);
