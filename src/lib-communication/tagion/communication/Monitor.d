@@ -94,21 +94,24 @@ class MonitorCallBacks : NetCallbacks {
     void witness_mask(const(Event) e) {
 
         auto bson=createBSON(e);
-        bson[Keywords.witness_mask]=bitarray2bool(e.witness_mask);
+        bson[Keywords.witness_mask]=bitarray2bool
+            (e.witness_mask);
         socket_send(bson.serialize);
     }
 
-    void round_mask(const(Event) e) {
-        auto bson=createBSON(e);
-        bson[Keywords.round_mask]=bitarray2bool(e.witness.seen_mask);
-        bson[Keywords.decided_mask]=bitarray2bool(e.witness.famous_decided_mask);
-        socket_send(bson.serialize);
-    }
+    // void round_mask(const(Event) e) {
+    //     auto bson=createBSON(e);
+    //
+//bson[Keywords.round_mask]=bitarray2bool(e.witness.seen_mask);
+    //     bson[Keywords.decided_mask]=bitarray2bool(e.witness.famous_decided_mask);
+    //     socket_send(bson.serialize);
+    // }
 
 
     void round_seen(const(Event) e) {
         auto bson=createBSON(e);
         bson[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
+//        bson[Keywords.decided_mask]=bitarray2bool(e.witness.famous_decided_mask);
         socket_send(bson.serialize);
     }
 
