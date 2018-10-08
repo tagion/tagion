@@ -94,15 +94,13 @@ class MonitorCallBacks : NetCallbacks {
     void witness_mask(const(Event) e) {
 
         auto bson=createBSON(e);
-        bson[Keywords.witness_mask]=bitarray2bool
-            (e.witness_mask);
+        bson[Keywords.witness_mask]=bitarray2bool(e.witness_mask);
         socket_send(bson.serialize);
     }
 
     // void round_mask(const(Event) e) {
     //     auto bson=createBSON(e);
-    //
-//bson[Keywords.round_mask]=bitarray2bool(e.witness.seen_mask);
+    //     //bson[Keywords.round_mask]=bitarray2bool(e.witness.seen_mask);
     //     bson[Keywords.decided_mask]=bitarray2bool(e.witness.famous_decided_mask);
     //     socket_send(bson.serialize);
     // }
@@ -118,9 +116,12 @@ class MonitorCallBacks : NetCallbacks {
 
     void looked_at(const(Event) e) {
         auto bson=createBSON(e);
-        bson[Keywords.looked_at_mask]=bitarray2bool(e.round.looked_at_mask);
-        bson[Keywords.looked_at_count]=e.round.looked_at_count;
-        bson[Keywords.seeing_completed]=e.round.seeing_completed;
+        auto round=new HBSON;
+        round[Keywords.number]=e.round.number;
+        round[Keywords.looked_at_mask]=bitarray2bool(e.round.looked_at_mask);
+        round[Keywords.looked_at_count]=e.round.looked_at_count;
+        round[Keywords.seeing_completed]=e.round.seeing_completed;
+        bson[Keywords.round]=round;
         socket_send(bson.serialize);
     }
 
@@ -152,7 +153,9 @@ class MonitorCallBacks : NetCallbacks {
 
     void round(const(Event) e) {
         auto bson=createBSON(e);
-        bson[Keywords.round]=e.round.number;
+        auto round=new HBSON;
+        round[Keywords.round]=e.round.number;
+        bson[Keywords.round]=round;
         socket_send(bson.serialize);
         // writeln("Impl. needed");
     }
