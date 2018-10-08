@@ -24,6 +24,7 @@ enum _keywords = [
     "famous",
     "famous_votes",
     "round",
+    "number",
     "remove",
     "forked",
     "strongly_seeing",
