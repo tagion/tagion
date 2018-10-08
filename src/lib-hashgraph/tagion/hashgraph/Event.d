@@ -189,7 +189,7 @@ interface EventCallbacks {
 //    void strongly2_seeing(const(Event) e);
     void strong_vote(const(Event) e, immutable uint vote);
 //    void strong2_vote(const(Event) e, immutable uint vote);
-    void round_mask(const(Event) e);
+//    void round_mask(const(Event) e);
     void round_seen(const(Event) e);
     void looked_at(const(Event) e);
 
@@ -512,15 +512,15 @@ class Round {
 class Witness {
     private Event _previous_witness_event;
 //    private Event _owner_event;
-    private BitArray _famous_decided_mask;
+//    private BitArray _famous_decided_mask;
     private bool     _famous_decided;
-    private BitArray _seen_mask;
+//    private BitArray _seen_mask;
     private BitArray _strong_seeing_mask;
     // This vector shows what we can see in the previous witness round
     // Round seeing masks from next round
     private BitArray _round_seen_mask;
-    // Mask when witness as look at the previous round
-    private BitArray _seeing_previous_round_mask;
+    // // Mask when witness as look at the previous round
+    // private BitArray _seeing_previous_round_mask;
 
     private uint     _round_seen_count;
     private uint     _famous_votes;
@@ -537,12 +537,12 @@ class Witness {
 //        _owner_event=owner_event;
         //this.node_size=cast(uint)strong_seeing_mask.length;
         _strong_seeing_mask=strong_seeing_mask.dup;
-        _seen_mask.length=node_size;
-        _famous_decided_mask.length=node_size;
+        //_seen_mask.length=node_size;
+//        _famous_decided_mask.length=node_size;
 //        _famous_vote_mask.length=node_size;
         _previous_witness_event=previous_witness_event;
 
-        _seeing_previous_round_mask.length=node_size;
+        // _seeing_previous_round_mask.length=node_size;
         _round_seen_mask.length=node_size;
          // if ( !owner.isEva ) {
              // Set the witness event to next round
@@ -636,25 +636,25 @@ class Witness {
     }
 
 
-    @trusted
-    package void seen(const uint node_id) {
-        if ( !_seen_mask[node_id] ) {
-            _seen_mask[node_id]=true;
-            _famous_votes++;
-        }
-    }
+    // @trusted
+    // package void seen(const uint node_id) {
+    //     if ( !_seen_mask[node_id] ) {
+    //         _seen_mask[node_id]=true;
+    //         _famous_votes++;
+    //     }
+    // }
 
-    ref const(BitArray) seen_mask() pure const nothrow {
-        return _seen_mask;
-    }
+    // ref const(BitArray) seen_mask() pure const nothrow {
+    //     return _seen_mask;
+    // }
 
     ref const(BitArray) round_seen_mask() pure const nothrow {
         return _round_seen_mask;
     }
 
-    ref const(BitArray) famous_decided_mask() pure const nothrow {
-        return _famous_decided_mask;
-    }
+    // ref const(BitArray) famous_decided_mask() pure const nothrow {
+    //     return _famous_decided_mask;
+    // }
 
     @trusted
     package void round_seen_vote(const uint node_id) {
@@ -733,7 +733,7 @@ class Witness {
                 _famous_votes = votes;
                 _famous_decided=famous;
             }
-            if ( !_famous_decided && ( _round_seen_mask == vote_mask ) ) {
+            if ( !_famous_decided && round_seen_completed && ( _round_seen_mask == vote_mask ) ) {
                 _famous_decided=true;
             }
         }
@@ -890,6 +890,7 @@ class Event {
 
     // This function markes the witness in the previous round which
     // See this the witness
+    version(none)
     @trusted // FIXME: remove after debug
     package void mark_round_seeing() {
         import std.stdio;
@@ -902,8 +903,8 @@ class Event {
                     if ( callbacks ) {
                         callbacks.round_mask(e);
                     }
-                    fout.writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d seen=%s decided=%s:%s votes=%d ",
-                        node_id, seen_node_id, e.id, e._witness.seen_mask, e._witness.famous_decided_mask,
+                    fout.writefln("mark_round_seeing node_id=%d seen_node_id=%d id=%d seen=%s %s votes=%d ",
+                        node_id, seen_node_id, e.id, e._witness.seen_mask,
                         e._witness.famous_decided, e._witness.famous_votes);
 
                 }
@@ -934,7 +935,8 @@ class Event {
 //                    if ( !e._witness.famous_decided ) {
 //                        if ( e._witness.famous ) {
                             // Masks the strongly seen witness votes in the undecided round
-                            e._witness.famous_vote(_witness.strong_seeing_mask);
+
+                    e._witness.famous_vote(_witness.strong_seeing_mask);
                             //update_decision
                             // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
                             // immutable votes=countVotes(vote_mask);
@@ -946,8 +948,8 @@ class Event {
                             fout.writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
 //                            undecided.famous_decide(seen_node_id);
                         }
-                        fout.writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s:%s decided=%s famous=%s votes=%d",
-                            e.id, e.node_id, e.round.number, seen_node_id, e._witness.seen_mask,  e._witness.famous_decided_mask, e._witness.famous_decided, e._witness.famous, e._witness.famous_votes);
+                        fout.writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s decided=%s famous=%s votes=%d",
+                            e.id, e.node_id, e.round.number, seen_node_id, e._witness.round_seen_mask, e._witness.famous_decided, e._witness.famous, e._witness.famous_votes);
                         //                  }
                 }
 
