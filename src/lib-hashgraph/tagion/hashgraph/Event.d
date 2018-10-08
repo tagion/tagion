@@ -726,15 +726,21 @@ class Witness {
     @trusted
     package void famous_vote(ref const(BitArray) strong_seeing_mask) {
 //        BitArray vote_mask=strong_seeing_mask & _seen_mask;
-        const BitArray vote_mask=strong_seeing_mask & _round_seen_mask;
-        immutable votes=countVotes(vote_mask);
-        if ( votes > _famous_votes ) {
-            _famous_votes = votes;
+        if ( !_famous_decided ) {
+            const BitArray vote_mask=strong_seeing_mask & _round_seen_mask;
+            immutable votes=countVotes(vote_mask);
+            if ( votes > _famous_votes ) {
+                _famous_votes = votes;
+                _famous_decided=famous;
+            }
+            if ( !_famous_decided && ( _round_seen_mask == vote_mask ) ) {
+                _famous_decided=true;
+            }
         }
-        _famous_decided_mask|=vote_mask;
-        if ( countVotes(_famous_decided_mask) > 0 ) {
-            _famous_decided = _famous_decided_mask == _round_seen_mask;
-        }
+            // _famous_decided_mask|=vote_mask;
+        // if ( countVotes(_famous_decided_mask) > 0 ) {
+        //     _famous_decided = _famous_decided_mask == _round_seen_mask;
+        // }
     }
 
     @trusted
