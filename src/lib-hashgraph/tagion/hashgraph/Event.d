@@ -361,6 +361,7 @@ class Round {
         }
     }
 
+    // Return true if all witness in this round has been created
     bool completed() pure const nothrow {
         return _events_count == node_size;
     }
@@ -399,7 +400,7 @@ class Round {
 
     // Returns true of the round can be decided
     bool can_be_decided() const {
-        if ( seeing_completed ) {
+        if ( seeing_completed && completed ) {
             if ( _previous ) {
                 foreach(node_id, e; this) {
                     if ( !e._witness.famous_decided ) {
@@ -541,7 +542,7 @@ class Event {
     class Witness {
         private Event _previous_witness_event;
 //    private Event _owner_event;
-//    private BitArray _famous_decided_mask;
+        private BitArray _famous_decided_mask;
         private bool     _famous_decided;
 //    private BitArray _seen_mask;
         private BitArray _strong_seeing_mask;
@@ -567,7 +568,7 @@ class Event {
             //this.node_size=cast(uint)strong_seeing_mask.length;
             _strong_seeing_mask=strong_seeing_mask.dup;
             //_seen_mask.length=node_size;
-//        _famous_decided_mask.length=node_size;
+            _famous_decided_mask.length=node_size;
 //        _famous_vote_mask.length=node_size;
             _previous_witness_event=previous_witness_event;
 
@@ -760,10 +761,14 @@ class Event {
                 immutable votes=countVotes(vote_mask);
                 if ( votes > _famous_votes ) {
                     _famous_votes = votes;
-                    _famous_decided=famous;
+//                    _famous_decided=famous;
                 }
-                if ( !_famous_decided && ( _round_seen_mask == vote_mask ) ) {
-                    _famous_decided=true;
+                if ( isMajority(votes, node_size ) ) {
+                    _famous_decided_mask|=vote_mask;
+                    if ( _famous_decided_mask == _round_seen_mask ) {
+                        // Famous decided if all the round witness has been seen with majority
+                        _famous_decided=true;
+                    }
                 }
             }
             // _famous_decided_mask|=vote_mask;
@@ -948,22 +953,34 @@ class Event {
     //     return _round.famous
     // }
 
-    version(none)
+//    version(none)
     @trusted // FIXME: trusted should be removed after debugging
     package void collect_famous_votes_2() {
         import std.stdio;
-        void collect(constRound previous_round) {
+        void collect_votes(Round previous_round) @safe {
             if ( previous_round ) {
-                if ( previous_round.can_be_decided ) {
-                    collect( previous_round._previous );
-                    foreach(seen_node, e; previous_round) {
-                        e._witness.famous_vote(_witness.strong_seeing_mask);
-                    }
+                // if ( previous_round.can_be_decided ) {
+                collect_votes( previous_round._previous );
+                foreach(seen_node, e; previous_round) {
+                    e._witness.famous_vote(_witness.strong_seeing_mask);
                 }
+                fout.writefln("Round %d undecided=%s can be decided=%s", previous_round.number,
+                    previous_round is Round.undecided_round, previous_round.can_be_decided);
+                if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
+                    previous_round.decided;
+                    if ( callbacks ) {
+                        foreach(seen_node_id, e; previous_round) {
+                            callbacks.famous(e);
+//                            callbacks.famous_mask(e);
+                        }
+                    }
+
+                }
+                    // }
             }
         }
-        if ( _witness && _round.previous && !isEva  ) {
-
+        if ( _witness && !isEva  ) {
+            collect_votes(_round.previous);
         }
     }
 
@@ -1164,6 +1181,7 @@ class Event {
         _witness.seeing_previous_round(this);
         if ( callbacks ) {
             callbacks.strongly_seeing(this);
+            callbacks.round(this);
         }
     }
 

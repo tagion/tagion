@@ -443,7 +443,7 @@ class HashGraph {
             // if ( event.witness ) {
             //     writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
             // }
-            event.collect_famous_votes;
+            event.collect_famous_votes_2;
 //            event.collect_witness_seen_votes;
 
             // if ( event.witness ) {
