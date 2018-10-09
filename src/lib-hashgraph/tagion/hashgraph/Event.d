@@ -221,6 +221,7 @@ class Round {
     }
 
     private Event[] _events;
+    private uint _events_count;
     private static Round _rounds;
     // Last undecided round
     private static Round _undecided;
@@ -354,7 +355,14 @@ class Round {
 // //                _decided=false;
 //             }
 //         }
-        _events[event.node_id]=event;
+        if ( _events[event.node_id] is null ) {
+            _events_count++;
+            _events[event.node_id]=event;
+        }
+    }
+
+    bool completed() pure const nothrow {
+        return _events_count == node_size;
     }
 
     inout(Event) event(const uint node_id) pure inout {
@@ -390,7 +398,7 @@ class Round {
     }
 
     // Returns true of the round can be decided
-    bool can_be_decieded() pure const nothrow {
+    bool can_be_decided() const {
         if ( seeing_completed ) {
             if ( _previous ) {
                 foreach(node_id, e; this) {
@@ -433,11 +441,12 @@ class Round {
     // }
 
     // Find collecting round from which the famous votes is collected from the previous round
-    package Round undecided_round() {
+    package static Round undecided_round() {
         if ( !_undecided ) {
             void search(Round r) {
                 if ( r ) {
-                    _undecide=search(r._previous);
+                    _undecided=r;
+                    search(r._previous);
                 }
             }
             search(_rounds);
@@ -939,6 +948,25 @@ class Event {
     //     return _round.famous
     // }
 
+    version(none)
+    @trusted // FIXME: trusted should be removed after debugging
+    package void collect_famous_votes_2() {
+        import std.stdio;
+        void collect(constRound previous_round) {
+            if ( previous_round ) {
+                if ( previous_round.can_be_decided ) {
+                    collect( previous_round._previous );
+                    foreach(seen_node, e; previous_round) {
+                        e._witness.famous_vote(_witness.strong_seeing_mask);
+                    }
+                }
+            }
+        }
+        if ( _witness && _round.previous && !isEva  ) {
+
+        }
+    }
+
     @trusted // FIXME: trusted should be removed after debugging
     package void collect_famous_votes() {
         import std.stdio;
@@ -972,7 +1000,7 @@ class Event {
                     //                  }
                 }
 
-                if ( undecided.update_decision ) {
+                if ( undecided.can_be_decided ) {
                     fout.writefln("Round %d decided ", undecided.number);
                     if ( callbacks ) {
                         foreach(seen_node_id, e; undecided) {
