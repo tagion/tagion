@@ -211,6 +211,7 @@ class Round {
     immutable int number;
     private bool _decided;
 
+
     private BitArray _looked_at_mask;
     private uint _looked_at_count;
 //    private uint _famous_events_decided_count;
@@ -221,6 +222,8 @@ class Round {
 
     private Event[] _events;
     private static Round _rounds;
+    // Last undecided round
+    private static Round _undecided;
 
     static void dump() {
         Event.fout.writefln("ROUND dump");
@@ -364,8 +367,9 @@ class Round {
 //        import std.stdio;
     }
 
+    version(none)
     package bool update_decision()  {
-        if ( !_decided && !seeing_completed ) {
+        if ( !_decided && seeing_completed ) {
             if ( _previous ) {
                 foreach(node_id, e; this) {
                     if ( e._witness.famous_decided ) {
@@ -379,10 +383,25 @@ class Round {
                 }
             }
             else {
-                 _decided=true;
+                _decided=true;
             }
         }
         return _decided;
+    }
+
+    // Returns true of the round can be decided
+    bool can_be_decieded() pure const nothrow {
+        if ( seeing_completed ) {
+            if ( _previous ) {
+                foreach(node_id, e; this) {
+                    if ( !e._witness.famous_decided ) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     void ground(H)(H h) {
@@ -415,17 +434,15 @@ class Round {
 
     // Find collecting round from which the famous votes is collected from the previous round
     package Round undecided_round() {
-        Round search(Round r) {
-            if ( r && r._previous && !r._previous.decided ) {
-                return search(r._previous);
+        if ( !_undecided ) {
+            void search(Round r) {
+                if ( r ) {
+                    _undecide=search(r._previous);
+                }
             }
-            return r;
+            search(_rounds);
         }
-        Round result=search(_previous);
-        if ( result && !result.decided ) {
-            return result;
-        }
-        return null;
+        return _undecided;
     }
 
     version(none)
@@ -508,171 +525,174 @@ class Round {
     }
 }
 
+
 @safe
-class Witness {
-    private Event _previous_witness_event;
+class Event {
+    @safe
+    class Witness {
+        private Event _previous_witness_event;
 //    private Event _owner_event;
 //    private BitArray _famous_decided_mask;
-    private bool     _famous_decided;
+        private bool     _famous_decided;
 //    private BitArray _seen_mask;
-    private BitArray _strong_seeing_mask;
-    // This vector shows what we can see in the previous witness round
-    // Round seeing masks from next round
-    private BitArray _round_seen_mask;
-    // // Mask when witness as look at the previous round
-    // private BitArray _seeing_previous_round_mask;
+        private BitArray _strong_seeing_mask;
+        // This vector shows what we can see in the previous witness round
+        // Round seeing masks from next round
+        private BitArray _round_seen_mask;
+        // // Mask when witness as look at the previous round
+        // private BitArray _seeing_previous_round_mask;
 
-    private uint     _round_seen_count;
-    private uint     _famous_votes;
+        private uint     _round_seen_count;
+        private uint     _famous_votes;
 //    private uint     _famous_counts;
-    //   immutable uint   node_size;
-    @trusted
-    this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
-    in {
-        assert(strong_seeing_mask.length > 0);
-        assert(owner_event);
-    }
-    do {
+        //   immutable uint   node_size;
+        @trusted
+        this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
+        in {
+            assert(strong_seeing_mask.length > 0);
+            assert(owner_event);
+        }
+        do {
 //        _famous_mask.length=node_size;
 //        _owner_event=owner_event;
-        //this.node_size=cast(uint)strong_seeing_mask.length;
-        _strong_seeing_mask=strong_seeing_mask.dup;
-        //_seen_mask.length=node_size;
+            //this.node_size=cast(uint)strong_seeing_mask.length;
+            _strong_seeing_mask=strong_seeing_mask.dup;
+            //_seen_mask.length=node_size;
 //        _famous_decided_mask.length=node_size;
 //        _famous_vote_mask.length=node_size;
-        _previous_witness_event=previous_witness_event;
+            _previous_witness_event=previous_witness_event;
 
-        // _seeing_previous_round_mask.length=node_size;
-        _round_seen_mask.length=node_size;
-         // if ( !owner.isEva ) {
-             // Set the witness event to next round
+            // _seeing_previous_round_mask.length=node_size;
+            _round_seen_mask.length=node_size;
+            // if ( !owner.isEva ) {
+            // Set the witness event to next round
 //             owner.next_round;
-             // Seeing witness in the previous and update _round_seen_mask
-             // seeing_previous_round(owner);
-        // }
-    }
+            // Seeing witness in the previous and update _round_seen_mask
+            // seeing_previous_round(owner);
+            // }
+        }
 
-    uint node_size() pure const nothrow {
-        return cast(uint)_strong_seeing_mask.length;
-    }
+        uint node_size() pure const nothrow {
+            return cast(uint)_strong_seeing_mask.length;
+        }
 
-    Event previous_witness_event() pure nothrow {
-        return _previous_witness_event;
-    }
+        Event previous_witness_event() pure nothrow {
+            return _previous_witness_event;
+        }
 
-    ref const(BitArray) strong_seeing_mask() pure const nothrow {
-        return _strong_seeing_mask;
-    }
+        ref const(BitArray) strong_seeing_mask() pure const nothrow {
+            return _strong_seeing_mask;
+        }
 
-    @trusted
-    package void seeing_previous_round(Event owner_event) {
-        import std.stdio;
-        void update_round_seeing(Event event, string indent="") @trusted {
-            if ( event ) {
-                if ( !event.visit ) {
-                    // && !_seeing_previous_round_mask[event.node_id] ) {
-                    // _seeing_previous_round_mask[event.node_id]=true;
-                    // _seeind_previous_round_count++;
+        @trusted
+        package void seeing_previous_round(Event owner_event) {
+            import std.stdio;
+            void update_round_seeing(Event event, string indent="") @trusted {
+                if ( event ) {
+                    if ( !event.visit ) {
+                        // && !_seeing_previous_round_mask[event.node_id] ) {
+                        // _seeing_previous_round_mask[event.node_id]=true;
+                        // _seeind_previous_round_count++;
 
-                    immutable round_distance = owner_event.round.number - event.round.number;
-                    Event.fout.writefln("%snode_id=%d id=%d event.round.number %d distance=%d witness=%s",
-                        indent,
-                        event.node_id,
-                        event.id,
-                        event.round.number,
-                        round_distance,
-                        event.witness !is null
-                        );
-                    if ( event.witness ) {
+                        immutable round_distance = owner_event.round.number - event.round.number;
+                        Event.fout.writefln("%snode_id=%d id=%d event.round.number %d distance=%d witness=%s",
+                            indent,
+                            event.node_id,
+                            event.id,
+                            event.round.number,
+                            round_distance,
+                            event.witness !is null
+                            );
+                        if ( event.witness ) {
 //                      if ( !event.witness.round_seen_completed ) {
-                        if ( !event.round.seeing_completed ) {
-                                        // Marked that this witness has been looked at from the next round at node_id
-                            // if ( callbacks ) {
+                            if ( !event.round.seeing_completed ) {
+                                // Marked that this witness has been looked at from the next round at node_id
+                                // if ( callbacks ) {
 
-                            // }
-                            if ( round_distance == 1 ) {
-                                // owner event sees witness in preivous round
-                                event.witness.round_seen_vote(owner_event.node_id);
-                                event.round.looked_at(owner_event.node_id);
+                                // }
+                                if ( round_distance == 1 ) {
+                                    // owner event sees witness in preivous round
+                                    event.witness.round_seen_vote(owner_event.node_id);
+                                    event.round.looked_at(owner_event.node_id);
 
 //                            event.witness._round_seen_mask[owner_event.node_id]=true;
-                                Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
-                                if ( Event.callbacks ) {
-                                    Event.callbacks.round_seen(event);
-                                    Event.callbacks.looked_at(event);
+                                    Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
+                                    if ( Event.callbacks ) {
+                                        Event.callbacks.round_seen(event);
+                                        Event.callbacks.looked_at(event);
+                                    }
+                                }
+                                update_round_seeing(event.mother, indent~"  ");
+                                update_round_seeing(event.father, indent~"  ");
+                            }
+                        }
+                        else if ( round_distance  <= 1 ) {
+                            Event.fout.writef("%s  ", indent);
+                            foreach(seeing_node_id, e; event.round) {
+                                Event.fout.writef(" %d", seeing_node_id);
+                                if ( event.witness_mask[seeing_node_id] ) {
+                                    Event.fout.writeln("->");
+//                            if ( e !is owner_event ) {
+                                    Event.fout.writefln("%s\t call node_id=%d id=%d witness=%s",
+                                        indent, e.node_id, e.id, e.witness !is null);
+                                    update_round_seeing(e, indent~"  ");
+//                            }
+                                    Event.fout.writefln("<<");
+
                                 }
                             }
-                            update_round_seeing(event.mother, indent~"  ");
-                            update_round_seeing(event.father, indent~"  ");
-                        }
-                    }
-                    else if ( round_distance  <= 1 ) {
-                        Event.fout.writef("%s  ", indent);
-                        foreach(seeing_node_id, e; event.round) {
-                            Event.fout.writef(" %d", seeing_node_id);
-                            if ( event.witness_mask[seeing_node_id] ) {
-                                Event.fout.writeln("->");
-//                            if ( e !is owner_event ) {
-                                Event.fout.writefln("%s\t call node_id=%d id=%d witness=%s",
-                                    indent, e.node_id, e.id, e.witness !is null);
-                                update_round_seeing(e, indent~"  ");
-//                            }
-                                Event.fout.writefln("<<");
 
-                            }
+                            Event.fout.writefln("@");
                         }
-
-                        Event.fout.writefln("@");
                     }
                 }
             }
+            // Update the visit marker to prevent infinity recusive loop
+            Event.visit_marker++;
+            Event.fout.writefln("@Owner node_id=%d id=%d round=%d",
+                owner_event.node_id, owner_event.id, owner_event.round.number);
+            update_round_seeing(owner_event.mother, "::");
+            update_round_seeing(owner_event.father,  "::");
         }
-        // Update the visit marker to prevent infinity recusive loop
-        Event.visit_marker++;
-        Event.fout.writefln("@Owner node_id=%d id=%d round=%d",
-            owner_event.node_id, owner_event.id, owner_event.round.number);
-        update_round_seeing(owner_event.mother, "::");
-        update_round_seeing(owner_event.father,  "::");
-    }
 
 
-    // @trusted
-    // package void seen(const uint node_id) {
-    //     if ( !_seen_mask[node_id] ) {
-    //         _seen_mask[node_id]=true;
-    //         _famous_votes++;
-    //     }
-    // }
+        // @trusted
+        // package void seen(const uint node_id) {
+        //     if ( !_seen_mask[node_id] ) {
+        //         _seen_mask[node_id]=true;
+        //         _famous_votes++;
+        //     }
+        // }
 
-    // ref const(BitArray) seen_mask() pure const nothrow {
-    //     return _seen_mask;
-    // }
+        // ref const(BitArray) seen_mask() pure const nothrow {
+        //     return _seen_mask;
+        // }
 
-    ref const(BitArray) round_seen_mask() pure const nothrow {
-        return _round_seen_mask;
-    }
-
-    // ref const(BitArray) famous_decided_mask() pure const nothrow {
-    //     return _famous_decided_mask;
-    // }
-
-    @trusted
-    package void round_seen_vote(const uint node_id) {
-        if ( !_round_seen_mask[node_id] ) {
-            _round_seen_mask[node_id] = true;
-            _round_seen_count++;
+        ref const(BitArray) round_seen_mask() pure const nothrow {
+            return _round_seen_mask;
         }
-    }
 
-    // bool round_seen_completed() pure const nothrow {
-    //     return _round_seen_mask.length == _round_seen_count;
-    // }
+        // ref const(BitArray) famous_decided_mask() pure const nothrow {
+        //     return _famous_decided_mask;
+        // }
 
-    // package ref const(BitArray) round_seen_mask(Event wintess_event) {
-    //     if ( wintness_event.mother ) {
-    //         _round_seen_mask|=
-    //     }
-    // }
+        @trusted
+        package void round_seen_vote(const uint node_id) {
+            if ( !_round_seen_mask[node_id] ) {
+                _round_seen_mask[node_id] = true;
+                _round_seen_count++;
+            }
+        }
+
+        // bool round_seen_completed() pure const nothrow {
+        //     return _round_seen_mask.length == _round_seen_count;
+        // }
+
+        // package ref const(BitArray) round_seen_mask(Event wintess_event) {
+        //     if ( wintness_event.mother ) {
+        //         _round_seen_mask|=
+        //     }
+        // }
 
 //     package ref const(BitArray) seeing_witness_mask(Event witness_event) {
 //         BitArray zeros;
@@ -705,79 +725,77 @@ class Witness {
 //         return node_size == _famous_counts;
 //     }
 
-    // ref const(BitArray) famous_vote_mask() pure const nothrow {
-    //     return _famous_vote_mask;
-    // }
-
-    // uint famous_counts() pure const nothrow {
-    //     return _famous_counts;
-    // }
-
-    // void famous_votes(const uint votes) nothrow
-    //     in {
-    //         assert(votes <= node_size);
-    //     }
-    // do {
-    //     if ( _famous_votes < votes ) {
-    //         _famous_votes = votes;
-    //     }
-    // }
-
-    @trusted
-    package void famous_vote(ref const(BitArray) strong_seeing_mask, const bool round_seeing_completed) {
-//        BitArray vote_mask=strong_seeing_mask & _seen_mask;
-        if ( !_famous_decided ) {
-            const BitArray vote_mask=strong_seeing_mask & _round_seen_mask;
-            immutable votes=countVotes(vote_mask);
-            if ( votes > _famous_votes ) {
-                _famous_votes = votes;
-                _famous_decided=famous;
-            }
-            if ( !_famous_decided && round_seeing_completed && ( _round_seen_mask == vote_mask ) ) {
-                _famous_decided=true;
-            }
-        }
-            // _famous_decided_mask|=vote_mask;
-        // if ( countVotes(_famous_decided_mask) > 0 ) {
-        //     _famous_decided = _famous_decided_mask == _round_seen_mask;
+        // ref const(BitArray) famous_vote_mask() pure const nothrow {
+        //     return _famous_vote_mask;
         // }
-    }
 
-    @trusted
-    bool famous_decided() pure const nothrow {
-        return _famous_decided;
-    }
+        // uint famous_counts() pure const nothrow {
+        //     return _famous_counts;
+        // }
 
-    uint famous_votes() pure const nothrow {
-        return _famous_votes;
-    }
+        // void famous_votes(const uint votes) nothrow
+        //     in {
+        //         assert(votes <= node_size);
+        //     }
+        // do {
+        //     if ( _famous_votes < votes ) {
+        //         _famous_votes = votes;
+        //     }
+        // }
 
-    bool famous() pure const nothrow {
+        @trusted
+        package void famous_vote(ref const(BitArray) strong_seeing_mask) {
+//        BitArray vote_mask=strong_seeing_mask & _seen_mask;
+            if ( !_famous_decided ) {
+                const BitArray vote_mask=strong_seeing_mask & _round_seen_mask;
+                immutable votes=countVotes(vote_mask);
+                if ( votes > _famous_votes ) {
+                    _famous_votes = votes;
+                    _famous_decided=famous;
+                }
+                if ( !_famous_decided && ( _round_seen_mask == vote_mask ) ) {
+                    _famous_decided=true;
+                }
+            }
+            // _famous_decided_mask|=vote_mask;
+            // if ( countVotes(_famous_decided_mask) > 0 ) {
+            //     _famous_decided = _famous_decided_mask == _round_seen_mask;
+            // }
+        }
+
+        @trusted
+        bool famous_decided() pure const nothrow {
+            return _famous_decided;
+        }
+
+        uint famous_votes() pure const nothrow {
+            return _famous_votes;
+        }
+
+        bool famous() pure const nothrow {
 //        immutable node_size=cast(uint)_famous_decided_mask.length;
-        return isMajority(_famous_votes, node_size);
+            return isMajority(_famous_votes, node_size);
+        }
+
+
+
+        // ref const(BitArray) seen_mask(const uint node_id) pure const {
+        //     return seen_mask[node_id];
+        // }
+        // @trusted
+        // bool confirm_famous_vote(const uint node_id) {
+        //     if ( !_famous_vote_mask[node_id] ) {
+        //         _famous_vote_mask[node_id]=true;
+        //         _famous_counts++;
+        //         if ( _seen_mask[node_id] ) {
+        //             _famous_votes++;
+        //         }
+        //     }
+        //     return _famous_counts == _famous_vote_mask.length;
+        // }
+
     }
 
-
-
-    // ref const(BitArray) seen_mask(const uint node_id) pure const {
-    //     return seen_mask[node_id];
-    // }
-    // @trusted
-    // bool confirm_famous_vote(const uint node_id) {
-    //     if ( !_famous_vote_mask[node_id] ) {
-    //         _famous_vote_mask[node_id]=true;
-    //         _famous_counts++;
-    //         if ( _seen_mask[node_id] ) {
-    //             _famous_votes++;
-    //         }
-    //     }
-    //     return _famous_counts == _famous_vote_mask.length;
-    // }
-
-}
-
-@safe
-class Event {
     alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
     static EventCallbacks callbacks;
@@ -925,7 +943,7 @@ class Event {
     package void collect_famous_votes() {
         import std.stdio;
         if ( _witness && _round.previous && !isEva  ) {
-            auto undecided=_round.undecided_round; //collecting_round;
+            auto undecided=Round.undecided_round; //collecting_round;
             fout.writefln("**** Undecided %s exists", undecided  !is null);
             if ( undecided ) {
                 assert(!undecided.decided, "False. Undecided round is decided");
@@ -934,23 +952,24 @@ class Event {
                 foreach(seen_node_id, e; undecided) {
 //                    if ( !e._witness.famous_decided ) {
 //                        if ( e._witness.famous ) {
-                            // Masks the strongly seen witness votes in the undecided round
+                    // Masks the strongly seen witness votes in the undecided round
 
-                    e._witness.famous_vote(_witness.strong_seeing_mask, _round.seeing_completed);
-                            //update_decision
-                            // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
-                            // immutable votes=countVotes(vote_mask);
-                            // immutable majority=isMajority(votes, node_size);
-                            fout.writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s", _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.round_seen_mask, e._witness.famous_votes, e._witness.famous);
+                    e._witness.famous_vote(_witness.strong_seeing_mask);
+                    //update_decision
+                    // BitArray vote_mask=_witness.strong_seeing_mask & e._witness.seen_mask;
+                    // immutable votes=countVotes(vote_mask);
+                    // immutable majority=isMajority(votes, node_size);
+                    fout.writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s looked_at=%s",
+                        _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.round_seen_mask, e._witness.famous_votes, e._witness.famous, e.round.looked_at_mask);
 
 //                        }
-                        if ( e._witness.famous_decided ) {
-                            fout.writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
+                    if ( e._witness.famous_decided ) {
+                        fout.writefln("\t\tDecided id=%d node_id=%d", e.id, seen_node_id);
 //                            undecided.famous_decide(seen_node_id);
-                        }
-                        fout.writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s decided=%s famous=%s votes=%d",
-                            e.id, e.node_id, e.round.number, seen_node_id, e._witness.round_seen_mask, e._witness.famous_decided, e._witness.famous, e._witness.famous_votes);
-                        //                  }
+                    }
+                    fout.writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s decided=%s famous=%s votes=%d",
+                        e.id, e.node_id, e.round.number, seen_node_id, e._witness.round_seen_mask, e._witness.famous_decided, e._witness.famous, e._witness.famous_votes);
+                    //                  }
                 }
 
                 if ( undecided.update_decision ) {
@@ -970,10 +989,10 @@ class Event {
     }
 
     package void received_round(Round r)
-        in {
-            assert(r !is null, "Received round can not be null");
-            assert(_received_round is null, "Received round has already been set");
-        }
+    in {
+        assert(r !is null, "Received round can not be null");
+        assert(_received_round is null, "Received round has already been set");
+    }
     do {
         _received_round=r;
     }
