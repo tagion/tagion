@@ -35,6 +35,7 @@ enum _keywords = [
     "looked_at_mask",
     "looked_at_count",
     "seeing_completed",
+    "completed",
 //        "events",     // List of event
     "type",       // Package type
     "block"     // block
