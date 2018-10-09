@@ -156,6 +156,7 @@ class MonitorCallBacks : NetCallbacks {
         auto bson=createBSON(e);
         auto round=new HBSON;
         round[Keywords.number]=e.round.number;
+        round[Keywords.completed]=e.round.completed;
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
         // writeln("Impl. needed");
