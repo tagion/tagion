@@ -974,7 +974,7 @@ class Event {
                 fout.writefln("Round %d undecided=%s can be decided=%s decided=%s", previous_round.number,
                     previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided );
                 if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
-                    previous_round.decide;
+                    //previous_round.decided;
                     if ( callbacks ) {
                         foreach(seen_node_id, e; previous_round) {
                             callbacks.famous(e);
