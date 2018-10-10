@@ -242,6 +242,10 @@ class Round {
     }
 
     private this(Round r, const uint node_size, immutable int round_number) {
+        if ( r is null ) {
+            // First round created
+            _decided=true;
+        }
         _previous=r;
         number=round_number;
         _events=new Event[node_size];
@@ -400,6 +404,9 @@ class Round {
 
     // Returns true of the round can be decided
     bool can_be_decided() const {
+        if ( _decided ) {
+            return true;
+        }
         if ( seeing_completed && completed ) {
             if ( _previous ) {
                 foreach(node_id, e; this) {
@@ -964,10 +971,10 @@ class Event {
                 foreach(seen_node, e; previous_round) {
                     e._witness.famous_vote(_witness.strong_seeing_mask);
                 }
-                fout.writefln("Round %d undecided=%s can be decided=%s", previous_round.number,
-                    previous_round is Round.undecided_round, previous_round.can_be_decided);
+                fout.writefln("Round %d undecided=%s can be decided=%s decided=%s", previous_round.number,
+                    previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided );
                 if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
-                    previous_round.decided;
+                    previous_round.decide;
                     if ( callbacks ) {
                         foreach(seen_node_id, e; previous_round) {
                             callbacks.famous(e);
