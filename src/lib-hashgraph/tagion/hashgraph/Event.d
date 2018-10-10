@@ -380,6 +380,43 @@ class Round {
 //        import std.stdio;
     }
 
+    private void decide()
+        in {
+            assert(!_decided, "Round should only be decided once");
+            assert(this is Round.undecided_round, "Round can only be decided if it is the lowest undecided round in the round stack");
+        }
+    out{
+        assert(_undecided._previous._decided, "Previous round should be decided");
+    }
+    do {
+        Event.fout.writefln("Decide round %d", number);
+        Round one_over(Round r=_rounds) {
+            if ( r._previous is this ) {
+                return r;
+            }
+            return one_over(r._previous);
+        }
+        _undecided=one_over;
+        _decided=true;
+
+
+//         foreach(seen_node_id, e; this) {
+//             e._witness._famous=
+// //            callbacks.famous(e);
+// //                            callbacks.famous_mask(e);
+//         }
+        if ( Event.callbacks ) {
+            foreach(seen_node_id, e; this) {
+                Event.callbacks.famous(e);
+//                            callbacks.famous_mask(e);
+            }
+        }
+
+
+//        return _decided;
+//        import std.stdio;
+    }
+
     version(none)
     package bool update_decision()  {
         if ( !_decided && seeing_completed ) {
@@ -403,7 +440,11 @@ class Round {
     }
 
     // Returns true of the round can be decided
-    bool can_be_decided() const {
+    bool can_be_decided() const
+        in {
+            assert( _previous, "This is not a valid round to ask for a decision, because not round below exists");
+        }
+    do {
         if ( _decided ) {
             return true;
         }
@@ -451,13 +492,14 @@ class Round {
     // Find collecting round from which the famous votes is collected from the previous round
     package static Round undecided_round() {
         if ( !_undecided ) {
-            void search(Round r) {
-                if ( r ) {
-                    _undecided=r;
-                    search(r._previous);
+            Round search(Round r=_rounds) @safe {
+                if ( r && r._previous && r._previous._decided ) {
+                    return r;
+
                 }
+                return search(r._previous);
             }
-            search(_rounds);
+            _undecided=search();
         }
         return _undecided;
     }
@@ -530,6 +572,9 @@ class Round {
         void check_round_order(const Round r, const Round p) {
             if ( ( r !is null) && ( p !is null ) ) {
                 assert( (r.number-p.number) == 1, "Consecutive round-numbers has to increase by one");
+                if ( r._decided ) {
+                    assert( p._decided, "If a higher round is decided all rounds below must be decided");
+                }
                 check_round_order(r._previous, p._previous);
             }
         }
@@ -971,23 +1016,26 @@ class Event {
                 foreach(seen_node, e; previous_round) {
                     e._witness.famous_vote(_witness.strong_seeing_mask);
                 }
-                fout.writefln("Round %d undecided=%s can be decided=%s decided=%s", previous_round.number,
-                    previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided );
-                if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
-                    //previous_round.decided;
-                    if ( callbacks ) {
-                        foreach(seen_node_id, e; previous_round) {
-                            callbacks.famous(e);
+                if ( previous_round._previous ) {
+                    fout.writefln("Round %d undecided=%s can be decided=%s decided=%s", previous_round.number,
+                        previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided );
+                    if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
+                        fout.writefln("\tDeciding Round %d",  previous_round.number);
+                        fout.flush;
+                        previous_round.decide;
+                        if ( callbacks ) {
+                            foreach(seen_node_id, e; previous_round) {
+                                callbacks.famous(e);
 //                            callbacks.famous_mask(e);
+                            }
                         }
                     }
-
                 }
                     // }
             }
         }
         if ( _witness && !isEva  ) {
-            collect_votes(_round.previous);
+            collect_votes(_round._previous);
         }
     }
 
@@ -1170,7 +1218,7 @@ class Event {
     }
 
     @trusted
-    void strongly_seeing(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
+    package void strongly_seeing(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
         in {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
