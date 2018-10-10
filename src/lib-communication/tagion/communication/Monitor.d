@@ -122,6 +122,7 @@ class MonitorCallBacks : NetCallbacks {
         round[Keywords.looked_at_count]=e.round.looked_at_count;
         round[Keywords.seeing_completed]=e.round.seeing_completed;
         round[Keywords.completed]=e.round.completed;
+        round[Keywords.total]=e.round.total_events;
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
     }
