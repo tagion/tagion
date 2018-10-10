@@ -220,7 +220,10 @@ class Round {
         return r.number+1;
     }
 
+    // Count all events
+    private uint _total_events;
     private Event[] _events;
+    // Counts the witness in the round
     private uint _events_count;
     private static Round _rounds;
     // Last undecided round
@@ -248,8 +251,28 @@ class Round {
         }
         _previous=r;
         number=round_number;
+        event_added;
         _events=new Event[node_size];
         bitarray_clear(_looked_at_mask, node_size);
+    }
+
+    private void event_added() pure nothrow {
+        _total_events++;
+    }
+
+    private void event_remove()
+        in {
+            assert(_total_events > 0, "Nom");
+        }
+    do {
+        _total_events--;
+        if ( _total_events == 0 ) {
+            assert(0, "AUTO REMOVE of Round not implemented");
+        }
+    }
+
+    uint total_events() pure const nothrow {
+        return _total_events;
     }
 
     private Round next_consecutive() {
@@ -1010,7 +1033,7 @@ class Event {
     package void collect_famous_votes_2() {
         import std.stdio;
         void collect_votes(Round previous_round) @safe {
-            if ( previous_round ) {
+            if ( previous_round && !previous_round._decided ) {
                 // if ( previous_round.can_be_decided ) {
                 collect_votes( previous_round._previous );
                 foreach(seen_node, e; previous_round) {
@@ -1114,6 +1137,7 @@ class Event {
     do {
         if ( !_round ) {
             _round=_mother.round;
+            _round.event_added;
         }
         return _round;
     }
@@ -1371,6 +1395,7 @@ class Event {
             _round.disconnect(this);
             _witness=null;
         }
+        _round.event_remove;
         _round = null;
     }
 
@@ -1388,9 +1413,9 @@ class Event {
         grounding(this);
     }
 
-    ~this() {
-        disconnect();
-    }
+    // ~this() {
+    //     disconnect();
+    // }
 
     Event mother(H)(H h, RequestNet request_net) {
         Event result;
