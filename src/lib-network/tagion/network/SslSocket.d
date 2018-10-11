@@ -24,14 +24,19 @@ void printDebugInformation (string msg) {
 }
 
 
-
-
 version=use_openssl;
 
 version(use_openssl) {
     pragma(lib, "crypto");
     pragma(lib, "ssl");
     pragma(msg, "Compiles SslSocket with OpenSsl");
+
+    shared static this() {
+		OpenSSL_add_ssl_algorithms();
+		OpenSSL_add_all_ciphers();
+		OpenSSL_add_all_digests();
+		SSL_load_error_strings();
+	}
 
     class OpenSslSocket : Socket {
         private:
@@ -54,11 +59,16 @@ version(use_openssl) {
                 assert(_ctx !is null);
 
                 _ssl = SSL_new(_ctx);
-                if ( verifyPeer ) {
+
+                if ( !verifyPeer ) {
                     SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
                 }
-                SSL_set_fd(_ssl, this.handle);
+
+                if ( et == EndpointType.Client ) {
+                    SSL_set_fd(_ssl, this.handle);
+                }
             }
+
 
         public:
 
@@ -149,7 +159,7 @@ version(use_openssl) {
         override Socket accept() {
             Socket sn = super.accept();
 
-           SSL_set_fd(_ssl, sn.handle());
+            SSL_set_fd(_ssl, sn.handle);
 
             if ( SSL_accept(_ssl) <= 0 ) {
                 ERR_print_errors_fp(stderr);
