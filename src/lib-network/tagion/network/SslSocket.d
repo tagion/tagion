@@ -1,9 +1,6 @@
 module tagion.network.SslSocket;
 
 import std.socket;
-import deimos.openssl.tls1;
-import deimos.openssl.ssl;
-import deimos.openssl.err;
 import std.stdio:writeln;
 import core.stdc.stdio;
 
@@ -31,6 +28,31 @@ version(use_openssl) {
     pragma(lib, "ssl");
     pragma(msg, "Compiles SslSocket with OpenSsl");
 
+
+    extern(C) {
+        enum SSL_VERIFY_NONE = 0;
+
+        struct SSL;
+        struct SSL_CTX;
+        struct SSL_METHOD;
+
+        SSL* SSL_new(SSL_CTX*);
+        void SSL_free(SSL*);
+        void SSL_set_verify(SSL*, int, void*);
+        int SSL_set_fd(SSL*, int);
+        int SSL_connect(SSL*);
+        int SSL_write(SSL*, const void*, int);
+        int SSL_read(SSL*, void*, int);
+
+        SSL_CTX* SSL_CTX_new(const SSL_METHOD* method);
+        void SSL_CTX_free(SSL_CTX*);
+
+        SSL_METHOD* TLS_client_method();
+
+        void ERR_print_errors_fp(FILE*);
+
+    }
+
     class OpenSslSocket : Socket {
         private:
             debug{
@@ -45,9 +67,9 @@ version(use_openssl) {
                 if ( et == EndpointType.Client) {
                     _ctx = SSL_CTX_new(TLS_client_method());
                 }
-                else if ( et == EndpointType.Server ) {
-                    _ctx = SSL_CTX_new(TLS_server_method());
-                }
+                // else if ( et == EndpointType.Server ) {
+                //     _ctx = SSL_CTX_new(TLS_server_method());
+                // }
 
                 assert(_ctx !is null);
 
@@ -65,39 +87,39 @@ version(use_openssl) {
 
         public:
 
-        @trusted
-        void configureContext(string certificate_path, string prvkey_path) {
+        // @trusted
+        // void configureContext(string certificate_path, string prvkey_path) {
 
-            assert(certificate_path.length > 0, "Empty certificate input.");
-            assert(prvkey_path.length > 0, "Empty private key input.");
+        //     assert(certificate_path.length > 0, "Empty certificate input.");
+        //     assert(prvkey_path.length > 0, "Empty private key input.");
 
-            if ( SSL_CTX_use_certificate_file(_ctx, certificate_path.ptr, SSL_FILETYPE_PEM) <= 0 ) {
-                ERR_print_errors_fp(stderr);
-                static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
-                    printDebugInformation("Error in setting certificate");
-                }
-                throw new SslSocketException("ssl ctx certificate");
-            }
+        //     if ( SSL_CTX_use_certificate_file(_ctx, certificate_path.ptr, SSL_FILETYPE_PEM) <= 0 ) {
+        //         ERR_print_errors_fp(stderr);
+        //         static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+        //             printDebugInformation("Error in setting certificate");
+        //         }
+        //         throw new SslSocketException("ssl ctx certificate");
+        //     }
 
-            if ( SSL_CTX_use_PrivateKey_file(_ctx, prvkey_path.ptr, SSL_FILETYPE_PEM) <= 0 ) {
-                ERR_print_errors_fp(stderr);
-                static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
-                    printDebugInformation("Error in setting prvkey");
-                }
+        //     if ( SSL_CTX_use_PrivateKey_file(_ctx, prvkey_path.ptr, SSL_FILETYPE_PEM) <= 0 ) {
+        //         ERR_print_errors_fp(stderr);
+        //         static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+        //             printDebugInformation("Error in setting prvkey");
+        //         }
 
-                throw new SslSocketException("ssl ctx private key");
-            }
-            if (!SSL_CTX_check_private_key(_ctx) ) {
-                static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
-                    printDebugInformation("Error private key not set correctly");
-                }
-                throw new SslSocketException("Private key not set correctly");
-            }
-        }
+        //         throw new SslSocketException("ssl ctx private key");
+        //     }
+        //     if (!SSL_CTX_check_private_key(_ctx) ) {
+        //         static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+        //             printDebugInformation("Error private key not set correctly");
+        //         }
+        //         throw new SslSocketException("Private key not set correctly");
+        //     }
+        // }
 
-        bool dataPending() {
-            return SSL_pending(_ssl) > 0;
-        }
+        // bool dataPending() {
+        //     return SSL_pending(_ssl) > 0;
+        // }
 
         @trusted
         override void connect(Address to) {
@@ -148,26 +170,26 @@ version(use_openssl) {
             return receive(buf, SocketFlags.NONE);
         }
 
-        @trusted
-        override Socket accept() {
-            Socket sn = super.accept();
-            writeln(sn.handle());
-            SSL_set_fd(_ssl, sn.handle());
+        // @trusted
+        // override Socket accept() {
+        //     Socket sn = super.accept();
+        //     writeln(sn.handle());
+        //     SSL_set_fd(_ssl, sn.handle());
 
-            if ( SSL_accept(_ssl) <= 0 ) {
-                ERR_print_errors_fp(stderr);
-                static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
-                        printDebugInformation("Error in handsaking, accept");
-                }
-                sn.shutdown(SocketShutdown.BOTH);
-                sn.close();
-				throw new SslSocketException("ssl handsake, accept");
-                sn.close();
-            }
-            else {
-                return this;
-            }
-        }
+        //     if ( SSL_accept(_ssl) <= 0 ) {
+        //         ERR_print_errors_fp(stderr);
+        //         static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+        //                 printDebugInformation("Error in handsaking, accept");
+        //         }
+        //         sn.shutdown(SocketShutdown.BOTH);
+        //         sn.close();
+		// 		throw new SslSocketException("ssl handsake, accept");
+        //         sn.close();
+        //     }
+        //     else {
+        //         return this;
+        //     }
+        // }
 
         this(AddressFamily af, EndpointType et, SocketType type = SocketType.STREAM, bool verifyPeer = true) {
             super(af, type);
