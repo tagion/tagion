@@ -198,8 +198,6 @@ interface EventCallbacks {
     void round(const(Event) e);
     void forked(const(Event) e);
     void remove(const(Event) e);
-    void remove(const(Round) r);
-
 //    void famous_votes(const(Event) e);
     void iterations(const(Event) e, const uint count);
 }
@@ -212,7 +210,7 @@ class Round {
     // Counts the number of nodes in this round
     immutable int number;
     private bool _decided;
-    private uint _decided_count;
+
 
     private BitArray _looked_at_mask;
     private uint _looked_at_count;
@@ -222,10 +220,7 @@ class Round {
         return r.number+1;
     }
 
-    // Count all events
-    private uint _total_events;
     private Event[] _events;
-    // Counts the witness in the round
     private uint _events_count;
     private static Round _rounds;
     // Last undecided round
@@ -253,39 +248,8 @@ class Round {
         }
         _previous=r;
         number=round_number;
-        event_added;
         _events=new Event[node_size];
         bitarray_clear(_looked_at_mask, node_size);
-    }
-
-    private void event_added() pure nothrow {
-        _total_events++;
-    }
-
-    private bool event_remove() nothrow
-        in {
-            assert(_total_events > 0, "Non more event is contained in this Round");
-        }
-    do {
-        _total_events--;
-        return _total_events == 0;
-    }
-
-    private void disconnect()
-        in {
-            assert(_previous is null, "Only the last round can be disconnected");
-            assert(_total_events == 0, "All events must be disconnected before the round can be disconnected");
-        }
-    do {
-        Round before;
-        for(before=_rounds; (before !is null) && (before._previous is this); before=before._previous) {
-            // Empty
-        }
-        before._previous=null;
-    }
-
-    uint total_events() pure const nothrow {
-        return _total_events;
     }
 
     private Round next_consecutive() {
@@ -416,43 +380,6 @@ class Round {
 //        import std.stdio;
     }
 
-    private void decide()
-        in {
-            assert(!_decided, "Round should only be decided once");
-            assert(this is Round.undecided_round, "Round can only be decided if it is the lowest undecided round in the round stack");
-        }
-    out{
-        assert(_undecided._previous._decided, "Previous round should be decided");
-    }
-    do {
-        Event.fout.writefln("Decide round %d", number);
-        Round one_over(Round r=_rounds) {
-            if ( r._previous is this ) {
-                return r;
-            }
-            return one_over(r._previous);
-        }
-        _undecided=one_over;
-        _decided=true;
-        _decided_count++;
-
-//         foreach(seen_node_id, e; this) {
-//             e._witness._famous=
-// //            callbacks.famous(e);
-// //                            callbacks.famous_mask(e);
-//         }
-        if ( Event.callbacks ) {
-            foreach(seen_node_id, e; this) {
-                Event.callbacks.famous(e);
-//                            callbacks.famous_mask(e);
-            }
-        }
-
-
-//        return _decided;
-//        import std.stdio;
-    }
-
     version(none)
     package bool update_decision()  {
         if ( !_decided && seeing_completed ) {
@@ -476,11 +403,7 @@ class Round {
     }
 
     // Returns true of the round can be decided
-    bool can_be_decided() const
-        in {
-            assert( _previous, "This is not a valid round to ask for a decision, because not round below exists");
-        }
-    do {
+    bool can_be_decided() const {
         if ( _decided ) {
             return true;
         }
@@ -497,20 +420,20 @@ class Round {
         return false;
     }
 
-    // void ground(H)(H h) {
-    //     foreach(node_id, ref e; this) {
-    //         e.ground(h);
-    //     }
-    //     void grounding(Round r) @safe {
-    //         if ( r ) {
-    //             if ( r._previous !is this ) {
-    //                 grounding(r._previous);
-    //             }
-    //             r._previous=null;
-    //         }
-    //     }
-    //     grounding(_rounds);
-    // }
+    void ground(H)(H h) {
+        foreach(node_id, ref e; this) {
+            e.ground(h);
+        }
+        void grounding(Round r) @safe {
+            if ( r ) {
+                if ( r._previous !is this ) {
+                    grounding(r._previous);
+                }
+                r._previous=null;
+            }
+        }
+        grounding(_rounds);
+    }
     // Return true if the event on node_id has been decided
     // @trusted
     // bool famous_decided(const uint node_id) pure const nothrow {
@@ -528,14 +451,13 @@ class Round {
     // Find collecting round from which the famous votes is collected from the previous round
     package static Round undecided_round() {
         if ( !_undecided ) {
-            Round search(Round r=_rounds) @safe {
-                if ( r && r._previous && r._previous._decided ) {
-                    return r;
-
+            void search(Round r) {
+                if ( r ) {
+                    _undecided=r;
+                    search(r._previous);
                 }
-                return search(r._previous);
             }
-            _undecided=search();
+            search(_rounds);
         }
         return _undecided;
     }
@@ -604,53 +526,10 @@ class Round {
         return _previous;
     }
 
-    // Find the lowest decide round
-    static Round lowest() {
-        Round local_lowest(Round r=_rounds) {
-            if ( r ) {
-                if ( r._decided && r._previous && (r._previous._previous is null ) ) {
-                    return r;
-                }
-                return lowest(r._previous);
-            }
-            return null;
-        }
-        return local_lowest;
-    }
-
-    // Scrap the lowest Round
-    static void scrap(H)(H hashgraph) {
-        void local_scrap(Round r, _rounds) {
-            foreach(node_id, e; r) {
-                void scrap_event(Event e) {
-                    if ( e ) {
-                        scrap_event(e.mother);
-                        if ( Event.callbacks ) {
-                            Event.callbacks.remove(e);
-                        }
-                        hashgraph.eliminated(e);
-                        e.disconnect;
-                        e.destroy;
-                    }
-                }
-            }
-        }
-        Round _lowest=lowest;
-        local_scrap(_lowest);
-        if ( Event.callbacks ) {
-            Event.callbacks.remove(_lowest);
-        }
-        _lowest.disconnect;
-        _lowest.destroy;
-    }
-
     invariant {
         void check_round_order(const Round r, const Round p) {
             if ( ( r !is null) && ( p !is null ) ) {
                 assert( (r.number-p.number) == 1, "Consecutive round-numbers has to increase by one");
-                if ( r._decided ) {
-                    assert( p._decided, "If a higher round is decided all rounds below must be decided");
-                }
                 check_round_order(r._previous, p._previous);
             }
         }
@@ -1086,32 +965,29 @@ class Event {
     package void collect_famous_votes_2() {
         import std.stdio;
         void collect_votes(Round previous_round) @safe {
-            if ( previous_round && !previous_round._decided ) {
+            if ( previous_round ) {
                 // if ( previous_round.can_be_decided ) {
                 collect_votes( previous_round._previous );
                 foreach(seen_node, e; previous_round) {
                     e._witness.famous_vote(_witness.strong_seeing_mask);
                 }
-                if ( previous_round._previous ) {
-                    fout.writefln("Round %d undecided=%s can be decided=%s decided=%s", previous_round.number,
-                        previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided );
-                    if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
-                        fout.writefln("\tDeciding Round %d",  previous_round.number);
-                        fout.flush;
-                        previous_round.decide;
-                        if ( callbacks ) {
-                            foreach(seen_node_id, e; previous_round) {
-                                callbacks.famous(e);
+                fout.writefln("Round %d undecided=%s can be decided=%s decided=%s", previous_round.number,
+                    previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided );
+                if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
+                    //previous_round.decided;
+                    if ( callbacks ) {
+                        foreach(seen_node_id, e; previous_round) {
+                            callbacks.famous(e);
 //                            callbacks.famous_mask(e);
-                            }
                         }
                     }
+
                 }
                     // }
             }
         }
         if ( _witness && !isEva  ) {
-            collect_votes(_round._previous);
+            collect_votes(_round.previous);
         }
     }
 
@@ -1190,7 +1066,6 @@ class Event {
     do {
         if ( !_round ) {
             _round=_mother.round;
-            _round.event_added;
         }
         return _round;
     }
@@ -1295,7 +1170,7 @@ class Event {
     }
 
     @trusted
-    package void strongly_seeing(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
+    void strongly_seeing(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
         in {
             assert(!_strongly_seeing_checked);
             assert(_witness_mask.length != 0);
@@ -1446,29 +1321,28 @@ class Event {
         _daughter=_son=null;
         if ( _witness ) {
             _round.disconnect(this);
-            _witness.destroy;
+            _witness=null;
         }
-        _round.event_remove;
         _round = null;
     }
 
-    // package void ground(H)(H h) {
-    //     void grounding(Event e) @safe {
-    //         if ( e ) {
-    //             grounding(e._mother);
-    //             h.eliminate(e.fingerprint);
-    //             if ( callbacks ) {
-    //                 callbacks.remove(e);
-    //             }
-    //             e.disconnect;
-    //         }
-    //     }
-    //     grounding(this);
-    // }
+    package void ground(H)(H h) {
+        void grounding(Event e) @safe {
+            if ( e ) {
+                grounding(e._mother);
+                h.eliminate(e.fingerprint);
+                if ( callbacks ) {
+                    callbacks.remove(e);
+                }
+                e.disconnect;
+            }
+        }
+        grounding(this);
+    }
 
-    // ~this() {
-    //     disconnect();
-    // }
+    ~this() {
+        disconnect();
+    }
 
     Event mother(H)(H h, RequestNet request_net) {
         Event result;
