@@ -122,6 +122,7 @@ class MonitorCallBacks : NetCallbacks {
         round[Keywords.looked_at_count]=e.round.looked_at_count;
         round[Keywords.seeing_completed]=e.round.seeing_completed;
         round[Keywords.completed]=e.round.completed;
+        round[Keywords.total]=e.round.total_events;
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
     }
@@ -170,11 +171,20 @@ class MonitorCallBacks : NetCallbacks {
     }
 
     void remove(const(Event) e) {
-        writefln("Remove %d", e.id);
-        auto bson=new HBSON;
-        bson[Keywords.remove]=e.id;
+        auto bson=createBSON(e);
+        bson[Keywords.remove]=true;
         socket_send(bson.serialize);
     }
+
+    void remove(const(Round) r) {
+        auto bson=new HBSON;
+        auto round=new HBSON;
+        round[Keywords.number]=r.number;
+        round[Keywords.remove]=true;
+        bson[Keywords.round]=round;
+        socket_send(bson.serialize);
+    }
+
     // void famous_votes(const(Event) e) {
     //     writeln("Not implemented %s", __FUNCTION__);
     //     // auto bson=createBSON(e);
