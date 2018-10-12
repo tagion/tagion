@@ -1,6 +1,6 @@
 module tagion.communication.Monitor;
 
-import tagion.hashgraph.Event : Event;
+import tagion.hashgraph.Event : Event, Round;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.Net : StdGossipNet, NetCallbacks;;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
@@ -114,6 +114,17 @@ class MonitorCallBacks : NetCallbacks {
     }
 
 
+    void round_decided(const(Round) r) {
+        auto bson=new HBSON;
+        auto round=new HBSON;
+        round[Keywords.number]=r.number;
+        round[Keywords.decided]=r.decided;
+        round[Keywords.total]=r.total_events;
+        bson[Keywords.round]=round;
+        socket_send(bson.serialize);
+
+    }
+
     void looked_at(const(Event) e) {
         auto bson=createBSON(e);
         auto round=new HBSON;
@@ -122,6 +133,7 @@ class MonitorCallBacks : NetCallbacks {
         round[Keywords.looked_at_count]=e.round.looked_at_count;
         round[Keywords.seeing_completed]=e.round.seeing_completed;
         round[Keywords.completed]=e.round.completed;
+        round[Keywords.total]=e.round.total_events;
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
     }
@@ -170,11 +182,21 @@ class MonitorCallBacks : NetCallbacks {
     }
 
     void remove(const(Event) e) {
-        writefln("Remove %d", e.id);
-        auto bson=new HBSON;
-        bson[Keywords.remove]=e.id;
+        auto bson=createBSON(e);
+        bson[Keywords.remove]=true;
         socket_send(bson.serialize);
     }
+
+    void remove(const(Round) r) {
+        auto bson=new HBSON;
+        auto round=new HBSON;
+        round[Keywords.number]=r.number;
+        round[Keywords.remove]=true;
+        round[Keywords.total]=r.total_events;
+        bson[Keywords.round]=round;
+        socket_send(bson.serialize);
+    }
+
     // void famous_votes(const(Event) e) {
     //     writeln("Not implemented %s", __FUNCTION__);
     //     // auto bson=createBSON(e);
