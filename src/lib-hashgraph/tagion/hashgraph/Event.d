@@ -651,8 +651,8 @@ class Round {
             }
         }
         Round _lowest=lowest;
-
-//        local_scrap(_lowest);
+        Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
+        local_scrap(_lowest);
         // if ( Event.callbacks ) {
         //     Event.callbacks.remove(_lowest);
         // }
