@@ -8,7 +8,7 @@ import std.exception : assumeUnique;
 enum EndpointType {Client, Server};
 
 @safe
-class SslSocketException : Exception {
+class SslSocketException : SocketException {
     this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
         super( msg, file, line);
     }
@@ -192,21 +192,23 @@ version(use_openssl) {
 
         @trusted
         override Socket accept() {
-            Socket sn = super.accept();
+            Socket client = super.accept();
 
-            auto ssl_client = new OpenSslSocket(sn.handle, EndpointType.Server, AddressFamily.INET);
+            auto ssl_client = new OpenSslSocket(client.handle, EndpointType.Server, AddressFamily.INET);
 
-            SSL_set_fd(ssl_client.getSsl, sn.handle);
+            SSL_set_fd(ssl_client.getSsl, client.handle);
 
             if ( SSL_accept(ssl_client.getSsl) <= 0 ) {
                 ERR_print_errors_fp(stderr);
                 static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
-                        printDebugInformation("Error in handsaking, accept");
+                    //TODO: debug!
+                       // printDebugInformation("Error in handsaking, accept");
                 }
-                sn.shutdown(SocketShutdown.BOTH);
-                sn.close();
+
+                client.shutdown(SocketShutdown.BOTH);
+                client.close();
+                writeln("Before exception");
 				throw new SslSocketException("ssl handsake, accept");
-                sn.close();
             }
             else {
                 return ssl_client;
@@ -232,6 +234,7 @@ version(use_openssl) {
         ~this() {
             SSL_free(_ssl);
             if ( client_ctx != _ctx && server_ctx != _ctx ) {
+                SSL_free(_ssl);
                 SSL_CTX_free(_ctx);
             }
         }
