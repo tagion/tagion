@@ -417,6 +417,13 @@ class Round {
 //        import std.stdio;
     }
 
+    int coin_round_distance() const nothrow {
+        if ( _undecided ) {
+            return number-_undecided.number;
+        }
+        return 0;
+    }
+
     private void decide()
         in {
             assert(!_decided, "Round should only be decided once");
@@ -645,7 +652,7 @@ class Round {
         }
         Round _lowest=lowest;
 
-        local_scrap(_lowest);
+//        local_scrap(_lowest);
         // if ( Event.callbacks ) {
         //     Event.callbacks.remove(_lowest);
         // }
@@ -1102,8 +1109,9 @@ class Event {
                     e._witness.famous_vote(_witness.strong_seeing_mask);
                 }
                 if ( previous_round._previous ) {
-                    fout.writefln("Round %d undecided=%s can be decided=%s decided=%s", previous_round.number,
-                        previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided );
+                    fout.writefln("Round %d undecided=%s can be decided=%s decided=%s coin_count=%d", previous_round.number,
+                        previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided,
+                        previous_round.coin_round_distance );
                     if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
                         fout.writefln("\tDeciding Round %d",  previous_round.number);
                         fout.flush;
