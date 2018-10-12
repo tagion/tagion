@@ -444,6 +444,10 @@ class HashGraph {
             //     writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
             // }
             event.collect_famous_votes_2;
+            if ( event.round.total_events > Round.total_limit ) {
+                // Scrap the lowest round which is not need anymore
+                event.round.scrap(this);
+            }
 //            event.collect_witness_seen_votes;
 
             // if ( event.witness ) {
