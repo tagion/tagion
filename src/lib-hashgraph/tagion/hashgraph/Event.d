@@ -348,9 +348,9 @@ class Round {
         assert(0, "Round number must increase by one");
     }
 
-    package int opApply(scope int delegate(const uint node_id, Event event) @safe dg) {
+    package int opApply(scope int delegate(const uint node_id, ref Event event) @safe dg) {
         int result;
-        foreach(uint node_id, e; _events) {
+        foreach(uint node_id, ref e; _events) {
             if ( e ) {
                 result=dg(node_id, e);
                 if ( result ) {
@@ -625,8 +625,8 @@ class Round {
     // Scrap the lowest Round
     @trusted
     static void scrap(H)(H hashgraph) {
-        void local_scrap(Round r=_rounds) {
-            foreach(node_id, e; r) {
+        void local_scrap(Round r) {
+            foreach(node_id, ref e; r) {
                 void scrap_event(Event e) {
                     if ( e ) {
                         scrap_event(e.mother);
@@ -634,19 +634,21 @@ class Round {
                             Event.callbacks.remove(e);
                         }
                         Event.fout.writefln("Event %d remove", e.id);
-                        hashgraph.eliminate(e.fingerprint);
+                        // hashgraph.eliminate(e.fingerprint);
                         // e.disconnect;
                         // e.destroy;
                     }
                 }
+                scrap_event(e);
+                // e=null
             }
         }
         Round _lowest=lowest;
 
         local_scrap(_lowest);
-        if ( Event.callbacks ) {
-            Event.callbacks.remove(_lowest);
-        }
+        // if ( Event.callbacks ) {
+        //     Event.callbacks.remove(_lowest);
+        // }
         // _lowest.disconnect;
         // _lowest.destroy;
     }
