@@ -4,7 +4,8 @@ import std.stdio : writeln, writefln;
 import tagion.Options;
 import tagion.Base : Control;
 import core.thread;
-import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown;
+import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown, AddressFamily;
+import tagion.network.SslSocket;
 import std.algorithm : remove;
 
 ScriptingEngineContext startScriptingEngine () {
@@ -33,7 +34,7 @@ private:
     immutable ushort _listener_port;
     immutable uint _max_connections;
     immutable uint _listener_max_queue_length;
-    TcpSocket _listener;
+    OpenSslSocket _listener;
     enum _buffer_size = 1024;
 
 public:
@@ -51,10 +52,16 @@ public:
 
     bool run_scripting_engine = true;
 
+    void sPing(const char[] addr, ushort port) {
+        auto client = new OpenSslSocket(AddressFamily.INET, EndpointType.Client);
+        client.connect(new InternetAddress(addr, port));
+    }
+
+    //TODO: Does not shutdown correctly.
     void stop () {
         writeln("Stops scripting engine API");
         run_scripting_engine = false;
-        auto ping = new TcpSocket( new InternetAddress ( _listener_ip_address, _listener_port ) );
+        sPing( _listener_ip_address, _listener_port );
     }
 
     void run () {
@@ -63,12 +70,13 @@ public:
             writeln( "Closing listener socket." );
             _listener.shutdown(SocketShutdown.BOTH);
             Thread.sleep( dur!("seconds") (2));
-            _listener.close();
+            _listener.destroy();
             Thread.sleep( dur!("seconds") (2));
         }
 
-        _listener = new TcpSocket();
+        _listener = new OpenSslSocket(AddressFamily.INET, EndpointType.Server);
         assert(_listener.isAlive);
+        _listener.configureContext("pem_files/domain.pem", "pem_files/domain.key.pem");
         _listener.blocking = false;
         _listener.bind( new InternetAddress( _listener_ip_address, _listener_port ) );
         _listener.listen( _listener_max_queue_length );
@@ -134,32 +142,29 @@ public:
             }
 
             if (socketSet.isSet(_listener)) {     // connection request
-
-                Socket sn = null;
-                scope ( failure )
-                {
-                    writefln( "Error accepting" );
-
-                    if ( sn )
-                        sn.close();
-                }
-                sn = _listener.accept();
-                assert( sn.isAlive );
-                assert( _listener.isAlive );
-
-                if ( reads.length < _max_connections )
-                {
-                    writefln( "Connection from %s established.", sn.remoteAddress().toString() );
-                    reads ~= sn;
-                    writefln( "\tTotal connections: %d", reads.length );
-                }
-                else
-                {
-                    writefln( "Rejected connection from %s; too many connections.", sn.remoteAddress().toString() );
-                    sn.close();
-                    assert( !sn.isAlive );
+                try {
+                    Socket sn = null;
+                    sn = _listener.accept();
+                    assert( sn.isAlive );
                     assert( _listener.isAlive );
+
+                    if ( reads.length < _max_connections )
+                    {
+                        writefln( "Connection from %s established.", sn.remoteAddress().toString() );
+                        reads ~= sn;
+                        writefln( "\tTotal connections: %d", reads.length );
+                    }
+                    else
+                    {
+                        writefln( "Rejected connection from %s; too many connections.", sn.remoteAddress().toString() );
+                        sn.close();
+                        assert( !sn.isAlive );
+                        assert( _listener.isAlive );
+                    }
+                } catch(SocketException ex) {
+                    writefln("SslSocketException: %s", ex);
                 }
+
             }
 
             socketSet.reset();
