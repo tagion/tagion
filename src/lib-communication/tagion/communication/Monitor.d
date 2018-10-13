@@ -125,6 +125,15 @@ class MonitorCallBacks : NetCallbacks {
 
     }
 
+    void coin_round(const(Round) r) {
+        auto bson=new HBSON;
+        auto round=new HBSON;
+        round[Keywords.number]=r.number;
+        round[Keywords.coin]=true;
+        bson[Keywords.round]=round;
+        socket_send(bson.serialize);
+    }
+
     void looked_at(const(Event) e) {
         auto bson=createBSON(e);
         auto round=new HBSON;
