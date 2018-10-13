@@ -20,6 +20,7 @@ enum _keywords = [
     "witness_mask",
     "round_mask",
     "round_seen",
+    "coin",
     "decided",
     "total",
 //    "decided_mask",
