@@ -193,6 +193,7 @@ interface EventCallbacks {
     void round_seen(const(Event) e);
     void looked_at(const(Event) e);
     void round_decided(const(Round) r);
+    void coin_round(const(Round) r);
     void famous(const(Event) e);
 //    void famous_mask(const(Event) e);
     void round(const(Event) e);
@@ -207,6 +208,7 @@ interface EventCallbacks {
 @safe
 class Round {
     enum uint total_limit = 3;
+    enum int coin_round_limit = 10;
     private Round _previous;
     // This indicates wish events belongs to this round
     // private BitArray nodes_mask;
@@ -422,6 +424,17 @@ class Round {
             return number-_undecided.number;
         }
         return 0;
+    }
+
+    package void check_coin_round() {
+        if ( coin_round_distance >= coin_round_limit ) {
+            // Force a coin round
+            Round undecided=undecided_round;
+            undecided.decide;
+            if ( Event.callbacks ) {
+                Event.callbacks.coin_round(undecided);
+            }
+        }
     }
 
     private void decide()
@@ -652,7 +665,7 @@ class Round {
         }
         Round _lowest=lowest;
         Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
-        local_scrap(_lowest);
+//        local_scrap(_lowest);
         // if ( Event.callbacks ) {
         //     Event.callbacks.remove(_lowest);
         // }
