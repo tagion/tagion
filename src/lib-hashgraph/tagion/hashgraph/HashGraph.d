@@ -447,8 +447,9 @@ class HashGraph {
 
             event.round.check_coin_round;
 
-            if ( event.round.total_events > Round.total_limit ) {
+            if ( event.round.check_round_limit) {
                 // Scrap the lowest round which is not need anymore
+                Event.fout.writefln("Round %d total=%d limit=%d", event.round.number, event.round.total_events, Round.total_limit);
                 event.round.scrap(this);
             }
 //            event.collect_witness_seen_votes;

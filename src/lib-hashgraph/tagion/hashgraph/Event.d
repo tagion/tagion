@@ -274,6 +274,10 @@ class Round {
         return _total_events == 0;
     }
 
+    bool check_round_limit() const nothrow {
+        return total_events > total_limit;
+    }
+
     private void disconnect()
         in {
             assert(_previous is null, "Only the last round can be disconnected");
@@ -654,23 +658,28 @@ class Round {
                             Event.callbacks.remove(e);
                         }
                         Event.fout.writefln("Event %d remove", e.id);
-                        // hashgraph.eliminate(e.fingerprint);
+                        hashgraph.eliminate(e.fingerprint);
                         // e.disconnect;
                         // e.destroy;
                     }
                 }
-                scrap_event(e);
+                Event evict_event=e;
+                e=null;
+                scrap_event(evict_event);
                 // e=null
             }
         }
         Round _lowest=lowest;
-        Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
-//        local_scrap(_lowest);
-        // if ( Event.callbacks ) {
-        //     Event.callbacks.remove(_lowest);
-        // }
-        // _lowest.disconnect;
-        // _lowest.destroy;
+        if ( _lowest ) {
+            Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
+            local_scrap(_lowest);
+            if ( Event.callbacks ) {
+                Event.callbacks.remove(_lowest);
+            }
+
+            // _lowest.disconnect;
+            // _lowest.destroy;
+        }
     }
 
     invariant {
