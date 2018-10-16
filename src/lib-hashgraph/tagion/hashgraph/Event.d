@@ -1527,7 +1527,7 @@ class Event {
             assert(_round.event(node_id) is this);
             _round.remove(this);
 //            _round.disconnect(this);
-//            _witness.destroy;
+            _witness.destroy;
             if ( _round.empty ) {
                 Event.fout.writefln("Round %d empty destroied", _round.number);
                 if ( Event.callbacks ) {
