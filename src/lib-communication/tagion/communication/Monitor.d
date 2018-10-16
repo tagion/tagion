@@ -119,7 +119,8 @@ class MonitorCallBacks : NetCallbacks {
         auto round=new HBSON;
         round[Keywords.number]=r.number;
         round[Keywords.decided]=r.decided;
-        round[Keywords.total]=r.total_events;
+        round[Keywords.decided_count]=r.decided_count;
+        //round[Keywords.total]=r.total_events;
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
 
@@ -142,7 +143,7 @@ class MonitorCallBacks : NetCallbacks {
         round[Keywords.looked_at_count]=e.round.looked_at_count;
         round[Keywords.seeing_completed]=e.round.seeing_completed;
         round[Keywords.completed]=e.round.completed;
-        round[Keywords.total]=e.round.total_events;
+
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
     }
@@ -201,7 +202,7 @@ class MonitorCallBacks : NetCallbacks {
         auto round=new HBSON;
         round[Keywords.number]=r.number;
         round[Keywords.remove]=true;
-        round[Keywords.total]=r.total_events;
+        //round[Keywords.total]=r.total_events;
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
     }
