@@ -281,7 +281,7 @@ class Round {
     private void disconnect()
         in {
             assert(_previous is null, "Only the last round can be disconnected");
-//            assert(_total_events == 0, "All events must be disconnected before the round can be disconnected");
+            assert(_events_count == 0, "All witness must be removed before the round can be disconnected");
         }
     do {
         Round before;
@@ -693,7 +693,7 @@ class Round {
 //                         }
                         hashgraph.eliminate(e.fingerprint);
                         e.disconnect;
-//                        e.destroy;
+                        e.destroy;
                     }
                 }
                 scrap_event(e._mother);
@@ -1534,7 +1534,7 @@ class Event {
                     Event.callbacks.remove(_round);
                 }
                 _round.disconnect;
-// //                _round.destroy;
+//                _round.destroy;
             }
         }
     }
