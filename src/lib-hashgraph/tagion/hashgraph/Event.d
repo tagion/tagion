@@ -693,7 +693,7 @@ class Round {
 //                         }
                         hashgraph.eliminate(e.fingerprint);
                         e.disconnect;
-                        //   e.destroy;
+//                        e.destroy;
                     }
                 }
                 scrap_event(e._mother);
@@ -802,18 +802,18 @@ class Event {
                         // _seeing_previous_round_mask[event.node_id]=true;
                         // _seeind_previous_round_count++;
 
-                        immutable round_distance = owner_event.round.number - event.round.number;
+                        immutable round_distance = owner_event._round.number - event._round.number;
                         Event.fout.writefln("%snode_id=%d id=%d event.round.number %d distance=%d witness=%s",
                             indent,
                             event.node_id,
                             event.id,
-                            event.round.number,
+                            event._round.number,
                             round_distance,
                             event.witness !is null
                             );
                         if ( event.witness ) {
 //                      if ( !event.witness.round_seen_completed ) {
-                            if ( !event.round.seeing_completed ) {
+                            if ( !event._round.seeing_completed ) {
                                 // Marked that this witness has been looked at from the next round at node_id
                                 // if ( callbacks ) {
 
@@ -821,7 +821,7 @@ class Event {
                                 if ( round_distance == 1 ) {
                                     // owner event sees witness in preivous round
                                     event.witness.round_seen_vote(owner_event.node_id);
-                                    event.round.looked_at(owner_event.node_id);
+                                    event._round.looked_at(owner_event.node_id);
 
 //                            event.witness._round_seen_mask[owner_event.node_id]=true;
                                     Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
@@ -836,7 +836,7 @@ class Event {
                         }
                         else if ( round_distance  <= 1 ) {
                             Event.fout.writef("%s  ", indent);
-                            foreach(seeing_node_id, e; event.round) {
+                            foreach(seeing_node_id, e; event._round) {
                                 Event.fout.writef(" %d", seeing_node_id);
                                 if ( event.witness_mask[seeing_node_id] ) {
                                     Event.fout.writeln("->");
@@ -858,7 +858,7 @@ class Event {
             // Update the visit marker to prevent infinity recusive loop
             Event.visit_marker++;
             Event.fout.writefln("@Owner node_id=%d id=%d round=%d",
-                owner_event.node_id, owner_event.id, owner_event.round.number);
+                owner_event.node_id, owner_event.id, owner_event._round.number);
             update_round_seeing(owner_event.mother, "::");
             update_round_seeing(owner_event.father,  "::");
         }
@@ -1207,7 +1207,7 @@ class Event {
                     // immutable votes=countVotes(vote_mask);
                     // immutable majority=isMajority(votes, node_size);
                     fout.writefln("\t\t strong=%s id=%d round=%d seen=%s votes=%s majority=%s looked_at=%s",
-                        _witness.strong_seeing_mask,  e.id, e.round.number, e._witness.round_seen_mask, e._witness.famous_votes, e._witness.famous, e.round.looked_at_mask);
+                        _witness.strong_seeing_mask,  e.id, e._round.number, e._witness._round_seen_mask, e._witness.famous_votes, e._witness.famous, e.round.looked_at_mask);
 
 //                        }
                     if ( e._witness.famous_decided ) {
@@ -1215,7 +1215,7 @@ class Event {
 //                            undecided.famous_decide(seen_node_id);
                     }
                     fout.writefln("\tcollect_famous_vote id=%d node_id=%d round=%d node_id=%d seen=%s decided=%s famous=%s votes=%d",
-                        e.id, e.node_id, e.round.number, seen_node_id, e._witness.round_seen_mask, e._witness.famous_decided, e._witness.famous, e._witness.famous_votes);
+                        e.id, e.node_id, e._round.number, seen_node_id, e._witness.round_seen_mask, e._witness.famous_decided, e._witness.famous, e._witness.famous_votes);
                     //                  }
                 }
 
@@ -1263,7 +1263,7 @@ class Event {
     }
     do {
         if ( !_round ) {
-            _round=_mother.round;
+            _round=_mother._round;
         }
         return _round;
     }
@@ -1392,7 +1392,7 @@ class Event {
 
     private void next_round() {
         // The round number is increased by one
-        _round=Round(mother.round.number+1);
+        _round=Round(_mother._round.number+1);
         // Event added to round
         _round.add(this);
 

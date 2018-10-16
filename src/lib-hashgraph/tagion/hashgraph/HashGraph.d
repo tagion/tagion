@@ -383,7 +383,7 @@ class HashGraph {
         return event;
     }
 
-    private static Event event_cleaner;
+//    private static Event event_cleaner;
     enum round_clean_limit=10;
     Event registerEvent(
         RequestNet request_net,
@@ -475,14 +475,14 @@ class HashGraph {
 
             }
 
-            if ( !event_cleaner ) {
-                event_cleaner=event;
-            }
-            else if ( ( event.round.number - event_cleaner.round.number ) > round_clean_limit ) {
-                writefln("CLEAN ROUND %d", event_cleaner.round.number);
-//                event_cleaner.ground(this);
-                event_cleaner=event;
-            }
+//             if ( !event_cleaner ) {
+//                 event_cleaner=event;
+//             }
+//             else if ( ( event.round.number - event_cleaner.round.number ) > round_clean_limit ) {
+//                 writefln("CLEAN ROUND %d", event_cleaner.round.number);
+// //                event_cleaner.ground(this);
+//                 event_cleaner=event;
+//             }
 
         }
 
