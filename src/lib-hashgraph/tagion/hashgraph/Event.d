@@ -215,7 +215,7 @@ class Round {
     // Counts the number of nodes in this round
     immutable int number;
     private bool _decided;
-    private uint _decided_count;
+    private static uint _decided_count;
 
     private BitArray _looked_at_mask;
     private uint _looked_at_count;
@@ -226,7 +226,7 @@ class Round {
     }
 
     // Count all events
-    private uint _total_events;
+//    private uint _total_events;
     private Event[] _events;
     // Counts the witness in the round
     private uint _events_count;
@@ -256,44 +256,49 @@ class Round {
         }
         _previous=r;
         number=round_number;
-        event_added;
+        //event_added;
         _events=new Event[node_size];
         bitarray_clear(_looked_at_mask, node_size);
     }
 
-    private void event_added() pure nothrow {
-        _total_events++;
-    }
+    // private void event_added() pure nothrow {
+    //     _total_events++;
+    // }
 
-    private bool event_remove() pure nothrow
-        in {
-            assert(_total_events > 0, "Non more event is contained in this Round");
-        }
-    do {
-        _total_events--;
-        return _total_events == 0;
-    }
+    // private bool event_remove() pure nothrow
+    //     in {
+    //         assert(_total_events > 0, "No more event is contained in this Round");
+    //     }
+    // do {
+    //     _total_events--;
+    //     return _total_events == 0;
+    // }
 
-    bool check_round_limit() const nothrow {
-        return total_events > total_limit;
+    static bool check_decided_round_limit() nothrow {
+         return _decided_count > total_limit;
     }
 
     private void disconnect()
         in {
             assert(_previous is null, "Only the last round can be disconnected");
-            assert(_total_events == 0, "All events must be disconnected before the round can be disconnected");
+//            assert(_total_events == 0, "All events must be disconnected before the round can be disconnected");
         }
     do {
         Round before;
-        for(before=_rounds; (before !is null) && (before._previous is this); before=before._previous) {
+        for(before=_rounds; (before !is null) && (before._previous !is this); before=before._previous) {
             // Empty
         }
         before._previous=null;
+        _decided_count--;
     }
 
-    uint total_events() pure const nothrow {
-        return _total_events;
-    }
+    // ~this() {
+    //     disconnect;
+    // }
+
+    // uint total_events() pure const nothrow {
+    //     return _total_events;
+    // }
 
     private Round next_consecutive() {
         _rounds=new Round(_rounds, node_size, _rounds.number+1);
@@ -380,7 +385,7 @@ class Round {
         return result;
     }
 
-    void add(Event event)
+    package void add(Event event)
         in {
             // version(DECIDED_PROBLEM) {
             //     assert(!_decided, "FIXME: An event has been added after this round has been decided!");
@@ -406,6 +411,22 @@ class Round {
             _events_count++;
             _events[event.node_id]=event;
         }
+    }
+
+    package void remove(const(Event) e)
+        in {
+            assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
+            assert(_events_count > 0, "No events exists in this round");
+        }
+    do {
+        if ( _events[e.node_id] ) {
+            _events_count--;
+            _events[e.node_id]=null;
+        }
+    }
+
+    bool empty() pure const nothrow {
+        return _events_count == 0;
     }
 
     // Return true if all witness in this round has been created
@@ -450,7 +471,6 @@ class Round {
         assert(_undecided._previous._decided, "Previous round should be decided");
     }
     do {
-        Event.fout.writefln("Decide round %d", number);
         Round one_over(Round r=_rounds) {
             if ( r._previous is this ) {
                 return r;
@@ -460,6 +480,7 @@ class Round {
         _undecided=one_over;
         _decided=true;
         _decided_count++;
+        Event.fout.writefln("Decide round %d decided_count=%d", number, _decided_count);
 
 //         foreach(seen_node_id, e; this) {
 //             e._witness._famous=
@@ -583,9 +604,9 @@ class Round {
         undo(_rounds);
     }
 
-    void disconnect(Event event) {
-        _events[event.node_id]=null;
-    }
+    // package void disconnect(Event event) {
+    //     _events[event.node_id]=null;
+    // }
 
     // bool famous_decided() const pure nothrow
     //     in {
@@ -647,39 +668,50 @@ class Round {
     }
 
     // Scrap the lowest Round
-    @trusted
     static void scrap(H)(H hashgraph) {
-        void local_scrap(Round r) {
+        // Scrap the rounds and events below this
+        void local_scrap(Round r) @trusted {
             foreach(node_id, ref e; r) {
                 void scrap_event(Event e) {
                     if ( e ) {
-                        scrap_event(e.mother);
+                        scrap_event(e._mother);
                         if ( Event.callbacks ) {
                             Event.callbacks.remove(e);
                         }
                         Event.fout.writefln("Event %d remove", e.id);
+//                         if ( e._witness ) {
+//                             e._round.remove(e);
+//                             if ( e._round.empty ) {
+//                                 if ( Event.callbacks ) {
+//                                     Event.callbacks.remove(e._round);
+//                                 }
+//                                 Event.fout.writefln("Round %d removed total=%d",
+//                                     e._round.number, e._round.total_events);
+//                                 // e._round.disconnect;
+// //                                e.round.destroy;
+//                             }
+//                         }
                         hashgraph.eliminate(e.fingerprint);
-                        // e.disconnect;
-                        // e.destroy;
+                        e.disconnect;
+                        //   e.destroy;
                     }
                 }
-                Event evict_event=e;
-                e=null;
-                scrap_event(evict_event);
-                // e=null
+                scrap_event(e._mother);
             }
+            // Round previous=r._previous;
+            // previous.disconnect;
+            // previous.destroy;
         }
         Round _lowest=lowest;
+        Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
         if ( _lowest ) {
-            Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
             local_scrap(_lowest);
-            if ( Event.callbacks ) {
-                Event.callbacks.remove(_lowest);
-            }
-
-            // _lowest.disconnect;
             // _lowest.destroy;
         }
+    }
+
+    static uint decided_count() nothrow {
+        return _decided_count;
     }
 
     invariant {
@@ -798,8 +830,8 @@ class Event {
                                         Event.callbacks.looked_at(event);
                                     }
                                 }
-                                update_round_seeing(event.mother, indent~"  ");
-                                update_round_seeing(event.father, indent~"  ");
+                                update_round_seeing(event._mother, indent~"  ");
+                                update_round_seeing(event._father, indent~"  ");
                             }
                         }
                         else if ( round_distance  <= 1 ) {
@@ -1136,14 +1168,14 @@ class Event {
                         previous_round.coin_round_distance );
                     if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
                         fout.writefln("\tDeciding Round %d",  previous_round.number);
-                        fout.flush;
+                        //                       fout.flush;
                         previous_round.decide;
-                        if ( callbacks ) {
-                            foreach(seen_node_id, e; previous_round) {
-                                callbacks.famous(e);
-//                            callbacks.famous_mask(e);
-                            }
-                        }
+//                         if ( callbacks ) {
+//                             foreach(seen_node_id, e; previous_round) {
+//                                 callbacks.famous(e);
+// //                            callbacks.famous_mask(e);
+//                             }
+//                         }
                     }
                 }
                     // }
@@ -1226,10 +1258,12 @@ class Event {
                 assert(_mother, "Graph has not been resolved");
             }
         }
+    out(result) {
+        assert(result, "No round was found for this event");
+    }
     do {
         if ( !_round ) {
             _round=_mother.round;
-            _round.event_added;
         }
         return _round;
     }
@@ -1356,7 +1390,7 @@ class Event {
         }
     }
 
-    package void next_round() {
+    private void next_round() {
         // The round number is increased by one
         _round=Round(mother.round.number+1);
         // Event added to round
@@ -1466,31 +1500,48 @@ class Event {
             bitarray_clear(strong_mask, node_size);
             _witness = new Witness(this, null, strong_mask);
             _round = Round.seed_round(node_size);
-
+            _round.add(this);
+            //_round.event_added;
         }
+
     }
 
 // Disconnect the Event from the graph
     @trusted
     void disconnect() {
         if ( _son ) {
-            _son._grounded=true;
+//            _son._grounded=true;
             _son._father=null;
         }
         if ( _daughter ) {
             _daughter._grounded=true;
             _daughter._mother=null;
         }
+        if ( _father ) {
+            _father._son=null;
+        }
         _mother=_father=null;
         _daughter=_son=null;
+        //_round.event_remove;
         if ( _witness ) {
-            _round.disconnect(this);
-            _witness.destroy;
+            assert(_round.event(node_id) is this);
+            _round.remove(this);
+//            _round.disconnect(this);
+//            _witness.destroy;
+            if ( _round.empty ) {
+                Event.fout.writefln("Round %d empty destroied", _round.number);
+                if ( Event.callbacks ) {
+                    Event.callbacks.remove(_round);
+                }
+                _round.disconnect;
+// //                _round.destroy;
+            }
         }
-        _round.event_remove;
-        _round = null;
     }
 
+    bool grounded() pure const nothrow {
+        return _grounded || (_mother is null);
+    }
     // package void ground(H)(H h) {
     //     void grounding(Event e) @safe {
     //         if ( e ) {
@@ -1536,11 +1587,11 @@ class Event {
 
     inout(Event) mother() inout pure nothrow
     in {
+        assert(!_grounded, "This event is grounded");
         if ( mother_hash ) {
             assert(_mother);
             assert( (altitude-_mother.altitude) == 1 );
         }
-        assert(!_grounded, "This event is grounded");
     }
     do {
         return _mother;
@@ -1653,7 +1704,11 @@ class Event {
         return payload.length != 0;
     }
 
-    bool motherExists() const pure nothrow {
+    bool motherExists() const pure nothrow
+        in {
+            assert(!_grounded, "This function should not be used on a grounded event");
+        }
+    do {
         return event_body.mother !is null;
     }
 

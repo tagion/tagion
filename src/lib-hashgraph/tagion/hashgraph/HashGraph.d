@@ -142,6 +142,7 @@ class HashGraph {
             return _cache_altitude;
         }
 
+
         int opApply(scope int delegate(const(Event) e) @safe dg) const
             in {
                 if ( _event ) {
@@ -152,9 +153,9 @@ class HashGraph {
         do {
             int iterate(const(Event) e) @safe {
                 int result;
-                if ( e ) {
+                if ( e  ) {
                     result=dg(e);
-                    if ( result == 0 ) {
+                    if ( (result == 0) && (!e.grounded)) {
                         iterate(e.mother);
                     }
                 }
@@ -436,7 +437,7 @@ class HashGraph {
             // writeln("Before strong See");
             iterative_strong_count=0;
             strongSee(event);
-            event.round; // Make sure that the round exists
+//            event.round; // Make sure that the round exists
 
             //event.mark_round_seeing;
 
@@ -447,9 +448,9 @@ class HashGraph {
 
             event.round.check_coin_round;
 
-            if ( event.round.check_round_limit) {
+            if ( Round.check_decided_round_limit) {
                 // Scrap the lowest round which is not need anymore
-                Event.fout.writefln("Round %d total=%d limit=%d", event.round.number, event.round.total_events, Round.total_limit);
+                Event.fout.writefln("Round %d decided_count=%d limit=%d", event.round.number, event.round.decided_count, Round.total_limit);
                 event.round.scrap(this);
             }
 //            event.collect_witness_seen_votes;
