@@ -431,8 +431,6 @@ class Round {
         _undecided=one_over;
         _decided=true;
         _decided_count++;
-        Event.fout.writefln("Decide round %d decided_count=%d", number, _decided_count);
-
         if ( Event.callbacks ) {
             foreach(seen_node_id, e; this) {
                 Event.callbacks.famous(e);
@@ -486,7 +484,6 @@ class Round {
     static Round lowest() {
         Round local_lowest(Round r=_rounds, string indent="  ") {
             if ( r ) {
-                Event.fout.writefln("%s Round %s decided=%s", indent, r.number, r.decided);
                 if ( r._decided && r._previous && (r._previous._previous is null ) ) {
                     return r;
                 }
@@ -494,7 +491,6 @@ class Round {
             }
             return null;
         }
-        Event.fout.writefln("Search Lowest round");
         return local_lowest;
     }
 
@@ -509,7 +505,6 @@ class Round {
                         if ( Event.callbacks ) {
                             Event.callbacks.remove(e);
                         }
-                        Event.fout.writefln("Event %d remove", e.id);
                         hashgraph.eliminate(e.fingerprint);
                         e.disconnect;
                         e.destroy;
@@ -522,7 +517,6 @@ class Round {
             }
         }
         Round _lowest=lowest;
-        Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
         if ( _lowest ) {
             local_scrap(_lowest);
         }
@@ -592,21 +586,11 @@ class Event {
                 if ( event ) {
                     if ( !event.visit ) {
                         immutable round_distance = owner_event._round.number - event._round.number;
-                        Event.fout.writefln("%snode_id=%d id=%d event.round.number %d distance=%d witness=%s",
-                            indent,
-                            event.node_id,
-                            event.id,
-                            event._round.number,
-                            round_distance,
-                            event.witness !is null
-                            );
                         if ( event.witness ) {
                             if ( !event._round.seeing_completed ) {
                                 if ( round_distance == 1 ) {
                                     event.witness.round_seen_vote(owner_event.node_id);
                                     event._round.looked_at(owner_event.node_id);
-
-                                    Event.fout.writefln("%s\t id=%d round_seen %s", indent, event.id, event.witness._round_seen_mask);
                                     if ( Event.callbacks ) {
                                         Event.callbacks.round_seen(event);
                                         Event.callbacks.looked_at(event);
@@ -617,28 +601,17 @@ class Event {
                             }
                         }
                         else if ( round_distance  <= 1 ) {
-                            Event.fout.writef("%s  ", indent);
                             foreach(seeing_node_id, e; event._round) {
-                                Event.fout.writef(" %d", seeing_node_id);
                                 if ( event.witness_mask[seeing_node_id] ) {
-                                    Event.fout.writeln("->");
-                                    Event.fout.writefln("%s\t call node_id=%d id=%d witness=%s",
-                                        indent, e.node_id, e.id, e.witness !is null);
                                     update_round_seeing(e, indent~"  ");
-                                    Event.fout.writefln("<<");
-
                                 }
                             }
-
-                            Event.fout.writefln("@");
                         }
                     }
                 }
             }
             // Update the visit marker to prevent infinity recusive loop
             Event.visit_marker++;
-            Event.fout.writefln("@Owner node_id=%d id=%d round=%d",
-                owner_event.node_id, owner_event.id, owner_event._round.number);
             update_round_seeing(owner_event.mother, "::");
             update_round_seeing(owner_event.father,  "::");
         }
@@ -801,11 +774,7 @@ class Event {
                     e._witness.famous_vote(_witness.strong_seeing_mask);
                 }
                 if ( previous_round._previous ) {
-                    fout.writefln("Round %d undecided=%s can be decided=%s decided=%s coin_count=%d", previous_round.number,
-                        previous_round is Round.undecided_round, previous_round.can_be_decided, previous_round.decided,
-                        previous_round.coin_round_distance );
                     if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
-                        fout.writefln("\tDeciding Round %d",  previous_round.number);
                         previous_round.decide;
                     }
                 }
@@ -1075,7 +1044,6 @@ class Event {
             _witness.destroy;
             _witness=null;
             if ( _round.empty ) {
-                Event.fout.writefln("Round %d empty destroied", _round.number);
                 if ( Event.callbacks ) {
                     Event.callbacks.remove(_round);
                 }

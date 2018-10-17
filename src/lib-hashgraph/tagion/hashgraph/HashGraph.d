@@ -367,7 +367,6 @@ class HashGraph {
 
             if ( Round.check_decided_round_limit) {
                 // Scrap the lowest round which is not need anymore
-                Event.fout.writefln("Round %d decided_count=%d limit=%d", event.round.number, event.round.decided_count, Round.total_limit);
                 event.round.scrap(this);
             }
 
