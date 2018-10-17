@@ -280,7 +280,6 @@ class Round {
          return _decided_count > total_limit;
     }
 
-    version(none)
     private void disconnect()
         in {
             assert(_previous is null, "Only the last round can be disconnected");
@@ -723,7 +722,7 @@ class Round {
             // }
             // scrap_round(_lowest._previous);
             // assert(_lowest._previous is null);
-            _lowest._previous=null;
+            //_lowest._previous=null;
 
             // _lowest._previous=null;
             // _lowest.destroy;
@@ -1554,7 +1553,7 @@ class Event {
                 if ( Event.callbacks ) {
                     Event.callbacks.remove(_round);
                 }
-                //_round.disconnect;
+                _round.disconnect;
 //                _round.destroy;
             }
         }
