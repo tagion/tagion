@@ -278,6 +278,7 @@ class Round {
          return _decided_count > total_limit;
     }
 
+    version(none)
     private void disconnect()
         in {
             assert(_previous is null, "Only the last round can be disconnected");
@@ -706,6 +707,19 @@ class Round {
         Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
         if ( _lowest ) {
             local_scrap(_lowest);
+
+            // @trusted
+            // void scrap_round(ref Round r)  {
+            //     if ( r ) {
+            //         scrap_round(r._previous);
+            //         r=null;
+            //     }
+            // }
+            // scrap_round(_lowest._previous);
+            // assert(_lowest._previous is null);
+            _lowest._previous=null;
+
+            // _lowest._previous=null;
             // _lowest.destroy;
         }
     }
@@ -1533,7 +1547,7 @@ class Event {
                 if ( Event.callbacks ) {
                     Event.callbacks.remove(_round);
                 }
-                _round.disconnect;
+                //_round.disconnect;
 //                _round.destroy;
             }
         }
