@@ -361,7 +361,7 @@ class HashGraph {
             iterative_strong_count=0;
             strongSee(event);
 
-            event.collect_famous_votes_2;
+            event.collect_famous_votes;
 
             event.round.check_coin_round;
 
