@@ -695,14 +695,14 @@ class Round {
 //                         }
                         hashgraph.eliminate(e.fingerprint);
                         e.disconnect;
-//                        e.destroy;
+                        e.destroy;
                     }
                 }
 //                assert(e._mother is e._mother._daughter);
                 scrap_event(e._mother);
-                // if ( e ) {
-                //     assert(e._mother is null);
-                // }
+                if ( e ) {
+                    assert(e._mother is null);
+                }
             }
             // Round previous=r._previous;
             // previous.disconnect;
