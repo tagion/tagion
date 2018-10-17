@@ -2,7 +2,6 @@ module tagion.hashgraph.HashGraph;
 
 import std.stdio;
 import std.conv;
-//import tagion.hashgraph.Store;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.GossipNet;
 import tagion.utils.LRU;
@@ -19,40 +18,24 @@ class HashGraph {
     alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
     alias LRU!(Buffer, Event) EventCache;
-//    private uint visit;
 
     private uint iterative_tree_count;
     private uint iterative_strong_count;
     //alias LRU!(Round, uint*) RoundCounter;
-    alias immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message) Sign;
+    alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
     private EventCache _event_cache;
     // List of rounds
     private Round _rounds;
-    // private GossipNet _gossip_net;
 
 
     this() {
         _event_cache=new EventCache(null);
-//        _gossip_net=gossip_net;
-        //_round_counter=new RoundCounter(null);
     }
 
-    // package static Round find_previous_round(Event event) {
-    //     Event e;
-    //     for (e=event; e && !e.round; e=e.mother) {
-    //         // Empty
-    //     }
-    //     return e.round;
-    // }
 
     @safe
     class Node {
         ExchangeState state;
-        // Is set if local has initiated an communication with this node
-//        bool initiator;
-        //DList!(Event) queue;
-        // private BitArray _famous_mask;
-        // private uint _famous_votes;
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
@@ -61,15 +44,7 @@ class HashGraph {
             this.node_id=node_id;
 //            this.discovery_time=time;
         }
-        // void updateRound(Round round) {
-        //     this.round=round;
-        // }
-        // Counts the number of times that a search has
-        // passed this node in the graph search
-        int passed;
-//        uint seeing; // See a witness
-        bool voted;
-        // uint voting;
+
         private Event _event; // Latest event
         package Event latest_witness_event; // Latest witness event
 
@@ -101,7 +76,6 @@ class HashGraph {
             }
         }
 
-
         const(Event) event() pure const nothrow
         in {
             if ( _event && _event.witness ) {
@@ -116,13 +90,13 @@ class HashGraph {
         bool isOnline() pure const nothrow {
             return (_event !is null);
         }
+
         // This is the altiude of the cache Event
         private int _cache_altitude;
 
         void altitude(int a)
             in {
                 if ( _event ) {
-//                    assert(_event.son is null);
                     assert(_event.daughter is null);
                 }
             }
@@ -146,7 +120,6 @@ class HashGraph {
         int opApply(scope int delegate(const(Event) e) @safe dg) const
             in {
                 if ( _event ) {
-                    //                  assert(_event.son is null);
                     assert(_event.daughter is null);
                 }
             }
@@ -164,21 +137,6 @@ class HashGraph {
             }
             return iterate(_event);
         }
-
-        version(node)
-        protected void vote_famous(Event witness_event)
-            in {
-                Event.fout.writefln("collect_round=%s latest_witness.round=%s isEva=%s", witness_event.round.number,  previous_witness.round.number, witness_event.isEva);
-                assert(!witness_event.isEva );
-                assert((witness_event.round.number-previous_witness.round.number) == 1);
-                assert(latest_witness_event.witness);
-            }
-        do {
-            Event.fout.writefln("Before  previous_witness");
-            witness_event.witness.vote_famous(witness_event, witness_event.node_id, witness_event.seeing_witness(node_id));
-            Event.fout.writefln("After  previous_witness");
-        }
-
 
         invariant {
             if ( latest_witness_event ) {
@@ -349,41 +307,13 @@ class HashGraph {
             assert(n.node_id in nodes, "Node id "~to!string(n.node_id)~" is not removable because it does not exist");
         }
     do {
-        nodes.remove(n.node_id);//=null;
+        nodes.remove(n.node_id);
         node_ids.remove(n.pubkey);
         unused_node_ids~=n.node_id;
     }
 
     enum max_package_size=0x1000;
     alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
-    version(none)
-    @trusted
-    Event receive(
-//        GossipNet gossip_net,
-        immutable(ubyte)[] data,
-        bool delegate(ref const(Pubkey) pubkey, immutable(ubyte[]) msg, Hfunc hfunc) signed,
-        Hfunc hfunc) {
-        auto doc=Document(data);
-        Pubkey pubkey;
-        Event event;
-        enum pubk=pubkey.stringof;
-        enum event_label=event.stringof;
-        immutable(ubyte)[] eventbody_data;
-        with ( ConcensusFailCode ) {
-            check((data.length <= max_package_size), PACKAGE_SIZE_OVERFLOW, "The package size exceeds the max of "~to!string(max_package_size));
-            check(doc.hasElement(pubk), EVENT_PACKAGE_MISSING_PUBLIC_KEY, "Event package is missing public key");
-            check(doc.hasElement(event_label), EVENT_PACKAGE_MISSING_EVENT, "Event package missing the actual event");
-            pubkey=doc[pubk].get!(immutable(ubyte)[]);
-            eventbody_data=doc[event_label].get!(immutable(ubyte[]));
-            check(signed(pubkey, eventbody_data, hfunc), EVENT_PACKAGE_BAD_SIGNATURE, "Invalid signature on event");
-        }
-        // Now we come this far so we can register the event
-        immutable eventbody=EventBody(eventbody_data);
-        event=registerEvent(pubkey, eventbody);
-        return event;
-    }
-
-//    private static Event event_cleaner;
     enum round_clean_limit=10;
     Event registerEvent(
         RequestNet request_net,
@@ -392,9 +322,6 @@ class HashGraph {
         ref immutable(EventBody) eventbody) {
         immutable fingerprint=request_net.calcHash(eventbody.serialize);
         Event event=lookup(fingerprint);
-        // writefln("PUB %s registerEvent=%s",
-        //     pubkey[0..7].toHexString,
-        //     fingerprint[0..7].toHexString);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;
             uint node_id;
@@ -420,30 +347,20 @@ class HashGraph {
             }
 
 
-//            writefln("Before new Event isEva=%s", eventbody.isEva);
             event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
 
 
-            // writeln("Before assign");
             // Add the event to the event cache
             assign(event);
 
-            // writeln("Before requestEventTree");
-            // Makes sure that we have the tree before the graph is checked
+            // Makes sure that we have the event tree before the graph is checked
             iterative_tree_count=0;
             requestEventTree(request_net, event);
 
             // See if the node is strong seeing the hashgraph
-            // writeln("Before strong See");
             iterative_strong_count=0;
             strongSee(event);
-//            event.round; // Make sure that the round exists
 
-            //event.mark_round_seeing;
-
-            // if ( event.witness ) {
-            //     writefln("Collect famous for id=%d node_id=%d", event.id, event.node_id);
-            // }
             event.collect_famous_votes_2;
 
             event.round.check_coin_round;
@@ -453,36 +370,14 @@ class HashGraph {
                 Event.fout.writefln("Round %d decided_count=%d limit=%d", event.round.number, event.round.decided_count, Round.total_limit);
                 event.round.scrap(this);
             }
-//            event.collect_witness_seen_votes;
-
-            // if ( event.witness ) {
-            //     // Collect votes from this witness to the previous witness
-            //     // previous round
-
-            // }
-//            vote_famous(event);
 
             if ( Event.callbacks ) {
                 Event.callbacks.round(event);
                 if ( iterative_strong_count != 0 ) {
                     Event.callbacks.iterations(event, iterative_strong_count);
                 }
-//                                    if ( callbacks ) {
-                // if ( event.) {
                 Event.callbacks.witness_mask(event);
-                // }
-//                    }
-
             }
-
-//             if ( !event_cleaner ) {
-//                 event_cleaner=event;
-//             }
-//             else if ( ( event.round.number - event_cleaner.round.number ) > round_clean_limit ) {
-//                 writefln("CLEAN ROUND %d", event_cleaner.round.number);
-// //                event_cleaner.ground(this);
-//                 event_cleaner=event;
-//             }
 
         }
 
@@ -497,14 +392,6 @@ class HashGraph {
         if ( event && ( !event.is_loaded ) ) {
             event.loaded;
 
-            // if ( child ) {
-            //     if ( is_father ) {
-            //         event.son=child;
-            //     }
-            //     else {
-            //         event.daughter=child;
-            //     }
-            // }
             auto mother=event.mother(this, request_net);
             requestEventTree(request_net, mother, event, false);
             if ( mother ) {
@@ -516,11 +403,8 @@ class HashGraph {
                 father.son=event;
             }
 
-            // assert(mother.daughter !is null);
             if ( Event.callbacks ) {
                 Event.callbacks.create(event);
-                // event.witness_mask;
-                // Event.callbacks.witness_mask(event);
             }
 
         }
@@ -538,7 +422,6 @@ class HashGraph {
                     scope BitArray strong_vote_mask;
                     uint seeing;
                     bool strong;
-//                    const round=top_event.previousRound;
                     const round=top_event.round;
                     @trusted
                         void checkStrongSeeing(Event check_event, const BitArray path_mask) {
@@ -557,10 +440,6 @@ class HashGraph {
                                         if ( isMajority(votes) ) {
                                             strong_vote_mask[check_event.node_id]=true;
                                             seeing++;
-                                            // if ( isMajority(seeing) ) {
-                                            //     strong=true;
-                                            //     return;
-                                            // }
                                         }
                                     }
                                 }
