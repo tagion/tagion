@@ -497,19 +497,26 @@ class HashGraph {
         if ( event && ( !event.is_loaded ) ) {
             event.loaded;
 
-            if ( child ) {
-                if ( is_father ) {
-                    event.son=child;
-                }
-                else {
-                    event.daughter=child;
-                }
-            }
+            // if ( child ) {
+            //     if ( is_father ) {
+            //         event.son=child;
+            //     }
+            //     else {
+            //         event.daughter=child;
+            //     }
+            // }
             auto mother=event.mother(this, request_net);
             requestEventTree(request_net, mother, event, false);
+            if ( mother ) {
+                mother.daughter=event;
+            }
             auto father=event.father(this, request_net);
             requestEventTree(request_net, father, event, true);
+            if ( father ) {
+                father.son=event;
+            }
 
+            // assert(mother.daughter !is null);
             if ( Event.callbacks ) {
                 Event.callbacks.create(event);
                 // event.witness_mask;

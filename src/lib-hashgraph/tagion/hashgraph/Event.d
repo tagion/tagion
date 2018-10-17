@@ -197,6 +197,8 @@ interface EventCallbacks {
     void famous(const(Event) e);
 //    void famous_mask(const(Event) e);
     void round(const(Event) e);
+    void son(const(Event) e);
+    void daughter(const(Event) e);
     void forked(const(Event) e);
     void remove(const(Event) e);
     void remove(const(Round) r);
@@ -278,7 +280,6 @@ class Round {
          return _decided_count > total_limit;
     }
 
-    version(none)
     private void disconnect()
         in {
             assert(_previous is null, "Only the last round can be disconnected");
@@ -694,10 +695,14 @@ class Round {
 //                         }
                         hashgraph.eliminate(e.fingerprint);
                         e.disconnect;
-                        e.destroy;
+//                        e.destroy;
                     }
                 }
+//                assert(e._mother is e._mother._daughter);
                 scrap_event(e._mother);
+                // if ( e ) {
+                //     assert(e._mother is null);
+                // }
             }
             // Round previous=r._previous;
             // previous.disconnect;
@@ -707,19 +712,6 @@ class Round {
         Event.fout.writefln("Round %d exits=%s", (_lowest)?_lowest.number:-1, _lowest !is null);
         if ( _lowest ) {
             local_scrap(_lowest);
-
-            // @trusted
-            // void scrap_round(ref Round r)  {
-            //     if ( r ) {
-            //         scrap_round(r._previous);
-            //         r=null;
-            //     }
-            // }
-            // scrap_round(_lowest._previous);
-            // assert(_lowest._previous is null);
-            _lowest._previous=null;
-
-            // _lowest._previous=null;
             // _lowest.destroy;
         }
     }
@@ -1542,12 +1534,13 @@ class Event {
             _round.remove(this);
 //            _round.disconnect(this);
             _witness.destroy;
+            _witness=null;
             if ( _round.empty ) {
                 Event.fout.writefln("Round %d empty destroied", _round.number);
                 if ( Event.callbacks ) {
                     Event.callbacks.remove(_round);
                 }
-                //_round.disconnect;
+                _round.disconnect;
 //                _round.destroy;
             }
         }
@@ -1658,11 +1651,15 @@ class Event {
             }
         }
     do {
-        if ( _daughter && (_daughter !is c) && !_forked ) {
+        if ( _daughter && (_daughter !is c) ) {
             forked=true;
         }
         else {
             _daughter=c;
+            if ( callbacks ) {
+                callbacks.daughter(this);
+            }
+
         }
     }
 
@@ -1677,11 +1674,14 @@ class Event {
             }
         }
     do {
-        if ( _son && (_son !is c) && !_forked ) {
+        if ( _son && (_son !is c) ) {
             forked=true;
         }
         else {
             _son=c;
+            if ( callbacks ) {
+                callbacks.son(this);
+            }
         }
     }
 
