@@ -413,6 +413,49 @@ class Round {
         }
     }
 
+    private void consensus_order() {
+        scope Event[] famous_events=new Event[_events.length];
+        ulong find_middel_time() {
+            uint famous_node_id;
+            foreach(e; _events) {
+                if (e._witness.famous) {
+                    famous_events[famous_node_id]=e;
+                    famous_node_id++;
+                }
+            }
+            famous_events.length=famous_node_id;
+            // Sort the time stamps
+            import std.algorithm : sort, SwapStrategy;
+            void dosort() @trusted {
+                sort!((a,b) => ( a<b ), SwapStrategy.stable)(famous_events);
+            }
+            dosort;
+            // Find middel time
+            immutable middel_time_index=(famous_event.length >> 2) + (famous_event.length & 1);
+            return famous_events[middel_time_index].time;
+        }1
+        immutable middel_time=find_middel_time;
+        //
+        Event[] received_rounds;
+        void famous_seeing_count(Event e) {
+            if ( e && !e.visit && !e.grounded ) {
+                if ( e.check_if_round_was_received(famous_node_id) ) {
+                    received_rounds~=e;
+                }
+                famous_seeing_count(e._mother);
+                famous_seeing_count(e._father);
+            }
+        }
+        foreach(e; famous_events) {
+            visit_marker++;
+            famous_seeing_count(e);
+        }
+        //
+
+
+
+    }
+
     private void decide()
         in {
             assert(!_decided, "Round should only be decided once");
@@ -695,7 +738,7 @@ class Event {
 
     private Round  _round;
     private Round  _received_round;
-
+    private uint _received_round_count;
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
 
@@ -744,6 +787,43 @@ class Event {
             }
         }
         return bson;
+    }
+
+    int opComp(const(Event) rhs) {
+        if ( eventbody.time == rhs.eventbody.time ) {
+            return 0;
+        }
+        else {
+            foreach(i;0..signature.length) {
+                if ( signature[i] != rhs.signature[i] ) {
+                    if ( signature[i] != rhs.signature[i] ) {
+                        return -1;
+                    }
+                    else {
+                        return 1;
+                    }
+                }
+            }
+            assert(0, "This is impossible same signature the eventbody must be the same");
+        }
+    }
+
+    private void check_if_round_was_received(const uint number_of_famous, Round received) {
+        if ( !_received_round ) {
+            _received_round_count++;
+            if (  _received_round_count==number_of_famous ) {
+                _received_round=received;
+                if ( callbacks ) {
+                    callbacks.received_round(this);
+                }
+            }
+        }
+    }
+
+    private void clear_received_count() {
+        if ( !_received_round ) {
+            _received_round_count=0;
+        }
     }
 
     bool isFront() pure const nothrow {
