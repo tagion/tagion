@@ -713,15 +713,19 @@ class Round {
         if ( _lowest ) {
             local_scrap(_lowest);
 
-            // @trusted
-            // void scrap_round(ref Round r)  {
-            //     if ( r ) {
-            //         scrap_round(r._previous);
-            //         r=null;
-            //     }
-            // }
-            // scrap_round(_lowest._previous);
-            // assert(_lowest._previous is null);
+            version(none) {
+            @trusted
+            void scrap_round(ref Round r)  {
+                if ( r ) {
+                    auto next=r._previous;
+                    r.destroy;
+                    scrap_round(next);
+                    r=null;
+                }
+            }
+            scrap_round(_lowest._previous);
+            assert(_lowest._previous is null);
+            }
             //_lowest._previous=null;
 
             // _lowest._previous=null;
@@ -1554,7 +1558,8 @@ class Event {
                     Event.callbacks.remove(_round);
                 }
                 _round.disconnect;
-//                _round.destroy;
+                _round.destroy;
+                _round=null;
             }
         }
     }
