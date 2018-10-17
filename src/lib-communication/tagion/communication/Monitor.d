@@ -68,6 +68,12 @@ class MonitorCallBacks : NetCallbacks {
         if ( e.father !is null ) {
             bson[Keywords.father]=e.father.id;
         }
+        // if ( e.son !is null ) {
+        //     bson[Keywords.son]=e.son.id;
+        // }
+        // if ( e.daughter !is null ) {
+        //     bson[Keywords.daughter]=e.daughter.id;
+        // }
         if ( e.payload !is null ) {
             bson[Keywords.payload]=e.payload;
         }
@@ -166,11 +172,22 @@ class MonitorCallBacks : NetCallbacks {
 
 
     void famous(const(Event) e) {
-//        writeln("Not implemented %s", __FUNCTION__);
         auto bson=createBSON(e);
         auto w=e.witness;
         bson[Keywords.famous]=w.famous;
         bson[Keywords.famous_votes]=w.famous_votes;
+        socket_send(bson.serialize);
+    }
+
+    void son(const(Event) e) {
+        auto bson=createBSON(e);
+        bson[Keywords.son]=e.son.id;
+        socket_send(bson.serialize);
+    }
+
+    void daughter(const(Event) e) {
+        auto bson=createBSON(e);
+        bson[Keywords.daughter]=e.daughter.id;
         socket_send(bson.serialize);
     }
 
