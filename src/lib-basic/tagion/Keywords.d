@@ -14,6 +14,8 @@ enum _keywords = [
     "message",
     "mother",
     "father",
+    "daughter",
+    "son",
     "payload",
     "channel",
     "witness",
