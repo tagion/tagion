@@ -115,10 +115,14 @@ class MonitorCallBacks : NetCallbacks {
     void round_seen(const(Event) e) {
         auto bson=createBSON(e);
         bson[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
-//        bson[Keywords.decided_mask]=bitarray2bool(e.witness.famous_decided_mask);
         socket_send(bson.serialize);
     }
 
+    void round_received(const(Event) e) {
+        auto bson=createBSON(e);
+        bson[Keywords.round_received]=e.round_received.number;
+        socket_send(bson.serialize);
+    }
 
     void round_decided(const(Round) r) {
         auto bson=new HBSON;
@@ -129,10 +133,11 @@ class MonitorCallBacks : NetCallbacks {
         //round[Keywords.total]=r.total_events;
         bson[Keywords.round]=round;
         socket_send(bson.serialize);
-
     }
 
-    void coin_round(const(Round) r) {
+
+
+void coin_round(const(Round) r) {
         auto bson=new HBSON;
         auto round=new HBSON;
         round[Keywords.number]=r.number;
