@@ -224,7 +224,8 @@ class Round {
     private static Round _rounds;
     // Last undecided round
     private static Round _undecided;
-
+    //
+    private BitArray _ground_mask;
     static void dump() {
         Event.fout.writefln("ROUND dump");
         for(Round r=_rounds; r !is null; r=r._previous) {
@@ -249,6 +250,7 @@ class Round {
         number=round_number;
         _events=new Event[node_size];
         bitarray_clear(_looked_at_mask, node_size);
+        bitarray_clear(_ground_mask, node_size);
     }
 
     static bool check_decided_round_limit() nothrow {
@@ -414,48 +416,92 @@ class Round {
         }
     }
 
+    @trusted
+    private bool ground(const uint node_id, ref const(BitArray) rhs) {
+        _ground_mask[node_id]=true;
+        return rhs == _ground_mask;
+    }
+
+    ref const(BitArray) ground_mask() pure const nothrow {
+        return _ground_mask;
+    }
+
+    // @trusted
+    // bool check_ground_mask(ref const(BitArray) rhs) {
+    //     return rhs == _ground_mask;
+    // }
+
     private void consensus_order() {
         scope Event[] famous_events=new Event[_events.length];
-        ulong find_middel_time(out uint famous_node_id) {
+        scope BitArray unique_famous_mask;
+        bitarray_clear(unique_famous_mask, node_size);
+        @trusted
+        ulong find_middel_time() {
+            uint famous_node_id;
             foreach(e; _events) {
                 if (e._witness.famous) {
                     famous_events[famous_node_id]=e;
+                    unique_famous_mask[famous_node_id]=true;
                     famous_node_id++;
                 }
             }
             famous_events.length=famous_node_id;
             // Sort the time stamps
             import std.algorithm : sort, SwapStrategy;
-            void dosort() @trusted {
-                sort!((a,b) => ( a<b ), SwapStrategy.stable)(famous_events);
-            }
-            dosort;
+            sort!((a,b) => ( a<b ), SwapStrategy.stable)(famous_events);
             // Find middel time
             immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
             return famous_events[middel_time_index].eventbody.time;
         }
-        uint famous_node_id;
-        immutable middel_time=find_middel_time(famous_node_id);
-        immutable number_of_famous=famous_node_id;
-        destroy(famous_node_id);
+        immutable middel_time=find_middel_time;
+        immutable number_of_famous=cast(uint)famous_events.length;
         //
-        // Clear received count
+        // Clear round received counters
         //
 
-        //
-        Event[] received_round_events;
-        void famous_seeing_count(Event e) {
-            if ( e && !e.visit && !e.grounded ) {
-                if ( e.check_if_round_was_received(famous_node_id) ) {
-                    received_round_events~=e;
+        foreach(event; famous_events) {
+            Event event_to_be_grounded;
+            bool trigger;
+            void clear_round_counters(Event e) {
+                if ( e && !e.grounded ) {
+                    if ( !trigger && e.round_received ) {
+                        trigger=true;
+                        event_to_be_grounded=e;
+                    }
+                    else if ( !e.round_received ) {
+                        trigger=false;
+                        event_to_be_grounded=null;
+                    }
+                    e.clear_round_received_count;
+                    clear_round_counters(e._mother);
                 }
-                famous_seeing_count(e._mother);
-                famous_seeing_count(e._father);
+            }
+            clear_round_counters(event._mother);
+            if ( event_to_be_grounded ) {
+                event_to_be_grounded._grounded=true;
+                if ( event_to_be_grounded.round.previous ) {
+                    if ( event_to_be_grounded.round.previous.ground(event_to_be_grounded.node_id, unique_famous_mask) ) {
+                        // scrap round!!!!
+                    }
+                }
             }
         }
-        foreach(e; famous_events) {
+        //
+        // Select the round received events
+        //
+        Event[] round_received_events;
+        foreach(event; famous_events) {
             Event.visit_marker++;
-            famous_seeing_count(e);
+            void famous_seeing_count(Event e) {
+                if ( e && !e.visit && !e.grounded ) {
+                    if ( e.check_if_round_was_received(number_of_famous) ) {
+                        round_received_events~=e;
+                    }
+                    famous_seeing_count(e._mother);
+                    famous_seeing_count(e._father);
+                }
+            }
+            famous_seeing_count(event);
         }
         //
 
@@ -830,7 +876,7 @@ class Event {
     }
 
 
-    private void clear_received_count() {
+    private void clear_round_received_count() {
         if ( !_round_received ) {
             _round_received_count=0;
         }
