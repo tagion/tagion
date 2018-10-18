@@ -149,11 +149,11 @@ struct EventBody {
                     include_member=m.length != 0;
                 }
                 if ( include_member ) {
-                    if ( use_event && name == basename!mother &&  use_event.mother ) {
-                        bson[name]=use_event.mother.id;
+                    if ( use_event && name == basename!mother &&  use_event._mother ) {
+                        bson[name]=use_event._mother.id;
                     }
-                    else if ( use_event && name == basename!father && use_event.father ) {
-                        bson[name]=use_event.father.id;
+                    else if ( use_event && name == basename!father && use_event._father ) {
+                        bson[name]=use_event._father.id;
                     }
                     else {
                         bson[name]=m;
@@ -453,12 +453,12 @@ class Round {
             immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
             return famous_events[middel_time_index].eventbody.time;
         }
+
         immutable middel_time=find_middel_time;
         immutable number_of_famous=cast(uint)famous_events.length;
         //
         // Clear round received counters
         //
-
         foreach(event; famous_events) {
             Event event_to_be_grounded;
             bool trigger;
@@ -479,8 +479,8 @@ class Round {
             clear_round_counters(event._mother);
             if ( event_to_be_grounded ) {
                 event_to_be_grounded._grounded=true;
-                if ( event_to_be_grounded.round.previous ) {
-                    if ( event_to_be_grounded.round.previous.ground(event_to_be_grounded.node_id, unique_famous_mask) ) {
+                if ( event_to_be_grounded._round._previous ) {
+                    if ( event_to_be_grounded._round._previous.ground(event_to_be_grounded.node_id, unique_famous_mask) ) {
                         // scrap round!!!!
                     }
                 }
@@ -494,7 +494,7 @@ class Round {
             Event.visit_marker++;
             void famous_seeing_count(Event e) {
                 if ( e && !e.visit && !e.grounded ) {
-                    if ( e.check_if_round_was_received(number_of_famous) ) {
+                    if ( e.check_if_round_was_received(number_of_famous, this) ) {
                         round_received_events~=e;
                     }
                     famous_seeing_count(e._mother);
@@ -504,9 +504,9 @@ class Round {
             famous_seeing_count(event);
         }
         //
+        version(none) {
 
-
-
+        }
     }
 
     private void decide()
@@ -533,6 +533,7 @@ class Round {
             }
             Event.callbacks.round_decided(this);
         }
+        consensus_order;
     }
 
     // Returns true of the round can be decided
@@ -842,30 +843,33 @@ class Event {
         return bson;
     }
 
-    int opComp(const(Event) rhs) {
-        if ( eventbody.time == rhs.eventbody.time ) {
+    int opCmp(const(Event) rhs) {
+        immutable diff=cast(long)(rhs.eventbody.time) - cast(long)(eventbody.time);
+        if ( diff == 0 ) {
             return 0;
         }
         else {
-            foreach(i;0..signature.length) {
-                if ( signature[i] != rhs.signature[i] ) {
-                    if ( signature[i] != rhs.signature[i] ) {
-                        return -1;
-                    }
-                    else {
-                        return 1;
-                    }
-                }
+            if ( diff < 0 ) {
+                return -1;
             }
-            assert(0, "This is impossible same signature the eventbody must be the same");
+            else if ( diff > 0 ) {
+                return 1;
+            }
+//            immutable result=signature < rhs.signature;
+            if ( signature < rhs.signature ) {
+                return -1;
+            }
+            else {
+                return 1;
+            }
         }
     }
 
-    private bool check_if_round_was_received(const uint number_of_famous) {
+    private bool check_if_round_was_received(const uint number_of_famous, Round received) {
         if ( !_round_received ) {
             _round_received_count++;
-            if (  _round_received_count==number_of_famous ) {
-                _round_received=_round;
+            if ( _round_received_count==number_of_famous ) {
+                _round_received=received;
                 if ( callbacks ) {
                     callbacks.round_received(this);
                 }
