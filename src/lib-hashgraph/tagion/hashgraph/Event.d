@@ -189,6 +189,7 @@ interface EventCallbacks {
     void round_seen(const(Event) e);
     void looked_at(const(Event) e);
     void round_decided(const(Round) r);
+    void round_received(const(Event) e);
     void coin_round(const(Round) r);
     void famous(const(Event) e);
     void round(const(Event) e);
@@ -415,8 +416,7 @@ class Round {
 
     private void consensus_order() {
         scope Event[] famous_events=new Event[_events.length];
-        ulong find_middel_time() {
-            uint famous_node_id;
+        ulong find_middel_time(out uint famous_node_id) {
             foreach(e; _events) {
                 if (e._witness.famous) {
                     famous_events[famous_node_id]=e;
@@ -431,23 +431,30 @@ class Round {
             }
             dosort;
             // Find middel time
-            immutable middel_time_index=(famous_event.length >> 2) + (famous_event.length & 1);
-            return famous_events[middel_time_index].time;
-        }1
-        immutable middel_time=find_middel_time;
+            immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
+            return famous_events[middel_time_index].eventbody.time;
+        }
+        uint famous_node_id;
+        immutable middel_time=find_middel_time(famous_node_id);
+        immutable number_of_famous=famous_node_id;
+        destroy(famous_node_id);
         //
-        Event[] received_rounds;
+        // Clear received count
+        //
+
+        //
+        Event[] received_round_events;
         void famous_seeing_count(Event e) {
             if ( e && !e.visit && !e.grounded ) {
                 if ( e.check_if_round_was_received(famous_node_id) ) {
-                    received_rounds~=e;
+                    received_round_events~=e;
                 }
                 famous_seeing_count(e._mother);
                 famous_seeing_count(e._father);
             }
         }
         foreach(e; famous_events) {
-            visit_marker++;
+            Event.visit_marker++;
             famous_seeing_count(e);
         }
         //
@@ -737,8 +744,8 @@ class Event {
     private bool _grounded;
 
     private Round  _round;
-    private Round  _received_round;
-    private uint _received_round_count;
+    private Round  _round_received;
+    private uint _round_received_count;
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
 
@@ -808,22 +815,29 @@ class Event {
         }
     }
 
-    private void check_if_round_was_received(const uint number_of_famous, Round received) {
-        if ( !_received_round ) {
-            _received_round_count++;
-            if (  _received_round_count==number_of_famous ) {
-                _received_round=received;
+    private bool check_if_round_was_received(const uint number_of_famous) {
+        if ( !_round_received ) {
+            _round_received_count++;
+            if (  _round_received_count==number_of_famous ) {
+                _round_received=_round;
                 if ( callbacks ) {
-                    callbacks.received_round(this);
+                    callbacks.round_received(this);
                 }
+                return true;
             }
+        }
+        return false;
+    }
+
+
+    private void clear_received_count() {
+        if ( !_round_received ) {
+            _round_received_count=0;
         }
     }
 
-    private void clear_received_count() {
-        if ( !_received_round ) {
-            _received_round_count=0;
-        }
+    const(Round) round_received() pure const nothrow {
+        return _round_received;
     }
 
     bool isFront() pure const nothrow {
@@ -865,14 +879,14 @@ class Event {
         }
     }
 
-    package void received_round(Round r)
-    in {
-        assert(r !is null, "Received round can not be null");
-        assert(_received_round is null, "Received round has already been set");
-    }
-    do {
-        _received_round=r;
-    }
+    // package void received_round(Round r)
+    // in {
+    //     assert(r !is null, "Received round can not be null");
+    //     assert(_round_received is null, "Received round has already been set");
+    // }
+    // do {
+    //     _round_received=r;
+    // }
 
     const(Round) round() pure const nothrow
     out(result) {
