@@ -198,7 +198,7 @@ interface EventCallbacks {
     void forked(const(Event) e);
     void remove(const(Event) e);
     void remove(const(Round) r);
-
+    void epoch(const(Event[]) received_event);
     void iterations(const(Event) e, const uint count);
 }
 
@@ -432,6 +432,8 @@ class Round {
     // }
 
     private void consensus_order() {
+        import std.algorithm : sort, SwapStrategy;
+        import std.functional;
         scope Event[] famous_events=new Event[_events.length];
         scope BitArray unique_famous_mask;
         bitarray_clear(unique_famous_mask, node_size);
@@ -447,8 +449,7 @@ class Round {
             }
             famous_events.length=famous_node_id;
             // Sort the time stamps
-            import std.algorithm : sort, SwapStrategy;
-            sort!((a,b) => ( a<b ), SwapStrategy.stable)(famous_events);
+            famous_events.sort!((a,b) => (Event.timeCmp(a,b) <0));
             // Find middel time
             immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
             return famous_events[middel_time_index].eventbody.time;
@@ -504,9 +505,14 @@ class Round {
             famous_seeing_count(event);
         }
         //
-        // XOR signatures
+        // Consensus sort
         //
+        sort!((a,b) => ( a<b ), SwapStrategy.stable)(round_received_events);
 
+
+        if ( Event.callbacks ) {
+            Event.callbacks.epoch(round_received_events);
+        }
         // auto xor_signatures=famous_events[0].signature.dup;
         // foreach(i; 1..famous_events.length) {
         //     immutable sign=famous_events[i].signature;
@@ -851,6 +857,24 @@ class Event {
             }
         }
         return bson;
+    }
+
+    static int timeCmp(const(Event) a, const(Event) b) {
+        immutable diff=cast(long)(b.eventbody.time) - cast(long)(a.eventbody.time);
+        if ( diff < 0 ) {
+            return -1;
+        }
+        else if ( diff > 0 ) {
+            return 1;
+        }
+
+        if ( a.signature < b.signature ) {
+            return -1;
+        }
+        else {
+            return 1;
+        }
+        assert(0, "This should be improbable to have two equal signatures");
     }
 
     int opCmp(const(Event) rhs) {
