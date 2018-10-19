@@ -504,9 +504,18 @@ class Round {
             famous_seeing_count(event);
         }
         //
-        version(none) {
+        // XOR signatures
+        //
+        // auto xor_signatures=famous_events[0].signature.dup;
+        // foreach(i; 1..famous_events.length) {
+        //     immutable sign=famous_events[i].signature;
+        //     foreach(j, ref x; xor_signatures)  {
+        //         x^=sign[j];
+        //     }
+        // }
+        // version(none) {
 
-        }
+        // }
     }
 
     private void decide()
