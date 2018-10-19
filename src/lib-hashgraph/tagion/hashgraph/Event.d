@@ -506,6 +506,7 @@ class Round {
         //
         // XOR signatures
         //
+
         // auto xor_signatures=famous_events[0].signature.dup;
         // foreach(i; 1..famous_events.length) {
         //     immutable sign=famous_events[i].signature;
@@ -798,7 +799,7 @@ class Event {
     private Event _daughter;
     private Event _son;
     private bool _grounded;
-
+    private int _received_order;
     private Round  _round;
     private Round  _round_received;
     private uint _round_received_count;
@@ -853,25 +854,21 @@ class Event {
     }
 
     int opCmp(const(Event) rhs) {
-        immutable diff=cast(long)(rhs.eventbody.time) - cast(long)(eventbody.time);
-        if ( diff == 0 ) {
-            return 0;
+        immutable diff=rhs._received_order - _received_order;
+        if ( diff < 0 ) {
+            return -1;
+        }
+        else if ( diff > 0 ) {
+            return 1;
+        }
+//            immutable result=signature < rhs.signature;
+        if ( signature < rhs.signature ) {
+            return -1;
         }
         else {
-            if ( diff < 0 ) {
-                return -1;
-            }
-            else if ( diff > 0 ) {
-                return 1;
-            }
-//            immutable result=signature < rhs.signature;
-            if ( signature < rhs.signature ) {
-                return -1;
-            }
-            else {
-                return 1;
-            }
+            return 1;
         }
+        assert(0, "This should be improbable to have two equal signatures");
     }
 
     private bool check_if_round_was_received(const uint number_of_famous, Round received) {
@@ -1172,6 +1169,7 @@ class Event {
             _witness = new Witness(this, null, strong_mask);
             _round = Round.seed_round(node_size);
             _round.add(this);
+            _received_order=-1;
         }
 
     }
@@ -1211,6 +1209,7 @@ class Event {
         return _grounded || (_mother is null);
     }
 
+
     Event mother(H)(H h, RequestNet request_net) {
         Event result;
         result=mother!true(h);
@@ -1219,6 +1218,24 @@ class Event {
             result=mother(h);
         }
         return result;
+    }
+
+    int received_order_max(const(Event) e, const bool increase=false) pure const nothrow {
+        int result=_received_order;
+        if ( e && ( ( _received_order - e._received_order ) < 0 ) ) {
+            result=e._received_order;
+        }
+        if ( increase ) {
+            result++;
+            if ( result < 0 ) {
+                result=0;
+            }
+        }
+        return result;
+    }
+
+    int received_order() pure const nothrow {
+        return _received_order;
     }
 
     private Event mother(bool ignore_null_check=false, H)(H h)
@@ -1232,6 +1249,9 @@ class Event {
     do {
         if ( _mother is null ) {
             _mother = h.lookup(mother_hash);
+            if ( _mother ) {
+                _received_order=_mother.received_order_max(_father, true);
+            }
         }
         return _mother;
     }
@@ -1260,6 +1280,9 @@ class Event {
     do {
         if ( _father is null ) {
             _father = h.lookup(father_hash);
+            if ( _father ) {
+                _received_order=_father.received_order_max(_mother, true);
+            }
         }
         return _father;
     }
