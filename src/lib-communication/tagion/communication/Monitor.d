@@ -250,6 +250,21 @@ class MonitorCallBacks : NetCallbacks {
     //     // writefln("Impl. needed. Event %d strong vote %d ", e.id, vote);
     // }
 
+    void epoch(const(Event[]) received_events) {
+        auto epoch=new HBSON;
+        auto bson=new HBSON;
+        //bson[Keywords.time]=middel_time;
+        auto list=new HBSON[received_events.length];
+        foreach(i, e; received_events) {
+            auto bson_e=new HBSON;
+            bson_e[basename!(e.id)]=e.id;
+            list[i]=bson_e;
+        }
+        bson[Keywords.list]=list;
+        epoch[Keywords.epoch]=bson;
+        socket_send(epoch.serialize);
+    }
+
     void consensus_failure(const(ConsensusException) e) {
         // writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
     }
