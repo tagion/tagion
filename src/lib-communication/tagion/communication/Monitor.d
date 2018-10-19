@@ -61,22 +61,19 @@ class MonitorCallBacks : NetCallbacks {
         immutable _witness=e.witness !is null;
 
         auto bson=createBSON(e);
-//        bson[basename!(e.altitude)]=e.altitude;
+        bson[basename!(Keywords.altitude)]=e.altitude;
+        bson[basename!(Keywords.received_order)]=e.received_order;
         if ( e.mother !is null ) {
             bson[Keywords.mother]=e.mother.id;
         }
         if ( e.father !is null ) {
             bson[Keywords.father]=e.father.id;
         }
-        // if ( e.son !is null ) {
-        //     bson[Keywords.son]=e.son.id;
-        // }
-        // if ( e.daughter !is null ) {
-        //     bson[Keywords.daughter]=e.daughter.id;
-        // }
         if ( e.payload !is null ) {
             bson[Keywords.payload]=e.payload;
         }
+
+
         /*
         bson[basename!(e.signature)]=e.signature;
         bson[Keywords.channel]=e.channel;
@@ -137,7 +134,7 @@ class MonitorCallBacks : NetCallbacks {
 
 
 
-void coin_round(const(Round) r) {
+    void coin_round(const(Round) r) {
         auto bson=new HBSON;
         auto round=new HBSON;
         round[Keywords.number]=r.number;
