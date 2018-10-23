@@ -37,11 +37,6 @@ public alias HBSON=BSON!(true,true);
 
 //import std.stdio;
 //private import proton.core.Misc;
-//import tango.text.convert.Format;
-//private import tango.core.Traits : isStringType;
-//static import tango.text.convert.Integer;
-
-import tango.io.Stdout;
 
 static assert(uint.sizeof == 4);
 
