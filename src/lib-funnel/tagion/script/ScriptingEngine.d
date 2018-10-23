@@ -6,6 +6,7 @@ import tagion.Base : Control;
 import core.thread;
 import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown, AddressFamily;
 import tagion.network.SslSocket;
+import std.algorithm : remove;
 
 ScriptingEngineContext startScriptingEngine () {
     auto s_e_c = ScriptingEngineContext();
@@ -56,6 +57,7 @@ public:
         client.connect(new InternetAddress(addr, port));
     }
 
+    //TODO: Does not shutdown correctly.
     void stop () {
         writeln("Stops scripting engine API");
         run_scripting_engine = false;
@@ -65,11 +67,9 @@ public:
     void run () {
 
         scope ( exit ) {
-            writefln( "Shutdown of listener socket. Is there an listener: %s and active: %s", _listener !is null, (_listener !is null &&_listener.isAlive));
+            writeln( "Closing listener socket." );
             _listener.shutdown(SocketShutdown.BOTH);
-            _listener.disconnect();
             Thread.sleep( dur!("seconds") (2));
-            writefln( "Destroy of listener socket. Is there an listener: %s and active: %s", _listener !is null, (_listener !is null &&_listener.isAlive));
             _listener.destroy();
             Thread.sleep( dur!("seconds") (2));
         }
@@ -83,16 +83,10 @@ public:
         writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
 
         auto socketSet = new SocketSet(_max_connections + 1);
-        OpenSslSocket[] reads;
-
-        void resetReads() {
-            foreach ( sock; reads ) {
-                sock.disconnect();
-            }
-            reads = null;
-        }
+        Socket[] reads;
 
         while ( run_scripting_engine ) {
+
             socketSet.add( _listener );
 
             foreach ( sock; reads ) {
@@ -129,18 +123,18 @@ public:
                         }
                     }
 
-                    reads[i].disconnect();
+                    reads[i].close();
 
-                    reads = reads[0..i]~reads[i+1..reads.length];
+                    reads = reads.remove(i);
                     i--;
 
                     writefln("\tTotal connections: %d", reads.length);
                 }
 
                 else if ( !reads[i].isAlive ) {
-                    reads[i].disconnect();
+                    reads[i].close();
 
-                    reads = reads[0..i]~reads[i+1..reads.length];
+                    reads = reads.remove(i);
                     i--;
 
                     writefln("\tTotal connections: %d", reads.length);
@@ -149,22 +143,22 @@ public:
 
             if (socketSet.isSet(_listener)) {     // connection request
                 try {
-                    OpenSslSocket req = null;
-                    req = cast(OpenSslSocket)_listener.accept();
-                    assert( req.isAlive );
+                    Socket sn = null;
+                    sn = _listener.accept();
+                    assert( sn.isAlive );
                     assert( _listener.isAlive );
 
                     if ( reads.length < _max_connections )
                     {
-                        writefln( "Connection from %s established.", req.remoteAddress().toString() );
-                        reads ~= req;
+                        writefln( "Connection from %s established.", sn.remoteAddress().toString() );
+                        reads ~= sn;
                         writefln( "\tTotal connections: %d", reads.length );
                     }
                     else
                     {
-                        writefln( "Rejected connection from %s; too many connections.", req.remoteAddress().toString() );
-                        req.disconnect();
-                        assert( !req.isAlive );
+                        writefln( "Rejected connection from %s; too many connections.", sn.remoteAddress().toString() );
+                        sn.close();
+                        assert( !sn.isAlive );
                         assert( _listener.isAlive );
                     }
                 } catch(SocketException ex) {
@@ -176,9 +170,6 @@ public:
             socketSet.reset();
 
         }
-
-        resetReads();
-
     }
 }
 
