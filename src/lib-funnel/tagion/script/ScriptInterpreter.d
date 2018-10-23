@@ -164,7 +164,10 @@ class ScriptInterpreter {
      */
     @safe
     static immutable(Token)[] Tokens2Tokens(const(Token)[] tokens) {
-        import std.uni : toLower;
+        string lowercase(const(char)[] str) @trusted  {
+            import tango.text.Unicode;
+            return toLower(str).idup;
+        }
         immutable(Token)[] results;
         ScriptType declare;
         bool func;
@@ -174,7 +177,7 @@ class ScriptInterpreter {
             with (ScriptType) {
                 ScriptType _type=UNKNOWN;
 //                writefln("Range %s func=%s declare=%s", _token, func, declare);
-                switch (toLower(word.token)) {
+                switch (lowercase(word.token)) {
                 case ":":
                     func=true;
                     continue;
