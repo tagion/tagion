@@ -6,9 +6,7 @@ import tagion.Base : Control;
 import core.thread;
 import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown, AddressFamily;
 import tagion.network.SslSocket;
-
-alias SSocket = OpenSslSocket;
-
+import std.algorithm : remove;
 
 ScriptingEngineContext startScriptingEngine () {
     auto s_e_c = ScriptingEngineContext();
@@ -30,124 +28,14 @@ struct ScriptingEngineContext {
 
 struct ScriptingEngine {
 
-    synchronized
-    class SharedClients {
-        private shared (SSocket[uint])* local_clients;
-        private shared(uint) client_counter;
-
-
-        this(ref SSocket[uint] _clients)
-        in {
-            assert(local_clients is null);
-            assert(_clients !is null);
-        }
-        out {
-            assert(local_clients !is null);
-            client_counter=cast(uint)_clients.length;
-        }
-        do {
-            local_clients = cast(typeof(local_clients))&_clients;
-        }
-
-        bool active() const pure {
-            return (local_clients !is null);
-        }
-
-        uint length() pure const {
-            return client_counter;
-        }
-
-        void add(ref SSocket client)
-        in {
-            assert(local_clients !is null);
-            assert(client !is null);
-        }
-        out {
-            assert(client_counter == local_clients.length);
-        }
-        body {
-            auto clients = cast(SSocket[uint]) *local_clients;
-            clients[client_counter] = client;
-            client_counter = client_counter +1;
-        }
-
-        void removeClient(uint index)
-        in {
-            assert(local_clients !is null);
-            assert(index <= this.length);
-        }
-        out{
-            if ( index < this.length + 1 ) {
-                assert(local_clients[index] !is null);
-            }
-            else if ( index == this.length + 1) {
-                assert(local_clients[index] is null);
-            }
-        }
-        body{
-            auto clients = cast(SSocket[uint]) *local_clients;
-            clients.remove(index);
-            client_counter = client_counter -1;
-        }
-
-
-
-        void close() {
-            if ( active ) {
-                auto clients = cast(SSocket[uint])*local_clients;
-                foreach ( key, client; clients ) {
-                    client.disconnect;
-                }
-                local_clients = null;
-                client_counter = 0;
-            }
-        }
-    }
-
-
 private:
-    SSocket[uint] clients;
-    shared(SharedClients) shared_clients;
+
     immutable char[] _listener_ip_address;
     immutable ushort _listener_port;
     immutable uint _max_connections;
     immutable uint _listener_max_queue_length;
     OpenSslSocket _listener;
     enum _buffer_size = 1024;
-
-    uint numberOfClients() pure const{
-        uint res;
-        if ( shared_clients !is null ) {
-            res = shared_clients.length;
-        }
-         return res;
-    }
-
-    bool active() pure const {
-        return (shared_clients !is null) && shared_clients.active;
-    }
-
-    void addClient(ref SSocket client) {
-        if ( shared_clients is null ) {
-            clients[0] = client;
-            shared_clients = new shared(SharedClients)(clients);
-        }
-        else {
-            shared_clients.add(client);
-        }
-    }
-
-    void removeClient(uint index) {
-        if ( shared_clients !is null ) {
-            shared_clients.removeClient(index);
-        }
-    }
-
-    void close() {
-        if ( active ) {
-            shared_clients.close;
-        }
-    }
 
 public:
 
@@ -169,6 +57,7 @@ public:
         client.connect(new InternetAddress(addr, port));
     }
 
+    //TODO: Does not shutdown correctly.
     void stop () {
         writeln("Stops scripting engine API");
         run_scripting_engine = false;
@@ -178,11 +67,9 @@ public:
     void run () {
 
         scope ( exit ) {
-            writefln( "Shutdown of listener socket. Is there an listener: %s and active: %s", _listener !is null, (_listener !is null &&_listener.isAlive));
+            writeln( "Closing listener socket." );
             _listener.shutdown(SocketShutdown.BOTH);
-            _listener.disconnect();
             Thread.sleep( dur!("seconds") (2));
-            writefln( "Destroy of listener socket. Is there an listener: %s and active: %s", _listener !is null, (_listener !is null &&_listener.isAlive));
             _listener.destroy();
             Thread.sleep( dur!("seconds") (2));
         }
@@ -196,16 +83,10 @@ public:
         writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
 
         auto socketSet = new SocketSet(_max_connections + 1);
-        OpenSslSocket[] reads;
-
-        void resetReads() {
-            foreach ( sock; reads ) {
-                sock.disconnect();
-            }
-            reads = null;
-        }
+        Socket[] reads;
 
         while ( run_scripting_engine ) {
+
             socketSet.add( _listener );
 
             foreach ( sock; reads ) {
@@ -242,18 +123,18 @@ public:
                         }
                     }
 
-                    reads[i].disconnect();
+                    reads[i].close();
 
-                    reads = reads[0..i]~reads[i+1..reads.length];
+                    reads = reads.remove(i);
                     i--;
 
                     writefln("\tTotal connections: %d", reads.length);
                 }
 
                 else if ( !reads[i].isAlive ) {
-                    reads[i].disconnect();
+                    reads[i].close();
 
-                    reads = reads[0..i]~reads[i+1..reads.length];
+                    reads = reads.remove(i);
                     i--;
 
                     writefln("\tTotal connections: %d", reads.length);
@@ -262,22 +143,22 @@ public:
 
             if (socketSet.isSet(_listener)) {     // connection request
                 try {
-                    OpenSslSocket req = null;
-                    req = cast(OpenSslSocket)_listener.accept();
-                    assert( req.isAlive );
+                    Socket sn = null;
+                    sn = _listener.accept();
+                    assert( sn.isAlive );
                     assert( _listener.isAlive );
 
                     if ( reads.length < _max_connections )
                     {
-                        writefln( "Connection from %s established.", req.remoteAddress().toString() );
-                        reads ~= req;
+                        writefln( "Connection from %s established.", sn.remoteAddress().toString() );
+                        reads ~= sn;
                         writefln( "\tTotal connections: %d", reads.length );
                     }
                     else
                     {
-                        writefln( "Rejected connection from %s; too many connections.", req.remoteAddress().toString() );
-                        req.disconnect();
-                        assert( !req.isAlive );
+                        writefln( "Rejected connection from %s; too many connections.", sn.remoteAddress().toString() );
+                        sn.close();
+                        assert( !sn.isAlive );
                         assert( _listener.isAlive );
                     }
                 } catch(SocketException ex) {
@@ -289,38 +170,6 @@ public:
             socketSet.reset();
 
         }
-
-        resetReads();
-
     }
 }
 
-//TO-DO: Enable unittest
-// unittest {
-//     auto s_e = ScriptingEngine();
-//     auto client1 = new SSocket(AddressFamily.INET, EndpointType.Server);
-//     auto client2 = new SSocket(AddressFamily.INET, EndpointType.Server);
-//     auto client3 = new SSocket(AddressFamily.INET, EndpointType.Server);
-//     assert(s_e.clients is null && s_e.shared_clients is null);
-//     assert(s_e.shared_clients.length is 0);
-//     assert(!s_e.active);
-
-//     s_e.addClient(client1);
-//     assert(s_e.shared_clients.length == 1);
-//     assert(s_e.numberOfClients == 1);
-//     assert(s_e.active);
-
-//     s_e.addClient(client2);
-//     assert(s_e.clients.length == 1);
-//     assert(s_e.numberOfClients == 3);
-
-//     s_e.addClient(client3);
-//     s_e.removeClient(1);
-//     assert(s_e.numberOfClients == 2);
-//     s_e.removeClient(1);
-//     assert(s_e.numberOfClients == 1);
-
-//     s_e.close;
-//     assert(!s_e.active);
-//     assert(s_e.numberOfClients == 0);
-// }
