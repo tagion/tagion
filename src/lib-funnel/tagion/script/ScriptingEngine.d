@@ -6,7 +6,9 @@ import tagion.Base : Control;
 import core.thread;
 import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown, AddressFamily;
 import tagion.network.SslSocket;
-import std.algorithm : remove;
+
+alias SSocket = OpenSslSocket;
+
 
 ScriptingEngineContext startScriptingEngine () {
     auto s_e_c = ScriptingEngineContext();
@@ -28,14 +30,137 @@ struct ScriptingEngineContext {
 
 struct ScriptingEngine {
 
-private:
+    synchronized
+    class SharedClients {
+        private shared (SSocket[uint])* local_clients;
+        private shared(uint) client_counter;
 
+
+        this(ref SSocket[uint] _clients)
+        in {
+            assert(local_clients is null);
+            assert(_clients !is null);
+        }
+        out {
+            assert(local_clients !is null);
+            client_counter=cast(uint)_clients.length;
+        }
+        do {
+            local_clients = cast(typeof(local_clients))&_clients;
+        }
+
+        bool active() const pure {
+            return (local_clients !is null);
+        }
+
+        uint length() pure const {
+            auto clients = cast(SSocket[uint]) *local_clients;
+            return cast(uint)clients.length;
+        }
+
+        void add(ref SSocket client)
+        in {
+            assert(local_clients !is null);
+            assert(client !is null);
+            assert(client_counter <= client_counter.max);
+        }
+        out {
+            assert(client_counter == local_clients.length);
+        }
+        body {
+            auto clients = cast(SSocket[uint]) *local_clients;
+            clients[client_counter] = client;
+            client_counter = client_counter +1;
+        }
+
+        void removeClient(uint index)
+        in {
+            assert(local_clients !is null);
+            assert(index in *local_clients);
+        }
+        out{
+            assert(index !in *local_clients);
+        }
+        body{
+            auto clients = cast(SSocket[uint]) *local_clients;
+            clients.remove(index);
+        }
+
+
+        void closeAll() {
+            if ( active ) {
+                auto clients = cast(SSocket[uint]) *local_clients;
+                foreach ( key, client; clients ) {
+                    client.disconnect;
+                }
+                local_clients = null;
+                client_counter = 0;
+            }
+        }
+
+        void addClientsToSocketSet(ref SocketSet socket_set)
+        in {
+            assert(socket_set !is null);
+            assert(active);
+        }
+        body {
+            auto clients = cast(SSocket[uint]) *local_clients;
+            foreach(client; clients) {
+                socket_set.add(client);
+            }
+        }
+    }
+
+
+private:
+    SSocket[uint] clients;
+    shared(SharedClients) shared_clients;
     immutable char[] _listener_ip_address;
     immutable ushort _listener_port;
     immutable uint _max_connections;
     immutable uint _listener_max_queue_length;
     OpenSslSocket _listener;
     enum _buffer_size = 1024;
+
+    uint numberOfClients() pure const{
+        uint res;
+        if ( shared_clients !is null ) {
+            res = shared_clients.length;
+        }
+         return res;
+    }
+
+    bool active() pure const {
+        return (shared_clients !is null) && shared_clients.active;
+    }
+
+    void addClient(ref SSocket client) {
+        if ( shared_clients is null ) {
+            clients[0] = client;
+            shared_clients = new shared(SharedClients)(clients);
+        }
+        else {
+            shared_clients.add(client);
+        }
+    }
+
+    void removeClient(uint index) {
+        if ( shared_clients !is null ) {
+            shared_clients.removeClient(index);
+        }
+    }
+
+    void closeAll() {
+        if ( active ) {
+            shared_clients.closeAll;
+        }
+    }
+
+    void addClientsToSocketSet(ref SocketSet socket_set) {
+        if ( socket_set !is null && active ) {
+            shared_clients.addClientsToSocketSet(socket_set);
+        }
+    }
 
 public:
 
@@ -53,11 +178,10 @@ public:
     bool run_scripting_engine = true;
 
     void sPing(const char[] addr, ushort port) {
-        auto client = new OpenSslSocket(AddressFamily.INET, EndpointType.Client);
+        auto client = new SSocket(AddressFamily.INET, EndpointType.Client);
         client.connect(new InternetAddress(addr, port));
     }
 
-    //TODO: Does not shutdown correctly.
     void stop () {
         writeln("Stops scripting engine API");
         run_scripting_engine = false;
@@ -67,14 +191,16 @@ public:
     void run () {
 
         scope ( exit ) {
-            writeln( "Closing listener socket." );
+            writefln( "Shutdown of listener socket. Is there an listener: %s and active: %s", _listener !is null, (_listener !is null &&_listener.isAlive));
             _listener.shutdown(SocketShutdown.BOTH);
+            _listener.disconnect();
             Thread.sleep( dur!("seconds") (2));
+            writefln( "Destroy of listener socket. Is there an listener: %s and active: %s", _listener !is null, (_listener !is null &&_listener.isAlive));
             _listener.destroy();
             Thread.sleep( dur!("seconds") (2));
         }
 
-        _listener = new OpenSslSocket(AddressFamily.INET, EndpointType.Server);
+        _listener = new SSocket(AddressFamily.INET, EndpointType.Server);
         assert(_listener.isAlive);
         _listener.configureContext("pem_files/domain.pem", "pem_files/domain.key.pem");
         _listener.blocking = false;
@@ -83,15 +209,11 @@ public:
         writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
 
         auto socketSet = new SocketSet(_max_connections + 1);
-        Socket[] reads;
 
         while ( run_scripting_engine ) {
-
             socketSet.add( _listener );
 
-            foreach ( sock; reads ) {
-                socketSet.add ( sock );
-            }
+            this.addClientsToSocketSet(socketSet);
 
             Socket.select( socketSet, null, null);
 
@@ -123,18 +245,18 @@ public:
                         }
                     }
 
-                    reads[i].close();
+                    reads[i].disconnect();
 
-                    reads = reads.remove(i);
+                    reads = reads[0..i]~reads[i+1..reads.length];
                     i--;
 
                     writefln("\tTotal connections: %d", reads.length);
                 }
 
                 else if ( !reads[i].isAlive ) {
-                    reads[i].close();
+                    reads[i].disconnect();
 
-                    reads = reads.remove(i);
+                    reads = reads[0..i]~reads[i+1..reads.length];
                     i--;
 
                     writefln("\tTotal connections: %d", reads.length);
@@ -143,22 +265,22 @@ public:
 
             if (socketSet.isSet(_listener)) {     // connection request
                 try {
-                    Socket sn = null;
-                    sn = _listener.accept();
-                    assert( sn.isAlive );
+                    OpenSslSocket req = null;
+                    req = cast(OpenSslSocket)_listener.accept();
+                    assert( req.isAlive );
                     assert( _listener.isAlive );
 
                     if ( reads.length < _max_connections )
                     {
-                        writefln( "Connection from %s established.", sn.remoteAddress().toString() );
-                        reads ~= sn;
+                        writefln( "Connection from %s established.", req.remoteAddress().toString() );
+                        reads ~= req;
                         writefln( "\tTotal connections: %d", reads.length );
                     }
                     else
                     {
-                        writefln( "Rejected connection from %s; too many connections.", sn.remoteAddress().toString() );
-                        sn.close();
-                        assert( !sn.isAlive );
+                        writefln( "Rejected connection from %s; too many connections.", req.remoteAddress().toString() );
+                        req.disconnect();
+                        assert( !req.isAlive );
                         assert( _listener.isAlive );
                     }
                 } catch(SocketException ex) {
@@ -170,6 +292,8 @@ public:
             socketSet.reset();
 
         }
+
+        this.closeAll;
+
     }
 }
-
