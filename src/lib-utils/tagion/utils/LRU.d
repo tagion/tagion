@@ -3,7 +3,6 @@ module tagion.utils.LRU;
 
 // EvictCallback is used to get a callback when a cache entry is evicted
 
-//import tango.util.container.LinkedList;
 //import std.stdio;
 import tagion.utils.DList;
 import std.conv;
