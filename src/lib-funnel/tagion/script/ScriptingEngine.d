@@ -64,9 +64,6 @@ struct ScriptingEngine {
             assert(client !is null);
             assert(client_counter <= client_counter.max);
         }
-        out {
-            assert(client_counter == locate_clients.length);
-        }
         body {
             auto clients = cast(SSocket[uint]) *locate_clients;
             clients[client_counter] = client;
@@ -107,6 +104,52 @@ struct ScriptingEngine {
             auto clients = cast(SSocket[uint]) *locate_clients;
             foreach(client; clients) {
                 socket_set.add(client);
+            }
+        }
+
+        void readDataAllClients(ref SocketSet socket_set) {
+            auto clients = cast(SSocket[uint]) *locate_clients;
+            foreach ( key, client; clients ) {
+                if( socket_set.isSet(client) )  {
+                    char[1024] buffer;
+                    auto data_length = client.receive( buffer[] );
+
+                    if ( data_length == Socket.ERROR ) {
+                        writeln( "Connection error" );
+                    }
+
+                    else if ( data_length != 0) {
+                        writefln ( "Received %d bytes from %s: \"%s\"", data_length, client.remoteAddress.toString, buffer[0..data_length] );
+                        client.send(buffer[0..data_length] );
+
+                        //Check dataformat
+                        //Call scripting engine
+                        //Send response back
+                    }
+
+                    else {
+                        try {
+                            writefln("Connection from %s closed.", client.remoteAddress().toString());
+                        }
+                        catch ( SocketException ) {
+                            writeln("Connection closed.");
+                        }
+                    }
+
+                    client.disconnect();
+
+                    this.removeClient(key);
+
+                    writefln("\tTotal connections: %d", this.length);
+                }
+
+                else if ( !client.isAlive ) {
+                    client.disconnect();
+
+                    this.removeClient(key);
+
+                    writefln("\tTotal connections: %d", this.length);
+                }
             }
         }
     }
@@ -162,6 +205,12 @@ private:
         }
     }
 
+    void readDataAllClients(ref SocketSet socket_set) {
+        if ( active ) {
+            shared_clients.readDataAllClients(socket_set);
+        }
+    }
+
 public:
 
     this (Options.ScriptingEngine se_options) {
@@ -208,92 +257,35 @@ public:
         _listener.listen( _listener_max_queue_length );
         writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
 
-        auto socketSet = new SocketSet(_max_connections + 1);
-        SSocket[] reads;
-
-        void addToSocketSet(SSocket[] clients) {
-            foreach(client; clients) {
-                socketSet.add(client);
-            }
-        }
-
-        void resetReads() {
-            foreach(client; reads) {
-                client.disconnect;
-            }
-        }
+        auto socket_set = new SocketSet(_max_connections + 1);
 
         while ( run_scripting_engine ) {
-            socketSet.add( _listener );
+            socket_set.add( _listener );
 
-            addToSocketSet(reads);
+            this.addClientsToSocketSet(socket_set);
 
-            Socket.select( socketSet, null, null);
+            Socket.select( socket_set, null, null);
 
-            for ( size_t i = 0; i < reads.length; i++ ) {
+            this.readDataAllClients(socket_set);
 
-                if( socketSet.isSet(reads[i]) )  {
-                    char[1024] buffer;
-                    auto data_length = reads[i].receive( buffer[] );
-
-                    if ( data_length == Socket.ERROR ) {
-                        writeln( "Connection error" );
-                    }
-
-                    else if ( data_length != 0) {
-                        writefln ( "Received %d bytes from %s: \"%s\"", data_length, reads[i].remoteAddress.toString, buffer[0..data_length] );
-                        reads[i].send(buffer[0..data_length] );
-
-                        //Check dataformat
-                        //Call scripting engine
-                        //Send response back
-                    }
-
-                    else {
-                        try {
-                            writefln("Connection from %s closed.", reads[i].remoteAddress().toString());
-                        }
-                        catch ( SocketException ) {
-                            writeln("Connection closed.");
-                        }
-                    }
-
-                    reads[i].disconnect();
-
-                    reads = reads[0..i]~reads[i+1..reads.length];
-                    i--;
-
-                    writefln("\tTotal connections: %d", reads.length);
-                }
-
-                else if ( !reads[i].isAlive ) {
-                    reads[i].disconnect();
-
-                    reads = reads[0..i]~reads[i+1..reads.length];
-                    i--;
-
-                    writefln("\tTotal connections: %d", reads.length);
-                }
-            }
-
-            if (socketSet.isSet(_listener)) {     // connection request
+            if (socket_set.isSet(_listener)) {     // connection request
                 try {
-                    OpenSslSocket req = null;
-                    req = cast(OpenSslSocket)_listener.accept();
-                    assert( req.isAlive );
+                    OpenSslSocket client = null;
+                    client = cast(OpenSslSocket)_listener.accept();
+                    assert( client.isAlive );
                     assert( _listener.isAlive );
 
-                    if ( reads.length < _max_connections )
+                    if ( this.numberOfClients < _max_connections )
                     {
-                        writefln( "Connection from %s established.", req.remoteAddress().toString() );
-                        reads ~= req;
-                        writefln( "\tTotal connections: %d", reads.length );
+                        writefln( "Connection from %s established.", client.remoteAddress().toString() );
+                        this.addClient(client);
+                        writefln( "\tTotal connections: %d", this.numberOfClients );
                     }
                     else
                     {
-                        writefln( "Rejected connection from %s; too many connections.", req.remoteAddress().toString() );
-                        req.disconnect();
-                        assert( !req.isAlive );
+                        writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
+                        client.disconnect();
+                        assert( !client.isAlive );
                         assert( _listener.isAlive );
                     }
                 } catch(SocketException ex) {
@@ -302,11 +294,11 @@ public:
 
             }
 
-            socketSet.reset();
+            socket_set.reset();
 
         }
 
-        resetReads;
+        this.closeAll;
 
     }
 }
