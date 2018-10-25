@@ -32,68 +32,68 @@ struct ScriptingEngine {
 
     synchronized
     class SharedClients {
-        private shared (SSocket[uint])* local_clients;
+        private shared (SSocket[uint])* locate_clients;
         private shared(uint) client_counter;
 
 
         this(ref SSocket[uint] _clients)
         in {
-            assert(local_clients is null);
+            assert(locate_clients is null);
             assert(_clients !is null);
         }
         out {
-            assert(local_clients !is null);
+            assert(locate_clients !is null);
             client_counter=cast(uint)_clients.length;
         }
         do {
-            local_clients = cast(typeof(local_clients))&_clients;
+            locate_clients = cast(typeof(locate_clients))&_clients;
         }
 
         bool active() const pure {
-            return (local_clients !is null);
+            return (locate_clients !is null);
         }
 
         uint length() pure const {
-            auto clients = cast(SSocket[uint]) *local_clients;
+            auto clients = cast(SSocket[uint]) *locate_clients;
             return cast(uint)clients.length;
         }
 
         void add(ref SSocket client)
         in {
-            assert(local_clients !is null);
+            assert(locate_clients !is null);
             assert(client !is null);
             assert(client_counter <= client_counter.max);
         }
         out {
-            assert(client_counter == local_clients.length);
+            assert(client_counter == locate_clients.length);
         }
         body {
-            auto clients = cast(SSocket[uint]) *local_clients;
+            auto clients = cast(SSocket[uint]) *locate_clients;
             clients[client_counter] = client;
             client_counter = client_counter +1;
         }
 
-        void removeClient(uint index)
+        void removeClient(uint key)
         in {
-            assert(local_clients !is null);
-            assert(index in *local_clients);
+            assert(locate_clients !is null);
+            assert(key in *locate_clients);
         }
         out{
-            assert(index !in *local_clients);
+            assert(key !in *locate_clients);
         }
         body{
-            auto clients = cast(SSocket[uint]) *local_clients;
-            clients.remove(index);
+            auto clients = cast(SSocket[uint]) *locate_clients;
+            clients.remove(key);
         }
 
 
         void closeAll() {
             if ( active ) {
-                auto clients = cast(SSocket[uint]) *local_clients;
+                auto clients = cast(SSocket[uint]) *locate_clients;
                 foreach ( key, client; clients ) {
                     client.disconnect;
                 }
-                local_clients = null;
+                locate_clients = null;
                 client_counter = 0;
             }
         }
@@ -104,7 +104,7 @@ struct ScriptingEngine {
             assert(active);
         }
         body {
-            auto clients = cast(SSocket[uint]) *local_clients;
+            auto clients = cast(SSocket[uint]) *locate_clients;
             foreach(client; clients) {
                 socket_set.add(client);
             }
@@ -144,9 +144,9 @@ private:
         }
     }
 
-    void removeClient(uint index) {
+    void removeClient(uint key) {
         if ( shared_clients !is null ) {
-            shared_clients.removeClient(index);
+            shared_clients.removeClient(key);
         }
     }
 
@@ -209,11 +209,24 @@ public:
         writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
 
         auto socketSet = new SocketSet(_max_connections + 1);
+        SSocket[] reads;
+
+        void addToSocketSet(SSocket[] clients) {
+            foreach(client; clients) {
+                socketSet.add(client);
+            }
+        }
+
+        void resetReads() {
+            foreach(client; reads) {
+                client.disconnect;
+            }
+        }
 
         while ( run_scripting_engine ) {
             socketSet.add( _listener );
 
-            this.addClientsToSocketSet(socketSet);
+            addToSocketSet(reads);
 
             Socket.select( socketSet, null, null);
 
@@ -293,7 +306,7 @@ public:
 
         }
 
-        this.closeAll;
+        resetReads;
 
     }
 }
