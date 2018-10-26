@@ -195,9 +195,8 @@ version(use_openssl) {
         }
 
         @trusted
-        override Socket accept() {
+        Socket acceptSsl() {
             Socket client = super.accept();
-            //client.blocking = false;
             writeln("client is blocking:", client.blocking);
 
             auto ssl_client = new OpenSslSocket(client.handle, EndpointType.Server, AddressFamily.INET);
