@@ -180,7 +180,7 @@ class HashGraphException : Exception {
 }
 
 @safe
-interface EventCallbacks {
+interface EventMonitorCallbacks {
     void create(const(Event) e);
     void witness(const(Event) e);
     void witness_mask(const(Event) e);
@@ -201,6 +201,12 @@ interface EventCallbacks {
     void epoch(const(Event[]) received_event);
     void iterations(const(Event) e, const uint count);
 }
+
+@safe
+interface EventScriptCallbacks {
+    void epoch(const(Event[]) received_event);
+}
+
 
 @safe
 class Round {
@@ -510,20 +516,14 @@ class Round {
         sort!((a,b) => ( a<b ), SwapStrategy.stable)(round_received_events);
 
 
+        if ( Event.scriptsbacks ) {
+            Event.scriptsbacks.epoch(round_received_events);
+        }
+
         if ( Event.callbacks ) {
             Event.callbacks.epoch(round_received_events);
         }
-        // auto xor_signatures=famous_events[0].signature.dup;
-        // foreach(i; 1..famous_events.length) {
-        //     immutable sign=famous_events[i].signature;
-        //     foreach(j, ref x; xor_signatures)  {
-        //         x^=sign[j];
-        //     }
-        // }
-        // version(none) {
-
-        // }
-    }
+   }
 
     private void decide()
         in {
@@ -777,7 +777,8 @@ class Event {
 
     alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
-    static EventCallbacks callbacks;
+    static EventMonitorCallbacks callbacks;
+    static EventScriptCallbacks scriptsbacks;
     import std.stdio;
     static File* fout;
     immutable(ubyte[]) signature;
