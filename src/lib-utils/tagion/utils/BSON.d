@@ -37,12 +37,17 @@ public alias HBSON=BSON!(true,true);
 
 //import std.stdio;
 //private import proton.core.Misc;
+//import tango.text.convert.Format;
+//private import tango.core.Traits : isStringType;
+//static import tango.text.convert.Integer;
+
+import tango.io.Stdout;
 
 static assert(uint.sizeof == 4);
 
 
 enum Type : byte {
-    MIN             = -1,        /// Special type which compares lower than all other possible BSON element values
+    MIN             = -1,    /// Special type which compares lower than all other possible BSON element values
         NONE            = 0x00,  /// End Of Document
         DOUBLE          = 0x01,  /// Floating point
         STRING          = 0x02,  /// UTF8 STRING
@@ -62,12 +67,11 @@ enum Type : byte {
         INT32           = 0x10,  /// 32-bit integer
         TIMESTAMP       = 0x11,  ///
         INT64           = 0x12,  /// 64-bit integer,
-        UINT32          = 0x50,  // 32 bit unsigend integer
+        UINT32          = 0x50, // 32 bit unsigend integer
         UINT64          = 0x52,  // 64 bit unsigned integer
         FLOAT           = 0x41,  // Float 32
 
-        MAX             = 0x7f,  /// Special type which compares higher than all other possible BSON element values
-        NATIVE_DOCUMENT = cast(byte)(0x80 | DOCUMENT) // This type is not a valid BSON type it is used to handle the BSON Document object
+        MAX             = 0x7f   /// Special type which compares higher than all other possible BSON element values
         }
 
 
@@ -442,8 +446,7 @@ public:
                 return 65;
             case Type.FLOAT, Type.UINT32, Type.UINT64:
                 return 70;
-            case Type.NATIVE_DOCUMENT:
-                assert(0, "Invalid type");
+
             }
         }
     }
@@ -497,42 +500,40 @@ public:
     size_t size() const pure nothrow
         {
             size_t s;
-            with(Type) final switch (type) {
-            case MIN, MAX, NONE, UNDEFINED, NULL:
+            final switch (type) {
+            case Type.MIN, Type.MAX, Type.NONE, Type.UNDEFINED, Type.NULL:
                 break;
-            case BOOLEAN:
+            case Type.BOOLEAN:
                 s = 1;
                 break;
-            case INT32, UINT32, FLOAT:
+            case Type.INT32, Type.UINT32, Type.FLOAT:
                 s = 4;
                 break;
-            case DOUBLE, INT64, DATE, TIMESTAMP, UINT64:
+            case Type.DOUBLE, Type.INT64, Type.DATE, Type.TIMESTAMP, Type.UINT64:
                 s = 8;
                 break;
-            case OID:
+            case Type.OID:
                 s = 12;
                 break;
-            case DOCUMENT, JS_CODE_W_SCOPE, ARRAY:
+            case Type.DOCUMENT, Type.JS_CODE_W_SCOPE, Type.ARRAY:
                 s = bodySize;
                 break;
-            case STRING, SYMBOL, JS_CODE:
+            case Type.STRING, Type.SYMBOL, Type.JS_CODE:
                 s = bodySize + 4;
                 break;
-            case BINARY:
+            case Type.BINARY:
                 s = bodySize + 4 + 1;
                 break;
-            case DBPOINTER:
+            case Type.DBPOINTER:
                 s = bodySize + 4 + 12;
                 break;
-            case REGEX:
+            case Type.REGEX:
                 auto p1 = cast(immutable(char*))data_[1 + rawKeySize..$].ptr;
                 size_t length1 = strlen(p1);
                 auto p2 = cast(immutable(char*))data_[1 + rawKeySize + length1 + 1..$].ptr;
                 size_t length2 = strlen(p2);
                 s = length1 + 1 + length2 + 1;
                 break;
-            case NATIVE_DOCUMENT:
-                s = data_.length;
             }
 
             return 1 + rawKeySize + s;
@@ -868,68 +869,68 @@ public:
             result = key ~ ": ";
         }
 
-        with(Type) final switch (type) {
-        case MIN:
+        final switch (type) {
+        case Type.MIN:
             result ~= "MinKey";
             break;
-        case MAX:
+        case Type.MAX:
             result ~= "MaxKey";
             break;
-        case NONE:
+        case Type.NONE:
             result ~= "End of Document";
             break;
-        case UNDEFINED:
+        case Type.UNDEFINED:
             result ~= "UNDEFINED";
             break;
-        case NULL:
+        case Type.NULL:
             result ~= "null";
             break;
-        case BOOLEAN:
+        case Type.BOOLEAN:
             result ~= to!string(_boolean());
             break;
-        case INT32:
+        case Type.INT32:
             result ~= to!string(_int32());
             break;
-        case UINT32:
+        case Type.UINT32:
             result ~= to!string(_uint32());
             break;
-        case INT64:
+        case Type.INT64:
             result ~= to!string(_int64());
             break;
-        case UINT64:
+        case Type.UINT64:
             result ~= to!string(_uint64());
             break;
-        case DOUBLE:
+        case Type.DOUBLE:
             result ~= to!string(_double());
             break;
-        case FLOAT:
+        case Type.FLOAT:
             result ~= to!string(_float());
             break;
-        case DATE:
+        case Type.DATE:
             result ~= "new Date(" ~ date.toString() ~ ")";
             break;
-        case TIMESTAMP:
+        case Type.TIMESTAMP:
             result ~= "Timestamp " ~ timestamp.toString();
             break;
-        case OID:
+        case Type.OID:
             auto oid = get!ObjectId;
             result ~= "ObjectId(" ~ oid.toString() ~ ")";
             break;
-        case DOCUMENT:
+        case Type.DOCUMENT:
             //result ~= DOCUMENT.toFormatString(false, full);
             break;
-        case ARRAY:
+        case Type.ARRAY:
             //result ~= DOCUMENT.toFormatString(true, full);
             break;
-        case JS_CODE_W_SCOPE:
+        case Type.JS_CODE_W_SCOPE:
             result ~= "codeWScope(" ~ codeWScope ~ ")";
             // TODO: Add codeWScopeObject
             break;
-        case STRING, SYMBOL, JS_CODE:
+        case Type.STRING, Type.SYMBOL, Type.JS_CODE:
             // TODO: Support ... representation with bool = true
             result ~= '"' ~ str ~ '"';
             break;
-        case BINARY:
+        case Type.BINARY:
             enum max_display_size=80;
             if ( binary_buffer.length > max_display_size ) {
                 result ~= binary_buffer[0..max_display_size/2].toHexString~
@@ -940,16 +941,14 @@ public:
                 result ~= binary_buffer.toHexString;
             }
             break;
-        case DBPOINTER:
+        case Type.DBPOINTER:
             result ~= "DBRef(" ~ str ~ ")";
             break;
-            case REGEX:
-                immutable re = regex;
-                result ~= "/" ~ re.field[0] ~ "/" ~ re.field[1];
-                break;
-            case NATIVE_DOCUMENT:
-                result ~= "NativeDoc("~data_.length.to!string~")";
-            }
+        case Type.REGEX:
+            immutable re = regex;
+            result ~= "/" ~ re.field[0] ~ "/" ~ re.field[1];
+            break;
+        }
 
         return result;
     }
@@ -1203,13 +1202,13 @@ int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool consid
 @trusted
 int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
 {
-    with(Type) final switch (lhs.type) {
-    case MIN, MAX, NONE, UNDEFINED,  NULL:
+    final switch (lhs.type) {
+    case Type.MIN, Type.MAX, Type.NONE, Type.UNDEFINED,  Type.NULL:
         auto r = lhs.canonicalType - rhs.canonicalType;
         if (r < 0)
             return -1;
         return r == 0 ? 0 : 1;
-    case DOUBLE:
+    case Type.DOUBLE:
     Ldouble:
         import std.math;
 
@@ -1223,8 +1222,8 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
         if (isNaN(l))
             return isNaN(r) ? 0 : -1;
         return 1;
-    case FLOAT:
-        if (rhs.type == FLOAT) {
+    case Type.FLOAT:
+        if (rhs.type == Type.FLOAT) {
             immutable l = lhs.as!float;
             immutable r = rhs.as!float;
 
@@ -1233,8 +1232,8 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
             return l == r ? 0 : 1;
         }
         goto Ldouble;
-    case INT32:
-        if (rhs.type == INT32) {
+    case Type.INT32:
+        if (rhs.type == Type.INT32) {
             immutable l = lhs.as!int;
             immutable r = rhs.as!int;
 
@@ -1243,8 +1242,8 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
             return l == r ? 0 : 1;
         }
         goto Ldouble;
-    case UINT32:
-        if (rhs.type == UINT32) {
+    case Type.UINT32:
+        if (rhs.type == Type.UINT32) {
             immutable l = lhs.as!int;
             immutable r = rhs.as!int;
 
@@ -1253,8 +1252,8 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
             return l == r ? 0 : 1;
         }
         goto Ldouble;
-    case INT64:
-        if (rhs.type == INT64) {
+    case Type.INT64:
+        if (rhs.type == Type.INT64) {
             immutable l = lhs.as!long;
             immutable r = rhs.as!long;
 
@@ -1263,8 +1262,8 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
             return l == r ? 0 : 1;
         }
         goto Ldouble;
-    case UINT64:
-        if (rhs.type == UINT64) {
+    case Type.UINT64:
+        if (rhs.type == Type.UINT64) {
             immutable l = lhs.as!ulong;
             immutable r = rhs.as!ulong;
 
@@ -1273,7 +1272,7 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
             return l == r ? 0 : 1;
         }
         goto Ldouble;
-    case STRING, SYMBOL, JS_CODE:
+    case Type.STRING, Type.SYMBOL, Type.JS_CODE:
         import std.algorithm;
 
         immutable ls = lhs.bodySize;
@@ -1285,21 +1284,21 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
         if (ls < rs)
             return -1;
         return ls == rs ? 0 : 1;
-    case DOCUMENT,  ARRAY:
+    case Type.DOCUMENT,  Type.ARRAY:
         // TODO
         return 0;
-    case BINARY:
+    case Type.BINARY:
         immutable ls = lhs.bodySize;
         immutable rs = rhs.bodySize;
 
         if ((ls - rs) != 0)
             return ls - rs < 0 ? -1 : 1;
         return memcmp(lhs.value[4..$].ptr, rhs.value[4..$].ptr, ls + 1);  // +1 for subtype
-    case OID:
+    case Type.OID:
         return memcmp(lhs.value.ptr, rhs.value.ptr, 12);
-    case BOOLEAN:
+    case Type.BOOLEAN:
         return lhs.value[0] - rhs.value[0];
-    case DATE, TIMESTAMP:
+    case Type.DATE, Type.TIMESTAMP:
         // TODO: Fix for correct comparison
         // Following comparison avoids non-pure function call.
         immutable l = lhs._int64();
@@ -1308,7 +1307,7 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
         if (l < r)
             return -1;
         return l == r ? 0 : 1;
-    case REGEX:
+    case Type.REGEX:
         immutable re1 = lhs.regex;
         immutable re2 = rhs.regex;
 
@@ -1316,14 +1315,14 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
         if (r != 0)
             return r;
         return strcmp(re1.field[1].ptr, re2.field[1].ptr);
-    case DBPOINTER:
+    case Type.DBPOINTER:
         immutable ls = lhs.valueSize;
         immutable rs = rhs.valueSize;
 
         if ((ls - rs) != 0)
             return ls - rs < 0 ? -1 : 1;
         return memcmp(lhs.str.ptr, rhs.str.ptr, ls);
-    case JS_CODE_W_SCOPE:
+    case Type.JS_CODE_W_SCOPE:
         auto r = lhs.canonicalType - rhs.canonicalType;
         if (r != 0)
             return r;
@@ -1334,8 +1333,6 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
         if (r != 0)
             return r;
         return 0;
-        case NATIVE_DOCUMENT:
-            assert(0, "A native document can not be compared");
     }
 }
 
@@ -1812,7 +1809,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         const(double)[] double_array;
         string[] text_array;
         BSON[] bson_array;
-
 /*
   immutable(char)[][] atext;
   int[] aint32;
@@ -1964,7 +1960,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         with (Type) final switch (type) {
             case MIN:
             case NONE:
-            case MAX:
                 break;
             case DOUBLE:
             case FLOAT:
@@ -2174,11 +2169,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     result=true;
                 }
                 break;
-            case NATIVE_DOCUMENT:
-                static if ( is(T:const(Document)) ) {
-                    elm.value.binary=x.data;
-                    result=true;
-                }
+            case MAX:
             }
         if (result) {
             if ( no_duble ) {
@@ -2230,9 +2221,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             else {
                 result=append(Type.ARRAY, key, x, getSubtype!BaseType);
             }
-        }
-        else static if (is(BaseType:const(Document)) ) {
-            result=append(Type.NATIVE_DOCUMENT, key, x);
         }
         else {
             static assert(0, "opIndexAssign does not support type "~T.stringof~" use append member function instead");
@@ -2350,8 +2338,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case TIMESTAMP:
                 result~=format("%s %s", to!string(_type), value.int64);
                 break;
-            case NATIVE_DOCUMENT:
-                result~=format("%s %s", to!string(_type), value.binary.length);
 
             }
         return result;
@@ -2622,8 +2608,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case UINT64:
                 data~=nativeToLittleEndian(value.uint64);
                 break;
-            case NATIVE_DOCUMENT:
-                data~=value.binary;
+
             }
     }
 
@@ -2631,7 +2616,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         immutable(ubyte)[] local_serialize() {
             immutable(ubyte)[] data;
             foreach(e; iterator!key_sort_flag) {
-                data~=(e._type & Type.MAX);
+                data~=e._type;
                 data~=e.key;
                 data~=zero;
                 with(Type) final switch(e._type) {
@@ -2708,8 +2693,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         data~=nativeToLittleEndian(e.value.uint64);
                         //dgelm(data);
                         break;
-                    case NATIVE_DOCUMENT:
-                        data~=e.value.binary;
+
                     }
             }
             return data;
@@ -3350,24 +3334,4 @@ unittest { // BSON with const member
     assert(bson2c_data == doc2c.data);
     assert(doc2c.data == doc2.data);
 
-}
-
-unittest { // Test of Native Document type
-    // The native document type is only used as an internal representation of the Document
-    auto bson1=new HBSON;
-    auto bson2=new HBSON;
-    auto doc_bson=new HBSON;
-    doc_bson["int"]=10;
-    doc_bson["bool"]=true;
-    bson1["obj"]=doc_bson;
-    // Test of using native Documnet as a object member
-    auto doc=Document(doc_bson.serialize);
-    bson2["obj"]=doc;
-//    import std.stdio;
-    auto data1=bson1.serialize;
-//    writefln("%s:%d", data1, data1.length);
-    auto data2=bson2.serialize;
-//    writefln("%s:%d", data2, data2.length);
-    assert(data1.length == data2.length);
-    assert(data1 == data2);
 }
