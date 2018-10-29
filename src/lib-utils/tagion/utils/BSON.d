@@ -1818,60 +1818,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     size_t id() const pure nothrow {
         return cast(size_t)(cast(void*)this);
     }
-version(none)
-    void replicate(immutable ubyte[] data) {
-        foreach(elm;Document.Range(data) ) {
-            const Type t=elm.type;
-            alias BSON_T=typeof(this);
-            with(Type) final switch(t) {
-                case MIN, MAX, NONE, UNDEFINED:
-                    // Ignore
-                    break;
-                case NULL:
-                    append!(void*)(t, elm.key, null);
-                    break;
-                case DOUBLE:
-                    append!(t, elm.key, cast(double)elm.value);
-                    break;
-                case INT32:
-                    append!(t, elm.key, cast(int)elm.value);
-                    break;
-                case INT64, DATE, TIMESTAMP:
-                    append!(t, elm.key, cast(long)elm.value);
-                    break;
-                case STRING, SYMBOL, JS_CODE, REGEX:
-                    append!(t, elm.key, cast(string)elm.value);
-                    break;
-                case DOCUMENT, ARRAY:
-                    auto bson=new BSON_T;
-                    bson.replicate(elm.value);
-                    append!(t, elm.key, bson);
-                    break;
-                case BINARY:
-                    append!(t, elm.key, elm.value, elm.subtype);
-                    break;
-                case Type.OID:
-                    return 35;
-                case BOOLEAN:
-                    append!(t, elm.key, cast(bool)elm.value);
-                    break;
-                case FLOAT:
-                    append!(t, elm.key, cast(float)elm.value);
-                    break;
-                case UINT32:
-                    append!(t, elm.key, cast(uint)elm.value);
-                    break;
-                case UINT64:
-                    append!(t, elm.key, cast(ulong)elm.value);
-                    break;
-                case DBPOINTER:
-                    throw new BSONException(format("Unsupprted type '%s' at '%s'", t.to!string, key));
-                case Type.JS_CODE_W_SCOPE:
-                    return 65;
-                }
-        }
-
-    }
     @trusted
     auto get(T)() inout {
         alias BaseType=TypedefType!T;
@@ -2530,10 +2476,8 @@ version(none)
 
     }
 
-    enum : ubyte {
-        zero=0,
-            one=1
-            }
+    enum zero=cast(ubyte)0;
+    enum one=cast(ubyte)1;
 
     @trusted
     void appendData(ref immutable(ubyte)[] data) const {
@@ -3334,13 +3278,22 @@ version(none)
 }
 
 
-T[] doc2(T)(Document doc) {
-    T[] result;
+int[] doc2ints(Document doc) {
+    int[] result;
     foreach(elm; doc.opSlice) {
-        result~=elm.as!T;
+        result~=elm.as!int;
     }
     return result;
 }
+
+double[] doc2doubles(Document doc) {
+    double[] result;
+    foreach(elm; doc.opSlice) {
+        result~=elm.as!double;
+    }
+    return result;
+}
+
 
 unittest { // BSON with const member
     alias GBSON=BSON!true;
