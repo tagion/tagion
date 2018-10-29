@@ -2,7 +2,6 @@ module tagion.crypto.MerkleTree;
 
 import tagion.crypto.Hash;
 import std.exception : assumeUnique;
-import tango.core.Traits;
 
 /**
  * MerkleTree is an implementation of a Merkle binary hash tree where the leaves
@@ -200,134 +199,7 @@ bool validateSignatures(
         local_validate(root);
         return result;
     }
-  /**
-   * Serialization format:
-   * (magicheader:uint)(numnodes:uint)[(nodetype:byte)(siglength:uint)(signature:[]byte)]
-   * @return
-   */
-    version(none)
-    @trusted
-    immutable(ubyte)[] serialize() {
-        void serializeTree(immutable(Node) tree, ubyte[] buffer, immutable(uint) level) {
-            if ( tree !is null ) {
-                buffer[0..Node.payload_size] = tree.payload;
-                buffer=buffer[Node.payload_size*(1 << level)..$];
-                serializeTree(tree.left, buffer, level+1);
-                serializeTree(tree.right, buffer[Node.payload_size..$], level+1);
-            }
-        }
-        ubyte[] result;
-        ubyte[] buffer;
-        immutable uint num_of_nodes=root.number_of_elements;
 
-        enum {
-            magicHeaderSz = MAGIC_HDR.sizeof,
-            nnodesSz = num_of_nodes.sizeof,
-//            siglengthSz = siglength.sizeof,
-            hdrSz = magicHeaderSz + nnodesSz // + siglengthSz,
-        }
-        result = new ubyte[hdrSz + num_of_nodes * Node.payload_size];
-        // buffer points into result
-        buffer = result;
-        /** buffer append function */
-        void append(T)(T item) {
-            static assert(isAtomicType!(BaseTypeOf!(T)), "Only atomic type supported");
-            static if ( is(BaseTypeOf!(T) == T) ) {
-                ubyte* item_p = cast(ubyte*)&item;
-            }
-            else {
-                T x=item;
-                ubyte* item_p = cast(ubyte*)&x;
-            }
-            buffer[0..item.sizeof]=item_p[0..item.sizeof];
-            buffer=buffer[item.sizeof..$];
-        }
-        append(MAGIC_HDR);
-        append(num_of_nodes);
-        append(Node.payload_size);
-        // And the whole thee
-        serializeTree(root, buffer, 0);
-        //
-
-        return assumeUnique(result);
-    }
-
-
-/**
-   * Serialization format after the header section:
-   * [(nodetype:byte)(siglength:int)(signature:[]byte)]
-   * @param buf
-   */
-    /*
-  void serializeBreadthFirst(ByteBuffer buf) {
-      Queue<Node> q = new ArrayDeque<Node>((nnodes / 2) + 1);
-      q.add(root);
-
-    while (!q.isEmpty()) {
-      Node nd = q.remove();
-      buf.put(nd.type).putInt(nd.sig.length).put(nd.sig);
-
-      if (nd.left != null) {
-        q.add(nd.left);
-      }
-      if (nd.right != null) {
-        q.add(nd.right);
-      }
-    }
-  }
-    */
-  /**
-   * Create a tree from the bottom up starting from the leaf signatures.
-   * @param signatures
-   */
-    version(node)
-    private immutable(Node) constructTree(MerkleTable!(H) signatures)
-    in {
-          assert(signatures.size() > 1, "Must be at least two signatures to construct a Merkle tree");
-      }
-body
-    {
-        leafSigs = signatures;
-        nnodes = signatures.size();
-        auto  parents = bottomLevel(signatures);
-        nnodes += cast(uint)parents.length;
-        depth = 1;
-
-        while (parents.length > 1) {
-            parents = internalLevel(parents);
-            depth++;
-            nnodes += cast(uint)parents.length;
-        }
-
-        return parents[0];
-    }
-
-/*
-    public int getNumNodes() {
-        return nnodes;
-    }
-
-    public Node getRoot() {
-        return root;
-    }
-
-    public int getHeight() {
-        return depth;
-    }
-*/
-    /*
-    @trusted
-    private immutable(Node) createNode(immutable(Node) node1, immutable(Node) node2) const pure {
-        auto result=new const(Node)(node1, node2);
-        return cast(immutable)(result);
-    }
-    @trusted
-    private immutable(Node) createNode(immutable(Node) node) const pure {
-        immutable(Node) right_null = null;
-        auto result=new const(Node)(node, right_null);
-        return cast(immutable)(result);
-    }
-    */
     static void buildTree(ref immutable(Node)[][] parents, const(D)[] leafs)
         in {
             assert(leafs.length > 1, "Must be at least two signatures to construct a Merkle tree");
@@ -382,44 +254,6 @@ body
     static private immutable(T)[] immune(T)(const(T)[] table) pure nothrow {
         return assumeUnique(table);
     }
-
-//    private immutable(Node) createNode();
-    /*
-    private Node constructInternalNode(const(Node) child1, const(Node) child2) {
-        Node parent = new Node();
-        parent.type = Node.Si;
-
-        if (child2 is null) {
-            parent.sig = child1.sig;
-        } else {
-            parent.sig = internalHash(child1.sig, child2.sig);
-        }
-
-        parent.left = child1;
-        parent.right = child2;
-        return parent;
-    }
-    */
-    /*
-    private static Node constructLeafNode(String signature) {
-        Node leaf = new Node(Node.sigType.leaf, signature);
-        // leaf.type = LEAF_SIG_TYPE;
-        // leaf.sig = signature.getBytes(StandardCharsets.UTF_8);
-        return leaf;
-    }
-    */
-/*
-    immutable(HashT) internalHash(const(HashT) leftChildSig, const(HashT) rightChildSig) const pure nothrow {
-        return H(leftChildSig,
-        buffer ~= leftChilSig;
-        buffer ~= rightChilSig;
-
-    crc.reset();
-    crc.update(leftChildSig);
-    crc.update(rightChildSig);
-    return longToByteArray(crc.getValue());
-*/
-    //}
 
     unittest {
         //
