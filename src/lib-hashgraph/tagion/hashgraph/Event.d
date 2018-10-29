@@ -204,7 +204,7 @@ interface EventMonitorCallbacks {
 
 @safe
 interface EventScriptCallbacks {
-    void epoch(const(Event[]) received_event);
+    void epoch(const(Event[]) received_event, const long time);
 }
 
 
@@ -517,7 +517,7 @@ class Round {
 
 
         if ( Event.scriptsbacks ) {
-            Event.scriptsbacks.epoch(round_received_events);
+            Event.scriptsbacks.epoch(round_received_events, middel_time);
         }
 
         if ( Event.callbacks ) {
