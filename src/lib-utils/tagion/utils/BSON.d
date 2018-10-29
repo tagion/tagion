@@ -67,7 +67,7 @@ enum Type : byte {
         FLOAT           = 0x41,  // Float 32
 
         MAX             = 0x7f,  /// Special type which compares higher than all other possible BSON element values
-        NATIVE_DOCUMENT = -3      // This type is not a valid BSON type it is used to handle the BSON Document object
+        NATIVE_DOCUMENT = cast(byte)(0x80 | DOCUMENT) // This type is not a valid BSON type it is used to handle the BSON Document object
         }
 
 
@@ -2184,7 +2184,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             if ( no_duble ) {
                 remove(key);
             }
-            elm._type=cast(Type)(type & Type.MAX);
+            elm._type=type;
             elm.subtype=subtype;
             elm._key=key;
             elm.members=members;
@@ -2631,7 +2631,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         immutable(ubyte)[] local_serialize() {
             immutable(ubyte)[] data;
             foreach(e; iterator!key_sort_flag) {
-                data~=e._type;
+                data~=(e._type & Type.MAX);
                 data~=e.key;
                 data~=zero;
                 with(Type) final switch(e._type) {
@@ -3363,9 +3363,11 @@ unittest { // Test of Native Document type
     // Test of using native Documnet as a object member
     auto doc=Document(doc_bson.serialize);
     bson2["obj"]=doc;
-    import std.stdio;
+//    import std.stdio;
     auto data1=bson1.serialize;
-    writefln("%s:%d", data1, data1.length);
+//    writefln("%s:%d", data1, data1.length);
     auto data2=bson2.serialize;
-    writefln("%s:%d", data2, data2.length);
+//    writefln("%s:%d", data2, data2.length);
+    assert(data1.length == data2.length);
+    assert(data1 == data2);
 }
