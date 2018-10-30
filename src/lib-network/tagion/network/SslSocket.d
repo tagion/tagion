@@ -207,7 +207,7 @@ version(use_openssl) {
         }
 
         @trusted
-        OpenSslSocket acceptSsl() {
+        Socket acceptSsl() {
             Socket client = super.accept();
 
             auto ssl_client = new OpenSslSocket(client.handle, EndpointType.Server, AddressFamily.INET);
@@ -222,7 +222,7 @@ version(use_openssl) {
 				throw new SslSocketException("ssl handsake, accept");
             }
             else {
-                return ssl_client;
+                return cast(Socket)ssl_client;
             }
         }
 
