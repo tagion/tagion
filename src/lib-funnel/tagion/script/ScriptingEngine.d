@@ -317,7 +317,7 @@ public:
 
             if (socket_set.isSet(_listener)) {     // connection request
                 try {
-                    OpenSslSocket client = null;
+                    Socket client = null;
                     client = _listener.acceptSsl();
                     assert( client.isAlive );
                     assert( _listener.isAlive );
