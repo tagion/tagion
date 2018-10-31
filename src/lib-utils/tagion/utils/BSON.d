@@ -65,9 +65,9 @@ enum Type : byte {
         UINT32          = 0x50,  // 32 bit unsigend integer
         UINT64          = 0x52,  // 64 bit unsigned integer
         FLOAT           = 0x41,  // Float 32
-
         MAX             = 0x7f,  /// Special type which compares higher than all other possible BSON element values
-        NATIVE_DOCUMENT = cast(byte)(0x80 | DOCUMENT) // This type is not a valid BSON type it is used to handle the BSON Document object
+        NATIVE_DOCUMENT = cast(byte)(0x80 | DOCUMENT), // This type is not a valid BSON type it is used to handle the native Document object
+        NATIVE_DOCUMENT_array = cast(byte)(0x80 | 0x70 | DOCUMENT ) // This type is not a valid BSON it is used to handle native Document object
         }
 
 
@@ -89,6 +89,7 @@ enum BinarySubType : ubyte
         UINT32_array    = userDefined | Type.UINT32,
         UINT64_array    = userDefined | Type.UINT64,
         FLOAT_array     = userDefined | Type.FLOAT,
+        NATIVE_DOCUMENT_array  = userDefined | cast(ubyte)(Type.NATIVE_DOCUMENT_array),
         not_defined     = 0xFF   /// Not defined
         }
 
@@ -495,42 +496,42 @@ public:
         byte canonicalType() {
             Type t = type;
 
-            final switch (t) {
-            case Type.MIN, Type.MAX:
-                return t;
-            case Type.NONE, Type.UNDEFINED:
-                return 0;
-            case Type.NULL:
-                return 5;
-            case Type.DOUBLE, Type.INT32, Type.INT64:
-                return 10;
-            case Type.STRING, Type.SYMBOL:
-                return 15;
-            case Type.DOCUMENT:
-                return 20;
-            case Type.ARRAY:
-                return 25;
-            case Type.BINARY:
-                return 30;
-            case Type.OID:
-                return 35;
-            case Type.BOOLEAN:
-                return 40;
-            case Type.DATE, Type.TIMESTAMP:
-                return 45;
-            case Type.REGEX:
-                return 50;
-            case Type.DBPOINTER:
-                return 55;
-            case Type.JS_CODE:
-                return 60;
-            case Type.JS_CODE_W_SCOPE:
-                return 65;
-            case Type.FLOAT, Type.UINT32, Type.UINT64:
-                return 70;
-            case Type.NATIVE_DOCUMENT:
-                assert(0, "Invalid type");
-            }
+            with(Type) final switch (t) {
+                case MIN, MAX:
+                    return t;
+                case NONE, UNDEFINED:
+                    return 0;
+                case NULL:
+                    return 5;
+                case DOUBLE, INT32, INT64:
+                    return 10;
+                case STRING, SYMBOL:
+                    return 15;
+                case DOCUMENT:
+                    return 20;
+                case ARRAY:
+                    return 25;
+                case BINARY:
+                    return 30;
+                case OID:
+                    return 35;
+                case BOOLEAN:
+                    return 40;
+                case DATE, TIMESTAMP:
+                    return 45;
+                case REGEX:
+                    return 50;
+                case DBPOINTER:
+                    return 55;
+                case JS_CODE:
+                    return 60;
+                case JS_CODE_W_SCOPE:
+                    return 65;
+                case FLOAT, UINT32, UINT64:
+                    return 70;
+                case NATIVE_DOCUMENT, NATIVE_DOCUMENT_array:
+                    assert(0, format("Invalid type %s",t));
+                }
         }
     }
 
@@ -619,6 +620,9 @@ public:
                 break;
             case NATIVE_DOCUMENT:
                 s = _data.length;
+                break;
+            case NATIVE_DOCUMENT_array:
+                assert(0, format("No size defined for type %s", type) );
             }
 
             return 1 + rawKeySize + s;
@@ -955,86 +959,89 @@ public:
         }
 
         with(Type) final switch (type) {
-        case MIN:
-            result ~= "MinKey";
-            break;
-        case MAX:
-            result ~= "MaxKey";
-            break;
-        case NONE:
-            result ~= "End of Document";
-            break;
-        case UNDEFINED:
-            result ~= "UNDEFINED";
-            break;
-        case NULL:
-            result ~= "null";
-            break;
-        case BOOLEAN:
-            result ~= to!string(_boolean());
-            break;
-        case INT32:
-            result ~= to!string(_int32());
-            break;
-        case UINT32:
-            result ~= to!string(_uint32());
-            break;
-        case INT64:
-            result ~= to!string(_int64());
-            break;
-        case UINT64:
-            result ~= to!string(_uint64());
-            break;
-        case DOUBLE:
-            result ~= to!string(_double());
-            break;
-        case FLOAT:
-            result ~= to!string(_float());
-            break;
-        case DATE:
-            result ~= "new Date(" ~ date.toString() ~ ")";
-            break;
-        case TIMESTAMP:
-            result ~= "Timestamp " ~ timestamp.toString();
-            break;
-        case OID:
-            auto oid = get!ObjectId;
-            result ~= "ObjectId(" ~ oid.toString() ~ ")";
-            break;
-        case DOCUMENT:
-            //result ~= DOCUMENT.toFormatString(false, full);
-            break;
-        case ARRAY:
-            //result ~= DOCUMENT.toFormatString(true, full);
-            break;
-        case JS_CODE_W_SCOPE:
-            result ~= "codeWScope(" ~ codeWScope ~ ")";
-            // TODO: Add codeWScopeObject
-            break;
-        case STRING, SYMBOL, JS_CODE:
-            // TODO: Support ... representation with bool = true
-            result ~= '"' ~ str ~ '"';
-            break;
-        case BINARY:
-            enum max_display_size=80;
-            if ( binary_buffer.length > max_display_size ) {
-                result ~= binary_buffer[0..max_display_size/2].toHexString~
-                    "..."~
-                    binary_buffer[max_display_size/2+1..$].toHexString;
-            }
-            else {
-                result ~= binary_buffer.toHexString;
-            }
-            break;
-        case DBPOINTER:
-            result ~= "DBRef(" ~ str ~ ")";
-            break;
+            case MIN:
+                result ~= "MinKey";
+                break;
+            case MAX:
+                result ~= "MaxKey";
+                break;
+            case NONE:
+                result ~= "End of Document";
+                break;
+            case UNDEFINED:
+                result ~= "UNDEFINED";
+                break;
+            case NULL:
+                result ~= "null";
+                break;
+            case BOOLEAN:
+                result ~= to!string(_boolean());
+                break;
+            case INT32:
+                result ~= to!string(_int32());
+                break;
+            case UINT32:
+                result ~= to!string(_uint32());
+                break;
+            case INT64:
+                result ~= to!string(_int64());
+                break;
+            case UINT64:
+                result ~= to!string(_uint64());
+                break;
+            case DOUBLE:
+                result ~= to!string(_double());
+                break;
+            case FLOAT:
+                result ~= to!string(_float());
+                break;
+            case DATE:
+                result ~= "new Date(" ~ date.toString() ~ ")";
+                break;
+            case TIMESTAMP:
+                result ~= "Timestamp " ~ timestamp.toString();
+                break;
+            case OID:
+                auto oid = get!ObjectId;
+                result ~= "ObjectId(" ~ oid.toString() ~ ")";
+                break;
+            case DOCUMENT:
+                //result ~= DOCUMENT.toFormatString(false, full);
+                break;
+            case ARRAY:
+                //result ~= DOCUMENT.toFormatString(true, full);
+                break;
+            case JS_CODE_W_SCOPE:
+                result ~= "codeWScope(" ~ codeWScope ~ ")";
+                // TODO: Add codeWScopeObject
+                break;
+            case STRING, SYMBOL, JS_CODE:
+                // TODO: Support ... representation with bool = true
+                result ~= '"' ~ str ~ '"';
+                break;
+            case BINARY:
+                enum max_display_size=80;
+                if ( binary_buffer.length > max_display_size ) {
+                    result ~= binary_buffer[0..max_display_size/2].toHexString~
+                        "..."~
+                        binary_buffer[max_display_size/2+1..$].toHexString;
+                }
+                else {
+                    result ~= binary_buffer.toHexString;
+                }
+                break;
+            case DBPOINTER:
+                result ~= "DBRef(" ~ str ~ ")";
+                break;
             case REGEX:
                 immutable re = regex;
                 result ~= "/" ~ re.field[0] ~ "/" ~ re.field[1];
                 break;
             case NATIVE_DOCUMENT:
                 result ~= "NativeDoc("~_data.length.to!string~")";
+                break;
+            case NATIVE_DOCUMENT_array:
+                    assert(0);
             }
 
         return result;
@@ -1420,7 +1427,7 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
         if (r != 0)
             return r;
         return 0;
-        case NATIVE_DOCUMENT:
+        case NATIVE_DOCUMENT, NATIVE_DOCUMENT_array:
             assert(0, "A native document can not be compared");
     }
 }
@@ -1809,6 +1816,9 @@ BinarySubType getSubtype(T)() {
             is(T:const(BSON_TT)[]) ) {
             return DOCUMENT_array;
         }
+        else static if ( is(T:const(Document)[]) ) {
+            return NATIVE_DOCUMENT_array;
+        }
         else static if (is(T:const(ubyte)[])) {
             return generic;
         }
@@ -1898,6 +1908,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         const(double)[] double_array;
         string[] text_array;
         BSON[] bson_array;
+        Document[] document_array;
 
 /*
   immutable(char)[][] atext;
@@ -2006,6 +2017,11 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subtype == BinarySubType.DOCUMENT_array);
             return cast(T)(value.bson_array);
         }
+        else static if (is(BaseType==Document[])) {
+            assert(_type == Type.ARRAY);
+            assert(subtype == BinarySubType.NATIVE_DOCUMENT_array);
+            return cast(T)(value.bson_array);
+        }
         else {
             static assert(0, "Type "~T.stringof~ "is not supported by this function");
         }
@@ -2038,6 +2054,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     bool isDocument() {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
+
     @trusted
     bool append(T)(Type type, in string key, T x, BinarySubType subtype=BinarySubType.generic) {
         static if (one_time_write) {
@@ -2149,6 +2166,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     }
                     else static if (is(U:BSON)) {
                         elm.value.bson_array=x;
+                        result=true;
+                    }
+                    else static if (is(U:Document)) {
+                        elm.value.document_array=x;
                         result=true;
                     }
                     else {
@@ -2265,6 +2286,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     elm.value.binary=x.data;
                     result=true;
                 }
+                break;
+            case NATIVE_DOCUMENT_array:
+                assert(0, format("Illegale type %s", type));
             }
         if (result) {
             if ( no_duble ) {
@@ -2438,7 +2462,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 break;
             case NATIVE_DOCUMENT:
                 result~=format("%s %s", to!string(_type), value.binary.length);
-
+                break;
+            case NATIVE_DOCUMENT_array:
+                result~=format("%s %s", to!string(_type), value.binary.length);
             }
         return result;
     }
@@ -2575,6 +2601,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         else static if (is(T:const(BSON))) {
             data~=x.serialize;
         }
+        else static if (is(T:const(Document))) {
+            data~=x.data;
+        }
         else {
             static assert(0, "Unsupported type "~T.stringof);
         }
@@ -2651,6 +2680,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         case DOCUMENT_array:
                             local_array_serialize!(BSON[])(_type);
                             break;
+                        case NATIVE_DOCUMENT_array:
+                            local_array_serialize!(Document[])(_type);
+                            break;
                         default:
                             throw new BSONException("Subtype "~to!string(subtype)~" not supported by "~to!string(_type));
                         }
@@ -2710,6 +2742,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 break;
             case NATIVE_DOCUMENT:
                 data~=value.binary;
+                break;
+            case NATIVE_DOCUMENT_array:
+                assert(0, "Not implement here");
             }
     }
 
@@ -2796,6 +2831,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         break;
                     case NATIVE_DOCUMENT:
                         data~=e.value.binary;
+                        break;
+                    case NATIVE_DOCUMENT_array:
+                        assert(0, "Not implemented here");
                     }
             }
             return data;
