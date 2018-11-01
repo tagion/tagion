@@ -258,29 +258,74 @@ public:
 class AcceptFiber : Fiber {
     private {
 
-        immutable max_numbers_of_reuse;
+        immutable uint max_numbers_of_reuse;
+        uint reuse_counter;
+
+        void accept() {
+            try {
+                client = null;
+                client = listener.acceptSsl();
+                assert( client.isAlive );
+                assert( listener.isAlive );
+
+                if ( clients.numberOfClients < _max_connections )
+                {
+                    writefln( "Connection from %s established.", client.remoteAddress().toString() );
+                    clients.addClient(client);
+                    writefln( "\tTotal connections: %d", clients.numberOfClients );
+                }
+                else
+                {
+                    writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
+                    client.disconnect();
+                    assert( !client.isAlive );
+                    assert( listener.isAlive );
+                }
+            } catch(SocketException ex) {
+                writefln("SslSocketException: %s", ex);
+            }
+        }
     }
 
     public {
 
-        this(immutable uint numbers_of_reuse) {
+        this(immutable uint numbers_of_reuse,
+            void delegate() dg ) {
             this.numbers_of_reuse = numbers_of_reuse;
+            super(&accept);
         }
 
-        void setDelegate ( void )
+        void reuseCount() {
+            reuse_counter++;
+        }
+
+        bool reuse() {
+            return reuse_counter < max_numbers_of_reuse;
+        }
+
+
     }
 }
 
+//TODO: Move into AcceptFiber as static
 struct AcceptFibers {
     private {
         uint max_number_of_fibers;
+        enum min_number_of_fibers = 10;
+        Fiber[uint] fibers;
+        uint fiber_counter;
+        uint[] free_fibers;
+        uint max_number_of_fiber_reuse;
+
         Duration min_full_cycle_time;
         MonoTime last_duration_timer_timestamp;
         SharedClientAccess clients;
         SSocket listener;
+        SSocket socket_set;
+
 
         void durationTimer() {
-            writeln("In duration timer");
+            writefln("In duration timer, current Time: %d", Mono.currTime);
             Duration time_elapsed = MonoTime.currTime - last_duration_timer_timestamp;
             if ( time_elapsed < min_full_cycle_time ) {
                 Thread.sleep(min_full_cycle_time - time_elapsed);
@@ -288,21 +333,55 @@ struct AcceptFibers {
 
             Fiber.yield();
         }
+
+        bool active() {
+            return min_number_of_fibers == free_fibers.length;
+        }
     }
     public {
 
-        this(unit max_number_of_fibers,
+        this(uint max_number_of_fibers,
             Duration min_full_cycle_time,
+            uint max_number_of_fiber_reuse,
             SharedClientAccess shared_client_access,
             SSocket listener) {
             this.max_number_of_fibers = max_number_of_fibers;
+            this.max_number_of_fiber_reuse = max_number_of_fiber_reuse;
             this.min_full_cycle_time = min_full_cycle_time;
             this.clients = shared_client_access;
             this.listener = listener;
             last_duration_timer_timestamp = MonoTime.currTime;
+            this.socket_set = new SocketSet(1);
         }
 
-        void accept(ref C)
+
+
+        void runAcceptCycle() {
+            socket_set.add( listener );
+
+            int sel_res;
+
+            if ( active ) {
+                sel_res = Socket.select( socket_set, null, dur!"msecs"(1));
+            }
+            else {
+                sel_res = Socket.select( socket_set, null, null);
+            }
+
+            if ( sel_res > 0 ) {
+                if (socket_set.isSet(listener)) {     // connection request
+                    auto ssl_accept = SSL_Accept();
+                    auto dg_acc = &ssl_accept.accept;
+                    dg_acc.ptr = &ssl_accept;
+                    auto fb1 = new AcceptFiber(max_number_of_fiber_reuse ,dg_acc);
+
+                }
+            }
+
+            socket_set.reset;
+            //run a cycle.
+
+        }
 
 
     }
@@ -321,6 +400,7 @@ private:
     immutable uint _listener_max_queue_length;
     immutable uint _max_accept_fibers;
     immutable Duration _min_full_cycle_time_accept_fibers;
+    immutable uint _max_number_of_fiber_reuse;
 
     OpenSslSocket _listener;
     enum _buffer_size = 1024;
@@ -334,6 +414,7 @@ public:
         _max_connections = se_options.max_connections;
         _max_accept_fibers = se_options.max_accept_fibers;
         _min_full_cycle_time_accept_fibers = dur!"msecs"(se_options.min_duration_full_fibers_cycle_ms);
+        _max_number_of_fiber_reuse = se_options.max_number_of_fiber_reuse;
     }
 
     ~this () {
@@ -363,50 +444,16 @@ public:
         _listener.listen( _listener_max_queue_length );
         writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
 
-        auto socket_set = new SocketSet(_max_connections + 1);
-
         auto s_e_w_c = startScriptingEngineWorker();
 
-        accept_fibers = AcceptFibers(_max_accept_fibers ,
+        accept_fibers = AcceptFibers(_max_accept_fibers,
+                                    _max_number_of_fiber_reuse,
                                     _min_full_cycle_time_accept_fibers,
                                     shared_clients_access,
                                     _listener);
 
         while ( run_scripting_engine ) {
-            socket_set.add( _listener );
-
-            this.clients.addClientsToSocketSet(socket_set);
-
-            Socket.select( socket_set, null, null);
-
-            if (socket_set.isSet(_listener)) {     // connection request
-                try {
-                    Socket client = null;
-                    client = _listener.acceptSsl();
-                    assert( client.isAlive );
-                    assert( _listener.isAlive );
-
-                    if ( clients.numberOfClients < _max_connections )
-                    {
-                        writefln( "Connection from %s established.", client.remoteAddress().toString() );
-                        clients.addClient(client);
-                        writefln( "\tTotal connections: %d", clients.numberOfClients );
-                    }
-                    else
-                    {
-                        writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
-                        client.disconnect();
-                        assert( !client.isAlive );
-                        assert( _listener.isAlive );
-                    }
-                } catch(SocketException ex) {
-                    writefln("SslSocketException: %s", ex);
-                }
-
-            }
-
-            socket_set.reset();
-
+            accept_fibers.runAcceptCycle;
         }
 
         scope ( exit ) {
