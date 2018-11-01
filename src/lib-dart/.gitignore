@@ -1,0 +1,9 @@
+*~
+*.o
+*#
+.#*
+*.parked
+bin/
+*.bak
+build
+.touch
