@@ -1,6 +1,6 @@
 module tagion.vault.HashBucket;
 
-import tagion.util.BSON : Documnet, HBSON;
+import tagion.utils.BSON : Document, HBSON;
 
 class HashBucket(Block) {
     private Buffer[] _buffers;
@@ -15,6 +15,7 @@ class HashBucket(Block) {
     }
     private void load(ref File fin) {
         while ( !fin.eof ) {
+
         }
     }
 
