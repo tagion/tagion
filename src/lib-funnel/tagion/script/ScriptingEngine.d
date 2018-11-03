@@ -296,33 +296,42 @@ class SSLFiber : Fiber {
     private {
         SSocket client;
         uint reuse_counter;
-        MonoTime last_cycle_timestamp;
         static SSLFiberConfig ssl_config;
 
         static Fiber[uint] fibers;
         static uint fiber_counter;
-        static uint[10] free_fibers;
+        static uint[] free_fibers;
+        static uint[] fibers_to_execute;
 
         void accept() {
             try {
-                writeln("trying to accept");
-                SocketStatus socket_status = ssl_config.listener.acceptSslAsync(client);
-                writeln("Socket status: ", socket_status);
-                assert( client.isAlive );
-                assert( ssl_config.listener.isAlive );
-
-                if ( ssl_config.clients.numberOfClients < ssl_config.max_connections )
-                {
-                    writefln( "Connection from %s established.", client.remoteAddress().toString() );
-                    ssl_config.clients.addClient(client);
-                    writefln( "\tTotal connections: %d", ssl_config.clients.numberOfClients );
+                if ( ssl_config.clients.numberOfClients >= ssl_config.max_connections ) {
+                        writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
+                        client.disconnect();
+                        assert( !client.isAlive );
+                        assert( ssl_config.listener.isAlive );
                 }
-                else
-                {
-                    writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
-                    client.disconnect();
-                    assert( !client.isAlive );
+                else {
+                    bool operation_complete;
+
+                    do {
+                        writeln("trying to accept");
+                        operation_complete = ssl_config.listener.acceptSslAsync(client);
+                        writeln("Operation complete: ", operation_complete);
+                        if ( !operation_complete ) {
+                            Fiber.yield();
+                        }
+                    } while(!operation_complete);
+
+                    assert( client.isAlive );
                     assert( ssl_config.listener.isAlive );
+
+                    if ( ssl_config.clients.numberOfClients < ssl_config.max_connections )
+                    {
+                        writefln( "Connection from %s established.", client.remoteAddress().toString() );
+                        ssl_config.clients.addClient(client);
+                        writefln( "\tTotal connections: %d", ssl_config.clients.numberOfClients );
+                    }
                 }
             } catch(SocketException ex) {
                 writefln("SslSocketException: %s", ex);
@@ -339,13 +348,14 @@ class SSLFiber : Fiber {
         }
 
         void durationTimer() {
-            writefln("In duration timer, current Time: %d", MonoTime.currTime);
-            Duration time_elapsed = MonoTime.currTime - last_cycle_timestamp;
+            const start_cycle_timestamp = MonoTime.currTime;
+            writefln("In duration timer, current Time: %d", start_cycle_timestamp);
+            Fiber.yield();
+            const end_cycle_timestamp = MonoTime.currTime;
+            Duration time_elapsed = end_cycle_timestamp - start_cycle_timestamp;
             if ( time_elapsed < ssl_config.min_full_cycle_time ) {
                 Thread.sleep(ssl_config.min_full_cycle_time - time_elapsed);
             }
-
-            Fiber.yield();
         }
 
         static bool active() {
@@ -362,6 +372,114 @@ class SSLFiber : Fiber {
         }
         do {
             super(&this.accept);
+        }
+
+        static acceptWithFiber()
+        in{
+            assert(fibers !is null);
+            assert(ssl_config.listener !is null);
+        }
+        body {
+            auto next_free_fiber = nextFreeFiber();
+            if ( next_free_fiber == -2 ) {
+                writeln("Service denial: Max number of fibers used and no free fibers avaliable.");
+                ssl_config.listener.rejectClient();
+            }
+            else if ( next_free_fiber == -1) {
+                auto new_fib = new SSLFiber();
+                fibers[fiber_counter] = new_fib;
+                assert(fiber_counter < fiber_counter.max);
+                addFiberToExecute(fiber_counter);
+                fiber_counter++;
+            }
+            else {
+                addFiberToExecute( next_free_fiber );
+            }
+        }
+
+        static int nextFreeFiber()
+        in {
+            assert(fibers !is null);
+            assert(ssl_config !is null);
+        }
+        body{
+            if ( fibers.length >= ssl_config.max_number_of_fibers && !hasFreeFibers) {
+                return -2;
+            }
+
+            if (hasFreeFibers) {
+                return free_fibers[0];
+            } else {
+                return -1;
+            }
+        }
+
+        static bool hasFreeFibers()
+        in{
+            assert(free_fibers !is null);
+        }
+        body{
+            return free_fibers.length > 0;
+        }
+
+        static void ExecuteFiberCycle() {
+            Fiber fib;
+            foreach(key; fibers_to_execute) {
+                fib = fibers[key];
+                fib.call;
+                if ( fib.state == Fiber.State.TERM) {
+                    fib.reset;
+                    if(key != 0) { // not duration
+                        addFreeFiber(key);
+                    }
+                }
+            }
+        }
+
+//Remove fibers...
+        static void addFiberToExecute(uint fiber_key)
+        in  {
+            assert(fibers[fiber_key].state == Fiber.State.HOLD);
+        }
+        body {
+            fibers_to_execute ~= fiber_key;
+        }
+
+        static void addFreeFiber(uint fiber_key)
+        in  {
+            assert(fibers[fiber_key].state == Fiber.State.HOLD);
+        }
+        body {
+            free_fibers ~= fiber_key;
+        }
+
+        static void initFibers ()
+        in {
+            assert(fibers is null);
+            assert(fiber_counter == 0);
+            assert(free_fibers is null);
+            assert(ssl_config !is null);
+        }
+        out {
+            assert(fibers !is null);
+            assert(fiber_counter == ssl_config.min_number_of_fibers+1); //One for the duration fiber
+            assert(free_fibers !is null);
+        }
+        body {
+            writeln("InitFibers;");
+            auto dur_func = &durationTimer;
+            auto dur_fiber = new Fiber(dur_func);
+            fibers[fiber_counter] = dur_fiber;
+            addFiberToExecute(fiber_counter);
+            fiber_counter++;
+            writeln("Added dur fiber");
+            for(int i = 0; i < ssl_config.min_number_of_fibers ; i++) {
+                writeln("Adding fiber");
+                auto acc_fib = new SSLFiber();
+                fibers[fiber_counter] = acc_fib;
+                addFreeFiber(fiber_counter);
+                fiber_counter++;
+            }
         }
     }
 }
@@ -432,8 +550,11 @@ public:
                                                     _listener);
         }
 
-        auto socket_set = new SocketSet(1);
+        SSLFiber.initFibers;
+        writeln("Initiated fibers");
 
+        auto socket_set = new SocketSet(1);
+        Fiber ssl_accept_fib;
         while ( run_scripting_engine ) {
 
             socket_set.add( _listener );
@@ -452,11 +573,17 @@ public:
             if ( sel_res > 0 ) {
                 if (socket_set.isSet(_listener)) {     // connection request
                     writeln("Creates ssl_Accept_fiber");
-                    auto ssl_accept_fib = new SSLFiber();
-                    ssl_accept_fib.call;
+                    // ssl_accept_fib = new SSLFiber();
+                    // ssl_accept_fib.call;
+                    SSLFiber.acceptWithFiber();
                 }
             }
-            //run a cycle.
+
+            SSLFiber.ExecuteFiberCycle;
+
+            // if(ssl_accept_fib !is null && ssl_accept_fib.state == Fiber.State.HOLD) {
+            //     ssl_accept_fib.call;
+            // }
 
             socket_set.reset;
 
