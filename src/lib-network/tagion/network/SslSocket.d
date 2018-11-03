@@ -242,13 +242,18 @@ version(use_openssl) {
                 // client.close();
 				// throw new SslSocketException("ssl handsake, accept");
 
-                return SocketStatus.SSL_ERROR_SSL;
+                return false;
             }
             else {
-                return SocketStatus.SSL_ERROR_NONE;
+                return true;
             }
         }
 
+        @trusted
+        void rejectClient () {
+            super.accept();
+            this.disconnect();
+        }
 
         @trusted
         void disconnect() {
