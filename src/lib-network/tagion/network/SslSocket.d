@@ -1,9 +1,9 @@
 module tagion.network.SslSocket;
 
+import std.stdio : writeln, writefln;
 import std.socket;
-import std.stdio:writeln;
 import core.stdc.stdio;
-import std.exception : assumeUnique;
+import std.range.primitives : isBidirectionalRange;
 
 enum EndpointType {Client, Server};
 
@@ -14,12 +14,15 @@ class SslSocketException : SocketException {
     }
 }
 
-void printDebugInformation (string msg) {
-    int i;
-    auto fmsg = msg ~ "\nPress a number to continue. \n";
-    printf(fmsg.ptr);
-    scanf("%d\n", i);
+debug {
+    void printDebugInformation (string msg) {
+        int i;
+        auto fmsg = msg ~ "\nPress a number to continue. \n";
+        printf(fmsg.ptr);
+        scanf("%d\n", i);
+    }
 }
+
 
 
 version=use_openssl;
@@ -61,11 +64,24 @@ version(use_openssl) {
 
     }
 
+    enum SocketStatus {
+        SSL_ERROR_NONE,
+        SSL_ERROR_ZERO_RETURN,
+        SSL_ERROR_WANT_READ,
+        SSL_ERROR_WANT_WRITE,
+        SSL_ERROR_WANT_CONNECT,
+        SSL_ERROR_WANT_ACCEPT,
+        SSL_ERROR_WANT_X509_LOOKUP,
+        SSL_ERROR_SYSCALL,
+        SSL_ERROR_SSL
+    }
+
     class OpenSslSocket : Socket {
+
         private:
             debug{
                 pragma(msg,"Compiles SslSocket in debug mode" );
-               bool in_debugging_mode = true;
+                enum in_debugging_mode = true;
             }
 
             SSL* _ssl;
@@ -200,19 +216,64 @@ version(use_openssl) {
 
             if ( SSL_accept(ssl_client.getSsl) <= 0 ) {
                 ERR_print_errors_fp(stderr);
-                static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
-                    //TODO: debug!
-                       // printDebugInformation("Error in handsaking, accept");
-                }
 
                 client.shutdown(SocketShutdown.BOTH);
                 client.close();
-                writeln("Before exception");
 				throw new SslSocketException("ssl handsake, accept");
             }
             else {
-                return ssl_client;
+                return cast(Socket)ssl_client;
             }
+        }
+
+        //false=operation not complete and 1, operation complete.
+        bool acceptSslAsync(ref OpenSslSocket ssl_client) {
+            if ( ssl_client is null ) {
+                Socket client = super.accept();
+                client.blocking = false;
+                ssl_client = new OpenSslSocket(client.handle, EndpointType.Server, AddressFamily.INET);
+                SSL_set_fd(ssl_client.getSsl, client.handle);
+            }
+
+            int res = SSL_accept(ssl_client.getSsl);
+            writeln("The result code is: ", res);
+            if ( res <= 0 ) {
+                // client.shutdown(SocketShutdown.BOTH);
+                // client.close();
+				// throw new SslSocketException("ssl handsake, accept");
+
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+
+        @trusted
+        void rejectClient () {
+            super.accept();
+            this.disconnect();
+        }
+
+        @trusted
+        void disconnect() {
+            try
+            {
+                if ( _ssl !is null ) {
+                    SSL_free(_ssl);
+                }
+
+
+                if ((client_ctx !is null || server_ctx !is null) &&
+                    client_ctx != _ctx && server_ctx != _ctx && _ctx !is null) {
+
+                    SSL_CTX_free(_ctx);
+                }
+            } catch(Exception ex) {
+                writeln(ex);
+            }
+
+            super.close();
         }
 
         @trusted
@@ -231,17 +292,10 @@ version(use_openssl) {
             init(true, et);
         }
 
-        ~this() {
-            SSL_free(_ssl);
-            if ( client_ctx != _ctx && server_ctx != _ctx ) {
-                SSL_free(_ssl);
-                SSL_CTX_free(_ctx);
-            }
-        }
-
         static ~this() {
             if ( server_ctx !is null ) SSL_CTX_free(server_ctx);
             if ( client_ctx !is null ) SSL_CTX_free(client_ctx);
+            writeln("Executed static destructor");
         }
     }
 }
