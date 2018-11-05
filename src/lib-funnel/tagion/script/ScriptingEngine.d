@@ -307,6 +307,7 @@ class SSLFiber : Fiber {
 
         void accept() {
             try {
+                //Needs to be tested.- not working
                 SSocket client = null;
                 if ( ssl_gen.clients.numberOfClients >= ssl_gen.max_connections ) {
                         writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
@@ -320,7 +321,8 @@ class SSLFiber : Fiber {
                     do {
                         writeln("trying to accept");
                         writefln("Is ssl_gen null: %s, is listener null: %s", ssl_gen is null, ssl_gen.listener is null);
-                        operation_complete = ssl_gen.listener.acceptSslAsync(client);
+                        uint client_index;
+                        operation_complete = ssl_gen.listener.acceptSslAsync(client_index);
                         writeln("Operation complete: ", operation_complete);
                         if ( !operation_complete ) {
                             Fiber.yield();
