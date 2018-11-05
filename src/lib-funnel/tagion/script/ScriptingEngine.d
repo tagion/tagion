@@ -34,16 +34,16 @@ class SharedClients {
     private shared(uint) client_counter;
 
 
-    this(ref SSocket[uint] _clients)
+    this(ref SSocket[uint] clients)
     in {
         assert(locate_clients is null);
     }
     out {
         assert(locate_clients !is null);
-        client_counter=cast(uint)_clients.length;
+        client_counter=cast(uint)clients.length;
     }
     do {
-        locate_clients = cast(typeof(locate_clients))&_clients;
+        locate_clients = cast(typeof(locate_clients))&clients;
     }
 
     bool active() const pure {
@@ -62,8 +62,9 @@ class SharedClients {
         assert(client_counter <= client_counter.max);
     }
     body {
-        auto clients = cast(SSocket[uint]) *locate_clients;
-        clients[client_counter] = client;
+        auto clients = *locate_clients;
+        auto shared_client = cast(shared(SSocket))client;
+        clients[client_counter] = shared_client;
         client_counter = client_counter +1;
     }
 
@@ -170,12 +171,13 @@ public:
         return (shared_clients !is null) && shared_clients.active;
     }
 
-    void addClient(ref SSocket client) {
+    void addClient( ref SSocket client ) {
         if ( shared_clients is null ) {
             clients[0] = client;
+            writeln("Adding client in null shared_clients");
             shared_clients = new shared(SharedClients)(clients);
-        }
-        else {
+        } else {
+            writeln("Adding client in shared_clients");
             shared_clients.add(client);
         }
     }
@@ -255,10 +257,10 @@ public:
     }
 }
 
-class SSLFiberConfig {
+class SSLFiberGeneral {
     immutable uint max_number_of_fibers;
     immutable uint max_number_of_fiber_reuse;
-    enum min_number_of_fibers = 1;
+    enum min_number_of_fibers = 2;
     immutable uint max_connections;
 
     private Duration _min_full_cycle_time;
@@ -290,35 +292,35 @@ class SSLFiberConfig {
         this._clients = shared_client_access;
         this._listener = listener;
     }
+
 }
 
 class SSLFiber : Fiber {
     private {
-        SSocket client;
-        uint reuse_counter;
-        static SSLFiberConfig ssl_config;
-
+        static SSLFiberGeneral ssl_gen;
         static Fiber[uint] fibers;
         static uint fiber_counter;
         static uint[] free_fibers;
         static uint[] fibers_to_execute;
         static Fiber duration_fiber;
+        static SSLFiber first_fiber;
 
         void accept() {
             try {
-                if ( ssl_config.clients.numberOfClients >= ssl_config.max_connections ) {
+                SSocket client = null;
+                if ( ssl_gen.clients.numberOfClients >= ssl_gen.max_connections ) {
                         writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
                         client.disconnect();
                         assert( !client.isAlive );
-                        assert( ssl_config.listener.isAlive );
+                        assert( ssl_gen.listener.isAlive );
                 }
                 else {
                     bool operation_complete;
-
+                    writefln("Is client nul? %s", client is null);
                     do {
                         writeln("trying to accept");
-                        writefln("Is ssl_config null: %s, is listener null: %s", ssl_config is null, ssl_config.listener is null);
-                        operation_complete = ssl_config.listener.acceptSslAsync(client);
+                        writefln("Is ssl_gen null: %s, is listener null: %s", ssl_gen is null, ssl_gen.listener is null);
+                        operation_complete = ssl_gen.listener.acceptSslAsync(client);
                         writeln("Operation complete: ", operation_complete);
                         if ( !operation_complete ) {
                             Fiber.yield();
@@ -326,13 +328,13 @@ class SSLFiber : Fiber {
                     } while(!operation_complete);
 
                     assert( client.isAlive );
-                    assert( ssl_config.listener.isAlive );
+                    assert( ssl_gen.listener.isAlive );
 
-                    if ( ssl_config.clients.numberOfClients < ssl_config.max_connections )
+                    if ( ssl_gen.clients.numberOfClients < ssl_gen.max_connections )
                     {
                         writefln( "Connection from %s established.", client.remoteAddress().toString() );
-                        ssl_config.clients.addClient(client);
-                        writefln( "\tTotal connections: %d", ssl_config.clients.numberOfClients );
+                        ssl_gen.clients.addClient(client);
+                        writefln( "\tTotal connections: %d", ssl_gen.clients.numberOfClients );
                     }
                 }
             } catch(SocketException ex) {
@@ -340,25 +342,25 @@ class SSLFiber : Fiber {
             }
         }
 
-        void reuseCount() {
-            reuse_counter++;
-        }
+        // void reuseCount() {
+        //     reuse_counter++;
+        // }
 
 
-        bool reuse() {
-            return reuse_counter < ssl_config.max_number_of_fiber_reuse;
-        }
+        // bool reuse() {
+        //     return reuse_counter < ssl_gen.max_number_of_fiber_reuse;
+        // }
 
         void durationTimer() {
             uint counter;
-            while (counter < ssl_config.max_number_of_fiber_reuse) {
+            while (counter < ssl_gen.max_number_of_fiber_reuse) {
                 const start_cycle_timestamp = MonoTime.currTime;
                 Fiber.yield();
                 const end_cycle_timestamp = MonoTime.currTime;
                 Duration time_elapsed = end_cycle_timestamp - start_cycle_timestamp;
                 writeln("Time elapsed: ", time_elapsed);
-                if ( time_elapsed < ssl_config.min_full_cycle_time ) {
-                    Thread.sleep(ssl_config.min_full_cycle_time - time_elapsed);
+                if ( time_elapsed < ssl_gen.min_full_cycle_time ) {
+                    Thread.sleep(ssl_gen.min_full_cycle_time - time_elapsed);
                     writeln("Sleeping");
                 }
 
@@ -367,7 +369,7 @@ class SSLFiber : Fiber {
         }
 
         static bool active() {
-            writefln("min number of fibers: %d, and current free fibers: %d", ssl_config.min_number_of_fibers, free_fibers.length);
+            writefln("min number of fibers: %d, and current free fibers: %d", ssl_gen.min_number_of_fibers, free_fibers.length);
             return fibers_to_execute.length > 0;
         }
     }
@@ -376,16 +378,21 @@ class SSLFiber : Fiber {
 
         this ()
         in {
-            assert(ssl_config.listener !is null);
+            assert(ssl_gen.listener !is null);
         }
         do {
             super(&this.accept);
+            if ( first_fiber is null ) {
+                first_fiber = this;
+                writeln("Set first fiber");
+            }
         }
 
         this (void function() func)
         in {
-            assert(ssl_config.listener !is null);
+            assert(ssl_gen.listener !is null);
             assert(func !is null);
+            assert(first_fiber !is null);
         }
         do {
             super(func);
@@ -395,7 +402,7 @@ class SSLFiber : Fiber {
         static acceptWithFiber()
         in{
             assert(fibers !is null);
-            assert(ssl_config.listener !is null);
+            assert(ssl_gen.listener !is null);
         }
         out{
             writefln("Added fiber. Fibers to execute: %d, free fibers: %d, total fibers: %d",
@@ -408,9 +415,9 @@ class SSLFiber : Fiber {
                 addFiberToExecute( useNextFreeFiber );
             }
             else {
-                if ( fibers.length >= ssl_config.max_number_of_fibers ) {
+                if ( fibers.length >= ssl_gen.max_number_of_fibers ) {
                     writeln("Service denial: Max number of fibers used and no free fibers avaliable.");
-                    ssl_config.listener.rejectClient();
+                    ssl_gen.listener.rejectClient();
                 }
                 writeln("Added a new fiber");
                 auto new_fib = new SSLFiber();
@@ -424,7 +431,7 @@ class SSLFiber : Fiber {
         static int useNextFreeFiber()
         in {
             assert(fibers !is null);
-            assert(ssl_config !is null);
+            assert(ssl_gen !is null);
             assert(hasFreeFibers);
         }
         body{
@@ -459,14 +466,16 @@ class SSLFiber : Fiber {
                 writeln("Executes fibers");
                 fib = fibers[key];
                 fib.call;
-                if ( fib.state == Fiber.State.TERM) {
-                    if ( key < ssl_config.min_number_of_fibers ) { //If the key is less than min number of fibers.
-                        writeln("Adding terminated fiber to free fiber");
-                        fib.reset;
-                        addFreeFiber(key);
-                    } else { //remove the fiber
-                        writeln("Removing fiber from fibers.");
-                        //fibers.remove(key);
+                if ( fib.state == Fiber.State.TERM ) {
+                    if ( SSLFiber.first_fiber !is fib ) { //not the first fiber, which holds the context
+                        if ( key < ssl_gen.min_number_of_fibers ) { //If the key is less than min number of fibers
+                            writeln("Adding terminated fiber to free fiber");
+                            fib.reset;
+                            addFreeFiber(key);
+                        } else { //remove the fiber
+                            writeln("Removing fiber from fibers.");
+                            //fibers.remove(key);
+                        }
                     }
                 } else {
                     writeln("Adding fiber to be executed again.");
@@ -497,26 +506,27 @@ class SSLFiber : Fiber {
             assert(fibers is null);
             assert(fiber_counter == 0);
             assert(free_fibers is null);
-            assert(ssl_config !is null);
+            assert(ssl_gen !is null);
         }
         out {
             assert(fibers !is null);
-            assert(fiber_counter == ssl_config.min_number_of_fibers);
+            assert(fiber_counter == ssl_gen.min_number_of_fibers);
             assert(free_fibers !is null);
         }
         body {
             writeln("InitFibers;");
-            auto dur_func = &durationTimer;
-            duration_fiber = new SSLFiber(dur_func);
-            duration_fiber.call;
-            writeln("Added dur fiber");
-            for(int i = 0; i < ssl_config.min_number_of_fibers ; i++) {
+            for(int i = 0; i < ssl_gen.min_number_of_fibers ; i++) {
                 writeln("Adding fiber");
                 auto acc_fib = new SSLFiber();
                 fibers[fiber_counter] = acc_fib;
                 addFreeFiber(fiber_counter);
                 fiber_counter++;
             }
+
+            auto dur_func = &durationTimer;
+            duration_fiber = new SSLFiber(dur_func);
+            duration_fiber.call;
+            writeln("Added dur fiber");
         }
     }
 }
@@ -578,8 +588,8 @@ public:
         writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
 
         auto s_e_w_c = startScriptingEngineWorker();
-        if ( SSLFiber.ssl_config is null ) {
-            SSLFiber.ssl_config = new SSLFiberConfig(_max_number_of_accept_fibers,
+        if ( SSLFiber.ssl_gen is null ) {
+            SSLFiber.ssl_gen = new SSLFiberGeneral(_max_number_of_accept_fibers,
                                                     _max_number_of_fiber_reuse,
                                                     _max_connections,
                                                     _min_full_cycle_time_accept_fibers,
@@ -600,7 +610,7 @@ public:
 
             if ( SSLFiber.active ) {
                 writeln("SSLFiber active");
-                sel_res = Socket.select( socket_set, null, null, dur!"msecs"(10000));
+                sel_res = Socket.select( socket_set, null, null, dur!"msecs"(1000));
             }
             else {
                 writeln("SSLFiber not active");
