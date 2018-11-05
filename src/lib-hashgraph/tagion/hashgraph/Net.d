@@ -2,7 +2,7 @@ module tagion.hashgraph.Net;
 
 import tagion.hashgraph.GossipNet;
 import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.Event : EventMonitorCallbacks;
+import tagion.hashgraph.Event : EventCallbacks;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.Base : consensusCheck, Pubkey, Buffer;
 
@@ -235,7 +235,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 }
 
 @safe
-interface NetCallbacks : EventMonitorCallbacks {
+interface NetCallbacks : EventCallbacks{
     void wavefront_state_receive(const(HashGraph.Node) n);
     //void wavefront_state_send(const(HashGraph.Node) n);
     void sent_tidewave(immutable(Pubkey) receiving_channel, const(StdGossipNet.Tides) tides);
