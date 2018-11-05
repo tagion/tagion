@@ -49,6 +49,7 @@ version(use_openssl) {
         int SSL_accept(SSL*);
         int SSL_write(SSL*, const void*, int);
         int SSL_read(SSL*, void*, int);
+        int SSL_pending(SSL*);
 
         SSL_CTX* SSL_CTX_new(const SSL_METHOD* method);
         void SSL_CTX_free(SSL_CTX*);
@@ -61,19 +62,23 @@ version(use_openssl) {
         int SSL_CTX_check_private_key(SSL_CTX*);
 
         void ERR_print_errors_fp(FILE*);
+        int SSL_get_error(const SSL *ssl, int ret);
 
     }
 
-    enum SocketStatus {
-        SSL_ERROR_NONE,
-        SSL_ERROR_ZERO_RETURN,
-        SSL_ERROR_WANT_READ,
-        SSL_ERROR_WANT_WRITE,
-        SSL_ERROR_WANT_CONNECT,
-        SSL_ERROR_WANT_ACCEPT,
-        SSL_ERROR_WANT_X509_LOOKUP,
-        SSL_ERROR_SYSCALL,
-        SSL_ERROR_SSL
+    enum {
+        SSL_ERROR_NONE = 0,
+        SSL_ERROR_SSL = 1,
+        SSL_ERROR_WANT_READ = 2,
+        SSL_ERROR_WANT_WRITE = 3,
+        SSL_ERROR_WANT_X509_LOOKUP = 4,
+        SSL_ERROR_SYSCALL = 5,           /* look at error stack/return
+                                           * value/errno */
+        SSL_ERROR_ZERO_RETURN = 6,
+        SSL_ERROR_WANT_CONNECT = 7,
+        SSL_ERROR_WANT_ACCEPT = 8,
+        SSL_ERROR_WANT_ASYNC = 9,
+        SSL_ERROR_WANT_ASYNC_JOB = 10
     }
 
     class OpenSslSocket : Socket {
@@ -88,6 +93,7 @@ version(use_openssl) {
 
             SSL_CTX* _ctx;
 
+            uint accept_counter;
             //Static are used as default as context. A setter/argu. in cons. for the context
             //could be impl. if diff. contexts for diff SSL are needed.
             static SSL_CTX* client_ctx;
@@ -229,24 +235,64 @@ version(use_openssl) {
         //false=operation not complete and 1, operation complete.
         bool acceptSslAsync(ref OpenSslSocket ssl_client) {
             if ( ssl_client is null ) {
+                writeln("Accepting new client");
                 Socket client = super.accept();
+                if ( !client.isAlive ) {
+                    client.close;
+                    writeln("Could not establish conenction");
+                }
+                writeln("Set Non-blocking");
                 client.blocking = false;
+                writeln("Create new OpenSslSocket");
                 ssl_client = new OpenSslSocket(client.handle, EndpointType.Server, AddressFamily.INET);
                 SSL_set_fd(ssl_client.getSsl, client.handle);
             }
 
-            int res = SSL_accept(ssl_client.getSsl);
-            writeln("The result code is: ", res);
-            if ( res <= 0 ) {
-                // client.shutdown(SocketShutdown.BOTH);
-                // client.close();
-				// throw new SslSocketException("ssl handsake, accept");
+            auto c_ssl = ssl_client.getSsl;
 
-                return false;
+            const res = SSL_accept(c_ssl);
+
+            auto ssl_error = SSL_get_error(c_ssl, res);
+            bool accepted;
+            bool accept_blocked;
+
+            writefln("The ssl error code: %d", ssl_error);
+            switch(ssl_error) {
+                case SSL_ERROR_NONE:
+                    accepted = true;
+                    writeln("accepted new SSL connection");
+                    break;
+
+                case SSL_ERROR_ZERO_RETURN:
+                    accept_blocked = true;
+                    //throw an error;
+                    break;
+
+                case SSL_ERROR_WANT_READ:
+                    writefln("SSL_ERROR_WANT_READ");
+                    break;
+
+                case SSL_ERROR_WANT_WRITE:
+                    writefln("SSL_ERROR_WANT_WRITE");
+                    break;
+
+                default:
+                    accept_blocked = 1;
+                    //throw error;
             }
-            else {
-                return true;
+
+            auto result = false;
+
+            if( ( SSL_pending(c_ssl) || (!accepted && !accept_blocked) ) &&
+            accept_counter < 10 ) {
+                result = false;
+            } else {
+                result = true;
             }
+
+            accept_counter++;
+
+            return result;
         }
 
         @trusted
@@ -279,6 +325,11 @@ version(use_openssl) {
         @trusted
         SSL* getSsl() {
             return this._ssl;
+        }
+
+        @safe
+        uint AcceptCounter() pure const {
+            return accept_counter;
         }
 
         this(AddressFamily af, EndpointType et,
