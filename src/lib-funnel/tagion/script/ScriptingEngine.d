@@ -258,7 +258,7 @@ public:
 class SSLFiberConfig {
     immutable uint max_number_of_fibers;
     immutable uint max_number_of_fiber_reuse;
-    enum min_number_of_fibers = 10;
+    enum min_number_of_fibers = 1;
     immutable uint max_connections;
 
     private Duration _min_full_cycle_time;
@@ -302,6 +302,7 @@ class SSLFiber : Fiber {
         static uint fiber_counter;
         static uint[] free_fibers;
         static uint[] fibers_to_execute;
+        static Fiber duration_fiber;
 
         void accept() {
             try {
@@ -316,6 +317,7 @@ class SSLFiber : Fiber {
 
                     do {
                         writeln("trying to accept");
+                        writefln("Is ssl_config null: %s, is listener null: %s", ssl_config is null, ssl_config.listener is null);
                         operation_complete = ssl_config.listener.acceptSslAsync(client);
                         writeln("Operation complete: ", operation_complete);
                         if ( !operation_complete ) {
@@ -348,19 +350,25 @@ class SSLFiber : Fiber {
         }
 
         void durationTimer() {
-            const start_cycle_timestamp = MonoTime.currTime;
-            writefln("In duration timer, current Time: %d", start_cycle_timestamp);
-            Fiber.yield();
-            const end_cycle_timestamp = MonoTime.currTime;
-            Duration time_elapsed = end_cycle_timestamp - start_cycle_timestamp;
-            if ( time_elapsed < ssl_config.min_full_cycle_time ) {
-                Thread.sleep(ssl_config.min_full_cycle_time - time_elapsed);
+            uint counter;
+            while (counter < ssl_config.max_number_of_fiber_reuse) {
+                const start_cycle_timestamp = MonoTime.currTime;
+                Fiber.yield();
+                const end_cycle_timestamp = MonoTime.currTime;
+                Duration time_elapsed = end_cycle_timestamp - start_cycle_timestamp;
+                writeln("Time elapsed: ", time_elapsed);
+                if ( time_elapsed < ssl_config.min_full_cycle_time ) {
+                    Thread.sleep(ssl_config.min_full_cycle_time - time_elapsed);
+                    writeln("Sleeping");
+                }
+
+                counter++;
             }
         }
 
         static bool active() {
             writefln("min number of fibers: %d, and current free fibers: %d", ssl_config.min_number_of_fibers, free_fibers.length);
-            return ssl_config.min_number_of_fibers > free_fibers.length;
+            return fibers_to_execute.length > 0;
         }
     }
 
@@ -374,44 +382,55 @@ class SSLFiber : Fiber {
             super(&this.accept);
         }
 
+        this (void function() func)
+        in {
+            assert(ssl_config.listener !is null);
+            assert(func !is null);
+        }
+        do {
+            super(func);
+        }
+
+
         static acceptWithFiber()
         in{
             assert(fibers !is null);
             assert(ssl_config.listener !is null);
         }
+        out{
+            writefln("Added fiber. Fibers to execute: %d, free fibers: %d, total fibers: %d",
+            fibers_to_execute.length, free_fibers.length, fibers.length);
+        }
         body {
-            auto next_free_fiber = nextFreeFiber();
-            if ( next_free_fiber == -2 ) {
-                writeln("Service denial: Max number of fibers used and no free fibers avaliable.");
-                ssl_config.listener.rejectClient();
+            auto has_free_fiber = hasFreeFibers;
+            if ( has_free_fiber ) {
+                writeln("Using free fiber");
+                addFiberToExecute( useNextFreeFiber );
             }
-            else if ( next_free_fiber == -1) {
+            else {
+                if ( fibers.length >= ssl_config.max_number_of_fibers ) {
+                    writeln("Service denial: Max number of fibers used and no free fibers avaliable.");
+                    ssl_config.listener.rejectClient();
+                }
+                writeln("Added a new fiber");
                 auto new_fib = new SSLFiber();
                 fibers[fiber_counter] = new_fib;
                 assert(fiber_counter < fiber_counter.max);
                 addFiberToExecute(fiber_counter);
                 fiber_counter++;
             }
-            else {
-                addFiberToExecute( next_free_fiber );
-            }
         }
 
-        static int nextFreeFiber()
+        static int useNextFreeFiber()
         in {
             assert(fibers !is null);
             assert(ssl_config !is null);
+            assert(hasFreeFibers);
         }
         body{
-            if ( fibers.length >= ssl_config.max_number_of_fibers && !hasFreeFibers) {
-                return -2;
-            }
-
-            if (hasFreeFibers) {
-                return free_fibers[0];
-            } else {
-                return -1;
-            }
+            auto res = free_fibers[0];
+            free_fibers = free_fibers[1..free_fibers.length];
+            return res;
         }
 
         static bool hasFreeFibers()
@@ -424,14 +443,34 @@ class SSLFiber : Fiber {
 
         static void ExecuteFiberCycle() {
             Fiber fib;
-            foreach(key; fibers_to_execute) {
+            uint[] temp_fibers_to_execute;
+            temp_fibers_to_execute = fibers_to_execute;
+            fibers_to_execute = null;
+            assert(temp_fibers_to_execute !is null);
+            duration_fiber.call;
+            if ( duration_fiber.state == Fiber.State.TERM ) {
+                auto dur_func = &durationTimer;
+                duration_fiber = new SSLFiber(dur_func);
+                duration_fiber.call;
+                writeln("Added duration fiber");
+            }
+
+            foreach(key; temp_fibers_to_execute) {
+                writeln("Executes fibers");
                 fib = fibers[key];
                 fib.call;
                 if ( fib.state == Fiber.State.TERM) {
-                    fib.reset;
-                    if(key != 0) { // not duration
+                    if ( key < ssl_config.min_number_of_fibers ) { //If the key is less than min number of fibers.
+                        writeln("Adding terminated fiber to free fiber");
+                        fib.reset;
                         addFreeFiber(key);
+                    } else { //remove the fiber
+                        writeln("Removing fiber from fibers.");
+                        //fibers.remove(key);
                     }
+                } else {
+                    writeln("Adding fiber to be executed again.");
+                    addFiberToExecute(key);
                 }
             }
         }
@@ -462,16 +501,14 @@ class SSLFiber : Fiber {
         }
         out {
             assert(fibers !is null);
-            assert(fiber_counter == ssl_config.min_number_of_fibers+1); //One for the duration fiber
+            assert(fiber_counter == ssl_config.min_number_of_fibers);
             assert(free_fibers !is null);
         }
         body {
             writeln("InitFibers;");
             auto dur_func = &durationTimer;
-            auto dur_fiber = new Fiber(dur_func);
-            fibers[fiber_counter] = dur_fiber;
-            addFiberToExecute(fiber_counter);
-            fiber_counter++;
+            duration_fiber = new SSLFiber(dur_func);
+            duration_fiber.call;
             writeln("Added dur fiber");
             for(int i = 0; i < ssl_config.min_number_of_fibers ; i++) {
                 writeln("Adding fiber");
@@ -563,7 +600,7 @@ public:
 
             if ( SSLFiber.active ) {
                 writeln("SSLFiber active");
-                sel_res = Socket.select( socket_set, null, null, dur!"msecs"(1000));
+                sel_res = Socket.select( socket_set, null, null, dur!"msecs"(10000));
             }
             else {
                 writeln("SSLFiber not active");
