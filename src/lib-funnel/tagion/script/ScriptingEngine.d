@@ -6,14 +6,15 @@ import tagion.Base : Control;
 import core.thread;
 import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown, AddressFamily;
 import tagion.network.SslSocket;
+import core.atomic;
 
 alias SSocket = OpenSslSocket;
-
+alias se_options = options.scripting_engine;
 
 ScriptingEngineContext startScriptingEngine () {
     auto s_e_c = ScriptingEngineContext();
 
-    s_e_c.scripting_engine = ScriptingEngine(options.scripting_engine);
+    s_e_c.scripting_engine = ScriptingEngine();
 
     void delegate() scr_eng_del;
     scr_eng_del.funcptr = &ScriptingEngine.run;
@@ -28,85 +29,79 @@ struct ScriptingEngineContext {
     Thread scripting_engine_tread;
 }
 
-synchronized
+
 class SharedClients {
-    private shared (SSocket[uint])* locate_clients;
-    private shared(uint) client_counter;
-
-
-    this(ref SSocket[uint] clients)
-    in {
-        assert(locate_clients is null);
-    }
-    out {
-        assert(locate_clients !is null);
-        client_counter=cast(uint)clients.length;
-    }
-    do {
-        locate_clients = cast(typeof(locate_clients))&clients;
+    synchronized {
+        private shared (SSocket[uint])* _locate_clients;
+        private shared uint _client_counter;
     }
 
-    bool active() const pure {
-        return (locate_clients !is null);
+    bool active() const pure shared {
+        return (_locate_clients !is null);
     }
 
-    uint length() pure const {
-        auto clients = cast(SSocket[uint]) *locate_clients;
+    uint useNextKey () shared {
+        atomicOp!"+="(this._client_counter, 1); //0 is used as a null value in the reference call between accept.
+        return cast(uint)_client_counter;
+    }
+
+    uint length() pure const shared {
+        auto clients = cast(SSocket[uint]) *_locate_clients;
         return cast(uint)clients.length;
     }
 
     void add(ref SSocket client)
     in {
-        assert(locate_clients !is null);
+        assert(_locate_clients !is null);
         assert(client !is null);
-        assert(client_counter <= client_counter.max);
+        assert(_client_counter <= _client_counter.max);
     }
     body {
-        auto clients = *locate_clients;
+        auto clients = *_locate_clients;
         auto shared_client = cast(shared(SSocket))client;
-        clients[client_counter] = shared_client;
-        client_counter = client_counter +1;
+        clients[_client_counter] = shared_client;
+        _client_counter = _client_counter +1;
     }
 
-    void removeClient(uint key)
+    void removeClient(uint key) shared
     in {
-        assert(locate_clients !is null);
-        assert(key in *locate_clients);
+        assert(_locate_clients !is null);
+        assert(key in *_locate_clients);
     }
     out{
-        assert(key !in *locate_clients);
+        assert(key !in *_locate_clients);
     }
     body{
-        auto clients = cast(SSocket[uint]) *locate_clients;
+        auto clients = cast(SSocket[uint]) *_locate_clients;
         clients.remove(key);
     }
 
 
-    void closeAll() {
+    void closeAll() shared {
         if ( active ) {
-            auto clients = cast(SSocket[uint]) *locate_clients;
+            auto clients = cast(SSocket[uint]) *_locate_clients;
             foreach ( key, client; clients ) {
                 client.disconnect;
             }
-            locate_clients = null;
-            client_counter = 0;
+            _locate_clients = null;
+            _client_counter = 0;
         }
     }
 
-    void addClientsToSocketSet(ref SocketSet socket_set)
+    void addClientsToSocketSet(ref SocketSet socket_set) shared
     in {
         assert(socket_set !is null);
         assert(active);
     }
     body {
-        auto clients = cast(SSocket[uint]) *locate_clients;
+        auto clients = cast(SSocket[uint]) *_locate_clients;
         foreach(client; clients) {
             socket_set.add(client);
         }
     }
 
-    void readDataAllClients(ref SocketSet socket_set) {
-        auto clients = cast(SSocket[uint]) *locate_clients;
+    void readDataAllClients(ref SocketSet socket_set) shared {
+        auto clients = cast(SSocket[uint]) *_locate_clients;
         foreach ( key, client; clients) {
             if( socket_set.isSet(client) )  {
                 char[1024] buffer;
@@ -152,57 +147,118 @@ class SharedClients {
     }
 }
 
-struct SharedClientAccess {
+class SharedClientAccess {
 private:
-    static shared(SharedClients) shared_clients;
-    SSocket[uint] clients;
+    static shared(SharedClients) _shared_clients;
+    SSocket _listener;
+    SSocket[uint] _clients;
+    uint _max_connections;
 
 public:
 
+    this(ref SSocket listener, Options.ScriptingEngine se_options)
+    in {
+        assert(_listener is null);
+    }
+    out{
+        assert(_listener !is null);
+    }
+    body{
+        this._listener = listener;
+        this._max_connections = se_options.max_connections;
+    }
+
+    this() {
+
+    }
+
+    SSocket listener() {
+        return _listener;
+    }
+
     uint numberOfClients() const{
         uint res;
-        if ( shared_clients !is null ) {
-            res = shared_clients.length;
+        if ( _shared_clients !is null ) {
+            res = _shared_clients.length;
         }
          return res;
     }
 
     bool active() const {
-        return (shared_clients !is null) && shared_clients.active;
+        return (_shared_clients !is null) && _shared_clients.active;
     }
 
-    void addClient( ref SSocket client ) {
-        if ( shared_clients is null ) {
-            clients[0] = client;
-            writeln("Adding client in null shared_clients");
-            shared_clients = new shared(SharedClients)(clients);
-        } else {
-            writeln("Adding client in shared_clients");
-            shared_clients.add(client);
-        }
+    uint useNextKey() {
+        return _shared_clients.useNextKey;
     }
 
-    void removeClient(uint key) {
-        if ( shared_clients !is null ) {
-            shared_clients.removeClient(key);
+    bool accept(ref uint key)
+    in {
+        if ( key != 0) {
+            assert (key in _clients);
         }
     }
+    body {
+        try {
+            SSocket client;
+            if ( key == 0 ) {
+                key = useNextKey;
+            } else {
+                client = _clients[key];
+            }
+
+            if ( numberOfClients >= this._max_connections ) {
+                    _listener.rejectClient();
+                    assert( _listener.isAlive );
+            }
+            else {
+                bool operation_complete;
+                writefln("Is client nul? %s", client is null);
+                writeln("trying to accept");
+                writefln("Is listener null: %s", _listener is null);
+                operation_complete = _listener.acceptSslAsync(client);
+                writeln("Operation complete: ", operation_complete);
+                if ( !operation_complete ) {
+                    return false;
+                }
+                else {
+                    assert( client.isAlive );
+                    assert( _listener.isAlive );
+
+                    if ( numberOfClients < _max_connections )
+                    {
+                        writefln( "Connection from %s established.", client.remoteAddress().toString() );
+                        //_shared_clients.addClient(client);
+                        writefln( "\tTotal connections: %d", numberOfClients );
+                    }
+                }
+            }
+
+        } catch(SocketException ex) {
+            writefln("SslSocketException: %s", ex);
+        }
+
+        return true;
+    }
+
+
+
 
     void closeAll() {
         if ( active ) {
-            shared_clients.closeAll;
+            _shared_clients.closeAll;
         }
     }
 
     void addClientsToSocketSet(ref SocketSet socket_set) {
         if ( socket_set !is null && active ) {
-            shared_clients.addClientsToSocketSet(socket_set);
+            _shared_clients.addClientsToSocketSet(socket_set);
         }
     }
 
     void readDataAllClients(ref SocketSet socket_set) {
         if ( active ) {
-            shared_clients.readDataAllClients(socket_set);
+            _shared_clients.readDataAllClients(socket_set);
         }
     }
 }
@@ -228,7 +284,7 @@ struct ScriptingEngineWorkerContext {
 struct ScriptingEngineWorker {
 private:
     enum _buffer_size = 1024;
-    SharedClientAccess shared_client_access = SharedClientAccess();
+    SharedClientAccess shared_client_access = new SharedClientAccess();
     alias clients = shared_client_access;
     bool run_scripting_engine_worker = true;
 
@@ -257,91 +313,55 @@ public:
     }
 }
 
-class SSLFiberGeneral {
-    immutable uint max_number_of_fibers;
-    immutable uint max_number_of_fiber_reuse;
-    enum min_number_of_fibers = 2;
-    immutable uint max_connections;
-
-    private Duration _min_full_cycle_time;
-    private SharedClientAccess _clients;
-    private SSocket _listener;
-
-    Duration min_full_cycle_time () {
-        return _min_full_cycle_time;
-    }
-
-    SharedClientAccess clients () {
-        return _clients;
-    }
-
-    SSocket listener () {
-        return _listener;
-    }
-
-    this(const uint max_number_of_fibers,
-        const uint max_number_of_fiber_reuse,
-        const uint max_connections,
-        Duration min_full_cycle_time,
-        SharedClientAccess shared_client_access,
-        ref SSocket listener) {
-        this.max_number_of_fibers = max_number_of_fibers;
-        this.max_number_of_fiber_reuse = max_number_of_fiber_reuse;
-        this.max_connections = max_connections;
-        this._min_full_cycle_time = min_full_cycle_time;
-        this._clients = shared_client_access;
-        this._listener = listener;
-    }
-
-}
 
 class SSLFiber : Fiber {
     private {
-        static SSLFiberGeneral ssl_gen;
+        enum min_number_of_fibers = 2;
         static Fiber[uint] fibers;
         static uint fiber_counter;
         static uint[] free_fibers;
         static uint[] fibers_to_execute;
         static Fiber duration_fiber;
-        static SSLFiber first_fiber;
+        static SharedClientAccess shared_client_access;
+        alias clients = shared_client_access;
 
         void accept() {
-            try {
-                //Needs to be tested.- not working
-                SSocket client = null;
-                if ( ssl_gen.clients.numberOfClients >= ssl_gen.max_connections ) {
-                        writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
-                        client.disconnect();
-                        assert( !client.isAlive );
-                        assert( ssl_gen.listener.isAlive );
-                }
-                else {
-                    bool operation_complete;
-                    writefln("Is client nul? %s", client is null);
-                    do {
-                        writeln("trying to accept");
-                        writefln("Is ssl_gen null: %s, is listener null: %s", ssl_gen is null, ssl_gen.listener is null);
-                        uint client_index;
-                        operation_complete = ssl_gen.listener.acceptSslAsync(client_index);
-                        writeln("Operation complete: ", operation_complete);
-                        if ( !operation_complete ) {
-                            Fiber.yield();
-                        }
-                    } while(!operation_complete);
+            // try {
+            //     //Needs to be tested.- not working
+            //     SSocket client = null;
+            //     if ( ssl_gen.clients.numberOfClients >= ssl_gen.max_connections ) {
+            //             writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
+            //             client.disconnect();
+            //             assert( !client.isAlive );
+            //             assert( ssl_gen.listener.isAlive );
+            //     }
+            //     else {
+            //         bool operation_complete;
+            //         writefln("Is client nul? %s", client is null);
+            //         do {
+            //             writeln("trying to accept");
+            //             writefln("Is ssl_gen null: %s, is listener null: %s", ssl_gen is null, ssl_gen.listener is null);
+            //             uint client_index;
+            //             operation_complete = ssl_gen.listener.acceptSslAsync(client_index);
+            //             writeln("Operation complete: ", operation_complete);
+            //             if ( !operation_complete ) {
+            //                 Fiber.yield();
+            //             }
+            //         } while(!operation_complete);
 
-                    assert( client.isAlive );
-                    assert( ssl_gen.listener.isAlive );
+            //         assert( client.isAlive );
+            //         assert( ssl_gen.listener.isAlive );
 
-                    if ( ssl_gen.clients.numberOfClients < ssl_gen.max_connections )
-                    {
-                        writefln( "Connection from %s established.", client.remoteAddress().toString() );
-                        ssl_gen.clients.addClient(client);
-                        writefln( "\tTotal connections: %d", ssl_gen.clients.numberOfClients );
-                    }
-                }
-            } catch(SocketException ex) {
-                writefln("SslSocketException: %s", ex);
-            }
+            //         if ( ssl_gen.clients.numberOfClients < ssl_gen.max_connections )
+            //         {
+            //             writefln( "Connection from %s established.", client.remoteAddress().toString() );
+            //             ssl_gen.clients.addClient(client);
+            //             writefln( "\tTotal connections: %d", ssl_gen.clients.numberOfClients );
+            //         }
+            //     }
+            // } catch(SocketException ex) {
+            //     writefln("SslSocketException: %s", ex);
+            // }
         }
 
         // void reuseCount() {
@@ -355,14 +375,14 @@ class SSLFiber : Fiber {
 
         void durationTimer() {
             uint counter;
-            while (counter < ssl_gen.max_number_of_fiber_reuse) {
+            while (counter < max_number_of_fiber_reuse) {
                 const start_cycle_timestamp = MonoTime.currTime;
                 Fiber.yield();
                 const end_cycle_timestamp = MonoTime.currTime;
                 Duration time_elapsed = end_cycle_timestamp - start_cycle_timestamp;
                 writeln("Time elapsed: ", time_elapsed);
                 if ( time_elapsed < ssl_gen.min_full_cycle_time ) {
-                    Thread.sleep(ssl_gen.min_full_cycle_time - time_elapsed);
+                    Thread.sleep(se_options.min_duration_full_fibers_cycle_ms - time_elapsed);
                     writeln("Sleeping");
                 }
 
@@ -380,21 +400,16 @@ class SSLFiber : Fiber {
 
         this ()
         in {
-            assert(ssl_gen.listener !is null);
+            assert(clients.listener !is null);
         }
         do {
             super(&this.accept);
-            if ( first_fiber is null ) {
-                first_fiber = this;
-                writeln("Set first fiber");
-            }
         }
 
         this (void function() func)
         in {
-            assert(ssl_gen.listener !is null);
+            assert(clients.listener !is null);
             assert(func !is null);
-            assert(first_fiber !is null);
         }
         do {
             super(func);
@@ -469,16 +484,15 @@ class SSLFiber : Fiber {
                 fib = fibers[key];
                 fib.call;
                 if ( fib.state == Fiber.State.TERM ) {
-                    if ( SSLFiber.first_fiber !is fib ) { //not the first fiber, which holds the context
-                        if ( key < ssl_gen.min_number_of_fibers ) { //If the key is less than min number of fibers
-                            writeln("Adding terminated fiber to free fiber");
-                            fib.reset;
-                            addFreeFiber(key);
-                        } else { //remove the fiber
-                            writeln("Removing fiber from fibers.");
-                            //fibers.remove(key);
-                        }
+                    if ( key < ssl_gen.min_number_of_fibers ) { //If the key is less than min number of fibers
+                        writeln("Adding terminated fiber to free fiber");
+                        fib.reset;
+                        addFreeFiber(key);
+                    } else { //remove the fiber
+                        writeln("Removing fiber from fibers.");
+                        //fibers.remove(key);
                     }
+
                 } else {
                     writeln("Adding fiber to be executed again.");
                     addFiberToExecute(key);
@@ -533,38 +547,20 @@ class SSLFiber : Fiber {
     }
 }
 
+class ScriptingEngineOptions {
+
+}
 
 struct ScriptingEngine {
 
 private:
-    SharedClientAccess shared_clients_access = SharedClientAccess();
+    SharedClientAccess shared_clients_access;
     alias clients = this.shared_clients_access;
-    immutable char[] _listener_ip_address;
-    immutable ushort _listener_port;
-    const uint _max_connections;
-    immutable uint _listener_max_queue_length;
-    const uint _max_number_of_accept_fibers;
-    const Duration _min_full_cycle_time_accept_fibers;
-    const uint _max_number_of_fiber_reuse;
 
     OpenSslSocket _listener;
     enum _buffer_size = 1024;
 
 public:
-
-    this (Options.ScriptingEngine se_options) {
-        _listener_ip_address = se_options.listener_ip_address;
-        _listener_port = se_options.listener_port;
-        _listener_max_queue_length = se_options.listener_max_queue_lenght;
-        _max_connections = se_options.max_connections;
-        _max_number_of_accept_fibers = se_options.max_number_of_accept_fibers;
-        _min_full_cycle_time_accept_fibers = dur!"msecs"(se_options.min_duration_full_fibers_cycle_ms);
-        _max_number_of_fiber_reuse = se_options.max_number_of_fiber_reuse;
-    }
-
-    ~this () {
-        //Implement desct. to free network res. Maybe call close function.
-    }
 
     bool run_scripting_engine = true;
 
@@ -576,7 +572,7 @@ public:
     void stop () {
         writeln("Stops scripting engine API");
         run_scripting_engine = false;
-        sPing( _listener_ip_address, _listener_port );
+        sPing( se_options.listener_ip_address, se_options.listener_port );
     }
 
     void run () {
@@ -585,19 +581,13 @@ public:
         assert(_listener.isAlive);
         _listener.configureContext("pem_files/domain.pem", "pem_files/domain.key.pem");
         _listener.blocking = false;
-        _listener.bind( new InternetAddress( _listener_ip_address, _listener_port ) );
-        _listener.listen( _listener_max_queue_length );
-        writefln("Started scripting engine API started on %s:%s.", _listener_ip_address, _listener_port);
+        _listener.bind( new InternetAddress( se_options.listener_ip_address, se_options.listener_port ) );
+        _listener.listen( se_options.listener_max_queue_length );
+        writefln("Started scripting engine API started on %s:%s.", se_options.listener_ip_address, se_options.listener_port);
 
         auto s_e_w_c = startScriptingEngineWorker();
-        if ( SSLFiber.ssl_gen is null ) {
-            SSLFiber.ssl_gen = new SSLFiberGeneral(_max_number_of_accept_fibers,
-                                                    _max_number_of_fiber_reuse,
-                                                    _max_connections,
-                                                    _min_full_cycle_time_accept_fibers,
-                                                    clients,
-                                                    _listener);
-        }
+
+        clients = SharedClientAccess(_listener);
 
         SSLFiber.initFibers;
         writeln("Initiated fibers");
