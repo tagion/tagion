@@ -1,7 +1,5 @@
 module tagion.script.Script;
 
-//private import tango.core.Exception;
-
 import std.bigint;
 import std.internal.math.biguintnoasm : BigDigit;
 import std.stdio;
