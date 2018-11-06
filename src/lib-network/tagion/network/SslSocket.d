@@ -297,7 +297,8 @@ version(use_openssl) {
 
         @trusted
         void rejectClient () {
-            super.accept();
+            auto client = super.accept();
+            writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
             this.disconnect();
         }
 
