@@ -40,15 +40,9 @@ struct Options {
         //Port
         ushort listener_port;
         //Listener max. incomming connection req. queue length
-        uint listener_max_queue_length;
+        uint listener_max_queue_lenght;
         //Max simultanious connections for the scripting engine
         uint max_connections;
-        //Max simultanious fibers for accepting incomming SSL connections.
-        uint max_number_of_accept_fibers;
-        //Min duration between a full call cycle for all fibers in milliseconds;
-        uint min_duration_full_fibers_cycle_ms;
-        //Number of times to reuse a fiber
-        uint max_number_of_fiber_reuse;
     }
 
     ScriptingEngine scripting_engine;
