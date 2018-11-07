@@ -1,9 +1,9 @@
 module tagion.network.SslSocket;
 
-import std.stdio : writeln, writefln;
 import std.socket;
 import core.stdc.stdio;
 import std.range.primitives : isBidirectionalRange;
+import std.string : format;
 
 enum EndpointType {Client, Server};
 
@@ -15,11 +15,10 @@ class SslSocketException : SocketException {
 }
 
 debug {
+    import std.stdio : writeln;
     void printDebugInformation (string msg) {
         int i;
-        auto fmsg = msg ~ "\nPress a number to continue. \n";
-        printf(fmsg.ptr);
-        scanf("%d\n", i);
+        writeln(msg);
     }
 }
 
@@ -235,15 +234,15 @@ version(use_openssl) {
         //false=operation not complete and 1, operation complete.
         bool acceptSslAsync(ref OpenSslSocket ssl_client) {
             if ( ssl_client is null ) {
-                writeln("Accepting new client");
+                static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                    printDebugInformation("Accepting new client");
+                }
                 Socket client = super.accept();
                 if ( !client.isAlive ) {
                     client.close;
-                    writeln("Could not establish conenction");
+                    throw new SslSocketException("Socket could not connect to client. Socket closed.");
                 }
-                writeln("Set Non-blocking");
                 client.blocking = false;
-                writeln("Create new OpenSslSocket");
                 ssl_client = new OpenSslSocket(client.handle, EndpointType.Server, AddressFamily.INET);
                 SSL_set_fd(ssl_client.getSsl, client.handle);
             }
@@ -254,36 +253,61 @@ version(use_openssl) {
 
             auto ssl_error = SSL_get_error(c_ssl, res);
             bool accepted;
-            bool accept_blocked;
 
-            writefln("The ssl error code: %d", ssl_error);
             switch(ssl_error) {
                 case SSL_ERROR_NONE:
                     accepted = true;
-                    writeln("accepted new SSL connection");
+                    static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                        printDebugInformation("Accepted new SSL connection");
+                    }
                     break;
 
-                case SSL_ERROR_ZERO_RETURN:
-                    accept_blocked = true;
-                    //throw an error;
+                case SSL_ERROR_SSL:
+                    ssl_client.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d\n
+                                                 Connection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_WANT_READ:
-                    writefln("SSL_ERROR_WANT_READ");
+                    static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                        printDebugInformation("SSL_ERROR_WANT_READ");
+                    }
                     break;
 
                 case SSL_ERROR_WANT_WRITE:
-                    writefln("SSL_ERROR_WANT_WRITE");
+                    static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                        printDebugInformation("SSL_ERROR_WANT_WRITE");
+                    }
+                    break;
+
+                case SSL_ERROR_WANT_X509_LOOKUP:
+                    ssl_client.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d\n
+                                                 Connection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_SYSCALL:
+                    ssl_client.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d\n
+                                                 Connection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_ZERO_RETURN:
+                    ssl_client.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d\n
+                                                Connection closed and cleaned up.", ssl_error) );
                     break;
 
                 default:
-                    accept_blocked = 1;
-                    //throw error;
+                    ssl_client.disconnect;
+                    throw new SslSocketException( format("SSL Error. SSL error code: %d\n
+                                                Connection closed and cleaned up.", ssl_error) );
+                    break;
             }
 
             auto result = false;
 
-            if(  SSL_pending(c_ssl) || (!accepted && !accept_blocked) ) {
+            if(  SSL_pending(c_ssl) || !accepted  ) {
                 result = false;
             } else {
                 result = true;
@@ -297,7 +321,9 @@ version(use_openssl) {
         @trusted
         void rejectClient () {
             auto client = super.accept();
-            writefln( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() );
+            static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                printDebugInformation( format( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() ) );
+            }
             this.disconnect();
         }
 
@@ -316,7 +342,9 @@ version(use_openssl) {
                     SSL_CTX_free(_ctx);
                 }
             } catch(Exception ex) {
-                writeln(ex);
+                static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                    printDebugInformation( format( "Exception from disconnect(), %s : %s \n msg: ", ex.file, ex.line, ex.msg) );
+                }
             }
 
             super.close();
@@ -346,7 +374,9 @@ version(use_openssl) {
         static ~this() {
             if ( server_ctx !is null ) SSL_CTX_free(server_ctx);
             if ( client_ctx !is null ) SSL_CTX_free(client_ctx);
-            writeln("Executed static destructor");
+            static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                printDebugInformation( "Executed static destructor" );
+            }
         }
     }
 }
