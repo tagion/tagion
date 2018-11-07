@@ -513,6 +513,7 @@ class ScriptingEngineOptions {
     immutable Duration min_duration_full_fibers_cycle_ms;
     immutable uint max_number_of_fiber_reuse;
     enum min_number_of_fibers = 10;
+     enum max_number_calls = 10;
 
     this(Options.ScriptingEngine se_options) {
         this.max_connections = se_options.max_connections;
