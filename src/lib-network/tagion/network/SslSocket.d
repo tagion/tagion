@@ -264,8 +264,7 @@ version(use_openssl) {
 
                 case SSL_ERROR_SSL:
                     ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d\n
-                                                 Connection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_WANT_READ:
@@ -282,26 +281,22 @@ version(use_openssl) {
 
                 case SSL_ERROR_WANT_X509_LOOKUP:
                     ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d\n
-                                                 Connection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_SYSCALL:
                     ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d\n
-                                                 Connection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_ZERO_RETURN:
                     ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d\n
-                                                Connection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 default:
                     ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error. SSL error code: %d\n
-                                                Connection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
             }
 
