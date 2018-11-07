@@ -283,8 +283,7 @@ version(use_openssl) {
 
             auto result = false;
 
-            if( ( SSL_pending(c_ssl) || (!accepted && !accept_blocked) ) &&
-            accept_counter < 10 ) {
+            if(  SSL_pending(c_ssl) || (!accepted && !accept_blocked) ) {
                 result = false;
             } else {
                 result = true;
