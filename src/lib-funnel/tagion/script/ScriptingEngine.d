@@ -6,9 +6,284 @@ import tagion.Base : Control;
 import core.thread;
 import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket, SocketShutdown, shutdown, AddressFamily;
 import tagion.network.SslSocket;
-
+import core.atomic;
 
 alias SSocket = OpenSslSocket;
+
+synchronized
+class SharedClients {
+    private shared (SSocket[uint])* _locate_clients;
+    private shared uint _client_counter;
+    private SSocket[uint] clients;
+
+    bool active() const pure {
+        return (_locate_clients !is null && length > 0);
+    }
+
+    uint useNextKey () {
+        atomicOp!"+="(this._client_counter, 1); //0 is used as a null value in the reference call between accept.
+        return cast(uint)_client_counter;
+    }
+
+    uint length() pure const  {
+        uint res;
+        if (_locate_clients !is null ) {
+            auto clients = cast(SSocket[uint]) *_locate_clients;
+            res = cast(uint)clients.length;
+        }
+        return res;
+    }
+
+    void add(ref SSocket client, uint key)
+    in {
+        assert(client !is null && key != 0);
+        assert(_client_counter <= _client_counter.max);
+    }
+    body {
+        if ( _locate_clients is null ) {
+            writeln("Adding the first locate client element");
+            clients[key] = cast(typeof(clients.values[0]))client;
+            _locate_clients = cast(typeof(_locate_clients))&clients;
+            writeln("Added the first locate client element");
+        } else {
+            auto clients = cast(SSocket[uint]) *_locate_clients;
+            clients[key] = client;
+        }
+    }
+
+    void removeClient(uint key)
+    in {
+        assert(_locate_clients !is null);
+        assert(key in *_locate_clients);
+    }
+    out{
+        assert(key !in *_locate_clients);
+    }
+    body{
+        auto clients = cast(SSocket[uint]) *_locate_clients;
+        clients.remove(key);
+    }
+
+
+    void closeAll()  {
+        if ( active ) {
+            auto clients = cast(SSocket[uint]) *_locate_clients;
+            foreach ( key, client; clients ) {
+                client.disconnect;
+            }
+            _locate_clients = null;
+            _client_counter = 0;
+        }
+    }
+
+    void addClientsToSocketSet(ref SocketSet socket_set)
+    in {
+        assert(socket_set !is null);
+    }
+    body {
+        if ( active ) {
+            auto clients = cast(SSocket[uint]) *_locate_clients;
+            foreach(client; clients) {
+                socket_set.add(client);
+                writeln("Added a cloent to socket set");
+            }
+        }
+    }
+
+    void readDataAllClients(ref SocketSet socket_set)
+        in{
+            assert(socket_set !is null);
+        }
+        body {
+            if ( !active ) {
+                return;
+            }
+            auto clients = cast(SSocket[uint]) *_locate_clients;
+            foreach ( key, client; clients) {
+                if( socket_set.isSet(client) )  {
+                    char[1024] buffer;
+                    auto data_length = client.receive( buffer[] );
+
+                    if ( data_length == Socket.ERROR ) {
+                        writeln( "Connection error" );
+                    }
+
+                    else if ( data_length != 0) {
+                        writefln ( "Received %d bytes from %s: \"%s\"", data_length, client.remoteAddress.toString, buffer[0..data_length] );
+                        client.send(buffer[0..data_length] );
+
+                        //Check dataformat
+                        //Call scripting engine
+                        //Send response back
+                    }
+
+                    else {
+                        try {
+                            writefln("Connection from %s closed.", client.remoteAddress().toString());
+                        }
+                        catch ( SocketException ) {
+                            writeln("Connection closed.");
+                        }
+                    }
+
+                    client.disconnect();
+
+                    this.removeClient(key);
+
+                    writefln("\tTotal connections: %d", this.length);
+                }
+
+                else if ( !client.isAlive ) {
+                    client.disconnect();
+
+                    this.removeClient(key);
+
+                    writefln("\tTotal connections: %d", this.length);
+                }
+            }
+        }
+
+    }
+
+
+struct SharedClientAccess {
+private:
+    static shared(SharedClients) _shared_clients;
+    SSocket _listener;
+    SSocket[uint] _clients;
+    static ScriptingEngineOptions s_e_options;
+
+    void checkSharedClient() {
+        if( _shared_clients is null ) {
+            _shared_clients = new shared(SharedClients)();
+        }
+    }
+
+public:
+
+    this(ref SSocket listener, ScriptingEngineOptions se_options)
+    in {
+        assert(_listener is null);
+    }
+    out{
+        assert(_listener !is null);
+    }
+    body{
+        this._listener = listener;
+        s_e_options = se_options;
+        checkSharedClient();
+    }
+
+    this (ScriptingEngineOptions se_options) {
+        s_e_options = se_options;
+        checkSharedClient();
+    }
+
+    SSocket listener() {
+        return _listener;
+    }
+
+    uint numberOfClients() const
+    in {
+        assert(_shared_clients !is null);
+    }
+    body{
+        return _shared_clients.length;
+    }
+
+    bool active() const {
+        return (_shared_clients !is null) && _shared_clients.active;
+    }
+
+    uint useNextKey()
+    in{
+        assert(_shared_clients !is null);
+    }
+    body {
+        return _shared_clients.useNextKey;
+    }
+
+    bool acceptAsync(ref uint key)
+    in {
+        if ( key != 0) {
+            assert (key in _clients);
+        }
+        assert(s_e_options !is null, "s_e_options is null");
+    }
+    out {
+        assert (key in _clients);
+    }
+    body {
+        try {
+            SSocket client;
+            if ( key == 0 ) {
+                writeln("Key is 0");
+                key = useNextKey;
+                writeln("Key is:", key);
+            } else {
+                client = _clients[key];
+            }
+
+            if ( numberOfClients >= s_e_options.max_connections ) {
+                    _listener.rejectClient();
+                    assert( _listener.isAlive );
+            }
+            else {
+                writeln("In main accept");
+                bool operation_complete;
+                writefln("Is client nul? %s", client is null);
+                writeln("trying to accept");
+                writefln("Is listener null: %s", _listener is null);
+                operation_complete = _listener.acceptSslAsync(client);
+                if ( key !in _clients ) {
+                    _clients[key] = client;
+                }
+                writeln("Operation complete: ", operation_complete);
+                if ( !operation_complete ) {
+                    return false;
+                }
+                else {
+                    assert( client.isAlive );
+                    assert( _listener.isAlive );
+
+                    if ( numberOfClients < s_e_options.max_connections )
+                    {
+                        writefln( "Connection from %s established.", client.remoteAddress().toString() );
+                        _shared_clients.add(client, key);
+                        writefln( "\tTotal connections: %d", numberOfClients );
+                    }
+                }
+            }
+
+        } catch(SocketException ex) {
+            writefln("SslSocketException: %s", ex);
+        }
+
+        return true;
+    }
+
+
+
+
+    void closeAll() {
+        if ( active ) {
+            _shared_clients.closeAll;
+        }
+    }
+
+    void addClientsToSocketSet(ref SocketSet socket_set) {
+        if ( socket_set !is null && active ) {
+            _shared_clients.addClientsToSocketSet(socket_set);
+        }
+    }
+
+    void readDataAllClients(ref SocketSet socket_set) {
+        if ( active ) {
+            _shared_clients.readDataAllClients(socket_set);
+        }
+    }
+}
+
 
 class SSLFiber : Fiber {
     private {
@@ -17,7 +292,9 @@ class SSLFiber : Fiber {
         static uint[] free_fibers;
         static uint[] fibers_to_execute;
         static Fiber duration_fiber;
+        static SharedClientAccess shared_client_access;
         static ScriptingEngineOptions s_e_options;
+        alias clients = shared_client_access;
         uint reuse_counter;
 
         void acceptAsync()
@@ -25,52 +302,8 @@ class SSLFiber : Fiber {
             assert(s_e_options !is null);
         }
         body {
-        //     bool operation_complete;
-        //     uint client_index;
-        //     try {
-        //     SSocket client;
-        //     if ( key == 0 ) {
-        //         writeln("Key is 0");
-        //         key = useNextKey;
-        //         writeln("Key is:", key);
-        //     } else {
-        //         client = _clients[key];
-        //     }
-
-        //     if ( numberOfClients >= s_e_options.max_connections ) {
-        //             _listener.rejectClient();
-        //             assert( _listener.isAlive );
-        //     }
-        //     else {
-        //         writeln("In main accept");
-        //         bool operation_complete;
-        //         writefln("Is client nul? %s", client is null);
-        //         writeln("trying to accept");
-        //         writefln("Is listener null: %s", _listener is null);
-        //         operation_complete = _listener.acceptSslAsync(client);
-        //         if ( key !in _clients ) {
-        //             _clients[key] = client;
-        //         }
-        //         writeln("Operation complete: ", operation_complete);
-        //         if ( !operation_complete ) {
-        //             return false;
-        //         }
-        //         else {
-        //             assert( client.isAlive );
-        //             assert( _listener.isAlive );
-
-        //             if ( numberOfClients < s_e_options.max_connections )
-        //             {
-        //                 writefln( "Connection from %s established.", client.remoteAddress().toString() );
-        //                 _shared_clients.add(client, key);
-        //                 writefln( "\tTotal connections: %d", numberOfClients );
-        //             }
-        //         }
-        //     }
-
-        // } catch(SocketException ex) {
-        //     writefln("SslSocketException: %s", ex);
-        // }
+            bool operation_complete;
+            uint client_index;
 
             do {
                 writeln("Calling accept async with client_index: ", client_index);
@@ -81,59 +314,6 @@ class SSLFiber : Fiber {
                 }
             } while(!operation_complete);
         }
-
-        // void readDataAllClients(ref SocketSet socket_set)
-        // in{
-        //     assert(socket_set !is null);
-        // }
-        // body {
-        //     if ( !active ) {
-        //         return;
-        //     }
-        //     auto clients = cast(SSocket[uint]) *_locate_clients;
-        //     foreach ( key, client; clients) {
-        //         if( socket_set.isSet(client) )  {
-        //             char[1024] buffer;
-        //             auto data_length = client.receive( buffer[] );
-
-        //             if ( data_length == Socket.ERROR ) {
-        //                 writeln( "Connection error" );
-        //             }
-
-        //             else if ( data_length != 0) {
-        //                 writefln ( "Received %d bytes from %s: \"%s\"", data_length, client.remoteAddress.toString, buffer[0..data_length] );
-        //                 client.send(buffer[0..data_length] );
-
-        //                 //Check dataformat
-        //                 //Call scripting engine
-        //                 //Send response back
-        //             }
-
-        //             else {
-        //                 try {
-        //                     writefln("Connection from %s closed.", client.remoteAddress().toString());
-        //                 }
-        //                 catch ( SocketException ) {
-        //                     writeln("Connection closed.");
-        //                 }
-        //             }
-
-        //             client.disconnect();
-
-        //             this.removeClient(key);
-
-        //             writefln("\tTotal connections: %d", this.length);
-        //         }
-
-        //         else if ( !client.isAlive ) {
-        //             client.disconnect();
-
-        //             this.removeClient(key);
-
-        //             writefln("\tTotal connections: %d", this.length);
-        //         }
-        //     }
-        // }
 
         void reuseCount() {
             reuse_counter++;
@@ -348,6 +528,8 @@ class ScriptingEngineOptions {
 struct ScriptingEngine {
 
 private:
+    SharedClientAccess shared_clients_access;
+    alias clients = this.shared_clients_access;
     ScriptingEngineOptions s_e_options;
     OpenSslSocket _listener;
     enum _buffer_size = 1024;
@@ -377,6 +559,9 @@ public:
         _listener.bind( new InternetAddress( s_e_options.listener_ip_address, s_e_options.listener_port ) );
         _listener.listen( s_e_options.listener_max_queue_length );
         writefln("Started scripting engine API started on %s:%s.", s_e_options.listener_ip_address, s_e_options.listener_port);
+
+
+        auto s_e_w_c = startScriptingEngineWorker();
 
         clients = SharedClientAccess(_listener, s_e_options);
 
@@ -428,6 +613,8 @@ public:
         }
 
         scope ( exit ) {
+            s_e_w_c.scripting_engine_worker.stop();
+            s_e_w_c.scripting_engine_worker_thread.join;
             clients.closeAll;
             writefln( "Shutdown of listener socket. Is there an listener: %s and active: %s", _listener !is null, (_listener !is null &&_listener.isAlive));
             _listener.shutdown(SocketShutdown.BOTH);
@@ -441,11 +628,6 @@ public:
     }
 }
 
-struct ScriptingEngineContext {
-    ScriptingEngine scripting_engine;
-    Thread scripting_engine_tread;
-}
-
 ScriptingEngineContext startScriptingEngine () {
     auto s_e_c = ScriptingEngineContext();
 
@@ -457,4 +639,65 @@ ScriptingEngineContext startScriptingEngine () {
     s_e_c.scripting_engine_tread = new Thread ( scr_eng_del ).start();
 
     return s_e_c;
+}
+
+struct ScriptingEngineContext {
+    ScriptingEngine scripting_engine;
+    Thread scripting_engine_tread;
+}
+
+ScriptingEngineWorkerContext startScriptingEngineWorker () {
+    auto s_e_w_c = ScriptingEngineWorkerContext();
+
+    s_e_w_c.scripting_engine_worker = ScriptingEngineWorker();
+
+    void delegate() scr_eng_del;
+    scr_eng_del.funcptr = &ScriptingEngineWorker.run;
+    scr_eng_del.ptr = &s_e_w_c.scripting_engine_worker;
+    s_e_w_c.scripting_engine_worker_thread = new Thread ( scr_eng_del ).start();
+
+    return s_e_w_c;
+}
+
+struct ScriptingEngineWorkerContext {
+    ScriptingEngineWorker scripting_engine_worker;
+    Thread scripting_engine_worker_thread;
+}
+
+struct ScriptingEngineWorker {
+private:
+    enum _buffer_size = 1024;
+    SharedClientAccess shared_client_access;
+    alias clients = shared_client_access;
+    bool run_scripting_engine_worker = true;
+
+public:
+
+    void stop () {
+        writeln("Stops scripting engine worker");
+        run_scripting_engine_worker = false;
+    }
+
+    auto socket_set = new SocketSet();
+
+    void run() {
+        writeln("Startet scripting engine worker.");
+        auto s_e_options = new ScriptingEngineOptions(options.scripting_engine);
+        shared_client_access = SharedClientAccess(s_e_options);
+        while (run_scripting_engine_worker) {
+        if ( clients.active ) {
+            clients.addClientsToSocketSet(socket_set);
+            const res = Socket.select(socket_set, null, null, dur!"msecs"(50));
+            if ( res > 0) {
+                clients.readDataAllClients(socket_set);
+            }
+            socket_set.reset;
+        }
+           Thread.sleep(dur!"msecs"(50));
+        }
+
+        scope(exit) {
+            writeln("Closing scripting engine worker.");
+        }
+    }
 }
