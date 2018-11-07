@@ -65,7 +65,7 @@ version(use_openssl) {
 
     }
 
-    enum {
+    enum SSLErrorCodes {
         SSL_ERROR_NONE = 0,
         SSL_ERROR_SSL = 1,
         SSL_ERROR_WANT_READ = 2,
@@ -92,7 +92,6 @@ version(use_openssl) {
 
             SSL_CTX* _ctx;
 
-            uint accept_counter;
             //Static are used as default as context. A setter/argu. in cons. for the context
             //could be impl. if diff. contexts for diff SSL are needed.
             static SSL_CTX* client_ctx;
@@ -211,6 +210,66 @@ version(use_openssl) {
             return receive(buf, SocketFlags.NONE);
         }
 
+        //Not made for fibers - reads all data and returns.
+        @trusted
+        int receiveNonBlocking(ref void[] buf, ref int pending_in_buffer)
+        in {
+            assert(!this.blocking);
+        }
+        body{
+            auto res = SSL_read(_ssl, buf.ptr, cast(uint)buf.length);
+
+            auto ssl_error = SSL_get_error(_ssl, res);
+
+            with(SSLErrorCodes) switch(ssl_error) {
+                case SSL_ERROR_NONE:
+                    static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                        printDebugInformation("Received data.");
+                    }
+                    break;
+
+                case SSL_ERROR_SSL:
+                    this.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_WANT_READ:
+                    this.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_READ. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_WANT_WRITE:
+                    this.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_WRITE. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+
+                    break;
+
+                case SSL_ERROR_WANT_X509_LOOKUP:
+                    this.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_SYSCALL:
+                    this.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_ZERO_RETURN:
+                    this.disconnect;
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                default:
+                    this.disconnect;
+                    throw new SslSocketException( format("SSL Error. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+            }
+
+            pending_in_buffer = SSL_pending(_ssl);
+
+            return res;
+        }
+
         @trusted
         override Socket accept() {
             Socket client = super.accept();
@@ -232,7 +291,7 @@ version(use_openssl) {
         }
 
         //false=operation not complete and 1, operation complete.
-        bool acceptSslAsync(ref OpenSslSocket ssl_client) {
+        bool acceptSslNonBlocking(ref OpenSslSocket ssl_client) {
             if ( ssl_client is null ) {
                 static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
                     printDebugInformation("Accepting new client");
@@ -254,7 +313,7 @@ version(use_openssl) {
             auto ssl_error = SSL_get_error(c_ssl, res);
             bool accepted;
 
-            switch(ssl_error) {
+            with(SSLErrorCodes) switch(ssl_error) {
                 case SSL_ERROR_NONE:
                     accepted = true;
                     static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
@@ -308,8 +367,6 @@ version(use_openssl) {
                 result = true;
             }
 
-            accept_counter++;
-
             return result;
         }
 
@@ -348,11 +405,6 @@ version(use_openssl) {
         @trusted
         SSL* getSsl() {
             return this._ssl;
-        }
-
-        @safe
-        uint AcceptCounter() pure const {
-            return accept_counter;
         }
 
         this(AddressFamily af, EndpointType et,
