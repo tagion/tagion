@@ -193,6 +193,59 @@ version(use_openssl) {
         }
 
         @trusted
+        int sendNonBlocking(const(void)[] buf, ref int pending_in_buffer)
+        in{
+            assert (!this.blocking);
+        }
+        body {
+            auto res = SSL_write(_ssl, buf.ptr, cast(uint)buf.length);
+
+            auto ssl_error = SSL_get_error(_ssl, res);
+
+            with(SSLErrorCodes) switch(ssl_error) {
+                case SSL_ERROR_NONE:
+                    static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                        printDebugInformation("Wrote data.");
+                    }
+                    break;
+
+                case SSL_ERROR_SSL:
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_WANT_READ:
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_READ. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_WANT_WRITE:
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_WRITE. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+
+                    break;
+
+                case SSL_ERROR_WANT_X509_LOOKUP:
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_SYSCALL:
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                case SSL_ERROR_ZERO_RETURN:
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+
+                default:
+                    throw new SslSocketException( format("SSL Error. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    break;
+            }
+
+            pending_in_buffer = SSL_pending(_ssl);
+
+            return res;
+
+        }
+
+        @trusted
         override ptrdiff_t receive(void[] buf, SocketFlags flags) {
             auto res_val = SSL_read(_ssl, buf.ptr, cast(uint)buf.length);
             if ( res_val == -1 ) {
@@ -212,7 +265,7 @@ version(use_openssl) {
 
         //Not made for fibers - reads all data and returns.
         @trusted
-        int receiveNonBlocking(ref void[] buf, ref int pending_in_buffer)
+        int receiveNonBlocking(void[] buf, ref int pending_in_buffer)
         in {
             assert(!this.blocking);
         }
@@ -229,38 +282,31 @@ version(use_openssl) {
                     break;
 
                 case SSL_ERROR_SSL:
-                    this.disconnect;
                     throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_WANT_READ:
-                    this.disconnect;
                     throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_READ. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_WANT_WRITE:
-                    this.disconnect;
                     throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_WRITE. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
 
                     break;
 
                 case SSL_ERROR_WANT_X509_LOOKUP:
-                    this.disconnect;
                     throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_SYSCALL:
-                    this.disconnect;
                     throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 case SSL_ERROR_ZERO_RETURN:
-                    this.disconnect;
                     throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
 
                 default:
-                    this.disconnect;
                     throw new SslSocketException( format("SSL Error. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
                     break;
             }
@@ -322,8 +368,7 @@ version(use_openssl) {
                     break;
 
                 case SSL_ERROR_SSL:
-                    ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SSL. SSL error code: %d", ssl_error) );
                     break;
 
                 case SSL_ERROR_WANT_READ:
@@ -339,29 +384,25 @@ version(use_openssl) {
                     break;
 
                 case SSL_ERROR_WANT_X509_LOOKUP:
-                    ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_WANT_X509_LOOKUP. SSL error code: %d", ssl_error) );
                     break;
 
                 case SSL_ERROR_SYSCALL:
-                    ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_SYSCALL. SSL error code: %d", ssl_error) );
                     break;
 
                 case SSL_ERROR_ZERO_RETURN:
-                    ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error: SSL_ERROR_ZERO_RETURN. SSL error code: %d", ssl_error) );
                     break;
 
                 default:
-                    ssl_client.disconnect;
-                    throw new SslSocketException( format("SSL Error. SSL error code: %d\nConnection closed and cleaned up.", ssl_error) );
+                    throw new SslSocketException( format("SSL Error. SSL error code: %d.", ssl_error) );
                     break;
             }
 
             auto result = false;
 
-            if(  SSL_pending(c_ssl) || !accepted  ) {
+            if( SSL_pending(c_ssl) || !accepted ) {
                 result = false;
             } else {
                 result = true;
@@ -376,11 +417,15 @@ version(use_openssl) {
             static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
                 printDebugInformation( format( "Rejected connection from %s; too many connections.", client.remoteAddress().toString() ) );
             }
-            this.disconnect();
+
+            client.close();
         }
 
         @trusted
         void disconnect() {
+            static if (__traits(hasMember, OpenSslSocket, "in_debugging_mode") ) {
+                printDebugInformation("Disconnet client. Closing client and clean up SSL.");
+            }
             try
             {
                 if ( _ssl !is null ) {
