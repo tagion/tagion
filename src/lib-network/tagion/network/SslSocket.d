@@ -14,15 +14,6 @@ class SslSocketException : SocketException {
     }
 }
 
-debug {
-    import std.stdio : writeln;
-    void printDebugInformation (string msg) {
-        int i;
-        writeln(msg);
-    }
-}
-
-
 
 version=use_openssl;
 
@@ -86,6 +77,12 @@ version(use_openssl) {
             debug{
                 pragma(msg,"Compiles SslSocket in debug mode" );
                 enum in_debugging_mode = true;
+
+                import std.stdio : writeln;
+                static void printDebugInformation (string msg) {
+                    int i;
+                    writeln(msg);
+                }
             }
 
             SSL* _ssl;
