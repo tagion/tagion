@@ -40,7 +40,7 @@ struct Options {
         //Port
         ushort listener_port;
         //Listener max. incomming connection req. queue length
-        uint listener_max_queue_length;
+        uint listener_max_queue_lenght;
         //Max simultanious connections for the scripting engine
         uint max_connections;
         //Max simultanious fibers for accepting incomming SSL connections.
