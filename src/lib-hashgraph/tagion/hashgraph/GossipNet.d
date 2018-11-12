@@ -17,7 +17,7 @@ enum ExchangeState : uint {
 
 @safe
 interface RequestNet {
-    immutable(Buffer) calcHash(immutable(ubyte[]) hash_pointer) inout;
+    immutable(Buffer) calcHash(immutable(ubyte[]) data) inout;
     // Request a missing event from the network
     // add
     void request(HashGraph h, immutable(Buffer) event_hash);
