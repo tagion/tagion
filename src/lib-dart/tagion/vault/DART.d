@@ -8,6 +8,7 @@ import tagion.Keywords;
 import std.conv : to;
 
 
+@safe
 class DART {
     private SecureNet _net;
     private ubyte _from_sector;
@@ -29,12 +30,13 @@ class DART {
     static class Bucket {
         private Bucket[] _buckets;
         private ArchiveTab _archive;
+        private uint _count;
         private immutable(ubyte)[]  _fingerprint;
         bool isBucket() const pure nothrow {
             return _buckets !is null;
         }
 
-        this() {
+        private this() {
         }
 
         this(ArchiveTab _archive) {
@@ -45,7 +47,7 @@ class DART {
             if ( doc.hasElement(Keywords.buckets) ) {
                 _buckets=new Bucket[bucket_size];
                 auto buckets_doc=doc[Keywords.buckets].get!Document;
-                foreach(elm; buckets_doc.iterator) {
+                foreach(elm; buckets_doc[]) {
                     auto arcive_doc=elm.get!Document;
                     immutable index=elm.key.to!ubyte;
                     _buckets[index]=new Bucket(arcive_doc, net);
@@ -113,6 +115,7 @@ class DART {
                         _bucket.add(_archive, net, level+1);
                         _bucket.add(archive, net, level+1);
                         _buckets[index]=_bucket;
+                        _count++;
                         _archive=null;
                     }
                 }
@@ -120,10 +123,12 @@ class DART {
                     auto _bucket=new Bucket;
                     _bucket._archive=archive;
                     _buckets[index]=_bucket;
+                    _count++;
                 }
             }
             else if ( _archive is null ) {
                 _archive=archive;
+                _count=1;
             }
             else {
                 _buckets=new Bucket[bucket_size];
@@ -131,6 +136,7 @@ class DART {
                 immutable _index=_archive.fingerprint[level];
                 _buckets[index]=new Bucket(archive);
                 _buckets[_index]=new Bucket(_archive);
+                _count=2;
                 _archive=null;
             }
         }
@@ -140,28 +146,26 @@ class DART {
             Bucket.remove(bucket, a, 0);
         }
 
+        @trusted
         private static void remove(ref Bucket bucket, const ArchiveTab archive, immutable uint level) {
             scope(success) {
                 if ( bucket ) {
                     bucket._fingerprint=null;
+                    bucket._count--;
                 }
             }
             if ( bucket.isBucket ) {
                 immutable index=archive.fingerprint[level];
                 if ( bucket._buckets[index] ) {
                     Bucket.remove(bucket._buckets[index], archive, level+1);
-                    if ( bucket._buckets[index] is null ) {
-                    }
-                    if ( bucket._buckets[index].isBucket ) {
-
-                    }
                 }
                 else {
                     new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
                 }
             }
             else {
-
+                bucket.destroy;
+                bucket=null;
             }
         }
 
@@ -207,14 +211,28 @@ class DART {
                 return _archive.fingerprint;
             }
         }
+
+        uint length() const pure nothrow {
+            return _count;
+        }
+
+        unittest {
+            import tagion.Base;
+            import std.typecons;
+            static class TestNet : BlackHole!SecureNet {
+                override immutable(Buffer) calcHash(immutable(ubyte[]) data) inout {
+                    return data;
+                }
+            }
+
+            auto net=new TestNet;
+        }
     }
 
     class Section {
         private string _filename;
         private Bucket _bucket;
     }
-
-
 
     private Section[] _sections;
     this(SecureNet net, const ubyte from_sector, const ubyte to_sector) {
@@ -258,7 +276,5 @@ class DART {
         assert(!dart2.inRange(10));
         assert(!dart2.inRange(42));
     }
-
-
 
 }
