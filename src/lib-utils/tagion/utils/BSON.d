@@ -278,7 +278,7 @@ public:
     }
 
 
-    Range iterator() {
+    Range opSlice() {
         return Range(_data);
     }
 
@@ -354,7 +354,7 @@ unittest {
         assert(!doc.hasElement("missing"));
     }
     { // opSlice
-        auto range = doc.iterator;
+        auto range = doc[];
         assert(count(range) == 3);
     }
     { // keys
@@ -3409,7 +3409,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
 int[] doc2ints(Document doc) {
     int[] result;
-    foreach(elm; doc.iterator) {
+    foreach(elm; doc.opSlice) {
         result~=elm.as!int;
     }
     return result;
@@ -3417,7 +3417,7 @@ int[] doc2ints(Document doc) {
 
 double[] doc2doubles(Document doc) {
     double[] result;
-    foreach(elm; doc.iterator) {
+    foreach(elm; doc.opSlice) {
         result~=elm.as!double;
     }
     return result;
