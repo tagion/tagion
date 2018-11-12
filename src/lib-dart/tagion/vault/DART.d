@@ -216,17 +216,27 @@ class DART {
             return _count;
         }
 
-        unittest {
-            import tagion.Base;
-            import std.typecons;
-            static class TestNet : BlackHole!SecureNet {
-                override immutable(Buffer) calcHash(immutable(ubyte[]) data) inout {
-                    return data;
-                }
-            }
+    }
 
-            auto net=new TestNet;
+    unittest {
+        import tagion.Base;
+        import std.typecons;
+        static class TestNet : BlackHole!SecureNet {
+            override immutable(Buffer) calcHash(immutable(ubyte[]) data) inout {
+                return data;
+            }
         }
+
+        auto net=new TestNet;
+
+        immutable(ubyte[]) data(uint x) {
+            import std.bitmanip;
+            return nativeToLittleEndian(x).idup;
+        }
+
+        import std.stdio;
+
+        writefln("%s", data(0x4858));
     }
 
     class Section {
