@@ -13,7 +13,41 @@ class DART {
     private SecureNet _net;
     private ubyte _from_sector;
     private ubyte _to_sector;
+    private Bucket _bucket;
     enum bucket_size=1 << (ubyte.sizeof*8);
+
+    // class Section {
+    //     private string _filename;
+    //     private Bucket _bucket;
+    // }
+
+    // private Section[] _sections;
+
+    this(SecureNet net, const ubyte from_sector, const ubyte to_sector) {
+        _net=net;
+        _from_sector=from_sector;
+        _to_sector=to_sector;
+//        _sections=new Section[calc_sector_size(_from_sector, _to_sector)];
+    }
+
+    void add(immutable(ubyte[]) data) {
+        auto archive=new ArchiveTab(_net, data);
+        if ( inRange(archive.fingerprint[0]) ) {
+            _bucket.add(_net, archive);
+        }
+    }
+
+    void remove(immutable(ubyte[]) data) {
+        auto archive=new ArchiveTab(_net, data);
+        if ( inRange(archive.fingerprint[0]) ) {
+            Bucket.remove(_bucket, _net, archive);
+        }
+    }
+
+    ArchiveTab find(immutable(ubyte[]) key) {
+        return _bucket.find(key);
+    }
+
 
     static class ArchiveTab {
         immutable(ubyte[])  data;
@@ -21,7 +55,7 @@ class DART {
         Document document() const {
             return Document(data);
         }
-        this(SecureNet net, immutable(ubyte[])  data) {
+        this(SecureNet net, immutable(ubyte[]) data) {
             fingerprint=net.calcHash(data);
             this.data=data;
         }
@@ -79,7 +113,6 @@ class DART {
             return toBSON.serialize;
         }
 
-
         ArchiveTab find(immutable(ubyte[]) key) {
             return find(key, 0);
         }
@@ -97,8 +130,7 @@ class DART {
             return null;
         }
 
-        void add(SecureNet net, immutable(ubyte[]) data) {
-            auto archive=new ArchiveTab(net, data);
+        void add(SecureNet net, ArchiveTab archive) {
             add(archive, net, 0);
         }
 
@@ -108,7 +140,7 @@ class DART {
                 immutable index=archive.fingerprint[level];
                 if ( _buckets[index] ) {
                     if (_buckets[index].fingerprint(net) == archive.fingerprint ) {
-                        new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
+                        throw new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
                     }
                     else {
                         auto _bucket=new Bucket;
@@ -141,9 +173,8 @@ class DART {
             }
         }
 
-        static void remove(ref Bucket bucket, SecureNet net, immutable(ubyte)[] data) {
-            auto a=new DART.ArchiveTab(net, data);
-            Bucket.remove(bucket, a, 0);
+        static void remove(ref Bucket bucket, SecureNet net, const ArchiveTab archive) {
+            Bucket.remove(bucket, archive, 0);
         }
 
         @trusted
@@ -160,7 +191,7 @@ class DART {
                     Bucket.remove(bucket._buckets[index], archive, level+1);
                 }
                 else {
-                    new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
+                    throw new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
                 }
             }
             else {
@@ -228,32 +259,26 @@ class DART {
         }
 
         auto net=new TestNet;
-
+        auto dart=new DART(net, 0x10, 0x42);
         immutable(ubyte[]) data(uint x) {
             import std.bitmanip;
             return nativeToLittleEndian(x).idup;
         }
 
+
         import std.stdio;
 
+//        dart.add(data(0x10));
+//        auto key=data(0x10);
+//        auto d=dart.find(key);
+
         writefln("%s", data(0x4858));
-    }
 
-    class Section {
-        private string _filename;
-        private Bucket _bucket;
-    }
 
-    private Section[] _sections;
-    this(SecureNet net, const ubyte from_sector, const ubyte to_sector) {
-        _net=net;
-        _from_sector=from_sector;
-        _to_sector=to_sector;
-        _sections=new Section[calc_sector_size(_from_sector, _to_sector)];
     }
 
     static uint calc_to_sector(const ubyte from_sector, const ubyte to_sector) pure nothrow {
-        return to_sector+(from_sector >= to_sector)?bucket_size:0;
+        return to_sector+((from_sector >= to_sector)?bucket_size:0);
     }
 
     static uint calc_sector_size(const ubyte from_sector, const ubyte to_sector) pure nothrow {
@@ -262,10 +287,11 @@ class DART {
         return to-from;
     }
 
-    bool inRange(const ubyte sector) const pure nothrow {
-        immutable uint from=_from_sector;
-        immutable uint to=calc_to_sector(_from_sector, _to_sector);
-        return ( ( sector >= from) && ( sector < to ) );
+
+    bool inRange(const ubyte sector) const pure nothrow  {
+        immutable ubyte sector_origin=(sector-_from_sector) & ubyte.max;
+        immutable ubyte to_origin=(_to_sector-_from_sector) & ubyte.max;
+        return ( sector_origin < to_origin );
     }
 
     unittest { // Check the inRange function
