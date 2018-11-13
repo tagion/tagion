@@ -19,9 +19,9 @@ class StdRequestNet : RequestNet {
     abstract void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint);
 
     //TO-DO: Implement
-    Buffer eventHashFromId(immutable uint id) {
-        assert(0, "Not implement for this test");
-    }
+    // Buffer eventHashFromId(immutable uint id) {
+    //     assert(0, "Not implement for this test");
+    // }
 
 }
 

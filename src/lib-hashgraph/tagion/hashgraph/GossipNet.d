@@ -23,7 +23,7 @@ interface RequestNet {
     void request(HashGraph h, immutable(Buffer) event_hash);
 //    immutable(ubyte[]) pubkey()
 
-    Buffer eventHashFromId(immutable uint id);
+//    Buffer eventHashFromId(immutable uint id);
 }
 
 @safe
