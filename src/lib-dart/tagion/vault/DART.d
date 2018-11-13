@@ -33,6 +33,9 @@ class DART {
     void add(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
         if ( inRange(archive.fingerprint[0]) ) {
+            if ( _bucket is null ) {
+                _bucket=new Bucket;
+            }
             _bucket.add(_net, archive);
         }
     }
@@ -48,6 +51,58 @@ class DART {
         return _bucket.find(key);
     }
 
+
+    struct Iterator {
+        static class BucketStack {
+            Bucket bucket;
+            uint index;
+            BucketStack stack;
+            this(Bucket b) {
+                bucket=b;
+            }
+            ArciveTab current() {
+                return bucket[index].archive;
+            }
+        }
+        static private void push(ref BuckeStack b, Bucket bucket) {
+        }
+
+        private BucketStack _stack;
+        private void next() {
+            if ( _stack ) {
+                for(; (_stack.buckets[_stack.index] is null) && (_stack.index <= ubyte.max); _stack.index++  ) {
+                    // Empty
+                }
+                if ( _stack.index <= ubyte.max ) {
+                    if ( _stack.buckets[_stack.index].isBucket ) {
+
+                    }
+                }
+
+                if (
+                    for(;_stack.index <= ubyte.max
+                            }
+                    else {
+                        _stack.destroy;
+                        _stack=null;
+                    }
+                    }
+        }
+        this(Bucket b) {
+            _stack=new BucketStack(b);
+        }
+
+        void popFront() {
+        }
+
+        bool empty() const pure nothrow {
+            return _stack is null;
+        }
+
+        ArchiveTab front() const {
+            return _stack[_stack.
+        }
+    }
 
     static class ArchiveTab {
         immutable(ubyte[])  data;
@@ -268,11 +323,11 @@ class DART {
 
         import std.stdio;
 
-//        dart.add(data(0x10));
-//        auto key=data(0x10);
-//        auto d=dart.find(key);
+        dart.add(data(0x10));
+        auto key=data(0x10);
+        auto d=dart.find(key);
 
-        writefln("%s", data(0x4858));
+        writefln("%s", d.data);
 
 
     }
