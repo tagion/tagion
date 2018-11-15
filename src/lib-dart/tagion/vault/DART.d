@@ -8,14 +8,50 @@ import tagion.Keywords;
 import std.conv : to;
 
 
+immutable(ubyte[]) sparsed_merkeltree(T)(SecureNet net, T[] table) {
+    immutable(ubyte[]) merkeltree(T[] left, T[] right) {
+        scope immutable(ubyte)[] _left_fingerprint;
+        scope immutable(ubyte)[] _right_fingerprint;
+        if ( (left.length == 1) && (right.length == 1 ) ) {
+            auto _left=left[0];
+            auto _right=right[0];
+            if ( _left ) {
+                _left_fingerprint=_left.fingerprint(net);
+            }
+            if ( _right ) {
+                _right_fingerprint=_right.fingerprint(net);
+            }
+        }
+        else {
+            immutable left_mid=left.length >> 1;
+            immutable right_mid=right.length >> 1;
+            _left_fingerprint=merkeltree(left[0..left_mid], left[left_mid..$]);
+            _right_fingerprint=merkeltree(right[0..right_mid], right[right_mid..$]);
+        }
+        if ( _left_fingerprint is null ) {
+            return _right_fingerprint;
+        }
+        else if ( _right_fingerprint is null ) {
+            return _left_fingerprint;
+        }
+        else {
+            return net.calcHash(_left_fingerprint~_right_fingerprint);
+        }
+    }
+    immutable mid=table.length >> 1;
+    return merkeltree(table[0..mid], table[mid..$]);
+}
+
+
 @safe
 class DART {
     private SecureNet _net;
-    private ubyte _from_sector;
-    private ubyte _to_sector;
-    private Bucket _bucket;
-    enum bucket_size=1 << (ubyte.sizeof*8);
-
+    private ushort _from_sector;
+    private ushort _to_sector;
+    private Bucket[] _root_buckets;
+    enum bucket_max=1 << (ubyte.sizeof*8);
+    enum uint root_depth=cast(uint)ushort.sizeof;
+    enum sector_max = ushort.max;
     // class Section {
     //     private string _filename;
     //     private Bucket _bucket;
@@ -23,84 +59,105 @@ class DART {
 
     // private Section[] _sections;
 
-    this(SecureNet net, const ubyte from_sector, const ubyte to_sector) {
+    this(SecureNet net, const ushort from_sector, const ushort to_sector) {
         _net=net;
         _from_sector=from_sector;
         _to_sector=to_sector;
-//        _sections=new Section[calc_sector_size(_from_sector, _to_sector)];
+        _root_buckets=new Bucket[calc_sector_size(_from_sector, _to_sector)];
+    }
+
+    ushort root_index(immutable(ubyte[]) data) pure const nothrow {
+        return data[0] | (data[1] << 1);
     }
 
     void add(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
-        if ( inRange(archive.fingerprint[0]) ) {
-            if ( _bucket is null ) {
-                _bucket=new Bucket;
+        immutable index=root_index(archive.fingerprint);
+        if ( inRange(index) ) {
+            if ( _root_buckets[index] is null ) {
+                _root_buckets[index]=new Bucket(root_depth);
             }
-            _bucket.add(_net, archive);
+            _root_buckets[index].add(_net, archive);
         }
     }
 
     void remove(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
-        if ( inRange(archive.fingerprint[0]) ) {
-            Bucket.remove(_bucket, _net, archive);
+        immutable index=root_index(archive.fingerprint);
+        if ( inRange(index) && _root_buckets[index] ) {
+            Bucket.remove(_root_buckets[index], _net, archive);
         }
     }
 
     ArchiveTab find(immutable(ubyte[]) key) {
-        return _bucket.find(key);
+        immutable index=root_index(key);
+        if ( inRange(index) && _root_buckets[index] ) {
+            return _root_buckets[index].find(key);
+        }
+        return null;
     }
-
 
     struct Iterator {
         static class BucketStack {
             Bucket bucket;
-            uint index;
+            ubyte pos;
             BucketStack stack;
             this(Bucket b) {
                 bucket=b;
             }
-            ArciveTab current() {
-                return bucket[index].archive;
-            }
-        }
-        static private void push(ref BuckeStack b, Bucket bucket) {
         }
 
-        private BucketStack _stack;
-        private void next() {
-            if ( _stack ) {
-                for(; (_stack.buckets[_stack.index] is null) && (_stack.index <= ubyte.max); _stack.index++  ) {
-                    // Empty
-                }
-                if ( _stack.index <= ubyte.max ) {
-                    if ( _stack.buckets[_stack.index].isBucket ) {
-
-                    }
-                }
-
-                if (
-                    for(;_stack.index <= ubyte.max
-                            }
-                    else {
-                        _stack.destroy;
-                        _stack=null;
-                    }
-                    }
-        }
         this(Bucket b) {
             _stack=new BucketStack(b);
         }
 
+        private void push(ref BucketStack b, Bucket bucket) {
+            auto top_stack=new BucketStack(bucket);
+            top_stack.stack=_stack;
+            _stack=top_stack;
+        }
+
+        private void pop(ref BucketStack b) {
+            _stack=b.stack;
+        }
+
+        private BucketStack _stack;
+        private Bucket _current;
         void popFront() {
+            if ( _stack ) {
+                if  (_stack.pos < _stack.bucket._bucket_size ) {
+                    if ( _stack.bucket.isBucket ) {
+
+                    }
+                    else {
+
+                    }
+                    _current=_stack.bucket._buckets[_stack.pos];
+                    _stack.pos++;
+                    if ( _current.isBucket ) {
+                        push(_stack, _current);
+                        popFront;
+                    }
+                }
+                else {
+                    pop(_stack);
+                    popFront;
+                }
+            }
         }
 
         bool empty() const pure nothrow {
             return _stack is null;
         }
 
-        ArchiveTab front() const {
-            return _stack[_stack.
+        ArchiveTab front()
+            in {
+                if ( _current ) {
+                    assert(!_current.isBucket, "Should be an archive tab not bucket");
+                }
+            }
+        do {
+            return _current._archive;
         }
     }
 
@@ -114,32 +171,157 @@ class DART {
             fingerprint=net.calcHash(data);
             this.data=data;
         }
+        ubyte index(const uint depth) const pure {
+            return fingerprint[depth];
+        }
     }
 
     static class Bucket {
         private Bucket[] _buckets;
+        private size_t _bucket_size;
         private ArchiveTab _archive;
         private uint _count;
+        immutable uint depth;
+        immutable size_t init_size;
+        immutable size_t extend;
         private immutable(ubyte)[]  _fingerprint;
         bool isBucket() const pure nothrow {
             return _buckets !is null;
         }
 
-        private this() {
+        version(none)
+        Bucket opIndex(ubyte i) {
+            Bucket find_bucket(immutable uint search_j, immutable uint division_j) {
+                if ( search_j < _bucket_size ) {
+                    immutable search_index=_buckets[search_j].index;
+                    if ( index == search_index ) {
+                        return _buckets[search_j];
+                    }
+                    else if ( division_j > 0 ) {
+                        if ( index < search_index ) {
+                            return find_bucket(search_j-division_j, division_j/2);
+                        }
+                        else if ( index > search_index ) {
+                            return find_bucket(search_j+division_j, division_j/2);
+                        }
+                    }
+                }
+                return null;
+            }
+            immutable start_j=((_bucket_size+((_bucket_size % 2 == 1)?1:0))/2) & ubyte.max;
+            return find_bucket(start_j, start_j/2);
         }
 
-        this(ArchiveTab _archive) {
+        uint index(const uint depth) const pure {
+            if ( isBucket ) {
+                return _buckets[0].index(depth);
+            }
+            else {
+                return _archive.index(depth);
+            }
+        }
+
+
+        private uint find_bucket_pos(uint i)
+            in {
+                assert(i <= ubyte.max);
+            }
+        do {
+            uint find_bucket_pos(immutable uint search_j, immutable uint division_j) {
+                if ( search_j < _bucket_size ) {
+                    immutable search_index=_buckets[search_j].index(depth);
+                    if ( index(depth) == search_index ) {
+                        return search_j;
+                    }
+                    else if ( division_j > 0 ) {
+                        if ( index(depth) < search_index ) {
+                            return find_bucket_pos(search_j-division_j, division_j/2);
+                        }
+                        else if ( index(depth) > search_index ) {
+                            return find_bucket_pos(search_j+division_j, division_j/2);
+                        }
+                    }
+                }
+                return search_j;
+            }
+            immutable start_j=((_bucket_size+((_bucket_size % 2 == 1)?1:0))/2) & ubyte.max;
+            return find_bucket_pos(start_j, start_j/2);
+        }
+
+
+        static size_t calc_init_size(size_t depth) {
+            switch ( depth ) {
+            case 0:
+                return 32;
+                break;
+            case 1:
+                return 4;
+                break;
+            default:
+                return 1;
+            }
+        }
+
+        static size_t calc_extend(size_t depth) {
+            switch ( depth ) {
+            case 0:
+                return 16;
+                break;
+            case 1:
+                return 4;
+                break;
+            default:
+                return 1;
+            }
+        }
+
+        size_t extend_size() pure const nothrow {
+            immutable size=_buckets.length+extend;
+            return (size <= ubyte.max)?size:ubyte.max+1;
+        }
+
+        private void opIndexAssign(Bucket b, const uint index) {
+            immutable pos=find_bucket_pos(index);
+            assert( _buckets[pos].index(depth) != index );
+            if ( _buckets is null ) {
+                _buckets=new Bucket[init_size];
+            }
+            if ( _bucket_size+1 < _buckets.length ) {
+                _buckets[pos+1.._bucket_size+1]=_buckets[pos.._bucket_size];
+                _buckets[pos]=b;
+                _bucket_size++;
+            }
+            else {
+                auto new_buckets=new Bucket[extend_size];
+                new_buckets[0..pos]=_buckets[0..pos];
+                new_buckets[pos+1.._bucket_size+1]=_buckets[pos.._bucket_size];
+                new_buckets[pos]=b;
+                _buckets=new_buckets;
+                _bucket_size++;
+            }
+        }
+
+        private this(immutable uint depth) {
+            this.depth=depth;
+            init_size=calc_init_size(depth);
+            extend=calc_extend(depth);
+
+        }
+
+        this(ArchiveTab _archive, immutable uint depth) {
+            this(depth);
             _archive=_archive;
         }
 
-        this(Document doc, SecureNet net) {
+        this(Document doc, SecureNet net, immutable uint depth) {
+            this(depth);
             if ( doc.hasElement(Keywords.buckets) ) {
-                _buckets=new Bucket[bucket_size];
                 auto buckets_doc=doc[Keywords.buckets].get!Document;
+                _buckets=new Bucket[buckets_doc.length];
                 foreach(elm; buckets_doc[]) {
                     auto arcive_doc=elm.get!Document;
                     immutable index=elm.key.to!ubyte;
-                    _buckets[index]=new Bucket(arcive_doc, net);
+                    this[index]=new Bucket(arcive_doc, net, depth+1);
                 }
             }
             else if (doc.hasElement(Keywords.tab)) {
@@ -153,8 +335,9 @@ class DART {
             auto bson=new HBSON;
             if ( isBucket ) {
                 auto buckets=new HBSON;
-                foreach(i, b; _buckets) {
-                    buckets[i.to!string]=b.toBSON;
+                foreach(i;0.._bucket_size) {
+                    auto b=_buckets[i];
+                    buckets[b.index(depth).to!string]=b.toBSON;
                 }
                 bson[Keywords.buckets]=buckets;
             }
@@ -169,14 +352,10 @@ class DART {
         }
 
         ArchiveTab find(immutable(ubyte[]) key) {
-            return find(key, 0);
-        }
-
-        private ArchiveTab find(immutable(ubyte[]) key, immutable uint level) {
             if ( isBucket ) {
-                immutable index=key[level];
+                immutable index=key[depth];
                 if ( _buckets[index] ) {
-                    return _buckets[index].find(key, level+1);
+                    return _buckets[index].find(key);
                 }
             }
             else if ( _archive && (_archive.fingerprint == key) ) {
@@ -186,45 +365,58 @@ class DART {
         }
 
         void add(SecureNet net, ArchiveTab archive) {
-            add(archive, net, 0);
-        }
-
-        private void add(ArchiveTab archive, SecureNet net, immutable uint level) {
             _fingerprint=null;
             if ( isBucket ) {
-                immutable index=archive.fingerprint[level];
-                if ( _buckets[index] ) {
-                    if (_buckets[index].fingerprint(net) == archive.fingerprint ) {
-                        throw new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
+                immutable pos=find_bucket_pos(archive.fingerprint[depth]);
+                if (_buckets[pos].fingerprint(net) == archive.fingerprint ) {
+                    throw new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
+                }
+                auto temp_bucket=new Bucket(depth+1);
+                temp_bucket.add(net, archive);
+                if ( _bucket_size+1 <= _buckets.length ) {
+                    foreach_reverse(i;pos.._bucket_size) {
+                        _buckets[i+1]=_buckets[i];
                     }
-                    else {
-                        auto _bucket=new Bucket;
-                        _bucket.add(_archive, net, level+1);
-                        _bucket.add(archive, net, level+1);
-                        _buckets[index]=_bucket;
-                        _count++;
-                        _archive=null;
-                    }
+                    _buckets[pos]=temp_bucket;
+                    _bucket_size++;
                 }
                 else {
-                    auto _bucket=new Bucket;
-                    _bucket._archive=archive;
-                    _buckets[index]=_bucket;
-                    _count++;
+                    auto new_buckets=new Bucket[extend_size];
+                    new_buckets[0..pos]=_buckets[0..pos];
+                    new_buckets[pos+1.._bucket_size+1]=_buckets[pos.._bucket_size];
+                    new_buckets[pos]=temp_bucket;
+                    _buckets=new_buckets;
+                    _bucket_size++;
                 }
             }
             else if ( _archive is null ) {
                 _archive=archive;
-                _count=1;
             }
             else {
-                _buckets=new Bucket[bucket_size];
-                immutable index=archive.fingerprint[level];
-                immutable _index=_archive.fingerprint[level];
-                _buckets[index]=new Bucket(archive);
-                _buckets[_index]=new Bucket(_archive);
-                _count=2;
-                _archive=null;
+                if ( _archive.index(depth) == archive.index(depth) ) {
+                    _bucket_size=1;
+                    _buckets=new Bucket[_bucket_size];
+                    _buckets[0].add(net, _archive);
+                    _buckets[0].add(net, archive);
+                }
+                else {
+                    import std.algorithm : min;
+                    immutable min_init_size=min(2,init_size);
+                    _bucket_size=2;
+                    _buckets=new Bucket[min_init_size];
+                    auto _bucket1=new Bucket(_archive, depth+1);
+                    auto _bucket2=new Bucket(archive, depth+1);
+                    if ( _bucket1._archive.index(depth) < _bucket1._archive.index(depth) ) {
+                        _buckets[0]=_bucket1;
+                        _buckets[1]=_bucket2;
+                    }
+                    else {
+                        _buckets[1]=_bucket1;
+                        _buckets[0]=_bucket2;
+                        _bucket_size=2;
+                    }
+                    _archive=null;
+                }
             }
         }
 
@@ -260,37 +452,12 @@ class DART {
                 return _fingerprint;
             }
             else if ( isBucket ) {
-                immutable(ubyte[]) merkeltree(Bucket[] left, Bucket[] right) {
-                    scope immutable(ubyte)[] _left_fingerprint;
-                    scope immutable(ubyte)[] _right_fingerprint;
-                    if ( (left.length == 1) && (right.length == 1 ) ) {
-                        auto _left=left[0];
-                        auto _right=right[0];
-                        if ( _left ) {
-                            _left_fingerprint=_left.fingerprint(net);
-                        }
-                        if ( _right ) {
-                            _right_fingerprint=_right.fingerprint(net);
-                        }
-                    }
-                    else {
-                        immutable left_mid=left.length >> 1;
-                        immutable right_mid=right.length >> 1;
-                        _left_fingerprint=merkeltree(left[0..left_mid], left[left_mid..$]);
-                        _right_fingerprint=merkeltree(right[0..right_mid], right[right_mid..$]);
-                    }
-                    if ( _left_fingerprint is null ) {
-                        return _right_fingerprint;
-                    }
-                    else if ( _right_fingerprint is null ) {
-                        return _left_fingerprint;
-                    }
-                    else {
-                        return net.calcHash(_left_fingerprint~_right_fingerprint);
-                    }
+                scope auto temp_buckets=new Bucket[bucket_max];
+                foreach(i;0.._bucket_size) {
+                    auto b=_buckets[i];
+                    temp_buckets[b.index(depth)]=b;
                 }
-                immutable mid=_buckets.length >> 1;
-                _fingerprint=merkeltree(_buckets[0..mid], _buckets[mid..$]);
+                _fingerprint=sparsed_merkeltree(net, temp_buckets);
                 return _fingerprint;
             }
             else {
@@ -332,20 +499,19 @@ class DART {
 
     }
 
-    static uint calc_to_sector(const ubyte from_sector, const ubyte to_sector) pure nothrow {
-        return to_sector+((from_sector >= to_sector)?bucket_size:0);
+    static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
+        return to_sector+((from_sector >= to_sector)?sector_max:0);
     }
 
-    static uint calc_sector_size(const ubyte from_sector, const ubyte to_sector) pure nothrow {
-        immutable uint from=from_sector;
-        immutable uint to=calc_to_sector(from_sector, to_sector);
+    static uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow {
+        immutable from=from_sector;
+        immutable to=calc_to_sector(from_sector, to_sector);
         return to-from;
     }
 
-
-    bool inRange(const ubyte sector) const pure nothrow  {
-        immutable ubyte sector_origin=(sector-_from_sector) & ubyte.max;
-        immutable ubyte to_origin=(_to_sector-_from_sector) & ubyte.max;
+    bool inRange(const ushort sector) const pure nothrow  {
+        immutable ushort sector_origin=(sector-_from_sector) & ushort.max;
+        immutable ushort to_origin=(_to_sector-_from_sector) & ushort.max;
         return ( sector_origin < to_origin );
     }
 
@@ -353,18 +519,22 @@ class DART {
         import std.typecons : BlackHole;
         auto net=new BlackHole!SecureNet;
 
-        auto dart1=new DART(net, 10, 88);
-        assert(dart1.inRange(10));
-        assert(dart1.inRange(42));
-        assert(dart1.inRange(87));
-        assert(!dart1.inRange(88));
+        enum from1=0x10;
+        enum to1=0x8201;
+        auto dart1=new DART(net, from1, to1);
+        assert(dart1.inRange(from1));
+        assert(dart1.inRange(to1-0x100));
+        assert(dart1.inRange(to1-1));
+        assert(!dart1.inRange(to1));
 
-        auto dart2=new DART(net, 231, 10);
-        assert(!dart2.inRange(200));
-        assert(dart2.inRange(231));
+        enum from2=0xFF80;
+        enum to2=0x10;
+        auto dart2=new DART(net, from2, to2);
+        assert(!dart2.inRange(from2-1));
+        assert(dart2.inRange(from2));
         assert(dart2.inRange(0));
-        assert(dart2.inRange(9));
-        assert(!dart2.inRange(10));
+        assert(dart2.inRange(to2-1));
+        assert(!dart2.inRange(to2));
         assert(!dart2.inRange(42));
     }
 
