@@ -67,13 +67,14 @@ class DART {
     }
 
     ushort root_index(immutable(ubyte[]) data) pure const nothrow {
-        return data[0] | (data[1] << 1);
+        return data[1] | (data[0] << 1);
     }
 
     void add(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
         immutable index=root_index(archive.fingerprint);
         if ( inRange(index) ) {
+            //immutable pos=
             if ( _root_buckets[index] is null ) {
                 _root_buckets[index]=new Bucket(root_depth);
             }
@@ -482,19 +483,29 @@ class DART {
 
         auto net=new TestNet;
         auto dart=new DART(net, 0x10, 0x42);
-        immutable(ubyte[]) data(uint x) {
+        immutable(ubyte[]) data(ulong x) {
             import std.bitmanip;
-            return nativeToLittleEndian(x).idup;
+            return nativeToBigEndian(x).idup;
         }
 
 
         import std.stdio;
 
-        dart.add(data(0x10));
-        auto key=data(0x10);
-        auto d=dart.find(key);
+        immutable array=[
+            0x10_10_10_10_10_10_10_10,
+            0x10_10_10_10_10_10_10_10
 
-        writefln("%s", d.data);
+            ];
+
+
+        enum key_val=0x17_16_15_14_13_12_11_10;
+        // dart.add(data(0x17_16_15_14_13_12_11_10));
+
+        auto key=data(key_val);
+        writefln("key=%s %x", key, key_val);
+        // auto d=dart.find(key);
+
+        // writefln("%s", d.data);
 
 
     }
