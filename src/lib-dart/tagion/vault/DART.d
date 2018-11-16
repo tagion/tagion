@@ -7,6 +7,12 @@ import tagion.hashgraph.ConsensusExceptions;
 import tagion.Keywords;
 import std.conv : to;
 
+@safe
+void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+    if (!flag) {
+        throw new EventConsensusException(code, file, line);
+    }
+}
 
 immutable(ubyte[]) sparsed_merkeltree(T)(SecureNet net, T[] table) {
     immutable(ubyte[]) merkeltree(T[] left, T[] right) {
@@ -52,12 +58,6 @@ class DART {
     enum bucket_max=1 << (ubyte.sizeof*8);
     enum uint root_depth=cast(uint)ushort.sizeof;
     enum sector_max = ushort.max;
-    // class Section {
-    //     private string _filename;
-    //     private Bucket _bucket;
-    // }
-
-    // private Section[] _sections;
 
     this(SecureNet net, const ushort from_sector, const ushort to_sector) {
         _net=net;
@@ -123,6 +123,12 @@ class DART {
         }
     }
 
+    Bucket.Iterator iterator(ushort sector) {
+        check(inRange(sector),  ConsensusFailCode.DART_ARCHIVE_SECTOR_NOT_FOUND);
+        return _root_buckets[sector_to_index(sector)].iterator;
+    }
+
+
     static class Bucket {
         private Bucket[] _buckets;
         private size_t _bucket_size;
@@ -135,29 +141,6 @@ class DART {
             return _buckets !is null;
         }
 
-        version(none)
-        Bucket opIndex(ubyte i) {
-            Bucket find_bucket(immutable uint search_j, immutable uint division_j) {
-                if ( search_j < _bucket_size ) {
-                    immutable search_index=_buckets[search_j].index;
-                    if ( index == search_index ) {
-                        return _buckets[search_j];
-                    }
-                    else if ( division_j > 0 ) {
-                        if ( index < search_index ) {
-                            return find_bucket(search_j-division_j, division_j/2);
-                        }
-                        else if ( index > search_index ) {
-                            return find_bucket(search_j+division_j, division_j/2);
-                        }
-                    }
-                }
-                return null;
-            }
-            immutable start_j=((_bucket_size+((_bucket_size % 2 == 1)?1:0))/2) & ubyte.max;
-            return find_bucket(start_j, start_j/2);
-        }
-
         uint index(const uint depth) const pure {
             if ( isBucket ) {
                 return _buckets[0].index(depth);
@@ -166,7 +149,6 @@ class DART {
                 return _archive.index(depth);
             }
         }
-
 
         private uint find_bucket_pos(uint i)
             in {
@@ -314,9 +296,7 @@ class DART {
             _fingerprint=null;
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(archive.fingerprint[depth]);
-                if (_buckets[pos].fingerprint(net) == archive.fingerprint ) {
-                    throw new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
-                }
+                check(_buckets[pos].fingerprint(net) == archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
                 auto temp_bucket=new Bucket(depth+1);
                 temp_bucket.add(net, archive);
                 if ( _bucket_size+1 <= _buckets.length ) {
@@ -379,12 +359,8 @@ class DART {
             }
             if ( bucket.isBucket ) {
                 immutable index=archive.fingerprint[level];
-                if ( bucket._buckets[index] ) {
-                    Bucket.remove(bucket._buckets[index], archive, level+1);
-                }
-                else {
-                    throw new EventConsensusException(ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
-                }
+                check(bucket._buckets[index] !is null, ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
+                Bucket.remove(bucket._buckets[index], archive, level+1);
             }
             else {
                 bucket.destroy;
@@ -413,7 +389,9 @@ class DART {
         // uint length() const pure nothrow {
         //     return _count;
         // }
-
+        Iterator iterator() {
+            return Iterator(this);
+        }
         struct Iterator {
             static class BucketStack {
                 Bucket bucket;
@@ -511,6 +489,7 @@ class DART {
 
         auto key=data(key_val);
         writefln("key=%s %x", key, key_val);
+        //    foreach(b; dart
         // auto d=dart.find(key);
 
         // writefln("%s", d.data);
