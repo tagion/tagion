@@ -66,15 +66,19 @@ class DART {
         _root_buckets=new Bucket[calc_sector_size(_from_sector, _to_sector)];
     }
 
-    ushort root_index(immutable(ubyte[]) data) pure const nothrow {
+    ushort root_sector(immutable(ubyte[]) data) pure const nothrow {
         return data[1] | (data[0] << 1);
+    }
+
+    ushort sector_to_index(const ushort sector) {
+        return (sector-_from_sector) & ushort.max;
     }
 
     void add(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
-        immutable index=root_index(archive.fingerprint);
-        if ( inRange(index) ) {
-            //immutable pos=
+        immutable sector=root_sector(archive.fingerprint);
+        if ( inRange(sector) ) {
+            immutable index=sector_to_index(sector);
             if ( _root_buckets[index] is null ) {
                 _root_buckets[index]=new Bucket(root_depth);
             }
@@ -84,82 +88,24 @@ class DART {
 
     void remove(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
-        immutable index=root_index(archive.fingerprint);
-        if ( inRange(index) && _root_buckets[index] ) {
-            Bucket.remove(_root_buckets[index], _net, archive);
+        immutable sector=root_sector(archive.fingerprint);
+        if ( inRange(sector) ) {
+            immutable index=sector_to_index(sector);
+            if ( _root_buckets[index] ) {
+                Bucket.remove(_root_buckets[index], _net, archive);
+            }
         }
     }
 
     ArchiveTab find(immutable(ubyte[]) key) {
-        immutable index=root_index(key);
-        if ( inRange(index) && _root_buckets[index] ) {
-            return _root_buckets[index].find(key);
+        immutable sector=root_sector(key);
+        if ( inRange(sector) ) {
+            immutable index=sector_to_index(sector);
+            if ( _root_buckets[index] ) {
+                return _root_buckets[index].find(key);
+            }
         }
         return null;
-    }
-
-    struct Iterator {
-        static class BucketStack {
-            Bucket bucket;
-            ubyte pos;
-            BucketStack stack;
-            this(Bucket b) {
-                bucket=b;
-            }
-        }
-
-        this(Bucket b) {
-            _stack=new BucketStack(b);
-        }
-
-        private void push(ref BucketStack b, Bucket bucket) {
-            auto top_stack=new BucketStack(bucket);
-            top_stack.stack=_stack;
-            _stack=top_stack;
-        }
-
-        private void pop(ref BucketStack b) {
-            _stack=b.stack;
-        }
-
-        private BucketStack _stack;
-        private Bucket _current;
-        void popFront() {
-            if ( _stack ) {
-                if  (_stack.pos < _stack.bucket._bucket_size ) {
-                    if ( _stack.bucket.isBucket ) {
-
-                    }
-                    else {
-
-                    }
-                    _current=_stack.bucket._buckets[_stack.pos];
-                    _stack.pos++;
-                    if ( _current.isBucket ) {
-                        push(_stack, _current);
-                        popFront;
-                    }
-                }
-                else {
-                    pop(_stack);
-                    popFront;
-                }
-            }
-        }
-
-        bool empty() const pure nothrow {
-            return _stack is null;
-        }
-
-        ArchiveTab front()
-            in {
-                if ( _current ) {
-                    assert(!_current.isBucket, "Should be an archive tab not bucket");
-                }
-            }
-        do {
-            return _current._archive;
-        }
     }
 
     static class ArchiveTab {
@@ -181,7 +127,6 @@ class DART {
         private Bucket[] _buckets;
         private size_t _bucket_size;
         private ArchiveTab _archive;
-        private uint _count;
         immutable uint depth;
         immutable size_t init_size;
         immutable size_t extend;
@@ -430,7 +375,6 @@ class DART {
             scope(success) {
                 if ( bucket ) {
                     bucket._fingerprint=null;
-                    bucket._count--;
                 }
             }
             if ( bucket.isBucket ) {
@@ -466,8 +410,72 @@ class DART {
             }
         }
 
-        uint length() const pure nothrow {
-            return _count;
+        // uint length() const pure nothrow {
+        //     return _count;
+        // }
+
+        struct Iterator {
+            static class BucketStack {
+                Bucket bucket;
+                ubyte pos;
+                BucketStack stack;
+                this(Bucket b) {
+                    bucket=b;
+                }
+            }
+
+            this(Bucket b) {
+                _stack=new BucketStack(b);
+            }
+
+            private void push(ref BucketStack b, Bucket bucket) {
+                auto top_stack=new BucketStack(bucket);
+                top_stack.stack=_stack;
+                _stack=top_stack;
+            }
+
+            private void pop(ref BucketStack b) {
+                _stack=b.stack;
+            }
+
+            private BucketStack _stack;
+            private Bucket _current;
+            void popFront() {
+                if ( _stack ) {
+                    if ( _stack.bucket.isBucket ) {
+                        if ( _stack.pos < _stack.bucket._bucket_size ) {
+                            _current=_stack.bucket._buckets[_stack.pos];
+                            _stack.pos++;
+                            if ( _current.isBucket ) {
+                                push(_stack, _current);
+                                popFront;
+                            }
+                        }
+                        else {
+                            pop(_stack);
+                            popFront;
+                        }
+                    }
+                    else {
+                        _current=_stack.bucket;
+                        pop(_stack);
+                    }
+                }
+            }
+
+            bool empty() const pure nothrow {
+                return _stack is null;
+            }
+
+            const(Bucket) front()
+            in {
+                if ( _current ) {
+                    assert(!_current.isBucket, "Should be an archive tab not bucket");
+                }
+            }
+            do {
+                return _current;
+            }
         }
 
     }
@@ -499,7 +507,7 @@ class DART {
 
 
         enum key_val=0x17_16_15_14_13_12_11_10;
-        // dart.add(data(0x17_16_15_14_13_12_11_10));
+        dart.add(data(key_val));
 
         auto key=data(key_val);
         writefln("key=%s %x", key, key_val);
