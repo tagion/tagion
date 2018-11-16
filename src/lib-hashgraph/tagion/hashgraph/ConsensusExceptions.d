@@ -40,6 +40,7 @@ enum ConsensusFailCode {
 
     DART_ARCHIVE_ALREADY_ADDED,
     DART_ARCHIVE_DOES_NOT_EXIST,
+    DART_ARCHIVE_SECTOR_NOT_FOUND,
 
     NETWORK_BAD_PACKAGE_TYPE
 };
@@ -147,7 +148,7 @@ static this() {
 
             DART_ARCHIVE_ALREADY_ADDED            : "DART Failed archive is already added",
             DART_ARCHIVE_DOES_NOT_EXIST           : "DART Failed archive does not exist",
-
+            DART_ARCHIVE_SECTOR_NOT_FOUND         : "DART Failed sector is not maintained by this node",
             NETWORK_BAD_PACKAGE_TYPE : "Illegal package type",
             ];
         version(none) {
