@@ -67,7 +67,7 @@ class DART {
     }
 
     ushort root_sector(immutable(ubyte[]) data) pure const nothrow {
-        return data[1] | (data[0] << 1);
+        return data[1] | (data[0] << 8);
     }
 
     ushort sector_to_index(const ushort sector) {
@@ -179,10 +179,10 @@ class DART {
 
         static size_t calc_init_size(size_t depth) {
             switch ( depth ) {
-            case 0:
+            case 0, 1, 2:
                 return 32;
                 break;
-            case 1:
+            case 3:
                 return 4;
                 break;
             default:
@@ -192,10 +192,10 @@ class DART {
 
         static size_t calc_extend(size_t depth) {
             switch ( depth ) {
-            case 0:
+            case 0, 1, 2:
                 return 16;
                 break;
-            case 1:
+            case 3:
                 return 4;
                 break;
             default:
@@ -236,9 +236,9 @@ class DART {
 
         }
 
-        this(ArchiveTab _archive, immutable uint depth) {
+        this(ArchiveTab archive, immutable uint depth) {
             this(depth);
-            _archive=_archive;
+            _archive=archive;
         }
 
         this(Document doc, SecureNet net, immutable uint depth) {
@@ -326,13 +326,13 @@ class DART {
                     _buckets[0].add(net, archive);
                 }
                 else {
-                    import std.algorithm : min;
-                    immutable min_init_size=min(2,init_size);
+                    import std.algorithm : max;
+                    immutable min_init_size=max(2,init_size);
                     _bucket_size=2;
                     _buckets=new Bucket[min_init_size];
                     auto _bucket1=new Bucket(_archive, depth+1);
                     auto _bucket2=new Bucket(archive, depth+1);
-                    if ( _bucket1._archive.index(depth) < _bucket1._archive.index(depth) ) {
+                    if ( _bucket1._archive.index(depth) < _bucket2._archive.index(depth) ) {
                         _buckets[0]=_bucket1;
                         _buckets[1]=_bucket2;
                     }
@@ -467,9 +467,7 @@ class DART {
             }
         }
 
-        auto net=new TestNet;
-        auto dart=new DART(net, 0x10, 0x42);
-        immutable(ubyte[]) data(ulong x) {
+        immutable(ubyte[]) data(const ulong x) {
             import std.bitmanip;
             return nativeToBigEndian(x).idup;
         }
@@ -478,22 +476,45 @@ class DART {
         import std.stdio;
 
         immutable array=[
-            0x10_10_10_10_10_10_10_10,
-            0x10_10_10_10_10_10_10_10
-
+            0x20_21_10_10_10_10_10_10,
+            0x20_21_11_10_10_10_10_10
             ];
 
 
-        enum key_val=0x17_16_15_14_13_12_11_10;
-        dart.add(data(key_val));
-
-        auto key=data(key_val);
-        writefln("key=%s %x", key, key_val);
-        //    foreach(b; dart
-        // auto d=dart.find(key);
-
+        auto net=new TestNet;
+        auto dart=new DART(net, 0x1000, 0x2022);
+        // dart.add(data(array[0]));
+        // auto d=dart.find(data(array[0]));
         // writefln("%s", d.data);
 
+        // foreach(a; array) {
+        //     dart.add(data(a));
+        // }
+
+        // auto d=dart.find(data(array[0]));
+        // writefln("%s", d.data);
+
+        // foreach(a; array) {
+        //     auto d=dart.find(data(a));
+        //     writefln("%s", d.data);
+        // }
+
+        enum key_val=array[0];//0x20_20_15_14_13_12_11_10;
+        foreach(a; array) {
+            dart.add(data(a));
+            auto key=data(a);
+            writefln("key=%s %x %x %s", key, a, dart.root_sector(key), dart.inRange(dart.root_sector(key)));
+        }
+        //    foreach(b; dart
+        foreach(a; array) {
+            auto d=dart.find(data(a));
+            if ( d ) {
+                writefln("%s", d.data);
+            }
+            else {
+                writeln("Not found!");
+            }
+        }
 
     }
 
