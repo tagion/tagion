@@ -179,12 +179,13 @@ class DART {
             }
         }
 
-        private uint find_bucket_pos(const uint index)
+        private int find_bucket_pos(const int index)
             in {
                 assert(index <= ubyte.max);
+                assert(index >= 0);
             }
         do {
-            uint find_bucket_pos(immutable uint search_j, immutable uint division_j) {
+            int find_bucket_pos(immutable int search_j, immutable int division_j) {
                 writefln("search_j=%d division_j=%d", search_j, division_j);
                 if ( search_j < _bucket_size ) {
                     immutable search_index=_buckets[search_j].index(depth);
@@ -343,6 +344,19 @@ class DART {
                         }
                         _bucket_size++;
                         _buckets[pos]=temp_bucket;
+                    }
+                    else if ( pos < 0 ) {
+                        Bucket[] new_buckets;
+                        if ( _bucket_size+1 <= _buckets.length ) {
+                            new_buckets.length=extend_size;
+                        }
+                        else {
+                            new_buckets.length=_buckets.length;
+                        }
+                        new_buckets[0]=temp_bucket;
+                        new_buckets[1.._bucket_size+1]=_buckets[0.._bucket_size];
+                        _bucket_size++;
+                        _buckets=new_buckets;
                     }
                     else {
                         check(_buckets[pos]._archive.fingerprint == archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
@@ -534,7 +548,8 @@ class DART {
         immutable(ulong[]) table=[
             0x20_21_10_30_40_50_80_90,
             0x20_21_11_30_40_50_80_90,
-            0x20_21_12_30_40_50_80_90
+            0x20_21_12_30_40_50_80_90,
+            0x20_21_0a_30_40_50_80_90
             ];
 
 
@@ -584,6 +599,10 @@ class DART {
         {
             writeln("###### Test 3 ######");
             check(table[0..3]);
+        }
+        {
+            writeln("###### Test 4 ######");
+            check(table[0..4]);
         }
 
     }
