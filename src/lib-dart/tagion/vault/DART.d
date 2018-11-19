@@ -330,30 +330,39 @@ class DART {
             _fingerprint=null;
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(archive.fingerprint[depth]);
-                writefln("add bucket %s pos=%d index=%x", archive.data, pos, archive.fingerprint[depth]);
-                if ( _buckets[pos].isBucket ) {
+                writefln("add bucket %s pos=%d index=%x bucket_size=%d", archive.data, pos, archive.fingerprint[depth],  _bucket_size);
+                if ( (pos < _bucket_size) && _buckets[pos].isBucket ) {
                     _buckets[pos].add(net,archive);
                 }
                 else {
-                    check(_buckets[pos]._archive.fingerprint == archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
                     auto temp_bucket=new Bucket(depth);
                     temp_bucket.add(net, archive);
-                    if ( _bucket_size+1 <= _buckets.length ) {
-                        writefln("\tfit in the bucket");
-                        foreach_reverse(i;pos.._bucket_size) {
-                            _buckets[i+1]=_buckets[i];
+                    if (pos == _bucket_size) {
+                        if ( _bucket_size+1 <= _buckets.length ) {
+                            _buckets.length=extend_size;
                         }
-                        _buckets[pos]=temp_bucket;
                         _bucket_size++;
+                        _buckets[pos]=temp_bucket;
                     }
                     else {
-                        writefln("\tExpand the  bucket");
-                        auto new_buckets=new Bucket[extend_size];
-                        new_buckets[0..pos]=_buckets[0..pos];
-                        new_buckets[pos+1.._bucket_size+1]=_buckets[pos.._bucket_size];
-                        new_buckets[pos]=temp_bucket;
-                        _buckets=new_buckets;
-                        _bucket_size++;
+                        check(_buckets[pos]._archive.fingerprint == archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
+                        if ( _bucket_size+1 <= _buckets.length ) {
+                            writefln("\tfit in the bucket");
+                            foreach_reverse(i;pos.._bucket_size) {
+                                _buckets[i+1]=_buckets[i];
+                            }
+                            _buckets[pos]=temp_bucket;
+                            _bucket_size++;
+                        }
+                        else {
+                            writefln("\tExpand the  bucket");
+                            auto new_buckets=new Bucket[extend_size];
+                            new_buckets[0..pos]=_buckets[0..pos];
+                            new_buckets[pos+1.._bucket_size+1]=_buckets[pos.._bucket_size];
+                            new_buckets[pos]=temp_bucket;
+                            _buckets=new_buckets;
+                            _bucket_size++;
+                        }
                     }
                 }
             }
