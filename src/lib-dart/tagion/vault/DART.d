@@ -202,6 +202,9 @@ class DART {
                         }
                     }
                 }
+                else if ( division_j > 0 ) {
+                    return find_bucket_pos(search_j-division_j, division_j/2);
+                }
                 return search_j;
             }
             writefln("bucket_size=%d", _bucket_size);
@@ -239,6 +242,15 @@ class DART {
         size_t extend_size() pure const nothrow {
             immutable size=_buckets.length+extend;
             return (size <= ubyte.max)?size:ubyte.max+1;
+        }
+
+        size_t grow() {
+            if ( _bucket_size+1 <= _buckets.length ) {
+                return _buckets.length;
+            }
+            else {
+                return extend_size;
+            }
         }
 
         private void opIndexAssign(Bucket b, const uint index) {
@@ -316,8 +328,9 @@ class DART {
             writefln("find=%s %x depth=%d", key, key[depth], depth);
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(key[depth]);
+                writefln("\t\tpos=%d bucket_size=%d depth=%d key=0x%x", pos, _bucket_size, depth, key[depth] );
                 if ( _buckets[pos] ) {
-                    writefln("\t\tpos=%d depth=%d", pos, _buckets[pos].depth);
+                    writefln("\t\tdepth=%d", _buckets[pos].depth);
                     return _buckets[pos].find(key);
                 }
             }
@@ -339,7 +352,7 @@ class DART {
                     auto temp_bucket=new Bucket(depth);
                     temp_bucket.add(net, archive);
                     if (pos == _bucket_size) {
-                        if ( _bucket_size+1 <= _buckets.length ) {
+                        if ( _bucket_size+1 >= _buckets.length ) {
                             _buckets.length=extend_size;
                         }
                         _bucket_size++;
@@ -359,7 +372,8 @@ class DART {
                         _buckets=new_buckets;
                     }
                     else {
-                        check(_buckets[pos]._archive.fingerprint == archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
+                        writefln("_archive.fingerprint=%s archive.fingerprint=%s", _buckets[pos]._archive.fingerprint, archive.fingerprint);
+                        check(_buckets[pos]._archive.fingerprint != archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
                         if ( _bucket_size+1 <= _buckets.length ) {
                             writefln("\tfit in the bucket");
                             foreach_reverse(i;pos.._bucket_size) {
@@ -546,10 +560,22 @@ class DART {
         import std.stdio;
 
         immutable(ulong[]) table=[
+            // first RIM test (depth=2)
             0x20_21_10_30_40_50_80_90,
             0x20_21_11_30_40_50_80_90,
             0x20_21_12_30_40_50_80_90,
-            0x20_21_0a_30_40_50_80_90
+            0x20_21_0a_30_40_50_80_90,
+
+            // Second Rim test (depth=3)
+            0x20_21_20_30_40_50_80_90,
+            0x20_21_20_31_40_50_80_90,
+            0x20_21_20_34_40_50_80_90,
+            0x20_21_20_20_40_50_80_90,
+            0x20_21_20_32_40_50_80_90,
+
+            // Add in first rim again
+            0x20_21_21_30_40_50_80_90,
+
             ];
 
 
@@ -568,7 +594,7 @@ class DART {
         //     auto d=dart.find(data(a));
         //     writefln("%s", d.data);
         // }
-        void check(immutable(ulong[]) array) {
+        void add_and_find_check(immutable(ulong[]) array) {
             auto net=new TestNet;
             auto dart=new DART(net, 0x1000, 0x2022);
             foreach(a; array) {
@@ -588,24 +614,50 @@ class DART {
             }
         }
 
-        {
+        // Add and find test
+        { // First rim test one element
             writeln("###### Test 1 ######");
-            check(table[0..1]);
+            add_and_find_check(table[0..1]);
         }
-        {
+        { // First rim test two elements
             writeln("###### Test 2 ######");
-            check(table[0..2]);
+            add_and_find_check(table[0..2]);
         }
-        {
+        { // First rim test three elements
             writeln("###### Test 3 ######");
-            check(table[0..3]);
+            add_and_find_check(table[0..3]);
         }
-        {
+        { // First rim test four elements (insert an element before all others)
             writeln("###### Test 4 ######");
-            check(table[0..4]);
+            add_and_find_check(table[0..4]);
         }
 
-    }
+        { // Second rim test 2 elements
+            writeln("###### Test 5 ######");
+            add_and_find_check(table[4..6]);
+        }
+
+        { // Second rim test 3 elements
+            writeln("###### Test 6 ######");
+            add_and_find_check(table[4..7]);
+        }
+
+        { // Second rim test 4 elements (insert an element before all others)
+            writeln("###### Test 7 ######");
+            add_and_find_check(table[4..8]);
+        }
+
+        { // Second rim test 5 elements (insert an element in the middel)
+            writeln("###### Test 8 ######");
+            add_and_find_check(table[4..9]);
+        }
+
+        { // Second rim test 6 elements (Last elemen is added in the first rim)
+            writeln("###### Test 9 ######");
+            add_and_find_check(table[4..10]);
+        }
+
+}
 
     static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
         return to_sector+((from_sector >= to_sector)?sector_max:0);
