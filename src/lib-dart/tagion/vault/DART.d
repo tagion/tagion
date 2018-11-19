@@ -7,11 +7,39 @@ import tagion.hashgraph.ConsensusExceptions;
 import tagion.Keywords;
 import std.conv : to;
 
+import std.stdio;
 @safe
 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
     if (!flag) {
         throw new EventConsensusException(code, file, line);
     }
+}
+
+@safe
+uint cover(const uint n) {
+    uint local_cover(immutable uint width, immutable uint step) {
+        immutable uint result=1 << width;
+        if ( step != 0 ) {
+            if ( result > n ) {
+                if ( (result >> 1) >= n ) {
+                    return local_cover(width-step, step >> 1);
+                }
+            }
+            else if ( result < n ) {
+                return local_cover(width+step, step >> 1);
+            }
+        }
+        return result;
+    }
+    immutable width=(uint.sizeof*8) >> 1;
+    return local_cover(width, width >> 1);
+}
+
+unittest {
+    assert(cover(0x1FFF) == 0x2000);
+    assert(cover(0x1200) == 0x2000);
+    assert(cover(0x210) == 0x400);
+    assert(cover(0x1000) == 0x1000);
 }
 
 immutable(ubyte[]) sparsed_merkeltree(T)(SecureNet net, T[] table) {
@@ -98,6 +126,7 @@ class DART {
     }
 
     ArchiveTab find(immutable(ubyte[]) key) {
+        writeln("---- ----- ----");
         immutable sector=root_sector(key);
         if ( inRange(sector) ) {
             immutable index=sector_to_index(sector);
@@ -131,7 +160,7 @@ class DART {
 
     static class Bucket {
         private Bucket[] _buckets;
-        private size_t _bucket_size;
+        private uint _bucket_size;
         private ArchiveTab _archive;
         immutable uint depth;
         immutable size_t init_size;
@@ -150,30 +179,33 @@ class DART {
             }
         }
 
-        private uint find_bucket_pos(uint i)
+        private uint find_bucket_pos(const uint index)
             in {
-                assert(i <= ubyte.max);
+                assert(index <= ubyte.max);
             }
         do {
             uint find_bucket_pos(immutable uint search_j, immutable uint division_j) {
+                writefln("search_j=%d division_j=%d", search_j, division_j);
                 if ( search_j < _bucket_size ) {
                     immutable search_index=_buckets[search_j].index(depth);
-                    if ( index(depth) == search_index ) {
+                    writefln("\tsearch_index=%x", _buckets[search_j].index(depth));
+                    if ( index == search_index ) {
                         return search_j;
                     }
                     else if ( division_j > 0 ) {
-                        if ( index(depth) < search_index ) {
+                        if ( index < search_index ) {
                             return find_bucket_pos(search_j-division_j, division_j/2);
                         }
-                        else if ( index(depth) > search_index ) {
+                        else if ( index > search_index ) {
                             return find_bucket_pos(search_j+division_j, division_j/2);
                         }
                     }
                 }
                 return search_j;
             }
-            immutable start_j=((_bucket_size+((_bucket_size % 2 == 1)?1:0))/2) & ubyte.max;
-            return find_bucket_pos(start_j, start_j/2);
+            writefln("bucket_size=%d", _bucket_size);
+            immutable start_j=cover(_bucket_size) >> 1;
+            return find_bucket_pos(start_j, start_j);
         }
 
 
@@ -236,10 +268,10 @@ class DART {
 
         }
 
-        this(ArchiveTab archive, immutable uint depth) {
-            this(depth);
-            _archive=archive;
-        }
+        // this(ArchiveTab archive, immutable uint depth) {
+        //     this(depth);
+        //     _archive=archive;
+        // }
 
         this(Document doc, SecureNet net, immutable uint depth) {
             this(depth);
@@ -280,10 +312,12 @@ class DART {
         }
 
         ArchiveTab find(immutable(ubyte[]) key) {
+            writefln("find=%s %x depth=%d", key, key[depth], depth);
             if ( isBucket ) {
-                immutable index=key[depth];
-                if ( _buckets[index] ) {
-                    return _buckets[index].find(key);
+                immutable pos=find_bucket_pos(key[depth]);
+                if ( _buckets[pos] ) {
+                    writefln("\t\tpos=%d depth=%d", pos, _buckets[pos].depth);
+                    return _buckets[pos].find(key);
                 }
             }
             else if ( _archive && (_archive.fingerprint == key) ) {
@@ -296,50 +330,64 @@ class DART {
             _fingerprint=null;
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(archive.fingerprint[depth]);
-                check(_buckets[pos].fingerprint(net) == archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
-                auto temp_bucket=new Bucket(depth+1);
-                temp_bucket.add(net, archive);
-                if ( _bucket_size+1 <= _buckets.length ) {
-                    foreach_reverse(i;pos.._bucket_size) {
-                        _buckets[i+1]=_buckets[i];
-                    }
-                    _buckets[pos]=temp_bucket;
-                    _bucket_size++;
+                writefln("add bucket %s pos=%d index=%x", archive.data, pos, archive.fingerprint[depth]);
+                if ( _buckets[pos].isBucket ) {
+                    _buckets[pos].add(net,archive);
                 }
                 else {
-                    auto new_buckets=new Bucket[extend_size];
-                    new_buckets[0..pos]=_buckets[0..pos];
-                    new_buckets[pos+1.._bucket_size+1]=_buckets[pos.._bucket_size];
-                    new_buckets[pos]=temp_bucket;
-                    _buckets=new_buckets;
-                    _bucket_size++;
+                    check(_buckets[pos]._archive.fingerprint == archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
+                    auto temp_bucket=new Bucket(depth);
+                    temp_bucket.add(net, archive);
+                    if ( _bucket_size+1 <= _buckets.length ) {
+                        writefln("\tfit in the bucket");
+                        foreach_reverse(i;pos.._bucket_size) {
+                            _buckets[i+1]=_buckets[i];
+                        }
+                        _buckets[pos]=temp_bucket;
+                        _bucket_size++;
+                    }
+                    else {
+                        writefln("\tExpand the  bucket");
+                        auto new_buckets=new Bucket[extend_size];
+                        new_buckets[0..pos]=_buckets[0..pos];
+                        new_buckets[pos+1.._bucket_size+1]=_buckets[pos.._bucket_size];
+                        new_buckets[pos]=temp_bucket;
+                        _buckets=new_buckets;
+                        _bucket_size++;
+                    }
                 }
             }
             else if ( _archive is null ) {
+                writefln("add archive %s", archive.data);
                 _archive=archive;
             }
             else {
+                writefln("add to bucket %s", archive.data);
                 if ( _archive.index(depth) == archive.index(depth) ) {
+                    writefln("\tsame sub bucket %x", archive.index(depth));
                     _bucket_size=1;
                     _buckets=new Bucket[_bucket_size];
-                    _buckets[0].add(net, _archive);
-                    _buckets[0].add(net, archive);
+                    auto temp_bucket=new Bucket(depth+1);
+                    temp_bucket.add(net, _archive);
+                    temp_bucket.add(net, archive);
+                    _buckets[0]=temp_bucket;
                 }
                 else {
+                    writefln("\tdo %x %x d=%d", _archive.index(depth), archive.index(depth), depth);
                     import std.algorithm : max;
                     immutable min_init_size=max(2,init_size);
                     _bucket_size=2;
                     _buckets=new Bucket[min_init_size];
-                    auto _bucket1=new Bucket(_archive, depth+1);
-                    auto _bucket2=new Bucket(archive, depth+1);
-                    if ( _bucket1._archive.index(depth) < _bucket2._archive.index(depth) ) {
-                        _buckets[0]=_bucket1;
-                        _buckets[1]=_bucket2;
+                    _buckets[0]=new Bucket(depth);
+                    _buckets[1]=new Bucket(depth);
+                    writefln("\t\t[0]=%x [1]=%x", _archive.index(depth), archive.index(depth));
+                    if ( _archive.index(depth) < archive.index(depth) ) {
+                        _buckets[0].add(net, _archive);
+                        _buckets[1].add(net, archive);
                     }
                     else {
-                        _buckets[1]=_bucket1;
-                        _buckets[0]=_bucket2;
-                        _bucket_size=2;
+                        _buckets[1].add(net, _archive);
+                        _buckets[0].add(net, archive);
                     }
                     _archive=null;
                 }
@@ -472,17 +520,15 @@ class DART {
             return nativeToBigEndian(x).idup;
         }
 
-
         import std.stdio;
 
-        immutable array=[
-            0x20_21_10_10_10_10_10_10,
-            0x20_21_11_10_10_10_10_10
+        immutable(ulong[]) table=[
+            0x20_21_10_30_40_50_80_90,
+            0x20_21_11_30_40_50_80_90,
+            0x20_21_12_30_40_50_80_90
             ];
 
 
-        auto net=new TestNet;
-        auto dart=new DART(net, 0x1000, 0x2022);
         // dart.add(data(array[0]));
         // auto d=dart.find(data(array[0]));
         // writefln("%s", d.data);
@@ -498,22 +544,37 @@ class DART {
         //     auto d=dart.find(data(a));
         //     writefln("%s", d.data);
         // }
-
-        enum key_val=array[0];//0x20_20_15_14_13_12_11_10;
-        foreach(a; array) {
-            dart.add(data(a));
-            auto key=data(a);
-            writefln("key=%s %x %x %s", key, a, dart.root_sector(key), dart.inRange(dart.root_sector(key)));
+        void check(immutable(ulong[]) array) {
+            auto net=new TestNet;
+            auto dart=new DART(net, 0x1000, 0x2022);
+            foreach(a; array) {
+                dart.add(data(a));
+                auto key=data(a);
+                writefln("key=%s %x %x %s", key, a, dart.root_sector(key), dart.inRange(dart.root_sector(key)));
+            }
+            //    foreach(b; dart
+            foreach(a; array) {
+                auto d=dart.find(data(a));
+                if ( d ) {
+                    writefln("found %s", d.data);
+                }
+                else {
+                    writefln("Not found! %016x", a);
+                }
+            }
         }
-        //    foreach(b; dart
-        foreach(a; array) {
-            auto d=dart.find(data(a));
-            if ( d ) {
-                writefln("%s", d.data);
-            }
-            else {
-                writeln("Not found!");
-            }
+
+        {
+            writeln("###### Test 1 ######");
+            check(table[0..1]);
+        }
+        {
+            writeln("###### Test 2 ######");
+            check(table[0..2]);
+        }
+        {
+            writeln("###### Test 3 ######");
+            check(table[0..3]);
         }
 
     }
