@@ -329,7 +329,7 @@ class DART {
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(key[depth]);
                 writefln("\t\tpos=%d bucket_size=%d depth=%d key=0x%x", pos, _bucket_size, depth, key[depth] );
-                if ( _buckets[pos] ) {
+                if ( (pos >= 0) && (pos < _bucket_size) && _buckets[pos] ) {
                     writefln("\t\tdepth=%d", _buckets[pos].depth);
                     return _buckets[pos].find(key);
                 }
@@ -344,9 +344,9 @@ class DART {
             _fingerprint=null;
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(archive.fingerprint[depth]);
-                writefln("add bucket %s pos=%d index=%x bucket_size=%d", archive.data, pos, archive.fingerprint[depth],  _bucket_size);
-                if ( (pos < _bucket_size) && _buckets[pos].isBucket ) {
-                    _buckets[pos].add(net,archive);
+                writefln("add bucket %s pos=%d index=%x bucket_size=%d", archive.data, pos, archive.fingerprint[depth], _bucket_size);
+                if ( (pos >= 0) && (pos < _bucket_size) && _buckets[pos].isBucket ) {
+                    _buckets[pos].add(net, archive);
                 }
                 else {
                     auto temp_bucket=new Bucket(depth);
@@ -375,8 +375,9 @@ class DART {
                         writefln("_archive.fingerprint=%s archive.fingerprint=%s", _buckets[pos]._archive.fingerprint, archive.fingerprint);
                         check(_buckets[pos]._archive.fingerprint != archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
                         if ( _bucket_size+1 <= _buckets.length ) {
-                            writefln("\tfit in the bucket");
+                            writefln("\tfit in the bucket pos=%d", pos);
                             foreach_reverse(i;pos.._bucket_size) {
+                                writefln("\t\ti=%d bucket_size=%d", i, _bucket_size);
                                 _buckets[i+1]=_buckets[i];
                             }
                             _buckets[pos]=temp_bucket;
@@ -579,21 +580,6 @@ class DART {
             ];
 
 
-        // dart.add(data(array[0]));
-        // auto d=dart.find(data(array[0]));
-        // writefln("%s", d.data);
-
-        // foreach(a; array) {
-        //     dart.add(data(a));
-        // }
-
-        // auto d=dart.find(data(array[0]));
-        // writefln("%s", d.data);
-
-        // foreach(a; array) {
-        //     auto d=dart.find(data(a));
-        //     writefln("%s", d.data);
-        // }
         void add_and_find_check(immutable(ulong[]) array) {
             auto net=new TestNet;
             auto dart=new DART(net, 0x1000, 0x2022);
@@ -654,7 +640,9 @@ class DART {
 
         { // Second rim test 6 elements (Last elemen is added in the first rim)
             writeln("###### Test 9 ######");
-            add_and_find_check(table[4..10]);
+//            add_and_find_check(table[4..10]);
+//            add_and_find_check(table[7..10]);
+            add_and_find_check(table[7..10]);
         }
 
 }
