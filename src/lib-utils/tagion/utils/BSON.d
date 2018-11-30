@@ -109,15 +109,15 @@ interface DocumentCallbacks {
 }
 
 bool less_than(string a, string b) @safe  {
-    bool toUint(string str, out ulong str_l) @safe {
+    bool toUint(string str, out ulong value) @safe {
         foreach(s;str) {
-            if ( (str_l == 0) && ( s == '0' ) ) {
+            if ( (value == 0) && ( s == '0' ) ) {
                 return false;
             }
             if ( (s >= '0') && ( s <= '9' ) ) {
-                str_l*=10;
-                str_l+=(s-'0');
-                if ( str_l > uint.max ) {
+                value*=10;
+                value+=(s-'0');
+                if ( value > uint.max ) {
                     return false;
                 }
             }
@@ -142,6 +142,13 @@ bool less_than(string a, string b) @safe  {
     else {
         return a < b;
     }
+}
+
+unittest {
+    assert(less_than("abe", "bob"));
+    assert(less_than("0", "abe"));
+    assert(less_than("0", "1"));
+    assert(!less_than("00", "0"));
 }
 
 /**
