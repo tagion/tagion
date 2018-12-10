@@ -38,6 +38,10 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT,
     SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
 
+    DART_ARCHIVE_ALREADY_ADDED,
+    DART_ARCHIVE_DOES_NOT_EXIST,
+    DART_ARCHIVE_SECTOR_NOT_FOUND,
+
     NETWORK_BAD_PACKAGE_TYPE
 };
 
@@ -97,6 +101,14 @@ class HashGraphConsensusException : ConsensusException {
 }
 
 
+@safe
+class DARTConsensusException : ConsensusException {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+        super( code, file, line );
+    }
+}
+
+
 @trusted
 static this() {
     with (ConsensusFailCode) {
@@ -134,6 +146,9 @@ static this() {
             SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT   : "Failed to tweak add public key",
             SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT  : "Failed to tweak mult public key",
 
+            DART_ARCHIVE_ALREADY_ADDED            : "DART Failed archive is already added",
+            DART_ARCHIVE_DOES_NOT_EXIST           : "DART Failed archive does not exist",
+            DART_ARCHIVE_SECTOR_NOT_FOUND         : "DART Failed sector is not maintained by this node",
             NETWORK_BAD_PACKAGE_TYPE : "Illegal package type",
             ];
         version(none) {
