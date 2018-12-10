@@ -17,13 +17,13 @@ enum ExchangeState : uint {
 
 @safe
 interface RequestNet {
-    immutable(Buffer) calcHash(immutable(ubyte[]) data) inout;
+    immutable(Buffer) calcHash(immutable(ubyte[]) hash_pointer) inout;
     // Request a missing event from the network
     // add
     void request(HashGraph h, immutable(Buffer) event_hash);
 //    immutable(ubyte[]) pubkey()
 
-//    Buffer eventHashFromId(immutable uint id);
+    Buffer eventHashFromId(immutable uint id);
 }
 
 @safe
