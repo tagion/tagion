@@ -112,7 +112,7 @@ bool less_than(string a, string b) @safe  {
     bool toUint(string str, out ulong value) @safe {
         foreach(s;str) {
             if ( (value == 0) && ( s == '0' ) ) {
-                return false;
+                return true;
             }
             if ( (s >= '0') && ( s <= '9' ) ) {
                 value*=10;
