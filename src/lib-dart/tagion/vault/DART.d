@@ -50,10 +50,10 @@ immutable(ubyte[]) sparsed_merkeltree(T)(SecureNet net, T[] table) {
             auto _left=left[0];
             auto _right=right[0];
             if ( _left ) {
-                _left_fingerprint=_left.fingerprint(net);
+                _left_fingerprint=_left.merkle_root(net);
             }
             if ( _right ) {
-                _right_fingerprint=_right.fingerprint(net);
+                _right_fingerprint=_right.merkle_root(net);
             }
         }
         else {
@@ -165,7 +165,7 @@ class DART {
         immutable uint depth;
         immutable size_t init_size;
         immutable size_t extend;
-        private immutable(ubyte)[]  _fingerprint;
+        private immutable(ubyte)[]  _merkle_root;
         bool isBucket() const pure nothrow {
             return _buckets !is null;
         }
@@ -304,6 +304,19 @@ class DART {
             }
         }
 
+        @trusted
+        void dump() {
+            writeln("Dump bucket");
+            foreach(i;0.._bucket_size) {
+                if ( _buckets[i].isBucket ) {
+                    writefln("\t\ti=%d %s %s", i, _buckets[i]._merkle_root, _buckets[i].isBucket);
+                }
+                else {
+                    writefln("\t\ti=%d %s %s", i, _buckets[i]._archive.fingerprint, _buckets[i].isBucket);
+                }
+            }
+        }
+
         HBSON toBSON() const {
             auto bson=new HBSON;
             if ( isBucket ) {
@@ -341,7 +354,7 @@ class DART {
         }
 
         void add(SecureNet net, ArchiveTab archive) {
-            _fingerprint=null;
+            _merkle_root=null;
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(archive.fingerprint[depth]);
                 writefln("add bucket %s pos=%d index=%x bucket_size=%d", archive.data, pos, archive.fingerprint[depth], _bucket_size);
@@ -376,12 +389,16 @@ class DART {
                         check(_buckets[pos]._archive.fingerprint != archive.fingerprint,  ConsensusFailCode.DART_ARCHIVE_ALREADY_ADDED);
                         if ( _bucket_size+1 <= _buckets.length ) {
                             writefln("\tfit in the bucket pos=%d", pos);
-                            foreach_reverse(i;pos.._bucket_size) {
+                            writeln("BEFORE");
+                            dump;
+                            foreach_reverse(i;pos+1.._bucket_size) {
                                 writefln("\t\ti=%d bucket_size=%d", i, _bucket_size);
                                 _buckets[i+1]=_buckets[i];
                             }
-                            _buckets[pos]=temp_bucket;
+                            _buckets[pos+1]=temp_bucket;
                             _bucket_size++;
+                            writeln("AFTER");
+                            dump;
                         }
                         else {
                             writefln("\tExpand the  bucket");
@@ -440,7 +457,7 @@ class DART {
         private static void remove(ref Bucket bucket, const ArchiveTab archive, immutable uint level) {
             scope(success) {
                 if ( bucket ) {
-                    bucket._fingerprint=null;
+                    bucket._merkle_root=null;
                 }
             }
             if ( bucket.isBucket ) {
@@ -454,9 +471,9 @@ class DART {
             }
         }
 
-        immutable(ubyte[]) fingerprint(SecureNet net) {
-            if ( _fingerprint ) {
-                return _fingerprint;
+        immutable(ubyte[]) merkle_root(SecureNet net) {
+            if ( _merkle_root ) {
+                return _merkle_root;
             }
             else if ( isBucket ) {
                 scope auto temp_buckets=new Bucket[bucket_max];
@@ -464,8 +481,8 @@ class DART {
                     auto b=_buckets[i];
                     temp_buckets[b.index(depth)]=b;
                 }
-                _fingerprint=sparsed_merkeltree(net, temp_buckets);
-                return _fingerprint;
+                _merkle_root=sparsed_merkeltree(net, temp_buckets);
+                return _merkle_root;
             }
             else {
                 return _archive.fingerprint;
@@ -571,8 +588,10 @@ class DART {
             0x20_21_20_30_40_50_80_90,
             0x20_21_20_31_40_50_80_90,
             0x20_21_20_34_40_50_80_90,
-            0x20_21_20_20_40_50_80_90,
-            0x20_21_20_32_40_50_80_90,
+//            0x20_21_20_20_40_50_80_90, // Insert before the first in rim 3
+     0x20_21_20_36_40_50_80_90, // Insert before the first in rim 3
+
+            0x20_21_20_32_40_50_80_90, // Insert between in rim 3
 
             // Add in first rim again
             0x20_21_21_30_40_50_80_90,
@@ -592,7 +611,7 @@ class DART {
             foreach(a; array) {
                 auto d=dart.find(data(a));
                 if ( d ) {
-                    writefln("found %s", d.data);
+                    writefln("found %016x", a);
                 }
                 else {
                     writefln("Not found! %016x", a);
@@ -638,6 +657,7 @@ class DART {
             add_and_find_check(table[4..9]);
         }
 
+        version(none)
         { // Second rim test 6 elements (Last elemen is added in the first rim)
             writeln("###### Test 9 ######");
 //            add_and_find_check(table[4..10]);
