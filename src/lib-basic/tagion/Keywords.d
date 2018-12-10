@@ -12,7 +12,6 @@ enum _keywords = [
     "wavefront",  // Wave front is the list of events hashs
     "ebody",      // Event body
     "event",      // Event including the eventbody
-
     "message",
     "mother",
     "father",
@@ -48,12 +47,9 @@ enum _keywords = [
     "epoch",
     "list",
     "time",
-    "events",     // List of event
+//        "events",     // List of event
     "type",       // Package type
-    "block",     // block
-
-    "buckets",
-    "tab"
+    "block"     // block
     ];
 
 // Generated the Keywords and enum string list
