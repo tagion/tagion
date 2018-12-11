@@ -506,7 +506,8 @@ class DART {
             if ( bucket.isBucket ) {
                 immutable index=archive.fingerprint[rim];
                 immutable pos=bucket.find_bucket_pos(index);
-                writefln("remove pos=%d index=%d archive.fingerprint=%s", pos, index, archive.fingerprint.cutHex);
+                bucket.dump;
+                writefln("remove pos=%d index=%02x archive.fingerprint=%s rim=%d size=%d length=%d", pos, index, archive.fingerprint.cutHex, rim, bucket._bucket_size, bucket._buckets.length);
                 check(bucket._buckets[pos] !is null, ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
                 bucket._buckets[pos]=Bucket.remove(bucket._buckets[pos], archive, rim+1);
                 if ( bucket._buckets[pos] is null ) {
@@ -679,7 +680,7 @@ class DART {
             0x20_21_22_32_40_50_80_90, // Insert between in rim 3
 
             // Add in first rim again
-            0x20_21_21_30_40_50_80_90,
+            0x20_21_11_33_40_50_80_90,
 
             ];
 
@@ -876,7 +877,22 @@ class DART {
             // assert(merkle_roo1 == data(table[1]));
         }
 
+        { // Remove all in one bucket in rim 2
+            writeln("###### Test 17 ######");
+            auto take_from_dart=add_array(table);
+            immutable rim=2;
+            uint count;
+            foreach(t; table) {
+                immutable key=data(t);
+                if ( key[rim] == 0x20 ) {
+                    count++;
+                    writefln("\tcounting=%d %s", count, key.cutHex);
+                    take_from_dart.remove(key);
+                }
+            }
+            writefln("count=%d", count);
 
+        }
 }
 
     static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
