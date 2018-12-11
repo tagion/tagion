@@ -44,7 +44,7 @@ unittest {
 }
 
 immutable(ubyte[]) sparsed_merkeltree(T)(SecureNet net, T[] table) {
-    immutable(ubyte[]) merkeltree(T[] left, T[] right, string indent) {
+    immutable(ubyte[]) merkeltree(T[] left, T[] right) {
         scope immutable(ubyte)[] _left_fingerprint;
         scope immutable(ubyte)[] _right_fingerprint;
         // scope(exit ) {
@@ -63,8 +63,8 @@ immutable(ubyte[]) sparsed_merkeltree(T)(SecureNet net, T[] table) {
         else {
             immutable left_mid=left.length >> 1;
             immutable right_mid=right.length >> 1;
-            _left_fingerprint=merkeltree(left[0..left_mid], left[left_mid..$], indent~"\t");
-            _right_fingerprint=merkeltree(right[0..right_mid], right[right_mid..$], indent~"\t");
+            _left_fingerprint=merkeltree(left[0..left_mid], left[left_mid..$]);
+            _right_fingerprint=merkeltree(right[0..right_mid], right[right_mid..$]);
         }
         if ( _left_fingerprint is null ) {
             return _right_fingerprint;
@@ -76,9 +76,8 @@ immutable(ubyte[]) sparsed_merkeltree(T)(SecureNet net, T[] table) {
             return net.calcHash(_left_fingerprint~_right_fingerprint);
         }
     }
-    writeln("SPARSE_MERKLETREE");
     immutable mid=table.length >> 1;
-    return merkeltree(table[0..mid], table[mid..$], "");
+    return merkeltree(table[0..mid], table[mid..$]);
 }
 
 
@@ -201,10 +200,10 @@ class DART {
             }
         do {
             int find_bucket_pos(immutable int search_j, immutable int division_j) {
-                writefln("search_j=%d division_j=%d", search_j, division_j);
+                // writefln("search_j=%d division_j=%d", search_j, division_j);
                 if ( search_j < _bucket_size ) {
                     immutable search_index=_buckets[search_j].index(rim);
-                    writefln("\tsearch_index=%x", _buckets[search_j].index(rim));
+                    // writefln("\tsearch_index=%x", _buckets[search_j].index(rim));
                     if ( index == search_index ) {
                         return search_j;
                     }
@@ -219,7 +218,7 @@ class DART {
                 }
                 else if ( division_j > 0 ) {
                     if ( index > _buckets[_bucket_size-1].index(rim) ) {
-                        writefln("Outside bucket index=%d search_index=%d", index , _buckets[_bucket_size-1].index(rim));
+//                        writefln("Outside bucket index=%d search_index=%d", index , _buckets[_bucket_size-1].index(rim));
                         return _bucket_size;
                     }
                     return find_bucket_pos(search_j-division_j, division_j/2);
@@ -227,7 +226,7 @@ class DART {
                 //if (
                 return search_j;
             }
-            writefln("\nfind pos bucket_size=%d", _bucket_size);
+//            writefln("\nfind pos bucket_size=%d", _bucket_size);
             immutable start_j=cover(_bucket_size) >> 1;
             return find_bucket_pos(start_j, start_j);
         }
@@ -379,15 +378,16 @@ class DART {
         }
 
         private void add(ArchiveTab archive, immutable uint _rim) {
-            string indent;
-            foreach(i;0.._rim) {
-                indent~="*>";
-            }
-            writefln("%s  ADD %s rim=%d",  indent, archive.data, _rim);
+            // string indent;
+            // foreach(i;0.._rim) {
+            //     indent~="*>";
+            // }
+            // writefln("%s  ADD %s rim=%d",  indent, archive.data, _rim);
             void insert(immutable int pos, ArchiveTab archive) {
-                writefln("%s  Insert pos=%d %s", indent, pos, archive.data);
+                // writefln("%s  Insert pos=%d %s", indent, pos, archive.data);
                 auto temp_bucket=new Bucket(_rim);
-                writefln("After insert (pos<0)=%s (pos >= _bucket_size)=%s", pos < 0, (pos >= _bucket_size));
+                // writefln("After insert (pos<0)=%s (pos >= _bucket_size)=%s", pos < 0, (pos >= _bucket_
+//                        size));
                 scope(exit) {
                     _bucket_size++;
                 }
@@ -399,7 +399,7 @@ class DART {
                     _buckets[_bucket_size]=temp_bucket;
                 }
                 else if ( pos < 0 ) {
-                    writeln("Infront");
+//                    writeln("Infront");
                     Bucket[] new_buckets;
                     if ( _bucket_size+1 <= _buckets.length ) {
                         new_buckets.length=extend_size;
@@ -510,10 +510,10 @@ class DART {
             }
             else if ( isBucket ) {
                 scope auto temp_buckets=new Bucket[bucket_max];
-                string indent;
-                foreach(j;0..rim) {
-                    indent~="\t";
-                }
+                // string indent;
+                // foreach(j;0..rim) {
+                //     indent~="\t";
+                // }
                 foreach(i;0.._bucket_size) {
                     auto b=_buckets[i];
                     temp_buckets[b.index(rim)]=b;
@@ -521,7 +521,7 @@ class DART {
 
                 }
                 _merkle_root=sparsed_merkeltree(net, temp_buckets);
-                writefln("%s merkle_root=%s", indent, _merkle_root.cutHex);
+//                writefln("%s merkle_root=%s", indent, _merkle_root.cutHex);
                 return _merkle_root;
             }
             else {
