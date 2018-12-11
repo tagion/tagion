@@ -505,10 +505,12 @@ class DART {
             }
             if ( bucket.isBucket ) {
                 immutable index=archive.fingerprint[rim];
-                check(bucket._buckets[index] !is null, ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
-                bucket._buckets[index]=Bucket.remove(bucket._buckets[index], archive, rim+1);
-                if ( bucket._buckets[index] is null ) {
-                    bucket._buckets=array_remove(bucket._buckets, index);
+                immutable pos=bucket.find_bucket_pos(index);
+                writefln("remove pos=%d index=%d archive.fingerprint=%s", pos, index, archive.fingerprint.cutHex);
+                check(bucket._buckets[pos] !is null, ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
+                bucket._buckets[pos]=Bucket.remove(bucket._buckets[pos], archive, rim+1);
+                if ( bucket._buckets[pos] is null ) {
+                    bucket._buckets=array_remove(bucket._buckets, pos);
                     bucket._bucket_size--;
                     if ( bucket._bucket_size == 1 ) {
                         if ( !bucket._buckets[0].isBucket ) {
@@ -817,10 +819,65 @@ class DART {
         }
 
         // Remove test
-        {
-
+        { // add and remove one archive
+            writeln("###### Test 14 ######");
+            auto dart=add_array(table[0..1]);
+            // Find the arcive
+            auto key=data(table[0]);
+            auto a=dart[key];
+            assert(a);
+            dart.remove(a);
+            a=dart[key];
+            assert(!a);
         }
-    }
+//        version(none)
+        { // add two and remove one archive
+            writeln("###### Test 15 ######");
+            auto dart=add_array(table[0..2]);
+            // Find the arcive
+            auto key=data(table[0]);
+            auto a=dart[key];
+            assert(a);
+            dart.get(key).dump;
+            dart.remove(a);
+            a=dart[key];
+            assert(!a);
+            immutable merkle_roo1=dart.get(data(table[1])).merkle_root(net);
+            writefln("merkle_roo1=%s", merkle_roo1.cutHex);
+            // For as single archive the merkle root is equal to the hash of the archive
+            assert(merkle_roo1 == data(table[1]));
+        }
+
+
+        { // add three and remove one archive
+            writeln("###### Test 16 ######");
+            auto dart=add_array(table[0..3]);
+            // Find the arcive
+            auto key1=data(table[1]);
+            auto a=dart[key1];
+            assert(a);
+            dart.get(key1).dump;
+            // Remove
+            dart.remove(a);
+            a=dart[key1];
+            assert(!a);
+            // Checks if the rest is still in the dart
+            auto key0=data(table[0]);
+            a=dart[key0];
+            assert(a);
+
+            auto key2=data(table[2]);
+            a=dart[key2];
+            assert(a);
+
+            // immutable merkle_roo1=dart.get(data(table[1])).merkle_root(net);
+            // writefln("merkle_roo1=%s", merkle_roo1.cutHex);
+            // // For as single archive the merkle root is equal to the hash of the archive
+            // assert(merkle_roo1 == data(table[1]));
+        }
+
+
+}
 
     static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
         return to_sector+((from_sector >= to_sector)?sector_max:0);
