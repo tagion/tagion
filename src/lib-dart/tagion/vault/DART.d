@@ -88,7 +88,7 @@ class DART {
     private ushort _to_sector;
     private Bucket[] _root_buckets;
     enum bucket_max=1 << (ubyte.sizeof*8);
-    enum uint root_rim=cast(uint)ushort.sizeof;
+    enum uint bucket_rim=cast(uint)ushort.sizeof;
     enum sector_max = ushort.max;
 
     this(SecureNet net, const ushort from_sector, const ushort to_sector) {
@@ -106,27 +106,36 @@ class DART {
         return (sector-_from_sector) & ushort.max;
     }
 
-    void add(immutable(ubyte[]) data) {
-        auto archive=new ArchiveTab(_net, data);
+    void add(ArchiveTab archive) {
+//        auto archive=new ArchiveTab(_net, data);
         immutable sector=root_sector(archive.fingerprint);
         if ( inRange(sector) ) {
             immutable index=sector_to_index(sector);
             if ( _root_buckets[index] is null ) {
-                _root_buckets[index]=new Bucket(root_rim);
+                _root_buckets[index]=new Bucket(bucket_rim);
             }
             _root_buckets[index].add(archive);
         }
     }
 
-    void remove(immutable(ubyte[]) data) {
+    void add(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
+        add(archive);
+    }
+
+    void remove(const ArchiveTab archive) {
         immutable sector=root_sector(archive.fingerprint);
         if ( inRange(sector) ) {
             immutable index=sector_to_index(sector);
             if ( _root_buckets[index] ) {
-                Bucket.remove(_root_buckets[index], _net, archive);
+                Bucket.remove(_root_buckets[index], archive);
             }
         }
+    }
+
+    void remove(immutable(ubyte[]) data) {
+        auto archive=new ArchiveTab(_net, data);
+        remove(archive);
     }
 
     ArchiveTab opIndex(immutable(ubyte[]) key) {
@@ -482,21 +491,21 @@ class DART {
             }
         }
 
-        static void remove(ref Bucket bucket, SecureNet net, const ArchiveTab archive) {
-            Bucket.remove(bucket, archive, 0);
+        static void remove(ref Bucket bucket, const ArchiveTab archive) {
+            Bucket.remove(bucket, archive, bucket_rim);
         }
 
         @trusted
-        private static void remove(ref Bucket bucket, const ArchiveTab archive, immutable uint level) {
+        private static void remove(ref Bucket bucket, const ArchiveTab archive, immutable uint rim) {
             scope(success) {
                 if ( bucket ) {
                     bucket._merkle_root=null;
                 }
             }
             if ( bucket.isBucket ) {
-                immutable index=archive.fingerprint[level];
+                immutable index=archive.fingerprint[rim];
                 check(bucket._buckets[index] !is null, ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
-                Bucket.remove(bucket._buckets[index], archive, level+1);
+                Bucket.remove(bucket._buckets[index], archive, rim+1);
             }
             else {
                 bucket.destroy;
@@ -666,15 +675,7 @@ class DART {
         }
 
         void add_and_find_check(immutable(ulong[]) array) {
-            // auto net=new TestNet;
-            // auto dart=new DART(net, 0x1000, 0x2022);
-            // foreach(a; array) {
-            //     dart.add(data(a));
-            //     auto key=data(a);
-            //     writefln("key=%s %x %x %s", key, a, dart.root_sector(key), dart.inRange(dart.root_sector(key)));
-            // }
             auto dart=add_array(array);
-            //    foreach(b; dart
             foreach(a; array) {
                 auto d=dart[data(a)];
                 if ( d ) {
@@ -683,6 +684,7 @@ class DART {
                 else {
                     writefln("Not found! %016x", a);
                 }
+                assert(d, "Not found");
             }
         }
 
@@ -767,6 +769,7 @@ class DART {
         }
 //        version(none)
 
+        // Merkle root test
         { // Checks that the merkle root is indifferent from the order the archives is added
             // Without buckets
             writeln("###### Test 12 ######");
@@ -777,8 +780,8 @@ class DART {
             immutable merkle_roo11=dart1.get(data(test_table[0])).merkle_root(net);
             immutable merkle_roo12=dart2.get(data(test_table[0])).merkle_root(net);
             assert(merkle_roo11 == merkle_roo12);
-            writefln("merkle_roo11=%s", merkle_roo11.cutHex);
-            writefln("merkle_roo12=%s", merkle_roo12.cutHex);
+            // writefln("merkle_roo11=%s", merkle_roo11.cutHex);
+            // writefln("merkle_roo12=%s", merkle_roo12.cutHex);
         }
 
         { // Checks that the merkle root is indifferent from the order the archives is added
@@ -791,8 +794,13 @@ class DART {
             immutable merkle_roo11=dart1.get(data(test_table[0])).merkle_root(net);
             immutable merkle_roo12=dart2.get(data(test_table[0])).merkle_root(net);
             assert(merkle_roo11 == merkle_roo12);
-            writefln("merkle_roo11=%s", merkle_roo11.cutHex);
-            writefln("merkle_roo12=%s", merkle_roo12.cutHex);
+            // writefln("merkle_roo11=%s", merkle_roo11.cutHex);
+            // writefln("merkle_roo12=%s", merkle_roo12.cutHex);
+        }
+
+        // Remove test
+        {
+
         }
     }
 
