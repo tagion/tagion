@@ -113,9 +113,11 @@ class DART {
         if ( inRange(sector) ) {
             immutable index=sector_to_index(sector);
             if ( _root_buckets[index] is null ) {
-                _root_buckets[index]=new Bucket(bucket_rim);
+                _root_buckets[index]=new Bucket(archive, bucket_rim);
             }
-            _root_buckets[index].add(archive);
+            else {
+                _root_buckets[index].add(archive);
+            }
         }
     }
 
@@ -337,23 +339,31 @@ class DART {
             this.rim=rim;
             init_size=calc_init_size(rim);
             extend=calc_extend(rim);
-
         }
 
+        private this(ArchiveTab archive, immutable uint rim) {
+            this(rim);
+            _archive=archive;
+        }
+
+        // private this(ArchiveTab arcive, immutable uint rim) {
+        //     this(rim);
+        //     this._archive=archive
+        // }
         // this(ArchiveTab archive, immutable uint rim) {
         //     this(rim);
         //     _archive=archive;
         // }
 
-        this(Document doc, SecureNet net, immutable uint rim) {
-            this(rim);
+        this(Document doc, SecureNet net) {
+            this(doc[Keywords.rim].get!uint);
             if ( doc.hasElement(Keywords.buckets) ) {
                 auto buckets_doc=doc[Keywords.buckets].get!Document;
                 _buckets=new Bucket[buckets_doc.length];
                 foreach(elm; buckets_doc[]) {
                     auto arcive_doc=elm.get!Document;
                     immutable index=elm.key.to!ubyte;
-                    this[index]=new Bucket(arcive_doc, net, rim+1);
+                    this[index]=new Bucket(arcive_doc, net);
                 }
             }
             else if (doc.hasElement(Keywords.tab)) {
@@ -430,14 +440,14 @@ class DART {
         }
 
         private void add(ArchiveTab archive, immutable uint _rim) {
-            // string indent;
-            // foreach(i;0.._rim) {
-            //     indent~="*>";
-            // }
-            // writefln("%s  ADD %s rim=%d",  indent, archive.data, _rim);
+            string indent;
+            foreach(i;0.._rim) {
+                indent~="*>";
+            }
+            writefln("%s  ADD %s rim=%d %s",  indent, archive.data, _rim, _archive is null);
             void insert(immutable int pos, ArchiveTab archive) {
-                // writefln("%s  Insert pos=%d %s", indent, pos, archive.data);
-                auto temp_bucket=new Bucket(_rim);
+                writefln("%s  Insert pos=%d %s", indent, pos, archive.data);
+//                auto temp_bucket=new Bucket(archive, _rim);
                 // writefln("After insert (pos<0)=%s (pos >= _bucket_size)=%s", pos < 0, (pos >= _bucket_
 //                        size));
                 scope(exit) {
@@ -447,32 +457,35 @@ class DART {
                     if ( _bucket_size+1 >= _buckets.length ) {
                         _buckets.length=grow;
                     }
-                    temp_bucket.add(archive, rim);
-                    _buckets[_bucket_size]=temp_bucket;
+//                    temp_bucket.add(archive, rim);
+                    _buckets[_bucket_size]=new Bucket(archive, _rim);
+                    //temp_bucket;
                 }
-                else if ( pos < 0 ) {
-//                    writeln("Infront");
-                    auto new_buckets=new Bucket[grow];
-                    // if ( _bucket_size+1 <= _buckets.length ) {
-                    //     new_buckets.length=extend_size;
-                    // }
-                    // else {
-                    //     new_buckets.length=_buckets.length;
-                    // }
-                    temp_bucket.add(archive, rim);
-                    new_buckets[0]=temp_bucket;
-                    new_buckets[1.._bucket_size+1]=_buckets[0.._bucket_size];
-                    _buckets=new_buckets;
-                }
+//                 else if ( pos < 0 ) {
+// //                    writeln("Infront");
+//                     auto new_buckets=new Bucket[grow];
+//                     // if ( _bucket_size+1 <= _buckets.length ) {
+//                     //     new_buckets.length=extend_size;
+//                     // }
+//                     // else {
+//                     //     new_buckets.length=_buckets.length;
+//                     // }
+// //                    temp_bucket.add(archive, rim);
+//                     new_buckets[0]=temp_bucket;
+//                     new_buckets[1.._bucket_size+1]=_buckets[0.._bucket_size];
+//                     _buckets=new_buckets;
+//                 }
                 else {
+                    immutable insert_pos=(pos<0)?0:pos;
                     if ( _bucket_size+1 >= _buckets.length ) {
                         _buckets.length=grow;
                     }
-                    foreach_reverse(i;pos.._bucket_size) {
+                    foreach_reverse(i;insert_pos.._bucket_size) {
                         _buckets[i+1]=_buckets[i];
                     }
-                    temp_bucket.add(archive, rim);
-                    _buckets[pos]=temp_bucket;
+//                    temp_bucket.add(archive, rim);
+                    _buckets[insert_pos]=new Bucket(archive, _rim);
+//                    temp_bucket;
                 }
             }
 
@@ -485,6 +498,7 @@ class DART {
 
             _merkle_root=null;
             if ( isBucket ) {
+                writefln("Is bucket     %s rim=%d %02X", archive.fingerprint.toHexString, rim, archive.fingerprint[rim]);
                 immutable index=archive.fingerprint[rim];
                 immutable pos=find_bucket_pos(index);
                 if ( same_index(pos, index) ) {
@@ -682,12 +696,14 @@ class DART {
 
         invariant {
             if ( _buckets !is null ) {
+//            if ( isBucket ) {
                 // Check that the prefix is the same for all buckets
                 // and that the index is ordered
                 immutable base_prefix=_buckets[0].prefix;
                 foreach(i; 1.._bucket_size) {
                     if ( !(_buckets[0].rim == _buckets[i].rim) ) {
                         writefln("Bad rim %d %d", _buckets[0].rim, _buckets[i].rim);
+                        writefln("%s %s", _buckets[0]._buckets !is null, _buckets[i]._buckets !is null);
                         writefln("Prefix %s %s", base_prefix.toHexString, _buckets[i].prefix.toHexString);
                     }
                     assert(_buckets[0].rim == _buckets[i].rim );
@@ -799,6 +815,18 @@ class DART {
 
         // Add and find test
         { // First rim test one element
+            writeln("###### Test 0 ######");
+            auto dart=new DART(net, 0x1000, 0x2022);
+            dart.add(data(table[0]));
+            auto d=dart[data(table[0])];
+            dart.dump;
+
+//            add_and_find_check(table[0..1]);
+
+        }
+
+        // Add and find test
+        { // First rim test one element
             writeln("###### Test 1 ######");
             add_and_find_check(table[0..1]);
 
@@ -835,6 +863,7 @@ class DART {
             writeln("###### Test 7 ######");
             add_and_find_check(table[4..8]);
         }
+        version(node) {
 
         { // Rim 3 test 5 elements (insert an element in the middel)
             writeln("###### Test 8 ######");
@@ -991,6 +1020,7 @@ class DART {
             }
             writefln("count=%d", count);
 
+        }
         }
 }
 
