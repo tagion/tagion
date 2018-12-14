@@ -42,6 +42,10 @@ class StdSecureNet : StdRequestNet, SecureNet {
         return _pubkey;
     }
 
+    Buffer hashPubkey() const {
+        return calcHash(cast(Buffer)_pubkey);
+    }
+
 
     bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) if ( __traits(compiles, pack.serialize) ) {
         auto message=calcHash(pack.serialize);
