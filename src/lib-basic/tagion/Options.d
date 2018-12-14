@@ -52,8 +52,6 @@ struct Options {
     }
 
     ScriptingEngine scripting_engine;
-
-
 }
 
 __gshared static Options options;
