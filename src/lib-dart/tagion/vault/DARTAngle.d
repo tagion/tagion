@@ -18,8 +18,8 @@ void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t lin
 }
 
 @safe
-uint cover(const uint n) {
-    uint local_cover(immutable uint width, immutable uint step) {
+uint cover(const uint n) pure nothrow {
+    uint local_cover(immutable uint width, immutable uint step) pure nothrow {
         immutable uint result=1 << width;
         if ( step != 0 ) {
             if ( result > n ) {
@@ -237,23 +237,18 @@ class DARTAngle {
             }
         }
 
-        private uint find_bucket_pos(const int index)
+        private uint find_bucket_pos(const int index) const pure
             in {
                 assert(index < ubyte.max);
                 assert(index >= 0);
             }
         out(pos) {
-            if ( !(pos <= _buckets.length) ) {
-                writefln("result pos=%d", pos);
-            }
             assert(pos <= _buckets.length);
         }
         do {
             int find_bucket_pos(immutable int search_j, immutable int division_j) {
-                writefln("search_j=%d division_j=%d", search_j, division_j);
                 if ( search_j < _buckets.length ) {
                     immutable search_index=_buckets[search_j].index(rim);
-                    writefln("\tsearch_index=%x", _buckets[search_j].index(rim));
                     if ( index == search_index ) {
                         return search_j;
                     }
@@ -271,15 +266,12 @@ class DARTAngle {
                 }
                 else if ( division_j > 0 ) {
                     if ( index > _buckets[$-1].index(rim) ) {
-//                        writefln("Outside bucket index=%d search_index=%d", index , _buckets[_bucket_size-1].index(rim));
                         return cast(int)_buckets.length;
                     }
                     return find_bucket_pos(search_j-division_j, division_j/2);
                 }
-                //if (
                 return search_j;
             }
-//            writefln("\nfind pos bucket_size=%d", _bucket_size);
             immutable start_j=cover(cast(int)_buckets.length) >> 1;
             auto result=find_bucket_pos(start_j, start_j);
             if ( result < 0 ) {
@@ -1028,16 +1020,26 @@ class DARTAngle {
         }
         { // Rim 3 test 6 all
             writeln("###### Test 11 ######");
-            auto dart=add_array(table[$-7..$-4]);
-            dart.dump;
+//            auto dart=add_array(table[$-7..$-4]);
+//            dart.dump;
 //            add_and_find_check(table[4..10]);
 //            add_and_find_check(table[7..10]);
-//            add_and_find_check(table[0..$-5]);
+            add_and_find_check(table[$-7..$]);
+        }
+
+                        version(node) {
+        { // Rim 3 test 6 all
+            writeln("###### Test 11 ######");
+//            auto dart=add_array(table[$-7..$-4]);
+//            dart.dump;
+//            add_and_find_check(table[4..10]);
+//            add_and_find_check(table[7..10]);
+            add_and_find_check(table);
         }
 
 
 
-                version(node) {
+
         // Merkle root test
         { // Checks that the merkle root is indifferent from the order the archives is added
             // Without buckets
