@@ -633,7 +633,7 @@ class DARTAngle {
                 _archive=null;
 
                 //add(_archive);
-                dump;
+//                dump;
                 // if ( _archive.index(rim) == archive.index(rim) ) {
                 //     writefln("\tsame sub bucket %x", archive.index(rim));
                 //     _bucket_size=1;
@@ -805,9 +805,6 @@ class DARTAngle {
 
         invariant {
             if ( _buckets !is null ) {
-//            if ( isBucket ) {
-                // Check that the prefix is the same for all buckets
-                // and that the index is ordered
                 immutable base_prefix=_buckets[0].prefix;
                 foreach(i; 1.._buckets.length) {
                     if ( !(_buckets[0].rim == _buckets[i].rim) ) {
@@ -821,7 +818,6 @@ class DARTAngle {
                     assert(base_prefix == _buckets[i].prefix);
                     if ( !(_buckets[i-1].index(rim) < _buckets[i].index(rim)) ) {
                         writefln("Index %02x < %02x", _buckets[i-1].index(rim), _buckets[i].index(rim));
-                        // dump("invatiant:");
                     }
                     assert(_buckets[i-1].index(rim) < _buckets[i].index(rim));
                 }
@@ -932,7 +928,7 @@ class DARTAngle {
             return result.idup;
         }
 
-        version(none) {
+
         // Add and find test
         { // First rim test one element
             writeln("###### Test 0 ######");
@@ -1008,6 +1004,7 @@ class DARTAngle {
             add_and_find_check(table[9..15]);
         }
 
+                version(none) {
         { // Rim 3 test 6 elements ( add elememt in rim number 2)
             writeln("###### Test 10a ######");
 //            add_and_find_check(table[4..10]);
@@ -1027,7 +1024,7 @@ class DARTAngle {
             add_and_find_check(table[$-7..$]);
         }
 
-                        version(node) {
+
         { // Rim 3 test 6 all
             writeln("###### Test 11 ######");
 //            auto dart=add_array(table[$-7..$-4]);
@@ -1039,7 +1036,7 @@ class DARTAngle {
 
 
 
-
+                        version(node) {
         // Merkle root test
         { // Checks that the merkle root is indifferent from the order the archives is added
             // Without buckets
