@@ -200,8 +200,8 @@ class DARTAngle {
 //        private uint _bucket_size;
         private ArchiveTab _archive;
         immutable uint rim;
-        immutable size_t init_size;
-        immutable size_t extend;
+        // immutable size_t init_size;
+        // immutable size_t extend;
         private immutable(ubyte)[]  _merkle_root;
         bool isBucket() const pure nothrow {
             return _buckets !is null;
@@ -369,10 +369,10 @@ class DARTAngle {
             }
         }
 
-        size_t extend_size() pure const nothrow {
-            immutable size=_buckets.length+extend;
-            return (size <= ubyte.max)?size:ubyte.max+1;
-        }
+        // size_t extend_size() pure const nothrow {
+        //     immutable size=_buckets.length+extend;
+        //     return (size <= ubyte.max)?size:ubyte.max+1;
+        // }
 
         // size_t grow() {
         //     if ( _bucket_size+1 <= _buckets.length ) {
@@ -423,8 +423,8 @@ class DARTAngle {
 
         private this(immutable uint rim) {
             this.rim=rim;
-            init_size=calc_init_size(rim);
-            extend=calc_extend(rim);
+            // init_size=calc_init_size(rim);
+            // extend=calc_extend(rim);
         }
 
         private this(ArchiveTab archive, immutable uint rim) {
@@ -616,7 +616,7 @@ class DARTAngle {
             else {
                 writefln("add to bucket %s rim=%d %02x", archive.fingerprint.toHexString, rim,  archive.fingerprint[rim]);
                 writefln("............. %s rim=%d %02x", _archive.fingerprint.toHexString, rim,  _archive.fingerprint[rim]);
-                writefln("init_size=%d bucket_size=%d", init_size, _buckets.length);
+
                 _buckets=new Bucket[1];
                 if ( archive.fingerprint[rim] == _archive.fingerprint[rim] ) {
                     auto temp_bucket=new Bucket(rim+1);
