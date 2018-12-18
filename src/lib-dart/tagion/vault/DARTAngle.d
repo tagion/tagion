@@ -921,10 +921,10 @@ class DARTAngle {
         { // Fill the bucket in rim 3..7
             // and check capacity
             writeln("###### Test 20 ######");
-            immutable rim=3;
-            immutable ulong rim3_data=0x20_21_A4_00_30_40_50_80;
+//            immutable rim=2;
+            immutable ulong rim3_data=0x20_21_00_00_00_00_00_00;
             auto full_bucket_table=new ulong[bucket_max];
-//            foreach(rim;3..7) {
+            foreach_reverse(rim;bucket_rim..8) {
                 foreach(i, ref t; full_bucket_table) {
                     immutable ulong mask=(cast(ulong)(i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
                     t=rim3_data | ((i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
@@ -933,7 +933,7 @@ class DARTAngle {
                 auto dart=add_and_find_check(shuffle(full_bucket_table, 1024));
                 // immutable key=data(rim3_data);
                 //   auto bucket=dart.get(key);
-//            }
+            }
         }
     }
 
