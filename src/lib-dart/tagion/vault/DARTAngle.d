@@ -112,14 +112,38 @@ class DARTAngle {
         return null;
     }
 
-    Bucket get(immutable(ubyte[]) key) {
-        Bucket result;
+    inout(Bucket) get(immutable(ubyte[]) key) inout {
+        uint sector_rim=bucket_rim;
+        return get(key, sector_rim);
+    }
+
+    inout(Bucket) get(immutable(ubyte[]) key, ref uint rim) inout
+        in {
+            assert(rim >= bucket_rim);
+        }
+    do {
+        uint found_rim=rim;
+        inout(Bucket) search(inout(Bucket) bucket, const uint search_rim) pure inout {
+            if ( bucket.isBucket ) {
+                found_rim=search_rim;
+                int index=key[rim];
+                immutable pos=bucket.find_bucket_pos(index, search_rim+1);
+                if ( (pos < bucket._buckets.length) && (key[rim] == bucket._buckets[pos].index(rim)) ) {
+                    return search(bucket._buckets[pos], search_rim+1);
+                }
+            }
+            return bucket;
+        }
+
         immutable sector=root_sector(key);
         if ( inRange(sector) ) {
             immutable index=sector_to_index(sector);
-            result=_root_buckets[index];
+            auto result=_root_buckets[index];
+            if ( rim >= bucket_rim ) {
+                return search(result, rim);
+            }
         }
-        return result;
+        return null;
     }
 
     static class ArchiveTab {
@@ -185,7 +209,7 @@ class DARTAngle {
 
         private uint find_bucket_pos(const int index, const uint rim) const pure
             in {
-                assert(index < ubyte.max);
+                assert(index <= ubyte.max);
                 assert(index >= 0);
             }
         out(pos) {
@@ -348,7 +372,6 @@ class DARTAngle {
                 }
                 return false;
             }
-
             _merkle_root=null;
             if ( isBucket ) {
                 // immutable child_rim=rim+1;
@@ -442,8 +465,8 @@ class DARTAngle {
             }
         }
 
-        static immutable(ubyte[]) sparsed_merkletree(T)(SecureNet net, T[] table, const uint rim) {
-            immutable(ubyte[]) merkletree(T[] left, T[] right) {
+        static immutable(ubyte[]) sparsed_merkletree(SecureNet net, Bucket[] table, const uint rim) {
+            immutable(ubyte[]) merkletree(Bucket[] left, Bucket[] right) {
                 scope immutable(ubyte)[] _left_fingerprint;
                 scope immutable(ubyte)[] _right_fingerprint;
                 if ( (left.length == 1) && (right.length == 1 ) ) {
@@ -620,19 +643,19 @@ class DARTAngle {
             return dart;
         }
 
-        void add_and_find_check(const(ulong[]) array) {
+        DARTAngle add_and_find_check(const(ulong[]) array) {
             auto dart=add_array(array);
             dart.dump;
             foreach(a; array) {
                 auto d=dart[data(a)];
                 assert(d, "Not found");
             }
-
+            return dart;
         }
 
         import tagion.utils.Random;
         auto rand=Random(1234);
-        immutable(ulong[]) shuffle(immutable(ulong[]) array, immutable uint count=127) {
+        immutable(ulong[]) shuffle(const(ulong[]) array, immutable uint count=127) {
             import std.algorithm.mutation : swap;
             ulong[] result=array.dup;
             immutable size=cast(uint)array.length;
@@ -716,6 +739,7 @@ class DARTAngle {
             immutable uint rim=2;
             immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
             immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            assert(merkle_root1);
             assert(merkle_root1 == merkle_root2);
         }
 
@@ -723,42 +747,27 @@ class DARTAngle {
             immutable test_table=table[0..3]~table[15];
 
             auto dart1=add_array(test_table);
-            writeln("DART1");
-            dart1.dump;
             // Same but shuffled
             auto dart2=add_array(shuffle(test_table));
-            writeln("DART2");
-            dart2.dump;
 
             immutable uint rim=2;
             immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
             immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            assert(merkle_root1);
             assert(merkle_root1 == merkle_root2);
-            // writefln("merkle_root1=%s", merkle_root1.cutHex);
-            // writefln("merkle_root2=%s", merkle_root2.cutHex);
         }
-        //     }
 
         { // Checks that the merkle root is indifferent from the order the archives is added
             // With buckets
-            writeln("###### Test 13b ######");
             immutable test_table=table;
             auto dart1=add_array(test_table);
-            writeln("DART1");
-            dart1.dump;
             // Same but shuffled
             auto dart2=add_array(shuffle(test_table));
-            writeln("DART2");
-            dart2.dump;
-
-            immutable rim=2;
 
             immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
             immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            assert(merkle_root1);
             assert(merkle_root1 == merkle_root2);
-            dart2.dump;
-            // writefln("merkle_root1=%s", merkle_root1.cutHex);
-            // writefln("merkle_root2=%s", merkle_root2.cutHex);
         }
 
         // Remove test
@@ -909,7 +918,23 @@ class DARTAngle {
             }
         }
 
-
+        { // Fill the bucket in rim 3..7
+            // and check capacity
+            writeln("###### Test 20 ######");
+            immutable rim=3;
+            immutable ulong rim3_data=0x20_21_A4_00_30_40_50_80;
+            auto full_bucket_table=new ulong[bucket_max];
+//            foreach(rim;3..7) {
+                foreach(i, ref t; full_bucket_table) {
+                    immutable ulong mask=(cast(ulong)(i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
+                    t=rim3_data | ((i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
+                    writefln("%3d t=%016x mask=%016x", i, t, mask);
+                }
+                auto dart=add_and_find_check(shuffle(full_bucket_table, 1024));
+                // immutable key=data(rim3_data);
+                //   auto bucket=dart.get(key);
+//            }
+        }
     }
 
     static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
