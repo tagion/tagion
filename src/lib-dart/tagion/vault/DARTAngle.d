@@ -584,18 +584,11 @@ class DARTAngle {
             }
             else if ( isBucket ) {
                 scope auto temp_buckets=new Bucket[bucket_max];
-                // string indent;
-                // foreach(j;0..rim) {
-                //     indent~="\t";
-                // }
                 foreach(i;0.._buckets.length) {
                     auto b=_buckets[i];
                     temp_buckets[b.index(rim)]=b;
-                    // writefln("%s %d key=%s rim=%d key=%s data=%s bucket=%s", indent, i, b.index(rim), rim, b._archive.fingerprint.cutHex, b._archive.data.cutHex, b.isBucket);
-
                 }
                 _merkle_root=sparsed_merkletree(net, temp_buckets, rim);
-//                writefln("%s merkle_root=%s", indent, _merkle_root.cutHex);
                 return _merkle_root;
             }
             else {
@@ -608,9 +601,6 @@ class DARTAngle {
             immutable(ubyte[]) merkletree(T[] left, T[] right) {
                 scope immutable(ubyte)[] _left_fingerprint;
                 scope immutable(ubyte)[] _right_fingerprint;
-                // scope(exit ) {
-                //     writefln("%sleft=%s right=%s", indent, _left_fingerprint.cutHex, _right_fingerprint.cutHex);
-                // }
                 if ( (left.length == 1) && (right.length == 1 ) ) {
                     auto _left=left[0];
                     auto _right=right[0];
@@ -642,10 +632,6 @@ class DARTAngle {
         }
 
 
-        // uint length() const pure nothrow {
-        //     return _count;
-        // }
-//        version(none) {
         private Iterator iterator(const uint rim) {
             return Iterator(this, rim);
         }
@@ -716,80 +702,6 @@ class DARTAngle {
             }
         }
 
-
-        version(none)
-        invariant {
-            if ( _buckets !is null ) {
-                Bucket privious;
-                immutable(ubyte)[] bucket_prefix;
-                uint archive_rim;
-                uint bucket_rim;
-
-                foreach(i,b; _buckets) {
-                    // if ( i > 0 ) {
-                    //     if ( (_buckets[i-1]._buckets) && (_buckets[i]._buckets !is null) ){
-                    //     if ( _buckets[i-1].rim != b.rim ) {
-                    //         writefln("Bad rim %d %d i=%d %s %s", _buckets[i-1].rim, b.rim, i,
-                    //             _buckets[i-1].prefix.toHexString,
-                    //             b.prefix.toHexString,
-                    //             );
-                    //         writefln("\t%s %s", _buckets[i-1]._buckets !is null, _buckets[i]._buckets !is null);
-                    //         writefln("\t%s %s", _buckets[i-1]._buckets.length, _buckets[i]._buckets.length);
-                    //     }
-                    //     }
-                    //     // if ( !(_buckets[i-1].index(rim) < b.index(rim)) ) {
-                    //     //     writefln("Index %02x < %02x", _buckets[i-1].index(rim), b.index(rim));
-
-                    //     // }
-                    //     // assert(_buckets[i-1].index(rim) < b.index(rim));
-                    // }
-                    version(none) {
-                    if ( b._buckets  ) {
-                        if ( bucket_prefix ) {
-                            if (!(bucket_prefix == b.prefix)) {
-                                writefln("Prefix %s %s", bucket_prefix.toHexString, b.prefix.toHexString);
-                            }
-                            if ( !(bucket_rim == b.rim) ) {
-                                writefln("Bad rim %d %d", bucket_rim, b.rim);
-                                writefln("%s %s", _buckets[0]._buckets !is null, _buckets[i]._buckets !is null);
-                            }
-                            assert(bucket_prefix == b.prefix);
-                            assert(bucket_rim == b.rim);
-                        }
-                        else {
-                            bucket_prefix=b.prefix;
-                            bucket_rim=b.rim;
-                        }
-                    }
-                    else {
-                        if (  archive_prefix ) {
-                            if (!(archive_prefix == b.prefix)) {
-                                writefln("Prefix %s %s", archive_prefix.toHexString, b.prefix.toHexString);
-                            }
-                            if ( !(archive_rim == b.rim) ) {
-                                writefln("Bad rim %d %d", archive_rim, b.rim);
-                                                             writefln("%s %s", _buckets[0]._buckets !is null, _buckets[i]._buckets !is null);
-                            }
-                            assert(archive_prefix == b.prefix);
-                            assert(archive_rim == b.rim );
-                        }
-                        else {
-                            archive_prefix=b.prefix;
-                            archive_rim=b.rim;
-                        }
-                    }
-
-
-                    if ( i > 0 ) {
-                        if ( !(_buckets[i-1].index(rim) < b.index(rim)) ) {
-                            writefln("Index %02x < %02x", _buckets[i-1].index(rim), b.index(rim));
-                        }
-                        assert(_buckets[i-1].index(rim) < b.index(rim));
-                    }
-                }
-                }
-            }
-        }
     }
 
     unittest { // Test of add, find, remove, merkle_root
@@ -854,7 +766,7 @@ class DARTAngle {
             ];
 
         auto net=new TestNet;
-        DARTAngle add_array(immutable(ulong[]) array) {
+        DARTAngle add_array(const(ulong[]) array) {
             auto dart=new DARTAngle(net, 0x1000, 0x2022);
             foreach(a; array) {
                 dart.add(data(a));
@@ -863,7 +775,7 @@ class DARTAngle {
             return dart;
         }
 
-        void add_and_find_check(immutable(ulong[]) array) {
+        void add_and_find_check(const(ulong[]) array) {
             auto dart=add_array(array);
             dart.dump;
             foreach(a; array) {
@@ -991,7 +903,7 @@ class DARTAngle {
 //            add_and_find_check(table[7..10]);
             add_and_find_check(table);
         }
-        version(none){
+
 
         // Merkle root test
         { // Checks that the merkle root is indifferent from the order the archives is added
@@ -1002,16 +914,12 @@ class DARTAngle {
             // Same but shuffled
             auto dart2=add_array(shuffle(test_table));
             immutable uint rim=2;
-            immutable merkle_roo11=dart1.get(data(test_table[0])).merkle_root(net, rim);
-            immutable merkle_roo12=dart2.get(data(test_table[0])).merkle_root(net, rim);
-            assert(merkle_roo11 == merkle_roo12);
-            // writefln("merkle_roo11=%s", merkle_roo11.cutHex);
-            // writefln("merkle_roo12=%s", merkle_roo12.cutHex);
+            immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            assert(merkle_root1 == merkle_root2);
+            // writefln("merkle_root1=%s", merkle_root1.cutHex);
+            // writefln("merkle_root2=%s", merkle_root2.cutHex);
         }
-
-
-
-
 
         { // Checks that the merkle root is indifferent from the order the archives is added
             // With buckets
@@ -1027,11 +935,11 @@ class DARTAngle {
             dart2.dump;
 
             immutable uint rim=2;
-            immutable merkle_roo11=dart1.get(data(test_table[0])).merkle_root(net, rim);
-            immutable merkle_roo12=dart2.get(data(test_table[0])).merkle_root(net, rim);
-            assert(merkle_roo11 == merkle_roo12);
-            // writefln("merkle_roo11=%s", merkle_roo11.cutHex);
-            // writefln("merkle_roo12=%s", merkle_roo12.cutHex);
+            immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            assert(merkle_root1 == merkle_root2);
+            // writefln("merkle_root1=%s", merkle_root1.cutHex);
+            // writefln("merkle_root2=%s", merkle_root2.cutHex);
         }
         //     }
 
@@ -1049,16 +957,13 @@ class DARTAngle {
 
             immutable rim=2;
 
-            immutable merkle_roo11=dart1.get(data(test_table[0])).merkle_root(net, rim);
-            immutable merkle_roo12=dart2.get(data(test_table[0])).merkle_root(net, rim);
-            assert(merkle_roo11 == merkle_roo12);
+            immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
+            assert(merkle_root1 == merkle_root2);
             dart2.dump;
-            // writefln("merkle_roo11=%s", merkle_roo11.cutHex);
-            // writefln("merkle_roo12=%s", merkle_roo12.cutHex);
+            // writefln("merkle_root1=%s", merkle_root1.cutHex);
+            // writefln("merkle_root2=%s", merkle_root2.cutHex);
         }
-        }
-
-        version(node) {
 
         // Remove test
         { // add and remove one archive
@@ -1072,69 +977,153 @@ class DARTAngle {
             a=dart[key];
             assert(!a);
         }
+
+
+
 //        version(none)
         { // add two and remove one archive
             writeln("###### Test 15 ######");
-            auto dart=add_array(table[0..2]);
+            auto dart1=add_array(table[0..2]);
+            auto dart2=add_array(table[1..2]);
             // Find the arcive
             auto key=data(table[0]);
-            auto a=dart[key];
+            auto a=dart1[key];
             assert(a);
-            dart.get(key).dump;
-            dart.remove(a);
-            a=dart[key];
+            dart1.get(key).dump;
+            dart1.remove(a);
+            a=dart1[key];
             assert(!a);
-            immutable merkle_roo1=dart.get(data(table[1])).merkle_root(net);
-            writefln("merkle_roo1=%s", merkle_roo1.cutHex);
+            immutable rim=2;
+            immutable merkle_root1=dart1.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root1=%s", merkle_root1.cutHex);
+            immutable merkle_root2=dart2.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root2=%s", merkle_root2.cutHex);
+            assert(merkle_root1 == merkle_root2);
             // For as single archive the merkle root is equal to the hash of the archive
-            assert(merkle_roo1 == data(table[1]));
+            assert(merkle_root1 == data(table[1]));
         }
 
 
         { // add three and remove one archive
             writeln("###### Test 16 ######");
-            auto dart=add_array(table[0..3]);
+            auto dart1=add_array(table[0..3]);
+            auto dart2=add_array([table[0], table[2]]);
             // Find the arcive
             auto key1=data(table[1]);
-            auto a=dart[key1];
+            auto a=dart1[key1];
             assert(a);
-            dart.get(key1).dump;
+            dart1.get(key1).dump;
             // Remove
-            dart.remove(a);
-            a=dart[key1];
+            dart1.remove(a);
+            a=dart1[key1];
             assert(!a);
             // Checks if the rest is still in the dart
             auto key0=data(table[0]);
-            a=dart[key0];
+            a=dart1[key0];
             assert(a);
 
             auto key2=data(table[2]);
-            a=dart[key2];
+            a=dart1[key2];
             assert(a);
 
-            // immutable merkle_roo1=dart.get(data(table[1])).merkle_root(net);
-            // writefln("merkle_roo1=%s", merkle_roo1.cutHex);
+            immutable rim=2;
+            immutable merkle_root1=dart1.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root1=%s", merkle_root1.cutHex);
+            immutable merkle_root2=dart2.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root2=%s", merkle_root2.cutHex);
+            assert(merkle_root1 == merkle_root2);
+
+            // immutable merkle_root=dart.get(data(table[1])).merkle_root(net);
+            // writefln("merkle_root=%s", merkle_root.cutHex);
             // // For as single archive the merkle root is equal to the hash of the archive
-            // assert(merkle_roo1 == data(table[1]));
+            // assert(merkle_root == data(table[1]));
         }
+
 
         { // Remove all in one bucket in rim 2
             writeln("###### Test 17 ######");
             auto take_from_dart=add_array(table);
+            immutable(ulong)[] dummy;
+            auto add_to_dart=add_array(dummy);
             immutable rim=2;
+
             uint count;
             foreach(t; table) {
                 immutable key=data(t);
                 if ( key[rim] == 0x20 ) {
                     count++;
                     writefln("\tcounting=%d %s", count, key.cutHex);
-                    take_from_dart.remove(kuy);
+                    take_from_dart.remove(key);
+                }
+                else {
+                    add_to_dart.add(key);
+                }
+            }
+//            writefln("count=%d size=%d", count, size);
+            assert(count == 10);
+
+            immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root1=%s", merkle_root1.cutHex);
+            immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root2=%s", merkle_root2.cutHex);
+            assert(merkle_root1 == merkle_root2);
+        }
+
+        {  // Remove all in one bucket in rim 3
+
+            writeln("###### Test 18 ######");
+            auto take_from_dart=add_array(table);
+            immutable(ulong)[] dummy;
+            auto add_to_dart=add_array(dummy);
+            immutable rim=3;
+
+
+            uint count;
+            foreach(t; table) {
+                immutable key=data(t);
+                if ( key[rim] == 0x32 ) {
+                    count++;
+                    writefln("\tcounting=%d %s", count, key.cutHex);
+                    take_from_dart.remove(key);
+                }
+                else {
+                    add_to_dart.add(key);
                 }
             }
             writefln("count=%d", count);
+            assert(count == 7);
 
+            immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root1=%s", merkle_root1.cutHex);
+            immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
+            writefln("merkle_root2=%s", merkle_root2.cutHex);
+            assert(merkle_root1 == merkle_root2);
         }
+
+        { // Remove all in random order
+            writeln("###### Test 19 ######");
+            import std.algorithm;
+            auto take_from_dart=add_array(table);
+            auto add_table=table.dup;
+
+            foreach(k;0..table.length-1) {
+                immutable key_index=rand.value(cast(uint)add_table.length);
+                immutable key=data(add_table[key_index]);
+                add_table=add_table.remove(key_index);
+                auto add_to_dart=add_array(add_table);
+                take_from_dart.remove(key);
+                writefln("add_table=%s", add_table);
+                writefln("    table=%s", table);
+                immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
+                writefln("merkle_root1=%s key_index=%d", merkle_root1.cutHex, key_index);
+                immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
+                writefln("merkle_root2=%s", merkle_root2.cutHex);
+                assert(merkle_root1 == merkle_root2);
+
+            }
         }
+
+
     }
 
     static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
