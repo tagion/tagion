@@ -354,9 +354,9 @@ class DARTAngle {
             else if ( _archive && (_archive.fingerprint == key) ) {
                 return _archive;
             }
-            if ( _archive ) {
-                writefln("key=%s fingerprint=%s", key.toHexString, _archive.fingerprint.toHexString);
-            }
+            // if ( _archive ) {
+            //     writefln("key=%s fingerprint=%s", key.toHexString, _archive.fingerprint.toHexString);
+            // }
             return null;
         }
 
@@ -419,8 +419,8 @@ class DARTAngle {
             if ( bucket.isBucket ) {
                 immutable index=archive.fingerprint[rim];
                 immutable pos=bucket.find_bucket_pos(index, rim);
-                bucket.dump;
-                writefln("remove pos=%d index=%02x archive.fingerprint=%s rim=%d length=%d", pos, index, archive.fingerprint.cutHex, rim, bucket._buckets.length);
+//                bucket.dump;
+//                writefln("remove pos=%d index=%02x archive.fingerprint=%s rim=%d length=%d", pos, index, archive.fingerprint.cutHex, rim, bucket._buckets.length);
                 check(bucket._buckets[pos] !is null, ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
                 bucket._buckets[pos]=Bucket.remove(bucket._buckets[pos], archive, rim+1);
                 if ( bucket._buckets[pos] is null ) {
@@ -645,7 +645,7 @@ class DARTAngle {
 
         DARTAngle add_and_find_check(const(ulong[]) array) {
             auto dart=add_array(array);
-            dart.dump;
+//            dart.dump;
             foreach(a; array) {
                 auto d=dart[data(a)];
                 assert(d, "Not found");
@@ -772,7 +772,7 @@ class DARTAngle {
 
         // Remove test
         { // add and remove one archive
-            writeln("###### Test 14 ######");
+//            writeln("###### Test 14 ######");
             auto dart=add_array(table[0..1]);
             // Find the arcive
             auto key=data(table[0]);
@@ -784,36 +784,36 @@ class DARTAngle {
         }
 
         { // add two and remove one archive
-            writeln("###### Test 15 ######");
+//            writeln("###### Test 15 ######");
             auto dart1=add_array(table[0..2]);
             auto dart2=add_array(table[1..2]);
             // Find the arcive
             auto key=data(table[0]);
             auto a=dart1[key];
             assert(a);
-            dart1.get(key).dump;
+//            dart1.get(key).dump;
             dart1.remove(a);
             a=dart1[key];
             assert(!a);
             immutable rim=2;
             immutable merkle_root1=dart1.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root1=%s", merkle_root1.cutHex);
+//            writefln("merkle_root1=%s", merkle_root1.cutHex);
             immutable merkle_root2=dart2.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root2=%s", merkle_root2.cutHex);
+//            writefln("merkle_root2=%s", merkle_root2.cutHex);
             assert(merkle_root1 == merkle_root2);
             // For as single archive the merkle root is equal to the hash of the archive
             assert(merkle_root1 == data(table[1]));
         }
 
         { // add three and remove one archive
-            writeln("###### Test 16 ######");
+//            writeln("###### Test 16 ######");
             auto dart1=add_array(table[0..3]);
             auto dart2=add_array([table[0], table[2]]);
             // Find the arcive
             auto key1=data(table[1]);
             auto a=dart1[key1];
             assert(a);
-            dart1.get(key1).dump;
+//            dart1.get(key1).dump;
             // Remove
             dart1.remove(a);
             a=dart1[key1];
@@ -837,7 +837,7 @@ class DARTAngle {
 
 
         { // Remove all in one bucket in rim 2
-            writeln("###### Test 17 ######");
+//            writeln("###### Test 17 ######");
             auto take_from_dart=add_array(table);
             immutable(ulong)[] dummy;
             auto add_to_dart=add_array(dummy);
@@ -848,7 +848,7 @@ class DARTAngle {
                 immutable key=data(t);
                 if ( key[rim] == 0x20 ) {
                     count++;
-                    writefln("\tcounting=%d %s", count, key.cutHex);
+//                    writefln("\tcounting=%d %s", count, key.cutHex);
                     take_from_dart.remove(key);
                 }
                 else {
@@ -867,7 +867,7 @@ class DARTAngle {
 
         {  // Remove all in one bucket in rim 3
 
-            writeln("###### Test 18 ######");
+//            writeln("###### Test 18 ######");
             auto take_from_dart=add_array(table);
             immutable(ulong)[] dummy;
             auto add_to_dart=add_array(dummy);
@@ -896,7 +896,7 @@ class DARTAngle {
         }
 
         { // Remove all in random order
-            writeln("###### Test 19 ######");
+//            writeln("###### Test 19 ######");
             import std.algorithm;
             auto take_from_dart=add_array(table);
             auto add_table=table.dup;
@@ -907,12 +907,12 @@ class DARTAngle {
                 add_table=add_table.remove(key_index);
                 auto add_to_dart=add_array(add_table);
                 take_from_dart.remove(key);
-                writefln("add_table=%s", add_table);
-                writefln("    table=%s", table);
+                // writefln("add_table=%s", add_table);
+                // writefln("    table=%s", table);
                 immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-                writefln("merkle_root1=%s key_index=%d", merkle_root1.cutHex, key_index);
+                // writefln("merkle_root1=%s key_index=%d", merkle_root1.cutHex, key_index);
                 immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-                writefln("merkle_root2=%s", merkle_root2.cutHex);
+                // writefln("merkle_root2=%s", merkle_root2.cutHex);
                 assert(merkle_root1 == merkle_root2);
 
             }
@@ -920,15 +920,15 @@ class DARTAngle {
 
         { // Fill the bucket in rim 3..7
             // and check capacity
-            writeln("###### Test 20 ######");
+//            writeln("###### Test 20 ######");
 //            immutable rim=2;
             immutable ulong rim3_data=0x20_21_00_00_00_00_00_00;
             auto full_bucket_table=new ulong[bucket_max];
             foreach_reverse(rim;bucket_rim..8) {
                 foreach(i, ref t; full_bucket_table) {
-                    immutable ulong mask=(cast(ulong)(i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
+//                    immutable ulong mask=(cast(ulong)(i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
                     t=rim3_data | ((i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
-                    writefln("%3d t=%016x mask=%016x", i, t, mask);
+                    //   writefln("%3d t=%016x mask=%016x", i, t, mask);
                 }
                 auto dart=add_and_find_check(shuffle(full_bucket_table, 1024));
                 // immutable key=data(rim3_data);
