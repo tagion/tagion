@@ -646,112 +646,69 @@ class DARTAngle {
 
         // Add and find test
         { // First rim test one element
-            writeln("###### Test 0 ######");
             auto dart=new DARTAngle(net, 0x1000, 0x2022);
             dart.add(data(table[0]));
             auto d=dart[data(table[0])];
-            dart.dump;
+            assert(d);
         }
 
         // Add and find test
         { // First rim test one element
-            writeln("###### Test 1 ######");
             add_and_find_check(table[0..1]);
-
         }
 
-
         { // rim 2 test two elements (First rim in the sector)
-            writeln("###### Test 2 ######");
             add_and_find_check(table[0..2]);
         }
 
-
         { // Rim 2 test three elements
-            writeln("###### Test 3 ######");
             add_and_find_check(table[0..3]);
         }
 
-
-
         { // Rim 2 test four elements (insert an element before all others)
-            writeln("###### Test 4 ######");
             add_and_find_check(table[0..4]);
         }
-        //   }
 
         { // Rim 3 test 2 elements
-            writeln("###### Test 5 ######");
             add_and_find_check(table[4..6]);
         }
 
-//        version(none) {
         { // Rim 3 test 3 elements
-            writeln("###### Test 6 ######");
-//            auto dart=add_array(table[4..7]);
-//            dart.dump;
             add_and_find_check(table[4..7]);
         }
 
         { // Rim 3 test 4 elements (insert an element before all others)
-            writeln("###### Test 7 ######");
             add_and_find_check(table[4..8]);
         }
 
         { // Rim 3 test 5 elements (insert an element in the middel)
-            writeln("###### Test 8 ######");
             add_and_find_check(table[4..9]);
         }
 
-
         { // Rim 3 test 5 elements (Add insert element before the first and after the last element)
-            writeln("###### Test 9 ######");
-//            add_and_find_check(table[4..10]);
-//            add_and_find_check(table[7..10]);
             add_and_find_check(table[9..14]);
         }
 
         { // Rim 3 test 6 elements ( add elememt in rim number 2)
-            writeln("###### Test 10 ######");
-//            add_and_find_check(table[4..10]);
-//            add_and_find_check(table[7..10]);
             add_and_find_check(table[9..15]);
         }
 
-
         { // Rim 3 test 6 elements ( add elememt in rim number 2)
-            writeln("###### Test 10a ######");
-//            add_and_find_check(table[4..10]);
-//            add_and_find_check(table[7..10]);
             add_and_find_check(table[16..21]);
         }
 
-
-
         { // Rim 3 test 6 all
-            writeln("###### Test 11a ######");
-//            auto dart=add_array(table[$-7..$-4]);
-//            dart.dump;
-//            add_and_find_check(table[4..10]);
-//            add_and_find_check(table[7..10]);
             add_and_find_check(table[$-7..$]);
         }
 
 
         { // Rim 3 test 6 all
-            writeln("###### Test 11b ######");
-//            auto dart=add_array(table[$-7..$-4]);
-//            dart.dump;
-//            add_and_find_check(table[4..10]);
-//            add_and_find_check(table[7..10]);
             add_and_find_check(table);
         }
 
 
         // Merkle root test
         { // Checks that the merkle root is indifferent from the order the archives is added
-            // Without buckets
-            writeln("###### Test 12 ######");
             immutable test_table=table[0..3];
             auto dart1=add_array(test_table);
             // Same but shuffled
@@ -760,13 +717,9 @@ class DARTAngle {
             immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
             immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
             assert(merkle_root1 == merkle_root2);
-            // writefln("merkle_root1=%s", merkle_root1.cutHex);
-            // writefln("merkle_root2=%s", merkle_root2.cutHex);
         }
 
         { // Checks that the merkle root is indifferent from the order the archives is added
-            // With buckets
-            writeln("###### Test 13a ######");
             immutable test_table=table[0..3]~table[15];
 
             auto dart1=add_array(test_table);
@@ -821,9 +774,6 @@ class DARTAngle {
             assert(!a);
         }
 
-
-
-//        version(none)
         { // add two and remove one archive
             writeln("###### Test 15 ######");
             auto dart1=add_array(table[0..2]);
@@ -845,7 +795,6 @@ class DARTAngle {
             // For as single archive the merkle root is equal to the hash of the archive
             assert(merkle_root1 == data(table[1]));
         }
-
 
         { // add three and remove one archive
             writeln("###### Test 16 ######");
@@ -871,15 +820,10 @@ class DARTAngle {
 
             immutable rim=2;
             immutable merkle_root1=dart1.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root1=%s", merkle_root1.cutHex);
+            // writefln("merkle_root1=%s", merkle_root1.cutHex);
             immutable merkle_root2=dart2.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root2=%s", merkle_root2.cutHex);
+            // writefln("merkle_root2=%s", merkle_root2.cutHex);
             assert(merkle_root1 == merkle_root2);
-
-            // immutable merkle_root=dart.get(data(table[1])).merkle_root(net);
-            // writefln("merkle_root=%s", merkle_root.cutHex);
-            // // For as single archive the merkle root is equal to the hash of the archive
-            // assert(merkle_root == data(table[1]));
         }
 
 
@@ -906,9 +850,9 @@ class DARTAngle {
             assert(count == 10);
 
             immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root1=%s", merkle_root1.cutHex);
+            // writefln("merkle_root1=%s", merkle_root1.cutHex);
             immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root2=%s", merkle_root2.cutHex);
+            // writefln("merkle_root2=%s", merkle_root2.cutHex);
             assert(merkle_root1 == merkle_root2);
         }
 
@@ -920,26 +864,25 @@ class DARTAngle {
             auto add_to_dart=add_array(dummy);
             immutable rim=3;
 
-
             uint count;
             foreach(t; table) {
                 immutable key=data(t);
                 if ( key[rim] == 0x32 ) {
                     count++;
-                    writefln("\tcounting=%d %s", count, key.cutHex);
+                    // writefln("\tcounting=%d %s", count, key.cutHex);
                     take_from_dart.remove(key);
                 }
                 else {
                     add_to_dart.add(key);
                 }
             }
-            writefln("count=%d", count);
+            // writefln("count=%d", count);
             assert(count == 7);
 
             immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root1=%s", merkle_root1.cutHex);
+            // writefln("merkle_root1=%s", merkle_root1.cutHex);
             immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            writefln("merkle_root2=%s", merkle_root2.cutHex);
+            // writefln("merkle_root2=%s", merkle_root2.cutHex);
             assert(merkle_root1 == merkle_root2);
         }
 
