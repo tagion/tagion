@@ -51,10 +51,10 @@ class DART {
     private ushort _from_sector;
     private ushort _to_sector;
 //    private Bucket[] _root_buckets;
-    enum bucket_max=1 << (ubyte.sizeof*8);
+    enum bucket_max_size=1 << (ubyte.sizeof*8);
     private Bucket _bulls_eye_bucket;
-    private Bucket[bucket_max] _zero_rim_buckets;
-    private Bucket[bucket_max*bucket_max] _first_rim_buckets;
+    private Bucket[bucket_max_size] _zero_rim_buckets;
+    private Bucket[bucket_max_size*bucket_max_size] _first_rim_buckets;
     enum uint bucket_rim=cast(uint)ushort.sizeof;
     enum sector_max = ushort.max;
 
@@ -66,7 +66,7 @@ class DART {
         _bulls_eye_bucket._buckets=_zero_rim_buckets;
         foreach(i,ref b; _zero_rim_buckets) {
             b=new Bucket;
-            b._buckets=_first_rim_buckets[i*bucket_max..(i+1)*bucket_max];
+            b._buckets=_first_rim_buckets[i*bucket_max_size..(i+1)*bucket_max_size];
         }
     }
 
@@ -328,7 +328,6 @@ class DART {
             }
         }
 
-
         void dump() const {
             dump(bucket_rim);
         }
@@ -351,11 +350,9 @@ class DART {
 
         HBSON toBSON() const {
             auto bson=new HBSON;
-            //bson[Keywords.rim]=rim;
             if ( isBucket ) {
-                HBSON[] buckets; //=new HBSON;
+                HBSON[] buckets;
                 foreach(b;_buckets) {
-//                    auto b=_buckets[i];
                     buckets~=b.toBSON;
                 }
                 bson[Keywords.buckets]=buckets;
@@ -471,7 +468,7 @@ class DART {
                 return _merkle_root;
             }
             else if ( isBucket ) {
-                scope auto temp_buckets=new Bucket[bucket_max];
+                scope auto temp_buckets=new Bucket[bucket_max_size];
                 foreach(i;0.._buckets.length) {
                     auto b=_buckets[i];
                     temp_buckets[b.index(rim)]=b;
@@ -517,7 +514,6 @@ class DART {
             immutable mid=table.length >> 1;
             return merkletree(table[0..mid], table[mid..$]);
         }
-
 
         private Iterator iterator(const uint rim) {
             return Iterator(this, rim);
@@ -588,7 +584,6 @@ class DART {
                 return _current;
             }
         }
-
     }
 
     unittest { // Test of add, find, remove, merkle_root
@@ -628,7 +623,6 @@ class DART {
             0x20_21_20_20_40_50_80_90, // Insert before the first in rim 3
 
             0x20_21_20_32_40_50_80_90, // Insert just the last archive in the bucket  in rim 3
-
 
             // Rim 3 test (rim=3)
             0x20_21_22_30_40_50_80_90,
@@ -746,7 +740,6 @@ class DART {
         { // Rim 3 test 6 all
             add_and_find_check(table);
         }
-
 
         // Merkle root test
         { // Checks that the merkle root is indifferent from the order the archives is added
@@ -907,14 +900,13 @@ class DART {
                 immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
                 immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
                 assert(merkle_root1 == merkle_root2);
-
             }
         }
 
         { // Fill the bucket in rim 3..7
             // and check capacity
             immutable ulong rim3_data=0x20_21_00_00_00_00_00_00;
-            auto full_bucket_table=new ulong[bucket_max];
+            auto full_bucket_table=new ulong[bucket_max_size];
             foreach_reverse(rim;bucket_rim..8) {
                 foreach(i, ref t; full_bucket_table) {
                     t=rim3_data | ((i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
