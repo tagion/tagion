@@ -262,8 +262,8 @@ template consensusCheckArguments(Consensus) {
 @safe
 string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
-    enum LEN=ulong.sizeof;
-    if ( buf.length < LEN ) {
+    enum LEN=8;
+    if ( buf.length <= LEN ) {
         return format("EMPTY[%s]",buf.length);
     }
     else {
