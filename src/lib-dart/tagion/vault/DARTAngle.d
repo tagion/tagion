@@ -13,7 +13,7 @@ import std.stdio;
 @safe
 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
     if (!flag) {
-        throw new EventConsensusException(code, file, line);
+        throw new DARTConsensusException(code, file, line);
     }
 }
 
