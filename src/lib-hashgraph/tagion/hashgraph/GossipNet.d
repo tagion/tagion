@@ -47,3 +47,11 @@ interface GossipNet : SecureNet {
     // and is use to collect node to be send to anotehr node
     ulong time();
 }
+
+@safe
+interface DARTNet : SecureNet {
+    immutable(ubyte[]) load(const(ubyte[]) key);
+    void save(const(ubyte[]) key, immutable(ubyte[]) data, const uint rim);
+    void erase(const(ubyte[]) key);
+
+}
