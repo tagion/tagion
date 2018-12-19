@@ -127,7 +127,7 @@ class DARTAngle {
         remove(archive);
     }
 
-    ArchiveTab opIndex(immutable(ubyte[]) key) {
+    ArchiveTab opIndex(const(ubyte[]) key) {
         immutable sector=root_sector(key);
         if ( inRange(sector) ) {
             auto first_bucket =_bulls_eye_bucket._buckets[key[0]];
@@ -139,12 +139,12 @@ class DARTAngle {
         return null;
     }
 
-    inout(Bucket) get(immutable(ubyte[]) key) inout {
+    inout(Bucket) get(const(ubyte[]) key) inout {
         uint sector_rim=bucket_rim;
         return get(key, sector_rim);
     }
 
-    inout(Bucket) get(immutable(ubyte[]) key, ref uint rim) inout
+    inout(Bucket) get(const(ubyte[]) key, ref uint rim) inout
         in {
             assert(rim >= bucket_rim);
         }
@@ -191,6 +191,7 @@ class DARTAngle {
         key~=sector & ubyte.max;
         return key;
     }
+
     Bucket.Iterator iterator(const ushort sector) {
         return iterator(to_key(sector));
     }
@@ -369,7 +370,7 @@ class DARTAngle {
             return toBSON.serialize;
         }
 
-        private ArchiveTab find(immutable(ubyte[]) key, const uint rim) {
+        private ArchiveTab find(const(ubyte[]) key, const uint rim) {
             if ( isBucket ) {
                 immutable pos=find_bucket_pos(key[rim], rim);
                 if ( (pos >= 0) && (pos < _buckets.length) && _buckets[pos] ) {
