@@ -1,4 +1,4 @@
-module tagion.vault.DARTAngle;
+module tagion.vault.DART;
 
 import tagion.hashgraph.GossipNet : SecureNet;
 import tagion.utils.BSON : HBSON, Document;
@@ -46,7 +46,7 @@ unittest {
 
 
 @safe
-class DARTAngle {
+class DART {
     private SecureNet _net;
     private ushort _from_sector;
     private ushort _to_sector;
@@ -653,8 +653,8 @@ class DARTAngle {
             ];
 
         auto net=new TestNet;
-        DARTAngle add_array(const(ulong[]) array) {
-            auto dart=new DARTAngle(net, 0x1000, 0x2022);
+        DART add_array(const(ulong[]) array) {
+            auto dart=new DART(net, 0x1000, 0x2022);
             foreach(a; array) {
                 dart.add(data(a));
                 auto key=data(a);
@@ -662,7 +662,7 @@ class DARTAngle {
             return dart;
         }
 
-        DARTAngle add_and_find_check(const(ulong[]) array) {
+        DART add_and_find_check(const(ulong[]) array) {
             auto dart=add_array(array);
             foreach(a; array) {
                 auto d=dart[data(a)];
@@ -687,7 +687,7 @@ class DARTAngle {
 
         // Add and find test
         { // First rim test one element
-            auto dart=new DARTAngle(net, 0x1000, 0x2022);
+            auto dart=new DART(net, 0x1000, 0x2022);
             dart.add(data(table[0]));
             auto d=dart[data(table[0])];
             assert(d);
@@ -946,7 +946,7 @@ class DARTAngle {
 
         enum from1=0x10;
         enum to1=0x8201;
-        auto dart1=new DARTAngle(net, from1, to1);
+        auto dart1=new DART(net, from1, to1);
         assert(dart1.inRange(from1));
         assert(dart1.inRange(to1-0x100));
         assert(dart1.inRange(to1-1));
@@ -954,7 +954,7 @@ class DARTAngle {
 
         enum from2=0xFF80;
         enum to2=0x10;
-        auto dart2=new DARTAngle(net, from2, to2);
+        auto dart2=new DART(net, from2, to2);
         assert(!dart2.inRange(from2-1));
         assert(dart2.inRange(from2));
         assert(dart2.inRange(0));
