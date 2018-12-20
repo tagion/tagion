@@ -177,7 +177,15 @@ public:
         @trusted uint size() {
             return *cast(uint*)(_data[0..uint.sizeof].ptr);
         }
-        alias size length;
+    }
+
+    @trusted
+    @property uint length() const {
+        uint counter;
+        foreach(i; Range(_data)) {
+            counter++;
+        }
+        return counter;
     }
 
     // FIXME: Check for index out of range and call the error function
@@ -296,7 +304,6 @@ public:
 
         return array(map!"a.key"(Range(_data)));
     }
-
 
 
     @trusted const {
