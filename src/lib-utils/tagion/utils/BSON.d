@@ -154,6 +154,19 @@ unittest {
 /**
  * BSON document representation, which is called "BSONObj" in C++.
  */
+
+//TO_DO: Make a isBSONFormat() static function.
+bool isBSONFormat(immutable(ubyte)[] data) {
+    return false;
+}
+unittest {
+    auto b=new HBSON();
+    b["a"]="apples";
+    assert(isBSONFormat(b.serialize));
+    ubyte[] test=[2,3];
+    assert(!isBSONFormat(test));
+}
+
 @safe
 struct Document {
 private:
@@ -177,7 +190,15 @@ public:
         @trusted uint size() {
             return *cast(uint*)(_data[0..uint.sizeof].ptr);
         }
-        alias size length;
+    }
+
+    @trusted
+    @property uint length() const {
+        uint counter;
+        foreach(i; Range(_data)) {
+            counter++;
+        }
+        return counter;
     }
 
     // FIXME: Check for index out of range and call the error function
@@ -208,6 +229,7 @@ public:
         auto local_range=Range(_data);
         return local_order(local_range.front, local_range);
     }
+
 
     unittest { // isInOrder
         void build(B)(B bson) {
@@ -296,7 +318,6 @@ public:
 
         return array(map!"a.key"(Range(_data)));
     }
-
 
 
     @trusted const {
