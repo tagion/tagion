@@ -50,8 +50,8 @@ interface GossipNet : SecureNet {
 
 @safe
 interface DARTNet : SecureNet {
-    immutable(ubyte[]) load(const(ubyte[]) key);
-    void save(const(ubyte[]) key, immutable(ubyte[]) data);
-    void erase(const(ubyte[]) key);
+    immutable(ubyte[]) load(const(string[]) path, const(ubyte[]) key);
+    void save(const(string[]) path, const(ubyte[]) key, immutable(ubyte[]) data);
+    void erase(const(string[]) path, const(ubyte[]) key);
 
 }
