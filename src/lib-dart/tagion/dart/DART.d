@@ -57,6 +57,7 @@ class DART {
     private Bucket[bucket_max_size*bucket_max_size] _first_rim_buckets;
     enum uint bucket_rim=cast(uint)ushort.sizeof;
     enum sector_max = ushort.max;
+    enum sector_max_size = 1 << (ushort.sizeof*8);
 
     this(DARTNet net, const ushort from_sector, const ushort to_sector) {
         _net = net;
@@ -64,20 +65,23 @@ class DART {
         _to_sector    = to_sector;
         _bulls_eye_bucket = new Bucket;
         _bulls_eye_bucket._buckets=_zero_rim_buckets;
-        foreach(i,ref b; _zero_rim_buckets) {
-            b=new Bucket;
-            b._buckets=_first_rim_buckets[i*bucket_max_size..(i+1)*bucket_max_size];
+        @trusted void build_buckets() {
+            foreach(i,ref b; _zero_rim_buckets) {
+                b=new Bucket;
+                b._buckets=_first_rim_buckets[i*bucket_max_size..(i+1)*bucket_max_size];
+            }
         }
+        build_buckets;
     }
+
 
     ushort root_sector(const(ubyte[]) data) pure const nothrow {
         return data[1] | (data[0] << 8);
     }
 
-    ushort sector_to_index(const ushort sector) const pure nothrow {
-        return (sector-_from_sector) & ushort.max;
-    }
-
+    // ushort sector_to_index(const ushort sector) const pure nothrow {
+    //     return (sector-_from_sector) & ushort.max;
+    // }
     void add(ArchiveTab archive) {
         immutable sector=root_sector(archive.fingerprint);
         if ( inRange(sector) ) {
@@ -98,9 +102,10 @@ class DART {
         }
     }
 
-    void add(immutable(ubyte[]) data) {
+    immutable(ubyte[]) add(immutable(ubyte[]) data) {
         auto archive=new ArchiveTab(_net, data);
         add(archive);
+        return archive.fingerprint;
     }
 
     void remove(const ArchiveTab archive) {
@@ -207,7 +212,7 @@ class DART {
 
     void dump() const {
         immutable uint from=_from_sector;
-        immutable uint to=(_to_sector==_from_sector)?_to_sector+sector_max+1:_to_sector;
+        immutable uint to=(_to_sector==_from_sector)?_to_sector+sector_max_size:_to_sector;
         foreach(s;from..to) {
             immutable ushort sector=s & sector_max;
             immutable key=to_key(sector);
@@ -917,7 +922,14 @@ class DART {
     }
 
     static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
-        return to_sector+((from_sector >= to_sector)?sector_max:0);
+        return to_sector+((from_sector >= to_sector)?sector_max_size:0);
+    }
+
+    unittest {
+        assert(calc_to_sector(42, 142) == 142);
+        assert(calc_to_sector(42, 41) == 41+sector_max_size);
+        assert(calc_to_sector(0, 0) == sector_max_size);
+
     }
 
     static uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow {
@@ -926,10 +938,38 @@ class DART {
         return to-from;
     }
 
+    void save() {
+        import std.format;
+        void local_save(Bucket bucket, const(string[]) path, string subdir,  const uint rim) {
+            if ( (bucket) && !bucket._merkle_root ) {
+                if ( bucket.isBucket ) {
+                    foreach(b; bucket._buckets) {
+                        local_save(b, path~subdir, format("%02X", b.index(rim)), rim+1);
+                    }
+//                    _net.save(path, bucket.prefix(rim), bucket.serialize);
+                    bucket.merkle_root(_net, rim);
+                }
+                else {
+                    _net.save(path, bucket.prefix(rim), bucket.serialize);
+                }
+            }
+        }
+        foreach(s;_from_sector..calc_to_sector(_from_sector, _to_sector)) {
+//            writefln("sector=%04x", s);
+            immutable sector=s & sector_max;
+            local_save(_first_rim_buckets[sector], [format("%04X", sector)], "", bucket_rim);
+        }
+    }
+
     bool inRange(const ushort sector) const pure nothrow  {
-        immutable ushort sector_origin=(sector-_from_sector) & ushort.max;
-        immutable ushort to_origin=(_to_sector-_from_sector) & ushort.max;
-        return ( sector_origin < to_origin );
+        if ( _to_sector == _from_sector ) {
+            return true;
+        }
+        else {
+            immutable ushort sector_origin=(sector-_from_sector) & ushort.max;
+            immutable ushort to_origin=(_to_sector-_from_sector) & ushort.max;
+            return ( sector_origin < to_origin );
+        }
     }
 
     unittest { // Check the inRange function
@@ -953,6 +993,11 @@ class DART {
         assert(dart2.inRange(to2-1));
         assert(!dart2.inRange(to2));
         assert(!dart2.inRange(42));
-    }
 
+        // Full dart
+        auto dart3=new DART(net, 0, 0);
+        assert(dart3.inRange(0));
+        assert(dart3.inRange(0xffff));
+        assert(dart3.inRange(0x2345));
+    }
 }

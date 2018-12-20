@@ -6,54 +6,62 @@ import tagion.crypto.Hash : toHexString;
 
 import std.path;
 import std.file;
+import std.array : join;
+import std.stdio : writefln;
 
 @safe
 class StdDARTNet : StdSecureNet, DARTNet {
-    private string path;
+    private immutable(char[]) root;
     enum extend="dart";
     enum max_size=0x1000;
     import tagion.crypto.secp256k1.NativeSecp256k1 : NativeSecp256k1;
 
-    this(NativeSecp256k1 crypt, string path) {
+    this(NativeSecp256k1 crypt, string root) {
         super(crypt);
-        this.path = path;
-        assert(isValidPath(this.path));
+        this.root = root;
+        assert(isValidPath(this.root));
+        if ( !root.exists ) {
+            root.mkdirRecurse;
+        }
     }
 
-    string fullpath(const(ubyte[]) key) {
-        return buildPath(path, key[0..4].toHexString);
+    string fullpath(const(string[]) path) {
+        return buildPath(join([[root], path]));
     }
 
-    string fullfilename(const(ubyte[]) key) {
-        auto filename=setExtension(key.toHexString, extend);
-        return buildPath(path, key[0..4].toHexString, filename);
+    string fullfilename(const(string[]) path, const(ubyte[]) key) {
+        auto filename=setExtension(key.toHexString!true, extend);
+        return buildPath(join([[root], path, [filename]]));
     }
 
     @trusted
-    immutable(ubyte[]) load(const(ubyte[]) key)
+    immutable(ubyte[]) load(const(string[]) path, const(ubyte[]) key)
     out(result) {
         assert(calcHash(result) == key);
     }
     do {
-        immutable result=(cast(ubyte[])(read(fullfilename(key), max_size+1))).idup;
+        auto _fullfilename=fullfilename(path, key);
+        immutable result=(cast(ubyte[])(read(_fullfilename, max_size+1))).idup;
         assert(result.length < max_size);
         return result;
     }
 
-    void save(const(ubyte[]) key, immutable(ubyte[]) data)
+    void save(const(string[]) path, const(ubyte[]) key, immutable(ubyte[]) data)
         in {
             assert(calcHash(data) == key);
         }
     do {
-        auto _fullpath=fullpath(key);
+        auto _fullpath=fullpath(path);
         if ( !_fullpath.exists ) {
             _fullpath.mkdirRecurse;
         }
-        write(fullfilename(key), data);
+        auto _fullfilename=fullfilename(path, key);
+//        writefln("write file %s", _fullfilename);
+        write(_fullfilename, data);
     }
 
-    void erase(const(ubyte[]) key) {
-        auto _fullfilename=fullfilename(key);
+    void erase(const(string[]) path, const(ubyte[]) key) {
+        auto _fullfilename=fullfilename(path, key);
         if ( _fullfilename.exists ) {
             _fullfilename.remove;
         }
