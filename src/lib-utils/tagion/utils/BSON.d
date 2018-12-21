@@ -443,8 +443,6 @@ bool isHBSONFormat(const(ubyte[]) data) {
     return CheckBSON!true(data).check;
 }
 
-// alias isHSONFormat=CheckBSON!true;
-
 //TO_DO: Make a isBSONFormat() static function.
 unittest {
     auto b=new HBSON();
@@ -2345,28 +2343,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     }
     package Value value;
-    // package void sort_keys() {
-    //     if ( (type == Type.DOCUMENT) ) {
-    //         BSON[] barry;
-    //         import std.algorithm.mutation : SwapStrategy;
-    //         for(auto b=members; b !is null; b=b.members) {
-    //             barry~=b;
-    //         }
-    //         if ( barry.length > 1 ) {
-    //             // Sort by key
-    //             sort!("a.key < b.key", SwapStrategy.stable)(barry);
-    //             BSON prev;
-    //             foreach(i,ref b;barry) {
-    //                 if ( i > 0 ) {
-    //                     prev.members=b;
-    //                 }
-    //                 prev=b;
-    //             }
-    //             prev.members=null;
-    //             this.members=barry[0];
-    //         }
-    //     }
-    // }
     bool isDocument() {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
