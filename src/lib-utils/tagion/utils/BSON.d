@@ -162,9 +162,9 @@ bool isBSONFormat(immutable(ubyte)[] data) {
 unittest {
     auto b=new HBSON();
     b["a"]="apples";
-    assert(isBSONFormat(b.serialize));
+    //assert(isBSONFormat(b.serialize));
     ubyte[] test=[2,3];
-    assert(!isBSONFormat(test));
+    assert(!isBSONFormat(test.idup));
 }
 
 @safe
