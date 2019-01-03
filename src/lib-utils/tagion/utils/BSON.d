@@ -151,21 +151,307 @@ unittest {
     assert(!less_than("00", "0"));
 }
 
-/**
- * BSON document representation, which is called "BSONObj" in C++.
- */
+
+struct CheckBSON(bool hbson_flag) {
+    private size_t pos;
+    private const(ubyte[]) data;
+
+    T get_value(T)(const(ubyte[]) value) {
+        pos+=T.sizeof;
+        return *(cast(T*)(value.ptr));
+    }
+
+    bool check_cstring(const(ubyte[]) cstring, out size_t cpos) {
+        foreach(i, c; cstring) {
+            if ( c == '\0' ) {
+                cpos=i;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool check_string(const(ubyte[]) str, out size_t cpos) {
+        auto str_len=get_value!uint(str);
+        bool result=(str[str_len] == '\0');
+        if ( result ) {
+            auto cstr=str[str_len..$];
+            foreach(c; str[0..str_len]) {
+                if (c == '\0') {
+                    result=false;
+                    break;
+                }
+            }
+        }
+        cpos=uint.sizeof+str_len+1;
+        return result;
+    }
+
+    bool check_e_list(const(ubyte[]) e_list, out size_t cpos) {
+        auto e_list_len=get_value!uint(e_list);
+        cpos=uint.sizeof;
+        bool crawl(const(ubyte[]) e_list) {
+            bool result=true;
+            if ( e_list[0] != 0 ) {
+                size_t size;
+                result=check_element(e_list, size);
+                cpos+=size;
+                if ( result) {
+                    result=crawl(e_list[size..$]);
+                }
+            }
+            return result;
+        }
+        return crawl(e_list[cpos..$]);
+    }
+
+    bool check_document(const(ubyte[]) doc, out size_t cpos) {
+        auto doc_len=get_value!uint(doc);
+        cpos=uint.sizeof;
+        size_t size;
+        bool result=check_e_list(doc[cpos..$], size);
+        if ( result ) {
+            cpos+=size+1;
+        }
+        return result;
+    }
+
+    bool check_document_array(const(ubyte[]) doc_array, out size_t cpos) {
+        auto doc_array_len=get_value!uint(doc_array);
+        cpos=uint.sizeof;
+        size_t size;
+        bool result;
+        while (doc_array[cpos]) {
+            size_t doc_size;
+            result=check_document(doc_array[cpos..doc_array_len], doc_size);
+            if ( !result ) {
+                break;
+            }
+            cpos+=doc_size;
+        }
+        return result;
+    }
+
+    bool check_code_w_s(const(ubyte[]) code, out size_t cpos) {
+        auto code_w_s_len=get_value!uint(code);
+        size_t size;
+        cpos=uint.sizeof;
+        bool result=check_string(code[cpos..$], size);
+        cpos+=size;
+        if ( result ) {
+            result=check_document(code[cpos..$], size);
+        }
+        return result;
+    }
+
+    bool check_binary(const(ubyte[]) bin, out size_t cpos) {
+        auto binary_len=get_value!uint(bin);
+        size_t size;
+        cpos=uint.sizeof;
+        immutable subtype=bin[cpos];
+        cpos++;
+        bool result;
+        size_t binary_size;
+        with (BinarySubType) switch(subtype) {
+            case generic:
+                result=true;
+                break;
+            case func:
+                result=!hbson_flag;
+                break;
+            case binary:
+                result=false;
+                break;
+            case uuid:
+                result=!hbson_flag;
+                break;
+            case md5:
+                result=!hbson_flag;
+                break;
+            case userDefined:
+                result=!hbson_flag;
+                break;
+            case INT32_array:
+                binary_size=int.sizeof;
+                result=hbson_flag;
+                break;
+            case INT64_array:
+                binary_size=long.sizeof;
+                result=hbson_flag;
+                break;
+            case DOUBLE_array:
+                binary_size=double.sizeof;
+                result=hbson_flag;
+                break;
+            case UINT32_array:
+                binary_size=uint.sizeof;
+                result=hbson_flag;
+                break;
+            case UINT64_array:
+                binary_size=ulong.sizeof;
+                result=hbson_flag;
+                break;
+            case FLOAT_array:
+                binary_size=float.sizeof;
+                result=hbson_flag;
+                break;
+            case NATIVE_DOCUMENT_array:
+                binary_size=0, //float.sizeof;
+                result=hbson_flag;
+                break;
+            default:
+                result=false;
+            }
+        if ( result ) {
+            static if ( hbson_flag ) {
+                if ( subtype == BinarySubType.NATIVE_DOCUMENT_array ) {
+                    size_t pos_bin;
+                    result=check_document_array(bin[cpos..size], pos_bin);
+                    cpos+=pos_bin;
+                }
+                else {
+                    immutable binarry_array_size=size-cpos;
+                    result=(binarry_array_size % binary_size == 0);
+                    cpos=size;
+                }
+            }
+        }
+        return result;
+    }
+
+    bool check_element(const(ubyte[]) full_elm, out size_t cpos) {
+        byte type=full_elm[0];
+        cpos=1;
+        pos++;
+        size_t size;
+        bool result=check_cstring(full_elm[cpos..$], size);
+        cpos+=size;
+        auto elm=full_elm[size..$];
+        if ( result ) {
+            with(Type) switch (type) {
+                case DOUBLE:
+                    size=double.sizeof;
+                    result=true;
+                    break;
+                case STRING:
+                    result=check_string(elm, size);
+                    break;
+                case DOCUMENT:
+                    result=check_document(data, size);
+                    break;
+                case ARRAY:
+                    static if ( !hbson_flag ) {
+                        result=check_document(data[uint.sizeof..$], size);
+                    }
+                    break;
+                case BINARY:
+                    result=check_binary(data[uint.sizeof..$], size);
+                    break;
+                case OID:
+                    size=12;
+                    result=true;
+                    break;
+                case BOOLEAN:
+                    size=1;
+                    result=true;
+                    break;
+                case DATE:
+                    size=long.sizeof;
+                    result=true;
+                    break;
+                case NULL:
+                    size=0;
+                    result=true;
+                    break;
+                case REGEX:
+                    static if ( !hbson_flag ) {
+                        result=check_cstring(data, cpos);
+                        size=cpos;
+                        if ( result ) {
+                            result=check_cstring(data, cpos);
+                            size+=pos;
+                        }
+                    }
+                    break;
+                case JS_CODE:
+                    static if ( !hbson_flag ) {
+                        result=check_string(elm, size) ;
+                    }
+                    break;
+                case JS_CODE_W_SCOPE:
+                    static if ( !hbson_flag ) {
+                        result=check_code_w_s(elm, size);
+                    }
+                    break;
+                case INT32:
+                    size=int.sizeof;
+                    result=true;
+                    break;
+                case TIMESTAMP:
+                    size=long.sizeof;
+                    result=true;
+                    break;
+                case INT64:
+                    size=long.sizeof;
+                    result=true;
+                    break;
+                case UINT32:
+                    size=uint.sizeof;
+                    result=true;
+                    break;
+                case UINT64:
+                    size=ulong.sizeof;
+                    result=true;
+                    break;
+                case FLOAT:
+                    size=float.sizeof;
+                    result=true;
+                    break;
+                default:
+                    result=false;
+                }
+        }
+        if ( result ) {
+            cpos+=size;
+            pos+=cpos;
+        }
+        return result;
+    }
+
+    this(const(ubyte[]) data) {
+        this.data=data;
+    }
+
+
+    bool check() {
+        size_t pos;
+        return check_document(data, pos);
+    }
+
+    // static bool opCall(const(ubyte[]) data) {
+    //     auto test=CheckBSON(data);
+    //     return test.check();
+    // }
+}
+
+
+bool isBSONFormat(const(ubyte[]) data) {
+    return CheckBSON!false(data).check;
+}
+
+bool isHBSONFormat(const(ubyte[]) data) {
+    return CheckBSON!true(data).check;
+}
 
 //TO_DO: Make a isBSONFormat() static function.
-bool isBSONFormat(immutable(ubyte)[] data) {
-    return false;
-}
 unittest {
     auto b=new HBSON();
     b["a"]="apples";
-    //assert(isBSONFormat(b.serialize));
+    assert(isBSONFormat(b.serialize));
     ubyte[] test=[2,3];
-    assert(!isBSONFormat(test.idup));
+    assert(!isBSONFormat(test));
 }
+
 
 @safe
 struct Document {
@@ -204,7 +490,6 @@ public:
     // FIXME: Check for index out of range and call the error function
     // This function will throw an RangeError if length format is wrong
     bool isInOrder(bool function(ref const(Element) elm, ref bool result) @safe error=null)  {
-        import std.stdio;
         bool local_order(ref const(Element) previous, Range range) @safe {
             //writefln("previous.key=%s", previous.key);
             range.popFront;
@@ -495,7 +780,7 @@ public:
         }
 
         bool isBinary() {
-                return type == Type.BINARY;
+            return type == Type.BINARY;
         }
 
         BinarySubType subtype() {
@@ -2058,28 +2343,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     }
     package Value value;
-    // package void sort_keys() {
-    //     if ( (type == Type.DOCUMENT) ) {
-    //         BSON[] barry;
-    //         import std.algorithm.mutation : SwapStrategy;
-    //         for(auto b=members; b !is null; b=b.members) {
-    //             barry~=b;
-    //         }
-    //         if ( barry.length > 1 ) {
-    //             // Sort by key
-    //             sort!("a.key < b.key", SwapStrategy.stable)(barry);
-    //             BSON prev;
-    //             foreach(i,ref b;barry) {
-    //                 if ( i > 0 ) {
-    //                     prev.members=b;
-    //                 }
-    //                 prev=b;
-    //             }
-    //             prev.members=null;
-    //             this.members=barry[0];
-    //         }
-    //     }
-    // }
     bool isDocument() {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
