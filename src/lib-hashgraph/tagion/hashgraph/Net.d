@@ -173,7 +173,6 @@ class StdSecureNet : StdRequestNet, SecureNet {
         AESCrypto.encrypt(aes_key, encrypted_privkey, data);
 
         immutable(ubyte[]) local_sign(immutable(ubyte[]) message) @safe {
-            // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
             // for long period of time
