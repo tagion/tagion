@@ -151,21 +151,8 @@ unittest {
     assert(!less_than("00", "0"));
 }
 
-/**
- * BSON document representation, which is called "BSONObj" in C++.
- */
 
-//TO_DO: Make a isBSONFormat() static function.
-bool isBSONFormat(immutable(ubyte)[] data) {
-    return false;
-}
-unittest {
-    auto b=new HBSON();
-    b["a"]="apples";
-    //assert(isBSONFormat(b.serialize));
-    ubyte[] test=[2,3];
-    assert(!isBSONFormat(test.idup));
-}
+
 
 @safe
 struct Document {
@@ -204,7 +191,6 @@ public:
     // FIXME: Check for index out of range and call the error function
     // This function will throw an RangeError if length format is wrong
     bool isInOrder(bool function(ref const(Element) elm, ref bool result) @safe error=null)  {
-        import std.stdio;
         bool local_order(ref const(Element) previous, Range range) @safe {
             //writefln("previous.key=%s", previous.key);
             range.popFront;
@@ -262,48 +248,44 @@ public:
 
     public:
         @safe
-        this(immutable(ubyte[]) data)
-            {
-                _data = data;
+        this(immutable(ubyte[]) data) {
+            _data = data;
 
-                if (data.length == 0) {
-                    index_ = 0;
-                } else {
-                    index_ = 4;
-                    popFront();
-                }
+            if (data.length == 0) {
+                index_ = 0;
+            }
+            else {
+                index_ = 4;
+                popFront();
+            }
+        }
+
+
+        @property @safe nothrow const {
+            bool empty() {
+                return index_ >= _data.length;
             }
 
 
-        @property @safe nothrow const
-            {
-                bool empty()
-                {
-                    return index_ >= _data.length;
-                }
-
-
-                /**
-                 * InputRange primitive operation that returns the currently iterated element.
-                 */
-                ref const(Element) front()
-                {
-                    return element_;
-                }
+            /**
+             * InputRange primitive operation that returns the currently iterated element.
+             */
+            ref const(Element) front() {
+                return element_;
             }
+        }
 
 
         /**
          * InputRange primitive operation that advances the range to its next element.
          */
         @trusted
-        void popFront()
-            {
-                import std.conv;
+        void popFront() {
+            import std.conv;
 
-                emplace!Element(&element_, _data[index_..$]);
-                index_ += element_.size;
-            }
+            emplace!Element(&element_, _data[index_..$]);
+            index_ += element_.size;
+        }
     }
 
 
@@ -495,7 +477,7 @@ public:
         }
 
         bool isBinary() {
-                return type == Type.BINARY;
+            return type == Type.BINARY;
         }
 
         BinarySubType subtype() {
@@ -2058,28 +2040,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     }
     package Value value;
-    // package void sort_keys() {
-    //     if ( (type == Type.DOCUMENT) ) {
-    //         BSON[] barry;
-    //         import std.algorithm.mutation : SwapStrategy;
-    //         for(auto b=members; b !is null; b=b.members) {
-    //             barry~=b;
-    //         }
-    //         if ( barry.length > 1 ) {
-    //             // Sort by key
-    //             sort!("a.key < b.key", SwapStrategy.stable)(barry);
-    //             BSON prev;
-    //             foreach(i,ref b;barry) {
-    //                 if ( i > 0 ) {
-    //                     prev.members=b;
-    //                 }
-    //                 prev=b;
-    //             }
-    //             prev.members=null;
-    //             this.members=barry[0];
-    //         }
-    //     }
-    // }
     bool isDocument() {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
