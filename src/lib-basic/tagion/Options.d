@@ -134,6 +134,10 @@ struct Options {
         uint min_duration_full_fibers_cycle_ms;
         //Number of times to reuse a fiber
         uint max_number_of_fiber_reuse;
+        //Directory to dump bson data
+        string tmp_debug_dir;
+        //Name of bills file for debug bson dump
+        string tmp_debug_bills_filename;
 
         mixin JSONCommon;
     }

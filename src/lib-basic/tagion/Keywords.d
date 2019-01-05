@@ -54,7 +54,18 @@ enum _keywords = [
 
     "rim",
     "buckets",
-    "tab"
+    "tab",
+    "transaction_id",
+    "result_code",
+    "error_code",
+    "signatures",
+    "transaction_obj",
+    "transaction_scripting_obj",
+    "payers",
+    "payees",
+    "bills",
+    "bill",
+    "bill_number"
     ];
 
 // Generated the Keywords and enum string list
