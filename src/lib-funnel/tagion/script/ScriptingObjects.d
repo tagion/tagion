@@ -207,11 +207,11 @@ struct Bill {
 
 struct Payer {
     immutable(ubyte[]) bill_number;
-    immutable(ubyte[]) pub_key;
+    immutable(ubyte[]) pubkey; //without underscore to align with keywords
 
     this(immutable(ubyte[]) bill_number, immutable(ubyte[]) pub_key) inout {
         this.bill_number = bill_number;
-        this.pub_key = pub_key;
+        this.pubkey = pub_key;
     }
 
     HBSON toBSON() const {
