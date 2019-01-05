@@ -52,19 +52,9 @@ enum _keywords = [
     "type",       // Package type
     "block",     // block
 
+    "rim",
     "buckets",
-    "tab",
-    "transaction_id",
-    "result_code",
-    "error_code",
-    "signatures",
-    "transaction_obj",
-    "transaction_scripting_obj",
-    "payers",
-    "payees",
-    "bills",
-    "bill",
-    "bill_number"
+    "tab"
     ];
 
 // Generated the Keywords and enum string list
