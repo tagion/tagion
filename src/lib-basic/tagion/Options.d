@@ -117,6 +117,7 @@ struct Options {
     // all the
     bool sequential;
 
+    string nodeprefix;
     mixin JSONCommon;
 
     struct ScriptingEngine {
@@ -143,6 +144,18 @@ struct Options {
     }
 
     ScriptingEngine scripting_engine;
+
+    struct TransactionTest {
+        // This maybe removed later used to make internal transaction test without TLS connection
+        bool enable;
+
+        uint pause_from; // Sets the from/to delay between transaction test
+        uint pause_to;
+
+        mixin JSONCommon;
+    }
+
+    TransactionTest transaction_test;
 
     void parseJSON(string json_text) {
         auto json=JSON.parseJSON(json_text);
