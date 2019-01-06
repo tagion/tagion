@@ -155,9 +155,14 @@ struct Options {
             parseJSON(json_text);
         }
         else {
-            config_file.write(stringify);
+            save(config_file);
         }
     }
+
+    void save(string config_file) {
+        config_file.write(stringify);
+    }
+
 }
 
 __gshared static Options options;
