@@ -218,6 +218,16 @@ unittest {
     assert(b.value == BigInt(num));
 
 
+    auto bson = new HBSON();
+    bson["test"]="test_text";
+    // auto c=const(Value)(bson, true);
+    // assert(b.type == Value.Type.BSON);
+    // assert(b.value == c);
+
+    auto doc = Document(bson.serialize);
+    auto d=const(Value)(doc);
+    assert(d.type == Value.Type.DOCUMENT);
+    assert(d.doc == doc);
 }
 
 @safe
@@ -382,10 +392,8 @@ interface ScriptBasic {
         assert(s !is null);
         assert(sc !is null);
     }
-    const(ScriptElement) next(ScriptElement n)
-    in {
-        assert(next is null, "Next script element is should not be change");
-    }
+    const(ScriptElement) next(ScriptElement n);
+
     inout(ScriptElement) next() inout pure nothrow;
     string toText() const;
 }
