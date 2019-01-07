@@ -196,12 +196,14 @@ unittest {
 
 }
 
+// enum ThreadState {
+//     KILL = 9,
+//     LIVE = 1
+// }
+
 enum Control{
 //    KILL=9,
     LIVE=1,
-    TRANSACT, // Used to receive and payload in the to network
-    EVENT, // Event body send to scripting engine
-    EPOCH, // Epoch send to scripting engine
     STOP,
     FAIL,
     ACK,
@@ -260,8 +262,8 @@ template consensusCheckArguments(Consensus) {
 @safe
 string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
-    enum LEN=ulong.sizeof;
-    if ( buf.length < LEN ) {
+    enum LEN=8;
+    if ( buf.length <= LEN ) {
         return format("EMPTY[%s]",buf.length);
     }
     else {
