@@ -707,6 +707,28 @@ public:
                 return Document(value);
             }
 
+            /**
+             * Returns an DOCUMENT[] document array.
+             */
+            Document[] get(T)() inout if (is(TypedefType!T == Document[])) {
+                check(Type.BINARY);
+                check(getSubtype!(TypedefType!T));
+                Document[] docs;
+
+                @trusted
+                void build_document_array(immutable(ubyte[]) data) {
+                    if ( data.length ) {
+                        immutable len=*cast(uint*)(data.ptr);
+                        immutable from=uint.sizeof;
+                        immutable to=uint.sizeof+len;
+                        docs~=Document(data[from..to]);
+                        build_document_array(data[to..$]);
+                    }
+                }
+                build_document_array(value);
+                return docs;
+            }
+
             // immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
             //     return value.idup;
             // }
@@ -1087,6 +1109,21 @@ private:
             }
             else {
                 message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
+            }
+            throw new BSONException(message);
+        }
+    }
+
+
+    void check(BinarySubType t) const /* pure */ {
+        if (t != subtype) {
+            string typeName = to!string(t); // why is to! not pure?
+            string message;
+            if (isEod) {
+                message = "Field not found: expected subtype = " ~ typeName;
+            }
+            else {
+                message = "Wrong subtype for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
             }
             throw new BSONException(message);
         }
@@ -2031,7 +2068,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         else static if (is(BaseType==Document[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.NATIVE_DOCUMENT_array);
-            return cast(T)(value.bson_array);
+            return cast(T)(value.document_array);
         }
         else {
             static assert(0, "Type "~T.stringof~ "is not supported by this function");
