@@ -78,6 +78,7 @@ enum BinarySubType : ubyte
         binary      = 0x02,  /// Binary (Old)
         uuid        = 0x03,  ///
         md5         = 0x05,  ///
+        bigint      = 0x06,  /// This is not a valid BSON type used in HBSON
         userDefined = 0x80,   ///
         // Non statdard types
         INT32_array     = userDefined | Type.INT32,
