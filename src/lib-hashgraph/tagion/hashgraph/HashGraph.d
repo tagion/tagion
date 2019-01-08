@@ -320,7 +320,9 @@ class HashGraph {
         Pubkey pubkey,
         immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
-        immutable fingerprint=request_net.calcHash(eventbody.serialize);
+        immutable ebody=eventbody.serialize;
+        immutable fingerprint=request_net.calcHash(ebody);
+        request_net.sendToScriptingEngine(ebody);
         Event event=lookup(fingerprint);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;

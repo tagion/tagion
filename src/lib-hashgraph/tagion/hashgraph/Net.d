@@ -18,10 +18,12 @@ class StdRequestNet : RequestNet {
     //TO-DO: Implement a general request func. if makes sense.
     abstract void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint);
 
-    //TO-DO: Implement
-    // Buffer eventHashFromId(immutable uint id) {
-    //     assert(0, "Not implement for this test");
-    // }
+    override void sendToScriptingEngine(immutable(Buffer) eventbody) {
+        assert(0, "Not implement for this test");
+    }
+
+
+//    abstract void sendToScriptingEngine(immutable(Buffer) eventbody);
 
 }
 
@@ -30,6 +32,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
     // The Eva value is set up a low negative number
     // to check the two-complement round wrapping if the altitude.
     enum int eva_altitude=-77;
+
 
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.hmac;
