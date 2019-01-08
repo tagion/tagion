@@ -206,6 +206,8 @@ interface EventMonitorCallbacks {
 @safe
 interface EventScriptCallbacks {
     void epoch(const(Event[]) received_event, const long time);
+    void send(immutable(Buffer) ebody);
+    bool stop(); // Stops the task
 }
 
 
@@ -517,8 +519,10 @@ class Round {
         sort!((a,b) => ( a<b ), SwapStrategy.stable)(round_received_events);
 
 
-        if ( Event.scriptscallbacks ) {
-            Event.scriptscallbacks.epoch(round_received_events, middel_time);
+        if ( Event.scriptcallbacks ) {
+            import std.stdio;
+            writefln("EPOCH received %d time=%d", round_received_events.length, middel_time);
+            Event.scriptcallbacks.epoch(round_received_events, middel_time);
         }
 
         if ( Event.callbacks ) {
@@ -779,7 +783,7 @@ class Event {
     alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
     static EventMonitorCallbacks callbacks;
-    static EventScriptCallbacks scriptscallbacks;
+    static EventScriptCallbacks scriptcallbacks;
     import std.stdio;
     static File* fout;
     immutable(ubyte[]) signature;

@@ -21,7 +21,7 @@ interface RequestNet {
     // Request a missing event from the network
     // add
     void request(HashGraph h, immutable(Buffer) event_hash);
-    void sendToScriptingEngine(immutable(Buffer) eventbody);
+//    void sendToScriptingEngine(immutable(Buffer) eventbody);
 //    immutable(ubyte[]) pubkey()
 
 //    Buffer eventHashFromId(immutable uint id);

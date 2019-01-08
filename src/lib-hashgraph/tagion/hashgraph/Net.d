@@ -18,9 +18,9 @@ class StdRequestNet : RequestNet {
     //TO-DO: Implement a general request func. if makes sense.
     abstract void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint);
 
-    override void sendToScriptingEngine(immutable(Buffer) eventbody) {
-        assert(0, "Not implement for this test");
-    }
+    // override void sendToScriptingEngine(immutable(Buffer) eventbody) {
+    //     assert(0, "Not implement for this test");
+    // }
 
 
 //    abstract void sendToScriptingEngine(immutable(Buffer) eventbody);
