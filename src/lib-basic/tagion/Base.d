@@ -209,9 +209,6 @@ unittest {
 enum Control{
 //    KILL=9,
     LIVE=1,
-    TRANSACT, // Used to receive and payload in the to network
-    // EVENT, // Event body send to scripting engine
-    // EPOCH, // Epoch send to scripting engine
     STOP,
     FAIL,
     ACK,
