@@ -11,8 +11,9 @@ import std.conv;
 import std.bitmanip;
 
 import std.format;
+import std.typecons;
 
-import tagion.Base : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, isMajority;
+import tagion.Base : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, isMajority;
 
 import tagion.Keywords;
 
@@ -73,7 +74,7 @@ struct EventBody {
     }
 
     this(
-        immutable(ubyte)[] payload,
+        Payload payload,
         Buffer mother,
         Buffer father,
         immutable ulong time,
@@ -82,7 +83,7 @@ struct EventBody {
         this.altitude  =    altitude;
         this.father    =    father;
         this.mother    =    mother;
-        this.payload   =    payload;
+        this.payload   =    payload.idup;
         consensus();
     }
 
@@ -1459,7 +1460,7 @@ class Event {
 
 unittest { // Serialize and unserialize EventBody
     import tagion.crypto.SHA256;
-    auto payload=cast(immutable(ubyte)[])"Some payload";
+    Payload payload=cast(immutable(ubyte)[])"Some payload";
     auto mother=SHA256("self").digits;
     auto father=SHA256("other").digits;
     auto seed_body=EventBody(payload, mother, father, 0, 0);
