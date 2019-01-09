@@ -4,7 +4,7 @@ import std.bigint;
 import std.internal.math.biguintnoasm : BigDigit;
 import std.stdio;
 import std.conv;
-
+import std.typecons : Typedef, TypedefType;
 import tagion.utils.BSON : HBSON, Document;
 
 
@@ -16,20 +16,22 @@ class ScriptException : Exception {
     }
 }
 
+
 @trusted
 class Value {
+    alias BsonIndex=Typedef!(uint, uint.init, Value.Type.BSON_INDEX.stringof);
     enum Type {
         INTEGER,
         FUNCTION,
         TEXT,
-        BSON,
+        BSON_INDEX,
         DOCUMENT
     }
     union BInt {
         private BigInt value;
         private const(ScriptElement) opcode;
         private string text;
-        private uint   bson_index;
+        private BsonIndex bson_index;
         private Document  doc;
 
         /* This struct is just read only for the BitInt value */
@@ -64,16 +66,13 @@ class Value {
 
     private BInt data;
     private Type _type;
-    this(long x, immutable bool bson_type=false) {
-        if ( bson_type ) {
-            _type=Type.BSON;
-            data.bson_index = cast(uint)x;
-        }
-        else {
-            _type=Type.INTEGER;
-            data.value = BigInt(x);
-        }
-
+    this(BsonIndex bson_index) {
+        _type=Type.BSON_INDEX;
+        data.bson_index=bson_index;
+    }
+    this(long x) {
+        _type=Type.INTEGER;
+        data.value = BigInt(x);
     }
     this(const BigInt x) {
         _type=Type.INTEGER;
@@ -133,7 +132,7 @@ class Value {
                     return new Value(x.text);
                 case TEXT:
                     return new Value(x.opcode);
-                case BSON:
+                case BSON_INDEX:
                     return new Value(x.bson_index);
                 case DOCUMENT:
                     return new Value(x.doc);
@@ -170,11 +169,11 @@ class Value {
         }
         throw new ScriptException(to!string(Type.DOCUMENT)~" expected not "~to!string(type));
     }
-    uint bson_index() const {
-        if ( type == Type.BSON ) {
+    BsonIndex bson_index() const {
+        if ( type == Type.BSON_INDEX ) {
             return data.bson_index;
         }
-        throw new ScriptException(to!string(Type.BSON)~" expected not "~to!string(type));
+        throw new ScriptException(to!string(Type.BSON_INDEX)~" expected not "~to!string(type));
     }
     immutable(ubyte[]) buffer() const {
         if ( type == Type.INTEGER) {
@@ -368,10 +367,10 @@ class ScriptContext {
         assert(pop_a == BigInt(num));
     }
     @trusted
-    immutable(ubyte)[] serialize(immutable uint index) {
-        return bsons[index].serialize;
+    immutable(ubyte)[] serialize(immutable Value.BsonIndex index) {
+        immutable i=cast(uint)index;
+        return bsons[i].serialize;
     }
-
 }
 
 
@@ -750,6 +749,8 @@ class ScriptPutLoc : ScriptElement {
 
 }
 
+
+version(none)
 @safe
 class ScriptGetBSON : ScriptElement {
     private immutable uint bson_index;
@@ -770,6 +771,7 @@ class ScriptGetBSON : ScriptElement {
 
 }
 
+version(none)
 @safe
 class ScriptPutBSON : ScriptElement {
     immutable uint bson_index;
@@ -1038,11 +1040,11 @@ class ScriptExpandBSON : ScriptElement {
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         auto a=sc.data_pop;
-        if ( a.type == Value.Type.BSON ) {
+        if ( a.type == Value.Type.BSON_INDEX ) {
             sc.data_push(Document(sc.serialize(a.bson_index)));
         }
         else {
-            auto error=new ScriptError(name~" expect an "~to!string(Value.Type.BSON)~
+            auto error=new ScriptError(name~" expect an "~to!string(Value.Type.BSON_INDEX)~
                 " put got a "~to!string(a.type), this);
         }
         return _next;

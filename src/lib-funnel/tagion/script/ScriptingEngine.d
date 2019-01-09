@@ -1,7 +1,7 @@
 module tagion.script.ScriptingEngine;
 
 import std.concurrency;
-import tagion.Base : Control, Pubkey, Buffer;
+import tagion.Base : Control, Pubkey;
 import std.stdio : writeln, writefln;
 import tagion.utils.BSON : Document;
 import tagion.hashgraph.ConsensusExceptions;
@@ -15,6 +15,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import std.string : format;
 import tagion.Keywords;
 import tagion.Options;
+import tagion.script.Script;
 
 @safe
 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
@@ -30,7 +31,6 @@ class SecureScriptingEngineNet : StdSecureNet {
     override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
         assert(0, "Not implement for this test");
     }
-
     this(NativeSecp256k1 crypt=new NativeSecp256k1()) {
         super(crypt);
     }
@@ -38,9 +38,9 @@ class SecureScriptingEngineNet : StdSecureNet {
     void verifySignatures(immutable(ubyte)[] trans_scrip_obj_data, Document payers, Document signatures) {
         foreach( i; 0..payers.length ) {
             auto payer=payers[i].get!Document;
-            auto pub_key=payer[Keywords.pubkey].get!(immutable(ubyte)[]);
+            auto pub_key=payer[Keywords.pubkey].get!(immutable(ubyte[]));
 
-            auto signatur=signatures[i].get!Document[Keywords.signatures].get!(immutable(ubyte[]));
+            auto signatur=signatures[i].get!Document[Keywords.signatur].get!(immutable(ubyte[]));
 
             auto message = this.calcHash(trans_scrip_obj_data);
 
@@ -119,7 +119,6 @@ void runScriptingEngine() {
         //Verify each signatur
         auto sec_scr_eng_net = new SecureScriptingEngineNet(new NativeSecp256k1);
         sec_scr_eng_net.verifySignatures(trans_scrip_obj.data, payers, signatures);
-
         //Execute script.
 
         //To-Do: Only for debug mode:

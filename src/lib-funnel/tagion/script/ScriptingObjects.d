@@ -278,7 +278,7 @@ struct Payee {
 
 struct TransactionScriptingObject {
     immutable(Payer[]) payers;
-    immutable(Payee)[] payees;
+    immutable(Payee[]) payees;
 
     this(ref immutable(Payer[]) payers, ref immutable(Payee[]) payee) inout {
         this.payers = payers;
