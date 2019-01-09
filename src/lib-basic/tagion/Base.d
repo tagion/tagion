@@ -8,6 +8,7 @@ private import std.traits;
 import std.bitmanip : BitArray;
 
 // private import std.algorithm : splitter;
+private import tagion.Options;
 
 enum this_dot="this.";
 
@@ -20,19 +21,28 @@ enum BufferType {
     PRIVKEY,
     SIGNATURE,
     HASHPOINTER,
-    MESSAGE
+    MESSAGE,
+    PAYLOAD
 }
 
 
 alias Buffer=immutable(ubyte)[];
 alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof);
+alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);
 version(none) {
 alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
-alias Message    =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
+alias Message    =Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 }
+
+string join(string[] list) {
+    import std.array : array_join=join;
+    return list.array_join(options.separator);
+}
+
+
 //template isBufferType(T) {
 //    alias isBuffer=true;
 enum isBufferType(T)=is(T : immutable(ubyte[]) ) || is(TypedefType!T : immutable(ubyte[]) );
@@ -196,11 +206,6 @@ unittest {
 
 }
 
-// enum ThreadState {
-//     KILL = 9,
-//     LIVE = 1
-// }
-
 enum Control{
 //    KILL=9,
     LIVE=1,
@@ -262,8 +267,8 @@ template consensusCheckArguments(Consensus) {
 @safe
 string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
-    enum LEN=8;
-    if ( buf.length <= LEN ) {
+    enum LEN=ulong.sizeof;
+    if ( buf.length < LEN ) {
         return format("EMPTY[%s]",buf.length);
     }
     else {
