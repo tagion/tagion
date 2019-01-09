@@ -235,7 +235,7 @@ class ScriptContext {
     private int data_stack_index;
     private int return_stack_index;
     private HBSON[] bsons;
-    private uint bsons_count;
+    private Value.BsonIndex bsons_count;
     this(const uint data_stack_size,
         const uint return_stack_size,
         const uint var_size,
@@ -255,7 +255,8 @@ class ScriptContext {
     const(Value) opIndex(uint i) {
         return variables[i];
     }
-    ref HBSON bson(uint i) {
+    ref HBSON bson(Value.BsonIndex index) {
+        immutable i=cast(uint)index;
         if ( i < bsons.length ) {
             if ( bsons[i] is null ) {
                 return bsons[i];
@@ -263,6 +264,16 @@ class ScriptContext {
         }
         throw new ScriptException("BSON index out of range");
     }
+
+    Value.BsonIndex createBson() {
+        scope(exit) {
+            bsons_count++;
+        }
+        immutable i=cast(uint)bsons_count;
+        bsons[i]=new HBSON();
+        return bsons_count;
+    }
+
     @trusted
     const(Value) data_pop() {
         scope(exit) {
@@ -797,6 +808,33 @@ class ScriptPutBSON : ScriptElement {
         return bson_name~" !";
     }
 
+}
+
+@safe
+class ScriptDeclareBSON : ScriptElement {
+    enum name="declarebson";
+
+    this(){
+        super(0);
+    }
+
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+
+        sc.data_push(sc.createBson);
+
+        return _next;
+    }
+
+    static ScriptElement create() {
+        return new ScriptExpandBSON;
+    }
+    static this() {
+        Script.opcreators[name]=&create;
+    }
+    string toText() const {
+        return name;
+    }
 }
 
 /* Arhitmentic opcodes */
