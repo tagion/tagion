@@ -21,6 +21,7 @@ interface RequestNet {
     // Request a missing event from the network
     // add
     void request(HashGraph h, immutable(Buffer) event_hash);
+//    void sendToScriptingEngine(immutable(Buffer) eventbody);
 //    immutable(ubyte[]) pubkey()
 
 //    Buffer eventHashFromId(immutable uint id);
@@ -46,4 +47,12 @@ interface GossipNet : SecureNet {
     // This function is call by the HashGraph.whatIsNotKnowBy
     // and is use to collect node to be send to anotehr node
     ulong time();
+}
+
+@safe
+interface DARTNet : SecureNet {
+    immutable(ubyte[]) load(const(string[]) path, const(ubyte[]) key);
+    void save(const(string[]) path, const(ubyte[]) key, immutable(ubyte[]) data);
+    void erase(const(string[]) path, const(ubyte[]) key);
+
 }

@@ -11,8 +11,9 @@ import std.conv;
 import std.bitmanip;
 
 import std.format;
+import std.typecons;
 
-import tagion.Base : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, isMajority;
+import tagion.Base : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, isMajority;
 
 import tagion.Keywords;
 
@@ -73,7 +74,7 @@ struct EventBody {
     }
 
     this(
-        immutable(ubyte)[] payload,
+        Payload payload,
         Buffer mother,
         Buffer father,
         immutable ulong time,
@@ -82,7 +83,7 @@ struct EventBody {
         this.altitude  =    altitude;
         this.father    =    father;
         this.mother    =    mother;
-        this.payload   =    payload;
+        this.payload   =    cast(Buffe)payload;
         consensus();
     }
 
@@ -205,6 +206,8 @@ interface EventMonitorCallbacks {
 @safe
 interface EventScriptCallbacks {
     void epoch(const(Event[]) received_event, const long time);
+    void send(immutable(Buffer) ebody);
+    bool stop(); // Stops the task
 }
 
 
@@ -516,8 +519,10 @@ class Round {
         sort!((a,b) => ( a<b ), SwapStrategy.stable)(round_received_events);
 
 
-        if ( Event.scriptscallbacks ) {
-            Event.scriptscallbacks.epoch(round_received_events, middel_time);
+        if ( Event.scriptcallbacks ) {
+            import std.stdio;
+            writefln("EPOCH received %d time=%d", round_received_events.length, middel_time);
+            Event.scriptcallbacks.epoch(round_received_events, middel_time);
         }
 
         if ( Event.callbacks ) {
@@ -778,13 +783,13 @@ class Event {
     alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
     static EventMonitorCallbacks callbacks;
-    static EventScriptCallbacks scriptscallbacks;
+    static EventScriptCallbacks scriptcallbacks;
     import std.stdio;
     static File* fout;
     immutable(ubyte[]) signature;
     immutable(Buffer) pubkey;
-    Pubkey channel() pure const nothrow {
-        return cast(Pubkey)pubkey;
+    immutable(Pubkey) channel() pure const nothrow {
+        return Pubkey(pubkey);
     }
 
     // Recursive markes
@@ -1459,7 +1464,7 @@ class Event {
 
 unittest { // Serialize and unserialize EventBody
     import tagion.crypto.SHA256;
-    auto payload=cast(immutable(ubyte)[])"Some payload";
+    Payload payload=cast(immutable(ubyte)[])"Some payload";
     auto mother=SHA256("self").digits;
     auto father=SHA256("other").digits;
     auto seed_body=EventBody(payload, mother, father, 0, 0);

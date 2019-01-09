@@ -313,14 +313,19 @@ class HashGraph {
     }
 
     enum max_package_size=0x1000;
-    alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
+//    alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
     enum round_clean_limit=10;
     Event registerEvent(
         RequestNet request_net,
         Pubkey pubkey,
         immutable(ubyte[]) signature,
         ref immutable(EventBody) eventbody) {
-        immutable fingerprint=request_net.calcHash(eventbody.serialize);
+        immutable ebody=eventbody.serialize;
+        immutable fingerprint=request_net.calcHash(ebody);
+        if ( Event.scriptcallbacks ) {
+            // Sends the eventbody to the scripting engine
+            Event.scriptcallbacks.send(ebody);
+        }
         Event event=lookup(fingerprint);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;
