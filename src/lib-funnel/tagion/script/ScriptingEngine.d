@@ -16,6 +16,7 @@ import std.string : format;
 import tagion.Keywords;
 import tagion.Options;
 import tagion.script.Script;
+import tagion.script.ScriptBuilder;
 
 @safe
 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {

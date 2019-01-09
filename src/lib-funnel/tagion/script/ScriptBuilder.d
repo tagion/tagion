@@ -5,6 +5,7 @@ import std.conv;
 import tagion.script.ScriptInterpreter;
 import tagion.script.Script;
 import tagion.utils.BSON : HBSON;
+import std.exception : assertThrown;
 
 import std.stdio;
 
@@ -591,12 +592,31 @@ class ScriptBuilder {
     }
 
     unittest {
+        assert("createbson" in Script.opcreators);
+        import std.stdio : writefln;
         string source=
             ": test\n"~
-            " bson B\n"~
-            " \n"~
+            "variable bson_1 variable bson_2\n"~
+            "createbson bson_1 ! createbson bson_2 ! \n"~
+            "bson_2 @ bson_1 @ \n"~
             ";\n"
             ;
+        Script script;
+        auto builder=new ScriptBuilder();
+        builder.build(script, source);
+
+        auto sc_1=new ScriptContext(10, 10, 10, 10);
+
+        script.run("test", sc_1); //bsons range error, only one bson in the context
+
+        auto sc=new ScriptContext(10, 10, 10, 10, 2);
+
+        script.run("test", sc);
+
+        auto res_1=sc.data_pop.bson_index;
+        auto res_2=sc.data_pop.bson_index;
+        writefln("bson_1 index: %d,  bson_2 index: %d", res_1, res_2 );
+        assert(res_1==0 && res_2==1);
     }
 
 private:

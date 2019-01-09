@@ -275,6 +275,9 @@ class ScriptContext {
             bsons_count++;
         }
         immutable i=cast(uint)bsons_count;
+        if ( i >= bsons.length ) {
+            throw new ScriptException("Bsons out of range");
+        }
         bsons[i]=new HBSON();
         return bsons_count;
     }
@@ -815,33 +818,6 @@ class ScriptPutBSON : ScriptElement {
 
 }
 
-@safe
-class ScriptDeclareBSON : ScriptElement {
-    enum name="declarebson";
-
-    this(){
-        super(0);
-    }
-
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-
-        sc.data_push(sc.createBson);
-
-        return _next;
-    }
-
-    static ScriptElement create() {
-        return new ScriptExpandBSON;
-    }
-    static this() {
-        Script.opcreators[name]=&create;
-    }
-    string toText() const {
-        return name;
-    }
-}
-
 /* Arhitmentic opcodes */
 
 @safe
@@ -1074,12 +1050,47 @@ class ScriptStackOp(string O) : ScriptElement {
     }
 }
 
+mixin template ScriptElementTemplate(T, alias element_name, uint runlevel) {
+    enum name=element_name;
+
+    this(){
+        super(runlevel);
+    }
+
+    static ScriptElement create() {
+        return new T;
+    }
+
+    static this() {
+        Script.opcreators[name]=&create;
+    }
+
+    string toText() const {
+        return name;
+    }
+
+}
+
+@safe
+class ScriptCreateBSON : ScriptElement {
+    mixin ScriptElementTemplate!(ScriptCreateBSON, "createbson", 0);
+
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        try {
+            sc.data_push(sc.createBson);
+            return _next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an exception: "~ex.msg, this);
+        }
+    }
+}
+
 @safe
 class ScriptExpandBSON : ScriptElement {
-    enum name="expand";
-    this() {
-        super(0);
-    }
+    mixin ScriptElementTemplate!(ScriptExpandBSON, "expandbson", 0);
+
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         auto a=sc.data_pop;
@@ -1087,19 +1098,10 @@ class ScriptExpandBSON : ScriptElement {
             sc.data_push(Document(sc.serialize(a.bson_index)));
         }
         else {
-            auto error=new ScriptError(name~" expect an "~to!string(Value.Type.BSON_INDEX)~
+            return new ScriptError(name~" expect an "~to!string(Value.Type.BSON_INDEX)~
                 " put got a "~to!string(a.type), this);
         }
         return _next;
-    }
-    static ScriptElement create() {
-        return new ScriptExpandBSON;
-    }
-    static this() {
-        Script.opcreators[name]=&create;
-    }
-    string toText() const {
-        return name;
     }
 }
 
