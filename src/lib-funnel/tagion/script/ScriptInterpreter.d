@@ -46,6 +46,7 @@ class ScriptInterpreter {
         // Memory and variables
         VAR, // Allocate a variable
         LOCAL, // Allocate a local variable
+        BSON,
         PUT, // Puts the value to the address
         GET, // Gets the value on the address
         INDEXPUT, // Loop index put
@@ -219,6 +220,9 @@ class ScriptInterpreter {
                     continue;
                 case "local":
                     declare=LOCAL;
+                    continue;
+                case "bson":
+                    declare=BSON;
                     continue;
                 case "!":
                     _type=PUT;
