@@ -216,7 +216,12 @@ unittest {
     assert(b.type == Value.Type.INTEGER);
     assert(b.value == BigInt(num));
 
-
+    immutable Value.BsonIndex bson_index=2;
+    auto c=const(Value)(bson_index);
+    assert(c.type == Value.Type.BSON_INDEX);
+    assert(c.bson_index == 2);
+    static assert(is(typeof(bson_index) : Value.BsonIndex));
+    static assert(is(TypedefType!(typeof(bson_index)) == uint));
 }
 
 @safe

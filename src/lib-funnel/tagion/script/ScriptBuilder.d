@@ -295,9 +295,7 @@ class ScriptBuilder {
     uint get_var(string var_name) const {
         return var_indices[var_name];
     }
-    uint get_bson(string bson_name) const {
-        return bson_indices[bson_name];
-    }
+
     unittest { // Simple function test
         string source=
             ": test\n"~
@@ -605,32 +603,17 @@ private:
     uint var_count;
     uint bson_count;
     uint[string] var_indices;
-    uint[string] bson_indices;
+
     uint allocate_var(string var_name) {
-        if ( is_bson(var_name) ) {
-            throw new ScriptBuilderException(var_name~" is already declared as a bson");
-        }
-        else if ( var_name !in var_indices ) {
+        if ( var_name !in var_indices ) {
             var_indices[var_name]=var_count;
             var_count++;
         }
         return var_indices[var_name];
     }
-    uint allocate_bson(string bson_name) {
-        if ( is_var(bson_name) ) {
-            throw new ScriptBuilderException(bson_name~" is already declared as a variable");
-        }
-        else if ( bson_name !in bson_indices ) {
-            bson_indices[bson_name]=bson_count;
-            bson_count++;
-        }
-        return bson_indices[bson_name];
-    }
+
     bool is_var(string var_name) pure const nothrow {
         return (var_name in var_indices) !is null;
-    }
-    bool is_bson(string bson_name) pure const nothrow {
-        return (bson_name in bson_indices) !is null;
     }
 
     immutable(Token)[] error_tokens;
@@ -648,7 +631,8 @@ private:
         result~=func_declare;
         result~=func_name;
         return result;
-    };
+    }
+
     static immutable(Token) token_endfunc={
       token : ";",
       type : ScriptType.WORD
@@ -1388,9 +1372,6 @@ private:
                             else if ( is_var(t.token) ) {
                                 result=new ScriptPutVar(t.token, get_var(t.token));
                             }
-                            else if ( is_bson(t.token) ) {
-                                result=new ScriptPutBSON(t.token, get_bson(t.token));
-                            }
                             else {
                                 auto msg="Variable or object name '"~t.token~"' not found";
                                 result=new ScriptTokenError(t, msg);
@@ -1402,9 +1383,6 @@ private:
                             }
                             else if ( is_var(t.token) ) {
                                 result=new ScriptGetVar(t.token, get_var(t.token));
-                            }
-                            else if ( is_bson(t.token) ) {
-                                result=new ScriptGetBSON(t.token, get_bson(t.token));
                             }
                             else {
                                 auto msg="Variable or object name '"~t.token~"' not found";
@@ -1431,16 +1409,6 @@ private:
                             }
                             else {
                                 allocate_var(t.token);
-                                return forward(i+1, n);
-                            }
-                            break;
-                        case BSON:
-                            if ( is_bson(t.token) ) {
-                                result=new ScriptTokenError(t,
-                                    "Local variable "~t.token~" is already defined");
-                            }
-                            else {
-                                allocate_bson(t.token);
                                 return forward(i+1, n);
                             }
                             break;
