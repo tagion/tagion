@@ -78,7 +78,6 @@ enum BinarySubType : ubyte
         binary      = 0x02,  /// Binary (Old)
         uuid        = 0x03,  ///
         md5         = 0x05,  ///
-        bigint      = 0x06,  /// This is not a valid BSON type used in HBSON
         userDefined = 0x80,   ///
         // Non statdard types
         INT32_array     = userDefined | Type.INT32,
@@ -152,8 +151,21 @@ unittest {
     assert(!less_than("00", "0"));
 }
 
+/**
+ * BSON document representation, which is called "BSONObj" in C++.
+ */
 
-
+//TO_DO: Make a isBSONFormat() static function.
+bool isBSONFormat(immutable(ubyte)[] data) {
+    return false;
+}
+unittest {
+    auto b=new HBSON();
+    b["a"]="apples";
+    //assert(isBSONFormat(b.serialize));
+    ubyte[] test=[2,3];
+    assert(!isBSONFormat(test.idup));
+}
 
 @safe
 struct Document {
@@ -192,6 +204,7 @@ public:
     // FIXME: Check for index out of range and call the error function
     // This function will throw an RangeError if length format is wrong
     bool isInOrder(bool function(ref const(Element) elm, ref bool result) @safe error=null)  {
+        import std.stdio;
         bool local_order(ref const(Element) previous, Range range) @safe {
             //writefln("previous.key=%s", previous.key);
             range.popFront;
@@ -249,44 +262,48 @@ public:
 
     public:
         @safe
-        this(immutable(ubyte[]) data) {
-            _data = data;
+        this(immutable(ubyte[]) data)
+            {
+                _data = data;
 
-            if (data.length == 0) {
-                index_ = 0;
-            }
-            else {
-                index_ = 4;
-                popFront();
-            }
-        }
-
-
-        @property @safe nothrow const {
-            bool empty() {
-                return index_ >= _data.length;
+                if (data.length == 0) {
+                    index_ = 0;
+                } else {
+                    index_ = 4;
+                    popFront();
+                }
             }
 
 
-            /**
-             * InputRange primitive operation that returns the currently iterated element.
-             */
-            ref const(Element) front() {
-                return element_;
+        @property @safe nothrow const
+            {
+                bool empty()
+                {
+                    return index_ >= _data.length;
+                }
+
+
+                /**
+                 * InputRange primitive operation that returns the currently iterated element.
+                 */
+                ref const(Element) front()
+                {
+                    return element_;
+                }
             }
-        }
 
 
         /**
          * InputRange primitive operation that advances the range to its next element.
          */
         @trusted
-        void popFront() {
-            import std.conv;
+        void popFront()
+            {
+                import std.conv;
 
-            emplace!Element(&element_, _data[index_..$]);
-            index_ += element_.size;
-        }
+                emplace!Element(&element_, _data[index_..$]);
+                index_ += element_.size;
+            }
     }
 
 
@@ -478,7 +495,7 @@ public:
         }
 
         bool isBinary() {
-            return type == Type.BINARY;
+                return type == Type.BINARY;
         }
 
         BinarySubType subtype() {
@@ -706,28 +723,6 @@ public:
                     check(Type.DOCUMENT);
                 }
                 return Document(value);
-            }
-
-            /**
-             * Returns an DOCUMENT[] document array.
-             */
-            Document[] get(T)() inout if (is(TypedefType!T == Document[])) {
-                check(Type.BINARY);
-                check(getSubtype!(TypedefType!T));
-                Document[] docs;
-
-                @trusted
-                void build_document_array(immutable(ubyte[]) data) {
-                    if ( data.length ) {
-                        immutable len=*cast(uint*)(data.ptr);
-                        immutable from=uint.sizeof;
-                        immutable to=uint.sizeof+len;
-                        docs~=Document(data[from..to]);
-                        build_document_array(data[to..$]);
-                    }
-                }
-                build_document_array(value);
-                return docs;
             }
 
             // immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
@@ -1110,21 +1105,6 @@ private:
             }
             else {
                 message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
-            }
-            throw new BSONException(message);
-        }
-    }
-
-
-    void check(BinarySubType t) const /* pure */ {
-        if (t != subtype) {
-            string typeName = to!string(t); // why is to! not pure?
-            string message;
-            if (isEod) {
-                message = "Field not found: expected subtype = " ~ typeName;
-            }
-            else {
-                message = "Wrong subtype for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
             }
             throw new BSONException(message);
         }
@@ -2069,7 +2049,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         else static if (is(BaseType==Document[])) {
             assert(_type == Type.ARRAY);
             assert(subtype == BinarySubType.NATIVE_DOCUMENT_array);
-            return cast(T)(value.document_array);
+            return cast(T)(value.bson_array);
         }
         else {
             static assert(0, "Type "~T.stringof~ "is not supported by this function");
@@ -2078,6 +2058,28 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     }
     package Value value;
+    // package void sort_keys() {
+    //     if ( (type == Type.DOCUMENT) ) {
+    //         BSON[] barry;
+    //         import std.algorithm.mutation : SwapStrategy;
+    //         for(auto b=members; b !is null; b=b.members) {
+    //             barry~=b;
+    //         }
+    //         if ( barry.length > 1 ) {
+    //             // Sort by key
+    //             sort!("a.key < b.key", SwapStrategy.stable)(barry);
+    //             BSON prev;
+    //             foreach(i,ref b;barry) {
+    //                 if ( i > 0 ) {
+    //                     prev.members=b;
+    //                 }
+    //                 prev=b;
+    //             }
+    //             prev.members=null;
+    //             this.members=barry[0];
+    //         }
+    //     }
+    // }
     bool isDocument() {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
