@@ -4,6 +4,7 @@ import tagion.utils.BSON : HBSON, Document;
 import tagion.script.Script : ScriptException;
 
 import tagion.Base : Buffer, basename;
+import tagion.Keywords;
 
 import core.exception : RangeError;
 import std.range.primitives;
@@ -156,9 +157,9 @@ class ScriptInterpreter {
     static immutable(Token)[] BSON2Tokens(const(Document) doc) {
         @trusted
         auto getRange(Document doc) {
-            if ( doc.hasElement("code") ) {
-//                writefln("code.type=%s", doc["code"].type);
-                return doc["code"].get!Document[];
+            if ( doc.hasElement(Keywords.code) ) {
+//                writefln("code.type=%s", doc[Keywords.code].type);
+                return doc[Keywords.code].get!Document[];
             }
             else {
                 return doc[];
@@ -458,7 +459,7 @@ class ScriptInterpreter {
         // }
         auto bson = new HBSON();
         if (tokenize) {
-            bson["source"]=source;
+            bson[Keywords.source]=source;
             HBSON[] code;
             for(;;) {
                 immutable t = token();
@@ -467,7 +468,7 @@ class ScriptInterpreter {
                 }
                 code~=t.toBSON;
             }
-            bson["code"]=code;
+            bson[Keywords.code]=code;
         }
         else {
             string[] code;
@@ -478,7 +479,7 @@ class ScriptInterpreter {
                 }
                 code~=t.token;
             }
-            bson["code"]=code;
+            bson[Keywords.code]=code;
         }
         return bson;
     }
@@ -516,7 +517,7 @@ class ScriptInterpreter {
             auto doc=Document(data);
             // auto keys=doc.keys;
             // writefln("doc.keys=%s", doc.keys);
-            auto code=doc["code"].get!Document;
+            auto code=doc[Keywords.code].get!Document;
             auto keys=code.keys;
             assert(keys == ["0", "1", "2", "3", "4"]);
             immutable(Token)[] ts;
