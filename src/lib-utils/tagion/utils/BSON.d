@@ -653,7 +653,7 @@ public:
 
             enum isTypedef(T)=!is(TypedefType!T == T);
 
-            T get(T)() inout if (is(TypedefType!T == string)) {
+            T get(T)() inout if (is(TypedefType!T : const(string))) {
                 check(Type.STRING);
                 return cast(T)str;
             }
@@ -1976,11 +1976,13 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     @trusted
     auto get(T)() inout {
         alias BaseType=TypedefType!T;
+        pragma(msg, T.stringof);
+        pragma(msg, BaseType.stringof);
         static if (is(BaseType==double)) {
             assert(_type == Type.DOUBLE);
             return cast(T)(value.number);
         }
-        else static if (is(BaseType==string)) {
+        else static if (is(BaseType:string)) {
             assert(_type == Type.STRING);
             return cast(T)(value.text);
         }
