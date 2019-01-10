@@ -1,7 +1,7 @@
 module tagion.script.ScriptingEngine;
 
 import std.concurrency;
-import tagion.Base : Control, Pubkey;
+import tagion.Base : Control, Pubkey, Buffer;
 import std.stdio : writeln, writefln;
 import tagion.utils.BSON : Document;
 import tagion.hashgraph.ConsensusExceptions;
@@ -32,6 +32,7 @@ class SecureScriptingEngineNet : StdSecureNet {
     override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
         assert(0, "Not implement for this test");
     }
+
     this(NativeSecp256k1 crypt=new NativeSecp256k1()) {
         super(crypt);
     }
