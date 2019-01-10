@@ -52,6 +52,7 @@ enum _keywords = [
     "type",       // Package type
     "block",     // block
 
+    "rim",
     "buckets",
     "tab",
     "transaction_id",
