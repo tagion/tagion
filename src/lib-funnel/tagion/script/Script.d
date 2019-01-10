@@ -4,7 +4,7 @@ import std.bigint;
 import std.internal.math.biguintnoasm : BigDigit;
 import std.stdio;
 import std.conv;
-
+import std.typecons : Typedef, TypedefType;
 import tagion.utils.BSON : HBSON, Document;
 
 
@@ -16,20 +16,22 @@ class ScriptException : Exception {
     }
 }
 
+
 @trusted
 class Value {
+    alias BsonIndex=Typedef!(uint, uint.init, Value.Type.BSON_INDEX.stringof);
     enum Type {
         INTEGER,
         FUNCTION,
         TEXT,
-        BSON,
+        BSON_INDEX,
         DOCUMENT
     }
     union BInt {
         private BigInt value;
         private const(ScriptElement) opcode;
         private string text;
-        private uint   bson_index;
+        private BsonIndex bson_index;
         private Document  doc;
 
         /* This struct is just read only for the BitInt value */
@@ -64,16 +66,13 @@ class Value {
 
     private BInt data;
     private Type _type;
-    this(long x, immutable bool bson_type=false) {
-        if ( bson_type ) {
-            _type=Type.BSON;
-            data.bson_index = cast(uint)x;
-        }
-        else {
-            _type=Type.INTEGER;
-            data.value = BigInt(x);
-        }
-
+    this(BsonIndex bson_index) {
+        _type=Type.BSON_INDEX;
+        data.bson_index=bson_index;
+    }
+    this(long x) {
+        _type=Type.INTEGER;
+        data.value = BigInt(x);
     }
     this(const BigInt x) {
         _type=Type.INTEGER;
@@ -133,7 +132,7 @@ class Value {
                     return new Value(x.text);
                 case TEXT:
                     return new Value(x.opcode);
-                case BSON:
+                case BSON_INDEX:
                     return new Value(x.bson_index);
                 case DOCUMENT:
                     return new Value(x.doc);
@@ -170,11 +169,11 @@ class Value {
         }
         throw new ScriptException(to!string(Type.DOCUMENT)~" expected not "~to!string(type));
     }
-    uint bson_index() const {
-        if ( type == Type.BSON ) {
+    BsonIndex bson_index() const {
+        if ( type == Type.BSON_INDEX ) {
             return data.bson_index;
         }
-        throw new ScriptException(to!string(Type.BSON)~" expected not "~to!string(type));
+        throw new ScriptException(to!string(Type.BSON_INDEX)~" expected not "~to!string(type));
     }
     immutable(ubyte[]) buffer() const {
         if ( type == Type.INTEGER) {
@@ -217,7 +216,12 @@ unittest {
     assert(b.type == Value.Type.INTEGER);
     assert(b.value == BigInt(num));
 
-
+    immutable Value.BsonIndex bson_index=2;
+    auto c=const(Value)(bson_index);
+    assert(c.type == Value.Type.BSON_INDEX);
+    assert(c.bson_index == 2);
+    static assert(is(typeof(bson_index) : Value.BsonIndex));
+    static assert(is(TypedefType!(typeof(bson_index)) == uint));
 }
 
 @safe
@@ -236,7 +240,7 @@ class ScriptContext {
     private int data_stack_index;
     private int return_stack_index;
     private HBSON[] bsons;
-    private uint bsons_count;
+    private Value.BsonIndex bsons_count;
     this(const uint data_stack_size,
         const uint return_stack_size,
         const uint var_size,
@@ -256,7 +260,8 @@ class ScriptContext {
     const(Value) opIndex(uint i) {
         return variables[i];
     }
-    ref HBSON bson(uint i) {
+    ref HBSON bson(Value.BsonIndex index) {
+        immutable i=cast(uint)index;
         if ( i < bsons.length ) {
             if ( bsons[i] is null ) {
                 return bsons[i];
@@ -264,6 +269,19 @@ class ScriptContext {
         }
         throw new ScriptException("BSON index out of range");
     }
+
+    Value.BsonIndex createBson() {
+        scope(exit) {
+            bsons_count++;
+        }
+        immutable i=cast(uint)bsons_count;
+        if ( i >= bsons.length ) {
+            throw new ScriptException("Bsons out of range");
+        }
+        bsons[i]=new HBSON();
+        return bsons_count;
+    }
+
     @trusted
     const(Value) data_pop() {
         scope(exit) {
@@ -368,10 +386,10 @@ class ScriptContext {
         assert(pop_a == BigInt(num));
     }
     @trusted
-    immutable(ubyte)[] serialize(immutable uint index) {
-        return bsons[index].serialize;
+    immutable(ubyte)[] serialize(immutable Value.BsonIndex index) {
+        immutable i=cast(uint)index;
+        return bsons[i].serialize;
     }
-
 }
 
 
@@ -750,52 +768,6 @@ class ScriptPutLoc : ScriptElement {
 
 }
 
-@safe
-class ScriptGetBSON : ScriptElement {
-    private immutable uint bson_index;
-    private immutable(char[]) bson_name;
-    this(string bson_name, uint bson_index) {
-        this.bson_name = bson_name;
-        this.bson_index = bson_index;
-        super(0);
-    }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        sc.data_push(bson_index, true);
-        return _next;
-    }
-    string toText() const {
-        return bson_name~" @";
-    }
-
-}
-
-@safe
-class ScriptPutBSON : ScriptElement {
-    immutable uint bson_index;
-    private string bson_name;
-    this(string bson_name, uint bson_index) {
-        this.bson_name = bson_name;
-        this.bson_index = bson_index;
-        super(0);
-    }
-    @trusted
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        auto a=sc.data_pop();
-        if ( a.type == Value.Type.BSON ) {
-            sc.bsons[bson_index]=sc.bsons[a.bson_index];
-            return _next;
-        }
-        else {
-            return new ScriptError("Type "~to!string(Value.Type.BSON)~" expect and not "~to!string(a.type), this);
-        }
-    }
-    string toText() const {
-        return bson_name~" !";
-    }
-
-}
 
 /* Arhitmentic opcodes */
 
@@ -1029,32 +1001,116 @@ class ScriptStackOp(string O) : ScriptElement {
     }
 }
 
-@safe
-class ScriptExpandBSON : ScriptElement {
-    enum name="expand";
-    this() {
-        super(0);
+mixin template ScriptElementTemplate(alias element_name, uint runlevel) {
+    enum name=element_name;
+    alias ScriptType=typeof(this);
+
+    this(){
+        super(runlevel);
     }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        auto a=sc.data_pop;
-        if ( a.type == Value.Type.BSON ) {
-            sc.data_push(Document(sc.serialize(a.bson_index)));
-        }
-        else {
-            auto error=new ScriptError(name~" expect an "~to!string(Value.Type.BSON)~
-                " put got a "~to!string(a.type), this);
-        }
-        return _next;
-    }
+
     static ScriptElement create() {
-        return new ScriptExpandBSON;
+        return new ScriptType;
     }
+
     static this() {
         Script.opcreators[name]=&create;
     }
+
     string toText() const {
         return name;
+    }
+
+}
+
+@safe
+class ScriptCreateBSON : ScriptElement {
+     /*
+        creates a new bson in the bsons array as an element
+        and returns the bsons_index on the stack.
+    */
+    mixin ScriptElementTemplate!("createbson", 0);
+
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        try {
+            sc.data_push(sc.createBson);
+            return _next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an exception: "~ex.msg, this);
+        }
+    }
+}
+
+@safe
+class ScriptPutBSON : ScriptElement {
+    /*
+        Stores a value in a bson object at the specified field.
+        bsons_index field_name value bson!
+    */
+    mixin ScriptElementTemplate!("bson!", 0);
+
+    @trusted
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        try {
+            auto bsons_index=sc.data_pop().bson_index;
+            auto field_name=sc.data_pop.get!string;
+            auto value=sc.data_pop.get!(const(BigInt));
+
+            immutable bsons_i=cast(uint)bsons_index;
+            if ( bsons_i >= sc.bsons.length || sc.bsons[bsons_i] is null ) {
+                throw new ScriptException("Invalid bson reference.");
+            }
+
+            if ( field_name.length < 1) {
+                throw new ScriptException("The bson field name cannot be empty");
+            }
+
+            auto bson=sc.bsons[bsons_i];
+
+            bson[field_name]=cast(uint)value;
+
+            return _next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an Script Exception: "~ex.msg, this);
+        }
+    }
+}
+
+@safe
+class ScriptGetBSON : ScriptElement {
+    mixin ScriptElementTemplate!("bson@", 0);
+
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        try {
+            sc.data_push(sc.createBson);
+            return _next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an exception: "~ex.msg, this);
+        }
+    }
+}
+
+@safe
+class ScriptExpandBSON : ScriptElement {
+    mixin ScriptElementTemplate!("expandbson", 0);
+
+    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        auto a=sc.data_pop;
+        if ( a.type == Value.Type.BSON_INDEX ) {
+            sc.data_push(Document(sc.serialize(a.bson_index)));
+        }
+        else {
+            return new ScriptError(name~" expect an "~to!string(Value.Type.BSON_INDEX)~
+                " put got a "~to!string(a.type), this);
+        }
+        return _next;
     }
 }
 
