@@ -67,7 +67,9 @@ enum _keywords = [
     "bills",
     "bill",
     "bill_number",
-
+    // Scripting
+    "code",
+    "source"
     ];
 
 // Generated the Keywords and enum string list
