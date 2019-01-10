@@ -18,12 +18,10 @@ class StdRequestNet : RequestNet {
     //TO-DO: Implement a general request func. if makes sense.
     abstract void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint);
 
-    // override void sendToScriptingEngine(immutable(Buffer) eventbody) {
+    //TO-DO: Implement
+    // Buffer eventHashFromId(immutable uint id) {
     //     assert(0, "Not implement for this test");
     // }
-
-
-//    abstract void sendToScriptingEngine(immutable(Buffer) eventbody);
 
 }
 
@@ -32,7 +30,6 @@ class StdSecureNet : StdRequestNet, SecureNet {
     // The Eva value is set up a low negative number
     // to check the two-complement round wrapping if the altitude.
     enum int eva_altitude=-77;
-
 
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.hmac;
@@ -176,7 +173,6 @@ class StdSecureNet : StdRequestNet, SecureNet {
         AESCrypto.encrypt(aes_key, encrypted_privkey, data);
 
         immutable(ubyte[]) local_sign(immutable(ubyte[]) message) @safe {
-            // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
             // for long period of time
