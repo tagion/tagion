@@ -1,15 +1,14 @@
 module tagion.script.ScriptInterpreter;
 
-import tagion.utils.BSON : R_BSON=BSON, Document;
+import tagion.utils.BSON : HBSON, Document;
 import tagion.script.Script : ScriptException;
+
+import tagion.Base : Buffer, basename;
 
 import core.exception : RangeError;
 import std.range.primitives;
 import std.conv;
 //import std.stdio;
-
-alias R_BSON!true BSON;
-
 
 class ScriptInterpreter {
     enum ScriptType {
@@ -64,9 +63,49 @@ class ScriptInterpreter {
         uint jump; // Jump label index
 
         string toText() @safe pure const {
-            return token~"':"~to!string(type)~" line:"~
+            return "'"~token~"':"~to!string(type)~" line:"~
                 to!string(line)~":"~to!string(pos)~" jump:"~to!string(jump);
         }
+
+        // this(Document doc) {
+        //     foreach(i, ref m; this.tupleof) {
+        //         alias typeof(m) type;
+        //         enum name=basename!(this.tupleof[i]);
+        //         if ( doc.hasElement(name) ) {
+        //             static if ( is(type == enum) ) {
+        //                 m=cast(type)doc[name].get!uint;
+        //             }
+        //             else {
+        //                 m=doc[name].get!type;
+        //             }
+        //         }
+        //     }
+        // }
+
+        HBSON toBSON() const {
+            auto bson=new HBSON;
+            foreach(i, m; this.tupleof) {
+                enum name=basename!(this.tupleof[i]);
+                static if ( __traits(compiles, m.toBSON) ) {
+                    bson[name]=m.toBSON;
+                }
+                else {
+                    static if ( is(type==enum) ) {
+                        bson[name]=cast(uint)m;
+                    }
+                    else {
+                        bson[name]=m;
+                    }
+                }
+            }
+            return bson;
+        }
+
+        @trusted
+        immutable(Buffer) serialize() const {
+            return toBSON.serialize;
+        }
+
     };
     private string source;
     private bool mode;
@@ -105,7 +144,7 @@ class ScriptInterpreter {
         return result;
     }
     @trusted
-    static immutable(Token)[] BSON2Tokens(BSON bson) {
+    static immutable(Token)[] BSON2Tokens(HBSON bson) {
         return BSON2Tokens(bson.serialize);
     }
     @safe
@@ -126,35 +165,42 @@ class ScriptInterpreter {
         }
         auto range = getRange(doc);
         immutable(Token)[] results;
+        import std.stdio;
         while(!range.empty) {
             auto word=range.front;
             range.popFront;
             if ( word.isDocument ) {
                 auto word_doc= word.get!Document;
-                immutable _token = word_doc["token"].get!string;
-                enum text_line="line";
+                immutable _token = word_doc[Token.token.stringof].get!string;
+                enum text_line=Token.line.stringof;
                 immutable _line = word_doc.hasElement(text_line)?
-                    cast(uint)(word_doc[text_line].get!int):0;
-                enum text_pos="pos";
+                    (word_doc[text_line].get!uint):0;
+                enum text_pos=Token.pos.stringof;
                 immutable _pos = word_doc.hasElement(text_pos)?
-                    cast(uint)(word_doc[text_pos].get!int):0;
-               immutable(Token) t={
+                    (word_doc[text_pos].get!uint):0;
+                enum text_type=Token.type.stringof;
+                immutable ScriptType _type=cast(ScriptType)word_doc[text_type].get!uint;
+                immutable(Token) t={
                   token : _token,
-                  type : ScriptType.UNKNOWN,
+                  type : _type,
                   line : _line,
                   pos  : _pos
                 };
                 results~=t;
+                writefln("\t\ttype=%s", _type);
             }
             else {
-                auto word_str=word.get!string;
+                immutable _token=word.get!string;
+                immutable ScriptType _type=cast(ScriptType)word.get!uint;
+                writefln("\t\ttype=%s", _type);
                 immutable(Token) t={
-                  token : word_str,
-                  type : ScriptType.UNKNOWN,
+                  token : _token,
+                  type : _type,
                 };
                 results~=t;
                 //                 throw new ScriptException("Malformed Genesys script BSON stream document expected not "~to!string(word.type) );
             }
+            writefln("BSON2Tokens %s", results[$-1].toText);
         }
         return results;
     }
@@ -232,16 +278,19 @@ class ScriptInterpreter {
                     enum regex_word   = regex("^[!-~]+$");
                     enum regex_hex    = regex("^[-+]?0[xX][0-9a-fA-F_][0-9a-fA-F_]*$");
                     import std.stdio;
-                    if ( match(word.token, regex_number) ) {
+                    if ( word.type == TEXT ) {
+                        _type = TEXT;
+                    }
+                    else if ( match(word.token, regex_number) ) {
                         _type = NUMBER;
                     }
                     else if ( match(word.token, regex_hex) ) {
                         _type = HEX;
                     }
-                    else if ( ((word.token[0]=='"') || (word.token[0]=='\'')) && (word.token[$-1] == word.token[0]) ) {
-                        _type = TEXT;
-                    }
-                    else if ( (word.token[0] == '(') && (word.token[$-1] == ')') ) {
+                    // else if ( ((word.token[0]=='"') || (word.token[0]=='\'')) && (word.token[$-1] == word.token[0]) ) {
+                    //     _type = TEXT;
+                    // }
+                    else if ( (word.token.length > 1) && (word.token[0] == '(') && (word.token[$-1] == ')') ) {
                         _type = COMMENT;
                     }
                     else if ( match(word.token, regex_word) ) {
@@ -384,38 +433,43 @@ class ScriptInterpreter {
             }
         }
         {  // TEXT
+            string[] strings=["test", "", " 88 ", " 88"];
             Token[] tokens=[
-                { token : "''"},
-                { token : "' 88 '"},
-                { token : "\" 88 \""},
+                { token : strings[0], type : ScriptType.TEXT},
+                { token : strings[1], type : ScriptType.TEXT},
+                { token : strings[2], type : ScriptType.TEXT},
+                { token : strings[3], type : ScriptType.TEXT},
                 ];
             auto to_tokens=Tokens2Tokens(tokens);
-            foreach(t; to_tokens) {
+            foreach(i, t; to_tokens) {
+                assert(t.token == strings[i]);
                 assert(t.type == ScriptType.TEXT);
             }
         }
     }
-    BSON toBSON(immutable bool tokenize=true) {
-        BSON bson_token(immutable(Token) t) {
-            auto result=new BSON();
-            result["token"]=t.token;
-            if ( mode ) {
-                result["line"]=t.line;
-                result["pos"]=t.pos;
-                result["type"]=t.type;
-            }
-            return result;
-        }
-        auto bson = new BSON();
+    HBSON toBSON(immutable bool tokenize=true) {
+        // HBSON bson_token(immutable(Token) t) {
+        //     auto result=new HBSON();
+        //     result["token"]=t.token;
+        //     if ( mode ) {
+        //         result["line"]=t.line;
+        //         result["pos"]=t.pos;
+        //         result["type"]=t.type;
+        //     }
+        //     return result;
+        // }
+        auto bson = new HBSON();
         if (tokenize) {
             bson["source"]=source;
-            BSON[] code;
+            HBSON[] code;
             for(;;) {
                 immutable t = token();
                 if ( t.type == ScriptType.EOF ) {
                     break;
                 }
-                code~=bson_token(t);
+                code~=t.toBSON;
+                import std.stdio;
+                writefln("\tbson %s",t.toText);
             }
             bson["code"]=code;
         }
@@ -646,86 +700,129 @@ private:
                 " 0xA-- XX 122 test\n"~        // 9
                 "  ) &&&\n"~                   // 10
                 "; ( end function )\n"~        // 11
-                "*-&  \n"                    // 12
-
+                "*-&  \n"~                     // 12
+                " \"text1\" \n"~               // 13
+                " 'text2' \n"~                 // 14
+                " '' \n"~                      // 15
+                "; \n"                         // 16
                 ;
             auto preter=new ScriptInterpreter(src, true);
             immutable(Token)[] tokens;
-            with(ScriptType) {
-                for(;;) {
-                    auto t=preter.token;
-                    tokens~=t;
-                    if ( (t.type == EOF) || (t.type == ERROR) ) {
-                        break;
+            for(;;) {
+                auto t=preter.token;
+                tokens~=t;
+                if ( (t.type == ScriptType.EOF) || (t.type == ScriptType.ERROR) ) {
+                    break;
+                }
+            }
+            void check(immutable bool second_pass=false) {
+                with(ScriptType) {
+                    uint i=0;
+                    if ( second_pass ) {
+                        assert(tokens[i].type == FUNC);
+                        assert(tokens[i].line   == 1);
+                        assert(tokens[i++].token == "test_comment");
+                    }
+                    else {
+                        assert(tokens[i].type == FUNC);
+                        assert(tokens[i++].line   == 1);
+                        assert(tokens[i].type == WORD);
+                        assert(tokens[i].line   == 1);
+                        assert(tokens[i++].token == "test_comment");
+                    }
+                    assert(tokens[i].type == COMMENT);
+                    assert(tokens[i].line   == 1);
+                    assert(tokens[i++].token == "( a b -- )");
+
+                    assert(tokens[i].type == WORD);
+                    assert(tokens[i].line   == 2);
+                    assert(tokens[i++].token == "+");
+                    assert(tokens[i].type == COMMENT);
+                    assert(tokens[i].line   == 2);
+                    assert(tokens[i++].token == "( some comment )");
+                    assert(tokens[i].type == WORD);
+                    assert(tokens[i].line   == 2);
+                    assert(tokens[i++].token == "><>A");
+
+                    assert(tokens[i].type == COMMENT);
+                    assert(tokens[i].line   == 3);
+                    assert(tokens[i++].token == "( line comment -- )");
+
+                    assert(tokens[i].type == WORD);
+                    assert(tokens[i].line   == 4);
+                    assert(tokens[i++].token == "X");
+
+                    assert(tokens[i].type == COMMENT);
+                    assert(tokens[i].line   == 5);
+                    assert(tokens[i++].token.length == 36);
+
+                    assert(tokens[i].type    == WORD);
+                    assert(tokens[i].line    == 7);
+                    assert(tokens[i++].token == "&");
+
+                    assert(tokens[i].type    == WORD);
+                    assert(tokens[i].line    == 8);
+                    assert(tokens[i++].token == "___");
+
+                    assert(tokens[i].type == COMMENT);
+                    assert(tokens[i].line   == 8);
+                    assert(tokens[i++].token.length == 37);
+
+                    assert(tokens[i].type    == WORD);
+                    assert(tokens[i].line    == 10);
+                    assert(tokens[i++].token == "&&&");
+
+                    assert(tokens[i].type    == EXIT);
+                    assert(tokens[i++].line    == 11);
+
+                    assert(tokens[i].type == COMMENT);
+                    assert(tokens[i].line   == 11);
+                    assert(tokens[i++].token == "( end function )" );
+
+                    assert(tokens[i].type    == WORD);
+                    assert(tokens[i].line    == 12);
+                    assert(tokens[i++].token == "*-&");
+
+                    assert(tokens[i].type    == TEXT);
+                    assert(tokens[i].line    == 13);
+                    assert(tokens[i++].token == "text1");
+
+                    assert(tokens[i].type    == TEXT);
+                    assert(tokens[i].line    == 14);
+                    assert(tokens[i++].token == "text2");
+
+                    assert(tokens[i].type    == TEXT);
+                    assert(tokens[i].line    == 15);
+                    assert(tokens[i++].token == "");
+
+                    assert(tokens[i].type    == EXIT);
+                    assert(tokens[i].line    == 16);
+                    assert(tokens[i++].token == ";");
+
+                    if ( !second_pass ) {
+                        assert(tokens[i].type    == EOF);
+                        assert(tokens[i].line    == 16);
                     }
                 }
-                uint i=0;
-                assert(tokens[i].type == FUNC);
-                assert(tokens[i++].line   == 1);
-                assert(tokens[i].type == WORD);
-                assert(tokens[i].line   == 1);
-                assert(tokens[i++].token == "test_comment");
-                assert(tokens[i].type == COMMENT);
-                assert(tokens[i].line   == 1);
-                assert(tokens[i++].token == "( a b -- )");
-
-                assert(tokens[i].type == WORD);
-                assert(tokens[i].line   == 2);
-                assert(tokens[i++].token == "+");
-                assert(tokens[i].type == COMMENT);
-                assert(tokens[i].line   == 2);
-                assert(tokens[i++].token == "( some comment )");
-                assert(tokens[i].type == WORD);
-                assert(tokens[i].line   == 2);
-                assert(tokens[i++].token == "><>A");
-
-                assert(tokens[i].type == COMMENT);
-                assert(tokens[i].line   == 3);
-                assert(tokens[i++].token == "( line comment -- )");
-
-                assert(tokens[i].type == WORD);
-                assert(tokens[i].line   == 4);
-                assert(tokens[i++].token == "X");
-
-                assert(tokens[i].type == COMMENT);
-                assert(tokens[i].line   == 5);
-                assert(tokens[i++].token.length == 36);
-
-                assert(tokens[i].type    == WORD);
-                assert(tokens[i].line    == 7);
-                assert(tokens[i++].token == "&");
-
-                assert(tokens[i].type    == WORD);
-                assert(tokens[i].line    == 8);
-                assert(tokens[i++].token == "___");
-
-                assert(tokens[i].type == COMMENT);
-                assert(tokens[i].line   == 8);
-                assert(tokens[i++].token.length == 37);
-
-                assert(tokens[i].type    == WORD);
-                assert(tokens[i].line    == 10);
-                assert(tokens[i++].token == "&&&");
-
-                assert(tokens[i].type    == EXIT);
-                assert(tokens[i++].line    == 11);
-
-                assert(tokens[i].type == COMMENT);
-                assert(tokens[i].line   == 11);
-                assert(tokens[i++].token == "( end function )" );
-
-                assert(tokens[i].type    == WORD);
-                assert(tokens[i].line    == 12);
-                assert(tokens[i++].token == "*-&");
-
-                assert(tokens[i].type    == EOF);
-                assert(tokens[i].line    == 12);
-
             }
+            check();
+            import std.stdio;
+            // Check the bson stream
+            preter=new ScriptInterpreter(src, true);
+            auto bson=preter.toBSON;
+            // Expand to BSON stream
+            auto data=bson.serialize;
+            tokens=ScriptInterpreter.BSON2Tokens(data);
+            writefln("tokens.length=%d", tokens.length);
+            // Add token types
+            tokens=ScriptInterpreter.Tokens2Tokens(tokens);
+            foreach(i, t; tokens) {
+                writefln("###%d]%s", i, t.toText);
+            }
+            check(true);
         }
-
-
     }
+
     immutable(Token) token() {
         auto result=base_token();
         if ( (result.type == ScriptType.WORD) ) {
@@ -992,4 +1089,5 @@ private:
         }
         assert(0);
     }
+
 }

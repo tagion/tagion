@@ -668,8 +668,9 @@ class ScriptNumber : ScriptElement {
 
 @safe
 class ScriptText : ScriptElement {
-    private string text;
+    immutable(string) text;
     this(string text) {
+        writefln("ScriptText %s", text);
         this.text=text;
         super(0);
     }

@@ -590,7 +590,38 @@ class ScriptBuilder {
 
 //        writefln("pop=%s", sc.data_pop.value);
     }
+    unittest { // Text type
+        import std.stdio : writefln;
+        string source=
+            ": test_text\n"~
+            " 1 \n"~
+            " \"text1\" \n"~
+            " 'text2' \n"~
+            " '' \n"~
+            ";\n"
+            ;
+        Script script;
+        auto builder=new ScriptBuilder();
+        auto interpreter=new ScriptInterpreter(source);
+        writeln("%%%%% Interpreter %%%% ");
+        foreach(i, t; interpreter.tokens) {
+            writefln("%d]%s", i, t.toText);
+        }
+        auto tokens=interpreter.Tokens2Tokens(interpreter.tokens);
+        writeln("%%%%% Tokens %%%% ");
+        foreach(i, t; tokens) {
+            writefln("%d]%s", i, t.toText);
+        }
+        builder.build(script, source);
 
+        auto sc=new ScriptContext(10, 10, 10, 10);
+
+script.run("test_text", sc);
+//        auto text=sc.data_pop.text;
+//        writefln("text=%s", text);
+    }
+
+    version(none)
     unittest {
         assert("createbson" in Script.opcreators);
         import std.stdio : writefln;
@@ -619,6 +650,8 @@ class ScriptBuilder {
         assert(res_1==0 && res_2==1);
     }
 
+
+    version(none)
     unittest {
         assert("bson!" in Script.opcreators);
         import std.stdio : writefln;
@@ -637,6 +670,7 @@ class ScriptBuilder {
 
         script.run("test", sc);
     }
+
 
 private:
     uint var_count;
@@ -678,14 +712,14 @@ private:
     };
 
     //
-    static immutable(Token) token_put={
-      token : "!",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_get= {
-      token : "@",
-      type : ScriptType.WORD
-    };
+    // static immutable(Token) token_put={
+    //   token : "!",
+    //   type : ScriptType.WORD
+    // };
+    // static immutable(Token) token_get= {
+    //   token : "@",
+    //   type : ScriptType.WORD
+    // };
     @safe
     static immutable(Token)[] token_loop_progress(immutable ScriptType type, immutable uint i)
         in {
@@ -731,37 +765,37 @@ private:
       token : "<r",
       type : ScriptType.WORD
     };
-    static immutable(Token) token_inc_r= {
-        // r> 1 + dup >r
-      token : "@r1+",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_get_r= {
-        // r@
-      token : "r@",
-      type : ScriptType.WORD
-    };
+    // static immutable(Token) token_inc_r= {
+    //     // r> 1 + dup >r
+    //   token : "@r1+",
+    //   type : ScriptType.WORD
+    // };
+    // static immutable(Token) token_get_r= {
+    //     // r@
+    //   token : "r@",
+    //   type : ScriptType.WORD
+    // };
 
     static immutable(Token) token_gte= {
         // greater than
       token : ">=",
       type : ScriptType.WORD
     };
-    static immutable(Token) token_invert= {
-        // invert
-      token : "invert",
-      type : ScriptType.WORD
-    };
+    // static immutable(Token) token_invert= {
+    //     // invert
+    //   token : "invert",
+    //   type : ScriptType.WORD
+    // };
     static immutable(Token) token_repeat= {
         // repeat
       token : "repeat",
       type : ScriptType.REPEAT
     };
-    static immutable(Token) token_not_if= {
-        // repeat
-      token : "not_if",
-      type : ScriptType.NOT_IF
-    };
+    // static immutable(Token) token_not_if= {
+    //     // if !
+    //   token : "not_if",
+    //   type : ScriptType.NOT_IF
+    // };
     static immutable(Token) token_until= {
         // until
       token : "until",
@@ -843,7 +877,7 @@ private:
             script=new Script;
         }
         foreach(t; tokens) {
-            // writefln("parse_function %s",t.toText);
+            writefln("parse_function %s",t.toText);
             if ( (t.token==":") || (t.type == ScriptType.FUNC) ) {
 
                 if ( inside_function || (function_name !is null) ) {
@@ -859,7 +893,7 @@ private:
 
                 }
                 if ( t.token !in script.functions ) {
-//                    writefln("%s",t.token);
+                    writefln("in script functions %s",t.token);
                     function_tokens = null;
                     function_name = t.token;
                 }
@@ -909,6 +943,7 @@ private:
 
             }
             else if ( function_name.length > 0 ) { // Inside function scope
+                writefln("function_name %s and token %s", function_name, t.toText);
                 function_tokens~=t;
             }
             else { //
@@ -1308,7 +1343,7 @@ private:
         auto data=bson.serialize;
         return build(script, data);
     }
-    immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
+    immutable(Token)[] build(ref Script script, immutable(Token[]) tokens) {
         immutable(Token)[] results;
         if ( parse_functions(script, tokens, results) ) {
             return results;
@@ -1328,6 +1363,9 @@ private:
         auto tokens=ScriptInterpreter.BSON2Tokens(data);
         // Add token types
         tokens=ScriptInterpreter.Tokens2Tokens(tokens);
+        foreach(i, t; tokens) {
+            writefln("\t%d]%s", i, t.toText);
+        }
         return build(script, tokens);
     }
     void build_functions(ref Script script) {
