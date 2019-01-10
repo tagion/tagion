@@ -161,20 +161,24 @@ class WriteAheadLog {
         return setExtension(buildPath(_workdir, fingerprint.toHexString), extension);
     }
 
+    // And a log to the write the wrire ahead
     void log(const(Document[]) list) {
         if ( _top_logblock ) {
             scope immutable data=_top_logblock.serialize;
             scope const fingerprint=_net.calcHash(data);
-            immutable filename=logblock_filename(fingerprint);
-            filename.write(data);
             _top_logblock=new LogBlock(list, _top_logblock.number+1, fingerprint);
         }
         else if ( _ground_block ) {
-            _top_logblock=new LogBlock(list, null, null);
+            _top_logblock=new LogBlock(list, _ground_block, _ground_block.fingerprint);
         }
         else {
             _top_logblock=new LogBlock(list);
         }
+        // Write the log to file
+        scope immutable data=_top_logblock.serialize;
+        scope const fingerprint=_net.calcHash(data);
+        immutable filename=logblock_filename(fingerprint);
+        filename.write(data);
     }
 
     // Return the backlog logblock in reverse order
@@ -199,4 +203,6 @@ class WriteAheadLog {
         }
         return list;
     }
+
+
 }
