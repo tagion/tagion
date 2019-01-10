@@ -1,89 +1,6 @@
 module tagion.Options;
 
 
-import JSON=std.json;
-import std.format;
-import std.traits;
-import std.file;
-import tagion.Base : basename;
-
-@safe
-class OptionException : Exception {
-    this( string msg, string file = __FILE__, size_t line = __LINE__ ) {
-        super(msg, file, line );
-    }
-}
-
-@safe
-void check(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
-    if (!flag) {
-        throw new OptionException(msg, file, line);
-    }
-}
-
-mixin template JSONCommon() {
-    JSON.JSONValue toJSON() const {
-        JSON.JSONValue result;
-        foreach(i, m; this.tupleof) {
-            enum name=basename!(this.tupleof[i]);
-            alias type=typeof(m);
-            static if (is(type==struct)) {
-                result[name]=m.toJSON;
-            }
-            else {
-                static if ( is(type : immutable(ubyte[])) ) {
-                    result[name]=m.toHexString;
-                }
-                else {
-                    result[name]=m;
-                }
-            }
-        }
-        return result;
-    }
-
-    string stringify(bool pretty=true)() const {
-        static if (pretty) {
-            return toJSON.toPrettyString;
-        }
-        else {
-            return toJSON.toString;
-        }
-    }
-
-    private void parse(ref JSON.JSONValue json_value) {
-        foreach(i, m; this.tupleof) {
-            enum name=basename!(this.tupleof[i]);
-            alias type=typeof(m);
-            static if (is(type==struct)) {
-                m.parse(json_value[name]);
-            }
-            else static if (is(type==string)) {
-                m=json_value[name].str;
-            }
-            else static if (isIntegral!type || isFloatingPoint!type) {
-                static if (isIntegral!type) {
-                    auto value=json_value[name].integer;
-                }
-                else {
-                    auto value=json_value[name].floating;
-                }
-                check((value >= type.min) && (value <= type.max), format("Value %d out of range for type %s of %s", value, type.stringof, m.stringof ));
-                m=cast(type)value;
-            }
-            else static if (is(type==bool)) {
-                check((json_value[name].type == JSON.JSON_TYPE.TRUE) || (json_value[name].type == JSON.JSON_TYPE.FALSE),
-                    format("Type %s expected for %s but the json type is %s", type.stringof, m.stringof, json_value[name].type));
-                m=json_value[name].type == JSON.JSON_TYPE.TRUE;
-            }
-            else {
-                assert(0, format("Unsupported type %s for %s member", type.stringof, m.stringof));
-            }
-        }
-    }
-
-}
-
 struct Options {
     // Number of concurrent nodes
     uint nodes;
@@ -116,14 +33,6 @@ struct Options {
     // Sequential test mode
     // all the
     bool sequential;
-    // Name separator
-    string separator;
-    // Node name prefix
-    string nodeprefix;
-    // logfile extension
-    string logext;
-
-    mixin JSONCommon;
 
     struct ScriptingEngine {
         // Ip address
@@ -144,48 +53,10 @@ struct Options {
         string tmp_debug_dir;
         //Name of bills file for debug bson dump
         string tmp_debug_bills_filename;
-        // Scripting engine name used for log filename etc.
-        string name;
-
-        mixin JSONCommon;
     }
 
     ScriptingEngine scripting_engine;
 
-    struct Transcript {
-        // This maybe removed later used to make internal transaction test without TLS connection
-        bool enable;
-
-        uint pause_from; // Sets the from/to delay between transaction test
-        uint pause_to;
-
-        // Scripting api log filename
-        // Scripting api name used for log filename etc.
-        string name;
-
-        mixin JSONCommon;
-    }
-
-    Transcript transcript;
-
-    void parseJSON(string json_text) {
-        auto json=JSON.parseJSON(json_text);
-        parse(json);
-    }
-
-    void load(string config_file) {
-        if (config_file.exists) {
-            auto json_text=readText(config_file);
-            parseJSON(json_text);
-        }
-        else {
-            save(config_file);
-        }
-    }
-
-    void save(string config_file) {
-        config_file.write(stringify);
-    }
 
 }
 
