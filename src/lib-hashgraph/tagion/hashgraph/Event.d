@@ -83,7 +83,7 @@ struct EventBody {
         this.altitude  =    altitude;
         this.father    =    father;
         this.mother    =    mother;
-        this.payload   =    cast(Buffe)payload;
+        this.payload   =    payload.idup;
         consensus();
     }
 
@@ -788,8 +788,8 @@ class Event {
     static File* fout;
     immutable(ubyte[]) signature;
     immutable(Buffer) pubkey;
-    immutable(Pubkey) channel() pure const nothrow {
-        return Pubkey(pubkey);
+    Pubkey channel() pure const nothrow {
+        return cast(Pubkey)pubkey;
     }
 
     // Recursive markes
