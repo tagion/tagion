@@ -59,7 +59,7 @@ mixin template JSONCommon() {
                 m.parse(json_value[name]);
             }
             else static if (is(type==string)) {
-                this.tupleof[i]=json_value[name].str;
+                m=json_value[name].str;
             }
             else static if (isIntegral!type || isFloatingPoint!type) {
                 static if (isIntegral!type) {
@@ -69,12 +69,12 @@ mixin template JSONCommon() {
                     auto value=json_value[name].floating;
                 }
                 check((value >= type.min) && (value <= type.max), format("Value %d out of range for type %s of %s", value, type.stringof, m.stringof ));
-                this.tupleof[i]=cast(type)value;
+                m=cast(type)value;
             }
             else static if (is(type==bool)) {
                 check((json_value[name].type == JSON.JSON_TYPE.TRUE) || (json_value[name].type == JSON.JSON_TYPE.FALSE),
                     format("Type %s expected for %s but the json type is %s", type.stringof, m.stringof, json_value[name].type));
-                this.tupleof[i]=json_value[name].type == JSON.JSON_TYPE.TRUE;
+                m=json_value[name].type == JSON.JSON_TYPE.TRUE;
             }
             else {
                 assert(0, format("Unsupported type %s for %s member", type.stringof, m.stringof));
