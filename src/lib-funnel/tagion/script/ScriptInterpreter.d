@@ -116,18 +116,19 @@ class ScriptInterpreter {
     @safe
     static immutable(Token) doc2token(const Document doc) {
 //        immutable _type = cast(Type)(doc["type"].get!int);
-        auto _token = doc["token"].get!string;
-        enum text_line="line";
+        auto _token = doc[Token.token.stringof].get!string;
+        enum text_line=Token.line.stringof;
         immutable _line = doc.hasElement(text_line)?
             cast(uint)(doc[text_line].get!int):0;
-        enum text_pos="pos";
+        enum text_pos=Token.pos.stringof;
         immutable _pos = doc.hasElement(text_pos)?
             cast(uint)(doc[text_pos].get!int):0;
+        immutable ScriptType _type =cast(ScriptType)doc[Token.type.stringof].get!uint;
         immutable(Token) result= {
           token : _token,
           line  : _line,
           pos  : _pos,
-          type : ScriptType.UNKNOWN
+          type : _type
         };
         return result;
     }
@@ -170,21 +171,22 @@ class ScriptInterpreter {
             range.popFront;
             if ( word.isDocument ) {
                 auto word_doc= word.get!Document;
-                immutable _token = word_doc[Token.token.stringof].get!string;
-                enum text_line=Token.line.stringof;
-                immutable _line = word_doc.hasElement(text_line)?
-                    (word_doc[text_line].get!uint):0;
-                enum text_pos=Token.pos.stringof;
-                immutable _pos = word_doc.hasElement(text_pos)?
-                    (word_doc[text_pos].get!uint):0;
-                enum text_type=Token.type.stringof;
-                immutable ScriptType _type=cast(ScriptType)word_doc[text_type].get!uint;
-                immutable(Token) t={
-                  token : _token,
-                  type : _type,
-                  line : _line,
-                  pos  : _pos
-                };
+                // immutable _token = word_doc[Token.token.stringof].get!string;
+                // enum text_line=Token.line.stringof;
+                // immutable _line = word_doc.hasElement(text_line)?
+                //     (word_doc[text_line].get!uint):0;
+                // enum text_pos=Token.pos.stringof;
+                // immutable _pos = word_doc.hasElement(text_pos)?
+                //     (word_doc[text_pos].get!uint):0;
+                // enum text_type=Token.type.stringof;
+                // immutable ScriptType _type=cast(ScriptType)word_doc[text_type].get!uint;
+                // immutable(Token) t={
+                //   token : _token,
+                //   type : _type,
+                //   line : _line,
+                //   pos  : _pos
+                // };
+                immutable t=doc2token(word_doc);
                 results~=t;
             }
             else {

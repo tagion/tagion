@@ -5,9 +5,6 @@ import std.conv;
 import tagion.script.ScriptInterpreter;
 import tagion.script.Script;
 import tagion.utils.BSON : HBSON;
-import std.exception : assertThrown;
-
-//import std.stdio;
 
 @safe
 class ScriptBuilderException : ScriptException {
@@ -15,13 +12,6 @@ class ScriptBuilderException : ScriptException {
         super( msg );
     }
 }
-
-// @safe
-// class ScriptBuilderExceptionIncompte : ScriptException {
-//     this( immutable(char)[] msg ) {
-//         super( msg );
-//     }
-// }
 
 class ScriptBuilder {
     alias ScriptInterpreter.ScriptType ScriptType;
@@ -170,8 +160,6 @@ class ScriptBuilder {
             assert(retokens.length == tokens.length);
             // Add token types to the token stream
             retokens=ScriptInterpreter.Tokens2Tokens(retokens);
-            // writefln("tokens.length=%s", tokens.length);
-            // writefln("retokens.length=%s", retokens.length);
             // Reconstructed tokens is one less because
             // : test is converted into one token
             // {
@@ -196,7 +184,6 @@ class ScriptBuilder {
             immutable retokens_test=retokens[1..$];
             // The reset of the token should be the same
             foreach(i;0..tokens_test.length) {
-                // writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
                 //     i,
                 //     retokens_test[i].type,
                 //     tokens_test[i].type);
@@ -221,12 +208,8 @@ class ScriptBuilder {
             assert(script.functions.length == 0);
         }
 
-        //     assert(builder.BSON2Token(stream, retokens));
-        // }
-//            writefln("3 tokens.length=%s", tokens.length);
 
         tokens~=token_endfunc;
-//            writefln("4 tokens.length=%s", tokens.length);
 
         {
             //
@@ -293,6 +276,7 @@ class ScriptBuilder {
             assert(builder.error_tokens.length == 0);
         }
     }
+
     uint get_var(string var_name) const {
         return var_indices[var_name];
     }
