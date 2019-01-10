@@ -1976,8 +1976,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     @trusted
     auto get(T)() inout {
         alias BaseType=TypedefType!T;
-        pragma(msg, T.stringof);
-        pragma(msg, BaseType.stringof);
         static if (is(BaseType==double)) {
             assert(_type == Type.DOUBLE);
             return cast(T)(value.number);
