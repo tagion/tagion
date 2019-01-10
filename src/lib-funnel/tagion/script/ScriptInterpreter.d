@@ -165,7 +165,6 @@ class ScriptInterpreter {
         }
         auto range = getRange(doc);
         immutable(Token)[] results;
-        import std.stdio;
         while(!range.empty) {
             auto word=range.front;
             range.popFront;
@@ -187,12 +186,10 @@ class ScriptInterpreter {
                   pos  : _pos
                 };
                 results~=t;
-                writefln("\t\ttype=%s", _type);
             }
             else {
                 immutable _token=word.get!string;
                 immutable ScriptType _type=cast(ScriptType)word.get!uint;
-                writefln("\t\ttype=%s", _type);
                 immutable(Token) t={
                   token : _token,
                   type : _type,
@@ -200,7 +197,6 @@ class ScriptInterpreter {
                 results~=t;
                 //                 throw new ScriptException("Malformed Genesys script BSON stream document expected not "~to!string(word.type) );
             }
-            writefln("BSON2Tokens %s", results[$-1].toText);
         }
         return results;
     }
@@ -287,7 +283,7 @@ class ScriptInterpreter {
                     else if ( match(word.token, regex_hex) ) {
                         _type = HEX;
                     }
-                    // else if ( ((word.token[0]=='"') || (word.token[0]=='\'')) && (word.token[$-1] == word.token[0]) ) {
+                    //else if ( ((word.token[0]=='"') || (word.token[0]=='\'')) && (word.token[$-1] == word.token[0]) ) {
                     //     _type = TEXT;
                     // }
                     else if ( (word.token.length > 1) && (word.token[0] == '(') && (word.token[$-1] == ')') ) {
@@ -468,8 +464,6 @@ class ScriptInterpreter {
                     break;
                 }
                 code~=t.toBSON;
-                import std.stdio;
-                writefln("\tbson %s",t.toText);
             }
             bson["code"]=code;
         }
@@ -806,19 +800,14 @@ private:
                 }
             }
             check();
-            import std.stdio;
             // Check the bson stream
             preter=new ScriptInterpreter(src, true);
             auto bson=preter.toBSON;
             // Expand to BSON stream
             auto data=bson.serialize;
             tokens=ScriptInterpreter.BSON2Tokens(data);
-            writefln("tokens.length=%d", tokens.length);
             // Add token types
             tokens=ScriptInterpreter.Tokens2Tokens(tokens);
-            foreach(i, t; tokens) {
-                writefln("###%d]%s", i, t.toText);
-            }
             check(true);
         }
     }
@@ -1089,5 +1078,4 @@ private:
         }
         assert(0);
     }
-
 }

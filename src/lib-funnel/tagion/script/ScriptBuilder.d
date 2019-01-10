@@ -7,7 +7,7 @@ import tagion.script.Script;
 import tagion.utils.BSON : HBSON;
 import std.exception : assertThrown;
 
-import std.stdio;
+//import std.stdio;
 
 @safe
 class ScriptBuilderException : ScriptException {
@@ -563,16 +563,9 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-//        sc.trace=true;
-        // Put and Get variable X and Y
-
-        // sc.data_push(10);
-        // sc.data_push(0);
-//        writefln("#### %s, ", source);
         script.run("test", sc);
         assert(sc.data_pop.value == 10);
 
-//        writefln("pop=%s", sc.data_pop.value);
     }
 
     unittest { // begin while repeat
@@ -588,13 +581,10 @@ class ScriptBuilder {
         script.run("test", sc);
         assert(sc.data_pop.value == 3);
 
-//        writefln("pop=%s", sc.data_pop.value);
     }
     unittest { // Text type
-        import std.stdio : writefln;
         string source=
             ": test_text\n"~
-            " 1 \n"~
             " \"text1\" \n"~
             " 'text2' \n"~
             " '' \n"~
@@ -602,23 +592,20 @@ class ScriptBuilder {
             ;
         Script script;
         auto builder=new ScriptBuilder();
-        auto interpreter=new ScriptInterpreter(source);
-        writeln("%%%%% Interpreter %%%% ");
-        foreach(i, t; interpreter.tokens) {
-            writefln("%d]%s", i, t.toText);
-        }
-        auto tokens=interpreter.Tokens2Tokens(interpreter.tokens);
-        writeln("%%%%% Tokens %%%% ");
-        foreach(i, t; tokens) {
-            writefln("%d]%s", i, t.toText);
-        }
         builder.build(script, source);
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
-script.run("test_text", sc);
-//        auto text=sc.data_pop.text;
-//        writefln("text=%s", text);
+        script.run("test_text", sc);
+        string text;
+        text=sc.data_pop.text;
+        assert(text == "");
+
+        text=sc.data_pop.text;
+        assert(text == "text2");
+
+        text=sc.data_pop.text;
+        assert(text == "text1");
     }
 
     version(none)
@@ -670,7 +657,6 @@ script.run("test_text", sc);
 
         script.run("test", sc);
     }
-
 
 private:
     uint var_count;
@@ -877,7 +863,7 @@ private:
             script=new Script;
         }
         foreach(t; tokens) {
-            writefln("parse_function %s",t.toText);
+            // writefln("parse_function %s",t.toText);
             if ( (t.token==":") || (t.type == ScriptType.FUNC) ) {
 
                 if ( inside_function || (function_name !is null) ) {
@@ -893,7 +879,7 @@ private:
 
                 }
                 if ( t.token !in script.functions ) {
-                    writefln("in script functions %s",t.token);
+//                    writefln("%s",t.token);
                     function_tokens = null;
                     function_name = t.token;
                 }
@@ -943,7 +929,6 @@ private:
 
             }
             else if ( function_name.length > 0 ) { // Inside function scope
-                writefln("function_name %s and token %s", function_name, t.toText);
                 function_tokens~=t;
             }
             else { //
@@ -1335,6 +1320,7 @@ private:
         }
 
     }
+
     immutable(Token)[] build(ref Script script, string source) {
         auto src=new ScriptInterpreter(source);
         // Convert to BSON object
@@ -1343,6 +1329,7 @@ private:
         auto data=bson.serialize;
         return build(script, data);
     }
+
     immutable(Token)[] build(ref Script script, immutable(Token[]) tokens) {
         immutable(Token)[] results;
         if ( parse_functions(script, tokens, results) ) {
@@ -1350,24 +1337,19 @@ private:
         }
         foreach(ref f; script.functions) {
             auto loop_tokens=expand_loop(f);
-            writefln("FUNC %s", f.name);
-            writefln("%s", f.toText);
-            writeln("--- ---");
             f.tokens=add_jump_label(loop_tokens);
-            writefln("%s", f.toText);
         }
         build_functions(script);
         return null;
     }
+
     immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
         auto tokens=ScriptInterpreter.BSON2Tokens(data);
         // Add token types
         tokens=ScriptInterpreter.Tokens2Tokens(tokens);
-        foreach(i, t; tokens) {
-            writefln("\t%d]%s", i, t.toText);
-        }
         return build(script, tokens);
     }
+
     void build_functions(ref Script script) {
         struct ScriptLabel {
             ScriptElement target; // Script element to jump to

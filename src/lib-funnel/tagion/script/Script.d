@@ -670,7 +670,6 @@ class ScriptNumber : ScriptElement {
 class ScriptText : ScriptElement {
     immutable(string) text;
     this(string text) {
-        writefln("ScriptText %s", text);
         this.text=text;
         super(0);
     }
