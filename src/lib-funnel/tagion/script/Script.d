@@ -5,7 +5,7 @@ import std.internal.math.biguintnoasm : BigDigit;
 import std.stdio;
 import std.conv;
 import std.typecons : Typedef, TypedefType;
-import tagion.utils.BSON : HBSON, Document;
+import tagion.utils.BSON : HBSON, Document, BSONException, BSON;
 
 
 @safe
@@ -25,7 +25,8 @@ class Value {
         FUNCTION,
         TEXT,
         BSON_INDEX,
-        DOCUMENT
+        DOCUMENT//,
+        //BYTEARRAY
     }
     union BInt {
         private BigInt value;
@@ -183,7 +184,7 @@ class Value {
     }
     T get(T)() const {
 
-        static if ( is(T==const(BigInt)) ) {
+        static if ( is(T:const(BigInt)) ) {
             return value;
         }
         else static if ( is(T==string) ) {
@@ -260,10 +261,11 @@ class ScriptContext {
     const(Value) opIndex(uint i) {
         return variables[i];
     }
+
     ref HBSON bson(Value.BsonIndex index) {
         immutable i=cast(uint)index;
         if ( i < bsons.length ) {
-            if ( bsons[i] is null ) {
+            if ( bsons[i] !is null ) {
                 return bsons[i];
             }
         }
@@ -668,7 +670,7 @@ class ScriptNumber : ScriptElement {
 
 @safe
 class ScriptText : ScriptElement {
-    immutable(string) text;
+    private string text;
     this(string text) {
         this.text=text;
         super(0);
@@ -1035,7 +1037,7 @@ class ScriptCreateBSON : ScriptElement {
         check(s, sc);
         try {
             sc.data_push(sc.createBson);
-            return _next;
+            return next;
         }
         catch(ScriptException ex) {
             return new ScriptError(name~" got an exception: "~ex.msg, this);
@@ -1047,7 +1049,7 @@ class ScriptCreateBSON : ScriptElement {
 class ScriptPutBSON : ScriptElement {
     /*
         Stores a value in a bson object at the specified field.
-        bsons_index field_name value bson!
+        bsons_index key value bson!
     */
     mixin ScriptElementTemplate!("bson!", 0);
 
@@ -1056,42 +1058,63 @@ class ScriptPutBSON : ScriptElement {
         check(s, sc);
         try {
             auto bsons_index=sc.data_pop().bson_index;
-            auto field_name=sc.data_pop.get!string;
+            auto key=sc.data_pop.get!string;
             auto value=sc.data_pop.get!(const(BigInt));
 
-            immutable bsons_i=cast(uint)bsons_index;
-            if ( bsons_i >= sc.bsons.length || sc.bsons[bsons_i] is null ) {
-                throw new ScriptException("Invalid bson reference.");
-            }
-
-            if ( field_name.length < 1) {
+            if ( key.length < 1) {
                 throw new ScriptException("The bson field name cannot be empty");
             }
 
-            auto bson=sc.bsons[bsons_i];
+            auto bson=sc.bson(bsons_index);
 
-            bson[field_name]=cast(uint)value;
+            bson[key]=cast(int)value;
 
-            return _next;
+            return next;
         }
         catch(ScriptException ex) {
             return new ScriptError(name~" got an Script Exception: "~ex.msg, this);
+        }
+        catch(BSONException ex) {
+            return new ScriptError(name~" got an BSON Exception: "~ex.msg, this);
         }
     }
 }
 
 @safe
 class ScriptGetBSON : ScriptElement {
+    /*
+        Gets a value in a bson object at the specified field.
+        bsons_index key bson!
+    */
     mixin ScriptElementTemplate!("bson@", 0);
 
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
         try {
-            sc.data_push(sc.createBson);
-            return _next;
+            auto bsons_index=sc.data_pop().bson_index;
+            auto key=sc.data_pop.get!string;
+
+            if ( key.length < 1) {
+                throw new ScriptException("The bson field name cannot be empty");
+            }
+
+            auto bson=sc.bson(bsons_index);
+
+            if ( !bson.hasElement(key) ) {
+                throw new ScriptException("The key does not exists in the bson.");
+            }
+
+            auto value=bson[key].get!int;
+
+            sc.data_push(value);
+
+            return next;
         }
         catch(ScriptException ex) {
             return new ScriptError(name~" got an exception: "~ex.msg, this);
+        }
+        catch(BSONException ex) {
+            return new ScriptError(name~" got an BSON Exception: "~ex.msg, this);
         }
     }
 }
@@ -1110,7 +1133,7 @@ class ScriptExpandBSON : ScriptElement {
             return new ScriptError(name~" expect an "~to!string(Value.Type.BSON_INDEX)~
                 " put got a "~to!string(a.type), this);
         }
-        return _next;
+        return next;
     }
 }
 

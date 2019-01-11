@@ -5,6 +5,9 @@ import std.conv;
 import tagion.script.ScriptInterpreter;
 import tagion.script.Script;
 import tagion.utils.BSON : HBSON;
+import std.exception : assertThrown;
+
+import std.stdio;
 
 @safe
 class ScriptBuilderException : ScriptException {
@@ -12,6 +15,13 @@ class ScriptBuilderException : ScriptException {
         super( msg );
     }
 }
+
+// @safe
+// class ScriptBuilderExceptionIncompte : ScriptException {
+//     this( immutable(char)[] msg ) {
+//         super( msg );
+//     }
+// }
 
 class ScriptBuilder {
     alias ScriptInterpreter.ScriptType ScriptType;
@@ -160,6 +170,8 @@ class ScriptBuilder {
             assert(retokens.length == tokens.length);
             // Add token types to the token stream
             retokens=ScriptInterpreter.Tokens2Tokens(retokens);
+            // writefln("tokens.length=%s", tokens.length);
+            // writefln("retokens.length=%s", retokens.length);
             // Reconstructed tokens is one less because
             // : test is converted into one token
             // {
@@ -184,6 +196,7 @@ class ScriptBuilder {
             immutable retokens_test=retokens[1..$];
             // The reset of the token should be the same
             foreach(i;0..tokens_test.length) {
+                // writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
                 //     i,
                 //     retokens_test[i].type,
                 //     tokens_test[i].type);
@@ -208,8 +221,12 @@ class ScriptBuilder {
             assert(script.functions.length == 0);
         }
 
+        //     assert(builder.BSON2Token(stream, retokens));
+        // }
+//            writefln("3 tokens.length=%s", tokens.length);
 
         tokens~=token_endfunc;
+//            writefln("4 tokens.length=%s", tokens.length);
 
         {
             //
@@ -276,7 +293,6 @@ class ScriptBuilder {
             assert(builder.error_tokens.length == 0);
         }
     }
-
     uint get_var(string var_name) const {
         return var_indices[var_name];
     }
@@ -547,9 +563,16 @@ class ScriptBuilder {
 
         auto sc=new ScriptContext(10, 10, 10, 10);
 
+//        sc.trace=true;
+        // Put and Get variable X and Y
+
+        // sc.data_push(10);
+        // sc.data_push(0);
+//        writefln("#### %s, ", source);
         script.run("test", sc);
         assert(sc.data_pop.value == 10);
 
+//        writefln("pop=%s", sc.data_pop.value);
     }
 
     unittest { // begin while repeat
@@ -565,34 +588,9 @@ class ScriptBuilder {
         script.run("test", sc);
         assert(sc.data_pop.value == 3);
 
-    }
-    unittest { // Text type
-        string source=
-            ": test_text\n"~
-            " \"text1\" \n"~
-            " 'text2' \n"~
-            " '' \n"~
-            ";\n"
-            ;
-        Script script;
-        auto builder=new ScriptBuilder();
-        builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-        script.run("test_text", sc);
-        string text;
-        text=sc.data_pop.text;
-        assert(text == "");
-
-        text=sc.data_pop.text;
-        assert(text == "text2");
-
-        text=sc.data_pop.text;
-        assert(text == "text1");
+//        writefln("pop=%s", sc.data_pop.value);
     }
 
-    version(none)
     unittest {
         assert("createbson" in Script.opcreators);
         import std.stdio : writefln;
@@ -621,16 +619,16 @@ class ScriptBuilder {
         assert(res_1==0 && res_2==1);
     }
 
-
-    version(none)
     unittest {
         assert("bson!" in Script.opcreators);
+        assert("bson@" in Script.opcreators);
         import std.stdio : writefln;
         string source=
             ": test\n"~
             "variable bson_1 \n"~
             "createbson bson_1 ! \n"~
             "bson_1 @ 'age' 32 bson! \n"~
+            "bson_1 @ 'age' bson@ \n"~
             ";\n"
             ;
         Script script;
@@ -640,6 +638,9 @@ class ScriptBuilder {
         auto sc=new ScriptContext(10, 10, 10, 10);
 
         script.run("test", sc);
+        import std.bigint;
+        // auto age=sc.data_pop.get!BigInt;
+        // assert(age==32, "Age is not correct, is: "~to!string(age));
     }
 
 private:
@@ -682,14 +683,14 @@ private:
     };
 
     //
-    // static immutable(Token) token_put={
-    //   token : "!",
-    //   type : ScriptType.WORD
-    // };
-    // static immutable(Token) token_get= {
-    //   token : "@",
-    //   type : ScriptType.WORD
-    // };
+    static immutable(Token) token_put={
+      token : "!",
+      type : ScriptType.WORD
+    };
+    static immutable(Token) token_get= {
+      token : "@",
+      type : ScriptType.WORD
+    };
     @safe
     static immutable(Token)[] token_loop_progress(immutable ScriptType type, immutable uint i)
         in {
@@ -735,37 +736,37 @@ private:
       token : "<r",
       type : ScriptType.WORD
     };
-    // static immutable(Token) token_inc_r= {
-    //     // r> 1 + dup >r
-    //   token : "@r1+",
-    //   type : ScriptType.WORD
-    // };
-    // static immutable(Token) token_get_r= {
-    //     // r@
-    //   token : "r@",
-    //   type : ScriptType.WORD
-    // };
+    static immutable(Token) token_inc_r= {
+        // r> 1 + dup >r
+      token : "@r1+",
+      type : ScriptType.WORD
+    };
+    static immutable(Token) token_get_r= {
+        // r@
+      token : "r@",
+      type : ScriptType.WORD
+    };
 
     static immutable(Token) token_gte= {
         // greater than
       token : ">=",
       type : ScriptType.WORD
     };
-    // static immutable(Token) token_invert= {
-    //     // invert
-    //   token : "invert",
-    //   type : ScriptType.WORD
-    // };
+    static immutable(Token) token_invert= {
+        // invert
+      token : "invert",
+      type : ScriptType.WORD
+    };
     static immutable(Token) token_repeat= {
         // repeat
       token : "repeat",
       type : ScriptType.REPEAT
     };
-    // static immutable(Token) token_not_if= {
-    //     // if !
-    //   token : "not_if",
-    //   type : ScriptType.NOT_IF
-    // };
+    static immutable(Token) token_not_if= {
+        // repeat
+      token : "not_if",
+      type : ScriptType.NOT_IF
+    };
     static immutable(Token) token_until= {
         // until
       token : "until",
@@ -1304,7 +1305,6 @@ private:
         }
 
     }
-
     immutable(Token)[] build(ref Script script, string source) {
         auto src=new ScriptInterpreter(source);
         // Convert to BSON object
@@ -1313,27 +1313,28 @@ private:
         auto data=bson.serialize;
         return build(script, data);
     }
-
-    immutable(Token)[] build(ref Script script, immutable(Token[]) tokens) {
+    immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
         immutable(Token)[] results;
         if ( parse_functions(script, tokens, results) ) {
             return results;
         }
         foreach(ref f; script.functions) {
             auto loop_tokens=expand_loop(f);
+            writefln("FUNC %s", f.name);
+            writefln("%s", f.toText);
+            writeln("--- ---");
             f.tokens=add_jump_label(loop_tokens);
+            writefln("%s", f.toText);
         }
         build_functions(script);
         return null;
     }
-
     immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
         auto tokens=ScriptInterpreter.BSON2Tokens(data);
         // Add token types
         tokens=ScriptInterpreter.Tokens2Tokens(tokens);
         return build(script, tokens);
     }
-
     void build_functions(ref Script script) {
         struct ScriptLabel {
             ScriptElement target; // Script element to jump to
