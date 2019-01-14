@@ -1988,13 +1988,14 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(_type == Type.BOOLEAN);
             return cast(T)(value.boolean);
         }
-        else static if (is(BaseType:const(BSON))) {
+        else static if (is(BaseType==BSON)) {
             assert(_type == Type.DOCUMENT);
             return cast(T)(value.document);
         }
-        else static if (is(BaseType:const(Document))) {
-            assert(_type == Type.NATIVE_DOCUMENT);
-            return Document(assumeUnique(value.binary));
+        else static if (is(BaseType:const(BSON))) {
+            assert(_type == Type.DOCUMENT);
+//            assert(const_pointer);
+            return cast(T)(value.document);
         }
         else static if (is(BaseType==ObjectId)) {
             assert(_type == Type.OID);
@@ -2004,17 +2005,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(_type == Type.INT32);
             return cast(T)(value.int32);
         }
-        else static if (is(BaseType==uint)) {
-            assert(_type == Type.UINT32);
-            return cast(T)(value.uint32);
-        }
         else static if (is(BaseType==long)) {
             assert(_type == Type.INT64);
             return cast(T)(value.int64);
-        }
-        else static if (is(BaseType==ulong)) {
-            assert(_type == Type.UINT64);
-            return cast(T)(value.uint64);
         }
         else static if (is(BaseType==Date)) {
             assert(_type == Type.DATE);
