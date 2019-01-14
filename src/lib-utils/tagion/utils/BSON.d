@@ -71,7 +71,8 @@ enum Type : byte {
         // Native types is only used inside the BSON object
         NATIVE_DOCUMENT       = cast(byte)(0x80 | 0x40 | DOCUMENT ),
         NATIVE_BSON_ARRAY     = cast(byte)(0x80 | 0x40 | ARRAY ), // This type is not a valid BSON type it is used to handle the native Document object
-        NATIVE_ARRAY          = cast(byte)(0x80 | ARRAY )
+        NATIVE_ARRAY          = cast(byte)(0x80 | ARRAY ),
+        NATIVE_STRING_ARRAY   = cast(byte)(0x80 | STRING )
         }
 
 
@@ -88,7 +89,7 @@ enum BinarySubType : ubyte
         INT32_array     = userDefined | Type.INT32,
         INT64_array     = userDefined | Type.INT64,
         DOUBLE_array    = userDefined | Type.DOUBLE,
-        STRING_array    = userDefined | Type.STRING,
+//        STRING_array    = userDefined | Type.STRING,
         BOOLEAN_array   = userDefined | Type.BOOLEAN,
         UINT32_array    = userDefined | Type.UINT32,
         UINT64_array    = userDefined | Type.UINT64,
@@ -543,7 +544,7 @@ public:
                     return 65;
                 case FLOAT, UINT32, UINT64:
                     return 70;
-                case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY:
+                case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
                     assert(0, format("Invalid type %s",t));
                 }
         }
@@ -635,7 +636,7 @@ public:
             case NATIVE_DOCUMENT:
                 s = _data.length;
                 break;
-                case NATIVE_ARRAY, NATIVE_BSON_ARRAY:
+                case NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
                 assert(0, format("No size defined for type %s", type) );
             }
 
@@ -1079,10 +1080,12 @@ public:
             case NATIVE_DOCUMENT:
                 result ~= "NativeDoc("~_data.length.to!string~")";
                 break;
+            case NATIVE_STRING_ARRAY:
+                assert(0, "Not implemented");
             case NATIVE_ARRAY:
-                    assert(0);
+                assert(0, "Not implemented");
             case NATIVE_BSON_ARRAY:
-                    assert(0);
+                 assert(0, "Not implemented");
             }
 
         return result;
@@ -1350,8 +1353,7 @@ int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool consid
 
 
 @trusted
-int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
-{
+int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow {
     with(Type) final switch (lhs.type) {
     case MIN, MAX, TRUNC, NONE, UNDEFINED,  NULL:
         auto r = lhs.canonicalType - rhs.canonicalType;
@@ -1485,7 +1487,7 @@ int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow
         if (r != 0)
             return r;
         return 0;
-        case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY:
+        case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
             assert(0, "A native document can not be compared");
     }
 }
@@ -1864,9 +1866,6 @@ BinarySubType getSubtype(T)() {
         else static if (is(T:const(float)[])) {
             return FLOAT_array;
         }
-        else static if (is(T:string[])) {
-            return STRING_array;
-        }
         else static if (is(T:const(ubyte)[])) {
             return generic;
         }
@@ -1975,7 +1974,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     @trusted
     auto get(T)() inout {
         alias BaseType=TypedefType!T;
-        static if (is(BaseType==double)) {
+        static if (is(immutable BaseType == immutable double)) {
             assert(_type == Type.DOUBLE);
             return cast(T)(value.number);
         }
@@ -2023,6 +2022,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(_type == Type.JS_CODE_SCOPE);
             return cast(T)(value.codescope);
         }
+        else static if (is(BaseType:string[])) {
+            assert(_type == Type.NATIVE_STRING_ARRAY);
+            return cast(T)(value.text_array);
+        }
         else static if (is(BaseType:const(ubyte)[])) {
             assert(_type == Type.BINARY);
             return cast(T)(value.binary);
@@ -2062,11 +2065,11 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subtype == BinarySubType.DOUBLE_array);
             return cast(T)(value.double_array);
         }
-        else static if (is(BaseType:U[],U) && isSomeString!U) {
-            assert(_type == Type.ARRAY);
-            assert(subtype == BinarySubType.STRING_array);
-            return cast(T)(value.text_array);
-        }
+        // else static if (is(BaseType:U[],U) && isSomeString!U) {
+        //     assert(_type == Type.ARRAY);
+        //     assert(subtype == BinarySubType.STRING_array);
+        //     return cast(T)(value.text_array);
+        // }
         else static if (is(BaseType==BSON[])) {
             writefln("BSON[] _type=%s", _type);
             assert(_type == Type.NATIVE_BSON_ARRAY);
@@ -2237,6 +2240,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     else static if (is(immutable U==immutable float)) {
                         elm.value.float_array=x;
                     }
+                    else static if (is(immutable U==immutable float)) {
+                        elm.value.bool_array=x;
+                    }
                 }
                 else {
                     static if (__traits(compiles,x.ptr)) {
@@ -2324,6 +2330,13 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case NATIVE_ARRAY:
                 static if ( is(T:const(Document[])) ) {
                     elm.value.document_array=x;
+                    writefln("append is(T:const(Document[]) type=%s elm.type=%s", type, elm.type );
+                    result=true;
+                }
+                break;
+            case NATIVE_STRING_ARRAY:
+                static if ( is(T==string[]) ) {
+                    elm.value.string_array=x;
                     result=true;
                 }
                 break;
@@ -2343,6 +2356,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             elm._key=key;
             elm.members=members;
             members=elm;
+            writefln("Elm key=%s type=%s", elm._key, elm._type);
         }
         return result;
     }
@@ -2377,13 +2391,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         else static if (is(BaseType:const(DateTime))) {
             result=append(Type.TIMESTAMP, key, x);
         }
-        else static if (is(BaseType:const(bool)[])) {
-            result=append(Type.BOOLEAN, key, x);
-        }
+        // else static if (is(BaseType:const(bool)[])) {
+        //     writefln("!!! boolean array");
+        //     result=append(Type.BINARY, key, x, BinarySubType.BOOLEAN_array);
+        // }
         else static if (is(BaseType:const(Document)) ) {
             result=append(Type.NATIVE_DOCUMENT, key, x);
         }
         else static if (is(BaseType:const(Document[])) ) {
+            writeln("is(BaseType:const(Document[])");
             result=append(Type.NATIVE_ARRAY, key, x);
         }
         else static if (is(BaseType:const(BSON[])) ) {
@@ -2392,6 +2408,8 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         }
         else static if (is(BaseType:U[],U)) {
             if (typedarray && is(U : const(double) ) ) {
+                enum flag=is(U : const(double) );
+                pragma(msg, U.stringof~" "~flag.stringof);
                 result=append(Type.BINARY, key, x, getSubtype!BaseType);
             }
             else {
@@ -2431,7 +2449,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         bson=new BSON;
         bson["docs"]=docs;
 
+        writefln("bson['docs'].type=%s", bson["docs"].type);
         auto doc=Document(bson.serialize);
+        writefln("doc['docs'].type=%s", doc["docs"].type);
+
         auto doc_docs=doc["docs"].get!Document;
 
         import std.stdio;
@@ -2541,13 +2562,16 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 result~=format("%s %s", to!string(_type), value.int64);
                 break;
             case NATIVE_DOCUMENT:
-                result~=format("%s %s", to!string(_type), value.binary.length);
+                result~=format("%s %s", to!string(_type), value.document_array.length);
                 break;
             case NATIVE_ARRAY:
                 result~=format("%s %s", to!string(_type), value.binary.length);
                 break;
             case NATIVE_BSON_ARRAY:
-                result~=format("%s %s", to!string(_type), value.binary.length);
+                result~=format("%s %s", to!string(_type), value.bson_array.length);
+                break;
+            case NATIVE_STRING_ARRAY:
+                result~=format("%s %s", to!string(_type), value.text_array.length);
             }
         return result;
     }
@@ -2695,22 +2719,22 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     enum zero = cast(ubyte)0;
     enum one  = cast(ubyte)1;
+    protected void append_native_array(T)(ref immutable(ubyte)[] data) const {
+        scope immutable(ubyte)[] local;
+        foreach(i,a;get!T) {
+            local~=Type.ARRAY;
+            local~=i.to!string;
+            local~=zero;
+            native_append(a, local);
+            writefln(" append_native_array %s", i);
+        }
+        data~=nativeToLittleEndian(cast(uint)(local.length+uint.sizeof+zero.sizeof));
+        data~=local;
+        data~=zero;
+    }
+
 
     immutable(ubyte)[] serialize() const {
-        void append_native_array(T)(ref immutable(ubyte)[] data) {
-            scope immutable(ubyte)[] local;
-            foreach(i,a;get!T) {
-                local~=Type.ARRAY;
-                local~=i.to!string;
-                local~=zero;
-                native_append(a, local);
-                writefln(" append_native_array %s", i);
-            }
-            data~=nativeToLittleEndian(cast(uint)(local.length+uint.sizeof+zero.sizeof));
-            data~=local;
-            data~=zero;
-        }
-
         immutable(ubyte)[] local_serialize() {
             immutable(ubyte)[] data;
             foreach(e; iterator!key_sort_flag) {
@@ -2741,10 +2765,13 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         data~=e.value.document.serialize;
                         break;
                     case NATIVE_BSON_ARRAY:
-                        append_native_array!(BSON[])(data);
+                        e.append_native_array!(BSON[])(data);
                         break;
                     case NATIVE_ARRAY:
-                        append_native_array!(Document[])(data);
+                        e.append_native_array!(Document[])(data);
+                        break;
+                    case NATIVE_STRING_ARRAY:
+                        e.append_native_array!(string[])(data);
                         break;
                     case BINARY:
                         data~=e.subtype_buffer;
@@ -2957,6 +2984,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subarray[1].get!double == doubles[1]);
             assert(subarray[2].get!double == doubles[2]);
         }
+        version(none) // Not supported
         { // string array
             string[] strings=["Hej", "med", "dig"];
             bson=new BSON;
@@ -3166,7 +3194,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     @trusted
     const(ubyte)[] subtype_buffer() const {
-        with(BinarySubType) switch(subtype) {
+        with(BinarySubType) final switch(subtype) {
             case generic:
             case func:
             case binary:
@@ -3186,8 +3214,11 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 return (cast(const(ubyte)*)(value.double_array.ptr))[0..value.double_array.length*double.sizeof];
             case FLOAT_array:
                 return (cast(const(ubyte)*)(value.float_array.ptr))[0..value.float_array.length*float.sizeof];
-            default:
-                throw new BSONException("Binary suptype "~to!string(subtype)~" not supported for buffer");
+            case BOOLEAN_array:
+                return (cast(const(ubyte)*)(value.bool_array.ptr))[0..value.bool_array.length*bool.sizeof];
+            case bigint, not_defined:
+                 throw new BSONException("Binary suptype "~to!string(subtype)~" not supported for buffer");
+
             }
 
     }
