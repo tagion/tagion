@@ -1842,6 +1842,17 @@ ubyte[] fromHex(in string hex) pure nothrow
 }
 
 
+bool isSubType(T)() {
+    return (is(T:const(bool)[]))|
+        (is(T:const(int)[])) |
+        (is(T:const(uint)[])) |
+        (is(T:const(long)[])) |
+        (is(T:const(ulong)[])) |
+        (is(T:const(double)[])) |
+        (is(T:const(float)[])) |
+        (is(T:const(ubyte)[]));
+}
+
 static
 BinarySubType getSubtype(T)() {
     with(BinarySubType) {
@@ -2172,46 +2183,8 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     elm.value.document=cast(BSON)x;
                     result=true;
                 }
-                else static if (is(T:U[],U) && !isSomeString!T) {
-                    static if (is(U:const(bool))) {
-//                        elm.subtype=BinarySubType.BOOLEAN_array;
-                        elm.value.bool_array=x;
-                        result=true;
-                    }
-                    else static if (is(U:const(char)[])) {
-                        elm.value.text_array=x;
-                        result=true;
-                    }
-                    else static if (is(immutable U==immutable uint )) {
-                        elm.value.uint32_array=x;
-                        result=true;
-                    }
-                    else static if (is(immutable U==immutable int )) {
-                        elm.value.int32_array=x;
-                        result=true;
-                    }
-                    else static if (is(immutable U==immutable long )) {
-                        elm.value.int64_array=x;
-                        result=true;
-                    }
-                    else static if (is(immutable U==immutable float)) {
-                        elm.value.float_array=x;
-                    }
-                    else static if (is(immutable U==immutable double)) {
-                        elm.value.double_array=x;
-                        result=true;
-                    }
-                    else static if (is(U:BSON)) {
-                        elm.value.bson_array=x;
-                        result=true;
-                    }
-                    else static if (is(U:Document)) {
-                        elm.value.document_array=x;
-                        result=true;
-                    }
-                    else {
-                        assert(0, "Unsupported type "~T.stringof);
-                    }
+                else static if (is(T:string[])) {
+                    elm.value.text_array=x;
                 }
                 else {
                     assert(0, "Unsupported type "~T.stringof~" does not seem to be a valid native array");
@@ -2336,7 +2309,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 break;
             case NATIVE_STRING_ARRAY:
                 static if ( is(T==string[]) ) {
-                    elm.value.string_array=x;
+                    elm.value.text_array=x;
                     result=true;
                 }
                 break;
@@ -2356,7 +2329,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             elm._key=key;
             elm.members=members;
             members=elm;
-            writefln("Elm key=%s type=%s", elm._key, elm._type);
+            // writefln("Elm key=%s type=%s", elm._key, elm._type);
         }
         return result;
     }
@@ -2406,15 +2379,11 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             writeln("is(BaseType:const(BSON[]))");
             result=append(Type.NATIVE_BSON_ARRAY, key, x);
         }
+        else static if (isSubType!BaseType) {
+            result=append(Type.BINARY, key, x, getSubtype!BaseType);
+        }
         else static if (is(BaseType:U[],U)) {
-            if (typedarray && is(U : const(double) ) ) {
-                enum flag=is(U : const(double) );
-                pragma(msg, U.stringof~" "~flag.stringof);
-                result=append(Type.BINARY, key, x, getSubtype!BaseType);
-            }
-            else {
-                result=append(Type.ARRAY, key, x, getSubtype!BaseType);
-            }
+            result=append(Type.ARRAY, key, x);
         }
         else {
             static assert(0, "opIndexAssign does not support type "~T.stringof~" use append member function instead");
@@ -2459,6 +2428,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
         writefln("DOC tyoe %s", typeid("1" in doc_docs));
 
+        writeln("End Assign Document[] unittest");
     }
 
     const(BSON) opIndex(const(char)[] key) const {
@@ -2739,7 +2709,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             immutable(ubyte)[] data;
             foreach(e; iterator!key_sort_flag) {
                 data~=(e._type & Type.TRUNC);
-                writefln("e.type=%s data=%s  & %s TRUNC=%s:%s", e.type, cast(Type)data[$-1], e._type & Type.TRUNC, cast(byte)Type.TRUNC, cast(ubyte)Type.NATIVE_DOCUMENT );
+                // writefln("e.type=%s data=%s  & %s TRUNC=%s:%s", e.type, cast(Type)data[$-1], e._type & Type.TRUNC, cast(byte)Type.TRUNC, cast(ubyte)Type.NATIVE_DOCUMENT );
                 data~=e.key;
                 data~=zero;
                 with(Type) final switch(e._type) {
@@ -2774,7 +2744,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         e.append_native_array!(string[])(data);
                         break;
                     case BINARY:
-                        data~=e.subtype_buffer;
+                        e.append_binary(data);
 //                        e.appendData(data);
                         break;
                     case UNDEFINED:
@@ -2899,7 +2869,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subobj["x"].isNumber);
             assert(subobj["x"].get!int == 10);
         }
-
+        writeln("duble test");
     }
 
     unittest { // Test of serializing of a cost(BSON)
@@ -2926,7 +2896,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(stream(bson1) == bson2.serialize);
             assert(bson1.serialize == stream(bson2));
         }
-
+        writeln("Test serializing");
     }
 
     unittest {
@@ -2936,9 +2906,14 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             immutable bools=[true, false, true];
             bson=new BSON;
             bson["bools"]=bools;
+            writeln("before bson.serialize");
+
             auto doc=Document(bson.serialize);
             assert(doc.hasElement("bools"));
+            writeln("before Document type");
             auto subarray=doc["bools"].get!Document;
+
+            writeln("after Document type");
 
             assert(subarray[0].get!bool == bools[0]);
             assert(subarray[1].get!bool == bools[1]);
@@ -2984,7 +2959,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subarray[1].get!double == doubles[1]);
             assert(subarray[2].get!double == doubles[2]);
         }
-        version(none) // Not supported
+
         { // string array
             string[] strings=["Hej", "med", "dig"];
             bson=new BSON;
@@ -2998,6 +2973,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subarray[1].get!string == strings[1]);
             assert(subarray[2].get!string == strings[2]);
         }
+
         {
             BSON[] bsons;
             bson=new BSON;
@@ -3193,7 +3169,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
 
     @trusted
-    const(ubyte)[] subtype_buffer() const {
+    protected const(ubyte)[] subtype_buffer() const {
+        scope(exit) {
+            writefln("Exit subtype %s", subtype);
+        }
         with(BinarySubType) final switch(subtype) {
             case generic:
             case func:
@@ -3222,6 +3201,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             }
 
     }
+
+    protected void append_binary(ref immutable(ubyte)[] data) const {
+        scope binary=subtype_buffer;
+        data~=nativeToLittleEndian(cast(uint)(binary.length+ubyte.sizeof+uint.sizeof+zero.sizeof));
+        data~=cast(ubyte)subtype;
+        data~=binary;
+        data~=zero;
+    }
+
 
     string[] keys() pure const nothrow {
         string[] result;
