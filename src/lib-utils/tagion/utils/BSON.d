@@ -2005,9 +2005,17 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(_type == Type.INT32);
             return cast(T)(value.int32);
         }
+        else static if (is(BaseType==uint)) {
+            assert(_type == Type.UINT32);
+            return cast(T)(value.uint32);
+        }
         else static if (is(BaseType==long)) {
             assert(_type == Type.INT64);
             return cast(T)(value.int64);
+        }
+        else static if (is(BaseType==ulong)) {
+            assert(_type == Type.UINT64);
+            return cast(T)(value.uint64);
         }
         else static if (is(BaseType==Date)) {
             assert(_type == Type.DATE);
