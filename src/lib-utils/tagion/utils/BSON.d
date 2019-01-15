@@ -2968,6 +2968,25 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
         }
 
+        { // Unsigned int array
+            writeln("Begin int array");
+            immutable(uint[]) uint32s=[7, 9, 13];
+            bson=new BSON;
+            bson["uint32s"]=uint32s;
+
+            auto doc=Document(bson.serialize);
+            assert(doc.hasElement("uint32s"));
+            writefln("bson.serialize=%s", bson.serialize);
+            writefln("bsom['uint32s'].type=%s %s", bson["uint32s"].type, bson["uint32s"].subtype);
+            auto subarray=doc["uint32s"].get!(typeof(uint32s));
+
+            assert(subarray[0] == uint32s[0]);
+            assert(subarray[1] == uint32s[1]);
+            assert(subarray[2] == uint32s[2]);
+            writeln("End uint32s array");
+
+        }
+
         { // Long array
             writeln("Begin int array");
             immutable(long[]) int64s=[7, 9, -13];
@@ -2986,6 +3005,24 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             writeln("End long array");
         }
 
+        { // Unsigned long array
+            writeln("Begin ulong array");
+            immutable(ulong[]) uint64s=[7, 9, 13];
+            bson=new BSON;
+            bson["uint64s"]=uint64s;
+
+            auto doc=Document(bson.serialize);
+            writefln("bson.serialize=%s", bson.serialize);
+            writefln("bsom['uint64s'].type=%s %s", bson["uint64s"].type, bson["uint64s"].subtype);
+            assert(doc.hasElement("uint64s"));
+            auto subarray=doc["uint64s"].get!(typeof(uint64s));
+
+            assert(subarray[0] == uint64s[0]);
+            assert(subarray[1] == uint64s[1]);
+            assert(subarray[2] == uint64s[2]);
+            writeln("End ulong array");
+        }
+
         { // double array
             immutable(double[]) doubles=[7.7, 9.9, 13.13];
             bson=new BSON;
@@ -2999,6 +3036,22 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subarray[1] == doubles[1]);
             assert(subarray[2] == doubles[2]);
             writeln("End double array");
+        }
+
+
+        { // float array
+            immutable(float[]) floats=[7.7, 9.9, 13.13];
+            bson=new BSON;
+            bson["floats"]=floats;
+
+            auto doc=Document(bson.serialize);
+            assert(doc.hasElement("floats"));
+            auto subarray=doc["floats"].get!(typeof(floats));
+
+            assert(subarray[0] == floats[0]);
+            assert(subarray[1] == floats[1]);
+            assert(subarray[2] == floats[2]);
+            writeln("End float array");
         }
 
         { // string array
