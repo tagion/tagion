@@ -5,6 +5,7 @@ import tagion.crypto.Hash;
 private import tagion.hashgraph.ConsensusExceptions;
 private import std.string : format, join, strip;
 private import std.traits;
+private import std.exception : assumeUnique;
 import std.bitmanip : BitArray;
 
 // private import std.algorithm : splitter;
@@ -92,14 +93,14 @@ void bitarray_change(ref BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
-const(bool)[] bitarray2bool(ref const(BitArray) bits) @trusted {
+immutable(bool[]) bitarray2bool(ref const(BitArray) bits) @trusted {
     bool[] mask=new bool[bits.length];
     foreach(i, m; bits) {
         if (m) {
             mask[i]=true;
         }
     }
-    return mask;
+    return assumeUnique(mask);
 }
 
 unittest {
