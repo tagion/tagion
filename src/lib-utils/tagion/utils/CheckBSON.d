@@ -153,13 +153,26 @@ struct CheckBSON(bool hbson_flag) {
                 binary_size=float.sizeof;
                 result=hbson_flag;
                 break;
+            case NATIVE_DOCUMENT_array:
+                binary_size=0, //float.sizeof;
+                result=hbson_flag;
+                break;
             default:
                 result=false;
             }
         if ( result ) {
-            immutable binarry_array_size=size-cpos;
-            result=(binarry_array_size % binary_size == 0);
-            cpos=size;
+            static if ( hbson_flag ) {
+                if ( subtype == BinarySubType.NATIVE_DOCUMENT_array ) {
+                    size_t pos_bin;
+                    result=check_document_array(bin[cpos..size], pos_bin);
+                    cpos+=pos_bin;
+                }
+                else {
+                    immutable binarry_array_size=size-cpos;
+                    result=(binarry_array_size % binary_size == 0);
+                    cpos=size;
+                }
+            }
         }
         return result;
     }
