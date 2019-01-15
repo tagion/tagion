@@ -27,7 +27,7 @@ import std.exception;  // assumeUnique
 import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
 import std.format;
-import std.traits : isSomeString;
+import std.traits : isSomeString, isIntegral;
 private import std.bitmanip;
 
 import tagion.crypto.Hash : toHexString;
@@ -35,7 +35,7 @@ import tagion.crypto.Hash : toHexString;
 // Hash invariant BSON object
 public alias HBSON=BSON!(true,true);
 
-import std.stdio;
+//import std.stdio;
 //private import proton.core.Misc;
 
 static assert(uint.sizeof == 4);
@@ -298,46 +298,47 @@ public:
     }
 
 
-    @property @trusted
+    @trusted
     string[] keys() const {
         import std.array;
-
         return array(map!"a.key"(Range(_data)));
     }
 
 
-    @trusted const {
-        bool hasElement(in string key) {
-            return !opIn_r(key).isEod();
-        }
+    // Throws an std.conv.ConvException if the keys can not be convert to an uint
+    immutable(uint[]) indices() const {
+        import std.array;
+        return array(map!"a.key.to!uint"(Range(_data))).idup;
+    }
+
+    bool hasElement(in string key) const {
+        return !opIn_r(key).isEod();
+    }
 
 
-        bool hasElement(in size_t index) {
-            return hasElement(index.to!string);
-        }
+    bool hasElement(Index)(in Index index) const if (isIntegral!Index) {
+        return hasElement(index.to!string);
+    }
 
-        inout(Element) opIn_r(in string key) inout {
-            foreach (ref element; Range(_data)) {
-                if (element.key == key) {
-                    return element;
-                }
+    const(Element) opIn_r(in string key) const {
+        foreach (ref element; Range(_data)) {
+            if (element.key == key) {
+                return element;
             }
-            return Element();
         }
+        return Element();
+    }
 
-        inout(Element) opIndex(in string key) inout {
-            auto result=key in this;
-            if ((callbacks !is null) && result.isEod) {
-                callbacks.not_found(format("Member named '%s' not found", key));
-            }
-            return result;
+    const(Element) opIndex(in string key) const {
+        auto result=key in this;
+        if ((callbacks !is null) && result.isEod) {
+            callbacks.not_found(format("Member named '%s' not found", key));
         }
+        return result;
+    }
 
-        inout(Element) opIndex(in size_t index) inout{
-            return opIndex(index.to!string);
-        }
-
-
+    const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
+        return opIndex(index.to!string);
     }
 
 
@@ -763,7 +764,6 @@ public:
 
             @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
                 alias BaseT=TypedefType!T;
-                writefln("get!%s type=%s subtype=%s getSubtype!BaseT=%s %s", T.stringof, type, subtype, getSubtype!BaseT, is(BaseT : immutable(Q[]), Q));
                 static if ( is(BaseT : immutable(U[]), U) ) {
                     static if ( is(BaseT : immutable(ubyte)[] ) ) {
                         return binary_buffer;
@@ -771,7 +771,6 @@ public:
                     else if ( (type == Type.BINARY ) && ( subtype == getSubtype!BaseT ) )  {
                         auto buf=binary_buffer;
                         .check(buf.length % U.sizeof == 0, format("The size of binary subtype '%s' should be a mutiple of %d but is %d", subtype, U.sizeof, buf.length));
-                        writefln("buf.lenght=%d U.sizeof=%d %s", buf.length, U.sizeof, BaseT.stringof);
                         return cast(BaseT)(buf.ptr[0..buf.length]);
                     }
                 }
@@ -2106,12 +2105,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         //     return cast(T)(value.text_array);
         // }
         else static if (is(BaseType==BSON[])) {
-            writefln("BSON[] _type=%s", _type);
             assert(_type == Type.NATIVE_BSON_ARRAY);
             return cast(T)(value.bson_array);
         }
         else static if (is(BaseType==Document[])) {
-            writefln("Document[] _type=%s", _type);
             assert(_type == Type.NATIVE_ARRAY);
             return cast(T)(value.document_array);
         }
@@ -2145,8 +2142,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             elm.members=members;
             members=elm;
         }
-        pragma(msg, "append type "~T.stringof);
-        writefln("Append type=%s subtype=%s", type, subtype);
         with (Type) {
             final switch (type) {
             case MIN:
@@ -2247,7 +2242,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         elm.value.float_array=x;
                     }
                     else static if (is(U==immutable bool)) {
-                        writefln("Assign bool_array %s", T.stringof);
                         elm.value.bool_array=x;
                     }
                     else {
@@ -2340,7 +2334,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case NATIVE_ARRAY:
                 static if ( is(T:const(Document[])) ) {
                     elm.value.document_array=x;
-                    writefln("append is(T:const(Document[]) type=%s elm.type=%s", type, elm.type );
                     result=true;
                 }
                 break;
@@ -2389,18 +2382,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             append(Type.TIMESTAMP, key, x);
         }
         else static if (is(BaseType:string[])) {
-            writefln("!!! string array");
             append(Type.NATIVE_STRING_ARRAY, key, x);
         }
         else static if (is(BaseType:const(Document)) ) {
             append(Type.NATIVE_DOCUMENT, key, x);
         }
         else static if (is(BaseType:const(Document[])) ) {
-            writeln("is(BaseType:const(Document[])");
             append(Type.NATIVE_ARRAY, key, x);
         }
         else static if (is(BaseType:const(BSON[])) ) {
-            writeln("is(BaseType:const(BSON[]))");
             append(Type.NATIVE_BSON_ARRAY, key, x);
         }
         else static if (isSubType!BaseType) {
@@ -2430,29 +2420,33 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         BSON bson;
         Document[] docs;
         bson=new BSON;
-        bson["int1"]=1;
+        bson["int_0"]=0;
         docs~=Document(bson.serialize);
         bson=new BSON;
-        bson["int2"]=2;
+        bson["int_1"]=1;
         docs~=Document(bson.serialize);
         bson=new BSON;
-        bson["int3"]=2;
+        bson["int_2"]=2;
         docs~=Document(bson.serialize);
 
         bson=new BSON;
         bson["docs"]=docs;
 
-        writefln("bson['docs'].type=%s", bson["docs"].type);
+
         auto doc=Document(bson.serialize);
-        writefln("doc['docs'].type=%s", doc["docs"].type);
 
         auto doc_docs=doc["docs"].get!Document;
 
-        import std.stdio;
-
-        writefln("DOC tyoe %s", typeid("1" in doc_docs));
-
-        writeln("End Assign Document[] unittest");
+        assert(doc_docs.length == 3);
+        assert(doc_docs.keys == ["0", "1", "2"]);
+        assert(doc_docs.indices == [0, 1, 2]);
+        foreach(uint i;0..3) {
+            assert(doc_docs.hasElement(i.to!string));
+            assert(doc_docs.hasElement(i));
+            auto e=(i.to!string in doc_docs);
+            auto d=doc_docs[i].get!Document;
+            assert(d["int_"~i.to!string].get!int == i);
+        }
     }
 
     const(BSON) opIndex(const(char)[] key) const {
@@ -2720,7 +2714,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             local~=i.to!string;
             local~=zero;
             native_append(a, local);
-            writefln(" append_native_array %s %s", T.stringof, i);
         }
         data~=nativeToLittleEndian(cast(uint)(local.length+uint.sizeof+zero.sizeof));
         data~=local;
@@ -2733,7 +2726,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             immutable(ubyte)[] data;
             foreach(e; iterator!key_sort_flag) {
                 data~=(e._type & Type.TRUNC);
-                writefln("e.type=%s data=%s  & %s TRUNC=%s:%s", e.type, cast(Type)data[$-1], e._type & Type.TRUNC, cast(byte)Type.TRUNC, cast(ubyte)Type.NATIVE_DOCUMENT );
                 data~=e.key;
                 data~=zero;
                 with(Type) final switch(e._type) {
@@ -2766,12 +2758,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         break;
                     case NATIVE_STRING_ARRAY:
                         e.append_native_array!(string[])(STRING, data);
-                        writefln("End of %s", type,);
                         break;
                     case BINARY:
-                        writefln("BINARY subtype=%s", e.subtype);
                         e.append_binary(data);
-//                        e.appendData(data);
                         break;
                     case UNDEFINED:
                     case NULL:
@@ -2895,7 +2884,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subobj["x"].isNumber);
             assert(subobj["x"].get!int == 10);
         }
-        writeln("duble test");
     }
 
     unittest { // Test of serializing of a cost(BSON)
@@ -2922,7 +2910,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(stream(bson1) == bson2.serialize);
             assert(bson1.serialize == stream(bson2));
         }
-        writeln("Test serializing");
     }
 
     unittest {
@@ -2932,95 +2919,70 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             immutable bools=[true, false, true];
             bson=new BSON;
             bson["bools"]=bools;
-            writeln("before bson.serialize");
 
             auto doc=Document(bson.serialize);
-            writefln("bson.serialize=%s", bson.serialize);
-            writefln("bsom['bools'].type=%s %s", bson["bools"].type, bson["bools"].subtype);
             assert(doc.hasElement("bools"));
-            writefln("before Document type %s", getSubtype!(immutable(bool)[]));
             auto subarray=doc["bools"].get!(typeof(bools));
-
-            writeln("after Document type");
 
             assert(subarray[0] == bools[0]);
             assert(subarray[1] == bools[1]);
             assert(subarray[2] == bools[2]);
-            writeln("End boolean array");
         }
 
         { // Int array
-            writeln("Begin int array");
             immutable(int[]) int32s=[7, -9, 13];
             bson=new BSON;
             bson["int32s"]=int32s;
 
             auto doc=Document(bson.serialize);
             assert(doc.hasElement("int32s"));
-            writefln("bson.serialize=%s", bson.serialize);
-            writefln("bsom['int32s'].type=%s %s", bson["int32s"].type, bson["int32s"].subtype);
             auto subarray=doc["int32s"].get!(typeof(int32s));
 
             assert(subarray[0] == int32s[0]);
             assert(subarray[1] == int32s[1]);
             assert(subarray[2] == int32s[2]);
-            writeln("End int32s array");
-
         }
 
         { // Unsigned int array
-            writeln("Begin int array");
             immutable(uint[]) uint32s=[7, 9, 13];
             bson=new BSON;
             bson["uint32s"]=uint32s;
 
             auto doc=Document(bson.serialize);
             assert(doc.hasElement("uint32s"));
-            writefln("bson.serialize=%s", bson.serialize);
-            writefln("bsom['uint32s'].type=%s %s", bson["uint32s"].type, bson["uint32s"].subtype);
             auto subarray=doc["uint32s"].get!(typeof(uint32s));
 
             assert(subarray[0] == uint32s[0]);
             assert(subarray[1] == uint32s[1]);
             assert(subarray[2] == uint32s[2]);
-            writeln("End uint32s array");
-
         }
 
         { // Long array
-            writeln("Begin int array");
             immutable(long[]) int64s=[7, 9, -13];
             bson=new BSON;
             bson["int64s"]=int64s;
 
             auto doc=Document(bson.serialize);
-            writefln("bson.serialize=%s", bson.serialize);
-            writefln("bsom['int64s'].type=%s %s", bson["int64s"].type, bson["int64s"].subtype);
             assert(doc.hasElement("int64s"));
             auto subarray=doc["int64s"].get!(typeof(int64s));
 
             assert(subarray[0] == int64s[0]);
             assert(subarray[1] == int64s[1]);
             assert(subarray[2] == int64s[2]);
-            writeln("End long array");
         }
 
         { // Unsigned long array
-            writeln("Begin ulong array");
             immutable(ulong[]) uint64s=[7, 9, 13];
             bson=new BSON;
             bson["uint64s"]=uint64s;
 
             auto doc=Document(bson.serialize);
-            writefln("bson.serialize=%s", bson.serialize);
-            writefln("bsom['uint64s'].type=%s %s", bson["uint64s"].type, bson["uint64s"].subtype);
             assert(doc.hasElement("uint64s"));
             auto subarray=doc["uint64s"].get!(typeof(uint64s));
 
             assert(subarray[0] == uint64s[0]);
             assert(subarray[1] == uint64s[1]);
             assert(subarray[2] == uint64s[2]);
-            writeln("End ulong array");
         }
 
         { // double array
@@ -3035,7 +2997,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subarray[0] == doubles[0]);
             assert(subarray[1] == doubles[1]);
             assert(subarray[2] == doubles[2]);
-            writeln("End double array");
         }
 
 
@@ -3051,25 +3012,20 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subarray[0] == floats[0]);
             assert(subarray[1] == floats[1]);
             assert(subarray[2] == floats[2]);
-            writeln("End float array");
         }
 
         { // string array
-            writeln("Begin string array");
             string[] strings=["Hej", "med", "dig"];
             bson=new BSON;
             bson["strings"]=strings;
 
             auto doc=Document(bson.serialize);
-            writefln("bson.serialize=%s", bson.serialize);
-            writefln("bsom['strings'].type=%s %s", bson["strings"].type, bson["strings"].subtype);
             assert(doc.hasElement("strings"));
             auto subarray=doc["strings"].get!Document;
 
             assert(subarray[0].get!string == strings[0]);
             assert(subarray[1].get!string == strings[1]);
             assert(subarray[2].get!string == strings[2]);
-            writeln("End string array");
         }
 
         {
@@ -3097,7 +3053,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(subarray[0].get!Document["x"].get!int == 10);
             assert(subarray[1].get!Document["y"].get!string == "kurt");
             assert(subarray[2].get!Document["z"].get!bool == true);
-            writeln("End bson object");
         }
     }
 
@@ -3268,9 +3223,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     @trusted
     protected immutable(ubyte)[] subtype_buffer() const {
-        scope(exit) {
-            writefln("Exit subtype %s", subtype);
-        }
         with(BinarySubType) final switch(subtype) {
             case generic:
             case func:
@@ -3305,8 +3257,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         data~=nativeToLittleEndian(cast(uint)(binary.length));
         data~=cast(ubyte)subtype;
         data~=binary;
-        writefln("append_binary subtype=%s size=%s subtype.sizeof=%d", subtype, binary.length, subtype.sizeof);
-//        data~=zero;
     }
 
 
@@ -3552,20 +3502,15 @@ unittest { // Test of Native Document type
     auto doc_bson=new HBSON;
     doc_bson["int"]=10;
     doc_bson["bool"]=true;
-    writeln("Before bson1['obj']");
     bson1["obj"]=doc_bson;
-    writeln("After bson1['obj']");
 
     // Test of using native Documnet as a object member
     auto doc=Document(doc_bson.serialize);
-    writeln("Before doc");
     bson2["obj"]=doc;
-    writeln("After doc");
-    import std.stdio;
     auto data1=bson1.serialize;
-    writefln("%s:%d", data1, data1.length);
+    // writefln("%s:%d", data1, data1.length);
     auto data2=bson2.serialize;
-    writefln("%s:%d", data2, data2.length);
+    // writefln("%s:%d", data2, data2.length);
     assert(data1.length == data2.length);
     assert(data1 == data2);
 }
