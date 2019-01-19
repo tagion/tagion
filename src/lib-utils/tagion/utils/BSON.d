@@ -3273,6 +3273,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         return result;
     }
 
+    uint length() const {
+        uint counter;
+        auto iter=Iterator!(const(BSON), false)(this);
+        foreach(e;iter) {
+            counter++;
+        }
+        return counter;
+    }
+
     unittest {
         // Test keys function
         // and the sorted BSON
