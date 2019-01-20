@@ -1606,7 +1606,7 @@ unittest
 
 
 /**
- * Exception type used by mongo.bson module
+ * Exception type used by tagion.utils.BSON module
  */
 @safe
 class BSONException : Exception
@@ -3271,15 +3271,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
         foreach_key(this.members);
         return result;
-    }
-
-    uint length() const {
-        uint counter;
-        auto iter=Iterator!(const(BSON), false)(this);
-        foreach(e;iter) {
-            counter++;
-        }
-        return counter;
     }
 
     unittest {
