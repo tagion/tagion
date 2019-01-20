@@ -276,3 +276,11 @@ string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
         return buf[0..LEN].toHexString;
     }
 }
+
+
+@safe
+void check(E)(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
+    if (!flag) {
+        throw new E(msg, file, line);
+    }
+}
