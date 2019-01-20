@@ -2355,6 +2355,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         }
     }
 
+    void opIndexAssign(T)(T x, in uint index) {
+        opIndexAssign(x, index.to!string);
+    }
+
     void opIndexAssign(T)(T x, in string key) {
         alias BaseType=TypedefType!T;
         static if (is(BaseType:const(bool))) {
