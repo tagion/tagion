@@ -276,3 +276,39 @@ string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
         return buf[0..LEN].toHexString;
     }
 }
+
+
+@safe
+void check(E)(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
+    if (!flag) {
+        throw new E(msg, file, line);
+    }
+}
+
+@safe
+int log2(ulong n) {
+    if ( n == 0 ) {
+        return -1;
+    }
+    int i;
+    void S(uint k=((ulong.sizeof*8)>>1))() {
+        static if ( k > 0 ) {
+            if (n >= (1uL << k)) {
+                i += k; n >>= k;
+            }
+            S!(k>>1);
+        }
+    }
+    S;
+    return i;
+}
+
+
+    unittest {
+    // Undefined value returns -1
+    assert(log2(0) == -1);
+    assert(log2(17) == 4);
+    assert(log2(177) == 7);
+    assert(log2(0x1000_000_000) == 36);
+
+}
