@@ -1606,7 +1606,7 @@ unittest
 
 
 /**
- * Exception type used by tagion.utils.BSON module
+ * Exception type used by mongo.bson module
  */
 @safe
 class BSONException : Exception
@@ -2353,10 +2353,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             .check(result, format("Unmatch type %s at %s. Expected  BSON type '%s' %s", T.stringof, key, type,
                 (type == BINARY)?format("subtype '%s'", subtype):""));
         }
-    }
-
-    void opIndexAssign(T)(T x, in uint index) {
-        opIndexAssign(x, index.to!string);
     }
 
     void opIndexAssign(T)(T x, in string key) {
@@ -3275,6 +3271,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
         foreach_key(this.members);
         return result;
+    }
+
+    uint length() const {
+        uint counter;
+        auto iter=Iterator!(const(BSON), false)(this);
+        foreach(e;iter) {
+            counter++;
+        }
+        return counter;
     }
 
     unittest {
