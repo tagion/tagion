@@ -67,6 +67,10 @@ enum _keywords = [
     "bills",
     "bill",
     "bill_number",
+    "bill_body",
+    "bill_type",
+    "value",
+    "ownerkey",
     // Scripting
     "code",
     "source"
