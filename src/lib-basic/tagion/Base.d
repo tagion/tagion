@@ -89,7 +89,7 @@ void  bitarray_clear(out BitArray bits, uint length) @trusted {
 }
 
 // Change the size of the bitarray
-void bitarray_change(ref BitArray bits, uint length) @trusted {
+void bitarray_change(ref scope BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
