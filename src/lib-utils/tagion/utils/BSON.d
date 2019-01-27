@@ -194,8 +194,8 @@ public:
 
     // FIXME: Check for index out of range and call the error function
     // This function will throw an RangeError if length format is wrong
-    bool isInOrder(bool function(ref const(Element) elm, ref bool result) @safe error=null)  {
-        bool local_order(ref const(Element) previous, Range range) @safe {
+    bool isInOrder(bool function(const(Element) elm, ref bool result) @safe error=null)  {
+        bool local_order(const(Element) previous, Range range) @safe {
             //writefln("previous.key=%s", previous.key);
             range.popFront;
             bool result=true;
@@ -274,7 +274,7 @@ public:
             /**
              * InputRange primitive operation that returns the currently iterated element.
              */
-            ref const(Element) front() {
+            const(Element) front() {
                 return element_;
             }
         }
