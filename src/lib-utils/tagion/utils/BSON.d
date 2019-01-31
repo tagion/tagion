@@ -194,8 +194,8 @@ public:
 
     // FIXME: Check for index out of range and call the error function
     // This function will throw an RangeError if length format is wrong
-    bool isInOrder(bool function(ref const(Element) elm, ref bool result) @safe error=null)  {
-        bool local_order(ref const(Element) previous, Range range) @safe {
+    bool isInOrder(bool function(const(Element) elm, ref bool result) @safe error=null)  {
+        bool local_order(const(Element) previous, Range range) @safe {
             //writefln("previous.key=%s", previous.key);
             range.popFront;
             bool result=true;
@@ -274,7 +274,7 @@ public:
             /**
              * InputRange primitive operation that returns the currently iterated element.
              */
-            ref const(Element) front() {
+            const(Element) front() {
                 return element_;
             }
         }
@@ -1606,7 +1606,7 @@ unittest
 
 
 /**
- * Exception type used by mongo.bson module
+ * Exception type used by tagion.utils.BSON module
  */
 @safe
 class BSONException : Exception
@@ -2353,6 +2353,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             .check(result, format("Unmatch type %s at %s. Expected  BSON type '%s' %s", T.stringof, key, type,
                 (type == BINARY)?format("subtype '%s'", subtype):""));
         }
+    }
+
+    void opIndexAssign(T)(T x, in uint index) {
+        opIndexAssign(x, index.to!string);
     }
 
     void opIndexAssign(T)(T x, in string key) {
