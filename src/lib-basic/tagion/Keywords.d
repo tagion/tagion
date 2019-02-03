@@ -71,7 +71,8 @@ enum _keywords = [
     "code",
     "source",
     // DART
-    "root"
+    "tree",
+    "stub"
     ];
 
 // Generated the Keywords and enum string list
