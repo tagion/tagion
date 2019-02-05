@@ -71,6 +71,7 @@ enum _keywords = [
     "code",
     "source",
     // DART
+    "fingerprint",
     "tree",
     "stub"
     ];
