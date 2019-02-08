@@ -26,7 +26,6 @@ enum BufferType {
     PAYLOAD
 }
 
-
 alias Buffer=immutable(ubyte)[];
 alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof);
 alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);
@@ -301,7 +300,7 @@ int log2(ulong n) {
 }
 
 
-    unittest {
+unittest {
     // Undefined value returns -1
     assert(log2(0) == -1);
     assert(log2(17) == 4);
