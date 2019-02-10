@@ -194,8 +194,8 @@ public:
 
     // FIXME: Check for index out of range and call the error function
     // This function will throw an RangeError if length format is wrong
-    bool isInOrder(bool function(ref const(Element) elm, ref bool result) @safe error=null)  {
-        bool local_order(ref const(Element) previous, Range range) @safe {
+    bool isInOrder(bool function(const(Element) elm, ref bool result) @safe error=null)  {
+        bool local_order(const(Element) previous, Range range) @safe {
             //writefln("previous.key=%s", previous.key);
             range.popFront;
             bool result=true;
@@ -274,7 +274,7 @@ public:
             /**
              * InputRange primitive operation that returns the currently iterated element.
              */
-            ref const(Element) front() {
+            const(Element) front() {
                 return element_;
             }
         }
@@ -568,11 +568,14 @@ public:
             return k[0..len];
         }
 
-
         size_t keySize() {
             return key.length;
         }
 
+    }
+
+    uint index() const pure {
+        return key.to!uint;
     }
 
 
@@ -765,7 +768,7 @@ public:
             @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
                 alias BaseT=TypedefType!T;
                 static if ( is(BaseT : immutable(U[]), U) ) {
-                    static if ( is(BaseT : immutable(ubyte)[] ) ) {
+                    static if ( is(BaseT : immutable(ubyte[]) ) ) {
                         return binary_buffer;
                     }
                     else if ( (type == Type.BINARY ) && ( subtype == getSubtype!BaseT ) )  {
@@ -1606,7 +1609,7 @@ unittest
 
 
 /**
- * Exception type used by mongo.bson module
+ * Exception type used by tagion.utils.BSON module
  */
 @safe
 class BSONException : Exception
@@ -2124,7 +2127,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     }
 
     @trusted
-    protected void append(T)(Type type, in string key, T x, BinarySubType binary_subtype=BinarySubType.generic) {
+    protected void append(T)(Type type, string key, T x, BinarySubType binary_subtype=BinarySubType.generic) {
         static if (one_time_write) {
             if ( hasElement(key) ) {
                 throw new BSONException(format("Member '%s' already exist, BSON is a 'one time write' type", key));
@@ -2355,7 +2358,11 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         }
     }
 
-    void opIndexAssign(T)(T x, in string key) {
+    void opIndexAssign(T, Index)(T x, const Index index) if (isIntegral!Index) {
+        opIndexAssign(x, index.to!string);
+    }
+
+    void opIndexAssign(T)(T x, string key) {
         alias BaseType=TypedefType!T;
         static if (is(BaseType:const(bool))) {
             append(Type.BOOLEAN, key, x);
@@ -3271,15 +3278,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
         foreach_key(this.members);
         return result;
-    }
-
-    uint length() const {
-        uint counter;
-        auto iter=Iterator!(const(BSON), false)(this);
-        foreach(e;iter) {
-            counter++;
-        }
-        return counter;
     }
 
     unittest {

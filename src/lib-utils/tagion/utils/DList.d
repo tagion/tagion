@@ -329,6 +329,7 @@ unittest {
     }
     { // pop
         import std.algorithm.comparison : equal;
+        import std.array;
         auto l=new DList!int;
         enum amount=4;
         int[] test;
@@ -337,7 +338,9 @@ unittest {
             test~=i;
         }
         auto I=l.iterator;
-        assert(equal(I, test));
+        // This statement does not work anymore
+        // assert(equal(I, test));
+        assert(array(I) == test);
 
         foreach_reverse(i;0..amount) {
             assert(l.pop == i);
@@ -391,6 +394,7 @@ unittest {
         // moveToFront for the second element ( element number 1 )
 
         {
+            import std.array;
             auto I=l.iterator;
             I.popFront;
             auto current = I.current;
@@ -399,10 +403,13 @@ unittest {
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
             I=l.iterator;
-            assert(equal(I, [1, 0, 2, 3]));
+            // This statem does not work anymore
+            // assert(equal(I, [1, 0, 2, 3]));
+            assert(array(I)== [1, 0, 2, 3]);
         }
 
         {
+            import std.array;
             auto I=l.iterator;
             I.popFront.popFront;
             auto current = I.current;
@@ -411,7 +418,9 @@ unittest {
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
             I=l.iterator;
-            assert(equal(I, [2, 1, 0, 3]));
+            // This statem does not work anymore
+            // assert(equal(I, [2, 1, 0, 3]));
+            assert(array(I) == [2, 1, 0, 3]);
         }
 
         // foreach(i;0..amount) {
