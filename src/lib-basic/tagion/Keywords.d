@@ -58,23 +58,24 @@ enum _keywords = [
     "transaction_id",
     "result_code",
     "error_code",
+    "output",
     "signatures",
     "signatur",
-    "transaction_obj",
-    "transaction_scripting_obj",
+    "transaction_object",
+    "transaction_scripting_object",
     "payers",
     "payees",
-    "bills",
+    "input_bills",
+    "output_bills",
     "bill",
     "bill_number",
+    "bill_body",
+    "bill_type",
+    "value",
+    "ownerkey",
     // Scripting
     "code",
-    "source",
-    // DART
-//    "fingerprint",
-    "branch",
-    "fingerprints",
-    "stub"
+    "source"
     ];
 
 // Generated the Keywords and enum string list
