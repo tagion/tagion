@@ -190,3 +190,42 @@ struct Options {
 }
 
 __gshared static Options options;
+
+struct TransactionMiddlewareOptions {
+    // port for the socket
+    ushort port;
+    // address for the socket
+    string address;
+    //  port for the socket to the tagion network
+    ushort network_port;
+    //  address for the socket to the tagion network
+    string network_address;
+
+    string logext;
+    string logname;
+    string logpath;
+
+    mixin JSONCommon;
+
+    void parseJSON(string json_text) {
+        auto json=JSON.parseJSON(json_text);
+        parse(json);
+    }
+
+    void load(string config_file) {
+        if (config_file.exists) {
+            auto json_text=readText(config_file);
+            parseJSON(json_text);
+        }
+        else {
+            save(config_file);
+        }
+    }
+
+    void save(string config_file) {
+        config_file.write(stringify);
+    }
+
+}
+
+__gshared static TransactionMiddlewareOptions transaction_middleware_options;
