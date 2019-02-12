@@ -75,13 +75,7 @@ enum _keywords = [
     "ownerkey",
     // Scripting
     "code",
-    "source",
-    // DART
-//    "fingerprint",
-    "branch",
-    "fingerprints",
-    "rims",
-    "stub"
+    "source"
     ];
 
 // Generated the Keywords and enum string list
