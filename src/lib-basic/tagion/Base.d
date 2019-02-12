@@ -27,9 +27,9 @@ enum BufferType {
 }
 
 enum BillType {
-    Non_Usable,
-    Tagions,
-    Contracts
+    NON_USABLE,
+    TAGIONS,
+    CONTRACTS
 }
 
 alias Buffer=immutable(ubyte)[];
