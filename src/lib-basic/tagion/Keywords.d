@@ -76,9 +76,11 @@ enum _keywords = [
     // Scripting
     "code",
     "source",
+
     // DART
 //    "fingerprint",
-    "branch",
+//    "branch",
+    "indices",
     "fingerprints",
     "rims",
     "stub"
