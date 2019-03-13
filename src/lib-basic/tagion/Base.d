@@ -265,14 +265,14 @@ template consensusCheckArguments(Consensus) {
 }
 
 @safe
-string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
+string cutHex(bool UCASE=false, BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
     enum LEN=ulong.sizeof;
     if ( buf.length < LEN ) {
         return format("EMPTY[%s]",buf.length);
     }
     else {
-        return buf[0..LEN].toHexString;
+        return buf[0..LEN].toHexString!UCASE;
     }
 }
 
