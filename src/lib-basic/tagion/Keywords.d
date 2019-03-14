@@ -81,6 +81,7 @@ enum _keywords = [
 //    "fingerprint",
 //    "branch",
     "indices",
+    "fingerprint",
     "fingerprints",
     "rims",
     "stub"
