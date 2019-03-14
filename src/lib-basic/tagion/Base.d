@@ -269,7 +269,8 @@ string cutHex(bool UCASE=false, BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
     enum LEN=ulong.sizeof;
     if ( buf.length < LEN ) {
-        return format("EMPTY[%s]",buf.length);
+        return buf.toHexString!UCASE;
+//        return format("EMPTY[%s]",buf.length);
     }
     else {
         return buf[0..LEN].toHexString!UCASE;
