@@ -587,16 +587,15 @@ public:
             if (isEod) {
                 return null;
             }
-                return _data[1 + rawKeySize..size];
-            }
-
-
-            size_t valueSize()
-            {
-                return value.length;
-            }
-
+            return _data[1 + rawKeySize..size];
         }
+
+
+        size_t valueSize() {
+            return value.length;
+        }
+
+    }
     //Binary buffer
     @trusted
     immutable(ubyte[]) binary_buffer() const  {
@@ -611,45 +610,45 @@ public:
         {
             size_t s;
             with(Type) final switch (type) {
-            case MIN, MAX, TRUNC, NONE, UNDEFINED, NULL:
-                break;
-            case BOOLEAN:
-                s = 1;
-                break;
-            case INT32, UINT32, FLOAT:
-                s = 4;
-                break;
-            case DOUBLE, INT64, DATE, TIMESTAMP, UINT64:
-                s = 8;
-                break;
-            case OID:
-                s = 12;
-                break;
-            case DOCUMENT, JS_CODE_W_SCOPE, ARRAY:
-                s = bodySize;
-                break;
-            case STRING, SYMBOL, JS_CODE:
-                s = bodySize + 4;
-                break;
-            case BINARY:
-                s = bodySize + 4 + 1;
-                break;
-            case DBPOINTER:
-                s = bodySize + 4 + 12;
-                break;
-            case REGEX:
-                auto p1 = cast(immutable(char*))_data[1 + rawKeySize..$].ptr;
-                size_t length1 = strlen(p1);
-                auto p2 = cast(immutable(char*))_data[1 + rawKeySize + length1 + 1..$].ptr;
-                size_t length2 = strlen(p2);
-                s = length1 + 1 + length2 + 1;
-                break;
-            case NATIVE_DOCUMENT:
-                s = _data.length;
-                break;
+                case MIN, MAX, TRUNC, NONE, UNDEFINED, NULL:
+                    break;
+                case BOOLEAN:
+                    s = 1;
+                    break;
+                case INT32, UINT32, FLOAT:
+                    s = 4;
+                    break;
+                case DOUBLE, INT64, DATE, TIMESTAMP, UINT64:
+                    s = 8;
+                    break;
+                case OID:
+                    s = 12;
+                    break;
+                case DOCUMENT, JS_CODE_W_SCOPE, ARRAY:
+                    s = bodySize;
+                    break;
+                case STRING, SYMBOL, JS_CODE:
+                    s = bodySize + 4;
+                    break;
+                case BINARY:
+                    s = bodySize + 4 + 1;
+                    break;
+                case DBPOINTER:
+                    s = bodySize + 4 + 12;
+                    break;
+                case REGEX:
+                    auto p1 = cast(immutable(char*))_data[1 + rawKeySize..$].ptr;
+                    size_t length1 = strlen(p1);
+                    auto p2 = cast(immutable(char*))_data[1 + rawKeySize + length1 + 1..$].ptr;
+                    size_t length2 = strlen(p2);
+                    s = length1 + 1 + length2 + 1;
+                    break;
+                case NATIVE_DOCUMENT:
+                    s = _data.length;
+                    break;
                 case NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
-                assert(0, format("No size defined for type %s", type) );
-            }
+                    assert(0, format("No size defined for type %s", type) );
+                }
 
             return 1 + rawKeySize + s;
         }
@@ -657,148 +656,147 @@ public:
 
     // D's primitive type accessor like Variant
 
-    @property const /* pure: check is not pure */
-        {
+    @property const /* pure: check is not pure */ {
 
-            template isGeneralType(T, Type) {
-                alias BaseT=TypedefType!T;
-                enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
-            }
+        template isGeneralType(T, Type) {
+            alias BaseT=TypedefType!T;
+            enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
+        }
 
-            enum isTypedef(T)=!is(TypedefType!T == T);
+        enum isTypedef(T)=!is(TypedefType!T == T);
 
-            T get(T)() inout if (is(TypedefType!T : const(string))) {
-                check(Type.STRING);
-                return cast(T)str;
-            }
+        T get(T)() inout if (is(TypedefType!T : const(string))) {
+            check(Type.STRING);
+            return cast(T)str;
+        }
 
 
-            T get(T)() inout if ( isGeneralType!(T,bool) ) {
-                check(Type.BOOLEAN);
-                return cast(T)(_boolean());
-            }
+        T get(T)() inout if ( isGeneralType!(T,bool) ) {
+            check(Type.BOOLEAN);
+            return cast(T)(_boolean());
+        }
 
-            T get(T)() inout if (isGeneralType!(T,int) || isGeneralType!(T,uint) ) {
-                check(Type.INT32);
-                return cast(T)(_int32());
-            }
+        T get(T)() inout if (isGeneralType!(T,int) || isGeneralType!(T,uint) ) {
+            check(Type.INT32);
+            return cast(T)(_int32());
+        }
 
-            // inout(T) get(T)() inout if (is(T == inout(long)) || is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
-            //     is(T == inout(ulong)) || is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong))) {
-            T get(T)() inout if (isGeneralType!(T,long) ||  isGeneralType!(T,ulong) ) {
-                check(Type.INT64);
-                return cast(T)(_int64());
-            }
+        // inout(T) get(T)() inout if (is(T == inout(long)) || is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
+        //     is(T == inout(ulong)) || is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong))) {
+        T get(T)() inout if (isGeneralType!(T,long) ||  isGeneralType!(T,ulong) ) {
+            check(Type.INT64);
+            return cast(T)(_int64());
+        }
 
 //            T get(T)() inout if (is(T == inout(double)) || is(T == double) || is(T == const(double)) || is(T == immutable(double))) {
-            T get(T)() inout if (isGeneralType!(T,double)) {
-                check(Type.DOUBLE);
-                return cast(T)(_double());
+        T get(T)() inout if (isGeneralType!(T,double)) {
+            check(Type.DOUBLE);
+            return cast(T)(_double());
+        }
+
+
+        T get(T)() inout if (is(TypedefType!T : const(Date))) {
+            check(Type.DATE);
+            return cast(T)SysTime(_int64());
+        }
+
+        T get(T)() inout if (is(TypedefType!T : const(DateTime))) {
+            check(Type.TIMESTAMP);
+            return cast(T)SysTime(_int64());
+        }
+
+        T get(T)() inout if (is(TypedefType!T : const(ObjectId))) {
+            check(Type.OID);
+            return cast(T)(ObjectId(value));
+        }
+
+        /**
+         * Returns an DOCUMENT document.
+         */
+        Document get(T)() inout if (is(TypedefType!T == Document)) {
+            if ( (type != Type.DOCUMENT) && (type != Type.ARRAY) ) {
+                check(Type.DOCUMENT);
             }
+            return Document(value);
+        }
 
+        /**
+         * Returns an DOCUMENT[] document array.
+         */
+        Document[] get(T)() inout if (is(TypedefType!T == Document[])) {
+            check(Type.BINARY);
+            check(getSubtype!(TypedefType!T));
+            Document[] docs;
 
-            T get(T)() inout if (is(TypedefType!T : const(Date))) {
-                check(Type.DATE);
-                return cast(T)SysTime(_int64());
-            }
-
-            T get(T)() inout if (is(TypedefType!T : const(DateTime))) {
-                check(Type.TIMESTAMP);
-                return cast(T)SysTime(_int64());
-            }
-
-            T get(T)() inout if (is(TypedefType!T : const(ObjectId))) {
-                check(Type.OID);
-                return cast(T)(ObjectId(value));
-            }
-
-            /**
-             * Returns an DOCUMENT document.
-             */
-            Document get(T)() inout if (is(TypedefType!T == Document)) {
-                if ( (type != Type.DOCUMENT) && (type != Type.ARRAY) ) {
-                    check(Type.DOCUMENT);
-                }
-                return Document(value);
-            }
-
-            /**
-             * Returns an DOCUMENT[] document array.
-             */
-            Document[] get(T)() inout if (is(TypedefType!T == Document[])) {
-                check(Type.BINARY);
-                check(getSubtype!(TypedefType!T));
-                Document[] docs;
-
-                @trusted
-                void build_document_array(immutable(ubyte[]) data) {
-                    if ( data.length ) {
-                        immutable len=*cast(uint*)(data.ptr);
-                        immutable from=uint.sizeof;
-                        immutable to=uint.sizeof+len;
-                        docs~=Document(data[from..to]);
-                        build_document_array(data[to..$]);
-                    }
-                }
-                build_document_array(value);
-                return docs;
-            }
-
-            // immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
-            //     return value.idup;
-            // }
-            version(none)
             @trusted
-                auto get(T)() inout if (!is(TypedefType!T == string) && isTypedef!T && is(TypedefType!T : immutable(U[]), U)) {
-                alias BaseT=TypedefType!T;
-                static if ( is(BaseT : immutable(U[]), U) ) {
-                    if ( type == Type.BINARY)  {
-                        static if ( is(BaseT : immutable(ubyte[]) ) ) {
-                            return binary_buffer;
-
-                        }
-                        else if ( subtype == getSubtype!BaseT ) {
-                            auto buf=binary_buffer;
-                            return (cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
-                        }
-                    }
+                void build_document_array(immutable(ubyte[]) data) {
+                if ( data.length ) {
+                    immutable len=*cast(uint*)(data.ptr);
+                    immutable from=uint.sizeof;
+                    immutable to=uint.sizeof+len;
+                    docs~=Document(data[from..to]);
+                    build_document_array(data[to..$]);
                 }
-
-                throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
-                assert(0, "Unsupported type "~T.stringof);
             }
+            build_document_array(value);
+            return docs;
+        }
 
-            @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
-                alias BaseT=TypedefType!T;
-                static if ( is(BaseT : immutable(U[]), U) ) {
+        // immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
+        //     return value.idup;
+        // }
+        version(none)
+            @trusted
+            auto get(T)() inout if (!is(TypedefType!T == string) && isTypedef!T && is(TypedefType!T : immutable(U[]), U)) {
+            alias BaseT=TypedefType!T;
+            static if ( is(BaseT : immutable(U[]), U) ) {
+                if ( type == Type.BINARY)  {
                     static if ( is(BaseT : immutable(ubyte[]) ) ) {
                         return binary_buffer;
+
                     }
-                    else if ( (type == Type.BINARY ) && ( subtype == getSubtype!BaseT ) )  {
+                    else if ( subtype == getSubtype!BaseT ) {
                         auto buf=binary_buffer;
-                        .check(buf.length % U.sizeof == 0, format("The size of binary subtype '%s' should be a mutiple of %d but is %d", subtype, U.sizeof, buf.length));
-                        return cast(BaseT)(buf.ptr[0..buf.length]);
+                        return (cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
                     }
                 }
-                else {
-                    static assert(0, "Only immutable type is supported not "~T.stringof);
-                }
-                throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", subtype, T.stringof));
-                assert(0, "Should never go here! Unsupported type "~T.stringof);
             }
 
-            version(none)
-            @trusted
-                T get(T)() inout if ( is(TypedefType!T : immutable(ubyte)[]) ) {
-                if ( type == Type.BINARY)  {
+            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
+            assert(0, "Unsupported type "~T.stringof);
+        }
+
+        @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
+            alias BaseT=TypedefType!T;
+            static if ( is(BaseT : immutable(U[]), U) ) {
+                static if ( is(BaseT : immutable(ubyte[]) ) ) {
                     return binary_buffer;
                 }
-                throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
-                assert(0, "Should never go here! Unsupported type "~T.stringof);
+                else if ( (type == Type.BINARY ) && ( subtype == getSubtype!BaseT ) )  {
+                    auto buf=binary_buffer;
+                    .check(buf.length % U.sizeof == 0, format("The size of binary subtype '%s' should be a mutiple of %d but is %d", subtype, U.sizeof, buf.length));
+                    return cast(BaseT)(buf.ptr[0..buf.length]);
+                }
             }
-
-
+            else {
+                static assert(0, "Only immutable type is supported not "~T.stringof);
+            }
+            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", subtype, T.stringof));
+            assert(0, "Should never go here! Unsupported type "~T.stringof);
         }
+
+        version(none)
+            @trusted
+            T get(T)() inout if ( is(TypedefType!T : immutable(ubyte)[]) ) {
+            if ( type == Type.BINARY)  {
+                return binary_buffer;
+            }
+            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
+            assert(0, "Should never go here! Unsupported type "~T.stringof);
+        }
+
+
+    }
 
 
     @property @trusted const pure nothrow
@@ -1106,7 +1104,7 @@ public:
             case NATIVE_ARRAY:
                 assert(0, "Not implemented");
             case NATIVE_BSON_ARRAY:
-                 assert(0, "Not implemented");
+                assert(0, "Not implemented");
             }
 
         return result;
@@ -1376,141 +1374,141 @@ int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool consid
 @trusted
 int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow {
     with(Type) final switch (lhs.type) {
-    case MIN, MAX, TRUNC, NONE, UNDEFINED,  NULL:
-        auto r = lhs.canonicalType - rhs.canonicalType;
-        if (r < 0)
-            return -1;
-        return r == 0 ? 0 : 1;
-    case DOUBLE:
-    Ldouble:
-        import std.math;
+        case MIN, MAX, TRUNC, NONE, UNDEFINED,  NULL:
+            auto r = lhs.canonicalType - rhs.canonicalType;
+            if (r < 0)
+                return -1;
+            return r == 0 ? 0 : 1;
+        case DOUBLE:
+        Ldouble:
+            import std.math;
 
-        double l = lhs.as!double;
-        double r = rhs.as!double;
+            double l = lhs.as!double;
+            double r = rhs.as!double;
 
-        if (l < r)
-            return -1;
-        if (l == r)
+            if (l < r)
+                return -1;
+            if (l == r)
+                return 0;
+            if (isNaN(l))
+                return isNaN(r) ? 0 : -1;
+            return 1;
+        case FLOAT:
+            if (rhs.type == FLOAT) {
+                immutable l = lhs.as!float;
+                immutable r = rhs.as!float;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case INT32:
+            if (rhs.type == INT32) {
+                immutable l = lhs.as!int;
+                immutable r = rhs.as!int;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case UINT32:
+            if (rhs.type == UINT32) {
+                immutable l = lhs.as!int;
+                immutable r = rhs.as!int;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case INT64:
+            if (rhs.type == INT64) {
+                immutable l = lhs.as!long;
+                immutable r = rhs.as!long;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case UINT64:
+            if (rhs.type == UINT64) {
+                immutable l = lhs.as!ulong;
+                immutable r = rhs.as!ulong;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case STRING, SYMBOL, JS_CODE:
+            import std.algorithm;
+
+            immutable ls = lhs.bodySize;
+            immutable rs = rhs.bodySize;
+            immutable r  = memcmp(lhs.str.ptr, rhs.str.ptr, min(ls, rs));
+
+            if (r != 0) {
+                return r;
+            }
+            else if (ls < rs) {
+                return -1;
+            }
+            return ls == rs ? 0 : 1;
+        case DOCUMENT,  ARRAY:
+            // TODO
             return 0;
-        if (isNaN(l))
-            return isNaN(r) ? 0 : -1;
-        return 1;
-    case FLOAT:
-        if (rhs.type == FLOAT) {
-            immutable l = lhs.as!float;
-            immutable r = rhs.as!float;
+        case BINARY:
+            immutable ls = lhs.bodySize;
+            immutable rs = rhs.bodySize;
+
+            if ((ls - rs) != 0)
+                return ls - rs < 0 ? -1 : 1;
+            return memcmp(lhs.value[4..$].ptr, rhs.value[4..$].ptr, ls + 1);  // +1 for subtype
+        case OID:
+            return memcmp(lhs.value.ptr, rhs.value.ptr, 12);
+        case BOOLEAN:
+            return lhs.value[0] - rhs.value[0];
+        case DATE, TIMESTAMP:
+            // TODO: Fix for correct comparison
+            // Following comparison avoids non-pure function call.
+            immutable l = lhs._int64();
+            immutable r = rhs._int64();
 
             if (l < r)
                 return -1;
             return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case INT32:
-        if (rhs.type == INT32) {
-            immutable l = lhs.as!int;
-            immutable r = rhs.as!int;
+        case REGEX:
+            immutable re1 = lhs.regex;
+            immutable re2 = rhs.regex;
 
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case UINT32:
-        if (rhs.type == UINT32) {
-            immutable l = lhs.as!int;
-            immutable r = rhs.as!int;
+            immutable r = strcmp(re1.field[0].ptr, re2.field[0].ptr);
+            if (r != 0)
+                return r;
+            return strcmp(re1.field[1].ptr, re2.field[1].ptr);
+        case DBPOINTER:
+            immutable ls = lhs.valueSize;
+            immutable rs = rhs.valueSize;
 
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case INT64:
-        if (rhs.type == INT64) {
-            immutable l = lhs.as!long;
-            immutable r = rhs.as!long;
-
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case UINT64:
-        if (rhs.type == UINT64) {
-            immutable l = lhs.as!ulong;
-            immutable r = rhs.as!ulong;
-
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case STRING, SYMBOL, JS_CODE:
-        import std.algorithm;
-
-        immutable ls = lhs.bodySize;
-        immutable rs = rhs.bodySize;
-        immutable r  = memcmp(lhs.str.ptr, rhs.str.ptr, min(ls, rs));
-
-        if (r != 0) {
-            return r;
-        }
-        else if (ls < rs) {
-            return -1;
-        }
-        return ls == rs ? 0 : 1;
-    case DOCUMENT,  ARRAY:
-        // TODO
-        return 0;
-    case BINARY:
-        immutable ls = lhs.bodySize;
-        immutable rs = rhs.bodySize;
-
-        if ((ls - rs) != 0)
-            return ls - rs < 0 ? -1 : 1;
-        return memcmp(lhs.value[4..$].ptr, rhs.value[4..$].ptr, ls + 1);  // +1 for subtype
-    case OID:
-        return memcmp(lhs.value.ptr, rhs.value.ptr, 12);
-    case BOOLEAN:
-        return lhs.value[0] - rhs.value[0];
-    case DATE, TIMESTAMP:
-        // TODO: Fix for correct comparison
-        // Following comparison avoids non-pure function call.
-        immutable l = lhs._int64();
-        immutable r = rhs._int64();
-
-        if (l < r)
-            return -1;
-        return l == r ? 0 : 1;
-    case REGEX:
-        immutable re1 = lhs.regex;
-        immutable re2 = rhs.regex;
-
-        immutable r = strcmp(re1.field[0].ptr, re2.field[0].ptr);
-        if (r != 0)
-            return r;
-        return strcmp(re1.field[1].ptr, re2.field[1].ptr);
-    case DBPOINTER:
-        immutable ls = lhs.valueSize;
-        immutable rs = rhs.valueSize;
-
-        if ((ls - rs) != 0)
-            return ls - rs < 0 ? -1 : 1;
-        return memcmp(lhs.str.ptr, rhs.str.ptr, ls);
-    case JS_CODE_W_SCOPE:
-        auto r = lhs.canonicalType - rhs.canonicalType;
-        if (r != 0)
-            return r;
-        r = strcmp(lhs.codeWScope.ptr, rhs.codeWScope.ptr);
-        if (r != 0)
-            return r;
-        r = strcmp(lhs.codeWScopeData.ptr, rhs.codeWScopeData.ptr);
-        if (r != 0)
-            return r;
-        return 0;
+            if ((ls - rs) != 0)
+                return ls - rs < 0 ? -1 : 1;
+            return memcmp(lhs.str.ptr, rhs.str.ptr, ls);
+        case JS_CODE_W_SCOPE:
+            auto r = lhs.canonicalType - rhs.canonicalType;
+            if (r != 0)
+                return r;
+            r = strcmp(lhs.codeWScope.ptr, rhs.codeWScope.ptr);
+            if (r != 0)
+                return r;
+            r = strcmp(lhs.codeWScopeData.ptr, rhs.codeWScopeData.ptr);
+            if (r != 0)
+                return r;
+            return 0;
         case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
             assert(0, "A native document can not be compared");
-    }
+        }
 }
 
 
@@ -2357,7 +2355,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 break;
             }
             .check(result, format("Unmatch type %s at %s. Expected  BSON type '%s' %s", T.stringof, key, type,
-                (type == BINARY)?format("subtype '%s'", subtype):""));
+                    (type == BINARY)?format("subtype '%s'", subtype):""));
         }
     }
 
@@ -3256,7 +3254,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case BOOLEAN_array:
                 return (cast(immutable(ubyte)*)(value.bool_array.ptr))[0..value.bool_array.length*bool.sizeof];
             case bigint, not_defined:
-                 throw new BSONException("Binary suptype "~to!string(subtype)~" not supported for buffer");
+                throw new BSONException("Binary suptype "~to!string(subtype)~" not supported for buffer");
 
             }
 
