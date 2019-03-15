@@ -13,6 +13,7 @@ enum _keywords = [
     "ebody",      // Event body
     "event",      // Event including the eventbody
 
+    // HashGraph
     "message",
     "mother",
     "father",
@@ -53,11 +54,9 @@ enum _keywords = [
     "block",     // block
 
     "rim",
-    "buckets",
-    "tab",
+   "buckets",
+   "tab",
     "transaction_id",
-    "result_code",
-    "error_code",
     "output",
     "signatures",
     "signatur",
@@ -73,18 +72,33 @@ enum _keywords = [
     "bill_type",
     "value",
     "ownerkey",
+
+    // FixMe should be change to "result" and "error" to fit the HBSON-RPC
+    "result_code",
+    "error_code",
+
     // Scripting
     "code",
     "source",
 
     // DART
-//    "fingerprint",
-//    "branch",
     "indices",
     "fingerprint",
     "fingerprints",
+    "archives",
+    "branches",
+    "read",
     "rims",
-    "stub"
+    "keys",
+    "stub",
+
+    // HBSON-RPC (Similar to JSON-RPC 2.0)
+    "method",
+    "params",
+    "error", // error_code
+    "result",
+    "id", //
+    "rpc"
     ];
 
 // Generated the Keywords and enum string list
