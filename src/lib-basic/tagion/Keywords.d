@@ -103,3 +103,13 @@ enum _keywords = [
 
 // Generated the Keywords and enum string list
 mixin(EnumText!("Keywords", _keywords));
+
+bool validate(Keywords keyword=Keywords.min)(immutable(string) word) {
+    static if ( keyword <= Keywords.max ) {
+        if ( keyword == word ) {
+            return true;
+        }
+        return validate(keyword++)(word);
+    }
+    return false;
+}
