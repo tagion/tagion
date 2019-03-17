@@ -665,6 +665,66 @@ public:
 
         enum isTypedef(T)=!is(TypedefType!T == T);
 
+        bool istype(T)() pure const {
+            static if (is(T==double)) {
+                return type == Type.DOUBLE;
+            }
+            else static if (is(T:string)) {
+                return type == Type.STRING;
+            }
+            else static if (is(T==Document)) {
+                return ((type == Type.DOCUMENT) || (type == Type.ARRAY));
+            }
+            else static if (is(T==bool)) {
+                return (type == Type.BOOLEAN);
+            }
+            else static if (is(T==int)) {
+                return (type == Type.INT32);
+            }
+            else static if (is(T==long)) {
+                return (type == Type.INT64);
+            }
+            else static if (is(T==uint)) {
+                return (type == Type.UINT32);
+            }
+            else static if (is(T==ulong)) {
+                return (type == Type.UINT64);
+            }
+            else static if (is(T==float)) {
+                return (type == Type.FLOAT);
+            }
+            else static if (is(T==Type.BINARY)) {
+                static if (is(T:immutable(ubyte)[])) {
+                    return (subtype == BinarySubType.binary);
+                }
+                else static if (is(T:immutable(int)[])) {
+                    return (subtype == BinarySubType.INT32_array);
+                }
+                else static if (is(T:immutable(uint)[])) {
+                    return (subtype == BinarySubType.UINT32_array);
+                }
+                else static if (is(T:immutable(long)[])) {
+                    return (subtype == BinarySubType.INT64_array);
+                }
+                else static if (is(T:immutable(ulong)[])) {
+                    return (subtype == BinarySubType.UINT64_array);
+                }
+                else static if (is(T:immutable(float)[])) {
+                    return (subtype == BinarySubType.FLOAT_array);
+                }
+                else static if (is(T:immutable(double)[])) {
+                    return (subtype == BinarySubType.INT64_array);
+                }
+                else static if (is(T:immutable(long)[])) {
+                    return (subtype == BinarySubType.INT64_array);
+                }
+                else static if (is(T:immutable(bool)[])) {
+                    return (subtype == BinarySubType.BOOL_array);
+                }
+            }
+            return false;
+        }
+
         T get(T)() inout if (is(TypedefType!T : const(string))) {
             check(Type.STRING);
             return cast(T)str;
@@ -797,7 +857,6 @@ public:
 
 
     }
-
 
     @property @trusted const pure nothrow
         {
