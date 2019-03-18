@@ -160,36 +160,33 @@ unittest {
 
 @safe
 struct Document {
-private:
-    immutable(ubyte[]) _data;
+    immutable(ubyte[]) data;
 
-
-public:
     static DocumentCallbacks callbacks;
 
     nothrow this(immutable ubyte[] data) {
-        _data = data;
+        this.data = data;
     }
 
     Document idup() const nothrow {
-        return Document(_data.idup);
+        return Document(data.idup);
     }
 
     @property nothrow pure const {
         @safe bool empty() {
-            return _data.length < 5;
+            return data.length < 5;
         }
 
 
         @trusted uint size() {
-            return *cast(uint*)(_data[0..uint.sizeof].ptr);
+            return *cast(uint*)(data[0..uint.sizeof].ptr);
         }
     }
 
     @trusted
     @property uint length() const {
         uint counter;
-        foreach(i; Range(_data)) {
+        foreach(i; Range(data)) {
             counter++;
         }
         return counter;
@@ -219,7 +216,7 @@ public:
 
             return result;
         }
-        auto local_range=Range(_data);
+        auto local_range=Range(data);
         return local_order(local_range.front, local_range);
     }
 
@@ -247,30 +244,30 @@ public:
     }
 
     struct Range {
-    private:
-        immutable(ubyte[]) _data;
-        size_t            index_;
-        Element           element_;
+        immutable(ubyte[]) data;
+    protected:
+        size_t            _index;
+        Element           _element;
 
 
     public:
         @safe
         this(immutable(ubyte[]) data) {
-            _data = data;
+            this.data = data;
 
             if (data.length == 0) {
-                index_ = 0;
+                _index = 0;
             }
             else {
-                index_ = 4;
+                _index = 4;
                 popFront();
             }
         }
 
 
-        @property @safe nothrow const {
+        @property @safe pure nothrow const {
             bool empty() {
-                return index_ >= _data.length;
+                return _index >= data.length;
             }
 
 
@@ -278,7 +275,7 @@ public:
              * InputRange primitive operation that returns the currently iterated element.
              */
             const(Element) front() {
-                return element_;
+                return _element;
             }
         }
 
@@ -290,28 +287,28 @@ public:
         void popFront() {
             import std.conv;
 
-            emplace!Element(&element_, _data[index_..$]);
-            index_ += element_.size;
+            emplace!Element(&_element, data[_index..$]);
+            _index += _element.size;
         }
     }
 
 
     Range opSlice() {
-        return Range(_data);
+        return Range(data);
     }
 
 
     @trusted
     string[] keys() const {
         import std.array;
-        return array(map!"a.key"(Range(_data)));
+        return array(map!"a.key"(Range(data)));
     }
 
 
     // Throws an std.conv.ConvException if the keys can not be convert to an uint
     immutable(uint[]) indices() const {
         import std.array;
-        return array(map!"a.key.to!uint"(Range(_data))).idup;
+        return array(map!"a.key.to!uint"(Range(data))).idup;
     }
 
     bool hasElement(in string key) const {
@@ -324,7 +321,7 @@ public:
     }
 
     const(Element) opIn_r(in string key) const {
-        foreach (ref element; Range(_data)) {
+        foreach (ref element; Range(data)) {
             if (element.key == key) {
                 return element;
             }
@@ -345,9 +342,9 @@ public:
     }
 
 
-    immutable(ubyte[]) data() const pure nothrow {
-        return _data;
-    }
+    // immutable(ubyte[]) data() const pure nothrow {
+    //     return _data;
+    // }
 
     alias serialize=data;
 
