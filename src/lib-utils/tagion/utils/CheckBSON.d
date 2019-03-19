@@ -48,7 +48,7 @@ struct CheckBSON(bool hbson_flag) {
         cpos=uint.sizeof+str_len;
         bool result=(str[cpos-1] == '\0');
         writefln("str_len=%d result=%s %d", str_len, result, str[cpos-1]);
-        cpos++;
+//        cpos++;
         version(result)
         if ( result ) {
             auto cstr=str[str_len..$];
@@ -205,7 +205,7 @@ struct CheckBSON(bool hbson_flag) {
     bool check_element(const(ubyte[]) full_elm, out size_t cpos) {
         current=full_elm;
         byte type=full_elm[0];
-        cpos=1;
+        cpos=ubyte.sizeof;
 
         writefln("type=%d full_elm[cpos..$]=%s", type, full_elm[cpos..$]);
         size_t size;
@@ -213,22 +213,24 @@ struct CheckBSON(bool hbson_flag) {
         writefln("size=%d %s", size, cast(string)(full_elm[cpos..cpos+size]));
 
 //        if ( result ) {
-        cpos+=size;
-        auto elm=full_elm[size+2..$];
+        cpos+=size+1;
+        auto elm=full_elm[cpos..$];
         writefln("elm=%s", elm);
 //        return true;
         if ( result ) {
             with(Type) switch (type) {
                 case DOUBLE:
+                    writef("type=%s %s", type, get_value!double(elm));
                     size=double.sizeof;
+                    writefln("->size=%d %s", size, elm[size..$]);
                     result=true;
-                        break;
-                    case STRING:
-                        writef("type=%s ", type);
-                        result=check_string(elm, size);
-                        writefln("->size=%d", size);
-                        break;
-                    case DOCUMENT:
+                    break;
+                case STRING:
+                    writef("type=%s ", type);
+                    result=check_string(elm, size);
+                    writefln("->size=%d", size);
+                    break;
+                case DOCUMENT:
                         result=check_document(elm, size);
                         break;
                     case ARRAY:
@@ -346,15 +348,22 @@ bool isHBSONFormat(const(ubyte[]) data) {
 
 //TO_DO: Make a isBSONFormat() static function.
 unittest {
+//    version(none)
+    {
+        auto b=new HBSON();
+        immutable double x=3.1415;
+        b["double"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
     {
         auto b=new HBSON();
         b["string"]="apples";
         auto data=b.serialize;
         assert(isBSONFormat(data));
         assert(isHBSONFormat(data));
-        // ubyte[] test=[2,3];
-        // writefln("%s", isBSONFormat(test));
-//        assert(!isBSONFormat(test));
     }
     // Type check
     {
