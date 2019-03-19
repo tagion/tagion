@@ -2468,6 +2468,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         }
     }
 
+    void setNull(string key) {
+        append(Type.NULL, key, null);
+    }
+
     unittest { // bool bug-fix test
         auto bson=new BSON;
         const x=true;

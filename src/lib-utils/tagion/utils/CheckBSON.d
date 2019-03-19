@@ -146,7 +146,7 @@ struct CheckBSON(bool hbson_flag) {
         immutable subtype=bin[cpos];
         cpos++;
         bool result;
-        size_t binary_size;
+        size_t binary_size=ubyte.sizeof;
         with (BinarySubType) switch(subtype) {
             case generic:
                 result=true;
@@ -231,76 +231,77 @@ struct CheckBSON(bool hbson_flag) {
                     writefln("->size=%d", size);
                     break;
                 case DOCUMENT:
-                        result=check_document(elm, size);
-                        break;
-                    case ARRAY:
-                        static if ( !hbson_flag ) {
-                            result=check_document(elm, size);
-                        }
-                        break;
-                    case BINARY:
-                        result=check_binary(elm[uint.sizeof..$], size);
-                        break;
-                    case OID:
-                        size=12;
-                        result=true;
-                        break;
-                    case BOOLEAN:
-                        size=1;
-                        result=true;
-                        break;
-                    case DATE:
-                        size=long.sizeof;
-                        result=true;
-                        break;
-                    case NULL:
-                        size=0;
-                        result=true;
-                        break;
-                    case REGEX:
-                        static if ( !hbson_flag ) {
-                            result=check_cstring(elm, size);
-                            if ( result ) {
-                                result=check_cstring(elm, size);
-                            }
-                        }
-                        break;
-                    case JS_CODE:
-                        static if ( !hbson_flag ) {
-                            result=check_string(elm, size) ;
-                        }
-                        break;
-                    case JS_CODE_W_SCOPE:
-                        static if ( !hbson_flag ) {
-                            result=check_code_w_s(elm, size);
-                        }
+                    result=check_document(elm, size);
                     break;
-                    case INT32:
-                        size=int.sizeof;
-                        result=true;
-                        break;
-                    case TIMESTAMP:
-                        size=long.sizeof;
-                        result=true;
-                        break;
-                    case INT64:
+                case ARRAY:
+                    static if ( !hbson_flag ) {
+                        result=check_document(elm, size);
+                    }
+                    break;
+                case BINARY:
+                    result=check_binary(elm[uint.sizeof..$], size);
+                    break;
+                case OID:
+                    result=!hbson_flag;
+                    size=12;
+                    break;
+                case BOOLEAN:
+                    result=(elm[0] == 0) || (elm[0] == 1);
+                    size=1;
+                    result=true;
+                    break;
+                case DATE:
                     size=long.sizeof;
                     result=true;
                     break;
-                    case UINT32:
-                        size=uint.sizeof;
-                        result=true;
-                        break;
+                case NULL:
+                    size=0;
+                    result=!hbson_flag;
+                    break;
+                case REGEX:
+                    static if ( !hbson_flag ) {
+                        result=check_cstring(elm, size);
+                        if ( result ) {
+                            result=check_cstring(elm, size);
+                        }
+                    }
+                    break;
+                case JS_CODE:
+                    static if ( !hbson_flag ) {
+                        result=check_string(elm, size) ;
+                    }
+                    break;
+                case JS_CODE_W_SCOPE:
+                    static if ( !hbson_flag ) {
+                        result=check_code_w_s(elm, size);
+                    }
+                    break;
+                case INT32:
+                    size=int.sizeof;
+                    result=true;
+                    break;
+                case TIMESTAMP:
+                    size=long.sizeof;
+                    result=true;
+                    break;
+                case INT64:
+                    size=long.sizeof;
+                    result=true;
+                    break;
+                case UINT32:
+                    size=uint.sizeof;
+                    result=true;
+                    break;
                 case UINT64:
                     size=ulong.sizeof;
                     result=true;
                     break;
-                    case FLOAT:
-                        size=float.sizeof;
-                        result=true;
-                        break;
-                    default:
-                        result=false;
+                case FLOAT:
+                    size=float.sizeof;
+                    result=true;
+                    break;
+                default:
+                    result=false;
                 }
             }
             if ( result ) {
@@ -365,6 +366,70 @@ unittest {
         assert(isBSONFormat(data));
         assert(isHBSONFormat(data));
     }
+
+
+    {
+        auto b=new HBSON();
+        b["bool"]=false;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        b["bool"]=true;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    { // Null is not support by HBSON
+        auto b=new HBSON();
+        b.setNull("null");
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(!isHBSONFormat(data));
+    }
+
+
+    {
+        auto b=new HBSON();
+        const int x=-42;
+        b["int32"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        const long x=-42;
+        b["int64"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        const ulong x=42;
+        b["uint64"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        const float x=42.21;
+        b["float"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+
     // Type check
     {
         auto b=new HBSON;
