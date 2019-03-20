@@ -221,6 +221,38 @@ struct Document {
     }
 
 
+    string toText(string INDENT="  ", string EOL="\n")() {
+        enum BETWEEN=","~EOL;
+        string object_toText(Document doc, const Type type, immutable(string) indent=null) @safe {
+            string buf;
+            bool any=false;
+            immutable bool array=(type == Type.ARRAY);
+            buf ~=indent;
+            buf =(array)?"[":"{";
+            string lines(Range)(Range range, immutable(string) indent, immutable(string) separator=EOL) @safe {
+                if ( !range.empty) {
+                    const e=range.front;
+                    range.popFront;
+                    if ( e.isDocument ) {
+                        return format("%s%s%s : %s", separator, indent, e.key, object_toText(e.get!Document, e.type, indent))~
+                            lines(range, indent, BETWEEN);
+
+                    }
+                    else {
+                        return format("%s%s%ss : (%s)%s", separator, indent, e.key, e.type, e.toInfo) ~
+                            lines(range, indent, BETWEEN);
+                    }
+                }
+                return "\n";
+            }
+            buf~=lines(doc[], indent~INDENT);
+            buf ~=indent;
+            buf ~= (array)?"]":"}";
+            return buf;
+        }
+        return object_toText(this, Type.DOCUMENT);
+    }
+
     unittest { // isInOrder
         void build(B)(B bson) {
             auto obj=new B;
@@ -292,18 +324,15 @@ struct Document {
         }
     }
 
-
     Range opSlice() {
         return Range(data);
     }
-
 
     @trusted
     string[] keys() const {
         import std.array;
         return array(map!"a.key"(Range(data)));
     }
-
 
     // Throws an std.conv.ConvException if the keys can not be convert to an uint
     immutable(uint[]) indices() const {
@@ -498,8 +527,6 @@ public:
             //return ((4<_data.length) )?_data[4]:BinarySubType.non;
         }
 
-
-
         // need mayEncapsulate?
     }
 
@@ -510,7 +537,6 @@ public:
             }
             return cast(Type)_data[0];
         }
-
 
         byte canonicalType() {
             Type t = type;
@@ -602,8 +628,7 @@ public:
 
 
     @property @trusted
-    size_t size() const pure nothrow
-        {
+    size_t size() const pure nothrow {
             size_t s;
             with(Type) final switch (type) {
                 case MIN, MAX, TRUNC, NONE, UNDEFINED, NULL:
@@ -689,32 +714,32 @@ public:
             else static if (is(T==float)) {
                 return (type == Type.FLOAT);
             }
-            else static if (is(T==Type.BINARY)) {
-                static if (is(T:immutable(ubyte)[])) {
+            else static if (is(T:immutable(U[]), U)) {
+                static if (is(T:immutable(ubyte[]))) {
                     return (subtype == BinarySubType.binary);
                 }
-                else static if (is(T:immutable(int)[])) {
+                else static if (is(T:immutable(int[]))) {
                     return (subtype == BinarySubType.INT32_array);
                 }
-                else static if (is(T:immutable(uint)[])) {
+                else static if (is(T:immutable(uint[]))) {
                     return (subtype == BinarySubType.UINT32_array);
                 }
-                else static if (is(T:immutable(long)[])) {
+                else static if (is(T:immutable(long[]))) {
                     return (subtype == BinarySubType.INT64_array);
                 }
-                else static if (is(T:immutable(ulong)[])) {
+                else static if (is(T:immutable(ulong[]))) {
                     return (subtype == BinarySubType.UINT64_array);
                 }
-                else static if (is(T:immutable(float)[])) {
+                else static if (is(T:immutable(float[]))) {
                     return (subtype == BinarySubType.FLOAT_array);
                 }
-                else static if (is(T:immutable(double)[])) {
+                else static if (is(T:immutable(double[]))) {
                     return (subtype == BinarySubType.INT64_array);
                 }
-                else static if (is(T:immutable(long)[])) {
+                else static if (is(T:immutable(long[]))) {
                     return (subtype == BinarySubType.INT64_array);
                 }
-                else static if (is(T:immutable(bool)[])) {
+                else static if (is(T:immutable(bool[]))) {
                     return (subtype == BinarySubType.BOOL_array);
                 }
             }
@@ -854,10 +879,8 @@ public:
 
     }
 
-    @property @trusted const pure nothrow
-        {
-            int as(T)() if (is(T == int))
-            {
+    @property @trusted const pure nothrow {
+            int as(T)() if (is(T == int)) {
                 switch (type) {
                 case Type.INT32:
                     return _int32();
@@ -875,8 +898,7 @@ public:
             }
 
 
-            int as(T)() if (is(T == uint))
-            {
+            int as(T)() if (is(T == uint)) {
                 switch (type) {
                 case Type.INT32:
                     return cast(uint)_int32();
@@ -894,8 +916,7 @@ public:
             }
 
 
-            long as(T)() if (is(T == long))
-            {
+            long as(T)() if (is(T == long)) {
                 switch (type) {
                 case Type.INT32:
                     return _int32();
@@ -915,8 +936,7 @@ public:
             }
 
 
-            ulong as(T)() if (is(T == ulong))
-            {
+            ulong as(T)() if (is(T == ulong)) {
                 switch (type) {
                 case Type.INT32:
                     return _int32();
@@ -935,8 +955,7 @@ public:
                 }
             }
 
-            double as(T)() if (is(T == double))
-            {
+            double as(T)() if (is(T == double)) {
                 switch (type) {
                 case Type.INT32:
                     return cast(double)_int32();
@@ -1056,17 +1075,15 @@ public:
 
 
     @safe
-    string toString() const
-        {
-            return toFormatString(true, true);
-        }
-
+    string toString() const {
+        return toInfo(true, true);
+    }
 
     @trusted
-    string toFormatString(bool includeKey = false, bool full = false) const {
+    string toInfo(bool includeKey = false, bool full = false) const {
         string result;
         if (!isEod && includeKey) {
-            result = key ~ ": ";
+            result = key ~ " : ";
         }
 
         with(Type) final switch (type) {
@@ -1216,67 +1233,53 @@ private:
 
 
     @trusted const pure nothrow {
-        bool _boolean()
-        {
+        bool _boolean() {
             return value[0] == 0 ? false : true;
         }
 
 
-        int _int32()
-        {
+        int _int32() {
             return *cast(int*)(value.ptr);
         }
 
-        uint _uint32()
-        {
+        uint _uint32() {
             return *cast(uint*)(value.ptr);
         }
 
 
-        long _int64()
-        {
+        long _int64() {
             return *cast(long*)(value.ptr);
         }
 
-        ulong _uint64()
-        {
+        ulong _uint64() {
             return *cast(ulong*)(value.ptr);
         }
 
 
-        double _double()
-        {
+        double _double() {
             return *cast(double*)(value.ptr);
         }
 
-        float _float()
-        {
+        float _float() {
             return *cast(float*)(value.ptr);
         }
     }
 
 
-    @property const pure nothrow
-        {
-            @safe
-                size_t rawKeySize()
-            {
-                return key.length + 1;  // including null character termination
-            }
-
-            @trusted
-                uint bodySize()
-            {
-                return *cast(uint*)(_data[1 + rawKeySize..$].ptr);
-            }
+    @property const pure nothrow {
+        @safe size_t rawKeySize() {
+            return key.length + 1;  // including null character termination
         }
+
+        @trusted uint bodySize() {
+            return *cast(uint*)(_data[1 + rawKeySize..$].ptr);
+        }
+    }
 }
 
 
-unittest
-{
-    struct ETest
-    {
+unittest {
+    struct ETest {
         ubyte[] data;
         Type    type;
         string  key;
@@ -1286,8 +1289,7 @@ unittest
         bool    isSimple;
     }
 
-    Element test(ref const ETest set, string msg)
-    {
+    Element test(ref const ETest set, string msg) {
         auto amsg = "Assertion failure(" ~ msg ~ " type unittest)";
         auto elem = Element(set.data.idup);
 
@@ -1831,17 +1833,15 @@ public:
 
 
     @safe
-    bool opEquals(ref const ObjectId other) const pure nothrow
-        {
-            return data == other.data;
-        }
+    bool opEquals(ref const ObjectId other) const pure nothrow {
+        return data == other.data;
+    }
 
 
     @safe
-    string toString() const pure nothrow
-        {
-            return data.toHex();
-        }
+    string toString() const pure nothrow {
+        return data.toHex();
+    }
 
     @safe
     immutable(ubyte)[12] id() const pure nothrow {
@@ -1901,8 +1901,7 @@ string toHex(in ubyte[] nums) pure nothrow {
 
 
 @safe
-ubyte[] fromHex(in string hex) pure nothrow
-{
+ubyte[] fromHex(in string hex) pure nothrow {
     static ubyte toNum(in char c) pure nothrow
     {
         if ('0' <= c && c <= '9')
@@ -1970,8 +1969,7 @@ BinarySubType getSubtype(T)() {
 
 unittest
 {
-    static struct Test
-    {
+    static struct Test {
         ubyte[] source;
         string  answer;
     }
