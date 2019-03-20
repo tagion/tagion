@@ -239,7 +239,7 @@ struct Document {
 
                     }
                     else {
-                        return format("%s%s%ss : (%s)%s", separator, indent, e.key, e.type, e.toInfo) ~
+                        return format("%s%s%s : (%s)%s", separator, indent, e.key, e.type, e.toInfo) ~
                             lines(range, indent, BETWEEN);
                     }
                 }
