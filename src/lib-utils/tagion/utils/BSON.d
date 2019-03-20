@@ -404,7 +404,6 @@ unittest {
  */
 @safe
 struct Element {
-private:
     /*
      * -----
      * //data image:
@@ -417,11 +416,11 @@ private:
      *                                     ^ data.length
      * -----
      */
-    immutable ubyte[] _data;
+    immutable(ubyte[]) _data;
 
 
 public:
-    this(immutable ubyte[] data) {
+    this(immutable(ubyte[]) data) {
         // In this time, Element does not parse a binary data.
         // This is lazy initialization for some efficient.
         _data = data;

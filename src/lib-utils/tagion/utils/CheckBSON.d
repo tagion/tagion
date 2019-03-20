@@ -1,6 +1,6 @@
 module tagion.utils.CheckBSON;
 
-import tagion.utils.BSON : Type, BinarySubType, BSON, HBSON;
+import tagion.utils.BSON : Type, BinarySubType, BSON, HBSON, less_than;
 
 import std.stdio;
 import tagion.Base : Check;
@@ -65,30 +65,16 @@ struct CheckBSON(bool hbson_flag) {
 
     bool check_e_list(const(ubyte[]) e_list) {
         writefln("e_list.lenght=%d e_list[0]=%d list=%s", e_list.length, e_list[0], e_list);
-        if ( e_list[0] !=  0 ) {
-//        current=e_list;
-//        auto e_list_len=get_value!uint(e_list);
-        writefln("e_list=%s", e_list);
-        size_t size;
-        return check_element(e_list, size) && check_e_list(e_list[size..$]);
-//        cpos=uint.sizeof;
-//        bool crawl(const(ubyte[]) e_list) {
-        // bool result=true;
-        // if ( e_list[0] != 0 ) {
-//         size_t size;
-//         result=check_element(e_list, size);
-//                 writefln("after size=%d", size);
-//                 if ( result) {
-
-// //                    cpos+=size;
-//                     return crawl(e_list[size..$]);
-//                 }
-//             }
-//             return result;
+        string name;
+        bool crawl(const(ubyte[]) e_list) {
+            if ( e_list[0] !=  0 ) {
+                writefln("e_list=%s", e_list);
+                size_t size;
+                return check_element(e_list, size, name) && crawl(e_list[size..$]);
+            }
+            return true;
         }
-        return true;
-
-//        return crawl(e_list);
+        return crawl(e_list);
     }
 
     bool check_document(const(ubyte[]) doc_data, out size_t size) {
@@ -202,7 +188,7 @@ struct CheckBSON(bool hbson_flag) {
     }
 
     @trusted
-    bool check_element(const(ubyte[]) full_elm, out size_t cpos) {
+    bool check_element(const(ubyte[]) full_elm, out size_t cpos, ref string previous_name) {
         current=full_elm;
         byte type=full_elm[0];
         cpos=ubyte.sizeof;
@@ -210,14 +196,24 @@ struct CheckBSON(bool hbson_flag) {
         writefln("type=%d full_elm[cpos..$]=%s", type, full_elm[cpos..$]);
         size_t size;
         bool result=check_cstring(full_elm[cpos..$], size);
-        writefln("size=%d %s", size, cast(string)(full_elm[cpos..cpos+size]));
+        string name=cast(string)(full_elm[cpos..cpos+size]);
+        static if ( hbson_flag ) {
+            scope(exit) {
+                previous_name=name;
+            }
+            if ( result && (previous_name) ) {
+                return less_than(previous_name, name);
+            }
+        }
+        writefln("size=%d %s %d", size, name, name.length);
+        //cast(string)(full_elm[cpos..cpos+size]));
 
 //        if ( result ) {
-        cpos+=size+1;
-        auto elm=full_elm[cpos..$];
-        writefln("elm=%s", elm);
 //        return true;
         if ( result ) {
+            cpos+=size+1;
+            auto elm=full_elm[cpos..$];
+            writefln("elm=%s", elm);
             with(Type) switch (type) {
                 case DOUBLE:
                     writef("type=%s %s", type, get_value!double(elm));
@@ -350,6 +346,7 @@ bool isHBSONFormat(const(ubyte[]) data) {
 //TO_DO: Make a isBSONFormat() static function.
 unittest {
 //    version(none)
+    // Standard types
     {
         auto b=new HBSON();
         immutable double x=3.1415;
@@ -391,7 +388,6 @@ unittest {
         assert(isBSONFormat(data));
         assert(!isHBSONFormat(data));
     }
-
 
     {
         auto b=new HBSON();
