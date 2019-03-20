@@ -99,6 +99,7 @@ enum _keywords = [
     "error", // error_code
     "result",
     "id", //
+    "data",
     "hrpc"
     ];
 
