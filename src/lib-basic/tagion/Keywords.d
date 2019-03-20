@@ -54,12 +54,12 @@ enum _keywords = [
     "block",     // block
 
     "rim",
-   "buckets",
-   "tab",
+    "buckets",
+    "tab",
     "transaction_id",
     "output",
     "signatures",
-    "signatur",
+//    "signatur",
     "transaction_object",
     "transaction_scripting_object",
     "payers",
@@ -98,7 +98,7 @@ enum _keywords = [
     "error", // error_code
     "result",
     "id", //
-    "rpc"
+    "hrpc"
     ];
 
 // Generated the Keywords and enum string list
