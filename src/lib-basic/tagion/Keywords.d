@@ -93,6 +93,7 @@ enum _keywords = [
     "stub",
 
     // HBSON-RPC (Similar to JSON-RPC 2.0)
+    "rev",
     "method",
     "params",
     "error", // error_code
