@@ -11,6 +11,7 @@
  * Authors:   Masahiro Nakagawa
  * Modified   Carsten Bleser Rasmussen
  *            BSON serialize function added
+ *            HBSON functions added
  *
  *            Copyright Masahiro Nakagawa 2011-.
  *    Distributed under the Apache LICENSE Version 2.0.
@@ -104,6 +105,76 @@ private {
     alias BSON_FT=BSON!(false, true);
     alias BSON_TT=BSON!(true, true);
 }
+
+template isGeneralType(T, Type) {
+    alias BaseT=TypedefType!T;
+    enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
+}
+
+enum isTypedef(T)=!is(TypedefType!T == T);
+
+template TypeName(T) {
+    static if (isGeneralType!(T,double)) {
+        alias TypeName=Type.DOUBLE;
+    }
+    else static if (isGeneralType!(T,string)) {
+        alias TypeName=Type.STRING;
+    }
+    else static if (is(T==Document)) {
+        alias TypeName=Type.DOCUMENT;
+    }
+    else static if (isGeneralType!(T,bool)) {
+        alias TypeName=Type.BOOLEAN;
+    }
+    else static if (isGeneralType!(T,int)) {
+        alias TypeName=Type.INT32;
+    }
+    else static if (isGeneralType!(T,long)) {
+        alias TypeName=Type.INT64;
+    }
+    else static if (isGeneralType!(T,uint)) {
+        alias TypeName=Type.UINT32;
+    }
+    else static if (isGeneralType!(T,ulong)) {
+        alias TypeName=Type.UINT64;
+    }
+    else static if (isGeneralType!(T,float)) {
+        alias TypeName=Type.FLOAT;
+    }
+    else static if (is(T:immutable(U[]), U)) {
+        static if (is(T:immutable(ubyte[]))) {
+            alias TypeName=BinarySubType.generic;
+        }
+        else static if (is(T:immutable(int[]))) {
+                    alias TypeName=BinarySubType.INT32_array;
+        }
+        else static if (is(T:immutable(uint[]))) {
+            alias TypeName=BinarySubType.UINT32_array;
+        }
+        else static if (is(T:immutable(long[]))) {
+            alias TypeName=BinarySubType.INT64_array;
+        }
+        else static if (is(T:immutable(ulong[]))) {
+            alias TypeName=BinarySubType.UINT64_array;
+        }
+        else static if (is(T:immutable(float[]))) {
+            alias TypeName=BinarySubType.FLOAT_array;
+        }
+        else static if (is(T:immutable(double[]))) {
+            alias TypeName=BinarySubType.INT64_array;
+        }
+        else static if (is(T:immutable(long[]))) {
+            alias TypeName=BinarySubType.INT64_array;
+        }
+        else static if (is(T:immutable(bool[]))) {
+            alias TypeName=BinarySubType.BOOL_array;
+        }
+    }
+    else {
+        static assert(0, format("Type %s does not have a BSON equivalent type", T.stringof));
+    }
+}
+
 
 
 @safe
@@ -239,7 +310,7 @@ struct Document {
 
                     }
                     else {
-                        return format("%s%s%s : (%s)%s", separator, indent, e.key, e.type, e.toInfo) ~
+                        return format("%s%s%s : (%s)%s", separator, indent, e.key, e.typeName, e.toInfo) ~
                             lines(range, indent, BETWEEN);
                     }
                 }
@@ -679,44 +750,46 @@ public:
 
     @property const /* pure: check is not pure */ {
 
-        template isGeneralType(T, Type) {
-            alias BaseT=TypedefType!T;
-            enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
+        string typeName() pure const  {
+            if ( type is Type.BINARY ) {
+                return subtype.to!string;
+            }
+            else {
+                return type.to!string;
+            }
         }
 
-        enum isTypedef(T)=!is(TypedefType!T == T);
-
         bool istype(T)() pure const {
-            static if (is(T==double)) {
+            static if (isGeneralType!(T,double)) {
                 return type == Type.DOUBLE;
             }
-            else static if (is(T:string)) {
+            else static if (isGeneralType!(T,string)) {
                 return type == Type.STRING;
             }
             else static if (is(T==Document)) {
                 return ((type == Type.DOCUMENT) || (type == Type.ARRAY));
             }
-            else static if (is(T==bool)) {
+            else static if (isGeneralType!(T,bool)) {
                 return (type == Type.BOOLEAN);
             }
-            else static if (is(T==int)) {
+            else static if (isGeneralType!(T,int)) {
                 return (type == Type.INT32);
             }
-            else static if (is(T==long)) {
+            else static if (isGeneralType!(T,long)) {
                 return (type == Type.INT64);
             }
-            else static if (is(T==uint)) {
+            else static if (isGeneralType!(T,uint)) {
                 return (type == Type.UINT32);
             }
-            else static if (is(T==ulong)) {
+            else static if (isGeneralType!(T,ulong)) {
                 return (type == Type.UINT64);
             }
-            else static if (is(T==float)) {
+            else static if (isGeneralType!(T,float)) {
                 return (type == Type.FLOAT);
             }
             else static if (is(T:immutable(U[]), U)) {
                 static if (is(T:immutable(ubyte[]))) {
-                    return (subtype == BinarySubType.binary);
+                    return (subtype == BinarySubType.generic);
                 }
                 else static if (is(T:immutable(int[]))) {
                     return (subtype == BinarySubType.INT32_array);
@@ -751,7 +824,6 @@ public:
             return cast(T)str;
         }
 
-
         T get(T)() inout if ( isGeneralType!(T,bool) ) {
             check(Type.BOOLEAN);
             return cast(T)(_boolean());
@@ -762,19 +834,15 @@ public:
             return cast(T)(_int32());
         }
 
-        // inout(T) get(T)() inout if (is(T == inout(long)) || is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
-        //     is(T == inout(ulong)) || is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong))) {
         T get(T)() inout if (isGeneralType!(T,long) ||  isGeneralType!(T,ulong) ) {
             check(Type.INT64);
             return cast(T)(_int64());
         }
 
-//            T get(T)() inout if (is(T == inout(double)) || is(T == double) || is(T == const(double)) || is(T == immutable(double))) {
         T get(T)() inout if (isGeneralType!(T,double)) {
             check(Type.DOUBLE);
             return cast(T)(_double());
         }
-
 
         T get(T)() inout if (is(TypedefType!T : const(Date))) {
             check(Type.DATE);
@@ -804,6 +872,7 @@ public:
         /**
          * Returns an DOCUMENT[] document array.
          */
+        version(none)
         Document[] get(T)() inout if (is(TypedefType!T == Document[])) {
             check(Type.BINARY);
             check(getSubtype!(TypedefType!T));
@@ -821,30 +890,6 @@ public:
             }
             build_document_array(value);
             return docs;
-        }
-
-        // immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
-        //     return value.idup;
-        // }
-        version(none)
-            @trusted
-            auto get(T)() inout if (!is(TypedefType!T == string) && isTypedef!T && is(TypedefType!T : immutable(U[]), U)) {
-            alias BaseT=TypedefType!T;
-            static if ( is(BaseT : immutable(U[]), U) ) {
-                if ( type == Type.BINARY)  {
-                    static if ( is(BaseT : immutable(ubyte[]) ) ) {
-                        return binary_buffer;
-
-                    }
-                    else if ( subtype == getSubtype!BaseT ) {
-                        auto buf=binary_buffer;
-                        return (cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
-                    }
-                }
-            }
-
-            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
-            assert(0, "Unsupported type "~T.stringof);
         }
 
         @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
@@ -897,7 +942,6 @@ public:
                 }
             }
 
-
             int as(T)() if (is(T == uint)) {
                 switch (type) {
                 case Type.INT32:
@@ -914,7 +958,6 @@ public:
                     return 0;
                 }
             }
-
 
             long as(T)() if (is(T == long)) {
                 switch (type) {
@@ -1216,7 +1259,6 @@ private:
         }
     }
 
-
     void check(BinarySubType t) const /* pure */ {
         if (t != subtype) {
             string typeName = to!string(t); // why is to! not pure?
@@ -1230,7 +1272,6 @@ private:
             throw new BSONException(message);
         }
     }
-
 
     @trusted const pure nothrow {
         bool _boolean() {
@@ -1691,8 +1732,7 @@ void check(bool flag, string msg, string file = __FILE__, size_t line = __LINE__
  * See_Also:
  *  $(LINK2 http://www.mongodb.org/display/DOCS/Object+IDs, Object IDs)
  */
-struct ObjectId
-{
+struct ObjectId {
 private:
     // ObjectId is 12 bytes
     union
@@ -1722,27 +1762,24 @@ private:
 
 
     @trusted
-    shared static this()
-        {
-            // import std.md5;  // TODO: Will be replaced with std.digest
-            import std.digest.md;
-            import std.socket;
+    shared static this() {
+        // import std.md5;  // TODO: Will be replaced with std.digest
+        import std.digest.md;
+        import std.socket;
 
-            ubyte[16] digest;
+        ubyte[16] digest;
 
-            digest=md5Of(Socket.hostName());
-            //sum(digest, Socket.hostName());
-            ourMachine[] = digest[0..3];
-        }
+        digest=md5Of(Socket.hostName());
+        //sum(digest, Socket.hostName());
+        ourMachine[] = digest[0..3];
+    }
 
+    unittest {
+        ObjectId oid;
+        oid.initialize();
 
-    unittest
-        {
-            ObjectId oid;
-            oid.initialize();
-
-            assert(oid.machine == ourMachine);
-        }
+        assert(oid.machine == ourMachine);
+    }
 
 
 public:
