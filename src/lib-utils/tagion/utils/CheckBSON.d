@@ -134,19 +134,19 @@ struct CheckBSON(bool hbson_flag) {
         bool result;
         size_t binary_size=ubyte.sizeof;
         with (BinarySubType) switch(subtype) {
-            case generic:
+            case GENERIC:
                 result=true;
                 break;
-            case func:
+            case FUNC:
                 result=!hbson_flag;
                 break;
-            case binary:
+            case BINARY:
                 result=false;
                 break;
-            case uuid:
+            case UUID:
                 result=!hbson_flag;
                 break;
-            case md5:
+            case MD5:
                 result=!hbson_flag;
                 break;
             case userDefined:
