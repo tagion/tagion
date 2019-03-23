@@ -146,7 +146,7 @@ template TypeName(T) {
             alias TypeName=BinarySubType.generic;
         }
         else static if (is(T:immutable(int[]))) {
-                    alias TypeName=BinarySubType.INT32_array;
+            alias TypeName=BinarySubType.INT32_array;
         }
         else static if (is(T:immutable(uint[]))) {
             alias TypeName=BinarySubType.UINT32_array;
@@ -174,8 +174,6 @@ template TypeName(T) {
         static assert(0, format("Type %s does not have a BSON equivalent type", T.stringof));
     }
 }
-
-
 
 @safe
 interface DocumentCallbacks {
@@ -700,50 +698,50 @@ public:
 
     @property @trusted
     size_t size() const pure nothrow {
-            size_t s;
-            with(Type) final switch (type) {
-                case MIN, MAX, TRUNC, NONE, UNDEFINED, NULL:
-                    break;
-                case BOOLEAN:
-                    s = 1;
-                    break;
-                case INT32, UINT32, FLOAT:
-                    s = 4;
-                    break;
-                case DOUBLE, INT64, DATE, TIMESTAMP, UINT64:
-                    s = 8;
-                    break;
-                case OID:
-                    s = 12;
-                    break;
-                case DOCUMENT, JS_CODE_W_SCOPE, ARRAY:
-                    s = bodySize;
-                    break;
-                case STRING, SYMBOL, JS_CODE:
-                    s = bodySize + 4;
-                    break;
-                case BINARY:
-                    s = bodySize + 4 + 1;
-                    break;
-                case DBPOINTER:
-                    s = bodySize + 4 + 12;
-                    break;
-                case REGEX:
-                    auto p1 = cast(immutable(char*))_data[1 + rawKeySize..$].ptr;
-                    size_t length1 = strlen(p1);
-                    auto p2 = cast(immutable(char*))_data[1 + rawKeySize + length1 + 1..$].ptr;
-                    size_t length2 = strlen(p2);
-                    s = length1 + 1 + length2 + 1;
-                    break;
-                case NATIVE_DOCUMENT:
-                    s = _data.length;
-                    break;
-                case NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
-                    assert(0, format("No size defined for type %s", type) );
-                }
+        size_t s;
+        with(Type) final switch (type) {
+            case MIN, MAX, TRUNC, NONE, UNDEFINED, NULL:
+                break;
+            case BOOLEAN:
+                s = 1;
+                break;
+            case INT32, UINT32, FLOAT:
+                s = 4;
+                break;
+            case DOUBLE, INT64, DATE, TIMESTAMP, UINT64:
+                s = 8;
+                break;
+            case OID:
+                s = 12;
+                break;
+            case DOCUMENT, JS_CODE_W_SCOPE, ARRAY:
+                s = bodySize;
+                break;
+            case STRING, SYMBOL, JS_CODE:
+                s = bodySize + 4;
+                break;
+            case BINARY:
+                s = bodySize + 4 + 1;
+                break;
+            case DBPOINTER:
+                s = bodySize + 4 + 12;
+                break;
+            case REGEX:
+                auto p1 = cast(immutable(char*))_data[1 + rawKeySize..$].ptr;
+                size_t length1 = strlen(p1);
+                auto p2 = cast(immutable(char*))_data[1 + rawKeySize + length1 + 1..$].ptr;
+                size_t length2 = strlen(p2);
+                s = length1 + 1 + length2 + 1;
+                break;
+            case NATIVE_DOCUMENT:
+                s = _data.length;
+                break;
+            case NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
+                assert(0, format("No size defined for type %s", type) );
+            }
 
-            return 1 + rawKeySize + s;
-        }
+        return 1 + rawKeySize + s;
+    }
     alias size length;
 
     // D's primitive type accessor like Variant
@@ -807,9 +805,6 @@ public:
                     return (subtype == BinarySubType.FLOAT_array);
                 }
                 else static if (is(T:immutable(double[]))) {
-                    return (subtype == BinarySubType.INT64_array);
-                }
-                else static if (is(T:immutable(long[]))) {
                     return (subtype == BinarySubType.INT64_array);
                 }
                 else static if (is(T:immutable(bool[]))) {
@@ -2676,6 +2671,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     Type type() pure const nothrow {
         return _type;
+    }
+
+    string typeName() pure const  {
+        if ( _type is Type.BINARY ) {
+            return subtype.to!string;
+        }
+        else {
+            return _type.to!string;
+        }
     }
 
     @trusted
