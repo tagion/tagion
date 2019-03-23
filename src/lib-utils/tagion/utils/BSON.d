@@ -484,9 +484,9 @@ unittest {
         assert(numElem.get!int == 10);
         assert(numElem.get!(const(int)) == 10);
         assert(numElem.get!(immutable(int)) == 10);
-        assert(numElem.get!uint == 10);
-        assert(numElem.get!(const(uint)) == 10);
-        assert(numElem.get!(immutable(uint)) == 10);
+        // assert(numElem.get!uint == 10);
+        // assert(numElem.get!(const(uint)) == 10);
+        // assert(numElem.get!(immutable(uint)) == 10);
 
         auto boolElem = doc["bool"];
         assert(boolElem.get!bool);
@@ -829,19 +829,34 @@ public:
             return cast(T)(_boolean());
         }
 
-        T get(T)() inout if (isGeneralType!(T,int) || isGeneralType!(T,uint) ) {
+        T get(T)() inout if (isGeneralType!(T,int) ) {
             check(Type.INT32);
             return cast(T)(_int32());
         }
 
-        T get(T)() inout if (isGeneralType!(T,long) ||  isGeneralType!(T,ulong) ) {
+        T get(T)() inout if (isGeneralType!(T,long) ) {
             check(Type.INT64);
             return cast(T)(_int64());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,uint) ) {
+            check(Type.UINT32);
+            return cast(T)(_uint32());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,ulong) ) {
+            check(Type.UINT64);
+            return cast(T)(_uint64());
         }
 
         T get(T)() inout if (isGeneralType!(T,double)) {
             check(Type.DOUBLE);
             return cast(T)(_double());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,float)) {
+            check(Type.FLOAT);
+            return cast(T)(_float());
         }
 
         T get(T)() inout if (is(TypedefType!T : const(Date))) {
@@ -1250,10 +1265,12 @@ private:
             string typeName = to!string(t); // why is to! not pure?
             string message;
             if (isEod) {
-                message = "Field not found: expected type = " ~ typeName;
+                message = format("Field not found: expected type = %s ", typeName);
             }
             else {
-                message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
+                message = format("Wrong type for field: [%s].type != %s  expected %s",
+                    key, typeName, to!string(type),
+                    ) ;
             }
             throw new BSONException(message);
         }
@@ -1711,8 +1728,7 @@ unittest
  * Exception type used by tagion.utils.BSON module
  */
 @safe
-class BSONException : Exception
-{
+class BSONException : Exception {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
         super( msg, file, line );
     }
@@ -2455,32 +2471,41 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     void opIndexAssign(T)(T x, string key) {
         alias BaseType=TypedefType!T;
-        static if (is(BaseType:const(bool))) {
+        static if (isGeneralType!(T, bool)) {
             append(Type.BOOLEAN, key, x);
         }
-        else static if (is(BaseType:string)) {
-            append(Type.STRING, key, x);
-        }
-        else static if (is(BaseType:const(BSON))) {
-            append(Type.DOCUMENT, key, x);
-        }
-        else static if (is(BaseType:const(int))) {
+        else static if (isGeneralType!(T, int)) {
             append(Type.INT32, key, x);
         }
-        else static if (is(BaseType:const(long))) {
+        else static if (isGeneralType!(T, long)) {
             append(Type.INT64, key, x);
         }
-        else static if (is(BaseType:const(double))) {
+        else static if (isGeneralType!(T, double)) {
             append(Type.DOUBLE, key, x);
         }
-        else static if (is(BaseType:const(Date))) {
+        else static if (isGeneralType!(T, uint)) {
+            append(Type.UINT32, key, x);
+        }
+        else static if (isGeneralType!(T, ulong)) {
+            append(Type.UINT64, key, x);
+        }
+        else static if (isGeneralType!(T, float)) {
+            append(Type.FLOAT, key, x);
+        }
+        else static if (isGeneralType!(T, string)) {
+            append(Type.STRING, key, x);
+        }
+        else static if (isGeneralType!(T, Date)) {
             append(Type.DATE, key, x);
         }
-        else static if (is(BaseType:const(DateTime))) {
+        else static if (isGeneralType!(T, DateTime)) {
             append(Type.TIMESTAMP, key, x);
         }
         else static if (is(BaseType:string[])) {
             append(Type.NATIVE_STRING_ARRAY, key, x);
+        }
+        else static if (is(BaseType:const(BSON))) {
+            append(Type.DOCUMENT, key, x);
         }
         else static if (is(BaseType:const(Document)) ) {
             append(Type.NATIVE_DOCUMENT, key, x);
@@ -2495,11 +2520,75 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             append(Type.BINARY, key, x, getSubtype!BaseType);
         }
         else static if (is(BaseType:U[],U)) {
-            result=append(Type.ARRAY, key, x);
+            append(Type.ARRAY, key, x);
+        }
+        else static if (is(BaseType==enum) && is(BaseType : const(uint)) ) {
+            append(Type.UINT32, key, cast(uint)x);
         }
         else {
             static assert(0, "opIndexAssign does not support type "~T.stringof~" use append member function instead");
         }
+    }
+
+    unittest { // opIndexAssign type test
+        auto bson=new BSON;
+        import std.stdio;
+        {
+            const bool x=true;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.BOOLEAN);
+        }
+
+        {
+            const int x=-42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.INT32);
+        }
+
+        {
+            const long x=-42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.INT64);
+        }
+
+        {
+            const double x=-42.42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.DOUBLE);
+        }
+
+        {
+            const uint x=42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.UINT32);
+        }
+
+        {
+            const ulong x=42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.UINT64);
+        }
+
+        {
+            const float x=-42.42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.FLOAT);
+        }
+
+        {
+            const string x="some_text";
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.STRING);
+        }
+
     }
 
     void setNull(string key) {
