@@ -2222,7 +2222,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         return ( (type == Type.DOCUMENT) || (type == Type.ARRAY) );
     }
 
-    import std.stdio;
     @trusted
     protected void append(T)(Type type, string key, T x, BinarySubType binary_subtype=BinarySubType.GENERIC) {
         alias BaseT=TypedefType!T;
@@ -2231,12 +2230,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 throw new BSONException(format("Member '%s' already exist, BSON is a 'one time write' type", key));
             }
         }
-//        static if(__traits(compiles, x.length) ) {
-            if ( key == "public" ) {
-                writefln("append %s type=%s subtype=%s T=%s BaseT=%s",
-                    key, type, binary_subtype, T.stringof, BaseT.stringof);
-            }
-//        }
         bool result=false;
         BSON elm=new BSON;
         scope(success) {
@@ -2327,8 +2320,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 break;
             case BINARY:
                 static if (is(BaseT:U[],U)) {
-
-                    writefln("BaseT=%s U=%s x=%s", BaseT.stringof, U.stringof, x);
                     static if (is(U==immutable ubyte)) {
                         elm.value.binary=cast(BaseT)x;
                     }
@@ -2467,14 +2458,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     void opIndexAssign(T, Index)(T x, const Index index) if (isIntegral!Index) {
         opIndexAssign(x, index.to!string);
     }
-    import std.stdio;
 
     void opIndexAssign(T)(T x, string key) {
         alias BaseType=TypedefType!T;
-        if ( key == "public" ) {
-            writefln("append key=%s T=%s BaseType=%s",
-                key, T.stringof, BaseType.stringof);
-        }
         static if (isGeneralType!(T, bool)) {
             append(Type.BOOLEAN, key, x);
         }
