@@ -3640,6 +3640,26 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 }
 
 
+T[] toArray(T)(Document doc) {
+    T[] array;
+    void iterate(Range)(Range range, immutable uint index=0) {
+        if ( !range.empty ) {
+            range.popFront;
+            scope e=front;
+            iterate(range, index+1);
+            check(e.istype!Array, format("Problem with array type @ %s. Got %s expected %s",
+                    e.key, e.typeName, typeName!T));
+            immutable current_index=e.index;
+            array[index]=e.get!Array;
+        }
+        else {
+            array=new T[index]:
+        }
+    }
+    iterate(doc[]);
+    return array;
+}
+
 // int[] doc2ints(Document doc) {
 //     int[] result;
 //     foreach(elm; doc.opSlice) {
