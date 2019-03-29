@@ -32,6 +32,7 @@ import std.traits : isSomeString, isIntegral;
 private import std.bitmanip;
 
 import tagion.crypto.Hash : toHexString;
+import tagion.Base : Check, TagionException;
 
 public alias HBSON=BSON!(true,true);
 
@@ -107,7 +108,8 @@ template isGeneralType(T, Type) {
 
 enum isTypedef(T)=!is(TypedefType!T == T);
 
-template TypeName(T) {
+
+template DtoBSONType(T) {
     static if (isGeneralType!(T,double)) {
         alias TypeName=Type.DOUBLE;
     }
@@ -167,6 +169,13 @@ template TypeName(T) {
     else {
         static assert(0, format("Type %s does not have a BSON equivalent type", T.stringof));
     }
+}
+
+
+string TypeString(T)() {
+    return DtoBSONType!(T).stringof;
+    // alias BType=DtoBSONType!(T);
+    // alias TypeString=BType.stringof;
 }
 
 @safe
@@ -302,7 +311,7 @@ struct Document {
 
                     }
                     else {
-                        return format("%s%s%s : (%s)%s", separator, indent, e.key, e.typeName, e.toInfo) ~
+                        return format("%s%s%s : (%s)%s", separator, indent, e.key, e.typeString, e.toInfo) ~
                             lines(range, indent, BETWEEN);
                     }
                 }
@@ -359,6 +368,9 @@ struct Document {
             }
         }
 
+        this(const Document doc) {
+            this(doc.data);
+        }
 
         @property @safe pure nothrow const {
             bool empty() {
@@ -524,7 +536,6 @@ public:
             return _data.length == 0;
         }
 
-
         bool isNumber() {
             switch (type) {
             case Type.INT32, Type.INT64, Type.DOUBLE, Type.UINT32, Type.UINT64:
@@ -543,7 +554,6 @@ public:
                 return false;
             }
         }
-
 
         bool isTrue() {
             switch (type) {
@@ -567,9 +577,18 @@ public:
         }
 
 
-        bool isDocument() {
+        bool isDocument() const pure nothrow {
             switch (type) {
             case Type.DOCUMENT, Type.ARRAY:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        bool isArray()  {
+            switch (type) {
+            case Type.ARRAY:
                 return true;
             default:
                 return false;
@@ -587,10 +606,8 @@ public:
             else {
                 return BinarySubType.not_defined;
             }
-            //return ((4<_data.length) )?_data[4]:BinarySubType.non;
         }
 
-        // need mayEncapsulate?
     }
 
     @property @safe const pure nothrow {
@@ -601,16 +618,18 @@ public:
             return cast(Type)_data[0];
         }
 
-        byte canonicalType() {
-            Type t = type;
+    }
 
-            with(Type) final switch (t) {
-                case MIN, MAX, TRUNC:
-                    return t;
-                case NONE, UNDEFINED:
-                    return 0;
-                case NULL:
-                    return 5;
+    @property byte canonicalType() const {
+        Type t = type;
+
+        with(Type) final switch (t) {
+            case MIN, MAX, TRUNC:
+                return t;
+            case NONE, UNDEFINED:
+                return 0;
+            case NULL:
+                return 5;
                 case DOUBLE, INT32, INT64:
                     return 10;
                 case STRING, SYMBOL:
@@ -638,11 +657,11 @@ public:
                 case FLOAT, UINT32, UINT64:
                     return 70;
                 case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
-                    assert(0, format("Invalid type %s",t));
+                    .check(0, format("Invalid type %s",t));
                 }
+        .check(0, format("Type code 0x%02x not supported", cast(ubyte)t));
+        assert(0);
         }
-    }
-
 
     @property const pure nothrow {
 
@@ -666,6 +685,14 @@ public:
         return key.to!uint;
     }
 
+    string typeString() pure const  {
+        if ( type is Type.BINARY ) {
+            return subtype.to!string;
+        }
+        else {
+            return type.to!string;
+        }
+    }
 
     @property @safe const pure nothrow {
         immutable(ubyte[]) value() {
@@ -679,8 +706,8 @@ public:
         size_t valueSize() {
             return value.length;
         }
-
     }
+
     //Binary buffer
     @trusted
     immutable(ubyte[]) binary_buffer() const  {
@@ -688,7 +715,6 @@ public:
         immutable len=*cast(int*)(v.ptr);
         return v[5..len+5];
     }
-
 
     @property @trusted
     size_t size() const pure nothrow {
@@ -741,15 +767,6 @@ public:
     // D's primitive type accessor like Variant
 
     @property const /* pure: check is not pure */ {
-
-        string typeName() pure const  {
-            if ( type is Type.BINARY ) {
-                return subtype.to!string;
-            }
-            else {
-                return type.to!string;
-            }
-        }
 
         bool istype(T)() pure const {
             static if (isGeneralType!(T,double)) {
@@ -873,27 +890,28 @@ public:
             return Document(value);
         }
 
-        /**
-         * Returns an DOCUMENT[] document array.
-         */
-        version(none)
-        Document[] get(T)() inout if (is(TypedefType!T == Document[])) {
-            check(Type.BINARY);
-            check(getSubtype!(TypedefType!T));
-            Document[] docs;
+        T[] toArray(T)() const {
+            T[] array;
+            @safe
+            void iterate(Document.Range range, immutable int previous_index=-1) {
+                if ( !range.empty ) {
+                    range.popFront;
+                    auto e=range.front;
+                    .check(previous_index < e.index, format("Index in an Array should be ordred @index %d next %d", previous_index, e.index));
+                    immutable index=e.index;
+                    iterate(range, e.index);
+                    .check(e.istype!T, format("Problem with array type @ %s. Got %s expected %s",
+                            e.key, e.typeString, TypeString!T));
 
-            @trusted
-                void build_document_array(immutable(ubyte[]) data) {
-                if ( data.length ) {
-                    immutable len=*cast(uint*)(data.ptr);
-                    immutable from=uint.sizeof;
-                    immutable to=uint.sizeof+len;
-                    docs~=Document(data[from..to]);
-                    build_document_array(data[to..$]);
+                    array[index]=e.get!T;
+                }
+                else {
+                    array=new T[index];
                 }
             }
-            build_document_array(value);
-            return docs;
+            .check(isArray, format("ARRAY type expected not %s", typeString));
+            iterate(Document.Range(value));
+            return array;
         }
 
         @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
@@ -1109,7 +1127,7 @@ public:
 
 
     @safe
-    int opCmp(ref const Element other) const pure nothrow {
+    int opCmp(ref const Element other) const {
         int typeDiff = canonicalType - other.canonicalType;
         if (typeDiff < 0) {
             return -1;
@@ -1459,7 +1477,7 @@ unittest {
 
 
 @trusted
-int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool considerKey = true) pure nothrow
+int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool considerKey = true)
 {
     int r = lhs.canonicalType - rhs.canonicalType;
     if (r != 0 && (!lhs.isNumber() || !rhs.isNumber()))
@@ -1476,7 +1494,7 @@ int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool consid
 
 
 @trusted
-int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow {
+int compareValue(ref const Element lhs, ref const Element rhs) {
     with(Type) final switch (lhs.type) {
         case MIN, MAX, TRUNC, NONE, UNDEFINED,  NULL:
             auto r = lhs.canonicalType - rhs.canonicalType;
@@ -1717,18 +1735,13 @@ unittest
  * Exception type used by tagion.utils.BSON module
  */
 @safe
-class BSONException : Exception {
+class BSONException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
         super( msg, file, line );
     }
 }
 
-@safe
-void check(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
-    if (!flag) {
-        throw new BSONException(msg, file, line);
-    }
-}
+alias check=Check!BSONException;
 
 
 /**
@@ -2667,7 +2680,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         return _type;
     }
 
-    string typeName() pure const  {
+    string typeString() pure const  {
         if ( _type is Type.BINARY ) {
             return subtype.to!string;
         }
@@ -3640,25 +3653,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 }
 
 
-T[] toArray(T)(Document doc) {
-    T[] array;
-    void iterate(Range)(Range range, immutable uint index=0) {
-        if ( !range.empty ) {
-            range.popFront;
-            scope e=front;
-            iterate(range, index+1);
-            check(e.istype!Array, format("Problem with array type @ %s. Got %s expected %s",
-                    e.key, e.typeName, typeName!T));
-            immutable current_index=e.index;
-            array[index]=e.get!Array;
-        }
-        else {
-            array=new T[index]:
-        }
-    }
-    iterate(doc[]);
-    return array;
-}
 
 // int[] doc2ints(Document doc) {
 //     int[] result;
