@@ -223,6 +223,13 @@ enum Control{
 };
 
 @safe
+class TagionException : Exception {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, file, line );
+    }
+}
+
+@safe
 template convertEnum(Enum, Consensus) {
     //   static if ( (is(Enum==enum)) && (is(Consensus:ConsensusException)) ) {
     const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
@@ -265,6 +272,13 @@ template consensusCheckArguments(Consensus) {
 }
 
 @safe
+void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) {
+    if (!flag) {
+        throw new E(msg, file, line);
+    }
+}
+
+@safe
 string cutHex(bool UCASE=false, BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
     enum LEN=ulong.sizeof;
@@ -278,12 +292,6 @@ string cutHex(bool UCASE=false, BUF)(BUF buf) if ( isBufferType!BUF )  {
 }
 
 
-@safe
-void Check(E)(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
-    if (!flag) {
-        throw new E(msg, file, line);
-    }
-}
 
 @trusted
 int log2(ulong n) {
