@@ -71,7 +71,8 @@ BUF buf_idup(BUF)(immutable(Buffer) buffer) {
 
 
 /**
-   Return the position of first '.' in string and
+   Returns:
+   The position of first '.' in string and
  */
 template find_dot(string str, size_t index=0) {
     static if ( index >= str.length ) {
@@ -88,12 +89,12 @@ template find_dot(string str, size_t index=0) {
     }
 }
 
-// Creates a new clean bitarray
+/// Creates a new clean bitarray
 void  bitarray_clear(out BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
-// Change the size of the bitarray
+/// Change the size of the bitarray
 void bitarray_change(ref scope BitArray bits, uint length) @trusted {
     bits.length=length;
 }
@@ -127,6 +128,9 @@ unittest {
     }
 }
 
+/++
+ Countes the number of bits set in mask
++/
 uint countVotes(ref const(BitArray) mask) @trusted {
     uint votes;
     foreach(vote; mask) {
@@ -137,21 +141,31 @@ uint countVotes(ref const(BitArray) mask) @trusted {
     return votes;
 }
 
-
+/++
+ + Wraps a safe version of to!string for a BitArray
+ +/
 string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
 }
 
 enum minimum_nodes = 3;
+/++
+ + Calculates the majority votes
+ + Params:
+ +     voting    = Number of votes
+ +     node_sizw = Total bumber of votes
+ + Returns:
+ +     Returns `true` if the votes are more thna 2/3
+ +/
 @safe
 bool isMajority(const uint voting, const uint node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3*voting > 2*node_size);
 }
 
 
-/**
-   Template function for removing the "this." prefix
- */
+/++
+  + Template function for removing the "this." prefix
+  +/
 template basename(alias K) {
     enum name=K.stringof;
     static if (
@@ -186,6 +200,9 @@ unittest {
     something.check();
 }
 
+/++
+ + Builds and enum string out of a string array
++/
 template EnumText(string name, string[] list, bool first=true) {
     static if ( first ) {
         enum begin="enum "~name~"{";
@@ -202,9 +219,9 @@ template EnumText(string name, string[] list, bool first=true) {
     }
 }
 
+///
 unittest {
     enum list=["red", "green", "blue"];
-//    pragma(msg, EnumText!("Colour", list));
     mixin(EnumText!("Colour", list));
     static assert(Colour.red == list[0]);
     static assert(Colour.green == list[1]);
@@ -213,7 +230,6 @@ unittest {
 }
 
 enum Control{
-//    KILL=9,
     LIVE=1,
     STOP,
     FAIL,
@@ -222,6 +238,9 @@ enum Control{
     END
 };
 
+/++
+ Exception used as a base exception class for all exceptions use in tagion project
++/
 @safe
 class TagionException : Exception {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
@@ -231,15 +250,13 @@ class TagionException : Exception {
 
 @safe
 template convertEnum(Enum, Consensus) {
-    //   static if ( (is(Enum==enum)) && (is(Consensus:ConsensusException)) ) {
     const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
-            if ( enum_number <= Enum.max) {
-                return cast(Enum)enum_number;
-            }
-            throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
-            assert(0);
+        if ( enum_number <= Enum.max) {
+            return cast(Enum)enum_number;
         }
-    // }
+        throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
+        assert(0);
+    }
 }
 
 @safe
@@ -271,20 +288,32 @@ template consensusCheckArguments(Consensus) {
     }
 }
 
+/++
+ + Builds a check function out of a TagionExecption
++/
 @safe
 void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) {
+    static assert(is(E:TagionException));
     if (!flag) {
         throw new E(msg, file, line);
     }
 }
 
+/++
+ + Converts on the first part of the buffer to a Hex string
+ + Used for debugging
+ +
+ + Params:
+ +     buf = is a buffer type like a byte array
+ + Returns:
+ +     The 16 first hex digits of the buffer
++/
 @safe
 string cutHex(bool UCASE=false, BUF)(BUF buf) if ( isBufferType!BUF )  {
     import std.format;
     enum LEN=ulong.sizeof;
     if ( buf.length < LEN ) {
         return buf[0..$].toHexString!UCASE;
-//        return format("EMPTY[%s]",buf.length);
     }
     else {
         return buf[0..LEN].toHexString!UCASE;
@@ -292,7 +321,11 @@ string cutHex(bool UCASE=false, BUF)(BUF buf) if ( isBufferType!BUF )  {
 }
 
 
-
+/++
+  +  Calculates log2
+  +  Returns:
+  +     log2(n)
++/
 @trusted
 int log2(ulong n) {
     if ( n == 0 ) {
