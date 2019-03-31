@@ -3,10 +3,10 @@ module tagion.utils.CheckBSON;
 import tagion.utils.BSON : Type, BinarySubType, BSON, HBSON, less_than;
 
 import std.stdio;
-import tagion.Base : Check;
+import tagion.Base : Check, TagionException;
 
 @safe
-class CheckBSONException : Exception {
+class CheckBSONException : TagionException {
 
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
         super( msg, file, line );
