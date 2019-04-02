@@ -344,6 +344,7 @@ bool isHBSONFormat(const(ubyte[]) data) {
 
 
 //TO_DO: Make a isBSONFormat() static function.
+version(none)
 unittest {
 //    version(none)
     // Standard types
