@@ -355,3 +355,13 @@ unittest {
     assert(log2(0x1000_000_000) == 36);
 
 }
+
+
+/++
+ + Generate a temporary file name
++/
+string tempfile() {
+    import std.file : deleteme;
+    int dummy;
+    return deleteme~(&dummy).to!string;
+}
