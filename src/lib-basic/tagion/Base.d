@@ -163,9 +163,7 @@ bool isMajority(const uint voting, const uint node_size) pure nothrow {
 }
 
 
-/++
-  + Template function for removing the "this." prefix
-  +/
+version(none)
 template basename(alias K) {
     enum name=K.stringof;
     static if (
@@ -183,6 +181,37 @@ template basename(alias K) {
             alias name basename;
         }
     }
+}
+
+template suffix(string name, size_t index) {
+    static if ( index is 0 ) {
+        alias suffix=name;
+    }
+    else static if ( name[index-1] !is '.' ) {
+        alias suffix=suffix!(name, index-1);
+    }
+    else {
+        enum cut_name=name[index..$];
+        alias suffix=cut_name;
+    }
+}
+
+/++
+  + Template function returns the suffux name after the last '.'
+  +/
+template basename(alias K) {
+    static if ( is(K==string) ) {
+        enum name=K;
+    }
+    else {
+        enum name=K.stringof;
+    }
+    enum basename=suffix!(name, name.length);
+}
+
+mixin template FUNCTION_NAME() {
+    import tagion.Base : basename;
+    enum __FUNCTION_NAME__=basename!(__FUNCTION__)[0..$-1];
 }
 
 unittest {
