@@ -2095,12 +2095,6 @@ unittest { // toArray
     bson[strings.stringof]=strings;
 
     auto doc=Document(bson.serialize);
-
-
-    writefln("keys=%s", doc.keys);
-    auto array=doc[strings.stringof].get!Document;
-    writefln("array.keys=%s", array.keys);
-
     auto same=doc[strings.stringof].toArray!string;
 
     assert(same == strings);
@@ -3339,7 +3333,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 writefln("->%s", s);
             }
 
-            writefln("subarray[0].get!string=%s", subarray[0].get!string);
             assert(subarray[0].get!string == strings[0]);
             assert(subarray[1].get!string == strings[1]);
             assert(subarray[2].get!string == strings[2]);
