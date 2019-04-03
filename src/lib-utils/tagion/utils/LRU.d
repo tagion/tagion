@@ -102,11 +102,6 @@ class LRU(K,V)  {
             // Remove the oldest element
             removeOldest;
         }
-//         static if ( is (K:const(ubyte)[]) ) {
-//             import std.stdio;
-//             import tagion.crypto.Hash : toHexString;
-// //            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
-//         }
         return evict;
     }
 

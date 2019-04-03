@@ -30,14 +30,16 @@ import std.typecons;   // Tuple
 import std.format;
 import std.traits : isSomeString, isIntegral;
 private import std.bitmanip;
+import std.meta : AliasSeq;
 
-import tagion.crypto.Hash : toHexString;
+import tagion.utils.Miscellaneous : toHexString;
 import tagion.Base : Check, TagionException;
 
 public alias HBSON=BSON!(true,true);
 
 static assert(uint.sizeof == 4);
 
+import std.stdio;
 
 enum Type : byte {
     MIN             = -1,        /// Special type which compares lower than all other possible BSON element values
@@ -94,16 +96,59 @@ enum BinarySubType : ubyte {
         }
 
 
+template isGeneralType(T, Type) {
+    alias BaseT=TypedefType!T;
+    enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
+}
+
+protected template isGeneralBSONType(T...) {
+    alias Type=T[0];
+    static if ( T.length == 1 ) {
+        enum isGeneralBSONType=false;
+    }
+    else {
+        alias CompType=T[$-1];
+        static if ( isGeneralType!(Type, CompType) ) {
+            enum isGeneralBSONType=true;
+        }
+        else {
+            alias isGeneralBSONType=isGeneralBSONType!(T[0..$-1]);
+        }
+    }
+}
+
+template isBSONType(T) {
+    alias BasicBSONTypes=AliasSeq!(T,
+        double, string, Document,
+        immutable(ubyte)[], immutable(ubyte[]),
+        ubyte[], bool, Date, int, long);
+    alias isBSONType=isGeneralBSONType!(BasicBSONTypes);
+}
+
+template isHBSONType(T) {
+//    alias BasicHBSONTypes=AliasSeq!(T, double, string, Document, immutable(ubyte)[], immutable(ubyte[]), bool, Date, int, long, uint, ulong, float);
+    alias BasicHBSONTypes=AliasSeq!(T,
+        double, string, Document,
+        immutable(ubyte)[], immutable(ubyte[]),
+        bool, Date, int, long, uint, ulong, float);
+    alias isHBSONType=isGeneralBSONType!(BasicHBSONTypes);
+}
+
+static unittest {
+    static assert(isHBSONType!uint);
+    static assert(isHBSONType!string);
+    static assert(!isHBSONType!void);
+    static assert(isBSONType!int);
+    static assert(!isBSONType!uint);
+    static assert(isHBSONType!(immutable(ubyte)[]));
+    static assert(isHBSONType!(immutable(ubyte[])));
+}
+
 private {
     alias BSON_FF=BSON!(false, false);
     alias BSON_TF=BSON!(true, false);
     alias BSON_FT=BSON!(false, true);
     alias BSON_TT=BSON!(true, true);
-}
-
-template isGeneralType(T, Type) {
-    alias BaseT=TypedefType!T;
-    enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
 }
 
 enum isTypedef(T)=!is(TypedefType!T == T);
@@ -163,7 +208,7 @@ template DtoBSONType(T) {
             alias TypeName=BinarySubType.INT64_array;
         }
         else static if (is(T:immutable(bool[]))) {
-            alias TypeName=BinarySubType.BOOL_array;
+            alias TypeName=BinarySubType.BOOLEAN_array;
         }
     }
     else {
@@ -171,12 +216,6 @@ template DtoBSONType(T) {
     }
 }
 
-
-string TypeString(T)() {
-    return DtoBSONType!(T).stringof;
-    // alias BType=DtoBSONType!(T);
-    // alias TypeString=BType.stringof;
-}
 
 @safe
 interface DocumentCallbacks {
@@ -901,7 +940,7 @@ public:
                     immutable index=e.index;
                     iterate(range, e.index);
                     .check(e.istype!T, format("Problem with array type @ %s. Got %s expected %s",
-                            e.key, e.typeString, TypeString!T));
+                            e.key, e.typeString, HBSON.TypeString!T));
 
                     array[index]=e.get!T;
                 }
@@ -2044,6 +2083,17 @@ unittest
 @safe
 class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
+    static string TypeString(T)() {
+        alias BaseT=TypedefType!T;
+        static if ( is(BaseT:const(BSON)) || is(BaseT:Document[]) || is(BaseT:const(BSON)[]) || is(BaseT:string[]) ) {
+            return BaseT.stringof;
+        }
+        else {
+            return DtoBSONType!(BaseT).stringof;
+        }
+    }
+
+
     package Type _type;
     package BinarySubType subtype;
     private BSON members; // List of members
@@ -2312,10 +2362,16 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     result=true;
                 }
                 else {
-                    assert(0, "Unsupported type "~T.stringof~" not a valid "~to!string(type));
+                    .check(0, "Unsupported type "~T.stringof~" not a valid "~to!string(type));
                 }
                 break;
             case ARRAY:
+                import std.stdio;
+                writefln("!!!!!!!!!!!!Array type=%s", BaseT.stringof);
+//                writefln("U=%s", U.stringof);
+//                writefln("\tis(BaseT:U[],U)=%s", is(BaseT:U[],U));
+                writefln("\tis(BaseT:U[],U)=%s", BaseT.stringof);
+                stdout.flush;
                 static if (is(BaseT==BSON)) {
                     elm.value.document=x;
                     result=true;
@@ -2325,9 +2381,40 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     result=true;
                 }
                 else static if (is(BaseT:string[])) {
-                    elm.value.text_array=x;
+                    auto bson_array=new BSON;
+                    writefln("strings=%s %s", x, x[0]);
+                    foreach(i, ref s; x) {
+                        if ( s !is null ) {
+                            writefln("%s", s);
+                            bson_array[i]=s;
+                        }
+                    }
+                    elm.value.document=bson_array;
+                    result=true;
+                }
+                else static if (is(BaseT:X[],X) ) {
+                    import tagion.Base : cutHex;
+
+//                     auto bson_array=new BSON;
+//                     foreach(i, b; x) {
+//                         if ( b !is null ) {
+//                             writefln("[%d]=%s", i, b.cutHex);
+// //                            bson_array[i]=b;
+//                         }
+//                     }
+//
+//                    elm.value.document=bson_array;
+
+                    // stdout.flush;
+                    writefln("Inside binary buffer");
+                    assert(0, "Stop!!");
+//                    result=true;
                 }
                 else {
+                    import std.stdio;
+                    writefln("BaseT=%s", is(BaseT:G[],G));
+                    writefln("!!!BaseT=%s", is(BaseT:S[][],S));
+                    stdout.flush;
                     assert(0, "Unsupported type "~T.stringof~" does not seem to be a valid native array");
                 }
                 break;
@@ -2463,8 +2550,8 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 }
                 break;
             }
-            .check(result, format("Unmatch type %s at %s. Expected  BSON type '%s' %s", T.stringof, key, type,
-                    (type == BINARY)?format("subtype '%s'", subtype):""));
+            assert(result, format("Unmatch type %s(%s) @ %s. Expected  BSON type '%s'",
+                    T.stringof, TypeString!T, key, typeString));
         }
     }
 
@@ -2473,59 +2560,61 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     }
 
     void opIndexAssign(T)(T x, string key) {
-        alias BaseType=TypedefType!T;
-        static if (isGeneralType!(T, bool)) {
+        alias BaseT=TypedefType!T;
+        static if (isGeneralType!(BaseT, bool)) {
             append(Type.BOOLEAN, key, x);
         }
-        else static if (isGeneralType!(T, int)) {
+        else static if (isGeneralType!(BaseT, int)) {
             append(Type.INT32, key, x);
         }
-        else static if (isGeneralType!(T, long)) {
+        else static if (isGeneralType!(BaseT, long)) {
             append(Type.INT64, key, x);
         }
-        else static if (isGeneralType!(T, double)) {
+        else static if (isGeneralType!(BaseT, double)) {
             append(Type.DOUBLE, key, x);
         }
-        else static if (isGeneralType!(T, uint)) {
+        else static if (isGeneralType!(BaseT, uint)) {
             append(Type.UINT32, key, x);
         }
-        else static if (isGeneralType!(T, ulong)) {
+        else static if (isGeneralType!(BaseT, ulong)) {
             append(Type.UINT64, key, x);
         }
-        else static if (isGeneralType!(T, float)) {
+        else static if (isGeneralType!(BaseT, float)) {
             append(Type.FLOAT, key, x);
         }
-        else static if (isGeneralType!(T, string)) {
+        else static if (isGeneralType!(BaseT, string)) {
             append(Type.STRING, key, x);
         }
-        else static if (isGeneralType!(T, Date)) {
+        else static if (isGeneralType!(BaseT, Date)) {
             append(Type.DATE, key, x);
         }
-        else static if (isGeneralType!(T, DateTime)) {
+        else static if (isGeneralType!(BaseT, DateTime)) {
             append(Type.TIMESTAMP, key, x);
         }
-        else static if (is(BaseType:string[])) {
-            append(Type.NATIVE_STRING_ARRAY, key, x);
-        }
-        else static if (is(BaseType:const(BSON))) {
+        // else static if (is(BaseT:string[])) {
+        //     append(Type.NATIVE_STRING_ARRAY, key, x);
+        // }
+        else static if (is(BaseT:const(BSON))) {
+            writefln("appaned %s", BaseT.stringof);
+            writefln("---- ----");
             append(Type.DOCUMENT, key, x);
         }
-        else static if (is(BaseType:const(Document)) ) {
+        else static if (is(BaseT:const(Document)) ) {
             append(Type.NATIVE_DOCUMENT, key, x);
         }
-        else static if (is(BaseType:const(Document[])) ) {
+        else static if (is(BaseT:const(Document[])) ) {
             append(Type.NATIVE_ARRAY, key, x);
         }
-        else static if (is(BaseType:const(BSON[])) ) {
+        else static if (is(BaseT:const(BSON[])) ) {
             append(Type.NATIVE_BSON_ARRAY, key, x);
         }
-        else static if (isSubType!BaseType) {
-            append(Type.BINARY, key, x, getSubtype!BaseType);
+        else static if (isSubType!BaseT) {
+            append(Type.BINARY, key, x, getSubtype!BaseT);
         }
-        else static if (is(BaseType:U[],U)) {
+        else static if (is(BaseT:U[],U)) {
             append(Type.ARRAY, key, x);
         }
-        else static if (is(BaseType==enum) && is(BaseType : const(uint)) ) {
+        else static if (is(BaseT==enum) && is(BaseT : const(uint)) ) {
             append(Type.UINT32, key, cast(uint)x);
         }
         else {
@@ -3225,6 +3314,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(doc.hasElement("strings"));
             auto subarray=doc["strings"].get!Document;
 
+            import std.stdio;
+            foreach(i, s; strings) {
+                writefln("->%s", s);
+            }
             assert(subarray[0].get!string == strings[0]);
             assert(subarray[1].get!string == strings[1]);
             assert(subarray[2].get!string == strings[2]);
