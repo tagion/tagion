@@ -326,27 +326,6 @@ void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = 
     }
 }
 
-/++
- + Converts on the first part of the buffer to a Hex string
- + Used for debugging
- +
- + Params:
- +     buf = is a buffer type like a byte array
- + Returns:
- +     The 16 first hex digits of the buffer
-+/
-@safe
-string cutHex(bool UCASE=false, BUF)(BUF buf) if ( isBufferType!BUF )  {
-    import std.format;
-    enum LEN=ulong.sizeof;
-    if ( buf.length < LEN ) {
-        return buf[0..$].toHexString!UCASE;
-    }
-    else {
-        return buf[0..LEN].toHexString!UCASE;
-    }
-}
-
 
 /++
   +  Calculates log2
