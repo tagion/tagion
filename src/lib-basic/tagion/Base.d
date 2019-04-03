@@ -1,7 +1,5 @@
 module tagion.Base;
 
-import tagion.crypto.Hash;
-
 private import tagion.hashgraph.ConsensusExceptions;
 private import std.string : format, join, strip;
 private import std.traits;
