@@ -39,8 +39,6 @@ public alias HBSON=BSON!(true,true);
 
 static assert(uint.sizeof == 4);
 
-import std.stdio;
-
 enum Type : byte {
     MIN             = -1,        /// Special type which compares lower than all other possible BSON element values
         NONE            = 0x00,  /// End Of Document
@@ -376,8 +374,7 @@ struct Document {
         //auto hbson=new HBSON;
         auto bson=new BSON!(false, false);
         build(bson);
-        // import std.stdio;
-        // writefln("bson is inOrder=%s", Document(bson.serialize).isInOrder);
+
         assert(!Document(bson.serialize).isInOrder);
         auto hbson=new HBSON;
         build(hbson);
@@ -942,7 +939,6 @@ public:
                 if ( !range.empty ) {
                     auto e=range.front;
                     range.popFront;
-                    writefln("%d<%d %s", previous_index, e.index, (previous_index is 0) || (previous_index < e.index) );
                     .check((previous_index is 0) || (previous_index < e.index), format("Index of an Array should be ordred @index %d next %d", previous_index, e.index));
                     immutable index=e.index;
                     iterate(range, e.index);
@@ -2117,7 +2113,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             is(BaseT:const(BSON)[]) ||
             is(BaseT:string[]) ||
             is(BaseT:Buffer[]) ) {
-            pragma(msg, BSONType.stringof);
             return BaseT.stringof;
         }
         else {
@@ -2399,12 +2394,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 }
                 break;
             case ARRAY:
-                import std.stdio;
-                writefln("!!!!!!!!!!!!Array type=%s", BaseT.stringof);
-//                writefln("U=%s", U.stringof);
-//                writefln("\tis(BaseT:U[],U)=%s", is(BaseT:U[],U));
-                writefln("\tis(BaseT:U[],U)=%s", BaseT.stringof);
-                stdout.flush;
                 static if (is(BaseT==BSON)) {
                     elm.value.document=x;
                     result=true;
@@ -2424,10 +2413,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     result=true;
                 }
                 else {
-                    import std.stdio;
-                    writefln("BaseT=%s", is(BaseT:G[],G));
-                    writefln("!!!BaseT=%s", is(BaseT:S[][],S));
-                    stdout.flush;
                     assert(0, "Unsupported type "~T.stringof~" does not seem to be a valid native array");
                 }
 
@@ -2609,8 +2594,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         //     append(Type.NATIVE_STRING_ARRAY, key, x);
         // }
         else static if (is(BaseT:const(BSON))) {
-            writefln("appaned %s", BaseT.stringof);
-            writefln("---- ----");
             append(Type.DOCUMENT, key, x);
         }
         else static if (is(BaseT:const(Document)) ) {
@@ -3327,11 +3310,6 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             auto doc=Document(bson.serialize);
             assert(doc.hasElement("strings"));
             auto subarray=doc["strings"].get!Document;
-
-            import std.stdio;
-            foreach(i, s; strings) {
-                writefln("->%s", s);
-            }
 
             assert(subarray[0].get!string == strings[0]);
             assert(subarray[1].get!string == strings[1]);
