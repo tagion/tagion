@@ -1,11 +1,14 @@
 module tagion.utils.Miscellaneous;
+
+import tagion.Base : Buffer, isBufferType;
+
 @safe
-immutable(char)[] toHexString(alias ucase=false)(const(ubyte)[] buffer) pure nothrow {
-    static if ( ucase ) {
-        immutable immutable(char)[] hexdigits = "0123456789ABCDEF";
+string toHexString(bool UCASE=false, BUF)(BUF buffer) pure if ( isBufferType!BUF ) {
+    static if ( UCASE ) {
+        enum hexdigits = "0123456789ABCDEF";
     }
     else {
-        immutable immutable(char)[] hexdigits = "0123456789abcdef";
+        enum hexdigits = "0123456789abcdef";
     }
     uint i = 0;
     char[]  text=new char[buffer.length*2];
@@ -17,6 +20,8 @@ immutable(char)[] toHexString(alias ucase=false)(const(ubyte)[] buffer) pure not
 
     return text.idup;
 }
+
+alias hex=toHexString!(true, immutable(ubyte)[]);
 
 unittest {
     {
@@ -72,4 +77,25 @@ do {
         }
     }
     return result.idup;
+}
+
+/++
+ + Converts on the first part of the buffer to a Hex string
+ + Used for debugging
+ +
+ + Params:
+ +     buf = is a buffer type like a byte array
+ + Returns:
+ +     The 16 first hex digits of the buffer
++/
+@safe
+string cutHex(bool UCASE=false, BUF)(BUF buf) pure if ( isBufferType!BUF ) {
+    import std.format;
+    enum LEN=ulong.sizeof;
+    if ( buf.length < LEN ) {
+        return buf[0..$].toHexString!UCASE;
+    }
+    else {
+        return buf[0..LEN].toHexString!UCASE;
+    }
 }

@@ -28,7 +28,7 @@ import std.exception;  // assumeUnique
 import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
 import std.format;
-import std.traits : isSomeString, isIntegral;
+import std.traits : isSomeString, isIntegral, isArray;
 private import std.bitmanip;
 import std.meta : AliasSeq;
 
@@ -212,7 +212,7 @@ template DtoBSONType(T) {
         }
     }
     else {
-        static assert(0, format("Type %s does not have a BSON equivalent type", T.stringof));
+        alias TypeName=bool;
     }
 }
 
@@ -720,8 +720,14 @@ public:
 
     }
 
-    uint index() const pure {
-        return key.to!uint;
+    uint index() const {
+        try {
+            return key.to!uint;
+        }
+        catch ( ConvException e ) {
+            throw new BSONException(format("Key is '%s' which is not a valid index number", key));
+        }
+        assert(0);
     }
 
     string typeString() pure const  {
@@ -932,11 +938,12 @@ public:
         T[] toArray(T)() const {
             T[] array;
             @safe
-            void iterate(Document.Range range, immutable int previous_index=-1) {
+            void iterate(Document.Range range, immutable int previous_index=0) {
                 if ( !range.empty ) {
-                    range.popFront;
                     auto e=range.front;
-                    .check(previous_index < e.index, format("Index in an Array should be ordred @index %d next %d", previous_index, e.index));
+                    range.popFront;
+                    writefln("%d<%d %s", previous_index, e.index, (previous_index is 0) || (previous_index < e.index) );
+                    .check((previous_index is 0) || (previous_index < e.index), format("Index of an Array should be ordred @index %d next %d", previous_index, e.index));
                     immutable index=e.index;
                     iterate(range, e.index);
                     .check(e.istype!T, format("Problem with array type @ %s. Got %s expected %s",
@@ -944,12 +951,13 @@ public:
 
                     array[index]=e.get!T;
                 }
-                else {
-                    array=new T[index];
+                else if ( previous_index !is 0 ) {
+                    array=new T[previous_index+1];
                 }
             }
             .check(isArray, format("ARRAY type expected not %s", typeString));
-            iterate(Document.Range(value));
+            auto doc_array=get!Document;
+            iterate(doc_array[]);
             return array;
         }
 
@@ -2017,14 +2025,14 @@ ubyte[] fromHex(in string hex) pure nothrow {
 
 
 bool isSubType(T)() {
-    return (is(T:const(bool)[]))|
-        (is(T:const(ubyte)[])) |
-        (is(T:const(int)[])) |
-        (is(T:const(uint)[])) |
-        (is(T:const(long)[])) |
-        (is(T:const(ulong)[])) |
-        (is(T:const(double)[])) |
-        (is(T:const(float)[])) |
+    return (is(T:const(bool)[]))||
+        (is(T:const(ubyte)[])) ||
+        (is(T:const(int)[])) ||
+        (is(T:const(uint)[])) ||
+        (is(T:const(long)[])) ||
+        (is(T:const(ulong)[])) ||
+        (is(T:const(double)[])) ||
+        (is(T:const(float)[])) ||
         (is(T:const(ubyte)[]));
 }
 
@@ -2080,16 +2088,47 @@ unittest
 }
 
 
+unittest { // toArray
+    auto strings=["Hej", "med", "Dig"];
+    auto bson=new HBSON;
+
+    bson[strings.stringof]=strings;
+
+    auto doc=Document(bson.serialize);
+
+
+    writefln("keys=%s", doc.keys);
+    auto array=doc[strings.stringof].get!Document;
+    writefln("array.keys=%s", array.keys);
+
+    auto same=doc[strings.stringof].toArray!string;
+
+    assert(same == strings);
+}
+
 @safe
 class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     static string TypeString(T)() {
         alias BaseT=TypedefType!T;
-        static if ( is(BaseT:const(BSON)) || is(BaseT:Document[]) || is(BaseT:const(BSON)[]) || is(BaseT:string[]) ) {
+        alias Buffer=immutable(ubyte)[];
+        alias BSONType=DtoBSONType!(BaseT);
+
+        static if ( !is(BSONType==bool) ) {
+            return BSONType.stringof;
+        }
+        else static if (
+            is(BaseT:const(BSON)) ||
+            is(BaseT:Document[]) ||
+            is(BaseT:const(BSON)[]) ||
+            is(BaseT:string[]) ||
+            is(BaseT:Buffer[]) ) {
+            pragma(msg, BSONType.stringof);
             return BaseT.stringof;
         }
         else {
-            return DtoBSONType!(BaseT).stringof;
+            static assert(0, format("Type %s does not have a BSON equivalent type", T.stringof));
+//            return DtoBSONType!(BaseT).stringof;
         }
     }
 
@@ -2380,35 +2419,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     elm.value.document=cast(BSON)x;
                     result=true;
                 }
-                else static if (is(BaseT:string[])) {
+                else static if (is(BaseT:U[],U) && !isSomeString!BaseT && !isSubType!BaseT && !is(U==struct) ) {
                     auto bson_array=new BSON;
-                    writefln("strings=%s %s", x, x[0]);
-                    foreach(i, ref s; x) {
-                        if ( s !is null ) {
-                            writefln("%s", s);
-                            bson_array[i]=s;
+                    foreach(i, ref b; x) {
+                        if ( b !is null ) {
+                            bson_array[i]=b;
                         }
                     }
                     elm.value.document=bson_array;
                     result=true;
-                }
-                else static if (is(BaseT:X[],X) ) {
-                    import tagion.Base : cutHex;
-
-//                     auto bson_array=new BSON;
-//                     foreach(i, b; x) {
-//                         if ( b !is null ) {
-//                             writefln("[%d]=%s", i, b.cutHex);
-// //                            bson_array[i]=b;
-//                         }
-//                     }
-//
-//                    elm.value.document=bson_array;
-
-                    // stdout.flush;
-                    writefln("Inside binary buffer");
-                    assert(0, "Stop!!");
-//                    result=true;
                 }
                 else {
                     import std.stdio;
@@ -2417,6 +2436,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     stdout.flush;
                     assert(0, "Unsupported type "~T.stringof~" does not seem to be a valid native array");
                 }
+
                 break;
             case BINARY:
                 static if (is(BaseT:U[],U)) {
@@ -3318,6 +3338,8 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             foreach(i, s; strings) {
                 writefln("->%s", s);
             }
+
+            writefln("subarray[0].get!string=%s", subarray[0].get!string);
             assert(subarray[0].get!string == strings[0]);
             assert(subarray[1].get!string == strings[1]);
             assert(subarray[2].get!string == strings[2]);
