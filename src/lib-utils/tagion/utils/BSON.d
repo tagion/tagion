@@ -11,6 +11,7 @@
  * Authors:   Masahiro Nakagawa
  * Modified   Carsten Bleser Rasmussen
  *            BSON serialize function added
+ *            HBSON functions added
  *
  *            Copyright Masahiro Nakagawa 2011-.
  *    Distributed under the Apache LICENSE Version 2.0.
@@ -27,19 +28,16 @@ import std.exception;  // assumeUnique
 import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
 import std.format;
-import std.traits : isSomeString, isIntegral;
+import std.traits : isSomeString, isIntegral, isArray;
 private import std.bitmanip;
+import std.meta : AliasSeq;
 
-import tagion.crypto.Hash : toHexString;
+import tagion.utils.Miscellaneous : toHexString;
+import tagion.Base : Check, TagionException;
 
-// Hash invariant BSON object
 public alias HBSON=BSON!(true,true);
 
-//import std.stdio;
-//private import proton.core.Misc;
-
 static assert(uint.sizeof == 4);
-
 
 enum Type : byte {
     MIN             = -1,        /// Special type which compares lower than all other possible BSON element values
@@ -68,7 +66,7 @@ enum Type : byte {
         FLOAT           = 0x31,  // Float 32
         TRUNC           = 0x3f,  // Trunc value for the native type
         MAX             = 0x7f,  /// Special type which compares higher than all other possible BSON element values
-        // Native types is only used inside the BSON object
+        /// Native types is only used inside the BSON object
         NATIVE_DOCUMENT       = cast(byte)(0x80 | 0x40 | DOCUMENT ),
         NATIVE_BSON_ARRAY     = cast(byte)(0x80 | 0x40 | ARRAY ), // This type is not a valid BSON type it is used to handle the native Document object
         NATIVE_ARRAY          = cast(byte)(0x80 | ARRAY ),
@@ -76,20 +74,18 @@ enum Type : byte {
         }
 
 
-enum BinarySubType : ubyte
-{
-    generic     = 0x00,  /// Binary / Generic
-        func        = 0x01,  ///
-        binary      = 0x02,  /// Binary (Old)
-        uuid        = 0x03,  ///
-        md5         = 0x05,  ///
-        bigint      = 0x06,  /// This is not a valid BSON type used in HBSON
+enum BinarySubType : ubyte {
+    GENERIC     = 0x00,  /// Binary / GENERIC
+        FUNC        = 0x01,  ///
+        BINARY      = 0x02,  /// Binary (Old)
+        UUID        = 0x03,  ///
+        MD5         = 0x05,  ///
+        BIGINT      = 0x06,  /// This is not a valid BSON type only used in HBSON
         userDefined = 0x80,   ///
-        // Non statdard types
+        /// Non statdard types
         INT32_array     = userDefined | Type.INT32,
         INT64_array     = userDefined | Type.INT64,
         DOUBLE_array    = userDefined | Type.DOUBLE,
-//        STRING_array    = userDefined | Type.STRING,
         BOOLEAN_array   = userDefined | Type.BOOLEAN,
         UINT32_array    = userDefined | Type.UINT32,
         UINT64_array    = userDefined | Type.UINT64,
@@ -98,11 +94,124 @@ enum BinarySubType : ubyte
         }
 
 
+template isGeneralType(T, Type) {
+    alias BaseT=TypedefType!T;
+    enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
+}
+
+protected template isGeneralBSONType(T...) {
+    alias Type=T[0];
+    static if ( T.length == 1 ) {
+        enum isGeneralBSONType=false;
+    }
+    else {
+        alias CompType=T[$-1];
+        static if ( isGeneralType!(Type, CompType) ) {
+            enum isGeneralBSONType=true;
+        }
+        else {
+            alias isGeneralBSONType=isGeneralBSONType!(T[0..$-1]);
+        }
+    }
+}
+
+template isBSONType(T) {
+    alias BasicBSONTypes=AliasSeq!(T,
+        double, string, Document,
+        immutable(ubyte)[], immutable(ubyte[]),
+        ubyte[], bool, Date, int, long);
+    alias isBSONType=isGeneralBSONType!(BasicBSONTypes);
+}
+
+template isHBSONType(T) {
+//    alias BasicHBSONTypes=AliasSeq!(T, double, string, Document, immutable(ubyte)[], immutable(ubyte[]), bool, Date, int, long, uint, ulong, float);
+    alias BasicHBSONTypes=AliasSeq!(T,
+        double, string, Document,
+        immutable(ubyte)[], immutable(ubyte[]),
+        bool, Date, int, long, uint, ulong, float);
+    alias isHBSONType=isGeneralBSONType!(BasicHBSONTypes);
+}
+
+static unittest {
+    static assert(isHBSONType!uint);
+    static assert(isHBSONType!string);
+    static assert(!isHBSONType!void);
+    static assert(isBSONType!int);
+    static assert(!isBSONType!uint);
+    static assert(isHBSONType!(immutable(ubyte)[]));
+    static assert(isHBSONType!(immutable(ubyte[])));
+}
+
 private {
     alias BSON_FF=BSON!(false, false);
     alias BSON_TF=BSON!(true, false);
     alias BSON_FT=BSON!(false, true);
     alias BSON_TT=BSON!(true, true);
+}
+
+enum isTypedef(T)=!is(TypedefType!T == T);
+
+
+template DtoBSONType(T) {
+    static if (isGeneralType!(T,double)) {
+        alias TypeName=Type.DOUBLE;
+    }
+    else static if (isGeneralType!(T,string)) {
+        alias TypeName=Type.STRING;
+    }
+    else static if (is(T==Document)) {
+        alias TypeName=Type.DOCUMENT;
+    }
+    else static if (isGeneralType!(T,bool)) {
+        alias TypeName=Type.BOOLEAN;
+    }
+    else static if (isGeneralType!(T,int)) {
+        alias TypeName=Type.INT32;
+    }
+    else static if (isGeneralType!(T,long)) {
+        alias TypeName=Type.INT64;
+    }
+    else static if (isGeneralType!(T,uint)) {
+        alias TypeName=Type.UINT32;
+    }
+    else static if (isGeneralType!(T,ulong)) {
+        alias TypeName=Type.UINT64;
+    }
+    else static if (isGeneralType!(T,float)) {
+        alias TypeName=Type.FLOAT;
+    }
+    else static if (is(T:immutable(U[]), U)) {
+        static if (is(T:immutable(ubyte[]))) {
+            alias TypeName=BinarySubType.GENERIC;
+        }
+        else static if (is(T:immutable(int[]))) {
+            alias TypeName=BinarySubType.INT32_array;
+        }
+        else static if (is(T:immutable(uint[]))) {
+            alias TypeName=BinarySubType.UINT32_array;
+        }
+        else static if (is(T:immutable(long[]))) {
+            alias TypeName=BinarySubType.INT64_array;
+        }
+        else static if (is(T:immutable(ulong[]))) {
+            alias TypeName=BinarySubType.UINT64_array;
+        }
+        else static if (is(T:immutable(float[]))) {
+            alias TypeName=BinarySubType.FLOAT_array;
+        }
+        else static if (is(T:immutable(double[]))) {
+            alias TypeName=BinarySubType.INT64_array;
+        }
+        else static if (is(T:immutable(long[]))) {
+            alias TypeName=BinarySubType.INT64_array;
+        }
+        else static if (is(T:immutable(bool[]))) {
+            alias TypeName=BinarySubType.BOOLEAN_array;
+        }
+    }
+    else {
+        alias TypeName=bool;
+    }
 }
 
 
@@ -160,36 +269,33 @@ unittest {
 
 @safe
 struct Document {
-private:
-    immutable(ubyte[]) _data;
+    immutable(ubyte[]) data;
 
-
-public:
     static DocumentCallbacks callbacks;
 
     nothrow this(immutable ubyte[] data) {
-        _data = data;
+        this.data = data;
     }
 
     Document idup() const nothrow {
-        return Document(_data.idup);
+        return Document(data.idup);
     }
 
     @property nothrow pure const {
         @safe bool empty() {
-            return _data.length < 5;
+            return data.length < 5;
         }
 
 
         @trusted uint size() {
-            return *cast(uint*)(_data[0..uint.sizeof].ptr);
+            return *cast(uint*)(data[0..uint.sizeof].ptr);
         }
     }
 
     @trusted
     @property uint length() const {
         uint counter;
-        foreach(i; Range(_data)) {
+        foreach(i; Range(data)) {
             counter++;
         }
         return counter;
@@ -219,10 +325,42 @@ public:
 
             return result;
         }
-        auto local_range=Range(_data);
+        auto local_range=Range(data);
         return local_order(local_range.front, local_range);
     }
 
+
+    string toText(string INDENT="  ", string EOL="\n")() const {
+        enum BETWEEN=","~EOL;
+        string object_toText(Document doc, const Type type, immutable(string) indent=null) @safe {
+            string buf;
+            bool any=false;
+            immutable bool array=(type == Type.ARRAY);
+            buf ~=indent;
+            buf =(array)?"[":"{";
+            string lines(Range)(Range range, immutable(string) indent, immutable(string) separator=EOL) @safe {
+                if ( !range.empty) {
+                    const e=range.front;
+                    range.popFront;
+                    if ( e.isDocument ) {
+                        return format("%s%s%s : %s", separator, indent, e.key, object_toText(e.get!Document, e.type, indent))~
+                            lines(range, indent, BETWEEN);
+
+                    }
+                    else {
+                        return format("%s%s%s : (%s)%s", separator, indent, e.key, e.typeString, e.toInfo) ~
+                            lines(range, indent, BETWEEN);
+                    }
+                }
+                return "\n";
+            }
+            buf~=lines(doc[], indent~INDENT);
+            buf ~=indent;
+            buf ~= (array)?"]":"}";
+            return buf;
+        }
+        return object_toText(this, Type.DOCUMENT);
+    }
 
     unittest { // isInOrder
         void build(B)(B bson) {
@@ -236,8 +374,7 @@ public:
         //auto hbson=new HBSON;
         auto bson=new BSON!(false, false);
         build(bson);
-        // import std.stdio;
-        // writefln("bson is inOrder=%s", Document(bson.serialize).isInOrder);
+
         assert(!Document(bson.serialize).isInOrder);
         auto hbson=new HBSON;
         build(hbson);
@@ -247,30 +384,33 @@ public:
     }
 
     struct Range {
-    private:
-        immutable(ubyte[]) _data;
-        size_t            index_;
-        Element           element_;
+        immutable(ubyte[]) data;
+    protected:
+        size_t            _index;
+        Element           _element;
 
 
     public:
         @safe
         this(immutable(ubyte[]) data) {
-            _data = data;
+            this.data = data;
 
             if (data.length == 0) {
-                index_ = 0;
+                _index = 0;
             }
             else {
-                index_ = 4;
+                _index = 4;
                 popFront();
             }
         }
 
+        this(const Document doc) {
+            this(doc.data);
+        }
 
-        @property @safe nothrow const {
+        @property @safe pure nothrow const {
             bool empty() {
-                return index_ >= _data.length;
+                return _index >= data.length;
             }
 
 
@@ -278,7 +418,7 @@ public:
              * InputRange primitive operation that returns the currently iterated element.
              */
             const(Element) front() {
-                return element_;
+                return _element;
             }
         }
 
@@ -290,28 +430,25 @@ public:
         void popFront() {
             import std.conv;
 
-            emplace!Element(&element_, _data[index_..$]);
-            index_ += element_.size;
+            emplace!Element(&_element, data[_index..$]);
+            _index += _element.size;
         }
     }
 
-
     Range opSlice() {
-        return Range(_data);
+        return Range(data);
     }
-
 
     @trusted
     string[] keys() const {
         import std.array;
-        return array(map!"a.key"(Range(_data)));
+        return array(map!"a.key"(Range(data)));
     }
-
 
     // Throws an std.conv.ConvException if the keys can not be convert to an uint
     immutable(uint[]) indices() const {
         import std.array;
-        return array(map!"a.key.to!uint"(Range(_data))).idup;
+        return array(map!"a.key.to!uint"(Range(data))).idup;
     }
 
     bool hasElement(in string key) const {
@@ -324,7 +461,7 @@ public:
     }
 
     const(Element) opIn_r(in string key) const {
-        foreach (ref element; Range(_data)) {
+        foreach (ref element; Range(data)) {
             if (element.key == key) {
                 return element;
             }
@@ -345,9 +482,9 @@ public:
     }
 
 
-    immutable(ubyte[]) data() const pure nothrow {
-        return _data;
-    }
+    // immutable(ubyte[]) data() const pure nothrow {
+    //     return _data;
+    // }
 
     alias serialize=data;
 
@@ -387,9 +524,9 @@ unittest {
         assert(numElem.get!int == 10);
         assert(numElem.get!(const(int)) == 10);
         assert(numElem.get!(immutable(int)) == 10);
-        assert(numElem.get!uint == 10);
-        assert(numElem.get!(const(uint)) == 10);
-        assert(numElem.get!(immutable(uint)) == 10);
+        // assert(numElem.get!uint == 10);
+        // assert(numElem.get!(const(uint)) == 10);
+        // assert(numElem.get!(immutable(uint)) == 10);
 
         auto boolElem = doc["bool"];
         assert(boolElem.get!bool);
@@ -407,7 +544,6 @@ unittest {
  */
 @safe
 struct Element {
-private:
     /*
      * -----
      * //data image:
@@ -420,11 +556,11 @@ private:
      *                                     ^ data.length
      * -----
      */
-    immutable ubyte[] _data;
+    immutable(ubyte[]) _data;
 
 
 public:
-    this(immutable ubyte[] data) {
+    this(immutable(ubyte[]) data) {
         // In this time, Element does not parse a binary data.
         // This is lazy initialization for some efficient.
         _data = data;
@@ -435,7 +571,6 @@ public:
         bool isEod() {
             return _data.length == 0;
         }
-
 
         bool isNumber() {
             switch (type) {
@@ -455,7 +590,6 @@ public:
                 return false;
             }
         }
-
 
         bool isTrue() {
             switch (type) {
@@ -479,9 +613,18 @@ public:
         }
 
 
-        bool isDocument() {
+        bool isDocument() const pure nothrow {
             switch (type) {
             case Type.DOCUMENT, Type.ARRAY:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        bool isArray()  {
+            switch (type) {
+            case Type.ARRAY:
                 return true;
             default:
                 return false;
@@ -499,12 +642,8 @@ public:
             else {
                 return BinarySubType.not_defined;
             }
-            //return ((4<_data.length) )?_data[4]:BinarySubType.non;
         }
 
-
-
-        // need mayEncapsulate?
     }
 
     @property @safe const pure nothrow {
@@ -515,17 +654,18 @@ public:
             return cast(Type)_data[0];
         }
 
+    }
 
-        byte canonicalType() {
-            Type t = type;
+    @property byte canonicalType() const {
+        Type t = type;
 
-            with(Type) final switch (t) {
-                case MIN, MAX, TRUNC:
-                    return t;
-                case NONE, UNDEFINED:
-                    return 0;
-                case NULL:
-                    return 5;
+        with(Type) final switch (t) {
+            case MIN, MAX, TRUNC:
+                return t;
+            case NONE, UNDEFINED:
+                return 0;
+            case NULL:
+                return 5;
                 case DOUBLE, INT32, INT64:
                     return 10;
                 case STRING, SYMBOL:
@@ -553,11 +693,11 @@ public:
                 case FLOAT, UINT32, UINT64:
                     return 70;
                 case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
-                    assert(0, format("Invalid type %s",t));
+                    .check(0, format("Invalid type %s",t));
                 }
+        .check(0, format("Type code 0x%02x not supported", cast(ubyte)t));
+        assert(0);
         }
-    }
-
 
     @property const pure nothrow {
 
@@ -577,26 +717,39 @@ public:
 
     }
 
-    uint index() const pure {
-        return key.to!uint;
+    uint index() const {
+        try {
+            return key.to!uint;
+        }
+        catch ( ConvException e ) {
+            throw new BSONException(format("Key is '%s' which is not a valid index number", key));
+        }
+        assert(0);
     }
 
+    string typeString() pure const  {
+        if ( type is Type.BINARY ) {
+            return subtype.to!string;
+        }
+        else {
+            return type.to!string;
+        }
+    }
 
     @property @safe const pure nothrow {
         immutable(ubyte[]) value() {
             if (isEod) {
                 return null;
             }
-                return _data[1 + rawKeySize..size];
-            }
-
-
-            size_t valueSize()
-            {
-                return value.length;
-            }
-
+            return _data[1 + rawKeySize..size];
         }
+
+
+        size_t valueSize() {
+            return value.length;
+        }
+    }
+
     //Binary buffer
     @trusted
     immutable(ubyte[]) binary_buffer() const  {
@@ -605,12 +758,10 @@ public:
         return v[5..len+5];
     }
 
-
     @property @trusted
-    size_t size() const pure nothrow
-        {
-            size_t s;
-            with(Type) final switch (type) {
+    size_t size() const pure nothrow {
+        size_t s;
+        with(Type) final switch (type) {
             case MIN, MAX, TRUNC, NONE, UNDEFINED, NULL:
                 break;
             case BOOLEAN:
@@ -647,164 +798,199 @@ public:
             case NATIVE_DOCUMENT:
                 s = _data.length;
                 break;
-                case NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
+            case NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
                 assert(0, format("No size defined for type %s", type) );
             }
 
-            return 1 + rawKeySize + s;
-        }
+        return 1 + rawKeySize + s;
+    }
     alias size length;
 
     // D's primitive type accessor like Variant
 
-    @property const /* pure: check is not pure */
-        {
+    @property const /* pure: check is not pure */ {
 
-            template isGeneralType(T, Type) {
-                alias BaseT=TypedefType!T;
-                enum isGeneralType=(is(BaseT == inout(Type)) || is(BaseT == Type) || is(BaseT == const(Type)) || is(BaseT == immutable(Type)));
+        bool istype(T)() pure const {
+            static if (isGeneralType!(T,double)) {
+                return type == Type.DOUBLE;
             }
-
-            enum isTypedef(T)=!is(TypedefType!T == T);
-
-            T get(T)() inout if (is(TypedefType!T : const(string))) {
-                check(Type.STRING);
-                return cast(T)str;
+            else static if (isGeneralType!(T,string)) {
+                return type == Type.STRING;
             }
-
-
-            T get(T)() inout if ( isGeneralType!(T,bool) ) {
-                check(Type.BOOLEAN);
-                return cast(T)(_boolean());
+            else static if (is(T==Document)) {
+                return ((type == Type.DOCUMENT) || (type == Type.ARRAY));
             }
-
-            T get(T)() inout if (isGeneralType!(T,int) || isGeneralType!(T,uint) ) {
-                check(Type.INT32);
-                return cast(T)(_int32());
+            else static if (isGeneralType!(T,bool)) {
+                return (type == Type.BOOLEAN);
             }
-
-            // inout(T) get(T)() inout if (is(T == inout(long)) || is(T == long) || is(T == const(long)) || is(T == immutable(long)) ||
-            //     is(T == inout(ulong)) || is(T == ulong) || is(T == const(ulong)) || is(T == immutable(ulong))) {
-            T get(T)() inout if (isGeneralType!(T,long) ||  isGeneralType!(T,ulong) ) {
-                check(Type.INT64);
-                return cast(T)(_int64());
+            else static if (isGeneralType!(T,int)) {
+                return (type == Type.INT32);
             }
-
-//            T get(T)() inout if (is(T == inout(double)) || is(T == double) || is(T == const(double)) || is(T == immutable(double))) {
-            T get(T)() inout if (isGeneralType!(T,double)) {
-                check(Type.DOUBLE);
-                return cast(T)(_double());
+            else static if (isGeneralType!(T,long)) {
+                return (type == Type.INT64);
             }
-
-
-            T get(T)() inout if (is(TypedefType!T : const(Date))) {
-                check(Type.DATE);
-                return cast(T)SysTime(_int64());
+            else static if (isGeneralType!(T,uint)) {
+                return (type == Type.UINT32);
             }
-
-            T get(T)() inout if (is(TypedefType!T : const(DateTime))) {
-                check(Type.TIMESTAMP);
-                return cast(T)SysTime(_int64());
+            else static if (isGeneralType!(T,ulong)) {
+                return (type == Type.UINT64);
             }
-
-            T get(T)() inout if (is(TypedefType!T : const(ObjectId))) {
-                check(Type.OID);
-                return cast(T)(ObjectId(value));
+            else static if (isGeneralType!(T,float)) {
+                return (type == Type.FLOAT);
             }
-
-            /**
-             * Returns an DOCUMENT document.
-             */
-            Document get(T)() inout if (is(TypedefType!T == Document)) {
-                if ( (type != Type.DOCUMENT) && (type != Type.ARRAY) ) {
-                    check(Type.DOCUMENT);
+            else static if (is(T:immutable(U[]), U)) {
+                static if (is(T:immutable(ubyte[]))) {
+                    return (subtype == BinarySubType.GENERIC);
                 }
-                return Document(value);
-            }
-
-            /**
-             * Returns an DOCUMENT[] document array.
-             */
-            Document[] get(T)() inout if (is(TypedefType!T == Document[])) {
-                check(Type.BINARY);
-                check(getSubtype!(TypedefType!T));
-                Document[] docs;
-
-                @trusted
-                void build_document_array(immutable(ubyte[]) data) {
-                    if ( data.length ) {
-                        immutable len=*cast(uint*)(data.ptr);
-                        immutable from=uint.sizeof;
-                        immutable to=uint.sizeof+len;
-                        docs~=Document(data[from..to]);
-                        build_document_array(data[to..$]);
-                    }
+                else static if (is(T:immutable(int[]))) {
+                    return (subtype == BinarySubType.INT32_array);
                 }
-                build_document_array(value);
-                return docs;
-            }
-
-            // immutable(ubyte)[] get(T)() if (is(T==immutable(ubyte)[])) {
-            //     return value.idup;
-            // }
-            version(none)
-            @trusted
-                auto get(T)() inout if (!is(TypedefType!T == string) && isTypedef!T && is(TypedefType!T : immutable(U[]), U)) {
-                alias BaseT=TypedefType!T;
-                static if ( is(BaseT : immutable(U[]), U) ) {
-                    if ( type == Type.BINARY)  {
-                        static if ( is(BaseT : immutable(ubyte[]) ) ) {
-                            return binary_buffer;
-
-                        }
-                        else if ( subtype == getSubtype!BaseT ) {
-                            auto buf=binary_buffer;
-                            return (cast(immutable(U)*)(buf.ptr))[0..buf.length/U.sizeof];
-                        }
-                    }
+                else static if (is(T:immutable(uint[]))) {
+                    return (subtype == BinarySubType.UINT32_array);
                 }
-
-                throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
-                assert(0, "Unsupported type "~T.stringof);
-            }
-
-            @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
-                alias BaseT=TypedefType!T;
-                static if ( is(BaseT : immutable(U[]), U) ) {
-                    static if ( is(BaseT : immutable(ubyte[]) ) ) {
-                        return binary_buffer;
-                    }
-                    else if ( (type == Type.BINARY ) && ( subtype == getSubtype!BaseT ) )  {
-                        auto buf=binary_buffer;
-                        .check(buf.length % U.sizeof == 0, format("The size of binary subtype '%s' should be a mutiple of %d but is %d", subtype, U.sizeof, buf.length));
-                        return cast(BaseT)(buf.ptr[0..buf.length]);
-                    }
+                else static if (is(T:immutable(long[]))) {
+                    return (subtype == BinarySubType.INT64_array);
                 }
-                else {
-                    static assert(0, "Only immutable type is supported not "~T.stringof);
+                else static if (is(T:immutable(ulong[]))) {
+                    return (subtype == BinarySubType.UINT64_array);
                 }
-                throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", subtype, T.stringof));
-                assert(0, "Should never go here! Unsupported type "~T.stringof);
+                else static if (is(T:immutable(float[]))) {
+                    return (subtype == BinarySubType.FLOAT_array);
+                }
+                else static if (is(T:immutable(double[]))) {
+                    return (subtype == BinarySubType.INT64_array);
+                }
+                else static if (is(T:immutable(bool[]))) {
+                    return (subtype == BinarySubType.BOOL_array);
+                }
             }
+            return false;
+        }
 
-            version(none)
-            @trusted
-                T get(T)() inout if ( is(TypedefType!T : immutable(ubyte)[]) ) {
-                if ( type == Type.BINARY)  {
+        T get(T)() inout if (is(TypedefType!T : const(string))) {
+            check(Type.STRING);
+            return cast(T)str;
+        }
+
+        T get(T)() inout if ( isGeneralType!(T,bool) ) {
+            check(Type.BOOLEAN);
+            return cast(T)(_boolean());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,int) ) {
+            check(Type.INT32);
+            return cast(T)(_int32());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,long) ) {
+            check(Type.INT64);
+            return cast(T)(_int64());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,uint) ) {
+            check(Type.UINT32);
+            return cast(T)(_uint32());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,ulong) ) {
+            check(Type.UINT64);
+            return cast(T)(_uint64());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,double)) {
+            check(Type.DOUBLE);
+            return cast(T)(_double());
+        }
+
+        T get(T)() inout if (isGeneralType!(T,float)) {
+            check(Type.FLOAT);
+            return cast(T)(_float());
+        }
+
+        T get(T)() inout if (is(TypedefType!T : const(Date))) {
+            check(Type.DATE);
+            return cast(T)SysTime(_int64());
+        }
+
+        T get(T)() inout if (is(TypedefType!T : const(DateTime))) {
+            check(Type.TIMESTAMP);
+            return cast(T)SysTime(_int64());
+        }
+
+        T get(T)() inout if (is(TypedefType!T : const(ObjectId))) {
+            check(Type.OID);
+            return cast(T)(ObjectId(value));
+        }
+
+        /**
+         * Returns an DOCUMENT document.
+         */
+        Document get(T)() inout if (is(TypedefType!T == Document)) {
+            if ( (type != Type.DOCUMENT) && (type != Type.ARRAY) ) {
+                check(Type.DOCUMENT);
+            }
+            return Document(value);
+        }
+
+        T[] toArray(T)() const {
+            T[] array;
+            @safe
+            void iterate(Document.Range range, immutable int previous_index=0) {
+                if ( !range.empty ) {
+                    auto e=range.front;
+                    range.popFront;
+                    .check((previous_index is 0) || (previous_index < e.index), format("Index of an Array should be ordred @index %d next %d", previous_index, e.index));
+                    immutable index=e.index;
+                    iterate(range, e.index);
+                    .check(e.istype!T, format("Problem with array type @ %s. Got %s expected %s",
+                            e.key, e.typeString, HBSON.TypeString!T));
+
+                    array[index]=e.get!T;
+                }
+                else if ( previous_index !is 0 ) {
+                    array=new T[previous_index+1];
+                }
+            }
+            .check(isArray, format("ARRAY type expected not %s", typeString));
+            auto doc_array=get!Document;
+            iterate(doc_array[]);
+            return array;
+        }
+
+        @trusted T get(T)() inout if (isSubType!(TypedefType!T)) {
+            alias BaseT=TypedefType!T;
+            static if ( is(BaseT : immutable(U[]), U) ) {
+                static if ( is(BaseT : immutable(ubyte[]) ) ) {
                     return binary_buffer;
                 }
-                throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
-                assert(0, "Should never go here! Unsupported type "~T.stringof);
+                else if ( (type == Type.BINARY ) && ( subtype == getSubtype!BaseT ) )  {
+                    auto buf=binary_buffer;
+                    .check(buf.length % U.sizeof == 0, format("The size of binary subtype '%s' should be a mutiple of %d but is %d", subtype, U.sizeof, buf.length));
+                    return cast(BaseT)(buf.ptr[0..buf.length]);
+                }
             }
+            else {
+                static assert(0, "Only immutable type is supported not "~T.stringof);
+            }
+            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", subtype, T.stringof));
+            assert(0, "Should never go here! Unsupported type "~T.stringof);
+        }
 
-
+        version(none)
+            @trusted
+            T get(T)() inout if ( is(TypedefType!T : immutable(ubyte)[]) ) {
+            if ( type == Type.BINARY)  {
+                return binary_buffer;
+            }
+            throw new BSONException(format("Invalide type expected '%s' but the type used is '%s'", to!string(subtype), T.stringof));
+            assert(0, "Should never go here! Unsupported type "~T.stringof);
         }
 
 
-    @property @trusted const pure nothrow
-        {
-            int as(T)() if (is(T == int))
-            {
+    }
+
+    @property @trusted const pure nothrow {
+            int as(T)() if (is(T == int)) {
                 switch (type) {
                 case Type.INT32:
                     return _int32();
@@ -821,9 +1007,7 @@ public:
                 }
             }
 
-
-            int as(T)() if (is(T == uint))
-            {
+            int as(T)() if (is(T == uint)) {
                 switch (type) {
                 case Type.INT32:
                     return cast(uint)_int32();
@@ -840,9 +1024,7 @@ public:
                 }
             }
 
-
-            long as(T)() if (is(T == long))
-            {
+            long as(T)() if (is(T == long)) {
                 switch (type) {
                 case Type.INT32:
                     return _int32();
@@ -862,8 +1044,7 @@ public:
             }
 
 
-            ulong as(T)() if (is(T == ulong))
-            {
+            ulong as(T)() if (is(T == ulong)) {
                 switch (type) {
                 case Type.INT32:
                     return _int32();
@@ -882,8 +1063,7 @@ public:
                 }
             }
 
-            double as(T)() if (is(T == double))
-            {
+            double as(T)() if (is(T == double)) {
                 switch (type) {
                 case Type.INT32:
                     return cast(double)_int32();
@@ -990,7 +1170,7 @@ public:
 
 
     @safe
-    int opCmp(ref const Element other) const pure nothrow {
+    int opCmp(ref const Element other) const {
         int typeDiff = canonicalType - other.canonicalType;
         if (typeDiff < 0) {
             return -1;
@@ -1003,17 +1183,15 @@ public:
 
 
     @safe
-    string toString() const
-        {
-            return toFormatString(true, true);
-        }
-
+    string toString() const {
+        return toInfo(true, true);
+    }
 
     @trusted
-    string toFormatString(bool includeKey = false, bool full = false) const {
+    string toInfo(bool includeKey = false, bool full = false) const {
         string result;
         if (!isEod && includeKey) {
-            result = key ~ ": ";
+            result = key ~ " : ";
         }
 
         with(Type) final switch (type) {
@@ -1106,7 +1284,7 @@ public:
             case NATIVE_ARRAY:
                 assert(0, "Not implemented");
             case NATIVE_BSON_ARRAY:
-                 assert(0, "Not implemented");
+                assert(0, "Not implemented");
             }
 
         return result;
@@ -1137,15 +1315,16 @@ private:
             string typeName = to!string(t); // why is to! not pure?
             string message;
             if (isEod) {
-                message = "Field not found: expected type = " ~ typeName;
+                message = format("Field not found: expected type = %s ", typeName);
             }
             else {
-                message = "Wrong type for field: " ~ key ~ " != " ~ typeName ~ " expected " ~ to!string(type) ;
+                message = format("Wrong type for field: [%s].type != %s  expected %s",
+                    key, typeName, to!string(type),
+                    ) ;
             }
             throw new BSONException(message);
         }
     }
-
 
     void check(BinarySubType t) const /* pure */ {
         if (t != subtype) {
@@ -1161,69 +1340,54 @@ private:
         }
     }
 
-
     @trusted const pure nothrow {
-        bool _boolean()
-        {
+        bool _boolean() {
             return value[0] == 0 ? false : true;
         }
 
 
-        int _int32()
-        {
+        int _int32() {
             return *cast(int*)(value.ptr);
         }
 
-        uint _uint32()
-        {
+        uint _uint32() {
             return *cast(uint*)(value.ptr);
         }
 
 
-        long _int64()
-        {
+        long _int64() {
             return *cast(long*)(value.ptr);
         }
 
-        ulong _uint64()
-        {
+        ulong _uint64() {
             return *cast(ulong*)(value.ptr);
         }
 
 
-        double _double()
-        {
+        double _double() {
             return *cast(double*)(value.ptr);
         }
 
-        float _float()
-        {
+        float _float() {
             return *cast(float*)(value.ptr);
         }
     }
 
 
-    @property const pure nothrow
-        {
-            @safe
-                size_t rawKeySize()
-            {
-                return key.length + 1;  // including null character termination
-            }
-
-            @trusted
-                uint bodySize()
-            {
-                return *cast(uint*)(_data[1 + rawKeySize..$].ptr);
-            }
+    @property const pure nothrow {
+        @safe size_t rawKeySize() {
+            return key.length + 1;  // including null character termination
         }
+
+        @trusted uint bodySize() {
+            return *cast(uint*)(_data[1 + rawKeySize..$].ptr);
+        }
+    }
 }
 
 
-unittest
-{
-    struct ETest
-    {
+unittest {
+    struct ETest {
         ubyte[] data;
         Type    type;
         string  key;
@@ -1233,8 +1397,7 @@ unittest
         bool    isSimple;
     }
 
-    Element test(ref const ETest set, string msg)
-    {
+    Element test(ref const ETest set, string msg) {
         auto amsg = "Assertion failure(" ~ msg ~ " type unittest)";
         auto elem = Element(set.data.idup);
 
@@ -1357,7 +1520,7 @@ unittest
 
 
 @trusted
-int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool considerKey = true) pure nothrow
+int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool considerKey = true)
 {
     int r = lhs.canonicalType - rhs.canonicalType;
     if (r != 0 && (!lhs.isNumber() || !rhs.isNumber()))
@@ -1374,143 +1537,143 @@ int wellOrderedCompare(ref const Element lhs, ref const Element rhs, bool consid
 
 
 @trusted
-int compareValue(ref const Element lhs, ref const Element rhs) pure nothrow {
+int compareValue(ref const Element lhs, ref const Element rhs) {
     with(Type) final switch (lhs.type) {
-    case MIN, MAX, TRUNC, NONE, UNDEFINED,  NULL:
-        auto r = lhs.canonicalType - rhs.canonicalType;
-        if (r < 0)
-            return -1;
-        return r == 0 ? 0 : 1;
-    case DOUBLE:
-    Ldouble:
-        import std.math;
+        case MIN, MAX, TRUNC, NONE, UNDEFINED,  NULL:
+            auto r = lhs.canonicalType - rhs.canonicalType;
+            if (r < 0)
+                return -1;
+            return r == 0 ? 0 : 1;
+        case DOUBLE:
+        Ldouble:
+            import std.math;
 
-        double l = lhs.as!double;
-        double r = rhs.as!double;
+            double l = lhs.as!double;
+            double r = rhs.as!double;
 
-        if (l < r)
-            return -1;
-        if (l == r)
+            if (l < r)
+                return -1;
+            if (l == r)
+                return 0;
+            if (isNaN(l))
+                return isNaN(r) ? 0 : -1;
+            return 1;
+        case FLOAT:
+            if (rhs.type == FLOAT) {
+                immutable l = lhs.as!float;
+                immutable r = rhs.as!float;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case INT32:
+            if (rhs.type == INT32) {
+                immutable l = lhs.as!int;
+                immutable r = rhs.as!int;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case UINT32:
+            if (rhs.type == UINT32) {
+                immutable l = lhs.as!int;
+                immutable r = rhs.as!int;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case INT64:
+            if (rhs.type == INT64) {
+                immutable l = lhs.as!long;
+                immutable r = rhs.as!long;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case UINT64:
+            if (rhs.type == UINT64) {
+                immutable l = lhs.as!ulong;
+                immutable r = rhs.as!ulong;
+
+                if (l < r)
+                    return -1;
+                return l == r ? 0 : 1;
+            }
+            goto Ldouble;
+        case STRING, SYMBOL, JS_CODE:
+            import std.algorithm;
+
+            immutable ls = lhs.bodySize;
+            immutable rs = rhs.bodySize;
+            immutable r  = memcmp(lhs.str.ptr, rhs.str.ptr, min(ls, rs));
+
+            if (r != 0) {
+                return r;
+            }
+            else if (ls < rs) {
+                return -1;
+            }
+            return ls == rs ? 0 : 1;
+        case DOCUMENT,  ARRAY:
+            // TODO
             return 0;
-        if (isNaN(l))
-            return isNaN(r) ? 0 : -1;
-        return 1;
-    case FLOAT:
-        if (rhs.type == FLOAT) {
-            immutable l = lhs.as!float;
-            immutable r = rhs.as!float;
+        case BINARY:
+            immutable ls = lhs.bodySize;
+            immutable rs = rhs.bodySize;
+
+            if ((ls - rs) != 0)
+                return ls - rs < 0 ? -1 : 1;
+            return memcmp(lhs.value[4..$].ptr, rhs.value[4..$].ptr, ls + 1);  // +1 for subtype
+        case OID:
+            return memcmp(lhs.value.ptr, rhs.value.ptr, 12);
+        case BOOLEAN:
+            return lhs.value[0] - rhs.value[0];
+        case DATE, TIMESTAMP:
+            // TODO: Fix for correct comparison
+            // Following comparison avoids non-pure function call.
+            immutable l = lhs._int64();
+            immutable r = rhs._int64();
 
             if (l < r)
                 return -1;
             return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case INT32:
-        if (rhs.type == INT32) {
-            immutable l = lhs.as!int;
-            immutable r = rhs.as!int;
+        case REGEX:
+            immutable re1 = lhs.regex;
+            immutable re2 = rhs.regex;
 
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case UINT32:
-        if (rhs.type == UINT32) {
-            immutable l = lhs.as!int;
-            immutable r = rhs.as!int;
+            immutable r = strcmp(re1.field[0].ptr, re2.field[0].ptr);
+            if (r != 0)
+                return r;
+            return strcmp(re1.field[1].ptr, re2.field[1].ptr);
+        case DBPOINTER:
+            immutable ls = lhs.valueSize;
+            immutable rs = rhs.valueSize;
 
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case INT64:
-        if (rhs.type == INT64) {
-            immutable l = lhs.as!long;
-            immutable r = rhs.as!long;
-
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case UINT64:
-        if (rhs.type == UINT64) {
-            immutable l = lhs.as!ulong;
-            immutable r = rhs.as!ulong;
-
-            if (l < r)
-                return -1;
-            return l == r ? 0 : 1;
-        }
-        goto Ldouble;
-    case STRING, SYMBOL, JS_CODE:
-        import std.algorithm;
-
-        immutable ls = lhs.bodySize;
-        immutable rs = rhs.bodySize;
-        immutable r  = memcmp(lhs.str.ptr, rhs.str.ptr, min(ls, rs));
-
-        if (r != 0) {
-            return r;
-        }
-        else if (ls < rs) {
-            return -1;
-        }
-        return ls == rs ? 0 : 1;
-    case DOCUMENT,  ARRAY:
-        // TODO
-        return 0;
-    case BINARY:
-        immutable ls = lhs.bodySize;
-        immutable rs = rhs.bodySize;
-
-        if ((ls - rs) != 0)
-            return ls - rs < 0 ? -1 : 1;
-        return memcmp(lhs.value[4..$].ptr, rhs.value[4..$].ptr, ls + 1);  // +1 for subtype
-    case OID:
-        return memcmp(lhs.value.ptr, rhs.value.ptr, 12);
-    case BOOLEAN:
-        return lhs.value[0] - rhs.value[0];
-    case DATE, TIMESTAMP:
-        // TODO: Fix for correct comparison
-        // Following comparison avoids non-pure function call.
-        immutable l = lhs._int64();
-        immutable r = rhs._int64();
-
-        if (l < r)
-            return -1;
-        return l == r ? 0 : 1;
-    case REGEX:
-        immutable re1 = lhs.regex;
-        immutable re2 = rhs.regex;
-
-        immutable r = strcmp(re1.field[0].ptr, re2.field[0].ptr);
-        if (r != 0)
-            return r;
-        return strcmp(re1.field[1].ptr, re2.field[1].ptr);
-    case DBPOINTER:
-        immutable ls = lhs.valueSize;
-        immutable rs = rhs.valueSize;
-
-        if ((ls - rs) != 0)
-            return ls - rs < 0 ? -1 : 1;
-        return memcmp(lhs.str.ptr, rhs.str.ptr, ls);
-    case JS_CODE_W_SCOPE:
-        auto r = lhs.canonicalType - rhs.canonicalType;
-        if (r != 0)
-            return r;
-        r = strcmp(lhs.codeWScope.ptr, rhs.codeWScope.ptr);
-        if (r != 0)
-            return r;
-        r = strcmp(lhs.codeWScopeData.ptr, rhs.codeWScopeData.ptr);
-        if (r != 0)
-            return r;
-        return 0;
+            if ((ls - rs) != 0)
+                return ls - rs < 0 ? -1 : 1;
+            return memcmp(lhs.str.ptr, rhs.str.ptr, ls);
+        case JS_CODE_W_SCOPE:
+            auto r = lhs.canonicalType - rhs.canonicalType;
+            if (r != 0)
+                return r;
+            r = strcmp(lhs.codeWScope.ptr, rhs.codeWScope.ptr);
+            if (r != 0)
+                return r;
+            r = strcmp(lhs.codeWScopeData.ptr, rhs.codeWScopeData.ptr);
+            if (r != 0)
+                return r;
+            return 0;
         case NATIVE_DOCUMENT, NATIVE_ARRAY, NATIVE_BSON_ARRAY, NATIVE_STRING_ARRAY:
             assert(0, "A native document can not be compared");
-    }
+        }
 }
 
 
@@ -1615,19 +1778,13 @@ unittest
  * Exception type used by tagion.utils.BSON module
  */
 @safe
-class BSONException : Exception
-{
+class BSONException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
         super( msg, file, line );
     }
 }
 
-@safe
-void check(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
-    if (!flag) {
-        throw new BSONException(msg, file, line);
-    }
-}
+alias check=Check!BSONException;
 
 
 /**
@@ -1636,8 +1793,7 @@ void check(bool flag, string msg, string file = __FILE__, size_t line = __LINE__
  * See_Also:
  *  $(LINK2 http://www.mongodb.org/display/DOCS/Object+IDs, Object IDs)
  */
-struct ObjectId
-{
+struct ObjectId {
 private:
     // ObjectId is 12 bytes
     union
@@ -1667,27 +1823,24 @@ private:
 
 
     @trusted
-    shared static this()
-        {
-            // import std.md5;  // TODO: Will be replaced with std.digest
-            import std.digest.md;
-            import std.socket;
+    shared static this() {
+        // import std.md5;  // TODO: Will be replaced with std.digest
+        import std.digest.md;
+        import std.socket;
 
-            ubyte[16] digest;
+        ubyte[16] digest;
 
-            digest=md5Of(Socket.hostName());
-            //sum(digest, Socket.hostName());
-            ourMachine[] = digest[0..3];
-        }
+        digest=md5Of(Socket.hostName());
+        //sum(digest, Socket.hostName());
+        ourMachine[] = digest[0..3];
+    }
 
+    unittest {
+        ObjectId oid;
+        oid.initialize();
 
-    unittest
-        {
-            ObjectId oid;
-            oid.initialize();
-
-            assert(oid.machine == ourMachine);
-        }
+        assert(oid.machine == ourMachine);
+    }
 
 
 public:
@@ -1778,17 +1931,15 @@ public:
 
 
     @safe
-    bool opEquals(ref const ObjectId other) const pure nothrow
-        {
-            return data == other.data;
-        }
+    bool opEquals(ref const ObjectId other) const pure nothrow {
+        return data == other.data;
+    }
 
 
     @safe
-    string toString() const pure nothrow
-        {
-            return data.toHex();
-        }
+    string toString() const pure nothrow {
+        return data.toHex();
+    }
 
     @safe
     immutable(ubyte)[12] id() const pure nothrow {
@@ -1848,8 +1999,7 @@ string toHex(in ubyte[] nums) pure nothrow {
 
 
 @safe
-ubyte[] fromHex(in string hex) pure nothrow
-{
+ubyte[] fromHex(in string hex) pure nothrow {
     static ubyte toNum(in char c) pure nothrow
     {
         if ('0' <= c && c <= '9')
@@ -1871,14 +2021,14 @@ ubyte[] fromHex(in string hex) pure nothrow
 
 
 bool isSubType(T)() {
-    return (is(T:const(bool)[]))|
-        (is(T:const(ubyte)[])) |
-        (is(T:const(int)[])) |
-        (is(T:const(uint)[])) |
-        (is(T:const(long)[])) |
-        (is(T:const(ulong)[])) |
-        (is(T:const(double)[])) |
-        (is(T:const(float)[])) |
+    return (is(T:const(bool)[]))||
+        (is(T:const(ubyte)[])) ||
+        (is(T:const(int)[])) ||
+        (is(T:const(uint)[])) ||
+        (is(T:const(long)[])) ||
+        (is(T:const(ulong)[])) ||
+        (is(T:const(double)[])) ||
+        (is(T:const(float)[])) ||
         (is(T:const(ubyte)[]));
 }
 
@@ -1907,7 +2057,7 @@ BinarySubType getSubtype(T)() {
             return FLOAT_array;
         }
         else static if (is(T:const(ubyte)[])) {
-            return generic;
+            return GENERIC;
         }
         else  {
             static assert(0, "Unsupport type "~T.stringof);
@@ -1917,8 +2067,7 @@ BinarySubType getSubtype(T)() {
 
 unittest
 {
-    static struct Test
-    {
+    static struct Test {
         ubyte[] source;
         string  answer;
     }
@@ -1935,8 +2084,43 @@ unittest
 }
 
 
+unittest { // toArray
+    auto strings=["Hej", "med", "Dig"];
+    auto bson=new HBSON;
+
+    bson[strings.stringof]=strings;
+
+    auto doc=Document(bson.serialize);
+    auto same=doc[strings.stringof].toArray!string;
+
+    assert(same == strings);
+}
+
 @safe
 class BSON(bool key_sort_flag=true, bool one_time_write=false) {
+
+    static string TypeString(T)() {
+        alias BaseT=TypedefType!T;
+        alias Buffer=immutable(ubyte)[];
+        alias BSONType=DtoBSONType!(BaseT);
+
+        static if ( !is(BSONType==bool) ) {
+            return BSONType.stringof;
+        }
+        else static if (
+            is(BaseT:const(BSON)) ||
+            is(BaseT:Document[]) ||
+            is(BaseT:const(BSON)[]) ||
+            is(BaseT:string[]) ||
+            is(BaseT:Buffer[]) ) {
+            return BaseT.stringof;
+        }
+        else {
+            static assert(0, format("Type %s does not have a BSON equivalent type", T.stringof));
+//            return DtoBSONType!(BaseT).stringof;
+        }
+    }
+
 
     package Type _type;
     package BinarySubType subtype;
@@ -2130,7 +2314,8 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     }
 
     @trusted
-    protected void append(T)(Type type, string key, T x, BinarySubType binary_subtype=BinarySubType.generic) {
+    protected void append(T)(Type type, string key, T x, BinarySubType binary_subtype=BinarySubType.GENERIC) {
+        alias BaseT=TypedefType!T;
         static if (one_time_write) {
             if ( hasElement(key) ) {
                 throw new BSONException(format("Member '%s' already exist, BSON is a 'one time write' type", key));
@@ -2157,13 +2342,13 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 break;
             case DOUBLE:
             case FLOAT:
-                static if (is(T:double)) {
+                static if (is(BaseT:double)) {
                     elm.value.number=cast(double)x;
                     result=true;
                 }
                 break;
             case REGEX:
-                static if (is(T==U[],U)) {
+                static if (is(BaseT==U[],U)) {
                     if (x.length>1) {
                         immutable(char)[][2] regex;
                         static if (is(U==immutable(char)[])) {
@@ -2184,71 +2369,79 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case STRING:
             case JS_CODE:
             case SYMBOL:
-                static if (is(T==string)) {
+                static if (is(BaseT==string)) {
                     elm.value.text=x;
                     result=true;
                 }
                 break;
             case JS_CODE_W_SCOPE:
-                static if (is(T==CodeScope)) {
+                static if (is(BaseT==CodeScope)) {
                     elm.value.codescope=x;
                     result=true;
                 }
                 break;
             case DOCUMENT:
-                static if (is(T:BSON)) {
+                static if (is(BaseT:BSON)) {
                     elm.value.document=x;
                     result=true;
                 }
-                else static if (is(T:const(BSON))) {
+                else static if (is(BaseT:const(BSON))) {
                     elm.value.document=cast(BSON)x;
                     result=true;
                 }
                 else {
-                    assert(0, "Unsupported type "~T.stringof~" not a valid "~to!string(type));
+                    .check(0, "Unsupported type "~T.stringof~" not a valid "~to!string(type));
                 }
                 break;
             case ARRAY:
-                static if (is(T==BSON)) {
+                static if (is(BaseT==BSON)) {
                     elm.value.document=x;
                     result=true;
                 }
-                else static if (is(T:const(BSON))) {
+                else static if (is(BaseT:const(BSON))) {
                     elm.value.document=cast(BSON)x;
                     result=true;
                 }
-                else static if (is(T:string[])) {
-                    elm.value.text_array=x;
+                else static if (is(BaseT:U[],U) && !isSomeString!BaseT && !isSubType!BaseT && !is(U==struct) ) {
+                    auto bson_array=new BSON;
+                    foreach(i, ref b; x) {
+                        if ( b !is null ) {
+                            bson_array[i]=b;
+                        }
+                    }
+                    elm.value.document=bson_array;
+                    result=true;
                 }
                 else {
                     assert(0, "Unsupported type "~T.stringof~" does not seem to be a valid native array");
                 }
+
                 break;
             case BINARY:
-                static if (is(T:U[],U)) {
+                static if (is(BaseT:U[],U)) {
                     static if (is(U==immutable ubyte)) {
-                        elm.value.binary=x;
+                        elm.value.binary=cast(BaseT)x;
                     }
                     else static if (is(U==immutable int)) {
-                        elm.value.int32_array=x;
+                        elm.value.int32_array=cast(BaseT)x;
                     }
                     else static if (is(U==immutable uint)) {
-                        elm.value.uint32_array=x;
+                        elm.value.uint32_array=cast(BaseT)x;
                     }
                     else static if (is(U==immutable long)) {
-                        elm.value.int64_array=x;
+                        elm.value.int64_array=cast(BaseT)x;
                     }
                     else static if (is(U==immutable ulong)) {
-                        elm.value.uint64_array=x;
+                        elm.value.uint64_array=cast(BaseT)x;
                     }
                     else static if (is(U==immutable double)) {
-                        elm.value.double_array=x;
+                        elm.value.double_array=cast(BaseT)x;
                     }
                     else static if (is(U==immutable float)) {
-                        elm.value.float_array=x;
+                        elm.value.float_array=cast(BaseT)x;
                     }
                     else static if (is(U==immutable bool)) {
-                        elm.value.bool_array=x;
+                        elm.value.bool_array=cast(BaseT)x;
                     }
                     else {
                         assert(0, "Native array must be immutable not "~T.stringof);
@@ -2256,10 +2449,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 }
                 else {
                     static if (__traits(compiles,x.ptr)) {
-                        elm.value.binary=((cast(ubyte*)x.ptr)[0..T.sizeof]).idup;
+                        elm.value.binary=((cast(ubyte*)x.ptr)[0..BaseT.sizeof]).idup;
                     }
                     else {
-                        elm.value.binary=((cast(ubyte*)&x)[0..T.sizeof]).idup;
+                        elm.value.binary=((cast(ubyte*)&x)[0..BaseT.sizeof]).idup;
                     }
                     elm.subtype=BinarySubType.userDefined;
                 }
@@ -2269,27 +2462,27 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 result=true;
                 break;
             case OID:
-                static if (is(T==ObjectId)) {
+                static if (is(BaseT==ObjectId)) {
                     result=true;
                     elm.value.oid=x;
                 }
                 break;
             case BOOLEAN:
-                static if (is(T:const(long)) || is(T:const(ulong)) ) {
+                static if (is(BaseT:const(long)) || is(BaseT:const(ulong)) ) {
                     elm.value.boolean=x!=0;
                     result=true;
                 }
-                else static if (is(T:const(real))) {
+                else static if (is(BaseT:const(real))) {
                     elm.value.boolean=x!=0.0;
                     result=true;
                 }
-                else static if (is(T:const(bool))) {
+                else static if (is(BaseT:const(bool))) {
                     elm.value.boolean=cast(bool)x;
                     result=true;
                 }
                 break;
             case DATE:
-                static if (is(T:Date)) {
+                static if (is(BaseT:Date)) {
                     elm.value.date=x;
                     result=true;
                 }
@@ -2301,63 +2494,63 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 throw new BSONException(format("Unsupported BSON type '%s' for key '%s' '",type.to!string, key.idup));
                 break;
             case INT32:
-                static if (is(T:int)) {
+                static if (is(BaseT:int)) {
                     elm.value.int32=cast(int)x;
                     result=true;
                 }
                 break;
             case UINT32:
-                static if (is(T:uint)) {
+                static if (is(BaseT:uint)) {
                     elm.value.uint32=cast(uint)x;
                     result=true;
                 }
                 break;
             case INT64:
-                static if (is(T:long)) {
+                static if (is(BaseT:long)) {
                     elm.value.int64=cast(long)x;
                     result=true;
                 }
                 break;
             case UINT64:
-                static if (is(T:ulong)) {
+                static if (is(BaseT:ulong)) {
                     elm.value.uint64=cast(ulong)x;
                     result=true;
                 }
                 break;
             case TIMESTAMP:
-                static if (is(T==DateTime)) {
+                static if (is(BaseT==DateTime)) {
                     auto st=SysTime(x);
                     elm.value.int64=st.stdTime;
                     result=true;
                 }
                 break;
             case NATIVE_BSON_ARRAY:
-                static if ( is(T:const(BSON[])) ) {
+                static if ( is(BaseT:const(BSON[])) ) {
                     elm.value.bson_array=x;
                     result=true;
                 }
                 break;
             case NATIVE_ARRAY:
-                static if ( is(T:const(Document[])) ) {
+                static if ( is(BaseT:const(Document[])) ) {
                     elm.value.document_array=x;
                     result=true;
                 }
                 break;
             case NATIVE_STRING_ARRAY:
-                static if ( is(T==string[]) ) {
+                static if ( is(BaseT==string[]) ) {
                     elm.value.text_array=x;
                     result=true;
                 }
                 break;
             case NATIVE_DOCUMENT:
-                static if ( is(T:const(Document)) ) {
+                static if ( is(BaseT:const(Document)) ) {
                     elm.value.binary=x.data;
                     result=true;
                 }
                 break;
             }
-            .check(result, format("Unmatch type %s at %s. Expected  BSON type '%s' %s", T.stringof, key, type,
-                (type == BINARY)?format("subtype '%s'", subtype):""));
+            assert(result, format("Unmatch type %s(%s) @ %s. Expected  BSON type '%s'",
+                    T.stringof, TypeString!T, key, typeString));
         }
     }
 
@@ -2366,52 +2559,128 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     }
 
     void opIndexAssign(T)(T x, string key) {
-        alias BaseType=TypedefType!T;
-        static if (is(BaseType:const(bool))) {
+        alias BaseT=TypedefType!T;
+        static if (isGeneralType!(BaseT, bool)) {
             append(Type.BOOLEAN, key, x);
         }
-        else static if (is(BaseType:string)) {
-            append(Type.STRING, key, x);
-        }
-        else static if (is(BaseType:const(BSON))) {
-            append(Type.DOCUMENT, key, x);
-        }
-        else static if (is(BaseType:const(int))) {
+        else static if (isGeneralType!(BaseT, int)) {
             append(Type.INT32, key, x);
         }
-        else static if (is(BaseType:const(long))) {
+        else static if (isGeneralType!(BaseT, long)) {
             append(Type.INT64, key, x);
         }
-        else static if (is(BaseType:const(double))) {
+        else static if (isGeneralType!(BaseT, double)) {
             append(Type.DOUBLE, key, x);
         }
-        else static if (is(BaseType:const(Date))) {
+        else static if (isGeneralType!(BaseT, uint)) {
+            append(Type.UINT32, key, x);
+        }
+        else static if (isGeneralType!(BaseT, ulong)) {
+            append(Type.UINT64, key, x);
+        }
+        else static if (isGeneralType!(BaseT, float)) {
+            append(Type.FLOAT, key, x);
+        }
+        else static if (isGeneralType!(BaseT, string)) {
+            append(Type.STRING, key, x);
+        }
+        else static if (isGeneralType!(BaseT, Date)) {
             append(Type.DATE, key, x);
         }
-        else static if (is(BaseType:const(DateTime))) {
+        else static if (isGeneralType!(BaseT, DateTime)) {
             append(Type.TIMESTAMP, key, x);
         }
-        else static if (is(BaseType:string[])) {
-            append(Type.NATIVE_STRING_ARRAY, key, x);
+        // else static if (is(BaseT:string[])) {
+        //     append(Type.NATIVE_STRING_ARRAY, key, x);
+        // }
+        else static if (is(BaseT:const(BSON))) {
+            append(Type.DOCUMENT, key, x);
         }
-        else static if (is(BaseType:const(Document)) ) {
+        else static if (is(BaseT:const(Document)) ) {
             append(Type.NATIVE_DOCUMENT, key, x);
         }
-        else static if (is(BaseType:const(Document[])) ) {
+        else static if (is(BaseT:const(Document[])) ) {
             append(Type.NATIVE_ARRAY, key, x);
         }
-        else static if (is(BaseType:const(BSON[])) ) {
+        else static if (is(BaseT:const(BSON[])) ) {
             append(Type.NATIVE_BSON_ARRAY, key, x);
         }
-        else static if (isSubType!BaseType) {
-            append(Type.BINARY, key, x, getSubtype!BaseType);
+        else static if (isSubType!BaseT) {
+            append(Type.BINARY, key, x, getSubtype!BaseT);
         }
-        else static if (is(BaseType:U[],U)) {
-            result=append(Type.ARRAY, key, x);
+        else static if (is(BaseT:U[],U)) {
+            append(Type.ARRAY, key, x);
+        }
+        else static if (is(BaseT==enum) && is(BaseT : const(uint)) ) {
+            append(Type.UINT32, key, cast(uint)x);
         }
         else {
             static assert(0, "opIndexAssign does not support type "~T.stringof~" use append member function instead");
         }
+    }
+
+    unittest { // opIndexAssign type test
+        auto bson=new BSON;
+        {
+            const bool x=true;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.BOOLEAN);
+        }
+
+        {
+            const int x=-42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.INT32);
+        }
+
+        {
+            const long x=-42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.INT64);
+        }
+
+        {
+            const double x=-42.42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.DOUBLE);
+        }
+
+        {
+            const uint x=42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.UINT32);
+        }
+
+        {
+            const ulong x=42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.UINT64);
+        }
+
+        {
+            const float x=-42.42;
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.FLOAT);
+        }
+
+        {
+            const string x="some_text";
+            enum type=typeof(x).stringof;
+            bson[type]=x;
+            assert(bson[type].type == Type.STRING);
+        }
+
+    }
+
+    void setNull(string key) {
+        append(Type.NULL, key, null);
     }
 
     unittest { // bool bug-fix test
@@ -2495,6 +2764,15 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
     Type type() pure const nothrow {
         return _type;
+    }
+
+    string typeString() pure const  {
+        if ( _type is Type.BINARY ) {
+            return subtype.to!string;
+        }
+        else {
+            return _type.to!string;
+        }
     }
 
     @trusted
@@ -3234,11 +3512,11 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     @trusted
     protected immutable(ubyte)[] subtype_buffer() const {
         with(BinarySubType) final switch(subtype) {
-            case generic:
-            case func:
-            case binary:
-            case uuid:
-            case md5:
+            case GENERIC:
+            case FUNC:
+            case BINARY:
+            case UUID:
+            case MD5:
             case userDefined:
                 return value.binary;
             case INT32_array:
@@ -3255,8 +3533,8 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                 return (cast(immutable(ubyte)*)(value.float_array.ptr))[0..value.float_array.length*float.sizeof];
             case BOOLEAN_array:
                 return (cast(immutable(ubyte)*)(value.bool_array.ptr))[0..value.bool_array.length*bool.sizeof];
-            case bigint, not_defined:
-                 throw new BSONException("Binary suptype "~to!string(subtype)~" not supported for buffer");
+            case BIGINT, not_defined:
+                throw new BSONException("Binary suptype "~to!string(subtype)~" not supported for buffer");
 
             }
 
@@ -3459,6 +3737,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
     }
 
 }
+
 
 
 // int[] doc2ints(Document doc) {
