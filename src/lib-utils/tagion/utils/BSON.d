@@ -33,7 +33,7 @@ import std.algorithm.searching : maxElement;
 //import std.array : Appender;
 private import std.bitmanip;
 import std.meta : AliasSeq;
-import std.stdio;
+//import std.stdio;
 
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.Base : Check, TagionException;
@@ -941,45 +941,18 @@ public:
         }
 
         T[] toArray(T)() const {
-//            T[] array;
-            version(none)
-            @safe
-            void iterate(ref Document.Range range, immutable int previous_index=0) {
-                if ( !range.empty ) {
-                    auto e=range.front;
-                    range.popFront;
-                    .check((previous_index is 0) || (previous_index < e.index), format("Index of an Array should be ordred @index %d next %d", previous_index, e.index));
-                    immutable index=e.index;
-                    iterate(range, e.index);
-                    .check(e.istype!T, format("Problem with array type @ %s. Got %s expected %s",
-                            e.key, e.typeString, HBSON.TypeString!T));
-
-                    array[index]=e.get!T;
-                }
-                else if ( previous_index !is 0 ) {
-                    array=new T[previous_index+1];
-                }
-            }
             .check(isArray, format("ARRAY type expected not %s", typeString));
             auto doc=get!Document;
             auto last_index=doc.indices.maxElement;
             auto array=new T[last_index+1];
-
-            // auto result=Appender!Buffer;
-
-            //result.reserve(length);
             uint previous_index;
             foreach(e; doc[]) {
-                writefln("e.key=%s", e.key);
-                //stdout.flush;
                 immutable current_index=e.index;
                 .check((previous_index is 0) || (previous_index < current_index), format("Index of an Array should be ordred @index %d next %d", previous_index, current_index));
 
                 array[current_index]=e.get!T;
                 previous_index=current_index;
             }
-            // auto doc_array_range=get!Document[];
-            // iterate(doc_array_range);
             return array;
         }
 
