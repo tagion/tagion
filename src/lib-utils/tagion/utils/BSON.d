@@ -442,17 +442,8 @@ struct Document {
         return Range(data);
     }
 
-    @trusted
-    string[] keys() const {
-        import std.array;
-        return array(map!"a.key"(Range(data)));
-    }
-
-    // Throws an std.conv.ConvException if the keys can not be convert to an uint
-    version(none)
-    immutable(uint[]) indices() const {
-        import std.array;
-        return array(map!"a.key.to!uint"(Range(data))).idup;
+    auto keys() const {
+        return map!"a.key"(Range(data));
     }
 
     // Throws an std.conv.ConvException if the keys can not be convert to an uint
@@ -522,7 +513,7 @@ unittest {
         assert(count(range) == 3);
     }
     { // keys
-        assert(doc.keys == ["foo", "bool", "num"]);
+        assert(equal(doc.keys, ["foo", "bool", "num"]));
     }
     { // opIndex([])
         auto strElem = doc["foo"];
@@ -2716,7 +2707,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         auto doc_docs=doc["docs"].get!Document;
 
         assert(doc_docs.length == 3);
-        assert(doc_docs.keys == ["0", "1", "2"]);
+        assert(equal(doc_docs.keys, ["0", "1", "2"]));
         assert(equal(doc_docs.indices, [0, 1, 2]));
         foreach(uint i;0..3) {
             assert(doc_docs.hasElement(i.to!string));
@@ -3148,7 +3139,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             assert(doc.hasElement("bool"));
             assert(doc.hasElement("number"));
             assert(doc.hasElement("text"));
-            assert(doc.keys.length == 4);
+            assert(doc.length == 4);
             assert(doc["int"].get!int == 3);
             assert(doc["bool"].get!bool);
             assert(doc["number"].get!double == 1.7);
@@ -3584,9 +3575,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             auto doc=Document(data);
             // writefln("doc.keys=%s", doc.keys);
             // Check that doc.keys are sorted
-            assert(doc.keys == ["abe", "kurt", "ole"]);
+            assert(equal(doc.keys, ["abe", "kurt", "ole"]));
         }
         {
+            import std.array : to_array=array;
             BSON!true[] array;
             for(int i=10; i>-7; i--) {
                 auto len=new BSON!true;
@@ -3598,7 +3590,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             auto data=bson.serialize;
             auto doc=Document(data);
             auto doc_array=doc["array"].get!Document;
-            foreach(i,k;doc_array.keys) {
+            foreach(i,k; to_array(doc_array.keys)) {
                 assert(to!string(i) == k);
             }
         }
