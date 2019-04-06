@@ -29,8 +29,11 @@ import std.datetime;   // Date, DateTime
 import std.typecons;   // Tuple
 import std.format;
 import std.traits : isSomeString, isIntegral, isArray;
+import std.algorithm.searching : maxElement;
+//import std.array : Appender;
 private import std.bitmanip;
 import std.meta : AliasSeq;
+import std.stdio;
 
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.Base : Check, TagionException;
@@ -446,15 +449,20 @@ struct Document {
     }
 
     // Throws an std.conv.ConvException if the keys can not be convert to an uint
+    version(none)
     immutable(uint[]) indices() const {
         import std.array;
         return array(map!"a.key.to!uint"(Range(data))).idup;
     }
 
+    // Throws an std.conv.ConvException if the keys can not be convert to an uint
+    auto indices() const {
+        return map!"a.key.to!uint"(Range(data));
+    }
+
     bool hasElement(in string key) const {
         return !opIn_r(key).isEod();
     }
-
 
     bool hasElement(Index)(in Index index) const if (isIntegral!Index) {
         return hasElement(index.to!string);
@@ -933,9 +941,10 @@ public:
         }
 
         T[] toArray(T)() const {
-            T[] array;
+//            T[] array;
+            version(none)
             @safe
-            void iterate(Document.Range range, immutable int previous_index=0) {
+            void iterate(ref Document.Range range, immutable int previous_index=0) {
                 if ( !range.empty ) {
                     auto e=range.front;
                     range.popFront;
@@ -952,8 +961,25 @@ public:
                 }
             }
             .check(isArray, format("ARRAY type expected not %s", typeString));
-            auto doc_array=get!Document;
-            iterate(doc_array[]);
+            auto doc=get!Document;
+            auto last_index=doc.indices.maxElement;
+            auto array=new T[last_index+1];
+
+            // auto result=Appender!Buffer;
+
+            //result.reserve(length);
+            uint previous_index;
+            foreach(e; doc[]) {
+                writefln("e.key=%s", e.key);
+                //stdout.flush;
+                immutable current_index=e.index;
+                .check((previous_index is 0) || (previous_index < current_index), format("Index of an Array should be ordred @index %d next %d", previous_index, current_index));
+
+                array[current_index]=e.get!T;
+                previous_index=current_index;
+            }
+            // auto doc_array_range=get!Document[];
+            // iterate(doc_array_range);
             return array;
         }
 
@@ -2718,7 +2744,7 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
 
         assert(doc_docs.length == 3);
         assert(doc_docs.keys == ["0", "1", "2"]);
-        assert(doc_docs.indices == [0, 1, 2]);
+        assert(equal(doc_docs.indices, [0, 1, 2]));
         foreach(uint i;0..3) {
             assert(doc_docs.hasElement(i.to!string));
             assert(doc_docs.hasElement(i));
