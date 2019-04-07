@@ -111,6 +111,8 @@ struct Options {
     bool trace_gossip;
     // Directory for the trace files
     string tmp;
+    // Print output
+    string stdout;
     //Port for network socket
     ushort network_socket_port;
     // Sequential test mode
@@ -122,6 +124,10 @@ struct Options {
     string nodeprefix;
     // logfile extension
     string logext;
+
+    // Search path
+    string path_arg;
+
 
     mixin JSONCommon;
 
@@ -229,3 +235,46 @@ struct TransactionMiddlewareOptions {
 }
 
 __gshared static TransactionMiddlewareOptions transaction_middleware_options;
+
+
+static auto all_getopt(ref string[] args, ref bool version_switch, ref bool overwrite_switch) {
+    import std.getopt;
+    return getopt(
+        args,
+        std.getopt.config.bundling,
+        "version",   "display the version",     &version_switch,
+        "overwrite|O", "Overwrite the config file", &overwrite_switch,
+        "transact-enable|T", format("Transaction test enable: default: %s", options.transcript.enable), &(options.transcript.enable),
+
+        "path|I",    "Sets the search path",     &(options.path_arg),
+        "trace-gossip|g",    "Sets the search path",     &(options.trace_gossip),
+        "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
+        "seed",      format("Sets the random seed: default %d", options.seed),       &(options.seed),
+        "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
+        "delay|d",   format("Sets delay: default: %d (ms)", options.delay), &(options.delay),
+        "loops",     format("Sets the loop count (loops=0 runs forever): default %d", options.loops), &(options.loops),
+        "url",       format("Sets the url: default %s", options.url), &(options.url),
+        "noserv|n",  format("Disable monitor sockets: default %s", options.disable_sockets), &(options.disable_sockets),
+        "sockets|M", format("Sets maximum number of monitors opened: default %s", options.max_monitors), &(options.max_monitors),
+        "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
+        "port|p",    format("Sets first port of the port sequency: default %d", options.port),  &(options.port),
+        "s|seq",     format("The event is produced sequential this is only used in test mode: default %s", options.sequential), &(options.sequential),
+        "stdout",    format("Set the stdout: default %s", options.stdout), &(options.stdout),
+
+        "script-ip",  format("Sets the listener ip address: default %s", options.scripting_engine.listener_ip_address), &(options.scripting_engine.listener_ip_address),
+        "script-port", format("Sets the listener port: default %d", options.scripting_engine.listener_port), &(options.scripting_engine.listener_port),
+        "script-queue", format("Sets the listener max queue lenght: default %d", options.scripting_engine.listener_max_queue_length), &(options.scripting_engine.listener_max_queue_length),
+        "script-maxcon",  format("Sets the maximum number of connections: default: %d", options.scripting_engine.max_connections), &(options.scripting_engine.max_connections),
+        "script-maxqueue",  format("Sets the maximum queue length: default: %d", options.scripting_engine.listener_max_queue_length), &(options.scripting_engine.listener_max_queue_length),
+        "script-maxfibres",  format("Sets the maximum number of fibres: default: %d", options.scripting_engine.max_number_of_accept_fibers), &(options.scripting_engine.max_number_of_accept_fibers),
+        "script-maxreuse",  format("Sets the maximum number of fibre reuse: default: %d", options.scripting_engine.max_number_of_fiber_reuse), &(options.scripting_engine.max_number_of_fiber_reuse),
+        "script-log",  format("Scripting engine log filename: default: %s", options.scripting_engine.name), &(options.scripting_engine.name),
+
+
+        "transcript-from", format("Transcript test from delay: default: %d", options.transcript.pause_from), &(options.transcript.pause_from),
+        "transcript-to", format("Transcript test to delay: default: %d", options.transcript.pause_to), &(options.transcript.pause_to),
+        "transcript-log",  format("Transcript log filename: default: %s", options.transcript.name), &(options.transcript.name),
+
+//        "help!h", "Display the help text",    &help_switch,
+        );
+};
