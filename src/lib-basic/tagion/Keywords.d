@@ -8,11 +8,12 @@ enum _keywords = [
     "signature",        // signature of the block
     "altitude",   // altitude
     "received_order",
-    "tidewave",
-    "wavefront",  // Wave front is the list of events hashs
+    // "tidewave",
+    // "wavefront",  // Wave front is the list of events hashs
     "ebody",      // Event body
     "event",      // Event including the eventbody
 
+    // HashGraph
     "message",
     "mother",
     "father",
@@ -56,11 +57,9 @@ enum _keywords = [
     "buckets",
     "tab",
     "transaction_id",
-    "result_code",
-    "error_code",
     "output",
     "signatures",
-    "signatur",
+//    "signatur",
     "transaction_object",
     "transaction_scripting_object",
     "payers",
@@ -73,16 +72,56 @@ enum _keywords = [
     "bill_type",
     "value",
     "ownerkey",
+
+    // FixMe should be change to "result" and "error" to fit the HBSON-RPC
+    "result_code",
+    "error_code",
+
     // Scripting
     "code",
     "source",
+
     // DART
-//    "fingerprint",
-    "branch",
+    "indices",
+    "fingerprint",
     "fingerprints",
+    "archives",
+    "branches",
+    "read",
     "rims",
-    "stub"
+    "keys",
+    "stub",
+
+    // HBSON-RPC (Similar to JSON-RPC 2.0)
+//    "rev",
+    "method",
+    "params",
+    "error", // error_code
+    "result",
+    "id", //
+    "data",
+    "hrpc"
     ];
 
 // Generated the Keywords and enum string list
 mixin(EnumText!("Keywords", _keywords));
+
+/++
+ Check if the CTE string $(LREF word) belongs to $(LREF K) string enum
++/
+template isValid(K, string word) if ( is(K==enum) ) {
+    enum code="K."~word;
+    enum isValid=__traits(compiles, mixin(code));
+}
+
+static unittest {
+    import std.traits : EnumMembers;
+    enum allkeys=EnumMembers!Keywords;
+    enum kmin=allkeys[0];
+    enum kmax=allkeys[$-1];
+    enum kmid=allkeys[$/2];
+    static assert(isValid!(Keywords, kmin));
+    static assert(isValid!(Keywords, kmax));
+    static assert(isValid!(Keywords, kmid));
+    static assert(!isValid!(Keywords, "xxx"));
+}
