@@ -218,12 +218,6 @@ template DtoBSONType(T) {
 }
 
 
-@safe
-interface DocumentCallbacks {
-    //bool check(bool flag, string msg, uint code=0);
-    void not_found(lazy string msg, string file = __FILE__, size_t line = __LINE__ );
-}
-
 bool less_than(string a, string b) @safe  {
     bool toUint(string str, out ulong value) @safe {
         foreach(s;str) {
@@ -274,9 +268,7 @@ unittest {
 struct Document {
     immutable(ubyte[]) data;
 
-    static DocumentCallbacks callbacks;
-
-    nothrow this(immutable ubyte[] data) {
+    this(immutable ubyte[] data) nothrow {
         this.data = data;
     }
 
@@ -470,9 +462,7 @@ struct Document {
 
     const(Element) opIndex(in string key) const {
         auto result=key in this;
-        if ((callbacks !is null) && result.isEod) {
-            callbacks.not_found(format("Member named '%s' not found", key));
-        }
+        .check(!result.isEod, format("Member named '%s' not found", key));
         return result;
     }
 
