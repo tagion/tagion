@@ -196,9 +196,8 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
                 auto mother=own_node.event;
                 immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
                     father_fingerprint, net.time, mother.altitude+1);
-                const pack=net.bulidEvent(ebody.toBSON);
-                //  immutable signature=net.sign(ebody);
-                return hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+                immutable signature=net.sign(ebody.toBSON.serialize);
+                return hashgraph.registerEvent(net, net.pubkey, signature, ebody);
             }
             event=net.receive(buf, &register_leading_event);
         }
@@ -209,15 +208,15 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
                     immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
-                    const pack=net.bulidEvent(ebody.toBSON);
+                    const pack=net.buildEvent(ebody.toBSON, ExchangeState.NONE);
                     // immutable signature=net.sign(ebody);
-                    event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
+                    event=hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
                 }
                 else {
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    const pack=net.bulidEvent(ebody.toBSON);
+                    const pack=net.buildEvent(ebody.toBSON, ExchangeState.NONE);
                     //immutable signature=net.sign(ebody);
                     event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
                 }
@@ -227,9 +226,9 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HBSON;
                     auto tides      = net.tideWave(tidewave, net.callbacks !is null);
-                    auto pack       = net.bulidEvent(tidewave, ExchangeState.TIDE_WAVE);
+                    auto pack       = net.buildEvent(tidewave, ExchangeState.TIDE_WAVE);
 
-                    net.send(send_channel, pack);
+                    net.send(send_channel, pack.toBSON.serialize);
                     if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
                     }
@@ -272,7 +271,6 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
                 next_mother(empty_payload);
             }
         }
-
         try {
             if ( has_random_seed && options.sequential ) {
                 static if (has_random_seed) {
