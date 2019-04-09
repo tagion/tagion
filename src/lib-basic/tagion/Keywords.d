@@ -10,8 +10,8 @@ enum _keywords = [
     "received_order",
     // "tidewave",
     // "wavefront",  // Wave front is the list of events hashs
-    "ebody",      // Event body
-    "event",      // Event including the eventbody
+//    "ebody",      // Event body
+//    "event",      // Event including the eventbody
 
     // HashGraph
     "message",
