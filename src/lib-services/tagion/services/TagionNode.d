@@ -16,6 +16,7 @@ import tagion.gossip.EmulatorGossipNet;
 import tagion.services.ScriptingEngineNode;
 import tagion.services.TranscriptNode;
 import tagion.services.ScriptCallbacks;
+import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.communication.Monitor;
 import tagion.Options;
@@ -49,14 +50,15 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     auto hashgraph=new HashGraph();
     // Create hash-graph
     ScriptNet net;
-    net=new Net(hashgraph);
+    auto crypt=new NativeSecp256k1;
+    net=new Net(crypt, hashgraph);
 //    hrpc.net=net;
 
     immutable transcript_enable=options.transcript.enable;
 
-    debug {
-        net.node_name=node_name;
-    }
+//    debug {
+    net.node_name=setup.node_name;
+//    }
     // Pseudo passpharse
     immutable passphrase=node_name;
     net.generateKeyPair(passphrase);
