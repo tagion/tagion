@@ -31,6 +31,12 @@ void tagionNode(uint timeout, immutable uint node_id,
     import std.datetime.systime;
     immutable node_name=getname(node_id);
     immutable filename=[node_name].getfilename;
+    //-----
+    alias Net=EmulatorGossipNet;
+    Net.Init setup;
+
+    //---
+
     EmulatorGossipNet.fout.open(filename, "w");
 
     alias fout=EmulatorGossipNet.fout;
@@ -103,7 +109,7 @@ void tagionNode(uint timeout, immutable uint node_id,
     //
 
     if ( transcript_enable ) {
-        net.transcript_tid=spawn(&transcript, node_id, net.random.value);
+        net.transcript_tid=spawn(&transcript!Net, setup);
 
         auto scripting_engine_tid=spawn(&scripting_engine, node_id);
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
