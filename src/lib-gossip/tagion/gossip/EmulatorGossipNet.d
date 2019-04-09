@@ -8,7 +8,7 @@ import std.conv : to;
 
 import tagion.revision;
 import tagion.Options;
-import tagion.Base : EnumText, Buffer,  Pubkey, Payload, buf_idup, convertEnum, consensusCheck, consensusCheckArguments, basename, isBufferType;
+import tagion.Base : EnumText, Buffer, Pubkey, Payload, buf_idup, convertEnum, consensusCheck, consensusCheckArguments, basename, isBufferType;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.Random;
 import tagion.utils.LRU;
@@ -23,11 +23,10 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.ConsensusExceptions;
 
-
-
-alias ReceiveQueue = Queue!(immutable(ubyte[]));
-alias check=consensusCheck!(GossipConsensusException);
-alias consensus=consensusCheckArguments!(GossipConsensusException);
+import tagion.crypto.secp256k1.NativeSecp256k1;
+// alias ReceiveQueue = Queue!(immutable(ubyte[]));
+// alias check=consensusCheck!(GossipConsensusException);
+// alias consensus=consensusCheckArguments!(GossipConsensusException);
 
 string getname(immutable size_t i) {
     return join([options.nodeprefix, to!string(i)]);
@@ -57,45 +56,27 @@ interface GossipTransceiver {
     immutable(Buffer) receive();
 }
 
+version(none)
 @safe class NewStdGossipNet : StdGossipNet, ScriptNet {
-    static File fout;
+//    static File fout;
     alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
     protected  EventPackageCache _event_package_cache;
-    protected GossipTransceiver _transceiver;
+//    protected GossipTransceiver _transceiver;
 
-    this(GossipTransceiver transceiver, HashGraph hashgraph) {
-        _transceiver=transceiver;
+    this(NativeSecp256k1 cript, HashGraph hashgraph) {
+//        _transceiver=transceiver;
         _hashgraph=hashgraph;
          _queue=new ReceiveQueue;
         _event_package_cache=new EventPackageCache(&onEvict);
-        import tagion.crypto.secp256k1.NativeSecp256k1;
-        super(new NativeSecp256k1());
+//        import tagion.crypto.secp256k1.NativeSecp256k1;
+        super(crypt);
     }
 
     protected enum _params = [
-        // "altitude",   // altitude
-        // "pubkey",
         "type",
-        // "event",
         "tidewave",
         "wavefront",
         "block"
-
-//        Keywords.pubkey,
-        // "waveFront",
-        // "tideWave",
-        // "fingerprints",
-        // "branches",
-        // "rims",
-        // "limit",
-        // "bullseye",
-        // "recorder",
-        // "archives",
-        // "archive",
-        // "remove_rims",
-        // "fingerprint",
-        // "index",
-        // "type"
         ];
 
     mixin(EnumText!("Params", _params));
@@ -511,7 +492,34 @@ interface GossipTransceiver {
 }
 
 @safe
-class EmulatorGossipNet : NewStdGossipNet {
+class EmulatorGossipNet : StdGossipNet { //, ScriptNet {
+//class EmulatorGossipNet : StdScriptNet { //, ScriptNet {
+    // protected Tid _transcript_tid;
+    // @property void transcript_tid(Tid tid)
+    // @trusted in {
+    //     assert(_transcript_tid != _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
+    // }
+    // do {
+    //     _transcript_tid=tid;
+    // }
+
+    // @property Tid transcript_tid() pure nothrow {
+    //     return _transcript_tid;
+    // }
+
+    // protected Tid _scripting_engine_tid;
+    // @property void scripting_engine_tid(Tid tid) @trusted in {
+    //     assert(_scripting_engine_tid != _scripting_engine_tid.init, format("%s hash already been set", __FUNCTION__));
+    // }
+    // do {
+    //     _scripting_engine_tid=tid;
+    // }
+
+    // @property Tid scripting_engine_tid() pure nothrow {
+    //     return _scripting_engine_tid;
+    // }
+
+//class EmulatorGossipNet : StdScriptNet {
     // static class GossipDocCallbacks : DocumentCallbacks {
     //     void not_found(lazy string msg, string file = __FILE__, size_t line = __LINE__ ) {
     //         throw new ConsensusException(msg, ConsensusFailCode.NON, file, line);
@@ -546,6 +554,7 @@ class EmulatorGossipNet : NewStdGossipNet {
 
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
+    version(none)
     debug {
         protected string _node_name;
         @property void node_name(string name)
@@ -564,6 +573,7 @@ class EmulatorGossipNet : NewStdGossipNet {
 //    protected ulong _current_time;
 //    protected HashGraph _hashgraph;
 
+    version(none) {
     protected Tid _transcript_tid;
     @property void transcript_tid(Tid tid)
     @trusted in {
@@ -588,7 +598,7 @@ class EmulatorGossipNet : NewStdGossipNet {
     @property Tid scripting_engine_tid() pure nothrow {
         return _scripting_engine_tid;
     }
-
+    }
     version(none)
     static bool isNetMajority(const(uint) voting, const(uint) nodes) pure nothrow {
         return voting*3 > nodes*2;
@@ -596,11 +606,11 @@ class EmulatorGossipNet : NewStdGossipNet {
 
     Random!uint random;
 
-    this(HashGraph hashgraph) {
+    this(NativeSecp256k1 crypt, HashGraph hashgraph) {
         //_hashgraph=hashgraph;
         //_queue=new ReceiveQueue;
 //        _event_package_cache=new EventPackageCache(&onEvict);
-        super(null, hashgraph);
+        super(crypt, hashgraph);
     }
 
     version(none)
@@ -787,7 +797,7 @@ class EmulatorGossipNet : NewStdGossipNet {
 
     protected uint _send_count;
     @trusted
-    override void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
+    void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
         auto doc=Document(data);
         auto doc_body=doc[Params.block].get!Document;
         if ( doc_body.hasElement(Event.Params.ebody) ) {
@@ -803,10 +813,11 @@ class EmulatorGossipNet : NewStdGossipNet {
     }
 
 
-    override void send(immutable(Pubkey) channel, ref const(Package) pack) {
+    void send(immutable(Pubkey) channel, ref const(Package) pack) {
         send(channel, pack.serialize);
     }
 
+    version(none)
     override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
         if ( !_hashgraph.isRegistered(fingerprint) ) {
             immutable has_new_event=(fingerprint !is null);

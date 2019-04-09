@@ -21,7 +21,7 @@ enum ExchangeState : uint {
 
 //    version(node)
 @safe
-    struct Package {
+struct Package {
 //        private GossipNet net;
         private const(HBSON) block;
         private Pubkey pubkey;
@@ -155,11 +155,12 @@ interface GossipNet : SecureNet, PackageNet {
 @safe
 interface ScriptNet : GossipNet {
     import std.concurrency;
-    @property
-    void transcript_tid(Tid tid);
-    @property
-    Tid transcript_tid() pure nothrow;
+    @property void transcript_tid(Tid tid);
+    @property Tid transcript_tid() pure nothrow;
 
+    @property void scripting_engine_tid(Tid tid);
+
+    @property Tid scripting_engine_tid();
 }
 
 @safe
