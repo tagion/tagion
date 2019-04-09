@@ -47,7 +47,6 @@ class StdSecureNet : StdRequestNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.hmac;
 
-    //    private immutable(ubyte)[] _privkey;
     private Pubkey _pubkey;
     private immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
 
@@ -58,7 +57,6 @@ class StdSecureNet : StdRequestNet, SecureNet {
     Buffer hashPubkey() const {
         return calcHash(cast(Buffer)_pubkey);
     }
-
 
     bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) if ( __traits(compiles, pack.serialize) ) {
         auto message=calcHash(pack.serialize);
@@ -195,19 +193,10 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
     }
 
     import tagion.hashgraph.Event : Event;
-    // alias Tides=int[immutable(Pubkey)];
-//    abstract Event receive(immutable(ubyte[]) data, Event delegate(immutable(ubyte)[] leading_event_fingerprint) @safe register_leading_event );
-//    abstract void send(Pubkey channel, immutable(ubyte[]) data);
-
-    //import tagion.crypto.secp256k1.NativeSecp256k1 : NativeSecp256k1;
-    // this(NativeSecp256k1 crypt) {
-    //     super(crypt);
-    // }
-
     this(NativeSecp256k1 crypt, HashGraph hashgraph) {
 //        _transceiver=transceiver;
         _hashgraph=hashgraph;
-         _queue=new ReceiveQueue;
+        _queue=new ReceiveQueue;
         _event_package_cache=new EventPackageCache(&onEvict);
 //        import tagion.crypto.secp256k1.NativeSecp256k1;
         super(crypt);
@@ -265,15 +254,6 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         return _queue;
     }
 
-    // bool queue_empty() {
-    //     return _queue.empty;
-    // }
-
-    // immutable(ubyte[]) queue_read() {
-    //     return _queue.read;
-    // }
-
-//    protected uint _send_node_id;
     alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
     protected  EventPackageCache _event_package_cache;
 
@@ -291,7 +271,6 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         }
     }
 
-//    version(none)
     static struct EventPackage {
         immutable(ubyte[]) signature;
         immutable(Pubkey) pubkey;
@@ -299,26 +278,6 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         this(Document doc) {
             signature=(doc[Event.Params.signature].get!(immutable(ubyte[]))).idup;
             pubkey=buf_idup!Pubkey(doc[Event.Params.pubkey].get!Buffer);
-//            pubkey=(doc[Keywords.pubkey].get!Buffer);
-            auto doc_ebody=doc[Event.Params.ebody].get!Document;
-            event_body=immutable(EventBody)(doc_ebody);
-        }
-        static EventPackage undefined() {
-            check(false, ConsensusFailCode.GOSSIPNET_EVENTPACKAGE_NOT_FOUND);
-            assert(0);
-        }
-    }
-
-
-    version(none)
-    struct EventPackage {
-        immutable(ubyte[]) signature;
-        immutable(Pubkey) pubkey;
-        immutable(EventBody) event_body;
-        this(Document doc) {
-            signature=(doc[Event.Params.signature].get!(immutable(ubyte[]))).idup;
-            pubkey=buf_idup!Pubkey(doc[Event.Params.pubkey].get!Buffer);
-//            pubkey=(doc[Keywords.pubkey].get!Buffer);
             auto doc_ebody=doc[Event.Params.ebody].get!Document;
             event_body=immutable(EventBody)(doc_ebody);
         }
@@ -341,7 +300,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
      +  The wave from is collect via the waveFront function by adding the remaining tides
      +  3)
      +  A send the rest of the event which is in front of B's wave-front
-    +/
+     +/
     Tides tideWave(HBSON bson, bool build_tides) {
         HBSON[] fronts;
         Tides tides;
@@ -584,20 +543,12 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
             assert(_node_name is null, format("%s is already set", __FUNCTION__));
         }
     do {
-            _node_name=name;
+        _node_name=name;
     }
 
     @property string node_name() pure const nothrow {
         return _node_name;
     }
-
-    // void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
-    //     assert(0, "Not implemented");
-    // }
-
-    // void send(immutable(Pubkey) channel, ref const(Package) pack) {
-    //     assert(0, "Not implemented");
-    // }
 
     @property
     void time(const(ulong) t) {
@@ -609,45 +560,9 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         return _current_time;
     }
 
-        protected Tid _transcript_tid;
-    @property void transcript_tid(Tid tid)
-    @trusted in {
-        assert(_transcript_tid != _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
-    }
-    do {
-        _transcript_tid=tid;
-    }
-
-    @property Tid transcript_tid() pure nothrow {
-        return _transcript_tid;
-    }
-
-    protected Tid _scripting_engine_tid;
-    @property void scripting_engine_tid(Tid tid) @trusted in {
-        assert(_scripting_engine_tid != _scripting_engine_tid.init, format("%s hash already been set", __FUNCTION__));
-    }
-    do {
-        _scripting_engine_tid=tid;
-    }
-
-    @property Tid scripting_engine_tid() pure nothrow {
-        return _scripting_engine_tid;
-    }
-
-}
-
-version(none)
-@safe
-abstract class StdScriptNet : StdGossipNet, ScriptNet {
-    this(
-        NativeSecp256k1 crypt,
-        HashGraph hashgraph) {
-        super(crypt, hashgraph);
-    }
-
     protected Tid _transcript_tid;
     @property void transcript_tid(Tid tid)
-    @trusted in {
+        @trusted in {
         assert(_transcript_tid != _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
     }
     do {
@@ -669,5 +584,4 @@ abstract class StdScriptNet : StdGossipNet, ScriptNet {
     @property Tid scripting_engine_tid() pure nothrow {
         return _scripting_engine_tid;
     }
-
 }
