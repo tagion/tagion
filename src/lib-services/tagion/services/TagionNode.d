@@ -4,7 +4,7 @@ import std.concurrency;
 import std.exception : assumeUnique;
 import std.stdio;
 import std.conv : to;
-
+import std.traits : hasMember;
 import core.thread;
 
 import tagion.utils.Miscellaneous: cutHex;
@@ -99,8 +99,11 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     writefln("Wait for some delay %s", node_name);
     Thread.sleep(2.seconds);
 
-    if ( !options.sequential ) {
-        net.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
+    alias has_random_seed=hasMember!(Net, "random.seed");
+    static if ( has_random_seed ) {
+        if ( !options.sequential ) {
+            net.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
+        }
     }
 
     //
