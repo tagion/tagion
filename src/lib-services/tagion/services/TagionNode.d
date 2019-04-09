@@ -4,7 +4,7 @@ import std.concurrency;
 import std.exception : assumeUnique;
 import std.stdio;
 import std.conv : to;
-import std.traits : hasMember;
+
 import core.thread;
 
 import tagion.utils.Miscellaneous: cutHex;
@@ -12,34 +12,28 @@ import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.hashgraph.GossipNet;
-import tagion.hashgraph.EmulatorGossipNet : getname, getfilename;
+import tagion.hashgraph.EmulatorGossipNet;
 import tagion.services.ScriptingEngineNode;
 import tagion.services.TranscriptNode;
 import tagion.services.ScriptCallbacks;
 
 import tagion.communication.Monitor;
-import tagion.communication.HRPC;
 import tagion.Options;
 import tagion.Base : Pubkey, Payload, Control;
 import tagion.utils.BSON : HBSON;
 
 // If no monitor should be enable set the address to empty or the port below 6000.
-// void tagionNode(Net)(uint timeout, immutable uint node_id,
-//     immutable uint N,
-//     string monitor_ip_address,
-//     const ushort monitor_port)  {
-void tagionNode(Net)(immutable(Net.Init) setup) {
-    // timeout, immutable uint node_id,
-    // immutable uint N,
-    // string monitor_ip_address,
-    // const ushort monitor_port)  {
-//    HRPC hrpc;
+void tagionNode(uint timeout, immutable uint node_id,
+    immutable uint N,
+    string monitor_ip_address,
+    const ushort monitor_port) {
     import std.format;
     import std.datetime.systime;
-    immutable node_name=getname(setup.node_id);
+    immutable node_name=getname(node_id);
     immutable filename=[node_name].getfilename;
-    Net.fout.open(filename, "w");
-    alias fout=Net.fout;
+    EmulatorGossipNet.fout.open(filename, "w");
+
+    alias fout=EmulatorGossipNet.fout;
     Event.fout=&fout;
 
     fout.write("\n\n\n\n\n");
@@ -49,9 +43,7 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
 
     auto hashgraph=new HashGraph();
     // Create hash-graph
-    ScriptNet net;
-    net=new Net(hashgraph);
-//    hrpc.net=net;
+    auto net=new EmulatorGossipNet(hashgraph);
 
     immutable transcript_enable=options.transcript.enable;
 
@@ -65,7 +57,7 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
 
     ownerTid.send(net.pubkey);
     Pubkey[] received_pkeys; //=receiveOnly!(immutable(Pubkey[]));
-    foreach(i;0..setup.N) {
+    foreach(i;0..N) {
         received_pkeys~=receiveOnly!(Pubkey);
     }
     immutable pkeys=assumeUnique(received_pkeys);
@@ -79,14 +71,14 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     }
     // All tasks is in sync
     fout.writefln("All tasks are in sync %s", node_name);
-    // scope tids=new Tid[N];
-    // getTids(tids);
-    net.set(pkeys);
+    scope tids=new Tid[N];
+    getTids(tids);
+    net.set(tids, pkeys);
 
-    if ( (setup.monitor_ip_address != "") && (setup.monitor_port > 6000) ) {
-        monitor_socket_tid = spawn(&createSocketThread, setup.monitor_port, setup.monitor_ip_address);
+    if ( (monitor_ip_address != "") && (monitor_port > 6000) ) {
+        monitor_socket_tid = spawn(&createSocketThread, monitor_port, monitor_ip_address);
 
-        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, setup.node_id, net.globalNodeId(net.pubkey));
+        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, node_id, net.globalNodeId(net.pubkey));
     }
 
     enum max_gossip=2;
@@ -102,11 +94,8 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     writefln("Wait for some delay %s", node_name);
     Thread.sleep(2.seconds);
 
-    alias has_random_seed=hasMember!(Net, "random.seed");
-    static if ( has_random_seed ) {
-        if ( !options.sequential ) {
-            net.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
-        }
+    if ( !options.sequential ) {
+        net.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
     }
 
     //
@@ -114,9 +103,9 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     //
 
     if ( transcript_enable ) {
-        net.transcript_tid=spawn(&transcript!Net, setup);
+        net.transcript_tid=spawn(&transcript, node_id, net.random.value);
 
-        auto scripting_engine_tid=spawn(&scripting_engine, setup.node_id);
+        auto scripting_engine_tid=spawn(&scripting_engine, node_id);
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
     }
 
@@ -189,14 +178,14 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
             timeout_count=0;
             net.time=net.time+100;
             fout.write("*\n*\n*\n");
-            fout.writefln("******* receive %s [%s] %s", node_name, setup.node_id, buf.length);
+            fout.writefln("******* receive %s [%s] %s", node_name, node_id, buf.length);
             auto own_node=hashgraph.getNode(net.pubkey);
 
             Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
                 auto mother=own_node.event;
                 immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
                     father_fingerprint, net.time, mother.altitude+1);
-                immutable signature=net.sign(ebody.toBSON.serialize);
+                immutable signature=net.sign(ebody);
                 return hashgraph.registerEvent(net, net.pubkey, signature, ebody);
             }
             event=net.receive(buf, &register_leading_event);
@@ -208,27 +197,24 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
                     immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
-                    const pack=net.buildEvent(ebody.toBSON, ExchangeState.NONE);
-                    // immutable signature=net.sign(ebody);
-                    event=hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+                    immutable signature=net.sign(ebody);
+                    event=hashgraph.registerEvent(net,  net.pubkey, signature, ebody);
                 }
                 else {
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    const pack=net.buildEvent(ebody.toBSON, ExchangeState.NONE);
-                    //immutable signature=net.sign(ebody);
-                    event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
+                    immutable signature=net.sign(ebody);
+                    event=hashgraph.registerEvent(net,  net.pubkey, signature, ebody);
                 }
                 immutable send_channel=net.selectRandomNode;
                 auto send_node=hashgraph.getNode(send_channel);
-                if ( send_node.state is  ExchangeState.NONE ) {
-                    send_node.state = ExchangeState.INIT_TIDE;
-                    auto tidewave   = new HBSON;
-                    auto tides      = net.tideWave(tidewave, net.callbacks !is null);
-                    auto pack       = net.buildEvent(tidewave, ExchangeState.TIDE_WAVE);
-
-                    net.send(send_channel, pack.toBSON.serialize);
+                if ( send_node.state == ExchangeState.NONE ) {
+                    send_node.state=ExchangeState.INIT_TIDE;
+                    auto tidewave=new HBSON;
+                    auto tides = net.tideWave(tidewave, net.callbacks !is null);
+                    auto pack=net.buildEvent(tidewave, ExchangeState.TIDE_WAVE);
+                    net.send(send_channel, pack);
                     if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
                     }
@@ -256,43 +242,36 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
                 }
         }
 
-
-        static if (has_random_seed) {
-            auto net_random=cast(Net)net;
-            void sequential(uint time, uint random)
-                in {
-                    assert(options.sequential);
-                }
-            do {
-
-                immutable(ubyte[]) payload;
-                net_random.seed(random);
-                net_random.time=time;
-                next_mother(empty_payload);
+        void sequential(uint time, uint random)
+            in {
+                assert(options.sequential);
             }
+        do {
+
+            immutable(ubyte[]) payload;
+            net.random.seed(random);
+            net.time=time;
+            next_mother(empty_payload);
         }
+
         try {
-            if ( has_random_seed && options.sequential ) {
-                static if (has_random_seed) {
-                    immutable message_received=receiveTimeout(
-                        setup.timeout.msecs,
-                        &receive_payload,
-                        &controller,
-                        &sequential,
-                        &receive_buffer,
-                        );
-                    if ( !message_received ) {
-                        fout.writeln("TIME OUT");
-                        timeout_count++;
-                        if ( !net.queue.empty ) {
-                            receive_buffer(net.queue.read);
-                        }
+            if ( options.sequential ) {
+                immutable message_received=receiveTimeout(timeout.msecs,
+                    &receive_payload,
+                    &controller,
+                    &sequential,
+                    &receive_buffer,
+                    );
+                if ( !message_received ) {
+                    fout.writeln("TIME OUT");
+                    timeout_count++;
+                    if ( !net.queue.empty ) {
+                        receive_buffer(net.queue.read);
                     }
                 }
             }
             else {
-                immutable message_received=receiveTimeout(
-                    setup.timeout.msecs,
+                immutable message_received=receiveTimeout(timeout.msecs,
                     &receive_payload,
                     &controller,
                     // &sequential,
@@ -323,7 +302,7 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
             stop=true;
         }
         catch ( Throwable t ) {
-            t.msg ~= " - From hashnode thread " ~ to!string(setup.node_id);
+            t.msg ~= " - From hashnode thread " ~ to!string(node_id);
             fout.writeln(t);
             writeln(t);
             stop=true;
