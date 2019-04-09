@@ -12,7 +12,7 @@ import tagion.utils.BSON : HBSON;
 import tagion.services.TagionLog;
 import tagion.utils.Random;
 
-import tagion.hashgraph.EmulatorGossipNet;
+import tagion.gossip.EmulatorGossipNet;
 
 
 // This function is just to perform a test on the scripting-api input

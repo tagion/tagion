@@ -9,7 +9,7 @@ import tagion.utils.Random;
 
 import tagion.Base : Pubkey, Control;
 import tagion.services.TagionNode;
-import tagion.hashgraph.EmulatorGossipNet;
+import tagion.gossip.EmulatorGossipNet;
 
 void heart_beat() { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
     immutable N=options.nodes;

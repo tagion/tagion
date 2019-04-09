@@ -10,9 +10,7 @@ import tagion.utils.BSON : Document;
 import tagion.Keywords;
 import tagion.hashgraph.ConsensusExceptions;
 
-
-
-import tagion.hashgraph.EmulatorGossipNet;
+import tagion.gossip.EmulatorGossipNet;
 
 
 // This the test task for the scripting engine
