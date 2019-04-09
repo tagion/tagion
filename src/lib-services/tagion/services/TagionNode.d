@@ -99,8 +99,10 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     writefln("Wait for some delay %s", node_name);
     Thread.sleep(2.seconds);
 
-    alias has_random_seed=hasMember!(Net, "random.seed");
+    enum bool has_random_seed=__traits(compiles, net.random.seed(0));
+//    pragma(msg, has_random_seed);
     static if ( has_random_seed ) {
+        pragma(msg, "Random seed works");
         if ( !options.sequential ) {
             net.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
         }
@@ -250,18 +252,21 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
                 }
         }
 
-        void sequential(uint time, uint random)
-            in {
-                assert(options.sequential);
+
+        static if (has_random_seed) {
+            auto net_random=cast(Net)net;
+            void sequential(uint time, uint random)
+                in {
+                    assert(options.sequential);
+                }
+            do {
+
+                immutable(ubyte[]) payload;
+                net_random.random.seed(random);
+                net_random.time=time;
+                next_mother(empty_payload);
             }
-        do {
-
-            immutable(ubyte[]) payload;
-            net.random.seed(random);
-            net.time=time;
-            next_mother(empty_payload);
         }
-
         try {
             if ( options.sequential ) {
                 immutable message_received=receiveTimeout(
