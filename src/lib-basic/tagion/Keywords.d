@@ -6,7 +6,7 @@ private import tagion.Base : EnumText;
 enum _keywords = [
     "pubkey",       // Pubkey
     "signature",        // signature of the block
-    "altitude",   // altitude
+//    "altitude",   // altitude
     "received_order",
     // "tidewave",
     // "wavefront",  // Wave front is the list of events hashs
@@ -41,7 +41,7 @@ enum _keywords = [
     "strong_votes",
     "strong_mask",
     "iterations",
-    "altenative",
+//    "altenative",
     "looked_at_mask",
     "looked_at_count",
     "seeing_completed",
@@ -51,7 +51,7 @@ enum _keywords = [
     "time",
     "events",     // List of event
     "type",       // Package type
-    "block",     // block
+//    "block",     // block
 
     "rim",
     "buckets",
