@@ -23,23 +23,22 @@ import tagion.Base : Pubkey, Payload, Control;
 import tagion.utils.BSON : HBSON;
 
 // If no monitor should be enable set the address to empty or the port below 6000.
-void tagionNode(uint timeout, immutable uint node_id,
-    immutable uint N,
-    string monitor_ip_address,
-    const ushort monitor_port) {
+// void tagionNode(Net)(uint timeout, immutable uint node_id,
+//     immutable uint N,
+//     string monitor_ip_address,
+//     const ushort monitor_port)  {
+void tagionNode(Net)(immutable(Net.Init) setup) {
+    // timeout, immutable uint node_id,
+    // immutable uint N,
+    // string monitor_ip_address,
+    // const ushort monitor_port)  {
+//    HRPC hrpc;
     import std.format;
     import std.datetime.systime;
-    immutable node_name=getname(node_id);
+    immutable node_name=getname(setup.node_id);
     immutable filename=[node_name].getfilename;
-    //-----
-    alias Net=EmulatorGossipNet;
-    Net.Init setup;
-
-    //---
-
-    EmulatorGossipNet.fout.open(filename, "w");
-
-    alias fout=EmulatorGossipNet.fout;
+    Net.fout.open(filename, "w");
+    alias fout=Net.fout;
     Event.fout=&fout;
 
     fout.write("\n\n\n\n\n");
@@ -63,7 +62,7 @@ void tagionNode(uint timeout, immutable uint node_id,
 
     ownerTid.send(net.pubkey);
     Pubkey[] received_pkeys; //=receiveOnly!(immutable(Pubkey[]));
-    foreach(i;0..N) {
+    foreach(i;0..setup.N) {
         received_pkeys~=receiveOnly!(Pubkey);
     }
     immutable pkeys=assumeUnique(received_pkeys);
@@ -81,10 +80,10 @@ void tagionNode(uint timeout, immutable uint node_id,
     // getTids(tids);
     net.set(pkeys);
 
-    if ( (monitor_ip_address != "") && (monitor_port > 6000) ) {
-        monitor_socket_tid = spawn(&createSocketThread, monitor_port, monitor_ip_address);
+    if ( (setup.monitor_ip_address != "") && (setup.monitor_port > 6000) ) {
+        monitor_socket_tid = spawn(&createSocketThread, setup.monitor_port, setup.monitor_ip_address);
 
-        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, node_id, net.globalNodeId(net.pubkey));
+        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, setup.node_id, net.globalNodeId(net.pubkey));
     }
 
     enum max_gossip=2;
@@ -111,7 +110,7 @@ void tagionNode(uint timeout, immutable uint node_id,
     if ( transcript_enable ) {
         net.transcript_tid=spawn(&transcript!Net, setup);
 
-        auto scripting_engine_tid=spawn(&scripting_engine, node_id);
+        auto scripting_engine_tid=spawn(&scripting_engine, setup.node_id);
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
     }
 
@@ -184,7 +183,7 @@ void tagionNode(uint timeout, immutable uint node_id,
             timeout_count=0;
             net.time=net.time+100;
             fout.write("*\n*\n*\n");
-            fout.writefln("******* receive %s [%s] %s", node_name, node_id, buf.length);
+            fout.writefln("******* receive %s [%s] %s", node_name, setup.node_id, buf.length);
             auto own_node=hashgraph.getNode(net.pubkey);
 
             Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
@@ -262,7 +261,8 @@ void tagionNode(uint timeout, immutable uint node_id,
 
         try {
             if ( options.sequential ) {
-                immutable message_received=receiveTimeout(timeout.msecs,
+                immutable message_received=receiveTimeout(
+	 	    setup.timeout.msecs,
                     &receive_payload,
                     &controller,
                     &sequential,
@@ -277,7 +277,8 @@ void tagionNode(uint timeout, immutable uint node_id,
                 }
             }
             else {
-                immutable message_received=receiveTimeout(timeout.msecs,
+                immutable message_received=receiveTimeout(
+                    setup.timeout.msecs,
                     &receive_payload,
                     &controller,
                     // &sequential,
@@ -308,7 +309,7 @@ void tagionNode(uint timeout, immutable uint node_id,
             stop=true;
         }
         catch ( Throwable t ) {
-            t.msg ~= " - From hashnode thread " ~ to!string(node_id);
+            t.msg ~= " - From hashnode thread " ~ to!string(setup.node_id);
             fout.writeln(t);
             writeln(t);
             stop=true;

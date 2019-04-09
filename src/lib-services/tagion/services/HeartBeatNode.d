@@ -71,7 +71,8 @@ void heart_beat() { //immutable uint count_from, immutable uint N, immutable uin
         if ( (!options.disable_sockets) && ((options.max_monitors == 0) || (i < options.max_monitors) ) ) {
             monitor_port=cast(ushort)(options.port + i);
         }
-        auto tid=spawn(&tagionNode, timeout, i, N, monitor_address, monitor_port);
+        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, monitor_port, 1234);
+        auto tid=spawn(&(tagionNode!EmulatorGossipNet), setup);
         register(getname(i), tid);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
