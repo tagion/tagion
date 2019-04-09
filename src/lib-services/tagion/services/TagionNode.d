@@ -48,7 +48,9 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
 
     auto hashgraph=new HashGraph();
     // Create hash-graph
-    auto net=new EmulatorGossipNet(hashgraph);
+    ScriptNet net;
+    net=new Net(hashgraph);
+//    hrpc.net=net;
 
     immutable transcript_enable=options.transcript.enable;
 
@@ -99,12 +101,13 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     writefln("Wait for some delay %s", node_name);
     Thread.sleep(2.seconds);
 
-    enum bool has_random_seed=__traits(compiles, net.random.seed(0));
+    auto net_random=cast(Net)net;
+    enum bool has_random_seed=__traits(compiles, net_random.random.seed(0));
 //    pragma(msg, has_random_seed);
     static if ( has_random_seed ) {
         pragma(msg, "Random seed works");
         if ( !options.sequential ) {
-            net.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
+            net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
         }
     }
 
@@ -258,7 +261,6 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
 
 
         static if (has_random_seed) {
-            auto net_random=cast(Net)net;
             void sequential(uint time, uint random)
                 in {
                     assert(options.sequential);
