@@ -4,77 +4,67 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.utils.BSON : HBSON, Document;
 import tagion.utils.Queue;
-//import tagion.communication.HRPC;
 import tagion.hashgraph.ConsensusExceptions;
-
-
 import tagion.Base;
 
 enum ExchangeState : uint {
     NONE,
-    INIT_TIDE,
-    TIDE_WAVE,
-    FIRST_WAVE,
-    SECOND_WAVE,
-    BREAK_WAVE
-}
+        INIT_TIDE,
+        TIDE_WAVE,
+        FIRST_WAVE,
+        SECOND_WAVE,
+        BREAK_WAVE
+        }
 
-//    version(node)
 @safe
 struct Package {
-//        private GossipNet net;
-        private const(HBSON) block;
-        private Pubkey pubkey;
-        immutable ExchangeState type;
-        immutable(ubyte[]) signature;
+    private const(HBSON) block;
+    private Pubkey pubkey;
+    immutable ExchangeState type;
+    immutable(ubyte[]) signature;
 
-        this(GossipNet net, const(HBSON) block,  ExchangeState type) {
-            //          this.net=net;
-            this.block=block;
-            this.type=type;
-            this.pubkey=net.pubkey;
-            immutable data=block.serialize;
-            immutable message=net.calcHash(data);
-            signature=net.sign(message);
-        }
+    this(GossipNet net, const(HBSON) block,  ExchangeState type) {
+        this.block=block;
+        this.type=type;
+        this.pubkey=net.pubkey;
+        immutable data=block.serialize;
+        immutable message=net.calcHash(data);
+        signature=net.sign(message);
+    }
 
-        HBSON toBSON() inout {
-            auto bson=new HBSON;
-            foreach(i, m; this.tupleof) {
-                enum name=basename!(this.tupleof[i]);
-                alias typeof(m) mtype;
-                //static if ( (name != basename!net) ) {
-                static if ( __traits(compiles, m.toBSON) ) {
-                    bson[name]=m.toBSON;
+    HBSON toBSON() inout {
+        auto bson=new HBSON;
+        foreach(i, m; this.tupleof) {
+            enum name=basename!(this.tupleof[i]);
+            alias typeof(m) mtype;
+            static if ( __traits(compiles, m.toBSON) ) {
+                bson[name]=m.toBSON;
+            }
+            else {
+                static if ( is(mtype == enum) ) {
+                    bson[name]=cast(uint)m;
+                }
+                else static if ( isBufferType!mtype ) {
+                    bson[name]=cast(Buffer)m;
                 }
                 else {
-                    static if ( is(mtype == enum) ) {
-                        bson[name]=cast(uint)m;
-                    }
-                    else static if ( isBufferType!mtype ) {
-                        bson[name]=cast(Buffer)m;
-                    }
-                    else {
-                        bson[name]=m;
-                    }
+                    bson[name]=m;
                 }
-                //}
             }
-            return bson;
+            //}
         }
-
-        immutable(ubyte[]) serialize() const {
-            return toBSON.serialize;
-        }
-
-
+        return bson;
     }
+
+    immutable(ubyte[]) serialize() const {
+        return toBSON.serialize;
+    }
+}
 
 
 @safe
 interface NetCallbacks : EventMonitorCallbacks {
     void wavefront_state_receive(const(HashGraph.Node) n);
-    //void wavefront_state_send(const(HashGraph.Node) n);
     void sent_tidewave(immutable(Pubkey) receiving_channel, const(PackageNet.Tides) tides);
     void received_tidewave(immutable(Pubkey) sending_channel, const(PackageNet.Tides) tides);
     void receive(Buffer data);
@@ -88,13 +78,10 @@ interface NetCallbacks : EventMonitorCallbacks {
 @safe
 interface RequestNet {
     immutable(Buffer) calcHash(immutable(ubyte[]) data) inout;
-    // Request a missing event from the network
-    // add
+    /++
+     + Request a missing event from the network
+     +/
     void request(HashGraph h, immutable(Buffer) event_hash);
-//    void sendToScriptingEngine(immutable(Buffer) eventbody);
-//    immutable(ubyte[]) pubkey()
-
-//    Buffer eventHashFromId(immutable uint id);
 }
 
 @safe
@@ -113,7 +100,7 @@ interface PackageNet {
     enum int eva_altitude=-77;
     alias Tides=int[immutable(Pubkey)];
     alias ReceiveQueue = Queue!(immutable(ubyte[]));
-   // const(HRPC.HRPCSender) bulidEvent(HBSON block, ExchangeState type=ExchangeState.NONE);
+    // const(HRPC.HRPCSender) bulidEvent(HBSON block, ExchangeState type=ExchangeState.NONE);
     Payload evaPackage();
     const(Package) buildEvent(const(HBSON) block, ExchangeState type);
 
@@ -161,13 +148,4 @@ interface ScriptNet : GossipNet {
     @property void scripting_engine_tid(Tid tid);
 
     @property Tid scripting_engine_tid();
-}
-
-version(none)
-@safe
-interface DARTNet : SecureNet {
-    immutable(ubyte[]) load(const(string[]) path, const(ubyte[]) key);
-    void save(const(string[]) path, const(ubyte[]) key, immutable(ubyte[]) data);
-    void erase(const(string[]) path, const(ubyte[]) key);
-
 }
