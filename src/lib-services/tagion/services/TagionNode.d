@@ -77,9 +77,9 @@ void tagionNode(uint timeout, immutable uint node_id,
     }
     // All tasks is in sync
     fout.writefln("All tasks are in sync %s", node_name);
-    scope tids=new Tid[N];
-    getTids(tids);
-    net.set(tids, pkeys);
+    // scope tids=new Tid[N];
+    // getTids(tids);
+    net.set(pkeys);
 
     if ( (monitor_ip_address != "") && (monitor_port > 6000) ) {
         monitor_socket_tid = spawn(&createSocketThread, monitor_port, monitor_ip_address);
