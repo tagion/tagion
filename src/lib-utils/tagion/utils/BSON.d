@@ -430,7 +430,7 @@ struct Document {
         }
     }
 
-    Range opSlice() {
+    Range opSlice() const {
         return Range(data);
     }
 
