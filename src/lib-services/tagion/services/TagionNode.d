@@ -11,7 +11,7 @@ import tagion.utils.Miscellaneous: cutHex;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.ConsensusExceptions;
-import tagion.gossip.GossipNet;
+import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.services.ScriptingEngineNode;
 import tagion.services.TranscriptNode;
