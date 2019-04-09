@@ -163,6 +163,7 @@ interface ScriptNet : GossipNet {
     @property Tid scripting_engine_tid();
 }
 
+version(none)
 @safe
 interface DARTNet : SecureNet {
     immutable(ubyte[]) load(const(string[]) path, const(ubyte[]) key);
