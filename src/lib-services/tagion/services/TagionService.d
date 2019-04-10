@@ -1,4 +1,4 @@
-module tagion.services.TagionNode;
+module tagion.services.TagionService;
 
 import std.concurrency;
 import std.exception : assumeUnique;
@@ -30,7 +30,7 @@ import tagion.utils.BSON : HBSON;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionNode(Net)(immutable(Net.Init) setup) {
+void tagionServiceThread(Net)(immutable(Net.Init) setup) {
     // timeout, immutable uint node_id,
     // immutable uint N,
     // string monitor_ip_address,

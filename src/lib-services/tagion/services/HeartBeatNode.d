@@ -8,7 +8,7 @@ import tagion.services.TagionLog;
 import tagion.utils.Random;
 
 import tagion.Base : Pubkey, Control;
-import tagion.services.TagionNode;
+import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
 void heart_beat() { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
@@ -72,7 +72,7 @@ void heart_beat() { //immutable uint count_from, immutable uint N, immutable uin
             monitor_port=cast(ushort)(options.port + i);
         }
         immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, monitor_port, 1234);
-        auto tid=spawn(&(tagionNode!EmulatorGossipNet), setup);
+        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
         register(getname(i), tid);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
