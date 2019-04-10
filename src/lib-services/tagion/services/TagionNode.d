@@ -19,6 +19,8 @@ import tagion.services.ScriptCallbacks;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.communication.Monitor;
+import tagion.services.MonitorService;
+
 import tagion.Options;
 import tagion.Base : Pubkey, Payload, Control;
 import tagion.utils.BSON : HBSON;
