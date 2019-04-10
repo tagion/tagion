@@ -16,25 +16,25 @@ import tagion.gossip.EmulatorGossipNet;
 
 
 // This function is just to perform a test on the scripting-api input
-void transcript(Net)(immutable(Net.Init) setup) { //(immutable uint node_id, immutable uint seed) {
-    assert(options.transcript.enable, "Scripting-Api test is not enabled");
-    immutable from=options.transcript.pause_from;
-    immutable to=options.transcript.pause_to;
-    assert(from < to);
-    immutable node_name=setup.node_id.getname;
+void transcript(Net)(immutable(Options) opts) { //(immutable uint node_id, immutable uint seed) {
+    assert(opts.transcript.enable, "Scripting-Api test is not enabled");
+    // alias from=opts.transcript.pause_from;
+    // alias to=opts.transcript.pause_to;
+    assert(opts.transcript.pause_from < opts.transcript.pause_to);
+//    immutable node_name=setup.node_iname;
 
-    if ( options.transcript.name ) {
-        string filename=[node_name, options.transcript.name].getfilename;
+    if ( opts.transcript.name ) {
+        string filename=[opts.node_name, opts.transcript.name].getfilename;
         import std.stdio;
         stderr.writefln("Trans Filename %s", filename);
         log.open(filename, "w");
     }
 
     Random!uint rand;
-    rand.seed(setup.seed);
-    immutable name=[node_name, options.transcript.name].join;
+    rand.seed(opts.seed);
+    immutable name=[opts.node_name, options.transcript.name].join;
     log.writefln("Scripting-Api script test %s started", name);
-    Tid node_tid=locate(node_name);
+    Tid node_tid=locate(opts.node_name);
     bool stop;
     void controller(Control ctrl) {
         if ( ctrl == Control.STOP ) {
@@ -54,7 +54,7 @@ void transcript(Net)(immutable(Net.Init) setup) { //(immutable uint node_id, imm
 
 
     while(!stop) {
-        immutable delay=rand.value(from, to);
+        immutable delay=rand.value(opts.transcript.pause_from, opts.transcript.pause_to);
         log.writefln("delay=%s", delay);
 
         immutable message_received=receiveTimeout(delay.msecs, &controller);
