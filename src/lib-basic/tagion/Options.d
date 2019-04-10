@@ -127,7 +127,8 @@ struct Options {
 
     // Search path
     string path_arg;
-
+    uint node_id;          /// This is use to set the node_id in emulator mode in normal node this is allways 0
+    string node_name;      /// Name of the node
 
     mixin JSONCommon;
 
