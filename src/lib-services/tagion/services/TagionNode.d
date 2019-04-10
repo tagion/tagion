@@ -87,7 +87,7 @@ void tagionNode(Net)(immutable(Net.Init) setup) {
     net.set(pkeys);
 
     if ( (setup.monitor_ip_address != "") && (setup.monitor_port > 6000) ) {
-        monitor_socket_tid = spawn(&createSocketThread, setup.monitor_port, setup.monitor_ip_address);
+        monitor_socket_tid = spawn(&monitorServiceThread, setup.monitor_port, setup.monitor_ip_address);
 
         Event.callbacks = new MonitorCallBacks(monitor_socket_tid, setup.node_id, net.globalNodeId(net.pubkey));
     }
