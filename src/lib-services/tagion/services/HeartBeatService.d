@@ -94,7 +94,7 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
         }
     }
 
-    uint count = count_from;
+    uint count = opts.loops;
 
     bool stop=false;
 
@@ -104,27 +104,27 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
 
         log.writeln("Start the heart beat");
         uint node_id;
-        uint time=delay;
+        uint time=opts.delay;
         Random!uint rand;
-        rand.seed(options.seed);
+        rand.seed(opts.seed);
         while(!stop) {
-            if ( !options.infinity ) {
+            if ( !opts.infinity ) {
                 log.writefln("count=%d", count);
             }
-            Thread.sleep(delay.msecs);
+            Thread.sleep(opts.delay.msecs);
 
             tids[node_id].send(time, rand.value);
-            if ( !options.infinity ) {
+            if ( !opts.infinity ) {
                 log.writefln("send time=%d to  %d", time, node_id);
             }
 
-            time+=delay;
+            time+=opts.delay;
             node_id++;
             if ( node_id >= tids.length ) {
                 node_id=0;
             }
 
-            if ( !options.infinity ) {
+            if ( !opts.infinity ) {
                 stop=(count==0);
                 count--;
             }
@@ -132,11 +132,11 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
     }
     else {
         while(!stop) {
-            if ( !options.infinity ) {
+            if ( !opts.infinity ) {
                 log.writefln("count=%d", count);
             }
-            Thread.sleep(delay.msecs);
-            if ( !options.infinity ) {
+            Thread.sleep(opts.delay.msecs);
+            if ( !opts.infinity ) {
                 stop=(count==0);
                 count--;
             }
