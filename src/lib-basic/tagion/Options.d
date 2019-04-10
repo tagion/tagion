@@ -7,7 +7,7 @@ import std.traits;
 import std.file;
 import std.getopt;
 
-import tagion.Base : basename, separator;
+import tagion.Base : basename;
 
 @safe
 class OptionException : Exception {
@@ -221,7 +221,7 @@ static this() @nogc {
 @safe
 static void set(const(Options) opt) {
     options_memory=opt;
-    separator=opt.separator;
+//    separator=opt.separator;
 //    seperator=opt.seperator;
     // import core.stdc.string : memcpy;
     // memcpy(&options_memory, &__gshared_options, sizeof(Options));

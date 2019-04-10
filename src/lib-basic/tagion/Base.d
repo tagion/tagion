@@ -41,11 +41,11 @@ alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 }
 
-static string separator;
-string join(string[] list) {
-    import std.array : array_join=join;
-    return list.array_join(separator);
-}
+// static string separator;
+// string join(string[] list) {
+//     import std.array : array_join=join;
+//     return list.array_join(separator);
+// }
 
 
 //template isBufferType(T) {
