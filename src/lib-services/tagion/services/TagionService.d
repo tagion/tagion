@@ -24,9 +24,10 @@ import tagion.services.MonitorService;
 import tagion.services.TranscriptService;
 import tagion.services.LoggerService;
 
-import tagion.Options : Options, set;
+import tagion.Options : Options, set, options;
 import tagion.Base : Pubkey, Payload, Control;
 import tagion.utils.BSON : HBSON;
+
 
 // If no monitor should be enable set the address to empty or the port below 6000.
 // void tagionNode(Net)(uint timeout, immutable uint node_id,
@@ -34,7 +35,10 @@ import tagion.utils.BSON : HBSON;
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
 void tagionServiceThread(Net)(immutable(Options) opts) {
-    log.register(opts.node_name);
+    set(opts);
+    immutable task_name=get_node_name(opts.node_id);
+    stderr.writefln("task_name=%s", task_name);
+    log.register(task_name);
 //    HRPC hrpc;
     import std.format;
     import std.datetime.systime;
@@ -191,7 +195,7 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
     Payload empty_payload;
 
     // Set thread global options
-    set(opts);
+
     while(!stop) {
 
         fout.writefln("opts.sequential=%s", opts.sequential);

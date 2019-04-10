@@ -37,9 +37,11 @@ static struct Logger {
         }
     do {
         push(LoggerType.ALL);
+//        writefln("Before '%s'", locate(thisTid));
         .register(task_name, thisTid);
         logger_tid=locate(options.logger.task_name);
         label=task_name;
+        stderr.writefln("Register: %s %s", task_name, (logger_tid != logger_tid.init));
     }
 
     void push(const uint mask) {
