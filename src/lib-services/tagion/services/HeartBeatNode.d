@@ -1,9 +1,9 @@
-module tagion.services.HeartBeatService;
+module tagion.services.HeartBeatNode;
 
 import core.thread;
 import std.concurrency;
 
-import tagion.Options : Options, set;
+import tagion.Options;
 import tagion.services.TagionLog;
 import tagion.utils.Random;
 
@@ -11,27 +11,27 @@ import tagion.Base : Pubkey, Control;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
-void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
-//    immutable N=options.nodes;
-//    immutable delay=options.delay;
-//    immutable timeout=options.timeout;
-//    immutable uint count_from=options.loops;
+void heart_beat() { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
+    immutable N=options.nodes;
+    immutable delay=options.delay;
+    immutable timeout=options.timeout;
+    immutable uint count_from=options.loops;
 
 //    auto main_tid=ownerTid;
 
     Tid[] tids;
 //    Tid[] scription_api_tids;
     Pubkey[]  pkeys;
-    immutable monitor_address = opts.url; //"127.0.0.1";
+    immutable monitor_address = options.url; //"127.0.0.1";
 
     version(Monitor) {
-        auto network_socket_thread_id = spawn(&createSocketThread, opts.network_socket_port, monitor_address);
+        auto network_socket_thread_id = spawn(&createSocketThread, options.network_socket_port, monitor_address);
      //spawn(&createSocketThread, ThreadState.LIVE, monitor_port, monitor_ip_address, true);
 
-        register(format("network_socket_thread %s", opts.network_socket_port), network_socket_thread_id);
+        register(format("network_socket_thread %s", options.network_socket_port), network_socket_thread_id);
     }
 
-//    immutable transcript_enable=options.transcript.enable;
+    immutable transcript_enable=options.transcript.enable;
 
     scope(exit) {
         version(Monitor) {
@@ -66,17 +66,13 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
         log.writeln("----- Stop send to all -----");
     }
 
-    foreach(i;0..opts.nodes) {
-        Options service_options=opts;
-//        ushort monitor_port;
-        if ( (!opts.monitor.disable) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
-            service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
+    foreach(i;0..N) {
+        ushort monitor_port;
+        if ( (!options.disable_sockets) && ((options.max_monitors == 0) || (i < options.max_monitors) ) ) {
+            monitor_port=cast(ushort)(options.port + i);
         }
-        service_options.node_id=cast(uint)i;
-        service_options.node_name=getname(opts.node_id);
-        immutable(Options) tagion_service_options=service_options;
-//        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, monitor_port, 1234);
-        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), tagion_service_options);
+        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, monitor_port, 1234);
+        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
         register(getname(i), tid);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
@@ -93,39 +89,37 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
         }
     }
 
-    uint count = opts.loops;
+    uint count = count_from;
 
     bool stop=false;
 
-    // Set thread options
-    set(opts);
-    if ( opts.sequential ) {
+    if ( options.sequential ) {
         Thread.sleep(1.seconds);
 
 
         log.writeln("Start the heart beat");
         uint node_id;
-        uint time=opts.delay;
+        uint time=delay;
         Random!uint rand;
-        rand.seed(opts.seed);
+        rand.seed(options.seed);
         while(!stop) {
-            if ( !opts.infinity ) {
+            if ( !options.infinity ) {
                 log.writefln("count=%d", count);
             }
-            Thread.sleep(opts.delay.msecs);
+            Thread.sleep(delay.msecs);
 
             tids[node_id].send(time, rand.value);
-            if ( !opts.infinity ) {
+            if ( !options.infinity ) {
                 log.writefln("send time=%d to  %d", time, node_id);
             }
 
-            time+=opts.delay;
+            time+=delay;
             node_id++;
             if ( node_id >= tids.length ) {
                 node_id=0;
             }
 
-            if ( !opts.infinity ) {
+            if ( !options.infinity ) {
                 stop=(count==0);
                 count--;
             }
@@ -133,11 +127,11 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
     }
     else {
         while(!stop) {
-            if ( !opts.infinity ) {
+            if ( !options.infinity ) {
                 log.writefln("count=%d", count);
             }
-            Thread.sleep(opts.delay.msecs);
-            if ( !opts.infinity ) {
+            Thread.sleep(delay.msecs);
+            if ( !options.infinity ) {
                 stop=(count==0);
                 count--;
             }
