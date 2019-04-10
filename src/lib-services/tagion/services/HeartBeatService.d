@@ -11,11 +11,11 @@ import tagion.Base : Pubkey, Control;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
-void heart_beat() { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
-    immutable N=options.nodes;
-    immutable delay=options.delay;
-    immutable timeout=options.timeout;
-    immutable uint count_from=options.loops;
+void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
+      immutable N=opts.nodes;
+      immutable delay=opts.delay;
+      immutable timeout=opts.timeout;
+      immutable uint count_from=opts.loops;
 
 //    auto main_tid=ownerTid;
 
