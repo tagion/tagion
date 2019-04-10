@@ -1,4 +1,4 @@
-module tagion.services.HeartBeatNode;
+module tagion.services.HeartBeatService;
 
 import core.thread;
 import std.concurrency;
@@ -11,7 +11,7 @@ import tagion.Base : Pubkey, Control;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
-void heart_beat() { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
+void heartBeatServiceThread() { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
     immutable N=options.nodes;
     immutable delay=options.delay;
     immutable timeout=options.timeout;
