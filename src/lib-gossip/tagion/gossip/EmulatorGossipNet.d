@@ -52,21 +52,6 @@ uint getTids(Tid[] tids) {
 class EmulatorGossipNet : StdGossipNet {
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
-    version(none)
-    debug {
-        protected string _node_name;
-        @property void node_name(string name)
-            in {
-                assert(_node_name is null, format("%s is already set", __FUNCTION__));
-            }
-        do {
-            _node_name=name;
-        }
-
-        @property string node_name() pure const nothrow {
-            return _node_name;
-        }
-    }
     protected uint _send_node_id;
 
     Random!uint random;
@@ -134,11 +119,6 @@ class EmulatorGossipNet : StdGossipNet {
         }
         fout.writefln("Send %s data=%d", channel.cutHex, data.length);
         _tids[channel].send(data);
-    }
-
-    version(none)
-    void send(immutable(Pubkey) channel, ref const(Package) pack) {
-        send(channel, pack.serialize);
     }
 
     private uint eva_count;
