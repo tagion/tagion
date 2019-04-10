@@ -22,16 +22,16 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
     Tid[] tids;
 //    Tid[] scription_api_tids;
     Pubkey[]  pkeys;
-    immutable monitor_address = options.url; //"127.0.0.1";
+    immutable monitor_address = opts.url; //"127.0.0.1";
 
     version(Monitor) {
-        auto network_socket_thread_id = spawn(&createSocketThread, options.network_socket_port, monitor_address);
+        auto network_socket_thread_id = spawn(&createSocketThread, opts.network_socket_port, monitor_address);
      //spawn(&createSocketThread, ThreadState.LIVE, monitor_port, monitor_ip_address, true);
 
-        register(format("network_socket_thread %s", options.network_socket_port), network_socket_thread_id);
+        register(format("network_socket_thread %s", opts.network_socket_port), network_socket_thread_id);
     }
 
-    immutable transcript_enable=options.transcript.enable;
+    immutable transcript_enable=opts.transcript.enable;
 
     scope(exit) {
         version(Monitor) {
