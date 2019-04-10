@@ -132,11 +132,11 @@ interface GossipNet : SecureNet, PackageNet {
     @property
     void time(const(ulong) t);
 
-    @property
-    string node_name() pure const;
+    // @property
+    // string node_name() pure const;
 
-    @property
-    void node_name(string name);
+    // @property
+    // void node_name(string name);
 }
 
 @safe
