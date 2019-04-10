@@ -167,12 +167,20 @@ struct Options {
                        one socket is opened for each node
                        +/
         ushort port; /// Monitor port
-        bool disable; // Disable monitor
-
+        bool disable; /// Disable monitor
+        string name;  /// Use for the montor task name
         mixin JSONCommon;
     }
 
     Monitor monitor;
+
+    struct Logger {
+        string task_name;
+        string file_name;
+        mixin JSONCommon;
+    }
+
+    Logger logger;
 
     void parseJSON(string json_text) {
         auto json=JSON.parseJSON(json_text);
@@ -210,6 +218,7 @@ static this() @nogc {
 /++
 +  Sets the thread global options opt
 +/
+@safe
 static void set(const(Options) opt) {
     options_memory=opt;
     separator=opt.separator;
@@ -349,9 +358,15 @@ __gshared static setDefaultOption() {
     __gshared_options.transcript.pause_from=333;
     __gshared_options.transcript.pause_to=888;
     __gshared_options.transcript.name="transcript";
-//
+// Monitor
     __gshared_options.monitor.port=10900;
     __gshared_options.monitor.disable=false;
     __gshared_options.monitor.max=0;
+    __gshared_options.monitor.name="monitor";
+
+    // Logger
+    __gshared_options.logger.task_name="tagion.logger";
+    __gshared_options.logger.file_name="/tmp/tagion.log";
+
     set();
 }
