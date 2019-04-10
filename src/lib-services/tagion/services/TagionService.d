@@ -30,7 +30,9 @@ import tagion.utils.BSON : HBSON;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionServiceThread(Net)(immutable(Net.Init) setup) {
+void tagionServiceThread(Net)(immutable(Options) opts) {
+    immutable setup=immutable(EmulatorGossipNet.Init)(opts.timeout, opts.node_id, opts.nodes, opts.url, opts.monitor.port, 1234);
+
     // timeout, immutable uint node_id,
     // immutable uint N,
     // string monitor_ip_address,
@@ -45,7 +47,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
     Event.fout=&fout;
 
     fout.write("\n\n\n\n\n");
-    fout.writefln("##### Received %s #####", node_name);
+    fout.writefln("##### Received %s #####", opts.node_name);
 
     Tid monitor_socket_tid;
 
@@ -68,7 +70,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
 
     ownerTid.send(net.pubkey);
     Pubkey[] received_pkeys; //=receiveOnly!(immutable(Pubkey[]));
-    foreach(i;0..setup.N) {
+    foreach(i;0..opts.nodes) {
         received_pkeys~=receiveOnly!(Pubkey);
     }
     immutable pkeys=assumeUnique(received_pkeys);
@@ -81,7 +83,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
         }
     }
     // All tasks is in sync
-    fout.writefln("All tasks are in sync %s", node_name);
+    fout.writefln("All tasks are in sync %s", opts.node_name);
     // scope tids=new Tid[N];
     // getTids(tids);
     net.set(pkeys);
@@ -102,7 +104,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
 //    Event mother;
     Event event;
     auto own_node=hashgraph.getNode(net.pubkey);
-    writefln("Wait for some delay %s", node_name);
+    writefln("Wait for some delay %s", opts.node_name);
     Thread.sleep(2.seconds);
 
     auto net_random=cast(Net)net;
@@ -128,7 +130,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
 
     scope(exit) {
         fout.flush;
-        writefln("!!!==========!!!!!! Existing hasnode %s", node_name);
+        writefln("!!!==========!!!!!! Existing hasnode %s", opts.node_name);
         fout.writefln("Send stop to the transcript");
         fout.flush;
 
@@ -150,20 +152,20 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
             }
         }
 
-        fout.writefln("Existing hasnode %s", node_name);
+        fout.writefln("Existing hasnode %s", opts.node_name);
         fout.flush;
         if ( net.callbacks ) {
             net.callbacks.exiting(hashgraph.getNode(net.pubkey));
         }
-        fout.writefln("$$$$$$Closed monitor %s", node_name);
+        fout.writefln("$$$$$$Closed monitor %s", opts.node_name);
         fout.flush;
         // Thread.sleep(2.seconds);
         if ( monitor_socket_tid != monitor_socket_tid.init ) {
-            fout.writefln("Send STOP %s", node_name);
+            fout.writefln("Send STOP %s", opts.node_name);
             fout.flush;
             monitor_socket_tid.prioritySend(Control.STOP);
 
-            fout.writefln("after STOP %s", node_name);
+            fout.writefln("after STOP %s", opts.node_name);
             fout.flush;
             auto control=receiveOnly!Control;
             fout.writefln("Control %s", control);
@@ -181,7 +183,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
 
 
         // }
-        fout.writefln("prioritySend %s", node_name);
+        fout.writefln("prioritySend %s", opts.node_name);
         fout.writefln("End");
         fout.close;
         ownerTid.prioritySend(Control.END);
@@ -195,7 +197,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
             timeout_count=0;
             net.time=net.time+100;
             fout.write("*\n*\n*\n");
-            fout.writefln("******* receive %s [%s] %s", node_name, setup.node_id, buf.length);
+            fout.writefln("******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
             auto own_node=hashgraph.getNode(net.pubkey);
 
             Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
@@ -256,7 +258,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
             with(Control) switch(ctrl) {
                 case STOP:
                     stop=true;
-                    fout.writefln("##### Stop %s", node_name);
+                    fout.writefln("##### Stop %s", opts.node_name);
                     break;
                 default:
                     fout.writefln("Unsupported control %s", ctrl);
@@ -267,7 +269,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
         static if (has_random_seed) {
             void sequential(uint time, uint random)
                 in {
-                    assert(options.sequential);
+                    assert(opts.sequential);
                 }
             do {
 
@@ -278,9 +280,9 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
             }
         }
         try {
-            if ( options.sequential ) {
+            if ( opts.sequential ) {
                 immutable message_received=receiveTimeout(
-	 	    setup.timeout.msecs,
+	 	    opts.timeout.msecs,
                     &receive_payload,
                     &controller,
                     &sequential,
@@ -296,7 +298,7 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
             }
             else {
                 immutable message_received=receiveTimeout(
-                    setup.timeout.msecs,
+                    opts.timeout.msecs,
                     &receive_payload,
                     &controller,
                     // &sequential,
@@ -314,20 +316,20 @@ void tagionServiceThread(Net)(immutable(Net.Init) setup) {
             }
         }
         catch ( ConsensusException e ) {
-            fout.writefln("Consensus fail %s: %s. code=%s\n%s", node_name, e.msg, e.code, typeid(e));
+            fout.writefln("Consensus fail %s: %s. code=%s\n%s", opts.node_name, e.msg, e.code, typeid(e));
             stop=true;
             if ( net.callbacks ) {
                 net.callbacks.consensus_failure(e);
             }
         }
         catch ( Exception e ) {
-            auto msg=format("Error %s: %s\n%s", node_name, e.msg, typeid(e));
+            auto msg=format("Error %s: %s\n%s", opts.node_name, e.msg, typeid(e));
             fout.writeln(msg);
             writeln(msg);
             stop=true;
         }
         catch ( Throwable t ) {
-            t.msg ~= " - From hashnode thread " ~ to!string(setup.node_id);
+            t.msg ~= format(" - From hashnode thread %s", opts.node_id);
             fout.writeln(t);
             writeln(t);
             stop=true;

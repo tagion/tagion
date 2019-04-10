@@ -77,7 +77,8 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
         immutable(Options) tagion_service_options=service_options;
 //
         immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, service_options.monitor.port, 1234);
-        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
+//        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
+        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), tagion_service_options);
         register(getname(i), tid);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
