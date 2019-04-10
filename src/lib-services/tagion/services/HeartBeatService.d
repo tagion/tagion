@@ -73,7 +73,9 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
         }
         service_options.node_id=cast(uint)i;
-        service_options.node_name=getname(opts.node_id);
+        service_options.node_name=getname(service_options.node_id);
+        import std.stdio;
+        writefln("service_options.node_name=%s", service_options.node_name);
         immutable(Options) tagion_service_options=service_options;
 //
         immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, service_options.monitor.port, 1234);

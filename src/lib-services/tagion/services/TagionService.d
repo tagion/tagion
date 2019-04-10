@@ -64,7 +64,7 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
     net.node_name=setup.node_name;
 //    }
     // Pseudo passpharse
-    immutable passphrase=node_name;
+    immutable passphrase=opts.node_name;
     net.generateKeyPair(passphrase);
 
 
@@ -112,7 +112,7 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
 //    pragma(msg, has_random_seed);
     static if ( has_random_seed ) {
         pragma(msg, "Random seed works");
-        if ( !options.sequential ) {
+        if ( !opts.sequential ) {
             net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
         }
     }
