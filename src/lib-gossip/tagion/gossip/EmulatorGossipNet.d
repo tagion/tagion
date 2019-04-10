@@ -136,7 +136,7 @@ class EmulatorGossipNet : StdGossipNet {
         _tids[channel].send(data);
     }
 
-
+    version(none)
     void send(immutable(Pubkey) channel, ref const(Package) pack) {
         send(channel, pack.serialize);
     }

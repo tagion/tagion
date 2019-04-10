@@ -498,7 +498,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
 
                             // Receive the tide wave and return the wave front
                             auto wavefront_pack=buildEvent(wavefront, SECOND_WAVE);
-                            send(received_pubkey, wavefront_pack);
+                            send(received_pubkey, wavefront_pack.serialize);
                         }
                         end_of_sequence=true;
                         received_node.state=NONE;

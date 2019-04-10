@@ -114,7 +114,7 @@ interface PackageNet {
 interface GossipNet : SecureNet, PackageNet {
     Event receive(const(Buffer) received, Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event );
     void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
-    void send(immutable(Pubkey) channel, ref const(Package) pack);
+//    void send(immutable(Pubkey) channel, ref const(Package) pack);
 
     immutable(Pubkey) selectRandomNode(const bool active=true);
     void set(immutable(Pubkey)[] pkeys);
