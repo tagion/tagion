@@ -68,15 +68,15 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
 
     foreach(i;0..opts.nodes) {
         Options service_options=opts;
-        ushort monitor_port;
-        if ( (!options.disable_sockets) && ((options.max_monitors == 0) || (i < options.max_monitors) ) ) {
-            monitor_port=cast(ushort)(options.port + i);
+//        ushort monitor_port;
+        if ( (!opts.monitor.disable) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
+            service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
         }
         service_options.node_id=cast(uint)i;
         service_options.node_name=getname(opts.node_id);
         immutable(Options) tagion_service_options=service_options;
 //
-        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, monitor_port, 1234);
+        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, service_options.monitor.port, 1234);
         auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
         register(getname(i), tid);
         tids~=tid;
@@ -98,7 +98,7 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
 
     bool stop=false;
 
-    if ( options.sequential ) {
+    if ( opts.sequential ) {
         Thread.sleep(1.seconds);
 
 
