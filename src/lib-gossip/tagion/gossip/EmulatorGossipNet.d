@@ -25,21 +25,17 @@ import tagion.hashgraph.ConsensusExceptions;
 
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
-string getname(immutable size_t i) {
-    return join([options.nodeprefix, to!string(i)]);
-}
-
-string getfilename(string[] names) {
-    import std.path;
-    return buildPath(options.tmp, setExtension(names.join, options.logext));
+static string get_node_name(immutable size_t i) {
+    import std.array : join;
+    return [options.nodeprefix, to!string(i)].join(options.separator);
 }
 
 @trusted
-uint getTids(Tid[] tids) {
+static uint getTids(Tid[] tids) {
     uint result=uint.max;
     foreach(i, ref tid ; tids) {
         immutable uint_i=cast(uint)i;
-        immutable taskname=getname(uint_i);
+        immutable taskname=get_node_name(uint_i);
         tid=locate(taskname);
         if ( tid == thisTid ) {
             result=uint_i;
@@ -47,6 +43,13 @@ uint getTids(Tid[] tids) {
     }
     return result;
 }
+
+
+string getfilename(string[] names) {
+    import std.path;
+    return buildPath(options.tmp, setExtension(names.join, options.logext));
+}
+
 
 @safe
 class EmulatorGossipNet : StdGossipNet {
