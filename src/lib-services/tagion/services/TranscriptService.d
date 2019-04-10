@@ -1,4 +1,4 @@
-module tagion.services.TranscriptNode;
+module tagion.services.TranscriptService;
 
 import std.concurrency;
 import core.thread;
@@ -16,7 +16,8 @@ import tagion.gossip.EmulatorGossipNet;
 
 
 // This function is just to perform a test on the scripting-api input
-void transcript(Net)(immutable(Net.Init) setup) { //(immutable uint node_id, immutable uint seed) {
+void transcriptServiceThread(Net)(immutable(Options) opts) { //(immutable uint node_id, immutable uint seed) {
+    immutable setup=immutable(EmulatorGossipNet.Init)(opts.timeout, opts.node_id, opts.nodes, opts.url, opts.monitor.port, 1234);
     assert(options.transcript.enable, "Scripting-Api test is not enabled");
     immutable from=options.transcript.pause_from;
     immutable to=options.transcript.pause_to;
