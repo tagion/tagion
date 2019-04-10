@@ -66,11 +66,16 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
         log.writeln("----- Stop send to all -----");
     }
 
-    foreach(i;0..N) {
+    foreach(i;0..opts.nodes) {
+        Options service_options=opts;
         ushort monitor_port;
         if ( (!options.disable_sockets) && ((options.max_monitors == 0) || (i < options.max_monitors) ) ) {
             monitor_port=cast(ushort)(options.port + i);
         }
+        service_options.node_id=cast(uint)i;
+        service_options.node_name=getname(opts.node_id);
+        immutable(Options) tagion_service_options=service_options;
+//
         immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, monitor_port, 1234);
         auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
         register(getname(i), tid);
