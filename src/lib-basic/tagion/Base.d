@@ -1,7 +1,5 @@
 module tagion.Base;
 
-import tagion.crypto.Hash;
-
 private import tagion.hashgraph.ConsensusExceptions;
 private import std.string : format, join, strip;
 private import std.traits;
@@ -9,7 +7,7 @@ private import std.exception : assumeUnique;
 import std.bitmanip : BitArray;
 
 // private import std.algorithm : splitter;
-private import tagion.Options;
+//private import tagion.Options;
 
 enum this_dot="this.";
 
@@ -27,9 +25,9 @@ enum BufferType {
 }
 
 enum BillType {
-    Non_Usable,
-    Tagions,
-    Contracts
+    NON_USABLE,
+    TAGIONS,
+    CONTRACTS
 }
 
 alias Buffer=immutable(ubyte)[];
@@ -43,9 +41,10 @@ alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 }
 
+static string separator;
 string join(string[] list) {
     import std.array : array_join=join;
-    return list.array_join(options.separator);
+    return list.array_join(separator);
 }
 
 
@@ -71,7 +70,8 @@ BUF buf_idup(BUF)(immutable(Buffer) buffer) {
 
 
 /**
-   Return the position of first '.' in string and
+   Returns:
+   The position of first '.' in string and
  */
 template find_dot(string str, size_t index=0) {
     static if ( index >= str.length ) {
@@ -88,12 +88,12 @@ template find_dot(string str, size_t index=0) {
     }
 }
 
-// Creates a new clean bitarray
+/// Creates a new clean bitarray
 void  bitarray_clear(out BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
-// Change the size of the bitarray
+/// Change the size of the bitarray
 void bitarray_change(ref scope BitArray bits, uint length) @trusted {
     bits.length=length;
 }
@@ -127,6 +127,9 @@ unittest {
     }
 }
 
+/++
+ Countes the number of bits set in mask
++/
 uint countVotes(ref const(BitArray) mask) @trusted {
     uint votes;
     foreach(vote; mask) {
@@ -137,21 +140,29 @@ uint countVotes(ref const(BitArray) mask) @trusted {
     return votes;
 }
 
-
+/++
+ + Wraps a safe version of to!string for a BitArray
+ +/
 string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
 }
 
 enum minimum_nodes = 3;
+/++
+ + Calculates the majority votes
+ + Params:
+ +     voting    = Number of votes
+ +     node_sizw = Total bumber of votes
+ + Returns:
+ +     Returns `true` if the votes are more thna 2/3
+ +/
 @safe
 bool isMajority(const uint voting, const uint node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3*voting > 2*node_size);
 }
 
 
-/**
-   Template function for removing the "this." prefix
- */
+version(none)
 template basename(alias K) {
     enum name=K.stringof;
     static if (
@@ -171,6 +182,37 @@ template basename(alias K) {
     }
 }
 
+template suffix(string name, size_t index) {
+    static if ( index is 0 ) {
+        alias suffix=name;
+    }
+    else static if ( name[index-1] !is '.' ) {
+        alias suffix=suffix!(name, index-1);
+    }
+    else {
+        enum cut_name=name[index..$];
+        alias suffix=cut_name;
+    }
+}
+
+/++
+  + Template function returns the suffux name after the last '.'
+  +/
+template basename(alias K) {
+    static if ( is(K==string) ) {
+        enum name=K;
+    }
+    else {
+        enum name=K.stringof;
+    }
+    enum basename=suffix!(name, name.length);
+}
+
+mixin template FUNCTION_NAME() {
+    import tagion.Base : basename;
+    enum __FUNCTION_NAME__=basename!(__FUNCTION__)[0..$-1];
+}
+
 unittest {
     enum name_another="another";
     struct Something {
@@ -186,6 +228,9 @@ unittest {
     something.check();
 }
 
+/++
+ + Builds and enum string out of a string array
++/
 template EnumText(string name, string[] list, bool first=true) {
     static if ( first ) {
         enum begin="enum "~name~"{";
@@ -202,9 +247,9 @@ template EnumText(string name, string[] list, bool first=true) {
     }
 }
 
+///
 unittest {
     enum list=["red", "green", "blue"];
-//    pragma(msg, EnumText!("Colour", list));
     mixin(EnumText!("Colour", list));
     static assert(Colour.red == list[0]);
     static assert(Colour.green == list[1]);
@@ -213,7 +258,6 @@ unittest {
 }
 
 enum Control{
-//    KILL=9,
     LIVE=1,
     STOP,
     FAIL,
@@ -222,17 +266,25 @@ enum Control{
     END
 };
 
+/++
+ Exception used as a base exception class for all exceptions use in tagion project
++/
+@safe
+class TagionException : Exception {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, file, line );
+    }
+}
+
 @safe
 template convertEnum(Enum, Consensus) {
-    //   static if ( (is(Enum==enum)) && (is(Consensus:ConsensusException)) ) {
     const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
-            if ( enum_number <= Enum.max) {
-                return cast(Enum)enum_number;
-            }
-            throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
-            assert(0);
+        if ( enum_number <= Enum.max) {
+            return cast(Enum)enum_number;
         }
-    // }
+        throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
+        assert(0);
+    }
 }
 
 @safe
@@ -264,26 +316,23 @@ template consensusCheckArguments(Consensus) {
     }
 }
 
+/++
+ + Builds a check function out of a TagionExecption
++/
 @safe
-string cutHex(BUF)(BUF buf) if ( isBufferType!BUF )  {
-    import std.format;
-    enum LEN=ulong.sizeof;
-    if ( buf.length < LEN ) {
-        return format("EMPTY[%s]",buf.length);
-    }
-    else {
-        return buf[0..LEN].toHexString;
-    }
-}
-
-
-@safe
-void check(E)(bool flag, string msg, string file = __FILE__, size_t line = __LINE__) {
+void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) {
+    static assert(is(E:TagionException));
     if (!flag) {
         throw new E(msg, file, line);
     }
 }
 
+
+/++
+  +  Calculates log2
+  +  Returns:
+  +     log2(n)
++/
 @trusted
 int log2(ulong n) {
     if ( n == 0 ) {
@@ -312,4 +361,14 @@ unittest {
     assert(log2(177) == 7);
     assert(log2(0x1000_000_000) == 36);
 
+}
+
+
+/++
+ + Generate a temporary file name
++/
+string tempfile() {
+    import std.file : deleteme;
+    int dummy;
+    return deleteme~(&dummy).to!string;
 }
