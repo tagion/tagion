@@ -1,4 +1,4 @@
-module tagion.services.HeartBeatNode;
+module tagion.services.HeartBeatService;
 
 import core.thread;
 import std.concurrency;
