@@ -1,10 +1,11 @@
 module tagion.services.ScriptingEngineNode;
 
+import std.format;
 import std.concurrency;
 import std.array : join;
 
 import tagion.Options;
-import tagion.services.TagionLog;
+import tagion.services.LoggerService;
 import tagion.Base : Buffer, Control;
 import tagion.utils.BSON : Document;
 import tagion.Keywords;
@@ -14,35 +15,40 @@ import tagion.gossip.EmulatorGossipNet;
 
 
 // This the test task for the scripting engine
-void scripting_engine(immutable uint node_id) {
-    immutable node_name=getname(node_id);
-    if ( options.scripting_engine.name ) {
-        string filename=[node_name, options.scripting_engine.name].getfilename;
-        log.writefln("Script Filename %s", filename);
-        log.open(filename, "w");
-    }
+void scripting_engine(immutable(Options) opts) {
+    set(opts);
+//    immutable node_name=getname(node_id);
+    immutable task_name=format("%s.%s", opts.node_name, options.scripting_engine.name);
+    log.register(task_name);
+//    register(format("%s.%s", opts.node_name, options.scripting_engine.name), thisTid);
 
-    Tid node_tid=locate(node_name);
+    // if ( options.scripting_engine.name ) {
+    //     string filename=[node_name, .scripting_engine.name].getfilename;
+    //     log("Script Filename %s", filename);
+    //     log.open(filename, "w");
+    // }
+
+    Tid node_tid=locate(opts.node_name);
     bool stop;
-    immutable name=[node_name, options.scripting_engine.name].join;
-    log.writefln("Scripting engine started %s", name);
+    immutable name=[opts.node_name, opts.scripting_engine.name].join;
+    log("Scripting engine started %s", name);
     void transaction(Buffer data) {
-        log.writefln("Transaction data received BUFFER  %d bytes", data.length);
+        log("Transaction data received BUFFER  %d bytes", data.length);
         // Data contains a Payload or an Epoch
         auto doc=Document(data);
         if ( doc.hasElement(Keywords.epoch) ) {
             auto docs=doc[Keywords.epoch].get!Document;
-            log.writefln("\tData is epoch %d", docs.length);
+            log("\tData is epoch %d", docs.length);
 
         }
         else {
-            log.writefln("\tData is payload");
+            log("\tData is payload");
         }
 
     }
 
     void controller(Control ctrl) {
-        log.writefln("Control %s", ctrl);
+        log("Control %s", ctrl);
         with(Control) switch(ctrl) {
             case STOP:
                 stop=true;
@@ -54,8 +60,8 @@ void scripting_engine(immutable uint node_id) {
 
     scope(exit) {
 //        ownerTid.prioritySend(Control.END);
-        log.writefln("Scripting engine test stopped %s", name);
-        log.close;
+        log("Scripting engine test stopped %s", name);
+//        log.close;
         node_tid.prioritySend(Control.END);
     }
 
@@ -67,10 +73,10 @@ void scripting_engine(immutable uint node_id) {
                 );
         }
         catch ( ConsensusException e ) {
-            log.writefln("Consensus fail %s: %s. code=%s\n%s", node_name, e.msg, e.code, typeid(e));
+            log("Consensus fail %s: %s. code=%s\n%s", opts.node_name, e.msg, e.code, typeid(e));
         }
         catch ( Exception e ) {
-            log.writefln("Error %s: %s\n%s", node_name, e.msg, e);
+            log("Error %s: %s\n%s", opts.node_name, e.msg, e);
             stop=true;
         }
         catch ( Throwable t ) {

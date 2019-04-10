@@ -22,6 +22,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.communication.Monitor;
 import tagion.services.MonitorService;
 import tagion.services.TranscriptService;
+import tagion.services.LoggerService;
 
 import tagion.Options : Options, set;
 import tagion.Base : Pubkey, Payload, Control;
@@ -33,12 +34,7 @@ import tagion.utils.BSON : HBSON;
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
 void tagionServiceThread(Net)(immutable(Options) opts) {
-  //  immutable setup=immutable(EmulatorGossipNet.Init)(opts.timeout, opts.node_id, opts.nodes, opts.url, opts.monitor.port, 1234);
-
-    // timeout, immutable uint node_id,
-    // immutable uint N,
-    // string monitor_ip_address,
-    // const ushort monitor_port)  {
+    log.register(opts.node_name);
 //    HRPC hrpc;
     import std.format;
     import std.datetime.systime;
@@ -60,7 +56,7 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
     net=new Net(crypt, hashgraph);
 //    hrpc.net=net;
 
-    immutable transcript_enable=opts.transcript.enable;
+//    immutable transcript_enable=opts.transcript.enable;
 
 //    debug {
     net.node_name=opts.node_name;
@@ -127,7 +123,7 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
 //        net.transcript_tid=spawn(&transcriptServiceThread!Net, setup);
         net.transcript_tid=spawn(&transcriptServiceThread, opts);
 
-        auto scripting_engine_tid=spawn(&scripting_engine, opts.node_id);
+        auto scripting_engine_tid=spawn(&scripting_engine, opts);
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
     }
 
@@ -197,6 +193,9 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
     // Set thread global options
     set(opts);
     while(!stop) {
+
+        fout.writefln("opts.sequential=%s", opts.sequential);
+//        stdout.flush;
         immutable(ubyte)[] data;
         void receive_buffer(immutable(ubyte)[] buf) {
             timeout_count=0;

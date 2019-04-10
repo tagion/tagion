@@ -1,10 +1,12 @@
 module tagion.services.MonitorService;
 
 import std.stdio : writeln, writefln;
+import std.format;
 import std.socket;
 import core.thread;
 import std.concurrency;
 
+import tagion.services.LoggerService;
 import tagion.Options : Options, set;
 import tagion.Base : Control, basename, bitarray2bool, Pubkey;
 import tagion.communication.ListenerSocket;
@@ -12,6 +14,9 @@ import tagion.communication.ListenerSocket;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceThread(immutable(Options) opts) {
+    immutable task_name=format("%s.%s", opts.node_name, opts.monitor.name);
+    log.register(task_name);
+
     writefln("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
     scope(failure) {
         writefln("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
