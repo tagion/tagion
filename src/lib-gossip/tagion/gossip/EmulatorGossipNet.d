@@ -97,7 +97,7 @@ class EmulatorGossipNet : StdGossipNet {
         debug {
             if ( options.trace_gossip ) {
                 import std.file;
-                immutable packfile=format("%s/%s_%d_%s.bson", options.tmp, node_name, _send_count, type); //.to!string~"_receive.bson";
+                immutable packfile=format("%s/%s_%d_%s.bson", options.tmp, options.node_name, _send_count, type); //.to!string~"_receive.bson";
                 write(packfile, data);
                 _send_count++;
             }
