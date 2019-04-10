@@ -5,9 +5,7 @@ import JSON=std.json;
 import std.format;
 import std.traits;
 import std.file;
-import std.getopt;
-
-import tagion.Base : basename, separator;
+import tagion.Base : basename;
 
 @safe
 class OptionException : Exception {
@@ -87,58 +85,74 @@ mixin template JSONCommon() {
 }
 
 struct Options {
-    uint nodes;     /// Number of concurrent nodes (Test mode)
+    // Number of concurrent nodes
+    uint nodes;
+    // Maximum number of monitor sockets open
+    // If this value is set to 0
+    // one socket is opened for each node
+    uint max_monitors;
+    // Enable sockets
+    bool disable_sockets;
+    // Random seed for pseudo random sequency
+    uint seed;
+    // Delay between heart-beats in ms
+    uint delay;
+    // Timeout for between nodes
+    uint timeout;
+    // Number of heart-beats until the program stops
+    uint loops;
+    // Runs forever
+    bool infinity;
+    // The port number of the first socket port
+    uint port;
+    // Url to be used for the sockets
+    string url;
+    // Enable the package dump for the transeived packagies
+    bool trace_gossip;
+    // Directory for the trace files
+    string tmp;
+    // Print output
+    string stdout;
+    //Port for network socket
+    ushort network_socket_port;
+    // Sequential test mode
+    // all the
+    bool sequential;
+    // Name separator
+    string separator;
+    // Node name prefix
+    string nodeprefix;
+    // logfile extension
+    string logext;
 
-    uint max_monitors;     /++ Maximum number of monitor sockets open
-                            If this value is set to 0
-                            one socket is opened for each node
-                            +/
-
-    uint seed;             /// Random seed for pseudo random sequency (Test mode)
-
-    uint delay;            /// Delay between heart-beats in ms (Test mode)
-    uint timeout;          /// Timeout for between nodes
-    uint loops;            /// Number of heart-beats until the program stops (Test mode)
-
-
-    bool infinity;         /// Runs forever
-
-//    uint port;             /// The port number of the first socket port
-    string url;            /// URL to be used for the sockets
-    bool trace_gossip;     /// Enable the package dump for the transeived packagies
-    string tmp;            /// Directory for the trace files etc.
-    string stdout;         /// Overwrites the standard output
-
-    ushort network_socket_port;     /// Port for network socket
-    bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
-
-    string separator;      /// Name separator
-    string nodeprefix;     /// Node name prefix used in emulator mode to set the node name and generate keypairs
-    string logext;         /// logfile extension
-    string path_arg;       /// Search path
+    // Search path
+    string path_arg;
     uint node_id;          /// This is use to set the node_id in emulator mode in normal node this is allways 0
     string node_name;      /// Name of the node
 
     mixin JSONCommon;
 
     struct ScriptingEngine {
-        string listener_ip_address;       /// Ip address
-        ushort listener_port;             /// Port
-        uint listener_max_queue_length;   /// Listener max. incomming connection req. queue length
-
-        uint max_connections;             /// Max simultanious connections for the scripting engine
-
-        uint max_number_of_accept_fibers;        /// Max simultanious fibers for accepting incomming SSL connections.
-
-        uint min_duration_full_fibers_cycle_ms; /// Min duration between a full call cycle for all fibers in milliseconds;
-
-        uint max_number_of_fiber_reuse;   /// Number of times to reuse a fiber
-
-        string tmp_debug_dir;             /// Directory to dump bson data
-
-        string tmp_debug_bills_filename;  /// Name of bills file for debug bson dump
-
-        string name;                      /// Scripting engine name used for log filename etc.
+        // Ip address
+        string listener_ip_address;
+        //Port
+        ushort listener_port;
+        //Listener max. incomming connection req. queue length
+        uint listener_max_queue_length;
+        //Max simultanious connections for the scripting engine
+        uint max_connections;
+        //Max simultanious fibers for accepting incomming SSL connections.
+        uint max_number_of_accept_fibers;
+        //Min duration between a full call cycle for all fibers in milliseconds;
+        uint min_duration_full_fibers_cycle_ms;
+        //Number of times to reuse a fiber
+        uint max_number_of_fiber_reuse;
+        //Directory to dump bson data
+        string tmp_debug_dir;
+        //Name of bills file for debug bson dump
+        string tmp_debug_bills_filename;
+        // Scripting engine name used for log filename etc.
+        string name;
 
         mixin JSONCommon;
     }
@@ -195,41 +209,7 @@ struct Options {
 
 }
 
-__gshared protected static Options __gshared_options;
-
-static immutable(Options*) options; // Points to the thread global options
-protected static Options options_memory;
-
-static this() {
-    options=cast(immutable)(&options_memory);
-}
-
-//@trusted
-/++
-+  Sets the thread global options opt
-+/
-static void set(const(Options) opt) {
-    options_memory=opt;
-    separator=opt.separator;
-//    seperator=opt.seperator;
-    // import core.stdc.string : memcpy;
-    // memcpy(&options_memory, &__gshared_options, sizeof(Options));
-}
-
-/++
- + Sets the thread global options to the value of __gshared_options
- +/
-static void set() {
-    set(__gshared_options);
-}
-/++
-+ Returns:
-+     a copy of the options
-+/
-static Options get() {
-    Options result=options_memory;
-    return result;
-}
+__gshared static Options options;
 
 struct TransactionMiddlewareOptions {
     // port for the socket
@@ -271,85 +251,44 @@ struct TransactionMiddlewareOptions {
 __gshared static TransactionMiddlewareOptions transaction_middleware_options;
 
 
-static auto all_getopt(string[] args, ref bool version_switch, ref bool overwrite_switch) {
-//static auto all_getopt(string[] args, ref bool version_switch, ref bool overwrite_switch) {
+static auto all_getopt(ref string[] args, ref bool version_switch, ref bool overwrite_switch) {
     import std.getopt;
-//    auto opt=__gshared_options;
     return getopt(
         args,
         std.getopt.config.bundling,
         "version",   "display the version",     &version_switch,
         "overwrite|O", "Overwrite the config file", &overwrite_switch,
-        "transact-enable|T", format("Transaction test enable: default: %s", __gshared_options.transcript.enable), &(__gshared_options.transcript.enable),
+        "transact-enable|T", format("Transaction test enable: default: %s", options.transcript.enable), &(options.transcript.enable),
 
-        "path|I",    "Sets the search path",     &(__gshared_options.path_arg),
-        "trace-gossip|g",    "Sets the search path",     &(__gshared_options.trace_gossip),
-        "nodes|N",   format("Sets the number of nodes: default %d", __gshared_options.nodes), &(__gshared_options.nodes),
-        "seed",      format("Sets the random seed: default %d", __gshared_options.seed),       &(__gshared_options.seed),
-        "timeout|t", format("Sets timeout: default %d (ms)", __gshared_options.timeout), &(__gshared_options.timeout),
-        "delay|d",   format("Sets delay: default: %d (ms)", __gshared_options.delay), &(__gshared_options.delay),
-        "loops",     format("Sets the loop count (loops=0 runs forever): default %d", __gshared_options.loops), &(__gshared_options.loops),
-        "url",       format("Sets the url: default %s", __gshared_options.url), &(__gshared_options.url),
-        "noserv|n",  format("Disable monitor sockets: default %s", __gshared_options.monitor.disable), &(__gshared_options.monitor.disable),
-        "sockets|M", format("Sets maximum number of monitors opened: default %s", __gshared_options.monitor.max), &(__gshared_options.monitor.max),
-        "tmp",       format("Sets temporaty work directory: default '%s'", __gshared_options.tmp), &(__gshared_options.tmp),
-        "port|p",    format("Sets first monitor port of the port sequency: default %d", __gshared_options.monitor.port),  &(__gshared_options.monitor.port),
-        "s|seq",     format("The event is produced sequential this is only used in test mode: default %s", __gshared_options.sequential), &(__gshared_options.sequential),
-        "stdout",    format("Set the stdout: default %s", __gshared_options.stdout), &(__gshared_options.stdout),
+        "path|I",    "Sets the search path",     &(options.path_arg),
+        "trace-gossip|g",    "Sets the search path",     &(options.trace_gossip),
+        "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
+        "seed",      format("Sets the random seed: default %d", options.seed),       &(options.seed),
+        "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
+        "delay|d",   format("Sets delay: default: %d (ms)", options.delay), &(options.delay),
+        "loops",     format("Sets the loop count (loops=0 runs forever): default %d", options.loops), &(options.loops),
+        "url",       format("Sets the url: default %s", options.url), &(options.url),
+        "noserv|n",  format("Disable monitor sockets: default %s", options.disable_sockets), &(options.disable_sockets),
+        "sockets|M", format("Sets maximum number of monitors opened: default %s", options.max_monitors), &(options.max_monitors),
+        "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
+        "port|p",    format("Sets first port of the port sequency: default %d", options.port),  &(options.port),
+        "s|seq",     format("The event is produced sequential this is only used in test mode: default %s", options.sequential), &(options.sequential),
+        "stdout",    format("Set the stdout: default %s", options.stdout), &(options.stdout),
 
-        "script-ip",  format("Sets the listener ip address: default %s", __gshared_options.scripting_engine.listener_ip_address), &(__gshared_options.scripting_engine.listener_ip_address),
-        "script-port", format("Sets the listener port: default %d", __gshared_options.scripting_engine.listener_port), &(__gshared_options.scripting_engine.listener_port),
-        "script-queue", format("Sets the listener max queue lenght: default %d", __gshared_options.scripting_engine.listener_max_queue_length), &(__gshared_options.scripting_engine.listener_max_queue_length),
-        "script-maxcon",  format("Sets the maximum number of connections: default: %d", __gshared_options.scripting_engine.max_connections), &(__gshared_options.scripting_engine.max_connections),
-        "script-maxqueue",  format("Sets the maximum queue length: default: %d", __gshared_options.scripting_engine.listener_max_queue_length), &(__gshared_options.scripting_engine.listener_max_queue_length),
-        "script-maxfibres",  format("Sets the maximum number of fibres: default: %d", __gshared_options.scripting_engine.max_number_of_accept_fibers), &(__gshared_options.scripting_engine.max_number_of_accept_fibers),
-        "script-maxreuse",  format("Sets the maximum number of fibre reuse: default: %d", __gshared_options.scripting_engine.max_number_of_fiber_reuse), &(__gshared_options.scripting_engine.max_number_of_fiber_reuse),
-        "script-log",  format("Scripting engine log filename: default: %s", __gshared_options.scripting_engine.name), &(__gshared_options.scripting_engine.name),
+        "script-ip",  format("Sets the listener ip address: default %s", options.scripting_engine.listener_ip_address), &(options.scripting_engine.listener_ip_address),
+        "script-port", format("Sets the listener port: default %d", options.scripting_engine.listener_port), &(options.scripting_engine.listener_port),
+        "script-queue", format("Sets the listener max queue lenght: default %d", options.scripting_engine.listener_max_queue_length), &(options.scripting_engine.listener_max_queue_length),
+        "script-maxcon",  format("Sets the maximum number of connections: default: %d", options.scripting_engine.max_connections), &(options.scripting_engine.max_connections),
+        "script-maxqueue",  format("Sets the maximum queue length: default: %d", options.scripting_engine.listener_max_queue_length), &(options.scripting_engine.listener_max_queue_length),
+        "script-maxfibres",  format("Sets the maximum number of fibres: default: %d", options.scripting_engine.max_number_of_accept_fibers), &(options.scripting_engine.max_number_of_accept_fibers),
+        "script-maxreuse",  format("Sets the maximum number of fibre reuse: default: %d", options.scripting_engine.max_number_of_fiber_reuse), &(options.scripting_engine.max_number_of_fiber_reuse),
+        "script-log",  format("Scripting engine log filename: default: %s", options.scripting_engine.name), &(options.scripting_engine.name),
 
 
-        "transcript-from", format("Transcript test from delay: default: %d", __gshared_options.transcript.pause_from), &(__gshared_options.transcript.pause_from),
-        "transcript-to", format("Transcript test to delay: default: %d", __gshared_options.transcript.pause_to), &(__gshared_options.transcript.pause_to),
-        "transcript-log",  format("Transcript log filename: default: %s", __gshared_options.transcript.name), &(__gshared_options.transcript.name),
+        "transcript-from", format("Transcript test from delay: default: %d", options.transcript.pause_from), &(options.transcript.pause_from),
+        "transcript-to", format("Transcript test to delay: default: %d", options.transcript.pause_to), &(options.transcript.pause_to),
+        "transcript-log",  format("Transcript log filename: default: %s", options.transcript.name), &(options.transcript.name),
 
 //        "help!h", "Display the help text",    &help_switch,
         );
 };
-
-__gshared static setDefaultOption() {
-    // Main
-    __gshared_options.nodeprefix="Node";
-    __gshared_options.logext="log";
-    __gshared_options.seed=42;
-    __gshared_options.delay=200;
-    __gshared_options.timeout=__gshared_options.delay*4;
-    __gshared_options.nodes=4;
-    __gshared_options.loops=30;
-    __gshared_options.infinity=false;
-    __gshared_options.url="127.0.0.1";
-    // __gshared_options.port=10900;
-    // __gshared_options.disable_sockets=false;
-    __gshared_options.tmp="/tmp/";
-    __gshared_options.stdout="/dev/tty";
-    __gshared_options.separator="_";
-    __gshared_options.network_socket_port =11900;
-    __gshared_options.sequential=false;
-// Scripting
-    __gshared_options.scripting_engine.listener_ip_address = "0.0.0.0";
-    __gshared_options.scripting_engine.listener_port = 18_444;
-    __gshared_options.scripting_engine.listener_max_queue_length = 100;
-    __gshared_options.scripting_engine.max_connections = 1000;
-    __gshared_options.scripting_engine.max_number_of_accept_fibers = 100;
-    __gshared_options.scripting_engine.min_duration_full_fibers_cycle_ms = 10;
-    __gshared_options.scripting_engine.max_number_of_fiber_reuse = 1000;
-    __gshared_options.scripting_engine.name="engine";
-
-// Transaction test
-    __gshared_options.transcript.pause_from=333;
-    __gshared_options.transcript.pause_to=888;
-    __gshared_options.transcript.name="transcript";
-//
-    __gshared_options.monitor.port=10900;
-    __gshared_options.monitor.disable=false;
-    __gshared_options.monitor.max=0;
-    set();
-}
