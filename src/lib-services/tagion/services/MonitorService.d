@@ -11,11 +11,7 @@ import tagion.communication.ListenerSocket;
 
 
 //Create flat webserver start class function - create Backend class.
-void monitorServiceThread(string url, immutable ushort port) {
-    Options opts;
-    opts.monitor.port=port;
-    opts.url=url;
-
+void monitorServiceThread(immutable(Options) opts) {
     writefln("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
     scope(failure) {
         writefln("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);

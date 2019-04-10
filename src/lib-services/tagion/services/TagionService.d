@@ -33,7 +33,7 @@ import tagion.utils.BSON : HBSON;
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
 void tagionServiceThread(Net)(immutable(Options) opts) {
-    immutable setup=immutable(EmulatorGossipNet.Init)(opts.timeout, opts.node_id, opts.nodes, opts.url, opts.monitor.port, 1234);
+  //  immutable setup=immutable(EmulatorGossipNet.Init)(opts.timeout, opts.node_id, opts.nodes, opts.url, opts.monitor.port, 1234);
 
     // timeout, immutable uint node_id,
     // immutable uint N,
@@ -60,10 +60,10 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
     net=new Net(crypt, hashgraph);
 //    hrpc.net=net;
 
-    immutable transcript_enable=options.transcript.enable;
+    immutable transcript_enable=opts.transcript.enable;
 
 //    debug {
-    net.node_name=setup.node_name;
+    net.node_name=opts.node_name;
 //    }
     // Pseudo passpharse
     immutable passphrase=opts.node_name;
@@ -90,10 +90,10 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
     // getTids(tids);
     net.set(pkeys);
 
-    if ( (setup.monitor_ip_address != "") && (setup.monitor_port > 6000) ) {
-        monitor_socket_tid = spawn(&monitorServiceThread, setup.monitor_ip_address, setup.monitor_port);
+    if ( (opts.url != "") && (opts.monitor.port > 6000) ) {
+        monitor_socket_tid = spawn(&monitorServiceThread, opts);
 
-        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, setup.node_id, net.globalNodeId(net.pubkey));
+        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
     }
 
     enum max_gossip=2;
@@ -123,11 +123,11 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
     // Start Script API task
     //
 
-    if ( transcript_enable ) {
+    if ( opts.transcript.enable ) {
 //        net.transcript_tid=spawn(&transcriptServiceThread!Net, setup);
         net.transcript_tid=spawn(&transcriptServiceThread, opts);
 
-        auto scripting_engine_tid=spawn(&scripting_engine, setup.node_id);
+        auto scripting_engine_tid=spawn(&scripting_engine, opts.node_id);
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
     }
 
