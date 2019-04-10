@@ -23,7 +23,7 @@ import tagion.communication.Monitor;
 import tagion.services.MonitorService;
 import tagion.services.TranscriptService;
 
-import tagion.Options;
+import tagion.Options : Options, set;
 import tagion.Base : Pubkey, Payload, Control;
 import tagion.utils.BSON : HBSON;
 
@@ -194,6 +194,8 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
 
     Payload empty_payload;
 
+    // Set thread global options
+    set(opts);
     while(!stop) {
         immutable(ubyte)[] data;
         void receive_buffer(immutable(ubyte)[] buf) {

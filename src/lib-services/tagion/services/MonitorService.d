@@ -5,7 +5,7 @@ import std.socket;
 import core.thread;
 import std.concurrency;
 
-import tagion.Options : Options;
+import tagion.Options : Options, set;
 import tagion.Base : Control, basename, bitarray2bool, Pubkey;
 import tagion.communication.ListenerSocket;
 
@@ -22,6 +22,9 @@ void monitorServiceThread(immutable(Options) opts) {
         writefln("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
         ownerTid.prioritySend(Control.END);
     }
+
+    // Set thread global options
+    set(opts);
 
 //    auto lso = ListenerSocket(opts.monitor.port, opts.url, thisTid);
     auto lso = ListenerSocket(thisTid, opts.url, opts.monitor.port);

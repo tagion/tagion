@@ -12,10 +12,10 @@ import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
 void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
-      immutable N=opts.nodes;
-      immutable delay=opts.delay;
-      immutable timeout=opts.timeout;
-      immutable uint count_from=opts.loops;
+//      immutable N=opts.nodes;
+//      immutable delay=opts.delay;
+//      immutable timeout=opts.timeout;
+//      immutable uint count_from=opts.loops;
 
 //    auto main_tid=ownerTid;
 
@@ -31,7 +31,7 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
         register(format("network_socket_thread %s", opts.network_socket_port), network_socket_thread_id);
     }
 
-    immutable transcript_enable=opts.transcript.enable;
+//    immutable transcript_enable=opts.transcript.enable;
 
     scope(exit) {
         version(Monitor) {
@@ -74,11 +74,9 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
         }
         service_options.node_id=cast(uint)i;
         service_options.node_name=getname(service_options.node_id);
-        import std.stdio;
-        writefln("service_options.node_name=%s", service_options.node_name);
         immutable(Options) tagion_service_options=service_options;
 //
-        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, service_options.monitor.port, 1234);
+//        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, service_options.monitor.port, 1234);
 //        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
         auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), tagion_service_options);
         register(getname(i), tid);
@@ -101,6 +99,8 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
 
     bool stop=false;
 
+    // Set thread options
+    set(opts);
     if ( opts.sequential ) {
         Thread.sleep(1.seconds);
 
