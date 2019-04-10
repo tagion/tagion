@@ -57,7 +57,13 @@ static struct Logger {
     @trusted
     void report(LoggerType type, string text) {
         if ( type | masks[$-1] ) {
-            logger_tid.send(type, text~"\n");
+            if (logger_tid == logger_tid.init) {
+                stderr.writeln("ERROR: Logger not register");
+                stderr.writefln("\t%s:%s", type, text);
+            }
+            else {
+                logger_tid.send(type, text~"\n");
+            }
         }
     }
 
