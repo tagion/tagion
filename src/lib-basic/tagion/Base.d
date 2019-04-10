@@ -7,7 +7,7 @@ private import std.exception : assumeUnique;
 import std.bitmanip : BitArray;
 
 // private import std.algorithm : splitter;
-//private import tagion.Options;
+private import tagion.Options;
 
 enum this_dot="this.";
 
@@ -41,10 +41,9 @@ alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 }
 
-static string separator;
 string join(string[] list) {
     import std.array : array_join=join;
-    return list.array_join(separator);
+    return list.array_join(options.separator);
 }
 
 
