@@ -125,7 +125,7 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
 
     if ( transcript_enable ) {
 //        net.transcript_tid=spawn(&transcriptServiceThread!Net, setup);
-        net.transcript_tid=spawn(&transcriptServiceThread!Net, opts);
+        net.transcript_tid=spawn(&transcriptServiceThread, opts);
 
         auto scripting_engine_tid=spawn(&scripting_engine, setup.node_id);
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
