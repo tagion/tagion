@@ -537,18 +537,18 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         }
     }
 
-    // protected string _node_name;
-    // @property void node_name(string name)
-    //     in {
-    //         assert(_node_name is null, format("%s is already set", __FUNCTION__));
-    //     }
-    // do {
-    //     _node_name=name;
-    // }
+    protected string _node_name;
+    @property void node_name(string name)
+        in {
+            assert(_node_name is null, format("%s is already set", __FUNCTION__));
+        }
+    do {
+        _node_name=name;
+    }
 
-    // @property string node_name() pure const nothrow {
-    //     return _node_name;
-    // }
+    @property string node_name() pure const nothrow {
+        return _node_name;
+    }
 
     @property
     void time(const(ulong) t) {
