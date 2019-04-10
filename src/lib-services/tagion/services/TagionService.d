@@ -40,8 +40,8 @@ void tagionServiceThread(Net)(immutable(Options) opts) {
 //    HRPC hrpc;
     import std.format;
     import std.datetime.systime;
-    immutable node_name=getname(setup.node_id);
-    immutable filename=[node_name].getfilename;
+//    immutable node_name=getname(options.node_id);
+    immutable filename=[opts.node_name].getfilename;
     Net.fout.open(filename, "w");
     alias fout=Net.fout;
     Event.fout=&fout;
