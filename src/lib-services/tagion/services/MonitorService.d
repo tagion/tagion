@@ -18,20 +18,20 @@ void monitorServiceTask(immutable(Options) opts) {
     // Set thread global options
     setOptions(opts);
     immutable task_name=opts.monitor.task_name;
-    writefln("Before monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
-        task_name,
-        opts.logger.task_name,
-        options.logger.task_name,
-        );
-    // Fixme CBR:
-    // Some race between the logger and this task
-    // This delay hackes it for now
-    Thread.sleep(500.msecs);
-    writefln("After monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
-        task_name,
-        opts.logger.task_name,
-        options.logger.task_name,
-        );
+    // writefln("Before monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
+    //     task_name,
+    //     opts.logger.task_name,
+    //     options.logger.task_name,
+    //     );
+    // // Fixme CBR:
+    // // Some race between the logger and this task
+    // // This delay hackes it for now
+    // Thread.sleep(500.msecs);
+    // writefln("After monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
+    //     task_name,
+    //     opts.logger.task_name,
+    //     options.logger.task_name,
+    //     );
     log.register(task_name);
 
     log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
