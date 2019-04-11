@@ -14,7 +14,8 @@ enum LoggerType {
     WARNING = TRACE<<1,
     ERROR   = WARNING <<1,
     FATAL   = ERROR<<1,
-    ALL     = INFO|TRACE|WARNING|ERROR|FATAL
+    ALL     = INFO|TRACE|WARNING|ERROR|FATAL,
+    STDERR  = WARNING|ERROR|FATAL
 }
 
 @safe
@@ -137,15 +138,17 @@ void loggerTask(immutable(Options) opts) {
             }
     }
 
-//    @trusted
-    void receiver(LoggerType type, string label, string text) @safe  {
+    @trusted
+    void receiver(LoggerType type, string label, string text) {
         if ( type is LoggerType.INFO ) {
             file.writefln("%s: %s", label, text);
         }
         else {
             file.writefln("%s:%s: %s", label, type, text);
         }
-//        stderr.writefln("%s:%s: %s", type, label, text);
+        if ( type & LoggerType.STDERR) {
+            stderr.writefln("%s:%s: %s", type, label, text);
+        }
     }
 
     ownerTid.send(Control.LIVE);
