@@ -13,7 +13,7 @@ import tagion.communication.ListenerSocket;
 
 
 //Create flat webserver start class function - create Backend class.
-void monitorServiceThread(immutable(Options) opts) {
+void monitorServiceTask(immutable(Options) opts) {
     // Set thread global options
     set(opts);
     immutable task_name=format("%s.%s", opts.node_name, opts.monitor.name);

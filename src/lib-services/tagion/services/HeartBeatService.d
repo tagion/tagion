@@ -11,7 +11,7 @@ import tagion.Base : Pubkey, Control;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
-void heartBeatServiceThread(immutable(Options) opts) {
+void heartBeatServiceTask(immutable(Options) opts) {
     set(opts);
 
     immutable tast_name="heatbeat";
@@ -48,7 +48,7 @@ void heartBeatServiceThread(immutable(Options) opts) {
         }
         service_options.node_id=cast(uint)i;
         immutable(Options) tagion_service_options=service_options;
-        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), tagion_service_options);
+        auto tid=spawn(&(tagionServiceTask!EmulatorGossipNet), tagion_service_options);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
         log("Start %d", pkeys.length);

@@ -35,7 +35,7 @@ import tagion.utils.BSON : HBSON;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionServiceThread(Net)(immutable(Options) args) {
+void tagionServiceTask(Net)(immutable(Options) args) {
     set(args);
     Options opts=args;
     stderr.writefln("options.nodeprefix=%s", options.nodeprefix);
@@ -97,7 +97,7 @@ void tagionServiceThread(Net)(immutable(Options) args) {
     net.set(pkeys);
 
     if ( (opts.url != "") && (opts.monitor.port > 6000) ) {
-        monitor_socket_tid = spawn(&monitorServiceThread, opts);
+        monitor_socket_tid = spawn(&monitorServiceTask, opts);
 
         Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
     }

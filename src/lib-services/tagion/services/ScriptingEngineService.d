@@ -13,7 +13,6 @@ import tagion.hashgraph.ConsensusExceptions;
 
 import tagion.gossip.EmulatorGossipNet;
 
-
 // This the test task for the scripting engine
 void scriptingEngineTask(immutable(Options) opts) {
     set(opts);
