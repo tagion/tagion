@@ -219,7 +219,7 @@ static this() @nogc {
 +  Sets the thread global options opt
 +/
 @safe
-static void set(const(Options) opt) {
+static void setOptions(const(Options) opt) {
     options_memory=opt;
 //    separator=opt.separator;
 //    seperator=opt.seperator;
@@ -230,16 +230,17 @@ static void set(const(Options) opt) {
 /++
  + Sets the thread global options to the value of __gshared_options
  +/
-static void set() {
+static void setSharedOptions() {
     import std.stdio;
     writefln("__gshared_options=%s", __gshared_options);
-    set(__gshared_options);
+    setOptions(__gshared_options);
 }
+
 /++
 + Returns:
 +     a copy of the options
 +/
-static Options get() {
+static Options getOptions() {
     Options result=options_memory;
     return result;
 }
@@ -368,5 +369,5 @@ __gshared static setDefaultOption() {
     __gshared_options.logger.task_name="tagion.logger";
     __gshared_options.logger.file_name="/tmp/tagion.log";
 
-    set();
+    setSharedOptions();
 }
