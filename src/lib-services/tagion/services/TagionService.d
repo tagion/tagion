@@ -13,7 +13,7 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.services.ScriptingEngineNode;
+
 
 
 import tagion.services.ScriptCallbacks;
@@ -22,6 +22,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.communication.Monitor;
 import tagion.services.MonitorService;
 import tagion.services.TranscriptService;
+import tagion.services.ScriptingEngineService;
 import tagion.services.LoggerService;
 
 import tagion.Options : Options, set, options;
@@ -130,9 +131,9 @@ void tagionServiceThread(Net)(immutable(Options) args) {
 
     if ( opts.transcript.enable ) {
 //        net.transcript_tid=spawn(&transcriptServiceThread!Net, setup);
-        net.transcript_tid=spawn(&transcriptServiceThread, opts);
+        net.transcript_tid=spawn(&transcriptServiceTask, opts);
 
-        auto scripting_engine_tid=spawn(&scripting_engine, opts);
+        auto scripting_engine_tid=spawn(&scriptingEngineTask, opts);
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
     }
 

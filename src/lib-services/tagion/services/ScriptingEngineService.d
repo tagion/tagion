@@ -1,4 +1,4 @@
-module tagion.services.ScriptingEngineNode;
+module tagion.services.ScriptingEngineService;
 
 import std.format;
 import std.concurrency;
@@ -15,7 +15,7 @@ import tagion.gossip.EmulatorGossipNet;
 
 
 // This the test task for the scripting engine
-void scripting_engine(immutable(Options) opts) {
+void scriptingEngineTask(immutable(Options) opts) {
     set(opts);
 //    immutable node_name=getname(node_id);
     immutable task_name=format("%s.%s", opts.node_name, options.scripting_engine.name);
