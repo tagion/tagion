@@ -15,7 +15,7 @@ import tagion.gossip.EmulatorGossipNet;
 
 // This the test task for the scripting engine
 void scriptingEngineTask(immutable(Options) opts) {
-    set(opts);
+    setOptions(opts);
 //    immutable node_name=getname(node_id);
     immutable task_name=format("%s.%s", opts.node_name, options.scripting_engine.name);
     log.register(task_name);

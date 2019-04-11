@@ -6,7 +6,7 @@ import std.concurrency;
 
 import tagion.Base : Control;
 
-import tagion.Options : Options, set, options;
+import tagion.Options : Options, setOptions, options;
 
 enum LoggerType {
     INFO    = 1,
@@ -41,7 +41,7 @@ static struct Logger {
         .register(task_name, thisTid);
         logger_tid=locate(options.logger.task_name);
         label=task_name;
-        stderr.writefln("Register: %s %s", task_name, (logger_tid != logger_tid.init));
+        stderr.writefln("Register: %s logger=%s %s ", task_name, options.logger.task_name, (logger_tid != logger_tid.init));
     }
 
     void push(const uint mask) {
@@ -60,7 +60,7 @@ static struct Logger {
     void report(LoggerType type, string text) {
         if ( type | masks[$-1] ) {
             if (logger_tid == logger_tid.init) {
-                stderr.writeln("ERROR: Logger not register");
+                stderr.writefln("ERROR: Logger not register for '%s'", label);
                 stderr.writefln("\t%s:%s: %s", label, type, text);
             }
             else {
@@ -108,7 +108,7 @@ static Logger log;
 // }
 
 void loggerTask(immutable(Options) opts) {
-    set(opts);
+    setOptions(opts);
     @trusted
     void task_register() {
         assert(register(opts.logger.task_name, thisTid));

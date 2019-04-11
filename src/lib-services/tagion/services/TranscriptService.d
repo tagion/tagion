@@ -18,7 +18,7 @@ import tagion.gossip.EmulatorGossipNet;
 
 // This function is just to perform a test on the scripting-api input
 void transcriptServiceTask(immutable(Options) opts) {
-    set(opts);
+    setOptions(opts);
     immutable task_name=format("%s.%s", opts.node_name, opts.transcript.name);
     log.register(task_name);
     assert(opts.transcript.enable, "Scripting-Api test is not enabled");

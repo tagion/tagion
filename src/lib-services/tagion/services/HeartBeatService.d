@@ -12,7 +12,7 @@ import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
 void heartBeatServiceTask(immutable(Options) opts) {
-    set(opts);
+    setOptions(opts);
 
     immutable tast_name="heatbeat";
     log.register(tast_name);

@@ -25,7 +25,7 @@ import tagion.services.TranscriptService;
 import tagion.services.ScriptingEngineService;
 import tagion.services.LoggerService;
 
-import tagion.Options : Options, set, options;
+import tagion.Options : Options, setOptions, options;
 import tagion.Base : Pubkey, Payload, Control;
 import tagion.utils.BSON : HBSON;
 
@@ -36,14 +36,14 @@ import tagion.utils.BSON : HBSON;
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
 void tagionServiceTask(Net)(immutable(Options) args) {
-    set(args);
+    setOptions(args);
     Options opts=args;
-    stderr.writefln("options.nodeprefix=%s", options.nodeprefix);
-    opts.node_name=get_node_name(opts.node_id);
-    set(opts);
+    writefln("options.nodeprefix=%s", options.nodeprefix);
+    opts.node_name=get_node_name(args.node_id);
+    setOptions(opts);
 
 //    immutable task_name=get_node_name(opts.node_id);
-    stderr.writefln("task_name=%s", opts.node_name);
+    writefln("task_name=%s options.mode_name=%s", opts.node_name, options.node_name);
     log.register(opts.node_name);
 //    HRPC hrpc;
     import std.format;
@@ -98,7 +98,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
 
     if ( (opts.url != "") && (opts.monitor.port > 6000) ) {
         monitor_socket_tid = spawn(&monitorServiceTask, opts);
-
+        writefln("opts.node_name=%s options.node_name=%s", opts.node_name, options.node_name);
         Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
     }
 
