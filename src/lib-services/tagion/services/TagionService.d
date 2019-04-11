@@ -34,11 +34,16 @@ import tagion.utils.BSON : HBSON;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionServiceThread(Net)(immutable(Options) opts) {
+void tagionServiceThread(Net)(immutable(Options) args) {
+    set(args);
+    Options opts=args;
+    stderr.writefln("options.nodeprefix=%s", options.nodeprefix);
+    opts.node_name=get_node_name(opts.node_id);
     set(opts);
-    immutable task_name=get_node_name(opts.node_id);
-    stderr.writefln("task_name=%s", task_name);
-    log.register(task_name);
+
+//    immutable task_name=get_node_name(opts.node_id);
+    stderr.writefln("task_name=%s", opts.node_name);
+    log.register(opts.node_name);
 //    HRPC hrpc;
     import std.format;
     import std.datetime.systime;

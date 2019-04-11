@@ -70,7 +70,9 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
             }
         }
         log("----- Stop send to all -----");
-//        log.close;
+
+        log.close;
+//        ownerTid.send(Control.END);
     }
 
     foreach(i;0..opts.nodes) {
@@ -86,6 +88,7 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
 //        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, service_options.monitor.port, 1234);
 //        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
         auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), tagion_service_options);
+//        scope(exit)
 //        register(getname(i), tid);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);

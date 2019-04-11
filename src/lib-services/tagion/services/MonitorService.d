@@ -14,6 +14,8 @@ import tagion.communication.ListenerSocket;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceThread(immutable(Options) opts) {
+    // Set thread global options
+    set(opts);
     immutable task_name=format("%s.%s", opts.node_name, opts.monitor.name);
     log.register(task_name);
 
@@ -28,15 +30,14 @@ void monitorServiceThread(immutable(Options) opts) {
         ownerTid.prioritySend(Control.END);
     }
 
-    // Set thread global options
-    set(opts);
 
 //    auto lso = ListenerSocket(opts.monitor.port, opts.url, thisTid);
-    auto lso = ListenerSocket(thisTid, opts.url, opts.monitor.port);
-    void delegate() ls;
-    ls.funcptr = &ListenerSocket.run;
-    ls.ptr = &lso;
-    auto listener_socket_thread = new Thread( ls ).start();
+//    auto lso = ListenerSocket(thisTid, opts.url, opts.monitor.port);
+    auto lso = ListenerSocket(opts, opts.url, opts.monitor.port);
+    void delegate() listerner;
+    listerner.funcptr = &ListenerSocket.run;
+    listerner.ptr = &lso;
+    auto listener_socket_thread = new Thread( listerner ).start();
 
     scope(exit) {
         writefln("In exit of soc. port=%d th", opts.monitor.port);

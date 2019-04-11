@@ -18,6 +18,7 @@ import tagion.gossip.EmulatorGossipNet;
 
 // This function is just to perform a test on the scripting-api input
 void transcriptServiceThread(immutable(Options) opts) { //(immutable uint node_id, immutable uint seed) {
+    set(opts);
     immutable task_name=format("%s.%s", opts.node_name, opts.transcript.name);
     log.register(task_name);
     assert(opts.transcript.enable, "Scripting-Api test is not enabled");
@@ -51,7 +52,7 @@ void transcriptServiceThread(immutable(Options) opts) { //(immutable uint node_i
         node_tid.prioritySend(Control.END);
     }
 
-    set(opts);
+
     while(!stop) {
         immutable delay=rand.value(opts.transcript.pause_from, opts.transcript.pause_to);
         log("delay=%s", delay);

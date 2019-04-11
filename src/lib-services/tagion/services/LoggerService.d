@@ -61,10 +61,10 @@ static struct Logger {
         if ( type | masks[$-1] ) {
             if (logger_tid == logger_tid.init) {
                 stderr.writeln("ERROR: Logger not register");
-                stderr.writefln("\t%s:%s", type, text);
+                stderr.writefln("\t%s:%s: %s", label, type, text);
             }
             else {
-                logger_tid.send(type, text~"\n");
+                logger_tid.send(type, label, text);
             }
         }
     }
@@ -108,6 +108,7 @@ static Logger log;
 // }
 
 void loggerTask(immutable(Options) opts) {
+    set(opts);
     @trusted
     void task_register() {
         assert(register(opts.logger.task_name, thisTid));
@@ -116,30 +117,37 @@ void loggerTask(immutable(Options) opts) {
 
     File file;
     file.open(opts.logger.file_name, "w");
+    file.writefln("Logger task: %s", opts.logger.task_name);
     scope(exit) {
+        file.writeln("Logger closed");
         file.close;
+        ownerTid.send(Control.END);
     }
 
     bool stop;
 
-    @safe
-    void controller(Control ctrl) {
+    void controller(Control ctrl) @safe {
         with(Control) switch(ctrl) {
             case STOP:
                 stop=true;
-                file.writefln("##### Stop %s", opts.logger.task_name);
+                file.writefln("%s Stopped ", opts.logger.task_name);
                 break;
             default:
-                file.writefln("Unsupported control %s", ctrl);
+                file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
             }
     }
 
-    @safe
-    void receiver(LoggerType type, string label, string text) {
-        file.writef("%s:%s: %s", type, label, text);
+//    @trusted
+    void receiver(LoggerType type, string label, string text) @safe  {
+        if ( type is LoggerType.INFO ) {
+            file.writefln("%s: %s", label, text);
+        }
+        else {
+            file.writefln("%s:%s: %s", label, type, text);
+        }
+//        stderr.writefln("%s:%s: %s", type, label, text);
     }
 
-    set(opts);
     ownerTid.send(Control.LIVE);
     while(!stop) {
         try {
@@ -154,6 +162,10 @@ void loggerTask(immutable(Options) opts) {
         }
         catch ( Throwable t ) {
             t.msg ~= format(" - From logger task %s ", opts.logger.task_name);
+            stderr.writeln(t.msg);
+            ownerTid.send(cast(immutable)t);
+            stop=true;
+
         }
     }
 }
