@@ -20,7 +20,9 @@ import tagion.services.ScriptCallbacks;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.communication.Monitor;
+import tagion.services.ServiceNames;
 import tagion.services.MonitorService;
+import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 import tagion.services.ScriptingEngineService;
 import tagion.services.LoggerService;
@@ -39,7 +41,12 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     setOptions(args);
     Options opts=args;
     writefln("options.nodeprefix=%s", options.nodeprefix);
-    opts.node_name=get_node_name(args.node_id);
+//    opts.node_name=node_task_name(args.node_id);
+    opts.monitor.task_name=monitor_task_name(opts);
+    opts.transaction.task_name=transaction_task_name(opts);
+    opts.transcript.task_name=transcript_task_name(opts);
+    opts.scripting_engine.task_name=scripting_engine_task_name(opts);
+    opts.dart.task_name=dart_task_name(opts);
     setOptions(opts);
 
 //    immutable task_name=get_node_name(opts.node_id);
@@ -55,9 +62,10 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     //Event.fout=&fout;
 
 
-    log("\n\n\n\n\n##### Received %s #####", opts.node_name);
+    log("\n\n\n\n\nx##### Received %s #####", opts.node_name);
 
     Tid monitor_socket_tid;
+    Tid transaction_socket_tid;
 
     auto hashgraph=new HashGraph();
     // Create hash-graph
@@ -95,13 +103,19 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     // scope tids=new Tid[N];
     // getTids(tids);
     net.set(pkeys);
+    if ( opts.url !is null ) {
+        if  (opts.monitor.port > 6000) {
+            monitor_socket_tid = spawn(&monitorServiceTask, opts);
+            log("opts.node_name=%s options.node_name=%s", opts.node_name, options.node_name);
+            Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
+        }
 
-    if ( (opts.url != "") && (opts.monitor.port > 6000) ) {
-        monitor_socket_tid = spawn(&monitorServiceTask, opts);
-        log("opts.node_name=%s options.node_name=%s", opts.node_name, options.node_name);
-        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
+        if ( opts.transaction.port > 6000) {
+            transaction_socket_tid = spawn(&transactionServiceTask, opts);
+//            log("opts.node_name=%s options.node_name=%s", opts.node_name, options.node_name);
+//            Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
+        }
     }
-
     enum max_gossip=2;
     uint gossip_count=max_gossip;
     bool stop=false;
@@ -161,17 +175,30 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             }
         }
 
-        log("Existing hasnode %s", opts.node_name);
+//        log("Existing hasnode %s", opts.node_name);
 //        fout.flush;
         if ( net.callbacks ) {
             net.callbacks.exiting(hashgraph.getNode(net.pubkey));
         }
-        log("$$$$$$Closed monitor %s", opts.node_name);
+//        log("$$$$$$Closed monitor %s", opts.node_name);
 //        fout.flush;
         // Thread.sleep(2.seconds);
+        if ( transaction_socket_tid != transaction_socket_tid.init ) {
+            transaction_socket_tid.prioritySend(Control.STOP);
+            auto control=receiveOnly!Control;
+            log("Control %s", control);
+//            fout.flush;
+            if ( control == Control.END ) {
+                log("Closed transaction thread");
+            }
+            else if ( control == Control.FAIL ) {
+                log.error("Closed transaction thread with failure");
+            }
+        }
         if ( monitor_socket_tid != monitor_socket_tid.init ) {
             log("Send STOP %s", opts.node_name);
 //            fout.flush;
+
             monitor_socket_tid.prioritySend(Control.STOP);
 
             log("after STOP %s", opts.node_name);
@@ -185,16 +212,9 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             else if ( control == Control.FAIL ) {
                 log.error("Closed monitor thread with failure");
             }
-//            fout.flush;
         }
-//        Thread.sleep(2.seconds);
-        //      version(none) {
-
-
-        // }
         log("prioritySend %s", opts.node_name);
         log("End");
-//        fout.close;
         ownerTid.prioritySend(Control.END);
     }
 

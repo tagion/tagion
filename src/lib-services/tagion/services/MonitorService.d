@@ -16,7 +16,7 @@ import tagion.communication.ListenerSocket;
 void monitorServiceTask(immutable(Options) opts) {
     // Set thread global options
     setOptions(opts);
-    immutable task_name=format("%s.%s", opts.node_name, opts.monitor.name);
+    immutable task_name=opts.monitor.task_name;
     writefln("Before monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
         task_name,
         opts.logger.task_name,
@@ -97,10 +97,15 @@ void monitorServiceTask(immutable(Options) opts) {
                 (immutable(ubyte)[] bson_bytes) {
                     listener_socket.sendBytes(bson_bytes);
                 },
+                (immutable(Exception) e) {
+                    stop=true;
+                    throw e;
+                },
                 (immutable(Throwable) t) {
                     //log.fatal("Throwable -------------------- %d", opts.monitor.port);
-                    throw t;
                     stop=true;
+                    throw t;
+
                 }
                 );
         }

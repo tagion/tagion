@@ -173,6 +173,7 @@ void loggerTask(immutable(Options) opts) {
         }
         catch ( Exception e ) {
             stderr.writefln("Logger error %s", e.msg);
+            ownerTid.send(cast(immutable)e);
             stop=true;
         }
         catch ( Throwable t ) {

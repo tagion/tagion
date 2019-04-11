@@ -17,7 +17,7 @@ import tagion.gossip.EmulatorGossipNet;
 void scriptingEngineTask(immutable(Options) opts) {
     setOptions(opts);
 //    immutable node_name=getname(node_id);
-    immutable task_name=format("%s.%s", opts.node_name, options.scripting_engine.name);
+    immutable task_name=opts.scripting_engine.task_name;
     log.register(task_name);
 //    register(format("%s.%s", opts.node_name, options.scripting_engine.name), thisTid);
 

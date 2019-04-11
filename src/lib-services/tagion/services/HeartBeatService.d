@@ -4,10 +4,14 @@ import core.thread;
 import std.concurrency;
 
 import tagion.Options;
-import tagion.services.LoggerService;
+
+import tagion.services.ServiceNames;
+
+//import tagion.services.LoggerService;
 import tagion.utils.Random;
 
 import tagion.Base : Pubkey, Control;
+import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
@@ -15,11 +19,23 @@ void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
 
     immutable tast_name="heatbeat";
-    log.register(tast_name);
+
 
     Tid[] tids;
     Pubkey[]  pkeys;
 
+    Control response;
+    auto logger_tid=spawn(&loggerTask, opts);
+    import std.stdio : stderr;
+    stderr.writeln("Waitin for logger");
+
+    response=receiveOnly!Control;
+    if ( response !is Control.LIVE ) {
+
+        stderr.writeln("ERROR:Logger %s", response);
+    }
+
+    log.register(tast_name);
     scope(exit) {
         log("----- Stop all tasks -----");
         foreach(i, ref tid; tids) {
@@ -46,7 +62,11 @@ void heartBeatServiceTask(immutable(Options) opts) {
         if ( (!opts.monitor.disable) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
         }
+        if ( (!opts.transaction.disable) && ((opts.transaction.max == 0) || (i < opts.transaction.max) ) ) {
+            service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
+        }
         service_options.node_id=cast(uint)i;
+        service_options.node_name=node_task_name(service_options);
         immutable(Options) tagion_service_options=service_options;
         auto tid=spawn(&(tagionServiceTask!EmulatorGossipNet), tagion_service_options);
         tids~=tid;
