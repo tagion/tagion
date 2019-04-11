@@ -83,16 +83,28 @@ static struct Logger {
         report(LoggerType.TRACE, format(fmt, args));
     }
 
-    void warring(Args...)(string fmt, Args args) {
-        report(LoggerType.WARRING, format(fmt, args));
+    void warning(Args...)(string fmt, Args args) {
+        report(LoggerType.WARNING, format(fmt, args));
+    }
+
+    void warning(string text) {
+        report(LoggerType.WARNING, text);
     }
 
     void error(Args...)(string fmt, Args args) {
         report(LoggerType.ERROR, format(fmt, args));
     }
 
+    void error(string text) {
+        report(LoggerType.ERROR, text);
+    }
+
     void fatal(Args...)(string fmt, Args args) {
         report(LoggerType.FATAL, format(fmt, args));
+    }
+
+    void fatal(string text) {
+        report(LoggerType.FATAL, text);
     }
 
     @trusted
