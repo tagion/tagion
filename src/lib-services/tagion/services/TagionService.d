@@ -68,7 +68,7 @@ void tagionServiceThread(Net)(immutable(Options) args) {
 //    immutable transcript_enable=opts.transcript.enable;
 
 //    debug {
-    net.node_name=opts.node_name;
+//    net.node_name=opts.node_name;
 //    }
     // Pseudo passpharse
     immutable passphrase=opts.node_name;
