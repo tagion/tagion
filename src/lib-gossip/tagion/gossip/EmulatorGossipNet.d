@@ -27,7 +27,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 
 static string get_node_name(immutable size_t i) {
     import std.array : join;
-    return [options.nodeprefix, to!string(i)].join(options.separator);
+    return [options.nodeprefix, i.to!string].join(options.separator);
 }
 
 @trusted
