@@ -52,7 +52,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     immutable filename=[opts.node_name].getfilename;
     Net.fout.open(filename, "w");
     alias fout=Net.fout;
-    Event.fout=&fout;
+    //Event.fout=&fout;
 
     fout.write("\n\n\n\n\n");
     fout.writefln("##### Received %s #####", opts.node_name);
