@@ -20,6 +20,8 @@ import tagion.hashgraph.ConsensusExceptions;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
+import tagion.services.LoggerService;
+
 @safe
 class StdRequestNet : RequestNet {
 
@@ -170,7 +172,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
 
 @safe
 abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
-    static File fout;
+//    static File fout;
     static private shared uint _next_global_id;
     static private shared uint[immutable(Pubkey)] _node_id_pair;
 
@@ -426,7 +428,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         Event result;
         auto doc=Document(data);
         Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-        fout.writefln("Receive %s data=%d", received_pubkey.cutHex, data.length);
+        log("Receive %s data=%d", received_pubkey.cutHex, data.length);
 
         check(received_pubkey != pubkey, ConsensusFailCode.GOSSIPNET_REPLICATED_PUBKEY);
 

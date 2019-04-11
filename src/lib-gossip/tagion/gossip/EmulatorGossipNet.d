@@ -23,6 +23,7 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.ConsensusExceptions;
 
+import tagion.services.LoggerService;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 static string get_node_name(immutable size_t i) {
@@ -91,7 +92,7 @@ class EmulatorGossipNet : StdGossipNet {
             auto pack_doc=Document(e.serialize);
             auto pack=EventPackage(pack_doc);
             immutable fingerprint=calcHash(pack.event_body.serialize);
-            fout.writefln("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
+            log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
         }
     }
 
@@ -100,8 +101,9 @@ class EmulatorGossipNet : StdGossipNet {
         debug {
             if ( options.trace_gossip ) {
                 import std.file;
-                immutable packfile=format("%s/%s_%d_%s.bson", options.tmp, options.node_name, _send_count, type); //.to!string~"_receive.bson";
-                write(packfile, data);
+//                immutable packfile=format("%s/%s_%d_%s.bson", options.tmp, options.node_name, _send_count, type); //.to!string~"_receive.bson";
+                log.trace("%s/%s_%d_%s.bson", options.tmp, options.node_name, _send_count, type);
+//                write(packfile, data);
                 _send_count++;
             }
         }
@@ -116,11 +118,12 @@ class EmulatorGossipNet : StdGossipNet {
             auto doc_ebody=doc_body[Event.Params.ebody].get!Document;
             auto event_body=immutable(EventBody)(doc_ebody);
         }
-        trace("send", data);
+//        trace("send", data);
+        log.trace("send %s bytes", data.length);
         if ( callbacks ) {
             callbacks.send(channel, data);
         }
-        fout.writefln("Send %s data=%d", channel.cutHex, data.length);
+        log("Send %s data=%d", channel.cutHex, data.length);
         _tids[channel].send(data);
     }
 
