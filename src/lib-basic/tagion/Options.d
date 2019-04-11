@@ -122,6 +122,7 @@ struct Options {
     mixin JSONCommon;
 
     struct ScriptingEngine {
+        string task_name;
         string listener_ip_address;       /// Ip address
         ushort listener_port;             /// Port
         uint listener_max_queue_length;   /// Listener max. incomming connection req. queue length
@@ -146,6 +147,7 @@ struct Options {
     ScriptingEngine scripting_engine;
 
     struct Transcript {
+        string task_name;
         // This maybe removed later used to make internal transaction test without TLS connection
         bool enable;
 
@@ -162,6 +164,7 @@ struct Options {
     Transcript transcript;
 
     struct Monitor {
+        string task_name;
         uint max;     /++ Maximum number of monitor sockets open
                        If this value is set to 0
                        one socket is opened for each node
@@ -173,6 +176,29 @@ struct Options {
     }
 
     Monitor monitor;
+
+    struct Transaction {
+        string task_name;
+        string name;
+        ushort port;
+        ushort max;
+        bool disable;
+        mixin JSONCommon;
+    }
+
+    Transaction transaction;
+
+    struct DART {
+        string task_name;
+        string name;
+        string path;
+        // ushort port;
+        // ushort max;
+        // bool disable;
+        mixin JSONCommon;
+    }
+
+    DART dart;
 
     struct Logger {
         string task_name;
@@ -206,13 +232,19 @@ struct Options {
 //__gshared protected static Options __gshared_options;
 __gshared static Options __gshared_options;
 
-static immutable(Options*) options; // Points to the thread global options
 protected static Options options_memory;
 
-static this() @nogc {
-    options=cast(immutable)(&options_memory);
-
+//static immutable(Options*) options;
+// Points to the thread global options
+static immutable(Options*) options() {
+    return cast(immutable)(&options_memory);
 }
+
+
+// static this() @nogc {
+//     options=cast(immutable)(&options_memory);
+
+// }
 
 //@trusted
 /++
@@ -305,7 +337,8 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "noserv|n",  format("Disable monitor sockets: default %s", __gshared_options.monitor.disable), &(__gshared_options.monitor.disable),
         "sockets|M", format("Sets maximum number of monitors opened: default %s", __gshared_options.monitor.max), &(__gshared_options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", __gshared_options.tmp), &(__gshared_options.tmp),
-        "port|p",    format("Sets first monitor port of the port sequency: default %d", __gshared_options.monitor.port),  &(__gshared_options.monitor.port),
+        "monitor|P",    format("Sets first monitor port of the port sequency: default %d", __gshared_options.monitor.port),  &(__gshared_options.monitor.port),
+        "transaction|p",    format("Sets first transaction port of the port sequency: default %d", __gshared_options.transaction.port),  &(__gshared_options.transaction.port),
         "s|seq",     format("The event is produced sequential this is only used in test mode: default %s", __gshared_options.sequential), &(__gshared_options.sequential),
         "stdout",    format("Set the stdout: default %s", __gshared_options.stdout), &(__gshared_options.stdout),
 
@@ -355,10 +388,16 @@ __gshared static setDefaultOption() {
     __gshared_options.scripting_engine.max_number_of_fiber_reuse = 1000;
     __gshared_options.scripting_engine.name="engine";
 
-// Transaction test
+// Transcript
     __gshared_options.transcript.pause_from=333;
     __gshared_options.transcript.pause_to=888;
     __gshared_options.transcript.name="transcript";
+// Transaction
+    __gshared_options.transaction.port=10800;
+    __gshared_options.transaction.disable=false;
+    __gshared_options.transaction.max=0;
+    __gshared_options.transaction.name="transaction";
+
 // Monitor
     __gshared_options.monitor.port=10900;
     __gshared_options.monitor.disable=false;
