@@ -328,7 +328,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
 
 __gshared static setDefaultOption() {
     // Main
-    __gshared_options.nodeprefix="Node_";
+    __gshared_options.nodeprefix="Node";
     __gshared_options.logext="log";
     __gshared_options.seed=42;
     __gshared_options.delay=200;
