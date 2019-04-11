@@ -9,6 +9,7 @@ import std.concurrency;
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
 import tagion.Base : Control, basename, bitarray2bool, Pubkey;
+import tagion.utils.BSON : Document;
 import tagion.communication.ListenerSocket;
 
 
@@ -95,7 +96,10 @@ void monitorServiceTask(immutable(Options) opts) {
                 //Control the thread
                 &handleState,
                 (immutable(ubyte)[] bson_bytes) {
-                    listener_socket.sendBytes(bson_bytes);
+                    listener_socket.broadcast(bson_bytes);
+                },
+                (Document doc) {
+                    listener_socket.broadcast(doc);
                 },
                 (immutable(Exception) e) {
                     stop=true;
