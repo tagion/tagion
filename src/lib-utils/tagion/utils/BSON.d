@@ -36,7 +36,7 @@ import std.meta : AliasSeq;
 //import std.stdio;
 
 import tagion.utils.Miscellaneous : toHexString;
-import tagion.Base : Check, TagionException;
+import tagion.TagionExceptions : Check, TagionException;
 
 public alias HBSON=BSON!(true,true);
 

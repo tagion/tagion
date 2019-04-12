@@ -1,23 +1,39 @@
 module tagion.utils.CheckBSON;
 
-import tagion.utils.BSON : Type, BinarySubType, BSON, HBSON;
+import tagion.utils.BSON : Type, BinarySubType, BSON, HBSON, less_than;
 
 import std.stdio;
+import tagion.TagionExceptions : Check, TagionException;
+
+@safe
+class CheckBSONException : TagionException {
+
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+        super( msg, file, line );
+    }
+}
+
+alias check=Check!CheckBSONException;
+
 
 @safe
 struct CheckBSON(bool hbson_flag) {
-    private size_t pos;
-    private const(ubyte[]) data;
+    //  private size_t pos;
+    const(ubyte[]) data;
+    protected const(ubyte)[] current;
 
+    @disable this();
 
     @trusted
     T get_value(T)(const(ubyte[]) value) {
-        pos+=T.sizeof;
+//        pos+=T.sizeof;
         return *(cast(T*)(value.ptr));
     }
 
     bool check_cstring(const(ubyte[]) cstring, out size_t cpos) {
+        writefln("cstring=%s", cstring);
         foreach(i, c; cstring) {
+            writefln("i=%d c=%d:%s",i,c,cast(char)c);
             if ( c == '\0' ) {
                 cpos=i;
                 return true;
@@ -27,8 +43,13 @@ struct CheckBSON(bool hbson_flag) {
     }
 
     bool check_string(const(ubyte[]) str, out size_t cpos) {
+        current=str;
         auto str_len=get_value!uint(str);
-        bool result=(str[str_len] == '\0');
+        cpos=uint.sizeof+str_len;
+        bool result=(str[cpos-1] == '\0');
+        writefln("str_len=%d result=%s %d", str_len, result, str[cpos-1]);
+//        cpos++;
+        version(result)
         if ( result ) {
             auto cstr=str[str_len..$];
             foreach(c; str[0..str_len]) {
@@ -38,38 +59,40 @@ struct CheckBSON(bool hbson_flag) {
                 }
             }
         }
-        cpos=uint.sizeof+str_len+1;
+
         return result;
     }
 
-    bool check_e_list(const(ubyte[]) e_list, out size_t cpos) {
-        auto e_list_len=get_value!uint(e_list);
-        cpos=uint.sizeof;
+    bool check_e_list(const(ubyte[]) e_list) {
+        writefln("e_list.lenght=%d e_list[0]=%d list=%s", e_list.length, e_list[0], e_list);
+        string name;
         bool crawl(const(ubyte[]) e_list) {
-            bool result=true;
-            if ( e_list[0] != 0 ) {
+            if ( e_list[0] !=  0 ) {
+                writefln("e_list=%s", e_list);
                 size_t size;
-                result=check_element(e_list, size);
-                cpos+=size;
-                if ( result) {
-                    result=crawl(e_list[size..$]);
-                }
+                return check_element(e_list, size, name) && crawl(e_list[size..$]);
             }
-            return result;
+            return true;
         }
-        return crawl(e_list[cpos..$]);
+        return crawl(e_list);
     }
 
-    bool check_document(const(ubyte[]) doc, out size_t cpos) {
-        auto doc_len=get_value!uint(doc);
-        cpos=uint.sizeof;
-        size_t size;
-        bool result=doc.length > 4;
+    bool check_document(const(ubyte[]) doc_data, out size_t size) {
+        current=doc_data;
+        auto doc_len=get_value!uint(doc_data);
+        writefln("doc_len=%d data=%s", doc_len, doc_data);
+        bool result=data.length > uint.sizeof;
         if ( result ) {
-            result=check_e_list(doc[cpos..$], size);
-        }
-        if ( result ) {
-            cpos+=size+1;
+            result=(doc_len == doc_data.length);
+            if ( result ) {
+                // cpos+=uint.sizeof;
+                result=check_e_list(doc_data[uint.sizeof..doc_len]);
+//                result=check_e_list(data, size);
+            }
+            // if ( result ) {
+            //     cpos+=size+1;
+            // }
+            size=doc_len;
         }
         return result;
     }
@@ -80,12 +103,12 @@ struct CheckBSON(bool hbson_flag) {
         size_t size;
         bool result;
         while (doc_array[cpos]) {
-            size_t doc_size;
-            result=check_document(doc_array[cpos..doc_array_len], doc_size);
+//            size_t doc_size;
+            result=check_document(doc_array[cpos..doc_array_len], size);
             if ( !result ) {
                 break;
             }
-            cpos+=doc_size;
+//            cpos+=doc_size;
         }
         return result;
     }
@@ -109,21 +132,21 @@ struct CheckBSON(bool hbson_flag) {
         immutable subtype=bin[cpos];
         cpos++;
         bool result;
-        size_t binary_size;
+        size_t binary_size=ubyte.sizeof;
         with (BinarySubType) switch(subtype) {
-            case generic:
+            case GENERIC:
                 result=true;
                 break;
-            case func:
+            case FUNC:
                 result=!hbson_flag;
                 break;
-            case binary:
+            case BINARY:
                 result=false;
                 break;
-            case uuid:
+            case UUID:
                 result=!hbson_flag;
                 break;
-            case md5:
+            case MD5:
                 result=!hbson_flag;
                 break;
             case userDefined:
@@ -164,39 +187,62 @@ struct CheckBSON(bool hbson_flag) {
         return result;
     }
 
-    bool check_element(const(ubyte[]) full_elm, out size_t cpos) {
+    @trusted
+    bool check_element(const(ubyte[]) full_elm, out size_t cpos, ref string previous_name) {
+        current=full_elm;
         byte type=full_elm[0];
-        cpos=1;
-        pos++;
+        cpos=ubyte.sizeof;
+
+        writefln("type=%d full_elm[cpos..$]=%s", type, full_elm[cpos..$]);
         size_t size;
         bool result=check_cstring(full_elm[cpos..$], size);
-        cpos+=size;
-        auto elm=full_elm[size..$];
+        string name=cast(string)(full_elm[cpos..cpos+size]);
+        static if ( hbson_flag ) {
+            scope(exit) {
+                previous_name=name;
+            }
+            if ( result && (previous_name) ) {
+                return less_than(previous_name, name);
+            }
+        }
+        writefln("size=%d %s %d", size, name, name.length);
+        //cast(string)(full_elm[cpos..cpos+size]));
+
+//        if ( result ) {
+//        return true;
         if ( result ) {
+            cpos+=size+1;
+            auto elm=full_elm[cpos..$];
+            writefln("elm=%s", elm);
             with(Type) switch (type) {
                 case DOUBLE:
+                    writef("type=%s %s", type, get_value!double(elm));
                     size=double.sizeof;
+                    writefln("->size=%d %s", size, elm[size..$]);
                     result=true;
                     break;
                 case STRING:
+                    writef("type=%s ", type);
                     result=check_string(elm, size);
+                    writefln("->size=%d", size);
                     break;
                 case DOCUMENT:
-                    result=check_document(data, size);
+                    result=check_document(elm, size);
                     break;
                 case ARRAY:
                     static if ( !hbson_flag ) {
-                        result=check_document(data[uint.sizeof..$], size);
+                        result=check_document(elm, size);
                     }
                     break;
                 case BINARY:
-                    result=check_binary(data[uint.sizeof..$], size);
+                    result=check_binary(elm[uint.sizeof..$], size);
                     break;
                 case OID:
+                    result=!hbson_flag;
                     size=12;
-                    result=true;
                     break;
                 case BOOLEAN:
+                    result=(elm[0] == 0) || (elm[0] == 1);
                     size=1;
                     result=true;
                     break;
@@ -206,15 +252,13 @@ struct CheckBSON(bool hbson_flag) {
                     break;
                 case NULL:
                     size=0;
-                    result=true;
+                    result=!hbson_flag;
                     break;
                 case REGEX:
                     static if ( !hbson_flag ) {
-                        result=check_cstring(data, cpos);
-                        size=cpos;
+                        result=check_cstring(elm, size);
                         if ( result ) {
-                            result=check_cstring(data, cpos);
-                            size+=pos;
+                            result=check_cstring(elm, size);
                         }
                     }
                     break;
@@ -255,11 +299,11 @@ struct CheckBSON(bool hbson_flag) {
                 default:
                     result=false;
                 }
-        }
-        if ( result ) {
-            cpos+=size;
-            pos+=cpos;
-        }
+            }
+            if ( result ) {
+                cpos+=size;
+            }
+//        }
         return result;
     }
 
@@ -268,9 +312,19 @@ struct CheckBSON(bool hbson_flag) {
     }
 
 
+    @trusted
+    size_t pos() {
+        return (data.ptr-current.ptr);
+    }
+
     bool check() {
-        size_t pos;
-        return check_document(data, pos);
+//        size_t pos;
+        writeln("---- ---- ----");
+        writefln("data=%s %d", data, data.length);
+        size_t size;
+        bool result=check_document(data, size);
+        writefln("check.result=%d", size);
+        return result;
     }
 
     // static bool opCall(const(ubyte[]) data) {
@@ -290,21 +344,104 @@ bool isHBSONFormat(const(ubyte[]) data) {
 
 
 //TO_DO: Make a isBSONFormat() static function.
+version(none)
 unittest {
+//    version(none)
+    // Standard types
     {
         auto b=new HBSON();
-        b["a"]="apples";
-        assert(isBSONFormat(b.serialize));
-        assert(isHBSONFormat(b.serialize));
-        ubyte[] test=[2,3];
-        writefln("%s", isBSONFormat(test));
-        assert(!isBSONFormat(test));
+        immutable double x=3.1415;
+        b["double"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
     }
+
+    {
+        auto b=new HBSON();
+        b["string"]="apples";
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+
+    {
+        auto b=new HBSON();
+        b["bool"]=false;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        b["bool"]=true;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    { // Null is not support by HBSON
+        auto b=new HBSON();
+        b.setNull("null");
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(!isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        const int x=-42;
+        b["int32"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        const long x=-42;
+        b["int64"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        const ulong x=42;
+        b["uint64"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+    {
+        auto b=new HBSON();
+        const float x=42.21;
+        b["float"]=x;
+        auto data=b.serialize;
+        assert(isBSONFormat(data));
+        assert(isHBSONFormat(data));
+    }
+
+
     // Type check
-    version(none)
     {
         auto b=new HBSON;
-        b["double"]=1.1;
+        b["string1"]="text1";
+        b["text2"]="string2";
+//        b["s"]="string";
+
+//        b["double"]=1.1;
+//        b["double"]=1;
+        auto data=b.serialize;
+        writefln("%s", isBSONFormat(data));
+        writefln("%s", isHBSONFormat(data));
+    }
+    version(none)
+    {
         assert(isBSONFormat(b.serialize));
         assert(isHBSONFormat(b.serialize));
         b["string"]="string";
@@ -316,5 +453,5 @@ unittest {
         assert(isHBSONFormat(b.serialize));
 
     }
-
+    writeln("End of Check BSON");
 }
