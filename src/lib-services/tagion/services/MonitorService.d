@@ -8,7 +8,7 @@ import std.concurrency;
 
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
-import tagion.Base : Control, basename, bitarray2bool, Pubkey;
+import tagion.Base : Control, basename, bitarray2bool, Pubkey, TagionException;
 import tagion.utils.BSON : Document;
 import tagion.communication.ListenerSocket;
 
@@ -70,7 +70,6 @@ void monitorServiceTask(immutable(Options) opts) {
             ping.close;
             log("Thread joined %d", opts.monitor.port);
         }
-
     }
 
     try{
@@ -101,20 +100,26 @@ void monitorServiceTask(immutable(Options) opts) {
                 (Document doc) {
                     listener_socket.broadcast(doc);
                 },
-                (immutable(Exception) e) {
+                (immutable(TagionException) e) {
+                    log.error(e.msg);
                     stop=true;
-                    throw e;
+                    ownerTid.send(e);
+                },
+                (immutable(Exception) e) {
+                    log.error(e.msg);
+                    stop=true;
+                    ownerTid.send(e);
                 },
                 (immutable(Throwable) t) {
-                    //log.fatal("Throwable -------------------- %d", opts.monitor.port);
+                    log.fatal(t.msg);
                     stop=true;
-                    throw t;
-
+                    ownerTid.send(t);
                 }
                 );
         }
     }
     catch(Throwable t) {
         log.fatal("Throwable %d", opts.monitor.port);
+        ownerTid.send(cast(immutable)t);
     }
 }

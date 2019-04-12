@@ -42,7 +42,8 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     Options opts=args;
     writefln("options.nodeprefix=%s", options.nodeprefix);
 //    opts.node_name=node_task_name(args.node_id);
-    opts.monitor.task_name=monitor_task_name(opts);
+    writefln("opts.monitor.task_name=%s", opts.monitor.task_name);
+//    opts.monitor.task_name=monitor_task_name(opts);
     opts.transaction.task_name=transaction_task_name(opts);
     opts.transcript.task_name=transcript_task_name(opts);
     opts.scripting_engine.task_name=scripting_engine_task_name(opts);
@@ -299,6 +300,20 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                 }
         }
 
+        void tagionexception(immutable(TagionException) e) {
+            stop=true;
+            ownerTid.send(e);
+        }
+
+        void exception(immutable(Exception) e) {
+            stop=true;
+            ownerTid.send(e);
+        }
+
+        void throwable(immutable(Throwable) t) {
+            stop=true;
+            ownerTid.send(t);
+        }
 
         static if (has_random_seed) {
             void sequential(uint time, uint random)
@@ -321,6 +336,10 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                     &controller,
                     &sequential,
                     &receive_buffer,
+                    &tagionexception,
+                    &exception,
+                    &throwable,
+
                     );
                 if ( !message_received ) {
                     log("TIME OUT");
@@ -337,6 +356,9 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                     &controller,
                     // &sequential,
                     &receive_buffer,
+                    &tagionexception,
+                    &exception,
+                    &throwable,
                     );
                 if ( !message_received ) {
                     log("TIME OUT");
@@ -355,6 +377,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             if ( net.callbacks ) {
                 net.callbacks.consensus_failure(e);
             }
+            ownerTid.send(cast(immutable)e);
         }
         catch ( Exception e ) {
             auto msg=format("%s: %s\n%s", opts.node_name, e.msg, typeid(e));
@@ -362,6 +385,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             // fout.writeln(msg);
             // writeln(msg);
             stop=true;
+            ownerTid.send(cast(immutable)e);
         }
         catch ( Throwable t ) {
             t.msg ~= format(" - From hashnode thread %s", opts.node_id);
@@ -369,7 +393,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             // fout.writeln(t);
             // writeln(t);
             stop=true;
-            throw t;
+            ownerTid.send(cast(immutable)t);
         }
 
     }
