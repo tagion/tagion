@@ -5,7 +5,8 @@ import std.stdio : File;
 import std.format;
 
 import tagion.Options;
-import tagion.Base : EnumText, convertEnum, consensusCheck, consensusCheckArguments, Pubkey, Buffer, buf_idup;
+import tagion.Base : EnumText, Pubkey, Buffer, buf_idup;
+import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.BSON : HBSON, Document;
 import tagion.utils.LRU;
