@@ -20,15 +20,15 @@ enum LoggerType {
 
 @safe
 static struct Logger {
-    protected string label;
+    protected string _task_name;
     protected Tid logger_tid;
     protected uint id;
     protected uint[] masks;
     // @trusted
-    // this(string label, string logger_task) {
+    // this(string _task_name, string logger_task) {
     //     logger_tid=locate(logger_task);
     //     push(LoggerType.ALL);
-    //     this.label=label;
+    //     this._task_name=_task_name;
     // }
 
     @trusted
@@ -41,8 +41,13 @@ static struct Logger {
 //        writefln("Before '%s'", locate(thisTid));
         .register(task_name, thisTid);
         logger_tid=locate(options.logger.task_name);
-        label=task_name;
+        _task_name=task_name;
         stderr.writefln("Register: %s logger=%s %s ", task_name, options.logger.task_name, (logger_tid != logger_tid.init));
+    }
+
+    @property
+    string task_name() pure const nothrow {
+        return _task_name;
     }
 
     void push(const uint mask) {
@@ -61,11 +66,11 @@ static struct Logger {
     void report(LoggerType type, string text) {
         if ( type | masks[$-1] ) {
             if (logger_tid == logger_tid.init) {
-                stderr.writefln("ERROR: Logger not register for '%s'", label);
-                stderr.writefln("\t%s:%s: %s", label, type, text);
+                stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
+                stderr.writefln("\t%s:%s: %s", _task_name, type, text);
             }
             else {
-                logger_tid.send(type, label, text);
+                logger_tid.send(type, _task_name, text);
             }
         }
     }

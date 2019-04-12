@@ -1,4 +1,4 @@
-module tagion.services.MonitorService;
+module tagion.services.TransactionService;
 
 import std.stdio : writeln, writefln;
 import std.format;
@@ -9,45 +9,42 @@ import std.concurrency;
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
 import tagion.Base : Control, basename, bitarray2bool, Pubkey;
-import tagion.TagionExceptions : TagionException;
-
-import tagion.utils.BSON : Document;
 import tagion.communication.ListenerSocket;
 
 
 //Create flat webserver start class function - create Backend class.
-void monitorServiceTask(immutable(Options) opts) {
+void transactionServiceTask(immutable(Options) opts) {
     // Set thread global options
     setOptions(opts);
-    immutable task_name=opts.monitor.task_name;
-    // writefln("Before monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
+    immutable task_name=opts.transaction.task_name;
+    // writefln("Before transactionServiceTask task_name=%s opt.logger=%s options.logger=%s",
     //     task_name,
     //     opts.logger.task_name,
     //     options.logger.task_name,
     //     );
-    // // Fixme CBR:
-    // // Some race between the logger and this task
-    // // This delay hackes it for now
+    // Fixme CBR:
+    // Some race between the logger and this task
+    // This delay hackes it for now
     // Thread.sleep(500.msecs);
-    // writefln("After monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
+    // writefln("After transactonServiceTask task_name=%s opt.logger=%s options.logger=%s",
     //     task_name,
     //     opts.logger.task_name,
     //     options.logger.task_name,
     //     );
     log.register(task_name);
 
-    log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
+    log("SockectThread port=%d addresss=%s", opts.transaction.port, opts.url);
     scope(failure) {
-        log.error("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
+        log.error("In failure of soc. port=%d th., flag %s:", opts.transaction.port, Control.FAIL);
         ownerTid.prioritySend(Control.FAIL);
     }
 
     scope(success) {
-        log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
+        log("In success of soc. port=%d th., flag %s:", opts.transaction.port, Control.END);
         ownerTid.prioritySend(Control.END);
     }
 
-    auto listener_socket = ListenerSocket(opts, opts.url, opts.monitor.port);
+    auto listener_socket = ListenerSocket(opts, opts.url, opts.transaction.port);
     void delegate() listerner;
     listerner.funcptr = &ListenerSocket.run;
     listerner.ptr = &listener_socket;
@@ -72,6 +69,7 @@ void monitorServiceTask(immutable(Options) opts) {
             ping.close;
             log("Thread joined %d", opts.monitor.port);
         }
+
     }
 
     try{
@@ -99,29 +97,20 @@ void monitorServiceTask(immutable(Options) opts) {
                 (immutable(ubyte)[] bson_bytes) {
                     listener_socket.broadcast(bson_bytes);
                 },
-                (Document doc) {
-                    listener_socket.broadcast(doc);
-                },
-                (immutable(TagionException) e) {
-                    log.error(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                },
                 (immutable(Exception) e) {
-                    log.error(e.msg);
                     stop=true;
-                    ownerTid.send(e);
+                    throw e;
                 },
                 (immutable(Throwable) t) {
-                    log.fatal(t.msg);
+                    //log.fatal("Throwable -------------------- %d", opts.monitor.port);
                     stop=true;
-                    ownerTid.send(t);
+                    throw t;
+
                 }
                 );
         }
     }
     catch(Throwable t) {
         log.fatal("Throwable %d", opts.monitor.port);
-        ownerTid.send(cast(immutable)t);
     }
 }
