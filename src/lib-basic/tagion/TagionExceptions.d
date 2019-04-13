@@ -18,7 +18,7 @@ class TagionException : Exception {
 }
 
 @safe
-template convertEnum(Enum, Consensus) {
+template ConvertEnum(Enum, Consensus) {
     const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
         if ( enum_number <= Enum.max) {
             return cast(Enum)enum_number;
@@ -29,7 +29,7 @@ template convertEnum(Enum, Consensus) {
 }
 
 @safe
-template consensusCheck(Consensus) {
+template ConsensusCheck(Consensus) {
     static if ( is(Consensus:ConsensusException) ) {
         void consensusCheck(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
             if (!flag) {
@@ -37,10 +37,13 @@ template consensusCheck(Consensus) {
             }
         }
     }
+    else {
+        static assert(0, "Type "~Consensus.stringof~" not supported");
+    }
 }
 
 @safe
-template consensusCheckArguments(Consensus) {
+template ConsensusCheckArguments(Consensus) {
     static if ( is(Consensus:ConsensusException) ) {
         ref auto consensusCheckArguments(A...)(A args) {
             struct Arguments {
@@ -54,6 +57,9 @@ template consensusCheckArguments(Consensus) {
             }
             return const(Arguments)(args);
         }
+    }
+    else {
+        static assert(0, "Type "~Consensus.stringof~" not supported");
     }
 }
 
