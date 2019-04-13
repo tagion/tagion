@@ -56,7 +56,6 @@ static unittest {
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
     static assert(isBufferType!(Pubkey));
-    pragma(msg, TypedefType!int);
 }
 
 unittest {
