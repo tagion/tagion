@@ -63,7 +63,7 @@ static struct Logger {
     }
 
     @trusted
-    void report(LoggerType type, string text) {
+    void report(LoggerType type, lazy string text) {
         if ( type | masks[$-1] ) {
             if (logger_tid == logger_tid.init) {
                 stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
@@ -75,40 +75,53 @@ static struct Logger {
         }
     }
 
-    void opCall(string text) {
+    @trusted
+    void report(Args...)(LoggerType type, string fmt, lazy Args args) {
+        if ( type | masks[$-1] ) {
+            if (logger_tid == logger_tid.init) {
+                stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
+                stderr.writefln("\t%s:%s: %s", _task_name, type, format(fmt, args));
+            }
+            else {
+                report(type, _task_name, format(fmt, args));
+            }
+        }
+    }
+
+    void opCall(lazy string text) {
         report(LoggerType.INFO, text);
     }
 
     @trusted
-    void opCall(Args...)(string fmt, Args args) {
-        opCall(format(fmt, args));
+    void opCall(Args...)(string fmt, lazy Args args) {
+        report(LoggerType.INFO, fmt, args);
     }
 
-    void trace(Args...)(string fmt, Args args) {
-        report(LoggerType.TRACE, format(fmt, args));
+    void trace(Args...)(string fmt, lazy Args args) {
+        report(LoggerType.TRACE, fmt, args);
     }
 
-    void warning(Args...)(string fmt, Args args) {
-        report(LoggerType.WARNING, format(fmt, args));
+    void warning(Args...)(string fmt, lazy Args args) {
+        report(LoggerType.WARNING, fmt, args);
     }
 
-    void warning(string text) {
+    void warning(lazy string text) {
         report(LoggerType.WARNING, text);
     }
 
-    void error(Args...)(string fmt, Args args) {
-        report(LoggerType.ERROR, format(fmt, args));
+    void error(Args...)(string fmt, lazy Args args) {
+        report(LoggerType.ERROR, fmt, args);
     }
 
-    void error(string text) {
+    void error(lazy string text) {
         report(LoggerType.ERROR, text);
     }
 
-    void fatal(Args...)(string fmt, Args args) {
-        report(LoggerType.FATAL, format(fmt, args));
+    void fatal(Args...)(string fmt, lazy Args args) {
+        report(LoggerType.FATAL, fmt, args);
     }
 
-    void fatal(string text) {
+    void fatal(lazy string text) {
         report(LoggerType.FATAL, text);
     }
 
