@@ -6,7 +6,7 @@ import std.format;
 
 import tagion.Options;
 import tagion.Base : EnumText, Pubkey, Buffer, buf_idup;
-import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
+import tagion.TagionExceptions : ConvertEnum, ConsensusCheck, ConsensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.BSON : HBSON, Document;
 import tagion.utils.LRU;
@@ -38,9 +38,10 @@ class StdRequestNet : RequestNet {
 
 
 alias ReceiveQueue = Queue!(immutable(ubyte[]));
-alias check=consensusCheck!(GossipConsensusException);
-alias consensus=consensusCheckArguments!(GossipConsensusException);
+alias check=ConsensusCheck!(GossipConsensusException);
+alias consensus=ConsensusCheckArguments!(GossipConsensusException);
 
+pragma(msg, typeof(check).stringof);
 @safe
 class StdSecureNet : StdRequestNet, SecureNet {
     // The Eva value is set up a low negative number
@@ -69,9 +70,10 @@ class StdSecureNet : StdRequestNet, SecureNet {
     private NativeSecp256k1 _crypt;
     bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) {
 
-        if ( signature.length == 0 && signature.length <= 520) {
-            consensusCheck!SecurityConsensusException(0, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        }
+//        if ( signature.length == 0 && signature.length <= 520) {
+        ConsensusCheck!(SecurityConsensusException)(signature.length == 0 && signature.length <= 520,
+            ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+//        }
         return _crypt.verify(message, signature, cast(Buffer)pubkey);
     }
 
@@ -405,7 +407,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
     }
 
 
-    alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
+    alias convertState=ConvertEnum!(ExchangeState, GossipConsensusException);
 
     @trusted
     void trace(string type, immutable(ubyte[]) data) {
@@ -507,7 +509,8 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                         received_node.state=NONE;
                         break;
                     case SECOND_WAVE:
-                        consensus(received_node.state, TIDE_WAVE).check( received_node.state == TIDE_WAVE,  ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
+                        consensus(received_node.state, TIDE_WAVE).check( received_node.state == TIDE_WAVE,
+                            ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                         Tides tides;
 
                         immutable father_fingerprint=waveFront(received_pubkey, block, tides);
