@@ -13,7 +13,7 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
-
+import tagion.TagionExceptions : TagionException;
 
 
 import tagion.services.ScriptCallbacks;
