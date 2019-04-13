@@ -6,7 +6,8 @@ import std.format;
 
 import tagion.Options;
 import tagion.Base : EnumText, Pubkey, Buffer, buf_idup;
-import tagion.TagionExceptions : ConvertEnum, ConsensusCheck, ConsensusCheckArguments;
+import tagion.TagionExceptions : convertEnum;
+//, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.BSON : HBSON, Document;
 import tagion.utils.LRU;
@@ -38,10 +39,9 @@ class StdRequestNet : RequestNet {
 
 
 alias ReceiveQueue = Queue!(immutable(ubyte[]));
-alias check=ConsensusCheck!(GossipConsensusException);
-alias consensus=ConsensusCheckArguments!(GossipConsensusException);
+alias check=consensusCheck!(GossipConsensusException);
+alias consensus=consensusCheckArguments!(GossipConsensusException);
 
-pragma(msg, typeof(check).stringof);
 @safe
 class StdSecureNet : StdRequestNet, SecureNet {
     // The Eva value is set up a low negative number
@@ -71,7 +71,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
     bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) {
 
 //        if ( signature.length == 0 && signature.length <= 520) {
-        ConsensusCheck!(SecurityConsensusException)(signature.length == 0 && signature.length <= 520,
+        consensusCheck!(SecurityConsensusException)(signature.length == 0 && signature.length <= 520,
             ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
 //        }
         return _crypt.verify(message, signature, cast(Buffer)pubkey);
@@ -407,7 +407,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
     }
 
 
-    alias convertState=ConvertEnum!(ExchangeState, GossipConsensusException);
+    alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
 
     @trusted
     void trace(string type, immutable(ubyte[]) data) {

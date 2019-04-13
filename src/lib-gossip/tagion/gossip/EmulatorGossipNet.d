@@ -9,7 +9,7 @@ import std.conv : to;
 import tagion.revision;
 import tagion.Options;
 import tagion.Base : EnumText, Buffer, Pubkey, Payload, buf_idup,  basename, isBufferType;
-import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
+//import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.Random;
 import tagion.utils.LRU;
