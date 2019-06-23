@@ -65,8 +65,9 @@ enum Type : byte {
         INT64           = 0x12,  /// 64-bit integer,
 
         UINT32          = 0x20,  // 32 bit unsigend integer
+        FLOAT           = 0x21,  // Float 32
         UINT64          = 0x22,  // 64 bit unsigned integer
-        FLOAT           = 0x31,  // Float 32
+        HASHDOC         = 0x23,  // Hash point to documement
         TRUNC           = 0x3f,  // Trunc value for the native type
         MAX             = 0x7f,  /// Special type which compares higher than all other possible BSON element values
         /// Native types is only used inside the BSON object
@@ -653,6 +654,9 @@ public:
                 return t;
             case NONE, UNDEFINED:
                 return 0;
+            case HASHDOC:
+                 assert(0, "Hashdoc not implemented yet");
+                 break;
             case NULL:
                 return 5;
                 case DOUBLE, INT32, INT64:
@@ -777,6 +781,9 @@ public:
             case DBPOINTER:
                 s = bodySize + 4 + 12;
                 break;
+            case HASHDOC:
+                 assert(0, "Hashdoc not implemented yet");
+                 break;
             case REGEX:
                 auto p1 = cast(immutable(char*))_data[1 + rawKeySize..$].ptr;
                 size_t length1 = strlen(p1);
@@ -1230,6 +1237,10 @@ public:
             case ARRAY:
                 //result ~= DOCUMENT.toFormatString(true, full);
                 break;
+             case HASHDOC:
+                  assert(0, "Hashdoc not implemented yet");
+                 break;
+
             case JS_CODE_W_SCOPE:
                 result ~= "codeWScope(" ~ codeWScope ~ ")";
                 // TODO: Add codeWScopeObject
@@ -1605,7 +1616,10 @@ int compareValue(ref const Element lhs, ref const Element rhs) {
         case DOCUMENT,  ARRAY:
             // TODO
             return 0;
-        case BINARY:
+         case HASHDOC:
+              assert(0, "Hashdoc not implemented yet");
+              break;
+         case BINARY:
             immutable ls = lhs.bodySize;
             immutable rs = rhs.bodySize;
 
@@ -2319,7 +2333,10 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case NONE:
             case MAX:
             case TRUNC:
-                break;
+                 break;
+            case HASHDOC:
+                 assert(0, "Hashdoc not implemented yet");
+                 break;
             case DOUBLE:
             case FLOAT:
                 static if (is(BaseT:double)) {
@@ -2755,9 +2772,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
         }
     }
 
-    @trusted
-    immutable(char)[] toInfo() const {
-        immutable(char)[] result;
+     @trusted
+     immutable(char)[] toInfo() const {
+         immutable(char)[] result;
         with(Type) final switch(_type) {
             case MIN:
             case MAX:
@@ -2814,9 +2831,13 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
             case UINT64:
                 result~=format("%s %s", to!string(_type), value.uint64);
                 break;
-            case TIMESTAMP:
+             case TIMESTAMP:
                 result~=format("%s %s", to!string(_type), value.int64);
                 break;
+             case HASHDOC:
+                  assert(0, "Hashdoc not implemented yet");
+                  break;
+
             case NATIVE_DOCUMENT:
                 result~=format("%s %s", to!string(_type), value.document_array.length);
                 break;
@@ -3030,6 +3051,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                     case BINARY:
                         e.append_binary(data);
                         break;
+                     case HASHDOC:
+                          assert(0, "Hashdoc not implemented yet");
+                          break;
                     case UNDEFINED:
                     case NULL:
                     case MAX:
@@ -3051,7 +3075,9 @@ class BSON(bool key_sort_flag=true, bool one_time_write=false) {
                         data~=zero;
                         break;
                     case DBPOINTER:
+                         assert(0, format("%s not supported", DBPOINTER));
                         break;
+
                     case JS_CODE_W_SCOPE:
                         immutable(ubyte)[] local=e.serialize();
                         // Size of block
