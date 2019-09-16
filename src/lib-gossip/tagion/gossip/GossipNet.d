@@ -71,7 +71,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
     bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) {
 
 //        if ( signature.length == 0 && signature.length <= 520) {
-        consensusCheck!(SecurityConsensusException)(signature.length == 0 && signature.length <= 520,
+        consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
             ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
 //        }
         return _crypt.verify(message, signature, cast(Buffer)pubkey);
