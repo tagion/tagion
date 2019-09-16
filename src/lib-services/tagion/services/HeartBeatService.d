@@ -4,7 +4,7 @@ import core.thread;
 import std.concurrency;
 
 import tagion.Options;
-import tagion.services.TagionLog;
+import tagion.services.LoggerService;
 import tagion.utils.Random;
 
 import tagion.Base : Pubkey, Control;
@@ -12,6 +12,12 @@ import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
 void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_from, immutable uint N, immutable uint seed, immutable uint delay, immutable uint timeout) {
+    // Set thread options
+    set(opts);
+
+    immutable tast_name="heatbeat";
+//    register(tast_name, thisTid);
+    log.register(tast_name);
 //      immutable N=opts.nodes;
 //      immutable delay=opts.delay;
 //      immutable timeout=opts.timeout;
@@ -22,13 +28,13 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
     Tid[] tids;
 //    Tid[] scription_api_tids;
     Pubkey[]  pkeys;
-    immutable monitor_address = opts.url; //"127.0.0.1";
+//    immutable monitor_address = opts.url; //"127.0.0.1";
 
     version(Monitor) {
         auto network_socket_thread_id = spawn(&createSocketThread, opts.network_socket_port, monitor_address);
      //spawn(&createSocketThread, ThreadState.LIVE, monitor_port, monitor_ip_address, true);
 
-        register(format("network_socket_thread %s", opts.network_socket_port), network_socket_thread_id);
+//        register(format("network_socket_thread %s", opts.network_socket_port), network_socket_thread_id);
     }
 
 //    immutable transcript_enable=opts.transcript.enable;
@@ -48,22 +54,25 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
             }
         }
 
-        log.writeln("----- Stop all tasks -----");
+        log("----- Stop all tasks -----");
         foreach(i, ref tid; tids) {
-            log.writefln("Send stop to %d", i);
+            log("Send stop to %d", i);
             tid.prioritySend(Control.STOP);
         }
-        log.writeln("----- Wait for all tasks -----");
+        log("----- Wait for all tasks -----");
         foreach(i, ref tid; tids) {
             auto control=receiveOnly!Control;
             if ( control == Control.END ) {
-                log.writefln("Thread %d stopped %d", i, control);
+                log("Thread %d stopped %d", i, control);
             }
             else {
-                log.writefln("Thread %d stopped %d unexpected control %s", i, control);
+                log("Thread %d stopped %d unexpected control %s", i, control);
             }
         }
-        log.writeln("----- Stop send to all -----");
+        log("----- Stop send to all -----");
+
+        log.close;
+//        ownerTid.send(Control.END);
     }
 
     foreach(i;0..opts.nodes) {
@@ -73,21 +82,22 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
         }
         service_options.node_id=cast(uint)i;
-        service_options.node_name=getname(service_options.node_id);
+        //service_options.node_name=getname(service_options.node_id);
         immutable(Options) tagion_service_options=service_options;
 //
 //        immutable setup=immutable(EmulatorGossipNet.Init)(timeout, i, N, monitor_address, service_options.monitor.port, 1234);
 //        auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), setup);
         auto tid=spawn(&(tagionServiceThread!EmulatorGossipNet), tagion_service_options);
-        register(getname(i), tid);
+//        scope(exit)
+//        register(getname(i), tid);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
-        log.writefln("Start %d", pkeys.length);
+        log("Start %d", pkeys.length);
     }
 
-    log.writeln("----- Receive sync signal from nodes -----");
+    log("----- Receive sync signal from nodes -----");
 
-    log.writefln("----- Send acknowlege signals  num of keys=%d -----", pkeys.length);
+    log("----- Send acknowlege signals  num of keys=%d -----", pkeys.length);
 
     foreach(ref tid; tids) {
         foreach(pkey; pkeys) {
@@ -99,26 +109,24 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
 
     bool stop=false;
 
-    // Set thread options
-    set(opts);
     if ( opts.sequential ) {
         Thread.sleep(1.seconds);
 
 
-        log.writeln("Start the heart beat");
+        log("Start the heart beat");
         uint node_id;
         uint time=opts.delay;
         Random!uint rand;
         rand.seed(opts.seed);
         while(!stop) {
             if ( !opts.infinity ) {
-                log.writefln("count=%d", count);
+                log("count=%d", count);
             }
             Thread.sleep(opts.delay.msecs);
 
             tids[node_id].send(time, rand.value);
             if ( !opts.infinity ) {
-                log.writefln("send time=%d to  %d", time, node_id);
+                log("send time=%d to  %d", time, node_id);
             }
 
             time+=opts.delay;
@@ -136,7 +144,7 @@ void heartBeatServiceThread(immutable(Options) opts) { //immutable uint count_fr
     else {
         while(!stop) {
             if ( !opts.infinity ) {
-                log.writefln("count=%d", count);
+                log("count=%d", count);
             }
             Thread.sleep(opts.delay.msecs);
             if ( !opts.infinity ) {

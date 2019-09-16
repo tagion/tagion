@@ -6,7 +6,7 @@ import std.concurrency;
 
 import tagion.Base : Control;
 
-import tagion.Options : Options, setOptions, options;
+import tagion.Options : Options, set, options;
 
 enum LoggerType {
     INFO    = 1,
@@ -14,21 +14,20 @@ enum LoggerType {
     WARNING = TRACE<<1,
     ERROR   = WARNING <<1,
     FATAL   = ERROR<<1,
-    ALL     = INFO|TRACE|WARNING|ERROR|FATAL,
-    STDERR  = WARNING|ERROR|FATAL
+    ALL     = INFO|TRACE|WARNING|ERROR|FATAL
 }
 
 @safe
 static struct Logger {
-    protected string _task_name;
+    protected string label;
     protected Tid logger_tid;
     protected uint id;
     protected uint[] masks;
     // @trusted
-    // this(string _task_name, string logger_task) {
+    // this(string label, string logger_task) {
     //     logger_tid=locate(logger_task);
     //     push(LoggerType.ALL);
-    //     this._task_name=_task_name;
+    //     this.label=label;
     // }
 
     @trusted
@@ -41,13 +40,8 @@ static struct Logger {
 //        writefln("Before '%s'", locate(thisTid));
         .register(task_name, thisTid);
         logger_tid=locate(options.logger.task_name);
-        _task_name=task_name;
-        stderr.writefln("Register: %s logger=%s %s ", task_name, options.logger.task_name, (logger_tid != logger_tid.init));
-    }
-
-    @property
-    string task_name() pure const nothrow {
-        return _task_name;
+        label=task_name;
+        stderr.writefln("Register: %s %s", task_name, (logger_tid != logger_tid.init));
     }
 
     void push(const uint mask) {
@@ -63,66 +57,41 @@ static struct Logger {
     }
 
     @trusted
-    void report(LoggerType type, lazy string text) {
+    void report(LoggerType type, string text) {
         if ( type | masks[$-1] ) {
             if (logger_tid == logger_tid.init) {
-                stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
-                stderr.writefln("\t%s:%s: %s", _task_name, type, text);
+                stderr.writeln("ERROR: Logger not register");
+                stderr.writefln("\t%s:%s: %s", label, type, text);
             }
             else {
-                logger_tid.send(type, _task_name, text);
+                logger_tid.send(type, label, text);
             }
         }
     }
 
-    @trusted
-    void report(Args...)(LoggerType type, string fmt, lazy Args args) {
-        if ( type | masks[$-1] ) {
-            if (logger_tid == logger_tid.init) {
-                stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
-                stderr.writefln("\t%s:%s: %s", _task_name, type, format(fmt, args));
-            }
-            else {
-                report(type, _task_name, format(fmt, args));
-            }
-        }
-    }
-
-    void opCall(lazy string text) {
+    void opCall(string text) {
         report(LoggerType.INFO, text);
     }
 
     @trusted
-    void opCall(Args...)(string fmt, lazy Args args) {
-        report(LoggerType.INFO, fmt, args);
+    void opCall(Args...)(string fmt, Args args) {
+        opCall(format(fmt, args));
     }
 
-    void trace(Args...)(string fmt, lazy Args args) {
-        report(LoggerType.TRACE, fmt, args);
+    void trace(Args...)(string fmt, Args args) {
+        report(LoggerType.TRACE, format(fmt, args));
     }
 
-    void warning(Args...)(string fmt, lazy Args args) {
-        report(LoggerType.WARNING, fmt, args);
+    void warring(Args...)(string fmt, Args args) {
+        report(LoggerType.WARRING, format(fmt, args));
     }
 
-    void warning(lazy string text) {
-        report(LoggerType.WARNING, text);
+    void error(Args...)(string fmt, Args args) {
+        report(LoggerType.ERROR, format(fmt, args));
     }
 
-    void error(Args...)(string fmt, lazy Args args) {
-        report(LoggerType.ERROR, fmt, args);
-    }
-
-    void error(lazy string text) {
-        report(LoggerType.ERROR, text);
-    }
-
-    void fatal(Args...)(string fmt, lazy Args args) {
-        report(LoggerType.FATAL, fmt, args);
-    }
-
-    void fatal(lazy string text) {
-        report(LoggerType.FATAL, text);
+    void fatal(Args...)(string fmt, Args args) {
+        report(LoggerType.FATAL, format(fmt, args));
     }
 
     @trusted
@@ -139,7 +108,7 @@ static Logger log;
 // }
 
 void loggerTask(immutable(Options) opts) {
-    setOptions(opts);
+    set(opts);
     @trusted
     void task_register() {
         assert(register(opts.logger.task_name, thisTid));
@@ -168,17 +137,15 @@ void loggerTask(immutable(Options) opts) {
             }
     }
 
-    @trusted
-    void receiver(LoggerType type, string label, string text) {
+//    @trusted
+    void receiver(LoggerType type, string label, string text) @safe  {
         if ( type is LoggerType.INFO ) {
             file.writefln("%s: %s", label, text);
         }
         else {
             file.writefln("%s:%s: %s", label, type, text);
         }
-        if ( type & LoggerType.STDERR) {
-            stderr.writefln("%s:%s: %s", type, label, text);
-        }
+//        stderr.writefln("%s:%s: %s", type, label, text);
     }
 
     ownerTid.send(Control.LIVE);
@@ -191,7 +158,6 @@ void loggerTask(immutable(Options) opts) {
         }
         catch ( Exception e ) {
             stderr.writefln("Logger error %s", e.msg);
-            ownerTid.send(cast(immutable)e);
             stop=true;
         }
         catch ( Throwable t ) {
