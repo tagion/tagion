@@ -8,7 +8,7 @@ import tagion.Base : Buffer, Payload, Control;
 import tagion.utils.BSON : HBSON, Document;
 import tagion.Keywords;
 
-import tagion.services.LoggerService;
+import tagion.services.TagionLog;
 
 @safe class ScriptCallbacks : EventScriptCallbacks {
     private Tid _event_script_tid;
@@ -18,13 +18,13 @@ import tagion.services.LoggerService;
     }
 
     void epoch(const(Event[]) received_event, const(long) time) {
-        log("Epoch with %d events", received_event.length);
+        log.writefln("Epoch with %d events", received_event.length);
         auto bson=new HBSON;
         bson[Keywords.time]=time;
         Document[] payloads;
 
         foreach(i, e; received_event) {
-            log("\tepoch=%d %d", i, e.eventbody.payload.length);
+            log.writefln("\tepoch=%d %d", i, e.eventbody.payload.length);
             if ( e.eventbody.payload ) {
                 payloads~=Document(e.eventbody.payload);
             }
@@ -32,14 +32,14 @@ import tagion.services.LoggerService;
         if ( payloads ) {
             bson[Keywords.epoch]=payloads;
             immutable data=bson.serialize;
-            log("SEND Epoch with %d transactions %d bytes", payloads.length, data.length);
+            log.writefln("SEND Epoch with %d transactions %d bytes", payloads.length, data.length);
             send(data);
         }
     }
 
     @trusted
     void send(immutable(Buffer) data) {
-        log("send data=%d", data.length);
+        log.writefln("send data=%d", data.length);
         _event_script_tid.send(data);
     }
 

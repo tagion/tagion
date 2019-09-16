@@ -1,127 +1,105 @@
 module tagion.services.MonitorService;
 
 import std.stdio : writeln, writefln;
-import std.format;
 import std.socket;
 import core.thread;
 import std.concurrency;
 
-import tagion.services.LoggerService;
-import tagion.Options : Options, setOptions, options;
+import tagion.Options : Options, set;
 import tagion.Base : Control, basename, bitarray2bool, Pubkey;
-import tagion.TagionExceptions : TagionException;
-
-import tagion.utils.BSON : Document;
 import tagion.communication.ListenerSocket;
 
 
 //Create flat webserver start class function - create Backend class.
-void monitorServiceTask(immutable(Options) opts) {
-    // Set thread global options
-    setOptions(opts);
-    immutable task_name=opts.monitor.task_name;
-    // writefln("Before monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
-    //     task_name,
-    //     opts.logger.task_name,
-    //     options.logger.task_name,
-    //     );
-    // // Fixme CBR:
-    // // Some race between the logger and this task
-    // // This delay hackes it for now
-    // Thread.sleep(500.msecs);
-    // writefln("After monitorServiceTask task_name=%s opt.logger=%s options.logger=%s",
-    //     task_name,
-    //     opts.logger.task_name,
-    //     options.logger.task_name,
-    //     );
-    log.register(task_name);
-
-    log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
+void monitorServiceThread(immutable(Options) opts) {
+    writefln("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
     scope(failure) {
-        log.error("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
+        writefln("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
         ownerTid.prioritySend(Control.FAIL);
     }
 
     scope(success) {
-        log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
+        writefln("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
         ownerTid.prioritySend(Control.END);
     }
 
-    auto listener_socket = ListenerSocket(opts, opts.url, opts.monitor.port);
-    void delegate() listerner;
-    listerner.funcptr = &ListenerSocket.run;
-    listerner.ptr = &listener_socket;
-    auto listener_socket_thread = new Thread( listerner ).start();
+    // Set thread global options
+    set(opts);
+
+//    auto lso = ListenerSocket(opts.monitor.port, opts.url, thisTid);
+    auto lso = ListenerSocket(thisTid, opts.url, opts.monitor.port);
+    void delegate() ls;
+    ls.funcptr = &ListenerSocket.run;
+    ls.ptr = &lso;
+    auto listener_socket_thread = new Thread( ls ).start();
 
     scope(exit) {
-        log("In exit of soc. port=%d th", opts.monitor.port);
+        writefln("In exit of soc. port=%d th", opts.monitor.port);
 
         if ( listener_socket_thread !is null ) {
-            listener_socket.close;
-            log("Kill listener socket. %d", opts.monitor.port);
+            lso.close;
+            writefln("Kill listener socket. %d", opts.monitor.port);
             //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
 //            if ( ldo.active ) {
             auto ping=new TcpSocket(new InternetAddress(opts.url, opts.monitor.port));
 //                receive( &handleClient);
 //                Thread.sleep(500.msecs);
             // run_listener = false;
-            log("run_listerner %s %s", listener_socket.active, opts.monitor.port);
+            writefln("run_listerner %s %s", lso.active, opts.monitor.port);
 //            }
-            listener_socket.stop;
+            lso.stop;
             listener_socket_thread.join();
             ping.close;
-            log("Thread joined %d", opts.monitor.port);
+            writefln("Thread joined %d", opts.monitor.port);
         }
+
     }
 
     try{
-        bool stop;
-//        bool runBackend = true;
+
+        bool runBackend = true;
         void handleState (Control ts) {
             with(Control) switch(ts) {
                 case STOP:
-                    log("Kill socket thread. %d", opts.monitor.port);
-                    stop = true;
+                    writefln("Kill socket thread. %d", opts.monitor.port);
+                    runBackend = false;
                     break;
                 case LIVE:
-                    stop = false;
+                    runBackend = true;
                     break;
                 default:
-                    log.error("Bad Control command %s", ts);
-                    stop=true;
+                    writefln("Bad Control command %s", ts);
+                    runBackend = false;
                 }
         }
 
-        while(!stop) {
+        while(runBackend) {
             receiveTimeout(500.msecs,
                 //Control the thread
                 &handleState,
+
+                // &handleClient,
+
+                // (string msg) {
+                //     writeln("The backend socket thread received the message and sends to client socket: " , msg);
+                //     if ( lso.active ) {
+                //         lso.sendBytes(generateHoleThroughBsonMsg(msg));
+                //     }
+                // },
+
                 (immutable(ubyte)[] bson_bytes) {
-                    listener_socket.broadcast(bson_bytes);
-                },
-                (Document doc) {
-                    listener_socket.broadcast(doc);
-                },
-                (immutable(TagionException) e) {
-                    log.error(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                },
-                (immutable(Exception) e) {
-                    log.error(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
+                    lso.sendBytes(bson_bytes);
                 },
                 (immutable(Throwable) t) {
-                    log.fatal(t.msg);
-                    stop=true;
-                    ownerTid.send(t);
+                    writefln("Throwable -------------------- %d", opts.monitor.port);
+                    writeln(t);
+                    runBackend=false;
                 }
                 );
         }
     }
     catch(Throwable t) {
-        log.fatal("Throwable %d", opts.monitor.port);
-        ownerTid.send(cast(immutable)t);
+        writefln(":::::::::: Throwable %d", opts.monitor.port);
+        writeln(t);
     }
 }
