@@ -122,6 +122,7 @@ struct Options {
     mixin JSONCommon;
 
     struct ScriptingEngine {
+        string task_name;
         string listener_ip_address;       /// Ip address
         ushort listener_port;             /// Port
         uint listener_max_queue_length;   /// Listener max. incomming connection req. queue length
@@ -140,12 +141,21 @@ struct Options {
 
         string name;                      /// Scripting engine name used for log filename etc.
 
+        uint min_number_of_fibers;
+        uint min_duration_for_accept_ms;
+
+        uint max_accept_call_tries() const pure {
+            const tries = min_duration_for_accept_ms / min_duration_full_fibers_cycle_ms;
+            return tries > 1 ? tries : 2;
+        }
+
         mixin JSONCommon;
     }
 
     ScriptingEngine scripting_engine;
 
     struct Transcript {
+        string task_name;
         // This maybe removed later used to make internal transaction test without TLS connection
         bool enable;
 
@@ -162,6 +172,7 @@ struct Options {
     Transcript transcript;
 
     struct Monitor {
+        string task_name;
         uint max;     /++ Maximum number of monitor sockets open
                        If this value is set to 0
                        one socket is opened for each node
@@ -173,6 +184,29 @@ struct Options {
     }
 
     Monitor monitor;
+
+    struct Transaction {
+        string task_name;
+        string name;
+        ushort port;
+        ushort max;
+        bool disable;
+        mixin JSONCommon;
+    }
+
+    Transaction transaction;
+
+    struct DART {
+        string task_name;
+        string name;
+        string path;
+        // ushort port;
+        // ushort max;
+        // bool disable;
+        mixin JSONCommon;
+    }
+
+    DART dart;
 
     struct Logger {
         string task_name;
@@ -206,20 +240,26 @@ struct Options {
 //__gshared protected static Options __gshared_options;
 __gshared static Options __gshared_options;
 
-static immutable(Options*) options; // Points to the thread global options
 protected static Options options_memory;
 
-static this() @nogc {
-    options=cast(immutable)(&options_memory);
-
+//static immutable(Options*) options;
+// Points to the thread global options
+static immutable(Options*) options() {
+    return cast(immutable)(&options_memory);
 }
+
+
+// static this() @nogc {
+//     options=cast(immutable)(&options_memory);
+
+// }
 
 //@trusted
 /++
 +  Sets the thread global options opt
 +/
 @safe
-static void set(const(Options) opt) {
+static void setOptions(const(Options) opt) {
     options_memory=opt;
 //    separator=opt.separator;
 //    seperator=opt.seperator;
@@ -230,16 +270,17 @@ static void set(const(Options) opt) {
 /++
  + Sets the thread global options to the value of __gshared_options
  +/
-static void set() {
+static void setSharedOptions() {
     import std.stdio;
     writefln("__gshared_options=%s", __gshared_options);
-    set(__gshared_options);
+    setOptions(__gshared_options);
 }
+
 /++
 + Returns:
 +     a copy of the options
 +/
-static Options get() {
+static Options getOptions() {
     Options result=options_memory;
     return result;
 }
@@ -304,7 +345,8 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "noserv|n",  format("Disable monitor sockets: default %s", __gshared_options.monitor.disable), &(__gshared_options.monitor.disable),
         "sockets|M", format("Sets maximum number of monitors opened: default %s", __gshared_options.monitor.max), &(__gshared_options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", __gshared_options.tmp), &(__gshared_options.tmp),
-        "port|p",    format("Sets first monitor port of the port sequency: default %d", __gshared_options.monitor.port),  &(__gshared_options.monitor.port),
+        "monitor|P",    format("Sets first monitor port of the port sequency: default %d", __gshared_options.monitor.port),  &(__gshared_options.monitor.port),
+        "transaction|p",    format("Sets first transaction port of the port sequency: default %d", __gshared_options.transaction.port),  &(__gshared_options.transaction.port),
         "s|seq",     format("The event is produced sequential this is only used in test mode: default %s", __gshared_options.sequential), &(__gshared_options.sequential),
         "stdout",    format("Set the stdout: default %s", __gshared_options.stdout), &(__gshared_options.stdout),
 
@@ -328,45 +370,61 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
 
 __gshared static setDefaultOption() {
     // Main
-    __gshared_options.nodeprefix="Node";
-    __gshared_options.logext="log";
-    __gshared_options.seed=42;
-    __gshared_options.delay=200;
-    __gshared_options.timeout=__gshared_options.delay*4;
-    __gshared_options.nodes=4;
-    __gshared_options.loops=30;
-    __gshared_options.infinity=false;
-    __gshared_options.url="127.0.0.1";
-    // __gshared_options.port=10900;
-    // __gshared_options.disable_sockets=false;
-    __gshared_options.tmp="/tmp/";
-    __gshared_options.stdout="/dev/tty";
-    __gshared_options.separator="_";
-//    __gshared_options.network_socket_port =11900;
-    __gshared_options.sequential=false;
-// Scripting
-    __gshared_options.scripting_engine.listener_ip_address = "0.0.0.0";
-    __gshared_options.scripting_engine.listener_port = 18_444;
-    __gshared_options.scripting_engine.listener_max_queue_length = 100;
-    __gshared_options.scripting_engine.max_connections = 1000;
-    __gshared_options.scripting_engine.max_number_of_accept_fibers = 100;
-    __gshared_options.scripting_engine.min_duration_full_fibers_cycle_ms = 10;
-    __gshared_options.scripting_engine.max_number_of_fiber_reuse = 1000;
-    __gshared_options.scripting_engine.name="engine";
-
-// Transaction test
-    __gshared_options.transcript.pause_from=333;
-    __gshared_options.transcript.pause_to=888;
-    __gshared_options.transcript.name="transcript";
-// Monitor
-    __gshared_options.monitor.port=10900;
-    __gshared_options.monitor.disable=false;
-    __gshared_options.monitor.max=0;
-    __gshared_options.monitor.name="monitor";
-
+    with(__gshared_options) {
+        nodeprefix="Node";
+        logext="log";
+        seed=42;
+        delay=200;
+        timeout=delay*4;
+        nodes=4;
+        loops=30;
+        infinity=false;
+        url="127.0.0.1";
+        //port=10900;
+        //disable_sockets=false;
+        tmp="/tmp/";
+        stdout="/dev/tty";
+        separator="_";
+//  s.network_socket_port =11900;
+        sequential=false;
+    }
+    // Scripting
+    with(__gshared_options.scripting_engine) {
+        listener_ip_address = "0.0.0.0";
+        listener_port = 18_444;
+        listener_max_queue_length = 100;
+        max_connections = 1000;
+        max_number_of_accept_fibers = 100;
+        min_duration_full_fibers_cycle_ms = 10;
+        max_number_of_fiber_reuse = 1000;
+        name="engine";
+        min_number_of_fibers = 10;
+        min_duration_for_accept_ms = 3000;
+    }
+    // Transcript
+    with (__gshared_options.transcript) {
+        pause_from=333;
+        pause_to=888;
+        name="transcript";
+    }
+    // Transaction
+    with(__gshared_options.transaction) {
+        port=10800;
+        disable=false;
+        max=0;
+        name="transaction";
+    }
+    // Monitor
+    with(__gshared_options.monitor) {
+        port=10900;
+        disable=false;
+        max=0;
+        name="monitor";
+    }
     // Logger
-    __gshared_options.logger.task_name="tagion.logger";
-    __gshared_options.logger.file_name="/tmp/tagion.log";
-
-    set();
+    with(__gshared_options.logger) {
+        task_name="tagion.logger";
+        file_name="/tmp/tagion.log";
+    }
+    setSharedOptions();
 }

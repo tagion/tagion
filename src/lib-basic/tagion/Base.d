@@ -1,6 +1,6 @@
 module tagion.Base;
 
-private import tagion.hashgraph.ConsensusExceptions;
+
 private import std.string : format, join, strip;
 private import std.traits;
 private import std.exception : assumeUnique;
@@ -41,11 +41,11 @@ alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 }
 
-static string separator;
-string join(string[] list) {
-    import std.array : array_join=join;
-    return list.array_join(separator);
-}
+// static string separator;
+// string join(string[] list) {
+//     import std.array : array_join=join;
+//     return list.array_join(separator);
+// }
 
 
 //template isBufferType(T) {
@@ -56,7 +56,6 @@ static unittest {
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
     static assert(isBufferType!(Pubkey));
-    pragma(msg, TypedefType!int);
 }
 
 unittest {
@@ -265,67 +264,6 @@ enum Control{
     REQUEST,
     END
 };
-
-/++
- Exception used as a base exception class for all exceptions use in tagion project
-+/
-@safe
-class TagionException : Exception {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
-        super( msg, file, line );
-    }
-}
-
-@safe
-template convertEnum(Enum, Consensus) {
-    const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
-        if ( enum_number <= Enum.max) {
-            return cast(Enum)enum_number;
-        }
-        throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
-        assert(0);
-    }
-}
-
-@safe
-template consensusCheck(Consensus) {
-    static if ( is(Consensus:ConsensusException) ) {
-        void consensusCheck(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
-            if (!flag) {
-                throw new Consensus(code, file, line);
-            }
-        }
-    }
-}
-
-@safe
-template consensusCheckArguments(Consensus) {
-    static if ( is(Consensus:ConsensusException) ) {
-        ref auto consensusCheckArguments(A...)(A args) {
-            struct Arguments {
-                A args;
-                void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) const {
-                    if ( !flag ) {
-                        immutable msg=format(consensus_error_messages[code], args);
-                        throw new Consensus(msg, code, file, line);
-                    }
-                }
-            }
-            return const(Arguments)(args);
-        }
-    }
-}
-
-/++
- + Builds a check function out of a TagionExecption
-+/
-@safe
-void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) {
-    static assert(is(E:TagionException));
-    if (!flag) {
-        throw new E(msg, file, line);
-    }
-}
 
 
 /++
