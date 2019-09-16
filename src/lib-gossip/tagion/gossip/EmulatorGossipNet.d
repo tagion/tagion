@@ -8,8 +8,7 @@ import std.conv : to;
 
 import tagion.revision;
 import tagion.Options;
-import tagion.Base : EnumText, Buffer, Pubkey, Payload, buf_idup,  basename, isBufferType;
-//import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
+import tagion.Base : EnumText, Buffer, Pubkey, Payload, buf_idup, convertEnum, consensusCheck, consensusCheckArguments, basename, isBufferType;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.Random;
 import tagion.utils.LRU;
@@ -24,20 +23,23 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.ConsensusExceptions;
 
-import tagion.services.LoggerService;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
-static string get_node_name(immutable size_t i) {
-    import std.array : join;
-    return [options.nodeprefix, i.to!string].join(options.separator);
+string getname(immutable size_t i) {
+    return join([options.nodeprefix, to!string(i)]);
+}
+
+string getfilename(string[] names) {
+    import std.path;
+    return buildPath(options.tmp, setExtension(names.join, options.logext));
 }
 
 @trusted
-static uint getTids(Tid[] tids) {
+uint getTids(Tid[] tids) {
     uint result=uint.max;
     foreach(i, ref tid ; tids) {
         immutable uint_i=cast(uint)i;
-        immutable taskname=get_node_name(uint_i);
+        immutable taskname=getname(uint_i);
         tid=locate(taskname);
         if ( tid == thisTid ) {
             result=uint_i;
@@ -45,13 +47,6 @@ static uint getTids(Tid[] tids) {
     }
     return result;
 }
-
-
-string getfilename(string[] names) {
-    import std.path;
-    return buildPath(options.tmp, setExtension(names.join, options.logext));
-}
-
 
 @safe
 class EmulatorGossipNet : StdGossipNet {
@@ -93,7 +88,7 @@ class EmulatorGossipNet : StdGossipNet {
             auto pack_doc=Document(e.serialize);
             auto pack=EventPackage(pack_doc);
             immutable fingerprint=calcHash(pack.event_body.serialize);
-            log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
+            fout.writefln("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
         }
     }
 
@@ -102,9 +97,8 @@ class EmulatorGossipNet : StdGossipNet {
         debug {
             if ( options.trace_gossip ) {
                 import std.file;
-//                immutable packfile=format("%s/%s_%d_%s.bson", options.tmp, options.node_name, _send_count, type); //.to!string~"_receive.bson";
-                log.trace("%s/%s_%d_%s.bson", options.tmp, options.node_name, _send_count, type);
-//                write(packfile, data);
+                immutable packfile=format("%s/%s_%d_%s.bson", options.tmp, node_name, _send_count, type); //.to!string~"_receive.bson";
+                write(packfile, data);
                 _send_count++;
             }
         }
@@ -119,12 +113,11 @@ class EmulatorGossipNet : StdGossipNet {
             auto doc_ebody=doc_body[Event.Params.ebody].get!Document;
             auto event_body=immutable(EventBody)(doc_ebody);
         }
-//        trace("send", data);
-        log.trace("send %s bytes", data.length);
+        trace("send", data);
         if ( callbacks ) {
             callbacks.send(channel, data);
         }
-        log("Send %s data=%d", channel.cutHex, data.length);
+        fout.writefln("Send %s data=%d", channel.cutHex, data.length);
         _tids[channel].send(data);
     }
 
