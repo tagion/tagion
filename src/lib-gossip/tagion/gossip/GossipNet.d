@@ -5,7 +5,9 @@ import std.stdio : File;
 import std.format;
 
 import tagion.Options;
-import tagion.Base : EnumText, convertEnum, consensusCheck, consensusCheckArguments, Pubkey, Buffer, buf_idup;
+import tagion.Base : EnumText, Pubkey, Buffer, buf_idup;
+import tagion.TagionExceptions : convertEnum;
+//, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.BSON : HBSON, Document;
 import tagion.utils.LRU;
@@ -19,6 +21,8 @@ import tagion.hashgraph.ConsensusExceptions;
 
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.secp256k1.NativeSecp256k1;
+
+import tagion.services.LoggerService;
 
 @safe
 class StdRequestNet : RequestNet {
@@ -66,9 +70,10 @@ class StdSecureNet : StdRequestNet, SecureNet {
     private NativeSecp256k1 _crypt;
     bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) {
 
-        if ( signature.length == 0 && signature.length <= 520) {
-            consensusCheck!SecurityConsensusException(0, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        }
+//        if ( signature.length == 0 && signature.length <= 520) {
+        consensusCheck!(SecurityConsensusException)(signature.length == 0 && signature.length <= 520,
+            ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+//        }
         return _crypt.verify(message, signature, cast(Buffer)pubkey);
     }
 
@@ -170,7 +175,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
 
 @safe
 abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
-    static File fout;
+//    static File fout;
     static private shared uint _next_global_id;
     static private shared uint[immutable(Pubkey)] _node_id_pair;
 
@@ -426,7 +431,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         Event result;
         auto doc=Document(data);
         Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-        fout.writefln("Receive %s data=%d", received_pubkey.cutHex, data.length);
+        log("Receive %s data=%d", received_pubkey.cutHex, data.length);
 
         check(received_pubkey != pubkey, ConsensusFailCode.GOSSIPNET_REPLICATED_PUBKEY);
 
@@ -504,7 +509,8 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                         received_node.state=NONE;
                         break;
                     case SECOND_WAVE:
-                        consensus(received_node.state, TIDE_WAVE).check( received_node.state == TIDE_WAVE,  ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
+                        consensus(received_node.state, TIDE_WAVE).check( received_node.state == TIDE_WAVE,
+                            ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                         Tides tides;
 
                         immutable father_fingerprint=waveFront(received_pubkey, block, tides);
@@ -537,18 +543,18 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         }
     }
 
-    protected string _node_name;
-    @property void node_name(string name)
-        in {
-            assert(_node_name is null, format("%s is already set", __FUNCTION__));
-        }
-    do {
-        _node_name=name;
-    }
+    // protected string _node_name;
+    // @property void node_name(string name)
+    //     in {
+    //         assert(_node_name is null, format("%s is already set", __FUNCTION__));
+    //     }
+    // do {
+    //     _node_name=name;
+    // }
 
-    @property string node_name() pure const nothrow {
-        return _node_name;
-    }
+    // @property string node_name() pure const nothrow {
+    //     return _node_name;
+    // }
 
     @property
     void time(const(ulong) t) {
