@@ -5,7 +5,7 @@ import std.concurrency;
 
 import tagion.Options;
 
-import tagion.services.ServiceNames;
+//import tagion.services.ServiceNames;
 
 //import tagion.services.LoggerService;
 import tagion.utils.Random;
@@ -66,7 +66,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
             service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
         }
         service_options.node_id=cast(uint)i;
-        service_options.node_name=node_task_name(service_options);
+//        service_options.node_name=node_task_name(service_options);
         immutable(Options) tagion_service_options=service_options;
         auto tid=spawn(&(tagionServiceTask!EmulatorGossipNet), tagion_service_options);
         tids~=tid;

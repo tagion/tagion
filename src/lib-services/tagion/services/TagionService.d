@@ -20,7 +20,7 @@ import tagion.services.ScriptCallbacks;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.communication.Monitor;
-import tagion.services.ServiceNames;
+//import tagion.services.ServiceNames;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
@@ -44,10 +44,10 @@ void tagionServiceTask(Net)(immutable(Options) args) {
 //    opts.node_name=node_task_name(args.node_id);
     writefln("opts.monitor.task_name=%s", opts.monitor.task_name);
 //    opts.monitor.task_name=monitor_task_name(opts);
-    opts.transaction.task_name=transaction_task_name(opts);
-    opts.transcript.task_name=transcript_task_name(opts);
-    opts.scripting_engine.task_name=scripting_engine_task_name(opts);
-    opts.dart.task_name=dart_task_name(opts);
+//    opts.transaction.task_name=transaction_task_name(opts);
+//  opts.transcript.task_name=transcript_task_name(opts);
+//    opts.scripting_engine.task_name=scripting_engine_task_name(opts);
+//    opts.dart.task_name=dart_task_name(opts);
     setOptions(opts);
 
 //    immutable task_name=get_node_name(opts.node_id);
