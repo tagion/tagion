@@ -29,7 +29,8 @@ import tagion.services.LoggerService;
 
 import tagion.Options : Options, setOptions, options;
 import tagion.Base : Pubkey, Payload, Control;
-import tagion.utils.BSON : HBSON;
+//import tagion.utils.BSON : HBSON;
+import tagion.utils.HiBON : HiBON;
 
 
 // If no monitor should be enable set the address to empty or the port below 6000.
@@ -239,7 +240,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                 auto mother=own_node.event;
                 immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
                     father_fingerprint, net.time, mother.altitude+1);
-                const pack=net.buildEvent(ebody.toBSON, ExchangeState.NONE);
+                const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
                 // immutable signature=net.sign(ebody);
                 return hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
             }
@@ -252,7 +253,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
                     immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
-                    const pack=net.buildEvent(ebody.toBSON, ExchangeState.NONE);
+                    const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
                     // immutable signature=net.sign(ebody);
                     event=hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
                 }
@@ -260,7 +261,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    const pack=net.buildEvent(ebody.toBSON, ExchangeState.NONE);
+                    const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
                     //immutable signature=net.sign(ebody);
                     event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
                 }
@@ -268,11 +269,11 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                 auto send_node=hashgraph.getNode(send_channel);
                 if ( send_node.state is  ExchangeState.NONE ) {
                     send_node.state = ExchangeState.INIT_TIDE;
-                    auto tidewave   = new HBSON;
+                    auto tidewave   = new HiBON;
                     auto tides      = net.tideWave(tidewave, net.callbacks !is null);
                     auto pack       = net.buildEvent(tidewave, ExchangeState.TIDE_WAVE);
 
-                    net.send(send_channel, pack.toBSON.serialize);
+                    net.send(send_channel, pack.toHiBON.serialize);
                     if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
                     }
