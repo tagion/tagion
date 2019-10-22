@@ -9,7 +9,9 @@ import tagion.Base : EnumText, Pubkey, Buffer, buf_idup;
 import tagion.TagionExceptions : convertEnum;
 //, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
-import tagion.utils.BSON : HBSON, Document;
+//import tagion.utils.BSON : HBSON, Document;
+import tagion.utils.HiBON : HiBON;
+import tagion.utils.Document : Document;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
 
@@ -238,7 +240,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         string node_name;
     }
 
-    const(Package) buildEvent(const(HBSON) block, ExchangeState type) {
+    const(Package) buildEvent(const(HiBON) block, ExchangeState type) {
         return Package(this, block, type);
     }
 
@@ -281,7 +283,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         immutable(Pubkey) pubkey;
         immutable(EventBody) event_body;
         this(Document doc) {
-            signature=(doc[Event.Params.signature].get!(immutable(ubyte[]))).idup;
+            signature=(doc[Event.Params.signature].get!(immutable(ubyte)[])).idup;
             pubkey=buf_idup!Pubkey(doc[Event.Params.pubkey].get!Buffer);
             auto doc_ebody=doc[Event.Params.ebody].get!Document;
             event_body=immutable(EventBody)(doc_ebody);
@@ -306,12 +308,12 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
      +  3)
      +  A send the rest of the event which is in front of B's wave-front
      +/
-    Tides tideWave(HBSON bson, bool build_tides) {
-        HBSON[] fronts;
+    Tides tideWave(HiBON hibon, bool build_tides) {
+        HiBON[] fronts;
         Tides tides;
         foreach(n; _hashgraph.nodeiterator) {
             if ( n.isOnline ) {
-                auto node=new HBSON;
+                auto node=new HiBON;
                 node[Event.Params.pubkey]=n.pubkey;
                 node[Event.Params.altitude]=n.altitude;
                 fronts~=node;
@@ -320,7 +322,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                 }
             }
         }
-        bson[Params.tidewave]=fronts;
+        hibon[Params.tidewave]=fronts;
         return tides;
     }
 
@@ -343,7 +345,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
             auto tidewave=doc[Params.tidewave].get!Document;
             foreach(pack; tidewave) {
                 auto pack_doc=pack.get!Document;
-                immutable _pkey=cast(Pubkey)(pack_doc[Event.Params.pubkey].get!(immutable(Buffer)));
+                immutable _pkey=cast(Pubkey)(pack_doc[Event.Params.pubkey].get!(Buffer));
                 immutable altitude=pack_doc[Event.Params.altitude].get!int;
                 tides[_pkey]=altitude;
             }
@@ -384,8 +386,8 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         return result;
     }
 
-    HBSON[] buildWavefront(Tides tides, bool is_tidewave) {
-        HBSON[] events;
+    HiBON[] buildWavefront(Tides tides, bool is_tidewave) {
+        HiBON[] events;
         foreach(i_n, n; _hashgraph.nodeiterator) {
             auto other_altitude_p=n.pubkey in tides;
             if ( other_altitude_p ) {
@@ -394,12 +396,12 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                     if ( higher( other_altitude, e.altitude) ) {
                         break;
                     }
-                    events~=e.toBSON;
+                    events~=e.toHiBON;
                 }
             }
             else if ( is_tidewave ) {
                 foreach(e; n) {
-                    events~=e.toBSON;
+                    events~=e.toHiBON;
                 }
             }
         }
@@ -470,11 +472,11 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                         // dump(tides);
                         assert(father_fingerprint is null); // This should be an exception
                         result=register_leading_event(null);
-                        HBSON[] events=buildWavefront(tides, true);
+                        HiBON[] events=buildWavefront(tides, true);
                         check(events.length > 0, ConsensusFailCode.GOSSIPNET_MISSING_EVENTS);
 
                         // Add the new leading event
-                        auto wavefront=new HBSON;
+                        auto wavefront=new HiBON;
                         wavefront[Params.wavefront]=events;
                         // If the this node already have INIT and tide the a braking wave is send
                         auto exchange=(received_node.state == INIT_TIDE)?BREAK_WAVE:FIRST_WAVE;
@@ -497,8 +499,8 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                         if ( send_second_wave ) {
                             assert(result !is null);
                             assert(result is _hashgraph.getNode(pubkey).event);
-                            HBSON[] events=buildWavefront(tides, true);
-                            auto wavefront=new HBSON;
+                            HiBON[] events=buildWavefront(tides, true);
+                            auto wavefront=new HiBON;
                             wavefront[Params.wavefront]=events;
 
                             // Receive the tide wave and return the wave front

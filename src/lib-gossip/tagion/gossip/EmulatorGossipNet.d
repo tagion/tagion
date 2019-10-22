@@ -16,8 +16,8 @@ import tagion.utils.LRU;
 import tagion.utils.Queue;
 //import tagion.Keywords;
 
-
-import tagion.utils.BSON;
+import tagion.utils.HiBON : HiBON;
+import tagion.utils.Document : Document;
 import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
@@ -88,7 +88,7 @@ class EmulatorGossipNet : StdGossipNet {
     }
 
 
-    void dump(const(HBSON[]) events) const {
+    void dump(const(HiBON[]) events) const {
         foreach(e; events) {
             auto pack_doc=Document(e.serialize);
             auto pack=EventPackage(pack_doc);
@@ -132,11 +132,11 @@ class EmulatorGossipNet : StdGossipNet {
 
     Payload evaPackage() {
         eva_count++;
-        auto bson=new HBSON;
-        bson["pubkey"]=pubkey;
-        bson["git"]=HASH;
-        bson["nonce"]="Should be implemented:"~to!string(eva_count);
-        return Payload(bson.serialize);
+        auto hibon=new HiBON;
+        hibon["pubkey"]=pubkey;
+        hibon["git"]=HASH;
+        hibon["nonce"]="Should be implemented:"~to!string(eva_count);
+        return Payload(hibon.serialize);
     }
 
 }

@@ -2,7 +2,8 @@ module tagion.gossip.InterfaceNet;
 
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
-import tagion.utils.BSON : HBSON, Document;
+import tagion.utils.HiBON : HiBON;
+import tagion.utils.Document : Document;
 import tagion.utils.Queue;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.Base;
@@ -18,12 +19,12 @@ enum ExchangeState : uint {
 
 @safe
 struct Package {
-    private const(HBSON) block;
+    private const(HiBON) block;
     private Pubkey pubkey;
     immutable ExchangeState type;
     immutable(ubyte[]) signature;
 
-    this(GossipNet net, const(HBSON) block,  ExchangeState type) {
+    this(GossipNet net, const(HiBON) block,  ExchangeState type) {
         this.block=block;
         this.type=type;
         this.pubkey=net.pubkey;
@@ -32,13 +33,13 @@ struct Package {
         signature=net.sign(message);
     }
 
-    HBSON toBSON() inout {
-        auto bson=new HBSON;
+    HiBON toHiBON() inout {
+        auto bson=new HiBON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
             alias typeof(m) mtype;
-            static if ( __traits(compiles, m.toBSON) ) {
-                bson[name]=m.toBSON;
+            static if ( __traits(compiles, m.toHiBON) ) {
+                bson[name]=m.toHiBON;
             }
             else {
                 static if ( is(mtype == enum) ) {
@@ -57,7 +58,7 @@ struct Package {
     }
 
     immutable(ubyte[]) serialize() const {
-        return toBSON.serialize;
+        return toHiBON.serialize;
     }
 }
 
@@ -102,9 +103,9 @@ interface PackageNet {
     alias ReceiveQueue = Queue!(immutable(ubyte[]));
     // const(HRPC.HRPCSender) bulidEvent(HBSON block, ExchangeState type=ExchangeState.NONE);
     Payload evaPackage();
-    const(Package) buildEvent(const(HBSON) block, ExchangeState type);
+    const(Package) buildEvent(const(HiBON) block, ExchangeState type);
 
-    Tides tideWave(HBSON bson, bool build_tides);
+    Tides tideWave(HiBON bson, bool build_tides);
 
     @property
     ReceiveQueue queue();
