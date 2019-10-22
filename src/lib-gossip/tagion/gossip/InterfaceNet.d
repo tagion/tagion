@@ -101,7 +101,7 @@ interface PackageNet {
     enum int eva_altitude=-77;
     alias Tides=int[immutable(Pubkey)];
     alias ReceiveQueue = Queue!(immutable(ubyte[]));
-    // const(HRPC.HRPCSender) bulidEvent(HBSON block, ExchangeState type=ExchangeState.NONE);
+
     Payload evaPackage();
     const(Package) buildEvent(const(HiBON) block, ExchangeState type);
 
