@@ -29,7 +29,7 @@ import tagion.services.LoggerService;
 
 import tagion.Options : Options, setOptions, options;
 import tagion.Base : Pubkey, Payload, Control;
-import tagion.utils.HiBON : HiBON;
+import tagion.hibon.HiBON : HiBON;
 
 
 // If no monitor should be enable set the address to empty or the port below 6000.
