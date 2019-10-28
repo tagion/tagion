@@ -2,8 +2,8 @@ module tagion.gossip.InterfaceNet;
 
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
-import tagion.utils.HiBON : HiBON;
-import tagion.utils.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.utils.Queue;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.Base;

@@ -9,8 +9,8 @@ import tagion.Base : EnumText, Pubkey, Buffer, buf_idup;
 import tagion.TagionExceptions : convertEnum;
 //, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
-import tagion.utils.HiBON : HiBON;
-import tagion.utils.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
 

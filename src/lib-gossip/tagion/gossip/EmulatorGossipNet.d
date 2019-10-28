@@ -16,8 +16,8 @@ import tagion.utils.LRU;
 import tagion.utils.Queue;
 //import tagion.Keywords;
 
-import tagion.utils.HiBON : HiBON;
-import tagion.utils.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
