@@ -1,0 +1,11 @@
+*~
+*.o
+*#
+.#*
+*.parked
+bin/
+*.bak
+build
+.touch
+modules.ddoc
+dfiles.mk
