@@ -8,7 +8,9 @@ import std.format;
 import std.traits : EnumMembers, Unqual, ReturnType, ForeachType;
 import std.range.primitives : isInputRange;
 
-import tagion.hibon.HiBONBase : Type, isNative, isArray, isHiBONType, HiBONException;
+import tagion.hibon.BigNumber;
+import tagion.hibon.HiBONBase : Type, isNative, isArray, isHiBONType;
+import tagion.hibon.HiBONException;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 // import tagion.utils.JSONOutStream;
@@ -53,6 +55,8 @@ enum typeMap=[
     Type.INT64    : "i64",
     Type.UINT32   : "u32",
     Type.UINT64   : "u64",
+    Type.BIGINT   : "big",
+
     Type.DEFINED_NATIVE : NotSupported,
     Type.BINARY         : "bin",
     Type.INT32_ARRAY    : "i32[]",
@@ -120,10 +124,10 @@ struct toJSONT(bool HASHSAFE) {
                             else {
                                 auto doc_element=new JSONValue[2];
                                 doc_element[TYPE]=JSONValue(typeMap[E]);
-                                static if (E is Type.UTC) {
+                                static if (E is UTC) {
                                     assert(0, format("%s is not implemented yet", E));
                                 }
-                                else static if (isArray(E) && (E !is Type.BINARY)) {
+                                else static if (isArray(E) && (E !is BINARY)) {
                                     alias T=Document.Value.TypeT!E;
                                     alias U=ForeachType!T;
                                     alias JSType=JSONTypeT!U;
@@ -132,6 +136,9 @@ struct toJSONT(bool HASHSAFE) {
                                         array~=toJSONType(a);
                                     }
                                     doc_element[VALUE]=array;
+                                }
+                                else static if(E is BIGINT) {
+                                    doc_element[VALUE]=e.by!(E).toDecimalString;
                                 }
                                 else {
                                     doc_element[VALUE]=toJSONType(e.by!E);
@@ -172,6 +179,9 @@ struct toJSONT(bool HASHSAFE) {
         else static if(is(T : immutable(ubyte)[])) {
             alias JSONTypeT=string;
         }
+        else static if(is(T : const BigNumber)) {
+            alias JSONTypeT=string;
+        }
         else static if(is(UnqualT  : double)) {
             static if (HASHSAFE) {
                 alias JSONTypeT=string;
@@ -209,6 +219,9 @@ struct toJSONT(bool HASHSAFE) {
             else {
                 return cast(double)x;
             }
+        }
+        else static if(is(T : const BigNumber)) {
+            return x.to!string;
         }
         else {
             static assert(0, format("Unsuported type %s", T.stringof));
@@ -252,6 +265,9 @@ HiBON toHiBON(scope const JSONValue json) {
                 array[i]=a.get!U;
             }
             return array.idup;
+        }
+        else static if (is(T : const BigNumber)) {
+            return BigNumber(jvalue.str);
         }
         else {
             static assert(0, format("Type %s is not supported", T.stringof));
@@ -301,6 +317,10 @@ HiBON toHiBON(scope const JSONValue json) {
                                 sub_result[key]=array.idup;
 
                             }
+                            // else static if (E is BIGINT) {
+
+                            //     assert(0, format("%s is not supported yet", E));
+                            //}
                             else {
                                 sub_result[key]=get!T(value);
                             }
@@ -370,6 +390,8 @@ unittest {
         long,   Type.INT64.stringof,
         uint,   Type.UINT32.stringof,
         ulong,  Type.UINT64.stringof,
+        BigNumber, Type.BIGINT.stringof,
+
 //                utc_t,  Type.UTC.stringof
         );
 
@@ -381,6 +403,8 @@ unittest {
     test_tabel.UINT32   = 42;
     test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
     test_tabel.BOOLEAN  = true;
+    test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+
 
     alias TabelArray = Tuple!(
         immutable(ubyte)[],  Type.BINARY.stringof,
@@ -426,7 +450,8 @@ unittest {
     const doc=Document(hibon.serialize);
 
     auto json=doc.toJSON(true);
-    //  writefln("%s", json.toPrettyString);
+    // import std.stdio;
+    // writefln("%s", json.toPrettyString);
     string str=json.toString;
     auto parse=str.parseJSON;
     auto h=parse.toHiBON;
