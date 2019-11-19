@@ -7,7 +7,7 @@ import std.array : join;
 import tagion.Options;
 import tagion.services.LoggerService;
 import tagion.Base : Buffer, Control;
-import tagion.utils.BSON : Document;
+import tagion.hibon.Document;
 import tagion.Keywords;
 import tagion.hashgraph.ConsensusExceptions;
 

@@ -8,7 +8,7 @@ import std.array : join;
 
 import tagion.Options;
 import tagion.Base : Payload, Control;
-import tagion.utils.BSON : HBSON;
+import tagion.hibon.HiBON;
 
 import tagion.services.LoggerService;
 import tagion.utils.Random;
@@ -54,7 +54,7 @@ void transcriptServiceTask(immutable(Options) opts) {
         if (!message_received) {
             // Send pseudo payload
             counter++;
-            auto bson=new HBSON;
+            auto bson=new HiBON;
             bson["transaction"]=name;
             bson["count"]=counter;
 

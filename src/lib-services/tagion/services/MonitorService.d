@@ -11,7 +11,7 @@ import tagion.Options : Options, setOptions, options;
 import tagion.Base : Control, basename, bitarray2bool, Pubkey;
 import tagion.TagionExceptions : TagionException;
 
-import tagion.utils.BSON : Document;
+import tagion.hibon.Document;
 import tagion.communication.ListenerSocket;
 
 

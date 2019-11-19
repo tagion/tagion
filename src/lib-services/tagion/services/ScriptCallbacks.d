@@ -5,7 +5,8 @@ import std.datetime;   // Date, DateTime
 
 import tagion.hashgraph.Event : Event, EventScriptCallbacks;
 import tagion.Base : Buffer, Payload, Control;
-import tagion.utils.BSON : HBSON, Document;
+import tagion.hibon.HiBON;
+import tagion.hibon.Document;
 import tagion.Keywords;
 
 import tagion.services.LoggerService;
@@ -19,7 +20,7 @@ import tagion.services.LoggerService;
 
     void epoch(const(Event[]) received_event, const(long) time) {
         log("Epoch with %d events", received_event.length);
-        auto bson=new HBSON;
+        auto bson=new HiBON;
         bson[Keywords.time]=time;
         Document[] payloads;
 
