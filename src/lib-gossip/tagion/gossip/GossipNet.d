@@ -415,7 +415,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         debug {
             if ( options.trace_gossip ) {
                 //import std.file;
-//                log.writefln("%s/_%d_%s.bson", options.tmp, _type); //.to!string~"_receive.bson";
+//                log.writefln("%s/_%d_%s.hibon", options.tmp, _type); //.to!string~"_receive.hibon";
 //                write(packfile, data);
 //                _send_count++;
             }
