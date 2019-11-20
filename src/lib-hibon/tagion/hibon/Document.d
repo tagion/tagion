@@ -217,14 +217,16 @@ static assert(uint.sizeof == 4);
     }
 
     bool hasElement(in string key) const {
-        return !opIn_r(key).isEod();
+
+        return !opBinaryRight!("in")(key).isEod();
+//        return !opIn_r(key).isEod();
     }
 
     bool hasElement(Index)(in Index index) const if (isIntegral!Index) {
         return hasElement(index.to!string);
     }
 
-    const(Element) opIn_r(in string key) const {
+    const(Element) opBinaryRight(string op)(in string key) const if(op == "in") {
         foreach (ref element; this[]) {
             if (element.key == key) {
                 return element;
