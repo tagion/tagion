@@ -5,7 +5,7 @@
 module tagion.hibon.Document;
 
 
-import std.format;
+//import std.format;
 import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, EnumMembers, Unqual;
 import std.conv : to, emplace;
@@ -13,8 +13,10 @@ import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 
-import tagion.Types : decimal_t;
+//import tagion.Types : decimal_t;
+
 import tagion.Base : isOneOf;
+import tagion.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
@@ -57,9 +59,13 @@ static assert(uint.sizeof == 4);
     alias ErrorCallback =void function(ref scope const(Element));
 
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
+        const(Element)* previous;
         foreach(ref e; this[]) {
             Element.ErrorCode error_code;
-            if ( e.type is Type.DOCUMENT ) {
+            if (!previous && !less_than(previous.key, e.key)) {
+                error_code = Element.ErrorCode.KEY_ORDER;
+            }
+            else if ( e.type is Type.DOCUMENT ) {
                 error_code = e.get!(Document).valid(error_callback);
             }
             else {
@@ -73,6 +79,10 @@ static assert(uint.sizeof == 4);
             }
         }
         return Element.ErrorCode.NONE;
+    }
+
+    bool isInOrder() const {
+        return valid() is Element.ErrorCode.NONE;
     }
 
     version(none)
@@ -225,7 +235,7 @@ static assert(uint.sizeof == 4);
 
     const(Element) opIndex(in string key) const {
         auto result=key in this;
-        .check(!result.isEod, format("Member named '%s' not found", key));
+        .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
 
@@ -701,14 +711,14 @@ static assert(uint.sizeof == 4);
                 default:
                     //empty
                 }
-                .check(0, format("Invalid type %s", type));
+                .check(0, message("Invalid type %s", type));
 
                 assert(0);
             }
 
             auto by(Type E)() {
-                .check(type is E, format("Type expected is %s but the actual type is %s", E, type));
-                .check(E !is Type.NONE, format("Type is not supported %s the actual type is %s", E, type));
+                .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+                .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
 
             }
@@ -743,7 +753,7 @@ static assert(uint.sizeof == 4);
 
             uint index() {
                 uint result;
-                .check(is_index(key, result), format("Key '%s' is not an index", key));
+                .check(is_index(key, result), message("Key '%s' is not an index", key));
                 return result;
             }
 
@@ -822,11 +832,13 @@ static assert(uint.sizeof == 4);
                         // empty
                     }
                 }
+                import std.format;
                 assert(0, format("Bad type %s", type));
             }
 
             enum ErrorCode {
                 NONE,           // No errors
+                KEY_ORDER,      // Error in the key order
                 DOCUMENT_TYPE,  // Warning document type
                 TOO_SMALL,      // Data stream is too small to contain valid data
                 ILLEGAL_TYPE,   // Use of internal types is illegal
