@@ -54,13 +54,13 @@ void transcriptServiceTask(immutable(Options) opts) {
         if (!message_received) {
             // Send pseudo payload
             counter++;
-            auto bson=new HiBON;
-            bson["transaction"]=name;
-            bson["count"]=counter;
+            auto hibon=new HiBON;
+            hibon["transaction"]=name;
+            hibon["count"]=counter;
 
             // Sends the transaction script to the node
             log("Scripting-Api %s send counter=%s", name, counter);
-            Payload payload=bson.serialize;
+            Payload payload=hibon.serialize;
             node_tid.send(payload);
         }
     }

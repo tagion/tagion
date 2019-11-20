@@ -94,8 +94,8 @@ void transactionServiceTask(immutable(Options) opts) {
             receiveTimeout(500.msecs,
                 //Control the thread
                 &handleState,
-                (immutable(ubyte)[] bson_bytes) {
-                    listener_socket.broadcast(bson_bytes);
+                (immutable(ubyte)[] hibon_bytes) {
+                    listener_socket.broadcast(hibon_bytes);
                 },
                 (immutable(Exception) e) {
                     stop=true;

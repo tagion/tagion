@@ -20,8 +20,8 @@ import tagion.services.LoggerService;
 
     void epoch(const(Event[]) received_event, const(long) time) {
         log("Epoch with %d events", received_event.length);
-        auto bson=new HiBON;
-        bson[Keywords.time]=time;
+        auto hibon=new HiBON;
+        hibon[Keywords.time]=time;
         Document[] payloads;
 
         foreach(i, e; received_event) {
@@ -31,8 +31,8 @@ import tagion.services.LoggerService;
             }
         }
         if ( payloads ) {
-            bson[Keywords.epoch]=payloads;
-            immutable data=bson.serialize;
+            hibon[Keywords.epoch]=payloads;
+            immutable data=hibon.serialize;
             log("SEND Epoch with %d transactions %d bytes", payloads.length, data.length);
             send(data);
         }
