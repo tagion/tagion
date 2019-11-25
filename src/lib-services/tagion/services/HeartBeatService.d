@@ -15,6 +15,7 @@ import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 
+import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
 
@@ -27,11 +28,11 @@ void heartBeatServiceTask(immutable(Options) opts) {
     Control response;
     auto logger_tid=spawn(&loggerTask, opts);
     import std.stdio : stderr;
-    stderr.writeln("Waitin for logger");
+    stderr.writeln("Waiting for logger");
 
     response=receiveOnly!Control;
+    stderr.writeln("Logger started");
     if ( response !is Control.LIVE ) {
-
         stderr.writeln("ERROR:Logger %s", response);
     }
 
@@ -58,6 +59,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
     }
 
     foreach(i;0..opts.nodes) {
+        writefln("node=%s", i);
         Options service_options=opts;
         if ( (!opts.monitor.disable) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
