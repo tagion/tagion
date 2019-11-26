@@ -422,6 +422,21 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         }
     }
 
+    version(none)
+    void breakAllWaves() {
+        foreach(ref node; _hashgraph.nodeiterator) {
+            if ( node.state !is ExchangeState.NONE || node.state !is ExchangeState.INIT_TIDE) {
+                // Break all the waves
+                HiBON[] events=buildWavefront(tides, true);
+                auto wavefront=new HiBON;
+                wavefront[Params.wavefront]=events;
+                auto wavefront_pack=buildEvent(wavefront, ExchangeState.BREAK_WAVE);
+                send(node.pubkey, wavefront_pack);
+                node.state=ExchangeState.NONE;
+            }
+        }
+    }
+
     override Event receive(immutable(ubyte[]) data,
         Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
         trace("receive", data);
