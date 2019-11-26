@@ -111,6 +111,14 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
         }
 
+       if ( receiveOnly!Control is Control.LIVE ) {
+            log("Monitor started");
+        }
+        else {
+            ownerTid.send(Control.FAIL);
+            return;
+        }
+
         if ( opts.transaction.port > 6000) {
             transaction_socket_tid = spawn(&transactionServiceTask, opts);
 //            log("opts.node_name=%s options.node_name=%s", opts.node_name, options.node_name);
@@ -390,7 +398,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
         catch ( Throwable t ) {
             t.msg ~= format(" - From hashnode thread %s", opts.node_id);
             log.fatal(t.msg);
-            // fout.writeln(t);
+            stderr.writeln(t);
             // writeln(t);
             stop=true;
             ownerTid.send(cast(immutable)t);

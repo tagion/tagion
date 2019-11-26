@@ -21,6 +21,7 @@ void monitorServiceTask(immutable(Options) opts) {
     setOptions(opts);
     immutable task_name=opts.monitor.task_name;
     log.register(task_name);
+    ownerTid.send(Control.LIVE);
 
     log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
     scope(failure) {
