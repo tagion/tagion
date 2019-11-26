@@ -70,6 +70,7 @@ class EmulatorGossipNet : StdGossipNet {
             assert(_tids is null);
         }
     do {
+        log("_pkeys.length=%d", _pkeys.length);
         _pkeys=pkeys;
         auto tids=new Tid[pkeys.length];
         getTids(tids);

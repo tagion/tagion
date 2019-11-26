@@ -282,7 +282,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         immutable(Pubkey) pubkey;
         immutable(EventBody) event_body;
         this(Document doc) {
-            signature=(doc[Event.Params.signature].get!(immutable(ubyte)[])).idup;
+            signature=(doc[Event.Params.signature].get!(Buffer)).idup;
             pubkey=buf_idup!Pubkey(doc[Event.Params.pubkey].get!Buffer);
             auto doc_ebody=doc[Event.Params.ebody].get!Document;
             event_body=immutable(EventBody)(doc_ebody);
