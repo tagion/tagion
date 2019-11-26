@@ -13,7 +13,7 @@ import tagion.TagionExceptions : TagionException;
 
 import tagion.hibon.Document;
 import tagion.communication.ListenerSocket;
-
+import tagion.TagionExceptions;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceTask(immutable(Options) opts) {
@@ -44,7 +44,8 @@ void monitorServiceTask(immutable(Options) opts) {
         log("In exit of soc. port=%d th", opts.monitor.port);
 
         if ( listener_socket_thread !is null ) {
-            listener_socket.close;
+            listener_socket.stop;
+
             log("Kill listener socket. %d", opts.monitor.port);
             //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
 //            if ( ldo.active ) {
@@ -54,8 +55,8 @@ void monitorServiceTask(immutable(Options) opts) {
             // run_listener = false;
             log("run_listerner %s %s", listener_socket.active, opts.monitor.port);
 //            }
-            listener_socket.stop;
             listener_socket_thread.join();
+            listener_socket.close;
             ping.close;
             log("Thread joined %d", opts.monitor.port);
         }

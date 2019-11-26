@@ -133,12 +133,13 @@ static struct Logger {
 
 static Logger log;
 
-// static this() {
-//     log=Logger(locate(thisTid), options.logger.task_name);
-// }
-
 void loggerTask(immutable(Options) opts) {
     setOptions(opts);
+
+    scope(success) {
+        ownerTid.prioritySend(Control.END);
+    }
+
     @trusted
     void task_register() {
         assert(register(opts.logger.task_name, thisTid));
@@ -198,7 +199,6 @@ void loggerTask(immutable(Options) opts) {
             stderr.writeln(t.msg);
             ownerTid.send(cast(immutable)t);
             stop=true;
-
         }
     }
 }

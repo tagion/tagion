@@ -14,6 +14,7 @@ import tagion.Base : Pubkey, Control;
 import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.TagionExceptions;
 
 import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
@@ -46,7 +47,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
         log("----- Wait for all tasks -----");
         foreach(i, ref tid; tids) {
             auto control=receiveOnly!Control;
-            if ( control == Control.END ) {
+            if ( control is Control.END ) {
                 log("Thread %d stopped %d", i, control);
             }
             else {
@@ -59,7 +60,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
     }
 
     foreach(i;0..opts.nodes) {
-        writefln("node=%s", i);
+        log("node=%s", i);
         Options service_options=opts;
         if ( (!opts.monitor.disable) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
@@ -68,9 +69,9 @@ void heartBeatServiceTask(immutable(Options) opts) {
             service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
         }
         service_options.node_id=cast(uint)i;
-        service_options.node_name=node_task_name(service_options);
-        immutable(Options) tagion_service_options=service_options;
-        auto tid=spawn(&(tagionServiceTask!EmulatorGossipNet), tagion_service_options);
+        //   service_options.node_name=node_task_name(service_options);
+//        immutable(Options) tagion_service_options=service_options;
+        auto tid=spawn(&(tagionServiceTask!EmulatorGossipNet), service_options);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
         log("Start %d", pkeys.length);
@@ -127,11 +128,48 @@ void heartBeatServiceTask(immutable(Options) opts) {
             if ( !opts.infinity ) {
                 log("count=%d", count);
             }
-            Thread.sleep(opts.delay.msecs);
-            if ( !opts.infinity ) {
+            immutable message_received=receiveTimeout(
+                opts.delay.msecs,
+                (Control ctrl) {
+                    with(Control) {
+                        switch(ctrl) {
+                        case STOP:
+                        stop=true;
+                        break;
+                        case END:
+                        stop=true;
+                        break;
+                        case FAIL:
+                        stop=true;
+                        break;
+                        default:
+                        log.error("Control %s unexpected", ctrl);
+                        }
+                    }
+                },
+                (immutable(TagionException) e) {
+                    stderr.writeln(e);
+                },
+                (immutable(Exception) e) {
+                    stderr.writeln(e);
+                },
+                (immutable(Throwable) t) {
+                    stderr.writeln(t);
+                }
+                );
+
+            if ( !message_received && !opts.infinity ) {
                 stop=(count==0);
                 count--;
             }
+
+	    //         opts.timeout.msecs,
+
+            // Thread.sleep(opts.delay.msecs);
+            // if ( !opts.infinity ) {
+            //     stop=(count==0);
+            //     count--;
+            // }
         }
     }
 }

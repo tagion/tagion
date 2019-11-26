@@ -20,7 +20,7 @@ import tagion.services.ScriptCallbacks;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.communication.Monitor;
-//import tagion.services.ServiceNames;
+import tagion.services.ServiceNames;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
@@ -40,39 +40,97 @@ import tagion.hibon.HiBON : HiBON;
 void tagionServiceTask(Net)(immutable(Options) args) {
     setOptions(args);
     Options opts=args;
-    writefln("options.nodeprefix=%s", options.nodeprefix);
-//    opts.node_name=node_task_name(args.node_id);
-    writefln("opts.monitor.task_name=%s", opts.monitor.task_name);
-//    opts.monitor.task_name=monitor_task_name(opts);
-//    opts.transaction.task_name=transaction_task_name(opts);
-//  opts.transcript.task_name=transcript_task_name(opts);
+//    log.register(opts.node_name);
+//    log("options.nodeprefix=%s", options.nodeprefix);
+    opts.node_name=node_task_name(opts);
+    log.register(opts.node_name);
+//    log("opts.monitor.task_name=%s", opts.monitor.task_name);
+    opts.monitor.task_name=monitor_task_name(opts);
+    opts.transaction.task_name=transaction_task_name(opts);
+    opts.transcript.task_name=transcript_task_name(opts);
 //    opts.scripting_engine.task_name=scripting_engine_task_name(opts);
 //    opts.dart.task_name=dart_task_name(opts);
     setOptions(opts);
 
 //    immutable task_name=get_node_name(opts.node_id);
-    writefln("task_name=%s options.mode_name=%s", opts.node_name, options.node_name);
-    log.register(opts.node_name);
+    log("task_name=%s options.mode_name=%s", opts.node_name, options.node_name);
+
 //    HRPC hrpc;
     import std.format;
     import std.datetime.systime;
-//    immutable node_name=getname(options.node_id);
-    immutable filename=[opts.node_name].getfilename;
-//    Net.fout.open(filename, "w");
-//    alias fout=Net.fout;
-    //Event.fout=&fout;
-
-
-    log("\n\n\n\n\nx##### Received %s #####", opts.node_name);
-
-    Tid monitor_socket_tid;
-    Tid transaction_socket_tid;
 
     auto hashgraph=new HashGraph();
     // Create hash-graph
     ScriptNet net;
     auto crypt=new NativeSecp256k1;
     net=new Net(crypt, hashgraph);
+
+    log("\n\n\n\n\nx##### Received %s #####", opts.node_name);
+
+    Tid monitor_socket_tid;
+    Tid transaction_socket_tid;
+
+    scope(exit) {
+        log("!!!==========!!!!!! Existing hasnode %s", opts.node_name);
+        log("Send stop to the transcript");
+
+        if ( net.transcript_tid != net.transcript_tid.init ) {
+            log("net.transcript_tid.prioritySend(Control.STOP)");
+
+            net.transcript_tid.prioritySend(Control.STOP);
+            if ( receiveOnly!Control is Control.END ) {
+                log("Scripting api end!!");
+            }
+        }
+
+        // log("Send stop to the engine");
+
+        // if ( Event.scriptcallbacks ) {
+        //     if ( Event.scriptcallbacks.stop && (receiveOnly!Control == Control.END) ) {
+        //         log("Scripting engine end!!");
+        //     }
+        // }
+
+        if ( net.callbacks ) {
+            net.callbacks.exiting(hashgraph.getNode(net.pubkey));
+        }
+
+
+        if ( transaction_socket_tid != transaction_socket_tid.init ) {
+            transaction_socket_tid.prioritySend(Control.STOP);
+            auto control=receiveOnly!Control;
+            log("Control %s", control);
+            if ( control == Control.END ) {
+                log("Closed transaction thread");
+            }
+            else if ( control == Control.FAIL ) {
+                log.error("Closed transaction thread with failure");
+            }
+        }
+
+        if ( monitor_socket_tid != monitor_socket_tid.init ) {
+            log("Send STOP %s", opts.node_name);
+
+            monitor_socket_tid.prioritySend(Control.STOP);
+
+            log("after STOP %s", opts.node_name);
+
+            auto control=receiveOnly!Control;
+            log("Control %s", control);
+//            fout.flush;
+            if ( control is Control.END ) {
+                log("Closed monitor thread");
+            }
+            else if ( control is Control.FAIL ) {
+                log.error("Closed monitor thread with failure");
+            }
+        }
+        log("prioritySend %s", opts.node_name);
+        log("End");
+        ownerTid.prioritySend(Control.END);
+    }
+
+
 //    hrpc.net=net;
 
 //    immutable transcript_enable=opts.transcript.enable;
@@ -111,7 +169,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
         }
 
-       if ( receiveOnly!Control is Control.LIVE ) {
+        if ( receiveOnly!Control is Control.LIVE ) {
             log("Monitor started");
         }
         else {
@@ -119,7 +177,8 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             return;
         }
 
-        if ( opts.transaction.port > 6000) {
+        if ( !opts.transaction.disable && (opts.transaction.port > 6000) ) {
+
             transaction_socket_tid = spawn(&transactionServiceTask, opts);
 //            log("opts.node_name=%s options.node_name=%s", opts.node_name, options.node_name);
 //            Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
@@ -160,73 +219,6 @@ void tagionServiceTask(Net)(immutable(Options) args) {
         Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
     }
 
-    scope(exit) {
-//        fout.flush;
-        log("!!!==========!!!!!! Existing hasnode %s", opts.node_name);
-        log("Send stop to the transcript");
-//        fout.flush;
-
-        if ( net.transcript_tid != net.transcript_tid.init ) {
-            log("net.transcript_tid.prioritySend(Control.STOP)");
-//            fout.flush;
-
-            net.transcript_tid.prioritySend(Control.STOP);
-            if ( receiveOnly!Control == Control.END ) {
-                log("Scripting api end!!");
-            }
-        }
-
-        log("Send stop to the engine");
-//        fout.flush;
-        if ( Event.scriptcallbacks ) {
-            if ( Event.scriptcallbacks.stop && (receiveOnly!Control == Control.END) ) {
-                log("Scripting engine end!!");
-            }
-        }
-
-//        log("Existing hasnode %s", opts.node_name);
-//        fout.flush;
-        if ( net.callbacks ) {
-            net.callbacks.exiting(hashgraph.getNode(net.pubkey));
-        }
-//        log("$$$$$$Closed monitor %s", opts.node_name);
-//        fout.flush;
-        // Thread.sleep(2.seconds);
-        if ( transaction_socket_tid != transaction_socket_tid.init ) {
-            transaction_socket_tid.prioritySend(Control.STOP);
-            auto control=receiveOnly!Control;
-            log("Control %s", control);
-//            fout.flush;
-            if ( control == Control.END ) {
-                log("Closed transaction thread");
-            }
-            else if ( control == Control.FAIL ) {
-                log.error("Closed transaction thread with failure");
-            }
-        }
-        if ( monitor_socket_tid != monitor_socket_tid.init ) {
-            log("Send STOP %s", opts.node_name);
-//            fout.flush;
-
-            monitor_socket_tid.prioritySend(Control.STOP);
-
-            log("after STOP %s", opts.node_name);
-//            fout.flush;
-            auto control=receiveOnly!Control;
-            log("Control %s", control);
-//            fout.flush;
-            if ( control == Control.END ) {
-                log("Closed monitor thread");
-            }
-            else if ( control == Control.FAIL ) {
-                log.error("Closed monitor thread with failure");
-            }
-        }
-        log("prioritySend %s", opts.node_name);
-        log("End");
-        ownerTid.prioritySend(Control.END);
-    }
-
     Payload empty_payload;
 
     // Set thread global options
@@ -239,8 +231,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
         void receive_buffer(immutable(ubyte)[] buf) {
             timeout_count=0;
             net.time=net.time+100;
-            log("*\n*\n*\n");
-            log("*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
+            log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
             auto own_node=hashgraph.getNode(net.pubkey);
 
             Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
@@ -274,7 +265,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                 }
                 immutable send_channel=net.selectRandomNode;
                 auto send_node=hashgraph.getNode(send_channel);
-                if ( send_node.state is  ExchangeState.NONE ) {
+                if ( send_node.state is ExchangeState.NONE ) {
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HiBON;
                     auto tides      = net.tideWave(tidewave, net.callbacks !is null);
@@ -404,5 +395,8 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             ownerTid.send(cast(immutable)t);
         }
 
+        if (stop) {
+            log("Should stop");
+        }
     }
 }

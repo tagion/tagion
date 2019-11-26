@@ -17,30 +17,13 @@ void transactionServiceTask(immutable(Options) opts) {
     // Set thread global options
     setOptions(opts);
     immutable task_name=opts.transaction.task_name;
-    // writefln("Before transactionServiceTask task_name=%s opt.logger=%s options.logger=%s",
-    //     task_name,
-    //     opts.logger.task_name,
-    //     options.logger.task_name,
-    //     );
-    // Fixme CBR:
-    // Some race between the logger and this task
-    // This delay hackes it for now
-    // Thread.sleep(500.msecs);
-    // writefln("After transactonServiceTask task_name=%s opt.logger=%s options.logger=%s",
-    //     task_name,
-    //     opts.logger.task_name,
-    //     options.logger.task_name,
-    //     );
+    writefln("opts.transaction.task_name=%s", opts.transaction.task_name);
+
     log.register(task_name);
 
     log("SockectThread port=%d addresss=%s", opts.transaction.port, opts.url);
-    scope(failure) {
-        log.error("In failure of soc. port=%d th., flag %s:", opts.transaction.port, Control.FAIL);
-        ownerTid.prioritySend(Control.FAIL);
-    }
 
     scope(success) {
-        log("In success of soc. port=%d th., flag %s:", opts.transaction.port, Control.END);
         ownerTid.prioritySend(Control.END);
     }
 
@@ -54,22 +37,17 @@ void transactionServiceTask(immutable(Options) opts) {
         log("In exit of soc. port=%d th", opts.monitor.port);
 
         if ( listener_socket_thread !is null ) {
+            listener_socket.stop;
             listener_socket.close;
             log("Kill listener socket. %d", opts.monitor.port);
             //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-//            if ( ldo.active ) {
             auto ping=new TcpSocket(new InternetAddress(opts.url, opts.monitor.port));
-//                receive( &handleClient);
-//                Thread.sleep(500.msecs);
-            // run_listener = false;
             log("run_listerner %s %s", listener_socket.active, opts.monitor.port);
-//            }
-            listener_socket.stop;
+
             listener_socket_thread.join();
             ping.close;
             log("Thread joined %d", opts.monitor.port);
         }
-
     }
 
     try{
@@ -99,11 +77,11 @@ void transactionServiceTask(immutable(Options) opts) {
                 },
                 (immutable(Exception) e) {
                     stop=true;
-                    throw e;
+                    ownerTid.send(e);
                 },
                 (immutable(Throwable) t) {
-                    //log.fatal("Throwable -------------------- %d", opts.monitor.port);
                     stop=true;
+                    ownerTid.send(t);
                     throw t;
 
                 }
@@ -112,5 +90,6 @@ void transactionServiceTask(immutable(Options) opts) {
     }
     catch(Throwable t) {
         log.fatal("Throwable %d", opts.monitor.port);
+        ownerTid.send(cast(immutable)t);
     }
 }
