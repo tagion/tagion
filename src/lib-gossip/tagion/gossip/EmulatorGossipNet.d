@@ -47,10 +47,10 @@ static uint getTids(Tid[] tids) {
 }
 
 
-string getfilename(string[] names) {
-    import std.path;
-    return buildPath(options.tmp, setExtension(names.join, options.logext));
-}
+// string getfilename(string[] names) {
+//     import std.path;
+//     return buildPath(options.tmp, setExtension(names.join, options.logext));
+// }
 
 
 @safe
