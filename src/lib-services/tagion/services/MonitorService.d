@@ -24,17 +24,17 @@ void monitorServiceTask(immutable(Options) opts) {
     ownerTid.send(Control.LIVE);
 
     log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
-    scope(failure) {
-        log.error("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
-        ownerTid.prioritySend(Control.FAIL);
-    }
+    // scope(failure) {
+    //     log.error("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
+    //     ownerTid.prioritySend(Control.FAIL);
+    // }
 
     scope(success) {
         log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
         ownerTid.prioritySend(Control.END);
     }
 
-    auto listener_socket = ListenerSocket(opts, opts.url, opts.monitor.port);
+    auto listener_socket = ListenerSocket(opts, opts.url, opts.monitor.port, opts.monitor.task_name);
     void delegate() listerner;
     listerner.funcptr = &ListenerSocket.run;
     listerner.ptr = &listener_socket;
@@ -44,6 +44,7 @@ void monitorServiceTask(immutable(Options) opts) {
         log("In exit of soc. port=%d th", opts.monitor.port);
 
         if ( listener_socket_thread !is null ) {
+            //  listener_socket.close;
             listener_socket.stop;
 
             log("Kill listener socket. %d", opts.monitor.port);
@@ -56,60 +57,75 @@ void monitorServiceTask(immutable(Options) opts) {
             log("run_listerner %s %s", listener_socket.active, opts.monitor.port);
 //            }
             listener_socket_thread.join();
-            listener_socket.close;
+
             ping.close;
             log("Thread joined %d", opts.monitor.port);
         }
     }
 
-    try{
-        bool stop;
+    // try{
+    bool stop;
 //        bool runBackend = true;
-        void handleState (Control ts) {
-            with(Control) switch(ts) {
-                case STOP:
-                    log("Kill socket thread. %d", opts.monitor.port);
-                    stop = true;
-                    break;
-                case LIVE:
-                    stop = false;
-                    break;
-                default:
-                    log.error("Bad Control command %s", ts);
-                    stop=true;
-                }
-        }
+    void handleState (Control ts) {
+        with(Control) switch(ts) {
+            case STOP:
+                log("Kill socket thread. %d", opts.monitor.port);
+                stop = true;
+                break;
+                // case LIVE:
+                //     stop = false;
+                //     break;
+            default:
+                log.error("Bad Control command %s", ts);
+                //    stop=true;
+            }
+    }
 
-        while(!stop) {
-            receiveTimeout(500.msecs,
-                //Control the thread
-                &handleState,
-                (immutable(ubyte)[] hibon_bytes) {
-                    listener_socket.broadcast(hibon_bytes);
-                },
-                (Document doc) {
-                    listener_socket.broadcast(doc);
-                },
-                (immutable(TagionException) e) {
-                    log.error(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                },
-                (immutable(Exception) e) {
-                    log.error(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                },
-                (immutable(Throwable) t) {
-                    log.fatal(t.msg);
-                    stop=true;
-                    ownerTid.send(t);
-                }
-                );
-        }
+    while(!stop) {
+        receiveTimeout(500.msecs,
+            //Control the thread
+            &handleState,
+            (immutable(ubyte)[] hibon_bytes) {
+                listener_socket.broadcast(hibon_bytes);
+            },
+            (Document doc) {
+                listener_socket.broadcast(doc);
+            },
+            (immutable(TagionException) e) {
+                log.error(e.msg);
+                stop=true;
+                ownerTid.send(e);
+                //throw e;
+            },
+            (immutable(Exception) e) {
+                log.fatal(e.msg);
+                stop=true;
+                ownerTid.send(e);
+                //throw e;
+            },
+            (immutable(Throwable) t) {
+                log.fatal(t.msg);
+                stop=true;
+                ownerTid.send(t);
+                // throw t;
+            }
+            );
+//        log("Running");
     }
-    catch(Throwable t) {
-        log.fatal("Throwable %d", opts.monitor.port);
-        ownerTid.send(cast(immutable)t);
-    }
+//     }
+//     catch(TagionException e) {
+//         log.error("TagionException %d", opts.monitor.port);
+// //        log.error(e.toString);
+//         ownerTid.send(cast(immutable)e);
+//     }
+//     catch(Exception e) {
+//         log.fatal("Exception %d", opts.monitor.port);
+// //        log.fatal(e.toString);
+//         ownerTid.send(cast(immutable)e);
+//     }
+//     catch(Throwable t) {
+//         log.fatal("Throwable %d", opts.monitor.port);
+// //        log.fatal(t.toString);
+//         ownerTid.send(cast(immutable)t);
+//     }
 }

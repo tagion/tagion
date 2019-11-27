@@ -4,18 +4,23 @@ import tagion.Options : Options;
 import std.array : join;
 import std.conv : to;
 
-string node_task_name(const Options opt) pure nothrow {
-    return [opt.nodeprefix, opt.node_id.to!string].join(opt.separator);
+string get_node_name(ref const Options opts, immutable size_t i) pure nothrow {
+    import std.array : join;
+    return [opts.nodeprefix, i.to!string].join(opts.separator);
 }
 
-string transaction_task_name(const Options opt) pure nothrow {
-    return [opt.transaction.prefix, opt.node_id.to!string].join(opt.separator);
+string node_task_name(ref const Options opts) pure nothrow {
+    return get_node_name(opts, opts.node_id);
 }
 
-string transcript_task_name(const Options opt) pure nothrow {
-    return [opt.transcript.prefix, opt.node_id.to!string].join(opt.separator);
+string transaction_task_name(ref const Options opts) pure nothrow {
+    return [opts.transaction.prefix, opts.node_id.to!string].join(opts.separator);
 }
 
-string monitor_task_name(const Options opt) pure nothrow {
-    return [opt.monitor.prefix, opt.node_id.to!string].join(opt.separator);
+string transcript_task_name(ref const Options opts) pure nothrow {
+    return [opts.transcript.prefix, opts.node_id.to!string].join(opts.separator);
+}
+
+string monitor_task_name(ref const Options opts) pure nothrow {
+    return [opts.monitor.prefix, opts.node_id.to!string].join(opts.separator);
 }

@@ -18,12 +18,16 @@ enum LoggerType {
     STDERR  = WARNING|ERROR|FATAL
 }
 
+
 @safe
 static struct Logger {
-    protected string _task_name;
-    protected Tid logger_tid;
-    protected uint id;
-    protected uint[] masks;
+    protected {
+        string _task_name;
+        Tid logger_tid;
+        uint id;
+        uint[] masks;
+        bool no_task;
+    }
 
     @trusted
     void register(string task_name)
@@ -35,7 +39,17 @@ static struct Logger {
         .register(task_name, thisTid);
         logger_tid=locate(options.logger.task_name);
         _task_name=task_name;
-        stderr.writefln("Register: %s logger=%s %s ", task_name, options.logger.task_name, (logger_tid != logger_tid.init));
+
+        stderr.writefln("Register: %s logger", _task_name);
+        log("Register: %s logger", _task_name);
+    }
+
+    @property @trusted
+    void task_name(string task_name) {
+        no_task=true;
+        logger_tid=locate(options.logger.task_name);
+        _task_name=task_name;
+        log("Register: %s logger", _task_name);
     }
 
     @property
@@ -58,7 +72,7 @@ static struct Logger {
     @trusted
     void report(LoggerType type, lazy string text) {
         if ( type | masks[$-1] ) {
-            if (logger_tid == logger_tid.init) {
+            if ((logger_tid == logger_tid.init) && (!no_task)) {
                 stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
                 stderr.writefln("\t%s:%s: %s", _task_name, type, text);
             }
@@ -149,12 +163,15 @@ void loggerTask(immutable(Options) opts) {
     File file;
     file.open(opts.logger.file_name, "w");
     file.writefln("Logger task: %s", opts.logger.task_name);
+    file.flush;
     scope(exit) {
-        file.writeln("Logger closed");
         file.close;
         ownerTid.send(Control.END);
     }
 
+    scope(success) {
+        file.writeln("Logger closed");
+    }
     bool stop;
 
     void controller(Control ctrl) @safe {

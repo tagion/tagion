@@ -14,67 +14,66 @@ import tagion.Base : Pubkey, Control;
 import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.services.ServiceNames : get_node_name;
 import tagion.TagionExceptions;
 
 import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
 
-    immutable tast_name="heatbeat";
-
+    immutable tast_name="heartbeat";
 
     Tid[] tids;
     Pubkey[]  pkeys;
 
-    Control response;
-    auto logger_tid=spawn(&loggerTask, opts);
-    import std.stdio : stderr;
-    stderr.writeln("Waiting for logger");
-
-    response=receiveOnly!Control;
-    stderr.writeln("Logger started");
-    if ( response !is Control.LIVE ) {
-        stderr.writeln("ERROR:Logger %s", response);
-    }
 
     log.register(tast_name);
     scope(exit) {
         log("----- Stop all tasks -----");
+        uint number_of_active_tids;
         foreach(i, ref tid; tids) {
-            log("Send stop to %d", i);
-            tid.prioritySend(Control.STOP);
+            immutable node_name=get_node_name(opts, i);
+//            writefln("node_name=%s", node_name, );
+            auto locate_tid=locate(node_name);
+            writefln("node_name=%s %s", node_name, locate_tid);
+
+            if (locate_tid != Tid.init) {
+                writefln("Send stop to %d", i);
+                log("Send stop to %d", i);
+                tid.prioritySend(Control.STOP);
+                number_of_active_tids++;
+            }
         }
-        log("----- Wait for all tasks -----");
-        foreach(i, ref tid; tids) {
+        foreach(i; 0..number_of_active_tids) {
             auto control=receiveOnly!Control;
             if ( control is Control.END ) {
-                log("Thread %d stopped %d", i, control);
+                log("Thread %s stopped %s", get_node_name(opts, i), control);
             }
             else {
-                log("Thread %d stopped %d unexpected control %s", i, control);
+                log("Thread %s unexpected control %s", get_node_name(opts, i), control);
             }
         }
         log("----- Stop send to all -----");
-
         log.close;
+        ownerTid.prioritySend(Control.END);
     }
 
     foreach(i;0..opts.nodes) {
         log("node=%s", i);
         Options service_options=opts;
-        if ( (!opts.monitor.disable) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
+        if ( (opts.monitor.port >= opts.min_port) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
         }
-        if ( (!opts.transaction.disable) && ((opts.transaction.max == 0) || (i < opts.transaction.max) ) ) {
+        if ( (opts.transaction.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
             service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
         }
         service_options.node_id=cast(uint)i;
-        //   service_options.node_name=node_task_name(service_options);
-//        immutable(Options) tagion_service_options=service_options;
         auto tid=spawn(&(tagionServiceTask!EmulatorGossipNet), service_options);
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
         log("Start %d", pkeys.length);
+        writefln("Start %d", pkeys.length);
+
     }
 
     log("----- Receive sync signal from nodes -----");
@@ -83,18 +82,18 @@ void heartBeatServiceTask(immutable(Options) opts) {
 
     foreach(ref tid; tids) {
         foreach(pkey; pkeys) {
+            writefln("Send %s", pkey.cutHex);
             tid.send(pkey);
         }
     }
 
     uint count = opts.loops;
 
+    size_t count_down=tids.length;
     bool stop=false;
 
     if ( opts.sequential ) {
         Thread.sleep(1.seconds);
-
-
         log("Start the heart beat");
         uint node_id;
         uint time=opts.delay;
@@ -124,52 +123,67 @@ void heartBeatServiceTask(immutable(Options) opts) {
         }
     }
     else {
-        while(!stop) {
-            if ( !opts.infinity ) {
-                log("count=%d", count);
-            }
+        Thread.sleep(1.seconds);
+while(!stop) {
             immutable message_received=receiveTimeout(
                 opts.delay.msecs,
                 (Control ctrl) {
                     with(Control) {
                         switch(ctrl) {
-                        case STOP:
+                        case STOP, FAIL:
                         stop=true;
                         break;
-                        case END:
-                        stop=true;
+                        case LIVE:
+                        count_down--;
+                        if (count_down == 0 ) {
+                            log("HEARTBEAT STARTED");
+                        }
                         break;
-                        case FAIL:
-                        stop=true;
-                        break;
+                        // case END:
+                        // stop=true;
+                        // break;
+                        // case FAIL:
+                        // stop=true;
+                        // break;
                         default:
                         log.error("Control %s unexpected", ctrl);
                         }
                     }
                 },
                 (immutable(TagionException) e) {
+                    stop=true;
+                    const print_e=e;
+                    print_e.toString((buf) {log.fatal(buf.idup);});
+                    // const print_e=cast(const)e;
+                    // pragma(msg, typeof(e), " ", typeof(print_e));
+                    // print_e.toString((string buf) {log.error(buf);});
                     stderr.writeln(e);
                 },
                 (immutable(Exception) e) {
+                    stop=true;
+                    const print_e=e;
+                    print_e.toString((buf) {log.fatal(buf.idup);});
                     stderr.writeln(e);
                 },
                 (immutable(Throwable) t) {
+                    stop=true;
+                    const print_t=t;
+                    print_t.toString((buf) {log.fatal(buf.idup);});
                     stderr.writeln(t);
                 }
                 );
-
-            if ( !message_received && !opts.infinity ) {
-                stop=(count==0);
-                count--;
+            if (message_received) {
+                log("count down=%s", count_down);
+            }
+            else if ( !opts.infinity ) {
+                if (count_down == 0) {
+                    stop=(count==0);
+                    stderr.writefln("count=%d", count);
+                    log("count=%d", count);
+                    count--;
+                }
             }
 
-	    //         opts.timeout.msecs,
-
-            // Thread.sleep(opts.delay.msecs);
-            // if ( !opts.infinity ) {
-            //     stop=(count==0);
-            //     count--;
-            // }
         }
     }
 }
