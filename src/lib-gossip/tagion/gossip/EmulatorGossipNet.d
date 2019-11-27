@@ -25,19 +25,15 @@ import tagion.hashgraph.Event;
 import tagion.hashgraph.ConsensusExceptions;
 
 import tagion.services.LoggerService;
+import tagion.services.ServiceNames : get_node_name;
 import tagion.crypto.secp256k1.NativeSecp256k1;
-
-static string get_node_name(immutable size_t i) {
-    import std.array : join;
-    return [options.nodeprefix, i.to!string].join(options.separator);
-}
 
 @trusted
 static uint getTids(Tid[] tids) {
     uint result=uint.max;
     foreach(i, ref tid ; tids) {
         immutable uint_i=cast(uint)i;
-        immutable taskname=get_node_name(uint_i);
+        immutable taskname=get_node_name(*options, uint_i);
         tid=locate(taskname);
         if ( tid == thisTid ) {
             result=uint_i;
