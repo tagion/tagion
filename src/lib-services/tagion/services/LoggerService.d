@@ -3,6 +3,11 @@ module tagion.services.LoggerService;
 import std.stdio;
 import std.format;
 import std.concurrency;
+import core.thread;
+import core.sys.posix.pthread;
+import std.string;
+
+extern(C) int pthread_setname_np(pthread_t, const char*);
 
 import tagion.Base : Control;
 
@@ -30,6 +35,11 @@ static struct Logger {
     }
 
     @trusted
+    static setThreadName(string name) {
+        pthread_setname_np(pthread_self(), toStringz(name));
+    }
+
+    @trusted
     void register(string task_name)
         in {
             assert(logger_tid == logger_tid.init);
@@ -39,7 +49,7 @@ static struct Logger {
         .register(task_name, thisTid);
         logger_tid=locate(options.logger.task_name);
         _task_name=task_name;
-
+        setThreadName(task_name);
         stderr.writefln("Register: %s logger", _task_name);
         log("Register: %s logger", _task_name);
     }
@@ -49,6 +59,7 @@ static struct Logger {
         no_task=true;
         logger_tid=locate(options.logger.task_name);
         _task_name=task_name;
+        setThreadName(task_name);
         log("Register: %s logger", _task_name);
     }
 
