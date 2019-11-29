@@ -149,19 +149,22 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     Pubkey[] received_pkeys; //=receiveOnly!(immutable(Pubkey[]));
     foreach(i;0..opts.nodes) {
         received_pkeys~=receiveOnly!(Pubkey);
-        writefln("Receive %s", received_pkeys[i].cutHex);
+        stderr.writefln("@@@@ Receive %s %s", opts.node_name, received_pkeys[i].cutHex);
     }
     immutable pkeys=assumeUnique(received_pkeys);
 
     hashgraph.createNode(net.pubkey);
     log("Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
+    stderr.writefln("@@@@ Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
     foreach(i, p; pkeys) {
         if ( hashgraph.createNode(p) ) {
             log("%d] %s", i, p.cutHex);
         }
     }
     // All tasks is in sync
+    stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
     log("All tasks are in sync %s", opts.node_name);
+
     // scope tids=new Tid[N];
     // getTids(tids);
     net.set(pkeys);
@@ -169,16 +172,18 @@ void tagionServiceTask(Net)(immutable(Options) args) {
         (opts.monitor.port >= opts.min_port) ) {
         monitor_socket_tid = spawn(&monitorServiceTask, opts);
         Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
+        stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
         if ( receiveOnly!Control is Control.LIVE ) {
             log("Monitor started");
         }
     }
 
-
+    stderr.writefln("@@@@ opts.transaction.port=%d", opts.transaction.port);
     if ( ( (opts.node_id < opts.transaction.max) || (opts.transaction.max == 0) ) &&
         (opts.transaction.port >= opts.min_port) ) {
         transaction_socket_tid = spawn(&transactionServiceTask, opts);
+        stderr.writefln("@@@@ Wait for transaction %s", opts.node_name);
         if ( receiveOnly!Control is Control.LIVE ) {
             log("Transaction started");
         }

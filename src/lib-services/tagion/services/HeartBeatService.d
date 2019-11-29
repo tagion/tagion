@@ -26,7 +26,6 @@ void heartBeatServiceTask(immutable(Options) opts) {
     Tid[] tids;
     Pubkey[]  pkeys;
 
-
     log.register(tast_name);
     scope(exit) {
         log("----- Stop all tasks -----");
@@ -58,8 +57,10 @@ void heartBeatServiceTask(immutable(Options) opts) {
         ownerTid.prioritySend(Control.END);
     }
 
+    stderr.writeln("@@@@@ Before node loop");
     foreach(i;0..opts.nodes) {
         log("node=%s", i);
+        stderr.writefln("node=%s", i);
         Options service_options=opts;
         if ( (opts.monitor.port >= opts.min_port) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
@@ -72,7 +73,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
         log("Start %d", pkeys.length);
-        writefln("Start %d", pkeys.length);
+        writefln("@@@@@ Start %d", pkeys.length);
 
     }
 
@@ -124,7 +125,8 @@ void heartBeatServiceTask(immutable(Options) opts) {
     }
     else {
         Thread.sleep(1.seconds);
-while(!stop) {
+        while(!stop) {
+            stderr.write("* ");
             immutable message_received=receiveTimeout(
                 opts.delay.msecs,
                 (Control ctrl) {
