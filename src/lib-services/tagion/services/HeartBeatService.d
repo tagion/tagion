@@ -17,11 +17,33 @@ import tagion.gossip.EmulatorGossipNet;
 import tagion.services.ServiceNames : get_node_name;
 import tagion.TagionExceptions;
 
+shared bool abort=false;
+static extern(C) void shutdown(int sig) @nogc nothrow {
+    import core.stdc.stdio;
+    import core.stdc.stdlib;
+    import core.thread;
+    import std.concurrency;
+//    import std.string : toStringz;
+    abort=true;
+    printf("Shutdown sig %d %d\n\0".ptr, sig, abort);
+
+    //auto tid=locate(options.heartbeat.task_name);
+//        assumeWontThrow(heart_tid.send(Control.STOP));
+
+//        thread_joinAll();
+    //exit(sig);
+}
+
+
+
 import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
+    import core.stdc.signal;
+    signal(SIGINT, &shutdown);
+    signal(SIGTERM, &shutdown);
 
-    immutable tast_name="heartbeat";
+    immutable tast_name=opts.heartbeat.task_name;
 
     Tid[] tids;
     Pubkey[]  pkeys;
@@ -91,8 +113,8 @@ void heartBeatServiceTask(immutable(Options) opts) {
     uint count = opts.loops;
 
     size_t count_down=tids.length;
-    bool stop=false;
 
+    bool stop=false;
     if ( opts.sequential ) {
         Thread.sleep(1.seconds);
         log("Start the heart beat");
@@ -124,9 +146,9 @@ void heartBeatServiceTask(immutable(Options) opts) {
         }
     }
     else {
-        Thread.sleep(1.seconds);
-        while(!stop) {
-            stderr.write("* ");
+        // Thread.sleep(1.seconds);
+        while(!stop && !abort) {
+            stderr.writef("* %s ", abort);
             immutable message_received=receiveTimeout(
                 opts.delay.msecs,
                 (Control ctrl) {

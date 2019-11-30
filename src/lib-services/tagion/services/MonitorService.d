@@ -33,7 +33,12 @@ void monitorServiceTask(immutable(Options) opts) {
         ownerTid.prioritySend(Control.END);
     }
 
-    auto listener_socket = ListenerSocket(opts, opts.url, opts.monitor.port, opts.monitor.task_name);
+    auto listener_socket = ListenerSocket(
+        opts,
+        opts.url,
+        opts.monitor.port,
+        opts.monitor.timeout,
+        opts.monitor.task_name);
     auto listener_socket_thread=listener_socket.start;
     // void delegate() listerner;
     // listerner.funcptr = &ListenerSocket.run;

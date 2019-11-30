@@ -28,7 +28,12 @@ void transactionServiceTask(immutable(Options) opts) {
         ownerTid.prioritySend(Control.END);
     }
 
-    auto listener_socket = ListenerSocket(opts, opts.url, opts.transaction.port, opts.transaction.task_name);
+    auto listener_socket = ListenerSocket(
+        opts,
+        opts.url,
+        opts.transaction.port,
+        opts.transaction.timeout,
+        opts.transaction.task_name);
     // void delegate() listerner;
     // listerner.funcptr = &ListenerSocket.run;
     // listerner.ptr = &listener_socket;
