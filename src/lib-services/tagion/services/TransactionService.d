@@ -29,16 +29,18 @@ void transactionServiceTask(immutable(Options) opts) {
     }
 
     auto listener_socket = ListenerSocket(opts, opts.url, opts.transaction.port, opts.transaction.task_name);
-    void delegate() listerner;
-    listerner.funcptr = &ListenerSocket.run;
-    listerner.ptr = &listener_socket;
-    auto listener_socket_thread = new Thread( listerner ).start();
+    // void delegate() listerner;
+    // listerner.funcptr = &ListenerSocket.run;
+    // listerner.ptr = &listener_socket;
+    auto listener_socket_thread = listener_socket.start;
+
 
     scope(exit) {
         log("In exit of soc. port=%d th", opts.transaction.port);
-
+        listener_socket.stop;
+        version(none)
         if ( listener_socket_thread !is null ) {
-            listener_socket.close;
+            //  listener_socket.close;
             listener_socket.stop;
 
             log("Kill listener socket. %d", opts.transaction.port);
@@ -48,6 +50,7 @@ void transactionServiceTask(immutable(Options) opts) {
 
             listener_socket_thread.join();
             ping.close;
+            listener_socket.close;
             log("Thread joined %d", opts.transaction.port);
         }
     }
@@ -61,15 +64,16 @@ void transactionServiceTask(immutable(Options) opts) {
                 log("Kill socket thread. %d", opts.transaction.port);
                 stop = true;
                 break;
-            case LIVE:
-                stop = false;
-                break;
+                // case LIVE:
+                //     stop = false;
+                //     break;
             default:
                 log.error("Bad Control command %s", ts);
-                stop=true;
+                //    stop=true;
             }
     }
 
+    ownerTid.send(Control.LIVE);
     while(!stop) {
         receiveTimeout(500.msecs,
             //Control the thread

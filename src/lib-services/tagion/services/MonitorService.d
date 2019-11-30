@@ -21,7 +21,6 @@ void monitorServiceTask(immutable(Options) opts) {
     setOptions(opts);
     immutable task_name=opts.monitor.task_name;
     log.register(task_name);
-    ownerTid.send(Control.LIVE);
 
     log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
     // scope(failure) {
@@ -35,14 +34,18 @@ void monitorServiceTask(immutable(Options) opts) {
     }
 
     auto listener_socket = ListenerSocket(opts, opts.url, opts.monitor.port, opts.monitor.task_name);
-    void delegate() listerner;
-    listerner.funcptr = &ListenerSocket.run;
-    listerner.ptr = &listener_socket;
-    auto listener_socket_thread = new Thread( listerner ).start();
+    auto listener_socket_thread=listener_socket.start;
+    // void delegate() listerner;
+    // listerner.funcptr = &ListenerSocket.run;
+    // listerner.ptr = &listener_socket;
+    // auto listener_socket_thread = new Thread( listerner ).start();
 
+//    version(none)
     scope(exit) {
         log("In exit of soc. port=%d th", opts.monitor.port);
+        listener_socket.stop;
 
+        version(none)
         if ( listener_socket_thread !is null ) {
             //  listener_socket.close;
             listener_socket.stop;
@@ -52,13 +55,16 @@ void monitorServiceTask(immutable(Options) opts) {
 //            if ( ldo.active ) {
             auto ping=new TcpSocket(new InternetAddress(opts.url, opts.monitor.port));
 //                receive( &handleClient);
-//                Thread.sleep(500.msecs);
+            writefln("Pause for %d to close", opts.monitor.port);
+            Thread.sleep(500.msecs);
             // run_listener = false;
             log("run_listerner %s %s", listener_socket.active, opts.monitor.port);
 //            }
+            writefln("Wait for %d to close", opts.monitor.port);
             listener_socket_thread.join();
+            //          ping.close;
+//            listener_socket.close;
 
-            ping.close;
             log("Thread joined %d", opts.monitor.port);
         }
     }
@@ -70,6 +76,13 @@ void monitorServiceTask(immutable(Options) opts) {
         with(Control) switch(ts) {
             case STOP:
                 log("Kill socket thread. %d", opts.monitor.port);
+                // if ( listener_socket_thread !is null ) {
+                //     listener_socket.stop;
+                //     writefln("Wait for %d to close", opts.monitor.port);
+                //     listener_socket_thread.join();
+                //     log("Thread joined %d", opts.monitor.port);
+                // }
+
                 stop = true;
                 break;
                 // case LIVE:
@@ -81,6 +94,7 @@ void monitorServiceTask(immutable(Options) opts) {
             }
     }
 
+    ownerTid.send(Control.LIVE);
     while(!stop) {
         receiveTimeout(500.msecs,
             //Control the thread

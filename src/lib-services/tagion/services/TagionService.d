@@ -76,7 +76,6 @@ void tagionServiceTask(Net)(immutable(Options) args) {
 
         if ( net.transcript_tid != net.transcript_tid.init ) {
             log("Send stop to %s", opts.transcript.task_name);
-
             net.transcript_tid.prioritySend(Control.STOP);
             if ( receiveOnly!Control is Control.END ) {
                 log("Scripting api end!!");
