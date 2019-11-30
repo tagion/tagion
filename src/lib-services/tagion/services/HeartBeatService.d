@@ -19,19 +19,8 @@ import tagion.TagionExceptions;
 
 shared bool abort=false;
 static extern(C) void shutdown(int sig) @nogc nothrow {
-    import core.stdc.stdio;
-    import core.stdc.stdlib;
-    import core.thread;
-    import std.concurrency;
-//    import std.string : toStringz;
     abort=true;
-    printf("Shutdown sig %d %d\n\0".ptr, sig, abort);
-
-    //auto tid=locate(options.heartbeat.task_name);
-//        assumeWontThrow(heart_tid.send(Control.STOP));
-
-//        thread_joinAll();
-    //exit(sig);
+    printf("Shutdown sig %d\n\0".ptr, sig);
 }
 
 
