@@ -23,14 +23,15 @@ static extern(C) void shutdown(int sig) @nogc nothrow {
     printf("Shutdown sig %d\n\0".ptr, sig);
 }
 
-
+shared static this() {
+    import core.stdc.signal;
+    signal(SIGINT, &shutdown);
+    signal(SIGTERM, &shutdown);
+}
 
 import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
-    import core.stdc.signal;
-    signal(SIGINT, &shutdown);
-    signal(SIGTERM, &shutdown);
 
     immutable tast_name=opts.heartbeat.task_name;
 
