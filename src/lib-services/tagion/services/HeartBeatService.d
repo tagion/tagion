@@ -18,17 +18,19 @@ import tagion.services.ServiceNames : get_node_name;
 import tagion.TagionExceptions;
 
 shared bool abort=false;
-static extern(C) void shutdown(int sig) @nogc nothrow {
-    abort=true;
-    printf("Shutdown sig %d\n\0".ptr, sig);
-}
+version(SIG_SHORTDOWN){
+    static extern(C) void shutdown(int sig) @nogc nothrow {
+        abort=true;
+        printf("Shutdown sig %d\n\0".ptr, sig);
+    }
 
-shared static this() {
-    import core.stdc.signal;
-    signal(SIGINT, &shutdown);
-    signal(SIGTERM, &shutdown);
-}
+    shared static this() {
+        import core.stdc.signal;
+        signal(SIGINT, &shutdown);
+        signal(SIGTERM, &shutdown);
+    }
 
+}
 import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
@@ -95,7 +97,6 @@ void heartBeatServiceTask(immutable(Options) opts) {
 
     foreach(ref tid; tids) {
         foreach(pkey; pkeys) {
-            writefln("Send %s", pkey.cutHex);
             tid.send(pkey);
         }
     }
