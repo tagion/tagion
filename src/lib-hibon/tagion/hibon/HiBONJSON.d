@@ -13,6 +13,7 @@ import tagion.hibon.HiBONBase : Type, isNative, isArray, isHiBONType;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.Message : message;
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
@@ -20,7 +21,7 @@ import tagion.TagionExceptions : Check;
 import tagion.utils.Miscellaneous : toHex=toHexString, decode;
 
 /**
- * Exception type used by tagion.utils.BSON module
+ * Exception type used by tagion.hibon.HiBON module
  */
 @safe
 class HiBON2JSONException : HiBONException {
@@ -55,7 +56,7 @@ enum typeMap=[
     Type.INT64    : "i64",
     Type.UINT32   : "u32",
     Type.UINT64   : "u64",
-    Type.BIGINT   : "big",
+    Type.BIGINT   : "int",
 
     Type.DEFINED_NATIVE : NotSupported,
     Type.BINARY         : "bin",
@@ -101,7 +102,11 @@ JSONValue toJSON(Document doc, bool hashsafe=true) {
 struct toJSONT(bool HASHSAFE) {
     @trusted
     static JSONValue opCall(const Document doc) {
+        import std.stdio;
         JSONValue result;
+        writeln("call");
+        writeln(cast(immutable(char[]))doc.serialize);
+        writeln(doc.serialize);
         immutable isarray=doc.isArray;
 //        writefln("HASHSAFE=%s",HASHSAFE);
         foreach(e; doc[]) {
@@ -113,7 +118,11 @@ struct toJSONT(bool HASHSAFE) {
                         case E:
                             static if (E is Type.DOCUMENT) {
                                 const sub_doc=e.by!E;
+                                writeln("is doc!");
+                                writeln(cast(immutable(char[])) e.data);
                                 auto doc_element=toJSONT(sub_doc);
+                                writeln("cheking!");
+                                writeln(cast(immutable(char[])) e.data);
                                 if ( isarray ) {
                                     result.array~=doc_element;
                                 }
@@ -122,6 +131,7 @@ struct toJSONT(bool HASHSAFE) {
                                 }
                             }
                             else {
+                                writeln("HERE!");
                                 auto doc_element=new JSONValue[2];
                                 doc_element[TYPE]=JSONValue(typeMap[E]);
                                 static if (E is UTC) {
@@ -143,6 +153,9 @@ struct toJSONT(bool HASHSAFE) {
                                 else {
                                     doc_element[VALUE]=toJSONType(e.by!E);
                                 }
+
+                                writeln("cheking2!");
+                                writeln(cast(immutable(char[])) e.data);
                                 if ( isarray ) {
                                     result.array~=doc_element;
                                 }
@@ -154,7 +167,7 @@ struct toJSONT(bool HASHSAFE) {
                         }
                     }
                 default:
-                    .check(0, format("HiBON type %s notsupported and can not be converted to JSON", e.type));
+                    .check(0, message("HiBON type %s notsupported and can not be converted to JSON", e.type));
                 }
             }
         }
@@ -224,7 +237,7 @@ struct toJSONT(bool HASHSAFE) {
             return x.to!string;
         }
         else {
-            static assert(0, format("Unsuported type %s", T.stringof));
+            static assert(0, message("Unsuported type %s", T.stringof));
         }
     }
 
@@ -304,11 +317,11 @@ HiBON toHiBON(scope const JSONValue json) {
                                 scope str=value.str;
                                 enum HEX_PREFIX="0x";
                                 .check(str[0..HEX_PREFIX.length].toLower == HEX_PREFIX,
-                                    format("Hex prefix %s expected for type %s", HEX_PREFIX, E));
+                                    message("Hex prefix %s expected for type %s", HEX_PREFIX, E));
                                 sub_result[key]=decode(str[HEX_PREFIX.length..$]);
                             }
                             else static if (isArray(E)) {
-                                .check(value.type is JSONType.array, format("JSON array expected for %s for member %s", E, key));
+                                .check(value.type is JSONType.array, message("JSON array expected for %s for member %s", E, key));
                                 alias U=Unqual!(ForeachType!T);
                                 scope array=new U[value.array.length];
                                 foreach(size_t i, ref e; value) {
