@@ -95,7 +95,6 @@ void heartBeatServiceTask(immutable(Options) opts) {
 
     foreach(ref tid; tids) {
         foreach(pkey; pkeys) {
-            writefln("Send %s", pkey.cutHex);
             tid.send(pkey);
         }
     }
