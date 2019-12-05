@@ -5,7 +5,7 @@ import std.stdio : File;
 import std.format;
 
 import tagion.Options;
-import tagion.Base : EnumText, Pubkey, Buffer, buf_idup;
+import tagion.Base : EnumText, Pubkey, Buffer, buf_idup, basename;
 import tagion.TagionExceptions : convertEnum;
 //, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
@@ -53,7 +53,7 @@ class StdSecureNet : StdRequestNet, SecureNet {
     import std.digest.hmac;
 
     private Pubkey _pubkey;
-    private immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
+    protected immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
 
     Pubkey pubkey() pure const nothrow {
         return _pubkey;
@@ -86,10 +86,13 @@ class StdSecureNet : StdRequestNet, SecureNet {
 
     immutable(ubyte[]) sign(immutable(ubyte[]) message)
     in {
-        assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
+        assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));    //FIXME: doesn't work with an abstract function
         assert(message.length == 32);
     }
     do {
+        import std.traits;
+        assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));   
+         
         return _sign(message);
     }
 
