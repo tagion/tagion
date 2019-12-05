@@ -104,9 +104,6 @@ struct toJSONT(bool HASHSAFE) {
     static JSONValue opCall(const Document doc) {
         import std.stdio;
         JSONValue result;
-        writeln("call");
-        writeln(cast(immutable(char[]))doc.serialize);
-        writeln(doc.serialize);
         immutable isarray=doc.isArray;
 //        writefln("HASHSAFE=%s",HASHSAFE);
         foreach(e; doc[]) {
@@ -118,11 +115,7 @@ struct toJSONT(bool HASHSAFE) {
                         case E:
                             static if (E is Type.DOCUMENT) {
                                 const sub_doc=e.by!E;
-                                writeln("is doc!");
-                                writeln(cast(immutable(char[])) e.data);
                                 auto doc_element=toJSONT(sub_doc);
-                                writeln("cheking!");
-                                writeln(cast(immutable(char[])) e.data);
                                 if ( isarray ) {
                                     result.array~=doc_element;
                                 }
@@ -131,7 +124,6 @@ struct toJSONT(bool HASHSAFE) {
                                 }
                             }
                             else {
-                                writeln("HERE!");
                                 auto doc_element=new JSONValue[2];
                                 doc_element[TYPE]=JSONValue(typeMap[E]);
                                 static if (E is UTC) {
@@ -154,8 +146,6 @@ struct toJSONT(bool HASHSAFE) {
                                     doc_element[VALUE]=toJSONType(e.by!E);
                                 }
 
-                                writeln("cheking2!");
-                                writeln(cast(immutable(char[])) e.data);
                                 if ( isarray ) {
                                     result.array~=doc_element;
                                 }
