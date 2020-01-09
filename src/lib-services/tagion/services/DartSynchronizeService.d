@@ -92,9 +92,11 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         auto port = opts.port - opts.portBase;
         ushort fromAng;
         ushort toAng;
-        if(!opts.dart.synchronize){
-        fromAng = to!ushort((ushort.max/opts.dart.sync.max) * port);
-        toAng = to!ushort(fromAng + ushort.max/opts.dart.sync.max);
+        if(opts.dart.setAngleFromPort){
+            writeln(opts.dart.sync.maxSlaves);
+            auto delta = (opts.dart.toAng - opts.dart.fromAng)/opts.dart.sync.maxSlaves;
+            fromAng = to!ushort(opts.dart.fromAng + (port)*delta ); 
+            toAng = to!ushort(opts.dart.fromAng + (port+1)*(delta+1));
         }else{
             fromAng = opts.dart.fromAng;
             toAng = opts.dart.toAng;
@@ -106,6 +108,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
             writeln("GENERATING DART");
             auto fp = GetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings, fromAng, toAng);
             writeln("DART Initialized: ", fp.cutHex);
+            dart.dump;
         }
         
         writeln(opts.dart.host.timeout.msecs);
@@ -160,8 +163,9 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                 (Response!(ControlCode.Control_RequestHandled) resp) {  
                     writeln("i get a response");
                     auto doc = Document(resp.data);
+                    // writeln("RECEIVED:");
+                    // writeln(doc.toJSON(true));
                     auto message_doc = doc[Keywords.message].get!Document;
-                    writeln("after convert");
                     void serverHandler(){
                         writeln("as a server");
                         HiRPC hrpc;
@@ -169,6 +173,9 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                         auto received = hrpc.receive(doc);
                         auto request = dart(received);
                         auto tosend = hrpc.toHiBON(request).serialize;
+                        // writeln("RESPONSE:");
+                        // writeln(Document(tosend).toJSON(true));
+                        writeln("RESPONSE KEY: ", resp.key);
                         connectionPool.send(resp.key, tosend);
                         destroy(resp.stream);
                     }
