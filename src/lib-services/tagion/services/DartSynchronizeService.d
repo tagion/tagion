@@ -32,15 +32,18 @@ import tagion.communication.HiRPC;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-enum DartControl{
+enum DartSynchronizeControl{
     GetStatus = 1,
 }
 
-enum DartState{
+enum DartSynchronizeState{
     WAITING = 4,
     READY = 5,
-    SYNCHRONIZING = 6
+    SYNCHRONIZING = 6,
+    REPLAYING_JOURNALS = 7,
+    REPLAYING_RECORDERS = 8,
 }
+
 
 struct ServiceState(T) {
     protected T _state;
@@ -63,7 +66,7 @@ struct ServiceState(T) {
 
 void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
     writeln("SERVICE CREATED"); 
-    auto state = ServiceState!DartState(DartState.WAITING);
+    auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING);
     try{
         setOptions(opts);
         immutable task_name=opts.dart.task_name;
@@ -93,7 +96,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         ushort fromAng;
         ushort toAng;
         if(opts.dart.setAngleFromPort){
-            writeln(opts.dart.sync.maxSlaves);
+            pragma(msg, "Fixme(as): static table");
             auto delta = (opts.dart.toAng - opts.dart.fromAng)/opts.dart.sync.maxSlaves;
             fromAng = to!ushort(opts.dart.fromAng + (port)*delta ); 
             toAng = to!ushort(opts.dart.fromAng + (port+1)*(delta+1));
@@ -126,32 +129,46 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                 }
         }
 
-        void handleDartControl(DartControl dc){
-            with(DartControl) switch(dc){
+        void handleDartControl(DartSynchronizeControl dc){
+            with(DartSynchronizeControl) switch(dc){
                 case GetStatus: state.notifyOwner(); break;
                 default: break;
             }
         }
 
+        immutable(DARTFile.Recorder)[] recorders;
+        void setRecorder(immutable(DARTFile.Recorder) recorder){
+            recorders~=recorder;
+        }
         ownerTid.send(Control.LIVE);
         auto handlerPool = new HandlerPool!(P2pSynchronizer, Pubkey)(opts.dart.host.timeout.msecs);
-        enum tickTimeout = 1.seconds;
+        enum tickTimeout = 50.msecs;
         
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
         DartSynchronizationPool syncPool = new DartSynchronizationPool(dart, node, connectionPool, opts);
-        bool isUpdated = false;
         if(opts.dart.synchronize) {
-            state.setState(DartState.WAITING);
+            state.setState(DartSynchronizeState.WAITING);
             syncPool.runMdns();
         }else{
-            isUpdated = true;
-            state.setState(DartState.READY);
+            state.setState(DartSynchronizeState.READY);
         }
+        alias JournalReplay =  ReplayFiber!(string, (DART dart, string journal)=> dart.replay(journal));
+        alias RecorderReplay = ReplayFiber!(immutable(DARTFile.Recorder), (DART dart, immutable(DARTFile.Recorder) recorder)=> dart.modify(cast(DARTFile.Recorder) recorder));
+        JournalReplay journalReplayFiber= new JournalReplay(dart, P2pSynchronizer.journals);
+        RecorderReplay recorderReplayFiber = new RecorderReplay(dart, recorders);
 
+        auto readPool = new HandlerPool!(ReadSynchronizer, uint)(1.minutes);
+        
+        HiRPC hrpc;
+        hrpc.net = net;
         while(!stop) {
             receiveTimeout(tickTimeout,
                 &handleControl,
                 &handleDartControl,
+                (immutable(DARTFile.Recorder) recorder){
+                    writeln("setRecorder");
+                    setRecorder(recorder);
+                },
                 (Response!(ControlCode.Control_Connected) resp) {    
                     writeln("Client Connected key: ", resp.key);
                     connectionPool.add(resp.key, resp.stream);
@@ -160,16 +177,18 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     writeln("Client Disconnected key: ", resp.key);     
                     connectionPool.close(cast(void*)resp.key);
                 },
-                (Response!(ControlCode.Control_RequestHandled) resp) {  
-                    writeln("i get a response");
+                (Response!(ControlCode.Control_RequestHandled) resp) {  //TODO: moveout to factory
                     auto doc = Document(resp.data);
-                    // writeln("RECEIVED:");
-                    // writeln(doc.toJSON(true));
                     auto message_doc = doc[Keywords.message].get!Document;
+                    void closeConnection(){
+                        writeln("Close connection");
+                        connectionPool.close(resp.key);
+                    }
                     void serverHandler(){
                         writeln("as a server");
-                        HiRPC hrpc;
-                        hrpc.net = net;
+                        if(message_doc[Keywords.method].get!string == DART.Quries.dartModify){  //Not allowed
+                            closeConnection();
+                        }
                         auto received = hrpc.receive(doc);
                         auto request = dart(received);
                         auto tosend = hrpc.toHiBON(request).serialize;
@@ -183,13 +202,35 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                         writeln("set sync pool resposne");
                         syncPool.setResponse(resp);
                     }
-                    if(message_doc.hasElement(Keywords.method) && isUpdated){
+                    if(message_doc.hasElement(Keywords.method) && state.state == DartSynchronizeState.READY){ //TODO: to switch
                         serverHandler();
-                    }else if(!message_doc.hasElement(Keywords.method) && !isUpdated){
+                    }else if(!message_doc.hasElement(Keywords.method) && state.state == DartSynchronizeState.SYNCHRONIZING){
                         clientHandler();
                     }else{
-                        writeln("Close connection");
-                        connectionPool.close(resp.key);
+                        closeConnection();
+                    }
+                },
+                (string taskName, Buffer data){
+                    writeln("DSS: received request from: ", taskName);
+                    scope hrpc = HiRPC(null);
+                    const doc = Document(data);
+                    const message_doc = doc[Keywords.message].get!Document;
+                    
+                    const method = message_doc[Keywords.method].get!string;
+                    if(method == DART.Quries.dartRead){
+                        auto port = addrPort(node_addrses[selectedNode]);
+                        DartSynchronizationPool.node_addrses
+                    }
+
+                    const received = hrpc.receive(doc);
+
+                    auto response = dart(received);
+                    auto tid = locate(taskName);
+                    if(tid != Tid.init){
+                        auto tosend = hrpc.toHiBON(response).serialize;
+                        send(tid, tosend);
+                    }else{
+                        // log.fatal ..  
                     }
                 },
                 (immutable(Exception) e) {
@@ -203,23 +244,43 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     ownerTid.send(t);
                 }
             );
-            handlerPool.tick();
+            readPool.tick();
             if(opts.dart.synchronize){
                 syncPool.tick();
                 if(syncPool.isReady){
                     syncPool.start();
-                    state.setState(DartState.SYNCHRONIZING);
+                    state.setState(DartSynchronizeState.SYNCHRONIZING);
                 }
                 if(syncPool.isOver){
                     writefln("is over");
-                    P2pSynchronizer.replay(dart); //block until update db
-                    isUpdated = true;
+                    // P2pSynchronizer.replay(dart); //block until update db
                     syncPool.stop;
-                    state.setState(DartState.READY);
+                    state.setState(DartSynchronizeState.REPLAYING_JOURNALS);
                 }
+            }
+            if(state.state == DartSynchronizeState.REPLAYING_JOURNALS){
+                if(!journalReplayFiber.empty){
+                    writeln("journals count", P2pSynchronizer.journals.length);
+                    journalReplayFiber.call;
+                }else{
+                    state.setState(DartSynchronizeState.REPLAYING_RECORDERS);
+                }
+            }
+            if(state.state == DartSynchronizeState.REPLAYING_RECORDERS){
+                if(!recorderReplayFiber.empty){
+                    writeln("recorders count", recorders.length);
+                    recorderReplayFiber.call;
+                }else{
+                    recorderReplayFiber.reset();
+                    state.setState(DartSynchronizeState.READY);
+                }
+            }
+
+            if(state.state == DartSynchronizeState.READY){
+                
             }
         }
     }catch(Exception e){
         writefln("EXCEPTION: %s", e);
     }
-}
+} 
