@@ -146,9 +146,10 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
         DartSynchronizationPool syncPool = new DartSynchronizationPool(dart, node, connectionPool, opts);
+        auto discoveryService = DiscoveryService(node);
         if(opts.dart.synchronize) {
             state.setState(DartSynchronizeState.WAITING);
-            syncPool.runMdns();
+            discoveryService.start();
         }else{
             state.setState(DartSynchronizeState.READY);
         }
@@ -218,8 +219,8 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     
                     const method = message_doc[Keywords.method].get!string;
                     if(method == DART.Quries.dartRead){
-                        auto port = addrPort(node_addrses[selectedNode]);
-                        DartSynchronizationPool.node_addrses
+                        // auto port = addrPort(node_addrses[selectedNode]);
+                        // DartSynchronizationPool.node_addrses
                     }
 
                     const received = hrpc.receive(doc);
@@ -244,11 +245,12 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     ownerTid.send(t);
                 }
             );
-            readPool.tick();
+            // readPool.tick();
             if(opts.dart.synchronize){
                 syncPool.tick();
-                if(syncPool.isReady){
-                    syncPool.start();
+                discoveryService.tick();
+                if(discoveryService.isReady && syncPool.isReady){
+                    syncPool.start(discoveryService.node_addrses);
                     state.setState(DartSynchronizeState.SYNCHRONIZING);
                 }
                 if(syncPool.isOver){
