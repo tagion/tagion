@@ -97,7 +97,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         ushort toAng;
         if(opts.dart.setAngleFromPort){
             pragma(msg, "Fixme(as): static table");
-            auto delta = (opts.dart.toAng - opts.dart.fromAng)/opts.dart.sync.maxSlaves;
+            auto delta = (opts.dart.sync.netToAng - opts.dart.sync.netFromAng)/opts.dart.sync.maxSlaves;
             fromAng = to!ushort(opts.dart.fromAng + (port)*delta ); 
             toAng = to!ushort(opts.dart.fromAng + (port+1)*(delta+1));
         }else{
@@ -141,15 +141,14 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
             recorders~=recorder;
         }
         ownerTid.send(Control.LIVE);
-        auto handlerPool = new HandlerPool!(P2pSynchronizer, Pubkey)(opts.dart.host.timeout.msecs);
         enum tickTimeout = 50.msecs;
         
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
         DartSynchronizationPool syncPool = new DartSynchronizationPool(dart, node, connectionPool, opts);
-        auto discoveryService = DiscoveryService(node);
+        auto discoveryService = DiscoveryService(node, opts);
+        discoveryService.start();
         if(opts.dart.synchronize) {
             state.setState(DartSynchronizeState.WAITING);
-            discoveryService.start();
         }else{
             state.setState(DartSynchronizeState.READY);
         }
@@ -199,39 +198,102 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                         connectionPool.send(resp.key, tosend);
                         destroy(resp.stream);
                     }
-                    void clientHandler(){
-                        writeln("set sync pool resposne");
-                        syncPool.setResponse(resp);
-                    }
                     if(message_doc.hasElement(Keywords.method) && state.state == DartSynchronizeState.READY){ //TODO: to switch
                         serverHandler();
-                    }else if(!message_doc.hasElement(Keywords.method) && state.state == DartSynchronizeState.SYNCHRONIZING){
-                        clientHandler();
+                    }else if(!message_doc.hasElement(Keywords.method)){
+                        if(state.state == DartSynchronizeState.SYNCHRONIZING){
+                            syncPool.setResponse(resp);
+                        }else{
+                            writeln("set read pool response ", message_doc[Keywords.id].get!uint);
+                            auto response = ResponseHandler.Response!uint(message_doc[Keywords.id].get!uint, resp.data);
+                            readPool.setResponse(response);
+                        }
                     }else{
                         closeConnection();
                     }
                 },
                 (string taskName, Buffer data){
                     writeln("DSS: received request from: ", taskName);
-                    scope hrpc = HiRPC(null);
+                    auto empty_hirpc = HiRPC(null);
                     const doc = Document(data);
+                    writeln(doc.toJSON);
+                    auto receiver = empty_hirpc.receive(doc);
                     const message_doc = doc[Keywords.message].get!Document;
+                    const hrpc_id = message_doc[Keywords.id].get!uint;
                     
                     const method = message_doc[Keywords.method].get!string;
                     if(method == DART.Quries.dartRead){
-                        // auto port = addrPort(node_addrses[selectedNode]);
-                        // DartSynchronizationPool.node_addrses
-                    }
+                        scope doc_fingerprints=receiver.params[DARTFile.Params.fingerprints].get!(Document);
+                        scope fingerprints=doc_fingerprints.range!(Buffer[]);  
+                        alias bufArr = Buffer[];
+                        bufArr[DiscoveryService.NodeAddress] remote_fp_requests;
+                        Buffer[] local_fp;
 
-                    const received = hrpc.receive(doc);
+                        fpIterator: foreach(fp; fingerprints){
+                            ushort sector = fp[0] | fp[1];
+                            writeln("sector:", sector);
+                            if(dart.inRange(sector)){
+                                writeln("in range");
+                                local_fp~=fp;
+                                continue fpIterator;
+                            }else{
+                                foreach(address, fps; remote_fp_requests){
+                                    writeln("check rfr addr from", address.fromAng, " to ", address.toAng, " with sector ", sector);
+                                    if(sector >= address.fromAng && sector<= address.toAng){
+                                        fps~=fp;
+                                        remote_fp_requests[address] = fps;
+                                        continue fpIterator;
+                                    }
+                                }
+                                foreach(id, address; DiscoveryService.node_addrses){
+                                    writeln("check address from", address.fromAng, " to ", address.toAng, " with sector ", sector);
+                                    if(sector>= address.fromAng && sector<= address.toAng){
+                                        remote_fp_requests[address] = [fp];
+                                        continue fpIterator;
+                                    }                                    
+                                }
+                            }                            
+                        }
+                        writeln("remote_fp_requests:", remote_fp_requests);
+                        writeln("local_fp:", local_fp);
+                        auto recorder=dart.loads(local_fp, DARTFile.Recorder.Archive.Type.ADD);
 
-                    auto response = dart(received);
-                    auto tid = locate(taskName);
-                    if(tid != Tid.init){
-                        auto tosend = hrpc.toHiBON(response).serialize;
-                        send(tid, tosend);
-                    }else{
-                        // log.fatal ..  
+                        if(remote_fp_requests.length != 0){
+                            import std.array;
+                            auto rs = new ReadSynchronizer(array(fingerprints), hrpc, taskName, receiver);
+                            writeln("add : ", hrpc_id);
+                            readPool.add(hrpc_id, rs);
+                            if(local_fp.length>0){
+                                writeln("set local fp response");
+                                readPool.setResponse(ResponseHandler.Response!uint(hrpc_id, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize));
+                            }
+                            foreach(addr, fps; remote_fp_requests){
+                                auto stream = node.connect(addr.address, [task_name~"sync"]);
+                                // connectionPool.add(stream.Identifier, stream);
+                                stream.listen(&StdHandlerCallback, opts.dart.task_name, opts.dart.host.timeout.msecs, opts.dart.host.max_size);
+                                auto params=new HiBON;
+                                auto params_fingerprints=new HiBON;
+                                foreach(i, b; fps) {
+                                    if ( b.length !is 0 ) {
+                                        params_fingerprints[i]=b;
+                                    }
+                                }
+                                params[DARTFile.Params.fingerprints]=params_fingerprints;
+                                const request = empty_hirpc.dartRead(params, hrpc_id);
+                                immutable foreign_data = empty_hirpc.toHiBON(request).serialize;
+                                writeln("requested");
+                                stream.writeBytes(foreign_data);
+                            }
+                        }else{
+                            if(local_fp.length != 0){
+                                auto tid = locate(task_name);
+                                if(tid != Tid.init){
+                                    writeln("sending local fp!!");
+                                    send(tid, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize);
+                                }
+                            }
+                        }
+                        
                     }
                 },
                 (immutable(Exception) e) {
@@ -245,10 +307,10 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     ownerTid.send(t);
                 }
             );
-            // readPool.tick();
+            readPool.tick();
+            discoveryService.tick();
             if(opts.dart.synchronize){
                 syncPool.tick();
-                discoveryService.tick();
                 if(discoveryService.isReady && syncPool.isReady){
                     syncPool.start(discoveryService.node_addrses);
                     state.setState(DartSynchronizeState.SYNCHRONIZING);
