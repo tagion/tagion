@@ -34,8 +34,7 @@ alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
 enum DartControl{
-    GetStatus = 1,
-    Start = 2
+    GetStatus = 1
 }
 
 enum DartState{
@@ -50,8 +49,8 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
     auto state = ServiceState!DartState(DartState.WAITING); 
     try{
         setOptions(opts);
-        immutable task_name=opts.dart.task_name~"dd";
-        auto pid = task_name~"ddd";
+        immutable task_name=opts.dart.task_name;
+        auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
         // log("-----Start Dart service-----");
@@ -75,11 +74,10 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
         void handleDartControl(DartControl dc){
             with(DartControl) switch(dc){
                 case GetStatus: state.notifyOwner(); break;
-                case Start: writeln("DS: START"); break;
                 default: break;
             }
         }
-        node.listen("dartsubs", &StdHandlerCallback, cast(string) task_name, 1.minutes, cast(uint) opts.dart.host.max_size);
+        node.listen(pid, &StdHandlerCallback, cast(string) task_name, opts.dart.subs.host.timeout.msecs, cast(uint) opts.dart.subs.host.max_size);
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
         while(!stop) {
             receive(
