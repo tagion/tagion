@@ -53,9 +53,9 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
-        // log("-----Start Dart service-----");
+        log("-----Start Dart service-----");
         scope(success){
-            // log("------Stop Dart service-----");
+            log("------Stop Dart service-----");
             ownerTid.prioritySend(Control.END);
         }
 
@@ -63,11 +63,11 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
         void handleControl (Control ts) {
             with(Control) switch(ts) {
                 case STOP:
-                    // log("Kill dart service");
+                    log("Kill dart service");
                     stop = true;
                     break;
                 default:
-                    // log.error("Bad Control command %s", ts);
+                    log.error("Bad Control command %s", ts);
                 }
         }
 
@@ -97,12 +97,12 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
                         // if not ready/started => send error
                     },
                     (immutable(Exception) e) {
-                        // log.fatal(e.msg);
+                        log.fatal(e.msg);
                         stop=true;
                         ownerTid.send(e);
                     },
                     (immutable(Throwable) t) {
-                        // log.fatal(t.msg);
+                        log.fatal(t.msg);
                         stop=true;
                         ownerTid.send(t);
                     }
