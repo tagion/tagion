@@ -45,7 +45,6 @@ enum DartState{
 
 
 void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
-    writeln("DS: SERVICE CREATED");
     auto state = ServiceState!DartState(DartState.WAITING); 
     try{
         setOptions(opts);
@@ -84,15 +83,15 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
                     &handleControl,
                     &handleDartControl,
                     (Response!(ControlCode.Control_Connected) resp) {    
-                        writeln("DS: Client Connected key: ", resp.key);
+                        log("DS: Client Connected key: %d", resp.key);
                         connectionPool.add(resp.key, resp.stream);
                     },
                     (Response!(ControlCode.Control_Disconnected) resp) { 
-                        writeln("DS: Client Disconnected key: ", resp.key);     
+                        log("DS: Client Disconnected key: %d", resp.key);     
                         connectionPool.close(cast(void*)resp.key);
                     },
                     (immutable(DARTFile.Recorder) recorder){ //TODO: change to HiRPC
-                        writeln("DS: received recorder");
+                        log("DS: received recorder");
                         connectionPool.broadcast(recorder.toHiBON.serialize); //+save to journal etc..
                         // if not ready/started => send error
                     },
@@ -108,7 +107,6 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
                     }
                 );
         }
-        writeln("DS: handling over");
     }catch(Exception e){
         writefln("EXCEPTION: %s", e);
     }

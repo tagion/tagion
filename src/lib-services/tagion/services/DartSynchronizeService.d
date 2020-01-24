@@ -83,38 +83,37 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
             log("------Stop Dart Sync service-----");
             ownerTid.prioritySend(Control.END);
         }
-        writeln("CREATING DART1");
         immutable filename = fileId!(DART)(opts.dart.name).fullpath;
-        writeln("DART FILENAME:", filename);
         if (opts.dart.initialize) {
             DARTFile.create_dart(filename);
         }
+        log("Dart file created with filename: %s", filename);
 
         auto crypt=new NativeSecp256k1;
         auto net = new MyFakeNet(crypt);
 
         net.generateKeyPair(node.Id[0..32]);
         
-        auto node_number = opts.port - opts.portBase;
-        ushort fromAng;
-        ushort toAng;
+        auto node_number = opts.port - opts.port_base;
+        ushort from_ang;
+        ushort to_ang;
         if(opts.dart.setAngleFromPort){
             pragma(msg, "Fixme(as): static table");
             import std.math: ceil, floor;
-            double delta = (cast(double)(opts.dart.sync.netToAng - opts.dart.sync.netFromAng))/opts.dart.sync.maxSlaves;
-            fromAng = to!ushort(opts.dart.fromAng + (node_number)*floor(delta)); 
-            toAng = to!ushort(opts.dart.fromAng + (node_number+1)*ceil(delta));
+
+            auto angRange = DiscoveryService.NodeAddress.calcAngleRange(opts, node_number, opts.dart.sync.maxSlaves);
+            from_ang = angRange[0];
+            to_ang = angRange[1];
         }else{
-            fromAng = opts.dart.fromAng;
-            toAng = opts.dart.toAng;
+            from_ang = opts.dart.from_ang;
+            to_ang = opts.dart.to_ang;
         }
-        writefln("DART from: %d to: %d", fromAng, toAng);
-        auto dart = new DART(net, filename, fromAng, toAng);
+        auto dart = new DART(net, filename, from_ang, to_ang);
+        log("DART initialized with angle from: %d to: %d", from_ang, to_ang);
 
         if (opts.dart.generate) {
-            writeln("GENERATING DART");
-            auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings, fromAng, toAng);
-            writeln("DART Initialized: ", fp.cutHex);
+            auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings, from_ang, to_ang);
+            log("DART generated: bullseye: %s", fp.cutHex);
             dart.dump;
         }
 
@@ -124,7 +123,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         void handleControl (Control ts) {
             with(Control) switch(ts) {
                 case STOP:
-                    log("Kill dart service");
+                    log("Kill dart synchronize service");
                     stop = true;
                     break;
                 default:
@@ -147,7 +146,6 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         auto discoveryService = DiscoveryService(node, opts);
 
         scope(exit){
-            writeln("connectionPool.len: ", connectionPool.size);
             discoveryService.stop;
             syncPool.stop;
         }
@@ -173,15 +171,15 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                 &handleControl,
                 &handleDartControl,
                 (immutable(DARTFile.Recorder) recorder){
-                    writeln("setRecorder");
+                    log("DSS: recorder received");
                     recorders ~= recorder;
                 },
                 (Response!(ControlCode.Control_Connected) resp) {
-                    writeln("Client Connected key: ", resp.key);
+                    log("DSS: Client Connected key: %d", resp.key);
                     connectionPool.add(resp.key, resp.stream);
                 },
                 (Response!(ControlCode.Control_Disconnected) resp) {
-                    writeln("Client Disconnected key: ", resp.key);     
+                    log("DSS: Client Disconnected key: %d", resp.key);  
                     connectionPool.close(cast(void*)resp.key);
                 },
                 (Response!(ControlCode.Control_RequestHandled) resp) {  //TODO: moveout to factory
@@ -193,7 +191,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     auto doc = Document(resp.data);
                     auto message_doc = doc[Keywords.message].get!Document;
                     void closeConnection(){
-                        writeln("Close connection");
+                        log("DSS: Forced close connection");
                         connectionPool.close(resp.key);
                     }
                     void serverHandler(){
@@ -219,7 +217,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     }
                 },
                 (string taskName, Buffer data){
-                    writeln("DSS: received request from: ", taskName);
+                    log("DSS: Received request from service: %s", task_name);
                     const doc = Document(data);
                     auto receiver = empty_hirpc.receive(doc);
                     const message_doc = doc[Keywords.message].get!Document;
@@ -236,21 +234,18 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                         fpIterator: foreach(fp; fingerprints){
                             ushort sector = fp[0] | fp[1];
                             if(dart.inRange(sector)){
-                                writeln("in range");
                                 local_fp~=fp;
                                 continue fpIterator;
                             }else{
                                 foreach(address, fps; remote_fp_requests){
-                                    writeln("check rfr addr from", address.fromAng, " to ", address.toAng, " with sector ", sector);
-                                    if(sector.inRange(address.fromAng,address.toAng)){
+                                    if(sector.inRange(address.from_ang,address.to_ang)){
                                         fps~=fp;
                                         remote_fp_requests[address] = fps;
                                         continue fpIterator;
                                     }
                                 }
                                 foreach(id, address; DiscoveryService.node_addrses){
-                                    writeln("check address from", address.fromAng, " to ", address.toAng, " with sector ", sector);
-                                    if(sector.inRange(address.fromAng, address.toAng)){
+                                    if(sector.inRange(address.from_ang, address.to_ang)){
                                         remote_fp_requests[address] = [fp];
                                         continue fpIterator;
                                     }                                    
@@ -314,12 +309,11 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     state.setState(DartSynchronizeState.SYNCHRONIZING);
                 }
                 if(syncPool.isOver){
-                    writefln("is over");
                     syncPool.stop;
+                    log("Start replay journals with: %d journals", P2pSynchronizer.journals.length);
                     state.setState(DartSynchronizeState.REPLAYING_JOURNALS);
                 }
                 if(syncPool.isError){
-                    writeln("syncPool has an Error");
                     syncPool.start(discoveryService.node_addrses);
                     state.setState(DartSynchronizeState.SYNCHRONIZING);
                 }
@@ -328,6 +322,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                 if(!journalReplayFiber.empty){
                     journalReplayFiber.call;
                 }else{
+                    log("Start replay recorders with: %d recorders", recorders.length);
                     state.setState(DartSynchronizeState.REPLAYING_RECORDERS);
                 }
             }
@@ -336,6 +331,8 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     recorderReplayFiber.call;
                 }else{
                     recorderReplayFiber.reset();
+                    dart.dump(true);
+                    log("DART generated: bullseye: %s", dart.fingerprint.toHexString);
                     state.setState(DartSynchronizeState.READY);
                 }
             }
