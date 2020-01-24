@@ -33,10 +33,6 @@ import tagion.services.DartSynchronizeService;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-enum DartControl{
-    GetStatus = 1
-}
-
 enum DartState{
     WAITING = 4,
     READY = 5,
@@ -69,19 +65,11 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
                     log.error("Bad Control command %s", ts);
                 }
         }
-
-        void handleDartControl(DartControl dc){
-            with(DartControl) switch(dc){
-                case GetStatus: state.notifyOwner(); break;
-                default: break;
-            }
-        }
         node.listen(pid, &StdHandlerCallback, cast(string) task_name, opts.dart.subs.host.timeout.msecs, cast(uint) opts.dart.subs.host.max_size);
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
         while(!stop) {
             receive(
                     &handleControl,
-                    &handleDartControl,
                     (Response!(ControlCode.Control_Connected) resp) {    
                         log("DS: Client Connected key: %d", resp.key);
                         connectionPool.add(resp.key, resp.stream);

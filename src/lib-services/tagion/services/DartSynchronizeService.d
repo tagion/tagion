@@ -38,10 +38,6 @@ static bool inRange(ref ushort sector, ushort from_sector, ushort to_sector) pur
     return ( sector_origin < to_origin );    
 }
 
-enum DartSynchronizeControl{
-    GetStatus = 1,
-}
-
 enum DartSynchronizeState{
     WAITING = 1,
     SYNCHRONIZING = 2,
@@ -130,13 +126,6 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     log.error("Bad Control command %s", ts);
                 }
         }
-
-        void handleDartControl(DartSynchronizeControl dc){
-            with(DartSynchronizeControl) switch(dc){
-                case GetStatus: state.notifyOwner(); break;
-                default: break;
-            }
-        }
         immutable(DARTFile.Recorder)[] recorders;
         ownerTid.send(Control.LIVE);
         
@@ -169,7 +158,6 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         while(!stop) {
             receiveTimeout(opts.dart.sync.tickTimeout.msecs,
                 &handleControl,
-                &handleDartControl,
                 (immutable(DARTFile.Recorder) recorder){
                     log("DSS: recorder received");
                     recorders ~= recorder;
