@@ -136,6 +136,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
 
         scope(exit){
             discoveryService.stop;
+            writeln("exit scope: call stop");
             syncPool.stop;
         }
 
@@ -171,6 +172,8 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     connectionPool.close(cast(void*)resp.key);
                 },
                 (Response!(ControlCode.Control_RequestHandled) resp) {  //TODO: moveout to factory
+                    log("DSS: Received request from p2p: %s", resp.key);
+                    writeln("response hadnled");
                     scope(exit){
                         if(resp.stream !is null){
                             destroy(resp.stream);
@@ -212,7 +215,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     const hrpc_id = message_doc[Keywords.id].get!uint;
                     
                     const method = message_doc[Keywords.method].get!string;
-                    if(method == DART.Quries.dartRead){
+                    void readDart(){
                         scope doc_fingerprints=receiver.params[DARTFile.Params.fingerprints].get!(Document);
                         scope fingerprints=doc_fingerprints.range!(Buffer[]);  
                         alias bufArr = Buffer[];
@@ -273,7 +276,26 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                                 }
                             }
                         }
-                        
+                    }
+
+                    void modifyDart(){
+                        HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
+                        scope recorder_doc=receiver.params[DARTFile.Params.recorder].get!Document;
+                        scope recorder=DARTFile.Recorder(net, recorder_doc);
+                        immutable bullseye=dart.modify(recorder);
+                        auto hibon_params=new HiBON;
+                        hibon_params[DARTFile.Params.bullseye]=bullseye;
+                        auto tid = locate(task_name);
+                        if(tid != Tid.init){
+                            send(tid, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize);
+                        }
+                    }
+
+                    if(method == DART.Quries.dartRead){
+                        readDart();
+                    }
+                    else if(method == DART.Quries.dartModify){
+                        modifyDart();
                     }
                 },
                 (immutable(Exception) e) {

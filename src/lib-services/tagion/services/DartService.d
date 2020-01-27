@@ -33,15 +33,7 @@ import tagion.services.DartSynchronizeService;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-enum DartState{
-    WAITING = 4,
-    READY = 5,
-    SYNCHRONIZING = 6
-}
-
-
 void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
-    auto state = ServiceState!DartState(DartState.WAITING); 
     try{
         setOptions(opts);
         immutable task_name=opts.dart.task_name;
