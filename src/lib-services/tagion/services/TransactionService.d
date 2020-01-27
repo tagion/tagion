@@ -7,66 +7,131 @@ import core.thread;
 import std.concurrency;
 import std.exception : assumeUnique;
 
+import tagion.network.SSLServiceAPI;
+import tagion.network.SSLFiberService : SSLRelay;
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
-import tagion.Base : Control, basename, bitarray2bool, Pubkey;
-import tagion.communication.ListenerSocket;
+import tagion.Base : Control;
+
+import tagion.communication.HiRPC : HiRPC;
+import tagion.hibon.Document;
+import tagion.communication.HiRPC;
+import tagion.hibon.HiBON;
+
+import tagion.gossip.GossipNet : StdSecureNet;
+
 import tagion.TagionExceptions;
 
-//Create flat webserver start class function - create Backend class.
+class HiRPCNet : StdSecureNet {
+    import tagion.hashgraph.HashGraph;
+    override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
+        assert(0, format("Not implemented %s", __PRETTY_FUNCTION__));
+    }
+    this(string passphrase) {
+        import tagion.crypto.secp256k1.NativeSecp256k1;
+        super(new NativeSecp256k1(NativeSecp256k1.Format.AUTO, NativeSecp256k1.Format.COMPACT));
+        generateKeyPair(passphrase);
+        import tagion.utils.Miscellaneous;
+        import tagion.Base;
+        writefln("public=%s", (cast(Buffer)pubkey).toHexString);
+    }
+}
+
 void transactionServiceTask(immutable(Options) opts) {
     // Set thread global options
     setOptions(opts);
     immutable task_name=opts.transaction.task_name;
     writefln("opts.transaction.task_name=%s", opts.transaction.task_name);
+    writefln("opts.transaction.service.task_name=%s", opts.transaction.service.task_name);
+
 
     log.register(task_name);
 
-    log("SockectThread port=%d addresss=%s", opts.transaction.port, opts.url);
+    log("SockectThread port=%d addresss=%s", opts.transaction.service.port, opts.url);
+
+    HiRPC hirpc;
+    immutable passphrase="Very secret password for the server";
+    hirpc.net=new HiRPCNet(passphrase);
+        @safe bool relay(SSLRelay ssl_relay) {
+        immutable buffer = ssl_relay.receive;
+        if (!buffer) {
+            return true;
+        }
+        const doc = Document(buffer);
+        const hiprc_received = hirpc.receive(doc);
+        {
+            import tagion.hibon.HiBONJSON;
+            import tagion.script.ScriptBuilder;
+            import tagion.script.ScriptParser;
+            import tagion.script.Script;
+
+            const method=hiprc_received.message.method;
+            const params=hiprc_received.params;
+            pragma(msg, typeof(method).stringof);
+            pragma(msg, typeof(params).stringof);
+            auto source=params["script"].get!string;
+            auto src=ScriptParser(source);
+            Script script;
+            auto builder=ScriptBuilder(src[]);
+            builder.build(script);
+
+            auto sc=new ScriptContext(10, 10, 10);
+            sc.push(params["stack"].get!uint);
+            sc.trace=true;
+            script.execute("start", sc);
+
+        }
+
+        {
+            auto params = new HiBON;
+            params["done"]=true;
+            const hirpc_send = hirpc.result(hiprc_received, params);
+            immutable send_buffer=hirpc.toHiBON(hirpc_send).serialize;
+            ssl_relay.send(send_buffer);
+
+        }
+        return true;
+    }
+
+
+//    immutable ssl_options=immutable(Options.ScriptingEngine)(options.scripting_engine);
+    writefln("script_api.opts %s", opts.transaction.service.task_name);
+    SSLServiceAPI script_api=SSLServiceAPI(opts.transaction.service, &relay);
+    auto script_thread = script_api.start;
+   // Thread script_thread;
 
     scope(success) {
-        ownerTid.prioritySend(Control.END);
+        writefln("EXIT %d END %s", opts.transaction.service.port, script_thread.isRunning);
+//        script_thread.join;
+        ownerTid.send(Control.END);
+        writeln("After Control.END");
     }
 
-    auto listener_socket = ListenerSocket(
-        opts,
-        opts.url,
-        opts.transaction.port,
-        opts.transaction.timeout,
-        opts.transaction.task_name);
-    // void delegate() listerner;
-    // listerner.funcptr = &ListenerSocket.run;
-    // listerner.ptr = &listener_socket;
-    auto listener_socket_thread = listener_socket.start;
+    scope(failure) {
+        writefln("EXIT %d Failed %s", opts.transaction.service.port, script_thread.isRunning);
+//        script_thread.join;
+        ownerTid.send(Control.FAIL);
+        writeln("After Control.FAIL");
+    }
 
 
+    version(none)
     scope(exit) {
-        log("In exit of soc. port=%d th", opts.transaction.port);
-        listener_socket.stop;
-        version(none)
-        if ( listener_socket_thread !is null ) {
-            //  listener_socket.close;
-            listener_socket.stop;
+        log("EXIT");
+        writefln("EXIT %d", opts.transaction.service.port);
 
-            log("Kill listener socket. %d", opts.transaction.port);
-            //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-            auto ping=new TcpSocket(new InternetAddress(opts.url, opts.transaction.port));
-            log("run_listerner %s %s", listener_socket.active, opts.transaction.port);
+        writefln("JOINED %d", opts.transaction.service.port);
 
-            listener_socket_thread.join();
-            ping.close;
-            listener_socket.close;
-            log("Thread joined %d", opts.transaction.port);
-        }
     }
 
-    // try{
     bool stop;
-//        bool runBackend = true;
     void handleState (Control ts) {
         with(Control) switch(ts) {
             case STOP:
-                log("Kill socket thread. %d", opts.transaction.port);
+                writefln("Transaction STOP %d", opts.transaction.service.port);
+                log("Kill socket thread port %d", opts.transaction.service.port);
+                script_api.stop;
+//                script_thread.join;
                 stop = true;
                 break;
                 // case LIVE:
@@ -83,38 +148,18 @@ void transactionServiceTask(immutable(Options) opts) {
         receiveTimeout(500.msecs,
             //Control the thread
             &handleState,
-            (immutable(ubyte)[] hibon_bytes) {
-                listener_socket.broadcast(hibon_bytes);
-            },
             (immutable(TagionException) e) {
-                // stop=true;
-                //throw e;
                 log.fatal(e.msg);
                 ownerTid.send(e);
             },
             (immutable(Exception) e) {
-                // stop=true;
-                //throw e;
                 log.fatal(e.msg);
                 ownerTid.send(e);
             },
             (immutable(Throwable) t) {
-                    // stop=true;
                 log.fatal(t.msg);
                 ownerTid.send(t);
-                    //throw t;
             }
             );
     }
-    // }
-    // catch(Exception e) {
-    //     log.fatal("Exception %d", opts.transaction.port);
-    //     log.fatal(e.toString);
-    //     ownerTid.send(cast(immutable)e);
-    // }
-    // catch(Throwable t) {
-    //     log.fatal("Throwable %d", opts.transaction.port);
-    //     log.fatal(t.toString);
-    //     ownerTid.send(cast(immutable)t);
-    // }
 }
