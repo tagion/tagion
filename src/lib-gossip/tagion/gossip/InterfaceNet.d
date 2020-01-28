@@ -11,10 +11,10 @@ import tagion.Base;
 enum ExchangeState : uint {
     NONE,
         INIT_TIDE,
-        TIDE_WAVE,
+        TIDAL_WAVE,
         FIRST_WAVE,
         SECOND_WAVE,
-        BREAK_WAVE
+        BREAKING_WAVE
         }
 
 @safe
@@ -34,27 +34,27 @@ struct Package {
     }
 
     HiBON toHiBON() inout {
-        auto bson=new HiBON;
+        auto hibon=new HiBON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
             alias typeof(m) mtype;
             static if ( __traits(compiles, m.toHiBON) ) {
-                bson[name]=m.toHiBON;
+                hibon[name]=m.toHiBON;
             }
             else {
                 static if ( is(mtype == enum) ) {
-                    bson[name]=cast(uint)m;
+                    hibon[name]=cast(uint)m;
                 }
                 else static if ( isBufferType!mtype ) {
-                    bson[name]=cast(Buffer)m;
+                    hibon[name]=cast(Buffer)m;
                 }
                 else {
-                    bson[name]=m;
+                    hibon[name]=m;
                 }
             }
             //}
         }
-        return bson;
+        return hibon;
     }
 
     immutable(ubyte[]) serialize() const {
@@ -76,9 +76,14 @@ interface NetCallbacks : EventMonitorCallbacks {
     void exiting(const(HashGraph.Node) n);
 }
 
+
 @safe
-interface RequestNet {
+interface HashNet {
     immutable(Buffer) calcHash(immutable(ubyte[]) data) inout;
+}
+
+@safe
+interface RequestNet : HashNet {
     /++
      + Request a missing event from the network
      +/
@@ -86,13 +91,13 @@ interface RequestNet {
 }
 
 @safe
-interface SecureNet : RequestNet {
+interface SecureNet : HashNet {
     Pubkey pubkey() pure const nothrow;
-    bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey);
+    bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey) const;
 
     // The private should be added implicite by the GossipNet
     // The message is a hash of the 'real' message
-    immutable(ubyte[]) sign(immutable(ubyte[]) message);
+    immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
     void generateKeyPair(string passphrase);
 }
 
@@ -105,14 +110,14 @@ interface PackageNet {
     Payload evaPackage();
     const(Package) buildEvent(const(HiBON) block, ExchangeState type);
 
-    Tides tideWave(HiBON bson, bool build_tides);
+    Tides tideWave(HiBON hibon, bool build_tides);
 
     @property
     ReceiveQueue queue();
 }
 
 @safe
-interface GossipNet : SecureNet, PackageNet {
+interface GossipNet : SecureNet, RequestNet, PackageNet {
     Event receive(const(Buffer) received, Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event );
     void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
 //    void send(immutable(Pubkey) channel, ref const(Package) pack);
@@ -138,6 +143,13 @@ interface GossipNet : SecureNet, PackageNet {
 
     // @property
     // void node_name(string name);
+}
+
+@safe
+interface FactoryNet {
+    HashNet hashnet();
+
+    SecureNet securenet(immutable(Buffer) drive);
 }
 
 @safe

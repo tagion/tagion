@@ -26,29 +26,32 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.services.LoggerService;
 
 @safe
-class StdRequestNet : RequestNet {
-
+class StdNetHash : HashNet {
     Buffer calcHash(const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest.digest;
         return digest!SHA256(data).idup;
     }
 
+}
+
+version(none) {
+@safe
+class StdRequestNet : RequestNet {
+
     //TO-DO: Implement a general request func. if makes sense.
     abstract void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint);
 }
-
+}
 
 alias ReceiveQueue = Queue!(immutable(ubyte[]));
-alias check=consensusCheck!(GossipConsensusException);
-alias consensus=consensusCheckArguments!(GossipConsensusException);
+alias check = consensusCheck!(GossipConsensusException);
+alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 @safe
-class StdSecureNet : StdRequestNet, SecureNet {
+class StdSecureNet : StdNetHash, SecureNet {
     // The Eva value is set up a low negative number
     // to check the two-complement round wrapping if the altitude.
-    enum AES_KEY_LENGTH=128;
-
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.hmac;
 
@@ -63,13 +66,13 @@ class StdSecureNet : StdRequestNet, SecureNet {
         return calcHash(cast(Buffer)_pubkey);
     }
 
-    bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) if ( __traits(compiles, pack.serialize) ) {
+    bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) ) {
         auto message=calcHash(pack.serialize);
         return verify(message, signature, pubkey);
     }
 
     private NativeSecp256k1 _crypt;
-    bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) {
+    bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) const {
 
 //        if ( signature.length == 0 && signature.length <= 520) {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
@@ -78,22 +81,101 @@ class StdSecureNet : StdRequestNet, SecureNet {
         return _crypt.verify(message, signature, cast(Buffer)pubkey);
     }
 
-    immutable(ubyte[]) sign(T)(T pack) if ( __traits(compiles, pack.serialize) ) {
+    immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) ) {
         auto message=calcHash(pack.serialize);
         auto result=sign(message);
         return result;
     }
 
-    immutable(ubyte[]) sign(immutable(ubyte[]) message)
+    immutable(ubyte[]) sign(immutable(ubyte[]) message) const
     in {
         assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));    //FIXME: doesn't work with an abstract function
         assert(message.length == 32);
     }
     do {
         import std.traits;
-        assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));   
-         
+        assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
+
         return _sign(message);
+    }
+
+
+    version(none)
+    void createKeyPair(string passphrase)
+        in {
+            assert(_sign is null);
+        }
+    do {
+        import std.digest.sha : SHA256;
+        import std.string : representation;
+        alias AES=AESCrypto!256;
+
+        auto hmac = HMAC!SHA256(passphrase.representation);
+        scope data = hmac.finish.dup;
+
+        // Generate Key pair
+        do {
+            data = hmac.put(data).finish.dup;
+        } while (!_crypt.secKeyVerify(data));
+
+
+        _pubkey=_crypt.computePubkey(data);
+        // Generate scramble key for the private key
+        import std.random;
+
+        void scramble(ref ubyte[] data, ubyte[] xor=null) @safe {
+            import std.random;
+            // enum from =ubyte.min;
+            // enum to   =ubyte.max;
+            auto gen1 = Mt19937(unpredictableSeed); //Random(unpredictableSeed);
+            foreach(ref s; data) {
+                s=gen1.front & ubyte.max; //cast(ubyte)uniform!("[]")(from, to, gen1);
+            }
+            foreach(i, ref s; xor) {
+                s^=data[i];
+            }
+        }
+        auto seed=new ubyte[32];
+
+        scramble(seed);
+        // CBR: Note AES need to be change to beable to handle const keys
+        auto aes_key=calcHash(seed).dup;
+
+        scramble(seed);
+
+        // Encrypt private key
+        auto encrypted_privkey=new ubyte[data.length];
+        AES.encrypt(aes_key, data, encrypted_privkey);
+
+        AES.encrypt(calcHash(seed), encrypted_privkey, data);
+        scramble(seed);
+
+        AES.encrypt(aes_key, encrypted_privkey, data);
+
+        AES.encrypt(aes_key, data, seed);
+
+        AES.encrypt(aes_key, encrypted_privkey, data);
+
+        immutable(ubyte[]) local_sign(immutable(ubyte[]) message) @safe {
+            // CBR:
+            // Yes I know it is security by obscurity
+            // But just don't want to have the private in clear text in memory
+            // for long period of time
+            auto privkey=new ubyte[encrypted_privkey.length];
+            scope(exit) {
+                auto seed=new ubyte[32];
+                scramble(seed, aes_key);
+                AES.encrypt(aes_key, privkey, encrypted_privkey);
+                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+            }
+            AES.decrypt(aes_key, encrypted_privkey, privkey);
+            immutable(ubyte[]) result() @trusted {
+                return _crypt.sign(message, privkey);
+            }
+            return result();
+        }
+
+        _sign=&local_sign;
     }
 
     void generateKeyPair(string passphrase)
@@ -106,12 +188,13 @@ class StdSecureNet : StdRequestNet, SecureNet {
         alias AES=AESCrypto!256;
 
         auto hmac = HMAC!SHA256(passphrase.representation);
-        auto data=hmac.finish.dup;
+        auto data = hmac.finish.dup;
 
         // Generate Key pair
         do {
-            data=hmac.put(data).finish.dup;
+            data = hmac.put(data).finish.dup;
         } while (!_crypt.secKeyVerify(data));
+
 
         _pubkey=_crypt.computePubkey(data);
         // Generate scramble key for the private key
@@ -480,7 +563,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                     case INIT_TIDE:
                         consensus(received_state).check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
                         break;
-                    case TIDE_WAVE:
+                    case TIDAL_WAVE:
                         // Receive the tide wave
                         consensus(received_node.state, INIT_TIDE, NONE).
                             check((received_node.state == INIT_TIDE) || (received_node.state == NONE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
@@ -495,18 +578,18 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                         // Add the new leading event
                         auto wavefront=new HiBON;
                         wavefront[Params.wavefront]=events;
-                        // If the this node already have INIT and tide the a braking wave is send
-                        auto exchange=(received_node.state == INIT_TIDE)?BREAK_WAVE:FIRST_WAVE;
+                        // If the this node already have INIT and tide a braking wave is send
+                        const exchange=(received_node.state is INIT_TIDE)?BREAKING_WAVE:FIRST_WAVE;
                         auto wavefront_pack=buildEvent(wavefront, exchange);
 
                         send(received_pubkey, wavefront_pack.serialize);
                         received_node.state=received_state;
                         break;
                     case FIRST_WAVE:
-                    case BREAK_WAVE:
+                    case BREAKING_WAVE:
                         // consensus(INIT_TIDE, received_node.state).check(received_node.state == INIT_TIDE,  ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
-                        consensus(received_node.state, INIT_TIDE, TIDE_WAVE).
-                            check((received_node.state == INIT_TIDE) || (received_node.state == TIDE_WAVE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                        consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
+                            check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
 
                         Tides tides;
                         immutable father_fingerprint=waveFront(received_pubkey, block, tides);
@@ -528,7 +611,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                         received_node.state=NONE;
                         break;
                     case SECOND_WAVE:
-                        consensus(received_node.state, TIDE_WAVE).check( received_node.state == TIDE_WAVE,
+                        consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
                             ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                         Tides tides;
 
