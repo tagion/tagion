@@ -23,10 +23,6 @@ import tagion.gossip.GossipNet : StdSecureNet;
 import tagion.TagionExceptions;
 
 class HiRPCNet : StdSecureNet {
-    import tagion.hashgraph.HashGraph;
-    override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
-        assert(0, format("Not implemented %s", __PRETTY_FUNCTION__));
-    }
     this(string passphrase) {
         import tagion.crypto.secp256k1.NativeSecp256k1;
         super(new NativeSecp256k1(NativeSecp256k1.Format.AUTO, NativeSecp256k1.Format.COMPACT));
