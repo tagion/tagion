@@ -93,7 +93,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         auto node_number = opts.port - opts.port_base;
         ushort from_ang;
         ushort to_ang;
-        if(opts.dart.setAngleFromPort){
+        if(opts.dart.angle_from_port){
             pragma(msg, "Fixme(as): static table");
             import std.math: ceil, floor;
 
