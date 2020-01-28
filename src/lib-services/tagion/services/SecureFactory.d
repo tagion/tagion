@@ -4,9 +4,8 @@ import tagion.gossip.InterfaceNet;
 import tagion.gossip.GossipNet;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
-version(none)
 @safe
-synchronized class Factory : FactoryNet {
+synchronized class SecureFactory : FactoryNet {
     protected {
         shared(StdSecureNet) net;
         shared(bool) keyset;
