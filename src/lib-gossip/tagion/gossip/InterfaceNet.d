@@ -91,6 +91,11 @@ interface RequestNet : HashNet {
 }
 
 @safe
+interface SecuretDriveNet : HashNet {
+    Net drive(Net : SecureNet)(string tweak_name);
+}
+
+@safe
 interface SecureNet : HashNet {
     Pubkey pubkey() pure const nothrow;
     bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey) const;
@@ -99,6 +104,7 @@ interface SecureNet : HashNet {
     // The message is a hash of the 'real' message
     immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
     void generateKeyPair(string passphrase);
+    //   SecureNet drive(string name);
 }
 
 @safe
@@ -147,9 +153,9 @@ interface GossipNet : SecureNet, RequestNet, PackageNet {
 
 @safe
 interface FactoryNet {
-    HashNet hashnet();
+    HashNet hashnet() const;
 
-    SecureNet securenet(immutable(Buffer) drive);
+    //  SecureNet securenet(immutable(Buffer) drive);
 }
 
 @safe

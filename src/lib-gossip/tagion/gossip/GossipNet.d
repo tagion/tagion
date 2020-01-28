@@ -26,7 +26,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.services.LoggerService;
 
 @safe
-class StdNetHash : HashNet {
+class StdHashNet : HashNet {
     Buffer calcHash(const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest.digest;
@@ -49,14 +49,26 @@ alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 @safe
-class StdSecureNet : StdNetHash, SecureNet {
+class StdSecureNet : StdHashNet, SecureNet {
     // The Eva value is set up a low negative number
     // to check the two-complement round wrapping if the altitude.
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.digest.hmac;
 
     private Pubkey _pubkey;
-    protected immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
+    enum SecretMethod {
+        SIGN, /// Sign method
+        MULT, /// Tweak method for multipling the privat
+        ADD   /// Tweak method for multipling the privat
+    }
+
+    /**
+       This function
+       returns
+       If method is SIGN the signed message or
+       If method is DRIVE it returns the drived privat key
+     */
+    protected immutable(ubyte[]) delegate(immutable(ubyte[]) message, const SecretMethod method ) @safe _secret;
 
     Pubkey pubkey() pure const nothrow {
         return _pubkey;
@@ -89,105 +101,27 @@ class StdSecureNet : StdNetHash, SecureNet {
 
     immutable(ubyte[]) sign(immutable(ubyte[]) message) const
     in {
-        assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));    //FIXME: doesn't work with an abstract function
+        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));    //FIXME: doesn't work with an abstract function
         assert(message.length == 32);
     }
     do {
         import std.traits;
-        assert(_sign !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
+        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
-        return _sign(message);
+        return _secret(message, SecretMethod.SIGN);
     }
 
-
-    version(none)
-    void createKeyPair(string passphrase)
-        in {
-            assert(_sign is null);
-        }
-    do {
-        import std.digest.sha : SHA256;
-        import std.string : representation;
-        alias AES=AESCrypto!256;
-
-        auto hmac = HMAC!SHA256(passphrase.representation);
-        scope data = hmac.finish.dup;
-
-        // Generate Key pair
-        do {
-            data = hmac.put(data).finish.dup;
-        } while (!_crypt.secKeyVerify(data));
-
-
-        _pubkey=_crypt.computePubkey(data);
-        // Generate scramble key for the private key
-        import std.random;
-
-        void scramble(ref ubyte[] data, ubyte[] xor=null) @safe {
-            import std.random;
-            // enum from =ubyte.min;
-            // enum to   =ubyte.max;
-            auto gen1 = Mt19937(unpredictableSeed); //Random(unpredictableSeed);
-            foreach(ref s; data) {
-                s=gen1.front & ubyte.max; //cast(ubyte)uniform!("[]")(from, to, gen1);
-            }
-            foreach(i, ref s; xor) {
-                s^=data[i];
-            }
-        }
-        auto seed=new ubyte[32];
-
-        scramble(seed);
-        // CBR: Note AES need to be change to beable to handle const keys
-        auto aes_key=calcHash(seed).dup;
-
-        scramble(seed);
-
-        // Encrypt private key
-        auto encrypted_privkey=new ubyte[data.length];
-        AES.encrypt(aes_key, data, encrypted_privkey);
-
-        AES.encrypt(calcHash(seed), encrypted_privkey, data);
-        scramble(seed);
-
-        AES.encrypt(aes_key, encrypted_privkey, data);
-
-        AES.encrypt(aes_key, data, seed);
-
-        AES.encrypt(aes_key, encrypted_privkey, data);
-
-        immutable(ubyte[]) local_sign(immutable(ubyte[]) message) @safe {
-            // CBR:
-            // Yes I know it is security by obscurity
-            // But just don't want to have the private in clear text in memory
-            // for long period of time
-            auto privkey=new ubyte[encrypted_privkey.length];
-            scope(exit) {
-                auto seed=new ubyte[32];
-                scramble(seed, aes_key);
-                AES.encrypt(aes_key, privkey, encrypted_privkey);
-                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
-            }
-            AES.decrypt(aes_key, encrypted_privkey, privkey);
-            immutable(ubyte[]) result() @trusted {
-                return _crypt.sign(message, privkey);
-            }
-            return result();
-        }
-
-        _sign=&local_sign;
-    }
 
     void generateKeyPair(string passphrase)
         in {
-            assert(_sign is null);
+            assert(_secret is null);
         }
     do {
         import std.digest.sha : SHA256;
         import std.string : representation;
         alias AES=AESCrypto!256;
 
-        auto hmac = HMAC!SHA256(passphrase.representation);
+        scope hmac = HMAC!SHA256(passphrase.representation);
         auto data = hmac.finish.dup;
 
         // Generate Key pair
@@ -233,7 +167,7 @@ class StdSecureNet : StdNetHash, SecureNet {
 
         AES.encrypt(aes_key, encrypted_privkey, data);
 
-        immutable(ubyte[]) local_sign(immutable(ubyte[]) message) @safe {
+        immutable(ubyte[]) local_secret(immutable(ubyte[]) message, const SecretMethod method) @safe {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
@@ -246,13 +180,22 @@ class StdSecureNet : StdNetHash, SecureNet {
                 AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
             }
             AES.decrypt(aes_key, encrypted_privkey, privkey);
-            immutable(ubyte[]) result() @trusted {
-                return _crypt.sign(message, privkey);
-            }
-            return result();
+
+//            immutable(ubyte[]) result() @trusted {
+            with(SecretMethod) final switch(method) {
+                case SIGN:
+                    return (() @trusted => _crypt.sign(message, privkey))();
+                case MULT:
+                    // Here the message is the drive tweak value
+                    return (() @trusted => _crypt.privKeyTweakMul(privkey, message))();
+                case ADD:
+                    // Here the message is the drive tweak value
+                    scope tweak=message.dup;
+                    return (() @trusted => _crypt.privKeyTweakAdd(privkey, message))();
+                }
         }
 
-        _sign=&local_sign;
+        _secret=&local_secret;
     }
 
     this(NativeSecp256k1 crypt) {
