@@ -17,6 +17,8 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  +/
 
 private import tagion.crypto.secp256k1.secp256k1;
+
+import std.exception : asumeUnique;
 import tagion.hashgraph.ConsensusExceptions;
 
 import tagion.utils.Miscellaneous : toHexString;
