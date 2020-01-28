@@ -56,19 +56,22 @@ class StdSecureNet : StdHashNet, SecureNet {
     import std.digest.hmac;
 
     private Pubkey _pubkey;
-    enum SecretMethod {
-        SIGN, /// Sign method
-        MULT, /// Tweak method for multipling the privat
-        ADD   /// Tweak method for multipling the privat
-    }
-
     /**
        This function
        returns
        If method is SIGN the signed message or
        If method is DRIVE it returns the drived privat key
      */
-    protected immutable(ubyte[]) delegate(immutable(ubyte[]) message, const SecretMethod method ) @safe _secret;
+    // protected immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
+
+    @safe
+    interface SecretMethods {
+        immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
+        void tweekMul(string tweek_code, ref ubyte[] tweak_privkey);
+        void tweekAdd(string tweek_code, ref ubyte[] tweak_privkey);
+    }
+
+    protected SecretMethods _secret;
 
     Pubkey pubkey() pure const nothrow {
         return _pubkey;
@@ -108,13 +111,25 @@ class StdSecureNet : StdHashNet, SecureNet {
         import std.traits;
         assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
-        return _secret(message, SecretMethod.SIGN);
+        return _secret.sign(message);
+    }
+
+    Net drive(Net : SecureNet)(string tweak_name) {
+        auto net = StdSecureNet(new NativeSecp256k1);
+        scope hmac = HMAC!SHA256(passphrase.representation);
+        auto data = hmac.finish.dup;
+        return null;
     }
 
 
-    protected void createKeyPair(ref ubyte[] privkey) {
+    protected void createKeyPair(ref ubyte[] privkey)
+        in {
+            assert(_crypt.secKeyVerify(privkey));
+            assert(_secret is null);
+        }
+    do {
         import std.digest.sha : SHA256;
-//        import std.string : representation;
+        import std.string : representation;
         alias AES=AESCrypto!256;
         _pubkey=_crypt.computePubkey(privkey);
         // Generate scramble key for the private key
@@ -153,7 +168,51 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         AES.encrypt(aes_key, encrypted_privkey, privkey);
 
-        immutable(ubyte[]) local_secret(immutable(ubyte[]) message, const SecretMethod method) @safe {
+        @safe
+        void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
+            // CBR:
+            // Yes I know it is security by obscurity
+            // But just don't want to have the private in clear text in memory
+            // for long period of time
+            auto privkey=new ubyte[encrypted_privkey.length];
+            scope(exit) {
+                auto seed=new ubyte[32];
+                scramble(seed, aes_key);
+                AES.encrypt(aes_key, privkey, encrypted_privkey);
+                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+            }
+            AES.decrypt(aes_key, encrypted_privkey, privkey);
+            dg(privkey);
+        }
+
+        @safe class LocalSecret : SecretMethods {
+            immutable(ubyte[]) sign(immutable(ubyte[]) message) const {
+                immutable(ubyte)[] result;
+                do_secret_stuff((const(ubyte[]) privkey) {
+                        result = _crypt.sign(message, privkey);
+                    });
+                return result;
+            }
+            void tweekMul(string tweek_code, ref ubyte[] tweak_privkey) {
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                        scope hmac = HMAC!SHA256(tweek_code.representation);
+                        auto data = hmac.finish.dup;
+                        _crypt.privKeyTweakMul(privkey, data, tweak_privkey);
+                    });
+            }
+            void tweekAdd(string tweek_code, ref ubyte[] tweak_privkey) {
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                        scope hmac = HMAC!SHA256(tweek_code.representation);
+                        auto data = hmac.finish.dup;
+                        _crypt.privKeyTweakAdd(privkey, data, tweak_privkey);
+                    });
+            }
+        }
+
+        _secret = new LocalSecret;
+
+        version(none)
+        Void local_secret() {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
@@ -167,20 +226,28 @@ class StdSecureNet : StdHashNet, SecureNet {
             }
             AES.decrypt(aes_key, encrypted_privkey, privkey);
 
+            immutable(ubyte[]) local_sign() {
+                return _crypt.sign(message, privkey);
+            }
+
 //            immutable(ubyte[]) result() @trusted {
             with(SecretMethod) final switch(method) {
                 case SIGN:
                     return (() @trusted => _crypt.sign(message, privkey))();
                 case MULT:
                     // Here the message is the drive tweak value
-                    return (() @trusted => _crypt.privKeyTweakMul(privkey, message))();
+                    ubyte[] result;
+                    _crypt.privKeyTweakMul(privkey, message, result);
+                    return result;
                 case ADD:
                     // Here the message is the drive tweak value
-                    return (() @trusted => _crypt.privKeyTweakAdd(privkey, message))();
+                    ubyte[] result;
+                    _crypt.privKeyTweakAdd(privkey, message, result);
+                    return result;
                 }
         }
 
-        _secret=&local_secret;
+//        _secret=&local_secret;
     }
 
     void generateKeyPair(string passphrase)
@@ -201,73 +268,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         } while (!_crypt.secKeyVerify(data));
 
         createKeyPair(data);
-        version(none) {
-        _pubkey=_crypt.computePubkey(data);
-        // Generate scramble key for the private key
-        import std.random;
-
-        void scramble(ref ubyte[] data, ubyte[] xor=null) @safe {
-            import std.random;
-            // enum from =ubyte.min;
-            // enum to   =ubyte.max;
-            auto gen1 = Mt19937(unpredictableSeed); //Random(unpredictableSeed);
-            foreach(ref s; data) {
-                s=gen1.front & ubyte.max; //cast(ubyte)uniform!("[]")(from, to, gen1);
-            }
-            foreach(i, ref s; xor) {
-                s^=data[i];
-            }
-        }
-        auto seed=new ubyte[32];
-
-        scramble(seed);
-        // CBR: Note AES need to be change to beable to handle const keys
-        auto aes_key=calcHash(seed).dup;
-
-        scramble(seed);
-
-        // Encrypt private key
-        auto encrypted_privkey=new ubyte[data.length];
-        AES.encrypt(aes_key, data, encrypted_privkey);
-
-        AES.encrypt(calcHash(seed), encrypted_privkey, data);
-        scramble(seed);
-
-        AES.encrypt(aes_key, encrypted_privkey, data);
-
-        AES.encrypt(aes_key, data, seed);
-
-        AES.encrypt(aes_key, encrypted_privkey, data);
-
-        immutable(ubyte[]) local_secret(immutable(ubyte[]) message, const SecretMethod method) @safe {
-            // CBR:
-            // Yes I know it is security by obscurity
-            // But just don't want to have the private in clear text in memory
-            // for long period of time
-            auto privkey=new ubyte[encrypted_privkey.length];
-            scope(exit) {
-                auto seed=new ubyte[32];
-                scramble(seed, aes_key);
-                AES.encrypt(aes_key, privkey, encrypted_privkey);
-                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
-            }
-            AES.decrypt(aes_key, encrypted_privkey, privkey);
-
-//            immutable(ubyte[]) result() @trusted {
-            with(SecretMethod) final switch(method) {
-                case SIGN:
-                    return (() @trusted => _crypt.sign(message, privkey))();
-                case MULT:
-                    // Here the message is the drive tweak value
-                    return (() @trusted => _crypt.privKeyTweakMul(privkey, message))();
-                case ADD:
-                    // Here the message is the drive tweak value
-                    return (() @trusted => _crypt.privKeyTweakAdd(privkey, message))();
-                }
-        }
-
-        _secret=&local_secret;
-        }
     }
 
     this(NativeSecp256k1 crypt) {
