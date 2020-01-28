@@ -92,7 +92,7 @@ interface RequestNet : HashNet {
 
 @safe
 interface SecureDriveNet : HashNet {
-    Net drive(Net : SecureNet)(string tweak_name);
+    Net drive(Net : SecureNet, Args...)(string tweak_code, Args args);
 }
 
 @safe

@@ -105,9 +105,14 @@ class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
         return _secret.sign(message);
     }
 
-    Net drive(Net : SecureNet)(string tweak_code) {
+    Net drive(Net : SecureNet, Args...)(string tweak_code, Args args) {
         auto new_crypt=new NativeSecp256k1;
-        Net result = new Net(new_crypt);
+        static if (T.length) {
+            Net result = new Net(new_crypt, args);
+        }
+        else {
+            Net result = new Net(new_crypt);
+        }
         scope hmac = HMAC!SHA256(passphrase.representation);
         ubyte[] tweak_privkey = hmac.finish.dup;
         _secret.tweakMul(tweak_code, privkey);
