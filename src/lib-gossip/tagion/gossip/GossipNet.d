@@ -190,7 +190,6 @@ class StdSecureNet : StdHashNet, SecureNet {
                     return (() @trusted => _crypt.privKeyTweakMul(privkey, message))();
                 case ADD:
                     // Here the message is the drive tweak value
-                    scope tweak=message.dup;
                     return (() @trusted => _crypt.privKeyTweakAdd(privkey, message))();
                 }
         }
