@@ -91,7 +91,7 @@ interface RequestNet : HashNet {
 }
 
 @safe
-interface SecuretDriveNet : HashNet {
+interface SecureDriveNet : HashNet {
     Net drive(Net : SecureNet)(string tweak_name);
 }
 
@@ -123,7 +123,7 @@ interface PackageNet {
 }
 
 @safe
-interface GossipNet : SecureNet, RequestNet, PackageNet {
+interface GossipNet : SecureNet, RequestNet, SecureDriveNet, PackageNet {
     Event receive(const(Buffer) received, Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event );
     void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
 //    void send(immutable(Pubkey) channel, ref const(Package) pack);

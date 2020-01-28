@@ -35,21 +35,12 @@ class StdHashNet : HashNet {
 
 }
 
-version(none) {
-@safe
-class StdRequestNet : RequestNet {
-
-    //TO-DO: Implement a general request func. if makes sense.
-    abstract void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint);
-}
-}
-
 alias ReceiveQueue = Queue!(immutable(ubyte[]));
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 @safe
-class StdSecureNet : StdHashNet, SecureNet {
+class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
     // The Eva value is set up a low negative number
     // to check the two-complement round wrapping if the altitude.
     import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -67,8 +58,8 @@ class StdSecureNet : StdHashNet, SecureNet {
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
-        void tweekMul(string tweek_code, ref ubyte[] tweak_privkey);
-        void tweekAdd(string tweek_code, ref ubyte[] tweak_privkey);
+        void tweakMul(string tweek_code, ref ubyte[] tweak_privkey);
+        void tweakAdd(string tweek_code, ref ubyte[] tweak_privkey);
     }
 
     protected SecretMethods _secret;
@@ -114,13 +105,15 @@ class StdSecureNet : StdHashNet, SecureNet {
         return _secret.sign(message);
     }
 
-    Net drive(Net : SecureNet)(string tweak_name) {
-        auto net = StdSecureNet(new NativeSecp256k1);
+    Net drive(Net : SecureNet)(string tweak_code) {
+        auto new_crypt=new NativeSecp256k1;
+        Net result = new Net(new_crypt);
         scope hmac = HMAC!SHA256(passphrase.representation);
-        auto data = hmac.finish.dup;
-        return null;
+        ubyte[] tweak_privkey = hmac.finish.dup;
+        _secret.tweakMul(tweak_code, privkey);
+        result.createKeyPair(tweak_privkey);
+        return result;
     }
-
 
     protected void createKeyPair(ref ubyte[] privkey)
         in {
@@ -193,14 +186,14 @@ class StdSecureNet : StdHashNet, SecureNet {
                     });
                 return result;
             }
-            void tweekMul(string tweek_code, ref ubyte[] tweak_privkey) {
+            void tweakMul(string tweek_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                         scope hmac = HMAC!SHA256(tweek_code.representation);
                         auto data = hmac.finish.dup;
                         _crypt.privKeyTweakMul(privkey, data, tweak_privkey);
                     });
             }
-            void tweekAdd(string tweek_code, ref ubyte[] tweak_privkey) {
+            void tweakAdd(string tweek_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                         scope hmac = HMAC!SHA256(tweek_code.representation);
                         auto data = hmac.finish.dup;
@@ -208,46 +201,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                     });
             }
         }
-
         _secret = new LocalSecret;
-
-        version(none)
-        Void local_secret() {
-            // CBR:
-            // Yes I know it is security by obscurity
-            // But just don't want to have the private in clear text in memory
-            // for long period of time
-            auto privkey=new ubyte[encrypted_privkey.length];
-            scope(exit) {
-                auto seed=new ubyte[32];
-                scramble(seed, aes_key);
-                AES.encrypt(aes_key, privkey, encrypted_privkey);
-                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
-            }
-            AES.decrypt(aes_key, encrypted_privkey, privkey);
-
-            immutable(ubyte[]) local_sign() {
-                return _crypt.sign(message, privkey);
-            }
-
-//            immutable(ubyte[]) result() @trusted {
-            with(SecretMethod) final switch(method) {
-                case SIGN:
-                    return (() @trusted => _crypt.sign(message, privkey))();
-                case MULT:
-                    // Here the message is the drive tweak value
-                    ubyte[] result;
-                    _crypt.privKeyTweakMul(privkey, message, result);
-                    return result;
-                case ADD:
-                    // Here the message is the drive tweak value
-                    ubyte[] result;
-                    _crypt.privKeyTweakAdd(privkey, message, result);
-                    return result;
-                }
-        }
-
-//        _secret=&local_secret;
     }
 
     void generateKeyPair(string passphrase)
