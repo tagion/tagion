@@ -18,7 +18,7 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
 
 private import tagion.crypto.secp256k1.secp256k1;
 
-import std.exception : asumeUnique;
+import std.exception : assumeUnique;
 import tagion.hashgraph.ConsensusExceptions;
 
 import tagion.utils.Miscellaneous : toHexString;
@@ -273,6 +273,7 @@ class NativeSecp256k1 {
         }
     do {
 //        auto ctx=getContext();
+        pragma(msg, "fixme(cbr): privkey must be scrambled");
         ubyte[] privkey_array = privkey.dup;
         ubyte* _privkey = privkey_array.ptr;
 //        immutable(ubyte)* _privkey=privkey.ptr;
@@ -281,8 +282,8 @@ class NativeSecp256k1 {
         int ret = secp256k1_ec_privkey_tweak_mul(_ctx, _privkey, _tweak);
         check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT);
 
-        immutable(ubyte[]) result=privkey_array.idup;
-        return result;
+//        immutable(ubyte[]) result=privkey_array.idup;
+        return assumeUnique(privkey_array);
     }
 
     /++
@@ -298,14 +299,15 @@ class NativeSecp256k1 {
         }
     do {
 //        auto ctx=getContext();
+        pragma(msg, "fixme(cbr): privkey must be scrambled");
         ubyte[] privkey_array=privkey.dup;
         ubyte* _privkey=privkey_array.ptr;
         const(ubyte)* _tweak=tweak.ptr;
 
         int ret = secp256k1_ec_privkey_tweak_add(_ctx, _privkey, _tweak);
         check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT);
-        immutable(ubyte[]) result=privkey_array.idup;
-        return result;
+
+        return assumeUnique(privkey_array);
     }
 
     /++
@@ -353,8 +355,7 @@ class NativeSecp256k1 {
 
         int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
 
-        immutable(ubyte[]) result=outputSer_array.idup;
-        return result;
+        return assumeUnique(outputSer_array);
     }
 
     /++
@@ -398,8 +399,7 @@ class NativeSecp256k1 {
 
         int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag );
 
-        immutable(ubyte[]) result=outputSer_array.idup;
-        return result;
+        return assumeUnique(outputSer_array);
     }
 
     /++
