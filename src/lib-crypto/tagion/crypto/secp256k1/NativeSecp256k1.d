@@ -188,7 +188,7 @@ class NativeSecp256k1 {
             assert(seckey.length == 32);
         }
     do {
-        const(ubyte)* sec=seckey.ptr;
+        const(ubyte)* sec = seckey.ptr;
         return secp256k1_ec_seckey_verify(_ctx, sec) == 1;
     }
 
@@ -267,23 +267,19 @@ class NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    immutable(ubyte[]) privKeyTweakMul(const(ubyte[]) privkey, const(ubyte[]) tweak) const
+        void privKeyTweakMul(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
         in {
             assert(privkey.length == 32);
         }
     do {
-//        auto ctx=getContext();
         pragma(msg, "fixme(cbr): privkey must be scrambled");
-        ubyte[] privkey_array = privkey.dup;
-        ubyte* _privkey = privkey_array.ptr;
-//        immutable(ubyte)* _privkey=privkey.ptr;
-        const(ubyte)* _tweak=tweak.ptr;
+        tweak_privkey = privkey.dup;
+        ubyte* _privkey = tweak_privkey.ptr;
+        const(ubyte)* _tweak = tweak.ptr;
 
         int ret = secp256k1_ec_privkey_tweak_mul(_ctx, _privkey, _tweak);
         check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT);
 
-//        immutable(ubyte[]) result=privkey_array.idup;
-        return assumeUnique(privkey_array);
     }
 
     /++
@@ -293,21 +289,19 @@ class NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    immutable(ubyte[]) privKeyTweakAdd(const(ubyte[]) privkey, const(ubyte[]) tweak) const
+        void privKeyTweakAdd(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
         in {
             assert(privkey.length == 32);
         }
     do {
 //        auto ctx=getContext();
         pragma(msg, "fixme(cbr): privkey must be scrambled");
-        ubyte[] privkey_array=privkey.dup;
-        ubyte* _privkey=privkey_array.ptr;
+        tweak_privkey = privkey.dup;
+        ubyte* _privkey = tweak_privkey.ptr;
         const(ubyte)* _tweak=tweak.ptr;
 
         int ret = secp256k1_ec_privkey_tweak_add(_ctx, _privkey, _tweak);
         check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT);
-
-        return assumeUnique(privkey_array);
     }
 
     /++
@@ -584,7 +578,8 @@ unittest {
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.privKeyTweakAdd( sec , data );
+            ubyte[] resultArr;
+            crypt.privKeyTweakAdd(sec , data, resultArr);
             auto sigString = resultArr.toHexString!true;
             assert( sigString == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3" );
         }
@@ -601,7 +596,8 @@ unittest {
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.privKeyTweakMul( sec , data );
+            ubyte[] resultArr;
+            crypt.privKeyTweakMul(sec , data, resultArr);
             auto sigString = resultArr.toHexString!true;
             assert( sigString == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC" );
         }
@@ -698,15 +694,17 @@ unittest {
 
         // Drived key a
         const drive=decode("ABCDEF");
-        auto privkey_a_drived = crypt.privKeyTweakMul( privkey, drive);
+        ubyte[] privkey_a_drived;
+        crypt.privKeyTweakMul(privkey, drive, privkey_a_drived);
         assert(privkey != privkey_a_drived);
-        auto pubkey_a_drived = crypt.pubKeyTweakMul( pubkey, drive);
+        auto pubkey_a_drived = crypt.pubKeyTweakMul(pubkey, drive);
         assert(pubkey != pubkey_a_drived);
         auto signature_a_drived = crypt.sign(message, privkey_a_drived);
         assert(crypt.verify( message, signature_a_drived, pubkey_a_drived));
 
         // Drive key b from key a
-        auto privkey_b_drived = crypt.privKeyTweakMul( privkey_a_drived , drive);
+        ubyte[] privkey_b_drived;
+        crypt.privKeyTweakMul(privkey_a_drived , drive, privkey_b_drived);
         assert(privkey_b_drived != privkey_a_drived);
         auto pubkey_b_drived = crypt.pubKeyTweakMul(pubkey_a_drived, drive);
         assert(pubkey_b_drived != pubkey_a_drived);
