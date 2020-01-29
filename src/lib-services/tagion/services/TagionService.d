@@ -38,11 +38,11 @@ import tagion.hibon.HiBON : HiBON;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionServiceTask(Net)(immutable(Options) args) { //, shared(SecureDriveNet) master_net) {
-    setOptions(args);
-    Options opts=args;
+void tagionServiceTask(Net)(immutable(Options) args, shared(SecureDriveNet) master_net) {
+//    setOptions(opts);
 //    log.register(opts.node_name);
 //    log("options.nodeprefix=%s", options.nodeprefix);
+    Options opts=args;
     opts.node_name=node_task_name(opts);
     log.register(opts.node_name);
 //    log("opts.monitor.task_name=%s", opts.monitor.task_name);
