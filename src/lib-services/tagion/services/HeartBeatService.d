@@ -94,13 +94,13 @@ void heartBeatServiceTask(immutable(Options) opts) {
         service_options.node_id=cast(uint)i;
         Tid tid;
 
-        auto net=new StdSecureNet;
-        synchronized(net) {
+        auto master_net=new StdSecureNet;
+        synchronized(master_net) {
             import std.format;
             immutable passphrase=format("Secret_word_%d",i).idup;
 
-            net.generateKeyPair(passphrase);
-            shared shared_net=cast(shared)net;
+            master_net.generateKeyPair(passphrase);
+            shared shared_net=cast(shared)master_net;
             tid=spawn(&(tagionServiceTask!EmulatorGossipNet), service_options, shared_net);
         }
 

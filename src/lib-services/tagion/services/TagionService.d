@@ -38,7 +38,7 @@ import tagion.hibon.HiBON : HiBON;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionServiceTask(Net)(immutable(Options) args, shared(SecureDriveNet) master_net) {
+void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_net) {
 //    setOptions(opts);
 //    log.register(opts.node_name);
 //    log("options.nodeprefix=%s", options.nodeprefix);
@@ -65,6 +65,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureDriveNet) mast
     // Create hash-graph
     Net net;
     net=new Net(hashgraph);
+    auto net1=new Net(hashgraph);
+    net1.drive("tagion_service", master_net);
+    // synchronized(master_net) {
+    //     auto unshared_net = cast(SecureDriveNet)master_net;
+    //     unshared_net.drive("tagion_service", net1);
+    // }
+
 
     log("\n\n\n\n\n##### Received %s #####", opts.node_name);
 
