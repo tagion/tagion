@@ -39,34 +39,25 @@ import tagion.hibon.HiBON : HiBON;
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
 void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_net) {
-//    setOptions(opts);
-//    log.register(opts.node_name);
-//    log("options.nodeprefix=%s", options.nodeprefix);
     Options opts=args;
     opts.node_name=node_task_name(opts);
     log.register(opts.node_name);
-//    log("opts.monitor.task_name=%s", opts.monitor.task_name);
     opts.monitor.task_name=monitor_task_name(opts);
     opts.transaction.task_name=transaction_task_name(opts);
     opts.transcript.task_name=transcript_task_name(opts);
     opts.transaction.service.task_name=transervice_task_name(opts);
-//    opts.scripting_engine.task_name=scripting_engine_task_name(opts);
-//    opts.dart.task_name=dart_task_name(opts);
     setOptions(opts);
 
-//    immutable task_name=get_node_name(opts.node_id);
     log("task_name=%s options.mode_name=%s", opts.node_task_name, options.node_name);
 
 //    HRPC hrpc;
-    import std.format;
     import std.datetime.systime;
 
     auto hashgraph=new HashGraph();
     // Create hash-graph
     Net net;
     net=new Net(hashgraph);
-    auto net1=new Net(hashgraph);
-    net1.drive("tagion_service", master_net);
+    net.drive("tagion_service", master_net);
     // synchronized(master_net) {
     //     auto unshared_net = cast(SecureDriveNet)master_net;
     //     unshared_net.drive("tagion_service", net1);
@@ -314,17 +305,14 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     }
 
     void tagionexception(immutable(TagionException) e) {
-//            stop=true;
         ownerTid.send(e);
     }
 
     void exception(immutable(Exception) e) {
-//            stop=true;
         ownerTid.send(e);
     }
 
     void throwable(immutable(Throwable) t) {
-//            stop=true;
         ownerTid.send(t);
     }
 
@@ -388,32 +376,4 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
         }
     }
-    // catch ( ConsensusException e ) {
-    //     log.error("Consensus fail %s: %s. code=%s\n%s", opts.node_name, e.msg, e.code, typeid(e));
-    //     // stop=true;
-    //     if ( net.callbacks ) {
-    //         net.callbacks.consensus_failure(e);
-    //     }
-    //     ownerTid.send(cast(immutable)e);
-    // }
-    // catch ( Exception e ) {
-    //     auto msg=format("%s: %s\n%s", opts.node_name, e.msg, typeid(e));
-    //     log.fatal(msg);
-    //     // fout.writeln(msg);
-    //     // writeln(msg);
-    //     // stop=true;
-    //     ownerTid.send(cast(immutable)e);
-    // }
-    // catch ( Throwable t ) {
-    //     t.msg ~= format(" - From hashnode thread %s", opts.node_id);
-    //     log.fatal(t.msg);
-    //     // stderr.writeln(t);
-    //     // writeln(t);
-    //     // stop=true;
-    //     ownerTid.send(cast(immutable)t);
-    // }
-
-    // if (stop) {
-    //     log("Should stop");
-    // }
 }
