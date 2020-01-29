@@ -21,7 +21,7 @@ import tagion.hashgraph.ConsensusExceptions;
 
 
 import tagion.crypto.aes.AESCrypto;
-import tagion.crypto.secp256k1.NativeSecp256k1;
+//import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.services.LoggerService;
 
@@ -77,7 +77,7 @@ class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
         return verify(message, signature, pubkey);
     }
 
-    private NativeSecp256k1 _crypt;
+    protected NativeSecp256k1 _crypt;
     bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) const {
 
 //        if ( signature.length == 0 && signature.length <= 520) {
@@ -229,8 +229,8 @@ class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
         createKeyPair(data);
     }
 
-    this(NativeSecp256k1 crypt) {
-        this._crypt = crypt;
+    this() {
+        this._crypt = new NativeSecp256k1;
     }
 }
 
@@ -259,13 +259,13 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
     }
 
     import tagion.hashgraph.Event : Event;
-    this(NativeSecp256k1 crypt, HashGraph hashgraph) {
+    this( HashGraph hashgraph) {
 //        _transceiver=transceiver;
         _hashgraph=hashgraph;
         _queue=new ReceiveQueue;
         _event_package_cache=new EventPackageCache(&onEvict);
 //        import tagion.crypto.secp256k1.NativeSecp256k1;
-        super(crypt);
+        super();
     }
 
     protected enum _params = [

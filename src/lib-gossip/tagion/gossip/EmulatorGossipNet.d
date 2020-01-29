@@ -57,8 +57,8 @@ class EmulatorGossipNet : StdGossipNet {
 
     Random!uint random;
 
-    this(NativeSecp256k1 crypt, HashGraph hashgraph) {
-        super(crypt, hashgraph);
+    this(HashGraph hashgraph) {
+        super(hashgraph);
     }
 
     void set(immutable(Pubkey)[] pkeys)
