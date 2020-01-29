@@ -26,7 +26,7 @@ import tagion.dart.DARTSynchronization;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
-
+import tagion.gossip.InterfaceNet: SecureNet;
 import tagion.communication.HiRPC;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
@@ -35,11 +35,7 @@ alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 static bool inRange(ref ushort sector, ushort from_sector, ushort to_sector) pure nothrow  {
     immutable ushort sector_origin=(sector-from_sector) & ushort.max;
     immutable ushort to_origin=(to_sector-from_sector) & ushort.max;
-    return ( sector_origin < to_origin );
-}
-
-enum DartSynchronizeControl{
-    GetStatus = 1,
+    return ( sector_origin < to_origin );    
 }
 
 enum DartSynchronizeState{
@@ -70,7 +66,7 @@ struct ServiceState(T) {
     }
 }
 
-void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
+void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node,  shared(SecureNet) master_net) {
     try{
         auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING);
         setOptions(opts);
@@ -89,14 +85,13 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         }
         log("Dart file created with filename: %s", filename);
 
-        auto net = new MyFakeNet();
-
-        net.generateKeyPair(node.Id[0..32]);
+        auto net = new Net();
+        net.drive(opts.dart.sync.task_name, master_net);
 
         auto node_number = opts.port - opts.port_base;
         ushort from_ang;
         ushort to_ang;
-        if(opts.dart.setAngleFromPort){
+        if(opts.dart.angle_from_port){
             pragma(msg, "Fixme(as): static table");
             import std.math: ceil, floor;
 
@@ -129,13 +124,6 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     log.error("Bad Control command %s", ts);
                 }
         }
-
-        void handleDartControl(DartSynchronizeControl dc){
-            with(DartSynchronizeControl) switch(dc){
-                case GetStatus: state.notifyOwner(); break;
-                default: break;
-            }
-        }
         immutable(DARTFile.Recorder)[] recorders;
         ownerTid.send(Control.LIVE);
 
@@ -146,6 +134,7 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
 
         scope(exit){
             discoveryService.stop;
+            writeln("exit scope: call stop");
             syncPool.stop;
         }
 
@@ -168,7 +157,6 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
         while(!stop) {
             receiveTimeout(opts.dart.sync.tickTimeout.msecs,
                 &handleControl,
-                &handleDartControl,
                 (immutable(DARTFile.Recorder) recorder){
                     log("DSS: recorder received");
                     recorders ~= recorder;
@@ -178,10 +166,12 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     connectionPool.add(resp.key, resp.stream);
                 },
                 (Response!(ControlCode.Control_Disconnected) resp) {
-                    log("DSS: Client Disconnected key: %d", resp.key);
+                    log("DSS: Client Disconnected key: %d", resp.key);  
                     connectionPool.close(cast(void*)resp.key);
                 },
                 (Response!(ControlCode.Control_RequestHandled) resp) {  //TODO: moveout to factory
+                    log("DSS: Received request from p2p: %s", resp.key);
+                    writeln("response hadnled");
                     scope(exit){
                         if(resp.stream !is null){
                             destroy(resp.stream);
@@ -223,9 +213,9 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                     const hrpc_id = message_doc[Keywords.id].get!uint;
 
                     const method = message_doc[Keywords.method].get!string;
-                    if(method == DART.Quries.dartRead){
+                    void readDart(){
                         scope doc_fingerprints=receiver.params[DARTFile.Params.fingerprints].get!(Document);
-                        scope fingerprints=doc_fingerprints.range!(Buffer[]);
+                        scope fingerprints=doc_fingerprints.range!(Buffer[]);  
                         alias bufArr = Buffer[];
                         bufArr[DiscoveryService.NodeAddress] remote_fp_requests;
                         Buffer[] local_fp;
@@ -284,7 +274,26 @@ void dartSynchronizeServiceTask(immutable(Options) opts, shared(p2plib.Node) nod
                                 }
                             }
                         }
+                    }
 
+                    void modifyDart(){
+                        HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
+                        scope recorder_doc=receiver.params[DARTFile.Params.recorder].get!Document;
+                        scope recorder=DARTFile.Recorder(net, recorder_doc);
+                        immutable bullseye=dart.modify(recorder);
+                        auto hibon_params=new HiBON;
+                        hibon_params[DARTFile.Params.bullseye]=bullseye;
+                        auto tid = locate(task_name);
+                        if(tid != Tid.init){
+                            send(tid, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize);
+                        }
+                    }
+
+                    if(method == DART.Quries.dartRead){
+                        readDart();
+                    }
+                    else if(method == DART.Quries.dartModify){
+                        modifyDart();
                     }
                 },
                 (immutable(Exception) e) {
