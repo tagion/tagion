@@ -79,7 +79,7 @@ interface NetCallbacks : EventMonitorCallbacks {
 
 @safe
 interface HashNet {
-    immutable(Buffer) calcHash(immutable(ubyte[]) data) inout;
+    Buffer calcHash(const(ubyte[]) data) const;
 }
 
 @safe

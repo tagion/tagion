@@ -25,6 +25,17 @@ import tagion.crypto.aes.AESCrypto;
 
 import tagion.services.LoggerService;
 
+void scramble(scope ref ubyte[] data, scope ubyte[] xor=null) @safe {
+    import std.random;
+    auto gen1 = Mt19937(unpredictableSeed);
+    foreach(ref s; data) {
+        s=gen1.front & ubyte.max;
+    }
+    foreach(i, ref s; xor) {
+        s^=data[i];
+    }
+}
+
 @safe
 class StdHashNet : HashNet {
     Buffer calcHash(const(ubyte[]) data) const {
@@ -79,11 +90,8 @@ class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
 
     protected NativeSecp256k1 _crypt;
     bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) const {
-
-//        if ( signature.length == 0 && signature.length <= 520) {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
             ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-//        }
         return _crypt.verify(message, signature, cast(Buffer)pubkey);
     }
 
@@ -106,12 +114,11 @@ class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
     }
 
     Net drive(Net : SecureNet, Args...)(string tweak_code, Args args) {
-        auto new_crypt=new NativeSecp256k1;
         static if (T.length) {
-            Net result = new Net(new_crypt, args);
+            Net result = new Net(args);
         }
         else {
-            Net result = new Net(new_crypt);
+            Net result = new Net();
         }
         scope hmac = HMAC!SHA256(passphrase.representation);
         ubyte[] tweak_privkey = hmac.finish.dup;
@@ -129,22 +136,10 @@ class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
         import std.digest.sha : SHA256;
         import std.string : representation;
         alias AES=AESCrypto!256;
-        _pubkey=_crypt.computePubkey(privkey);
+        _pubkey = _crypt.computePubkey(privkey);
         // Generate scramble key for the private key
         import std.random;
 
-        void scramble(ref ubyte[] data, ubyte[] xor=null) @safe {
-            import std.random;
-            // enum from =ubyte.min;
-            // enum to   =ubyte.max;
-            auto gen1 = Mt19937(unpredictableSeed); //Random(unpredictableSeed);
-            foreach(ref s; data) {
-                s=gen1.front & ubyte.max; //cast(ubyte)uniform!("[]")(from, to, gen1);
-            }
-            foreach(i, ref s; xor) {
-                s^=data[i];
-            }
-        }
         auto seed=new ubyte[32];
 
         scramble(seed);
@@ -321,7 +316,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
     }
 
     alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
-    protected  EventPackageCache _event_package_cache;
+    protected EventPackageCache _event_package_cache;
 
     protected ulong _current_time;
     protected HashGraph _hashgraph;
@@ -381,7 +376,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                 }
             }
         }
-        hibon[Params.tidewave]=fronts;
+        hibon[Params.tidewave] = fronts;
         return tides;
     }
 
@@ -478,21 +473,6 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
 //                log.writefln("%s/_%d_%s.hibon", options.tmp, _type); //.to!string~"_receive.hibon";
 //                write(packfile, data);
 //                _send_count++;
-            }
-        }
-    }
-
-    version(none)
-    void breakAllWaves() {
-        foreach(ref node; _hashgraph.nodeiterator) {
-            if ( node.state !is ExchangeState.NONE || node.state !is ExchangeState.INIT_TIDE) {
-                // Break all the waves
-                HiBON[] events=buildWavefront(tides, true);
-                auto wavefront=new HiBON;
-                wavefront[Params.wavefront]=events;
-                auto wavefront_pack=buildEvent(wavefront, ExchangeState.BREAK_WAVE);
-                send(node.pubkey, wavefront_pack);
-                node.state=ExchangeState.NONE;
             }
         }
     }
