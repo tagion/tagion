@@ -90,21 +90,25 @@ interface RequestNet : HashNet {
     void request(HashGraph h, immutable(Buffer) event_hash);
 }
 
+version(none)
 @safe
 interface SecureDriveNet : HashNet {
-    Net drive(Net : SecureNet, Args...)(string tweak_code, Args args);
+    void drive(Net : SecureNet, Args...)(string tweak_code, ref Net net);
 }
 
 @safe
 interface SecureNet : HashNet {
     Pubkey pubkey() pure const nothrow;
     bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey) const;
+    bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) );
 
     // The private should be added implicite by the GossipNet
     // The message is a hash of the 'real' message
     immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
+    immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) );
     void generateKeyPair(string passphrase);
-    //   SecureNet drive(string name);
+    void drive(string tweak_code, shared(SecureNet) secure_net);
+    void drive(string tweak_code, ref ubyte[] tweak_privkey);
 }
 
 @safe
@@ -123,7 +127,7 @@ interface PackageNet {
 }
 
 @safe
-interface GossipNet : SecureNet, RequestNet, SecureDriveNet, PackageNet {
+interface GossipNet : SecureNet, RequestNet, PackageNet {
     Event receive(const(Buffer) received, Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event );
     void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
 //    void send(immutable(Pubkey) channel, ref const(Package) pack);

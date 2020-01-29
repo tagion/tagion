@@ -51,7 +51,7 @@ alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 @safe
-class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
+class StdSecureNet : StdHashNet, SecureNet  {
     // The Eva value is set up a low negative number
     // to check the two-complement round wrapping if the altitude.
     import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -113,18 +113,30 @@ class StdSecureNet : StdHashNet, SecureNet, SecureDriveNet {
         return _secret.sign(message);
     }
 
-    Net drive(Net : SecureNet, Args...)(string tweak_code, Args args) {
-        static if (T.length) {
-            Net result = new Net(args);
+    void drive(string tweak_code, ref ubyte[] tweak_privkey)
+        in {
+            assert(tweak_privkey >= 32);
         }
-        else {
-            Net result = new Net();
+    do {
+        _secret.tweakMul(tweak_code, tweak_privkey);
+    }
+
+
+    @trusted
+    void drive(string tweak_code, shared(SecureNet) secure_net)
+        in {
+            assert(_secret);
         }
-        scope hmac = HMAC!SHA256(passphrase.representation);
-        ubyte[] tweak_privkey = hmac.finish.dup;
-        _secret.tweakMul(tweak_code, privkey);
-        result.createKeyPair(tweak_privkey);
-        return result;
+    do {
+        import std.digest.sha : SHA256;
+        import std.string : representation;
+        synchronized(secure_net) {
+            scope hmac = HMAC!SHA256(tweak_code.representation);
+            ubyte[] tweak_privkey = hmac.finish.dup;
+            auto unshared_secure_net = cast(SecureNet)secure_net;
+            unshared_secure_net.drive(tweak_code, tweak_privkey);
+            createKeyPair(tweak_privkey);
+        }
     }
 
     protected void createKeyPair(ref ubyte[] privkey)
