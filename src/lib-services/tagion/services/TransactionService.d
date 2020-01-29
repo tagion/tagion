@@ -24,8 +24,7 @@ import tagion.TagionExceptions;
 
 class HiRPCNet : StdSecureNet {
     this(string passphrase) {
-        import tagion.crypto.secp256k1.NativeSecp256k1;
-        super(new NativeSecp256k1(NativeSecp256k1.Format.AUTO, NativeSecp256k1.Format.COMPACT));
+        super();
         generateKeyPair(passphrase);
         import tagion.utils.Miscellaneous;
         import tagion.Base;

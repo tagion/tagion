@@ -64,8 +64,7 @@ void tagionServiceTask(Net)(immutable(Options) args) { //, shared(SecureDriveNet
     auto hashgraph=new HashGraph();
     // Create hash-graph
     Net net;
-    auto crypt=new NativeSecp256k1;
-    net=new Net(crypt, hashgraph);
+    net=new Net(hashgraph);
 
     log("\n\n\n\n\n##### Received %s #####", opts.node_name);
 
