@@ -133,8 +133,8 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
 
     // Pseudo passpharse
-    immutable passphrase=opts.node_name;
-    net.generateKeyPair(passphrase);
+    // immutable passphrase=opts.node_name;
+    // net.generateKeyPair(passphrase);
 
     ownerTid.send(net.pubkey);
 
@@ -376,4 +376,32 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
         }
     }
+    // catch ( ConsensusException e ) {
+    //     log.error("Consensus fail %s: %s. code=%s\n%s", opts.node_name, e.msg, e.code, typeid(e));
+    //     // stop=true;
+    //     if ( net.callbacks ) {
+    //         net.callbacks.consensus_failure(e);
+    //     }
+    //     ownerTid.send(cast(immutable)e);
+    // }
+    // catch ( Exception e ) {
+    //     auto msg=format("%s: %s\n%s", opts.node_name, e.msg, typeid(e));
+    //     log.fatal(msg);
+    //     // fout.writeln(msg);
+    //     // writeln(msg);
+    //     // stop=true;
+    //     ownerTid.send(cast(immutable)e);
+    // }
+    // catch ( Throwable t ) {
+    //     t.msg ~= format(" - From hashnode thread %s", opts.node_id);
+    //     log.fatal(t.msg);
+    //     // stderr.writeln(t);
+    //     // writeln(t);
+    //     // stop=true;
+    //     ownerTid.send(cast(immutable)t);
+    // }
+
+    // if (stop) {
+    //     log("Should stop");
+    // }
 }
