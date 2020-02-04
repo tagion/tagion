@@ -11,4 +11,4 @@ class HiBONException : TagionException {
     }
 }
 
-package alias check=Check!HiBONException;
+alias check=Check!HiBONException;
