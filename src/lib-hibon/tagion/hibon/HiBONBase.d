@@ -3,11 +3,11 @@ module tagion.hibon.HiBONBase;
 import tagion.Types;
 import tagion.Base : isOneOf;
 
+import tagion.utils.UTCTime;
 
 import std.format;
 import std.meta : AliasSeq; //, Filter;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
-import std.typecons : Typedef;
 
 import std.system : Endian;
 import bin = std.bitmanip;
@@ -69,8 +69,6 @@ enum Type : ubyte {
         NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT, // Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
         NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING, // Represetents (string[]) is convert to an ARRAY of string's
         }
-
-alias utc_t = Typedef!(ulong, ulong.init, Type.UTC.stringof);
 
 @safe
 bool isNative(Type type) pure nothrow {
@@ -205,7 +203,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @trusted
     auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
-//        pragma(msg, code);
         mixin(code);
         assert(0);
     }
