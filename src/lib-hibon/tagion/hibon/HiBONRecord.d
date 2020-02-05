@@ -10,6 +10,7 @@ import tagion.hibon.Document : Document;
 struct Label {
     string name;
     bool optional;
+//    string method;
 }
 
 template GetLabel(alias member) {
@@ -25,7 +26,7 @@ mixin template HiBONRecord() {
     import tagion.hibon.HiBONException : check;
     import tagion.Message : message;
     HiBON toHiBON() {
-        auto hibon=new HiBON;
+        auto hibon= new HiBON;
         foreach(i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 static if (hasUDA!(this.tupleof[i], Label)) {
@@ -78,7 +79,6 @@ mixin template HiBONRecord() {
     }
 
     this(const Document doc) {
-
         foreach(i, ref m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 static if (hasUDA!(this.tupleof[i], Label)) {
