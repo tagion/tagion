@@ -14,21 +14,29 @@ import tagion.Base : Pubkey, Control;
 import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.gossip.InterfaceNet : SecureNet;
+import tagion.gossip.GossipNet : StdSecureNet;
 import tagion.services.ServiceNames : get_node_name;
 import tagion.TagionExceptions;
 
 shared bool abort=false;
+version(SIG_SHORTDOWN){
+import core.stdc.signal;
 static extern(C) void shutdown(int sig) @nogc nothrow {
-    abort=true;
-    printf("Shutdown sig %d\n\0".ptr, sig);
+
+    printf("Shutdown sig %d about=%d\n\0".ptr, sig, abort);
+    if (sig is SIGINT || sig is SIGTERM) {
+        abort=true;
+    }
+//    printf("Shutdown sig %d\n\0".ptr, sig);
 }
 
 shared static this() {
-    import core.stdc.signal;
+
     signal(SIGINT, &shutdown);
     signal(SIGTERM, &shutdown);
 }
-
+}
 import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
@@ -77,11 +85,25 @@ void heartBeatServiceTask(immutable(Options) opts) {
         if ( (opts.monitor.port >= opts.min_port) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
         }
-        if ( (opts.transaction.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
-            service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
+        // if ( (opts.transaction.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
+        //     service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
+        // }
+        if ( (opts.transaction.service.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
+            service_options.transaction.service.port=cast(ushort)(opts.transaction.service.port + i);
         }
         service_options.node_id=cast(uint)i;
-        auto tid=spawn(&(tagionServiceTask!EmulatorGossipNet), service_options);
+        Tid tid;
+
+        auto master_net=new StdSecureNet;
+        synchronized(master_net) {
+            import std.format;
+            immutable passphrase=format("Secret_word_%d",i).idup;
+
+            master_net.generateKeyPair(passphrase);
+            shared shared_net=cast(shared)master_net;
+            tid=spawn(&(tagionServiceTask!EmulatorGossipNet), service_options, shared_net);
+        }
+
         tids~=tid;
         pkeys~=receiveOnly!(Pubkey);
         log("Start %d", pkeys.length);
@@ -136,6 +158,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
     }
     else {
         // Thread.sleep(1.seconds);
+        log("Start the heatbeat in none sequential mode");
         while(!stop && !abort) {
             stderr.writef("* %s ", abort);
             immutable message_received=receiveTimeout(

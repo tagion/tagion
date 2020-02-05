@@ -24,7 +24,7 @@ import tagion.services.ServiceNames;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
-import tagion.services.ScriptingEngineService;
+//import tagion.services.ScriptingEngineService;
 import tagion.services.LoggerService;
 import tagion.TagionExceptions;
 
@@ -38,33 +38,31 @@ import tagion.hibon.HiBON : HiBON;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionServiceTask(Net)(immutable(Options) args) {
-    setOptions(args);
+void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_net) {
     Options opts=args;
-//    log.register(opts.node_name);
-//    log("options.nodeprefix=%s", options.nodeprefix);
     opts.node_name=node_task_name(opts);
     log.register(opts.node_name);
-//    log("opts.monitor.task_name=%s", opts.monitor.task_name);
     opts.monitor.task_name=monitor_task_name(opts);
     opts.transaction.task_name=transaction_task_name(opts);
     opts.transcript.task_name=transcript_task_name(opts);
-//    opts.scripting_engine.task_name=scripting_engine_task_name(opts);
-//    opts.dart.task_name=dart_task_name(opts);
+    opts.transaction.service.task_name=transervice_task_name(opts);
     setOptions(opts);
 
-//    immutable task_name=get_node_name(opts.node_id);
-    log("task_name=%s options.mode_name=%s", opts.node_name, options.node_name);
+    log("task_name=%s options.mode_name=%s", opts.node_task_name, options.node_name);
 
 //    HRPC hrpc;
-    import std.format;
     import std.datetime.systime;
 
     auto hashgraph=new HashGraph();
     // Create hash-graph
-    ScriptNet net;
-    auto crypt=new NativeSecp256k1;
-    net=new Net(crypt, hashgraph);
+    Net net;
+    net=new Net(hashgraph);
+    net.drive("tagion_service", master_net);
+    // synchronized(master_net) {
+    //     auto unshared_net = cast(SecureDriveNet)master_net;
+    //     unshared_net.drive("tagion_service", net1);
+    // }
+
 
     log("\n\n\n\n\n##### Received %s #####", opts.node_name);
 
@@ -94,15 +92,17 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             net.callbacks.exiting(hashgraph.getNode(net.pubkey));
         }
 
+        // version(none)
         if ( transaction_socket_tid != transaction_socket_tid.init ) {
             log("send stop to %s", opts.transaction.task_name);
             transaction_socket_tid.prioritySend(Control.STOP);
+            writefln("Send stop %s", opts.transaction.task_name);
             auto control=receiveOnly!Control;
             log("Control %s", control);
-            if ( control == Control.END ) {
+            if ( control is Control.END ) {
                 log("Closed transaction");
             }
-            else if ( control == Control.FAIL ) {
+            else if ( control is Control.FAIL ) {
                 log.error("Closed transaction with failure");
             }
         }
@@ -132,20 +132,13 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     }
 
 
-//    hrpc.net=net;
-
-//    immutable transcript_enable=opts.transcript.enable;
-
-//    debug {
-//    net.node_name=opts.node_name;
-//    }
     // Pseudo passpharse
-    immutable passphrase=opts.node_name;
-    net.generateKeyPair(passphrase);
+    // immutable passphrase=opts.node_name;
+    // net.generateKeyPair(passphrase);
 
     ownerTid.send(net.pubkey);
 
-    Pubkey[] received_pkeys; //=receiveOnly!(immutable(Pubkey[]));
+    Pubkey[] received_pkeys;
     foreach(i;0..opts.nodes) {
         received_pkeys~=receiveOnly!(Pubkey);
         stderr.writefln("@@@@ Receive %s %s", opts.node_name, received_pkeys[i].cutHex);
@@ -160,9 +153,6 @@ void tagionServiceTask(Net)(immutable(Options) args) {
             log("%d] %s", i, p.cutHex);
         }
     }
-    // All tasks is in sync
-    stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
-    log("All tasks are in sync %s", opts.node_name);
 
     // scope tids=new Tid[N];
     // getTids(tids);
@@ -178,19 +168,22 @@ void tagionServiceTask(Net)(immutable(Options) args) {
         }
     }
 
-    stderr.writefln("@@@@ opts.transaction.port=%d", opts.transaction.port);
+    stderr.writefln("@@@@ opts.transaction.port=%d", opts.transaction.service.port);
+    // version(none)
     if ( ( (opts.node_id < opts.transaction.max) || (opts.transaction.max == 0) ) &&
-        (opts.transaction.port >= opts.min_port) ) {
+        (opts.transaction.service.port >= opts.min_port) ) {
         transaction_socket_tid = spawn(&transactionServiceTask, opts);
         stderr.writefln("@@@@ Wait for transaction %s", opts.node_name);
+        log("@@@@ Wait for transaction %s", opts.node_name);
         if ( receiveOnly!Control is Control.LIVE ) {
-            log("Transaction started");
+            log("Transaction started port %d", opts.transaction.service.port);
         }
-        // else {
-        //     ownerTid.send(Control.FAIL);
-        //     return;
-        // }
+        log("@@@@ after %s", opts.node_name);
     }
+
+    // All tasks is in sync
+    stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
+    log("All tasks are in sync %s", opts.node_name);
 
     version(none)
     if ( opts.transcript.enable ) {
@@ -280,7 +273,7 @@ void tagionServiceTask(Net)(immutable(Options) args) {
                 send_node.state = ExchangeState.INIT_TIDE;
                 auto tidewave   = new HiBON;
                 auto tides      = net.tideWave(tidewave, net.callbacks !is null);
-                auto pack       = net.buildEvent(tidewave, ExchangeState.TIDE_WAVE);
+                auto pack       = net.buildEvent(tidewave, ExchangeState.TIDAL_WAVE);
 
                 net.send(send_channel, pack.toHiBON.serialize);
                 if ( net.callbacks ) {
@@ -312,17 +305,14 @@ void tagionServiceTask(Net)(immutable(Options) args) {
     }
 
     void tagionexception(immutable(TagionException) e) {
-//            stop=true;
         ownerTid.send(e);
     }
 
     void exception(immutable(Exception) e) {
-//            stop=true;
         ownerTid.send(e);
     }
 
     void throwable(immutable(Throwable) t) {
-//            stop=true;
         ownerTid.send(t);
     }
 

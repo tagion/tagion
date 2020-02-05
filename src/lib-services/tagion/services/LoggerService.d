@@ -167,6 +167,7 @@ void loggerTask(immutable(Options) opts) {
 
     @trusted
     void task_register() {
+        writeln("REGISTER ", opts.logger.task_name);
         assert(register(opts.logger.task_name, thisTid));
     }
     task_register;
@@ -198,11 +199,19 @@ void loggerTask(immutable(Options) opts) {
 
     @trusted
     void receiver(LoggerType type, string label, string text) {
+        void printToConsole(string s)
+        {
+            if(opts.logger.to_console) writeln(s);
+        }
         if ( type is LoggerType.INFO ) {
-            file.writefln("%s: %s", label, text);
+            const output = format("%s: %s", label, text);
+            file.writeln(output);
+            printToConsole(output);
         }
         else {
-            file.writefln("%s:%s: %s", label, type, text);
+            const output = format("%s:%s: %s", label, type, text);
+            file.writeln(output);
+            printToConsole(output);
         }
         if ( type & LoggerType.STDERR) {
             stderr.writefln("%s:%s: %s", type, label, text);
@@ -216,6 +225,9 @@ void loggerTask(immutable(Options) opts) {
                 &controller,
                 &receiver
             );
+            if(opts.logger.flush){
+                file.flush();
+            }
         }
         catch ( Exception e ) {
             stderr.writefln("Logger error %s", e.msg);
