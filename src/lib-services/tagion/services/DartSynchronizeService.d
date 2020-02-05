@@ -79,6 +79,10 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             log("------Stop Dart Sync service-----");
             ownerTid.prioritySend(Control.END);
         }
+        scope(failure){
+            log("------Error Stop Dart Sync service-----");
+            ownerTid.prioritySend(Control.END);
+        }
         immutable filename = fileId!(DART)(opts.dart.name).fullpath;
         if (opts.dart.initialize) {
             DARTFile.create_dart(filename);
@@ -126,10 +130,10 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         }
         immutable(DARTFile.Recorder)[] recorders;
         ownerTid.send(Control.LIVE);
+ 
+        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.sync.host.timeout.msecs);
 
-        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
-
-        DartSynchronizationPool syncPool = new DartSynchronizationPool(dart, node, connectionPool, opts);
+        auto syncPool = new DartSynchronizationPool!StdHandlerPool(dart, node, connectionPool, opts);
         auto discoveryService = DiscoveryService(node, opts);
 
         scope(exit){
@@ -146,207 +150,219 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         }
         alias JournalReplay =  ReplayFiber!(string, (DART dart, string journal)=> dart.replay(journal));
         alias RecorderReplay = ReplayFiber!(immutable(DARTFile.Recorder), (DART dart, immutable(DARTFile.Recorder) recorder)=> dart.modify(cast(DARTFile.Recorder) recorder));
-        JournalReplay journalReplayFiber= new JournalReplay(dart, P2pSynchronizer.journals);
+        JournalReplay journalReplayFiber= new JournalReplay(dart, DartSynchronizationPool!(StdHandlerPool).P2pSynchronizer.journals);
         RecorderReplay recorderReplayFiber = new RecorderReplay(dart, recorders);
 
-        auto readPool = new HandlerPool!(ReadSynchronizer, uint)(opts.dart.commands.read_timeout.msecs);
-
+        auto readPool = new StdHandlerPool!(ReadRequestHandler, uint)(opts.dart.commands.read_timeout.msecs);
+        
         HiRPC hrpc;
         auto empty_hirpc = HiRPC(null);
         hrpc.net = net;
         while(!stop) {
-            receiveTimeout(opts.dart.sync.tickTimeout.msecs,
-                &handleControl,
-                (immutable(DARTFile.Recorder) recorder){
-                    log("DSS: recorder received");
-                    recorders ~= recorder;
-                },
-                (Response!(ControlCode.Control_Connected) resp) {
-                    log("DSS: Client Connected key: %d", resp.key);
-                    connectionPool.add(resp.key, resp.stream);
-                },
-                (Response!(ControlCode.Control_Disconnected) resp) {
-                    log("DSS: Client Disconnected key: %d", resp.key);  
-                    connectionPool.close(cast(void*)resp.key);
-                },
-                (Response!(ControlCode.Control_RequestHandled) resp) {  //TODO: moveout to factory
-                    log("DSS: Received request from p2p: %s", resp.key);
-                    writeln("response hadnled");
-                    scope(exit){
-                        if(resp.stream !is null){
-                            destroy(resp.stream);
+            try{
+                receiveTimeout(opts.dart.sync.tickTimeout.msecs,
+                    &handleControl,
+                    (immutable(DARTFile.Recorder) recorder){
+                        log("DSS: recorder received");
+                        recorders ~= recorder;
+                    },
+                    (Response!(ControlCode.Control_Connected) resp) {
+                        log("DSS: Client Connected key: %d", resp.key);
+                        connectionPool.add(resp.key, resp.stream, true);
+                    },
+                    (Response!(ControlCode.Control_Disconnected) resp) {
+                        log("DSS: Client Disconnected key: %d", resp.key);  
+                        connectionPool.close(cast(void*)resp.key);
+                    },
+                    (Response!(ControlCode.Control_RequestHandled) resp) {  //TODO: moveout to factory
+                        // log("DSS: Received request from p2p: %s", resp.key);
+                        scope(exit){
+                            if(resp.stream !is null){
+                                destroy(resp.stream);
+                            }
                         }
-                    }
-                    auto doc = Document(resp.data);
-                    auto message_doc = doc[Keywords.message].get!Document;
-                    void closeConnection(){
-                        log("DSS: Forced close connection");
-                        connectionPool.close(resp.key);
-                    }
-                    void serverHandler(){
-                        if(message_doc[Keywords.method].get!string == DART.Quries.dartModify){  //Not allowed
+                        auto doc = Document(resp.data);
+                        auto message_doc = doc[Keywords.message].get!Document;
+                        void closeConnection(){
+                            log("DSS: Forced close connection");
+                            connectionPool.close(resp.key);
+                        }
+                        void serverHandler(){
+                            if(message_doc[Keywords.method].get!string == DART.Quries.dartModify){  //Not allowed
+                                closeConnection();
+                            }
+                            auto received = hrpc.receive(doc);
+                            auto request = dart(received);
+                            auto tosend = hrpc.toHiBON(request).serialize;
+                            connectionPool.send(resp.key, tosend);
+                            // log("DSS: Sended response to connection: %s", resp.key);
+                        }
+                        if(message_doc.hasElement(Keywords.method) && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
+                            serverHandler();
+                        }else if(!message_doc.hasElement(Keywords.method)){
+                            if(state.checkState(DartSynchronizeState.SYNCHRONIZING)){
+                                syncPool.setResponse(resp);
+                            }else{
+                                auto response = ResponseHandler.Response!uint(message_doc[Keywords.id].get!uint, resp.data);
+                                readPool.setResponse(response);
+                            }
+                        }else{
                             closeConnection();
                         }
-                        auto received = hrpc.receive(doc);
-                        auto request = dart(received);
-                        auto tosend = hrpc.toHiBON(request).serialize;
-                        connectionPool.send(resp.key, tosend);
-                    }
-                    if(message_doc.hasElement(Keywords.method) && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
-                        serverHandler();
-                    }else if(!message_doc.hasElement(Keywords.method)){
-                        if(state.checkState(DartSynchronizeState.SYNCHRONIZING)){
-                            syncPool.setResponse(resp);
-                        }else{
-                            auto response = ResponseHandler.Response!uint(message_doc[Keywords.id].get!uint, resp.data);
-                            readPool.setResponse(response);
-                        }
-                    }else{
-                        closeConnection();
-                    }
-                },
-                (string taskName, Buffer data){
-                    log("DSS: Received request from service: %s", task_name);
-                    const doc = Document(data);
-                    auto receiver = empty_hirpc.receive(doc);
-                    const message_doc = doc[Keywords.message].get!Document;
-                    const hrpc_id = message_doc[Keywords.id].get!uint;
+                    },
+                    (string taskName, Buffer data){
+                        log("DSS: Received request from service: %s", task_name);
+                        const doc = Document(data);
+                        auto receiver = empty_hirpc.receive(doc);
+                        const message_doc = doc[Keywords.message].get!Document;
+                        const hrpc_id = message_doc[Keywords.id].get!uint;
 
-                    const method = message_doc[Keywords.method].get!string;
-                    void readDart(){
-                        scope doc_fingerprints=receiver.params[DARTFile.Params.fingerprints].get!(Document);
-                        scope fingerprints=doc_fingerprints.range!(Buffer[]);  
-                        alias bufArr = Buffer[];
-                        bufArr[DiscoveryService.NodeAddress] remote_fp_requests;
-                        Buffer[] local_fp;
+                        const method = message_doc[Keywords.method].get!string;
+                        
+                        void readDart(){
+                            scope doc_fingerprints=receiver.params[DARTFile.Params.fingerprints].get!(Document);
+                            scope fingerprints=doc_fingerprints.range!(Buffer[]);  
+                            alias bufArr = Buffer[];
+                            bufArr[DiscoveryService.NodeAddress] remote_fp_requests;
+                            Buffer[] local_fp;
 
-                        fpIterator: foreach(fp; fingerprints){
-                            ushort sector = fp[0] | fp[1];
-                            if(dart.inRange(sector)){
-                                local_fp~=fp;
-                                continue fpIterator;
+                            fpIterator: foreach(fp; fingerprints){
+                                ushort sector = fp[0] | fp[1];
+                                if(dart.inRange(sector)){
+                                    local_fp~=fp;
+                                    continue fpIterator;
+                                }else{
+                                    foreach(address, fps; remote_fp_requests){
+                                        if(sector.inRange(address.from_ang,address.to_ang)){
+                                            fps~=fp;
+                                            remote_fp_requests[address] = fps;
+                                            continue fpIterator;
+                                        }
+                                    }
+                                    foreach(id, address; DiscoveryService.node_addrses){
+                                        if(sector.inRange(address.from_ang, address.to_ang)){
+                                            remote_fp_requests[address] = [fp];
+                                            continue fpIterator;
+                                        }
+                                    }
+                                }
+                            }
+                            auto recorder=dart.loads(local_fp, DARTFile.Recorder.Archive.Type.ADD);
+
+                            if(remote_fp_requests.length != 0){
+                                import std.array;
+                                auto rs = new ReadRequestHandler(array(fingerprints), hrpc, taskName, receiver);
+                                readPool.add(hrpc_id, rs);
+                                if(local_fp.length>0){
+                                    readPool.setResponse(ResponseHandler.Response!uint(hrpc_id, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize));
+                                }
+                                foreach(addr, fps; remote_fp_requests){
+                                    auto stream = node.connect(addr.address, [pid]);
+                                    // connectionPool.add(stream.Identifier, stream);
+                                    stream.listen(&StdHandlerCallback, opts.dart.task_name, opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
+                                    auto params=new HiBON;
+                                    auto params_fingerprints=new HiBON;
+                                    foreach(i, b; fps) {
+                                        if ( b.length !is 0 ) {
+                                            params_fingerprints[i]=b;
+                                        }
+                                    }
+                                    params[DARTFile.Params.fingerprints]=params_fingerprints;
+                                    const request = empty_hirpc.dartRead(params, hrpc_id);
+                                    immutable foreign_data = empty_hirpc.toHiBON(request).serialize;
+                                    stream.writeBytes(foreign_data);
+                                }
                             }else{
-                                foreach(address, fps; remote_fp_requests){
-                                    if(sector.inRange(address.from_ang,address.to_ang)){
-                                        fps~=fp;
-                                        remote_fp_requests[address] = fps;
-                                        continue fpIterator;
-                                    }
-                                }
-                                foreach(id, address; DiscoveryService.node_addrses){
-                                    if(sector.inRange(address.from_ang, address.to_ang)){
-                                        remote_fp_requests[address] = [fp];
-                                        continue fpIterator;
+                                if(local_fp.length != 0){
+                                    auto tid = locate(task_name);
+                                    if(tid != Tid.init){
+                                        send(tid, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize);
                                     }
                                 }
                             }
                         }
-                        auto recorder=dart.loads(local_fp, DARTFile.Recorder.Archive.Type.ADD);
 
-                        if(remote_fp_requests.length != 0){
-                            import std.array;
-                            auto rs = new ReadSynchronizer(array(fingerprints), hrpc, taskName, receiver);
-                            readPool.add(hrpc_id, rs);
-                            if(local_fp.length>0){
-                                readPool.setResponse(ResponseHandler.Response!uint(hrpc_id, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize));
-                            }
-                            foreach(addr, fps; remote_fp_requests){
-                                auto stream = node.connect(addr.address, [pid]);
-                                // connectionPool.add(stream.Identifier, stream);
-                                stream.listen(&StdHandlerCallback, opts.dart.task_name, opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
-                                auto params=new HiBON;
-                                auto params_fingerprints=new HiBON;
-                                foreach(i, b; fps) {
-                                    if ( b.length !is 0 ) {
-                                        params_fingerprints[i]=b;
-                                    }
-                                }
-                                params[DARTFile.Params.fingerprints]=params_fingerprints;
-                                const request = empty_hirpc.dartRead(params, hrpc_id);
-                                immutable foreign_data = empty_hirpc.toHiBON(request).serialize;
-                                stream.writeBytes(foreign_data);
-                            }
-                        }else{
-                            if(local_fp.length != 0){
-                                auto tid = locate(task_name);
-                                if(tid != Tid.init){
-                                    send(tid, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize);
-                                }
+                        void modifyDart(){
+                            HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
+                            scope recorder_doc=receiver.params[DARTFile.Params.recorder].get!Document;
+                            scope recorder=DARTFile.Recorder(net, recorder_doc);
+                            immutable bullseye=dart.modify(recorder);
+                            auto hibon_params=new HiBON;
+                            hibon_params[DARTFile.Params.bullseye]=bullseye;
+                            auto tid = locate(task_name);
+                            if(tid != Tid.init){
+                                send(tid, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize);
                             }
                         }
-                    }
 
-                    void modifyDart(){
-                        HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
-                        scope recorder_doc=receiver.params[DARTFile.Params.recorder].get!Document;
-                        scope recorder=DARTFile.Recorder(net, recorder_doc);
-                        immutable bullseye=dart.modify(recorder);
-                        auto hibon_params=new HiBON;
-                        hibon_params[DARTFile.Params.bullseye]=bullseye;
-                        auto tid = locate(task_name);
-                        if(tid != Tid.init){
-                            send(tid, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize);
+                        if(method == DART.Quries.dartRead){
+                            readDart();
                         }
+                        else if(method == DART.Quries.dartModify){
+                            modifyDart();
+                        }
+                    },
+                    (immutable(Exception) e) {
+                        log.fatal(e.msg);
+                        stop=true;
+                        ownerTid.send(e);
+                    },
+                    (immutable(Throwable) t) {
+                        log.fatal(t.msg);
+                        stop=true;
+                        ownerTid.send(t);
                     }
+                );
 
-                    if(method == DART.Quries.dartRead){
-                        readDart();
+                connectionPool.tick();
+                readPool.tick();
+                discoveryService.tick();
+                if(opts.dart.synchronize){
+                    syncPool.tick();
+                    if(discoveryService.isReady && syncPool.isReady){
+                        syncPool.start(discoveryService.node_addrses);
+                        state.setState(DartSynchronizeState.SYNCHRONIZING);
                     }
-                    else if(method == DART.Quries.dartModify){
-                        modifyDart();
+                    if(syncPool.isOver){
+                        syncPool.stop;
+                        log("Start replay journals with: %d journals", DartSynchronizationPool!(StdHandlerPool).P2pSynchronizer.journals.length);
+                        state.setState(DartSynchronizeState.REPLAYING_JOURNALS);
                     }
-                },
-                (immutable(Exception) e) {
-                    log.fatal(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                },
-                (immutable(Throwable) t) {
-                    log.fatal(t.msg);
-                    stop=true;
-                    ownerTid.send(t);
+                    if(syncPool.isError){
+                        syncPool.start(discoveryService.node_addrses);
+                        state.setState(DartSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
+                    }
                 }
-            );
-
-            readPool.tick();
-            discoveryService.tick();
-            if(opts.dart.synchronize){
-                syncPool.tick();
-                if(discoveryService.isReady && syncPool.isReady){
-                    syncPool.start(discoveryService.node_addrses);
-                    state.setState(DartSynchronizeState.SYNCHRONIZING);
+                if(state.checkState(DartSynchronizeState.REPLAYING_JOURNALS)){
+                    if(!journalReplayFiber.empty){
+                        journalReplayFiber.call;
+                    }else{
+                        log("Start replay recorders with: %d recorders", recorders.length);
+                        connectionPool.closeAll();
+                        state.setState(DartSynchronizeState.REPLAYING_RECORDERS);
+                    }
                 }
-                if(syncPool.isOver){
-                    syncPool.stop;
-                    log("Start replay journals with: %d journals", P2pSynchronizer.journals.length);
-                    state.setState(DartSynchronizeState.REPLAYING_JOURNALS);
+                if(state.checkState(DartSynchronizeState.REPLAYING_RECORDERS)){
+                    if(!recorderReplayFiber.empty){
+                        recorderReplayFiber.call;
+                    }else{
+                        recorderReplayFiber.reset();
+                        dart.dump(true);
+                        log("DART generated: bullseye: %s", dart.fingerprint.toHexString);
+                        state.setState(DartSynchronizeState.READY);
+                    }
                 }
-                if(syncPool.isError){
-                    syncPool.start(discoveryService.node_addrses);
-                    state.setState(DartSynchronizeState.SYNCHRONIZING);
-                }
+            }catch(Exception e){
+                log("Iteration exception: %s", e);
             }
-            if(state.checkState(DartSynchronizeState.REPLAYING_JOURNALS)){
-                if(!journalReplayFiber.empty){
-                    journalReplayFiber.call;
-                }else{
-                    log("Start replay recorders with: %d recorders", recorders.length);
-                    state.setState(DartSynchronizeState.REPLAYING_RECORDERS);
-                }
+            catch(Throwable t) {
+                log("Iteration throwable: %s", t);
             }
-            if(state.checkState(DartSynchronizeState.REPLAYING_RECORDERS)){
-                if(!recorderReplayFiber.empty){
-                    recorderReplayFiber.call;
-                }else{
-                    recorderReplayFiber.reset();
-                    dart.dump(true);
-                    log("DART generated: bullseye: %s", dart.fingerprint.toHexString);
-                    state.setState(DartSynchronizeState.READY);
-                }
-            }
-            stdout.flush();
         }
     }catch(Exception e){
-        writefln("EXCEPTION: %s", e);
+        log("EXCEPTION: %s", e);
+    }
+    catch(Throwable t) {
+        log("THROWABLE: %s", t);
     }
 }

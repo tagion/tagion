@@ -58,7 +58,10 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
                 }
         }
         node.listen(pid, &StdHandlerCallback, cast(string) task_name, opts.dart.subs.host.timeout.msecs, cast(uint) opts.dart.subs.host.max_size);
-        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
+        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.subs.host.timeout.msecs);
+
+        // auto dartSyncTid = locate(opts.dart.sync.task_name);
+
         while(!stop) {
             receive(
                     &handleControl,
@@ -74,6 +77,9 @@ void dartServiceTask(immutable(Options) opts, shared(p2plib.Node) node) {
                         log("DS: received recorder");
                         connectionPool.broadcast(recorder.toHiBON.serialize); //+save to journal etc..
                         // if not ready/started => send error
+                        // if(dartSyncTid != Tid.init){
+                        //     send(dartSyncTid, recorder);
+                        // }
                     },
                     (immutable(Exception) e) {
                         log.fatal(e.msg);
