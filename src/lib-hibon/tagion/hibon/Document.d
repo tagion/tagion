@@ -56,7 +56,7 @@ static assert(uint.sizeof == 4);
         return cast(uint)(this[].walkLength);
     }
 
-    alias ErrorCallback =void function(ref scope const(Element));
+    alias ErrorCallback = void delegate(ref scope const(Element));
 
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
         const(Element)* previous;
