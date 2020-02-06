@@ -1,5 +1,5 @@
 module tagion.hibon.HiBONRecord;
-import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual;
+//import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual;
 import tagion.hibon.HiBONBase : ValueT;
 
 import tagion.hibon.HiBON : HiBON;
@@ -14,6 +14,7 @@ struct Label {
 }
 
 template GetLabel(alias member) {
+    import std.traits : getUDAs, hasUDA;
     static if (hasUDA!(member, Label)) {
         enum GetLabel=getUDAs!(member, Label); //[0].name;
     }
@@ -23,8 +24,11 @@ template GetLabel(alias member) {
 }
 
 mixin template HiBONRecord() {
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual;
+    import std.typecons : TypedefType;
     import tagion.hibon.HiBONException : check;
     import tagion.Message : message;
+    import std.format;
     HiBON toHiBON() {
         auto hibon= new HiBON;
         foreach(i, m; this.tupleof) {
