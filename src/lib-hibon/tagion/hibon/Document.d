@@ -56,13 +56,23 @@ static assert(uint.sizeof == 4);
         return cast(uint)(this[].walkLength);
     }
 
-    alias ErrorCallback = void delegate(ref scope const(Element));
+    alias ErrorCallback = void delegate(scope const(Element) current,
+        scope const(Element) previous);
 
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
-        const(Element)* previous;
+//        const(Element)* previous;
+        import std.stdio;
+        auto previous=this[];
+        bool not_first;
         foreach(ref e; this[]) {
             Element.ErrorCode error_code;
-            if (!previous && !less_than(previous.key, e.key)) {
+            if(not_first) {
+                //   previous.popFront;
+                writefln("previous.key=%s", previous.front.key);
+            }
+            if (not_first && !less_than(previous.front.key, e.key)) {
+
+                writefln("previous.key=%s e.key=%s", previous.front.key, e.key);
                 error_code = Element.ErrorCode.KEY_ORDER;
             }
             else if ( e.type is Type.DOCUMENT ) {
@@ -73,61 +83,25 @@ static assert(uint.sizeof == 4);
             }
             if ( error_code !is Element.ErrorCode.NONE ) {
                 if ( error_callback ) {
-                    error_callback(e);
+                    error_callback(e, previous.front);
                 }
                 return error_code;
             }
+            if(not_first) {
+                previous.popFront;
+            }
+            not_first=true;
+
+            writefln("e.key=%s", e.key);
+            // previous=&e;
+            writefln("\tprevious.key=%s", previous.front.key);
+
         }
         return Element.ErrorCode.NONE;
     }
 
     bool isInOrder() const {
         return valid() is Element.ErrorCode.NONE;
-    }
-
-    version(none)
-    void toJSON(T, string INDENT="  ", string EOL="\n", string SPACE=" ")(T stream, string indent=null) {
-        enum BETWEEN=","~EOL;
-        bool first=true;
-        void print(string key, string element_type, string element_text) {
-            stream.writef("%s%s%s:%s{%s", indent, key, SPACE, SPACE, EOL);
-            stream.writef("%s%s$type%s:%s%s%s", indent, INDENT, SPACE, SPACE, element_type, BETWEEN);
-            string text;
-            e.as(text);
-            stream.writef("%s%s$type%s:%s%s%s", indent, INDENT, SPACE, SPACE, element_text, EOL);
-            stream.writef("%s}", indent);
-        }
-        foreach(ref e; this[]) {
-            if ( !first ) {
-                stream.writef("%s", BETWEEN);
-            }
-            first = false;
-            if (e.type is Type.DOCUMENT) {
-                e.get!(Document).toJSON(stream);
-            }
-            else {
-            CaseType:
-                switch(e.type) {
-                    static foreach(E; EnumMembers!Type) {
-                        static if (isHiBONType!E) {
-                        case E:
-                            string text;
-                            e.as(text);
-                            alias BaseT = Value.TypeT!E;
-                            static if ( isNumeric!BaseT || is(Unqual!BaseT == bool) || isArray(E) ) {
-                                print(e.key, e.type.to!string, text);
-                            }
-                            else {
-                                print(e.key, e.type.to!string, '"'~text~'"');
-                            }
-                            break CaseType;
-                        }
-                    }
-                default:
-                    print(e.key, cast(ubyte)(e.type).to!string, format("\"Bad data type\""));
-                }
-            }
-        }
     }
 
     @safe
@@ -859,7 +833,7 @@ static assert(uint.sizeof == 4);
             */
             @trusted
                 ErrorCode valid() {
-                        enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + uint.sizeof;
+                enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + uint.sizeof;
 
                 with(ErrorCode) {
                     if ( type is Type.DOCUMENT ) {
@@ -880,7 +854,12 @@ static assert(uint.sizeof == 4);
                     default:
                         return INVALID_TYPE;
                     }
-                    if ( size < data.length ) {
+                    if ( size > data.length ) {
+                        debug {
+                            import std.stdio;
+                            import std.exception;
+                            assumeWontThrow(writefln("size=%d data.length=%d", size, data.length));
+                        }
                         return OVERFLOW;
                     }
                     if ( .isArray(type) ) {
