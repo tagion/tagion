@@ -33,6 +33,7 @@ alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
 static bool inRange(ref ushort sector, ushort from_sector, ushort to_sector) pure nothrow  {
+    if(from_sector == to_sector) return true;
     immutable ushort sector_origin=(sector-from_sector) & ushort.max;
     immutable ushort to_origin=(to_sector-from_sector) & ushort.max;
     return ( sector_origin < to_origin );    
@@ -110,7 +111,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         log("DART initialized with angle from: %d to: %d", from_ang, to_ang);
 
         if (opts.dart.generate) {
-            auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings, from_ang, to_ang);
+            auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings);
             log("DART generated: bullseye: %s", fp.cutHex);
             dart.dump;
         }
@@ -132,8 +133,8 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         ownerTid.send(Control.LIVE);
  
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.sync.host.timeout.msecs);
-
-        auto syncPool = new DartSynchronizationPool!StdHandlerPool(dart, node, connectionPool, opts);
+        auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts);
+        auto syncPool = new DartSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors, opts);
         auto discoveryService = DiscoveryService(node, opts);
 
         scope(exit){
@@ -150,7 +151,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         }
         alias JournalReplay =  ReplayFiber!(string, (DART dart, string journal)=> dart.replay(journal));
         alias RecorderReplay = ReplayFiber!(immutable(DARTFile.Recorder), (DART dart, immutable(DARTFile.Recorder) recorder)=> dart.modify(cast(DARTFile.Recorder) recorder));
-        JournalReplay journalReplayFiber= new JournalReplay(dart, DartSynchronizationPool!(StdHandlerPool).P2pSynchronizer.journals);
+        JournalReplay journalReplayFiber= new JournalReplay(dart, P2pSynchronizationFactory.P2pSynchronizer.journals);
         RecorderReplay recorderReplayFiber = new RecorderReplay(dart, recorders);
 
         auto readPool = new StdHandlerPool!(ReadRequestHandler, uint)(opts.dart.commands.read_timeout.msecs);
@@ -160,7 +161,12 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         hrpc.net = net;
         while(!stop) {
             try{
-                receiveTimeout(opts.dart.sync.tickTimeout.msecs,
+                const tick_timeout = state.checkState(
+                    DartSynchronizeState.REPLAYING_JOURNALS, 
+                    DartSynchronizeState.REPLAYING_RECORDERS)
+                    ? opts.dart.sync.replay_tick_timeout.msecs 
+                    : opts.dart.sync.tick_timeout.msecs;
+                receiveTimeout(tick_timeout,
                     &handleControl,
                     (immutable(DARTFile.Recorder) recorder){
                         log("DSS: recorder received");
@@ -233,14 +239,14 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                                     continue fpIterator;
                                 }else{
                                     foreach(address, fps; remote_fp_requests){
-                                        if(sector.inRange(address.from_ang,address.to_ang)){
+                                        if(sector.inRange(address.sector.from_sector,address.sector.to_sector)){
                                             fps~=fp;
                                             remote_fp_requests[address] = fps;
                                             continue fpIterator;
                                         }
                                     }
                                     foreach(id, address; DiscoveryService.node_addrses){
-                                        if(sector.inRange(address.from_ang, address.to_ang)){
+                                        if(sector.inRange(address.sector.from_sector, address.sector.to_sector)){
                                             remote_fp_requests[address] = [fp];
                                             continue fpIterator;
                                         }
@@ -320,16 +326,18 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                 if(opts.dart.synchronize){
                     syncPool.tick();
                     if(discoveryService.isReady && syncPool.isReady){
-                        syncPool.start(discoveryService.node_addrses);
+                        sync_factory.setNodeTable(discoveryService.node_addrses);
+                        syncPool.start(sync_factory);
                         state.setState(DartSynchronizeState.SYNCHRONIZING);
                     }
                     if(syncPool.isOver){
                         syncPool.stop;
-                        log("Start replay journals with: %d journals", DartSynchronizationPool!(StdHandlerPool).P2pSynchronizer.journals.length);
+                        log("Start replay journals with: %d journals", P2pSynchronizationFactory.P2pSynchronizer.journals.length);
                         state.setState(DartSynchronizeState.REPLAYING_JOURNALS);
                     }
                     if(syncPool.isError){
-                        syncPool.start(discoveryService.node_addrses);
+                        sync_factory.setNodeTable(discoveryService.node_addrses);
+                        syncPool.start(sync_factory);
                         state.setState(DartSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
                     }
                 }
