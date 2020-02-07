@@ -41,6 +41,9 @@ class StdHashNet : HashNet {
     Buffer calcHash(const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest.digest;
+        // static if (hasMember!(data, "serialize")) {
+
+        // }
         return digest!SHA256(data).idup;
     }
 
@@ -71,6 +74,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
         immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
         void tweakMul(string tweek_code, ref ubyte[] tweak_privkey);
         void tweakAdd(string tweek_code, ref ubyte[] tweak_privkey);
+        Buffer mask(const(ubyte[]) _mask) const;
     }
 
     protected SecretMethods _secret;
@@ -121,6 +125,9 @@ class StdSecureNet : StdHashNet, SecureNet  {
         _secret.tweakMul(tweak_code, tweak_privkey);
     }
 
+    Buffer mask(const(ubyte[]) _mask) const {
+        return _secret.mask(_mask);
+    }
 
     @trusted
     void drive(string tweak_code, shared(SecureNet) secure_net)
@@ -211,6 +218,17 @@ class StdSecureNet : StdHashNet, SecureNet  {
                         auto data = hmac.finish.dup;
                         _crypt.privKeyTweakAdd(privkey, data, tweak_privkey);
                     });
+            }
+            Buffer mask(const(ubyte[]) _mask) const {
+                import std.algorithm.iteration : sum;
+                check(sum(_mask) != 0, ConsensusFailCode.SECURITY_MASK_VECTOR_IS_ZERO);
+                Buffer result;
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                        import tagion.utils.Miscellaneous : xor;
+                        auto data = xor(privkey, _mask);
+                        result=calcHash(calcHash(data));
+                    });
+                return result;
             }
         }
         _secret = new LocalSecret;

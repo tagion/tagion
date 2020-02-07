@@ -24,7 +24,7 @@ struct Package {
     immutable ExchangeState type;
     immutable(ubyte[]) signature;
 
-    this(GossipNet net, const(HiBON) block,  ExchangeState type) {
+    this(GossipNet net, const(HiBON) block, ExchangeState type) {
         this.block=block;
         this.type=type;
         this.pubkey=net.pubkey;
@@ -109,6 +109,8 @@ interface SecureNet : HashNet {
     void generateKeyPair(string passphrase);
     void drive(string tweak_code, shared(SecureNet) secure_net);
     void drive(string tweak_code, ref ubyte[] tweak_privkey);
+    Buffer mask(const(ubyte[]) _mask) const;
+
 }
 
 @safe
