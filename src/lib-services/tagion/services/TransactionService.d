@@ -26,9 +26,9 @@ class HiRPCNet : StdSecureNet {
     this(string passphrase) {
         super();
         generateKeyPair(passphrase);
-        import tagion.utils.Miscellaneous;
-        import tagion.Base;
-        writefln("public=%s", (cast(Buffer)pubkey).toHexString);
+        // import tagion.utils.Miscellaneous;
+        // import tagion.Base;
+        // writefln("public=%s", (cast(Buffer)pubkey).toHexString);
     }
 }
 
