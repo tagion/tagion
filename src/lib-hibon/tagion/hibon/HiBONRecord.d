@@ -29,7 +29,7 @@ mixin template HiBONRecord() {
     import tagion.hibon.HiBONException : check;
     import tagion.Message : message;
     import std.format;
-    HiBON toHiBON() {
+    HiBON toHiBON() const {
         auto hibon= new HiBON;
         foreach(i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
