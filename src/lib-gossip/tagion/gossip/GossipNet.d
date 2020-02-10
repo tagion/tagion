@@ -27,18 +27,24 @@ import tagion.services.LoggerService;
 
 void scramble(scope ref ubyte[] data, scope ubyte[] xor=null) @safe {
     import std.random;
-    auto gen1 = Mt19937(unpredictableSeed);
-    foreach(ref s; data) {
-        s=gen1.front & ubyte.max;
+    auto gen = Mt19937(unpredictableSeed);
+    foreach(ref s; data) { //, gen1, StoppingPolicy.shortest)) {
+        s=gen.front & ubyte.max;
+        gen.popFront;
     }
-    foreach(i, ref s; xor) {
-        s^=data[i];
+    foreach(i, x; xor) {
+        data[i]^=x;
     }
 }
 
 @safe
 class StdHashNet : HashNet {
-    Buffer calcHash(const(ubyte[]) data) const {
+    protected enum HASH_SIZE=32;
+    uint hashSize() const pure nothrow {
+        return HASH_SIZE;
+    }
+
+    Buffer calcHash(scope const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest.digest;
         // static if (hasMember!(data, "serialize")) {

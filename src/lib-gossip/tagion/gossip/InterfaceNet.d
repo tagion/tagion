@@ -79,7 +79,8 @@ interface NetCallbacks : EventMonitorCallbacks {
 
 @safe
 interface HashNet {
-    Buffer calcHash(const(ubyte[]) data) const;
+    uint hashSize() const pure nothrow;
+    Buffer calcHash(scope const(ubyte[]) data) const;
 }
 
 @safe
