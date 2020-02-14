@@ -77,7 +77,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             log("------Error Stop Dart Sync service-----");
             ownerTid.prioritySend(Control.END);
         }
-        immutable filename = fileId!(DART)(opts.dart.name).fullpath;
+        immutable filename = opts.dart.path.length==0 ? fileId!(DART)(opts.dart.name).fullpath: opts.dart.path;
         if (opts.dart.initialize) {
             DARTFile.create_dart(filename);
         }
@@ -91,10 +91,15 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         log("DART initialized with angle from: %s", sector_range);
 
         if (opts.dart.generate) {
+            writeln("start generating: ", dart.sectors);
             auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings);
             log("DART generated: bullseye: %s", fp.cutHex);
             dart.dump;
+        }else{
+            dart.dump;
+            log("DART bullseye: %s", dart.fingerprint.cutHex);
         }
+
 
         node.listen(pid, &StdHandlerCallback, cast(string) task_name, opts.dart.sync.host.timeout.msecs, cast(uint) opts.dart.sync.host.max_size);
         scope(exit){
@@ -120,7 +125,8 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts);
-        auto syncPool = new DartSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors, journalReplayFiber, opts);
+        // auto fast_sync_factory = new FastSynchronizationFactory(dart,node, connectionPool, opts);
+        auto syncPool = new DartSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint), true)(dart.sectors, journalReplayFiber, opts);
         auto discoveryService = DiscoveryService(node, opts);
 
         scope(exit){
@@ -180,6 +186,8 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                             auto received = hrpc.receive(doc);
                             auto request = dart(received);
                             auto tosend = hrpc.toHiBON(request).serialize;
+                            import tagion.hibon.HiBONJSON;
+                            writeln(Document(tosend).toJSON);
                             connectionPool.send(resp.key, tosend);
                             // log("DSS: Sended response to connection: %s", resp.key);
                         }
