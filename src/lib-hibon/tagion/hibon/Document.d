@@ -60,19 +60,11 @@ static assert(uint.sizeof == 4);
         scope const(Element) previous);
 
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
-//        const(Element)* previous;
-        import std.stdio;
         auto previous=this[];
         bool not_first;
         foreach(ref e; this[]) {
             Element.ErrorCode error_code;
-            if(not_first) {
-                //   previous.popFront;
-                writefln("previous.key=%s", previous.front.key);
-            }
             if (not_first && !less_than(previous.front.key, e.key)) {
-
-                writefln("previous.key=%s e.key=%s", previous.front.key, e.key);
                 error_code = Element.ErrorCode.KEY_ORDER;
             }
             else if ( e.type is Type.DOCUMENT ) {
@@ -91,11 +83,6 @@ static assert(uint.sizeof == 4);
                 previous.popFront;
             }
             not_first=true;
-
-            writefln("e.key=%s", e.key);
-            // previous=&e;
-            writefln("\tprevious.key=%s", previous.front.key);
-
         }
         return Element.ErrorCode.NONE;
     }
