@@ -419,14 +419,10 @@ unittest {
 }
 
 @safe bool isArray(R)(R keys) {
-    import std.stdio;
-//        auto range=keys;
-    writefln("keys=%s", keys);
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {
             uint current_index;
             if (is_index(keys.front, current_index)) {
-                writefln("previous_index=%d current_index=%d", previous_index, current_index);
                 if (previous_index+1 is current_index) {
                     keys.popFront;
                     return check_array_index(current_index);
@@ -439,7 +435,6 @@ unittest {
     if (!keys.empty) {
         uint previous_index=uint.max;
         if (is_index(keys.front, previous_index) && (previous_index is 0)) {
-            writefln("previous_index=%d", previous_index);
             keys.popFront;
             return check_array_index(previous_index);
         }

@@ -21,6 +21,9 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 
+import std.stdio;
+import std.exception;
+
 static assert(uint.sizeof == 4);
 
 @safe struct Document {
@@ -828,16 +831,23 @@ static assert(uint.sizeof == 4);
                     if ( .isArray(type) ) {
                         immutable binary_array_pos = valuePos+uint.sizeof;
                         immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
+                    ArrayTypeCase:
                         switch(type) {
                             static foreach(E; EnumMembers!Type) {
                                 static if ( .isArray(E) && !isNative(E) ) {
                                 case E:
                                     alias T = Value.TypeT!E;
-                                    static if ( is(T : U[], U) ) {
+                                    static if ( is(T == U[], U) ) {
                                         if ( byte_size % U.sizeof !is 0 ) {
+
+                                            debug {
+                                                assumeWontThrow(writefln("E=%s key=%s type=%s T=%s byte_size=%d U.sizeof=%d %d",
+                                                        E, key, type, T.stringof, byte_size, U.sizeof, byte_size % U.sizeof));
+                                            }
                                             return ARRAY_SIZE_BAD;
                                         }
                                     }
+                                    break ArrayTypeCase;
                                 }
                             }
                         default:
