@@ -139,7 +139,6 @@ static assert(uint.sizeof == 4);
         }
     }
 
-
     Range opSlice() const {
         return Range(data);
     }
@@ -154,33 +153,11 @@ static assert(uint.sizeof == 4);
     }
 
     bool isArray() const {
-        auto range=this[];
-        bool check_array_index(const uint previous_index) {
-            if (!range.empty) {
-                uint current_index;
-                if (is_index(range.front.key, current_index)) {
-                    range.popFront;
-                    if (previous_index+1 is current_index) {
-                        return check_array_index(current_index);
-                    }
-                }
-                return false;
-            }
-            return true;
-        }
-        if (!range.empty) {
-            uint previous_index;
-            if (is_index(range.front.key, previous_index)) {
-                return check_array_index(previous_index);
-            }
-        }
-        return false;
+        return .isArray(keys);
     }
 
     bool hasElement(in string key) const {
-
         return !opBinaryRight!("in")(key).isEod();
-//        return !opIn_r(key).isEod();
     }
 
     bool hasElement(Index)(in Index index) const if (isIntegral!Index) {

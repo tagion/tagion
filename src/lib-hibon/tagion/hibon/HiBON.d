@@ -319,32 +319,7 @@ import tagion.Base : CastTo;
     }
 
     bool isArray() const {
-        import std.stdio;
-        auto range=keys;
-        writefln("keys=%s", keys);
-        bool check_array_index(const uint previous_index) {
-            if (!range.empty) {
-                uint current_index;
-                if (is_index(range.front, current_index)) {
-                    writefln("previous_index=%d current_index=%d", previous_index, current_index);
-                    if (previous_index+1 is current_index) {
-                        range.popFront;
-                        return check_array_index(current_index);
-                    }
-                }
-                return false;
-            }
-            return true;
-        }
-        if (!range.empty) {
-            uint previous_index=uint.max;
-            if (is_index(range.front, previous_index) && (previous_index is 0)) {
-                writefln("previous_index=%d", previous_index);
-                range.popFront;
-                return check_array_index(previous_index);
-            }
-        }
-        return false;
+        return .isArray(keys);
     }
 
     unittest {
@@ -369,7 +344,6 @@ import tagion.Base : CastTo;
             assert(hibon.isArray);
             hibon["4"]=2;
             assert(!hibon.isArray);
-
         }
     }
 
