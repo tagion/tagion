@@ -41,7 +41,6 @@ mixin template HiBONRecord() {
                     enum name=basename!(this.tupleof[i]);
                 }
                 static if (name.length) {
-                    pragma(msg, name);
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     static if (__traits(compiles, m.toHiBON)) {
@@ -64,7 +63,6 @@ mixin template HiBONRecord() {
                                     array[index]=e;
                                 }
                                 hibon[name]=array;
-                                break;
                             }
                             else {
                                 static assert(is(U == immutable), format("The array must be immutable not %s but ",
