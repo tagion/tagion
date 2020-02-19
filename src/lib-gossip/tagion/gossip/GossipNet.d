@@ -152,7 +152,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
         }
     }
 
-    protected void createKeyPair(ref ubyte[] privkey)
+    void createKeyPair(ref ubyte[] privkey)
         in {
             assert(_crypt.secKeyVerify(privkey));
             assert(_secret is null);

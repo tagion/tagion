@@ -107,6 +107,7 @@ interface SecureNet : HashNet {
     // The message is a hash of the 'real' message
     immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
     immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) );
+    void createKeyPair(ref ubyte[] privkey);
     void generateKeyPair(string passphrase);
     void drive(string tweak_code, shared(SecureNet) secure_net);
     void drive(string tweak_code, ref ubyte[] tweak_privkey);
