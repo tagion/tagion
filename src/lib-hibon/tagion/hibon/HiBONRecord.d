@@ -81,6 +81,7 @@ mixin template HiBONRecord() {
     }
 
     this(const Document doc) {
+        import std.stdio;
         foreach(i, ref m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 static if (hasUDA!(this.tupleof[i], Label)) {
@@ -104,8 +105,10 @@ mixin template HiBONRecord() {
                     static if (is(TypedefType!BaseT == struct)) {
                         pragma(msg, "@@@ ", TypedefType!BaseT);
                         const dub_doc = Document(doc[name].get!Document);
-                        mixin(code);
-//                        this.tupleof[i]=Type(dub_doc;
+                        pragma(msg, code, " : ", BaseT.stringof);
+                        enum doc_code=format("%s=MemberT(dub_doc);", member_name);
+                        mixin(doc_code);
+                        //m=MemberT(dub_doc);
                     }
                     else static if (is(BaseT == class)) {
                         const dub_doc = Document(doc[name].get!Document);
@@ -119,7 +122,9 @@ mixin template HiBONRecord() {
                         static if (is(BaseT:U[], U)) {
                             static if (Document.Value.hasType!U) {
                                 MemberT array;
+                                writefln("Type=%s", doc[name].type);
                                 auto doc_array=doc[name].get!Document;
+                                writefln("doc_array.keys=%s %s", doc_array.keys, doc_array.isArray);
                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
                                 foreach(e; doc_array[]) {
                                     array~=e.get!U;

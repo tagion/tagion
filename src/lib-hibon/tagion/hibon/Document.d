@@ -157,7 +157,6 @@ static assert(uint.sizeof == 4);
         auto range=this[];
         bool check_array_index(const uint previous_index) {
             if (!range.empty) {
-
                 uint current_index;
                 if (is_index(range.front.key, current_index)) {
                     range.popFront;

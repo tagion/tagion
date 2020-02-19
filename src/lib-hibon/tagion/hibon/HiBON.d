@@ -23,46 +23,8 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
+import tagion.Message : message;
 import tagion.Base : CastTo;
-
-version(none)
-@trusted
-string toHex(in ubyte[] nums) pure nothrow {
-    immutable static lowerHexDigits = "0123456789abcdef";
-
-    char[] result = new char[](nums.length * 2);
-    foreach (i, num; nums) {
-        immutable index = i * 2;
-        result[index]     = lowerHexDigits[(num & 0xf0) >> 4];
-        result[index + 1] = lowerHexDigits[num & 0x0f];
-    }
-
-    return assumeUnique(result);
-}
-
-
-version(none)
-@safe
-ubyte[] fromHex(in string hex) pure nothrow {
-    static ubyte toNum(in char c) pure nothrow
-    {
-        if ('0' <= c && c <= '9')
-            return cast(ubyte)(c - '0');
-        if ('a' <= c && c <= 'f')
-            return cast(ubyte)(c - 'a' + 10);
-        assert(false, "Out of hex: " ~ c);
-    }
-
-    ubyte[] result = new ubyte[](hex.length / 2);
-
-    foreach (i, ref num; result) {
-        immutable index = i * 2;
-        num = cast(ubyte)((toNum(hex[index]) << 4) | toNum(hex[index + 1]));
-    }
-
-    return result;
-}
-
 
 @safe class HiBON {
     alias Value=ValueT!(true, HiBON,  Document);
@@ -86,6 +48,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
         return buffer.idup;
     }
 
+    @trusted
     private void append(ref ubyte[] buffer, ref size_t index) const pure {
         immutable size_index = index;
         buffer.binwrite(uint.init, &index);
@@ -153,9 +116,9 @@ ubyte[] fromHex(in string hex) pure nothrow {
             return result;
         }
 
-        T get(T)() inout {
+        const(T) get(T)() const {
             enum E = Value.asType!T;
-            .check(E is type, format("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
+            .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
             return value.by!E;
         }
 
@@ -212,6 +175,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
             }
         }
 
+        @trusted
         protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index)  const pure if (isNativeArray(E)) {
             immutable size_index = index;
             buffer.binwrite(uint.init, &index);
@@ -292,7 +256,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
     }
 
     void opIndexAssign(T)(T x, in string key) {
-        .check(is_key_valid(key), format("Key is not a valid format '%s'", key));
+        .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
         _members.insert(new_member);
     }
@@ -300,21 +264,21 @@ ubyte[] fromHex(in string hex) pure nothrow {
     void opIndexAssign(T)(T x, const size_t index) {
         const key=index.to!string;
         static if(!is(size_t == uint) ) {
-            .check(index <= uint.max, format("Index out of range (index=%d)", index));
+            .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         opIndexAssign(x, key);
     }
 
     const(Member) opIndex(in string key) const {
         auto range=_members.equalRange(Member.search(key));
-        .check(!range.empty, format("Member '%s' does not exist", key) );
+        .check(!range.empty, message("Member '%s' does not exist", key) );
         return range.front;
     }
 
     const(Member) opIndex(const size_t index) const {
         const key=index.to!string;
         static if(!is(size_t == uint) ) {
-            .check(index <= uint.max, format("Index out of range (index=%d)", index));
+            .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         return opIndex(key);
     }
@@ -352,6 +316,61 @@ ubyte[] fromHex(in string hex) pure nothrow {
     // Throws an std.conv.ConvException if the keys can not be convert to an uint
     auto indices() const {
         return map!"a.key.to!uint"(this[]);
+    }
+
+    bool isArray() const {
+        import std.stdio;
+        auto range=keys;
+        writefln("keys=%s", keys);
+        bool check_array_index(const uint previous_index) {
+            if (!range.empty) {
+                uint current_index;
+                if (is_index(range.front, current_index)) {
+                    writefln("previous_index=%d current_index=%d", previous_index, current_index);
+                    if (previous_index+1 is current_index) {
+                        range.popFront;
+                        return check_array_index(current_index);
+                    }
+                }
+                return false;
+            }
+            return true;
+        }
+        if (!range.empty) {
+            uint previous_index=uint.max;
+            if (is_index(range.front, previous_index) && (previous_index is 0)) {
+                writefln("previous_index=%d", previous_index);
+                range.popFront;
+                return check_array_index(previous_index);
+            }
+        }
+        return false;
+    }
+
+    unittest {
+        {
+            auto hibon=new HiBON;
+            assert(!hibon.isArray);
+
+            hibon["0"]=1;
+            assert(hibon.isArray);
+            hibon["1"]=2;
+            assert(hibon.isArray);
+            hibon["2"]=3;
+            assert(hibon.isArray);
+            hibon["x"]=3;
+            assert(!hibon.isArray);
+        }
+        {
+            auto hibon=new HiBON;
+            hibon["1"]=1;
+            assert(!hibon.isArray);
+            hibon["0"]=2;
+            assert(hibon.isArray);
+            hibon["4"]=2;
+            assert(!hibon.isArray);
+
+        }
     }
 
     unittest {
