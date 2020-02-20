@@ -1,4 +1,4 @@
-module tagion.utils.HiBONJSON;
+module tagion.hibon.HiBONJSON;
 
 //import std.stdio;
 
@@ -102,9 +102,12 @@ JSONValue toJSON(Document doc, bool hashsafe=true) {
 struct toJSONT(bool HASHSAFE) {
     @trusted
     static JSONValue opCall(const Document doc) {
-        import std.stdio;
         JSONValue result;
         immutable isarray=doc.isArray;
+        if (isarray) {
+            // Array needs to be initialized
+            result.array=null;
+        }
 //        writefln("HASHSAFE=%s",HASHSAFE);
         foreach(e; doc[]) {
             with(Type) {
@@ -117,6 +120,8 @@ struct toJSONT(bool HASHSAFE) {
                                 const sub_doc=e.by!E;
                                 auto doc_element=toJSONT(sub_doc);
                                 if ( isarray ) {
+                                    if (doc_element.type is JSONType.array) {
+                                    }
                                     result.array~=doc_element;
                                 }
                                 else {
@@ -147,7 +152,7 @@ struct toJSONT(bool HASHSAFE) {
                                 }
 
                                 if ( isarray ) {
-                                    result.array~=doc_element;
+                                    result.array~=JSONValue(doc_element);
                                 }
                                 else {
                                     result[e.key]=doc_element;
