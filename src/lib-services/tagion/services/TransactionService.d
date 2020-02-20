@@ -17,6 +17,7 @@ import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
+import tagion.script.StandardRecords : Contract, ContractType;
 
 import tagion.gossip.GossipNet : StdSecureNet;
 
@@ -64,18 +65,25 @@ void transactionServiceTask(immutable(Options) opts) {
             const params=hiprc_received.params;
             switch (method) {
             case "transaction":
-                pragma(msg, typeof(method).stringof);
-                pragma(msg, typeof(params).stringof);
-                auto source=params["script"].get!string;
-                auto src=ScriptParser(source);
-                Script script;
-                auto builder=ScriptBuilder(src[]);
-                builder.build(script);
+                // Should be EXTERNAL
+                try {
+                    auto contract=Contract!(ContractType.INTERNAL)(params);
+                    if (contract.valid) {
+                        auto source=params["script"].get!string;
+                        auto src=ScriptParser(source);
+                        Script script;
+                        auto builder=ScriptBuilder(src[]);
+                        builder.build(script);
 
-                auto sc=new ScriptContext(10, 10, 10);
-                sc.push(params["stack"].get!uint);
-                sc.trace=true;
-                script.execute("start", sc);
+                        auto sc=new ScriptContext(10, 10, 10);
+                        sc.push(params["stack"].get!uint);
+                        sc.trace=true;
+                        script.execute("start", sc);
+                    }
+                }
+                catch (TagionException e) {
+                    writeln("Bad contract:%s", e.msg);
+                }
                 break;
             default:
                 return true;
