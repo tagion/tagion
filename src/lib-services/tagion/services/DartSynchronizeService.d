@@ -22,7 +22,7 @@ import tagion.Base;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.dart.DARTSynchronization;
-
+version(unittest) import tagion.dart.BlockFile: fileId;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
