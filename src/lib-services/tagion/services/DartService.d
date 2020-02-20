@@ -38,10 +38,10 @@ import std.array;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range) {
+void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range, uint id) {
     try{
         setOptions(opts);
-        immutable task_name=opts.dart.task_name;
+        immutable task_name=opts.dart.task_name~to!string(id);;
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
@@ -62,25 +62,25 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
                     log.error("Bad Control command %s", ts);
                 }
         }
-        const is_active_node = opts.port == opts.dart.subs.masterPort;
-        Tid subscribeHandlerTid;
-        if(is_active_node){
-            node.listen(
-                opts.dart.subs.protocol_id,
-                &StdHandlerCallback,
-                opts.dart.subs.task_name,
-                opts.dart.subs.host.timeout.msecs,
-                cast(uint) opts.dart.subs.host.max_size
-            );
-            subscribeHandlerTid = spawn(&subscibeHandler, opts);
-        }
-        scope(exit){
-            if(is_active_node){
-                node.closeListener(opts.dart.subs.protocol_id);
-                send(subscribeHandlerTid, Control.STOP);
-                receiveOnly!Control;
-            }
-        }
+        // const is_active_node = opts.port == opts.dart.subs.masterPort;
+        // Tid subscribeHandlerTid;
+        // if(is_active_node){
+        //     node.listen(
+        //         opts.dart.subs.protocol_id,
+        //         &StdHandlerCallback,
+        //         opts.dart.subs.task_name,
+        //         opts.dart.subs.host.timeout.msecs,
+        //         cast(uint) opts.dart.subs.host.max_size
+        //     );
+        //     subscribeHandlerTid = spawn(&subscibeHandler, opts);
+        // }
+        // scope(exit){
+        //     if(is_active_node){
+        //         node.closeListener(opts.dart.subs.protocol_id);
+        //         send(subscribeHandlerTid, Control.STOP);
+        //         receiveOnly!Control;
+        //     }
+        // }
 
         node.listen(
             pid,
@@ -95,8 +95,7 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.host.timeout.msecs);
 
-        auto dartSyncTid = locate(opts.dart.sync.task_name);
-
+        auto dartSyncTid = locate(opts.dart.sync.task_name~to!string(id));
 
         auto net = new Net();
         net.drive(opts.dart.task_name, master_net);
@@ -140,7 +139,7 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
                     },
                     (immutable(DARTFile.Recorder) recorder){ //TODO: change to HiRPC
                         log("DS: received recorder");
-                        send(subscribeHandlerTid, recorder);
+                        // send(subscribeHandlerTid, recorder);
                     },
                     (Buffer data){
                         auto doc = Document(data);
@@ -210,7 +209,7 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
                                 foreach(addr, fps; remote_fp_requests){
                                     auto stream = node.connect(addr.address, [opts.dart.sync.protocol_id]);
                                     // connectionPool.add(stream.Identifier, stream);
-                                    stream.listen(&StdHandlerCallback, opts.dart.task_name, opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
+                                    stream.listen(&StdHandlerCallback, task_name, opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
                                     immutable foreign_data = requestData!(hirpc)(fps);
                                     stream.writeBytes(foreign_data);
                                 }

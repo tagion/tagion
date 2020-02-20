@@ -18,7 +18,11 @@ import tagion.gossip.InterfaceNet : SecureNet;
 import tagion.gossip.GossipNet : StdSecureNet;
 import tagion.services.ServiceNames : get_node_name;
 import tagion.TagionExceptions;
-
+import p2plib = p2p.node;
+import tagion.services.DartSynchronizeService;
+import tagion.dart.DARTSynchronization;
+import tagion.dart.DART;
+import std.conv;
 shared bool abort=false;
 version(SIG_SHORTDOWN){
 import core.stdc.signal;
@@ -78,6 +82,49 @@ void heartBeatServiceTask(immutable(Options) opts) {
     }
 
     stderr.writeln("@@@@@ Before node loop");
+    auto sector_range = DART.SectorRange(0,0);
+    Tid[] dart_sync_tids;
+    scope(exit){
+        log("Stop dart sync tasks", dart_sync_tids.length);
+        foreach(id, dart_sync_tid; dart_sync_tids){
+            log("!!!send stop to ", id);
+            send(dart_sync_tid, Control.STOP);
+            log("wait for response from", id);
+            const dartSyncControl = receiveOnly!Control;
+            log("received control ", dartSyncControl);
+        }
+    }
+    foreach (i; 0..opts.nodes) {
+        auto local_port = opts.port_base + i;
+        if(i==0){
+            local_port = opts.dart.sync.maxSlavePort;
+        }
+        auto node = new shared(p2plib.Node)("/ip4/0.0.0.0/tcp/" ~ to!string(local_port), 0);
+        auto master_net=new StdSecureNet;
+        synchronized(master_net) {
+            import std.format;
+            immutable passphrase=format("Secret_word_%d",i).idup;
+
+            master_net.generateKeyPair(passphrase);
+            shared shared_net=cast(shared)master_net;
+            auto dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet, opts, node, shared_net, sector_range, i);
+            dart_sync_tids ~= dart_sync_tid;
+        }
+        // dartTid = spawn(&dartServiceTask!MyFakeNet, local_options, node, shared_net, sector_range);
+    }
+    uint ready_counter = opts.nodes;
+    do{
+        receive(
+            (DartSynchronizeState state, uint id){
+                // writefln("!!received from %d state: %s", id, state);
+                if(state == DartSynchronizeState.READY){
+                    log("%d sync finished", id);
+                    ready_counter--;
+                }
+            }
+        );
+    }while(ready_counter>0);
+    log("All nodes synchronized");
     foreach(i;0..opts.nodes) {
         log("node=%s", i);
         stderr.writefln("node=%s", i);

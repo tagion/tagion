@@ -43,8 +43,10 @@ enum DartSynchronizeState{
 
 struct ServiceState(T) {
     mixin StateT!T;
-    this(T initial){
+    uint id;
+    this(T initial, uint id = 0){
         _state = initial;
+        this.id = id;
     }
     void setState(T state){
         _state = state;
@@ -56,16 +58,15 @@ struct ServiceState(T) {
     }
 
     void notifyOwner(){
-        send(ownerTid, _state);
+        send(ownerTid, _state, id);
     }
 }
 
-void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range) {
+void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range, uint id) {
     try{
-        auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING);
-        setOptions(opts);
-        immutable task_name=opts.dart.sync.task_name;
+        auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING, id);
         auto pid = opts.dart.sync.protocol_id;
+        const task_name = opts.dart.sync.task_name~to!string(id);
         log.register(task_name);
 
         log("-----Start Dart Sync service-----");
@@ -81,16 +82,16 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             immutable filename = opts.dart.path.length==0 ? fileId!(DART)(opts.dart.name).fullpath: opts.dart.path;
         }
         else {
-            immutable filename = opts.dart.path;
+            immutable filename = id!=0 ? opts.dart.path~to!string(id): opts.dart.path;
         }
-        if (opts.dart.initialize) {
+        if (opts.dart.initialize && id!=0) {
             enum BLOCK_SIZE=0x80;
             BlockFile.create(filename, DARTFile.stringof, BLOCK_SIZE);
         }
         log("Dart file created with filename: %s", filename);
 
         auto net = new Net();
-        net.drive(opts.dart.sync.task_name, master_net);
+        net.drive(task_name, master_net);
 
 
         auto dart = new DART(net, filename, sector_range.from_sector, sector_range.to_sector);
@@ -130,7 +131,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         auto recorderReplayFiber= new ReplayFiber!(immutable(DARTFile.Recorder))(&recorderReplayFunc);
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.sync.host.timeout.msecs);
-        auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts);
+        auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts,task_name);
         // auto fast_sync_factory = new FastSynchronizationFactory(dart,node, connectionPool, opts);
         auto syncPool = new DartSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint), true)(dart.sectors, journalReplayFiber, opts);
         auto discoveryService = DiscoveryService(node, opts);
@@ -141,8 +142,8 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             syncPool.stop;
         }
 
-        discoveryService.start();
-        if(opts.dart.synchronize) {
+        discoveryService.start(opts.dart.mdns.task_name~to!string(id));
+        if(opts.dart.synchronize && id!=0) {
             state.setState(DartSynchronizeState.WAITING);
         }else{
             state.setState(DartSynchronizeState.READY);
@@ -192,8 +193,8 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                             auto received = hrpc.receive(doc);
                             auto request = dart(received);
                             auto tosend = hrpc.toHiBON(request).serialize;
-                            import tagion.hibon.HiBONJSON;
-                            writeln(Document(tosend).toJSON);
+                            // import tagion.hibon.HiBONJSON;
+                            // writeln(Document(tosend).toJSON);
                             connectionPool.send(resp.key, tosend);
                             // log("DSS: Sended response to connection: %s", resp.key);
                         }
@@ -209,7 +210,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                         log("DSS: Received request from service: %s", taskName);
                         const doc = Document(data);
                         auto receiver = empty_hirpc.receive(doc);
-                        auto request = dart(receiver);
+                        auto request = dart(receiver, false);
                         auto tosend = empty_hirpc.toHiBON(request).serialize;
                         auto tid = locate(taskName);
                         if(tid != Tid.init){
@@ -230,7 +231,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
 
                 connectionPool.tick();
                 discoveryService.tick();
-                if(opts.dart.synchronize){
+                if(opts.dart.synchronize && id!=0){
                     syncPool.tick();
                     if(discoveryService.isReady && syncPool.isReady){
                         sync_factory.setNodeTable(discoveryService.node_addrses);
