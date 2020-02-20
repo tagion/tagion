@@ -17,7 +17,7 @@ import std.conv;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
-version(unittest) import tagion.dart.BlockFile : fileId;
+import tagion.dart.BlockFile : BlockFile;
 import tagion.Base;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -84,7 +84,8 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             immutable filename = opts.dart.path;
         }
         if (opts.dart.initialize) {
-            DARTFile.create_dart(filename);
+            enum BLOCK_SIZE=0x80;
+            BlockFile.create(filename, DARTFile.stringof, BLOCK_SIZE);
         }
         log("Dart file created with filename: %s", filename);
 
