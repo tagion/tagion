@@ -1,5 +1,6 @@
 module tagion.hibon.HiBONRecord;
 //import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual;
+import tagion.Base : basename;
 import tagion.hibon.HiBONBase : ValueT;
 
 import tagion.hibon.HiBON : HiBON;
@@ -28,6 +29,7 @@ mixin template HiBONRecord() {
     import std.typecons : TypedefType;
     import tagion.hibon.HiBONException : check;
     import tagion.Message : message;
+    import tagion.Base : basename;
     import std.format;
     HiBON toHiBON() const {
         auto hibon= new HiBON;
