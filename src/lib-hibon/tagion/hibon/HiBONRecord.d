@@ -25,7 +25,7 @@ template GetLabel(alias member) {
 }
 
 mixin template HiBONRecord() {
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual;
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
     import std.typecons : TypedefType;
     import tagion.hibon.HiBONException : check;
     import tagion.Message : message;
@@ -66,9 +66,16 @@ mixin template HiBONRecord() {
                                 }
                                 hibon[name]=array;
                             }
+                            else static if (hasMember!(U, "toHiBON")) {
+                                auto array=new HiBON;
+                                foreach(index, e; cast(BaseT)m) {
+                                    array[index]=e.toHiBON;
+                                }
+                                hibon[name]=array;
+                            }
                             else {
-                                static assert(is(U == immutable), format("The array must be immutable not %s but ",
-                                    BaseT.stringof, cast(immutable)U[].stringof));
+                                static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
+                                        BaseT.stringof, (immutable(U)[]).stringof));
                                 hibon[name]=cast(BaseT)m;
                             }
                         }
@@ -134,9 +141,21 @@ mixin template HiBONRecord() {
                                 m=array;
 //                                static assert(0, format("Special handling of array %s", MemberT.stringof));
                             }
+                            else static if (hasMember!(U, "toHiBON")) {
+                                MemberT array;
+                                auto doc_array=doc[name].get!Document;
+                                check(doc_array.isArray, message("Document array expected for %s member",  name));
+                                foreach(e; doc_array[]) {
+                                    const sub_doc=e.get!Document;
+                                    array~=U(sub_doc);
+                                }
+                                enum doc_array_code=format("%s=array;", member_name);
+                                pragma(msg, doc_array_code);
+                                mixin(doc_array_code);
+                            }
                             else {
-                                static assert(is(U == immutable), format("The array must be immutable not %s but ",
-                                    BaseT.stringof, cast(immutable)U[].stringof));
+                                static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
+                                        BaseT.stringof, cast(immutable(U)[]).stringof));
                                 mixin(code);
                             }
                         }
