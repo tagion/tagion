@@ -121,8 +121,11 @@ struct toJSONT(bool HASHSAFE) {
                                 auto doc_element=toJSONT(sub_doc);
                                 if ( isarray ) {
                                     if (doc_element.type is JSONType.array) {
+                                        result.array~=JSONValue(doc_element);
                                     }
-                                    result.array~=doc_element;
+                                    else {
+                                        result.array~=doc_element;
+                                    }
                                 }
                                 else {
                                     result[e.key]=doc_element;
