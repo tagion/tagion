@@ -84,14 +84,13 @@ void heartBeatServiceTask(immutable(Options) opts) {
     stderr.writeln("@@@@@ Before node loop");
     auto sector_range = DART.SectorRange(0,0);
     Tid[] dart_sync_tids;
-    scope(exit){
-        log("Stop dart sync tasks", dart_sync_tids.length);
+    scope(exit) {
+        log("---- Stop dart sync tasks(%d) ----", dart_sync_tids.length);
         foreach(id, dart_sync_tid; dart_sync_tids){
-            log("!!!send stop to ", id);
+            log("Send stop to %d dart_sync_service", id);
             send(dart_sync_tid, Control.STOP);
-            log("wait for response from", id);
             const dartSyncControl = receiveOnly!Control;
-            log("received control ", dartSyncControl);
+            log("received control %s from %d dart_sync_service", dartSyncControl, id);
         }
     }
     foreach (i; 0..opts.nodes) {
@@ -99,7 +98,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
         if(i==0){
             local_port = opts.dart.sync.maxSlavePort;
         }
-        auto node = new shared(p2plib.Node)("/ip4/0.0.0.0/tcp/" ~ to!string(local_port), 0);
+        auto p2pnode = new shared(p2plib.Node)("/ip4/0.0.0.0/tcp/" ~ to!string(local_port), 0);
         auto master_net=new StdSecureNet;
         synchronized(master_net) {
             import std.format;
@@ -107,7 +106,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
 
             master_net.generateKeyPair(passphrase);
             shared shared_net=cast(shared)master_net;
-            auto dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet, opts, node, shared_net, sector_range, i);
+            auto dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet, opts, p2pnode, shared_net, sector_range, i);
             dart_sync_tids ~= dart_sync_tid;
         }
         // dartTid = spawn(&dartServiceTask!MyFakeNet, local_options, node, shared_net, sector_range);
@@ -115,6 +114,9 @@ void heartBeatServiceTask(immutable(Options) opts) {
     uint ready_counter = opts.nodes;
     do{
         receive(
+            (Control control){
+
+            },
             (DartSynchronizeState state, uint id){
                 // writefln("!!received from %d state: %s", id, state);
                 if(state == DartSynchronizeState.READY){
