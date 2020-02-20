@@ -47,7 +47,7 @@ void transactionServiceTask(immutable(Options) opts) {
     HiRPC hirpc;
     immutable passphrase="Very secret password for the server";
     hirpc.net=new HiRPCNet(passphrase);
-        @safe bool relay(SSLRelay ssl_relay) {
+    @safe bool relay(SSLRelay ssl_relay) {
         immutable buffer = ssl_relay.receive;
         if (!buffer) {
             return true;
@@ -62,19 +62,24 @@ void transactionServiceTask(immutable(Options) opts) {
 
             const method=hiprc_received.message.method;
             const params=hiprc_received.params;
-            pragma(msg, typeof(method).stringof);
-            pragma(msg, typeof(params).stringof);
-            auto source=params["script"].get!string;
-            auto src=ScriptParser(source);
-            Script script;
-            auto builder=ScriptBuilder(src[]);
-            builder.build(script);
+            switch (method) {
+            case "transaction":
+                pragma(msg, typeof(method).stringof);
+                pragma(msg, typeof(params).stringof);
+                auto source=params["script"].get!string;
+                auto src=ScriptParser(source);
+                Script script;
+                auto builder=ScriptBuilder(src[]);
+                builder.build(script);
 
-            auto sc=new ScriptContext(10, 10, 10);
-            sc.push(params["stack"].get!uint);
-            sc.trace=true;
-            script.execute("start", sc);
-
+                auto sc=new ScriptContext(10, 10, 10);
+                sc.push(params["stack"].get!uint);
+                sc.trace=true;
+                script.execute("start", sc);
+                break;
+            default:
+                return true;
+            }
         }
 
         {
