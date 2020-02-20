@@ -17,7 +17,9 @@ import std.conv;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
-import tagion.dart.BlockFile : fileId;
+version(unittest) {
+    import tagion.dart.BlockFile : fileId;
+}
 import tagion.Base;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
