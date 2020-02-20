@@ -78,8 +78,8 @@ class StdSecureNet : StdHashNet, SecureNet  {
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
-        void tweakMul(string tweek_code, ref ubyte[] tweak_privkey);
-        void tweakAdd(string tweek_code, ref ubyte[] tweak_privkey);
+        void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
+        void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         Buffer mask(const(ubyte[]) _mask) const;
     }
 
@@ -123,9 +123,17 @@ class StdSecureNet : StdHashNet, SecureNet  {
         return _secret.sign(message);
     }
 
-    void drive(string tweak_code, ref ubyte[] tweak_privkey)
+    void drive(string tweak_word, ref ubyte[] tweak_privkey) {
+        import std.digest.sha : SHA256;
+        import std.string : representation;
+        scope hmac = HMAC!SHA256(tweak_word.representation);
+        auto data = hmac.finish.dup;
+        drive(data, tweak_privkey);
+    }
+
+    void drive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
         in {
-            assert(tweak_privkey >= 32);
+            assert(tweak_privkey.length >= 32);
         }
     do {
         _secret.tweakMul(tweak_code, tweak_privkey);
@@ -211,18 +219,18 @@ class StdSecureNet : StdHashNet, SecureNet  {
                     });
                 return result;
             }
-            void tweakMul(string tweek_code, ref ubyte[] tweak_privkey) {
+            void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        scope hmac = HMAC!SHA256(tweek_code.representation);
-                        auto data = hmac.finish.dup;
-                        _crypt.privKeyTweakMul(privkey, data, tweak_privkey);
+                        // scope hmac = HMAC!SHA256(tweek_code.representation);
+                        // auto data = hmac.finish.dup;
+                        _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
                     });
             }
-            void tweakAdd(string tweek_code, ref ubyte[] tweak_privkey) {
+            void tweakAdd(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        scope hmac = HMAC!SHA256(tweek_code.representation);
-                        auto data = hmac.finish.dup;
-                        _crypt.privKeyTweakAdd(privkey, data, tweak_privkey);
+                        // scope hmac = HMAC!SHA256(tweek_code.representation);
+                        // auto data = hmac.finish.dup;
+                        _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
                     });
             }
             Buffer mask(const(ubyte[]) _mask) const {
