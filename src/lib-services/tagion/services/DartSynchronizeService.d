@@ -28,6 +28,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.gossip.InterfaceNet: SecureNet;
 import tagion.communication.HiRPC;
+import tagion.script.StandardRecords;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
@@ -43,10 +44,8 @@ enum DartSynchronizeState{
 
 struct ServiceState(T) {
     mixin StateT!T;
-    uint id;
-    this(T initial, uint id = 0){
+    this(T initial){
         _state = initial;
-        this.id = id;
     }
     void setState(T state){
         _state = state;
@@ -58,15 +57,15 @@ struct ServiceState(T) {
     }
 
     void notifyOwner(){
-        send(ownerTid, _state, id);
+        send(ownerTid, _state);
     }
 }
 
-void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range, uint id) {
+void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range) {
     try{
-        auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING, id);
+        auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING);
         auto pid = opts.dart.sync.protocol_id;
-        const task_name = opts.dart.sync.task_name~to!string(id);
+        const task_name = opts.dart.sync.task_name;
         log.register(task_name);
 
         log("-----Start Dart Sync service-----");
@@ -82,9 +81,9 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             immutable filename = opts.dart.path.length==0 ? fileId!(DART)(opts.dart.name).fullpath: opts.dart.path;
         }
         else {
-            immutable filename = id!=0 ? opts.dart.path~to!string(id): opts.dart.path;
+            immutable filename = opts.dart.path;
         }
-        if (opts.dart.initialize && id!=0) {
+        if (opts.dart.initialize) {
             enum BLOCK_SIZE=0x80;
             BlockFile.create(filename, DARTFile.stringof, BLOCK_SIZE);
         }
@@ -142,8 +141,8 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             syncPool.stop;
         }
 
-        discoveryService.start(opts.dart.mdns.task_name~to!string(id));
-        if(opts.dart.synchronize && id!=0) {
+        discoveryService.start();
+        if(opts.dart.synchronize) {
             state.setState(DartSynchronizeState.WAITING);
         }else{
             state.setState(DartSynchronizeState.READY);
@@ -208,13 +207,42 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     },
                     (string taskName, Buffer data){
                         log("DSS: Received request from service: %s", taskName);
+                        Document loadAll(HiRPC hirpc){
+                            return Document(dart.loadAll().serialize);
+                        }
+                        void sendResult(Buffer result){
+                            auto tid = locate(taskName);
+                            if(tid != Tid.init){
+                                send(tid, result);
+                            }
+                        }
+
                         const doc = Document(data);
                         auto receiver = empty_hirpc.receive(doc);
-                        auto request = dart(receiver, false);
-                        auto tosend = empty_hirpc.toHiBON(request).serialize;
-                        auto tid = locate(taskName);
-                        if(tid != Tid.init){
-                            send(tid, tosend);
+                        // auto message_doc = doc[Keywords.message].get!Document;
+                        if(DART.supports(receiver)){
+                            auto request = dart(receiver, false);
+                            auto tosend = empty_hirpc.toHiBON(request).serialize;
+                            sendResult(tosend);
+                        }else{
+                            auto epoch = receiver.params["epoch"].get!int;
+                            auto owner = receiver.params["owner"].get!Buffer;
+                            auto result_doc = loadAll(hrpc);
+                            foreach(archive_doc;result_doc[]){
+                                auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
+                                auto data_doc = Document(archive.data);
+                                if(data_doc.hasElement("$type")){
+                                    if(data_doc["$type"].get!string == "BILL"){
+                                        auto bill = StandardBill(data_doc);
+                                        if(bill.epoch == epoch && bill.owner == owner){
+                                            auto response = empty_hirpc.result(receiver, bill.toHiBON);
+                                            sendResult(empty_hirpc.toHiBON(response).serialize);
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                            sendResult(empty_hirpc.error(receiver, "Not found", 0).toHiBON(net).serialize);
                         }
                     },
                     (immutable(Exception) e) {
@@ -231,7 +259,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
 
                 connectionPool.tick();
                 discoveryService.tick();
-                if(opts.dart.synchronize && id!=0){
+                if(opts.dart.synchronize){
                     syncPool.tick();
                     if(discoveryService.isReady && syncPool.isReady){
                         sync_factory.setNodeTable(discoveryService.node_addrses);
