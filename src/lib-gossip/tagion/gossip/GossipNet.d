@@ -3,6 +3,8 @@ module tagion.gossip.GossipNet;
 import std.concurrency;
 import std.stdio : File;
 import std.format;
+import std.exception : assumeUnique;
+import std.string : representation;
 
 import tagion.Options;
 import tagion.Base : EnumText, Pubkey, Buffer, buf_idup, basename;
@@ -53,6 +55,16 @@ class StdHashNet : HashNet {
         return digest!SHA256(data).idup;
     }
 
+    @trusted
+    Buffer HMAC(scope const(ubyte[]) data) const {
+        import std.digest.sha : SHA256;
+        import std.digest.hmac : digestHMAC=HMAC;
+        scope hmac = digestHMAC!SHA256(data);
+        auto result = hmac.finish.dup;
+        pragma(msg, typeof(result));
+        return assumeUnique(result);
+    }
+
 }
 
 alias ReceiveQueue = Queue!(immutable(ubyte[]));
@@ -89,8 +101,20 @@ class StdSecureNet : StdHashNet, SecureNet  {
         return _pubkey;
     }
 
-    Buffer hashPubkey() const {
-        return calcHash(cast(Buffer)_pubkey);
+    Buffer hmacPubkey() const {
+        return HMAC(cast(Buffer)_pubkey);
+    }
+
+    Pubkey drivePubkey(string tweak_word) const {
+        const tweak_code=HMAC(tweak_word.representation);
+        return drivePubkey(tweak_code);
+    }
+
+    Pubkey drivePubkey(const(ubyte[]) tweak_code) const {
+        Pubkey result;
+        const pkey=cast(const(ubyte[]))_pubkey;
+        result=_crypt.pubKeyTweakMul(pkey, tweak_code);
+        return result;
     }
 
     bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) ) {
@@ -124,10 +148,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
     }
 
     void drive(string tweak_word, ref ubyte[] tweak_privkey) {
-        import std.digest.sha : SHA256;
-        import std.string : representation;
-        scope hmac = HMAC!SHA256(tweak_word.representation);
-        auto data = hmac.finish.dup;
+        const data = HMAC(tweak_word.representation);
         drive(data, tweak_privkey);
     }
 
@@ -144,16 +165,19 @@ class StdSecureNet : StdHashNet, SecureNet  {
     }
 
     @trusted
-    void drive(string tweak_code, shared(SecureNet) secure_net)
+    void drive(string tweak_word, shared(SecureNet) secure_net) {
+        const tweak_code=HMAC(tweak_word.representation);
+        drive(tweak_code, secure_net);
+    }
+
+    @trusted
+    void drive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
         in {
             assert(_secret);
         }
     do {
-        import std.digest.sha : SHA256;
-        import std.string : representation;
         synchronized(secure_net) {
-            scope hmac = HMAC!SHA256(tweak_code.representation);
-            ubyte[] tweak_privkey = hmac.finish.dup;
+            ubyte[] tweak_privkey = tweak_code.dup;
             auto unshared_secure_net = cast(SecureNet)secure_net;
             unshared_secure_net.drive(tweak_code, tweak_privkey);
             createKeyPair(tweak_privkey);
@@ -254,10 +278,11 @@ class StdSecureNet : StdHashNet, SecureNet  {
         }
     do {
         import std.digest.sha : SHA256;
+        import std.digest.hmac : digestHMAC=HMAC;
         import std.string : representation;
         alias AES=AESCrypto!256;
 
-        scope hmac = HMAC!SHA256(passphrase.representation);
+        scope hmac = digestHMAC!SHA256(passphrase.representation);
         auto data = hmac.finish.dup;
 
         // Generate Key pair

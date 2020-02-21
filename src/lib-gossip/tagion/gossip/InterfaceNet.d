@@ -81,6 +81,7 @@ interface NetCallbacks : EventMonitorCallbacks {
 interface HashNet {
     uint hashSize() const pure nothrow;
     Buffer calcHash(scope const(ubyte[]) data) const;
+    Buffer HMAC(scope const(ubyte[]) data) const;
 }
 
 @safe
@@ -109,8 +110,13 @@ interface SecureNet : HashNet {
     immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) );
     void createKeyPair(ref ubyte[] privkey);
     void generateKeyPair(string passphrase);
-    void drive(string tweak_code, shared(SecureNet) secure_net);
-    void drive(string tweak_code, ref ubyte[] tweak_privkey);
+    void drive(string tweak_word, shared(SecureNet) secure_net);
+    void drive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net);
+    void drive(string tweak_word, ref ubyte[] tweak_privkey);
+    void drive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey);
+    Pubkey drivePubkey(const(ubyte[]) tweak_code);
+    Pubkey drivePubkey(string tweak_word);
+
     Buffer mask(const(ubyte[]) _mask) const;
 
 }
