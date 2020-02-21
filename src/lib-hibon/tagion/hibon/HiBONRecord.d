@@ -131,9 +131,7 @@ mixin template HiBONRecord() {
                         static if (is(BaseT:U[], U)) {
                             static if (Document.Value.hasType!U) {
                                 MemberT array;
-                                writefln("Type=%s", doc[name].type);
                                 auto doc_array=doc[name].get!Document;
-                                writefln("doc_array.keys=%s %s", doc_array.keys, doc_array.isArray);
                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
                                 foreach(e; doc_array[]) {
                                     array~=e.get!U;
