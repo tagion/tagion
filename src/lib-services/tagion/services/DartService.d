@@ -41,7 +41,7 @@ alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range, uint id) {
     try{
         setOptions(opts);
-        immutable task_name=opts.dart.task_name~to!string(id);;
+        immutable task_name=opts.dart.task_name~to!string(id);
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
