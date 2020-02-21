@@ -5,6 +5,7 @@ import std.stdio : File;
 import std.format;
 import std.exception : assumeUnique;
 import std.string : representation;
+import core.time : MonoTime;
 
 import tagion.Options;
 import tagion.Base : EnumText, Pubkey, Buffer, buf_idup, basename;
