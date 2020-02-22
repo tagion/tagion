@@ -17,7 +17,7 @@ import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
-import tagion.script.StandardRecords : Contract, ContractType;
+import tagion.script.StandardRecords : Contract, SignedContract;
 
 import tagion.gossip.GossipNet : StdSecureNet;
 
@@ -67,7 +67,7 @@ void transactionServiceTask(immutable(Options) opts) {
             case "transaction":
                 // Should be EXTERNAL
                 try {
-                    auto contract=Contract!(ContractType.INTERNAL)(params);
+                    auto contract=SignedContract(params);
                     if (contract.valid) {
                         auto source=params["script"].get!string;
                         auto src=ScriptParser(source);
