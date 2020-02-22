@@ -28,16 +28,20 @@ static assert(uint.sizeof == 4);
 
 @safe struct Document {
     alias Value=ValueT!(false, void, Document);
-    immutable(ubyte[]) data;
+    protected immutable(ubyte)[] _data;
+
+    immutable(ubyte[]) data() const pure nothrow {
+        return _data;
+    }
 
     @disable this();
 
     this(immutable(ubyte[]) data) pure nothrow {
-        this.data = data;
+        this._data = data;
     }
 
     this(const Document document) nothrow {
-        this.data = document.data;
+        this._data = document._data;
     }
 
     @trusted
