@@ -11,7 +11,7 @@ import tagion.network.SSLServiceAPI;
 import tagion.network.SSLFiberService : SSLRelay;
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
-import tagion.Base : Control;
+import tagion.Base : Control, Payload;
 
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document;
@@ -48,6 +48,10 @@ void transactionServiceTask(immutable(Options) opts) {
     HiRPC hirpc;
     immutable passphrase="Very secret password for the server";
     hirpc.net=new HiRPCNet(passphrase);
+    Tid node_tid=locate(opts.node_name);
+    @trusted void sendPayload(Payload payload) {
+        node_tid.send(payload);
+    }
     @safe bool relay(SSLRelay ssl_relay) {
         immutable buffer = ssl_relay.receive;
         if (!buffer) {
@@ -67,22 +71,41 @@ void transactionServiceTask(immutable(Options) opts) {
             case "transaction":
                 // Should be EXTERNAL
                 try {
-                    auto contract=SignedContract(params);
-                    if (contract.valid) {
-                        auto source=params["script"].get!string;
+                    auto signed_contract=SignedContract(params);
+                    if (signed_contract.valid) {
+                        immutable source=signed_contract.contract.script;
                         auto src=ScriptParser(source);
                         Script script;
                         auto builder=ScriptBuilder(src[]);
                         builder.build(script);
 
                         auto sc=new ScriptContext(10, 10, 10);
-                        sc.push(params["stack"].get!uint);
+                        // if (params.params.length) {
+                        //     sc.push(params.params["stack"].get!uint);
+                        // }
                         sc.trace=true;
                         script.execute("start", sc);
+                        //
+                        // Load inputs to the contract from the DART
+                        //
+
+                        // Send the contract as payload to the HashGraph
+                        // The data inside HashGraph is pure payload not an HiRPC
+
+                        Payload payload=signed_contract.toHiBON.serialize;
+                        {
+                            immutable data=signed_contract.toHiBON.serialize;
+                            const json_doc=Document(data);
+                            auto json=json_doc.toJSON;
+
+                            writefln("payload\n%s", json.toPrettyString);
+                        }
+                        sendPayload(payload);
                     }
                 }
                 catch (TagionException e) {
-                    writeln("Bad contract:%s", e.msg);
+                    log.error("Bad contract: %s", e.msg);
+                    writefln("Bad contract: %s", e.msg);
                 }
                 break;
             default:
