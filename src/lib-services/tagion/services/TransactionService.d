@@ -11,7 +11,7 @@ import tagion.network.SSLServiceAPI;
 import tagion.network.SSLFiberService : SSLRelay;
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
-import tagion.Base : Control, Payload;
+import tagion.Base : Control, Payload, Buffer;
 
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document;
@@ -23,6 +23,7 @@ import tagion.gossip.GossipNet : StdSecureNet;
 
 import tagion.TagionExceptions;
 
+import tagion.dart.DARTFile;
 class HiRPCNet : StdSecureNet {
     this(string passphrase) {
         super();
@@ -45,13 +46,36 @@ void transactionServiceTask(immutable(Options) opts) {
 
     log("SockectThread port=%d addresss=%s", opts.transaction.service.port, opts.url);
 
+    import std.conv;
+
     HiRPC hirpc;
+    HiRPC empty_hirpc = HiRPC(null);
     immutable passphrase="Very secret password for the server";
     hirpc.net=new HiRPCNet(passphrase);
     Tid node_tid=locate(opts.node_name);
+
     @trusted void sendPayload(Payload payload) {
         node_tid.send(payload);
     }
+    auto dart_sync_tid = locate(opts.dart.sync.task_name ~ to!string(opts.node_id));
+    @trusted DARTFile.Recorder requestInputs(Buffer[] inputs){
+        auto n_params=new HiBON;
+        auto params_fingerprints=new HiBON;
+        foreach(i, b; inputs) {
+            if ( b.length !is 0 ) {
+                params_fingerprints[i]=b;
+            }
+        }
+        n_params[DARTFile.Params.fingerprints]=params_fingerprints;
+        auto sender = empty_hirpc.dartRead(n_params);
+        auto tosend = empty_hirpc.toHiBON(sender).serialize;
+        send(dart_sync_tid, opts.transaction.service.task_name, tosend);
+        Buffer response = receiveOnly!Buffer;
+        auto received = empty_hirpc.receive(Document(response));
+        auto recorder = DARTFile.Recorder(hirpc.net, received.params);
+        return recorder;
+    }
+
     @safe bool relay(SSLRelay ssl_relay) {
         immutable buffer = ssl_relay.receive;
         if (!buffer) {
@@ -67,27 +91,37 @@ void transactionServiceTask(immutable(Options) opts) {
 
             const method=hiprc_received.message.method;
             const params=hiprc_received.params;
+
             switch (method) {
             case "transaction":
                 // Should be EXTERNAL
                 try {
                     auto signed_contract=SignedContract(params);
                     if (signed_contract.valid) {
-                        immutable source=signed_contract.contract.script;
-                        auto src=ScriptParser(source);
-                        Script script;
-                        auto builder=ScriptBuilder(src[]);
-                        builder.build(script);
+                        // immutable source=signed_contract.contract.script;
+                        // auto src=ScriptParser(source);
+                        // Script script;
+                        // auto builder=ScriptBuilder(src[]);
+                        // builder.build(script);
 
-                        auto sc=new ScriptContext(10, 10, 10);
+                        // auto sc=new ScriptContext(10, 10, 10);
                         // if (params.params.length) {
                         //     sc.push(params.params["stack"].get!uint);
                         // }
-                        sc.trace=true;
-                        script.execute("start", sc);
+                        // sc.trace=true;
+                        // script.execute("start", sc);
                         //
                         // Load inputs to the contract from the DART
                         //
+
+                        auto inputs = signed_contract.contract.input;
+                        auto foreign_recoder=requestInputs(inputs);
+                        import tagion.script.StandardRecords: StandardBill;
+                        // writefln("input loaded %d", foreign_recoder.archive);
+                        foreach(archive; foreign_recoder.archives){
+                            auto std_bill = StandardBill(Document(archive.data));
+                            signed_contract.input ~= std_bill;
+                        }
 
                         // Send the contract as payload to the HashGraph
                         // The data inside HashGraph is pure payload not an HiRPC

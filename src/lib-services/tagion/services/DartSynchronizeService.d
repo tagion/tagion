@@ -205,7 +205,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     }
                 },
                 (string taskName, Buffer data){
-                    log("DSS: Received request from service: %s", taskName);
+                    log("DSS: Received request from service2: %s", taskName);
                     Document loadAll(HiRPC hirpc){
                         return Document(dart.loadAll().serialize);
                     }
@@ -213,9 +213,10 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                         auto tid = locate(taskName);
                         if(tid != Tid.init){
                             send(tid, result);
+                        }else{
+                            log("couldn't locate task: %s", taskName);
                         }
                     }
-
                     const doc = Document(data);
                     auto receiver = empty_hirpc.receive(doc);
                     // auto message_doc = doc[Keywords.message].get!Document;
