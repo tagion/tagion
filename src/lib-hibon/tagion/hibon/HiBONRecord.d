@@ -106,11 +106,13 @@ mixin template HiBONRecord(string TYPE="") {
             string _type=doc[TYPENAME].get!string;
             .check(_type == TYPE, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
         }
+    ForeachTuple:
         foreach(i, ref m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 static if (hasUDA!(this.tupleof[i], Label)) {
                     alias label=GetLabel!(this.tupleof[i])[0];
                     enum name=label.name;
+                    enum optional=label.optional;
                     static if (label.optional) {
                         if (!doc.hasElement(name)) {
                             break;
@@ -124,6 +126,7 @@ mixin template HiBONRecord(string TYPE="") {
                 }
                 else {
                     enum name=basename!(this.tupleof[i]);
+                    enum optional=false;
                 }
                 static if (name.length) {
                     enum member_name=this.tupleof[i].stringof;
@@ -131,17 +134,15 @@ mixin template HiBONRecord(string TYPE="") {
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
-                    static if (is(TypedefType!BaseT == struct)) {
+                    static if (is(BaseT == struct)) {
                         pragma(msg, "@@@ ", TypedefType!BaseT);
-                        const dub_doc = Document(doc[name].get!Document);
-                        pragma(msg, code, " : ", BaseT.stringof);
-                        enum doc_code=format("%s=MemberT(dub_doc);", member_name);
+                        auto dub_doc = doc[name].get!Document;
+                        enum doc_code=format("%s=BaseT(dub_doc);", member_name);
                         mixin(doc_code);
-                        //m=MemberT(dub_doc);
                     }
                     else static if (is(BaseT == class)) {
                         const dub_doc = Document(doc[name].get!Document);
-                        m=new MemberT(dub_doc);
+                        m=new BaseT(dub_doc);
                     }
                     else static if (is(BaseT == enum)) {
                         alias EnumBaseT=OriginalType!BaseT;
@@ -152,6 +153,11 @@ mixin template HiBONRecord(string TYPE="") {
                             static if (Document.Value.hasType!U) {
                                 MemberT array;
                                 auto doc_array=doc[name].get!Document;
+                                static if (optional) {
+                                    if (doc_array.length == 0) {
+                                        break ForeachTuple;
+                                    }
+                                }
                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
                                 foreach(e; doc_array[]) {
                                     array~=e.get!U;
@@ -162,6 +168,11 @@ mixin template HiBONRecord(string TYPE="") {
                             else static if (hasMember!(U, "toHiBON")) {
                                 MemberT array;
                                 auto doc_array=doc[name].get!Document;
+                                static if (optional) {
+                                    if (doc_array.length == 0) {
+                                        break ForeachTuple;
+                                    }
+                                }
                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
                                 foreach(e; doc_array[]) {
                                     const sub_doc=e.get!Document;

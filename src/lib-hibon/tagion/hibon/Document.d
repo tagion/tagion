@@ -34,8 +34,6 @@ static assert(uint.sizeof == 4);
         return _data;
     }
 
-    @disable this();
-
     this(immutable(ubyte[]) data) pure nothrow {
         this._data = data;
     }
