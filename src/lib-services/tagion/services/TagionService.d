@@ -186,18 +186,11 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
     log("All tasks are in sync %s", opts.node_name);
 
-    //Event.scriptcallbacks=new ScriptCallbacks(thisTid);
 
-//    version(none)
-    //  if ( opts.transcript.enable ) {
-    version(none) {
     transcript_tid=spawn(&transcriptServiceTask, opts);
-
-
     Event.scriptcallbacks=new ScriptCallbacks(transcript_tid);
     if ( receiveOnly!Control is Control.LIVE ) {
         log("Transcript started");
-    }
     }
 
     enum max_gossip=2;
@@ -291,7 +284,6 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         }
     }
 
-
     void receive_payload(Payload pload) {
         log("payload.length=%d", pload.length);
         next_mother(pload);
@@ -342,7 +334,6 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             immutable message_received=receiveTimeout(
                 opts.timeout.msecs,
                 &receive_payload,
-                // &epoch,
                 &controller,
                 &sequential,
                 &receive_buffer,
@@ -363,7 +354,6 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             immutable message_received=receiveTimeout(
                 opts.timeout.msecs,
                 &receive_payload,
-                // &epoch,
                 &controller,
                 // &sequential,
                 &receive_buffer,
