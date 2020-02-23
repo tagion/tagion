@@ -251,7 +251,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
     void next_mother(Payload payload) {
         auto own_node=hashgraph.getNode(net.pubkey);
-        if ( gossip_count >= max_gossip ) {
+        if ( (gossip_count >= max_gossip) || (payload.length) ) {
             // fout.writeln("After build wave front");
             if ( own_node.event is null ) {
                 immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
@@ -264,6 +264,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 immutable mother_hash=mother.fingerprint;
                 immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
                 const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
+                log("registerEvent %s", payload.length);
                 //immutable signature=net.sign(ebody);
                 event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
             }
@@ -376,32 +377,4 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
         }
     }
-    // catch ( ConsensusException e ) {
-    //     log.error("Consensus fail %s: %s. code=%s\n%s", opts.node_name, e.msg, e.code, typeid(e));
-    //     // stop=true;
-    //     if ( net.callbacks ) {
-    //         net.callbacks.consensus_failure(e);
-    //     }
-    //     ownerTid.send(cast(immutable)e);
-    // }
-    // catch ( Exception e ) {
-    //     auto msg=format("%s: %s\n%s", opts.node_name, e.msg, typeid(e));
-    //     log.fatal(msg);
-    //     // fout.writeln(msg);
-    //     // writeln(msg);
-    //     // stop=true;
-    //     ownerTid.send(cast(immutable)e);
-    // }
-    // catch ( Throwable t ) {
-    //     t.msg ~= format(" - From hashnode thread %s", opts.node_id);
-    //     log.fatal(t.msg);
-    //     // stderr.writeln(t);
-    //     // writeln(t);
-    //     // stop=true;
-    //     ownerTid.send(cast(immutable)t);
-    // }
-
-    // if (stop) {
-    //     log("Should stop");
-    // }
 }
