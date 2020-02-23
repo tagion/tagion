@@ -186,12 +186,19 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
     log("All tasks are in sync %s", opts.node_name);
 
+    //Event.scriptcallbacks=new ScriptCallbacks(thisTid);
 
+//    version(none)
+    //  if ( opts.transcript.enable ) {
+    //version(none) {
     transcript_tid=spawn(&transcriptServiceTask, opts);
+
+
     Event.scriptcallbacks=new ScriptCallbacks(transcript_tid);
     if ( receiveOnly!Control is Control.LIVE ) {
         log("Transcript started");
     }
+    //}
 
     enum max_gossip=2;
     uint gossip_count=max_gossip;
@@ -247,7 +254,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
     void next_mother(Payload payload) {
         auto own_node=hashgraph.getNode(net.pubkey);
-        if ( (gossip_count >= max_gossip) || (payload.length) ) {
+        if ( gossip_count >= max_gossip ) {
             // fout.writeln("After build wave front");
             if ( own_node.event is null ) {
                 immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
@@ -260,7 +267,6 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 immutable mother_hash=mother.fingerprint;
                 immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
                 const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-                log("registerEvent payload-size=%s", payload.length);
                 //immutable signature=net.sign(ebody);
                 event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
             }

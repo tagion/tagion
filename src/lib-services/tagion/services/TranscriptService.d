@@ -7,7 +7,7 @@ import core.thread;
 import std.array : join;
 
 import tagion.Options;
-import tagion.Base : Payload, Control;
+import tagion.Base : Payload, Control, Buffer;
 import tagion.hibon.HiBON;
 
 import tagion.services.LoggerService;
@@ -22,8 +22,8 @@ void transcriptServiceTask(immutable(Options) opts) {
     setOptions(opts);
     immutable task_name=opts.transcript.task_name;
     log.register(task_name);
-    assert(opts.transcript.enable, "Scripting-Api test is not enabled");
-    assert(opts.transcript.pause_from < opts.transcript.pause_to);
+    // assert(opts.transcript.enable, "Scripting-Api test is not enabled");
+    // assert(opts.transcript.pause_from < opts.transcript.pause_to);
 
     Random!uint rand;
     rand.seed(opts.seed);
@@ -42,6 +42,10 @@ void transcriptServiceTask(immutable(Options) opts) {
 
     void receive_epoch(immutable(Payload[]) payloads) {
          log("Epochs %d", payloads.length);
+    }
+
+    void receive_ebody(Buffer ebody) {
+         log("Ebody %d", ebody.length);
     }
 
     void tagionexception(immutable(TagionException) e) {
@@ -67,11 +71,12 @@ void transcriptServiceTask(immutable(Options) opts) {
 
 
     while(!stop) {
-        immutable delay=rand.value(opts.transcript.pause_from, opts.transcript.pause_to);
-        log("delay=%s", delay);
+        //    immutable delay=rand.value(opts.transcript.pause_from, opts.transcript.pause_to);
+        //  log("delay=%s", delay);
 
         receive(
             &receive_epoch,
+            &receive_ebody,
             //&receive_payload,
             // &epoch,
             &controller,
