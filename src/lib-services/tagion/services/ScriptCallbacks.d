@@ -19,10 +19,10 @@ import tagion.services.LoggerService;
         _event_script_tid=event_script_tid;
     }
 
-    void epoch(const(Event[]) received_event, const(long) time) {
+    void epoch(const(Event[]) received_event, immutable long epoch_time) {
         log("Epoch with %d events", received_event.length);
-        auto hibon=new HiBON;
-        hibon[Keywords.time]=time;
+        // auto hibon=new HiBON;
+        // hibon[Keywords.time]=time;
         Payload[] payloads;
 
         foreach(i, e; received_event) {
@@ -37,21 +37,23 @@ import tagion.services.LoggerService;
             // hibon[Keywords.epoch]=payloads;
             // immutable data=hibon.serialize;
             log("SEND Epoch with %d transactions", payloads.length);
-            send(payloads);
+            send(payloads, epoch_time);
         }
     }
 
    @trusted
-    void send(ref Payload[] payloads) {
-        immutable unique_payloads=assumeUnique(payloads);
-        log("send data=%d", unique_payloads.length);
-        _event_script_tid.send(unique_payloads);
-    }
+   void send(ref Payload[] payloads, immutable long epoch_time) {
+       immutable unique_payloads=assumeUnique(payloads);
+       log("send data=%d", unique_payloads.length);
+       _event_script_tid.send(unique_payloads);
+   }
 
     @trusted
     void send(immutable(EventBody) ebody) {
         log("ebody.payload=%d", ebody.payload.length);
-        _event_script_tid.send(ebody);
+        if (ebody.payload.length) {
+            _event_script_tid.send(ebody);
+        }
     }
 
     @trusted
