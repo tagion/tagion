@@ -57,7 +57,7 @@ void transactionServiceTask(immutable(Options) opts) {
     @trusted void sendPayload(Payload payload) {
         node_tid.send(payload);
     }
-    auto dart_sync_tid = locate(opts.dart.sync.task_name);
+    auto dart_sync_tid = locate(opts.dart.sync.task_name ~ to!string(opts.node_id));
     @trusted DARTFile.Recorder requestInputs(Buffer[] inputs){
         auto n_params=new HiBON;
         auto params_fingerprints=new HiBON;
@@ -74,22 +74,6 @@ void transactionServiceTask(immutable(Options) opts) {
         auto received = empty_hirpc.receive(Document(response));
         auto recorder = DARTFile.Recorder(hirpc.net, received.params);
         return recorder;
-    }
-    @trusted Buffer search(int epoch, Document doc){
-        import tagion.hibon.HiBONJSON;
-        log("to search: %s", doc.toJSON);
-        auto n_params=new HiBON;
-        n_params["epoch"] = epoch;
-        n_params["owner"] = doc["owner"].get!Buffer;
-        auto sender = empty_hirpc.search(n_params);
-        auto tosend = empty_hirpc.toHiBON(sender).serialize;
-        log("send to dss");
-        send(dart_sync_tid, opts.transaction.service.task_name, tosend);
-        log("wait for response dss %s", thisTid);
-        Buffer response = receiveOnly!Buffer;
-        log("response %d", response.length);
-        log("send back: %s", Document(response).toJSON);
-        return response;
     }
 
     @safe bool relay(SSLRelay ssl_relay) {
@@ -148,7 +132,7 @@ void transactionServiceTask(immutable(Options) opts) {
                             const json_doc=Document(data);
                             auto json=json_doc.toJSON;
 
-                            writefln("payload\n%s", json.toPrettyString);
+                            log("payload\n%s", json.toPrettyString);
                         }
                         sendPayload(payload);
                     }
@@ -158,12 +142,6 @@ void transactionServiceTask(immutable(Options) opts) {
                     writefln("Bad contract: %s", e.msg);
                 }
                 break;
-            case "search":{
-                log("search request received");
-                auto response = search(0, params);  //epoch number?
-                ssl_relay.send(response);
-                break;
-            }
             default:
                 return true;
             }

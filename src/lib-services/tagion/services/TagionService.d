@@ -68,6 +68,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
     Tid monitor_socket_tid;
     Tid transaction_socket_tid;
+    Tid transcript_tid;
 
     scope(exit) {
         log("!!!==========!!!!!! Existing %s", opts.node_name);
@@ -185,17 +186,19 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
     log("All tasks are in sync %s", opts.node_name);
 
-    version(none)
-    if ( opts.transcript.enable ) {
-        net.transcript_tid=spawn(&transcriptServiceTask, opts);
+    //Event.scriptcallbacks=new ScriptCallbacks(thisTid);
 
-        auto scripting_engine_tid=spawn(&scriptingEngineTask, opts);
-        Event.scriptcallbacks=new ScriptCallbacks(scripting_engine_tid);
-        if ( receiveOnly!Control is Control.LIVE ) {
-            log("Transcript started");
-        }
+//    version(none)
+    //  if ( opts.transcript.enable ) {
+    version(none) {
+    transcript_tid=spawn(&transcriptServiceTask, opts);
+
+
+    Event.scriptcallbacks=new ScriptCallbacks(transcript_tid);
+    if ( receiveOnly!Control is Control.LIVE ) {
+        log("Transcript started");
     }
-
+    }
 
     enum max_gossip=2;
     uint gossip_count=max_gossip;
@@ -264,7 +267,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 immutable mother_hash=mother.fingerprint;
                 immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
                 const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-                log("registerEvent %s", payload.length);
+                log("registerEvent payload-size=%s", payload.length);
                 //immutable signature=net.sign(ebody);
                 event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
             }
@@ -287,6 +290,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             gossip_count++;
         }
     }
+
 
     void receive_payload(Payload pload) {
         log("payload.length=%d", pload.length);
@@ -338,6 +342,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             immutable message_received=receiveTimeout(
                 opts.timeout.msecs,
                 &receive_payload,
+                // &epoch,
                 &controller,
                 &sequential,
                 &receive_buffer,
@@ -358,6 +363,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             immutable message_received=receiveTimeout(
                 opts.timeout.msecs,
                 &receive_payload,
+                // &epoch,
                 &controller,
                 // &sequential,
                 &receive_buffer,
