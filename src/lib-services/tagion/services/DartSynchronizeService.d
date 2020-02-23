@@ -212,6 +212,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     void sendResult(Buffer result){
                         auto tid = locate(taskName);
                         if(tid != Tid.init){
+                            log("sending response back, %s", tid);
                             send(tid, result);
                         }else{
                             log("couldn't locate task: %s", taskName);
@@ -227,11 +228,14 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     }else{
                         auto epoch = receiver.params["epoch"].get!int;
                         auto owner = receiver.params["owner"].get!Buffer;
+                        log("epoch: %d, owner: %s", epoch, owner);
                         auto result_doc = loadAll(hrpc);
                         foreach(archive_doc;result_doc[]){
                             auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
                             auto data_doc = Document(archive.data);
+                            log("%s", data_doc.toJSON);
                             if(data_doc.hasElement("$type")){
+                                log(data_doc["$type"].get!string);
                                 if(data_doc["$type"].get!string == "BILL"){
                                     auto bill = StandardBill(data_doc);
                                     if(bill.epoch == epoch && bill.owner == owner){

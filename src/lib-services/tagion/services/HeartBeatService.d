@@ -86,34 +86,65 @@ void heartBeatServiceTask(immutable(Options) opts) {
     Tid[] dart_sync_tids;
     scope(exit) {
         log("---- Stop dart sync tasks(%d) ----", dart_sync_tids.length);
-        foreach(id, dart_sync_tid; dart_sync_tids){
-            log("Send stop to %d dart_sync_service", id);
-            send(dart_sync_tid, Control.STOP);
-            const dartSyncControl = receiveOnly!Control;
-            log("received control %s from %d dart_sync_service", dartSyncControl, id);
+        foreach (i; 0..opts.nodes) {
+            auto dart_sync_tid = locate(opts.dart.sync.task_name~to!string(i));
+            if(dart_sync_tid != Tid.init){
+                send(dart_sync_tid, Control.STOP);
+                const dartSyncControl = receiveOnly!Control;
+            }else{
+                log("couldn't locate task: %s", opts.dart.sync.task_name~to!string(i));
+            }
         }
     }
     import std.array: replace;
     import std.string: indexOf;
     import std.file: mkdir, exists;
+
+    Options[uint] node_opts;
     foreach (i; 0..opts.nodes) {
-        auto sync_opts = getOptions();
+        const is_master_node = i == 0;
+        Options service_options=opts;
+
+        service_options.node_id=cast(uint)i;
         auto local_port = opts.port_base + i;
-        if(i==0){
-            sync_opts.dart.initialize = false;
-            sync_opts.dart.synchronize = false;
+        if(is_master_node){
+            service_options.dart.initialize = false;
+            service_options.dart.synchronize = false;
             local_port = opts.dart.sync.maxSlavePort;
         }
-        auto p2pnode = new shared(p2plib.Node)("/ip4/0.0.0.0/tcp/" ~ to!string(local_port), 0);
-        sync_opts.port = local_port;
-        enum dir_token = "%dir%";
-        auto path_to_dir = sync_opts.dart.path[0..sync_opts.dart.path.indexOf(dir_token)]~"node"~to!string(i);
-        if(!path_to_dir.exists) path_to_dir.mkdir;
-        sync_opts.dart.path = sync_opts.dart.path.replace(dir_token, "node"~to!string(i));
 
-        sync_opts.dart.task_name = sync_opts.dart.task_name~to!string(i);
-        sync_opts.dart.sync.task_name = sync_opts.dart.sync.task_name~to!string(i);
-        sync_opts.dart.mdns.task_name = sync_opts.dart.mdns.task_name~to!string(i);
+        service_options.port = local_port;
+        enum dir_token = "%dir%";
+        if(opts.dart.path.indexOf(dir_token) != -1){
+            auto path_to_dir = service_options.dart.path[0..opts.dart.path.indexOf(dir_token)]~"node"~to!string(i);
+            if(!path_to_dir.exists) path_to_dir.mkdir;
+            service_options.dart.path = opts.dart.path.replace(dir_token, "node"~to!string(i));
+        }else{
+            import std.path;
+            if(!is_master_node){
+                service_options.dart.path = stripExtension(opts.dart.path) ~ to!string(i) ~ extension(opts.dart.path);
+            }
+        }
+        service_options.dart.task_name = opts.dart.task_name~to!string(i);
+        service_options.dart.sync.task_name = opts.dart.sync.task_name~to!string(i);
+        service_options.dart.mdns.task_name = opts.dart.mdns.task_name~to!string(i);
+        if ( (opts.monitor.port >= opts.min_port) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
+            service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
+        }
+        // if ( (opts.transaction.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
+        //     service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
+        // }
+        if ( (opts.transaction.service.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
+            service_options.transaction.service.port=cast(ushort)(opts.transaction.service.port + i);
+        }
+
+        node_opts[i] = service_options;
+    }
+
+    foreach (i; 0..opts.nodes) {
+        auto sync_opts = node_opts[i];
+
+        auto p2pnode = new shared(p2plib.Node)("/ip4/0.0.0.0/tcp/" ~ to!string(sync_opts.port), 0);
         auto master_net=new StdSecureNet;
         synchronized(master_net) {
             import std.format;
@@ -124,38 +155,52 @@ void heartBeatServiceTask(immutable(Options) opts) {
             auto dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet, sync_opts, p2pnode, shared_net, sector_range);
             dart_sync_tids ~= dart_sync_tid;
         }
+        // const service_control = receiveOnly!Control;
+        // log("received %s from %d", service_control, i);
+        // assert(service_control == Control.LIVE);
         // dartTid = spawn(&dartServiceTask!MyFakeNet, local_options, node, shared_net, sector_range);
     }
     uint ready_counter = opts.nodes;
+    uint live_counter = opts.nodes;
+    bool force_stop = false;
     do{
         receive(
             (Control control){
-
+                if(control == Control.LIVE){
+                    live_counter--;
+                }
+                if(control == Control.END){
+                    live_counter--;
+                }
+                if(control == Control.STOP){
+                    force_stop = true;
+                }
             },
             (DartSynchronizeState state){
                 // writefln("!!received from %d state: %s", id, state);
                 if(state == DartSynchronizeState.READY){
-                    log("%d sync finished");
                     ready_counter--;
                 }
+            },
+            (immutable(Exception) e) {
+                ownerTid.send(e);
+                // force_stop = true;
+            },
+            (immutable(Throwable) t) {
+                ownerTid.send(t);
+                // force_stop = true;
             }
         );
+        if(force_stop && live_counter <=0) break;
     }while(ready_counter>0);
+    if(force_stop) return;
+
     log("All nodes synchronized");
     foreach(i;0..opts.nodes) {
         log("node=%s", i);
         stderr.writefln("node=%s", i);
-        Options service_options=opts;
-        if ( (opts.monitor.port >= opts.min_port) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
-            service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
-        }
-        // if ( (opts.transaction.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
-        //     service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
-        // }
-        if ( (opts.transaction.service.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
-            service_options.transaction.service.port=cast(ushort)(opts.transaction.service.port + i);
-        }
-        service_options.node_id=cast(uint)i;
+        Options service_options=node_opts[i];
+
         Tid tid;
 
         auto master_net=new StdSecureNet;
