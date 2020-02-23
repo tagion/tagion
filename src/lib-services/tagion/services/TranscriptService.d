@@ -8,6 +8,7 @@ import std.array : join;
 
 import tagion.Options;
 import tagion.Base : Payload, Control, Buffer;
+import tagion.hashgraph.Event : EventBody;
 import tagion.hibon.HiBON;
 
 import tagion.services.LoggerService;
@@ -41,11 +42,11 @@ void transcriptServiceTask(immutable(Options) opts) {
     }
 
     void receive_epoch(immutable(Payload[]) payloads) {
-         log("Epochs %d", payloads.length);
+         log("Received Epochs %d", payloads.length);
     }
 
-    void receive_ebody(Buffer ebody) {
-         log("Ebody %d", ebody.length);
+    void receive_ebody(immutable(EventBody) ebody) {
+         log("Received Ebody %d", ebody.payload.length);
     }
 
     void tagionexception(immutable(TagionException) e) {

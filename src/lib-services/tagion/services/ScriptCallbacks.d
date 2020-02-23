@@ -2,8 +2,9 @@ module tagion.services.ScriptCallbacks;
 
 import std.concurrency;
 import std.datetime;   // Date, DateTime
+import std.exception : assumeUnique;
 
-import tagion.hashgraph.Event : Event, EventScriptCallbacks;
+import tagion.hashgraph.Event : Event, EventScriptCallbacks, EventBody;
 import tagion.Base : Buffer, Payload, Control;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
@@ -20,30 +21,37 @@ import tagion.services.LoggerService;
 
     void epoch(const(Event[]) received_event, const(long) time) {
         log("Epoch with %d events", received_event.length);
-        /++
         auto hibon=new HiBON;
         hibon[Keywords.time]=time;
-        Document[] payloads;
+        Payload[] payloads;
 
         foreach(i, e; received_event) {
-            log("\tepoch=%d %d", i, e.eventbody.payload.length);
+            if (e.eventbody.payload.length) {
+                log("\tepoch=%d %d", i, e.eventbody.payload.length);
+            }
             if ( e.eventbody.payload ) {
-                payloads~=Document(e.eventbody.payload);
+                payloads~=Payload(e.eventbody.payload);
             }
         }
         if ( payloads ) {
-            hibon[Keywords.epoch]=payloads;
-            immutable data=hibon.serialize;
-            log("SEND Epoch with %d transactions %d bytes", payloads.length, data.length);
-            send(data);
+            // hibon[Keywords.epoch]=payloads;
+            // immutable data=hibon.serialize;
+            log("SEND Epoch with %d transactions", payloads.length);
+            send(payloads);
         }
-        ++/
+    }
+
+   @trusted
+    void send(ref Payload[] payloads) {
+        immutable unique_payloads=assumeUnique(payloads);
+        log("send data=%d", unique_payloads.length);
+        _event_script_tid.send(unique_payloads);
     }
 
     @trusted
-    void send(immutable(Buffer) data) {
-        log("send data=%d", data.length);
-        _event_script_tid.send(data);
+    void send(immutable(EventBody) ebody) {
+        log("ebody.payload=%d", ebody.payload.length);
+        _event_script_tid.send(ebody);
     }
 
     @trusted
