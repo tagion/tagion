@@ -10,12 +10,16 @@ import tagion.Options;
 import tagion.Base : Payload, Control, Buffer;
 import tagion.hashgraph.Event : EventBody;
 import tagion.hibon.HiBON;
+import tagion.hibon.Document;
 
 import tagion.services.LoggerService;
 import tagion.utils.Random;
 import tagion.TagionExceptions;
-
-import tagion.gossip.EmulatorGossipNet;
+import tagion.script.SmartScript;
+import tagion.script.StandardRecords : Contract, SignedContract;
+import tagion.hashgraph.ConsensusExceptions : ConsensusException;
+import tagion.gossip.GossipNet : StdSecureNet;
+//import tagion.gossip.EmulatorGossipNet;
 
 
 // This function is just to perform a test on the scripting-api input
@@ -33,6 +37,9 @@ void transcriptServiceTask(immutable(Options) opts) {
     Tid node_tid=locate(opts.node_name);
     node_tid.send(Control.LIVE);
 
+    auto net=new StdSecureNet;
+    scope SmartScript[Buffer] smart_scripts;
+
     bool stop;
     void controller(Control ctrl) {
         if ( ctrl == Control.STOP ) {
@@ -42,11 +49,51 @@ void transcriptServiceTask(immutable(Options) opts) {
     }
 
     void receive_epoch(immutable(Payload[]) payloads) {
-         log("Received Epochs %d", payloads.length);
+        log("Received Epochs %d", payloads.length);
+        scope bool[Buffer] used_inputs;
+        scope(exit) {
+            used_inputs=null;
+            smart_scripts=null;
+        }
+        foreach(payload; payloads) {
+            immutable data=cast(Buffer)payload;
+            const doc=Document(data);
+            scope signed_contract=SignedContract(doc);
+            //smart_script.check(net);
+            bool invalid;
+        ForachInput:
+            foreach(input; signed_contract.contract.input) {
+                if (input in used_inputs) {
+                    invalid=true;
+                    break ForachInput;
+                }
+                else {
+                    used_inputs[input]=true;
+                }
+            }
+            if (!invalid) {
+                const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
+                scope smart_script=smart_scripts[fingerprint];
+                // Do the DART Recorder;
+            }
+        }
+
     }
 
     void receive_ebody(immutable(EventBody) ebody) {
-         log("Received Ebody %d", ebody.payload.length);
+        try {
+            log("Received Ebody %d", ebody.payload.length);
+            const doc=Document(ebody.payload);
+            auto signed_contract=SignedContract(doc);
+            auto smart_script=new SmartScript(signed_contract);
+            smart_script.check(net);
+            const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
+            smart_scripts[fingerprint]=smart_script;
+            smart_script.run;
+        }
+        catch (ConsensusException e) {
+            // Not approved
+        }
     }
 
     void tagionexception(immutable(TagionException) e) {

@@ -18,7 +18,7 @@ import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.script.StandardRecords : Contract, SignedContract;
-
+import tagion.script.SmartScript;
 import tagion.gossip.GossipNet : StdSecureNet;
 
 import tagion.TagionExceptions;
@@ -125,7 +125,7 @@ void transactionServiceTask(immutable(Options) opts) {
 
                         // Send the contract as payload to the HashGraph
                         // The data inside HashGraph is pure payload not an HiRPC
-
+                        SmartScript.check(hirpc.net, signed_contract);
                         Payload payload=signed_contract.toHiBON.serialize;
                         {
                             immutable data=signed_contract.toHiBON.serialize;
