@@ -3,8 +3,8 @@ module tagion.services.TranscriptService;
 import std.format;
 import std.concurrency;
 import core.thread;
-
 import std.array : join;
+import std.exception : assumeUnique;
 
 import tagion.Options;
 import tagion.Base : Payload, Control, Buffer;
@@ -21,7 +21,6 @@ import tagion.hashgraph.ConsensusExceptions : ConsensusException;
 import tagion.gossip.GossipNet : StdSecureNet;
 //import tagion.gossip.EmulatorGossipNet;
 
-
 // This function is just to perform a test on the scripting-api input
 void transcriptServiceTask(immutable(Options) opts) {
     setOptions(opts);
@@ -30,6 +29,7 @@ void transcriptServiceTask(immutable(Options) opts) {
     // assert(opts.transcript.enable, "Scripting-Api test is not enabled");
     // assert(opts.transcript.pause_from < opts.transcript.pause_to);
 
+    uint current_epoch;
     Random!uint rand;
     rand.seed(opts.seed);
 //    immutable name=[opts.node_name, options.transcript.name].join;
@@ -54,6 +54,7 @@ void transcriptServiceTask(immutable(Options) opts) {
         scope(exit) {
             used_inputs=null;
             smart_scripts=null;
+            current_epoch++;
         }
         foreach(payload; payloads) {
             immutable data=cast(Buffer)payload;
@@ -75,6 +76,11 @@ void transcriptServiceTask(immutable(Options) opts) {
                 const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
                 scope smart_script=smart_scripts[fingerprint];
                 // Do the DART Recorder;
+                // All input's is stored in
+                // smart_script.signed_contract.input;
+                // and all output's stored in
+                // snart_script.output_bills
+
             }
         }
 
@@ -88,8 +94,9 @@ void transcriptServiceTask(immutable(Options) opts) {
             auto smart_script=new SmartScript(signed_contract);
             smart_script.check(net);
             const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
+            smart_script.run(current_epoch+1);
+
             smart_scripts[fingerprint]=smart_script;
-            smart_script.run;
         }
         catch (ConsensusException e) {
             // Not approved
