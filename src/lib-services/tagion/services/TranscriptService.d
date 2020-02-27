@@ -19,6 +19,9 @@ import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
 import tagion.gossip.GossipNet : StdSecureNet;
+import tagion.communication.HiRPC;
+import tagion.dart.DART;
+import tagion.dart.DARTFile;
 //import tagion.gossip.EmulatorGossipNet;
 
 // This function is just to perform a test on the scripting-api input
@@ -36,8 +39,10 @@ void transcriptServiceTask(immutable(Options) opts) {
     log("Scripting-Api script test %s started", task_name);
     Tid node_tid=locate(opts.node_name);
     node_tid.send(Control.LIVE);
+    Tid dart_sync_tid = locate(opts.dart.sync.task_name);
 
     auto net=new StdSecureNet;
+    auto empty_hirpc = HiRPC(null);
     scope SmartScript[Buffer] smart_scripts;
 
     bool stop;
@@ -48,40 +53,74 @@ void transcriptServiceTask(immutable(Options) opts) {
         }
     }
 
-    void receive_epoch(immutable(Payload[]) payloads) {
-        log("Received Epochs %d", payloads.length);
-        scope bool[Buffer] used_inputs;
-        scope(exit) {
-            used_inputs=null;
-            smart_scripts=null;
-            current_epoch++;
-        }
-        foreach(payload; payloads) {
-            immutable data=cast(Buffer)payload;
-            const doc=Document(data);
-            scope signed_contract=SignedContract(doc);
-            //smart_script.check(net);
-            bool invalid;
-        ForachInput:
-            foreach(input; signed_contract.contract.input) {
-                if (input in used_inputs) {
-                    invalid=true;
-                    break ForachInput;
-                }
-                else {
-                    used_inputs[input]=true;
-                }
-            }
-            if (!invalid) {
-                const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
-                scope smart_script=smart_scripts[fingerprint];
-                // Do the DART Recorder;
-                // All input's is stored in
-                // smart_script.signed_contract.input;
-                // and all output's stored in
-                // snart_script.output_bills
+    Buffer modifyDART(DARTFile.Recorder recorder){
+        auto sender = DART.dartModify(recorder, empty_hirpc);
+        dart_sync_tid.send(task_name, empty_hirpc.toHiBON(sender).serialize);
+        auto response = receiveOnly!Buffer;
+        auto receiver = empty_hirpc.receive(Document(response));
+        return receiver.params[DARTFile.Params.bullseye].get!Buffer;
+    }
+    void receive_epoch(Buffer payloads_buff) {
+        try{
+            import tagion.hibon.HiBONJSON;
+            // pragma(msg, "transcript: ", typeof(payloads));
+            log("Received epoch: len:%d", payloads_buff.length);
+            auto payload_doc = Document(payloads_buff);
 
+            // log("Epoch: %s", payload_doc.toJSON);
+            scope bool[Buffer] used_inputs;
+            scope(exit) {
+                used_inputs=null;
+                smart_scripts=null;
+                current_epoch++;
             }
+            auto recorder = DARTFile.Recorder(net);
+            foreach(payload_el; payload_doc[]) {
+                immutable data=payload_el.get!Buffer;
+                const doc=Document(data);
+                // log("payload: %s", doc.toJSON);
+                scope signed_contract=SignedContract(doc);
+                //smart_script.check(net);
+                bool invalid;
+            ForachInput:
+                foreach(input; signed_contract.contract.input) {
+                    if (input in used_inputs) {
+                        invalid=true;
+                        break ForachInput;
+                    }
+                    else {
+                        used_inputs[input]=true;
+                    }
+                }
+                if (!invalid) {
+                    const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
+                    if(fingerprint in smart_scripts){
+                        scope smart_script=smart_scripts[fingerprint];
+                        foreach(bill; smart_script.signed_contract.input){
+                            recorder.remove(bill.toHiBON.serialize);
+                        }
+                        foreach(bill; smart_script.output_bills){
+                            recorder.add(bill.toHiBON.serialize);
+                        }
+                    }else{
+                        invalid = true;
+                    }
+                }
+            }
+            if(recorder.length > 0){
+                log("Sending to dart len: %d", recorder.length);
+                recorder.dump;
+                auto bullseye = modifyDART(recorder);
+                import tagion.utils.Miscellaneous: cutHex;
+                log("Bullseye %s", bullseye.cutHex);
+            }else{
+                log("Empty epoch");
+            }
+        }catch(Exception e){
+            log("Epoch exception:%s ", e);
+        }
+        catch(Throwable e){
+            log("Epoch throwable:%s ", e);
         }
 
     }
@@ -99,7 +138,16 @@ void transcriptServiceTask(immutable(Options) opts) {
             smart_scripts[fingerprint]=smart_script;
         }
         catch (ConsensusException e) {
+            log("ConsensusException: %s", e.msg);
             // Not approved
+        }
+        catch(TagionException e){
+            log("TagionException: %s", e.msg);
+        }catch(Exception e){
+            log("Exception: %s", e.msg);
+        }
+        catch(Throwable e){
+            log("Throwable: %s", e.msg);
         }
     }
 
@@ -140,7 +188,6 @@ void transcriptServiceTask(immutable(Options) opts) {
             &throwable,
 
             );
-
         // immutable message_received=receiveTimeout(delay.msecs, &controller);
         // log("message_received=%s", message_received);
         // if (!message_received) {
