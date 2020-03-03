@@ -70,7 +70,6 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
 
         auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING);
         auto pid = opts.dart.sync.protocol_id;
-
         log("-----Start Dart Sync service-----");
         scope(success){
             log("------Stop Dart Sync service-----");
@@ -205,15 +204,15 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     }
                 },
                 (string taskName, Buffer data){
-                    log("DSS: Received request from service2: %s", taskName);
+                    log("DSS: Received request from service: %s", taskName);
                     Document loadAll(HiRPC hirpc){
                         return Document(dart.loadAll().serialize);
                     }
                     void sendResult(Buffer result){
                         auto tid = locate(taskName);
                         if(tid != Tid.init){
-                            log("sending response back, %s", tid);
-                            send(tid, result);
+                            // log("sending response back, %s", tid);
+                            send(tid, result, true);
                         }else{
                             log("couldn't locate task: %s", taskName);
                         }
@@ -226,27 +225,36 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                         auto tosend = empty_hirpc.toHiBON(request).serialize;
                         sendResult(tosend);
                     }else{
-                        auto epoch = receiver.params["epoch"].get!int;
-                        auto owner = receiver.params["owner"].get!Buffer;
-                        log("epoch: %d, owner: %s", epoch, owner);
+                        // auto epoch = receiver.params["epoch"].get!int;
+                        auto owners_doc = receiver.params["owners"].get!Document;
+                        Buffer[] owners;
+                        foreach(owner; owners_doc[]){
+                            owners ~= owner.get!Buffer;
+                        }
+                        // log("epoch: %d, owner: %s", epoch, owner);
                         auto result_doc = loadAll(hrpc);
+                        StandardBill[] bills;
                         foreach(archive_doc;result_doc[]){
                             auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
                             auto data_doc = Document(archive.data);
-                            log("%s", data_doc.toJSON);
+                            // log("%s", data_doc.toJSON);
                             if(data_doc.hasElement("$type")){
-                                log(data_doc["$type"].get!string);
-                                if(data_doc["$type"].get!string == "BILL"){
+                                if(data_doc["$type"].get!string == "BIL"){
                                     auto bill = StandardBill(data_doc);
-                                    if(bill.epoch == epoch && bill.owner == owner){
-                                        auto response = empty_hirpc.result(receiver, bill.toHiBON);
-                                        sendResult(empty_hirpc.toHiBON(response).serialize);
-                                        return;
+                                    import std.algorithm: canFind;
+                                    // log("bill.owner: %s, owner: %s", bill.owner, owner);
+                                    if( owners.canFind(bill.owner)){
+                                        bills~=bill;
                                     }
                                 }
                             }
                         }
-                        sendResult(empty_hirpc.error(receiver, "Not found", 0).toHiBON(net).serialize);
+                        HiBON params = new HiBON;
+                        foreach(i, bill; bills){
+                            params[i] = bill.toHiBON;
+                        }
+                        auto response = empty_hirpc.result(receiver, params);
+                        sendResult(empty_hirpc.toHiBON(response).serialize);
                     }
                 },
                 (immutable(Exception) e) {

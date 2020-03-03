@@ -10,7 +10,7 @@ import tagion.Options;
 //import tagion.services.LoggerService;
 import tagion.utils.Random;
 
-import tagion.Base : Pubkey, Control;
+import tagion.Base : Pubkey, Control, abort;
 import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
@@ -23,24 +23,7 @@ import tagion.services.DartSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import std.conv;
-shared bool abort=false;
-version(SIG_SHORTDOWN){
-import core.stdc.signal;
-static extern(C) void shutdown(int sig) @nogc nothrow {
 
-    printf("Shutdown sig %d about=%d\n\0".ptr, sig, abort);
-    if (sig is SIGINT || sig is SIGTERM) {
-        abort=true;
-    }
-//    printf("Shutdown sig %d\n\0".ptr, sig);
-}
-
-shared static this() {
-
-    signal(SIGINT, &shutdown);
-    signal(SIGTERM, &shutdown);
-}
-}
 import std.stdio;
 void heartBeatServiceTask(immutable(Options) opts) {
     setOptions(opts);
@@ -191,9 +174,9 @@ void heartBeatServiceTask(immutable(Options) opts) {
                 // force_stop = true;
             }
         );
-        if(force_stop && live_counter <=0) break;
+        if((force_stop || abort) && live_counter <=0) break;
     }while(ready_counter>0);
-    if(force_stop) return;
+    if(force_stop || abort) return;
 
     log("All nodes synchronized");
     foreach(i;0..opts.nodes) {

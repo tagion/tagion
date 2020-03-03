@@ -22,6 +22,7 @@ import tagion.gossip.GossipNet : StdSecureNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
+import tagion.hibon.HiBONJSON;
 //import tagion.gossip.EmulatorGossipNet;
 
 // This function is just to perform a test on the scripting-api input
@@ -56,13 +57,12 @@ void transcriptServiceTask(immutable(Options) opts) {
     Buffer modifyDART(DARTFile.Recorder recorder){
         auto sender = DART.dartModify(recorder, empty_hirpc);
         dart_sync_tid.send(task_name, empty_hirpc.toHiBON(sender).serialize);
-        auto response = receiveOnly!Buffer;
+        auto response = (receiveOnly!(Buffer, bool))[0];
         auto receiver = empty_hirpc.receive(Document(response));
         return receiver.params[DARTFile.Params.bullseye].get!Buffer;
     }
     void receive_epoch(Buffer payloads_buff) {
         try{
-            import tagion.hibon.HiBONJSON;
             // pragma(msg, "transcript: ", typeof(payloads));
             log("Received epoch: len:%d", payloads_buff.length);
             auto payload_doc = Document(payloads_buff);

@@ -24,6 +24,7 @@ import tagion.gossip.GossipNet : StdSecureNet;
 import tagion.TagionExceptions;
 
 import tagion.dart.DARTFile;
+import tagion.dart.DART;
 class HiRPCNet : StdSecureNet {
     this(string passphrase) {
         super();
@@ -57,23 +58,27 @@ void transactionServiceTask(immutable(Options) opts) {
     @trusted void sendPayload(Payload payload) {
         node_tid.send(payload);
     }
-    auto dart_sync_tid = locate(opts.dart.sync.task_name ~ to!string(opts.node_id));
+    auto dart_sync_tid = locate(opts.dart.sync.task_name);
     @trusted DARTFile.Recorder requestInputs(Buffer[] inputs){
-        auto n_params=new HiBON;
-        auto params_fingerprints=new HiBON;
-        foreach(i, b; inputs) {
-            if ( b.length !is 0 ) {
-                params_fingerprints[i]=b;
-            }
-        }
-        n_params[DARTFile.Params.fingerprints]=params_fingerprints;
-        auto sender = empty_hirpc.dartRead(n_params);
+        auto sender = DART.dartRead(inputs, empty_hirpc);
         auto tosend = empty_hirpc.toHiBON(sender).serialize;
         send(dart_sync_tid, opts.transaction.service.task_name, tosend);
-        Buffer response = receiveOnly!Buffer;
+        Buffer response = (receiveOnly!(Buffer, bool))[0];
         auto received = empty_hirpc.receive(Document(response));
         auto recorder = DARTFile.Recorder(hirpc.net, received.params);
         return recorder;
+    }
+    @trusted Buffer search(int epoch, Document doc){
+        import tagion.hibon.HiBONJSON;
+        auto n_params=new HiBON;
+        // n_params["epoch"] = epoch;
+        // n_params["owner"] = doc["owner"].get!Buffer;
+        n_params["owners"] = doc;
+        auto sender = empty_hirpc.search(n_params);
+        auto tosend = empty_hirpc.toHiBON(sender).serialize;
+        send(dart_sync_tid, opts.transaction.service.task_name, tosend);
+        Buffer response = (receiveOnly!(Buffer, bool))[0];
+        return response;
     }
 
     @safe bool relay(SSLRelay ssl_relay) {
@@ -132,16 +137,26 @@ void transactionServiceTask(immutable(Options) opts) {
                             const json_doc=Document(data);
                             auto json=json_doc.toJSON;
 
-                            log("payload\n%s", json.toPrettyString);
+                            log("Contract:\n%s", json.toPrettyString);
                         }
                         sendPayload(payload);
+                        auto empty_params = new HiBON;
+                        auto empty_response = empty_hirpc.result(hiprc_received, empty_params);
+                        ssl_relay.send(hirpc.toHiBON(empty_response).serialize);
                     }
                 }
                 catch (TagionException e) {
                     log.error("Bad contract: %s", e.msg);
-                    writefln("Bad contract: %s", e.msg);
+                    auto bad_response = empty_hirpc.error(hiprc_received, e.msg, 1);
+                    ssl_relay.send(hirpc.toHiBON(bad_response).serialize);
                 }
                 break;
+            case "search":{
+                // log("search request received");
+                auto response = search(0, params);  //epoch number?
+                ssl_relay.send(response);
+                break;
+            }
             default:
                 return true;
             }
