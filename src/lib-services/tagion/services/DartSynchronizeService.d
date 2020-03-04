@@ -211,7 +211,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     void sendResult(Buffer result){
                         auto tid = locate(taskName);
                         if(tid != Tid.init){
-                            // log("sending response back, %s", tid);
+                            log("sending response back, %s", taskName);
                             send(tid, result, true);
                         }else{
                             log("couldn't locate task: %s", taskName);

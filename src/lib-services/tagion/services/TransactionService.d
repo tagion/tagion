@@ -77,7 +77,12 @@ void transactionServiceTask(immutable(Options) opts) {
         auto sender = empty_hirpc.search(n_params);
         auto tosend = empty_hirpc.toHiBON(sender).serialize;
         send(dart_sync_tid, opts.transaction.service.task_name, tosend);
-        Buffer response = (receiveOnly!(Buffer, bool))[0];
+        Buffer response;
+        receiveTimeout(5.seconds,
+        (Buffer buf, bool flag){
+            response = buf;
+        });
+        // Buffer response = (receiveOnly!(Buffer, bool))[0];
         return response;
     }
 
@@ -154,7 +159,12 @@ void transactionServiceTask(immutable(Options) opts) {
             case "search":{
                 // log("search request received");
                 auto response = search(0, params);  //epoch number?
-                ssl_relay.send(response);
+                if(response.length){
+                    ssl_relay.send(response);
+                }else{
+                    auto bad_response = hirpc.error(hiprc_received, "Timeout exception", 1);
+                    ssl_relay.send(hirpc.toHiBON(bad_response).serialize);
+                }
                 break;
             }
             default:

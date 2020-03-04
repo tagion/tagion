@@ -54,12 +54,9 @@ void transcriptServiceTask(immutable(Options) opts) {
         }
     }
 
-    Buffer modifyDART(DARTFile.Recorder recorder){
+    void modifyDART(DARTFile.Recorder recorder){
         auto sender = DART.dartModify(recorder, empty_hirpc);
         dart_sync_tid.send(task_name, empty_hirpc.toHiBON(sender).serialize);
-        auto response = (receiveOnly!(Buffer, bool))[0];
-        auto receiver = empty_hirpc.receive(Document(response));
-        return receiver.params[DARTFile.Params.bullseye].get!Buffer;
     }
     void receive_epoch(Buffer payloads_buff) {
         try{
@@ -110,9 +107,9 @@ void transcriptServiceTask(immutable(Options) opts) {
             if(recorder.length > 0){
                 log("Sending to dart len: %d", recorder.length);
                 recorder.dump;
-                auto bullseye = modifyDART(recorder);
-                import tagion.utils.Miscellaneous: cutHex;
-                log("Bullseye %s", bullseye.cutHex);
+                modifyDART(recorder);
+                // import tagion.utils.Miscellaneous: cutHex;
+                // log("Bullseye %s", bullseye.cutHex);
             }else{
                 log("Empty epoch");
             }
@@ -186,7 +183,13 @@ void transcriptServiceTask(immutable(Options) opts) {
             &tagionexception,
             &exception,
             &throwable,
+            (Buffer response, bool flag){
+                auto receiver = empty_hirpc.receive(Document(response));
+                auto bullseye = receiver.params[DARTFile.Params.bullseye].get!Buffer;
 
+                import tagion.utils.Miscellaneous: cutHex;
+                log("Bullseye %s", bullseye.cutHex);
+            }
             );
         // immutable message_received=receiveTimeout(delay.msecs, &controller);
         // log("message_received=%s", message_received);
