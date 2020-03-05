@@ -204,7 +204,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     }
                 },
                 (string taskName, Buffer data){
-                    log("DSS: Received request from service: %s", taskName);
+                    log("DSS: Received request from service: %s %d", taskName, data.length);
                     Document loadAll(HiRPC hirpc){
                         return Document(dart.loadAll().serialize);
                     }

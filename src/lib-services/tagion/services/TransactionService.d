@@ -59,34 +59,8 @@ void transactionServiceTask(immutable(Options) opts) {
         node_tid.send(payload);
     }
     auto dart_sync_tid = locate(opts.dart.sync.task_name);
-    @trusted DARTFile.Recorder requestInputs(Buffer[] inputs){
-        auto sender = DART.dartRead(inputs, empty_hirpc);
-        auto tosend = empty_hirpc.toHiBON(sender).serialize;
-        send(dart_sync_tid, opts.transaction.service.task_name, tosend);
-        Buffer response = (receiveOnly!(Buffer, bool))[0];
-        auto received = empty_hirpc.receive(Document(response));
-        auto recorder = DARTFile.Recorder(hirpc.net, received.params);
-        return recorder;
-    }
-    @trusted Buffer search(int epoch, Document doc){
-        import tagion.hibon.HiBONJSON;
-        auto n_params=new HiBON;
-        // n_params["epoch"] = epoch;
-        // n_params["owner"] = doc["owner"].get!Buffer;
-        n_params["owners"] = doc;
-        auto sender = empty_hirpc.search(n_params);
-        auto tosend = empty_hirpc.toHiBON(sender).serialize;
-        send(dart_sync_tid, opts.transaction.service.task_name, tosend);
-        Buffer response;
-        receiveTimeout(5.seconds,
-        (Buffer buf, bool flag){
-            response = buf;
-        });
-        // Buffer response = (receiveOnly!(Buffer, bool))[0];
-        return response;
-    }
 
-    @safe bool relay(SSLRelay ssl_relay) {
+    @trusted bool relay(SSLRelay ssl_relay) {
         immutable buffer = ssl_relay.receive;
         if (!buffer) {
             return true;
@@ -125,7 +99,13 @@ void transactionServiceTask(immutable(Options) opts) {
                         //
 
                         auto inputs = signed_contract.contract.input;
-                        auto foreign_recoder=requestInputs(inputs);
+                        auto hirpc_id = empty_hirpc.generateId;
+                        auto sender = DART.dartRead(inputs, empty_hirpc, hirpc_id);
+                        auto tosend = empty_hirpc.toHiBON(sender).serialize;
+                        send(dart_sync_tid, opts.transaction.service.task_name, tosend);
+                        auto response = ssl_relay.waitForServiceResponse(hirpc_id);
+                        auto received = empty_hirpc.receive(Document(response));
+                        auto foreign_recoder = DARTFile.Recorder(hirpc.net, received.params);
                         import tagion.script.StandardRecords: StandardBill;
                         // writefln("input loaded %d", foreign_recoder.archive);
                         foreach(archive; foreign_recoder.archives){
@@ -158,7 +138,14 @@ void transactionServiceTask(immutable(Options) opts) {
                 break;
             case "search":{
                 // log("search request received");
-                auto response = search(0, params);  //epoch number?
+                // auto response = search(0, params);  //epoch number?
+                 auto n_params=new HiBON;
+                n_params["owners"] = params;
+                auto hirpc_id = empty_hirpc.generateId;
+                auto sender = empty_hirpc.search(n_params, hirpc_id);
+                auto tosend = empty_hirpc.toHiBON(sender).serialize;
+                send(dart_sync_tid, opts.transaction.service.task_name, tosend);
+                auto response = ssl_relay.waitForServiceResponse(hirpc_id);
                 if(response.length){
                     ssl_relay.send(response);
                 }else{
