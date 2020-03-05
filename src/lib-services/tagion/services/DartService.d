@@ -28,6 +28,7 @@ import tagion.Options;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
+import tagion.utils.HandlerPool;
 
 import tagion.communication.HiRPC;
 import tagion.services.DartSynchronizeService;
