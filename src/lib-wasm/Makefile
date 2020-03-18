@@ -9,3 +9,4 @@ dodi: ${WAVM_DI}
 
 ${WAVM_DI}: ${WAVM_H} makeway
 	dstep $< -o $@ --package $(WAVM_PACKAGE)
+	${WAVMa2p} $@
