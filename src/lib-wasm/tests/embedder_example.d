@@ -1,7 +1,7 @@
 
 import std.stdio;
 import wavm.c.wavm;
-import core.stdc.stdlib;
+import stdlib=core.stdc.stdlib;
 
 import std.array : join;
 
