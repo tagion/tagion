@@ -78,12 +78,21 @@ struct WAVMFunctionT(F) {
             pragma(msg, "Result is not void :", Results);
             static if (isTuple!Results) {
                 pragma(msg, "Type ", Results, " is a Tuple");
+                results=calloc!(wasm_valtype_t*)(Results.length);
+
+                size_t index;
                 static foreach(i;0..Results.length) {
                     pragma(msg, "Results ", i.to!string, " ", Results.Types[i]);
                     {
                         alias T=Unqual!(Results.Types[i]);
                         enum WASMType=toWASMType!T;
-                        results[i]=wasm_valtype_new(WASMType);
+                        pragma(msg, "WASMType : ", WASMType, " : ", T);
+                        // This line causes a link error in DMD64 D Compiler v2.090.1
+                        // results[i]=wasm_valtype_new(WASMType);
+                        // But this works
+                        enum code=format("results[%d]=wasm_valtype_new(WASMType);", i);
+
+                        mixin(code);
                     }
                 }
             }
@@ -125,6 +134,7 @@ unittest {
         auto wasm_x2=WAVMFunction(&x2);
     }
 
+
     { // No return value
         void ref_x2(int x, ref int y) {
             y=x*x;
@@ -132,12 +142,15 @@ unittest {
         auto wasm_ref_x2=WAVMFunction(&ref_x2);
     }
 
+//    version(none)
     { // Return tuple
         auto tuple_x2(int x) {
             return tuple(x, x*x);
         }
         auto wasm_tuple_x2=WAVMFunction(&tuple_x2);
     }
+
+
 
     { // Parameter with struct
         struct S {

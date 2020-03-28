@@ -9,7 +9,6 @@ endif
 
 DC?=dmd
 AR?=ar
-LIBNAME:=libtagion.a
 include $(REPOROOT)/command.mk
 
 include setup.mk
@@ -20,7 +19,7 @@ BIN:=$(REPOROOT)/bin/
 LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
-SRC?=$(REPOROOT)
+#SRC?=$(REPOROOT)
 OBJS=${DFILES:.d=.o}
 
 .SECONDARY: $(TOUCHHOOK)
@@ -67,7 +66,7 @@ LDFLAGS+=-lgmp
 LIBRARY:=$(BIN)/$(LIBNAME)
 LIBOBJ:=${LIBRARY:.a=.o};
 
-REVISION:=$(SRC)/tagion/revision.di
+REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 .PHONY: $(REVISION)
 .SECONDARY: .touch
 
@@ -107,12 +106,7 @@ info:
 	@echo "DCFLAGS =$(DCFLAGS)"
 	@echo "INCFLAGS=$(INCFLAGS)"
 
-$(REVISION):
-	@echo "########################################################################################"
-	@echo "## Linking $(1)"
-	$(PRECMD)echo "module tagion.revision;" > $@
-	$(PRECMD)echo 'enum REVNO=$(REVNO);' >> $@
-	$(PRECMD)echo 'enum HASH="$(HASH)";' >> $@
+include revsion.mk
 
 ifndef DFILES
 lib: dfiles.mk
