@@ -1,0 +1,209 @@
+module wavm.LEB128;
+
+import std.traits : isSigned, isUnsigned;
+
+import wavm.WAVMException;
+
+@safe
+class LEB128Exception : WAVMException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+        super( msg, file, line );
+    }
+}
+
+
+alias check=Check!LEB128Exception;
+
+@safe
+size_t calc_size(const(ubyte[]) data) pure {
+    foreach(i, d;data) {
+        if ((d & 0x80) == 0) {
+            check(i <= ulong.sizeof+1, "LEB128 overflow");
+            return i+1;
+        }
+    }
+    check(0, "LEB128 bad format");
+    assert(0);
+}
+
+@safe
+size_t calc_size(T)(const T v) pure if(isUnsigned!T) {
+    size_t result;
+    T value=cast(ulong)v;
+    do {
+        result++;
+        value >>= 7;
+    } while (value);
+    return result;
+}
+
+
+@safe
+size_t calc_size(T)(const T v) pure if(isSigned!T) {
+    size_t result;
+    import std.stdio;
+    ulong value=cast(ulong)(v < 0?-v:v);
+    debug {
+        writefln("calc_size %b %b", v, value);
+        stdout.flush;
+    }
+
+    do {
+        result++;
+        value >>= 7;
+    } while (value);
+    return result;
+}
+
+const(ubyte[]) encode(T)(const T v) pure if(isUnsigned!T) {
+    ubyte[T.sizeof+1] data;
+    T value=v;
+    foreach(i, ref d; data) {
+        d = value & 0x7f;
+        value >>= 7;
+        if (value == 0) {
+            return data[0..i+1].dup;
+        }
+        d |= 0x80;
+    }
+    assert(0);
+}
+
+const(ubyte[]) encode(T)(const T v) pure if(isSigned!T) {
+    ubyte[T.sizeof+1] data;
+    immutable negative=(v < 0);
+    T value=v;
+    enum BITS=T.sizeof*8;
+    foreach(i, ref d; data) {
+        d = value & 0x7f;
+        value >>= 7;
+        /* sign bit of byte is second high order bit (0x40) */
+        if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
+            return data[0..i+1].dup;
+        }
+        d |= 0x80;
+    }
+    assert(0);
+}
+
+T decode(T=ulong)(const(ubyte[]) data, out size_t len) pure if (isUnsigned!T) {
+    ulong result;
+    uint shift;
+    enum MAX_LIMIT=T.sizeof*8-7;
+    enum LAST_BYTE_MASK=~(~0UL >> MAX_LIMIT);
+    foreach(i, d; data) {
+        check(!((shift >= MAX_LIMIT) && ((d & LAST_BYTE_MASK) == 0)), "LEB128 decoding buffer over limit");
+        result |= (d & 0x7F) << shift;
+        if ((d & 0x80) == 0) {
+            len=i+1;
+            static if (is(T==ulong)) {
+                return result;
+            }
+            else {
+                check(result <= T.max, format("LEB128 decoding overflow for %s", T.stringof));
+                return cast(T)result;
+            }
+        }
+        shift+=7;
+    }
+    assert(0);
+}
+
+T decode(T=long)(const(ubyte[]) data, out size_t len) pure if (isSigned!T) {
+    ulong result;
+    uint shift;
+    enum MAX_LIMIT=T.sizeof*8-7;
+    enum LAST_BYTE_MASK=~(~0 >> MAX_LIMIT);
+    foreach(i, d; data) {
+        check(!((shift >= MAX_LIMIT) && ((d & LAST_BYTE_MASK) == 0)), "LEB128 decoding buffer over limit");
+        result |= (d & 0x7F) << shift;
+        shift+=7;
+        if ((d & 0x80) == 0 ) {
+            if ((shift < size) && (d & 0x40)) {
+                // signed of byte is set
+                result = (~0 << shift);
+            }
+            const sresult=cast(long)result;
+            len=i+1;
+            static if (is(T==long)) {
+                return sresult;
+            }
+            else {
+                check((T.min <= sresult) && (sresult <= T.max),
+                    format("LEB128 out of range for %s", T.sizeof));
+                return cast(T)sresult;
+            }
+        }
+    }
+    assert(0);
+}
+
+
+unittest {
+    import std.stdio;
+    import std.algorithm.comparison : equal;
+    void ok(T)(T x, const(ubyte[]) expected) {
+//        const len=
+//        x=27;
+        writefln("x=%d %s", x, encode(x));
+//        const(ubyte[]) expected=[27];
+        assert(equal(encode(x), expected));
+        size_t len;
+        writefln("decode %s=%d", expected, decode!ulong(expected, len));
+        writefln("len=%d", len);
+        assert(len == expected.length);
+        writefln("size %d", calc_size(x));
+        assert(calc_size(x) == len);
+        writefln("size %d", calc_size(expected));
+        assert(calc_size(expected) == len);
+    }
+
+    {
+
+//        version(none)
+        {
+            ok!ulong(27, [27]);
+            ok!ulong(2727, [167, 21]);
+            ok!ulong(272727, [215, 210, 16]);
+            ok!ulong(27272727,  [151, 204, 128, 13]);
+            ok!ulong(1427449141, [181, 202, 212, 168, 5]);
+
+        }
+
+        {
+            ok!long(27, [27]);
+            ok!long(2727, [167, 21]);
+            ok!long(272727, [215, 210, 16]);
+            ok!long(27272727,  [151, 204, 128, 13]);
+            ok!long(1427449141, [181, 202, 212, 168, 5]);
+
+            ok!long(-27, [101]);
+            ok!long(-2727,[217, 106]);
+            ok!long(-272727, [169, 173, 111]);
+            ok!long(-27272727,   [233, 179, 255, 114]);
+            ok!long(-1427449141, [203, 181, 171, 215, 122]);
+        }
+
+         long x;
+
+//         x=272727;
+//         writefln("x=%d %s", x, encode(x));
+// //        assert(encode(x), [167, 21]);
+
+//         x=27272727;
+//         writefln("x=%d %s", x, encode(x));
+//         x=1427449141;
+//         writefln("x=%d %s", x, encode(x));
+
+        x=-27;
+        writefln("x=%d %s", x, encode(x));
+        x=-2727;
+        writefln("x=%d %s", x, encode(x));
+        x=-272727;
+        writefln("x=%d %s", x, encode(x));
+        x=-27272727;
+        writefln("x=%d %s", x, encode(x));
+        x=-1427449141;
+        writefln("x=%d %s", x, encode(x));
+    }
+}

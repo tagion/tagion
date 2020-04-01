@@ -4,10 +4,11 @@ import std.format;
 
 @safe
 class WASMException : WAVMException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
 }
+
 
 alias check=Check!WASMException;
 
@@ -281,30 +282,138 @@ struct Wasm {
         DATA     = 11
     }
 
-    OpcodeRange opSlice() {
-        return OpcodeRange(data);
+    // OpcodeRange WasmSections opSlice() {
+    //     return OpcodeRange(data);
+    // }
+
+    @trusted
+    static uint calc_size(const(ubyte[]) data) pure {
+        return *cast(uint*)(data[0..uint.sizeof].ptr);
     }
 
-    struct OpcodeRange {
+    @trusted
+    static immutable(T[]) Vector(T)(immutable(ubyte[]) vec_data) {
+        immutable byte_size=calc_size(vec_data);
+        immutable vec_mem=vec_data[uint.sizeof..$];
+        immutable len=vec_mem.length / T.sizeof;
+        pragma(msg, "Fixme(cbr): this assert should be an exception");
+        assert(T.sizeof % vec_mem.length == 0,
+            format("The vector memory (size=%d) does not match the size of %s",
+                vec_mem.length, T.stringof));
+        immutable result=cast(immutable(T*))(vec_mem.ptr);
+        return result[0..len];
+    }
+
+    WasmRange opSlice() {
+        return WasmRange(data);
+    }
+
+    struct WasmRange {
         immutable(ubyte[]) data;
-        protected size_t index;
+        private size_t index;
 
         this(immutable(ubyte[]) data) {
             this.data=data;
+            index=2*uint.sizeof;
+        }
+
+        @property bool empty() const pure nothrow {
+            return index >= data.length;
+        }
+
+        @property WasmSection front() const pure {
+            return WasmSection(data[index..$]);
+        }
+
+        @property void popFront() {
+            index+=PACKAGE_POS+front.size;
+        }
+
+
+
+        struct WasmSection {
+            enum SIZE_POS=Section.sizeof;
+            enum PACKAGE_POS=SIZE_POS+uint.sizeof;
+            immutable(ubyte[]) data;
+            @property pure const {
+                Section section() {
+                    return cast(Section)data[0];
+                }
+
+                uint size() {
+                    return calc_size(data[SIZE_POS..$]);
+                }
+            }
+
+            this(immutable(ubyte[]) data) pure {
+                this.data=data[PACKAGE_POS..PACKAGE_POS+size];
+            }
+
+            Custom customsec() pure const
+                in {
+                    assert(section is Section.CUSTOM);
+                }
+            do {
+                return Custom(data[PACKAGE_POS..$]);
+            }
+
+            mixin template SectionT() {
+                immutable(ubyte[]) data;
+                @property uint size() pure const {
+                    return calc_size(data[0..$]);
+                }
+                @disable this();
+                this(immutable(ubyte[]) data) {
+                    this.data=data;
+                }
+            }
+
+            struct Custom {
+                mixin SectionT;
+                @property pure const {
+                    string name() {
+                        return cast(string)(data[uint.sizeof..size+uint.sizeof]);
+                    }
+                    immutable(ubyte[]) bytes() {
+                        auto index=size+uint.sizeof;
+                        immutable byte_size=calc_size(data[index..$]);
+                        index+=uint.sizeof;
+                        return data[index..index+byte_size];
+                    }
+                }
+                @disable this();
+                this(immutable(ubyte[]) data) pure {
+                    this.data=data;
+                }
+            }
+
+            // struct Type {
+            //     mixin(SectionT);
+
+            // }
+
         }
 
         enum SIZE_POS=Section.sizeof;
         enum PACKAGE_POS=SIZE_POS+uint.sizeof;
+        version(none)
         @property pure const {
-            Section section() {
-                return cast(Section)data[index];
+            immutable(ubyte[]) magic() {
+                return data[0..uint.sizeof];
             }
-
-            uint size() {
-                return calc_size(data[index+SIZE_POS..$]);
+            immutable(ubyte[]) vers() {
+                return data[uint.sizeof..size];
             }
         }
 
+        version(none)
+        Header headersec() {
+            auto result=Header(data);
+            index=result.size;
+            return result;
+        }
+
+        version(none)
         Custom customsec()
             in {
                 assert(section is Section.CUSTOM);
@@ -316,6 +425,7 @@ struct Wasm {
             return result;
         }
 
+        version(none) {
         const(Function[]) typesec()
         in {
             assert(section is Section.TYPE);
@@ -351,6 +461,18 @@ struct Wasm {
             return result;
         }
 
+        version(none)
+        struct Header {
+            immutable(uint) size;
+            immutable(ubyte[]) magic;
+            immutable(ubyte[]) vers;
+            @disable this();
+            this(immutable(ubyte[]) data) {
+                magic=data[0..uint.sizeof];
+                size=uint.sizeof*2;
+                vers=data[uint.sizeof..size];
+            }
+        }
 
         struct Custom {
             immutable(uint) size;
@@ -413,7 +535,7 @@ struct Wasm {
             immutable result=cast(immutable(T*))(vec_mem.ptr);
             return result[0..len];
         }
-
+        }
 
     // Function func() {
     //             pragma(msg, "Fixme(cbr): this assert should be an exception");
@@ -440,9 +562,67 @@ struct Wasm {
     unittest {
         import std.stdio;
         import std.file;
+        import std.exception : assumeUnique;
+        //      import std.file : fread=read, fwrite=write;
+
+
+        @trusted
+        static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
+            import std.file : _read=read;
+            auto data=cast(ubyte[])_read(name, upTo);
+            return assumeUnique(data);
+        }
         writeln("WAVM Started");
         {
-            string filename="../../tests/wasm/";
+            //string filename="../tests/wasm/custom_2.wasm";
+            string filename="../tests/wasm/func_1.wasm";
+            immutable code=fread(filename);
+//            auto code=cast(
+            auto wasm=Wasm(code);
+            auto range=wasm[];
+            writefln("WasmRange %s %d %d", range.empty, wasm.data.length, code.length);
+            foreach(a; range) {
+
+                writefln("%s", a.section);
+            }
+
         }
     }
 }
+/+
+
+                                             param-len
+                                               |  return-len
+                                               | i32 |
+                                         |     |  |  |
+00000000  00 61 73 6d 01 00 00 00  01 08 02 60 01 7f 00 60  |.asm.......`...`|
+                                    |  |     |          |
+          magic       version   typesec|   func        func
+                                     pack-len
+
+               import
+                 |      len i  m   p  o  qq t  s len i  m
+00000010  00 00|02 19 01 07 69 6d  70 6f 72 74 73 0d 69 6d  |......imports.im|
+                  len |
+                  25 num-imports
+                                             typeidx
+                                               | end-19
+          p  o  r  t  e  d  _  f  u   n  c     | |
+00000020  70 6f 72 74 65 64 5f 66  75 6e 63|00 00|03 02 01  |ported_func.....|
+                                            |  funcsec
+                                         import-type-func
+
+             len-export
+                 |   len e  x  p   o  r  t  e  d  _  f  u
+00000030  01 07 11 01 0d 65 78 70  6f 72 74 65 64 5f 66 75  |.....exported_fu|
+             |
+          export
+
+                  export-end             42   $i end
+          n  c       |                    |    |  |
+00000040  6e 63 00 01|0a 08 01 06  00 41 2a 10 00 0b|       |nc.......A*...|
+                      |   |           |   call      |
+                    code  |       i32.const         |
+                        code-len                 code-end
+
++/

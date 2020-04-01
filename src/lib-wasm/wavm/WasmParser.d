@@ -3,6 +3,9 @@ module wavm.WasmParser;
 import std.uni : toUpper;
 import std.traits : EnumMembers;
 import std.format;
+
+import wavm.LEB128;
+
 //import tagion.Message : message;
 
 struct Token {
@@ -68,6 +71,14 @@ struct Tokenizer {
                 return _eos;
             }
 
+            size_t begin_pos() {
+                return _begin_pos;
+            }
+
+            size_t end_pos() {
+                return _end_pos;
+            }
+
             immutable(string) grap(const size_t begin, const size_t end)
                 in {
                     assert(begin <= end);
@@ -88,6 +99,7 @@ struct Tokenizer {
             if (_end_pos < source.length) {
                 if ((_end_pos+1<source.length) && (source[_end_pos.._end_pos+2] == "(;")) {
                     _end_pos+=2;
+                    uint level=1;
                     while (_end_pos+1 < source.length) {
                         const eol=is_newline(source[_end_pos..$]);
                         if ( eol ) {
@@ -97,7 +109,14 @@ struct Tokenizer {
                         }
                         else if (source[_end_pos.._end_pos+2] == ";)") {
                             _end_pos+=2;
-                            break;
+                            level--;
+                            if (level==0) {
+                                break;
+                            }
+                        }
+                        else if (source[_end_pos.._end_pos+2] == "(;") {
+                            _end_pos+=2;
+                            level++;
                         }
                         else {
                             _end_pos++;
