@@ -41,13 +41,7 @@ size_t calc_size(T)(const T v) pure if(isUnsigned!T) {
 @safe
 size_t calc_size(T)(const T v) pure if(isSigned!T) {
     size_t result;
-    import std.stdio;
     ulong value=cast(ulong)(v < 0?-v:v);
-    debug {
-        writefln("calc_size %b %b", v, value);
-        stdout.flush;
-    }
-
     do {
         result++;
         value >>= 7;
@@ -143,18 +137,10 @@ unittest {
     import std.stdio;
     import std.algorithm.comparison : equal;
     void ok(T)(T x, const(ubyte[]) expected) {
-//        const len=
-//        x=27;
-        writefln("x=%d %s", x, encode(x));
-//        const(ubyte[]) expected=[27];
         assert(equal(encode(x), expected));
         size_t len;
-        writefln("decode %s=%d", expected, decode!ulong(expected, len));
-        writefln("len=%d", len);
         assert(len == expected.length);
-        writefln("size %d", calc_size(x));
         assert(calc_size(x) == len);
-        writefln("size %d", calc_size(expected));
         assert(calc_size(expected) == len);
     }
 
@@ -184,26 +170,5 @@ unittest {
             ok!long(-1427449141, [203, 181, 171, 215, 122]);
         }
 
-         long x;
-
-//         x=272727;
-//         writefln("x=%d %s", x, encode(x));
-// //        assert(encode(x), [167, 21]);
-
-//         x=27272727;
-//         writefln("x=%d %s", x, encode(x));
-//         x=1427449141;
-//         writefln("x=%d %s", x, encode(x));
-
-        x=-27;
-        writefln("x=%d %s", x, encode(x));
-        x=-2727;
-        writefln("x=%d %s", x, encode(x));
-        x=-272727;
-        writefln("x=%d %s", x, encode(x));
-        x=-27272727;
-        writefln("x=%d %s", x, encode(x));
-        x=-1427449141;
-        writefln("x=%d %s", x, encode(x));
     }
 }
