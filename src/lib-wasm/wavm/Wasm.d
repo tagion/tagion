@@ -299,7 +299,11 @@ struct Wasm {
     @trusted
     static immutable(T[]) Vector(T)(immutable(ubyte[]) vec_data, out size_t index) {
 //        size_t index;
+//        size_t u32_size;
         immutable len=u32(vec_data, index);
+        writefln("vec_data=%s", vec_data);
+        writefln("[%d..%d]", index, index+len*T.sizeof);
+        //index=u32_size;
         immutable vec_mem=vec_data[index..index+len*T.sizeof];
         index+=len*T.sizeof;
         // immutable len=vec_mem.length / T.sizeof;
@@ -342,15 +346,6 @@ struct Wasm {
             writefln("popFront %d", _index);
         }
 
-        // @property size_t index() const pure nothrow {
-        //     return _index;
-        // }
-
-        // @property Section section() const pure nothrow {
-        //     return cast(Section)(data[_index]);
-        // }
-
-
         struct WasmSection {
             //enum SIZE_POS=Section.sizeof;
             //enum PACKAGE_POS=SIZE_POS+uint.sizeof;
@@ -379,26 +374,39 @@ struct Wasm {
                 this.data=data[index..index+size];
             }
 
-            auto sec(Section S)() {
+            auto sec(Section S)()
+                in {
+                    assert(S is section);
+                }
+            do {
                 with(Section) {
                     final switch(S) {
                     case CUSTOM:
                         assert(0);
-                    case CUSTOM:
+                    case TYPE:
+                        return Type(data);
+                    case IMPORT:
                         assert(0);
-
-            }
-            version(none)
-            Custom customsec() pure const
-            in {
-                assert(section is Section.CUSTOM);
-            }
-            do {
-                return Custom(data);
-            }
-
-            mixin template SectionT() {
-                immutable(uint) size;
+                    case FUNCTION:
+                        assert(0);
+                    case TABLE:
+                        assert(0);
+                    case MEMORY:
+                        assert(0);
+                    case GLOBAL:
+                        assert(0);
+                    case EXPORT:
+                        assert(0);
+                    case START:
+                        assert(0);
+                    case ELEMENT:
+                        assert(0);
+                    case CODE:
+                        assert(0);
+                    case DATA:
+                        assert(0);
+                    }
+                }
             }
 
             version(none)
@@ -430,191 +438,73 @@ struct Wasm {
                 }
             }
 
-            struct Type {
-                immutable(Types[]) func_types;
-                immutable(Types[]) return_types;
-                this(immutable(ubyte[]) data) {
-                    size_t index=Section.sizeof;
-                    size_t byte_size;
-                    func_types=Vector!Types(data[index..$], byte_size);
-                    index+=byte_size;
-                    return_types=Vector!Types(data[index..$], byte_size);
-                    index+=byte_size;
-//                    size=index;
-                }
-            }
 
-
-
-            version(none)
-            struct Import {
-                immutable(char[]) mod;
-                immutable(char[]) name;
-                struct ImportDesc {
-                    IndexType type;
-                    uint index;
-                }
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    size_t byte_size;
-                    mod=Vector!char(data[index..$], byte_size);
-                    index+=byte_size;
-                    name=Vector!char(data[index..$], byte_size);
-
-                }
-            }
-
-        // enum SIZE_POS=Section.sizeof;
-        // enum PACKAGE_POS=SIZE_POS+uint.sizeof;
-            version(none)
-            @property pure const {
-                immutable(ubyte[]) magic() {
-                    return data[0..uint.sizeof];
-                }
-                immutable(ubyte[]) vers() {
-                    return data[uint.sizeof..size];
-                }
-            }
-
-            version(none)
-            Header headersec() {
-                auto result=Header(data);
-                index=result.size;
-                return result;
-            }
-
-            version(none){
-                Custom customsec()
-                    in {
-                        assert(section is Section.CUSTOM);
-                    }
-                do {
-                    index+=SIZE_POS;
-                    auto result=Custom(data[index..$]);
-                    index+=result.size+uint.sizeof;
-                    return result;
-                }
-
-                const(Function[]) typesec()
-                    in {
-                        assert(section is Section.TYPE);
-                    }
-                do {
-                    // pragma(msg, "Fixme(cbr): this assert should be an exception");
-                    // assert(section is Section.TYPE);
-                    index+=SIZE_POS;
-                    immutable types_size=calc_size(data[index..$]);
-
-                    auto func_data=data[PACKAGE_POS..PACKAGE_POS+types_size];
-                    Function[] result;
-                    while(func_data.length) {
-                        immutable _func=Function(data);
-                        result~=_func;
-                        func_data=func_data[_func.size..$];
-                    }
-                    return result;
-                }
-
-                const(Import[]) importsec() {
-                    pragma(msg, "Fixme(cbr): this assert should be an exception");
-                    assert(section is Section.IMPORT);
-                    immutable import_size=calc_size(data[SIZE_POS..$]);
-                    auto import_data=data[PACKAGE_POS..PACKAGE_POS+import_size];
-
-                    Import[] result;
-                    while (import_data.length) {
-                        immutable _import=Import(data);
-                        result~=_import;
-                        import_data=import_data[_import.size..$];
-                    }
-                    return result;
-                }
-            }
-
-            // struct Custom {
-            //     immutable(uint) size;
-            //     immutable(string) name;
-            //     @disable this();
-            //     this(immutable(ubyte[]) data) {
-            //         size=calc_size(data);
-            //         name=cast(string)(data[uint.sizeof..size+uint.sizeof]);
-            //     }
-            // }
-            version(none)
-            struct Function {
-            immutable(uint) size;
+            struct FuncType {
                 immutable(Types[]) params;
                 immutable(Types[]) returns;
-                @disable this();
+                immutable(size_t) size;
+//                immutable(
                 this(immutable(ubyte[]) data) {
-                    size=calc_size(data);
-                    pragma(msg, "Fixme(cbr): this assert should be an exception");
-                    assert(data[PACKAGE_POS] is Section.TYPE);
-                    uint index=PACKAGE_POS+Types.sizeof;
-                    immutable param_byte_size=calc_size(data[index..$]);
-                    index+=param_byte_size.sizeof;
-                    immutable params=Vector!Types(data[index..index+param_byte_size]);
-                    index+=params.length*Types.sizeof;
-                    immutable results_byte_size=calc_size(data[index..$]);
-                    immutable results=Vector!Types(data[index..index+results_byte_size]);
-                    this.params=params;
-                    this.returns=returns;
+                    size_t index=IR.sizeof;
+                    size_t bytes_size;
+                    params=Vector!Types(data[index..$], bytes_size);
+                    index+=bytes_size;
+                    returns=Vector!Types(data[index..$], bytes_size);
+                    index+=bytes_size;
+                    size=index;
                 }
             }
 
-            // struct Import {
-            //     immutable(uint) size; ///  Size in bytes
-            //     immutable(string) mod;  /// Import module name
-            //     immutable(string) name; /// Import name
-            //     immutable(IndexType) descriptor; /// Import descriptor
-            //     this(immutable(ubyte[]) data) {
-            //         size=calc_size(data);
-            //         pragma(msg, "Fixme(cbr): this assert should be an exception");
-            //         assert(data[PACKAGE_POS] is Section.IMPORT);
-            //     }
-            // }
+            struct Type {
+                // immutable(Types[]) func_types;
+                // immutable(Types[]) return_types;
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    size_t u32_size;
+                    length=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    this.data=data[index..$];
+                    // func_types=Vector!Types(data[index..$], byte_size);
+                    // index+=byte_size;
+                    // return_types=Vector!Types(data[index..$], byte_size);
+                    // index+=byte_size;
+//                    size=index;
+                }
 
+                FuncRange opSlice() {
+                    return FuncRange(this);
+                }
 
-            @trusted
-            static uint calc_size(const(ubyte[]) data) pure {
-                return *cast(uint*)(data[0..uint.sizeof].ptr);
+                struct FuncRange {
+                    Type owner;
+                    protected size_t index;
+                    protected uint funcidx;
+                    this(Type owner)  {
+                        this.owner=owner;
+                    }
+
+                    @property FuncType front() const {
+                        return FuncType(owner.data[index..$]);
+                    }
+
+                    @property bool empty() const pure nothrow {
+                        return funcidx>=owner.length;
+                    }
+
+                    @property void popFront() {
+                        index+=front.size;
+                        funcidx++;
+                    }
+
+                }
             }
 
-            @trusted
-            static immutable(T[]) Vector(T)(immutable(ubyte[]) vec_data) {
-                immutable byte_size=calc_size(vec_data);
-                immutable vec_mem=vec_data[uint.sizeof..$];
-                immutable len=vec_mem.length / T.sizeof;
-                pragma(msg, "Fixme(cbr): this assert should be an exception");
-                assert(T.sizeof % vec_mem.length == 0,
-                    format("The vector memory (size=%d) does not match the size of %s",
-                        vec_mem.length, T.stringof));
-                immutable result=cast(immutable(T*))(vec_mem.ptr);
-            return result[0..len];
-            }
+
+
         }
 
-
-    // Function func() {
-    //             pragma(msg, "Fixme(cbr): this assert should be an exception");
-    //             assert(data[PACKAGE_POS] is Types.FUNC);
-    //             enum index=PACKAGE_POS+Types.sizeof;
-    //             // immutable param_byte_size=calc_size(data[index..$]);
-    //             // index+=param_byte_size.sizeof;
-    //             // immutable params=Vector!Types(data[index..index+param_byte_size]);
-    //             // index+=params.length*Types.sizeof;
-    //             // immutable results_byte_size=calc_size(data[index..$]);
-    //             // immutable results=Vector!Types(data[index..index+results_byte_size]);
-    //             return Function(data[index..$]);
-    //         }
-
-
-    // @safe
-    // struct Opcode {
-    //     immutable(ubyte[]) data;
-    //     this(immutable(ubyte[]) data) pure nothrow {
-    //         this.data=data;
-    //     }
 
     }
     unittest {
@@ -644,7 +534,11 @@ struct Wasm {
             foreach(a; range) {
 
                 writefln("%s length=%d data=%s", a.section, a.data.length, a.data);
-
+                if (a.section == Section.TYPE) {
+                    auto _type=a.sec!(Section.TYPE);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Function types length %d %s", _type.length, _type[]);
+                }
             }
 
         }
