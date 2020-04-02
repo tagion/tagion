@@ -5,6 +5,7 @@ import wavm.WAVMException;
 import LEB128=wavm.LEB128;
 
 import std.stdio;
+import std.meta : AliasSeq;
 
 @safe
 class WASMException : WAVMException {
@@ -374,39 +375,38 @@ struct Wasm {
                 this.data=data[index..index+size];
             }
 
+
+//             protected template GetSector(Section S, EList...) {
+// //                static foreach(E; EnumMembers!Section) {
+//                 switch (S) {
+//                     case Section.Type:
+//                         alias GetSector=Type;
+//                     default:
+//                         alias GetSector=Type;
+
+//                 }
+//             }
+
+            alias Sections=AliasSeq!(
+                Custom,
+                Type,
+                Import,
+                Function,
+                Table,
+                Memory,
+                Global,
+                Export,
+                Start,
+                Element,
+                Code);
+
             auto sec(Section S)()
                 in {
                     assert(S is section);
                 }
             do {
-                with(Section) {
-                    final switch(S) {
-                    case CUSTOM:
-                        assert(0);
-                    case TYPE:
-                        return Type(data);
-                    case IMPORT:
-                        assert(0);
-                    case FUNCTION:
-                        assert(0);
-                    case TABLE:
-                        assert(0);
-                    case MEMORY:
-                        assert(0);
-                    case GLOBAL:
-                        assert(0);
-                    case EXPORT:
-                        assert(0);
-                    case START:
-                        assert(0);
-                    case ELEMENT:
-                        assert(0);
-                    case CODE:
-                        assert(0);
-                    case DATA:
-                        assert(0);
-                    }
-                }
+                alias T=Sections[S];
+                return T(data);
             }
 
             version(none)
@@ -439,11 +439,35 @@ struct Wasm {
             }
 
 
+            struct VectorRange(ModuleSection, Element) {
+                ModuleSection owner;
+                protected size_t pos;
+                protected uint index;
+                this(ModuleSection owner)  {
+                    this.owner=owner;
+                }
+
+                @property Element front() const {
+                    return Element(owner.data[pos..$]);
+                }
+
+                @property bool empty() const pure nothrow {
+                    return index>=owner.length;
+                }
+
+                @property void popFront() {
+                    pos+=front.size;
+                    index++;
+                }
+            }
+
+            struct Custom {
+            }
+
             struct FuncType {
                 immutable(Types[]) params;
                 immutable(Types[]) returns;
                 immutable(size_t) size;
-//                immutable(
                 this(immutable(ubyte[]) data) {
                     size_t index=IR.sizeof;
                     size_t bytes_size;
@@ -456,8 +480,6 @@ struct Wasm {
             }
 
             struct Type {
-                // immutable(Types[]) func_types;
-                // immutable(Types[]) return_types;
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
@@ -466,42 +488,74 @@ struct Wasm {
                     length=u32(data[index..$], u32_size);
                     index+=u32_size;
                     this.data=data[index..$];
-                    // func_types=Vector!Types(data[index..$], byte_size);
-                    // index+=byte_size;
-                    // return_types=Vector!Types(data[index..$], byte_size);
-                    // index+=byte_size;
-//                    size=index;
                 }
+
+                alias FuncRange=VectorRange!(Type, FuncType);
 
                 FuncRange opSlice() {
                     return FuncRange(this);
                 }
+            }
 
-                struct FuncRange {
-                    Type owner;
-                    protected size_t index;
-                    protected uint funcidx;
-                    this(Type owner)  {
-                        this.owner=owner;
-                    }
-
-                    @property FuncType front() const {
-                        return FuncType(owner.data[index..$]);
-                    }
-
-                    @property bool empty() const pure nothrow {
-                        return funcidx>=owner.length;
-                    }
-
-                    @property void popFront() {
-                        index+=front.size;
-                        funcidx++;
-                    }
-
+            struct ImportType {
+                immutable(char[]) mod;
+                immutable(char[]) name;
+                immutable(IndexType) desc;
+                immutable(size_t) size;
+//                immutable(
+                this(immutable(ubyte[]) data) {
+                    size_t index=IR.sizeof;
+                    size_t bytes_size;
+                    mod=Vector!char(data[index..$], bytes_size);
+                    index+=bytes_size;
+                    name=Vector!char(data[index..$], bytes_size);
+                    index+=bytes_size;
+                    desc=cast(IndexType)data[index];
+                    size=index+1;
                 }
             }
 
+            struct Import {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    size_t u32_size;
+                    length=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    this.data=data[index..$];
+                }
 
+                alias ImportRange=VectorRange!(Import, ImportType);
+
+                ImportRange opSlice() {
+                    return ImportRange(this);
+                }
+            }
+
+            struct Function {
+            }
+
+            struct Table {
+            }
+
+            struct Memory {
+            }
+
+            struct Global {
+            }
+
+            struct Export {
+            }
+
+            struct Start {
+            }
+
+            struct Element {
+            }
+
+            struct Code {
+            }
 
         }
 
