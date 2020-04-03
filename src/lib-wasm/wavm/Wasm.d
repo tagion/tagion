@@ -612,10 +612,8 @@ struct Wasm {
                 this(immutable(ubyte[]) data) {
                     // check(data[0] == Types.FUNCREF,
                     //     format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
-                    writefln("MemoryType %s", data);
                     size_t index; //=Types.sizeof; //=Section.sizeof;
                     const ltype=cast(Limits)data[index];
-                    writefln("ltype=%s", ltype);
                     index+=Limits.sizeof;
                     size_t u32_size;
                     begin=u32(data[index..$], u32_size);
@@ -633,17 +631,6 @@ struct Wasm {
                             format("Bad Limits type 0x%02X in table", ltype));
                     }
                     end=_end;
-                    writefln("Begin %d end %d", begin, end);
-                    // final switch(ltype) {
-                    // case Limits.LOWER:
-                    //     _end=uint.max;
-                    //     break;
-                    // case Limits.RANGE:
-                    //     _end=u32(data[index..$], u32_size);
-                    //     index+=u32_size;
-                    //     break;
-                    // }
-                    //end=_end;
                     size=index;
                 }
             }
@@ -665,10 +652,37 @@ struct Wasm {
                     return MemoryRange(this);
                 }
             }
+
+            struct GlobalType {
+                immutable(Types) valtype;
+                immutable(Mutable) mut;
+                immutable(size_t) size;
+//                immutable(
+                this(immutable(ubyte[]) data) {
+                    valtype=cast(Types)data[0];
+                    mut=cast(Mutable)data[Types.sizeof];
+                    size=Types.sizeof+Mutable.sizeof;
+                }
+            }
             // struct Memory {
             // }
 
             struct Global {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    size_t u32_size;
+                    length=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    this.data=data[index..$];
+                }
+
+                alias GlobalRange=VectorRange!(Global, GlobalType);
+
+                GlobalRange opSlice() {
+                    return GlobalRange(this);
+                }
             }
 
             struct ExportType {
@@ -738,7 +752,8 @@ struct Wasm {
             //string filename="../tests/wasm/custom_1.wasm";
             //string filename="../tests/wasm/func_2.wasm";
             //string filename="../tests/wasm/table_copy_2.wasm"; //../tests/wasm/func_2.wasm";
-            string filename="../tests/wasm/memory_4.wasm"; //../tests/wasm/func_2.wasm";
+//            string filename="../tests/wasm/memory_4.wasm"; //../tests/wasm/func_2.wasm";
+            string filename="../tests/wasm/global_1.wasm";
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
@@ -776,6 +791,12 @@ struct Wasm {
                     auto _memory=a.sec!(Section.MEMORY);
 //                    writefln("Function types %s", _type.func_types);
                     writefln("Memory types length %d %s", _memory.length, _memory[]);
+//                    writefln("Table types %s", _table);
+                }
+                else if (a.section == Section.GLOBAL) {
+                    auto _global=a.sec!(Section.GLOBAL);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Global types length %d %s", _global.length, _global[]);
 //                    writefln("Table types %s", _table);
                 }
             }
