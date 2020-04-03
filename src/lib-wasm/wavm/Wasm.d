@@ -432,6 +432,15 @@ struct Wasm {
             }
 
             struct Custom {
+                immutable(char[]) name;
+                immutable(ubyte[]) bytes;
+                this(immutable(ubyte[]) data) {
+                    size_t index;
+                    size_t bytes_size;
+                    name=Vector!char(data[index..$], bytes_size);
+                    index+=bytes_size;
+                    bytes=Vector!ubyte(data[index..$], bytes_size);
+                }
             }
 
             struct FuncType {
@@ -503,7 +512,36 @@ struct Wasm {
                 }
             }
 
+
+            struct Index {
+                immutable(uint) value;
+                immutable(size_t) size;
+//                immutable(
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    size_t u32_size;
+                    value=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    size=index;
+                }
+            }
+
             struct Function {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    size_t u32_size;
+                    length=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    this.data=data[index..$];
+                }
+
+                alias FunctionRange=VectorRange!(Function, Index);
+
+                FunctionRange opSlice() {
+                    return FunctionRange(this);
+                }
             }
 
             struct Table {
@@ -578,11 +616,10 @@ struct Wasm {
         }
         writeln("WAVM Started");
         {
-            //string filename="../tests/wasm/custom_2.wasm";
-            string filename="../tests/simple/simple.wasm"; //../tests/wasm/func_1.wasm";
+            //string filename="../tests/simple/simple.wasm";
+            //string filename="../tests/wasm/custom_1.wasm";
+            string filename="../tests/wasm/func_2.wasm";
             immutable code=fread(filename);
-            // writefln("code=%s", code);
-//            auto code=cast(
             auto wasm=Wasm(code);
             auto range=wasm[];
             writefln("WasmRange %s %d %d", range.empty, wasm.data.length, code.length);
@@ -603,6 +640,11 @@ struct Wasm {
                     auto _export=a.sec!(Section.EXPORT);
 //                    writefln("Function types %s", _type.func_types);
                     writefln("Export types length %d %s", _export.length, _export[]);
+                }
+                else if (a.section == Section.FUNCTION) {
+                    auto _function=a.sec!(Section.FUNCTION);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Function types length %d %s", _function.length, _function[]);
                 }
             }
 
