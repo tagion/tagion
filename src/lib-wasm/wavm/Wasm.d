@@ -720,6 +720,11 @@ struct Wasm {
             }
 
             struct Start {
+                immutable(uint) idx;
+                this(immutable(ubyte[]) data) {
+                    size_t u32_size;
+                    idx=u32(data, u32_size);
+                }
             }
 
             struct Element {
@@ -753,7 +758,8 @@ struct Wasm {
             //string filename="../tests/wasm/func_2.wasm";
             //string filename="../tests/wasm/table_copy_2.wasm"; //../tests/wasm/func_2.wasm";
 //            string filename="../tests/wasm/memory_4.wasm"; //../tests/wasm/func_2.wasm";
-            string filename="../tests/wasm/global_1.wasm";
+            //string filename="../tests/wasm/global_1.wasm";
+            string filename="../tests/wasm/start_4.wasm";
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
@@ -797,6 +803,12 @@ struct Wasm {
                     auto _global=a.sec!(Section.GLOBAL);
 //                    writefln("Function types %s", _type.func_types);
                     writefln("Global types length %d %s", _global.length, _global[]);
+//                    writefln("Table types %s", _table);
+                }
+                else if (a.section == Section.START) {
+                    auto _start=a.sec!(Section.START);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Start types %s", _start);
 //                    writefln("Table types %s", _table);
                 }
             }
