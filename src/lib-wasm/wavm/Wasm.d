@@ -302,8 +302,8 @@ struct Wasm {
 //        size_t index;
 //        size_t u32_size;
         immutable len=u32(vec_data, index);
-        writefln("vec_data=%s", vec_data);
-        writefln("[%d..%d]", index, index+len*T.sizeof);
+        // writefln("vec_data=%s", vec_data);
+        // writefln("[%d..%d]", index, index+len*T.sizeof);
         //index=u32_size;
         immutable vec_mem=vec_data[index..index+len*T.sizeof];
         index+=len*T.sizeof;
@@ -328,7 +328,7 @@ struct Wasm {
         this(immutable(ubyte[]) data) {
             this.data=data;
             _index=2*uint.sizeof;
-            writefln("WasmRange %s", data);
+            //   writefln("WasmRange %s", data);
         }
 
         @property bool empty() const pure nothrow {
@@ -344,7 +344,7 @@ struct Wasm {
             _index+=Section.sizeof;
             const size=u32(data[_index..$], u32_size);
             _index+=u32_size+size;
-            writefln("popFront %d", _index);
+            // writefln("popFront %d", _index);
         }
 
         struct WasmSection {
@@ -366,11 +366,11 @@ struct Wasm {
                 size_t u32_size;
                 const size=u32(data[index..$], u32_size);
                 index+=u32_size;
-                //const total_size=Section.sizeof+u32_size+size;
-                debug {
-                    writefln("data=%s", data[0..index+size]);
-                    writefln(":: %s index=%d u32_size=%d size=%d", section, index, u32_size, size);
-                }
+                // //const total_size=Section.sizeof+u32_size+size;
+                // debug {
+                //     writefln("data=%s", data[0..index+size]);
+                //     writefln(":: %s index=%d u32_size=%d size=%d", section, index, u32_size, size);
+                // }
 
                 this.data=data[index..index+size];
             }
@@ -408,36 +408,6 @@ struct Wasm {
                 alias T=Sections[S];
                 return T(data);
             }
-
-            version(none)
-            struct Custom {
-                mixin SectionT;
-                immutable(char[]) name;
-                immutable(ubyte[]) bytes;
-                // @property pure const {
-                //     // string name() {
-                //     //     return cast(string)(data[uint.sizeof..size+uint.sizeof]);
-                //     // }
-                //     immutable(ubyte[]) bytes() {
-                //         auto index=size+uint.sizeof;
-                //         immutable byte_size=calc_size(data[index..$]);
-                //         index+=uint.sizeof;
-                //         return data[index..index+byte_size];
-                //     }
-                // }
-                @disable this();
-                this(immutable(ubyte[]) data) pure {
-                    size_t index=Section.sizeof;
-                    size_t byte_size;
-                    name=Vector!char(data[index..$], byte_size);
-                    index+=byte_size;
-                    bytes=Vector!ubyte(data[index..$], byte_size);
-                    index+=byte_size;
-                    //size=index;
-                    //this.data=data;
-                }
-            }
-
 
             struct VectorRange(ModuleSection, Element) {
                 ModuleSection owner;
@@ -504,7 +474,7 @@ struct Wasm {
                 immutable(size_t) size;
 //                immutable(
                 this(immutable(ubyte[]) data) {
-                    size_t index=IR.sizeof;
+                    size_t index;//=IR.sizeof;
                     size_t bytes_size;
                     mod=Vector!char(data[index..$], bytes_size);
                     index+=bytes_size;
@@ -545,7 +515,38 @@ struct Wasm {
             struct Global {
             }
 
+            struct ExportType {
+                immutable(char[]) name;
+                immutable(IndexType) desc;
+                immutable(size_t) size;
+//                immutable(
+                this(immutable(ubyte[]) data) {
+                    size_t index;//=IR.sizeof;
+                    size_t bytes_size;
+                    name=Vector!char(data[index..$], bytes_size);
+                    index+=bytes_size;
+                    desc=cast(IndexType)data[index];
+                    size=index+1;
+                }
+            }
+
             struct Export {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    size_t u32_size;
+                    length=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    this.data=data[index..$];
+                }
+
+                alias ExportRange=VectorRange!(Export, ExportType);
+
+                ExportRange opSlice() {
+                    return ExportRange(this);
+                }
+
             }
 
             struct Start {
@@ -592,6 +593,16 @@ struct Wasm {
                     auto _type=a.sec!(Section.TYPE);
 //                    writefln("Function types %s", _type.func_types);
                     writefln("Function types length %d %s", _type.length, _type[]);
+                }
+                else if (a.section == Section.IMPORT) {
+                    auto _import=a.sec!(Section.IMPORT);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Import types length %d %s", _import.length, _import[]);
+                }
+                else if (a.section == Section.EXPORT) {
+                    auto _export=a.sec!(Section.EXPORT);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Export types length %d %s", _export.length, _export[]);
                 }
             }
 
