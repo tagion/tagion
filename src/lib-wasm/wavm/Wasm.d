@@ -592,7 +592,7 @@ struct Wasm {
                 if (a.section == Section.TYPE) {
                     auto _type=a.sec!(Section.TYPE);
 //                    writefln("Function types %s", _type.func_types);
-                    writefln("Function types length %d %s", _type.length, _type[]);
+                    writefln("Type types length %d %s", _type.length, _type[]);
                 }
                 else if (a.section == Section.IMPORT) {
                     auto _import=a.sec!(Section.IMPORT);
