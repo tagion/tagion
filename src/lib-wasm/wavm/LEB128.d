@@ -107,13 +107,13 @@ T decode(T=long)(const(ubyte[]) data, out size_t len) pure if (isSigned!T) {
     ulong result;
     uint shift;
     enum MAX_LIMIT=T.sizeof*8-7;
-    enum LAST_BYTE_MASK=~(~0 >> MAX_LIMIT);
+    enum ulong LAST_BYTE_MASK=~(~0UL >> MAX_LIMIT);
     foreach(i, d; data) {
         check(!((shift >= MAX_LIMIT) && ((d & LAST_BYTE_MASK) == 0)), "LEB128 decoding buffer over limit");
         result |= (d & 0x7F) << shift;
         shift+=7;
         if ((d & 0x80) == 0 ) {
-            if ((shift < size) && (d & 0x40)) {
+            if ((shift < ulong.sizeof) && (d & 0x40)) {
                 // signed of byte is set
                 result = (~0 << shift);
             }
