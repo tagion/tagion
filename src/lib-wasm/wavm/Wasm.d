@@ -544,7 +544,63 @@ struct Wasm {
                 }
             }
 
+            struct TableType {
+                immutable(uint) begin;
+                immutable(uint) end;
+                immutable(size_t) size;
+//                immutable(
+                this(immutable(ubyte[]) data) {
+                    check(data[0] == Types.FUNCREF,
+                        format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
+                    size_t index=Types.sizeof; //=Section.sizeof;
+                    const ltype=cast(Limits)data[index];
+                    index+=Limits.sizeof;
+                    size_t u32_size;
+                    begin=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    uint _end;
+                    if (ltype==Limits.LOWER) {
+                        _end=uint.max;
+                    }
+                    else if (ltype==Limits.RANGE) {
+                        _end=u32(data[index..$], u32_size);
+                        index+=u32_size;
+                    }
+                    else {
+                        check(0,
+                            format("Bad Limits type 0x%02X in table", ltype));
+                    }
+                    // final switch(ltype) {
+                    // case Limits.LOWER:
+                    //     _end=uint.max;
+                    //     break;
+                    // case Limits.RANGE:
+                    //     _end=u32(data[index..$], u32_size);
+                    //     index+=u32_size;
+                    //     break;
+                    // }
+                    //end=_end;
+                    size=index;
+                }
+            }
+
             struct Table {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    size_t u32_size;
+                    length=u32(data[index..$], u32_size);
+                    index+=u32_size;
+                    this.data=data[index..$];
+                }
+
+                alias TableRange=VectorRange!(Table, TableType);
+
+                TableRange opSlice() {
+                    return TableRange(this);
+                }
+
             }
 
             struct Memory {
@@ -618,7 +674,8 @@ struct Wasm {
         {
             //string filename="../tests/simple/simple.wasm";
             //string filename="../tests/wasm/custom_1.wasm";
-            string filename="../tests/wasm/func_2.wasm";
+            //string filename="../tests/wasm/func_2.wasm";
+            string filename="../tests/wasm/table_copy_2.wasm"; //../tests/wasm/func_2.wasm";
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
@@ -634,17 +691,23 @@ struct Wasm {
                 else if (a.section == Section.IMPORT) {
                     auto _import=a.sec!(Section.IMPORT);
 //                    writefln("Function types %s", _type.func_types);
-                    writefln("Import types length %d %s", _import.length, _import[]);
+                    //   writefln("Import types length %d %s", _import.length, _import[]);
                 }
                 else if (a.section == Section.EXPORT) {
                     auto _export=a.sec!(Section.EXPORT);
 //                    writefln("Function types %s", _type.func_types);
-                    writefln("Export types length %d %s", _export.length, _export[]);
+                    // writefln("Export types length %d %s", _export.length, _export[]);
                 }
                 else if (a.section == Section.FUNCTION) {
                     auto _function=a.sec!(Section.FUNCTION);
 //                    writefln("Function types %s", _type.func_types);
                     writefln("Function types length %d %s", _function.length, _function[]);
+                }
+                else if (a.section == Section.TABLE) {
+                    auto _table=a.sec!(Section.TABLE);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Table types length %d %s", _table.length, _table[]);
+//                    writefln("Table types %s", _table);
                 }
             }
 
@@ -687,4 +750,20 @@ struct Wasm {
                     code  |       i32.const         |
                         code-len                 code-end
 
++/
+
+/+
+00000000  00 61 73 6d 01 00 00 00  01 0d 03 60 00 01 7f 60  |.asm.......`...`|
+00000010  00 00 60 01 7f 01 7f 02  29 05 01 61 03 65 66 30  |..`.....)..a.ef0|
+00000020  00 00 01 61 03 65 66 31  00 00 01 61 03 65 66 32  |...a.ef1...a.ef2|
+00000030  00 00 01 61 03 65 66 33  00 00 01 61 03 65 66 34  |...a.ef3...a.ef4|
+00000040  00 00 03 08 07 00 00 00  00 00 01 02 04 05 01 70  |...............p|
+00000050  01 1e 1e 07 10 02 04 74  65 73 74 00 0a 05 63 68  |.......test...ch|
+00000060  65 63 6b 00 0b 09 23 04  00 41 02 0b 04 03 01 04  |eck...#..A......|
+00000070  01 01 00 04 02 07 01 08  00 41 0c 0b 05 07 05 02  |.........A......|
+00000080  03 06 01 00 05 05 09 02  07 06 0a 26 07 04 00 41  |...........&...A|
+00000090  05 0b 04 00 41 06 0b 04  00 41 07 0b 04 00 41 08  |....A....A....A.|
+000000a0  0b 04 00 41 09 0b 03 00  01 0b 07 00 20 00 11 00  |...A........ ...|
+000000b0  00 0b                                             |..|
+000000b2
 +/
