@@ -582,7 +582,8 @@ struct Wasm {
                 Export,
                 Start,
                 Element,
-                Code);
+                Code,
+                Data);
 
             auto sec(Section S)()
                 in {
@@ -909,9 +910,11 @@ struct Wasm {
                     auto range=ExprRange(data);
                     while(!range.empty) {
                         const elm=range.front;
-                        if ((elm.code is IR.END) && (elm.level == -1)) {
+                        if ((elm.code is IR.END) && (elm.level == 0)) {
+                            range.popFront;
                             return data[0..range.index];
                         }
+                        range.popFront;
                     }
                     check(0, format("Expression in Element section expected an end code"));
                     assert(0);
@@ -1202,13 +1205,64 @@ struct Wasm {
                 CodeRange opSlice() {
                     return CodeRange(this);
                 }
+            }
+
+            struct DataType {
+                immutable uint idx;
+                immutable(ubyte[]) expr;
+                immutable(ubyte[]) init;
+                immutable(size_t) size;
+
+                this(immutable(ubyte[]) data) {
+                    size_t index;
+                    idx=u32(data, index);
+                    auto range=ExprRange(data[index..$]);
+                    while(!range.empty) {
+                        const elm=range.front;
+                        if ((elm.code is IR.END) && (elm.level == 0)) {
+                            range.popFront;
+                            break;
+                        }
+                        range.popFront;
+                    }
+
+                    expr=range.data[0..range.index];
+
+                    index+=range.index;
+                    const init_size=u32(data, index);
+                    init=data[index..index+init_size];
+                    index+=init_size;
+                    size=init_size;
+                }
+
+                ExprRange opSlice() {
+                    return ExprRange(expr);
+                }
+            }
+
+
+            struct Data {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    //size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
+                    this.data=data[index..$];
+                }
+
+                alias DataRange=VectorRange!(Data, DataType);
+
+                DataRange opSlice() {
+                    return DataRange(this);
+                }
 
             }
 
         }
-
-
     }
+
     unittest {
         import std.stdio;
         import std.file;
@@ -1296,6 +1350,15 @@ struct Wasm {
                     writefln("Code types length=%s", _code.length);
                     foreach(c; _code[]) {
                         writefln("c.size=%d c.data.length=%d c.locals=%s c[]=%s", c.size, c.data.length, c.locals, c[]);
+                    }
+//                    writefln("Table types %s", _table);
+                }
+                else if (a.section == Section.DATA) {
+                    auto _data=a.sec!(Section.DATA);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Data types length=%s", _data.length);
+                    foreach(d; _data[]) {
+                        writefln("d.size=%d d.data.length=%d d.lodals=%s d[]=%s", d.size, d.init.length, d.init, d[]);
                     }
 //                    writefln("Table types %s", _table);
                 }
