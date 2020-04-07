@@ -77,6 +77,7 @@ const(ubyte[]) encode(T)(const T v) pure if(isSigned!T) {
         }
         d |= 0x80;
     }
+    check(0, "Bad format");
     assert(0);
 }
 
@@ -100,6 +101,7 @@ T decode(T=ulong)(const(ubyte[]) data, out size_t len) pure if (isUnsigned!T) {
         }
         shift+=7;
     }
+    check(0, "Bad format");
     assert(0);
 }
 
@@ -129,6 +131,7 @@ T decode(T=long)(const(ubyte[]) data, out size_t len) pure if (isSigned!T) {
             }
         }
     }
+    check(0, "Bad format");
     assert(0);
 }
 
@@ -159,9 +162,9 @@ unittest {
         ok!long(1427449141, [181, 202, 212, 168, 5]);
 
         ok!long(-27, [101]);
-        // ok!long(-2727,[217, 106]);
-        // ok!long(-272727, [169, 173, 111]);
-        // ok!long(-27272727,   [233, 179, 255, 114]);
-        // ok!long(-1427449141, [203, 181, 171, 215, 122]);
+        ok!long(-2727,[217, 106]);
+        ok!long(-272727, [169, 173, 111]);
+        ok!long(-27272727,   [233, 179, 255, 114]);
+        ok!long(-1427449141, [203, 181, 171, 215, 122]);
     }
 }

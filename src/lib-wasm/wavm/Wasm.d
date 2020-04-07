@@ -7,6 +7,7 @@ import LEB128=wavm.LEB128;
 import std.stdio;
 import std.meta : AliasSeq;
 import std.traits : EnumMembers, getUDAs, Unqual;
+import std.range : InputRange;
 
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
@@ -27,6 +28,8 @@ struct Wasm {
     immutable(ubyte[]) data() const pure nothrow {
         return _data;
     }
+
+    alias serialize=data;
 
     this(immutable(ubyte[]) data) pure nothrow {
         _data=data;
@@ -446,7 +449,6 @@ struct Wasm {
     }
 
 
-
     unittest {
         size_t i;
         foreach(E; EnumMembers!IR) {
@@ -508,21 +510,16 @@ struct Wasm {
         return *cast(uint*)(data[0..uint.sizeof].ptr);
     }
 
+    alias u32=decode!uint;
+    alias u64=decode!ulong;
+    alias i32=decode!int;
+    alias i64=decode!long;
+
     @trusted
-    static immutable(T[]) Vector(T)(immutable(ubyte[]) vec_data, out size_t index) {
-//        size_t index;
-//        size_t u32_size;
-        immutable len=u32(vec_data, index);
-        // writefln("vec_data=%s", vec_data);
-        // writefln("[%d..%d]", index, index+len*T.sizeof);
-        //index=u32_size;
-        immutable vec_mem=vec_data[index..index+len*T.sizeof];
+    static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
+        immutable len=u32(data, index);
+        immutable vec_mem=data[index..index+len*T.sizeof];
         index+=len*T.sizeof;
-        // immutable len=vec_mem.length / T.sizeof;
-        // pragma(msg, "Fixme(cbr): this assert should be an exception");
-        // assert(T.sizeof % vec_mem.length == 0,
-        //     format("The vector memory (size=%d) does not match the size of %s",
-        //         vec_mem.length, T.stringof));
         immutable result=cast(immutable(T*))(vec_mem.ptr);
         return result[0..len];
     }
@@ -531,10 +528,14 @@ struct Wasm {
         return WasmRange(data);
     }
 
-    alias u32=LEB128.decode!uint;
-    alias u64=LEB128.decode!ulong;
-    alias i32=LEB128.decode!int;
-    alias i64=LEB128.decode!long;
+    static T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
+        size_t byte_size;
+        scope(exit) {
+           index+=byte_size;
+        }
+        return LEB128.decode!T(data[index..$], byte_size);
+    }
+
     struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
@@ -542,7 +543,6 @@ struct Wasm {
         this(immutable(ubyte[]) data) {
             this.data=data;
             _index=2*uint.sizeof;
-            //   writefln("WasmRange %s", data);
         }
 
         @property bool empty() const pure nothrow {
@@ -556,50 +556,20 @@ struct Wasm {
         @property void popFront() {
             size_t u32_size;
             _index+=Section.sizeof;
-            const size=u32(data[_index..$], u32_size);
-            _index+=u32_size+size;
-            // writefln("popFront %d", _index);
+            const size=u32(data, _index);
+            _index+=size;
         }
 
         struct WasmSection {
-            //enum SIZE_POS=Section.sizeof;
-            //enum PACKAGE_POS=SIZE_POS+uint.sizeof;
             immutable(ubyte[]) data;
             immutable(Section) section;
-            //immutable uint begin_index;
-            // immutable uint size;
-            // @property pure const {
-            //     Section section() {
-            //         return cast(Section)data[0];
-            //     }
-            // }
 
             this(immutable(ubyte[]) data) pure {
                 section=cast(Section)data[0];
                 size_t index=Section.sizeof;
-                size_t u32_size;
-                const size=u32(data[index..$], u32_size);
-                index+=u32_size;
-                // //const total_size=Section.sizeof+u32_size+size;
-                // debug {
-                //     writefln("data=%s", data[0..index+size]);
-                //     writefln(":: %s index=%d u32_size=%d size=%d", section, index, u32_size, size);
-                // }
-
+                const size=u32(data, index);
                 this.data=data[index..index+size];
             }
-
-
-//             protected template GetSector(Section S, EList...) {
-// //                static foreach(E; EnumMembers!Section) {
-//                 switch (S) {
-//                     case Section.Type:
-//                         alias GetSector=Type;
-//                     default:
-//                         alias GetSector=Type;
-
-//                 }
-//             }
 
             alias Sections=AliasSeq!(
                 Custom,
@@ -650,10 +620,10 @@ struct Wasm {
                 immutable(ubyte[]) bytes;
                 this(immutable(ubyte[]) data) {
                     size_t index;
-                    size_t bytes_size;
-                    name=Vector!char(data[index..$], bytes_size);
-                    index+=bytes_size;
-                    bytes=Vector!ubyte(data[index..$], bytes_size);
+                    //size_t bytes_size;
+                    name=Vector!char(data, index);
+                    //index+=bytes_size;
+                    bytes=Vector!ubyte(data, index);
                 }
             }
 
@@ -663,11 +633,11 @@ struct Wasm {
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index=IR.sizeof;
-                    size_t bytes_size;
-                    params=Vector!Types(data[index..$], bytes_size);
-                    index+=bytes_size;
-                    returns=Vector!Types(data[index..$], bytes_size);
-                    index+=bytes_size;
+                    //size_t bytes_size;
+                    params=Vector!Types(data, index);
+                    //index+=bytes_size;
+                    returns=Vector!Types(data, index);
+                    //index+=bytes_size;
                     size=index;
                 }
             }
@@ -677,9 +647,9 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    length=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -698,11 +668,11 @@ struct Wasm {
 //                immutable(
                 this(immutable(ubyte[]) data) {
                     size_t index;//=IR.sizeof;
-                    size_t bytes_size;
-                    mod=Vector!char(data[index..$], bytes_size);
-                    index+=bytes_size;
-                    name=Vector!char(data[index..$], bytes_size);
-                    index+=bytes_size;
+                    //size_t bytes_size;
+                    mod=Vector!char(data, index);
+                    //index+=bytes_size;
+                    name=Vector!char(data, index);
+                    //index+=bytes_size;
                     desc=cast(IndexType)data[index];
                     size=index+1;
                 }
@@ -713,9 +683,9 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    length=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -733,9 +703,9 @@ struct Wasm {
 //                immutable(
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    value=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    value=u32(data, index);
+                    //index+=u32_size;
                     size=index;
                 }
             }
@@ -745,9 +715,9 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    length=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -769,32 +739,22 @@ struct Wasm {
                     size_t index=Types.sizeof; //=Section.sizeof;
                     const ltype=cast(Limits)data[index];
                     index+=Limits.sizeof;
-                    size_t u32_size;
-                    begin=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    begin=u32(data, index);
+                    //index+=u32_size;
                     uint _end;
                     if (ltype==Limits.LOWER) {
                         _end=uint.max;
                     }
                     else if (ltype==Limits.RANGE) {
-                        _end=u32(data[index..$], u32_size);
-                        index+=u32_size;
+                        _end=u32(data, index);
+                        //ndex+=u32_size;
                     }
                     else {
                         check(0,
                             format("Bad Limits type 0x%02X in table", ltype));
                     }
                     _end=end;
-                    // final switch(ltype) {
-                    // case Limits.LOWER:
-                    //     _end=uint.max;
-                    //     break;
-                    // case Limits.RANGE:
-                    //     _end=u32(data[index..$], u32_size);
-                    //     index+=u32_size;
-                    //     break;
-                    // }
-                    //end=_end;
                     size=index;
                 }
             }
@@ -804,9 +764,9 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    length=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -829,16 +789,16 @@ struct Wasm {
                     size_t index; //=Types.sizeof; //=Section.sizeof;
                     const ltype=cast(Limits)data[index];
                     index+=Limits.sizeof;
-                    size_t u32_size;
-                    begin=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    begin=u32(data, index);
+                    //index+=u32_size;
                     uint _end;
                     if (ltype==Limits.LOWER) {
                         _end=uint.max;
                     }
                     else if (ltype==Limits.RANGE) {
-                        _end=u32(data[index..$], u32_size);
-                        index+=u32_size;
+                        _end=u32(data, index);
+                        //index+=u32_size;
                     }
                     else {
                         check(0,
@@ -854,9 +814,9 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    length=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                   // size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -886,9 +846,9 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    length=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -906,9 +866,9 @@ struct Wasm {
 //                immutable(
                 this(immutable(ubyte[]) data) {
                     size_t index;//=IR.sizeof;
-                    size_t bytes_size;
-                    name=Vector!char(data[index..$], bytes_size);
-                    index+=bytes_size;
+                    //size_t bytes_size;
+                    name=Vector!char(data, index);
+                    //index+=bytes_size;
                     desc=cast(IndexType)data[index];
                     size=index+1;
                 }
@@ -919,9 +879,9 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    size_t u32_size;
-                    length=u32(data[index..$], u32_size);
-                    index+=u32_size;
+                    //size_t u32_size;
+                    length=u32(data, index);
+                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -941,35 +901,28 @@ struct Wasm {
                 }
             }
 
-
-
-            version(none)
-            struct ElementType {
-                immutable(char[])    tableidx;
-                immutable(IndexType) expr;
-                immutable(Types[])   funcs;
-//                immutable(
-                this(immutable(ubyte[]) data) {
-                    size_t index;//=IR.sizeof;
-                    size_t bytes_size;
-                    name=Vector!char(data[index..$], bytes_size);
-                    index+=bytes_size;
-                    desc=cast(IndexType)data[index];
-                    size=index+1;
-                }
-            }
-
             struct Element {
-            }
-
-            struct Block {
-                immutable(ubyte[]) data;
-                //immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    while(index < data.length) {
-
+                immutable(Types)    tableidx;
+                immutable(ubyte[])  expr;
+                immutable(Types[])  funcs;
+                static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data) {
+                    auto range=ExprRange(data);
+                    while(!range.empty) {
+                        const elm=range.front;
+                        if ((elm.code is IR.END) && (elm.level == -1)) {
+                            return data[0..range.index];
+                        }
                     }
+                    check(0, format("Expression in Element section expected an end code"));
+                    assert(0);
+                }
+                this(immutable(ubyte[]) data) {
+                    tableidx=cast(Types)data[0];
+                    size_t index=Types.sizeof;
+                    expr=exprBlock(data[Types.sizeof..$]);
+                    index+=expr.length;
+                    //size_t bytes_size;
+                    funcs=Vector!Types(data, index);
                 }
             }
 
@@ -983,11 +936,11 @@ struct Wasm {
                 }
                 void opAssign(T)(T x) {
                     alias BaseT=Unqual!T;
-                    static if (is(BaseT == int) && is(BaseT == uint)) {
+                    static if (is(BaseT == int) || is(BaseT == uint)) {
                         type=Types.I32;
                         i32=cast(int)x;
                     }
-                    else static if (is(BaseT == long) && is(BaseT == ulong)) {
+                    else static if (is(BaseT == long) || is(BaseT == ulong)) {
                         type=Types.I64;
                         i64=cast(long)x;
                     }
@@ -998,6 +951,9 @@ struct Wasm {
                     else static if (is(BaseT == double)) {
                         type=Types.F64;
                         f64=x;
+                    }
+                    else {
+                        static assert(0, format("Type %s is not supported by WasmArg", T.stringof));
                     }
                 }
 
@@ -1022,88 +978,231 @@ struct Wasm {
                 }
             }
 
-            struct CodeRange {
+            struct ExprRange {
                 immutable(ubyte[]) data;
                 protected {
-                    size_t index;
+                    size_t _index;
                     WasmArg[2] _args;
+                    Types _type;
+                    int _level;
+                    immutable(Types)[] _types;
+                    size_t arglen;
                 }
 
-                //immutable(size_t) size;
+                struct IRElement {
+                    IR code;
+                    const(WasmArg[]) args;
+                    int level;
+                    const(Types[]) types;
+                }
+
                 this(immutable(ubyte[]) data) {
                     this.data=data;
                 }
 
-                @property IR front() const pure {
-                    return cast(IR)data[index];
-                }
+                @property {
+                    const(size_t) index() const pure nothrow {
+                        return _index;
+                    }
 
-                @property bool empty() const pure nothrow {
-                    return index >= data.length;
-                }
+                    const(IR) code() const pure nothrow {
+                        return cast(IR)data[_index];
+                    }
 
-                @property void popFront() {
-                    void set(ref WasmArg arg, const Types type) {
-//                        const type=cast(Types)data[index];
-                        size_t leb128_size;
-                        index++;
-                        with(Types) {
-                            switch(type) {
-                            case I32:
-                                arg=u32(data[index..$], leb128_size);
+                    const(IRElement) front() const pure {
+                        const ir=cast(IR)data[_index];
+                        return IRElement(ir, _args[0..arglen], _level, _types);
+                    }
+
+                    bool empty() const pure nothrow {
+                        return index >= data.length;
+                    }
+
+                    void popFront() {
+                        void set(ref WasmArg arg, const Types type) {
+                            //size_t leb128_size;
+                            //_index++;
+                            with(Types) {
+                                switch(type) {
+                                case I32:
+                                    arg=u32(data, _index);
+                                    break;
+                                case I64:
+                                    arg=u64(data, _index);
+                                    break;
+                                case F32:
+                                    arg=data.binpeek!(float, Endian.littleEndian)(&_index);
+                                    break;
+                                case F64:
+                                    arg=data.binpeek!(double, Endian.littleEndian)(&_index);
+                                    break;
+                                default:
+                                    check(0, format("Assembler argument type not vaild as an argument %s", type));
+                                }
+                            }
+                        }
+                        const ir=front.code;
+                        const instr=instrTable[ir];
+                        arglen=0;
+                        _index++;
+                        with(IRType) {
+                            final switch(instr.irtype) {
+                            case CODE:
                                 break;
-                            case I64:
-                                arg=u64(data[index..$], leb128_size);
+                            case BLOCK:
+                                _level++;
                                 break;
-                            case F32:
-                                arg=data.binpeek!(float, Endian.littleEndian)(&index);
+                            case BRANCH:
+                                // branchidx
+                                set(_args[0], Types.I32);
+                                _level++;
+                                arglen=1;
                                 break;
-                            case F64:
-                                arg=data.binpeek!(double, Endian.littleEndian)(&index);
+                            case BRANCH_TABLE:
+                                //size_t vec_size;
+                                _types=Vector!Types(data, _index);
+                                //_index+=vec_size;
+                                set(_args[0], Types.I32);
+                                arglen=1;
                                 break;
-                            default:
-                                check(0, format("Assembler argument type not vaild as an argument %s", type));
+                            case CALL:
+                                // callidx
+                                set(_args[0], Types.I32);
+                                arglen=1;
+                                break;
+                            case CALL_INDIRECT:
+                                // typeidx
+                                set(_args[0], Types.I32);
+                                check(data[_index] is 0x00,
+                                    format("Call indirect 0x%02X not 0x%02X", 0x00, data[_index]));
+                                arglen=1;
+                                break;
+                            case LOCAL, GLOBAL:
+                                // localidx globalidx
+                                set(_args[0], Types.I32);
+                                arglen=1;
+                                break;
+                            case MEMORY:
+                                // offset
+                                set(_args[0], Types.I32);
+                                // align
+                                set(_args[1], Types.I32);
+                                arglen=2;
+                                break;
+                            case MEMOP:
+                                check(data[index] is 0x00,
+                                    format("Memory grow and size expects a 0x%02X not 0x%02X", 0x00, data[index]));
+                                _index++;
+                                break;
+                            case CONST:
+                                const type=cast(Types)data[_index];
+                                set(_args[0], Types.I32);
+                                arglen=1;
+                                break;
+                            case END:
+                                _level--;
+                                break;
                             }
                         }
                     }
-                    const ir=front;
-                    const instr=instrTable[ir];
-                    index++;
-                    with(IRType) {
-                        final switch(instr.irtype) {
-                        case CODE:
-                            break;
-                        case BLOCK:
-                            break;
-                        case BRANCH:
-                            break;
-                        case BRANCH_TABLE:
-                            break;
-                        case CALL:
-                            break;
-                        case CALL_INDIRECT:
-                            break;
-                        case LOCAL:
-                            break;
-                        case GLOBAL:
-                            break;
-                        case MEMORY:
-                            break;
-                        case MEMOP:
-                            break;
-                        case CONST:
-                            const type=cast(Types)data[index];
-                            set(_args[0], type);
-                            break;
-                        case END:
-                            break;
+
+                }
+            }
+
+            struct CodeType {
+                immutable size_t size;
+                immutable(ubyte[]) data;
+
+                // struct CodeBlock {
+                //     immutable size_t size;
+                //     immutable(ubyte[]) data;
+                    this(immutable(ubyte[]) data, ref size_t index) {
+                        size=u32(data, index);
+                        this.data=data[index..index+size];
+                    }
+
+                    struct Local {
+                        immutable uint count;
+                        immutable Types type;
+                        this(immutable(ubyte[]) data, ref size_t index) pure {
+                            count=u32(data, index);
+                            type=cast(Types)data[index];
+                            index+=Types.sizeof;
+                        // this.data=data[index..$];
                         }
                     }
+
+
+                    LocalRange locals() {
+                        return LocalRange(data);
+                    }
+
+                    struct LocalRange {
+                        immutable uint length;
+                        immutable(ubyte[]) data;
+                        private {
+                            size_t index;
+                            uint j;
+                        }
+                        this(immutable(ubyte[]) data) {
+                            length=u32(data, index);
+                            this.data=data[index..$];
+                        }
+
+                        @property {
+                            Local front() const pure {
+                                size_t dummy_index=index;
+                                return Local(data, dummy_index);
+                            }
+
+                            bool empty() const pure {
+                                return (index>=length);
+                            }
+
+                            void popFront() {
+                                if (!empty) {
+                                    Local(data[index..$], index);
+                                    j++;
+                                }
+                            }
+                        }
+                    }
+
+                    ExprRange opSlice() {
+                        auto range=LocalRange(data);
+                        while(!range.empty) {
+                            range.popFront;
+                        }
+                        return ExprRange(data[range.index..$]);
+                    }
+                // }
+
+                this(immutable(ubyte[]) data) {
+                    size_t index;
+                    auto byte_size=u32(data, index);
+                    writefln("byte_size=%d", byte_size);
+                    this.data=data[index..index+byte_size];
+                    index+=byte_size;
+                    size=index;
                 }
 
             }
 
             struct Code {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index;
+                    length=u32(data, index);
+                    this.data=data[index..$];
+                }
+
+                alias CodeRange=VectorRange!(Code, CodeType);
+
+                CodeRange opSlice() {
+                    return CodeRange(this);
+                }
+
             }
 
         }
@@ -1148,12 +1247,13 @@ struct Wasm {
                 else if (a.section == Section.IMPORT) {
                     auto _import=a.sec!(Section.IMPORT);
 //                    writefln("Function types %s", _type.func_types);
-                    //   writefln("Import types length %d %s", _import.length, _import[]);
+                     writefln("Import types length %d %s", _import.length, _import[]);
                 }
                 else if (a.section == Section.EXPORT) {
                     auto _export=a.sec!(Section.EXPORT);
 //                    writefln("Function types %s", _type.func_types);
-                    // writefln("Export types length %d %s", _export.length, _export[]);
+//                    writefln("export %s", _export.data);
+                    writefln("Export types length %d %s", _export.length, _export[]);
                 }
                 else if (a.section == Section.FUNCTION) {
                     auto _function=a.sec!(Section.FUNCTION);
@@ -1182,6 +1282,21 @@ struct Wasm {
                     auto _start=a.sec!(Section.START);
 //                    writefln("Function types %s", _type.func_types);
                     writefln("Start types %s", _start);
+//                    writefln("Table types %s", _table);
+                }
+                else if (a.section == Section.ELEMENT) {
+                    auto _element=a.sec!(Section.ELEMENT);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Element types %s", _element);
+//                    writefln("Table types %s", _table);
+                }
+                else if (a.section == Section.CODE) {
+                    auto _code=a.sec!(Section.CODE);
+//                    writefln("Function types %s", _type.func_types);
+                    writefln("Code types length=%s", _code.length);
+                    foreach(c; _code[]) {
+                        writefln("c.size=%d c.data.length=%d c.locals=%s c[]=%s", c.size, c.data.length, c.locals, c[]);
+                    }
 //                    writefln("Table types %s", _table);
                 }
             }
@@ -1242,3 +1357,13 @@ code-len                 code-end
  000000b0  00 0b                                             |..|
  000000b2
  +/
+
+/++     i32.const                                       end           n:32               bytesize    u:32
+   bytesize |        n32   from to    n:32   i32.store8  |   len-locals|    from to    end  |    call |     u:32   u:32
+len  |      |         |      |   |     |        |        |      |      |      |  |      |   |      |  |      |      |
+[3, 15, 0, 65, 0, 65, 0, 45, 0, 0, 65, 1, 106, 58, 0, 0, 11, 8, 0, 65, 0, 45, 0, 0, 15, 11, 8, 0, 16, 0, 16, 0, 16, 0, 11]
+        |    n:32  |     |         |       |       |  |      |      |      |         |         |          |     |     end
+        |          |  i32.load8_u  |   i32.add   from to   bytesize |      |       return   len-local   call   call
+     len-locals    |           i32.const                        i32.const  |
+               i32.const                                                  i32.load8_u
++/
