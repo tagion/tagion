@@ -1,5 +1,3 @@
-ifndef FIX_DFILES
-
 dfiles.mk: ${WAYS}
 	@echo "########################################################################################"
 	@echo "## DFILES"
@@ -9,4 +7,3 @@ CLEANER+=clean-dfiles
 
 clean-dfiles:
 	rm -f dfiles.mk
-endif

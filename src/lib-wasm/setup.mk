@@ -35,3 +35,5 @@ WAYS+=${BIN}
 WAYS+=${BUILD}
 
 SOURCE:=wavm
+
+-include dstep.mk

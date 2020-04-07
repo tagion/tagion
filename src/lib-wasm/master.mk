@@ -75,11 +75,6 @@ RUNFLAGS+=--DRT-covopt="merge:1 dstpath:reports"
 DCFLAGS+=-cov
 endif
 
-
-ifndef DFILES
-include $(REPOROOT)/source.mk
-endif
-
 HELPER:=help-main
 
 help-master: help-main
@@ -107,6 +102,8 @@ info:
 	@echo "INCFLAGS=$(INCFLAGS)"
 
 include revsion.mk
+
+include $(REPOROOT)/source.mk
 
 ifndef DFILES
 lib: dfiles.mk
@@ -151,10 +148,6 @@ ddoc: $(DDOCMODULES)
 	@echo "########################################################################################"
 	@echo "## compile "$(notdir $<)
 	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
-
-secp256k1_test: secp256k1_test.c
-	echo $@
-	gcc $(CFLAGS) -o $@ $< ${LDFLAGS}
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
