@@ -763,22 +763,18 @@ struct Wasm {
             struct ExportType {
                 immutable(char[]) name;
                 immutable(IndexType) desc;
+                immutable(uint) idx;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
                     name=Vector!char(data, index);
                     desc=cast(IndexType)data[index];
-                    size=index+1;
+                    index+=IndexType.sizeof;
+                    idx=u32(data, index);
+                    size=index;
                 }
                 string toString() {
-                    string _name;
-                    if (name.length) {
-                        _name=name;
-                    }
-                    else {
-                        _name=format("$%s_%d", indexName(desc), desc);
-                    }
-                    return format(`(export "%s" (%s $%d))`, _name, indexName(desc), desc);
+                    return format(`(export "%s" (%s $%d))`, name, indexName(desc), idx);
                 }
             }
 
