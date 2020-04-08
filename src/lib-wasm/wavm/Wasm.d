@@ -743,6 +743,9 @@ struct Wasm {
                     end=_end;
                     size=index;
                 }
+                string toString() {
+                    return format("(memory %d %d)", begin, end);
+                }
             }
 
             alias Memory=SectionT!(MemoryType);
@@ -1132,7 +1135,9 @@ struct Wasm {
             //string filename="../tests/wasm/table_copy_2.wasm"; //../tests/wasm/func_2.wasm";
 //            string filename="../tests/wasm/memory_4.wasm"; //../tests/wasm/func_2.wasm";
             //string filename="../tests/wasm/global_1.wasm";
-            string filename="../tests/wasm/start_4.wasm";
+//            string filename="../tests/wasm/start_4.wasm";
+//            string filename="../tests/wasm/memory_1.wasm";
+            string filename="../tests/wasm/memory_9.wasm";
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
