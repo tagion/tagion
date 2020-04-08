@@ -647,7 +647,7 @@ struct Wasm {
                 }
             }
 
-            struct Custom {
+            @Section(Section.CUSTOM) struct Custom {
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
                 this(immutable(ubyte[]) data) {
@@ -695,7 +695,7 @@ struct Wasm {
 
             }
 
-            alias Type=SectionT!(FuncType);
+            alias   Type=SectionT!(FuncType);
 
             struct ImportType {
                 immutable(char[]) mod;

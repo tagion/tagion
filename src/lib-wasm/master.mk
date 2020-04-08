@@ -1,6 +1,7 @@
-REPOROOT?=$(shell git root)
-REVNO?=$(shell git revno)
-HASH?=$(shell git hash)
+REPOROOT?=${shell git rev-parse --show-toplevel}
+include $(REPOROOT)/git.mk
+REVNO?=$(GIT_REVNO)
+HASH?=$(GIT_HASH)
 
 
 ifndef $(VERBOSE)
