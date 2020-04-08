@@ -710,12 +710,14 @@ struct Wasm {
             alias Function=SectionT!(Index);
 
             struct TableType {
+                immutable(Types) type;
                 immutable(uint) begin;
                 immutable(uint) end;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
-                    check(data[0] == Types.FUNCREF,
-                        format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
+                    type=cast(Types)data[0];
+                    // check(data[0] == Types.FUNCREF,
+                    //     format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
                     size_t index=Types.sizeof;
                     const ltype=cast(Limits)data[index];
                     index+=Limits.sizeof;
@@ -731,8 +733,12 @@ struct Wasm {
                         check(0,
                             format("Bad Limits type 0x%02X in table", ltype));
                     }
-                    _end=end;
+                    end=_end;
                     size=index;
+                }
+
+                string toString() {
+                    return format("(table %d %d %s)", begin, end, typesName(type));
                 }
             }
 
@@ -1207,7 +1213,8 @@ struct Wasm {
 //            string filename="../tests/wasm/memory_1.wasm";
             //string filename="../tests/wasm/memory_9.wasm";
 //            string filename="../tests/wasm/global_1.wasm";
-            string filename="../tests/wasm/imports_2.wasm";
+//            string filename="../tests/wasm/imports_2.wasm";
+            string filename="../tests/wasm/table_copy_2.wasm";
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
