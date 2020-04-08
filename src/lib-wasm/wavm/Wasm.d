@@ -477,7 +477,7 @@ struct Wasm {
             F64 = 0x7C,   /// f64 valtype
             }
 
-    static string typesName(Types type) pure {
+    static string typesName(const Types type) pure {
         import std.uni : toLower;
         import std.conv : to;
         final switch(type) {
@@ -494,7 +494,7 @@ struct Wasm {
             }
 
 
-    static string indexName(IndexType idx) pure {
+    static string indexName(const IndexType idx) pure {
         import std.uni : toLower;
         import std.conv : to;
         final switch(idx) {
@@ -676,13 +676,22 @@ struct Wasm {
                 immutable(char[]) mod;
                 immutable(char[]) name;
                 immutable(IndexType) desc;
+                immutable(uint)      idx;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
+//                    writefln("ImportType.CTOR %s", data);
                     size_t index;
                     mod=Vector!char(data, index);
                     name=Vector!char(data, index);
                     desc=cast(IndexType)data[index];
-                    size=index+1;
+                    index+=IndexType.sizeof;
+                    idx=u32(data, index);
+                    size=index;
+                    // writefln("ImportType.CTOR %s", data[0..size]);
+                }
+
+                string toString() {
+                    return format(`(import "%s" "%s" (%s $%d))`, mod, name, indexName(desc), idx);
                 }
             }
 
@@ -1197,7 +1206,8 @@ struct Wasm {
 //            string filename="../tests/wasm/start_4.wasm";
 //            string filename="../tests/wasm/memory_1.wasm";
             //string filename="../tests/wasm/memory_9.wasm";
-            string filename="../tests/wasm/global_1.wasm";
+//            string filename="../tests/wasm/global_1.wasm";
+            string filename="../tests/wasm/imports_2.wasm";
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
