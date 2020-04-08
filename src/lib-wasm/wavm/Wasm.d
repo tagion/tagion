@@ -659,15 +659,40 @@ struct Wasm {
 
 
             struct FuncType {
+                immutable(Types) type;
                 immutable(Types[]) params;
-                immutable(Types[]) returns;
+                immutable(Types[]) results;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
-                    size_t index=IR.sizeof;
+                    type=cast(Types)data[0];
+                    size_t index=Types.sizeof;
                     params=Vector!Types(data, index);
-                    returns=Vector!Types(data, index);
+                    results=Vector!Types(data, index);
                     size=index;
                 }
+
+
+                string toString() {
+                    string result;
+                    result=format("(type (%s", typesName(type));
+                    if (params.length) {
+                        result~=" (param";
+                        foreach(p; params) {
+                            result~=format(" %s", typesName(p));
+                        }
+                        result~=")";
+                    }
+                    if (results.length) {
+                        result~=" (result";
+                        foreach(r; results) {
+                            result~=format(" %s", typesName(r));
+                        }
+                        result~=")";
+                    }
+                    result~="))";
+                    return result;
+                }
+
             }
 
             alias Type=SectionT!(FuncType);
@@ -1214,7 +1239,9 @@ struct Wasm {
             //string filename="../tests/wasm/memory_9.wasm";
 //            string filename="../tests/wasm/global_1.wasm";
 //            string filename="../tests/wasm/imports_2.wasm";
-            string filename="../tests/wasm/table_copy_2.wasm";
+            //string filename="../tests/wasm/table_copy_2.wasm";
+            string filename="../tests/wasm/type_1.wasm";
+
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
@@ -1358,4 +1385,8 @@ len  |      |         |      |   |     |        |        |      |      |      | 
         |          |  i32.load8_u  |   i32.add   from to   bytesize |      |       return   len-local   call   call
      len-locals    |           i32.const                        i32.const  |
                i32.const                                                  i32.load8_u
++/
+
+/+
+        Type types length 14 [(type (func)), (type (func)), (type (func(param i32))), (type (func(param i32))), (type (func (results i32))), (type (func(param i32) (results i32))), (type (func(param i32) (results i32))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64 i32 f64 i32 i32))), (type (func(param f32 f64 i32)))]
 +/
