@@ -262,7 +262,6 @@ struct Wasm {
                 LOOP                : Instr("loop", 0, IRType.BLOCK),
                 IF                  : Instr("if", 1, IRType.CODE),
 
-
                 ELSE                : Instr("else", 0, IRType.END),
                 END                 : Instr("end", 0, IRType.END),
                 BR                  : Instr("br", 1, IRType.BRANCH),
@@ -278,7 +277,7 @@ struct Wasm {
                 LOCAL_TEE           : Instr("local.tee", 1, IRType.LOCAL),
                 GLOBAL_GET          : Instr("global.get", 1, IRType.GLOBAL),
                 GLOBAL_SET          : Instr("global.set", 1, IRType.GLOBAL),
-/// memarg a                     :u32 o:u32 ⇒ {align a, offset o}
+                /// memarg a                     :u32 o:u32 ⇒ {align a, offset o}
                 I32_LOAD            : Instr("i32.load", 2, IRType.MEMORY),
                 I64_LOAD            : Instr("i64.load", 2, IRType.MEMORY),
                 F32_LOAD            : Instr("f32.load", 2, IRType.MEMORY),
@@ -501,10 +500,6 @@ struct Wasm {
             }
 
 
-// OpcodeRange WasmSections opSlice() {
-//     return OpcodeRange(data);
-// }
-
     @trusted
     static uint calc_size(const(ubyte[]) data) pure {
         return *cast(uint*)(data[0..uint.sizeof].ptr);
@@ -621,9 +616,7 @@ struct Wasm {
                 immutable(ubyte[]) bytes;
                 this(immutable(ubyte[]) data) {
                     size_t index;
-                    //size_t bytes_size;
                     name=Vector!char(data, index);
-                    //index+=bytes_size;
                     bytes=Vector!ubyte(data, index);
                 }
             }
@@ -634,11 +627,8 @@ struct Wasm {
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index=IR.sizeof;
-                    //size_t bytes_size;
                     params=Vector!Types(data, index);
-                    //index+=bytes_size;
                     returns=Vector!Types(data, index);
-                    //index+=bytes_size;
                     size=index;
                 }
             }
@@ -648,9 +638,7 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
                     size_t index; //=Section.sizeof;
-                    //size_t u32_size;
                     length=u32(data, index);
-                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -666,14 +654,10 @@ struct Wasm {
                 immutable(char[]) name;
                 immutable(IndexType) desc;
                 immutable(size_t) size;
-//                immutable(
                 this(immutable(ubyte[]) data) {
-                    size_t index;//=IR.sizeof;
-                    //size_t bytes_size;
+                    size_t index;
                     mod=Vector!char(data, index);
-                    //index+=bytes_size;
                     name=Vector!char(data, index);
-                    //index+=bytes_size;
                     desc=cast(IndexType)data[index];
                     size=index+1;
                 }
@@ -683,10 +667,8 @@ struct Wasm {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    //size_t u32_size;
+                    size_t index;
                     length=u32(data, index);
-                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -701,12 +683,9 @@ struct Wasm {
             struct Index {
                 immutable(uint) value;
                 immutable(size_t) size;
-//                immutable(
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    //size_t u32_size;
+                    size_t index;
                     value=u32(data, index);
-                    //index+=u32_size;
                     size=index;
                 }
             }
@@ -733,23 +712,19 @@ struct Wasm {
                 immutable(uint) begin;
                 immutable(uint) end;
                 immutable(size_t) size;
-//                immutable(
                 this(immutable(ubyte[]) data) {
                     check(data[0] == Types.FUNCREF,
                         format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
-                    size_t index=Types.sizeof; //=Section.sizeof;
+                    size_t index=Types.sizeof;
                     const ltype=cast(Limits)data[index];
                     index+=Limits.sizeof;
-                    //size_t u32_size;
                     begin=u32(data, index);
-                    //index+=u32_size;
                     uint _end;
                     if (ltype==Limits.LOWER) {
                         _end=uint.max;
                     }
                     else if (ltype==Limits.RANGE) {
                         _end=u32(data, index);
-                        //ndex+=u32_size;
                     }
                     else {
                         check(0,
@@ -764,10 +739,8 @@ struct Wasm {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    //size_t u32_size;
+                    size_t index;
                     length=u32(data, index);
-                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -783,23 +756,17 @@ struct Wasm {
                 immutable(uint) begin;
                 immutable(uint) end;
                 immutable(size_t) size;
-//                immutable(
                 this(immutable(ubyte[]) data) {
-                    // check(data[0] == Types.FUNCREF,
-                    //     format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
-                    size_t index; //=Types.sizeof; //=Section.sizeof;
+                    size_t index;
                     const ltype=cast(Limits)data[index];
                     index+=Limits.sizeof;
-                    //size_t u32_size;
                     begin=u32(data, index);
-                    //index+=u32_size;
                     uint _end;
                     if (ltype==Limits.LOWER) {
                         _end=uint.max;
                     }
                     else if (ltype==Limits.RANGE) {
                         _end=u32(data, index);
-                        //index+=u32_size;
                     }
                     else {
                         check(0,
@@ -814,10 +781,8 @@ struct Wasm {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                   // size_t u32_size;
+                    size_t index;
                     length=u32(data, index);
-                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -832,24 +797,19 @@ struct Wasm {
                 immutable(Types) valtype;
                 immutable(Mutable) mut;
                 immutable(size_t) size;
-//                immutable(
                 this(immutable(ubyte[]) data) {
                     valtype=cast(Types)data[0];
                     mut=cast(Mutable)data[Types.sizeof];
                     size=Types.sizeof+Mutable.sizeof;
                 }
             }
-            // struct Memory {
-            // }
 
             struct Global {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    //size_t u32_size;
+                    size_t index;
                     length=u32(data, index);
-                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -864,12 +824,9 @@ struct Wasm {
                 immutable(char[]) name;
                 immutable(IndexType) desc;
                 immutable(size_t) size;
-//                immutable(
                 this(immutable(ubyte[]) data) {
-                    size_t index;//=IR.sizeof;
-                    //size_t bytes_size;
+                    size_t index;
                     name=Vector!char(data, index);
-                    //index+=bytes_size;
                     desc=cast(IndexType)data[index];
                     size=index+1;
                 }
@@ -879,10 +836,8 @@ struct Wasm {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    //size_t u32_size;
+                    size_t index;
                     length=u32(data, index);
-                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
@@ -924,7 +879,6 @@ struct Wasm {
                     size_t index=Types.sizeof;
                     expr=exprBlock(data[Types.sizeof..$]);
                     index+=expr.length;
-                    //size_t bytes_size;
                     funcs=Vector!Types(data, index);
                 }
             }
@@ -1023,8 +977,6 @@ struct Wasm {
 
                     void popFront() {
                         void set(ref WasmArg arg, const Types type) {
-                            //size_t leb128_size;
-                            //_index++;
                             with(Types) {
                                 switch(type) {
                                 case I32:
@@ -1115,70 +1067,64 @@ struct Wasm {
             struct CodeType {
                 immutable size_t size;
                 immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data, ref size_t index) {
+                    size=u32(data, index);
+                    this.data=data[index..index+size];
+                }
 
-                // struct CodeBlock {
-                //     immutable size_t size;
-                //     immutable(ubyte[]) data;
-                    this(immutable(ubyte[]) data, ref size_t index) {
-                        size=u32(data, index);
-                        this.data=data[index..index+size];
+                struct Local {
+                    immutable uint count;
+                    immutable Types type;
+                    this(immutable(ubyte[]) data, ref size_t index) pure {
+                        count=u32(data, index);
+                        type=cast(Types)data[index];
+                        index+=Types.sizeof;
+                    }
+                }
+
+
+                LocalRange locals() {
+                    return LocalRange(data);
+                }
+
+                struct LocalRange {
+                    immutable uint length;
+                    immutable(ubyte[]) data;
+                    private {
+                        size_t index;
+                        uint j;
+                    }
+                    this(immutable(ubyte[]) data) {
+                        length=u32(data, index);
+                        this.data=data[index..$];
                     }
 
-                    struct Local {
-                        immutable uint count;
-                        immutable Types type;
-                        this(immutable(ubyte[]) data, ref size_t index) pure {
-                            count=u32(data, index);
-                            type=cast(Types)data[index];
-                            index+=Types.sizeof;
-                        // this.data=data[index..$];
-                        }
-                    }
-
-
-                    LocalRange locals() {
-                        return LocalRange(data);
-                    }
-
-                    struct LocalRange {
-                        immutable uint length;
-                        immutable(ubyte[]) data;
-                        private {
-                            size_t index;
-                            uint j;
-                        }
-                        this(immutable(ubyte[]) data) {
-                            length=u32(data, index);
-                            this.data=data[index..$];
+                    @property {
+                        Local front() const pure {
+                            size_t dummy_index=index;
+                            return Local(data, dummy_index);
                         }
 
-                        @property {
-                            Local front() const pure {
-                                size_t dummy_index=index;
-                                return Local(data, dummy_index);
-                            }
+                        bool empty() const pure {
+                            return (index>=length);
+                        }
 
-                            bool empty() const pure {
-                                return (index>=length);
-                            }
-
-                            void popFront() {
-                                if (!empty) {
-                                    Local(data[index..$], index);
-                                    j++;
-                                }
+                        void popFront() {
+                            if (!empty) {
+                                Local(data[index..$], index);
+                                j++;
                             }
                         }
                     }
+                }
 
-                    ExprRange opSlice() {
-                        auto range=LocalRange(data);
-                        while(!range.empty) {
-                            range.popFront;
-                        }
-                        return ExprRange(data[range.index..$]);
+                ExprRange opSlice() {
+                    auto range=LocalRange(data);
+                    while(!range.empty) {
+                        range.popFront;
                     }
-                // }
+                    return ExprRange(data[range.index..$]);
+                }
 
                 this(immutable(ubyte[]) data) {
                     size_t index;
@@ -1245,10 +1191,8 @@ struct Wasm {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    //size_t u32_size;
+                    size_t index;
                     length=u32(data, index);
-                    //index+=u32_size;
                     this.data=data[index..$];
                 }
 
