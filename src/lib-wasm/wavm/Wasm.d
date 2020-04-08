@@ -477,6 +477,15 @@ struct Wasm {
             F64 = 0x7C,   /// f64 valtype
             }
 
+    static string typesName(Types type) pure {
+        import std.uni : toLower;
+        import std.conv : to;
+        final switch(type) {
+            foreach(E; EnumMembers!Types) {
+            case E: return toLower(E.to!string);
+            }
+        }
+    }
     enum IndexType : ubyte {
         FUNC =   0x00, /// func x:typeidx
             TABLE =     0x01, /// func  tt:tabletype
@@ -753,11 +762,42 @@ struct Wasm {
             struct GlobalType {
                 immutable(Types) valtype;
                 immutable(Mutable) mut;
+                immutable(ubyte[]) expr;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
+                    size_t index;
                     valtype=cast(Types)data[0];
-                    mut=cast(Mutable)data[Types.sizeof];
-                    size=Types.sizeof+Mutable.sizeof;
+                    // writefln("---> global type %s  0x%02X", valtype, valtype);
+                    index+=Types.sizeof;
+                    mut=cast(Mutable)data[index];
+                    index+=Mutable.sizeof;
+                    auto range=ExprRange(data[index..$]);
+                    // writefln("Globaltype.expr=%s", data[index..$]);
+                    while(!range.empty) {
+                        const elm=range.front;
+                        if ((elm.code is IR.END) && (elm.level == 0)) {
+                            range.popFront;
+                            break;
+                        }
+                        range.popFront;
+                    }
+                    expr=data[index..index+range.index];
+                    index+=range.index;
+                    size=index;
+                }
+//                version(none)
+                string toString() {
+                    string mutability;
+//                    writefln("mutability=%d", mut);
+                    with(Mutable) final switch(mut) {
+                        case CONST:
+                            mutability=typesName(valtype);
+                            break;
+                        case VAR:
+                            mutability=format("(mut %s)", typesName(valtype));
+                            break;
+                        }
+                    return format("(global %s (%s))", mutability, ExprRange(expr));
                 }
             }
 
@@ -987,8 +1027,28 @@ struct Wasm {
                                 _index++;
                                 break;
                             case CONST:
-                                const type=cast(Types)data[_index];
-                                set(_args[0], Types.I32);
+                                // writefln("CONST %s", data[_index..$]);
+                                with(IR) {
+                                    switch (ir) {
+                                    case I32_CONST:
+                                        set(_args[0], Types.I32);
+                                        break;
+                                    case I64_CONST:
+                                        set(_args[0], Types.I64);
+                                        break;
+                                    case F32_CONST:
+                                        set(_args[0], Types.F32);
+                                        break;
+                                    case F64_CONST:
+                                        set(_args[0], Types.F64);
+                                        break;
+                                    default:
+                                        assert(0, format("Instruction %s is not a const", ir));
+                                    }
+                                }
+                                // const type=cast(Types)data[_index];
+                                // _index+=Types.sizeof;
+                                // set(_args[0], type);
                                 arglen=1;
                                 break;
                             case END:
@@ -1066,7 +1126,6 @@ struct Wasm {
                 this(immutable(ubyte[]) data) {
                     size_t index;
                     auto byte_size=u32(data, index);
-                    writefln("byte_size=%d", byte_size);
                     this.data=data[index..index+byte_size];
                     index+=byte_size;
                     size=index;
@@ -1137,7 +1196,8 @@ struct Wasm {
             //string filename="../tests/wasm/global_1.wasm";
 //            string filename="../tests/wasm/start_4.wasm";
 //            string filename="../tests/wasm/memory_1.wasm";
-            string filename="../tests/wasm/memory_9.wasm";
+            //string filename="../tests/wasm/memory_9.wasm";
+            string filename="../tests/wasm/global_1.wasm";
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
