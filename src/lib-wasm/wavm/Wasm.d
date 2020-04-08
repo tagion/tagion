@@ -652,23 +652,6 @@ struct Wasm {
 
             alias Type=SectionT!(FuncType);
 
-            version(none)
-            struct Type {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias FuncRange=VectorRange!(Type, FuncType);
-
-                FuncRange opSlice() {
-                    return FuncRange(this);
-                }
-            }
-
             struct ImportType {
                 immutable(char[]) mod;
                 immutable(char[]) name;
@@ -684,23 +667,6 @@ struct Wasm {
             }
 
             alias Import=SectionT!(ImportType);
-            version(none)
-            struct Import {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias ImportRange=VectorRange!(Import, ImportType);
-
-                ImportRange opSlice() {
-                    return ImportRange(this);
-                }
-            }
-
 
             struct Index {
                 immutable(uint) value;
@@ -713,24 +679,6 @@ struct Wasm {
             }
 
             alias Function=SectionT!(Index);
-            version(none)
-            struct Function {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
-                    //size_t u32_size;
-                    length=u32(data, index);
-                    //index+=u32_size;
-                    this.data=data[index..$];
-                }
-
-                alias FunctionRange=VectorRange!(Function, Index);
-
-                FunctionRange opSlice() {
-                    return FunctionRange(this);
-                }
-            }
 
             struct TableType {
                 immutable(uint) begin;
@@ -761,24 +709,6 @@ struct Wasm {
 
             alias Table=SectionT!(TableType);
 
-            version(none)
-            struct Table {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias TableRange=VectorRange!(Table, TableType);
-
-                TableRange opSlice() {
-                    return TableRange(this);
-                }
-
-            }
-
             struct MemoryType {
                 immutable(uint) begin;
                 immutable(uint) end;
@@ -805,22 +735,6 @@ struct Wasm {
             }
 
             alias Memory=SectionT!(MemoryType);
-            version(none)
-            struct Memory {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias MemoryRange=VectorRange!(Memory, MemoryType);
-
-                MemoryRange opSlice() {
-                    return MemoryRange(this);
-                }
-            }
 
             struct GlobalType {
                 immutable(Types) valtype;
@@ -834,22 +748,6 @@ struct Wasm {
             }
 
             alias Global=SectionT!(GlobalType);
-            version(none)
-            struct Global {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias GlobalRange=VectorRange!(Global, GlobalType);
-
-                GlobalRange opSlice() {
-                    return GlobalRange(this);
-                }
-            }
 
             struct ExportType {
                 immutable(char[]) name;
@@ -864,23 +762,6 @@ struct Wasm {
             }
 
             alias Export=SectionT!(ExportType);
-            version(none)
-            struct Export {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias ExportRange=VectorRange!(Export, ExportType);
-
-                ExportRange opSlice() {
-                    return ExportRange(this);
-                }
-
-            }
 
             struct Start {
                 immutable(uint) idx;
@@ -1172,23 +1053,6 @@ struct Wasm {
 
             alias Code=SectionT!(CodeType);
 
-            version(none)
-            struct Code {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias CodeRange=VectorRange!(Code, CodeType);
-
-                CodeRange opSlice() {
-                    return CodeRange(this);
-                }
-            }
-
             struct DataType {
                 immutable uint idx;
                 immutable(ubyte[]) expr;
@@ -1224,23 +1088,6 @@ struct Wasm {
 
 
             alias Data=SectionT!(DataType);
-            version(none)
-            struct Data {
-                immutable uint length;
-                immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
-                    size_t index;
-                    length=u32(data, index);
-                    this.data=data[index..$];
-                }
-
-                alias DataRange=VectorRange!(Data, DataType);
-
-                DataRange opSlice() {
-                    return DataRange(this);
-                }
-
-            }
 
         }
     }
