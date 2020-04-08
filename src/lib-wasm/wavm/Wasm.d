@@ -54,7 +54,7 @@ struct Wasm {
         string name;
         uint cost;
         IRType irtype;
-        Types  args;
+        uint pops; // Number of pops from the stack
     }
 
     enum ubyte[] magic=[0x00, 0x61, 0x73, 0x6D];
@@ -309,21 +309,21 @@ struct Wasm {
                 F32_CONST           : Instr("f32.const", 1, IRType.CONST),
                 F64_CONST           : Instr("f64.const", 1, IRType.CONST),
                 // Compare instructions
-                I32_EQZ             : Instr("i32.eqz", 1, IRType.CODE),
-                I32_EQ              : Instr("i32.eq", 1, IRType.CODE),
-                I32_NE              : Instr("i32.ne", 1, IRType.CODE),
-                I32_LT_S            : Instr("i32.lt_s", 1, IRType.CODE),
-                I32_LT_U            : Instr("i32.lt_u", 1, IRType.CODE),
-                I32_GT_S            : Instr("i32.gt_s", 1, IRType.CODE),
-                I32_GT_U            : Instr("i32.gt_u", 1, IRType.CODE),
-                I32_LE_S            : Instr("i32.le_s", 1, IRType.CODE),
-                I32_LE_U            : Instr("i32.le_u", 1, IRType.CODE),
-                I32_GE_S            : Instr("i32.ge_s", 1, IRType.CODE),
-                I32_GE_U            : Instr("i32.ge_u", 1, IRType.CODE),
+                I32_EQZ             : Instr("i32.eqz", 1, IRType.CODE, 1),
+                I32_EQ              : Instr("i32.eq", 1, IRType.CODE, 1),
+                I32_NE              : Instr("i32.ne", 1, IRType.CODE, 1),
+                I32_LT_S            : Instr("i32.lt_s", 1, IRType.CODE, 2),
+                I32_LT_U            : Instr("i32.lt_u", 1, IRType.CODE, 2),
+                I32_GT_S            : Instr("i32.gt_s", 1, IRType.CODE, 2),
+                I32_GT_U            : Instr("i32.gt_u", 1, IRType.CODE, 2),
+                I32_LE_S            : Instr("i32.le_s", 1, IRType.CODE, 2),
+                I32_LE_U            : Instr("i32.le_u", 1, IRType.CODE, 2),
+                I32_GE_S            : Instr("i32.ge_s", 1, IRType.CODE, 2),
+                I32_GE_U            : Instr("i32.ge_u", 1, IRType.CODE, 2),
 
-                I64_EQZ             : Instr("i64.eqz", 1, IRType.CODE),
-                I64_EQ              : Instr("i64.eq", 1, IRType.CODE),
-                I64_NE              : Instr("i64.ne", 1, IRType.CODE),
+                I64_EQZ             : Instr("i64.eqz", 1, IRType.CODE, 1),
+                I64_EQ              : Instr("i64.eq", 1, IRType.CODE, 1),
+                I64_NE              : Instr("i64.ne", 1, IRType.CODE, 1),
                 I64_LT_S            : Instr("i64.lt_s", 1, IRType.CODE),
 
                 I64_LT_U            : Instr("i64.lt_u", 1, IRType.CODE),
@@ -483,6 +483,17 @@ struct Wasm {
             MEM =       0x02, /// mem mt:memtype
             GLOBAL =    0x03, /// global gt:globaltype
             }
+
+
+    static string indexName(IndexType idx) pure {
+        import std.uni : toLower;
+        import std.conv : to;
+        final switch(idx) {
+            foreach(E; EnumMembers!IndexType) {
+            case E: return toLower(E.to!string);
+            }
+        }
+    }
 
     enum Section : ubyte {
         CUSTOM   = 0,
@@ -759,6 +770,16 @@ struct Wasm {
                     desc=cast(IndexType)data[index];
                     size=index+1;
                 }
+                string toString() {
+                    string _name;
+                    if (name.length) {
+                        _name=name;
+                    }
+                    else {
+                        _name=format("$%s_%d", indexName(desc), desc);
+                    }
+                    return format(`(export "%s" (%s $%d))`, _name, indexName(desc), desc);
+                }
             }
 
             alias Export=SectionT!(ExportType);
@@ -768,6 +789,9 @@ struct Wasm {
                 this(immutable(ubyte[]) data) {
                     size_t u32_size;
                     idx=u32(data, u32_size);
+                }
+                string toString() {
+                    return format("(start $%d)", idx);
                 }
             }
 
@@ -1086,9 +1110,7 @@ struct Wasm {
                 }
             }
 
-
             alias Data=SectionT!(DataType);
-
         }
     }
 
