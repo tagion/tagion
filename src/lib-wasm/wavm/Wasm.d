@@ -723,12 +723,16 @@ struct Wasm {
             alias Import=SectionT!(ImportType);
 
             struct Index {
-                immutable(uint) value;
+                immutable(uint) idx;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
-                    value=u32(data, index);
+                    idx=u32(data, index);
                     size=index;
+                }
+
+                string toString() {
+                    return format("(func $%d)", idx);
                 }
             }
 
@@ -1240,7 +1244,7 @@ struct Wasm {
 //            string filename="../tests/wasm/global_1.wasm";
 //            string filename="../tests/wasm/imports_2.wasm";
             //string filename="../tests/wasm/table_copy_2.wasm";
-            string filename="../tests/wasm/type_1.wasm";
+            string filename="../tests/wasm/func_1.wasm";
 
             immutable code=fread(filename);
             auto wasm=Wasm(code);
