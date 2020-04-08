@@ -611,6 +611,22 @@ struct Wasm {
                 }
             }
 
+            struct SectionT(SecType) {
+                immutable uint length;
+                immutable(ubyte[]) data;
+                this(immutable(ubyte[]) data) {
+                    size_t index; //=Section.sizeof;
+                    length=u32(data, index);
+                    this.data=data[index..$];
+                }
+
+                alias SecRange=VectorRange!(SectionT, SecType);
+
+                SecRange opSlice() {
+                    return SecRange(this);
+                }
+            }
+
             struct Custom {
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
@@ -620,6 +636,7 @@ struct Wasm {
                     bytes=Vector!ubyte(data, index);
                 }
             }
+
 
             struct FuncType {
                 immutable(Types[]) params;
@@ -633,6 +650,9 @@ struct Wasm {
                 }
             }
 
+            alias Type=SectionT!(FuncType);
+
+            version(none)
             struct Type {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -663,6 +683,8 @@ struct Wasm {
                 }
             }
 
+            alias Import=SectionT!(ImportType);
+            version(none)
             struct Import {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -690,6 +712,8 @@ struct Wasm {
                 }
             }
 
+            alias Function=SectionT!(Index);
+            version(none)
             struct Function {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -735,6 +759,9 @@ struct Wasm {
                 }
             }
 
+            alias Table=SectionT!(TableType);
+
+            version(none)
             struct Table {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -777,6 +804,8 @@ struct Wasm {
                 }
             }
 
+            alias Memory=SectionT!(MemoryType);
+            version(none)
             struct Memory {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -804,6 +833,8 @@ struct Wasm {
                 }
             }
 
+            alias Global=SectionT!(GlobalType);
+            version(none)
             struct Global {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -832,6 +863,8 @@ struct Wasm {
                 }
             }
 
+            alias Export=SectionT!(ExportType);
+            version(none)
             struct Export {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -1137,6 +1170,9 @@ struct Wasm {
 
             }
 
+            alias Code=SectionT!(CodeType);
+
+            version(none)
             struct Code {
                 immutable uint length;
                 immutable(ubyte[]) data;
@@ -1187,6 +1223,8 @@ struct Wasm {
             }
 
 
+            alias Data=SectionT!(DataType);
+            version(none)
             struct Data {
                 immutable uint length;
                 immutable(ubyte[]) data;
