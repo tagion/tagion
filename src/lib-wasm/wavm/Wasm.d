@@ -7,9 +7,11 @@ import LEB128=wavm.LEB128;
 import std.stdio;
 import std.meta : AliasSeq;
 import std.traits : EnumMembers, getUDAs, Unqual;
-import std.range : InputRange;
+//import std.range : InputRange;
 
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
+
+import std.range.primitives : isInputRange;
 
 @safe
 class WASMException : WAVMException {
@@ -551,6 +553,7 @@ struct Wasm {
         return LEB128.decode!T(data[index..$], byte_size);
     }
 
+    static assert(isInputRange!WasmRange);
     struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
@@ -640,6 +643,7 @@ struct Wasm {
                     this.data=data[index..$];
                 }
 
+                static assert(isInputRange!SecRange);
                 alias SecRange=VectorRange!(SectionT, SecType);
 
                 SecRange opSlice() {
@@ -956,6 +960,7 @@ struct Wasm {
                 }
             }
 
+            static assert(isInputRange!ExprRange);
             struct ExprRange {
                 immutable(ubyte[]) data;
                 protected {
@@ -1128,6 +1133,7 @@ struct Wasm {
                     return LocalRange(data);
                 }
 
+                static assert(isInputRange!LocalRange);
                 struct LocalRange {
                     immutable uint length;
                     immutable(ubyte[]) data;

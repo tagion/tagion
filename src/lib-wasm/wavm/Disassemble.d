@@ -93,7 +93,7 @@ struct Disassemble {
 }
 
 
-void wast(Range)(Disassembler dasm,  Range output) if (isOutputRange!Range) {
+void wast(Range)(Disassembler dasm, Range output) if (isOutputRange!Range) {
     dasm((const Section sec, ref scope const(Disassembler.Module) mod) => {
             with(Wasm.Section) {
                 final switch(a.sec) {
