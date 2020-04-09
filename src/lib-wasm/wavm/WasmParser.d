@@ -558,12 +558,12 @@ unittest {
     auto range_1=parser[];
 
     import std.stdio;
-    while (!range_1.empty) {
-//    foreach(t; parser[]) {
-//        const x=t.token;
-        writefln("{line : %d, pos : %d, token : \"%s\"},", range_1.line, range_1.pos, range_1.front);
-        range_1.popFront;
-    }
+//     while (!range_1.empty) {
+// //    foreach(t; parser[]) {
+// //        const x=t.token;
+//         writefln("{line : %d, pos : %d, token : \"%s\"},", range_1.line, range_1.pos, range_1.front);
+//         range_1.popFront;
+//     }
     auto range=parser[];
     foreach(t; tokens) {
         assert(range.line is t.line);

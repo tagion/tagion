@@ -616,7 +616,7 @@ struct Wasm {
                 ModuleSection owner;
                 protected size_t pos;
                 protected uint index;
-                this(ModuleSection owner)  {
+                this(const ModuleSection owner)  {
                     this.owner=owner;
                 }
 
@@ -646,7 +646,7 @@ struct Wasm {
                 static assert(isInputRange!SecRange);
                 alias SecRange=VectorRange!(SectionT, SecType);
 
-                SecRange opSlice() {
+                SecRange opSlice() const {
                     return SecRange(this);
                 }
             }
@@ -1222,6 +1222,7 @@ struct Wasm {
         }
     }
 
+    version(none)
     unittest {
         import std.stdio;
         import std.file;
