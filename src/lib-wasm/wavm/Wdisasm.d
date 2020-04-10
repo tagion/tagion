@@ -123,6 +123,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     alias Section=Wasm.Section;
     alias IRType=Wasm.IRType;
     alias IR=Wasm.IR;
+    alias Types=Wasm.Types;
     protected {
         Output output;
         Wdisasm dasm;
@@ -169,8 +170,10 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     void code_sec(ref scope const(Module) mod) {
         auto _code=*mod.code_sec;
         output.writefln("Code types _code.length=%s", _code.length);
-        uint count=100;
+        uint count=1000;
+        uint block_count;
         const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
+            string block_comment;
             while (!expr.empty) {
                 const elm=expr.front;
                 const instr=Wasm.instrTable[elm.code];
@@ -178,6 +181,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                     return elm;
                 }
                 count--;
+
                 with(IRType) {
                     // if (instr.irtype is END) {
                     //     return;
@@ -185,40 +189,64 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                     // else {
                         expr.popFront;
                     // }
-                    output.writefln("%s<%s>", indent, elm);
+//                    output.writefln("%s<%s>", indent, elm);
                     final switch(instr.irtype) {
                     case CODE:
                         output.writefln("%s(%s)", indent, instr.name);
                         break;
                     case BLOCK:
-                        output.writefln("%s(%s)", indent, instr.name);
+                        static string block_result_type() (const Types t) {
+                            with(Types) {
+                                switch(t) {
+                                case I32, I64, F32, F64, FUNCREF:
+                                    return format(" (result %s)", Wasm.typesName(t));
+                                case EMPTY:
+                                    return null;
+                                default:
+                                    check(0, format("Block Illegal result type %s for a block", t));
+                                // empty
+                                }
+                            }
+                            assert(0);
+                        }
+                        block_comment=format(";; block %d", block_count);
+                        block_count++;
+                        output.writefln("%s(%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                         const end_elm=block(expr, indent~spacer, level+1);
                         // writefln("expr.empty=%s", expr.empty);
                         // const end_elm=expr.front;
-                        writefln(">>>end %s", end_elm);
+                        //writefln(">>>end %s", end_elm);
                         const end_instr=Wasm.instrTable[end_elm.code];
-                        check(end_elm.code is IR.END, format("(begin expected an end) but got an (%s)", end_instr.name));
-                        output.writefln("%s(%s) count=%d", indent, end_instr.name, count);
+                        //check(end_elm.code is IR.END, format("(begin expected an end) but got an (%s)", end_instr.name));
+                        output.writefln("%s) %s count=%d", indent, block_comment, count);
                         break;
                     case BRANCH:
+                        output.writefln("%s[%s %s] ;; %s", indent, instr.name, elm.args[0], elm);
                         break;
                     case BRANCH_TABLE:
+                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case CALL:
+                        output.writefln("%s(%s %s)", indent, instr.name, elm.args[0]);
                         break;
                     case CALL_INDIRECT:
+                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case LOCAL:
-                        output.writefln("%s(%s %d)", indent, instr.name, elm.args[0].get!uint);
+                        output.writefln("%s(%s %s)", indent, instr.name, elm.args[0]);
                         break;
                     case GLOBAL:
+                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case MEMORY:
+                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case MEMOP:
+                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case CONST:
 
+                        output.writefln("%s[%s %s] ;; %s", indent, instr.name, elm.args[0], elm);
                         break;
                     case END:
                         writeln("Retrun END");
@@ -237,12 +265,12 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             }
             // check(0, "Block missing end");
             // assert(0);
-            return ExprRange.IRElement();
+            return ExprRange.IRElement(IR.END, level);
         }
         writefln("code.data=%s", _code.data);
         foreach(c; _code[]) {
             auto expr=c[];
-            writefln("c.data=%s c.locals=%s expr.data=%s", c.data, c.locals, expr.data);
+            writefln(">expr.data=%s", expr.data);
             block(expr,indent);
             // foreach(elm; c[]) {
 
@@ -351,14 +379,16 @@ unittest {
 4, 0, 32, 1, 11,
 4, 0, 32, 1, 11,
 4, 0, 32, 1, 11,
-28, 0, 32, 0, 140, 26, 32, 1, 69, 26, 32, 2, 80, 26, 32, 3, 69, 26, 32, 4, 154, 26, 32, 5, 69, 26, 32, 4, 11, 2, 0, 11,
+28, 0, 32, 0, 140, 26, 32, 1, 69, 26, 32, 2, 80, 26, 32, 3, 69, 26, 32, 4, 154, 26, 32, 5, 69, 26, 32, 4, 11,
+2, 0, 11,
 4, 0, 16, 0, 11,
 5, 0, 65, 205, 0, 11, 5, 0, 66, 225, 60, 11,
 7, 0, 67, 102, 102, 155, 66, 11,
 11, 0, 68, 225, 122, 20, 174, 71, 113, 83, 64, 11,
-9, 0, 2, 64, 16, 0, 16, 0, 11,
-11, 10, 0, 2, 127, 16, 0, 65, 205, 0, 11,
-11, 3, 0, 15, 11, 6, 0, 65, 206, 0, 15, 11,
+9, 0, 2, 64, 16, 0, 16, 0, 11, 11,
+10, 0, 2, 127, 16, 0, 65, 205, 0, 11, 11,
+3, 0, 15, 11,
+6, 0, 65, 206, 0, 15, 11,
 6, 0, 66, 198, 61, 15, 11,
 8, 0, 67, 102, 102, 157, 66, 15, 11,
 12, 0, 68, 82, 184, 30, 133, 235, 177, 83, 64, 15, 11,

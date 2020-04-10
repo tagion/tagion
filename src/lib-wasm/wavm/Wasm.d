@@ -13,6 +13,8 @@ import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
 import std.range.primitives : isInputRange;
 
+import std.conv : to;
+
 @safe
 class WASMException : WAVMException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
@@ -918,6 +920,7 @@ struct Wasm {
                         @(Types.F64) double f64;
                     }
                 }
+
                 void opAssign(T)(T x) {
                     alias BaseT=Unqual!T;
                     static if (is(BaseT == int) || is(BaseT == uint)) {
@@ -960,6 +963,24 @@ struct Wasm {
                         return f64;
                     }
                 }
+
+                string toString() const {
+                    with(Types) {
+                        switch(type) {
+                        case I32:
+                            return get!int.to!string;
+                        case I64:
+                            return get!long.to!string;
+                        case F32:
+                            return get!float.to!string;
+                        case F64:
+                            return get!double.to!string;
+                        default:
+                            assert(0);
+                        }
+                    }
+                    assert(0);
+                }
             }
 
             static assert(isInputRange!ExprRange);
@@ -967,20 +988,14 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 protected {
                     size_t _index;
-                    //size_t _previous_index;
-                    // WasmArg[2] _args;
-                    // Types _type;
                     int _level;
-                    // immutable(Types)[] _types;
-                    // size_t arglen;
                     IRElement current;
-                    // bool first=true;
                 }
 
                 struct IRElement {
                     IR code;
-                    WasmArg[] args;
                     int level;
+                    WasmArg[] args;
                     const(Types)[] types;
                 }
 
@@ -1025,6 +1040,8 @@ struct Wasm {
                         case CODE:
                             break;
                         case BLOCK:
+                            elm.types=[cast(Types)data[index]];
+                            index+=Types.sizeof;
                             _level++;
                             break;
                         case BRANCH:
@@ -1037,8 +1054,13 @@ struct Wasm {
                             break;
                         case BRANCH_TABLE:
                             //size_t vec_size;
-                            elm.types=Vector!Types(data, index);
-                            elm.args.length=1;
+                            const len=u32(data, index)+1;
+                            elm.args.length=len;
+                            foreach(ref a; elm.args) {
+                                a=u32(data, index);
+                            }
+                            // elm.types=Vector!Types(data, index);
+                            // elm.args.length=1;
                             //_index+=vec_size;
                             //arglen=1;
                             break;
@@ -1062,7 +1084,7 @@ struct Wasm {
                             elm.args.length=1;
                             set(elm.args[0], Types.I32);
                             // set(_args[0], Types.I32);
-                            writefln("LOCAL %s", elm.args[0].get!uint);
+                            //writefln("LOCAL %s", elm.args[0].get!uint);
                             // arglen=1;
                             break;
                         case MEMORY:
@@ -1136,9 +1158,7 @@ struct Wasm {
                     }
 
                     void popFront() {
-                        writef("popFront before %d ", _index);
                         set_front(current, _index);
-                        writefln("popFront after %d", _index);
                     }
                 }
             }
@@ -1203,12 +1223,10 @@ struct Wasm {
                 }
 
                 ExprRange opSlice() {
-                    writefln("ExprRange opSlice data=%s", data);
                     scope range=LocalRange(data);
                     while(!range.empty) {
                         range.popFront;
                     }
-                    writefln("code locals index=%d", range.index);
                     return ExprRange(data[range.index..$]);
                 }
 
