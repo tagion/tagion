@@ -120,6 +120,7 @@ WastT!Output Wast(Output)(Wdisasm dasm, Output output) {
 class WastT(Output) : Wdisasm.InterfaceModule {
     alias Module=Wdisasm.Module;
     alias ExprRange=Wasm.WasmRange.WasmSection.ExprRange;
+    alias WasmArg=Wasm.WasmRange.WasmSection.WasmArg;
     alias Section=Wasm.Section;
     alias IRType=Wasm.IRType;
     alias IR=Wasm.IR;
@@ -221,19 +222,26 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%send %s count=%d", indent, block_comment, count);
                         break;
                     case BRANCH:
-                        output.writefln("%s[%s %s] ;; %s", indent, instr.name, elm.args[0], elm);
+                        output.writefln("%s[%s %s] ;; %s", indent, instr.name, elm.warg, elm);
                         break;
                     case BRANCH_TABLE:
-                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                        static string branch_table(const(WasmArg[]) args) pure {
+                            string result;
+                            foreach(a; args) {
+                                result~=format(" %d", a.get!uint);
+                            }
+                            return result;
+                        }
+                        output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
-                        output.writefln("%s%s %s", indent, instr.name, elm.args[0]);
+                        output.writefln("%s%s %s", indent, instr.name, elm.warg);
                         break;
                     case CALL_INDIRECT:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case LOCAL:
-                        output.writefln("%s%s %s", indent, instr.name, elm.args[0]);
+                        output.writefln("%s%s %s", indent, instr.name, elm.warg);
                         break;
                     case GLOBAL:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
@@ -246,7 +254,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         break;
                     case CONST:
 
-                        output.writefln("%s%s %s", indent, instr.name, elm.args[0]);
+                        output.writefln("%s%s %s", indent, instr.name, elm.warg);
                         break;
                     case END:
                         //writeln("Retrun END");

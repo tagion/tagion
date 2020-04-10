@@ -13,7 +13,7 @@ import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
 import std.range.primitives : isInputRange;
 
-import std.conv : to;
+import std.conv : to, emplace;
 
 @safe
 class WASMException : WAVMException {
@@ -939,6 +939,11 @@ struct Wasm {
                         type=Types.F64;
                         f64=x;
                     }
+                    else static if (is(BaseT == WasmArg)) {
+                        emplace!WasmArg(&this, x);
+                        //type=x.type;
+
+                    }
                     else {
                         static assert(0, format("Type %s is not supported by WasmArg", T.stringof));
                     }
@@ -995,8 +1000,85 @@ struct Wasm {
                 struct IRElement {
                     IR code;
                     int level;
-                    WasmArg[] args;
-                    const(Types)[] types;
+                    // enum ArgType {
+                    //     NONE,
+                    //     SINGLE,
+                    //     MULTI,
+                    //     TYPES
+                    // }
+                    // protected Arg arg;
+                    // struct Arg {
+                    // private {
+                    //     debug {
+                    //         ArgType argtype;
+                    //     }
+                    //     union {
+                    private {
+                        WasmArg _warg;
+                        WasmArg[] _wargs;
+                        const(Types)[] _types;
+                    }
+
+                    const(WasmArg) warg() const pure nothrow {
+                        return _warg;
+                    }
+
+                    const(WasmArg[]) wargs() const pure nothrow {
+                        return _wargs;
+                    }
+
+                    const(Types[]) types() const pure nothrow {
+                        return _types;
+                    }
+
+                    //     }
+                    // }
+
+                    // @trusted {
+                    //     void opAssign(ref const(WasmArg) a) {
+                    //         debug argtype=ArgType.SINGLE;
+                    //         _warg=a;
+                    //     }
+
+                    //     void opAssign(const(WasmArg[]) a) {
+                    //         debug argtype=ArgType.MULTI;
+                    //         _wargs=a;
+                    //     }
+
+                    //     void opAssign(const(Types[]) t) {
+                    //         debug argtype=ArgType.TYPES;
+                    //         _types=t;
+                    //     }
+
+
+                    //     //@property {
+                    //     const(WasmArg) warg() pure const nothrow
+                    //         in {
+                    //             debug assert(argtype is ArgType.SINGLE);
+                    //         }
+                    //     do {
+                    //         return _warg;
+                    //     }
+
+                    //     const(WasmArg[]) arg() pure const nothrow
+                    //         in {
+                    //             debug assert(argtype is ArgType.MULTI);
+                    //         }
+                    //     do {
+                    //         return _wargs;
+                    //     }
+
+
+                    //     const(Types[]) types() pure const nothrow
+                    //         in {
+                    //             debug assert(argtype is ArgType.MULTI);
+                    //         }
+                    //     do {
+                    //         return _types;
+                    //     }
+                    //     //}
+                    // }
+                    //}
                 }
 
                 this(immutable(ubyte[]) data) {
@@ -1008,20 +1090,21 @@ struct Wasm {
                 @safe
                 protected void set_front(ref scope IRElement elm, ref size_t index) {
                     @trusted
-                    void set(ref WasmArg arg, const Types type) {
+                    void set(ref WasmArg warg, const Types type) {
+
                         with(Types) {
                             switch(type) {
                             case I32:
-                                arg=u32(data, index);
+                                warg=u32(data, index);
                                 break;
                             case I64:
-                                arg=u64(data, index);
+                                warg=u64(data, index);
                                 break;
                             case F32:
-                                arg=data.binpeek!(float, Endian.littleEndian)(&index);
+                                warg=data.binpeek!(float, Endian.littleEndian)(&index);
                                 break;
                             case F64:
-                                arg=data.binpeek!(double, Endian.littleEndian)(&index);
+                                warg=data.binpeek!(double, Endian.littleEndian)(&index);
                                 break;
                             default:
                                 check(0, format("Assembler argument type not vaild as an argument %s", type));
@@ -1030,7 +1113,7 @@ struct Wasm {
                     }
 
                     elm.code=cast(IR)data[index];
-                    elm.types=null;
+                    elm._types=null;
                     // const ir=front.code;
                     const instr=instrTable[elm.code];
                     //size_t arglen=0;
@@ -1040,23 +1123,23 @@ struct Wasm {
                         case CODE:
                             break;
                         case BLOCK:
-                            elm.types=[cast(Types)data[index]];
+                            elm._types=[cast(Types)data[index]];
                             index+=Types.sizeof;
                             _level++;
                             break;
                         case BRANCH:
                             // branchidx
 
-                            elm.args.length=1;
-                            set(elm.args[0], Types.I32);
+                            //elm.args=new WasmArg[1];
+                            set(elm._warg, Types.I32);
                             _level++;
                             //arglen=1;
                             break;
                         case BRANCH_TABLE:
                             //size_t vec_size;
                             const len=u32(data, index)+1;
-                            elm.args.length=len;
-                            foreach(ref a; elm.args) {
+                            elm._wargs=new WasmArg[len];
+                            foreach(ref a; elm._wargs) {
                                 a=u32(data, index);
                             }
                             // elm.types=Vector!Types(data, index);
@@ -1066,33 +1149,33 @@ struct Wasm {
                             break;
                         case CALL:
                             // callidx
-                            elm.args.length=1;
-                            set(elm.args[0], Types.I32);
+                            //elm.args=new WasmArg[1];
+                            set(elm._warg, Types.I32);
                             //set(_args[0], Types.I32);
                             //arglen=1;
                             break;
                         case CALL_INDIRECT:
                             // typeidx
-                            elm.args.length=1;
-                            set(elm.args[0], Types.I32);
+                            //elm.args=new WasmArg[1];
+                            set(elm._warg, Types.I32);
                             // check(data[local_index] is 0x00,
                             //     format("Call indirect 0x%02X not 0x%02X", 0x00, data[local_index]));
                             // arglen=1;
                             break;
                         case LOCAL, GLOBAL:
                             // localidx globalidx
-                            elm.args.length=1;
-                            set(elm.args[0], Types.I32);
+                            //elm.args=new WasmArg[1];
+                            set(elm._warg, Types.I32);
                             // set(_args[0], Types.I32);
                             //writefln("LOCAL %s", elm.args[0].get!uint);
                             // arglen=1;
                             break;
                         case MEMORY:
                             // offset
-                            elm.args.length=2;
-                            set(elm.args[0], Types.I32);
+                            elm._wargs=new WasmArg[2];
+                            set(elm._wargs[0], Types.I32);
                             // align
-                            set(elm.args[1], Types.I32);
+                            set(elm._wargs[1], Types.I32);
                             //arglen=2;
                             break;
                         case MEMOP:
@@ -1102,20 +1185,20 @@ struct Wasm {
                             break;
                         case CONST:
                             // writefln("CONST %s", data[_index..$]);
-                            elm.args.length=1;
+                            //elm.args=new WasmArg[1];
                             with(IR) {
                                 switch (elm.code) {
                                 case I32_CONST:
-                                    set(elm.args[0], Types.I32);
+                                    set(elm._warg, Types.I32);
                                     break;
                                 case I64_CONST:
-                                    set(elm.args[0], Types.I64);
+                                    set(elm._warg, Types.I64);
                                     break;
                                 case F32_CONST:
-                                    set(elm.args[0], Types.F32);
+                                    set(elm._warg, Types.F32);
                                     break;
                                 case F64_CONST:
-                                    set(elm.args[0], Types.F64);
+                                    set(elm._warg, Types.F64);
                                     break;
                                 default:
                                     assert(0, format("Instruction %s is not a const", elm.code));
