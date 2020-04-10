@@ -192,7 +192,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
 //                    output.writefln("%s<%s>", indent, elm);
                     final switch(instr.irtype) {
                     case CODE:
-                        output.writefln("%s(%s)", indent, instr.name);
+                        output.writefln("%s%s", indent, instr.name);
                         break;
                     case BLOCK:
                         static string block_result_type() (const Types t) {
@@ -211,14 +211,14 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         }
                         block_comment=format(";; block %d", block_count);
                         block_count++;
-                        output.writefln("%s(%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
+                        output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                         const end_elm=block(expr, indent~spacer, level+1);
                         // writefln("expr.empty=%s", expr.empty);
                         // const end_elm=expr.front;
                         //writefln(">>>end %s", end_elm);
                         const end_instr=Wasm.instrTable[end_elm.code];
                         //check(end_elm.code is IR.END, format("(begin expected an end) but got an (%s)", end_instr.name));
-                        output.writefln("%s) %s count=%d", indent, block_comment, count);
+                        output.writefln("%send %s count=%d", indent, block_comment, count);
                         break;
                     case BRANCH:
                         output.writefln("%s[%s %s] ;; %s", indent, instr.name, elm.args[0], elm);
@@ -227,13 +227,13 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case CALL:
-                        output.writefln("%s(%s %s)", indent, instr.name, elm.args[0]);
+                        output.writefln("%s%s %s", indent, instr.name, elm.args[0]);
                         break;
                     case CALL_INDIRECT:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case LOCAL:
-                        output.writefln("%s(%s %s)", indent, instr.name, elm.args[0]);
+                        output.writefln("%s%s %s", indent, instr.name, elm.args[0]);
                         break;
                     case GLOBAL:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
@@ -246,10 +246,10 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         break;
                     case CONST:
 
-                        output.writefln("%s[%s %s] ;; %s", indent, instr.name, elm.args[0], elm);
+                        output.writefln("%s%s %s", indent, instr.name, elm.args[0]);
                         break;
                     case END:
-                        writeln("Retrun END");
+                        //writeln("Retrun END");
                         return elm;
                         //assert(0);
                         //return;
