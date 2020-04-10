@@ -119,15 +119,21 @@ WastT!Output Wast(Output)(Wdisasm dasm, Output output) {
 
 class WastT(Output) : Wdisasm.InterfaceModule {
     alias Module=Wdisasm.Module;
+    alias ExprRange=Wasm.WasmRange.WasmSection.ExprRange;
+    alias Section=Wasm.Section;
+    alias IRType=Wasm.IRType;
+    alias IR=Wasm.IR;
     protected {
         Output output;
         Wdisasm dasm;
         string indent;
+        string spacer;
     }
 
-    this(Wdisasm dasm, Output output) { //static if (isOutputRange!Ouput) {
+    this(Wdisasm dasm, Output output, string spacer="  ") { //static if (isOutputRange!Ouput) {
         this.output=output;
         this.dasm=dasm;
+        this.spacer=spacer;
     }
 
     void custom_sec(ref scope const(Module) mod) {
@@ -162,9 +168,87 @@ class WastT(Output) : Wdisasm.InterfaceModule {
 
     void code_sec(ref scope const(Module) mod) {
         auto _code=*mod.code_sec;
-        output.writefln("Code types length=%s", _code.length);
+        output.writefln("Code types _code.length=%s", _code.length);
+        uint count=100;
+        const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
+            while (!expr.empty) {
+                const elm=expr.front;
+                const instr=Wasm.instrTable[elm.code];
+                if (count==0) {
+                    return elm;
+                }
+                count--;
+                with(IRType) {
+                    // if (instr.irtype is END) {
+                    //     return;
+                    // }
+                    // else {
+                        expr.popFront;
+                    // }
+                    output.writefln("%s<%s>", indent, elm);
+                    final switch(instr.irtype) {
+                    case CODE:
+                        output.writefln("%s(%s)", indent, instr.name);
+                        break;
+                    case BLOCK:
+                        output.writefln("%s(%s)", indent, instr.name);
+                        const end_elm=block(expr, indent~spacer, level+1);
+                        // writefln("expr.empty=%s", expr.empty);
+                        // const end_elm=expr.front;
+                        writefln(">>>end %s", end_elm);
+                        const end_instr=Wasm.instrTable[end_elm.code];
+                        check(end_elm.code is IR.END, format("(begin expected an end) but got an (%s)", end_instr.name));
+                        output.writefln("%s(%s) count=%d", indent, end_instr.name, count);
+                        break;
+                    case BRANCH:
+                        break;
+                    case BRANCH_TABLE:
+                        break;
+                    case CALL:
+                        break;
+                    case CALL_INDIRECT:
+                        break;
+                    case LOCAL:
+                        output.writefln("%s(%s %d)", indent, instr.name, elm.args[0].get!uint);
+                        break;
+                    case GLOBAL:
+                        break;
+                    case MEMORY:
+                        break;
+                    case MEMOP:
+                        break;
+                    case CONST:
+
+                        break;
+                    case END:
+                        writeln("Retrun END");
+                        return elm;
+                        //assert(0);
+                        //return;
+                        //break;
+                    }
+                }
+                // if (instr.irtype is IRType.BLOCK) {
+                //     block(expr, indent~spacer, level+1);
+                // }
+                // else if (instr.irtype is IRType.END) {
+                //     return;
+                // }
+            }
+            // check(0, "Block missing end");
+            // assert(0);
+            return ExprRange.IRElement();
+        }
+        writefln("code.data=%s", _code.data);
         foreach(c; _code[]) {
-            output.writefln("c.size=%d c.data.length=%d c.locals=%s c[]=%s", c.size, c.data.length, c.locals, c[]);
+            auto expr=c[];
+            writefln("c.data=%s c.locals=%s expr.data=%s", c.data, c.locals, expr.data);
+            block(expr,indent);
+            // foreach(elm; c[]) {
+
+            //     output.writefln("<%s>", elm);
+            // }
+//            output.writefln("c.size=%d c.data.length=%d c.locals=%s c[]=%s", c.size, c.data.length, c.locals, c[]);
         }
     }
 
@@ -172,8 +256,9 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
 
-    Output serialize(string spacer=null) {
+    Output serialize() {
         output.writeln("(module");
+        indent=spacer;
         scope(exit) {
             output.writeln(")");
         }
@@ -206,3 +291,89 @@ unittest {
 //    auto output=Wast
 
 }
+
+/+
+[
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+4, 1, 1, 127, 11,
+4, 1, 1, 127, 11,
+8, 3, 1, 127, 1, 124, 1, 126, 11,
+6, 2, 1, 127, 1, 124, 11,
+12, 5, 1, 127, 1, 125, 1, 126, 1, 127, 1, 124, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+2, 0, 11,
+3, 0, 0, 11,
+2, 0, 11,
+4, 0, 65, 0, 11,
+2, 0, 11, 4, 0, 65, 0, 11,
+4, 0, 65, 0, 11, 2, 0, 11,
+4, 0, 65, 0, 11, 2, 0, 11,
+2, 0, 11,
+16, 6, 1, 125, 1, 127, 1, 126, 1, 127, 1, 124, 1, 127, 0, 0, 11,
+16, 6,
+1, 125,
+1, 127,
+1, 126,
+1, 127,
+1, 124,
+1, 127,
+0, 0, 11,
+
+6, 1,
+2, 127,
+32, 0,
+11,
+
+6, 1, 2, 126, 32, 0, 11,
+6, 1, 2, 125, 32, 0, 11,
+6, 1, 2, 124, 32, 0, 11,
+6, 1, 2, 127, 32, 1, 11,
+6, 1, 2, 126, 32, 1, 11,
+6, 1, 2, 125, 32, 1, 11,
+6, 1, 2, 124, 32, 1, 11,
+40, 6, 1, 125, 1, 127, 1, 126, 1, 127, 1, 124, 1, 127, 32, 0, 140, 26, 32, 1, 69, 26, 32, 2, 80, 26, 32, 3, 69, 26, 32, 4, 154, 26, 32, 5, 69, 26, 32, 4, 11,
+4, 0, 32, 0, 11,
+4, 0, 32, 0, 11,
+4, 0, 32, 0, 11,
+4, 0, 32, 0, 11,
+4, 0, 32, 1, 11,
+4, 0, 32, 1, 11,
+4, 0, 32, 1, 11,
+4, 0, 32, 1, 11,
+28, 0, 32, 0, 140, 26, 32, 1, 69, 26, 32, 2, 80, 26, 32, 3, 69, 26, 32, 4, 154, 26, 32, 5, 69, 26, 32, 4, 11, 2, 0, 11,
+4, 0, 16, 0, 11,
+5, 0, 65, 205, 0, 11, 5, 0, 66, 225, 60, 11,
+7, 0, 67, 102, 102, 155, 66, 11,
+11, 0, 68, 225, 122, 20, 174, 71, 113, 83, 64, 11,
+9, 0, 2, 64, 16, 0, 16, 0, 11,
+11, 10, 0, 2, 127, 16, 0, 65, 205, 0, 11,
+11, 3, 0, 15, 11, 6, 0, 65, 206, 0, 15, 11,
+6, 0, 66, 198, 61, 15, 11,
+8, 0, 67, 102, 102, 157, 66, 15, 11,
+12, 0, 68, 82, 184, 30, 133, 235, 177, 83, 64, 15, 11,
+11, 0, 2, 127, 16, 0, 65, 205, 0, 11,
+15, 11, 4, 0, 12, 0, 11, 7, 0, 65, 207, 0, 12, 0, 11,
+7, 0, 66, 171, 62, 12, 0, 11,
+9, 0, 67, 205, 204, 159, 66, 12, 0, 11,
+13, 0, 68, 195, 245, 40, 92, 143, 242, 83, 64, 12, 0, 11,
+12, 0, 2, 127, 16, 0, 65, 205, 0, 11,
+12, 0, 11, 6, 0, 32, 0, 13, 0, 11,
+11, 0, 65, 50, 32, 0, 13, 0, 26, 65, 51, 11,
+9, 0, 32, 0, 14, 2, 0, 0, 0, 11,
+12, 0, 65, 50, 32, 0, 14, 1, 0, 0, 65, 51, 11,
+12, 0, 2, 64, 32, 0, 14, 2, 0, 1, 0, 11,
+11, 19, 0, 2, 127, 65, 50, 32, 0, 14, 2, 0, 1, 0, 65, 51, 11,
+65, 2, 106, 11, 6, 1, 1, 127, 32, 0, 11, 6, 1, 1, 126, 32, 0, 11, 6, 1, 1, 125, 32, 0, 11, 6, 1, 1, 124, 32, 0, 11
+]
++/

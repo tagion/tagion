@@ -909,12 +909,14 @@ struct Wasm {
             }
 
             struct WasmArg {
-                protected Types type;
-                union {
-                    @(Types.I32) int i32;
-                    @(Types.I64) long i64;
-                    @(Types.F32) float f32;
-                    @(Types.F64) double f64;
+                protected {
+                    Types type;
+                    union {
+                        @(Types.I32) int i32;
+                        @(Types.I64) long i64;
+                        @(Types.F32) float f32;
+                        @(Types.F64) double f64;
+                    }
                 }
                 void opAssign(T)(T x) {
                     alias BaseT=Unqual!T;
@@ -939,13 +941,13 @@ struct Wasm {
                     }
                 }
 
-                T get(T)() const pure nothrow {
+                T get(T)() const pure {
                     alias BaseT=Unqual!T;
-                    static if (is(BaseT == int)  && is(BaseT == uint)) {
+                    static if (is(BaseT == int) || is(BaseT == uint)) {
                         check(type is Types.I32, format("Wrong to type %s execpted %s", type, Types.I32));
                         return cast(T)i32;
                     }
-                    else static if (is(BaseT == long) && is(BaseT == ulong)) {
+                    else static if (is(BaseT == long) || is(BaseT == ulong)) {
                         check(type is Types.I64, format("Wrong to type %s execpted %s", type, Types.I64));
                         return cast(T)i64;
                     }
@@ -965,22 +967,148 @@ struct Wasm {
                 immutable(ubyte[]) data;
                 protected {
                     size_t _index;
-                    WasmArg[2] _args;
-                    Types _type;
+                    //size_t _previous_index;
+                    // WasmArg[2] _args;
+                    // Types _type;
                     int _level;
-                    immutable(Types)[] _types;
-                    size_t arglen;
+                    // immutable(Types)[] _types;
+                    // size_t arglen;
+                    IRElement current;
+                    // bool first=true;
                 }
 
                 struct IRElement {
                     IR code;
-                    const(WasmArg[]) args;
+                    WasmArg[] args;
                     int level;
-                    const(Types[]) types;
+                    const(Types)[] types;
                 }
 
                 this(immutable(ubyte[]) data) {
                     this.data=data;
+                    size_t dummy_index;
+                    set_front(current, dummy_index);
+                }
+
+                @safe
+                protected void set_front(ref scope IRElement elm, ref size_t index) {
+                    @trusted
+                    void set(ref WasmArg arg, const Types type) {
+                        with(Types) {
+                            switch(type) {
+                            case I32:
+                                arg=u32(data, index);
+                                break;
+                            case I64:
+                                arg=u64(data, index);
+                                break;
+                            case F32:
+                                arg=data.binpeek!(float, Endian.littleEndian)(&index);
+                                break;
+                            case F64:
+                                arg=data.binpeek!(double, Endian.littleEndian)(&index);
+                                break;
+                            default:
+                                check(0, format("Assembler argument type not vaild as an argument %s", type));
+                            }
+                        }
+                    }
+
+                    elm.code=cast(IR)data[index];
+                    elm.types=null;
+                    // const ir=front.code;
+                    const instr=instrTable[elm.code];
+                    //size_t arglen=0;
+                    index+=IR.sizeof;
+                    with(IRType) {
+                        final switch(instr.irtype) {
+                        case CODE:
+                            break;
+                        case BLOCK:
+                            _level++;
+                            break;
+                        case BRANCH:
+                            // branchidx
+
+                            elm.args.length=1;
+                            set(elm.args[0], Types.I32);
+                            _level++;
+                            //arglen=1;
+                            break;
+                        case BRANCH_TABLE:
+                            //size_t vec_size;
+                            elm.types=Vector!Types(data, index);
+                            elm.args.length=1;
+                            //_index+=vec_size;
+                            //arglen=1;
+                            break;
+                        case CALL:
+                            // callidx
+                            elm.args.length=1;
+                            set(elm.args[0], Types.I32);
+                            //set(_args[0], Types.I32);
+                            //arglen=1;
+                            break;
+                        case CALL_INDIRECT:
+                            // typeidx
+                            elm.args.length=1;
+                            set(elm.args[0], Types.I32);
+                            // check(data[local_index] is 0x00,
+                            //     format("Call indirect 0x%02X not 0x%02X", 0x00, data[local_index]));
+                            // arglen=1;
+                            break;
+                        case LOCAL, GLOBAL:
+                            // localidx globalidx
+                            elm.args.length=1;
+                            set(elm.args[0], Types.I32);
+                            // set(_args[0], Types.I32);
+                            writefln("LOCAL %s", elm.args[0].get!uint);
+                            // arglen=1;
+                            break;
+                        case MEMORY:
+                            // offset
+                            elm.args.length=2;
+                            set(elm.args[0], Types.I32);
+                            // align
+                            set(elm.args[1], Types.I32);
+                            //arglen=2;
+                            break;
+                        case MEMOP:
+                            // check(data[index] is 0x00,
+                            //     format("Memory grow and size expects a 0x%02X not 0x%02X", 0x00, data[index]));
+                            index++;
+                            break;
+                        case CONST:
+                            // writefln("CONST %s", data[_index..$]);
+                            elm.args.length=1;
+                            with(IR) {
+                                switch (elm.code) {
+                                case I32_CONST:
+                                    set(elm.args[0], Types.I32);
+                                    break;
+                                case I64_CONST:
+                                    set(elm.args[0], Types.I64);
+                                    break;
+                                case F32_CONST:
+                                    set(elm.args[0], Types.F32);
+                                    break;
+                                case F64_CONST:
+                                    set(elm.args[0], Types.F64);
+                                    break;
+                                default:
+                                    assert(0, format("Instruction %s is not a const", elm.code));
+                                }
+                            }
+                            // const type=cast(Types)data[_index];
+                            // _index+=Types.sizeof;
+                            // set(_args[0], type);
+                            //arglen=1;
+                            break;
+                        case END:
+                            _level--;
+                            break;
+                        }
+                    }
                 }
 
                 @property {
@@ -988,13 +1116,19 @@ struct Wasm {
                         return _index;
                     }
 
-                    const(IR) code() const pure nothrow {
-                        return cast(IR)data[_index];
-                    }
+                    // const(IR) code() const pure nothrow {
+                    //     return cast(IR)data[_index];
+                    // }
 
-                    const(IRElement) front() const pure {
-                        const ir=cast(IR)data[_index];
-                        return IRElement(ir, _args[0..arglen], _level, _types);
+                    const(IRElement) front() const pure nothrow {
+                        return current;
+                        // set_front;
+                        // const ir=cast(IR)data[_index];
+                        // debug {
+                        //     writefln("\t\targlen=%s", arglen);
+                        //     writefln("\t\t\targs=%s", _args[0..arglen]);
+                        // }
+                        // return IRElement(ir, _args[0..arglen].dup, _level, _types);
                     }
 
                     bool empty() const pure nothrow {
@@ -1002,111 +1136,10 @@ struct Wasm {
                     }
 
                     void popFront() {
-                        void set(ref WasmArg arg, const Types type) {
-                            with(Types) {
-                                switch(type) {
-                                case I32:
-                                    arg=u32(data, _index);
-                                    break;
-                                case I64:
-                                    arg=u64(data, _index);
-                                    break;
-                                case F32:
-                                    arg=data.binpeek!(float, Endian.littleEndian)(&_index);
-                                    break;
-                                case F64:
-                                    arg=data.binpeek!(double, Endian.littleEndian)(&_index);
-                                    break;
-                                default:
-                                    check(0, format("Assembler argument type not vaild as an argument %s", type));
-                                }
-                            }
-                        }
-                        const ir=front.code;
-                        const instr=instrTable[ir];
-                        arglen=0;
-                        _index++;
-                        with(IRType) {
-                            final switch(instr.irtype) {
-                            case CODE:
-                                break;
-                            case BLOCK:
-                                _level++;
-                                break;
-                            case BRANCH:
-                                // branchidx
-                                set(_args[0], Types.I32);
-                                _level++;
-                                arglen=1;
-                                break;
-                            case BRANCH_TABLE:
-                                //size_t vec_size;
-                                _types=Vector!Types(data, _index);
-                                //_index+=vec_size;
-                                set(_args[0], Types.I32);
-                                arglen=1;
-                                break;
-                            case CALL:
-                                // callidx
-                                set(_args[0], Types.I32);
-                                arglen=1;
-                                break;
-                            case CALL_INDIRECT:
-                                // typeidx
-                                set(_args[0], Types.I32);
-                                check(data[_index] is 0x00,
-                                    format("Call indirect 0x%02X not 0x%02X", 0x00, data[_index]));
-                                arglen=1;
-                                break;
-                            case LOCAL, GLOBAL:
-                                // localidx globalidx
-                                set(_args[0], Types.I32);
-                                arglen=1;
-                                break;
-                            case MEMORY:
-                                // offset
-                                set(_args[0], Types.I32);
-                                // align
-                                set(_args[1], Types.I32);
-                                arglen=2;
-                                break;
-                            case MEMOP:
-                                check(data[index] is 0x00,
-                                    format("Memory grow and size expects a 0x%02X not 0x%02X", 0x00, data[index]));
-                                _index++;
-                                break;
-                            case CONST:
-                                // writefln("CONST %s", data[_index..$]);
-                                with(IR) {
-                                    switch (ir) {
-                                    case I32_CONST:
-                                        set(_args[0], Types.I32);
-                                        break;
-                                    case I64_CONST:
-                                        set(_args[0], Types.I64);
-                                        break;
-                                    case F32_CONST:
-                                        set(_args[0], Types.F32);
-                                        break;
-                                    case F64_CONST:
-                                        set(_args[0], Types.F64);
-                                        break;
-                                    default:
-                                        assert(0, format("Instruction %s is not a const", ir));
-                                    }
-                                }
-                                // const type=cast(Types)data[_index];
-                                // _index+=Types.sizeof;
-                                // set(_args[0], type);
-                                arglen=1;
-                                break;
-                            case END:
-                                _level--;
-                                break;
-                            }
-                        }
+                        writef("popFront before %d ", _index);
+                        set_front(current, _index);
+                        writefln("popFront after %d", _index);
                     }
-
                 }
             }
 
@@ -1119,8 +1152,8 @@ struct Wasm {
                 }
 
                 struct Local {
-                    immutable uint count;
-                    immutable Types type;
+                    uint count;
+                    Types type;
                     this(immutable(ubyte[]) data, ref size_t index) pure {
                         count=u32(data, index);
                         type=cast(Types)data[index];
@@ -1140,36 +1173,42 @@ struct Wasm {
                     private {
                         size_t index;
                         uint j;
+
                     }
+                    protected Local _local;
                     this(immutable(ubyte[]) data) {
                         length=u32(data, index);
-                        this.data=data[index..$];
+                        this.data=data; //[index..$];
                     }
 
                     @property {
-                        Local front() const pure {
-                            size_t dummy_index=index;
-                            return Local(data, dummy_index);
+                        const(Local) front() const pure nothrow {
+                            return _local;
                         }
 
-                        bool empty() const pure {
-                            return (index>=length);
+                        bool empty() const pure nothrow {
+                            return (j>=length);
                         }
 
                         void popFront() {
                             if (!empty) {
-                                Local(data[index..$], index);
+                                _local=Local(data, index);
                                 j++;
+                            }
+                            else {
+                                _local=Local();
                             }
                         }
                     }
                 }
 
                 ExprRange opSlice() {
-                    auto range=LocalRange(data);
+                    writefln("ExprRange opSlice data=%s", data);
+                    scope range=LocalRange(data);
                     while(!range.empty) {
                         range.popFront;
                     }
+                    writefln("code locals index=%d", range.index);
                     return ExprRange(data[range.index..$]);
                 }
 
