@@ -1160,6 +1160,8 @@ struct Wasm {
                         case CALL_INDIRECT:
                             // typeidx
                             set(elm._warg, Types.I32);
+                            check(data[index] == 0x00, "call_indirect should end with 0x00");
+                            index+=ubyte.sizeof;
                             break;
                         case LOCAL, GLOBAL:
                             // localidx globalidx

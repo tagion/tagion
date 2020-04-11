@@ -202,7 +202,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             }
         }
         foreach(imp; _import[]) {
-            output.writefln("imp=%s", imp);
+//            output.writefln("imp=%s", imp);
             output.writefln(`%s(import "%s" "%s" %s)`,
                 indent, imp.mod, imp.name, importdesc(imp));
         }
@@ -307,7 +307,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
                         break;
                     case CALL_INDIRECT:
-                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                        output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
                         break;
                     case LOCAL:
                         output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
@@ -412,8 +412,8 @@ unittest {
 
 //    string filename="../tests/wasm/func_1.wasm";
 //    string filename="../tests/wasm/global_1.wasm";
-    string filename="../tests/wasm/imports_1.wasm";
-//    string filename="../tests/wasm/table_copy_2.wasm";
+//    string filename="../tests/wasm/imports_1.wasm";
+    string filename="../tests/wasm/table_copy_2.wasm";
 
     immutable code=fread(filename);
     auto wasm=Wasm(code);
