@@ -7,6 +7,7 @@ import std.typecons : Tuple;
 import std.uni : toLower;
 import std.conv : to;
 import std.range.primitives : isOutputRange;
+import std.range : StoppingPolicy, lockstep;
 
 import wavm.Wasm;
 
@@ -190,7 +191,8 @@ class WastT(Output) : Wdisasm.InterfaceModule {
 
     void code_sec(ref scope const(Module) mod) {
         auto _code=*mod.code_sec;
-        output.writefln("Code types _code.length=%s", _code.length);
+        auto _func=*mod.function_sec;
+        //output.writefln("Code types _code.length=%s", _code.length);
         uint count=1000;
         uint block_count;
         const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
@@ -238,7 +240,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%send %s count=%d", indent, block_comment, count);
                         break;
                     case BRANCH:
-                        output.writefln("%s[%s %s] ;; %s", indent, instr.name, elm.warg, elm);
+                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:
                         static string branch_table(const(WasmArg[]) args) pure {
@@ -251,13 +253,13 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg);
+                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
                         break;
                     case CALL_INDIRECT:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case LOCAL:
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg);
+                        output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
                         break;
                     case GLOBAL:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
@@ -298,19 +300,27 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             }
             return ExprRange.IRElement(IR.END, level);
         }
-        writefln("code.data=%s", _code.data);
-        foreach(c; _code[]) {
+//        writefln("code.data=%s", _code.data);
+
+        foreach(f, c; lockstep(_func[], _code[], StoppingPolicy.requireSameLength)) {
             auto expr=c[];
-            writefln(">expr.data=%s", expr.data);
-            writefln(">c.locals.data=%s c.locals.length=%d", c.locals.data, c.locals.length);
+            //writefln(">expr.data=%s", expr.data);
+            //writefln(">c.locals.data=%s c.locals.length=%d", c.locals.data, c.locals.length);
+            output.writefln("%s(func (type %d)", indent, f.idx);
+            const local_indent=indent~spacer;
             if (!c.locals.empty) {
-                output.writef("%s(local", indent);
+                output.writef("%s(local", local_indent);
                 foreach(l; c.locals) {
                     output.writef(" %s", typesName(l.type));
                 }
                 output.writeln(")");
             }
-            block(expr, indent);
+
+//            output.writeln("(func ");
+//            foreach(t; f) {
+//            }
+            block(expr, local_indent);
+            output.writefln("%s)", indent);
             // foreach(elm; c[]) {
 
             //     output.writefln("<%s>", elm);
