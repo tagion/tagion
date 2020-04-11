@@ -15,6 +15,7 @@ import std.range.primitives : isInputRange;
 
 import std.conv : to, emplace;
 import std.uni : toLower;
+import std.exception : assumeUnique;
 
 @safe
 class WASMException : WAVMException {
@@ -545,23 +546,33 @@ struct Wasm {
             }
 
 
-    @trusted
-    static uint calc_size(const(ubyte[]) data) pure {
-        return *cast(uint*)(data[0..uint.sizeof].ptr);
-    }
+    // @trusted
+    // static uint calc_size(const(ubyte[]) data) pure {
+    //     return *cast(uint*)(data[0..uint.sizeof].ptr);
+    // }
 
     alias u32=decode!uint;
     alias u64=decode!ulong;
     alias i32=decode!int;
     alias i64=decode!long;
 
+
     @trusted
     static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
         immutable len=u32(data, index);
-        immutable vec_mem=data[index..index+len*T.sizeof];
-        index+=len*T.sizeof;
-        immutable result=cast(immutable(T*))(vec_mem.ptr);
-        return result[0..len];
+        static if(T.sizeof is ubyte.sizeof) {
+            immutable vec_mem=data[index..index+len*T.sizeof];
+            index+=len*T.sizeof;
+            immutable result=cast(immutable(T*))(vec_mem.ptr);
+            return result[0..len];
+        }
+        else {
+            auto result=new T[len];
+            foreach(ref a; result) {
+                a=decode!T(data, index);
+            }
+            return assumeUnique(result);
+        }
     }
 
     WasmRange opSlice() {
@@ -577,6 +588,7 @@ struct Wasm {
     }
 
     static assert(isInputRange!WasmRange);
+//    version(none)
     struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
@@ -674,7 +686,7 @@ struct Wasm {
                 }
             }
 
-            @Section(Section.CUSTOM) struct Custom {
+            struct Custom {
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
                 this(immutable(ubyte[]) data) {
@@ -683,7 +695,6 @@ struct Wasm {
                     bytes=Vector!ubyte(data, index);
                 }
             }
-
 
             struct FuncType {
                 immutable(Types) type;
@@ -697,11 +708,9 @@ struct Wasm {
                     results=Vector!Types(data, index);
                     size=index;
                 }
-
-
             }
 
-            alias   Type=SectionT!(FuncType);
+            alias Type=SectionT!(FuncType);
 
             struct ImportType {
                 immutable(char[])    mod;
@@ -789,30 +798,13 @@ struct Wasm {
                     }
 
                 }
-                // immutable(size_t) size;
-                // static Mutable get_mut(immutable(ubyte[]) data, const IndexType it, ref size_t index) {
-                //     with(IndexType) {
-                //         final switch(it) {
-                //         case FUNC, TABLE, MEM:
-                //             return Mutable.init; // Dummy
-                //         case GLOBAL:
-                //             return cast(Mutable)data[index];
-                //             index+=Mutable.sizeof;
-                //         }
-                //     }
-                // }
 
                 this(immutable(ubyte[]) data) {
                     size_t index;
                     mod=Vector!char(data, index);
                     name=Vector!char(data, index);
                     importdesc=ImportDesc(data, index);
-                    // desc=cast(IndexType)data[index];
-                    // index+=IndexType.sizeof;
-                    // mut=get_mut(data, desc, index);
-                    // idx=u32(data, index);
                     size=index;
-                    // writefln("ImportType.CTOR %s", data[0..size]);
                 }
 
             }
@@ -827,10 +819,6 @@ struct Wasm {
                     idx=u32(data, index);
                     size=index;
                 }
-
-                // string toString() {
-                //     return format("(func $%d)", idx);
-                // }
             }
 
             alias Function=SectionT!(Index);
@@ -838,30 +826,11 @@ struct Wasm {
             struct TableType {
                 immutable(Types) type;
                 immutable(Limit) limit;
-                // immutable(uint) begin;
-                // immutable(uint) end;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     type=cast(Types)data[0];
-                    // check(data[0] == Types.FUNCREF,
-                    //     format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
                     size_t index=Types.sizeof;
                     limit=Limit(data, index);
-                        //const ltype=cast(Limits)data[index];
-                    // index+=Limits.sizeof;
-                    // begin=u32(data, index);
-                    // uint _end;
-                    // if (ltype==Limits.LOWER) {
-                    //     _end=uint.max;
-                    // }
-                    // else if (ltype==Limits.RANGE) {
-                    //     _end=u32(data, index);
-                    // }
-                    // else {
-                    //     check(0,
-                    //         format("Bad Limits type 0x%02X in table", ltype));
-                    // }
-                    // end=_end;
                     size=index;
                 }
 
@@ -871,32 +840,12 @@ struct Wasm {
 
             struct MemoryType {
                 immutable(Limit) limit;
-                // immutable(uint) begin;
-                // immutable(uint) end;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
                     limit=Limit(data, index);
-                    // const ltype=cast(Limits)data[index];
-                    // index+=Limits.sizeof;
-                    // begin=u32(data, index);
-                    // uint _end;
-                    // if (ltype==Limits.LOWER) {
-                    //     _end=uint.max;
-                    // }
-                    // else if (ltype==Limits.RANGE) {
-                    //     _end=u32(data, index);
-                    // }
-                    // else {
-                    //     check(0,
-                    //         format("Bad Limits type 0x%02X in table", ltype));
-                    // }
-                    // end=_end;
                    size=index;
                 }
-                // string toString() {
-                //     return format("(memory %d %d)", begin, end);
-                // }
             }
 
             alias Memory=SectionT!(MemoryType);
@@ -952,21 +901,19 @@ struct Wasm {
                     size_t u32_size;
                     idx=u32(data, u32_size);
                 }
-                // string toString() {
-                //     return format("(start $%d)", idx);
-                // }
             }
 
-            struct Element {
-                immutable(Types)    tableidx;
+            struct ElementType {
+                immutable(uint)    tableidx;
                 immutable(ubyte[])  expr;
-                immutable(Types[])  funcs;
+                immutable(uint[])  funcs;
+                immutable(size_t)   size;
                 static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data) {
                     auto range=ExprRange(data);
                     while(!range.empty) {
                         const elm=range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            range.popFront;
+                            //range.popFront;
                             return data[0..range.index];
                         }
                         range.popFront;
@@ -975,13 +922,21 @@ struct Wasm {
                     assert(0);
                 }
                 this(immutable(ubyte[]) data) {
-                    tableidx=cast(Types)data[0];
-                    size_t index=Types.sizeof;
-                    expr=exprBlock(data[Types.sizeof..$]);
+                    size_t index;
+                    tableidx=u32(data, index);
+                    expr=exprBlock(data[index..$]);
                     index+=expr.length;
-                    funcs=Vector!Types(data, index);
+                    funcs=Vector!uint(data, index);
+                    //funcs=Vector!Types(data, index);
+                    size=index;
+                }
+
+                ExprRange opSlice() {
+                    return ExprRange(expr);
                 }
             }
+
+            alias Element=SectionT!(ElementType);
 
             struct WasmArg {
                 protected {
