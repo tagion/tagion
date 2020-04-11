@@ -891,7 +891,7 @@ struct Wasm {
 
             struct WasmArg {
                 protected {
-                    Types type;
+                    Types _type;
                     union {
                         @(Types.I32) int i32;
                         @(Types.I64) long i64;
@@ -903,19 +903,19 @@ struct Wasm {
                 void opAssign(T)(T x) {
                     alias BaseT=Unqual!T;
                     static if (is(BaseT == int) || is(BaseT == uint)) {
-                        type=Types.I32;
+                        _type=Types.I32;
                         i32=cast(int)x;
                     }
                     else static if (is(BaseT == long) || is(BaseT == ulong)) {
-                        type=Types.I64;
+                        _type=Types.I64;
                         i64=cast(long)x;
                     }
                     else static if (is(BaseT == float)) {
-                        type=Types.F32;
+                        _type=Types.F32;
                         f32=x;
                     }
                     else static if (is(BaseT == double)) {
-                        type=Types.F64;
+                        _type=Types.F64;
                         f64=x;
                     }
                     else static if (is(BaseT == WasmArg)) {
@@ -931,40 +931,27 @@ struct Wasm {
                 T get(T)() const pure {
                     alias BaseT=Unqual!T;
                     static if (is(BaseT == int) || is(BaseT == uint)) {
-                        check(type is Types.I32, format("Wrong to type %s execpted %s", type, Types.I32));
+                        check(_type is Types.I32, format("Wrong to type %s execpted %s", _type, Types.I32));
                         return cast(T)i32;
                     }
                     else static if (is(BaseT == long) || is(BaseT == ulong)) {
-                        check(type is Types.I64, format("Wrong to type %s execpted %s", type, Types.I64));
+                        check(_type is Types.I64, format("Wrong to type %s execpted %s", _type, Types.I64));
                         return cast(T)i64;
                     }
                     else static if (is(BaseT == float)) {
-                        check(type is Types.F32, format("Wrong to type %s execpted %s", type, Types.F32));
+                        check(_type is Types.F32, format("Wrong to type %s execpted %s", _type, Types.F32));
                         return f32;
                     }
                     else static if (is(BaseT == double)) {
-                        check(type is Types.F64, format("Wrong to type %s execpted %s", type, Types.F64));
+                        check(_type is Types.F64, format("Wrong to type %s execpted %s", _type, Types.F64));
                         return f64;
                     }
                 }
 
-                string toString() const {
-                    with(Types) {
-                        switch(type) {
-                        case I32:
-                            return get!int.to!string;
-                        case I64:
-                            return get!long.to!string;
-                        case F32:
-                            return get!float.to!string;
-                        case F64:
-                            return get!double.to!string;
-                        default:
-                            assert(0);
-                        }
-                    }
-                    assert(0);
+                @property Types type() const pure nothrow {
+                    return _type;
                 }
+
             }
 
             static assert(isInputRange!ExprRange);

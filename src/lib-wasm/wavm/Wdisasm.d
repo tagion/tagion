@@ -269,8 +269,27 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
                         break;
                     case CONST:
+                        static string toText(const WasmArg a) {
+                            with(Types) {
+                                switch(a.type) {
+                                case I32:
+                                    return a.get!int.to!string;
+                                case I64:
+                                    return a.get!long.to!string;
+                                case F32:
+                                    const x=a.get!float;
+                                    return format("%a ;; %s", x, x);
+                                case F64:
+                                    const x=a.get!double;
+                                    return format("%a ;; %s", x, x);
+                                default:
+                                    assert(0);
+                                }
+                            }
+                            assert(0);
+                        }
 
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg);
+                        output.writefln("%s%s %s", indent, instr.name, toText(elm.warg));
                         break;
                     case END:
                         return elm;
@@ -287,7 +306,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             if (!c.locals.empty) {
                 output.writef("%s(local", indent);
                 foreach(l; c.locals) {
-                    output.writef(" %s:%d", typesName(l.type), l.count);
+                    output.writef(" %s", typesName(l.type));
                 }
                 output.writeln(")");
             }
