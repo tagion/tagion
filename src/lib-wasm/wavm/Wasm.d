@@ -952,9 +952,9 @@ struct Wasm {
                     size_t u32_size;
                     idx=u32(data, u32_size);
                 }
-                string toString() {
-                    return format("(start $%d)", idx);
-                }
+                // string toString() {
+                //     return format("(start $%d)", idx);
+                // }
             }
 
             struct Element {
