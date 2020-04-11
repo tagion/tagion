@@ -190,6 +190,11 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     void export_sec(ref scope const(Module) mod) {
+        auto _export=*mod.export_sec;
+        foreach(exp; _export[]) {
+            output.writefln(`%s(export "%s" (%s %d))`, indent, exp.name, indexName(exp.desc), exp.idx);
+        }
+
     }
 
     void element_sec(ref scope const(Module) mod) {
