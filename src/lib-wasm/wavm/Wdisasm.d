@@ -164,6 +164,24 @@ class WastT(Output) : Wdisasm.InterfaceModule {
         assert(0);
     }
 
+    static string offsetAlignToString(const(WasmArg[]) wargs)
+        in {
+            assert(wargs.length == 2);
+        }
+    do {
+        string result;
+        const _offset=wargs[0].get!uint;
+        const _align=wargs[1].get!uint;
+
+        if (_offset > 0) {
+            result~=format(" offset=%d", _offset);
+        }
+        if (_align > 0) {
+            result~=format(" align=%d", _align);
+        }
+        return result;
+    }
+
     void custom_sec(ref scope const(Module) mod) {
     }
 
@@ -345,7 +363,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
-                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                        output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
                         break;
                     case MEMOP:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
@@ -484,7 +502,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
-                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                        output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
                         break;
                     case MEMOP:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
@@ -551,7 +569,8 @@ unittest {
 //    string filename="../tests/wasm/imports_1.wasm";
 //    string filename="../tests/wasm/table_copy_2.wasm";
 //    string filename="../tests/wasm/memory_2.wasm";
-    string filename="../tests/wasm/start_4.wasm";
+//    string filename="../tests/wasm/start_4.wasm";
+    string filename="../tests/wasm/address_1.wasm";
 
     immutable code=fread(filename);
     auto wasm=Wasm(code);
