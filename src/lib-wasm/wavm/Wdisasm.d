@@ -169,10 +169,11 @@ class WastT(Output) : Wdisasm.InterfaceModule {
 
     void import_sec(ref scope const(Module) mod) {
         auto _import=*mod.import_sec;
-        writefln("_import.data=%s %s", _import.data, _import.length);
+        //writefln("_import.data=%s %s", _import.data, _import.length);
         foreach(imp; _import[]) {
-            output.writefln("imp=%s", imp);
-            output.writefln(`%s(import "%s" "%s" (%s $%d))`, indent, imp.mod, imp.name, indexName(imp.desc), imp.idx);
+            //output.writefln("imp=%s", imp);
+            output.writefln(`%s(import "%s" "%s" (%s %s))`,
+                indent, imp.mod, imp.name, indexName(imp.desc), typesName(imp.type));
         }
     }
 
