@@ -147,8 +147,8 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     static string limitToString(ref const Limit limit) {
-        immutable to_range=(limit.lim is Wasm.Limits.INFINITE)?"":format(" %s", limit.to);
-        return format("%d %s", limit.from, to_range);
+        immutable to_range=(limit.lim is Wasm.Limits.INFINITE)?"":format(" %d", limit.to);
+        return format("%d%s", limit.from, to_range);
     }
 
     void custom_sec(ref scope const(Module) mod) {
@@ -215,12 +215,15 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     void table_sec(ref scope const(Module) mod) {
         auto _table=*mod.table_sec;
         foreach(t; _table[]) {
-            //const end_limit=(t.end is uint.max)?"":format(" %d", t.end);
-            output.writefln("%s(table %s%s)", indent, limitToString(t.limit), typesName(t.type));
+            output.writefln("%s(table %s %s)", indent, limitToString(t.limit), typesName(t.type));
         }
     }
 
     void memory_sec(ref scope const(Module) mod) {
+        auto _memory=*mod.memory_sec;
+        foreach(m; _memory[]) {
+            output.writefln("%s(memory %s)", indent, limitToString(m.limit));
+        }
     }
 
     void global_sec(ref scope const(Module) mod) {
@@ -413,7 +416,8 @@ unittest {
 //    string filename="../tests/wasm/func_1.wasm";
 //    string filename="../tests/wasm/global_1.wasm";
 //    string filename="../tests/wasm/imports_1.wasm";
-    string filename="../tests/wasm/table_copy_2.wasm";
+//    string filename="../tests/wasm/table_copy_2.wasm";
+    string filename="../tests/wasm/memory_2.wasm";
 
     immutable code=fread(filename);
     auto wasm=Wasm(code);
