@@ -678,27 +678,6 @@ struct Wasm {
                 }
 
 
-                string toString() {
-                    string result;
-                    result=format("(type (%s", typesName(type));
-                    if (params.length) {
-                        result~=" (param";
-                        foreach(p; params) {
-                            result~=format(" %s", typesName(p));
-                        }
-                        result~=")";
-                    }
-                    if (results.length) {
-                        result~=" (result";
-                        foreach(r; results) {
-                            result~=format(" %s", typesName(r));
-                        }
-                        result~=")";
-                    }
-                    result~="))";
-                    return result;
-                }
-
             }
 
             alias   Type=SectionT!(FuncType);
@@ -1276,12 +1255,22 @@ struct Wasm {
                     private {
                         size_t index;
                         uint j;
-
                     }
+
                     protected Local _local;
                     this(immutable(ubyte[]) data) {
+                        //writefln("LocalRange.data=%s", data);
                         length=u32(data, index);
                         this.data=data; //[index..$];
+                        if (length) {
+                            size_t local_index=index;
+                            set_front;
+                            index=local_index;
+                        }
+                    }
+
+                    protected void set_front() {
+                        _local=Local(data, index);
                     }
 
                     @property {
@@ -1295,11 +1284,8 @@ struct Wasm {
 
                         void popFront() {
                             if (!empty) {
-                                _local=Local(data, index);
+                                set_front();
                                 j++;
-                            }
-                            else {
-                                _local=Local();
                             }
                         }
                     }

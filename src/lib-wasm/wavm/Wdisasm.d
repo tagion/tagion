@@ -125,6 +125,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     alias IRType=Wasm.IRType;
     alias IR=Wasm.IR;
     alias Types=Wasm.Types;
+    alias typesName=Wasm.typesName;
     protected {
         Output output;
         Wdisasm dasm;
@@ -142,6 +143,25 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     void type_sec(ref scope const(Module) mod) {
+        auto _type=*mod.type_sec;
+        foreach(t; _type[]) {
+            output.writef("%s(type (%s", indent, typesName(t.type));
+            if (t.params.length) {
+                output.write(" (param");
+                foreach(p; t.params) {
+                    output.writef(" %s", typesName(p));
+                }
+                output.write(")");
+            }
+            if (t.results.length) {
+                output.write(" (result");
+                foreach(r; t.results) {
+                    output.writef(" %s", typesName(r));
+                }
+                output.write(")");
+            }
+            output.writeln("))");
+        }
     }
 
     void import_sec(ref scope const(Module) mod) {
@@ -200,7 +220,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                             with(Types) {
                                 switch(t) {
                                 case I32, I64, F32, F64, FUNCREF:
-                                    return format(" (result %s)", Wasm.typesName(t));
+                                    return format(" (result %s)", typesName(t));
                                 case EMPTY:
                                     return null;
                                 default:
@@ -279,6 +299,14 @@ class WastT(Output) : Wdisasm.InterfaceModule {
         foreach(c; _code[]) {
             auto expr=c[];
             writefln(">expr.data=%s", expr.data);
+            writefln(">c.locals.data=%s c.locals.length=%d", c.locals.data, c.locals.length);
+            if (!c.locals.empty) {
+                output.writef("%s(local", indent);
+                foreach(l; c.locals) {
+                    output.writef(" %s:%d", typesName(l.type), l.count);
+                }
+                output.writeln(")");
+            }
             block(expr,indent);
             // foreach(elm; c[]) {
 
