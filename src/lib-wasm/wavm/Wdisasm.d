@@ -209,7 +209,6 @@ class WastT(Output) : Wdisasm.InterfaceModule {
 
     void import_sec(ref scope const(Module) mod) {
         auto _import=*mod.import_sec;
-        //writefln("_import.data=%s %s", _import.data, _import.length);
         static string importdesc(ref const ImportType imp) {
             const desc=imp.importdesc.desc;
             with(IndexType) {
@@ -256,16 +255,10 @@ class WastT(Output) : Wdisasm.InterfaceModule {
 
     void global_sec(ref scope const(Module) mod) {
         auto _global=*mod.global_sec;
-        // output.writefln("_global.length=%s", _global.length);
-        // output.writefln("_global.data=%s", _global.data);
         foreach(g; _global[]) {
             output.writefln("%s(global %s", indent, globalToString(g.global));
-
-
-            // output.writefln("\t%s", g);
             auto expr=g[];
             block(expr, indent~spacer);
-            //pragma(msg, "Fixme(cbr): end bracket missing");
             output.writefln("%s)", indent);
         }
     }
@@ -317,6 +310,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             string block_comment;
             uint block_count;
             uint count;
+            output.writefln("expr.data=%s", expr.data);
             while (!expr.empty) {
                 const elm=expr.front;
                 const instr=Wasm.instrTable[elm.code];
@@ -342,6 +336,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         }
                         block_comment=format(";; block %d", block_count);
                         block_count++;
+                        output.writefln("BLOCK %s", elm);
                         output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                         const end_elm=block(expr, indent~spacer, level+1);
                         const end_instr=Wasm.instrTable[end_elm.code];
