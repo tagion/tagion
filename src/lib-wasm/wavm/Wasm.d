@@ -734,10 +734,10 @@ struct Wasm {
                         Mutable mut;
                         Types   type;
                         this(immutable(ubyte[]) data, ref size_t index) {
-                            mut=cast(Mutable)data[index];
-                            index+=Mutable.sizeof;
                             type=cast(Types)data[index];
                             index+=Types.sizeof;
+                            mut=cast(Mutable)data[index];
+                            index+=Mutable.sizeof;
                         }
                     }
                     protected union {
@@ -902,23 +902,17 @@ struct Wasm {
             alias Memory=SectionT!(MemoryType);
 
             struct GlobalType {
-                immutable(Types) valtype;
-                immutable(Mutable) mut;
+                immutable(ImportType.ImportDesc.GlobalDesc) global;
                 immutable(ubyte[]) expr;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
-                    valtype=cast(Types)data[0];
-                    // writefln("---> global type %s  0x%02X", valtype, valtype);
-                    index+=Types.sizeof;
-                    mut=cast(Mutable)data[index];
-                    index+=Mutable.sizeof;
+                    global=ImportType.ImportDesc.GlobalDesc(data, index);
                     auto range=ExprRange(data[index..$]);
-                    // writefln("Globaltype.expr=%s", data[index..$]);
                     while(!range.empty) {
                         const elm=range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            range.popFront;
+                            //   range.popFront;
                             break;
                         }
                         range.popFront;
@@ -927,19 +921,9 @@ struct Wasm {
                     index+=range.index;
                     size=index;
                 }
-//                version(none)
-                string toString() {
-                    string mutability;
-//                    writefln("mutability=%d", mut);
-                    with(Mutable) final switch(mut) {
-                        case CONST:
-                            mutability=typesName(valtype);
-                            break;
-                        case VAR:
-                            mutability=format("(mut %s)", typesName(valtype));
-                            break;
-                        }
-                    return format("(global %s (%s))", mutability, ExprRange(expr));
+
+                ExprRange opSlice() {
+                    return ExprRange(expr);
                 }
             }
 

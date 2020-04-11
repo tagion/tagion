@@ -132,6 +132,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     alias IndexType=Wasm.IndexType;
     alias Mutable=Wasm.Mutable;
     alias Limit=Wasm.Limit;
+    alias GlobalDesc=Wasm.WasmRange.WasmSection.ImportType.ImportDesc.GlobalDesc;
 
     protected {
         Output output;
@@ -149,6 +150,18 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     static string limitToString(ref const Limit limit) {
         immutable to_range=(limit.lim is Wasm.Limits.INFINITE)?"":format(" %d", limit.to);
         return format("%d%s", limit.from, to_range);
+    }
+
+    static string globalToString(ref const GlobalDesc globaldesc) {
+        with(Mutable) {
+            final switch(globaldesc.mut) {
+            case CONST:
+                return format("%s", typesName(globaldesc.type));
+            case VAR:
+                return format("(mut %s)", typesName(globaldesc.type));
+            }
+        }
+        assert(0);
     }
 
     void custom_sec(ref scope const(Module) mod) {
@@ -194,10 +207,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                     return format("(%s %s %s)", indexName(desc), limitToString(_memorydesc.limit));
                 case GLOBAL:
                     const _globaldesc=imp.importdesc.get!GLOBAL;
-                    const type_text=(_globaldesc.mut is Mutable.VAR)?
-                        typesName(_globaldesc.type):
-                        format("(mut %s)", typesName(_globaldesc.type));
-                    return format("(%s %s)", indexName(desc), type_text);
+                    return format("(%s %s)", indexName(desc), globalToString(_globaldesc));
                 }
             }
         }
@@ -227,6 +237,19 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     void global_sec(ref scope const(Module) mod) {
+        auto _global=*mod.global_sec;
+        // output.writefln("_global.length=%s", _global.length);
+        // output.writefln("_global.data=%s", _global.data);
+        foreach(g; _global[]) {
+            output.writefln("%s(global %s", indent, globalToString(g.global));
+
+
+            // output.writefln("\t%s", g);
+            auto expr=g[];
+            block(expr, indent~spacer);
+            //pragma(msg, "Fixme(cbr): end bracket missing");
+            output.writefln("%s)", indent);
+        }
     }
 
     void export_sec(ref scope const(Module) mod) {
@@ -243,21 +266,129 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     void start_sec(ref scope const(Module) mod) {
     }
 
+    private const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
+            string block_comment;
+            uint block_count;
+            uint count;
+            while (!expr.empty) {
+                const elm=expr.front;
+                const instr=Wasm.instrTable[elm.code];
+                // if (count==0) {
+                //     return elm;
+                // }
+                // count--;
+                    // output.writefln("\tA)expr.front=%s expr.index=%d instr=%s %s",
+                    //     expr.front.code, expr.index, instr, Wasm.instrTable[expr.front.code]);
+                expr.popFront;
+                // if (!expr.empty) {
+                //     output.writefln("\tB)expr.front=%s expr.index=%d instr=%s %s",
+                //         expr.front.code, expr.index, instr, Wasm.instrTable[expr.front.code]);
+                // }
+                with(IRType) {
+                    final switch(instr.irtype) {
+                    case CODE:
+                        output.writefln("%s%s", indent, instr.name);
+                        break;
+                    case BLOCK:
+                        // output.writeln(":: BLOCK ::");
+                        static string block_result_type() (const Types t) {
+                            with(Types) {
+                                switch(t) {
+                                case I32, I64, F32, F64, FUNCREF:
+                                    return format(" (result %s)", typesName(t));
+                                case EMPTY:
+                                    return null;
+                                default:
+                                    check(0, format("Block Illegal result type %s for a block", t));
+                                }
+                            }
+                            assert(0);
+                        }
+                        block_comment=format(";; block %d", block_count);
+                        block_count++;
+                        output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
+                        const end_elm=block(expr, indent~spacer, level+1);
+                        const end_instr=Wasm.instrTable[end_elm.code];
+                        //check(end_elm.code is IR.END, format("(begin expected an end) but got an (%s)", end_instr.name));
+                        output.writefln("%send %s count=%d", indent, block_comment, count);
+                        break;
+                    case BRANCH:
+                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        break;
+                    case BRANCH_TABLE:
+                        static string branch_table(const(WasmArg[]) args) pure {
+                            string result;
+                            foreach(a; args) {
+                                result~=format(" %d", a.get!uint);
+                            }
+                            return result;
+                        }
+                        output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
+                        break;
+                    case CALL:
+                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        break;
+                    case CALL_INDIRECT:
+                        output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
+                        break;
+                    case LOCAL:
+                        output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
+                        break;
+                    case GLOBAL:
+                        output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
+                        break;
+                    case MEMORY:
+                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                        break;
+                    case MEMOP:
+                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                        break;
+                    case CONST:
+                        static string toText(const WasmArg a) {
+                            with(Types) {
+                                switch(a.type) {
+                                case I32:
+                                    return a.get!int.to!string;
+                                case I64:
+                                    return a.get!long.to!string;
+                                case F32:
+                                    const x=a.get!float;
+                                    return format("%a ;; %s", x, x);
+                                case F64:
+                                    const x=a.get!double;
+                                    return format("%a ;; %s", x, x);
+                                default:
+                                    assert(0);
+                                }
+                            }
+                            assert(0);
+                        }
+
+                        output.writefln("%s%s %s", indent, instr.name, toText(elm.warg));
+                        break;
+                    case END:
+                        return elm;
+                    }
+                }
+            }
+            return ExprRange.IRElement(IR.END, level);
+        }
     void code_sec(ref scope const(Module) mod) {
         auto _code=*mod.code_sec;
         auto _func=*mod.function_sec;
         //output.writefln("Code types _code.length=%s", _code.length);
-        uint count=1000;
-        uint block_count;
+        // uint count=1000;
+        // uint block_count;
+        version(none)
         const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
             string block_comment;
             while (!expr.empty) {
                 const elm=expr.front;
                 const instr=Wasm.instrTable[elm.code];
-                if (count==0) {
-                    return elm;
-                }
-                count--;
+                // if (count==0) {
+                //     return elm;
+                // }
+                // count--;
                     // output.writefln("\tA)expr.front=%s expr.index=%d instr=%s %s",
                     //     expr.front.code, expr.index, instr, Wasm.instrTable[expr.front.code]);
                 expr.popFront;
@@ -414,10 +545,10 @@ unittest {
     }
 
 //    string filename="../tests/wasm/func_1.wasm";
-//    string filename="../tests/wasm/global_1.wasm";
+    string filename="../tests/wasm/global_1.wasm";
 //    string filename="../tests/wasm/imports_1.wasm";
 //    string filename="../tests/wasm/table_copy_2.wasm";
-    string filename="../tests/wasm/memory_2.wasm";
+//    string filename="../tests/wasm/memory_2.wasm";
 
     immutable code=fread(filename);
     auto wasm=Wasm(code);
