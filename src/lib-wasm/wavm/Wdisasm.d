@@ -315,6 +315,14 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     void data_sec(ref scope const(Module) mod) {
+        auto _data=*mod.data_sec;
+        foreach(d; _data[]) {
+            output.writefln("%s(data (", indent);
+            auto expr=d[];
+            const local_indent=indent~spacer;
+            block(expr, local_indent~spacer);
+            output.writefln(`%s) "%s")`, local_indent, d.base);
+        }
     }
 
     private const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
@@ -447,7 +455,7 @@ unittest {
 //    string filename="../tests/wasm/memory_2.wasm";
 //    string filename="../tests/wasm/start_4.wasm";
 //    string filename="../tests/wasm/address_1.wasm";
-    string filename="../tests/wasm/elem_1.wasm";
+    string filename="../tests/wasm/data_4.wasm";
     immutable code=fread(filename);
     auto wasm=Wasm(code);
     auto dasm=Wdisasm(wasm);

@@ -866,7 +866,7 @@ struct Wasm {
                         }
                         range.popFront;
                     }
-                    expr=data[index..index+range.index];
+                    expr=range.data[0..range.index];
                     index+=range.index;
                     size=index;
                 }
@@ -927,7 +927,6 @@ struct Wasm {
                     expr=exprBlock(data[index..$]);
                     index+=expr.length;
                     funcs=Vector!uint(data, index);
-                    //funcs=Vector!Types(data, index);
                     size=index;
                 }
 
@@ -1250,8 +1249,8 @@ struct Wasm {
             struct DataType {
                 immutable uint idx;
                 immutable(ubyte[]) expr;
-                immutable(ubyte[]) init;
-                immutable(size_t) size;
+                immutable(char[])  base; // init value
+                immutable(size_t)  size;
 
                 this(immutable(ubyte[]) data) {
                     size_t index;
@@ -1260,19 +1259,15 @@ struct Wasm {
                     while(!range.empty) {
                         const elm=range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            range.popFront;
+                            // range.popFront;
                             break;
                         }
                         range.popFront;
                     }
-
                     expr=range.data[0..range.index];
-
                     index+=range.index;
-                    const init_size=u32(data, index);
-                    init=data[index..index+init_size];
-                    index+=init_size;
-                    size=init_size;
+                    base=Vector!char(data, index);
+                    size=index;
                 }
 
                 ExprRange opSlice() {
