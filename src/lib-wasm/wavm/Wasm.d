@@ -968,6 +968,7 @@ struct Wasm {
             }
 
             static assert(isInputRange!ExprRange);
+
             struct ExprRange {
                 immutable(ubyte[]) data;
                 protected {
@@ -979,19 +980,6 @@ struct Wasm {
                 struct IRElement {
                     IR code;
                     int level;
-                    // enum ArgType {
-                    //     NONE,
-                    //     SINGLE,
-                    //     MULTI,
-                    //     TYPES
-                    // }
-                    // protected Arg arg;
-                    // struct Arg {
-                    // private {
-                    //     debug {
-                    //         ArgType argtype;
-                    //     }
-                    //     union {
                     private {
                         WasmArg _warg;
                         WasmArg[] _wargs;
@@ -1010,67 +998,18 @@ struct Wasm {
                         return _types;
                     }
 
-                    //     }
-                    // }
-
-                    // @trusted {
-                    //     void opAssign(ref const(WasmArg) a) {
-                    //         debug argtype=ArgType.SINGLE;
-                    //         _warg=a;
-                    //     }
-
-                    //     void opAssign(const(WasmArg[]) a) {
-                    //         debug argtype=ArgType.MULTI;
-                    //         _wargs=a;
-                    //     }
-
-                    //     void opAssign(const(Types[]) t) {
-                    //         debug argtype=ArgType.TYPES;
-                    //         _types=t;
-                    //     }
-
-
-                    //     //@property {
-                    //     const(WasmArg) warg() pure const nothrow
-                    //         in {
-                    //             debug assert(argtype is ArgType.SINGLE);
-                    //         }
-                    //     do {
-                    //         return _warg;
-                    //     }
-
-                    //     const(WasmArg[]) arg() pure const nothrow
-                    //         in {
-                    //             debug assert(argtype is ArgType.MULTI);
-                    //         }
-                    //     do {
-                    //         return _wargs;
-                    //     }
-
-
-                    //     const(Types[]) types() pure const nothrow
-                    //         in {
-                    //             debug assert(argtype is ArgType.MULTI);
-                    //         }
-                    //     do {
-                    //         return _types;
-                    //     }
-                    //     //}
-                    // }
-                    //}
                 }
 
                 this(immutable(ubyte[]) data) {
                     this.data=data;
-                    size_t dummy_index;
-                    set_front(current, dummy_index);
+                    //size_t dummy_index;
+                    set_front(current, _index);
                 }
 
                 @safe
                 protected void set_front(ref scope IRElement elm, ref size_t index) {
                     @trusted
                     void set(ref WasmArg warg, const Types type) {
-
                         with(Types) {
                             switch(type) {
                             case I32:
@@ -1093,9 +1032,7 @@ struct Wasm {
 
                     elm.code=cast(IR)data[index];
                     elm._types=null;
-                    // const ir=front.code;
                     const instr=instrTable[elm.code];
-                    //size_t arglen=0;
                     index+=IR.sizeof;
                     with(IRType) {
                         final switch(instr.irtype) {
@@ -1108,11 +1045,8 @@ struct Wasm {
                             break;
                         case BRANCH:
                             // branchidx
-
-                            //elm.args=new WasmArg[1];
                             set(elm._warg, Types.I32);
                             _level++;
-                            //arglen=1;
                             break;
                         case BRANCH_TABLE:
                             //size_t vec_size;
@@ -1121,33 +1055,18 @@ struct Wasm {
                             foreach(ref a; elm._wargs) {
                                 a=u32(data, index);
                             }
-                            // elm.types=Vector!Types(data, index);
-                            // elm.args.length=1;
-                            //_index+=vec_size;
-                            //arglen=1;
                             break;
                         case CALL:
                             // callidx
-                            //elm.args=new WasmArg[1];
                             set(elm._warg, Types.I32);
-                            //set(_args[0], Types.I32);
-                            //arglen=1;
                             break;
                         case CALL_INDIRECT:
                             // typeidx
-                            //elm.args=new WasmArg[1];
                             set(elm._warg, Types.I32);
-                            // check(data[local_index] is 0x00,
-                            //     format("Call indirect 0x%02X not 0x%02X", 0x00, data[local_index]));
-                            // arglen=1;
                             break;
                         case LOCAL, GLOBAL:
                             // localidx globalidx
-                            //elm.args=new WasmArg[1];
                             set(elm._warg, Types.I32);
-                            // set(_args[0], Types.I32);
-                            //writefln("LOCAL %s", elm.args[0].get!uint);
-                            // arglen=1;
                             break;
                         case MEMORY:
                             // offset
@@ -1155,16 +1074,11 @@ struct Wasm {
                             set(elm._wargs[0], Types.I32);
                             // align
                             set(elm._wargs[1], Types.I32);
-                            //arglen=2;
                             break;
                         case MEMOP:
-                            // check(data[index] is 0x00,
-                            //     format("Memory grow and size expects a 0x%02X not 0x%02X", 0x00, data[index]));
                             index++;
                             break;
                         case CONST:
-                            // writefln("CONST %s", data[_index..$]);
-                            //elm.args=new WasmArg[1];
                             with(IR) {
                                 switch (elm.code) {
                                 case I32_CONST:
@@ -1183,10 +1097,6 @@ struct Wasm {
                                     assert(0, format("Instruction %s is not a const", elm.code));
                                 }
                             }
-                            // const type=cast(Types)data[_index];
-                            // _index+=Types.sizeof;
-                            // set(_args[0], type);
-                            //arglen=1;
                             break;
                         case END:
                             _level--;
@@ -1197,26 +1107,15 @@ struct Wasm {
 
                 @property {
                     const(size_t) index() const pure nothrow {
-                        return _index;
+                         return _index;
                     }
-
-                    // const(IR) code() const pure nothrow {
-                    //     return cast(IR)data[_index];
-                    // }
 
                     const(IRElement) front() const pure nothrow {
                         return current;
-                        // set_front;
-                        // const ir=cast(IR)data[_index];
-                        // debug {
-                        //     writefln("\t\targlen=%s", arglen);
-                        //     writefln("\t\t\targs=%s", _args[0..arglen]);
-                        // }
-                        // return IRElement(ir, _args[0..arglen].dup, _level, _types);
                     }
 
                     bool empty() const pure nothrow {
-                        return index >= data.length;
+                        return _index >= data.length;
                     }
 
                     void popFront() {
@@ -1243,7 +1142,6 @@ struct Wasm {
                     }
                 }
 
-
                 LocalRange locals() {
                     return LocalRange(data);
                 }
@@ -1263,14 +1161,14 @@ struct Wasm {
                         length=u32(data, index);
                         this.data=data; //[index..$];
                         if (length) {
-                            size_t local_index=index;
-                            set_front;
-                            index=local_index;
+                            size_t dummy_index=index;
+                            set_front(dummy_index);
+                            //index=local_index;
                         }
                     }
 
-                    protected void set_front() {
-                        _local=Local(data, index);
+                    protected void set_front(ref size_t local_index) {
+                        _local=Local(data, local_index);
                     }
 
                     @property {
@@ -1284,7 +1182,7 @@ struct Wasm {
 
                         void popFront() {
                             if (!empty) {
-                                set_front();
+                                set_front(index);
                                 j++;
                             }
                         }

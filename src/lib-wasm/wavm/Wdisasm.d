@@ -202,20 +202,20 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                     return elm;
                 }
                 count--;
-
+                    // output.writefln("\tA)expr.front=%s expr.index=%d instr=%s %s",
+                    //     expr.front.code, expr.index, instr, Wasm.instrTable[expr.front.code]);
+                expr.popFront;
+                // if (!expr.empty) {
+                //     output.writefln("\tB)expr.front=%s expr.index=%d instr=%s %s",
+                //         expr.front.code, expr.index, instr, Wasm.instrTable[expr.front.code]);
+                // }
                 with(IRType) {
-                    // if (instr.irtype is END) {
-                    //     return;
-                    // }
-                    // else {
-                        expr.popFront;
-                    // }
-//                    output.writefln("%s<%s>", indent, elm);
                     final switch(instr.irtype) {
                     case CODE:
                         output.writefln("%s%s", indent, instr.name);
                         break;
                     case BLOCK:
+                        // output.writeln(":: BLOCK ::");
                         static string block_result_type() (const Types t) {
                             with(Types) {
                                 switch(t) {
@@ -225,7 +225,6 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                                     return null;
                                 default:
                                     check(0, format("Block Illegal result type %s for a block", t));
-                                // empty
                                 }
                             }
                             assert(0);
@@ -234,9 +233,6 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         block_count++;
                         output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                         const end_elm=block(expr, indent~spacer, level+1);
-                        // writefln("expr.empty=%s", expr.empty);
-                        // const end_elm=expr.front;
-                        //writefln(">>>end %s", end_elm);
                         const end_instr=Wasm.instrTable[end_elm.code];
                         //check(end_elm.code is IR.END, format("(begin expected an end) but got an (%s)", end_instr.name));
                         output.writefln("%send %s count=%d", indent, block_comment, count);
@@ -277,22 +273,10 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s%s %s", indent, instr.name, elm.warg);
                         break;
                     case END:
-                        //writeln("Retrun END");
                         return elm;
-                        //assert(0);
-                        //return;
-                        //break;
                     }
                 }
-                // if (instr.irtype is IRType.BLOCK) {
-                //     block(expr, indent~spacer, level+1);
-                // }
-                // else if (instr.irtype is IRType.END) {
-                //     return;
-                // }
             }
-            // check(0, "Block missing end");
-            // assert(0);
             return ExprRange.IRElement(IR.END, level);
         }
         writefln("code.data=%s", _code.data);
@@ -307,7 +291,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                 }
                 output.writeln(")");
             }
-            block(expr,indent);
+            block(expr, indent);
             // foreach(elm; c[]) {
 
             //     output.writefln("<%s>", elm);
