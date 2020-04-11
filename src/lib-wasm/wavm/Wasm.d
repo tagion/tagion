@@ -14,6 +14,7 @@ import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 import std.range.primitives : isInputRange;
 
 import std.conv : to, emplace;
+import std.uni : toLower;
 
 @safe
 class WASMException : WAVMException {
@@ -462,9 +463,29 @@ struct Wasm {
     }
 
     enum Limits : ubyte {
-        LOWER = 0x00, ///  n:u32       ⇒ {min n, max ε}
+        INFINITE = 0x00, ///  n:u32       ⇒ {min n, max ε}
             RANGE = 0x01, /// n:u32 m:u32  ⇒ {min n, max m}
             }
+
+    struct Limit {
+        Limits lim;
+        uint from;
+        uint to;
+        this(immutable(ubyte[]) data, ref size_t index) {
+            lim=cast(Limits)data[index];
+            index+=Limits.sizeof;
+            from=u32(data, index);
+            with(Limits) {
+                final switch(lim) {
+                case INFINITE:
+                    to=to.max;
+                    break;
+                case RANGE:
+                    to=u32(data, index);
+                }
+            }
+        }
+    }
 
     enum Mutable : ubyte {
         CONST = 0x00,
@@ -493,7 +514,7 @@ struct Wasm {
     enum IndexType : ubyte {
         FUNC =   0x00, /// func x:typeidx
             TABLE =     0x01, /// func  tt:tabletype
-            MEM =       0x02, /// mem mt:memtype
+            MEMORY =       0x02, /// mem mt:memtype
             GLOBAL =    0x03, /// global gt:globaltype
             }
 
@@ -683,22 +704,113 @@ struct Wasm {
             alias   Type=SectionT!(FuncType);
 
             struct ImportType {
-                immutable(char[]) mod;
-                immutable(char[]) name;
-                immutable(IndexType) desc;
-                immutable(Types) type;
-                immutable(uint)      idx;
-                immutable(size_t) size;
+                immutable(char[])    mod;
+                immutable(char[])    name;
+                immutable(ImportDesc) importdesc;
+                immutable(size_t)    size;
+                struct ImportDesc {
+                    struct FuncDesc {
+                        uint typeidx;
+                        this(immutable(ubyte[]) data, ref size_t index) {
+                            typeidx=u32(data, index);
+                        }
+                    }
+                    struct TableDesc {
+                        Types type;
+                        Limit limit;
+                        this(immutable(ubyte[]) data, ref size_t index) {
+                            type=cast(Types)data[index];
+                            index+=Types.sizeof;
+                            limit=Limit(data, index);
+                        }
+                    }
+                    struct MemoryDesc {
+                        Limit limit;
+                        this(immutable(ubyte[]) data, ref size_t index) {
+                            limit=Limit(data, index);
+                        }
+                    }
+                    struct GlobalDesc {
+                        Mutable mut;
+                        Types   type;
+                        this(immutable(ubyte[]) data, ref size_t index) {
+                            mut=cast(Mutable)data[index];
+                            index+=Mutable.sizeof;
+                            type=cast(Types)data[index];
+                            index+=Types.sizeof;
+                        }
+                    }
+                    protected union {
+                        @(IndexType.FUNC)  FuncDesc _funcdesc;
+                        @(IndexType.TABLE) TableDesc _tabledesc;
+                        @(IndexType.MEMORY) MemoryDesc _memorydesc;
+                        @(IndexType.GLOBAL) GlobalDesc _globaldesc;
+                    }
+
+                    protected IndexType _desc;
+
+                    auto get(IndexType IType)() const pure
+                        in {
+                            assert(_desc is IType);
+                        }
+                    do {
+                        foreach(E; EnumMembers!IndexType) {
+                            static if (E is IType) {
+                                enum code=format("return _%sdesc;", toLower(E.to!string));
+                                pragma(msg, code);
+                                mixin(code);
+                            }
+                        }
+                    }
+
+                    @property IndexType desc() const pure nothrow {
+                        return _desc;
+                    }
+
+                    this(immutable(ubyte[]) data, ref size_t index) {
+                        _desc=cast(IndexType)data[index];
+                        index+=IndexType.sizeof;
+                        with(IndexType) {
+                            final switch(_desc) {
+                            case FUNC:
+                                _funcdesc=FuncDesc(data, index);
+                                break;
+                            case TABLE:
+                                _tabledesc=TableDesc(data, index);
+                                break;
+                            case MEMORY:
+                                _memorydesc=MemoryDesc(data, index);
+                                break;
+                            case GLOBAL:
+                                _globaldesc=GlobalDesc(data, index);
+                                break;
+                            }
+                        }
+                    }
+
+                }
+                // immutable(size_t) size;
+                // static Mutable get_mut(immutable(ubyte[]) data, const IndexType it, ref size_t index) {
+                //     with(IndexType) {
+                //         final switch(it) {
+                //         case FUNC, TABLE, MEM:
+                //             return Mutable.init; // Dummy
+                //         case GLOBAL:
+                //             return cast(Mutable)data[index];
+                //             index+=Mutable.sizeof;
+                //         }
+                //     }
+                // }
+
                 this(immutable(ubyte[]) data) {
-//                    writefln("ImportType.CTOR %s", data);
                     size_t index;
                     mod=Vector!char(data, index);
                     name=Vector!char(data, index);
-                    desc=cast(IndexType)data[index];
-                    index+=IndexType.sizeof;
-                    type=cast(Types)data[index];
-                    index+=IndexType.sizeof;
-                    idx=u32(data, index);
+                    importdesc=ImportDesc(data, index);
+                    // desc=cast(IndexType)data[index];
+                    // index+=IndexType.sizeof;
+                    // mut=get_mut(data, desc, index);
+                    // idx=u32(data, index);
                     size=index;
                     // writefln("ImportType.CTOR %s", data[0..size]);
                 }
@@ -725,65 +837,66 @@ struct Wasm {
 
             struct TableType {
                 immutable(Types) type;
-                immutable(uint) begin;
-                immutable(uint) end;
+                immutable(Limit) limit;
+                // immutable(uint) begin;
+                // immutable(uint) end;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     type=cast(Types)data[0];
                     // check(data[0] == Types.FUNCREF,
                     //     format("Wrong element type 0x%02X expected %s=0x%02X", data[0], Types.FUNCREF, Types.FUNCREF));
                     size_t index=Types.sizeof;
-                    const ltype=cast(Limits)data[index];
-                    index+=Limits.sizeof;
-                    begin=u32(data, index);
-                    uint _end;
-                    if (ltype==Limits.LOWER) {
-                        _end=uint.max;
-                    }
-                    else if (ltype==Limits.RANGE) {
-                        _end=u32(data, index);
-                    }
-                    else {
-                        check(0,
-                            format("Bad Limits type 0x%02X in table", ltype));
-                    }
-                    end=_end;
+                    limit=Limit(data, index);
+                        //const ltype=cast(Limits)data[index];
+                    // index+=Limits.sizeof;
+                    // begin=u32(data, index);
+                    // uint _end;
+                    // if (ltype==Limits.LOWER) {
+                    //     _end=uint.max;
+                    // }
+                    // else if (ltype==Limits.RANGE) {
+                    //     _end=u32(data, index);
+                    // }
+                    // else {
+                    //     check(0,
+                    //         format("Bad Limits type 0x%02X in table", ltype));
+                    // }
+                    // end=_end;
                     size=index;
                 }
 
-                string toString() {
-                    return format("(table %d %d %s)", begin, end, typesName(type));
-                }
             }
 
             alias Table=SectionT!(TableType);
 
             struct MemoryType {
-                immutable(uint) begin;
-                immutable(uint) end;
+                immutable(Limit) limit;
+                // immutable(uint) begin;
+                // immutable(uint) end;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
-                    const ltype=cast(Limits)data[index];
-                    index+=Limits.sizeof;
-                    begin=u32(data, index);
-                    uint _end;
-                    if (ltype==Limits.LOWER) {
-                        _end=uint.max;
-                    }
-                    else if (ltype==Limits.RANGE) {
-                        _end=u32(data, index);
-                    }
-                    else {
-                        check(0,
-                            format("Bad Limits type 0x%02X in table", ltype));
-                    }
-                    end=_end;
-                    size=index;
+                    limit=Limit(data, index);
+                    // const ltype=cast(Limits)data[index];
+                    // index+=Limits.sizeof;
+                    // begin=u32(data, index);
+                    // uint _end;
+                    // if (ltype==Limits.LOWER) {
+                    //     _end=uint.max;
+                    // }
+                    // else if (ltype==Limits.RANGE) {
+                    //     _end=u32(data, index);
+                    // }
+                    // else {
+                    //     check(0,
+                    //         format("Bad Limits type 0x%02X in table", ltype));
+                    // }
+                    // end=_end;
+                   size=index;
                 }
-                string toString() {
-                    return format("(memory %d %d)", begin, end);
-                }
+                // string toString() {
+                //     return format("(memory %d %d)", begin, end);
+                // }
             }
 
             alias Memory=SectionT!(MemoryType);
@@ -844,9 +957,6 @@ struct Wasm {
                     index+=IndexType.sizeof;
                     idx=u32(data, index);
                     size=index;
-                }
-                string toString() {
-                    return format(`(export "%s" (%s $%d))`, name, indexName(desc), idx);
                 }
             }
 

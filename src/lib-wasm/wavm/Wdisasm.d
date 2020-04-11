@@ -128,6 +128,10 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     alias Types=Wasm.Types;
     alias typesName=Wasm.typesName;
     alias indexName=Wasm.indexName;
+    alias ImportType=Wasm.WasmRange.WasmSection.ImportType;
+    alias IndexType=Wasm.IndexType;
+    alias Mutable=Wasm.Mutable;
+    alias Limit=Wasm.Limit;
 
     protected {
         Output output;
@@ -140,6 +144,11 @@ class WastT(Output) : Wdisasm.InterfaceModule {
         this.output=output;
         this.dasm=dasm;
         this.spacer=spacer;
+    }
+
+    static string limitToString(ref const Limit limit) {
+        immutable to_range=(limit.lim is Wasm.Limits.INFINITE)?"":format(" %s", limit.to);
+        return format("%d %s", limit.from, to_range);
     }
 
     void custom_sec(ref scope const(Module) mod) {
@@ -170,17 +179,45 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     void import_sec(ref scope const(Module) mod) {
         auto _import=*mod.import_sec;
         //writefln("_import.data=%s %s", _import.data, _import.length);
+        static string importdesc(ref const ImportType imp) {
+            const desc=imp.importdesc.desc;
+            with(IndexType) {
+                final switch(desc) {
+                case FUNC:
+                    const _funcdesc=imp.importdesc.get!FUNC;
+                    return format("(%s (type %d))", indexName(desc), _funcdesc.typeidx);
+                case TABLE:
+                    const _tabledesc=imp.importdesc.get!TABLE;
+                    return format("(%s %s %s)", indexName(desc), limitToString(_tabledesc.limit), typesName(_tabledesc.type));
+                case MEMORY:
+                    const _memorydesc=imp.importdesc.get!MEMORY;
+                    return format("(%s %s %s)", indexName(desc), limitToString(_memorydesc.limit));
+                case GLOBAL:
+                    const _globaldesc=imp.importdesc.get!GLOBAL;
+                    const type_text=(_globaldesc.mut is Mutable.VAR)?
+                        typesName(_globaldesc.type):
+                        format("(mut %s)", typesName(_globaldesc.type));
+                    return format("(%s %s)", indexName(desc), type_text);
+                }
+            }
+        }
         foreach(imp; _import[]) {
-            //output.writefln("imp=%s", imp);
-            output.writefln(`%s(import "%s" "%s" (%s %s))`,
-                indent, imp.mod, imp.name, indexName(imp.desc), typesName(imp.type));
+            output.writefln("imp=%s", imp);
+            output.writefln(`%s(import "%s" "%s" %s)`,
+                indent, imp.mod, imp.name, importdesc(imp));
         }
     }
 
     void function_sec(ref scope const(Module) mod) {
+        // Empty
     }
 
     void table_sec(ref scope const(Module) mod) {
+        auto _table=*mod.table_sec;
+        foreach(t; _table[]) {
+            //const end_limit=(t.end is uint.max)?"":format(" %d", t.end);
+            output.writefln("%s(table %s%s)", indent, limitToString(t.limit), typesName(t.type));
+        }
     }
 
     void memory_sec(ref scope const(Module) mod) {
@@ -314,11 +351,11 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             }
             return ExprRange.IRElement(IR.END, level);
         }
-//        writefln("code.data=%s", _code.data);
+        writefln("code.data=%s", _code.data);
 
         foreach(f, c; lockstep(_func[], _code[], StoppingPolicy.requireSameLength)) {
             auto expr=c[];
-            //writefln(">expr.data=%s", expr.data);
+            //writefln(">c.data=%s", c.data);
             //writefln(">c.locals.data=%s c.locals.length=%d", c.locals.data, c.locals.length);
             output.writefln("%s(func (type %d)", indent, f.idx);
             const local_indent=indent~spacer;
@@ -374,7 +411,9 @@ unittest {
     }
 
 //    string filename="../tests/wasm/func_1.wasm";
-    string filename="../tests/wasm/imports_35.wasm";
+//    string filename="../tests/wasm/global_1.wasm";
+    string filename="../tests/wasm/imports_1.wasm";
+//    string filename="../tests/wasm/table_copy_2.wasm";
 
     immutable code=fread(filename);
     auto wasm=Wasm(code);
