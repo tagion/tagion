@@ -262,7 +262,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
                         break;
                     case GLOBAL:
-                        output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                        output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
                         break;
                     case MEMORY:
                         output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
@@ -359,7 +359,8 @@ unittest {
         return assumeUnique(data);
     }
 
-    string filename="../tests/wasm/func_1.wasm";
+//    string filename="../tests/wasm/func_1.wasm";
+    string filename="../tests/wasm/imports_35.wasm";
 
     immutable code=fread(filename);
     auto wasm=Wasm(code);
