@@ -310,7 +310,6 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             string block_comment;
             uint block_count;
             uint count;
-            output.writefln("expr.data=%s", expr.data);
             while (!expr.empty) {
                 const elm=expr.front;
                 const instr=Wasm.instrTable[elm.code];

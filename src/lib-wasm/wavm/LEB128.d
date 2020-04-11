@@ -84,18 +84,20 @@ const(ubyte[]) encode(T)(const T v) pure if(isSigned!T) {
 T decode(T=ulong)(const(ubyte[]) data, out size_t len) pure if (isUnsigned!T) {
     ulong result;
     uint shift;
-    enum MAX_LIMIT=T.sizeof*8-7;
+    enum MAX_LIMIT=ulong.sizeof*8-7;
     enum LAST_BYTE_MASK=~(~0UL >> MAX_LIMIT);
+
     foreach(i, d; data) {
-        check(!((shift >= MAX_LIMIT) && ((d & LAST_BYTE_MASK) == 0)), "LEB128 decoding buffer over limit");
-        result |= (d & 0x7F) << shift;
+        check(!((shift > MAX_LIMIT) && ((d & LAST_BYTE_MASK) == 0)),
+            format("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
+        result |= (d & 0x7FUL) << shift;
         if ((d & 0x80) == 0) {
             len=i+1;
             static if (is(T==ulong)) {
                 return result;
             }
             else {
-                check(result <= T.max, format("LEB128 decoding overflow for %s", T.stringof));
+                check(result <= T.max, format("LEB128 decoding overflow of %x for %s", result, T.stringof));
                 return cast(T)result;
             }
         }
