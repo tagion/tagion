@@ -686,6 +686,7 @@ struct Wasm {
                 immutable(char[]) mod;
                 immutable(char[]) name;
                 immutable(IndexType) desc;
+                immutable(Types) type;
                 immutable(uint)      idx;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
@@ -695,14 +696,13 @@ struct Wasm {
                     name=Vector!char(data, index);
                     desc=cast(IndexType)data[index];
                     index+=IndexType.sizeof;
+                    type=cast(Types)data[index];
+                    index+=IndexType.sizeof;
                     idx=u32(data, index);
                     size=index;
                     // writefln("ImportType.CTOR %s", data[0..size]);
                 }
 
-                string toString() {
-                    return format(`(import "%s" "%s" (%s $%d))`, mod, name, indexName(desc), idx);
-                }
             }
 
             alias Import=SectionT!(ImportType);
@@ -716,9 +716,9 @@ struct Wasm {
                     size=index;
                 }
 
-                string toString() {
-                    return format("(func $%d)", idx);
-                }
+                // string toString() {
+                //     return format("(func $%d)", idx);
+                // }
             }
 
             alias Function=SectionT!(Index);

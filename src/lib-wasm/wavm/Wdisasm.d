@@ -127,6 +127,8 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     alias IR=Wasm.IR;
     alias Types=Wasm.Types;
     alias typesName=Wasm.typesName;
+    alias indexName=Wasm.indexName;
+
     protected {
         Output output;
         Wdisasm dasm;
@@ -166,6 +168,12 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     void import_sec(ref scope const(Module) mod) {
+        auto _import=*mod.import_sec;
+        writefln("_import.data=%s %s", _import.data, _import.length);
+        foreach(imp; _import[]) {
+            output.writefln("imp=%s", imp);
+            output.writefln(`%s(import "%s" "%s" (%s $%d))`, indent, imp.mod, imp.name, indexName(imp.desc), imp.idx);
+        }
     }
 
     void function_sec(ref scope const(Module) mod) {
