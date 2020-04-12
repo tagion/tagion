@@ -54,14 +54,10 @@ struct WAVMFunctionT(F) {
 
     @trusted
     wasm_func_callback_t createCallback(F)(F func) if (is(F==function) || is(F==delegate)) {
-        pragma(msg, ReturnType!F);
-        pragma(msg, Parameters!F);
         alias Params=Parameters!F;
         alias Results=ReturnType!F;
-        pragma(msg, "-------");
         wasm_valtype_t** params=calloc!(wasm_valtype_t*)(Params.length);
         static foreach(i;0..Params.length) {
-            pragma(msg, "Params ", i.to!string, " ", Params[i]);
             {
                 alias T=Unqual!(Params[i]);
                 enum WASMType=toWASMType!T;
@@ -73,20 +69,15 @@ struct WAVMFunctionT(F) {
             stdlib.free(params);
             stdlib.free(results);
         }
-        pragma(msg, Results);
         static if (!is(Results==void)) {
-            pragma(msg, "Result is not void :", Results);
             static if (isTuple!Results) {
-                pragma(msg, "Type ", Results, " is a Tuple");
                 results=calloc!(wasm_valtype_t*)(Results.length);
 
                 size_t index;
                 static foreach(i;0..Results.length) {
-                    pragma(msg, "Results ", i.to!string, " ", Results.Types[i]);
                     {
                         alias T=Unqual!(Results.Types[i]);
                         enum WASMType=toWASMType!T;
-                        pragma(msg, "WASMType : ", WASMType, " : ", T);
                         // This line causes a link error in DMD64 D Compiler v2.090.1
                         // results[i]=wasm_valtype_new(WASMType);
                         // But this works
@@ -97,7 +88,6 @@ struct WAVMFunctionT(F) {
                 }
             }
             else {
-                pragma(msg, "Type ", Results, " is NOT a Tuple");
                 results=calloc!(wasm_valtype_t*)(1);
                 enum WASMType=toWASMType!Results;
                 results[0]=wasm_valtype_new(WASMType);

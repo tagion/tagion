@@ -766,7 +766,6 @@ struct WasmReader {
                         foreach(E; EnumMembers!IndexType) {
                             static if (E is IType) {
                                 enum code=format("return _%sdesc;", toLower(E.to!string));
-                                pragma(msg, code);
                                 mixin(code);
                             }
                         }

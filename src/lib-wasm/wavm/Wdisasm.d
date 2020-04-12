@@ -101,7 +101,6 @@ struct Wdisasm {
                             }
                             else {
                                 enum code=format(q{iter.%s(mod);}, secname(E));
-                                pragma(msg, code);
                                 mixin(code);
                             }
                             break;
