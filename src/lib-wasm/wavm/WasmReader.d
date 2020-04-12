@@ -24,7 +24,6 @@ class WASMException : WAVMException {
     }
 }
 
-
 alias check=Check!WASMException;
 
 @safe

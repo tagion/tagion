@@ -10,6 +10,16 @@ import std.range.primitives : isOutputRange;
 import std.range : StoppingPolicy, lockstep;
 
 import wavm.WasmReader;
+import wavm.WAVMException;
+
+@safe
+class WdisasmException : WAVMException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+        super( msg, file, line );
+    }
+}
+
+alias check=Check!WdisasmException;
 
 @safe
 struct Wdisasm {
@@ -18,12 +28,14 @@ struct Wdisasm {
     this(const WasmReader wasm) {
         this.wasm=wasm;
     }
-    static bool simple_error(const bool flag, string text) {
-        if (!flag) {
-            stderr.writeln("Error %s", text);
-        }
-        return flag;
-    }
+
+    // @safe
+    // static bool simple_error(const bool flag, string text) {
+    //     if (!flag) {
+    //         stderr.writeln("Error %s", text);
+    //     }
+    //     return flag;
+    // }
 
     alias WasmSection=WasmReader.WasmRange.WasmSection;
     alias Section=WasmReader.Section;
@@ -80,23 +92,19 @@ struct Wdisasm {
         static assert(is(unqualModule == WasmSection.Sections));
     }
 
+    @trusted
     void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
         scope Module mod;
         WasmReader.Section previous_sec;
         foreach(a; wasm[]) {
             with(WasmReader.Section) {
-                if ((a.section !is CUSTOM) && (simple_error(previous_sec < a.section, "Bad order"))) {
+                check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
                     previous_sec=a.section;
                     final switch(a.section) {
                         foreach(E; EnumMembers!(WasmReader.Section)) {
                         case E:
-                            static if (E is CUSTOM) {
-                                mod.custom_sec~=a.sec!CUSTOM;
-                            }
-                            else {
-                                const sec=a.sec!E;
-                                mod[E]=&sec;
-                            }
+                            const sec=a.sec!E;
+                            mod[E]=&sec;
                             static if (is(T==ModuleIterator)) {
                                 iter(a.section, mod);
                             }
@@ -107,7 +115,6 @@ struct Wdisasm {
                             break;
                         }
                     }
-                }
             }
         }
     }
@@ -290,6 +297,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
         }
     }
 
+    @trusted
     void code_sec(ref scope const(Module) mod) {
         auto _code=*mod.code_sec;
         auto _func=*mod.function_sec;
