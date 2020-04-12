@@ -1,4 +1,4 @@
-module wavm.Wasm;
+module wavm.WasmReader;
 
 import std.format;
 import wavm.WAVMException;
@@ -28,7 +28,7 @@ class WASMException : WAVMException {
 alias check=Check!WASMException;
 
 @safe
-struct Wasm {
+struct WasmReader {
     protected immutable(ubyte[]) _data;
 
     immutable(ubyte[]) data() const pure nothrow {

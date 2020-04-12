@@ -9,12 +9,12 @@ import std.conv : to;
 import std.range.primitives : isOutputRange;
 import std.range : StoppingPolicy, lockstep;
 
-import wavm.Wasm;
+import wavm.WasmReader;
 
 struct Wdisasm {
-    protected Wasm wasm;
+    protected WasmReader wasm;
     @disable this();
-    this(const Wasm wasm) {
+    this(const WasmReader wasm) {
         this.wasm=wasm;
     }
     static bool simple_error(const bool flag, string text) {
@@ -24,8 +24,8 @@ struct Wdisasm {
         return flag;
     }
 
-    alias WasmSection=Wasm.WasmRange.WasmSection;
-    alias Section=Wasm.Section;
+    alias WasmSection=WasmReader.WasmRange.WasmSection;
+    alias Section=WasmReader.Section;
 
     protected static string secname(immutable Section s) {
         import std.exception : assumeUnique;
@@ -81,13 +81,13 @@ struct Wdisasm {
 
     void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
         scope Module mod;
-        Wasm.Section previous_sec;
+        WasmReader.Section previous_sec;
         foreach(a; wasm[]) {
-            with(Wasm.Section) {
+            with(WasmReader.Section) {
                 if ((a.section !is CUSTOM) && (simple_error(previous_sec < a.section, "Bad order"))) {
                     previous_sec=a.section;
                     final switch(a.section) {
-                        foreach(E; EnumMembers!(Wasm.Section)) {
+                        foreach(E; EnumMembers!(WasmReader.Section)) {
                         case E:
                             static if (E is CUSTOM) {
                                 mod.custom_sec~=a.sec!CUSTOM;
@@ -120,19 +120,19 @@ WastT!Output Wast(Output)(Wdisasm dasm, Output output) {
 
 class WastT(Output) : Wdisasm.InterfaceModule {
     alias Module=Wdisasm.Module;
-    alias ExprRange=Wasm.WasmRange.WasmSection.ExprRange;
-    alias WasmArg=Wasm.WasmRange.WasmSection.WasmArg;
-    alias Section=Wasm.Section;
-    alias IRType=Wasm.IRType;
-    alias IR=Wasm.IR;
-    alias Types=Wasm.Types;
-    alias typesName=Wasm.typesName;
-    alias indexName=Wasm.indexName;
-    alias ImportType=Wasm.WasmRange.WasmSection.ImportType;
-    alias IndexType=Wasm.IndexType;
-    alias Mutable=Wasm.Mutable;
-    alias Limit=Wasm.Limit;
-    alias GlobalDesc=Wasm.WasmRange.WasmSection.ImportType.ImportDesc.GlobalDesc;
+    alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
+    alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
+    alias Section=WasmReader.Section;
+    alias IRType=WasmReader.IRType;
+    alias IR=WasmReader.IR;
+    alias Types=WasmReader.Types;
+    alias typesName=WasmReader.typesName;
+    alias indexName=WasmReader.indexName;
+    alias ImportType=WasmReader.WasmRange.WasmSection.ImportType;
+    alias IndexType=WasmReader.IndexType;
+    alias Mutable=WasmReader.Mutable;
+    alias Limit=WasmReader.Limit;
+    alias GlobalDesc=WasmReader.WasmRange.WasmSection.ImportType.ImportDesc.GlobalDesc;
 
     protected {
         Output output;
@@ -148,7 +148,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     static string limitToString(ref const Limit limit) {
-        immutable to_range=(limit.lim is Wasm.Limits.INFINITE)?"":format(" %d", limit.to);
+        immutable to_range=(limit.lim is WasmReader.Limits.INFINITE)?"":format(" %d", limit.to);
         return format("%d%s", limit.from, to_range);
     }
 
@@ -331,7 +331,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             uint count;
             while (!expr.empty) {
                 const elm=expr.front;
-                const instr=Wasm.instrTable[elm.code];
+                const instr=WasmReader.instrTable[elm.code];
                 expr.popFront;
                 with(IRType) {
                     final switch(instr.irtype) {
@@ -357,7 +357,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("BLOCK %s", elm);
                         output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                         const end_elm=block(expr, indent~spacer, level+1);
-                        const end_instr=Wasm.instrTable[end_elm.code];
+                        const end_instr=WasmReader.instrTable[end_elm.code];
                         output.writefln("%send %s count=%d", indent, block_comment, count);
                         break;
                     case BRANCH:
@@ -457,7 +457,7 @@ unittest {
 //    string filename="../tests/wasm/address_1.wasm";
     string filename="../tests/wasm/data_4.wasm";
     immutable code=fread(filename);
-    auto wasm=Wasm(code);
+    auto wasm=WasmReader(code);
     auto dasm=Wdisasm(wasm);
     Wast(dasm, stdout).serialize();
 //    auto output=Wast
