@@ -11,6 +11,7 @@ import std.range : StoppingPolicy, lockstep;
 
 import wavm.WasmReader;
 
+@safe
 struct Wdisasm {
     protected WasmReader wasm;
     @disable this();
@@ -34,7 +35,7 @@ struct Wdisasm {
 
 
     alias Module=Tuple!(
-        const(WasmSection.Custom)[],  secname(Section.CUSTOM),
+        const(WasmSection.Custom)*,   secname(Section.CUSTOM),
         const(WasmSection.Type)*,     secname(Section.TYPE),
         const(WasmSection.Import)*,   secname(Section.IMPORT),
         const(WasmSection.Function)*, secname(Section.FUNCTION),

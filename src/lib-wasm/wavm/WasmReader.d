@@ -546,16 +546,10 @@ struct WasmReader {
             }
 
 
-    // @trusted
-    // static uint calc_size(const(ubyte[]) data) pure {
-    //     return *cast(uint*)(data[0..uint.sizeof].ptr);
-    // }
-
     alias u32=decode!uint;
     alias u64=decode!ulong;
     alias i32=decode!int;
     alias i64=decode!long;
-
 
     @trusted
     static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
@@ -588,7 +582,7 @@ struct WasmReader {
     }
 
     static assert(isInputRange!WasmRange);
-//    version(none)
+
     struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
@@ -686,15 +680,19 @@ struct WasmReader {
                 }
             }
 
-            struct Custom {
+            struct CustomType {
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
+                immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
                     name=Vector!char(data, index);
                     bytes=Vector!ubyte(data, index);
+                    size=index;
                 }
             }
+
+            alias Custom=SectionT!(CustomType);
 
             struct FuncType {
                 immutable(Types) type;
