@@ -40,7 +40,7 @@ struct Wdisasm {
     alias WasmSection=WasmReader.WasmRange.WasmSection;
     alias Section=WasmReader.Section;
 
-    protected static string secname(immutable Section s) {
+    static string secname(immutable Section s) {
         import std.exception : assumeUnique;
         return assumeUnique(format("%s_sec", toLower(s.to!string)));
     }
