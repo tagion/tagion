@@ -10,6 +10,7 @@ import std.range.primitives : isOutputRange;
 import std.range : StoppingPolicy, lockstep;
 
 import wavm.WasmReader;
+import wavm.WasmBase;
 import wavm.WAVMException;
 
 @safe
@@ -38,7 +39,7 @@ struct Wdisasm {
     // }
 
     alias WasmSection=WasmReader.WasmRange.WasmSection;
-    alias Section=WasmReader.Section;
+    //alias Section=Section;
 
     static string secname(immutable Section s) {
         import std.exception : assumeUnique;
@@ -95,13 +96,13 @@ struct Wdisasm {
     @trusted
     void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
         scope Module mod;
-        WasmReader.Section previous_sec;
+        Section previous_sec;
         foreach(a; wasm[]) {
-            with(WasmReader.Section) {
+            with(Section) {
                 check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
                     previous_sec=a.section;
                     final switch(a.section) {
-                        foreach(E; EnumMembers!(WasmReader.Section)) {
+                        foreach(E; EnumMembers!(Section)) {
                         case E:
                             const sec=a.sec!E;
                             mod[E]=&sec;
@@ -129,15 +130,15 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     alias Module=Wdisasm.Module;
     alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
-    alias Section=WasmReader.Section;
-    alias IRType=WasmReader.IRType;
-    alias IR=WasmReader.IR;
-    alias Types=WasmReader.Types;
-    alias typesName=WasmReader.typesName;
-    alias indexName=WasmReader.indexName;
+    // alias Section=WasmReader.Section;
+    // alias IRType=WasmReader.IRType;
+    // alias IR=WasmReader.IR;
+    // alias Types=WasmReader.Types;
+    // alias typesName=WasmReader.typesName;
+    // alias indexName=WasmReader.indexName;
     alias ImportType=WasmReader.WasmRange.WasmSection.ImportType;
-    alias IndexType=WasmReader.IndexType;
-    alias Mutable=WasmReader.Mutable;
+    // alias IndexType=WasmReader.IndexType;
+    // alias Mutable=WasmReader.Mutable;
     alias Limit=WasmReader.Limit;
     alias GlobalDesc=WasmReader.WasmRange.WasmSection.ImportType.ImportDesc.GlobalDesc;
 
@@ -155,7 +156,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
     }
 
     static string limitToString(ref const Limit limit) {
-        immutable to_range=(limit.lim is WasmReader.Limits.INFINITE)?"":format(" %d", limit.to);
+        immutable to_range=(limit.lim is Limits.INFINITE)?"":format(" %d", limit.to);
         return format("%d%s", limit.from, to_range);
     }
 
@@ -339,7 +340,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
             uint count;
             while (!expr.empty) {
                 const elm=expr.front;
-                const instr=WasmReader.instrTable[elm.code];
+                const instr=instrTable[elm.code];
                 expr.popFront;
                 with(IRType) {
                     final switch(instr.irtype) {
@@ -365,7 +366,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
                         output.writefln("BLOCK %s", elm);
                         output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                         const end_elm=block(expr, indent~spacer, level+1);
-                        const end_instr=WasmReader.instrTable[end_elm.code];
+                        const end_instr=instrTable[end_elm.code];
                         output.writefln("%send %s count=%d", indent, block_comment, count);
                         break;
                     case BRANCH:

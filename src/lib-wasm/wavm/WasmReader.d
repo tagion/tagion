@@ -2,7 +2,8 @@ module wavm.WasmReader;
 
 import std.format;
 import wavm.WAVMException;
-import LEB128=wavm.LEB128;
+import wavm.WasmBase;
+//import LEB128=wavm.LEB128;
 
 import std.stdio;
 import std.meta : AliasSeq;
@@ -40,6 +41,7 @@ struct WasmReader {
         _data=data;
     }
 
+    version(none) {
     enum IRType {
         CODE,          /// Simple instruction with no argument
         BLOCK,         /// Block instruction
@@ -466,7 +468,7 @@ struct WasmReader {
         INFINITE = 0x00, ///  n:u32       ⇒ {min n, max ε}
             RANGE = 0x01, /// n:u32 m:u32  ⇒ {min n, max m}
             }
-
+    }
     struct Limit {
         Limits lim;
         uint from;
@@ -487,6 +489,7 @@ struct WasmReader {
         }
     }
 
+    version(none) {
     enum Mutable : ubyte {
         CONST = 0x00,
             VAR = 0x01,
@@ -545,11 +548,11 @@ struct WasmReader {
             }
 
 
-    alias u32=decode!uint;
-    alias u64=decode!ulong;
-    alias i32=decode!int;
-    alias i64=decode!long;
-
+    // alias u32=decode!uint;
+    // alias u64=decode!ulong;
+    // alias i32=decode!int;
+    // alias i64=decode!long;
+    }
     @trusted
     static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
         immutable len=u32(data, index);
@@ -572,13 +575,13 @@ struct WasmReader {
         return WasmRange(data);
     }
 
-    static T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
-        size_t byte_size;
-        scope(exit) {
-           index+=byte_size;
-        }
-        return LEB128.decode!T(data[index..$], byte_size);
-    }
+    // static T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
+    //     size_t byte_size;
+    //     scope(exit) {
+    //        index+=byte_size;
+    //     }
+    //     return LEB128.decode!T(data[index..$], byte_size);
+    // }
 
     static assert(isInputRange!WasmRange);
 

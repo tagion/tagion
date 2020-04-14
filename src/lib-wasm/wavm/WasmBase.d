@@ -1,6 +1,14 @@
 module wavm.WasmBase;
 
 import std.traits : EnumMembers;
+import std.typecons : Tuple;
+import std.format;
+import std.uni : toLower;
+import std.conv : to;
+
+//import wavm.LEB128;
+import LEB128=wavm.LEB128;
+
 
 enum IRType {
     CODE,          /// Simple instruction with no argument
@@ -21,12 +29,11 @@ struct Instr {
     string name;
     uint cost;
     IRType irtype;
-    Types  args;
+    uint pops; // Number of pops from the stack
 }
 
 enum ubyte[] magic=[0x00, 0x61, 0x73, 0x6D];
 enum ubyte[] wasm_version=[0x01, 0x00, 0x00, 0x00];
-
 enum IR : ubyte {
     UNREACHABLE         = 0x00, ///  unreachable
         NOP                 = 0x01, ///  nop
@@ -230,7 +237,6 @@ shared static this() {
             LOOP                : Instr("loop", 0, IRType.BLOCK),
             IF                  : Instr("if", 1, IRType.CODE),
 
-
             ELSE                : Instr("else", 0, IRType.END),
             END                 : Instr("end", 0, IRType.END),
             BR                  : Instr("br", 1, IRType.BRANCH),
@@ -246,7 +252,7 @@ shared static this() {
             LOCAL_TEE           : Instr("local.tee", 1, IRType.LOCAL),
             GLOBAL_GET          : Instr("global.get", 1, IRType.GLOBAL),
             GLOBAL_SET          : Instr("global.set", 1, IRType.GLOBAL),
-/// memarg a                     :u32 o:u32 ⇒ {align a, offset o}
+            /// memarg a                     :u32 o:u32 ⇒ {align a, offset o}
             I32_LOAD            : Instr("i32.load", 2, IRType.MEMORY),
             I64_LOAD            : Instr("i64.load", 2, IRType.MEMORY),
             F32_LOAD            : Instr("f32.load", 2, IRType.MEMORY),
@@ -278,21 +284,21 @@ shared static this() {
             F32_CONST           : Instr("f32.const", 1, IRType.CONST),
             F64_CONST           : Instr("f64.const", 1, IRType.CONST),
             // Compare instructions
-            I32_EQZ             : Instr("i32.eqz", 1, IRType.CODE),
-            I32_EQ              : Instr("i32.eq", 1, IRType.CODE),
-            I32_NE              : Instr("i32.ne", 1, IRType.CODE),
-            I32_LT_S            : Instr("i32.lt_s", 1, IRType.CODE),
-            I32_LT_U            : Instr("i32.lt_u", 1, IRType.CODE),
-            I32_GT_S            : Instr("i32.gt_s", 1, IRType.CODE),
-            I32_GT_U            : Instr("i32.gt_u", 1, IRType.CODE),
-            I32_LE_S            : Instr("i32.le_s", 1, IRType.CODE),
-            I32_LE_U            : Instr("i32.le_u", 1, IRType.CODE),
-            I32_GE_S            : Instr("i32.ge_s", 1, IRType.CODE),
-            I32_GE_U            : Instr("i32.ge_u", 1, IRType.CODE),
+            I32_EQZ             : Instr("i32.eqz", 1, IRType.CODE, 1),
+            I32_EQ              : Instr("i32.eq", 1, IRType.CODE, 1),
+            I32_NE              : Instr("i32.ne", 1, IRType.CODE, 1),
+            I32_LT_S            : Instr("i32.lt_s", 1, IRType.CODE, 2),
+            I32_LT_U            : Instr("i32.lt_u", 1, IRType.CODE, 2),
+            I32_GT_S            : Instr("i32.gt_s", 1, IRType.CODE, 2),
+            I32_GT_U            : Instr("i32.gt_u", 1, IRType.CODE, 2),
+            I32_LE_S            : Instr("i32.le_s", 1, IRType.CODE, 2),
+            I32_LE_U            : Instr("i32.le_u", 1, IRType.CODE, 2),
+            I32_GE_S            : Instr("i32.ge_s", 1, IRType.CODE, 2),
+            I32_GE_U            : Instr("i32.ge_u", 1, IRType.CODE, 2),
 
-            I64_EQZ             : Instr("i64.eqz", 1, IRType.CODE),
-            I64_EQ              : Instr("i64.eq", 1, IRType.CODE),
-            I64_NE              : Instr("i64.ne", 1, IRType.CODE),
+            I64_EQZ             : Instr("i64.eqz", 1, IRType.CODE, 1),
+            I64_EQ              : Instr("i64.eq", 1, IRType.CODE, 1),
+            I64_NE              : Instr("i64.ne", 1, IRType.CODE, 1),
             I64_LT_S            : Instr("i64.lt_s", 1, IRType.CODE),
 
             I64_LT_U            : Instr("i64.lt_u", 1, IRType.CODE),
@@ -427,9 +433,10 @@ unittest {
 }
 
 enum Limits : ubyte {
-    LOWER = 0x00, ///  n:u32       ⇒ {min n, max ε}
+    INFINITE = 0x00, ///  n:u32       ⇒ {min n, max ε}
         RANGE = 0x01, /// n:u32 m:u32  ⇒ {min n, max m}
         }
+
 
 enum Mutable : ubyte {
     CONST = 0x00,
@@ -446,12 +453,34 @@ enum Types : ubyte {
         F64 = 0x7C,   /// f64 valtype
         }
 
+@safe
+static string typesName(const Types type) pure {
+    import std.uni : toLower;
+    import std.conv : to;
+    final switch(type) {
+        foreach(E; EnumMembers!Types) {
+        case E: return toLower(E.to!string);
+        }
+    }
+}
+
 enum IndexType : ubyte {
     FUNC =   0x00, /// func x:typeidx
         TABLE =     0x01, /// func  tt:tabletype
-        MEM =       0x02, /// mem mt:memtype
+        MEMORY =       0x02, /// mem mt:memtype
         GLOBAL =    0x03, /// global gt:globaltype
         }
+
+@safe
+static string indexName(const IndexType idx) pure {
+    import std.uni : toLower;
+    import std.conv : to;
+    final switch(idx) {
+        foreach(E; EnumMembers!IndexType) {
+        case E: return toLower(E.to!string);
+        }
+    }
+}
 
 enum Section : ubyte {
     CUSTOM   = 0,
@@ -467,3 +496,52 @@ enum Section : ubyte {
         CODE     = 10,
         DATA     = 11
         }
+
+T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
+    size_t byte_size;
+    scope(exit) {
+        index+=byte_size;
+    }
+    return LEB128.decode!T(data[index..$], byte_size);
+}
+
+alias u32=decode!uint;
+alias u64=decode!ulong;
+alias i32=decode!int;
+alias i64=decode!long;
+
+static string secname(immutable Section s) {
+    import std.exception : assumeUnique;
+    return assumeUnique(format("%s_sec", toLower(s.to!string)));
+}
+
+alias ModuleT(SectionType)=Tuple!(
+    const(SectionType.Custom)*,   secname(Section.CUSTOM),
+    const(SectionType.Type)*,     secname(Section.TYPE),
+    const(SectionType.Import)*,   secname(Section.IMPORT),
+    const(SectionType.Function)*, secname(Section.FUNCTION),
+    const(SectionType.Table)*,    secname(Section.TABLE),
+    const(SectionType.Memory)*,   secname(Section.MEMORY),
+    const(SectionType.Global)*,   secname(Section.GLOBAL),
+    const(SectionType.Export)*,   secname(Section.EXPORT),
+    const(SectionType.Start)*,    secname(Section.START),
+    const(SectionType.Element)*,  secname(Section.ELEMENT),
+    const(SectionType.Code)*,     secname(Section.CODE),
+    const(SectionType.Data)*,     secname(Section.DATA),
+    );
+
+
+interface InterfaceModuleT(T) {
+    void custom_sec(ref scope const(T) mod);
+    void type_sec(ref scope const(T) mod);
+    void import_sec(ref scope const(T) mod);
+    void function_sec(ref scope const(T) mod);
+    void table_sec(ref scope const(T) mod);
+    void memory_sec(ref scope const(T) mod);
+    void global_sec(ref scope const(T) mod);
+    void export_sec(ref scope const(T) mod);
+    void start_sec(ref scope const(T) mod);
+    void element_sec(ref scope const(T) mod);
+    void code_sec(ref scope const(T) mod);
+    void data_sec(ref scope const(T) mod);
+}
