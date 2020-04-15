@@ -202,16 +202,7 @@ class WasmWriter {
                 }
 
                 foreach(i, m; this.tupleof) {
-                    // {
-                    //     enum code=format("alias member=ty.%s;", m);
-                    // }
-                    //pragma(msg, "code ", code);
-                    //mixin(code);
-
-                    //enum name=basename!(this.tupleof[i]);
                     alias T=typeof(m);
-                    //pragma(msg, );
-                    //pragma(msg, getUDAs!(T));
                     static if (is(T==struct) || is(T==class)) {
                         m.serialize(bout);
                     }
@@ -608,6 +599,9 @@ class WasmWriter {
         struct CodeType {
             Local[] locals;
             @Section(Section.CODE) immutable(ubyte)[] expr;
+            size_t guess_size() const pure nothrow {
+                return locals.length*Local.sizeof+expr.length+2*uint.sizeof;
+            }
             struct Local {
                 uint count;
                 Types type;
@@ -622,7 +616,16 @@ class WasmWriter {
                 }
                 expr=c[].data;
             }
-            mixin Serialize;
+            void serialize(ref OutBuffer bout) const {
+                scope tmp_out=new OutBuffer;
+                tmp_out.reserve(guess_size);
+                tmp_out.write(encode(locals.length));
+                locals.each!((l) => l.serialize(tmp_out));//.write(encode(e)));
+                tmp_out.write(expr);
+                bout.write(encode(tmp_out.offset));
+                bout.write(tmp_out.toBytes);
+            }
+            // mixin Serialize;
         }
 
         alias Code=SectionT!(CodeType);

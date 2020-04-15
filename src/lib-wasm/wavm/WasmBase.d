@@ -10,6 +10,21 @@ import std.conv : to;
 import LEB128=wavm.LEB128;
 
 
+enum Section : ubyte {
+    CUSTOM   = 0,
+        TYPE     = 1,
+        IMPORT   = 2,
+        FUNCTION = 3,
+        TABLE    = 4,
+        MEMORY   = 5,
+        GLOBAL   = 6,
+        EXPORT   = 7,
+        START    = 8,
+        ELEMENT  = 9,
+        CODE     = 10,
+        DATA     = 11
+        }
+
 enum IRType {
     CODE,          /// Simple instruction with no argument
     BLOCK,         /// Block instruction
@@ -482,20 +497,6 @@ static string indexName(const IndexType idx) pure {
     }
 }
 
-enum Section : ubyte {
-    CUSTOM   = 0,
-        TYPE     = 1,
-        IMPORT   = 2,
-        FUNCTION = 3,
-        TABLE    = 4,
-        MEMORY   = 5,
-        GLOBAL   = 6,
-        EXPORT   = 7,
-        START    = 8,
-        ELEMENT  = 9,
-        CODE     = 10,
-        DATA     = 11
-        }
 
 T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
     size_t byte_size;
