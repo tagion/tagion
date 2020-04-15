@@ -38,90 +38,89 @@ struct Wdisasm {
     //     return flag;
     // }
 
-    alias WasmSection=WasmReader.WasmRange.WasmSection;
-    //alias Section=Section;
+    // alias WasmSection=WasmReader.WasmRange.WasmSection;
+    // //alias Section=Section;
 
-    static string secname(immutable Section s) {
-        import std.exception : assumeUnique;
-        return assumeUnique(format("%s_sec", toLower(s.to!string)));
-    }
+    // static string secname(immutable Section s) {
+    //     import std.exception : assumeUnique;
+    //     return assumeUnique(format("%s_sec", toLower(s.to!string)));
+    // }
 
 
-    alias Module=Tuple!(
-        const(WasmSection.Custom)*,   secname(Section.CUSTOM),
-        const(WasmSection.Type)*,     secname(Section.TYPE),
-        const(WasmSection.Import)*,   secname(Section.IMPORT),
-        const(WasmSection.Function)*, secname(Section.FUNCTION),
-        const(WasmSection.Table)*,    secname(Section.TABLE),
-        const(WasmSection.Memory)*,   secname(Section.MEMORY),
-        const(WasmSection.Global)*,   secname(Section.GLOBAL),
-        const(WasmSection.Export)*,   secname(Section.EXPORT),
-        const(WasmSection.Start)*,    secname(Section.START),
-        const(WasmSection.Element)*,  secname(Section.ELEMENT),
-        const(WasmSection.Code)*,     secname(Section.CODE),
-        const(WasmSection.Data)*,     secname(Section.DATA),
-        );
+    // alias Module=Tuple!(
+    //     const(WasmSection.Custom)*,   secname(Section.CUSTOM),
+    //     const(WasmSection.Type)*,     secname(Section.TYPE),
+    //     const(WasmSection.Import)*,   secname(Section.IMPORT),
+    //     const(WasmSection.Function)*, secname(Section.FUNCTION),
+    //     const(WasmSection.Table)*,    secname(Section.TABLE),
+    //     const(WasmSection.Memory)*,   secname(Section.MEMORY),
+    //     const(WasmSection.Global)*,   secname(Section.GLOBAL),
+    //     const(WasmSection.Export)*,   secname(Section.EXPORT),
+    //     const(WasmSection.Start)*,    secname(Section.START),
+    //     const(WasmSection.Element)*,  secname(Section.ELEMENT),
+    //     const(WasmSection.Code)*,     secname(Section.CODE),
+    //     const(WasmSection.Data)*,     secname(Section.DATA),
+    //     );
 
-    alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
+    // alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
 
-    interface InterfaceModule {
-        void custom_sec(ref scope const(Module) mod);
-        void type_sec(ref scope const(Module) mod);
-        void import_sec(ref scope const(Module) mod);
-        void function_sec(ref scope const(Module) mod);
-        void table_sec(ref scope const(Module) mod);
-        void memory_sec(ref scope const(Module) mod);
-        void global_sec(ref scope const(Module) mod);
-        void export_sec(ref scope const(Module) mod);
-        void start_sec(ref scope const(Module) mod);
-        void element_sec(ref scope const(Module) mod);
-        void code_sec(ref scope const(Module) mod);
-        void data_sec(ref scope const(Module) mod);
-    }
+    // interface InterfaceModule {
+    //     void custom_sec(ref scope const(Module) mod);
+    //     void type_sec(ref scope const(Module) mod);
+    //     void import_sec(ref scope const(Module) mod);
+    //     void function_sec(ref scope const(Module) mod);
+    //     void table_sec(ref scope const(Module) mod);
+    //     void memory_sec(ref scope const(Module) mod);
+    //     void global_sec(ref scope const(Module) mod);
+    //     void export_sec(ref scope const(Module) mod);
+    //     void start_sec(ref scope const(Module) mod);
+    //     void element_sec(ref scope const(Module) mod);
+    //     void code_sec(ref scope const(Module) mod);
+    //     void data_sec(ref scope const(Module) mod);
+    // }
 
-    shared static unittest {
-        import std.traits : Unqual;
-        import std.meta : staticMap;
-        alias NoPtrModule=staticMap!(PointerTarget, Module.Types);
-        alias unqualModule=staticMap!(Unqual, NoPtrModule);
-        static assert(is(unqualModule == WasmSection.Sections));
-    }
+    // shared static unittest {
+    //     import std.traits : Unqual;
+    //     import std.meta : staticMap;
+    //     alias NoPtrModule=staticMap!(PointerTarget, Module.Types);
+    //     alias unqualModule=staticMap!(Unqual, NoPtrModule);
+    //     static assert(is(unqualModule == WasmSection.Sections));
+    // }
 
-    @trusted
-    void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
-        scope Module mod;
-        Section previous_sec;
-        foreach(a; wasm[]) {
-            with(Section) {
-                check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
-                    previous_sec=a.section;
-                    final switch(a.section) {
-                        foreach(E; EnumMembers!(Section)) {
-                        case E:
-                            const sec=a.sec!E;
-                            mod[E]=&sec;
-                            static if (is(T==ModuleIterator)) {
-                                iter(a.section, mod);
-                            }
-                            else {
-                                enum code=format(q{iter.%s(mod);}, secname(E));
-                                mixin(code);
-                            }
-                            break;
-                        }
-                    }
-            }
-        }
-    }
+
+    // @trusted
+    // void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
+    //     scope Module mod;
+    //     Section previous_sec;
+    //     foreach(a; wasm[]) {
+    //         with(Section) {
+    //             final switch(a.section) {
+    //                 foreach(E; EnumMembers!(Section)) {
+    //                 case E:
+    //                     const sec=a.sec!E;
+    //                     mod[E]=&sec;
+    //                     static if (is(T==ModuleIterator)) {
+    //                         iter(a.section, mod);
+    //                     }
+    //                     else {
+    //                         enum code=format(q{iter.%s(mod);}, secname(E));
+    //                         mixin(code);
+    //                     }
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 
-WastT!Output Wast(Output)(Wdisasm dasm, Output output) {
-    return new WastT!Output(dasm, output);
+WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) { // if (is(WasmStream == WasmReader)) {
+    return new WastT!(Output)(wasmreader, output);
 }
 
-class WastT(Output) : Wdisasm.InterfaceModule {
-    alias Module=Wdisasm.Module;
+class WastT(Output) : WasmReader.InterfaceModule {
+    alias Module=WasmReader.Module;
     alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
     // alias Section=WasmReader.Section;
@@ -138,14 +137,14 @@ class WastT(Output) : Wdisasm.InterfaceModule {
 
     protected {
         Output output;
-        Wdisasm dasm;
+        WasmReader wasmstream;
         string indent;
         string spacer;
     }
 
-    this(Wdisasm dasm, Output output, string spacer="  ") { //static if (isOutputRange!Ouput) {
+    this(WasmReader wasmstream, Output output, string spacer="  ") { //static if (isOutputRange!Ouput) {
         this.output=output;
-        this.dasm=dasm;
+        this.wasmstream=wasmstream;
         this.spacer=spacer;
     }
 
@@ -431,7 +430,7 @@ class WastT(Output) : Wdisasm.InterfaceModule {
         scope(exit) {
             output.writeln(")");
         }
-        dasm(this);
+        wasmstream(this);
         return output;
     }
 }
@@ -461,8 +460,8 @@ unittest {
     string filename="../tests/wasm/data_4.wasm";
     immutable code=fread(filename);
     auto wasm=WasmReader(code);
-    auto dasm=Wdisasm(wasm);
-    Wast(dasm, stdout).serialize();
+//    auto dasm=Wdisasm(wasm);
+    Wast(wasm, stdout).serialize();
 //    auto output=Wast
 
 }

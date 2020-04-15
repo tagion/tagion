@@ -33,12 +33,12 @@ class WasmWriter {
 
     Module mod;
 //    const(WasmReader) reader;
-    // this(ref const(WasmReader) reader) pure {
-    //     this.reader=reader;
-    // }
+    this(ref const(WasmReader) reader) pure {
+        auto loader=new WasmLoader;
+        //reader(loader);
+//        this.reader=reader;
+    }
 
-    pragma(msg, "WasmLoader.custom_sec=", typeof(WasmLoader.custom_sec));
-    pragma(msg, "WasmReader.InterfaceModule=", WasmReader.InterfaceModule);
     class WasmLoader : WasmReader.InterfaceModule {
 
         alias SecType(Section sec)=Unqual!(PointerTarget!(Unqual!(Module.Types[sec])));
@@ -91,11 +91,7 @@ class WasmWriter {
         }
 
         final void start_sec(ref scope const(ReaderModule) reader_mod) {
-            pragma(msg, "*reader_mod[Section.START]", typeof(*(reader_mod[Section.START])));
-            pragma(msg, "mod[Section.START]=", typeof(mod[Section.START]));
-            pragma(msg, "Start=", WasmSection.Start);
             mod[Section.START]=new WasmSection.Start(*reader_mod[Section.START]);
-//            xmod[Section.START.start_sec=Module[Section.START](*mod.start_sec);
         }
 
 
@@ -258,8 +254,6 @@ class WasmWriter {
             size_t guess_size() const pure nothrow {
                 if (sectypes.length>0) {
                     static if (hasMember!(SecType, "guess_size")) {
-                        pragma(msg, typeof(sectypes.map!(s => s.guess_size())));
-                        pragma(msg, typeof(sectypes.map!(s => s.guess_size()).sum));
                         return sectypes.map!(s => s.guess_size()).sum+uint.sizeof;
                     }
                     else {
@@ -289,8 +283,6 @@ class WasmWriter {
             size_t guess_size() const pure nothrow {
                 return name.length+bytes.length+uint.sizeof*2;
             }
-            //alias ReaderSecType=ReaderModuleSecType!(Section.CUSTOM);
-            pragma(msg, ">>ReaderSecType!(Section.CUSTOM)=", ReaderSecType!(Section.CUSTOM));
             this(ReaderSecType!(Section.CUSTOM) s) {
                 name=s.name;
             }
@@ -306,7 +298,6 @@ class WasmWriter {
             size_t guess_size() const pure nothrow {
                 return params.length+results.length+uint.sizeof*2+Types.sizeof;
             }
-            pragma(msg, ">>ReaderSecType!(Section.TYPE)=", ReaderSecType!(Section.TYPE));
             this(ref const(ReaderSecType!(Section.TYPE)) s) {
                 type=s.type;
                 params=s.params;
@@ -460,7 +451,6 @@ class WasmWriter {
             }
 
             this(ref const(ReaderImportType) s) {
-                pragma(msg, "ReaderImportType=", ReaderImportType);
                 auto x=s.mod;
                 writefln("this.mod=%s", this.mod);
                 this.mod=s.mod;
@@ -551,8 +541,6 @@ class WasmWriter {
 
         struct Start {
             uint idx;
-//            alias ReaderStartType=WasmReader.Module[Section.START];
-            pragma(msg, "START ", Unqual!(PointerTarget!(ReaderModule.Types[Section.START]))); //.Module[Section.START]);
             alias ReaderStartType=Unqual!(PointerTarget!(ReaderModule.Types[Section.START])); //WasmReader.Module[Section.START];
 
             this(ref const(ReaderStartType) s) {
@@ -639,7 +627,7 @@ unittest {
     immutable read_data=fread(filename);
     auto wasm_reader=WasmReader(read_data);
     //auto dasm=Wdisasm(wasm_reader);
-    // auto wasm_writer=WasmWriter(wasm_reader);
+    //auto wasm_writer=WasmWriter(wasm_reader);
     // immutable writer_data=wasm_writer.serialize;
 
     // auto dasm_writer=Wdisasm(writer_data);

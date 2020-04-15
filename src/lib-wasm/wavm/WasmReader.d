@@ -7,7 +7,7 @@ import wavm.WasmBase;
 
 import std.stdio;
 import std.meta : AliasSeq;
-import std.traits : EnumMembers, getUDAs, Unqual;
+import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget;
 //import std.range : InputRange;
 
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
@@ -46,6 +46,39 @@ struct WasmReader {
     alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
 
     alias InterfaceModule=InterfaceModuleT!(Module);
+
+    shared static unittest {
+        import std.traits : Unqual;
+        import std.meta : staticMap;
+        alias NoPtrModule=staticMap!(PointerTarget, Module.Types);
+        alias unqualModule=staticMap!(Unqual, NoPtrModule);
+        static assert(is(unqualModule == WasmRange.WasmSection.Sections));
+    }
+
+    @trusted
+    void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
+        scope Module mod;
+        Section previous_sec;
+        foreach(a; opSlice) {
+            with(Section) {
+                final switch(a.section) {
+                    foreach(E; EnumMembers!(Section)) {
+                    case E:
+                        const sec=a.sec!E;
+                        mod[E]=&sec;
+                        static if (is(T==ModuleIterator)) {
+                            iter(a.section, mod);
+                        }
+                        else {
+                            enum code=format(q{iter.%s(mod);}, secname(E));
+                            mixin(code);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     struct Limit {
         Limits lim;
