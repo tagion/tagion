@@ -2,7 +2,7 @@ module wavm.Wdisasm;
 
 import std.format;
 import std.stdio;
-import std.traits : EnumMembers;
+import std.traits : EnumMembers, PointerTarget;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import std.conv : to;
@@ -80,15 +80,9 @@ struct Wdisasm {
     }
 
     shared static unittest {
-        template NoPtr(T) {
-            T x;
-            alias NoPtr=typeof(x[0]);
-        }
-
-
         import std.traits : Unqual;
         import std.meta : staticMap;
-        alias NoPtrModule=staticMap!(NoPtr, Module.Types);
+        alias NoPtrModule=staticMap!(PointerTarget, Module.Types);
         alias unqualModule=staticMap!(Unqual, NoPtrModule);
         static assert(is(unqualModule == WasmSection.Sections));
     }

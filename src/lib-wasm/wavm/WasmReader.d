@@ -55,15 +55,17 @@ struct WasmReader {
             lim=cast(Limits)data[index];
             index+=Limits.sizeof;
             from=u32(data, index);
-            with(Limits) {
-                final switch(lim) {
-                case INFINITE:
-                    to=to.max;
-                    break;
-                case RANGE:
-                    to=u32(data, index);
+            const uint get_to(const uint lim) {
+                with(Limits) {
+                    final switch(lim) {
+                    case INFINITE:
+                        return to.max;
+                    case RANGE:
+                        return u32(data, index);
+                    }
                 }
             }
+            to=get_to(lim);
         }
     }
 
@@ -684,7 +686,7 @@ struct WasmReader {
                     }
                 }
 
-                LocalRange locals() {
+                LocalRange locals() const {
                     return LocalRange(data);
                 }
 
