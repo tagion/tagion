@@ -37,6 +37,8 @@ class WasmWriter {
     //     this.reader=reader;
     // }
 
+    pragma(msg, "WasmLoader.custom_sec=", typeof(WasmLoader.custom_sec));
+    pragma(msg, "WasmReader.InterfaceModule=", WasmReader.InterfaceModule);
     class WasmLoader : WasmReader.InterfaceModule {
 
         alias SecType(Section sec)=Unqual!(PointerTarget!(Unqual!(Module.Types[sec])));
@@ -45,46 +47,85 @@ class WasmWriter {
             auto _reader_sec=*reader_mod[sec];
             if (!_reader_sec[].empty) {
                 alias ModT=Module.Types[sec];
-                pragma(msg, ModT);
                 alias ModuleType=SecType!sec; //Unqual!(PointerTarget!(Module.Types[sec]));
                 alias SectionElement=TemplateArgsOf!(ModuleType);
-                pragma(msg, "ModuleType=", ModuleType); //Unqual!(PointerTarget!(Module.Types[sec])));
                 auto _sec=new SecType!sec; //PointerTarget!(Module.Types[sec]);
-                pragma(msg, typeof(_sec));
                 mod[sec]=_sec;
                 //static if (is(Module[sec] : Section!SecType, SecType)) {
-                pragma(msg, ReaderSecType!sec);
-                pragma(msg, "SecType!sec=",SecType!sec);
-                pragma(msg, "SecElement!(sec)=", SecElement!(sec));
                 foreach(s; _reader_sec[]) {
-                    pragma(msg, "typeof(c)=",typeof(s)," ", typeof(_reader_sec[]), " ",
-                        typeof(_reader_sec[].front), " ", typeof(_sec.sectypes));
-                    pragma(msg, "XX ", typeof(_sec));
                     _sec.sectypes~=SecElement!(sec)(s); //.name, c.bytes);
                 }
-                // }
-                // else {
-                //     static assert(0, format("The type %s does not have a SecType", Module[sec].stringof));
-
-                // }
             }
         }
 
-        alias custom_sec=section_secT!(Section.CUSTOM);
-        alias type_sec=section_secT!(Section.TYPE);
-        alias import_sec=section_secT!(Section.IMPORT);
-        alias function_sec=section_secT!(Section.FUNCTION);
-        alias table_sec=section_secT!(Section.TABLE);
-        alias memory_sec=section_secT!(Section.MEMORY);
-        alias global_sec=section_secT!(Section.GLOBAL);
-        alias export_sec=section_secT!(Section.EXPORT);
+        final void custom_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.CUSTOM)(reader_mod);
+        }
 
-        void start_sec(ref scope const(ReaderModule) mod) {
+        final void type_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.TYPE)(reader_mod);
+        }
+
+        final void import_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.IMPORT)(reader_mod);
+        }
+
+        final void function_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.FUNCTION)(reader_mod);
+        }
+
+        final void table_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.TABLE)(reader_mod);
+        }
+
+        final void memory_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.TABLE)(reader_mod);
+        }
+
+        final void global_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.GLOBAL)(reader_mod);
+        }
+
+        final void export_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.EXPORT)(reader_mod);
+        }
+
+        final void start_sec(ref scope const(ReaderModule) reader_mod) {
+            pragma(msg, "*reader_mod[Section.START]", typeof(*(reader_mod[Section.START])));
+            pragma(msg, "mod[Section.START]=", typeof(mod[Section.START]));
+            pragma(msg, "Start=", WasmSection.Start);
+            mod[Section.START]=new WasmSection.Start(*reader_mod[Section.START]);
 //            xmod[Section.START.start_sec=Module[Section.START](*mod.start_sec);
         }
 
-        alias code_sec=section_secT!(Section.CODE);
-        alias data_sec=section_secT!(Section.DATA);
+
+        final void element_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.ELEMENT)(reader_mod);
+        }
+
+        final void code_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.CODE)(reader_mod);
+        }
+
+        final void data_sec(ref scope const(ReaderModule) reader_mod) {
+            section_secT!(Section.DATA)(reader_mod);
+        }
+
+// //        alias custom_sec=section_secT!(Section.CUSTOM);
+//         alias type_sec=section_secT!(Section.TYPE);
+//         alias import_sec=section_secT!(Section.IMPORT);
+//         alias function_sec=section_secT!(Section.FUNCTION);
+//         alias table_sec=section_secT!(Section.TABLE);
+//         alias memory_sec=section_secT!(Section.MEMORY);
+//         alias global_sec=section_secT!(Section.GLOBAL);
+//         alias export_sec=section_secT!(Section.EXPORT);
+
+//         void start_sec(ref scope const(ReaderModule) mod) {
+// //            xmod[Section.START.start_sec=Module[Section.START](*mod.start_sec);
+//         }
+
+//         alias code_sec=section_secT!(Section.CODE);
+//         alias data_sec=section_secT!(Section.DATA);
 
     }
 
