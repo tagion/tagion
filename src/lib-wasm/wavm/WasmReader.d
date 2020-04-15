@@ -281,8 +281,8 @@ struct WasmReader {
                         }
                     }
                     struct GlobalDesc {
-                        Mutable mut;
                         Types   type;
+                        Mutable mut;
                         this(immutable(ubyte[]) data, ref size_t index) {
                             type=cast(Types)data[index];
                             index+=Types.sizeof;
@@ -411,7 +411,7 @@ struct WasmReader {
                     size=index;
                 }
 
-                ExprRange opSlice() {
+                ExprRange opSlice() const {
                     return ExprRange(expr);
                 }
             }
@@ -470,7 +470,7 @@ struct WasmReader {
                     size=index;
                 }
 
-                ExprRange opSlice() {
+                ExprRange opSlice() const {
                     return ExprRange(expr);
                 }
             }
@@ -766,7 +766,7 @@ struct WasmReader {
                     }
                 }
 
-                ExprRange opSlice() {
+                ExprRange opSlice() const {
                     scope range=LocalRange(data);
                     while(!range.empty) {
                         range.popFront;
@@ -810,7 +810,7 @@ struct WasmReader {
                     size=index;
                 }
 
-                ExprRange opSlice() {
+                ExprRange opSlice() const {
                     return ExprRange(expr);
                 }
             }
