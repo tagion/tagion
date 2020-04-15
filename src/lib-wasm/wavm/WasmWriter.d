@@ -16,7 +16,7 @@ import std.stdio;
 import wavm.LEB128 : encode;
 import wavm.WasmBase;
 import wavm.WasmReader;
-import wavm.Wdisasm;
+//import wavm.Wdisasm;
 
 @safe
 class WasmWriter {
