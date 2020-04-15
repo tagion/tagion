@@ -33,10 +33,17 @@ class WasmWriter {
 
     Module mod;
 //    const(WasmReader) reader;
-    this(ref const(WasmReader) reader) pure {
+    this(ref const(WasmReader) reader) {
         auto loader=new WasmLoader;
-        //reader(loader);
+        debug writefln("Before loader");
+        reader(loader);
+        //this.opCall(reader);
+//        reader(loader);
 //        this.reader=reader;
+    }
+
+    static WasmWriter opCall(ref const(WasmReader) reader) {
+        return new WasmWriter(reader);
     }
 
     class WasmLoader : WasmReader.InterfaceModule {
@@ -44,8 +51,10 @@ class WasmWriter {
         alias SecType(Section sec)=Unqual!(PointerTarget!(Unqual!(Module.Types[sec])));
         alias SecElement(Section sec)=TemplateArgsOf!(SecType!sec)[0];
         void section_secT(Section sec)(ref scope const(ReaderModule) reader_mod) {
+            if (reader_mod[sec] !is null) {
             auto _reader_sec=*reader_mod[sec];
             if (!_reader_sec[].empty) {
+                writefln("%s _reader_sec=%s", sec, _reader_sec.data);
                 alias ModT=Module.Types[sec];
                 alias ModuleType=SecType!sec; //Unqual!(PointerTarget!(Module.Types[sec]));
                 alias SectionElement=TemplateArgsOf!(ModuleType);
@@ -55,6 +64,7 @@ class WasmWriter {
                 foreach(s; _reader_sec[]) {
                     _sec.sectypes~=SecElement!(sec)(s); //.name, c.bytes);
                 }
+            }
             }
         }
 
@@ -79,6 +89,7 @@ class WasmWriter {
         }
 
         final void memory_sec(ref scope const(ReaderModule) reader_mod) {
+            writefln("MEMORY_SEC");
             section_secT!(Section.TABLE)(reader_mod);
         }
 
@@ -106,37 +117,18 @@ class WasmWriter {
         final void data_sec(ref scope const(ReaderModule) reader_mod) {
             section_secT!(Section.DATA)(reader_mod);
         }
-
-// //        alias custom_sec=section_secT!(Section.CUSTOM);
-//         alias type_sec=section_secT!(Section.TYPE);
-//         alias import_sec=section_secT!(Section.IMPORT);
-//         alias function_sec=section_secT!(Section.FUNCTION);
-//         alias table_sec=section_secT!(Section.TABLE);
-//         alias memory_sec=section_secT!(Section.MEMORY);
-//         alias global_sec=section_secT!(Section.GLOBAL);
-//         alias export_sec=section_secT!(Section.EXPORT);
-
-//         void start_sec(ref scope const(ReaderModule) mod) {
-// //            xmod[Section.START.start_sec=Module[Section.START](*mod.start_sec);
-//         }
-
-//         alias code_sec=section_secT!(Section.CODE);
-//         alias data_sec=section_secT!(Section.DATA);
-
     }
 
-    // static WasmWriter opCall(ref const(WasmReader) reader) pure {
-    //     return new WasmWriter(reader);
-    // }
 
     immutable(ubyte[]) serialize() const {
-        OutBuffer[EnumMembers!Section.length] buffers;
+        scope OutBuffer[EnumMembers!Section.length] buffers;
         scope(exit) {
             buffers=null;
         }
         size_t output_size;
         foreach(E; EnumMembers!Section) {
             if (mod[E] !is null) {
+                buffers[E]=new OutBuffer;
                 mod[E].serialize(buffers[E]);
                 output_size+=buffers[E].offset+uint.sizeof+Section.sizeof;
             }
@@ -150,7 +142,7 @@ class WasmWriter {
                 output.write(b);
             }
         }
-        auto output_result=new OutBuffer;
+        scope output_result=new OutBuffer;
         output_result.reserve(output_size+magic.length+wasm_version.length+uint.sizeof);
         output_result.write(magic);
         output_result.write(wasm_version);
@@ -160,23 +152,27 @@ class WasmWriter {
     }
 
     @trusted
-    void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
-        scope Module mod;
+    void opCall(T)(T reader) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
+        //scope Module mod;
         Section previous_sec;
+        writefln("WasmWriter opCall");
         foreach(a; reader[]) {
-            with(WasmReader.Section) {
+            writefln("a=%s", a);
+            with(Section) {
                 check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
                 previous_sec=a.section;
                 final switch(a.section) {
-                    foreach(E; EnumMembers!(WasmReader.Section)) {
+                    foreach(E; EnumMembers!(Section)) {
                     case E:
                         const sec=a.sec!E;
-                        xmod[E]=&sec;
+                        pragma(msg, E, " ", typeof(sec));
+                        pragma(msg, E, ":", typeof(mod[E]));
+                        mod[E]=&sec;
                         static if (is(T==ModuleIterator)) {
                                 iter(a.section, xmod);
                         }
                         else {
-                            enum code=format(q{iter.%s(xmod);}, secname(E));
+                            enum code=format(q{reader.%s(xmod);}, secname(E));
                             mixin(code);
                         }
                         break;
@@ -626,6 +622,10 @@ unittest {
     string filename="../tests/wasm/data_4.wasm";
     immutable read_data=fread(filename);
     auto wasm_reader=WasmReader(read_data);
+    writefln("wasm_reader.serialize=%s", wasm_reader.serialize);
+    auto wasm_writer=WasmWriter(wasm_reader);
+    writeln("wasm_writer.serialize");
+    writefln("wasm_writer.serialize=%s", wasm_writer.serialize);
     //auto dasm=Wdisasm(wasm_reader);
     //auto wasm_writer=WasmWriter(wasm_reader);
     // immutable writer_data=wasm_writer.serialize;

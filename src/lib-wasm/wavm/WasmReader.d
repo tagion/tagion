@@ -56,7 +56,7 @@ struct WasmReader {
     }
 
     @trusted
-    void opCall(T)(T iter) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
+    void opCall(T)(T iter) const if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
         scope Module mod;
         Section previous_sec;
         foreach(a; opSlice) {
@@ -120,7 +120,7 @@ struct WasmReader {
         }
     }
 
-    WasmRange opSlice() {
+    WasmRange opSlice() const {
         return WasmRange(data);
     }
 
