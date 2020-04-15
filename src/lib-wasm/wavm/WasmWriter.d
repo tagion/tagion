@@ -7,7 +7,7 @@ import std.typecons : Tuple;
 import std.format;
 import std.algorithm.iteration : each, map, sum, fold, filter;
 import std.range.primitives : isInputRange;
-import std.traits : Unqual, TemplateArgsOf, PointerTarget;
+import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
 import std.exception : assumeUnique;
 import std.range : lockstep;
 
@@ -90,7 +90,7 @@ class WasmWriter {
 
         final void memory_sec(ref scope const(ReaderModule) reader_mod) {
             writefln("MEMORY_SEC");
-            section_secT!(Section.TABLE)(reader_mod);
+            section_secT!(Section.MEMORY)(reader_mod);
         }
 
         final void global_sec(ref scope const(ReaderModule) reader_mod) {
@@ -129,26 +129,39 @@ class WasmWriter {
         foreach(E; EnumMembers!Section) {
             if (mod[E] !is null) {
                 buffers[E]=new OutBuffer;
-                mod[E].serialize(buffers[E]);
+                //buffers[E].write(cast(ubyte)E);
+                mod[E].serialize(buffers[E]);//tmp_bout); //buffers[E]);
+                // {
+                //     scope tmp_bout=new OutBuffer;
+                //     mod[E].serialize(tmp_bout); //buffers[E]);
+                //     buffers[E].write(encode(tmp_bout.offset));
+                //     buffers[E].write(tmp_bout);
+                // }
+                writefln("buffers[%s]=%s", E, buffers[E].toBytes);
                 output_size+=buffers[E].offset+uint.sizeof+Section.sizeof;
             }
         }
         auto output=new OutBuffer;
+        output_size+=magic.length+wasm_version.length;
         output.reserve(output_size);
+        output.write(magic);
+        output.write(wasm_version);
         foreach(sec, b; buffers) {
             if (b !is null) {
-                output.write(sec);
+                output.write(cast(ubyte)sec);
                 output.write(encode(b.offset));
                 output.write(b);
+                writefln("output[%s]=%s", sec, output.toBytes);
             }
         }
-        scope output_result=new OutBuffer;
-        output_result.reserve(output_size+magic.length+wasm_version.length+uint.sizeof);
-        output_result.write(magic);
-        output_result.write(wasm_version);
-        output_result.write(encode(output.offset));
-        output_result.write(output.offset);
-        return output_result.toBytes.idup;
+        // scope output_result=new OutBuffer;
+        // output_result.reserve(output_size+magic.length+wasm_version.length+uint.sizeof);
+        // output_result.write(magic);
+        // output_result.write(wasm_version);
+        // output_result.write(encode(output.offset));
+        // output_result.write(output.offset);
+        writefln("result=%s", output.toBytes);
+        return output.toBytes.idup;
     }
 
     @trusted
@@ -185,13 +198,24 @@ class WasmWriter {
     struct WasmSection {
         mixin template Serialize() {
             void serialize(ref OutBuffer bout) const {
-                static if (hasMember!(typeof(this),  "guess_size")) {
+                alias MainType=typeof(this);
+                static if (hasMember!(MainType,  "guess_size")) {
                     bout.reserve(guess_size);
                 }
+
                 foreach(i, m; this.tupleof) {
+                    // {
+                    //     enum code=format("alias member=ty.%s;", m);
+                    // }
+                    //pragma(msg, "code ", code);
+                    //mixin(code);
+
                     //enum name=basename!(this.tupleof[i]);
                     alias T=typeof(m);
-
+                    //pragma(msg, );
+                    pragma(msg, getUDAs!(m, Section));
+                    pragma(msg, getUDAs!(this.tupleof[i], Section));
+                    //pragma(msg, getUDAs!(T));
                     static if (is(T==struct) || is(T==class)) {
                         m.serialize(bout);
                     }
@@ -206,7 +230,11 @@ class WasmWriter {
                             bout.write(nativeToLittleEndian(m));
                         }
                         else static if (is(T: U[], U)) {
-                            bout.write(encode(m.length));
+                            alias spec=getUDAs!(this.tupleof[i], Section);
+                            static if ((spec.length == 0) || (spec[0] !is Section.CODE)) {
+                                // Check to avoid addinh the length for an expression
+                                bout.write(encode(m.length));
+                            }
                             static if (U.sizeof == 1) {
                                 bout.write(cast(const(ubyte[]))m);
                             }
@@ -214,9 +242,11 @@ class WasmWriter {
                                 m.each!((e) => bout.write(encode(e)));
                             }
                             else static if (hasMember!(U,  "serialize")) {
+                                writefln("serialize %s m.length=%d", m, m.length);
                                 foreach(e; m) {
                                     e.serialize(bout);
                                 }
+                                writefln("bout=%s", bout.toBytes);
                             }
                             else {
                                 static assert(0, format("Array type %s is not supported", T.stringof));
@@ -239,7 +269,21 @@ class WasmWriter {
                 from=l.from;
                 to=l.to;
             }
-            mixin Serialize;
+            void serialize(ref OutBuffer bout) const {
+                bout.write(cast(ubyte)lim);
+                bout.write(encode(from));
+                with(Limits) {
+                    final switch(lim) {
+                    case INFINITE:
+                        // Empty
+                        break;
+                    case RANGE:
+                        bout.write(encode(to));
+                        break;
+                    }
+                }
+            }
+            //mixin Serialize;
         }
 
         struct SectionT(SecType) {
@@ -500,6 +544,7 @@ class WasmWriter {
             Limit limit;
             this(ref const(ReaderSecType!(Section.MEMORY)) m) {
                 limit=Limit(m.limit);
+                writefln("MemoryType %s", this);
             }
             mixin Serialize;
         }
@@ -508,7 +553,7 @@ class WasmWriter {
 
         struct GlobalType {
             ImportType.ImportDesc.GlobalDesc global;
-            immutable(ubyte)[] expr;
+            @Section(Section.CODE) immutable(ubyte)[] expr;
             this(ref const(ReaderSecType!(Section.GLOBAL)) g) {
                 global=ImportType.ImportDesc.GlobalDesc(g.global);
                 expr=expr;
@@ -547,7 +592,7 @@ class WasmWriter {
 
         struct ElementType {
             uint    tableidx;
-            immutable(ubyte)[] expr;
+            @Section(Section.CODE) immutable(ubyte)[] expr;
             immutable(uint)[]  funcs;
             this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
                 tableidx=e.tableidx;
@@ -583,7 +628,7 @@ class WasmWriter {
 
         struct DataType {
             uint idx;
-            immutable(ubyte)[] expr;
+            @Section(Section.CODE) immutable(ubyte)[] expr;
             string  base; // init value
             this(ref const(ReaderSecType!(Section.DATA)) d) {
                 idx=d.idx;
@@ -635,3 +680,9 @@ unittest {
 //    auto output=Wast
 
 }
+
+
+/+
+[0, 97, 115, 109, 1, 0, 0, 0, 5, 3, 1, 0, 1, 11, 34, 5, 0, 65, 0, 11, 1, 97, 0, 65, 3, 11, 1, 98, 0, 65, 228, 0, 11, 3, 99, 100, 101, 0, 65, 5, 11, 1, 120, 0, 65, 3, 11, 1, 99]
+[0, 97, 115, 109, 1, 0, 0, 0, 5, 3, 1, 0, 1, 11, 39, 5, 0, 3, 65, 0, 11, 1, 97, 0, 3, 65, 3, 11, 1, 98, 0, 4, 65, 228, 0, 11, 3, 99, 100, 101, 0, 3, 65, 5, 11, 1, 120, 0, 3, 65, 3, 11, 1, 99]
++/
