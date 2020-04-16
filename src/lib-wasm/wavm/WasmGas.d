@@ -129,7 +129,16 @@ struct WasmGas {
         CodeType code_type;
         {
             scope out_expr=new OutBuffer;
-            WasmExpr(out_expr)(IR.GLOBAL_SET, global_idx)(IR.END);
+            WasmExpr(out_expr)
+                (IR.GLOBAL_GET, global_idx)
+                //       (IR.BLOCK)
+                (IR.I32_EQ)
+                (IR.IF, Types.EMPTY)
+                (IR.GLOBAL_SET, global_idx)
+                (IR.ELSE)
+                (IR.UNREACHABLE)
+                (IR.END)
+                (IR.END);
             immutable expr=out_expr.toBytes.idup;
             code_type=CodeType(null, expr);
         }

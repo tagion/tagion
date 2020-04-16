@@ -243,6 +243,9 @@ enum IR : ubyte {
 
 shared static  immutable(Instr[IR]) instrTable;
 
+pragma(msg, "fixme(cbr) IR.ELSE should be in a seperate groupe");
+//pragma(msg, "fixme(cbr) IR.IF should be in a seperate groupe");
+
 shared static this() {
     with(IR) {
         instrTable = [
@@ -250,9 +253,9 @@ shared static this() {
             NOP                 : Instr("nop", 1, IRType.CODE),
             BLOCK               : Instr("block", 0, IRType.BLOCK),
             LOOP                : Instr("loop", 0, IRType.BLOCK),
-            IF                  : Instr("if", 1, IRType.CODE),
+            IF                  : Instr("if", 1, IRType.BLOCK),
 
-            ELSE                : Instr("else", 0, IRType.END),
+            ELSE                : Instr("else", 1, IRType.CODE),
             END                 : Instr("end", 0, IRType.END),
             BR                  : Instr("br", 1, IRType.BRANCH),
             BR_IF               : Instr("br_if", 1, IRType.BRANCH),
