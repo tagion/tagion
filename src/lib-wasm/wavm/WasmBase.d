@@ -124,7 +124,7 @@ enum IR : ubyte {
         I64_LT_U            = 0x54, ///  i64.lt_u
         I64_GT_S            = 0x55, ///  i64.gt_s
         I64_GT_U            = 0x56, ///  i64.gt_u
-        i64_le_s            = 0x57, ///  i64.le_s
+        I64_LE_S            = 0x57, ///  i64.le_s
         I64_LE_U            = 0x58, ///  i64.le_u
         I64_GE_S            = 0x59, ///  i64.ge_s
         I64_GE_U            = 0x5A, ///  i64.ge_u
@@ -322,7 +322,7 @@ shared static this() {
             I64_LT_U            : Instr("i64.lt_u", 1, IRType.CODE),
             I64_GT_S            : Instr("i64.gt_s", 1, IRType.CODE),
             I64_GT_U            : Instr("i64.gt_u", 1, IRType.CODE),
-            i64_le_s            : Instr("i64.le_s", 1, IRType.CODE),
+            I64_LE_S            : Instr("i64.le_s", 1, IRType.CODE),
             I64_LE_U            : Instr("i64.le_u", 1, IRType.CODE),
             I64_GE_S            : Instr("i64.ge_s", 1, IRType.CODE),
             I64_GE_U            : Instr("i64.ge_u", 1, IRType.CODE),

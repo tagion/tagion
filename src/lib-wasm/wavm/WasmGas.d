@@ -9,6 +9,8 @@ import std.traits : Unqual, TemplateArgsOf, PointerTarget, EnumMembers;
 import std.meta : staticMap;
 
 struct WasmGas {
+    enum set_gas_gauge="$set_gas_gauge";
+    enum read_gas_gauge="$read_gas_gauge";
     protected WasmWriter writer;
 
     this(ref WasmWriter writer) {
@@ -24,6 +26,7 @@ struct WasmGas {
     alias FuncType=WasmWriter.WasmSection.FuncType;
     alias Index=WasmWriter.WasmSection.Index;
     alias CodeType=WasmWriter.WasmSection.CodeType;
+    alias ExportType=WasmWriter.WasmSection.ExportType;
 
 
 //     alias X=staticMap!(PointerTarget, WasmWriter.Module.Types);
@@ -77,30 +80,6 @@ struct WasmGas {
     pragma(msg, "asType ", WasmWriter.asType!(Global));
 
     void modify() {
-        // const uint inject_global() {
-        //     GlobalType global_type;
-        //     {
-        //         scope out_expr=new OutBuffer;
-        //         WasmExpr(out_expr)(IR.I64_CONST, 0)(IR.END);
-        //         GlobalDesc global_desc=GlobalDesc(Types.I64, Mutable.VAR);
-        //         immutable expr=out_expr.toBytes.idup;
-        //         global_type=GlobalType(global_desc, expr);
-        //     }
-
-        //     uint global_idx;
-        //     with(Section) {
-        //         if (writer.mod[GLOBAL] is null) {
-        //             global_idx=0;
-        //             writer.mod[GLOBAL]=new Global;
-        //             writer.mod[GLOBAL].sectypes=[global_type];
-        //         }
-        //         else {
-        //             global_idx=cast(uint)(writer.mod[GLOBAL].sectypes.length);
-        //             writer.mod[GLOBAL].sectypes~=global_type;
-        //         }
-        //     }
-        //     return global_idx;
-        // }
         /+
          Inject the Global variable
          +/
@@ -113,56 +92,93 @@ struct WasmGas {
             global_type=GlobalType(global_desc, expr);
         }
         const global_idx=inject(global_type);
-        /+
-         Inject the function type to the set_gas_gauge
-         +/
-        FuncType func_type=FuncType(Types.FUNC, [Types.I32], null);
-        const type_idx=inject(func_type);
-        /+
-         Inject the function header index to the set_gas_gauge
-         +/
-        Index func_index=Index(type_idx); //Types.FUNC, [Types.I32], null);
-        const func_idx=inject(func_index);
-        /+
-         Inject the function body to the set_gas_gauage
-         +/
-        CodeType code_type;
-        {
-            scope out_expr=new OutBuffer;
-            WasmExpr(out_expr)
-                (IR.GLOBAL_GET, global_idx)
-                //       (IR.BLOCK)
-                (IR.I32_EQ)
-                (IR.IF, Types.EMPTY)
-                (IR.GLOBAL_SET, global_idx)
-                (IR.ELSE)
-                (IR.UNREACHABLE)
-                (IR.END)
-                (IR.END);
-            immutable expr=out_expr.toBytes.idup;
-            code_type=CodeType(null, expr);
-        }
-        const code_idx=inject(code_type);
-        // const uint inject_func_type() {
-        //     FuncType func_type=FuncType(Types.FUNC, [Types.I64], null);
-        //     uint func_idx;
-        //     with(Section) {
-        //         if (writer.mod[TYPE] is null) {
-        //             func_idx=0;
-        //             writer.mod[TYPE]=new Type;
-        //             writer.mod[TYPE].sectypes=[func_type];
-        //         }
-        //         else {
-        //             func_idx=cast(uint)(writer.mod[TYPE].sectypes.length);
-        //             writer.mod[TYPE].sectypes~=func_type;
-        //         }
-        //     }
-        //     return func_idx;
-        // }
-        // const func_idx=inject_func_type;
+        { // Gas down counter
+            FuncType func_type=FuncType(Types.FUNC, null, null);
+            const type_idx=inject(func_type);
 
+            Index func_index=Index(type_idx);
+            const func_idx=inject(func_index);
+
+            CodeType code_type;
+            {
+                scope out_expr=new OutBuffer;
+                WasmExpr(out_expr)
+                    (IR.GLOBAL_GET, global_idx)
+                    (IR.I32_CONST, 0)
+                    (IR.I32_GT_S)
+                    (IR.IF, Types.EMPTY)
+                    (IR.GLOBAL_GET, global_idx)
+                    (IR.I32_CONST, 1)
+                    (IR.I32_SUB)
+                    (IR.GLOBAL_SET, global_idx)
+                    (IR.ELSE)
+                    (IR.UNREACHABLE)
+                    (IR.END)
+                    (IR.END);
+                immutable expr=out_expr.toBytes.idup;
+                code_type=CodeType(null, expr);
+            }
+            const code_idx=inject(code_type);
+        }
+        { // set_gas_gauge
+            /+
+             Inject the function type to the set_gas_gauge
+             +/
+            FuncType func_type=FuncType(Types.FUNC, [Types.I32], null);
+            const type_idx=inject(func_type);
+            /+
+             Inject the function header index to the set_gas_gauge
+             +/
+            Index func_index=Index(type_idx); //Types.FUNC, [Types.I32], null);
+            const func_idx=inject(func_index);
+            /+
+             Inject the function body to the set_gas_gauage
+             +/
+            CodeType code_type;
+            {
+                scope out_expr=new OutBuffer;
+                WasmExpr(out_expr)
+                    (IR.GLOBAL_GET, global_idx)
+                    //       (IR.BLOCK)
+                    (IR.I32_EQ)
+                    (IR.IF, Types.EMPTY)
+                    (IR.GLOBAL_SET, global_idx)
+                    (IR.ELSE)
+                    (IR.UNREACHABLE)
+                    (IR.END)
+                    (IR.END);
+                immutable expr=out_expr.toBytes.idup;
+                code_type=CodeType(null, expr);
+            }
+            const code_idx=inject(code_type);
+
+            ExportType export_type=ExportType(set_gas_gauge, func_idx);
+            const export_idx=inject(export_type);
+        }
+        { // read_gas_gauge
+            FuncType func_type=FuncType(Types.FUNC, null, [Types.I32]);
+            const type_idx=inject(func_type);
+
+            Index func_index=Index(type_idx); //Types.FUNC, [Types.I32], null);
+            const func_idx=inject(func_index);
+
+            CodeType code_type;
+            {
+                scope out_expr=new OutBuffer;
+                WasmExpr(out_expr)
+                    (IR.GLOBAL_GET, global_idx)
+                    (IR.END);
+                immutable expr=out_expr.toBytes.idup;
+                code_type=CodeType(null, expr);
+            }
+            const code_idx=inject(code_type);
+
+            ExportType export_type=ExportType(read_gas_gauge, func_idx);
+            const export_idx=inject(export_type);
+        }
     }
 }
+
 unittest {
     import std.stdio;
     import std.file;

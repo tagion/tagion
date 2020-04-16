@@ -607,6 +607,11 @@ class WasmWriter {
             size_t guess_size() const pure nothrow {
                 return name.length+uint.sizeof+ImportType.ImportDesc.sizeof;
             }
+            this(string name, const uint idx, const IndexType desc=IndexType.FUNC) {
+                this.name=name;
+                this.desc=desc;
+                this.idx=idx;
+            }
             this(ref const(ReaderSecType!(Section.EXPORT)) e) {
                 name=e.name;
                 desc=IndexType(e.desc);
