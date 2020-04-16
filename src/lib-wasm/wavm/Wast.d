@@ -159,10 +159,10 @@ class WastT(Output) : WasmReader.InterfaceModule {
     void global_sec(ref scope const(Module) mod) {
         auto _global=*mod.global_sec;
         foreach(g; _global[]) {
-            output.writefln("%s(global %s", indent, globalToString(g.global));
+            output.writefln("%s(global %s (", indent, globalToString(g.global));
             auto expr=g[];
             block(expr, indent~spacer);
-            output.writefln("%s)", indent);
+            output.writefln("%s))", indent);
         }
     }
 
@@ -197,7 +197,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     void code_sec(ref scope const(Module) mod) {
         auto _code=*mod.code_sec;
         auto _func=*mod.function_sec;
-        writefln("code.data=%s", _code.data);
+        //writefln("code.data=%s", _code.data);
 
         foreach(f, c; lockstep(_func[], _code[], StoppingPolicy.requireSameLength)) {
             auto expr=c[];
@@ -256,7 +256,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
                     }
                     block_comment=format(";; block %d", block_count);
                     block_count++;
-                    output.writefln("BLOCK %s", elm);
+                    //output.writefln("BLOCK %s", elm);
                     output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                     const end_elm=block(expr, indent~spacer, level+1);
                     const end_instr=instrTable[end_elm.code];

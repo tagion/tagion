@@ -23,7 +23,7 @@ class WasmWriter {
 
     alias ReaderModule=WasmReader.Module;
 
-    alias Module=ModuleT!(WasmSection);
+    alias Module=ModuleT!(WasmSection, false);
 
     alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
 
@@ -35,7 +35,7 @@ class WasmWriter {
 //    const(WasmReader) reader;
     this(ref const(WasmReader) reader) {
         auto loader=new WasmLoader;
-        debug writefln("Before loader");
+        //debug writefln("Before loader");
         reader(loader);
         //this.opCall(reader);
 //        reader(loader);
@@ -54,7 +54,7 @@ class WasmWriter {
             if (reader_mod[sec] !is null) {
             auto _reader_sec=*reader_mod[sec];
             if (!_reader_sec[].empty) {
-                writefln("%s _reader_sec=%s", sec, _reader_sec.data);
+                //writefln("%s _reader_sec=%s", sec, _reader_sec.data);
                 alias ModT=Module.Types[sec];
                 alias ModuleType=SecType!sec; //Unqual!(PointerTarget!(Module.Types[sec]));
                 alias SectionElement=TemplateArgsOf!(ModuleType);
@@ -89,7 +89,7 @@ class WasmWriter {
         }
 
         final void memory_sec(ref scope const(ReaderModule) reader_mod) {
-            writefln("MEMORY_SEC");
+//            writefln("MEMORY_SEC");
             section_secT!(Section.MEMORY)(reader_mod);
         }
 
@@ -137,7 +137,7 @@ class WasmWriter {
                 //     buffers[E].write(encode(tmp_bout.offset));
                 //     buffers[E].write(tmp_bout);
                 // }
-                writefln("buffers[%s]=%s", E, buffers[E].toBytes);
+//                writefln("buffers[%s]=%s", E, buffers[E].toBytes);
                 output_size+=buffers[E].offset+uint.sizeof+Section.sizeof;
             }
         }
@@ -151,7 +151,7 @@ class WasmWriter {
                 output.write(cast(ubyte)sec);
                 output.write(encode(b.offset));
                 output.write(b);
-                writefln("output[%s]=%s", sec, output.toBytes);
+//                writefln("output[%s]=%s", sec, output.toBytes);
             }
         }
         // scope output_result=new OutBuffer;
@@ -160,7 +160,7 @@ class WasmWriter {
         // output_result.write(wasm_version);
         // output_result.write(encode(output.offset));
         // output_result.write(output.offset);
-        writefln("result=%s", output.toBytes);
+//        writefln("result=%s", output.toBytes);
         return output.toBytes.idup;
     }
 
@@ -168,9 +168,9 @@ class WasmWriter {
     void opCall(T)(T reader) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
         //scope Module mod;
         Section previous_sec;
-        writefln("WasmWriter opCall");
+//        writefln("WasmWriter opCall");
         foreach(a; reader[]) {
-            writefln("a=%s", a);
+//            writefln("a=%s", a);
             with(Section) {
                 check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
                 previous_sec=a.section;
@@ -229,11 +229,11 @@ class WasmWriter {
                                 m.each!((e) => bout.write(encode(e)));
                             }
                             else static if (hasMember!(U,  "serialize")) {
-                                writefln("serialize %s m.length=%d", m, m.length);
+                                //writefln("serialize %s m.length=%d", m, m.length);
                                 foreach(e; m) {
                                     e.serialize(bout);
                                 }
-                                writefln("bout=%s", bout.toBytes);
+                                //writefln("bout=%s", bout.toBytes);
                             }
                             else {
                                 static assert(0, format("Array type %s is not supported", T.stringof));
@@ -372,6 +372,10 @@ class WasmWriter {
                 struct GlobalDesc {
                     Types   type;
                     Mutable mut;
+                    this(const Types type, const Mutable mut=Mutable.CONST) {
+                        this.type=type;
+                        this.mut=mut;
+                    }
                     this(const(ReaderImportDesc.GlobalDesc) g) {
                         mut=g.mut;
                         type=g.type;
@@ -388,9 +392,6 @@ class WasmWriter {
                 protected IndexType _desc;
                 mixin Serialize;
 
-                // void serialize(scope ref OutBuffer bout) const {
-
-                // }
                 auto get(IndexType IType)() const pure
                     in {
                         assert(_desc is IType);
@@ -530,7 +531,7 @@ class WasmWriter {
             Limit limit;
             this(ref const(ReaderSecType!(Section.MEMORY)) m) {
                 limit=Limit(m.limit);
-                writefln("MemoryType %s", this);
+                //writefln("MemoryType %s", this);
             }
             mixin Serialize;
         }
@@ -538,8 +539,13 @@ class WasmWriter {
         alias Memory=SectionT!(MemoryType);
 
         struct GlobalType {
-            ImportType.ImportDesc.GlobalDesc global;
+            alias GlobalDesc=ImportType.ImportDesc.GlobalDesc;
+            GlobalDesc global;
             @Section(Section.CODE) immutable(ubyte)[] expr;
+            this(const GlobalDesc global, immutable(ubyte)[] expr) {
+                this.global=global;
+                this.expr=expr;
+            }
             this(ref const(ReaderSecType!(Section.GLOBAL)) g) {
                 global=ImportType.ImportDesc.GlobalDesc(g.global);
                 expr=g.expr;
@@ -561,12 +567,12 @@ class WasmWriter {
                 desc=IndexType(e.desc);
                 idx=e.idx;
             }
-            void serialize(ref OutBuffer bout) const {
-                bout.write(encode(name.length));
-                bout.write(name);
-                bout.write(cast(ubyte)desc);
-                bout.write(encode(idx));
-            }
+            // void serialize(ref OutBuffer bout) const {
+            //     bout.write(encode(name.length));
+            //     bout.write(name);
+            //     bout.write(cast(ubyte)desc);
+            //     bout.write(encode(idx));
+            // }
             mixin Serialize;
         }
 
@@ -663,13 +669,14 @@ unittest {
     }
 
 //    string filename="../tests/wasm/func_1.wasm";
-//    string filename="../tests/wasm/global_1.wasm";
-    string filename="../tests/wasm/imports_1.wasm";
+    string filename="../tests/wasm/global_1.wasm";
+//    string filename="../tests/wasm/imports_1.wasm";
 //    string filename="../tests/wasm/table_copy_2.wasm";
 //    string filename="../tests/wasm/memory_2.wasm";
 //    string filename="../tests/wasm/start_4.wasm";
 //    string filename="../tests/wasm/address_1.wasm";
 //    string filename="../tests/wasm/data_4.wasm";
+//    string filename="../tests/web_gas_gauge.wasm";//wasm/imports_1.wasm";
     immutable read_data=fread(filename);
     auto wasm_reader=WasmReader(read_data);
     Wast(wasm_reader, stdout).serialize();

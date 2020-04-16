@@ -516,19 +516,28 @@ static string secname(immutable Section s) {
     return assumeUnique(format("%s_sec", toLower(s.to!string)));
 }
 
-alias ModuleT(SectionType)=Tuple!(
-    const(SectionType.Custom)*,   secname(Section.CUSTOM),
-    const(SectionType.Type)*,     secname(Section.TYPE),
-    const(SectionType.Import)*,   secname(Section.IMPORT),
-    const(SectionType.Function)*, secname(Section.FUNCTION),
-    const(SectionType.Table)*,    secname(Section.TABLE),
-    const(SectionType.Memory)*,   secname(Section.MEMORY),
-    const(SectionType.Global)*,   secname(Section.GLOBAL),
-    const(SectionType.Export)*,   secname(Section.EXPORT),
-    const(SectionType.Start)*,    secname(Section.START),
-    const(SectionType.Element)*,  secname(Section.ELEMENT),
-    const(SectionType.Code)*,     secname(Section.CODE),
-    const(SectionType.Data)*,     secname(Section.DATA),
+protected  template Ptr(T, bool CONST) {
+    static if (CONST) {
+        alias Ptr=const(T)*;
+    }
+    else {
+        alias Ptr=T*;
+    }
+}
+
+alias ModuleT(SectionType, bool CONST=true)=Tuple!(
+    Ptr!(SectionType.Custom, CONST),   secname(Section.CUSTOM),
+    Ptr!(SectionType.Type, CONST),     secname(Section.TYPE),
+    Ptr!(SectionType.Import, CONST),   secname(Section.IMPORT),
+    Ptr!(SectionType.Function, CONST), secname(Section.FUNCTION),
+    Ptr!(SectionType.Table, CONST),    secname(Section.TABLE),
+    Ptr!(SectionType.Memory, CONST),   secname(Section.MEMORY),
+    Ptr!(SectionType.Global, CONST),   secname(Section.GLOBAL),
+    Ptr!(SectionType.Export, CONST),   secname(Section.EXPORT),
+    Ptr!(SectionType.Start, CONST),    secname(Section.START),
+    Ptr!(SectionType.Element, CONST),  secname(Section.ELEMENT),
+    Ptr!(SectionType.Code, CONST),     secname(Section.CODE),
+    Ptr!(SectionType.Data, CONST),     secname(Section.DATA),
     );
 
 

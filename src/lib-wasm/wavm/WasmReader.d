@@ -45,7 +45,7 @@ struct WasmReader {
 
     alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
 
-    alias InterfaceModule=InterfaceModuleT!(Module);
+    alias InterfaceModule=InterfaceModuleT!(const(Module));
 
     shared static unittest {
         import std.traits : Unqual;
