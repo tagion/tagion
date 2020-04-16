@@ -325,6 +325,9 @@ class WasmWriter {
             size_t guess_size() const pure nothrow {
                 return params.length+results.length+uint.sizeof*2+Types.sizeof;
             }
+            this(const Type type, immutable(Types)[] params, immutable(Types)[] results) {
+                this.type=type;
+            }
             this(ref const(ReaderSecType!(Section.TYPE)) s) {
                 type=s.type;
                 params=s.params;
@@ -545,10 +548,12 @@ class WasmWriter {
             this(const GlobalDesc global, immutable(ubyte)[] expr) {
                 this.global=global;
                 this.expr=expr;
+                //writefln("GlobalDesc length=%d expr=%s", expr.length, expr);
             }
             this(ref const(ReaderSecType!(Section.GLOBAL)) g) {
                 global=ImportType.ImportDesc.GlobalDesc(g.global);
                 expr=g.expr;
+                //writefln("GlobalDesc length=%d expr=%s", expr.length, expr);
             }
             mixin Serialize;
         }
@@ -652,6 +657,7 @@ class WasmWriter {
     }
 }
 
+version(none)
 unittest {
     import std.stdio;
     import std.file;
