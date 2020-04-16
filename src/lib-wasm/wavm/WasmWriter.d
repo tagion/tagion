@@ -42,7 +42,7 @@ class WasmWriter {
         return new WasmWriter(reader);
     }
 
-    protected template AsType(T, TList...) {
+    template AsType(T, TList...) {
         static foreach(E; EnumMembers!Section) {
             static if (is(T == TList[E])) {
                 enum AsType=E;
@@ -51,6 +51,17 @@ class WasmWriter {
     }
 
     enum asType(T)=AsType!(T, staticMap!(PointerTarget, Module.Types));
+
+    template FromSecType(SecType, TList...) {
+        alias T=WasmSection.SectionT!SecType;
+        static foreach(E; EnumMembers!Section) {
+            static if (is(T == TList[E])) {
+                enum FromSecType=E;
+            }
+        }
+    }
+
+    enum fromSecType(T)=FromSecType!(T, staticMap!(PointerTarget, Module.Types));
 
     alias getType(Section sec)=WasmSection.Sections[sec];
 
@@ -536,6 +547,9 @@ class WasmWriter {
 
         struct Index {
             uint idx;
+            this(const uint idx) {
+                this.idx=idx;
+            }
             this(ref const(ReaderSecType!(Section.FUNCTION)) f) {
                 idx=f.idx;
             }
@@ -643,6 +657,10 @@ class WasmWriter {
                 uint count;
                 Types type;
                 mixin Serialize;
+            }
+            this(Local[] locals, immutable(ubyte[]) expr) {
+                this.locals=locals;
+                this.expr=expr;
             }
             @trusted
             this(ref const(ReaderSecType!(Section.CODE)) c) {
