@@ -8,6 +8,7 @@ import std.format;
 import std.algorithm.iteration : each, map, sum, fold, filter;
 import std.range.primitives : isInputRange;
 import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
+import std.meta : AliasSeq, staticMap;
 import std.exception : assumeUnique;
 import std.range : lockstep;
 
@@ -32,19 +33,26 @@ class WasmWriter {
     alias ReaderSecType(Section sec)=TemplateArgsOf!(ReaderModule.Types[sec].SecRange)[1];
 
     Module mod;
-//    const(WasmReader) reader;
     this(ref const(WasmReader) reader) {
         auto loader=new WasmLoader;
-        //debug writefln("Before loader");
         reader(loader);
-        //this.opCall(reader);
-//        reader(loader);
-//        this.reader=reader;
     }
 
     static WasmWriter opCall(ref const(WasmReader) reader) {
         return new WasmWriter(reader);
     }
+
+    protected template AsType(T, TList...) {
+        static foreach(E; EnumMembers!Section) {
+            static if (is(T == TList[E])) {
+                enum AsType=E;
+            }
+        }
+    }
+
+    enum asType(T)=AsType!(T, staticMap!(PointerTarget, Module.Types));
+
+    alias getType(Section sec)=WasmSection.Sections[sec];
 
     class WasmLoader : WasmReader.InterfaceModule {
 
@@ -292,6 +300,20 @@ class WasmWriter {
             mixin Serialize;
         }
 
+     alias Sections=AliasSeq!(
+         Custom,
+         Type,
+         Import,
+         Function,
+         Table,
+         Memory,
+         Global,
+         Export,
+         Start,
+         Element,
+         Code,
+         Data);
+
 
 
 //        TemplateArgsOf!(ReaderModule.Types[sec])[0];
@@ -325,13 +347,17 @@ class WasmWriter {
             size_t guess_size() const pure nothrow {
                 return params.length+results.length+uint.sizeof*2+Types.sizeof;
             }
-            this(const Type type, immutable(Types)[] params, immutable(Types)[] results) {
+            this(const Types type, immutable(Types)[] params, immutable(Types)[] results) {
                 this.type=type;
+                this.params=params;
+                this.results=results;
+                writefln("FuncType %s", this);
             }
             this(ref const(ReaderSecType!(Section.TYPE)) s) {
                 type=s.type;
                 params=s.params;
                 results=s.results;
+                writefln("ReaderSecType.FuncType %s", this);
             }
             mixin Serialize;
         }
