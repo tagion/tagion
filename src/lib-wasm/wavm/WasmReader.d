@@ -1,7 +1,7 @@
 module wavm.WasmReader;
 
 import std.format;
-import wavm.WAVMException;
+import wavm.WasmException;
 import wavm.WasmBase;
 //import LEB128=wavm.LEB128;
 
@@ -18,14 +18,7 @@ import std.conv : to, emplace;
 import std.uni : toLower;
 import std.exception : assumeUnique;
 
-@safe
-class WASMException : WAVMException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( msg, file, line );
-    }
-}
 
-alias check=Check!WASMException;
 
 @safe
 struct WasmReader {
@@ -384,7 +377,7 @@ struct WasmReader {
                 this(immutable(ubyte[]) data) {
                     size_t index;
                     limit=Limit(data, index);
-                   size=index;
+                    size=index;
                 }
             }
 
@@ -477,6 +470,7 @@ struct WasmReader {
 
             alias Element=SectionT!(ElementType);
 
+            version(none)
             struct WasmArg {
                 protected {
                     Types _type;
@@ -540,165 +534,6 @@ struct WasmReader {
                     return _type;
                 }
 
-            }
-
-            static assert(isInputRange!ExprRange);
-
-            struct ExprRange {
-                immutable(ubyte[]) data;
-                protected {
-                    size_t _index;
-                    int _level;
-                    IRElement current;
-                }
-
-                struct IRElement {
-                    IR code;
-                    int level;
-                    private {
-                        WasmArg _warg;
-                        WasmArg[] _wargs;
-                        const(Types)[] _types;
-                    }
-
-                    const(WasmArg) warg() const pure nothrow {
-                        return _warg;
-                    }
-
-                    const(WasmArg[]) wargs() const pure nothrow {
-                        return _wargs;
-                    }
-
-                    const(Types[]) types() const pure nothrow {
-                        return _types;
-                    }
-
-                }
-
-                this(immutable(ubyte[]) data) {
-                    this.data=data;
-                    //size_t dummy_index;
-                    set_front(current, _index);
-                }
-
-                @safe
-                protected void set_front(ref scope IRElement elm, ref size_t index) {
-                    @trusted
-                    void set(ref WasmArg warg, const Types type) {
-                        with(Types) {
-                            switch(type) {
-                            case I32:
-                                warg=u32(data, index);
-                                break;
-                            case I64:
-                                warg=u64(data, index);
-                                break;
-                            case F32:
-                                warg=data.binpeek!(float, Endian.littleEndian)(&index);
-                                break;
-                            case F64:
-                                warg=data.binpeek!(double, Endian.littleEndian)(&index);
-                                break;
-                            default:
-                                check(0, format("Assembler argument type not vaild as an argument %s", type));
-                            }
-                        }
-                    }
-
-                    elm.code=cast(IR)data[index];
-                    elm._types=null;
-                    const instr=instrTable[elm.code];
-                    index+=IR.sizeof;
-                    with(IRType) {
-                        final switch(instr.irtype) {
-                        case CODE:
-                            break;
-                        case BLOCK:
-                            elm._types=[cast(Types)data[index]];
-                            index+=Types.sizeof;
-                            _level++;
-                            break;
-                        case BRANCH:
-                            // branchidx
-                            set(elm._warg, Types.I32);
-                            _level++;
-                            break;
-                        case BRANCH_TABLE:
-                            //size_t vec_size;
-                            const len=u32(data, index)+1;
-                            elm._wargs=new WasmArg[len];
-                            foreach(ref a; elm._wargs) {
-                                a=u32(data, index);
-                            }
-                            break;
-                        case CALL:
-                            // callidx
-                            set(elm._warg, Types.I32);
-                            break;
-                        case CALL_INDIRECT:
-                            // typeidx
-                            set(elm._warg, Types.I32);
-                            check(data[index] == 0x00, "call_indirect should end with 0x00");
-                            index+=ubyte.sizeof;
-                            break;
-                        case LOCAL, GLOBAL:
-                            // localidx globalidx
-                            set(elm._warg, Types.I32);
-                            break;
-                        case MEMORY:
-                            // offset
-                            elm._wargs=new WasmArg[2];
-                            set(elm._wargs[0], Types.I32);
-                            // align
-                            set(elm._wargs[1], Types.I32);
-                            break;
-                        case MEMOP:
-                            index++;
-                            break;
-                        case CONST:
-                            with(IR) {
-                                switch (elm.code) {
-                                case I32_CONST:
-                                    set(elm._warg, Types.I32);
-                                    break;
-                                case I64_CONST:
-                                    set(elm._warg, Types.I64);
-                                    break;
-                                case F32_CONST:
-                                    set(elm._warg, Types.F32);
-                                    break;
-                                case F64_CONST:
-                                    set(elm._warg, Types.F64);
-                                    break;
-                                default:
-                                    assert(0, format("Instruction %s is not a const", elm.code));
-                                }
-                            }
-                            break;
-                        case END:
-                            _level--;
-                            break;
-                        }
-                    }
-                }
-
-                @property {
-                    const(size_t) index() const pure nothrow {
-                         return _index;
-                    }
-
-                    const(IRElement) front() const pure nothrow {
-                        return current;
-                    }
-
-                    bool empty() const pure nothrow {
-                        return _index >= data.length;
-                    }
-
-                    void popFront() {
-                        set_front(current, _index);
-                    }
-                }
             }
 
             struct CodeType {
@@ -865,7 +700,7 @@ struct WasmReader {
                 else if (a.section == Section.IMPORT) {
                     auto _import=a.sec!(Section.IMPORT);
 //                    writefln("Function types %s", _type.func_types);
-                     writefln("Import types length %d %s", _import.length, _import[]);
+                    writefln("Import types length %d %s", _import.length, _import[]);
                 }
                 else if (a.section == Section.EXPORT) {
                     auto _export=a.sec!(Section.EXPORT);
@@ -986,15 +821,15 @@ code-len                 code-end
  +/
 
 /++     i32.const                                       end           n:32               bytesize    u:32
-   bytesize |        n32   from to    n:32   i32.store8  |   len-locals|    from to    end  |    call |     u:32   u:32
-len  |      |         |      |   |     |        |        |      |      |      |  |      |   |      |  |      |      |
-[3, 15, 0, 65, 0, 65, 0, 45, 0, 0, 65, 1, 106, 58, 0, 0, 11, 8, 0, 65, 0, 45, 0, 0, 15, 11, 8, 0, 16, 0, 16, 0, 16, 0, 11]
-        |    n:32  |     |         |       |       |  |      |      |      |         |         |          |     |     end
-        |          |  i32.load8_u  |   i32.add   from to   bytesize |      |       return   len-local   call   call
-     len-locals    |           i32.const                        i32.const  |
-               i32.const                                                  i32.load8_u
-+/
+ bytesize |        n32   from to    n:32   i32.store8  |   len-locals|    from to    end  |    call |     u:32   u:32
+ len  |      |         |      |   |     |        |        |      |      |      |  |      |   |      |  |      |      |
+ [3, 15, 0, 65, 0, 65, 0, 45, 0, 0, 65, 1, 106, 58, 0, 0, 11, 8, 0, 65, 0, 45, 0, 0, 15, 11, 8, 0, 16, 0, 16, 0, 16, 0, 11]
+ |    n:32  |     |         |       |       |  |      |      |      |         |         |          |     |     end
+ |          |  i32.load8_u  |   i32.add   from to   bytesize |      |       return   len-local   call   call
+ len-locals    |           i32.const                        i32.const  |
+ i32.const                                                  i32.load8_u
+ +/
 
 /+
-        Type types length 14 [(type (func)), (type (func)), (type (func(param i32))), (type (func(param i32))), (type (func (results i32))), (type (func(param i32) (results i32))), (type (func(param i32) (results i32))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64 i32 f64 i32 i32))), (type (func(param f32 f64 i32)))]
-+/
+ Type types length 14 [(type (func)), (type (func)), (type (func(param i32))), (type (func(param i32))), (type (func (results i32))), (type (func(param i32) (results i32))), (type (func(param i32) (results i32))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64 i32 f64 i32 i32))), (type (func(param f32 f64 i32)))]
+ +/

@@ -1,10 +1,15 @@
 module wavm.WasmBase;
 
-import std.traits : EnumMembers;
+import std.traits : EnumMembers, Unqual;
 import std.typecons : Tuple;
 import std.format;
 import std.uni : toLower;
 import std.conv : to;
+import std.range.primitives : isInputRange;
+import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
+
+import wavm.WasmException;
+
 
 //import wavm.LEB128;
 import LEB128=wavm.LEB128;
@@ -28,6 +33,8 @@ enum Section : ubyte {
 enum IRType {
     CODE,          /// Simple instruction with no argument
     BLOCK,         /// Block instruction
+    // BLOCK_IF,      /// Block for [IF] ELSE END
+    // BLOCK_ELSE,    /// Block for IF [ELSE] END
     BRANCH,        /// Branch jump instruction
     BRANCH_TABLE,  /// Branch table jump instruction
     CALL,          /// Subroutine call
@@ -557,4 +564,231 @@ interface InterfaceModuleT(T) {
     void element_sec(ref scope const(T) mod);
     void code_sec(ref scope const(T) mod);
     void data_sec(ref scope const(T) mod);
+}
+
+@safe
+struct WasmArg {
+    protected {
+        Types _type;
+        union {
+            @(Types.I32) int i32;
+            @(Types.I64) long i64;
+            @(Types.F32) float f32;
+            @(Types.F64) double f64;
+        }
+    }
+
+    void opAssign(T)(T x) {
+        alias BaseT=Unqual!T;
+        static if (is(BaseT == int) || is(BaseT == uint)) {
+            _type=Types.I32;
+            i32=cast(int)x;
+        }
+        else static if (is(BaseT == long) || is(BaseT == ulong)) {
+            _type=Types.I64;
+            i64=cast(long)x;
+        }
+        else static if (is(BaseT == float)) {
+            _type=Types.F32;
+            f32=x;
+        }
+        else static if (is(BaseT == double)) {
+            _type=Types.F64;
+            f64=x;
+        }
+        else static if (is(BaseT == WasmArg)) {
+            emplace!WasmArg(&this, x);
+            //type=x.type;
+
+        }
+        else {
+            static assert(0, format("Type %s is not supported by WasmArg", T.stringof));
+        }
+    }
+
+    T get(T)() const pure {
+        alias BaseT=Unqual!T;
+        static if (is(BaseT == int) || is(BaseT == uint)) {
+            check(_type is Types.I32, format("Wrong to type %s execpted %s", _type, Types.I32));
+            return cast(T)i32;
+        }
+        else static if (is(BaseT == long) || is(BaseT == ulong)) {
+            check(_type is Types.I64, format("Wrong to type %s execpted %s", _type, Types.I64));
+            return cast(T)i64;
+        }
+        else static if (is(BaseT == float)) {
+            check(_type is Types.F32, format("Wrong to type %s execpted %s", _type, Types.F32));
+            return f32;
+        }
+        else static if (is(BaseT == double)) {
+            check(_type is Types.F64, format("Wrong to type %s execpted %s", _type, Types.F64));
+            return f64;
+        }
+    }
+
+    @property Types type() const pure nothrow {
+        return _type;
+    }
+
+}
+
+
+
+static assert(isInputRange!ExprRange);
+@safe
+struct ExprRange {
+    immutable(ubyte[]) data;
+    protected {
+        size_t _index;
+        int _level;
+        IRElement current;
+    }
+
+    struct IRElement {
+        IR code;
+        int level;
+        private {
+            WasmArg _warg;
+            WasmArg[] _wargs;
+            const(Types)[] _types;
+        }
+
+        const(WasmArg) warg() const pure nothrow {
+            return _warg;
+        }
+
+        const(WasmArg[]) wargs() const pure nothrow {
+            return _wargs;
+        }
+
+        const(Types[]) types() const pure nothrow {
+            return _types;
+        }
+
+    }
+
+    this(immutable(ubyte[]) data) {
+        this.data=data;
+        //size_t dummy_index;
+        set_front(current, _index);
+    }
+
+    @safe
+    protected void set_front(ref scope IRElement elm, ref size_t index) {
+        @trusted
+            void set(ref WasmArg warg, const Types type) {
+            with(Types) {
+                switch(type) {
+                case I32:
+                    warg=u32(data, index);
+                    break;
+                case I64:
+                    warg=u64(data, index);
+                    break;
+                case F32:
+                    warg=data.binpeek!(float, Endian.littleEndian)(&index);
+                    break;
+                case F64:
+                    warg=data.binpeek!(double, Endian.littleEndian)(&index);
+                    break;
+                default:
+                    check(0, format("Assembler argument type not vaild as an argument %s", type));
+                }
+            }
+        }
+
+        elm.code=cast(IR)data[index];
+        elm._types=null;
+        const instr=instrTable[elm.code];
+        index+=IR.sizeof;
+        with(IRType) {
+            final switch(instr.irtype) {
+            case CODE:
+                break;
+            case BLOCK:
+                elm._types=[cast(Types)data[index]];
+                index+=Types.sizeof;
+                _level++;
+                break;
+            case BRANCH:
+                // branchidx
+                set(elm._warg, Types.I32);
+                _level++;
+                break;
+            case BRANCH_TABLE:
+                //size_t vec_size;
+                const len=u32(data, index)+1;
+                elm._wargs=new WasmArg[len];
+                foreach(ref a; elm._wargs) {
+                    a=u32(data, index);
+                }
+                break;
+            case CALL:
+                // callidx
+                set(elm._warg, Types.I32);
+                break;
+            case CALL_INDIRECT:
+                // typeidx
+                set(elm._warg, Types.I32);
+                check(data[index] == 0x00, "call_indirect should end with 0x00");
+                index+=ubyte.sizeof;
+                break;
+            case LOCAL, GLOBAL:
+                // localidx globalidx
+                set(elm._warg, Types.I32);
+                break;
+            case MEMORY:
+                // offset
+                elm._wargs=new WasmArg[2];
+                set(elm._wargs[0], Types.I32);
+                // align
+                set(elm._wargs[1], Types.I32);
+                break;
+            case MEMOP:
+                index++;
+                break;
+            case CONST:
+                with(IR) {
+                    switch (elm.code) {
+                    case I32_CONST:
+                        set(elm._warg, Types.I32);
+                        break;
+                    case I64_CONST:
+                        set(elm._warg, Types.I64);
+                        break;
+                    case F32_CONST:
+                        set(elm._warg, Types.F32);
+                        break;
+                    case F64_CONST:
+                        set(elm._warg, Types.F64);
+                        break;
+                    default:
+                        assert(0, format("Instruction %s is not a const", elm.code));
+                    }
+                }
+                break;
+            case END:
+                _level--;
+                break;
+            }
+        }
+    }
+
+    @property {
+        const(size_t) index() const pure nothrow {
+            return _index;
+        }
+
+        const(IRElement) front() const pure nothrow {
+            return current;
+        }
+
+        bool empty() const pure nothrow {
+            return _index >= data.length;
+        }
+
+        void popFront() {
+            set_front(current, _index);
+        }
+    }
 }

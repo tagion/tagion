@@ -28,57 +28,105 @@ struct WasmGas {
     alias CodeType=WasmWriter.WasmSection.CodeType;
     alias ExportType=WasmWriter.WasmSection.ExportType;
 
-
-//     alias X=staticMap!(PointerTarget, WasmWriter.Module.Types);
-
-//     alias XX=staticMap!(TemplateArgsOf, X); //staticMap!(PointerTarget, WasmWriter.Module.Types));
-// //    enum X=Module.Types;
-
-//     pragma(msg, "staticMap!(PointerTarget, Module.Types)=", WasmWriter.Module); //staticMap!(PointerTarget, Module.Types));
-//     pragma(msg, "X=", X); //staticMap!(PointerTarget, Module.Types));
-//     pragma(msg, "XX=", XX); //staticMap!(PointerTarget, Module.Types));
-    // enum fromSecType(T)=WasmWriter.AsType(T, staticMap!(PointerTarget, Module.Types));
-//    enum asType(T)=AsType!(T, staticMap!(PointerTarget, Module.Types));
-
-    // template FromSecType(SecType, TList...) {
-    //     alias T=WasmWriter.WasmSection.SectionT!SecType;
-    //     static foreach(E; EnumMembers!Section) {
-    //         static if (is(T == TList[E])) {
-    //             enum FromSecType=E;
-    //         }
-    //     }
-    // }
-
-    // enum fromSecType(T)=FromSecType!(T, staticMap!(PointerTarget, WasmWriter.Module.Types));
-
-//    pragma(msg, "fromSecType!GlobalType=", fromSecType!GlobalType);
     uint inject(SecType)(SecType sectype) {
         uint idx;
         enum SectionId=WasmWriter.fromSecType!SecType;
-        pragma(msg, "SectionId=", SectionId); //, " SecType=", SecType);
-        // version(none) {
-        //enum SectionId=WasmWriter.fromSecType!SecType;
-        // enum SectionId=fromSecType!SecType;
-        // pragma(msg, "SectionId=", SectionId); //, " SecType=", SecType);
-        //   pragma(msg, "SectionId=", SectionId, " SecType=", SecType);
-        //pragma(msg, "Module.Types[SectionIn]=", Module.Types[SectionIn]);
-        with(Section) {
-            if (writer.mod[SectionId] is null) {
-                idx=0;
-                writer.mod[SectionId]=new WasmWriter.WasmSection.SectionT!SecType;
-                writer.mod[SectionId].sectypes=[sectype];
-            }
-            else {
-                idx=cast(uint)(writer.mod[SectionId].sectypes.length);
-                writer.mod[SectionId].sectypes~=sectype;
-            }
+        if (writer.mod[SectionId] is null) {
+            idx=0;
+            writer.mod[SectionId]=new WasmWriter.WasmSection.SectionT!SecType;
+            writer.mod[SectionId].sectypes=[sectype];
         }
-        // }
+        else {
+            idx=cast(uint)(writer.mod[SectionId].sectypes.length);
+            writer.mod[SectionId].sectypes~=sectype;
+        }
         return idx;
     }
 
-    pragma(msg, "asType ", WasmWriter.asType!(Global));
+    /+
+    package void inject_gas(const uint gas_counter_funcidx) {
+        auto code_sec=mod[Section.CODE];
+        static void inject_gas(scope OutBuffer bout, const uint gas) {
+            wasmexpr
+                (IR.I32_CONST, gas)
+                (IR.CALL, gas_counter_funcidx);
+        }
 
+        uint inject_gas_funcs(ref scope OutBuffer bout, ref ExprRange expr, const uint level) {
+            scope wasmexpr=WasmExpr(bout);
+            uint gas_count;
+            while(!expr.empty) {
+                const elm=expr.front;
+                const instr=instrTable[elm.code];
+                gas_count+=instr.cost;
+                expr.popFront;
+                with(IRType) {
+                    final switch(irstr.irtype) {
+                    case CODE:
+                        waspexpr(elm.code);
+                        //bout.write(cast(ubyte)elm.code);
+                        break;
+                    case BLOCK:
+                        wasmexpr(elm.code, elm.types[0]);
+                        scope block_bout=new OutBuffer;
+                        pragma(msg, "fixme(cbr): add block_bout.reserve");
+                        const block_gas_cost=inject_gas_funcs(but, expr, eml.level);
+                        inject_gas(bout, block_gas_cost);
+                        bout.write(block_bout);
+                        break;
+                    case BRANCH:
+                        wasmexpr(elm.code, elm.warg.get!uint);
+                        break;
+                    case BRANCH_TABLE:
+                        const branch_idxs=elm.wargs.each((a) => a.get!uint).array;
+                        wasmexpr(elm.code, branch_idxs);
+                        break;
+                    case CALL, LOCAL, GLOBAL, CALL_INDIRECT:
+                        wasmexpr(elm.code, elm.warg.get!uint);
+                        break;
+                    case MEMORY:
+                        wasmexpr(elm.code, elm.warg[0].get!uint, elm.warg[1].get!uint);
+                        break;
+                    case MEMOP:
+                        wasmexpr(elm.code);
+                        break;
+                    case CONST:
+                        with(IR) {
+                            switch (elm.code) {
+                            case I32_CONST:
+                                wasmexpr(elm.code, elm.warg.get!int);
+                                break
+                            case I64_CONST:
+                                wasmexpr(elm.code, elm.warg.get!long);
+                                break
+                            case F32_CONST:
+                                wasmexpr(elm.code, elm.warg.get!float);
+                                break
+                            case F64_CONST:
+                                wasmexpr(elm.code, elm.warg.get!double);
+                                break;
+                            default:
+                                assert(0, format("Instruction %s is not a const", elm.code));
+                            }
+                        }
+                    case END:
+                        if (level == elm.level) {
+                            expr=ExprRan
+                            return gas_count;
+                        }
+                    }
+                }
+            }
+            return gas_const;
+        }
+        if (code_sec) {
+            foreach(c; code_sec.opSlice) {
+                scope expr_bout=new OutBuffer;
+                expr_bout.re
+            }
+        }
+    }
+    +/
     void modify() {
         /+
          Inject the Global variable
@@ -92,6 +140,10 @@ struct WasmGas {
             global_type=GlobalType(global_desc, expr);
         }
         const global_idx=inject(global_type);
+        const func_sec=writer.mod[Section.FUNCTION];
+        const gas_count_func_idx=cast(uint)((func_sec is null)?0:func_sec.sectypes.length);
+
+
         { // Gas down counter
             FuncType func_type=FuncType(Types.FUNC, null, null);
             const type_idx=inject(func_type);
@@ -221,17 +273,4 @@ unittest {
     {
         Wast(WasmReader(wasm_writer.serialize), stdout).serialize;
     }
-
-//    Wast(wasm_writer, stdout).serialize();
-
-
-
-    //auto dasm=Wdisasm(wasm_reader);
-    //auto wasm_writer=WasmWriter(wasm_reader);
-    // immutable writer_data=wasm_writer.serialize;
-
-    // auto dasm_writer=Wdisasm(writer_data);
-//    Wast(wasm_writer, stdout).serialize();
-//    auto output=Wast
-
 }

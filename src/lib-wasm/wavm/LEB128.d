@@ -2,10 +2,11 @@ module wavm.LEB128;
 
 import std.traits : isSigned, isUnsigned;
 import std.format;
-import wavm.WAVMException;
+import wavm.WavmException;
+import wavm.WasmException;
 
 @safe
-class LEB128Exception : WAVMException {
+class LEB128Exception : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }

@@ -11,16 +11,17 @@ import std.range : StoppingPolicy, lockstep;
 
 import wavm.WasmReader;
 import wavm.WasmBase;
-import wavm.WAVMException;
+import wavm.WavmException;
+import wavm.WasmException;
 
 @safe
-class WdisasmException : WAVMException {
+class WastException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
 }
 
-alias check=Check!WdisasmException;
+alias check=Check!WastException;
 
 
 @safe
@@ -31,8 +32,8 @@ WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) { // if (is(Wa
 @safe
 class WastT(Output) : WasmReader.InterfaceModule {
     alias Module=WasmReader.Module;
-    alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
-    alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
+    //alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
+    //alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
     alias ImportType=WasmReader.WasmRange.WasmSection.ImportType;
     alias Limit=WasmReader.Limit;
     alias GlobalDesc=WasmReader.WasmRange.WasmSection.ImportType.ImportDesc.GlobalDesc;

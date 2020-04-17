@@ -1,10 +1,10 @@
-module wavm.WAVMException;
+module wavm.WavmException;
 
 /++
  + Exception used as a base exception class for all exceptions use in tagion project
  +/
 @safe
-class WAVMException : Exception {
+class WavmException : Exception {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
