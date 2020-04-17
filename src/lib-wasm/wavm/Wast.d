@@ -229,9 +229,23 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     private const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
+//        immutable indent=base_indent~spacer;
         string block_comment;
         uint block_count;
         uint count;
+        static string block_result_type() (const Types t) {
+            with(Types) {
+                switch(t) {
+                case I32, I64, F32, F64, FUNCREF:
+                    return format(" (result %s)", typesName(t));
+                case EMPTY:
+                    return null;
+                default:
+                    check(0, format("Block Illegal result type %s for a block", t));
+                }
+            }
+            assert(0);
+        }
         while (!expr.empty) {
             const elm=expr.front;
             const instr=instrTable[elm.code];
@@ -242,26 +256,20 @@ class WastT(Output) : WasmReader.InterfaceModule {
                     output.writefln("%s%s", indent, instr.name);
                     break;
                 case BLOCK:
-                    static string block_result_type() (const Types t) {
-                        with(Types) {
-                            switch(t) {
-                            case I32, I64, F32, F64, FUNCREF:
-                                return format(" (result %s)", typesName(t));
-                            case EMPTY:
-                                return null;
-                            default:
-                                check(0, format("Block Illegal result type %s for a block", t));
-                            }
-                        }
-                        assert(0);
-                    }
                     block_comment=format(";; block %d", block_count);
                     block_count++;
-                    //output.writefln("BLOCK %s", elm);
                     output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                     const end_elm=block(expr, indent~spacer, level+1);
                     const end_instr=instrTable[end_elm.code];
-                    output.writefln("%send %s count=%d", indent, block_comment, count);
+                    output.writefln("%s%s %s count=%d", indent, end_instr.name, block_comment, count);
+                    //return end_elm;
+
+                    // const end_elm=block_elm(elm);
+                    if (end_elm.code is IR.ELSE) {
+                        const endif_elm=block(expr, indent~spacer, level+1);
+                        const endif_instr=instrTable[endif_elm.code];
+                        output.writefln("%s%s %s count=%d", indent, endif_instr.name, block_comment, count);
+                    }
                     break;
                 case BRANCH:
                     output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);

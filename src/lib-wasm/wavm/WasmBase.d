@@ -33,8 +33,8 @@ enum Section : ubyte {
 enum IRType {
     CODE,          /// Simple instruction with no argument
     BLOCK,         /// Block instruction
-    // BLOCK_IF,      /// Block for [IF] ELSE END
-    // BLOCK_ELSE,    /// Block for IF [ELSE] END
+//    BLOCK_IF,      /// Block for [IF] ELSE END
+    //   BLOCK_ELSE,    /// Block for IF [ELSE] END
     BRANCH,        /// Branch jump instruction
     BRANCH_TABLE,  /// Branch table jump instruction
     CALL,          /// Subroutine call
@@ -262,7 +262,7 @@ shared static this() {
             LOOP                : Instr("loop", 0, IRType.BLOCK),
             IF                  : Instr("if", 1, IRType.BLOCK),
 
-            ELSE                : Instr("else", 1, IRType.CODE),
+            ELSE                : Instr("else", 1, IRType.END),
             END                 : Instr("end", 0, IRType.END),
             BR                  : Instr("br", 1, IRType.BRANCH),
             BR_IF               : Instr("br_if", 1, IRType.BRANCH),
