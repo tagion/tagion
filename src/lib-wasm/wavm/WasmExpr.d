@@ -4,7 +4,6 @@ import std.bitmanip : nativeToLittleEndian;
 import std.traits : Unqual, isArray, isIntegral, ForeachType;
 import std.outbuffer;
 import std.format;
-//import std.stdio;
 
 import wavm.WasmBase;
 import wavm.LEB128;
@@ -40,7 +39,7 @@ struct WasmExpr {
                 scope uint[] table;
                 static foreach(i, a; args) {
                     {
-                        enum OK=is(Args[i]:const(uint)) || is(Args[i]:const(uint[])); // || isArray!(Args[i]); // && isIntegral!(ForeachType!(Args[i])));
+                        enum OK=is(Args[i]:const(uint)) || is(Args[i]:const(uint[]));
                         assert(OK, format("Argument %d must be integer or uint[] of integer not %s", i, Args[i].stringof));
                         static if (OK) {
                             table~=a;

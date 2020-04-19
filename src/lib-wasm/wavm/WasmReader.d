@@ -3,12 +3,10 @@ module wavm.WasmReader;
 import std.format;
 import wavm.WasmException;
 import wavm.WasmBase;
-//import LEB128=wavm.LEB128;
 
 import std.stdio;
 import std.meta : AliasSeq;
 import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget;
-//import std.range : InputRange;
 
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
@@ -17,8 +15,6 @@ import std.range.primitives : isInputRange;
 import std.conv : to, emplace;
 import std.uni : toLower;
 import std.exception : assumeUnique;
-
-
 
 @safe
 struct WasmReader {
@@ -469,72 +465,6 @@ struct WasmReader {
             }
 
             alias Element=SectionT!(ElementType);
-
-            version(none)
-            struct WasmArg {
-                protected {
-                    Types _type;
-                    union {
-                        @(Types.I32) int i32;
-                        @(Types.I64) long i64;
-                        @(Types.F32) float f32;
-                        @(Types.F64) double f64;
-                    }
-                }
-
-                void opAssign(T)(T x) {
-                    alias BaseT=Unqual!T;
-                    static if (is(BaseT == int) || is(BaseT == uint)) {
-                        _type=Types.I32;
-                        i32=cast(int)x;
-                    }
-                    else static if (is(BaseT == long) || is(BaseT == ulong)) {
-                        _type=Types.I64;
-                        i64=cast(long)x;
-                    }
-                    else static if (is(BaseT == float)) {
-                        _type=Types.F32;
-                        f32=x;
-                    }
-                    else static if (is(BaseT == double)) {
-                        _type=Types.F64;
-                        f64=x;
-                    }
-                    else static if (is(BaseT == WasmArg)) {
-                        emplace!WasmArg(&this, x);
-                        //type=x.type;
-
-                    }
-                    else {
-                        static assert(0, format("Type %s is not supported by WasmArg", T.stringof));
-                    }
-                }
-
-                T get(T)() const pure {
-                    alias BaseT=Unqual!T;
-                    static if (is(BaseT == int) || is(BaseT == uint)) {
-                        check(_type is Types.I32, format("Wrong to type %s execpted %s", _type, Types.I32));
-                        return cast(T)i32;
-                    }
-                    else static if (is(BaseT == long) || is(BaseT == ulong)) {
-                        check(_type is Types.I64, format("Wrong to type %s execpted %s", _type, Types.I64));
-                        return cast(T)i64;
-                    }
-                    else static if (is(BaseT == float)) {
-                        check(_type is Types.F32, format("Wrong to type %s execpted %s", _type, Types.F32));
-                        return f32;
-                    }
-                    else static if (is(BaseT == double)) {
-                        check(_type is Types.F64, format("Wrong to type %s execpted %s", _type, Types.F64));
-                        return f64;
-                    }
-                }
-
-                @property Types type() const pure nothrow {
-                    return _type;
-                }
-
-            }
 
             struct CodeType {
                 immutable size_t size;

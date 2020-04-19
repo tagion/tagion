@@ -13,7 +13,6 @@ import std.algorithm.comparison : max;
 import std.algorithm.iteration : map;
 import std.array : array;
 import std.format;
-//import std.stdio;
 
 struct WasmGas {
     enum set_gas_gauge="$set_gas_gauge";
@@ -76,7 +75,6 @@ struct WasmGas {
                     final switch(instr.irtype) {
                     case CODE:
                         wasmexpr(elm.code);
-                        //bout.write(cast(ubyte)elm.code);
                         break;
                     case BLOCK:
                         wasmexpr(elm.code, elm.types[0]);
@@ -90,14 +88,9 @@ struct WasmGas {
                                 if_gas_count=max(endif_result.gas, if_gas_count);
                             }
                             gas_count+=if_gas_count;
-                            //inject_gas(bout, 100);
-                            //inject_gas(bout, if_gas_count);
-
-
                         }
                         else {
                             inject_gas(bout, block_result.gas);
-                            //inject_gas(bout, 200);
                         }
                         bout.write(block_bout);
                         break;

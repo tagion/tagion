@@ -11,8 +11,6 @@ import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 import std.stdio;
 import wavm.WasmException;
 
-
-//import wavm.LEB128;
 import LEB128=wavm.LEB128;
 
 
@@ -250,9 +248,6 @@ enum IR : ubyte {
         }
 
 shared static  immutable(Instr[IR]) instrTable;
-
-pragma(msg, "fixme(cbr) IR.ELSE should be in a seperate groupe");
-//pragma(msg, "fixme(cbr) IR.IF should be in a seperate groupe");
 
 shared static this() {
     with(IR) {
