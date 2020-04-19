@@ -499,13 +499,11 @@ struct WasmReader {
 
                     protected Local _local;
                     this(immutable(ubyte[]) data) {
-                        //writefln("LocalRange.data=%s", data);
                         length=u32(data, index);
-                        this.data=data; //[index..$];
+                        this.data=data;
                         if (length) {
                             size_t dummy_index=index;
                             set_front(dummy_index);
-                            //index=local_index;
                         }
                     }
 
