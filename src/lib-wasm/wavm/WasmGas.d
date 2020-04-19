@@ -105,9 +105,6 @@ struct WasmGas {
                         wasmexpr(elm.code, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:
-                        pragma(msg, "elm.wargs=", typeof(elm.wargs));
-                        pragma(msg, "elm.wargs.map=", typeof(elm.wargs.map!((a) => a.get!uint)));
-                        pragma(msg, "elm.wargs.map.array=", typeof(elm.wargs.map!((a) => a.get!uint).array));
                         const branch_idxs=elm.wargs.map!((a) => a.get!uint).array;
                         wasmexpr(elm.code, branch_idxs);
                         break;
