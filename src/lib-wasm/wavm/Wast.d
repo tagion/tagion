@@ -300,7 +300,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
                     output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
                     break;
                 case MEMOP:
-                    output.writefln("%s[%s] ;; %s", indent, instr.name, elm);
+                    output.writefln("%s%s", indent, instr.name);
                     break;
                 case CONST:
                     static string toText(const WasmArg a) {

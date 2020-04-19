@@ -1,6 +1,6 @@
 module wavm.LEB128;
 
-import std.traits : isSigned, isUnsigned;
+import std.traits : isSigned, isUnsigned, isIntegral;
 import std.format;
 import wavm.WavmException;
 import wavm.WasmException;
@@ -50,7 +50,7 @@ size_t calc_size(T)(const T v) pure if(isSigned!T) {
     return result;
 }
 
-const(ubyte[]) encode(T)(const T v) pure if(isUnsigned!T) {
+const(ubyte[]) encode(T)(const T v) pure if(isUnsigned!T && isIntegral!T) {
     ubyte[T.sizeof+1] data;
     T value=v;
     foreach(i, ref d; data) {
@@ -64,7 +64,7 @@ const(ubyte[]) encode(T)(const T v) pure if(isUnsigned!T) {
     assert(0);
 }
 
-const(ubyte[]) encode(T)(const T v) pure if(isSigned!T) {
+const(ubyte[]) encode(T)(const T v) pure if(isSigned!T && isIntegral!T) {
     ubyte[T.sizeof+1] data;
     immutable negative=(v < 0);
     T value=v;

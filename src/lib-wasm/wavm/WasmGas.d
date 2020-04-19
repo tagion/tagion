@@ -1,12 +1,19 @@
 module wavm.WasmGas;
 
-import std.outbuffer;
 import wavm.WasmWriter;
 import wavm.WasmBase;
 import wavm.WasmExpr;
 import wavm.LEB128;
+
 import std.traits : Unqual, TemplateArgsOf, PointerTarget, EnumMembers;
 import std.meta : staticMap;
+import std.outbuffer;
+import std.typecons : Tuple;
+import std.algorithm.comparison : max;
+import std.algorithm.iteration : map;
+import std.array : array;
+import std.format;
+import std.stdio;
 
 struct WasmGas {
     enum set_gas_gauge="$set_gas_gauge";
@@ -43,49 +50,81 @@ struct WasmGas {
         return idx;
     }
 
-    /+
-    package void inject_gas(const uint gas_counter_funcidx) {
-        auto code_sec=mod[Section.CODE];
-        static void inject_gas(scope OutBuffer bout, const uint gas) {
-            wasmexpr
-                (IR.I32_CONST, gas)
-                (IR.CALL, gas_counter_funcidx);
-        }
 
-        uint inject_gas_funcs(ref scope OutBuffer bout, ref ExprRange expr, const uint level) {
+    alias InjectGas=void delegate(scope OutBuffer bout, const uint gas);
+    package void inject_gas(InjectGas inject_gas) { //const uint gas_counter_funcidx) {
+        auto code_sec=writer.mod[Section.CODE];
+        // void inject_gas(scope OutBuffer bout, const uint gas) {
+        //     if (gas>0) {
+        //         WasmExpr(bout)
+        //             (IR.I32_CONST, gas)
+        //             (IR.CALL, gas_counter_funcidx);
+        //     }
+        // }
+
+        alias GasResult=Tuple!(uint, "gas", IR, "irtype");
+
+        const(GasResult) inject_gas_funcs(ref scope OutBuffer bout, ref ExprRange expr) {
             scope wasmexpr=WasmExpr(bout);
             uint gas_count;
+            scope(exit) {
+                writefln("\tbout=%s", bout.toBytes);
+            }
             while(!expr.empty) {
                 const elm=expr.front;
                 const instr=instrTable[elm.code];
+                writefln("> %s", instr);
                 gas_count+=instr.cost;
                 expr.popFront;
                 with(IRType) {
-                    final switch(irstr.irtype) {
+                    final switch(instr.irtype) {
                     case CODE:
-                        waspexpr(elm.code);
+                        writefln("\t%s", instr);
+                        wasmexpr(elm.code);
                         //bout.write(cast(ubyte)elm.code);
                         break;
                     case BLOCK:
                         wasmexpr(elm.code, elm.types[0]);
                         scope block_bout=new OutBuffer;
-                        pragma(msg, "fixme(cbr): add block_bout.reserve");
-                        const block_gas_cost=inject_gas_funcs(but, expr, eml.level);
-                        inject_gas(bout, block_gas_cost);
+                        pragma(msg, "fixme(cbr): add block_block_out.reserve");
+                        const block_result=inject_gas_funcs(block_bout, expr);
+                        if (elm.code is IR.IF) {
+                            int if_gas_count=block_result.gas;
+                            writefln("gas_count=%d if_gas_count=%d", gas_count, if_gas_count);
+                            if (block_result.irtype is IR.ELSE) {
+                                const endif_result=inject_gas_funcs(block_bout, expr);
+                                writefln("gas_count=%d else_gas_count=%d", gas_count, endif_result.gas);
+                                if_gas_count=max(endif_result.gas, if_gas_count);
+                            }
+                            gas_count+=if_gas_count;
+                            //inject_gas(bout, 100);
+                            //inject_gas(bout, if_gas_count);
+
+
+                        }
+                        else {
+                            inject_gas(bout, block_result.gas);
+                            //inject_gas(bout, 200);
+                        }
                         bout.write(block_bout);
                         break;
                     case BRANCH:
                         wasmexpr(elm.code, elm.warg.get!uint);
                         break;
                     case BRANCH_TABLE:
-                        const branch_idxs=elm.wargs.each((a) => a.get!uint).array;
+                        pragma(msg, "elm.wargs=", typeof(elm.wargs));
+                        pragma(msg, "elm.wargs.map=", typeof(elm.wargs.map!((a) => a.get!uint)));
+                        pragma(msg, "elm.wargs.map.array=", typeof(elm.wargs.map!((a) => a.get!uint).array));
+                        const branch_idxs=elm.wargs.map!((a) => a.get!uint).array;
+                        writefln("branch_idxs=%s", branch_idxs);
                         wasmexpr(elm.code, branch_idxs);
                         break;
                     case CALL, LOCAL, GLOBAL, CALL_INDIRECT:
                         wasmexpr(elm.code, elm.warg.get!uint);
+                        //writefln("\t\tdata=%s",
                         break;
                     case MEMORY:
-                        wasmexpr(elm.code, elm.warg[0].get!uint, elm.warg[1].get!uint);
+                        wasmexpr(elm.code, elm.wargs[0].get!uint, elm.wargs[1].get!uint);
                         break;
                     case MEMOP:
                         wasmexpr(elm.code);
@@ -95,13 +134,13 @@ struct WasmGas {
                             switch (elm.code) {
                             case I32_CONST:
                                 wasmexpr(elm.code, elm.warg.get!int);
-                                break
+                                break;
                             case I64_CONST:
                                 wasmexpr(elm.code, elm.warg.get!long);
-                                break
+                                break;
                             case F32_CONST:
                                 wasmexpr(elm.code, elm.warg.get!float);
-                                break
+                                break;
                             case F64_CONST:
                                 wasmexpr(elm.code, elm.warg.get!double);
                                 break;
@@ -109,24 +148,49 @@ struct WasmGas {
                                 assert(0, format("Instruction %s is not a const", elm.code));
                             }
                         }
+                        break;
                     case END:
-                        if (level == elm.level) {
-                            expr=ExprRan
-                            return gas_count;
-                        }
+                        writefln(" END ****");
+                        wasmexpr(elm.code);
+                        return GasResult(gas_count, elm.code);
                     }
                 }
             }
-            return gas_const;
+            return GasResult(gas_count, IR.END);
         }
+
         if (code_sec) {
-            foreach(c; code_sec.opSlice) {
+//            int count=1;
+            foreach(ref c; code_sec.sectypes) {
+                // count--;
+                // if (count < 0) {
+                //     break;
+                // }
                 scope expr_bout=new OutBuffer;
-                expr_bout.re
+                auto expr_range=c[];
+//                 {
+//                     auto expr=expr_range;
+//                     // expr.test=true;
+//                     // expr.count=10;
+//                     foreach(e; expr) {
+//                         writefln("::%s", e);
+//                     }
+// //                    writefln("ex
+//                 }
+//                writefln("expr_range.data=%s", expr_range.data);
+                expr_bout.reserve(c.expr.length*5/4); // add 25%
+                const gas_result=inject_gas_funcs(expr_bout, expr_range);
+                scope code_bout=new OutBuffer;
+                code_bout.reserve(expr_bout.offset+2*uint.sizeof);
+                inject_gas(code_bout, gas_result.gas);
+//                writefln("expr_bout=%s expr_range.empty=%s %s", expr_bout.toBytes, expr_range.empty, expr_range.front);
+                code_bout.write(expr_bout);
+                c.expr=code_bout.toBytes.idup;
+//                writefln("code_bout=%s", code_bout.toBytes);
             }
         }
     }
-    +/
+
     void modify() {
         /+
          Inject the Global variable
@@ -142,7 +206,15 @@ struct WasmGas {
         const global_idx=inject(global_type);
         const func_sec=writer.mod[Section.FUNCTION];
         const gas_count_func_idx=cast(uint)((func_sec is null)?0:func_sec.sectypes.length);
-
+        void inject_gas_count(scope OutBuffer bout, const uint gas) {
+            writefln("gas=%d gas_count_func_idx=%d", gas, gas_count_func_idx);
+            if (gas>0) {
+                WasmExpr(bout)
+                    (IR.I32_CONST, gas)
+                    (IR.CALL, gas_count_func_idx);
+            }
+        }
+        inject_gas(&inject_gas_count); //gas_count_func_idx);
 
         { // Gas down counter
             FuncType func_type=FuncType(Types.FUNC, null, null);
@@ -155,12 +227,13 @@ struct WasmGas {
             {
                 scope out_expr=new OutBuffer;
                 WasmExpr(out_expr)
+                    (IR.LOCAL_SET, 0)
                     (IR.GLOBAL_GET, global_idx)
                     (IR.I32_CONST, 0)
                     (IR.I32_GT_S)
                     (IR.IF, Types.EMPTY)
                     (IR.GLOBAL_GET, global_idx)
-                    (IR.I32_CONST, 1)
+                    (IR.LOCAL_GET, 0)
                     (IR.I32_SUB)
                     (IR.GLOBAL_SET, global_idx)
                     (IR.ELSE)
@@ -190,14 +263,18 @@ struct WasmGas {
             {
                 scope out_expr=new OutBuffer;
                 WasmExpr(out_expr)
-                    (IR.GLOBAL_GET, global_idx)
-                    //       (IR.BLOCK)
-                    (IR.I32_EQ)
-                    (IR.IF, Types.EMPTY)
-                    (IR.GLOBAL_SET, global_idx)
-                    (IR.ELSE)
+                    // void $set_gas_gauge(i32 $gas)
+                    //   if ( $gas_gauge != 0) {
+                    (IR.GLOBAL_GET, global_idx)(IR.I32_EQZ)(IR.IF, Types.EMPTY)
+                    //       exit;
                     (IR.UNREACHABLE)
+                    //   } else {
+                    (IR.ELSE)
+                    //     $gas_gauge=$gas;
+                    (IR.GLOBAL_SET, global_idx)
+                    //   }
                     (IR.END)
+                    //}
                     (IR.END);
                 immutable expr=out_expr.toBytes.idup;
                 code_type=CodeType(null, expr);

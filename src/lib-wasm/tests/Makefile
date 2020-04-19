@@ -26,7 +26,7 @@ MAIN:=embedder_example
 # 	echo ${DLDFLAGS}
 
 run: all
-	export LD_LIBARY_PATH=$(WAVMROOT); ./$(MAIN)
+	export LD_LIBRARY_PATH=$(WAVMROOT); ./$(MAIN)
 
 all: $(MAIN)
 

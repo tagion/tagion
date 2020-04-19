@@ -676,6 +676,9 @@ class WasmWriter {
                 }
                 expr=c[].data;
             }
+            ExprRange opSlice() const {
+                return ExprRange(expr);
+            }
             void serialize(ref OutBuffer bout) const {
                 scope tmp_out=new OutBuffer;
                 tmp_out.reserve(guess_size);

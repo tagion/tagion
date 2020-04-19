@@ -8,6 +8,7 @@ import std.conv : to;
 import std.range.primitives : isInputRange;
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
+import std.stdio;
 import wavm.WasmException;
 
 
@@ -262,7 +263,7 @@ shared static this() {
             LOOP                : Instr("loop", 0, IRType.BLOCK),
             IF                  : Instr("if", 1, IRType.BLOCK),
 
-            ELSE                : Instr("else", 1, IRType.END),
+            ELSE                : Instr("else", 0, IRType.END),
             END                 : Instr("end", 0, IRType.END),
             BR                  : Instr("br", 1, IRType.BRANCH),
             BR_IF               : Instr("br_if", 1, IRType.BRANCH),
@@ -578,6 +579,10 @@ struct WasmArg {
         }
     }
 
+    void undefine() nothrow {
+        _type=Types.EMPTY;
+    }
+
     void opAssign(T)(T x) {
         alias BaseT=Unqual!T;
         static if (is(BaseT == int) || is(BaseT == uint)) {
@@ -653,6 +658,13 @@ struct ExprRange {
             const(Types)[] _types;
         }
 
+        void unreachable() nothrow {
+            code=IR.UNREACHABLE;
+            _warg.undefine;
+            _wargs=null;
+            _types=null;
+        }
+
         const(WasmArg) warg() const pure nothrow {
             return _warg;
         }
@@ -667,8 +679,15 @@ struct ExprRange {
 
     }
 
+    // int count;
+    // bool test;
     this(immutable(ubyte[]) data) {
+        //count=int.max;
+        // this.count=count;
+        // this.test=test;
         this.data=data;
+        // test=true;
+        // count=int.max;
         //size_t dummy_index;
         set_front(current, _index);
     }
@@ -696,7 +715,17 @@ struct ExprRange {
                 }
             }
         }
+        // if (test) {
+        //     //writefln("::\tindex=%d data.length=%d empty=%s", index, data.length, empty);
+        //     if (index == data.length) {
+        //         index++;
+        //     }
+        //     if (index >= data.length) {
+        //         return;
+        //     }
+        // }
 
+        if (index < data.length) {
         elm.code=cast(IR)data[index];
         elm._types=null;
         const instr=instrTable[elm.code];
@@ -768,9 +797,19 @@ struct ExprRange {
                 }
                 break;
             case END:
+                //writefln("END index=%d", index);
                 _level--;
                 break;
             }
+        }
+        }
+        else {
+            if (index == data.length) {
+                index++;
+            }
+            elm.unreachable;
+            // IRElement result;
+            // elm=result; //IRElement(IR.UNREACHABLE);
         }
     }
 
@@ -784,10 +823,19 @@ struct ExprRange {
         }
 
         bool empty() const pure nothrow {
-            return _index >= data.length;
+            // if (test) {
+            //     return _index > data.length;
+            // }
+            // else {
+            return _index > data.length;
+            // }
         }
 
         void popFront() {
+            // if (test) {
+            //     count--;
+            //     assert(count > 0);
+            // }
             set_front(current, _index);
         }
     }
