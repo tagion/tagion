@@ -13,7 +13,7 @@ import std.algorithm.comparison : max;
 import std.algorithm.iteration : map;
 import std.array : array;
 import std.format;
-import std.stdio;
+//import std.stdio;
 
 struct WasmGas {
     enum set_gas_gauge="$set_gas_gauge";
@@ -67,19 +67,14 @@ struct WasmGas {
         const(GasResult) inject_gas_funcs(ref scope OutBuffer bout, ref ExprRange expr) {
             scope wasmexpr=WasmExpr(bout);
             uint gas_count;
-            scope(exit) {
-                writefln("\tbout=%s", bout.toBytes);
-            }
             while(!expr.empty) {
                 const elm=expr.front;
                 const instr=instrTable[elm.code];
-                writefln("> %s", instr);
                 gas_count+=instr.cost;
                 expr.popFront;
                 with(IRType) {
                     final switch(instr.irtype) {
                     case CODE:
-                        writefln("\t%s", instr);
                         wasmexpr(elm.code);
                         //bout.write(cast(ubyte)elm.code);
                         break;
@@ -90,10 +85,8 @@ struct WasmGas {
                         const block_result=inject_gas_funcs(block_bout, expr);
                         if (elm.code is IR.IF) {
                             int if_gas_count=block_result.gas;
-                            writefln("gas_count=%d if_gas_count=%d", gas_count, if_gas_count);
                             if (block_result.irtype is IR.ELSE) {
                                 const endif_result=inject_gas_funcs(block_bout, expr);
-                                writefln("gas_count=%d else_gas_count=%d", gas_count, endif_result.gas);
                                 if_gas_count=max(endif_result.gas, if_gas_count);
                             }
                             gas_count+=if_gas_count;
@@ -116,7 +109,6 @@ struct WasmGas {
                         pragma(msg, "elm.wargs.map=", typeof(elm.wargs.map!((a) => a.get!uint)));
                         pragma(msg, "elm.wargs.map.array=", typeof(elm.wargs.map!((a) => a.get!uint).array));
                         const branch_idxs=elm.wargs.map!((a) => a.get!uint).array;
-                        writefln("branch_idxs=%s", branch_idxs);
                         wasmexpr(elm.code, branch_idxs);
                         break;
                     case CALL, LOCAL, GLOBAL, CALL_INDIRECT:
@@ -150,7 +142,6 @@ struct WasmGas {
                         }
                         break;
                     case END:
-                        writefln(" END ****");
                         wasmexpr(elm.code);
                         return GasResult(gas_count, elm.code);
                     }
@@ -207,7 +198,6 @@ struct WasmGas {
         const func_sec=writer.mod[Section.FUNCTION];
         const gas_count_func_idx=cast(uint)((func_sec is null)?0:func_sec.sectypes.length);
         void inject_gas_count(scope OutBuffer bout, const uint gas) {
-            writefln("gas=%d gas_count_func_idx=%d", gas, gas_count_func_idx);
             if (gas>0) {
                 WasmExpr(bout)
                     (IR.I32_CONST, gas)
