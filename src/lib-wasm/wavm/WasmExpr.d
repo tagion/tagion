@@ -4,7 +4,7 @@ import std.bitmanip : nativeToLittleEndian;
 import std.traits : Unqual, isArray, isIntegral, ForeachType;
 import std.outbuffer;
 import std.format;
-import std.stdio;
+//import std.stdio;
 
 import wavm.WasmBase;
 import wavm.LEB128;
@@ -84,7 +84,6 @@ struct WasmExpr {
                         }
                     }
                 }
-                writefln("table=%s", table);
                 check(table.length >= 2, format("Too few arguments for %s instruction", instr.name));
                 bout.write(encode(table.length-1));
                 foreach(t; table) {
