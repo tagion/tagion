@@ -87,6 +87,11 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void custom_sec(ref scope const(Module) mod) {
+        auto _custom=*mod.custom_sec;
+        //foreach(c; _custom[]) {
+        writefln("_custom=%s",  _custom);
+                //output.writef("%s(custom (%s %s))", indent, c.name, cast(string)(c.bytes));
+            //}
     }
 
     void type_sec(ref scope const(Module) mod) {

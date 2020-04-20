@@ -54,6 +54,7 @@ struct WasmReader {
                     foreach(E; EnumMembers!(Section)) {
                     case E:
                         const sec=a.sec!E;
+                        writefln("SEC %s", E);
                         mod[E]=&sec;
                         static if (is(T==ModuleIterator)) {
                             iter(a.section, mod);
@@ -95,6 +96,8 @@ struct WasmReader {
     static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
         immutable len=u32(data, index);
         static if(T.sizeof is ubyte.sizeof) {
+            // writefln("data=%s", data[index..$]);
+            // writefln("%d..%d len=%d data.length=%d", index, index+len*T.sizeof, len, data.length);
             immutable vec_mem=data[index..index+len*T.sizeof];
             index+=len*T.sizeof;
             immutable result=cast(immutable(T*))(vec_mem.ptr);
@@ -170,6 +173,9 @@ struct WasmReader {
                 }
             do {
                 alias T=Sections[S];
+                static if(S is Section.CUSTOM) {
+                    writefln("sec(%s).data=%s", S, data);
+                }
                 return T(data);
             }
 
@@ -212,19 +218,23 @@ struct WasmReader {
                 }
             }
 
-            struct CustomType {
+            struct Custom {
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
+                    writefln("Custom data=%s %s", data, cast(string)data);
+
                     name=Vector!char(data, index);
-                    bytes=Vector!ubyte(data, index);
-                    size=index;
+                    writefln("name=%s", name);
+                    bytes=data[index..$];
+                    //Vector!ubyte(data, index);
+                    size=data.length;
                 }
             }
 
-            alias Custom=SectionT!(CustomType);
+            //alias Custom=SectionT!(CustomType);
 
             struct FuncType {
                 immutable(Types) type;

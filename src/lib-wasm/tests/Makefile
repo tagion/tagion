@@ -1,6 +1,6 @@
 
 REPOROOT?=${shell git rev-parse --show-toplevel}
-WAVMROOT:=$(REPOROOT)/../../WAVM/
+WAVMROOT:=$(REPOROOT)/../WAVM/
 
 # Unwind
 CFLAGS+=${shell pkg-config --cflags libunwind}

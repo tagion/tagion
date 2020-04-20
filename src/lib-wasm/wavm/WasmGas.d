@@ -288,6 +288,7 @@ struct WasmGas {
     }
 }
 
+version(none)
 unittest {
     import std.stdio;
     import std.file;

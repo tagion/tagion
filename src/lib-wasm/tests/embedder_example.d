@@ -48,7 +48,7 @@ int main(string[] args)
 	// Create external print functions.
     wasm_valtype_t** p=cast(wasm_valtype_t**)malloc((wasm_valtype_t*).sizeof*1);
     wasm_valtype_t** r=cast(wasm_valtype_t**)malloc((wasm_valtype_t*).sizeof*1);
-    scope(exit) {
+    scope(exit) {1
         free(r);
         free(p);
     }

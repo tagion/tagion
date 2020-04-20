@@ -88,7 +88,8 @@ class WasmWriter {
         }
 
         final void custom_sec(ref scope const(ReaderModule) reader_mod) {
-            section_secT!(Section.CUSTOM)(reader_mod);
+            pragma(msg, Module.Types[Section.CUSTOM], " : ", WasmSection.Custom);
+            mod[Section.CUSTOM]=new WasmSection.Custom(*reader_mod[Section.CUSTOM]);
         }
 
         final void type_sec(ref scope const(ReaderModule) reader_mod) {
@@ -121,6 +122,7 @@ class WasmWriter {
         }
 
         final void start_sec(ref scope const(ReaderModule) reader_mod) {
+            pragma(msg, Module.Types[Section.START], " : ", WasmSection.Start);
             mod[Section.START]=new WasmSection.Start(*reader_mod[Section.START]);
         }
 
@@ -337,19 +339,22 @@ class WasmWriter {
         //     }
         // }
 
-        struct CustomType {
+        struct Custom {
             string name;
             immutable(ubyte)[] bytes;
             size_t guess_size() const pure nothrow {
                 return name.length+bytes.length+uint.sizeof*2;
             }
-            this(ReaderSecType!(Section.CUSTOM) s) {
+            alias ReaderCustomType=Unqual!(PointerTarget!(ReaderModule.Types[Section.CUSTOM]));
+
+            this(ReaderCustomType s) {
                 name=s.name;
+                bytes=s.bytes;
             }
             mixin Serialize;
         }
 
-        alias Custom=SectionT!(CustomType);
+        // alias Custom=SectionT!(CustomType);
 
         struct FuncType {
             Types type;
@@ -630,8 +635,7 @@ class WasmWriter {
 
         struct Start {
             uint idx;
-            alias ReaderStartType=Unqual!(PointerTarget!(ReaderModule.Types[Section.START])); //WasmReader.Module[Section.START];
-
+            alias ReaderStartType=Unqual!(PointerTarget!(ReaderModule.Types[Section.START]));
             this(ref const(ReaderStartType) s) {
                 idx=s.idx;
             }
