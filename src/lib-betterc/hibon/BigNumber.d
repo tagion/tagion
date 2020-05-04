@@ -18,13 +18,8 @@ import std.internal.math.biguintnoasm : BigDigit;
  It is a wrapper of the std.bigint
 +/
 struct BigNumber {
-    private union {
-//        BigInt x;
-        struct {
-            BigDigit[] _data;
-            bool _sign;
-        }
-    }
+    BigDigit[] data;
+    bool sign;
 }
 
 version(none) {

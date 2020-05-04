@@ -56,6 +56,7 @@ void binwrite(T, R, I)(R range, const T value, I index) pure {
 /++
  Helper function to serialize an array of the type T of a HiBON
 +/
+version(none)
 void array_write(T)(BinBuffer buffer, T array, ref size_t index) if ( is(T : U[], U) && isBasicType!U ) {
     const ubytes = cast(const(ubyte[]))array;
     immutable new_index = index + ubytes.length;

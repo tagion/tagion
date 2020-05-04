@@ -4,7 +4,7 @@ extern(C):
 @system:
 import core.stdc.stdlib : calloc, malloc, realloc, free;
 import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
-import std.traits : isNumeric;
+import std.traits : isNumeric, isArray, Unqual;
 import std.exception : assumeUnique;
 import hibon.Memory;
 
@@ -65,14 +65,17 @@ struct BinBuffer {
         }
         _data[*index..*index+add.length]=add;
     }
-    void write(T)(const T x, size_t* index) if(isNumeric!T) {
+
+
+    void write(T)(const T x, size_t* index) if (isNumeric!T || is(Unqual!(T)==bool)) {
         const res=nativeToLittleEndian(x);
         append(res, index);
     }
+
     void write(const(ubyte[]) x, size_t* index) {
         append(x, index);
     }
-    void write(string x, size_t* index) {
+    void write(T)(T x, size_t* index) if(isArray!T) {
         append(cast(ubyte[])x, index);
     }
     void write(T)(T x) {
@@ -89,6 +92,17 @@ struct BinBuffer {
             _index=0;
         }
     }
+    BinBuffer opSlice(const size_t from, const size_t to)
+        in {
+            assert(from<=to);
+            assert(to <= _data.length);
+        }
+    do {
+        auto result=Buffer(to-from);
+        result.write(_data[from..to]);
+        return opSlice;
+    }
+
     immutable(ubyte[]) serialize() const {
         auto result=_data[0.._index];
         return assumeUnique(result);
