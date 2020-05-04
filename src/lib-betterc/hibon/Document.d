@@ -210,7 +210,7 @@ struct Document {
     auto keys() const {
         return map!"a.key"(this[]);
     }
-    version(none) {
+
     /++
      The Document must only contain member names which represents an uint number
      Throws:
@@ -222,14 +222,13 @@ struct Document {
     auto indices() const {
         return map!(a => to_uint(a.key))(this[]);
     }
-    }
-    version(none) {
+
+
     /++
      Check if the Document can be clasified as an Array
      Returns:
      Is true if all the keys in ordred numbers
      +/
-    version(none)
     bool isArray() const {
         return .isArray(keys);
     }
@@ -241,7 +240,7 @@ struct Document {
     bool hasElement(in string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
-    }
+
     /++
      Returns:
      true if the index exist in the Document
@@ -250,7 +249,7 @@ struct Document {
         return hasElement(index.to!string);
     }
 
-    version(none) {
+
     /++
      Find the element with key
      Returns:
@@ -288,7 +287,6 @@ struct Document {
      +/
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         return opIndex(index.to!string);
-    }
     }
 
     /++
@@ -354,7 +352,6 @@ struct Document {
      x = is the value of the element
      index = is offset index in side the buffer and index with be progressed
      +/
-    @trusted
     static void build(T)(BinBuffer buffer, Type type, string key, const(T) x, ref size_t index) {
         buildKey(buffer, type, key, index);
         // buffer.binwrite(type, &index);
@@ -390,7 +387,6 @@ struct Document {
         return RangeT!U(data);
     }
 
-    version(none) {
     ///
     unittest {
         alias TabelRange = Tuple!( immutable(ubyte)[],  immutable(ubyte)[], immutable(ubyte)[]);
@@ -424,7 +420,6 @@ struct Document {
         // }
 
         // assert(should_fail);
-    }
     }
 
     struct RangeT(T) {
@@ -463,7 +458,7 @@ struct Document {
         }
     }
 
-    version(none) {
+
 
     version(unittest) {
         import std.typecons : Tuple, isTuple;
@@ -487,7 +482,7 @@ struct Document {
             return index;
         }
     }
-
+    version(none) {
     unittest {
         auto buffer=BinBuffer(0x200);
 
