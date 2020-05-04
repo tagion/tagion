@@ -98,9 +98,13 @@ struct BinBuffer {
             assert(to <= _data.length);
         }
     do {
-        auto result=Buffer(to-from);
+        auto result=BinBuffer(to-from);
         result.write(_data[from..to]);
-        return opSlice;
+        return result;
+    }
+
+    @property size_t length() const pure {
+        return _index;
     }
 
     immutable(ubyte[]) serialize() const {

@@ -3,6 +3,8 @@ module hibon.HiBONBase;
 extern(C):
 @system:
 
+import hibon.Bailout;
+
 //import std.typecons : Typedef;
 enum UTC = "UTC";
 struct utc_t {
@@ -139,33 +141,31 @@ bool isArray(Type type) pure nothrow {
     }
 }
 
+mixin(Init_HiBON_Types!("__gshared immutable hibon_types=", 0));
 
 /++
  Returns:
  true if the type is a valid HiBONType excluding narive types
 +/
 bool isHiBONType(Type type) {
-    init_hibon_type;
-    pragma(msg, EnumMembers!Type);
-    return hibon_type[type];
+    return hibon_types[type];
 }
 
-protected __gshared bool[] hibon_type;
-protected void init_hibon_type() {
-    import core.stdc.stdlib;
-    if (hibon_type is null) {
-        hibon_type=(cast(bool*)malloc(ubyte.max+1))[0..ubyte.max+1];
-        with(Type) {
-            static foreach(E; EnumMembers!Type) {
-                hibon_type[E]=(!isNative(E) && (E !is NONE) && (E !is DEFINED_ARRAY) && (E !is DEFINED_NATIVE));
-            }
-        }
+template Init_HiBON_Types(string text, uint i) {
+    static if(i is ubyte.max+1) {
+        enum Init_HiBON_Types=text~"];";
+    }
+    else {
+        enum start_bracket=(i is 0)?"[":"";
+        enum E=cast(Type)i;
+        enum flag=(!isNative(E) && (E !is Type.NONE) && (E !is Type.DEFINED_ARRAY) && (E !is Type.DEFINED_NATIVE));
+        enum Init_HiBON_Types=Init_HiBON_Types!(text~start_bracket~flag.stringof~",", i+1);
     }
 }
 
 
-version(none) {
 ///
+
 static unittest {
     with(Type) {
         static assert(!isHiBONType(NONE));
@@ -175,12 +175,14 @@ static unittest {
 
 }
 
+version(none) {
+
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 }
 /++
  HiBON Generic value used by the HiBON class and the Document struct
 +/
-@safe
+//@safe
 union ValueT(bool NATIVE=false, HiBON,  Document) {
     @Type(Type.FLOAT32)   float     float32;
     @Type(Type.FLOAT64)   double    float64;
@@ -260,7 +262,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @trusted
     auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
-        //pragma(msg, code);
         mixin(code);
         assert(0);
     }
@@ -526,6 +527,12 @@ ulong to_ulong(string num) pure {
         result+=(a-'0');
     }
     return result;
+}
+
+uint to_uint(string num) pure {
+    ulong result=to_ulong(num);
+//    .check(result <= uint.max, "Bad uint overflow");
+    return cast(uint)result;
 }
 
 

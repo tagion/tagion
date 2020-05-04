@@ -216,7 +216,7 @@ struct Document {
      A range of indices of the type of uint in the Document
     +/
     auto indices() const {
-        return map!"a.key.to!uint"(this[]);
+        return map!(a => to_uint(a.key))(this[]);
     }
 
     /++
@@ -360,7 +360,7 @@ struct Document {
             buffer.write(x, &index);
         }
         else static if (is(T : const Document)) {
-            buffer.array_write(x.data, index);
+            buffer.write(x.data, &index);
         }
         else static if (is(T : const BigNumber)) {
             import std.internal.math.biguintnoasm : BigDigit;
@@ -582,6 +582,7 @@ struct Document {
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
+                    pragma(msg, typeof(e.get!(const(U))));
                     assert(e.get!U == test_tabel[i]);
                     assert(keys.front == name);
                     keys.popFront;
@@ -600,8 +601,8 @@ struct Document {
 
             { // Document which includes basic arrays and string
                 index = make(buffer, test_tabel_array);
-                immutable data = buffer[0..index].idup;
-                const doc=Document(data);
+                const doc_buffer = buffer[0..index];
+                const doc=Document(doc_buffer.serialize);
                 foreach(i, t; test_tabel_array) {
                     enum name = test_tabel_array.fieldNames[i];
                     alias U   = test_tabel_array.Types[i];
@@ -617,30 +618,30 @@ struct Document {
             }
 
             { // Document which includes sub-documents
-                auto buffer_subdoc=new ubyte[0x200];
+                auto buffer_subdoc=BinBuffer(0x200);
                 index = make(buffer_subdoc, test_tabel);
-                immutable data_sub_doc = buffer_subdoc[0..index].idup;
-                const sub_doc=Document(data_sub_doc);
+                const data_sub_doc = buffer_subdoc[0..index];
+                const sub_doc=Document(data_sub_doc.serialize);
 
                 index = 0;
                 uint size;
-                buffer.binwrite(uint.init, &index);
+                buffer.write(uint.init, &index);
                 enum doc_name="doc";
 
                 immutable index_before=index;
                 build(buffer, Type.INT32, Type.INT32.stringof, int(42), index);
-                immutable data_int32 = buffer[index_before..index].idup;
+                const data_int32 = buffer[index_before..index];
 
                 build(buffer, Type.DOCUMENT, doc_name, sub_doc, index);
                 build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
 
-                buffer.binwrite(Type.NONE, &index);
+                buffer.write(Type.NONE, &index);
 
                 size = cast(uint)(index - uint.sizeof);
-                buffer.binwrite(size, 0);
+                buffer.write(size, 0);
 
-                immutable data = buffer[0..index].idup;
-                const doc=Document(data);
+                const doc_buffer = buffer[0..index];
+                const doc=Document(doc_buffer.serialize);
 
                 { // Check int32 in doc
                     const int32_e = doc[Type.INT32.stringof];
@@ -684,7 +685,7 @@ struct Document {
                 }
 
                 { // Check opEqual
-                    const data_int32_e = Element(data_int32);
+                    const data_int32_e = Element(data_int32.serialize);
                     assert(doc[Type.INT32.stringof] == data_int32_e);
                 }
             }
@@ -692,7 +693,7 @@ struct Document {
             { // Test opCall!(string[])
                 index = 0;
                 uint size;
-                buffer.binwrite(uint.init, &index);
+                buffer.write(uint.init, &index);
                 auto texts=["Text1", "Text2", "Text3"];
                 foreach(i, text; texts) {
                     build(buffer, Type.STRING, i.to!string, text, index);
@@ -813,7 +814,7 @@ struct Document {
              throws:
              if the element does not contain the type E and HiBONException is thrown
              +/
-            auto by(Type E)() {
+            auto by(Type E)() const {
                 .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
                 .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
@@ -826,10 +827,12 @@ struct Document {
              throws:
              if the element does not contain the type and HiBONException is thrown
              +/
-            T get(T)() const {
+            const(T) get(T)() const {
                 enum E = Value.asType!T;
+                pragma(msg, "T=", T);
                 import std.format;
                 static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));
+                pragma(msg, "T=", T, " by!E=", typeof(by!E));
                 return by!E;
             }
 
