@@ -146,6 +146,7 @@ bool isArray(Type type) pure nothrow {
 +/
 bool isHiBONType(Type type) {
     init_hibon_type;
+    pragma(msg, EnumMembers!Type);
     return hibon_type[type];
 }
 
