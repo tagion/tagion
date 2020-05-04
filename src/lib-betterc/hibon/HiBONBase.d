@@ -1,24 +1,52 @@
-module tagion.hibon.HiBONBase;
+module hibon.HiBONBase;
 
+extern(C):
+@system:
+
+//import std.typecons : Typedef;
+enum UTC = "UTC";
+struct utc_t {
+     @(UTC) ulong time; //
+    this(ulong x) {
+        time=x;
+    }
+    bool opEquals(T)(T x) const pure {
+        static if (is(T:const(utc_t))) {
+            return this == x;
+
+        }
+        else {
+            return time == x;
+        }
+    }
+}
+//alias utc_t = Typedef!(ulong, ulong.init, UTC);
+/*
 import tagion.Types;
 import tagion.Base : isOneOf;
 
 import tagion.utils.UTCTime;
+*/
 
-import std.format;
+//import std.format;
 import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
 
 import std.system : Endian;
-import bin = std.bitmanip;
-import tagion.hibon.HiBONException;
-import tagion.hibon.BigNumber;
+//import bin = std.bitmanip;
+import std.exception;
 
-alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
+// import tagion.hibon.HiBONException;
+import hibon.BinBuffer;
+import hibon.BigNumber;
+
+
+//alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 
 /++
  Helper function to serialize a HiBON
 +/
+version(none)
 void binwrite(T, R, I)(R range, const T value, I index) pure {
     import std.typecons : TypedefType;
     alias BaseT=TypedefType!(T);
@@ -28,16 +56,15 @@ void binwrite(T, R, I)(R range, const T value, I index) pure {
 /++
  Helper function to serialize an array of the type T of a HiBON
 +/
-@safe
-void array_write(T)(ref ubyte[] buffer, T array, ref size_t index) pure if ( is(T : U[], U) && isBasicType!U ) {
+void array_write(T)(BinBuffer buffer, T array, ref size_t index) if ( is(T : U[], U) && isBasicType!U ) {
     const ubytes = cast(const(ubyte[]))array;
     immutable new_index = index + ubytes.length;
     scope(success) {
         index = new_index;
     }
-    buffer[index..new_index] = ubytes;
+    buffer.write(ubytes);
+    //buffer[index..new_index] = ubytes;
 }
-
 /++
  HiBON Type codes
 +/
@@ -83,18 +110,18 @@ enum Type : ubyte {
  Returns:
  true if the type is a internal native HiBON type
 +/
-@safe
 bool isNative(Type type) pure nothrow {
     with(Type) {
         return ((type & DEFINED_NATIVE) !is 0) && (type !is DEFINED_NATIVE);
     }
 }
 
+
+
 /++
  Returns:
  true if the type is a internal native array HiBON type
 +/
-@safe
 bool isNativeArray(Type type) pure nothrow {
     with(Type) {
         return ((type & DEFINED_ARRAY) !is 0) && (isNative(type));
@@ -105,33 +132,37 @@ bool isNativeArray(Type type) pure nothrow {
  Returns:
  true if the type is a HiBON data array (This is not the same as HiBON.isArray)
 +/
-@safe
 bool isArray(Type type) pure nothrow {
     with(Type) {
         return ((type & DEFINED_ARRAY) !is 0) && (type !is DEFINED_ARRAY) && (!isNative(type));
     }
 }
 
+
 /++
  Returns:
  true if the type is a valid HiBONType excluding narive types
 +/
-@safe
-bool isHiBONType(Type type) pure nothrow {
-    bool[] make_flags() {
-        bool[] str;
-        str.length = ubyte.max+1;
-        with(Type) {
-            static foreach(E; EnumMembers!Type) {
-                str[E]=(!isNative(E) && (E !is NONE) && (E !is DEFINED_ARRAY) && (E !is DEFINED_NATIVE));
-            }
-        }
-        return str;
-    }
-    enum flags = make_flags;
-    return flags[type];
+bool isHiBONType(Type type) {
+    init_hibon_type;
+    return hibon_type[type];
 }
 
+protected __gshared bool[] hibon_type;
+protected void init_hibon_type() {
+    import core.stdc.stdlib;
+    if (hibon_type is null) {
+        hibon_type=(cast(bool*)malloc(ubyte.max+1))[0..ubyte.max+1];
+        with(Type) {
+            static foreach(E; EnumMembers!Type) {
+                hibon_type[E]=(!isNative(E) && (E !is NONE) && (E !is DEFINED_ARRAY) && (E !is DEFINED_NATIVE));
+            }
+        }
+    }
+}
+
+
+version(none) {
 ///
 static unittest {
     with(Type) {
@@ -143,7 +174,7 @@ static unittest {
 }
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
-
+}
 /++
  HiBON Generic value used by the HiBON class and the Document struct
 +/
@@ -208,8 +239,8 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                     enum code="";
                 }
                 else {
-                    enum code = format("%sstatic if ( type is Type.%s ) {\n    return %s;\n}\n",
-                        (first)?"":"else ", MemberType, name);
+                    enum code_else=(first)?"":"else ";
+                    enum code = code_else~"static if ( type is "~MemberType.stringof~" ) {\n    return "~name~";\n}\n";
                 }
                 enum GetFunctions=GetFunctions!(text~code, false, TList[1..$]);
             }
@@ -227,6 +258,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @trusted
     auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
+        //pragma(msg, code);
         mixin(code);
         assert(0);
     }
@@ -312,7 +344,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Constructs a Value of the type BigNumber
      +/
     @trusted
-    this(const BigNumber big) {
+    this(BigNumber big) {
         bigint=big;
     }
 
@@ -390,7 +422,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
 
 };
 
-
+version(none)
 unittest {
     import std.typecons;
     alias Value = ValueT!(false, void, void);
@@ -416,10 +448,13 @@ unittest {
 
     { // utc test,
         static assert(Value.asType!utc_t is Type.UTC);
-        utc_t time = 1234;
+        pragma(msg, typeof(1234UL));
+//        utc_t time_1;  time_1.opAssign(1234UL);
+
+        utc_t time = 1234UL;
         Value v;
         v = time;
-        assert(v.by!(Type.UTC) == 1234);
+        assert(v.by!(Type.UTC) == 1234UL);
         alias U = Value.TypeT!(Type.UTC);
         static assert(is(U == const utc_t));
         static assert(!is(U == const ulong));
@@ -461,9 +496,9 @@ unittest {
  Returns:
  true if the a is an index
 +/
-@safe bool is_index(string a, out uint result) pure {
-    import std.conv : to;
-    enum MAX_UINT_SIZE=to!string(uint.max).length;
+// memcpy(return void* s1, scope const void* s2, size_t n);
+bool is_index(string a, out uint result) pure {
+    enum MAX_UINT_SIZE=uint.max.stringof.length;
     if ( a.length <= MAX_UINT_SIZE ) {
         if ( (a[0] is '0') && (a.length > 1) ) {
             return false;
@@ -473,7 +508,7 @@ unittest {
                 return false;
             }
         }
-        immutable number=a.to!ulong;
+        immutable number=a.to_ulong;
         if ( number <= uint.max ) {
             result = cast(uint)number;
             return true;
@@ -482,12 +517,22 @@ unittest {
     return false;
 }
 
+ulong to_ulong(string num) pure {
+    ulong result;
+    foreach(a; num) {
+        result*=10;
+        result+=(a-'0');
+    }
+    return result;
+}
+
+
 /++
  Check if all the keys in range is indices and are consecutive
  Returns:
  true if keys is the indices of an HiBON array
 +/
-@safe bool isArray(R)(R keys) {
+bool isArray(R)(R keys) {
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {
             uint current_index;
@@ -511,17 +556,19 @@ unittest {
     return false;
 }
 
+version(none) {
 ///
 unittest { // check is_index
-    import std.conv : to;
+//    import std.conv : to;
     uint index;
     assert(is_index("0", index));
     assert(index is 0);
     assert(!is_index("-1", index));
-    assert(is_index(uint.max.to!string, index));
+    assert(is_index(uint.max.stringof, index));
     assert(index is uint.max);
 
-    assert(!is_index(((cast(ulong)uint.max)+1).to!string, index));
+    enum overflow=((cast(ulong)uint.max)+1);
+    assert(!is_index(overflow.stringof, index));
 
     assert(is_index("42", index));
     assert(index is 42);
@@ -530,11 +577,12 @@ unittest { // check is_index
     assert(!is_index("00", index));
     assert(!is_index("01", index));
 }
+}
 
 /++
  This function decides the order of the HiBON keys
 +/
-@safe bool less_than(string a, string b) pure
+bool less_than(string a, string b) pure
     in {
         assert(a.length > 0);
         assert(b.length > 0);
@@ -548,6 +596,7 @@ body {
     return a < b;
 }
 
+version(none) {
 ///
 unittest { // Check less_than
     import std.conv : to;
@@ -556,7 +605,7 @@ unittest { // Check less_than
     assert(!less_than("00", "0"));
     assert(less_than("0", "abe"));
 }
-
+}
 /++
  Returns:
  true if the key is a valid HiBON key
@@ -584,6 +633,7 @@ unittest { // Check less_than
     return false;
 }
 
+version(none) {
 ///
 unittest { // Check is_key_valid
     import std.conv : to;
@@ -613,4 +663,17 @@ unittest { // Check is_key_valid
     assert(is_key_valid(text));
     text~='B';
     assert(!is_key_valid(text));
+}
+}
+
+template isOneOf(T, TList...) {
+    static if ( TList.length == 0 ) {
+        enum isOneOf = false;
+    }
+    else static if (is(T == TList[0])) {
+        enum isOneOf = true;
+    }
+    else {
+        alias isOneOf = isOneOf!(T, TList[1..$]);
+    }
 }

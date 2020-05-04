@@ -2,8 +2,9 @@
  * HiBON Document
  *
  */
-module tagion.hibon.Document;
+module hibon.Document;
 
+extern(C):
 
 //import std.format;
 import std.meta : AliasSeq, Filter;
@@ -15,11 +16,13 @@ import std.range.primitives : walkLength;
 
 //import tagion.Types : decimal_t;
 
-import tagion.Base : isOneOf;
-import tagion.Message : message;
-import tagion.hibon.BigNumber;
-import tagion.hibon.HiBONBase;
-import tagion.hibon.HiBONException;
+//import tagion.Base : isOneOf;
+//import .Message : message;
+import hibon.BinBuffer;
+import hibon.Bailout;
+import hibon.BigNumber;
+import hibon.HiBONBase;
+import hibon.HiBONException;
 
 import std.stdio;
 import std.exception;
@@ -29,7 +32,7 @@ static assert(uint.sizeof == 4);
 /**
    Document is a lazy handler of HiBON serialized buffer
 */
-@safe struct Document {
+struct Document {
     alias Value=ValueT!(false, void, Document); /// HiBON Document value type
     protected immutable(ubyte)[] _data;
 
@@ -70,11 +73,11 @@ static assert(uint.sizeof == 4);
     }
 
     @property nothrow pure const {
-        @safe bool empty() {
+        bool empty() {
             return data.length < 5;
         }
 
-        @trusted uint size() {
+        uint size() {
             return *cast(uint*)(data[0..uint.sizeof].ptr);
         }
     }
@@ -142,7 +145,6 @@ static assert(uint.sizeof == 4);
     /++
      Range of the Document
      +/
-    @safe
     struct Range {
         immutable(ubyte[]) data;
     protected:
@@ -202,6 +204,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of the member keys in the document
      +/
+    version(none)
     auto keys() const {
         return map!"a.key"(this[]);
     }
@@ -213,6 +216,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of indices of the type of uint in the Document
     +/
+    version(none)
     auto indices() const {
         return map!"a.key.to!uint"(this[]);
     }
@@ -222,6 +226,7 @@ static assert(uint.sizeof == 4);
      Returns:
      Is true if all the keys in ordred numbers
      +/
+    version(none)
     bool isArray() const {
         return .isArray(keys);
     }
@@ -330,11 +335,10 @@ static assert(uint.sizeof == 4);
      key = is the member key
      index = is offset index in side the buffer and index with be progressed
      +/
-    @trusted
-    static void buildKey(ref ubyte[] buffer, Type type, string key, ref size_t index) pure {
-        buffer.binwrite(type, &index);
-        buffer.binwrite(cast(ubyte)(key.length), &index);
-        buffer.array_write(key, index);
+    static void buildKey(BinBuffer buffer, Type type, string key, ref size_t index) {
+        buffer.write(type, &index);
+        buffer.write(cast(ubyte)(key.length), &index);
+        buffer.write(key, index);
     }
 
     /++
@@ -347,14 +351,14 @@ static assert(uint.sizeof == 4);
      index = is offset index in side the buffer and index with be progressed
      +/
     @trusted
-    static void build(T)(ref ubyte[] buffer, Type type, string key, const(T) x, ref size_t index) pure {
+    static void build(T)(BinBuffer buffer, Type type, string key, const(T) x, ref size_t index) {
         buildKey(buffer, type, key, index);
         // buffer.binwrite(type, &index);
         // buffer.binwrite(cast(ubyte)(key.length), &index);
         // buffer.array_write(key, index);
         static if ( is(T: U[], U) ) {
             immutable size=cast(uint)(x.length*U.sizeof);
-            buffer.binwrite(size, &index);
+            buffer.write(size, &index);
             buffer.array_write(x, index);
         }
         else static if (is(T : const Document)) {
@@ -392,7 +396,7 @@ static assert(uint.sizeof == 4);
         tabel_range[2]=[8,4,2,1];
 
         size_t index;
-        auto buffer=new ubyte[0x200];
+        auto buffer=BinBuffer(0x200); //new ubyte[0x200];
         index = make(buffer, tabel_range);
         immutable data = buffer[0..index].idup;
         const doc=Document(data);
@@ -417,7 +421,7 @@ static assert(uint.sizeof == 4);
         assert(should_fail);
     }
 
-    @safe struct RangeT(T) {
+    struct RangeT(T) {
         Range range;
         enum EType=Value.asType!T;
         static assert(EType !is Type.NONE, format("Range type %s not supported", T.stringof));
@@ -456,9 +460,9 @@ static assert(uint.sizeof == 4);
     version(unittest) {
         import std.typecons : Tuple, isTuple;
 
-        static private size_t make(R)(ref ubyte[] buffer, R range, size_t count=size_t.max) if (isTuple!R) {
+        static private size_t make(R)(BinBuffer buffer, R range, size_t count=size_t.max) if (isTuple!R) {
             size_t index;
-            buffer.binwrite(uint.init, &index);
+            buffer.write(uint.init, &index);
             foreach(i, t; range) {
                 if ( i is count ) {
                     break;
@@ -468,10 +472,10 @@ static assert(uint.sizeof == 4);
                 enum  E = Value.asType!U;
                 build(buffer, E, name, t, index);
             }
-            buffer.binwrite(Type.NONE, &index);
+            buffer.write(Type.NONE, &index);
             uint size;
             size = cast(uint)(index - uint.sizeof);
-            buffer.binwrite(size, 0);
+            buffer.write(size, 0);
             return index;
         }
     }
@@ -488,9 +492,9 @@ static assert(uint.sizeof == 4);
 
         { // Test of empty Document
             size_t index;
-            buffer.binwrite(uint.init, &index);
-            buffer.binwrite(Type.NONE, &index);
-            buffer.binwrite(uint(1), 0);
+            buffer.write(uint.init, &index);
+            buffer.write(Type.NONE, &index);
+            buffer.write(uint(1), 0);
             immutable data=buffer[0..index].idup;
             const doc = Document(data);
             assert(doc.length is 0);
@@ -718,7 +722,7 @@ static assert(uint.sizeof == 4);
 /**
  * HiBON Element representation
  */
-    @safe struct Element {
+    struct Element {
         /*
          * -----
          * //data image:
@@ -1080,7 +1084,6 @@ static assert(uint.sizeof == 4);
         /++
          Compare two elements
          +/
-        @safe
         bool opEquals(ref const Element other) const {
             immutable s = size;
             if (s !is other.size) {

@@ -1,32 +1,33 @@
-module tagion.hibon.BigNumber;
+module hibon.BigNumber;
 
-protected import std.bigint;
+extern(C):
+//protected import std.bigint;
 //import std.bigint;
-import std.format;
+//import std.format;
 import std.internal.math.biguintnoasm : BigDigit;
 //import std.conv : emplace;
-import std.range.primitives;
-import std.traits;
-import std.system : Endian;
+// import std.range.primitives;
+// import std.traits;
+// import std.system : Endian;
 
-import tagion.hibon.HiBONException : check;
-import tagion.hibon.BigNumber;
+//import hibon.HiBONException : check;
+
 
 /++
  BigNumber used in the HiBON format
  It is a wrapper of the std.bigint
 +/
-@safe
 struct BigNumber {
     private union {
-        BigInt x;
+//        BigInt x;
         struct {
             BigDigit[] _data;
             bool _sign;
         }
     }
+}
 
-
+version(none) {
     /++
      Returns:
      the BigNumber as BigDigit array
