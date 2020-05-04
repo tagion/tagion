@@ -6,6 +6,7 @@ import core.stdc.stdlib : calloc, malloc, realloc, free;
 import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
 import std.traits : isNumeric;
 import std.exception : assumeUnique;
+import hibon.Memory;
 
 struct BinBuffer {
     version(none) {
@@ -47,21 +48,20 @@ struct BinBuffer {
     enum DEFAULT_SIZE=256;
     this(size_t size) {
         if (size>0) {
-            _data=(cast(ubyte*)malloc(size))[0..size];
+            _data=create!(ubyte[])(size);
         }
     }
     private void append(scope const(ubyte[]) add, size_t* index) {
         if (_data is null) {
             const new_size=(add.length < DEFAULT_SIZE)?DEFAULT_SIZE:add.length;
-            _data=(cast(ubyte*)malloc(new_size))[0..new_size];
-            //current=root=Buffer(DEFAULT_SIZE);
+            _data=create!(ubyte[])(new_size);
         }
         scope(exit) {
             *index+=add.length;
         }
         if (*index+add.length > _data.length) {
             const new_size=_data.length+((add.length < DEFAULT_SIZE)?DEFAULT_SIZE:add.length);
-            _data=(cast(ubyte*)realloc(_data.ptr, new_size))[0..new_size];
+            _data.resize(new_size);
         }
         _data[*index..*index+add.length]=add;
     }
