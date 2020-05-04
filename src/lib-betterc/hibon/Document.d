@@ -32,6 +32,7 @@ static assert(uint.sizeof == 4);
 /**
    Document is a lazy handler of HiBON serialized buffer
 */
+
 struct Document {
     alias Value=ValueT!(false, void, Document); /// HiBON Document value type
     protected immutable(ubyte)[] _data;
@@ -67,7 +68,7 @@ struct Document {
      Returns:
      Document copy
      +/
-    @trusted
+
     void copy(ref const Document doc) {
         emplace(&this, doc);
     }
@@ -138,6 +139,7 @@ struct Document {
      Params:
      true if the Document is inorder
      +/
+
     bool isInorder() const {
         return valid() is Element.ErrorCode.NONE;
     }
@@ -200,6 +202,7 @@ struct Document {
         return Range(data);
     }
 
+    version(none) {
     /++
      Returns:
      A range of the member keys in the document
@@ -215,10 +218,12 @@ struct Document {
      Returns:
      A range of indices of the type of uint in the Document
     +/
+
     auto indices() const {
         return map!(a => to_uint(a.key))(this[]);
     }
-
+    }
+    version(none) {
     /++
      Check if the Document can be clasified as an Array
      Returns:
@@ -236,7 +241,7 @@ struct Document {
     bool hasElement(in string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
-
+    }
     /++
      Returns:
      true if the index exist in the Document
@@ -245,6 +250,7 @@ struct Document {
         return hasElement(index.to!string);
     }
 
+    version(none) {
     /++
      Find the element with key
      Returns:
@@ -283,7 +289,7 @@ struct Document {
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         return opIndex(index.to!string);
     }
-
+    }
 
     /++
      same as data
@@ -384,6 +390,7 @@ struct Document {
         return RangeT!U(data);
     }
 
+    version(none) {
     ///
     unittest {
         alias TabelRange = Tuple!( immutable(ubyte)[],  immutable(ubyte)[], immutable(ubyte)[]);
@@ -417,6 +424,7 @@ struct Document {
         // }
 
         // assert(should_fail);
+    }
     }
 
     struct RangeT(T) {
@@ -454,6 +462,8 @@ struct Document {
             }
         }
     }
+
+    version(none) {
 
     version(unittest) {
         import std.typecons : Tuple, isTuple;
@@ -582,7 +592,6 @@ struct Document {
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
-                    pragma(msg, typeof(e.get!(const(U))));
                     assert(e.get!U == test_tabel[i]);
                     assert(keys.front == name);
                     keys.popFront;
@@ -716,7 +725,7 @@ struct Document {
             }
         }
     }
-
+    }
 
 /**
  * HiBON Element representation
@@ -761,7 +770,7 @@ struct Document {
              throws:
              if  the type is invalid and HiBONException is thrown
              +/
-            @trusted const(Value*) value() {
+            Value value() {
                 with(Type)
                 TypeCase:
                 switch(type) {
@@ -770,7 +779,7 @@ struct Document {
                         case E:
                             static if (E is Type.DOCUMENT) {
                                 immutable byte_size = *cast(uint*)(data[valuePos..valuePos+uint.sizeof].ptr);
-                                return new Value(Document(data[valuePos..valuePos+uint.sizeof+byte_size]));
+                                return Value(Document(data[valuePos..valuePos+uint.sizeof+byte_size]));
                             }
                             else static if (.isArray(E) || (E is Type.STRING)) {
                                 alias T = Value.TypeT!E;
@@ -778,7 +787,7 @@ struct Document {
                                     immutable birary_array_pos = valuePos+uint.sizeof;
                                     immutable byte_size = *cast(uint*)(data[valuePos..birary_array_pos].ptr);
                                     immutable len = byte_size / U.sizeof;
-                                    return new Value((cast(immutable(U)*)(data[birary_array_pos..$].ptr))[0..len]);
+                                    return Value((cast(immutable(U)*)(data[birary_array_pos..$].ptr))[0..len]);
                                 }
                             }
                             else static if (E is BIGINT) {
@@ -789,12 +798,12 @@ struct Document {
                                 immutable dig=(cast(immutable(BigDigit*))(data[birary_array_pos..$].ptr))[0..len];
                                 const sign=data[birary_array_pos+byte_size] !is 0;
                                 const big=BigNumber(sign, dig);
-                                return new Value(big);
+                                return Value(big);
                                 //  assert(0, format("Type %s not implemented", E));
                             }
                             else {
                                 if (isHiBONType(type)) {
-                                    return cast(Value*)(data[valuePos..$].ptr);
+                                    return cast(Value)(data[valuePos..$]);
                                 }
                             }
                             break TypeCase;
@@ -829,10 +838,7 @@ struct Document {
              +/
             const(T) get(T)() const {
                 enum E = Value.asType!T;
-                pragma(msg, "T=", T);
-                import std.format;
-                static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));
-                pragma(msg, "T=", T, " by!E=", typeof(by!E));
+                static assert(E !is Type.NONE, "Unsupported type "~T.stringof);
                 return by!E;
             }
 
@@ -930,6 +936,7 @@ struct Document {
              Returns:
              the size of the element in bytes
              +/
+            //  version(none)
             @trusted size_t size() {
                 with(Type) {
                 TypeCase:
@@ -975,8 +982,9 @@ struct Document {
                         // empty
                     }
                 }
-                import std.format;
-                assert(0, format("Bad type %s", type));
+                // import std.format;
+                // assert(0, format("Bad type %s", type));
+                assert(0);
             }
 
 
@@ -1000,7 +1008,6 @@ struct Document {
             +/
             @trusted ErrorCode valid() {
                 enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + uint.sizeof;
-
                 with(ErrorCode) {
                     if ( type is Type.DOCUMENT ) {
                         return DOCUMENT_TYPE;
@@ -1039,11 +1046,6 @@ struct Document {
                                     alias T = Value.TypeT!E;
                                     static if ( is(T == U[], U) ) {
                                         if ( byte_size % U.sizeof !is 0 ) {
-
-                                            debug {
-                                                assumeWontThrow(writefln("E=%s key=%s type=%s T=%s byte_size=%d U.sizeof=%d %d",
-                                                        E, key, type, T.stringof, byte_size, U.sizeof, byte_size % U.sizeof));
-                                            }
                                             return ARRAY_SIZE_BAD;
                                         }
                                     }
@@ -1081,7 +1083,6 @@ struct Document {
                 return false;
             }
         }
-
         /++
          Compare two elements
          +/
@@ -1093,5 +1094,4 @@ struct Document {
             return data[0..s] == other.data[0..s];
         }
     }
-
 }

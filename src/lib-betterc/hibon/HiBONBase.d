@@ -259,7 +259,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Returns:
      the value as HiBON type E
      +/
-    @trusted
     auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
         mixin(code);
@@ -308,14 +307,12 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     }
 
     static if (!is(Document == void) && is(HiBON == void)) {
-        @trusted
             this(Document doc) {
             document = doc;
         }
     }
 
     static if (!is(Document == void) && !is(HiBON == void) ) {
-        @trusted
             this(Document doc) {
             native_document = doc;
         }
@@ -324,11 +321,11 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     /++
      Construct a Value of the type T
      +/
-    @trusted
     this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct) ) {
         alias MutableT = Unqual!T;
         static foreach(m; __traits(allMembers, ValueT) ) {
             static if ( is(typeof(__traits(getMember, this, m)) == MutableT ) ){
+                import std.format;
                 enum code=format("alias member=ValueT.%s;", m);
                 mixin(code);
                 static if ( hasUDA!(member, Type ) ) {
@@ -346,7 +343,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     /++
      Constructs a Value of the type BigNumber
      +/
-    @trusted
     this(BigNumber big) {
         bigint=big;
     }
@@ -356,7 +352,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Params:
      x = value to be assigned
      +/
-    @trusted
     void opAssign(T)(T x) if (isOneOf!(T, typeof(this.tupleof))) {
         alias UnqualT = Unqual!T;
         static foreach(m; __traits(allMembers, ValueT) ) {
