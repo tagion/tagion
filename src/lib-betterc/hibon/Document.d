@@ -202,7 +202,7 @@ struct Document {
         return Range(data);
     }
 
-    version(none) {
+
     /++
      Returns:
      A range of the member keys in the document
@@ -210,7 +210,7 @@ struct Document {
     auto keys() const {
         return map!"a.key"(this[]);
     }
-
+    version(none) {
     /++
      The Document must only contain member names which represents an uint number
      Throws:
