@@ -482,7 +482,7 @@ struct Document {
             return index;
         }
     }
-    version(none) {
+
     unittest {
         auto buffer=BinBuffer(0x200);
 
@@ -720,6 +720,7 @@ struct Document {
             }
         }
     }
+    version(none) {
     }
 
 /**
