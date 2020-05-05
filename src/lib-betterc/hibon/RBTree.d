@@ -367,7 +367,16 @@ struct RBTree(K, V=void) {
      * procedure remove_fixup(x) is called to recover this.
      */
 
-    void remove(ref Node* z) {
+    bool remove(K key) {
+        auto remove_node=search(key);
+        if (remove_node !is nill) {
+            remove(remove_node);
+            return true;
+        }
+        return false;
+    }
+
+    protected void remove(ref Node* z) {
         scope(exit) {
             z.dispose;
         }
