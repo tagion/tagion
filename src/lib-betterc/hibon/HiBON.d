@@ -9,6 +9,7 @@
  */
 module tagion.hibon.HiBON;
 
+extern(C):
 import std.container : RedBlackTree;
 import std.format;
 import std.meta : staticIndexOf;
@@ -16,20 +17,21 @@ import std.algorithm.iteration : map, fold, each;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
 import std.meta : AliasSeq;
 
-import std.conv : to;
-import std.typecons : TypedefType;
+//import std.conv : to;
+//import std.typecons : TypedefType;
 
-import tagion.hibon.BigNumber;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONBase;
-import tagion.hibon.HiBONException;
+import hibon.BigNumber;
+import hibon.Document;
+import hibon.HiBONBase;
+import hibon.Bailout;
+//import tagion.hibon.HiBONException;
 import tagion.Message : message;
 import tagion.Base : CastTo;
 
 /++
  HiBON is a generate object of the HiBON format
 +/
-@safe class HiBON {
+ class HiBON {
     /++
      Gets the internal buffer
      Returns:
@@ -70,7 +72,7 @@ import tagion.Base : CastTo;
     // /++
     //  Helper function to append
     //  +/
-    @trusted
+
     private void append(ref ubyte[] buffer, ref size_t index) const pure {
         immutable size_index = index;
         buffer.binwrite(uint.init, &index);
@@ -85,7 +87,7 @@ import tagion.Base : CastTo;
     /++
      Internal Member in the HiBON class
      +/
-    @safe static class Member {
+     static class Member {
         string key;
         Type type;
         Value value;
@@ -106,7 +108,7 @@ import tagion.Base : CastTo;
          x = the parameter value
          key = the name of the member
          +/
-        @trusted
+
         this(T)(T x, string key) { //const pure if ( is(T == const) ) {
             alias BaseT=TypedefType!T;
             alias UnqualT = Unqual!BaseT;
@@ -136,7 +138,7 @@ import tagion.Base : CastTo;
          Returns:
          the value as a Document
          +/
-        @trusted
+
         inout(HiBON) document() inout pure
         in {
             assert(type is Type.DOCUMENT);
@@ -187,7 +189,7 @@ import tagion.Base : CastTo;
          Returns:
          the size in bytes
          +/
-        @trusted
+
         size_t size() const pure {
             with(Type) {
             TypeCase:
@@ -232,7 +234,7 @@ import tagion.Base : CastTo;
             }
         }
 
-        @trusted
+
         protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index)  const pure if (isNativeArray(E)) {
             immutable size_index = index;
             buffer.binwrite(uint.init, &index);
@@ -392,7 +394,7 @@ import tagion.Base : CastTo;
      Params:
      key = name of the member to be removed
      +/
-    @trusted
+
     void remove(string key) {
         _members.removeKey(Member.search(key));
     }
