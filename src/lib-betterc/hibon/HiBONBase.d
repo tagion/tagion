@@ -8,7 +8,7 @@ import hibon.Bailout;
 //import std.typecons : Typedef;
 enum UTC = "UTC";
 struct utc_t {
-     @(UTC) ulong time; //
+    @(UTC) ulong time; //
     this(ulong x) {
         time=x;
     }

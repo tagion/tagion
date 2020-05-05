@@ -1,6 +1,6 @@
 module hibon.Memory;
 
-import std.traits : isArray, ForeachType;
+import std.traits : isArray, ForeachType, isPointer;
 import core.stdc.stdlib : calloc, malloc, realloc, free;
 
 extern(C):

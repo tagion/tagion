@@ -9,7 +9,7 @@ extern(C):
 //import std.format;
 import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, EnumMembers, Unqual;
-import std.conv : to, emplace;
+import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
@@ -19,6 +19,7 @@ import std.range.primitives : walkLength;
 //import tagion.Base : isOneOf;
 //import .Message : message;
 import hibon.BinBuffer;
+import hibon.Text;
 import hibon.Bailout;
 import hibon.BigNumber;
 import hibon.HiBONBase;
@@ -337,10 +338,10 @@ struct Document {
      key = is the member key
      index = is offset index in side the buffer and index with be progressed
      +/
-    static void buildKey(BinBuffer buffer, Type type, string key, ref size_t index) {
+    static void buildKey(ref BinBuffer buffer, Type type, const(char[]) key, ref size_t index) {
         buffer.write(type, &index);
         buffer.write(cast(ubyte)(key.length), &index);
-        buffer.write(key, index);
+        buffer.write(key, &index);
     }
 
     /++
@@ -352,7 +353,7 @@ struct Document {
      x = is the value of the element
      index = is offset index in side the buffer and index with be progressed
      +/
-    static void build(T)(BinBuffer buffer, Type type, string key, const(T) x, ref size_t index) {
+    static void build(T)(ref BinBuffer buffer, Type type, const(char[]) key, const(T) x, ref size_t index) {
         buildKey(buffer, type, key, index);
         // buffer.binwrite(type, &index);
         // buffer.binwrite(cast(ubyte)(key.length), &index);
@@ -463,7 +464,7 @@ struct Document {
     version(unittest) {
         import std.typecons : Tuple, isTuple;
 
-        static private size_t make(R)(BinBuffer buffer, R range, size_t count=size_t.max) if (isTuple!R) {
+        static private size_t make(R)(ref BinBuffer buffer, R range, size_t count=size_t.max) if (isTuple!R) {
             size_t index;
             buffer.write(uint.init, &index);
             foreach(i, t; range) {
@@ -699,30 +700,39 @@ struct Document {
                 uint size;
                 buffer.write(uint.init, &index);
                 auto texts=["Text1", "Text2", "Text3"];
-                foreach(i, text; texts) {
-                    build(buffer, Type.STRING, i.to!string, text, index);
-                }
-                buffer.binwrite(Type.NONE, &index);
-                size = cast(uint)(index - uint.sizeof);
-                buffer.binwrite(size, 0);
 
-                immutable data = buffer[0..index].idup;
-                const doc=Document(data);
+                foreach(i, text; texts) {
+                    auto converter=Text(long.max.stringof.length);
+                    converter(i); //Convert i to string like i.to!string;
+                    build(buffer, Type.STRING, converter.serialize, text, index);
+                }
+
+                buffer.write(Type.NONE, &index);
+                size = cast(uint)(index - uint.sizeof);
+                buffer.write(size, 0);
+                const doc_buffer = buffer[0..index];
+                const doc=Document(doc_buffer.serialize);
+
 
                 auto typed_range = doc.range!(string[])();
+
                 foreach(i, text; texts) {
                     assert(!typed_range.empty);
-                    assert(typed_range.key == i.to!string);
+                    auto converter=Text(ulong.max.stringof.length);
+                    converter(i);
+                    assert(typed_range.key == converter.serialize);
                     assert(typed_range.index == i);
                     assert(typed_range.front == text);
                     typed_range.popFront;
+
+
+
                 }
+
             }
         }
-    }
-    version(none) {
-    }
 
+    }
 /**
  * HiBON Element representation
  */
