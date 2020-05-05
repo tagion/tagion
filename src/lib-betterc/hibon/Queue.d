@@ -2,7 +2,9 @@ module hibon.Queue;
 
 extern(C):
 import hibon.Memory;
+import core.stdc.stdio;
 
+@nogc:
 struct Queue(T) {
     struct Element {
         Element* next;
@@ -11,20 +13,24 @@ struct Queue(T) {
     protected {
         Element* root;
     }
-    this() {
-        root=null;
-    }
+    // this() {
+    //     root=null;
+    // }
     ~this() {
         dispose;
     }
     void dispose() {
-        for(Element* e=root; e !is null; e=e.next) {
-            e.dispose;
+        static void _dispose(ref Element* e) {
+            if (e !is null) {
+                _dispose(e.next);
+                e.dispose;
+            }
         }
-        root=null;
+        _dispose(root);
     }
     void push(T x) {
-        auto new_e=create!Element;
+        Element* new_e=create!(Element*);
+        printf("e=%p x=%d\n", new_e, x);
         new_e.value=x;
         new_e.next=root;
         root=new_e;
@@ -41,16 +47,39 @@ struct Queue(T) {
         return root.value;
     }
 
-    void empty() const pure {
-        return (root is null);
+    Range opSlice() {
+        return Range(root);
     }
 
-    T front() pure {
-        return root;
+    struct Range {
+        private Element* current;
+        bool empty() const pure {
+            return (current is null);
+        }
+
+        T front() pure {
+            return current.value;
+        }
+
+        void popFront() {
+            current=current.next;
+        }
     }
 
-    void popFront() {
-        pop();
+}
+
+unittest {
+        Queue!int q;
+    enum table=[7, 6, 5, 4, 3, 2, 1];
+    foreach(t; table) {
+        q.push(t);
     }
 
+//    check=table;
+    size_t i=table.length;
+    int[table.length] check=table;
+    foreach(b; q[]) {
+        i--;
+        assert(check[i] is b);
+    }
 }

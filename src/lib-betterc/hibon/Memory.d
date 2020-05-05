@@ -1,9 +1,10 @@
 module hibon.Memory;
 
-import std.traits : isArray, ForeachType, isPointer;
+import std.traits : isArray, ForeachType, isPointer, PointerTarget;
 import core.stdc.stdlib : calloc, malloc, realloc, free;
 
 extern(C):
+@nogc:
 
 T create(T)(const size_t size) if(isArray!T) {
     alias BaseT=ForeachType!T;
@@ -11,7 +12,7 @@ T create(T)(const size_t size) if(isArray!T) {
 }
 
 T create(T)() if (isPointer!T) {
-    return cast(T)calloc(PointerTaget!(T).sizeof, 1);
+    return cast(T)calloc(PointerTarget!(T).sizeof, 1);
 }
 
 void resize(T)(ref T data, const size_t len) if(isArray!T) {
