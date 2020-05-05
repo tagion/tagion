@@ -93,7 +93,7 @@ struct RBTree(K, V=void) {
         tree_print(root);
     }
 
-    Node* tree_search(int key) {
+    protected Node* search(K key) {
         Node* x = root;
         while(x !is nill && (x.key != key)) {
             if (key < x.key) {
@@ -104,6 +104,10 @@ struct RBTree(K, V=void) {
             }
         }
         return x;
+    }
+
+    bool exists(K key) {
+        return search(key) !is nill;
     }
 
     protected Node* tree_minimum(Node *x) {
@@ -133,7 +137,19 @@ struct RBTree(K, V=void) {
             z.value=value;
             insert(z);
         }
+
+        void opIndexAssign(V value, K key) {
+            insert(key, value);
+        }
+
+        V opIndex(K key) {
+            if (auto result=serach(key) !is nill) {
+                return result.value;
+            }
+            return V.init;
+        }
     }
+
     private void insert(Node* z) {
         Node*  x, y;
         z.color = Color.RED;
