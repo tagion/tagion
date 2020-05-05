@@ -119,11 +119,23 @@ struct RBTree(K, V=void) {
      * auxilary procedure called insert_fixup is called to fix these violation.
      */
 
-    void insert(K key) {
-        Node* z, x, y;
-        z = create!(Node*);
-
-        z.key = key;
+    static if (is(V==void)) {
+        void insert(K key) {
+            Node* z = create!(Node*);
+            z.key=key;
+            insert(z);
+        }
+    }
+    else {
+        void insert(K key, V value) {
+            Node* z = create!(Node*);
+            z.key=key;
+            z.value=value;
+            insert(z);
+        }
+    }
+    private void insert(Node* z) {
+        Node*  x, y;
         z.color = Color.RED;
         z.left = nill;
         z.right = nill;
