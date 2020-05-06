@@ -481,10 +481,10 @@ struct HiBON {
         _members.remove(&m);
     }
 
-    version(none) {
+
     ///
     unittest { // remove
-        auto hibon=new HiBON;
+        auto hibon=HiBON();
         hibon["a"] =1;
         hibon["b"] =2;
         hibon["c"] =3;
@@ -494,7 +494,7 @@ struct HiBON {
         hibon.remove("b");
         assert(!hibon.hasMember("b"));
     }
-
+    version(none) {
     /++
      Returns:
      the number of members in the HiBON
