@@ -393,7 +393,7 @@ struct HiBON {
         return _members[];
     }
 
-
+    }
     /++
      Assign and member x with the key
      Params:
@@ -406,6 +406,7 @@ struct HiBON {
         _members.insert(new_member);
     }
 
+    version(none) {
     /++
      Assign and member x with the index
      Params:
