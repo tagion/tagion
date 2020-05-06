@@ -476,7 +476,7 @@ unittest {
  true if the a is an index
 +/
 // memcpy(return void* s1, scope const void* s2, size_t n);
-bool is_index(string a, out uint result) pure {
+bool is_index(const(char[]) a, out uint result) pure {
     enum MAX_UINT_SIZE=uint.max.stringof.length;
     if ( a.length <= MAX_UINT_SIZE ) {
         if ( (a[0] is '0') && (a.length > 1) ) {

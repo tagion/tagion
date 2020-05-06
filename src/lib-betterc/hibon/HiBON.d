@@ -10,6 +10,7 @@
 module hibon.HiBON;
 
 extern(C):
+@nogc:
 //import std.container : RedBlackTree;
 //import std.format;
 import std.meta : staticIndexOf;
@@ -45,8 +46,10 @@ struct HiBON {
     +/
     alias Members=RBTree!(const(Member)*);
 //     RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
-
-    protected Members _members;
+    protected {
+        Members _members;
+        BinBuffer _buffer;
+    }
 
     alias Value=ValueT!(true, HiBON*,  Document);
     static HiBON* opCall() {
@@ -74,23 +77,22 @@ struct HiBON {
         return result;
     }
 
-    version(none) {
+
     /++
      Generated the serialized HiBON
      Returns:
      The byte stream
      +/
-    immutable(ubyte[]) serialize() const {
-        scope buffer = new ubyte[size];
+    immutable(ubyte[]) serialize() {
+        _buffer.recreate(size);
         size_t index;
-        append(buffer, index);
-        return buffer.idup;
+        append(_buffer, index);
+        return _buffer.serialize;
     }
 
     // /++
     //  Helper function to append
     //  +/
-    }
     private void append(ref BinBuffer buffer, ref size_t index) const {
         immutable size_index = index;
         buffer.write(uint.init, &index);
@@ -383,18 +385,17 @@ struct HiBON {
             }
         }
     }
-    version(none) {
 
     /++
      Returns:
-     A range of members
+     A list of members
      +/
-    auto opSlice() const {
-        return _members[];
-    }
+     alias Stack=Members.Stack;
+     void all(scope ref Stack queue) const {
+         return _members.inOrder(queue);
+     }
 
-    }
-    /++
+     /++
      Assign and member x with the key
      Params:
      x = parameter value
@@ -406,7 +407,6 @@ struct HiBON {
         _members.insert(new_member);
     }
 
-    version(none) {
     /++
      Assign and member x with the index
      Params:
@@ -420,7 +420,8 @@ struct HiBON {
         }
         opIndexAssign(x, key);
     }
-    }
+
+
     /++
      Access an member at key
      Params:
@@ -504,24 +505,40 @@ struct HiBON {
         return _members.length;
     }
 
-    version(none) {
     /++
      Returns:
-     A range of the member keys
+     A list of the member keys
      +/
-    auto keys() const {
-        return map!"a.key"(this[]);
+    void keys(scope void delegate(const(char[]) key) dg) const {
+        Stack member_list;
+        all(member_list);
+        foreach(m; member_list) {
+            dg(m.key.serialize);
+        }
     }
 
     /++
+     A list of indices
      Returns:
-     A range of indices
-     Throws:
-     The range will throw an std.conv.ConvException if the key is not an index
+     returns false if some index is not a number;
     +/
-    auto indices() const {
-        return map!"a.key.to!uint"(this[]);
+    bool indices(scope void delegate(const(uint) i) dg) const {
+        Stack member_list;
+        all(member_list);
+        foreach(m; member_list) {
+            uint index;
+            if (is_index(m.key.serialize, index)) {
+                if (dg !is null) {
+                    dg(index);
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        return true;
     }
+
 
     /++
      Check if the HiBON is an Array
@@ -529,9 +546,10 @@ struct HiBON {
      true if all keys is indices and are consecutive
      +/
     bool isArray() const {
-        return .isArray(keys);
+        return indices(null);
     }
 
+    version(none) {
     ///
     unittest {
         {

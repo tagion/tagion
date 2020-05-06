@@ -10,44 +10,23 @@ import hibon.Memory;
 import hibon.utc;
 
 struct BinBuffer {
-    version(none) {
-    struct Buffer {
-        private {
-            ubyte[] data;
-            Buffer* next;
-        }
-        void create(size_t size)
-            in {
-                assert(data !is null);
-            }
-        do {
-            data=cast(ubyte[])(calloc(size, ubyte.sizeof))[0..size];
-        }
-        void dispose() {
-            free(data.ptr);
-        }
-        static Buffer* opCall(size_t size) {
-            auto result=cast(Buffer*)(calloc(1, Buffer.sizeof));
-            result.create(size);
-            return result;
-        }
-        ~this() {
-            dispose();
-        }
-    }
-    protected {
-        Buffer* root;
-        Buffer* current;
-        size_t index;
-    }
-    }
     protected {
         ubyte[] _data;
         size_t _index;
-//        ubyte[] current;
     }
     enum DEFAULT_SIZE=256;
-    this(size_t size) {
+    this(const size_t size) {
+        if (size>0) {
+            _data=create!(ubyte[])(size);
+        }
+    }
+    ~this() {
+        dispose;
+    }
+    void recreate(const size_t size) {
+        if (_data !is null) {
+            dispose;
+        }
         if (size>0) {
             _data=create!(ubyte[])(size);
         }
@@ -114,9 +93,6 @@ struct BinBuffer {
     immutable(ubyte[]) serialize() const {
         auto result=_data[0.._index];
         return assumeUnique(result);
-    }
-    ~this() {
-        dispose;
     }
 }
 
