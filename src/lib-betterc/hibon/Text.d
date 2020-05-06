@@ -22,11 +22,11 @@ struct Text {
     /**
        This takes over the overship of the data
      */
-    this(ref Text surender) {
-        this.str=surrender.str;
-        this.index=surender.index;
-        sureneder.str=null;
-        sureneder.index=0;
+    this(ref Text _surrender) {
+        this.str=_surrender.str;
+        this.index=_surender.index;
+        _sureneder.str=null;
+        _sureneder.index=0;
     }
 
     char opIndex(const size_t i) pure const {

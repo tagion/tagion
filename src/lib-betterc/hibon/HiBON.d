@@ -111,6 +111,10 @@ struct HiBON {
             data=create!(char[])(key.length);
             data[0..$]=key[0..$];
         }
+        this(const uint index) {
+            auto _key=Text()(index);
+            this(_key);
+        }
         ~this() {
             data.dispose;
         }
@@ -415,7 +419,7 @@ struct HiBON {
         }
         opIndexAssign(x, key);
     }
-
+    }
     /++
      Access an member at key
      Params:
@@ -425,10 +429,10 @@ struct HiBON {
      Throws:
      if the an member with the key does not exist an HiBONException is thrown
      +/
-    const(Member) opIndex(in string key) const {
-        auto range=_members.equalRange(Member.search(key));
-        .check(!range.empty, message("Member '%s' does not exist", key) );
-        return range.front;
+    const(Member*) opIndex(in const(char[]) key) const {
+        Member m;
+        m.key=Key(key);
+        return _members.get(&m);
     }
 
 
@@ -442,12 +446,15 @@ struct HiBON {
      if the an member with the index does not exist an HiBONException is thrown
      Or an std.conv.ConvException is thrown if the key is not an index
      +/
-    const(Member) opIndex(const size_t index) const {
-        const key=index.to!string;
-        static if(!is(size_t == uint) ) {
-            .check(index <= uint.max, message("Index out of range (index=%d)", index));
-        }
-        return opIndex(key);
+
+    const(Member*) opIndex(const uint index) const {
+//        const key=index.to!string;
+        // static if(!is(size_t == uint) ) {
+        //     .check(index <= uint.max, message("Index out of range (index=%d)", index));
+        // }
+        Member m;
+        m.key=Key(index);
+        return _members.get(&m);
     }
 
     /++
@@ -459,8 +466,7 @@ struct HiBON {
     bool hasMember(in const(char[]) key) const {
         Member m;
         m.key=Key(key);
-        //auto range=_members.equalRange(Member.search(key));
-        return _members.exists(&m);;
+        return _members.exists(&m);
     }
 
     /++

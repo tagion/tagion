@@ -108,7 +108,26 @@ struct RBTree(K, V=void) {
         return x;
     }
 
-    bool exists(K key) {
+    const(Node*) search(K key) const {
+        const(Node*) _search(const(Node*) current) {
+            if (current is nill) {
+                if (current.key == key) {
+                    return current;
+                }
+                else if (current.key > key) {
+                    return _search(current.left);
+                }
+                else {
+                    return _search(current.right);
+                }
+            }
+            return null;
+        }
+        return _search(root);
+    }
+
+    bool exists(K key) const {
+        const result=search(key);
         return search(key) !is nill;
     }
 
@@ -143,6 +162,16 @@ struct RBTree(K, V=void) {
             z.key=key;
             insert(z);
         }
+        const(K) get(const(K) key) const {
+            alias _K=const(K);
+            pragma(msg, "const(K)=", _K);
+            auto result=search(key);
+            if (result !is nill) {
+                return result.key;
+            }
+            return K.init;
+        }
+
     }
     else {
         void insert(K key, V value) {
@@ -156,7 +185,7 @@ struct RBTree(K, V=void) {
             insert(key, value);
         }
 
-        V opIndex(K key) {
+        const(V) opIndex(K key) const {
             if (auto result=serach(key) !is nill) {
                 return result.value;
             }
