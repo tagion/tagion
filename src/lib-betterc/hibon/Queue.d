@@ -19,6 +19,7 @@ struct Queue(T) {
     ~this() {
         dispose;
     }
+
     void dispose() {
         static void _dispose(ref Element* e) {
             if (e !is null) {
@@ -28,9 +29,11 @@ struct Queue(T) {
         }
         _dispose(root);
     }
+
     void push(T x) {
-        Element* new_e=create!(Element*);
-        printf("e=%p x=%d\n", new_e, x);
+        auto new_e=create!(Element*);
+//        printf("e=%p x=%d\n", new_e, x);
+        pragma(msg, "T=", T, "  ", typeof(new_e));
         new_e.value=x;
         new_e.next=root;
         root=new_e;

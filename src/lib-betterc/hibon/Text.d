@@ -37,7 +37,7 @@ struct Text {
     do {
         return cast(string)(str[from..to]);
     }
-    string opSlice() {
+    string opSlice() const pure {
         return this[0..index];
     }
     alias serialize=opSlice;

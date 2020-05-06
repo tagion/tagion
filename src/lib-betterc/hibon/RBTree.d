@@ -24,14 +24,16 @@ import hibon.Memory;
 import hibon.Queue;
 import core.stdc.stdio;
 
-// RBTreeT(K, V) RBTree(K, V=void)() {
-
-// }
-
 struct RBTree(K, V=void) {
     enum Color { RED, BLACK };
     struct Node {
         K key;
+        static if (!is(V==void)) {
+            V value;
+        }
+        else {
+            alias value=key;
+        }
         Color color;
         Node* parent;
         Node* left;
@@ -65,7 +67,6 @@ struct RBTree(K, V=void) {
             if (current !is nill) {
                 _dispose(current.left);
                 _dispose(current.right);
-                printf("Dispose %d\n", current.key);
                 if (owner) {
                     static if (__traits(compiles, current.key.dispose)) {
                         current.key.dispose;
@@ -82,6 +83,7 @@ struct RBTree(K, V=void) {
     }
     /* Print tree keys by inorder tree walk */
 
+    version(none)
     void tree_print() {
         void tree_print(Node* x) {
             if (x !is nill) {
@@ -108,6 +110,18 @@ struct RBTree(K, V=void) {
 
     bool exists(K key) {
         return search(key) !is nill;
+    }
+
+    @property size_t length() const pure {
+        size_t result;
+        void count(Node* current) {
+            if (current !is nill) {
+                count(current.left);
+                count(current.right);
+                result++;
+            }
+        }
+        return result;
     }
 
     protected Node* tree_minimum(Node *x) {
@@ -538,16 +552,73 @@ struct RBTree(K, V=void) {
         v.parent = u.parent;
     }
 
-    int opApply(scope int delegate(Node* n) dg) {
-        int end;
-        void sort(Node* current) {
-            if ((current !is nill) && !end) {
-                sort(current.left);
-                end=dg(current);
-                sort(current.right);
+    void inOrder(scope ref Stack queue) const {
+        void _inorder(const(Node*) current) {
+            if (current is nill) {
+                _inorder(current.right);
+                queue.push(current.key);
+                _inorder(current.left);
             }
         }
-        sort(root);
-        return end;
+        _inorder(root);
+
     }
+
+    alias Stack=Queue!(K);
+    version(none)
+    void inOrder(T)(scope ref Stack queue)  {
+        void _inorder(Node* current) {
+            if (current is nill) {
+                sort(current.right);
+                queue.push(current);
+                sort(current.letf);
+            }
+        }
+        _inorder(root);
+    }
+}
+
+unittest {
+    // NILL = malloc(sizeof(struct node));
+    // NILL->color = BLACK;
+    auto tree=RBTree!int(false);
+
+    //ROOT = NILL;
+
+    printf("### RED-BLACK TREE INSERT ###\n\n");
+    enum tcase=[90, 29, 41, 73,43,2,18,10,77,75,56,13,14,6];
+    foreach(key; tcase) {
+        tree.insert(key);
+    }
+
+    // printf("Number of key: ");
+    // scanf("%d", &tcase);
+    // while(tcase--){
+    //     printf("Enter key: ");
+    //     scanf("%d", &key);
+    //     red_black_insert(key);
+    // }
+
+
+    printf("### TREE PRINT ###\n\n");
+    tree.tree_print;
+
+    printf("\n");
+
+    printf("### KEY SEARCH ###\n\n");
+    printf("Enter key: ");
+//    scanf("%d", &key);
+    int key=73;
+    printf("exist %d", tree.exists(90)); //((tree_search(key) == NILL) ? "NILL\n" : "%p\n", tree_search(key));
+
+    // printf("### MIN TEST ###\n\n");
+    // printf("MIN: %d\n", (tree_minimum(ROOT))->key);
+
+    printf("### TREE DELETE TEST ###\n\n");
+    printf("Enter key to delete: ");
+    tree.remove(key);
+
+    printf("### TREE PRINT ###\n\n");
+    tree.tree_print;
+    printf("\n");
 }

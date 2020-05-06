@@ -7,11 +7,11 @@
  *  $(LINK2 http://bsonspec.org/, BSON - Binary JSON)
  *
  */
-module tagion.hibon.HiBON;
+module hibon.HiBON;
 
 extern(C):
-import std.container : RedBlackTree;
-import std.format;
+//import std.container : RedBlackTree;
+//import std.format;
 import std.meta : staticIndexOf;
 import std.algorithm.iteration : map, fold, each;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
@@ -24,24 +24,39 @@ import hibon.BigNumber;
 import hibon.Document;
 import hibon.HiBONBase;
 import hibon.Bailout;
+import hibon.RBTree;
+import hibon.Memory;
+import hibon.Text;
+import hibon.BinBuffer;
+
 //import tagion.hibon.HiBONException;
-import tagion.Message : message;
-import tagion.Base : CastTo;
+//import tagion.Message : message;
+//import tagion.Base : CastTo;
 
 /++
  HiBON is a generate object of the HiBON format
 +/
- class HiBON {
+
+struct HiBON {
     /++
      Gets the internal buffer
      Returns:
      The buffer of the HiBON document
     +/
+    alias Members=RBTree!(const(Member)*);
+//     RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
 
-    alias Value=ValueT!(true, HiBON,  Document);
+    protected Members _members;
 
-    this() {
-        _members = new Members;
+    alias Value=ValueT!(true, HiBON*,  Document);
+    static HiBON* opCall() {
+        auto result=create!(HiBON*);
+        result._members = Members(true);
+        return result;
+    }
+
+    ~this() {
+        _members.dispose;
     }
 
     /++
@@ -49,20 +64,26 @@ import tagion.Base : CastTo;
      Returns:
      the size in bytes
      +/
-    size_t size() const pure {
+    size_t size() const {
         size_t result = uint.sizeof+Type.sizeof;
-        if (_members.length) {
-            result += _members[].map!(a => a.size).fold!( (a, b) => a + b);
-        }
+        Members.Stack stack;
+        pragma(msg, Members.Stack);
+        //_members.test(stack);
+
+        _members.inOrder(stack);
+        // foreach(n; stack) {
+        //     result+=n.key.value.size;
+        // }
         return result;
     }
 
+    version(none) {
     /++
      Generated the serialized HiBON
      Returns:
      The byte stream
      +/
-    immutable(ubyte[]) serialize() const pure {
+    immutable(ubyte[]) serialize() const {
         scope buffer = new ubyte[size];
         size_t index;
         append(buffer, index);
@@ -72,35 +93,72 @@ import tagion.Base : CastTo;
     // /++
     //  Helper function to append
     //  +/
-
-    private void append(ref ubyte[] buffer, ref size_t index) const pure {
+    }
+    private void append(ref BinBuffer buffer, ref size_t index) const {
         immutable size_index = index;
-        buffer.binwrite(uint.init, &index);
+        buffer.write(uint.init, &index);
         if (_members.length) {
             _members[].each!(a => a.append(buffer, index));
         }
-        buffer.binwrite(Type.NONE, &index);
+        buffer.write(Type.NONE, &index);
         immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-        buffer.binwrite(doc_size, size_index);
+        buffer.write(doc_size, size_index);
     }
+
+
+    struct Key {
+        protected char[] data;
+        this(string key) {
+            data=create!(char[])(key.length);
+            data[0..$]=key[0..$];
+        }
+        ~this() {
+            data.dispose;
+        }
+        string serialize() const pure {
+            return cast(string)data;
+        }
+        int opCmp(const(char[]) b) const {
+            if (less_than(data, b)) {
+                return -1;
+            }
+            else if (data==b) {
+                return 0;
+            }
+            return 0;
+        }
+        int opCmp(const Key b) const {
+            return opCmp(b.data);
+        }
+        bool opEquals(const(char[]) b) const {
+            return data == b;
+        }
+        bool opEquals(const Key b) const {
+            return opEquals(b.data);
+        }
+
+    }
+
 
     /++
      Internal Member in the HiBON class
      +/
-     static class Member {
-        string key;
+     struct Member {
+        Key key;
         Type type;
         Value value;
-
-        protected this() pure nothrow {
-            value = uint.init;
+        int opCmp(const(Member) b) const {
+            return key.opCmp(b.key);
+        }
+        bool opEqual(const(Member) b) const {
+            return key.opEquals(b.key);
         }
 
-        // this(T)(T x, string key) pure if ( is(T==Unqual!T) ) {
-        //     this.value = x;
-        //     this.type  = Value.asType!T;
-        //     this.key  = key;
+        // protected this() pure nothrow {
+        //     value = uint.init;
         // }
+//        @disable this();
+
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
 
         /++
@@ -113,7 +171,7 @@ import tagion.Base : CastTo;
             alias BaseT=TypedefType!T;
             alias UnqualT = Unqual!BaseT;
             enum E=Value.asType!UnqualT;
-            this.key  = key;
+            this.key  = Key(key);
             static if (E is Type.NONE) {
                 alias CastT=CastTo!(UnqualT, CastTypes);
                 static assert(!is(CastT==void), format("Type %s is not valid", T.stringof));
@@ -139,7 +197,7 @@ import tagion.Base : CastTo;
          the value as a Document
          +/
 
-        inout(HiBON) document() inout pure
+        inout(HiBON*) document() inout pure
         in {
             assert(type is Type.DOCUMENT);
         }
@@ -152,11 +210,14 @@ import tagion.Base : CastTo;
          Returns:
          The a member with a name of key
          +/
+        version(none)
         static Member search(string key) pure {
             auto result=new Member();
             result.key = key;
             return result;
         }
+
+
 
         /++
          Returns:
@@ -180,9 +241,11 @@ import tagion.Base : CastTo;
             return value.by!type;
         }
 
+        version(none)
         static const(Member) opCast(string key) pure {
             return Member.search(key);
         }
+
 
         /++
          Calculates the size in bytes of the Member
@@ -190,7 +253,7 @@ import tagion.Base : CastTo;
          the size in bytes
          +/
 
-        size_t size() const pure {
+        size_t size() const {
             with(Type) {
             TypeCase:
                 switch(type) {
@@ -198,16 +261,18 @@ import tagion.Base : CastTo;
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
-                                return Document.sizeKey(key)+value.by!(E).size;
+                                return Document.sizeKey(key.serialize)+value.by!(E).size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
-                                return Document.sizeKey(key)+value.by!(E).size+uint.sizeof;
+                                return Document.sizeKey(key.serialize)+value.by!(E).size+uint.sizeof;
                             }
                             else static if ( isNativeArray(E) ) {
-                                size_t result = Document.sizeKey(key)+uint.sizeof+Type.sizeof;
+                                size_t result = Document.sizeKey(key.serialize)+uint.sizeof+Type.sizeof;
                                 foreach(i, e; value.by!(E)[]) {
-                                    immutable key=i.to!string;
-                                    result += Document.sizeKey(key);
+                                    auto key=Text(uint.max.stringof.length)(i);
+                                    //key.append(i);
+                                    //immutable key=i.to!string;
+                                    result += Document.sizeKey(key.serialize);
                                     static if(E is NATIVE_HIBON_ARRAY) {
                                         result += e.size;
                                     }
@@ -222,7 +287,7 @@ import tagion.Base : CastTo;
                             }
                             else {
                                 const v = value.by!(E);
-                                return Document.sizeT(E, key, v);
+                                return Document.sizeT(E, key.serialize, v);
                             }
                             break TypeCase;
                         }
@@ -230,14 +295,13 @@ import tagion.Base : CastTo;
                 default:
                     // Empty
                 }
-                assert(0, format("Size of HiBON type %s is not valid", type));
+                assert(0, "Size of HiBON type %s is not valid");
             }
         }
 
-
-        protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index)  const pure if (isNativeArray(E)) {
+        protected void appendList(Type E)(ref BinBuffer buffer, ref size_t index)  const pure if (isNativeArray(E)) {
             immutable size_index = index;
-            buffer.binwrite(uint.init, &index);
+            buffer.write(uint.init, &index);
             scope(exit) {
                 buffer.binwrite(Type.NONE, &index);
                 immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
@@ -267,7 +331,7 @@ import tagion.Base : CastTo;
 
         }
 
-        void append(ref ubyte[] buffer, ref size_t index) const pure {
+        void append(ref BinBuffer buffer, ref size_t index) const {
             with(Type) {
             TypeCase:
                 switch(type) {
@@ -276,7 +340,11 @@ import tagion.Base : CastTo;
                         case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
-                                Document.buildKey(buffer, E, key, index);
+                                Document.buildKey(buffer, E, key.serialize, index);
+                                pragma(msg, "value.by!(E)=", typeof(value.by!(E)));
+                                pragma(msg, "value.by!(E).append=", typeof(value.by!(E).append));
+                                pragma(msg, "append=", typeof(HiBON.append));
+                                pragma(msg, Value);
                                 value.by!(E).append(buffer, index);
                             }
                             else static if (isNative(E)) {
@@ -294,7 +362,7 @@ import tagion.Base : CastTo;
                                 }
                             }
                             else {
-                                Document.build(buffer, E, key, value.by!E, index);
+                                Document.build(buffer, E, key.serialize, value.by!E, index);
                             }
                             break TypeCase;
                         }
@@ -305,10 +373,7 @@ import tagion.Base : CastTo;
             }
         }
     }
-
-    alias Members=RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
-
-    protected Members _members;
+    version(none) {
 
     /++
      Returns:
@@ -317,6 +382,7 @@ import tagion.Base : CastTo;
     auto opSlice() const {
         return _members[];
     }
+
 
     /++
      Assign and member x with the key
@@ -396,7 +462,7 @@ import tagion.Base : CastTo;
      +/
 
     void remove(string key) {
-        _members.removeKey(Member.search(key));
+        _members.remove(key);
     }
 
     ///
@@ -450,7 +516,7 @@ import tagion.Base : CastTo;
     ///
     unittest {
         {
-            auto hibon=new HiBON;
+            auto hibon=HiBON();
             assert(!hibon.isArray);
 
             hibon["0"]=1;
@@ -804,5 +870,6 @@ import tagion.Base : CastTo;
                 assert(e.get!string == s);
             }
         }
+    }
     }
 }

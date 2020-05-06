@@ -196,9 +196,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     else static if ( !is(Document == void ) ) {
         @Type(Type.DOCUMENT)  Document      document;
     }
-    // static if ( !is(HiList == void ) ) {
-    //     @Type(Type.LIST)  HiList    list;
-    // }
     @Type(Type.UTC)       utc_t     date;
     @Type(Type.INT32)     int       int32;
     @Type(Type.INT64)     long      int64;
@@ -586,7 +583,7 @@ unittest { // check is_index
 /++
  This function decides the order of the HiBON keys
 +/
-bool less_than(string a, string b) pure
+bool less_than(const(char[]) a, const(char[]) b) pure
     in {
         assert(a.length > 0);
         assert(b.length > 0);
