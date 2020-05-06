@@ -113,7 +113,7 @@ struct HiBON {
         }
         this(const uint index) {
             auto _key=Text()(index);
-            this(_key);
+            this(_key.serialize);
         }
         ~this() {
             data.dispose;
@@ -481,7 +481,7 @@ struct HiBON {
         _members.remove(&m);
     }
 
-
+    version(none) {
     ///
     unittest { // remove
         auto hibon=HiBON();
@@ -494,7 +494,7 @@ struct HiBON {
         hibon.remove("b");
         assert(!hibon.hasMember("b"));
     }
-    version(none) {
+    }
     /++
      Returns:
      the number of members in the HiBON
@@ -503,6 +503,7 @@ struct HiBON {
         return _members.length;
     }
 
+    version(none) {
     /++
      Returns:
      A range of the member keys

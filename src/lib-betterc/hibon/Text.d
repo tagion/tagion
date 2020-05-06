@@ -1,7 +1,7 @@
 module hibon.Text;
 
 extern(C):
-import std.traits : isIntegral, isSigned;
+import std.traits : isIntegral, isSigned, Unqual;
 import hibon.Memory;
 
 struct Text {
@@ -80,7 +80,9 @@ struct Text {
                 index++;
             }
         }
-        const(char[]) fill_numbers(T n, char[] s) {
+        const(char[]) fill_numbers(T num, char[] s) {
+            alias Mutable=Unqual!T;
+            Mutable n=num;
             uint i;
             do {
                 s[i++] = numbers[base % base];
