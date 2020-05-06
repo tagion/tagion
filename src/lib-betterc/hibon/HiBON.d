@@ -456,11 +456,13 @@ struct HiBON {
      Returns:
      true if the member with the key exists
      +/
-    bool hasMember(in string key) const {
-        auto range=_members.equalRange(Member.search(key));
-        return !range.empty;
+    bool hasMember(in const(char[]) key) const {
+        Member m;
+        m.key=Key(key);
+        //auto range=_members.equalRange(Member.search(key));
+        return _members.exists(&m);;
     }
-    }
+
     /++
      Removes a member with name of key
      Params:
@@ -468,9 +470,9 @@ struct HiBON {
      +/
 
     void remove(const(char[]) key) {
-        Member mkey;
-        mkey.key=Key(key);
-        _members.remove(&mkey);
+        Member m;
+        m.key=Key(key);
+        _members.remove(&m);
     }
 
     version(none) {
