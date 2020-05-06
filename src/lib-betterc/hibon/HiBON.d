@@ -67,13 +67,10 @@ struct HiBON {
     size_t size() const {
         size_t result = uint.sizeof+Type.sizeof;
         Members.Stack stack;
-        pragma(msg, Members.Stack);
-        //_members.test(stack);
-
         _members.inOrder(stack);
-        // foreach(n; stack) {
-        //     result+=n.key.value.size;
-        // }
+        foreach(n; stack) {
+             result+=n.size;
+        }
         return result;
     }
 
@@ -97,8 +94,10 @@ struct HiBON {
     private void append(ref BinBuffer buffer, ref size_t index) const {
         immutable size_index = index;
         buffer.write(uint.init, &index);
-        if (_members.length) {
-            _members[].each!(a => a.append(buffer, index));
+        Members.Stack stack;
+        _members.inOrder(stack);
+        foreach(m; stack) {
+            m.append(buffer, index);
         }
         buffer.write(Type.NONE, &index);
         immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
@@ -108,7 +107,7 @@ struct HiBON {
 
     struct Key {
         protected char[] data;
-        this(string key) {
+        this(const(char[]) key) {
             data=create!(char[])(key.length);
             data[0..$]=key[0..$];
         }
@@ -150,8 +149,14 @@ struct HiBON {
         int opCmp(const(Member) b) const {
             return key.opCmp(b.key);
         }
-        bool opEqual(const(Member) b) const {
+        int opCmp(const(char[]) b) const {
+            return key.opCmp(b);
+        }
+        bool opEquals(const(Member) b) const {
             return key.opEquals(b.key);
+        }
+        bool opEquals(const(char[]) b) const {
+            return key.opEquals(b);
         }
 
         // protected this() pure nothrow {
@@ -299,31 +304,32 @@ struct HiBON {
             }
         }
 
-        protected void appendList(Type E)(ref BinBuffer buffer, ref size_t index)  const pure if (isNativeArray(E)) {
+        protected void appendList(Type E)(ref BinBuffer buffer, ref size_t index)  const if (isNativeArray(E)) {
             immutable size_index = index;
             buffer.write(uint.init, &index);
             scope(exit) {
-                buffer.binwrite(Type.NONE, &index);
+                buffer.write(Type.NONE, &index);
                 immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-                buffer.binwrite(doc_size, size_index);
+                buffer.write(doc_size, size_index);
             }
             with(Type) {
                 foreach(i, h; value.by!E) {
-                    immutable key=i.to!string;
+                    const key=Text()(i);
+                    //immutable key=i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
-                        Document.build(buffer, STRING, key, h, index);
+                        Document.build(buffer, STRING, key.serialize, h, index);
                     }
                     else {
-                        Document.buildKey(buffer, DOCUMENT, key, index);
+                        Document.buildKey(buffer, DOCUMENT, key.serialize, index);
                         static if (E is NATIVE_HIBON_ARRAY) {
                             h.append(buffer, index);
                         }
                         else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                            buffer.array_write(h.data, index);
+                            buffer.write(h.data, index);
                         }
 
                         else {
-                            assert(0, format("%s is not implemented yet", E));
+                            assert(0, "Support is not implemented yet");
                         }
                     }
                 }
@@ -349,12 +355,12 @@ struct HiBON {
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
-                                    Document.buildKey(buffer, DOCUMENT, key, index);
+                                    Document.buildKey(buffer, DOCUMENT, key.serialize, index);
                                     const doc=value.by!(E);
-                                    buffer.array_write(value.by!(E).data, index);
+                                    buffer.write(value.by!(E).data, index);
                                 }
                                 else static if (isNativeArray(E)) {
-                                    Document.buildKey(buffer, DOCUMENT, key, index);
+                                    Document.buildKey(buffer, DOCUMENT, key.serialize, index);
                                     appendList!E(buffer, index);
                                 }
                                 else {
@@ -368,7 +374,7 @@ struct HiBON {
                         }
                     }
                 default:
-                    assert(0, format("Illegal type %s", type));
+                    assert(0, "Illegal type");
                 }
             }
         }
@@ -454,17 +460,20 @@ struct HiBON {
         auto range=_members.equalRange(Member.search(key));
         return !range.empty;
     }
-
+    }
     /++
      Removes a member with name of key
      Params:
      key = name of the member to be removed
      +/
 
-    void remove(string key) {
-        _members.remove(key);
+    void remove(const(char[]) key) {
+        Member mkey;
+        mkey.key=Key(key);
+        _members.remove(&mkey);
     }
 
+    version(none) {
     ///
     unittest { // remove
         auto hibon=new HiBON;

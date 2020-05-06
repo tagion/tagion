@@ -4,24 +4,8 @@ extern(C):
 @system:
 
 import hibon.Bailout;
+import hibon.utc;
 
-//import std.typecons : Typedef;
-enum UTC = "UTC";
-struct utc_t {
-    @(UTC) ulong time; //
-    this(ulong x) {
-        time=x;
-    }
-    bool opEquals(T)(T x) const pure {
-        static if (is(T:const(utc_t))) {
-            return this == x;
-
-        }
-        else {
-            return time == x;
-        }
-    }
-}
 //alias utc_t = Typedef!(ulong, ulong.init, UTC);
 /*
 import tagion.Types;

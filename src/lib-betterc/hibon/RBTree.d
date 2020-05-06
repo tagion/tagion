@@ -97,8 +97,8 @@ struct RBTree(K, V=void) {
 
     protected Node* search(K key) {
         Node* x = root;
-        while(x !is nill && (x.key != key)) {
-            if (key < x.key) {
+        while ((x !is nill) && (x.key != key)) {
+            if (x.key > key) {
                 x = x.left;
             }
             else {

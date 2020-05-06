@@ -374,6 +374,7 @@ struct Document {
             buffer.write(x.sign, &index);
         }
         else {
+            pragma(msg, "Document x ", typeof(x));
             buffer.write(x, &index);
         }
     }

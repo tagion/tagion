@@ -7,6 +7,7 @@ import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
 import std.traits : isNumeric, isArray, Unqual;
 import std.exception : assumeUnique;
 import hibon.Memory;
+import hibon.utc;
 
 struct BinBuffer {
     version(none) {
@@ -77,6 +78,9 @@ struct BinBuffer {
     }
     void write(T)(T x, size_t* index) if(isArray!T) {
         append(cast(ubyte[])x, index);
+    }
+    void write(utc_t utc, size_t* index) {
+        append(utc.time, index);
     }
     void write(T)(T x) {
         write(x, &_index);

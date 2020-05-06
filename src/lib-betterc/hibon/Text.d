@@ -14,6 +14,11 @@ struct Text {
             str=create!(char[])(size);
         }
     }
+
+    this(const(char[]) _str) {
+        this(_str.length);
+        str[0..$]=_str[0..$];
+    }
     /**
        This takes over the overship of the data
      */
@@ -23,6 +28,7 @@ struct Text {
         sureneder.str=null;
         sureneder.index=0;
     }
+
     char opIndex(const size_t i) pure const {
         if (i < index) {
             return str[i];
