@@ -1,14 +1,15 @@
 module tagion.hibon.HiBONRecord;
 
+extern(C):
 import file=std.file;
 import std.exception : assumeUnique;
 
 import tagion.Base : basename;
-import tagion.hibon.HiBONBase : ValueT;
+import hibon.HiBONBase : ValueT;
 
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONException;
+import hibon.HiBON : HiBON;
+import hibon.Document : Document;
+
 /++
  Label use to set the HiBON member name
 +/
