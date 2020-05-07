@@ -1,6 +1,6 @@
 
-import hibon.Queue;
-import hibon.RBTree;
+import hibon.utils.Queue;
+import hibon.utils.RBTree;
 import hibon.HiBON;
 
 

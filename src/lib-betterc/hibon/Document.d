@@ -18,9 +18,9 @@ import std.range.primitives : walkLength;
 
 //import tagion.Base : isOneOf;
 //import .Message : message;
-import hibon.BinBuffer;
-import hibon.Text;
-import hibon.Bailout;
+import hibon.utils.BinBuffer;
+import hibon.utils.Text;
+import hibon.utils.Bailout;
 import hibon.BigNumber;
 import hibon.HiBONBase;
 //import hibon.HiBONException;

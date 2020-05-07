@@ -1,4 +1,4 @@
-module hibon.Memory;
+module hibon.utils.Memory;
 
 import std.traits : isArray, ForeachType, isPointer, PointerTarget;
 import core.stdc.stdlib : calloc, malloc, realloc, free;

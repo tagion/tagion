@@ -1,4 +1,4 @@
-module hibon.utc;
+module hibon.utils.utc;
 //import std.typecons : Typedef;
 enum UTC = "UTC";
 struct utc_t {

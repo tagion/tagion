@@ -1,8 +1,8 @@
-module hibon.Text;
+module hibon.utils.Text;
 
 extern(C):
 import std.traits : isIntegral, isSigned, Unqual;
-import hibon.Memory;
+import hibon.utils.Memory;
 
 struct Text {
     protected {

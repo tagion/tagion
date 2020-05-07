@@ -1,4 +1,4 @@
-module hibon.Bailout;
+module hibon.utils.Bailout;
 
 
 extern(C):

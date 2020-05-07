@@ -1,4 +1,4 @@
-module hibon.RBTree;
+module hibon.utils.RBTree;
 /*
  * [PROG]               : Red Black Tree
  * [AUTHOR]             : Ashfaqur Rahman <sajib.finix@gmail.com>
@@ -20,8 +20,8 @@ module hibon.RBTree;
  */
 
 extern(C):
-import hibon.Memory;
-import hibon.Queue;
+import hibon.utils.Memory;
+import hibon.utils.Queue;
 import core.stdc.stdio;
 
 struct RBTree(K, V=void) {

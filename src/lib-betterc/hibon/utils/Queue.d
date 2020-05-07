@@ -1,7 +1,7 @@
-module hibon.Queue;
+module hibon.utils.Queue;
 
 extern(C):
-import hibon.Memory;
+import hibon.utils.Memory;
 import core.stdc.stdio;
 
 @nogc:

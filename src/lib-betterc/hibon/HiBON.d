@@ -24,11 +24,11 @@ import std.meta : AliasSeq;
 import hibon.BigNumber;
 import hibon.Document;
 import hibon.HiBONBase;
-import hibon.Bailout;
-import hibon.RBTree;
-import hibon.Memory;
-import hibon.Text;
-import hibon.BinBuffer;
+import hibon.utils.Bailout;
+import hibon.utils.RBTree;
+import hibon.utils.Memory;
+import hibon.utils.Text;
+import hibon.utils.BinBuffer;
 
 //import tagion.hibon.HiBONException;
 //import tagion.Message : message;

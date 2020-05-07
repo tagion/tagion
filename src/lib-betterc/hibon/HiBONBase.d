@@ -3,8 +3,6 @@ module hibon.HiBONBase;
 extern(C):
 @system:
 
-import hibon.Bailout;
-import hibon.utc;
 
 //alias utc_t = Typedef!(ulong, ulong.init, UTC);
 /*
@@ -23,8 +21,10 @@ import std.system : Endian;
 import std.exception;
 
 // import tagion.hibon.HiBONException;
-import hibon.BinBuffer;
+import hibon.utils.BinBuffer;
 import hibon.BigNumber;
+import hibon.utils.Bailout;
+import hibon.utils.utc;
 
 
 //alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);

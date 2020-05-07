@@ -1,4 +1,4 @@
-module hibon.BinBuffer;
+module hibon.utils.BinBuffer;
 
 extern(C):
 @system:
@@ -6,8 +6,8 @@ import core.stdc.stdlib : calloc, malloc, realloc, free;
 import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
 import std.traits : isNumeric, isArray, Unqual;
 import std.exception : assumeUnique;
-import hibon.Memory;
-import hibon.utc;
+import hibon.utils.Memory;
+import hibon.utils.utc;
 
 struct BinBuffer {
     protected {
