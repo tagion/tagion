@@ -581,6 +581,76 @@ struct RBTree(K, V=void) {
         v.parent = u.parent;
     }
 
+    Range opSlice() const {
+        return Range(this);
+    }
+
+    struct Range {
+        enum Walk {LEFT, RIGHT};
+        private {
+            Node* nill;
+            Node* current;
+            Walk walk;
+            Queue!(Node*) stack;
+        }
+
+        this(const(RBTree) rbtree) {
+            this.nill=cast(Node*)(rbtree.nill);
+            current=cast(Node*)(rbtree.root);
+        }
+
+        ~this() {
+            stack.dispose;
+        }
+
+        private Node* pop() {
+            auto result=stack.pop;
+            if (result is null) {
+                return nill;
+            }
+            return result;
+        }
+
+        @property bool empty() const pure {
+            return (current is nill);
+        }
+
+        @property const(Node*) front() const pure {
+            if (current is nill) {
+                return null;
+            }
+            return current;
+        }
+
+        void popFront() {
+            if (current !is nill) {
+                with(Walk) {
+                    final switch(walk) {
+                    case LEFT:
+                        if (current.left !is nill) {
+                            do {
+                                stack.push(current);
+                                current=current.left;
+                            } while (current.left !is nill);
+                        }
+                        else {
+                            current=pop;
+                            walk=RIGHT;
+                        }
+                        break;
+                    case RIGHT:
+                        current=current.right;
+                        if (current !is nill) {
+                            current=pop;
+                        }
+                        walk=LEFT;
+                    }
+                }
+            }
+        }
+    }
+
+
     void inOrder(scope ref Stack queue) const {
         void _inorder(const(Node*) current) {
             if (current is nill) {

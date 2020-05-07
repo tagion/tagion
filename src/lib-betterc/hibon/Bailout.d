@@ -10,6 +10,16 @@ enum MESSAGE_BUFFER_SIZE=0x80;
 protected __gshared const(char)[] _message;
 protected __gshared char[MESSAGE_BUFFER_SIZE] _message_buffer;
 
+const(char[]) message(Args...)(string text, Args args) {
+    static foreach(arg; args) {
+        {
+            const t=arg;
+        }
+    }
+    return null;
+}
+
+/*
 const(char[]) message(T1)(string text, T1 arg1) {
     _message_buffer[0..text.length]=text;
 //    printf(_message_buffer.ptr, arg1);
@@ -30,9 +40,11 @@ const(char[]) message(T1, T2, T3)(string text, T1 arg1, T2 arg2, T3 arg3) {
     _message_buffer[0..text.length]=text;
 //    printf(_message_buffer.ptr, arg1, arg2, arg3);
 
-    snprintf(_message_buffer.ptr, _message_buffer.length, _message_buffer.ptr, arg1, arg2, arg3);
+    //   snprintf(_message_buffer.ptr, _message_buffer.length, _message_buffer.ptr, arg1, arg2, arg3);
     return _message[0..strlen(_message_buffer.ptr)];
 }
+*/
+
 
 
 unittest {

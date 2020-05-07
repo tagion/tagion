@@ -23,7 +23,7 @@ import hibon.Text;
 import hibon.Bailout;
 import hibon.BigNumber;
 import hibon.HiBONBase;
-import hibon.HiBONException;
+//import hibon.HiBONException;
 
 import std.stdio;
 import std.exception;

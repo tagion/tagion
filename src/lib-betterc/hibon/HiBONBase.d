@@ -496,7 +496,7 @@ bool is_index(const(char[]) a, out uint result) pure {
     return false;
 }
 
-ulong to_ulong(string num) pure {
+ulong to_ulong(const(char[]) num) pure {
     ulong result;
     foreach(a; num) {
         result*=10;
@@ -595,7 +595,7 @@ unittest { // Check less_than
  Returns:
  true if the key is a valid HiBON key
 +/
-@safe bool is_key_valid(string a) pure nothrow {
+@safe bool is_key_valid(const(char[]) a) pure nothrow {
     enum : char {
         SPACE = 0x20,
             DEL = 0x7F,

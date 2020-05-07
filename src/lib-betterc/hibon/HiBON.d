@@ -39,6 +39,7 @@ import hibon.BinBuffer;
 +/
 
 struct HiBON {
+    uint error;
     /++
      Gets the internal buffer
      Returns:
@@ -216,19 +217,6 @@ struct HiBON {
             return value.document;
         }
 
-        /++
-         Sets the key of the Member
-         Returns:
-         The a member with a name of key
-         +/
-        version(none)
-        static Member search(string key) pure {
-            auto result=new Member();
-            result.key = key;
-            return result;
-        }
-
-
 
         /++
          Returns:
@@ -250,11 +238,6 @@ struct HiBON {
          +/
         auto by(Type type)() inout {
             return value.by!type;
-        }
-
-        version(none)
-        static const(Member) opCast(string key) pure {
-            return Member.search(key);
         }
 
 
@@ -401,10 +384,16 @@ struct HiBON {
      x = parameter value
      key = member key
      +/
-    void opIndexAssign(T)(T x, in string key) {
-        .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
-        Member new_member=new Member(x, key);
-        _members.insert(new_member);
+     void opIndexAssign(T)(T x, in const(char[]) key) {
+         if (is_key_valid(key)) {
+             auto new_member=create!(Member*);
+             new_member.value=x;
+             new_member.key=Key(key);
+             _members.insert(new_member);
+         }
+         else {
+             error++;
+         }
     }
 
     /++
@@ -414,11 +403,14 @@ struct HiBON {
      index = member index
      +/
     void opIndexAssign(T)(T x, const size_t index) {
-        const key=index.to!string;
-        static if(!is(size_t == uint) ) {
-            .check(index <= uint.max, message("Index out of range (index=%d)", index));
+        if (index <=uint.max) {
+            auto _key=Key(index);
+
+            opIndexAssign(x, key.serialize);
         }
-        opIndexAssign(x, key);
+        else {
+            error++;
+        }
     }
 
 
@@ -449,14 +441,18 @@ struct HiBON {
      Or an std.conv.ConvException is thrown if the key is not an index
      +/
 
-    const(Member*) opIndex(const uint index) const {
+    const(Member*) opIndex(const size_t index) {
 //        const key=index.to!string;
         // static if(!is(size_t == uint) ) {
         //     .check(index <= uint.max, message("Index out of range (index=%d)", index));
         // }
-        Member m;
-        m.key=Key(index);
-        return _members.get(&m);
+        if (index <= uint.max) {
+            Member m;
+            m.key=Key(cast(uint)index);
+            return _members.get(&m);
+        }
+        error++;
+        return null;
     }
 
     /++
@@ -483,20 +479,19 @@ struct HiBON {
         _members.remove(&m);
     }
 
-    version(none) {
     ///
     unittest { // remove
         auto hibon=HiBON();
-        hibon["a"] =1;
-        hibon["b"] =2;
-        hibon["c"] =3;
-        hibon["d"] =4;
+        (*hibon)["a"] =1;
+        (*hibon)["b"] =2;
+        (*hibon)["c"] =3;
+        (*hibon)["d"] =4;
 
         assert(hibon.hasMember("b"));
         hibon.remove("b");
         assert(!hibon.hasMember("b"));
     }
-    }
+
     /++
      Returns:
      the number of members in the HiBON
@@ -549,41 +544,42 @@ struct HiBON {
         return indices(null);
     }
 
-    version(none) {
     ///
     unittest {
         {
             auto hibon=HiBON();
             assert(!hibon.isArray);
 
-            hibon["0"]=1;
+            (*hibon)["0"]=1;
             assert(hibon.isArray);
-            hibon["1"]=2;
+            (*hibon)["1"]=2;
             assert(hibon.isArray);
-            hibon["2"]=3;
+            (*hibon)["2"]=3;
             assert(hibon.isArray);
-            hibon["x"]=3;
+            (*hibon)["x"]=3;
             assert(!hibon.isArray);
         }
+
         {
-            auto hibon=new HiBON;
-            hibon["1"]=1;
+            auto hibon=HiBON();
+            (*hibon)["1"]=1;
             assert(!hibon.isArray);
-            hibon["0"]=2;
+            (*hibon)["0"]=2;
             assert(hibon.isArray);
-            hibon["4"]=2;
+            (*hibon)["4"]=2;
             assert(!hibon.isArray);
         }
     }
 
+
     unittest {
         // import std.stdio;
-        import std.conv : to;
         import std.typecons : Tuple, isTuple;
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
+
         alias Tabel = Tuple!(
-            BigNumber, Type.BIGINT.stringof,
+//            BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             float,  Type.FLOAT32.stringof,
             double, Type.FLOAT64.stringof,
@@ -603,34 +599,11 @@ struct HiBON {
         test_tabel.UINT32   = 42;
         test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
         test_tabel.BOOLEAN  = true;
-        test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+        //test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
-        // Note that the keys are in alphabetic order
-        // Because the HiBON keys must be ordered
-        alias TabelArray = Tuple!(
-            immutable(ubyte)[],  Type.BINARY.stringof,
-            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
-            immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
-            immutable(double)[], Type.FLOAT64_ARRAY.stringof,
-            immutable(int)[],    Type.INT32_ARRAY.stringof,
-            immutable(long)[],   Type.INT64_ARRAY.stringof,
-            string,              Type.STRING.stringof,
-            immutable(uint)[],   Type.UINT32_ARRAY.stringof,
-            immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
-            );
-        TabelArray test_tabel_array;
-        test_tabel_array.BINARY        = [1, 2, 3];
-        test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
-        test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
-        test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
-        test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
-        test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 42];
-        test_tabel_array.BOOLEAN_ARRAY = [true, false];
-        test_tabel_array.STRING        = "Text";
 
         { // empty
-            auto hibon = new HiBON;
+            auto hibon = HiBON();
             assert(hibon.length is 0);
 
             assert(hibon.size is uint.sizeof+Type.sizeof);
@@ -641,18 +614,20 @@ struct HiBON {
             assert(doc[].empty);
         }
 
+        // Note that the keys are in alphabetic order
+        // Because the HiBON keys must be ordered
         { // Single element
-            auto hibon = new HiBON;
-            enum pos=2;
+            auto hibon = HiBON();
+            enum pos=1;
             static assert(is(test_tabel.Types[pos] == float));
-            hibon[test_tabel.fieldNames[pos]] = test_tabel[pos];
+            (*hibon)[test_tabel.fieldNames[pos]] = test_tabel[pos];
 
             assert(hibon.length is 1);
 
-            const m=hibon[test_tabel.fieldNames[pos]];
+            const m=(*hibon)[test_tabel.fieldNames[pos]];
 
             assert(m.type is Type.FLOAT32);
-            assert(m.key is Type.FLOAT32.stringof);
+            assert(m.key.serialize is Type.FLOAT32.stringof);
             assert(m.get!(test_tabel.Types[pos]) == test_tabel[pos]);
             assert(m.by!(Type.FLOAT32) == test_tabel[pos]);
 
@@ -687,16 +662,16 @@ struct HiBON {
         }
 
         { // HiBON Test for basic types
-            auto hibon = new HiBON;
+            auto hibon = HiBON();
 
-            string[] keys;
+            string[test_tabel.length] keys;
             foreach(i, t; test_tabel) {
-                hibon[test_tabel.fieldNames[i]] = t;
-                keys~=test_tabel.fieldNames[i];
+                (*hibon)[test_tabel.fieldNames[i]] = t;
+                keys[i]=test_tabel.fieldNames[i];
             }
-
+            version(none) {
             size_t index;
-            foreach(m; hibon[]) {
+            foreach(m; (*hibon)[]) {
                 assert(m.key == keys[index]);
                 index++;
             }
@@ -718,18 +693,58 @@ struct HiBON {
                 enum key=test_tabel.fieldNames[i];
                 const e = doc[key];
                 assert(e.key == key);
-                assert(e.type.to!string == key);
+
+                //assert(e.type.to!string == key);
                 assert(e.get!(test_tabel.Types[i]) == t);
             }
         }
+        }
+            version(none) {
+        alias TabelArray = Tuple!(
+            immutable(ubyte)[],  Type.BINARY.stringof,
+            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
+
+            immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
+            immutable(double)[], Type.FLOAT64_ARRAY.stringof,
+            string,              Type.STRING.stringof,
+            immutable(int)[],    Type.INT32_ARRAY.stringof,
+            immutable(long)[],   Type.INT64_ARRAY.stringof,
+            immutable(uint)[],   Type.UINT32_ARRAY.stringof,
+            immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
+
+            /*
+
+
+
+
+
+            */
+            );
+//        immutable(int)[] test;
+
+        TabelArray test_tabel_array;
+
+        test_tabel_array.BINARY        = [1, 2, 3];
+//                            version(none) {
+        test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
+        test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
+
+        test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
+        test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
+        test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
+        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 42];
+        test_tabel_array.BOOLEAN_ARRAY = [true, false];
+        test_tabel_array.STRING        = "Text";
+
+
 
         { // HiBON Test for basic-array types
-            auto hibon = new HiBON;
+            auto hibon = HiBON();
 
-            string[] keys;
+            string[test_tabel_array.length] keys;
             foreach(i, t; test_tabel_array) {
                 hibon[test_tabel_array.fieldNames[i]] = t;
-                keys~=test_tabel_array.fieldNames[i];
+                keys[i]=test_tabel_array.fieldNames[i];
             }
 
             size_t index;
@@ -782,7 +797,7 @@ struct HiBON {
             const doc = Document(data);
 
         }
-
+               version(none) {
         { // Use of native Documet in HiBON
             auto native_hibon = new HiBON;
             native_hibon["int"] = int(42);
@@ -907,6 +922,8 @@ struct HiBON {
                 assert(e.get!string == s);
             }
         }
+         }
     }
     }
+
 }
