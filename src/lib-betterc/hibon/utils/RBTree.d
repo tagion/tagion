@@ -596,7 +596,7 @@ struct RBTree(K, V=void) {
 
     struct Range {
         import std.traits;
-        int level;
+//        int level;
         private {
             Node* nill;
             Node* current;
@@ -607,47 +607,21 @@ struct RBTree(K, V=void) {
         this(const(RBTree*) owner) {
             this.nill=cast(Node*)(owner.nill);
             walker=current=cast(Node*)(owner.root);
-            static if (isIntegral!K) {
-                printf("this root key %d\n", owner.root.key);
-            }
             popFront;
         }
 
         ~this() {
-            printf("%s disposed\n", __FUNCTION__.ptr);
             stack.dispose;
         }
 
         private void push(Node* node) {
-            level++;
-            static if (isIntegral!K) {
-                foreach(i; 0..level) {
-                    printf(". ");
-                }
-                printf(">%d\n", node.key);
-            }
             stack.push(node);
         }
         private Node* pop() {
             if (stack.empty) {
                 return nill;
             }
-            level--;
             return stack.pop;
-/*
-
-            if (result is null) {
-                return nill;
-            }
-            static if (isIntegral!K) {
-                foreach(i; 0..level) {
-                    printf(". ");
-                }
-                printf("<%d: right=%d\n", result.key, walk);
-            }
-
-            return result;
-*/
         }
 
         @property bool empty() const pure {
@@ -662,11 +636,6 @@ struct RBTree(K, V=void) {
         }
 
         void popFront() {
-            if (walker !is nill) {
-                static if (isIntegral!K) {
-                    printf("%d] key %d\n", level, current.key);
-                }
-            }
             while (walker !is nill) {
                 push(walker);
                 walker=walker.left;
