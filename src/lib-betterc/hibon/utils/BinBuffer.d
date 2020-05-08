@@ -59,7 +59,7 @@ struct BinBuffer {
         append(cast(ubyte[])x, index);
     }
     void write(utc_t utc, size_t* index) {
-        append(utc.time, index);
+        write(utc.time, index);
     }
     void write(T)(T x) {
         write(x, &_index);

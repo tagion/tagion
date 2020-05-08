@@ -30,29 +30,6 @@ import hibon.utils.utc;
 //alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 
 /++
- Helper function to serialize a HiBON
-+/
-version(none)
-void binwrite(T, R, I)(R range, const T value, I index) pure {
-    import std.typecons : TypedefType;
-    alias BaseT=TypedefType!(T);
-    bin.write!(BaseT, Endian.littleEndian, R)(range, cast(BaseT)value, index);
-}
-
-/++
- Helper function to serialize an array of the type T of a HiBON
-+/
-version(none)
-void array_write(T)(BinBuffer buffer, T array, ref size_t index) if ( is(T : U[], U) && isBasicType!U ) {
-    const ubytes = cast(const(ubyte[]))array;
-    immutable new_index = index + ubytes.length;
-    scope(success) {
-        index = new_index;
-    }
-    buffer.write(ubytes);
-    //buffer[index..new_index] = ubytes;
-}
-/++
  HiBON Type codes
 +/
 enum Type : ubyte {
@@ -427,8 +404,6 @@ unittest {
 
     { // utc test,
         static assert(Value.asType!utc_t is Type.UTC);
-        pragma(msg, typeof(1234UL));
-//        utc_t time_1;  time_1.opAssign(1234UL);
 
         utc_t time = 1234UL;
         Value v;

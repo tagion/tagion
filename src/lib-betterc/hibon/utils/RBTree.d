@@ -46,8 +46,12 @@ struct RBTree(K, V=void) {
         Node* root;
         bool owner;
     }
+    version(none)
     invariant {
-        assert(root !is null, "Must be ctor must becalled");
+        if ( root is null ) {
+            printf("%s root is null\n", __FUNCTION__.ptr);
+        }
+        assert(root !is null, "Must ctor must be called");
     }
 
     @disable this();
@@ -59,6 +63,7 @@ struct RBTree(K, V=void) {
     }
 
     ~this() {
+        printf("%s dispose\n", __FUNCTION__.ptr);
         dispose;
     }
 
@@ -164,7 +169,6 @@ struct RBTree(K, V=void) {
         }
         const(K) get(const(K) key) const {
             alias _K=const(K);
-            pragma(msg, "const(K)=", _K);
             auto result=search(key);
             if (result !is nill) {
                 return result.key;
@@ -582,33 +586,68 @@ struct RBTree(K, V=void) {
     }
 
     Range opSlice() const {
-        return Range(this);
+        scope(exit) {
+            printf("Range exit\n");
+        }
+        // In betterC the descructor of RBTree is call if the argument is passed to the Range struct
+        // This is the reason why the pointer to RBTree is used
+        return Range(&this);
     }
 
     struct Range {
-        enum Walk {LEFT, RIGHT};
+        import std.traits;
+        int level;
         private {
             Node* nill;
             Node* current;
-            Walk walk;
+            Node* walker;
             Queue!(Node*) stack;
         }
 
-        this(const(RBTree) rbtree) {
-            this.nill=cast(Node*)(rbtree.nill);
-            current=cast(Node*)(rbtree.root);
+        this(const(RBTree*) owner) {
+            this.nill=cast(Node*)(owner.nill);
+            walker=current=cast(Node*)(owner.root);
+            static if (isIntegral!K) {
+                printf("this root key %d\n", owner.root.key);
+            }
+            popFront;
         }
 
         ~this() {
+            printf("%s disposed\n", __FUNCTION__.ptr);
             stack.dispose;
         }
 
+        private void push(Node* node) {
+            level++;
+            static if (isIntegral!K) {
+                foreach(i; 0..level) {
+                    printf(". ");
+                }
+                printf(">%d\n", node.key);
+            }
+            stack.push(node);
+        }
         private Node* pop() {
-            auto result=stack.pop;
+            if (stack.empty) {
+                return nill;
+            }
+            level--;
+            return stack.pop;
+/*
+
             if (result is null) {
                 return nill;
             }
+            static if (isIntegral!K) {
+                foreach(i; 0..level) {
+                    printf(". ");
+                }
+                printf("<%d: right=%d\n", result.key, walk);
+            }
+
             return result;
+*/
         }
 
         @property bool empty() const pure {
@@ -623,29 +662,22 @@ struct RBTree(K, V=void) {
         }
 
         void popFront() {
-            if (current !is nill) {
-                with(Walk) {
-                    final switch(walk) {
-                    case LEFT:
-                        if (current.left !is nill) {
-                            do {
-                                stack.push(current);
-                                current=current.left;
-                            } while (current.left !is nill);
-                        }
-                        else {
-                            current=pop;
-                            walk=RIGHT;
-                        }
-                        break;
-                    case RIGHT:
-                        current=current.right;
-                        if (current !is nill) {
-                            current=pop;
-                        }
-                        walk=LEFT;
-                    }
+            if (walker !is nill) {
+                static if (isIntegral!K) {
+                    printf("%d] key %d\n", level, current.key);
                 }
+            }
+            while (walker !is nill) {
+                push(walker);
+                walker=walker.left;
+            }
+
+            if (!stack.empty) {
+                walker=current=pop;
+                walker=walker.right;
+            }
+            else {
+                current=nill;
             }
         }
     }
@@ -685,7 +717,10 @@ unittest {
     //ROOT = NILL;
 
     printf("### RED-BLACK TREE INSERT ###\n\n");
-    enum tcase=[90, 29, 41, 73,43,2,18,10,77,75,56,13,14,6];
+//    enum tcase=[90, 29, 41, 73,43,2,18,10,77,75,56,13,14,6];
+//    enum tcase=[ 60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
+    enum tcase=[ 1,2,3,4,5,6,7,8,9,10,11,12,13, 14,15,16,17];//60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
+
     foreach(key; tcase) {
         tree.insert(key);
     }
@@ -700,7 +735,14 @@ unittest {
 
 
     printf("### TREE PRINT ###\n\n");
-    tree.tree_print;
+    int max_count=tcase.length;
+//    auto range=tree[];
+//    printf("After range\n");
+    foreach(n; tree[]) {
+        printf("key=%d\n", n.key);
+        assert(max_count > 0);
+        max_count--;
+    }
 
     printf("\n");
 
@@ -718,6 +760,10 @@ unittest {
     tree.remove(key);
 
     printf("### TREE PRINT ###\n\n");
-    tree.tree_print;
+    foreach(n; tree[]) {
+        printf("key=%d\n", n.key);
+    }
+//    tree.tree_print;
     printf("\n");
+    printf("RBTest passed\n");
 }

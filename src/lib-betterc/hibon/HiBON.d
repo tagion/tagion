@@ -30,6 +30,7 @@ import hibon.utils.Memory;
 import hibon.utils.Text;
 import hibon.utils.BinBuffer;
 
+import core.stdc.stdio;
 //import tagion.hibon.HiBONException;
 //import tagion.Message : message;
 //import tagion.Base : CastTo;
@@ -55,7 +56,9 @@ struct HiBON {
     alias Value=ValueT!(true, HiBON*,  Document);
     static HiBON* opCall() {
         auto result=create!(HiBON*);
+        printf("before\n");
         result._members = Members(true);
+        printf("after\n");
         return result;
     }
 
@@ -336,10 +339,6 @@ struct HiBON {
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
                                 Document.buildKey(buffer, E, key.serialize, index);
-                                pragma(msg, "value.by!(E)=", typeof(value.by!(E)));
-                                pragma(msg, "value.by!(E).append=", typeof(value.by!(E).append));
-                                pragma(msg, "append=", typeof(HiBON.append));
-                                pragma(msg, Value);
                                 value.by!(E).append(buffer, index);
                             }
                             else static if (isNative(E)) {

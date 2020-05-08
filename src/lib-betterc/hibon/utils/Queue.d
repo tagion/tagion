@@ -32,8 +32,6 @@ struct Queue(T) {
 
     void push(T x) {
         auto new_e=create!(Element*);
-//        printf("e=%p x=%d\n", new_e, x);
-        pragma(msg, "T=", T, "  ", typeof(new_e));
         new_e.value=x;
         new_e.next=root;
         root=new_e;
@@ -48,6 +46,10 @@ struct Queue(T) {
             }
         }
         return root.value;
+    }
+
+    @property empty() const pure {
+        return root is null;
     }
 
     Range opSlice() {
@@ -72,7 +74,7 @@ struct Queue(T) {
 }
 
 unittest {
-        Queue!int q;
+    Queue!int q;
     enum table=[7, 6, 5, 4, 3, 2, 1];
     foreach(t; table) {
         q.push(t);

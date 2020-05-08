@@ -24,9 +24,9 @@ struct Text {
      */
     this(ref Text _surrender) {
         this.str=_surrender.str;
-        this.index=_surender.index;
-        _sureneder.str=null;
-        _sureneder.index=0;
+        this.index=_surrender.index;
+        _surrender.str=null;
+        _surrender.index=0;
     }
 
     char opIndex(const size_t i) pure const {
@@ -43,8 +43,8 @@ struct Text {
     do {
         return cast(string)(str[from..to]);
     }
-    string opSlice() const pure {
-        return this[0..index];
+    const(char[]) opSlice() const pure {
+        return str[0..index];
     }
     alias serialize=opSlice;
     void opOpAssign(string op)(const(char[]) cat) if (op == "~") {

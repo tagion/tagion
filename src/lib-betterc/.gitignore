@@ -50,3 +50,4 @@ Mkfile.old
 dkms.conf
 
 *~
+dfiles.mk

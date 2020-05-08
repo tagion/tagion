@@ -299,7 +299,7 @@ struct Document {
      Retruns:
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
-    static size_t sizeKey(string key) pure nothrow {
+    static size_t sizeKey(const(char[]) key) pure nothrow {
         return Type.sizeof + ubyte.sizeof + key.length;
     }
 
@@ -374,7 +374,6 @@ struct Document {
             buffer.write(x.sign, &index);
         }
         else {
-            pragma(msg, "Document x ", typeof(x));
             buffer.write(x, &index);
         }
     }
@@ -802,9 +801,9 @@ struct Document {
                                 immutable birary_array_pos = valuePos+uint.sizeof;
                                 immutable byte_size = *cast(uint*)(data[valuePos..birary_array_pos].ptr);
                                 immutable len = byte_size / BigDigit.sizeof;
-                                immutable dig=(cast(immutable(BigDigit*))(data[birary_array_pos..$].ptr))[0..len];
+                                auto dig=(cast(BigDigit*)(data[birary_array_pos..$].ptr))[0..len];
                                 const sign=data[birary_array_pos+byte_size] !is 0;
-                                const big=BigNumber(sign, dig);
+                                auto big=BigNumber(dig, sign);
                                 return Value(big);
                                 //  assert(0, format("Type %s not implemented", E));
                             }
