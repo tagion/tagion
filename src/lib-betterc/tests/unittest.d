@@ -4,7 +4,7 @@ import hibon.HiBONBase;
 //import hibon.HiBONRecord;
 import hibon.BigNumber;
 import hibon.utils.utc;
-import hibon.utils.Queue;
+import hibon.utils.Stack;
 import hibon.utils.RBTree;
 import hibon.utils.BinBuffer;
 import hibon.utils.Memory;

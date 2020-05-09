@@ -73,10 +73,8 @@ struct HiBON {
      +/
     size_t size() const {
         size_t result = uint.sizeof+Type.sizeof;
-        Members.Stack stack;
-        _members.inOrder(stack);
-        foreach(n; stack) {
-             result+=n.size;
+        foreach(m; _members[]) {
+            result+=m.key.size;
         }
         return result;
     }
@@ -100,10 +98,8 @@ struct HiBON {
     private void append(ref BinBuffer buffer, ref size_t index) const {
         immutable size_index = index;
         buffer.write(uint.init, &index);
-        Members.Stack stack;
-        _members.inOrder(stack);
-        foreach(m; stack) {
-            m.append(buffer, index);
+        foreach(m; _members[]) {
+            m.key.append(buffer, index);
         }
         buffer.write(Type.NONE, &index);
         immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
@@ -370,11 +366,10 @@ struct HiBON {
 
     /++
      Returns:
-     A list of members
+     A Range of members
      +/
-     alias Stack=Members.Stack;
-     void all(scope ref Stack queue) const {
-         return _members.inOrder(queue);
+     Members.Range opSlice() const {
+         return _members[];
      }
 
      /++
@@ -503,34 +498,64 @@ struct HiBON {
      Returns:
      A list of the member keys
      +/
-    void keys(scope void delegate(const(char[]) key) dg) const {
-        Stack member_list;
-        all(member_list);
-        foreach(m; member_list) {
-            dg(m.key.serialize);
-        }
+    KeyRange keys() const {
+        return KeyRange(&this);
     }
 
+    protected struct KeyRange {
+        Members.Range range;
+        this(const(HiBON*) owner) {
+            range=owner.opSlice;
+        }
+        ~this() {
+            range.dispose;
+        }
+        alias empty=range.empty;
+        alias popFront=range.popFront;
+        string front() {
+            return range.front.key.key.serialize;
+        }
+    }
     /++
      A list of indices
      Returns:
      returns false if some index is not a number;
     +/
-    bool indices(scope void delegate(const(uint) i) dg) const {
-        Stack member_list;
-        all(member_list);
-        foreach(m; member_list) {
-            uint index;
-            if (is_index(m.key.serialize, index)) {
-                if (dg !is null) {
-                    dg(index);
-                }
-            }
-            else {
-                return false;
-            }
+    IndexRange indices() const {
+        return IndexRange(&this);
+    }
+
+    protected struct IndexRange {
+        private {
+            Members.Range range;
+            bool _error;
         }
-        return true;
+        this(const(HiBON*) owner) {
+            range=owner.opSlice;
+        }
+        ~this() {
+            range.dispose;
+        }
+
+        @property bool empty() const pure {
+            return range.empty;
+        }
+        uint front()  {
+            const key=range.front.key.key.serialize;
+            uint index;
+            if (!is_index(key, index)) {
+                _error=true;
+            }
+            return index;
+        }
+
+        void popFront() {
+            range.popFront;
+        }
+
+        @property error() const pure {
+            return _error;
+        }
     }
 
 
@@ -540,7 +565,14 @@ struct HiBON {
      true if all keys is indices and are consecutive
      +/
     bool isArray() const {
-        return indices(null);
+        auto range=indices;
+        while(!range.empty) {
+            range.popFront;
+            if (range.error) {
+                return false;
+            }
+        }
+        return true;
     }
 
     ///

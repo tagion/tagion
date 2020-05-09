@@ -1,11 +1,11 @@
-module hibon.utils.Queue;
+module hibon.utils.Stack;
 
 extern(C):
 import hibon.utils.Memory;
 import core.stdc.stdio;
 
 @nogc:
-struct Queue(T) {
+struct Stack(T) {
     struct Element {
         Element* next;
         T value;
@@ -74,7 +74,7 @@ struct Queue(T) {
 }
 
 unittest {
-    Queue!int q;
+    Stack!int q;
     enum table=[7, 6, 5, 4, 3, 2, 1];
     foreach(t; table) {
         q.push(t);

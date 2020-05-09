@@ -21,8 +21,9 @@ module hibon.utils.RBTree;
 
 extern(C):
 import hibon.utils.Memory;
-import hibon.utils.Queue;
+import hibon.utils.Stack;
 import core.stdc.stdio;
+import std.algorithm.searching : count;
 
 struct RBTree(K, V=void) {
     enum Color { RED, BLACK };
@@ -63,7 +64,7 @@ struct RBTree(K, V=void) {
     }
 
     ~this() {
-        printf("%s dispose\n", __FUNCTION__.ptr);
+        debug printf("%s dispose\n", __FUNCTION__.ptr);
         dispose;
     }
 
@@ -98,6 +99,10 @@ struct RBTree(K, V=void) {
             }
         }
         tree_print(root);
+    }
+
+    @property empty() const pure {
+        return root is nill;
     }
 
     protected Node* search(K key) {
@@ -136,16 +141,8 @@ struct RBTree(K, V=void) {
         return search(key) !is nill;
     }
 
-    @property size_t length() const pure {
-        size_t result;
-        void count(Node* current) {
-            if (current !is nill) {
-                count(current.left);
-                count(current.right);
-                result++;
-            }
-        }
-        return result;
+    @property size_t length() const {
+        return this[].count!("true")(0);
     }
 
     protected Node* tree_minimum(Node *x) {
@@ -586,9 +583,6 @@ struct RBTree(K, V=void) {
     }
 
     Range opSlice() const {
-        scope(exit) {
-            printf("Range exit\n");
-        }
         // In betterC the descructor of RBTree is call if the argument is passed to the Range struct
         // This is the reason why the pointer to RBTree is used
         return Range(&this);
@@ -601,17 +595,22 @@ struct RBTree(K, V=void) {
             Node* nill;
             Node* current;
             Node* walker;
-            Queue!(Node*) stack;
+            Stack!(Node*) stack;
         }
 
-        this(const(RBTree*) owner) {
+        this(const(RBTree*) owner)  {
             this.nill=cast(Node*)(owner.nill);
             walker=current=cast(Node*)(owner.root);
             popFront;
         }
 
         ~this() {
+            dispose;
+        }
+
+        void dispose() {
             stack.dispose;
+            nill=walker=current=null;
         }
 
         private void push(Node* node) {
@@ -651,7 +650,7 @@ struct RBTree(K, V=void) {
         }
     }
 
-
+    version(none)
     void inOrder(scope ref Stack queue) const {
         void _inorder(const(Node*) current) {
             if (current is nill) {
@@ -664,18 +663,18 @@ struct RBTree(K, V=void) {
 
     }
 
-    alias Stack=Queue!(K);
-    version(none)
-    void inOrder(T)(scope ref Stack queue)  {
-        void _inorder(Node* current) {
-            if (current is nill) {
-                sort(current.right);
-                queue.push(current);
-                sort(current.letf);
-            }
-        }
-        _inorder(root);
-    }
+//    alias Stack=Stack!(K);
+    // version(none)
+    // void inOrder(T)(scope ref Stack queue)  {
+    //     void _inorder(Node* current) {
+    //         if (current is nill) {
+    //             sort(current.right);
+    //             queue.push(current);
+    //             sort(current.letf);
+    //         }
+    //     }
+    //     _inorder(root);
+    // }
 }
 
 unittest {
