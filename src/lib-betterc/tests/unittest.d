@@ -15,24 +15,7 @@ import hibon.Document;
 
 import core.stdc.stdio;
 
-version(none)
-void callUnittest(alias Members)() {
-    // static foreach(m; members) {
-    //     pragma(msg, typeof(m));
-    // }
-//    static foreach(u; __traits(getUnittests, Members)) {
-//    static foreach(u; __traits(getUnittests, Members)) {
-//     static foreach(u; Members) {
-//         pragma(
-// //        u();
-//     }
-//    pragma(msg, Members);
-    // static foreach(u; Members) {
-    //     pragma(msg, u, " ", typeof(u));
-    // }
-}
-
-void callUnittest(string parent, Members...)() {
+static void callUnittest(string parent, Members...)() {
     pragma(msg, "CALLED:",__FUNCTION__);
     pragma(msg, Members);
     static foreach(i, x; Members) {
@@ -68,10 +51,9 @@ void callUnittest(string parent, Members...)() {
             }
         }
     }
-
 }
 
-void callUnittest(alias Module)() {
+static void callUnittest(alias Module)() {
     alias Members=__traits(allMembers, Module);
     pragma(msg, "Members=", Members);
     pragma(msg, __FUNCTION__, " unttests ", __traits(getUnitTests, Module));
@@ -106,6 +88,7 @@ version(unittest) {
             pragma(msg, is(T==struct));
 //            callUnittest!(null, X)();
             callUnittest!(hibon.utils.RBTree)();
+            callUnittest!(hibon.utils.HiBON)();
 //            callUnittest!(hibon.HiBON)();
             version(none)
             static foreach(i, x; X) {
