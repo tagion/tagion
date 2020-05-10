@@ -3,6 +3,7 @@ module hibon.utils.Memory;
 import std.traits : isArray, ForeachType, isPointer, PointerTarget;
 import core.stdc.stdlib : calloc,  realloc, free;
 import core.stdc.stdio;
+import std.conv : emplace;
 
 extern(C):
 @nogc:
@@ -12,11 +13,20 @@ T create(T)(const size_t size) if(isArray!T) {
     return (cast(BaseT*)calloc(size, BaseT.sizeof))[0..size];
 }
 
-void create(T)(ref T data, const size_t size) if(isArray!T) {
+void create(T)(ref T data, const size_t size) if(isArray!T)
+    in {
+        assert(data is null);
+    }
+do {
     alias BaseT=ForeachType!T;
     data=(cast(BaseT*)calloc(size, BaseT.sizeof))[0..size];
 }
 
+T* create(T, Args...)(Args args) if(is(T == struct)) {
+    auto result=cast(T*)calloc(T.sizeof, 1);
+    emplace!T(result, args);
+    return result;
+}
 
 T create(T)() if (isPointer!T) {
     return cast(T)calloc(PointerTarget!(T).sizeof, 1);
@@ -28,7 +38,7 @@ void resize(T)(ref T data, const size_t len) if(isArray!T) {
     data=(cast(BaseT*)realloc(data.ptr, size))[0..len];
 }
 
-@nogc void dispose(T)(ref T die) if (isArray!T) {
+void dispose(T)(ref T die) if (isArray!T) {
     static if(__traits(compiles, die[0].dispose)) {
         foreach(ref d; die) {
             d.dispose;
@@ -38,11 +48,10 @@ void resize(T)(ref T data, const size_t len) if(isArray!T) {
     die=null;
 }
 
-@nogc void dispose(T)(ref T die) if (isPointer!T) {
+void dispose(T)(ref T die) if (isPointer!T) {
     free(die);
     die=null;
 }
-
 
 unittest {
     { // Check Array
@@ -51,24 +60,38 @@ unittest {
         array.create(table.length);
         scope(exit) {
             array.dispose;
+            assert(array.length == 0);
+            assert(array is null);
         }
+
         foreach(a; array) {
-            printf("a=%d\n", a);
             assert(a == a.init);
         }
 
 
         foreach(i, c; table) {
             array[i]=c;
-            printf("a=%d\n", c);
         }
 
         foreach(i, a; array) {
-            printf("%d a=%d table[i]=%d\n", i, a, table[i]);
             assert(a == table[i]);
         }
         assert(array.length == table.length);
     }
-//    printf("array[0]=%d\n", array[0]);
+
+    { // Struct
+        struct S {
+            bool b;
+            int x;
+        }
+        auto s=create!S(true, 42);
+        scope(exit) {
+            s.dispose;
+        }
+
+
+        assert(s.b == true);
+        assert(s.x == 42);
+    }
 
 }

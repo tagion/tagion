@@ -69,8 +69,8 @@ version(unittest) {
             printf("Main\n");
             import core.stdc.stdlib;
             callUnittest!(hibon.utils.Memory)();
+            callUnittest!(hibon.utils.BinBuffer)();
             printf("After\n");
-            // callUnittest!(hibon.utils.BinBuffer)();
             // callUnittest!(hibon.utils.Text)();
             // callUnittest!(hibon.utils.Stack)();
             // callUnittest!(hibon.utils.RBTree)();

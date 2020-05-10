@@ -11,22 +11,22 @@ import hibon.utils.utc;
 
 struct BinBuffer {
     protected {
-        @nogc ubyte[] _data;
+        ubyte[] _data;
         size_t _index;
     }
     enum DEFAULT_SIZE=256;
-    @nogc this(const size_t size) {
+    this(const size_t size) {
         if (size>0) {
-            _data=create!(ubyte[])(size);
+            _data.create(size);
         }
     }
 
-    @nogc ~this() {
+   ~this() {
         dispose;
     }
 
-    @nogc void dispose() {
-//        dispose(_data);
+    void dispose() {
+        _data.dispose;
         scope(exit) {
             _index=0;
         }
