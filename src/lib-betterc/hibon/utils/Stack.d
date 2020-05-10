@@ -27,7 +27,9 @@ struct Stack(T) {
                 e.dispose;
             }
         }
+        printf("before _dispose(root)=%p\n", root);
         _dispose(root);
+        printf("after _dispose(root)=%p\n", root);
     }
 
     void push(T x) {

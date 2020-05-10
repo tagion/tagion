@@ -5,7 +5,7 @@
 module hibon.Document;
 
 extern(C):
-
+@nogc:
 //import std.format;
 import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, EnumMembers, Unqual;

@@ -1,6 +1,8 @@
 module hibon.utils.Text;
 
 extern(C):
+@nogc:
+
 import std.traits : isIntegral, isSigned, Unqual;
 import hibon.utils.Memory;
 

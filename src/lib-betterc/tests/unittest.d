@@ -69,45 +69,46 @@ version(unittest) {
         extern(C) int main()
         {
             printf("Main\n");
-            Document doc;
+            // Document doc;
 //            auto hibon=HiBON();
-            pragma(msg, __traits(getUnitTests, hibon.HiBONBase));
-            pragma(msg, __traits(getUnitTests, hibon.HiBON.HiBON));
-            pragma(msg, __traits(allMembers, hibon.Document));
-            pragma(msg, "---- ---- ----");
-            pragma(msg, __traits(allMembers, test));
-            alias X=__traits(allMembers, hibon.HiBON);
-            pragma(msg, typeof(X));
-            pragma(msg, X);
-            pragma(msg, X[0]);
-            pragma(msg, typeof(X[0]));
-            pragma(msg, X[3]);
-            enum code="alias T=hibon.HiBON."~X[3]~";";
-            mixin(code);
-            pragma(msg, T);
-            pragma(msg, is(T==struct));
+            // pragma(msg, __traits(getUnitTests, hibon.HiBONBase));
+            // pragma(msg, __traits(getUnitTests, hibon.HiBON.HiBON));
+            // pragma(msg, __traits(allMembers, hibon.Document));
+            // pragma(msg, "---- ---- ----");
+            // pragma(msg, __traits(allMembers, test));
+            // alias X=__traits(allMembers, hibon.HiBON);
+            // pragma(msg, typeof(X));
+            // pragma(msg, X);
+            // pragma(msg, X[0]);
+            // pragma(msg, typeof(X[0]));
+            // pragma(msg, X[3]);
+            // enum code="alias T=hibon.HiBON."~X[3]~";";
+            // mixin(code);
+            // pragma(msg, T);
+            // pragma(msg, is(T==struct));
 //            callUnittest!(null, X)();
             callUnittest!(hibon.utils.RBTree)();
-            callUnittest!(hibon.utils.HiBON)();
+            // callUnittest!(hibon.HiBON)();
+            // callUnittest!(hibon.Document)();
 //            callUnittest!(hibon.HiBON)();
-            version(none)
-            static foreach(i, x; X) {
-                {
-                    printf("x=%s\n", x.ptr);
-//                    enum code1="alias T1=hibon.HiBON."~X[i]~";";
-                    enum code1="alias T1="~X[i]~";";
-                    mixin(code1);
-                    pragma(msg, X[i], " : ", is(T1 == struct));
-                    // static if (__traits(compiles, T1 x)) {
-                    //     pragma(msg, "T1=", T1);
-                    // }
-                    // static if (__traits(compiles, mixin(code1))) {
-                    //     pragma(msg, "Compiles ", code1);
-                    //     mixin(code1);
-                    //     //enum _X=x;
-                    // }
-                }
-            }
+//             version(none)
+//             static foreach(i, x; X) {
+//                 {
+//                     printf("x=%s\n", x.ptr);
+// //                    enum code1="alias T1=hibon.HiBON."~X[i]~";";
+//                     enum code1="alias T1="~X[i]~";";
+//                     mixin(code1);
+//                     pragma(msg, X[i], " : ", is(T1 == struct));
+//                     // static if (__traits(compiles, T1 x)) {
+//                     //     pragma(msg, "T1=", T1);
+//                     // }
+//                     // static if (__traits(compiles, mixin(code1))) {
+//                     //     pragma(msg, "Compiles ", code1);
+//                     //     mixin(code1);
+//                     //     //enum _X=x;
+//                     // }
+//                 }
+//             }
 //            callUnittest!(X)();
 //            hibon.HiBON.HiBON.__unittest_L574_C5();
 //            allMembers

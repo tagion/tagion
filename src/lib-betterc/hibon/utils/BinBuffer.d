@@ -1,7 +1,7 @@
 module hibon.utils.BinBuffer;
 
 extern(C):
-@system:
+@nogc {
 import core.stdc.stdlib : calloc, malloc, realloc, free;
 import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
 import std.traits : isNumeric, isArray, Unqual;
@@ -95,7 +95,7 @@ struct BinBuffer {
         return assumeUnique(result);
     }
 }
-
+}
 
 unittest {
     BinBuffer buf;

@@ -20,6 +20,7 @@ module hibon.utils.RBTree;
  */
 
 extern(C):
+@nogc:
 import hibon.utils.Memory;
 import hibon.utils.Stack;
 import core.stdc.stdio;
@@ -105,7 +106,7 @@ struct RBTree(K, V=void) {
         return root is nill;
     }
 
-    protected Node* search(K key) {
+    protected Node* _search(K key) {
         Node* x = root;
         while ((x !is nill) && (x.key != key)) {
             if (x.key > key) {
@@ -120,8 +121,9 @@ struct RBTree(K, V=void) {
 
     const(Node*) search(K key) const {
         const(Node*) _search(const(Node*) current) {
-            if (current is nill) {
+            if (current !is nill) {
                 if (current.key == key) {
+                    printf("Found %d\n", key);
                     return current;
                 }
                 else if (current.key > key) {
@@ -131,18 +133,27 @@ struct RBTree(K, V=void) {
                     return _search(current.right);
                 }
             }
-            return null;
+            return nill;
         }
-        return _search(root);
+        auto result=_search(root);
+        if (result !is nill) {
+            return result;
+        }
+        return null;
     }
 
     bool exists(K key) const {
-        const result=search(key);
-        return search(key) !is nill;
+//        const result=search(key);
+        return search(key) !is null;
     }
 
     @property size_t length() const {
-        return this[].count!("true")(0);
+        size_t count;
+        foreach(m; this[]) {
+            count++;
+        }
+        printf("before range.count!(\"true\")\n");
+        return count;
     }
 
     protected Node* tree_minimum(Node *x) {
@@ -167,7 +178,7 @@ struct RBTree(K, V=void) {
         const(K) get(const(K) key) const {
             alias _K=const(K);
             auto result=search(key);
-            if (result !is nill) {
+            if (result !is null) {
                 return result.key;
             }
             return K.init;
@@ -412,7 +423,7 @@ struct RBTree(K, V=void) {
      */
 
     bool remove(K key) {
-        auto remove_node=search(key);
+        auto remove_node=_search(key);
         if (remove_node !is nill) {
             remove(remove_node);
             return true;
@@ -585,7 +596,11 @@ struct RBTree(K, V=void) {
     Range opSlice() const {
         // In betterC the descructor of RBTree is call if the argument is passed to the Range struct
         // This is the reason why the pointer to RBTree is used
-        return Range(&this);
+        scope(exit) {
+            printf("%s scope(exit)\n", __FUNCTION__.ptr);
+        }
+        auto range=Range(&this);
+        return range;
     }
 
     struct Range {
@@ -599,12 +614,14 @@ struct RBTree(K, V=void) {
         }
 
         this(const(RBTree*) owner)  {
+            printf("Create RBTree range %p\n", &stack);
             this.nill=cast(Node*)(owner.nill);
             walker=current=cast(Node*)(owner.root);
             popFront;
         }
 
         ~this() {
+            printf("Dispose RBTree range %p\n", &stack);
             dispose;
         }
 
@@ -678,60 +695,56 @@ struct RBTree(K, V=void) {
 }
 
 unittest {
-    // NILL = malloc(sizeof(struct node));
-    // NILL->color = BLACK;
     auto tree=RBTree!int(false);
 
-    //ROOT = NILL;
 
     printf("### RED-BLACK TREE INSERT ###\n\n");
-//    enum tcase=[90, 29, 41, 73,43,2,18,10,77,75,56,13,14,6];
-//    enum tcase=[ 60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
-    enum tcase=[ 1,2,3,4,5,6,7,8,9,10,11,12,13, 14,15,16,17];//60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
+    enum tcase=[ 60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
+    const(int[17]) result=[ 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170];
+
+    assert(tcase.length == result.length);
 
     foreach(key; tcase) {
         tree.insert(key);
     }
 
-    // printf("Number of key: ");
-    // scanf("%d", &tcase);
-    // while(tcase--){
-    //     printf("Enter key: ");
-    //     scanf("%d", &key);
-    //     red_black_insert(key);
-    // }
 
-
-    printf("### TREE PRINT ###\n\n");
-    int max_count=tcase.length;
-//    auto range=tree[];
-//    printf("After range\n");
+    // Check that all the elements has been added
+    uint count;
     foreach(n; tree[]) {
-        printf("key=%d\n", n.key);
-        assert(max_count > 0);
-        max_count--;
+        const key=result[count++];
+        assert(n.key == key);
     }
 
-    printf("\n");
+    // Check the size of the check lists
+    assert(tcase.length == count);
 
-    printf("### KEY SEARCH ###\n\n");
-    printf("Enter key: ");
-//    scanf("%d", &key);
-    int key=73;
-    printf("exist %d", tree.exists(90)); //((tree_search(key) == NILL) ? "NILL\n" : "%p\n", tree_search(key));
+    enum indices=[5,3, 14, 0, tcase.length-1];
 
-    // printf("### MIN TEST ###\n\n");
-    // printf("MIN: %d\n", (tree_minimum(ROOT))->key);
-
-    printf("### TREE DELETE TEST ###\n\n");
-    printf("Enter key to delete: ");
-    tree.remove(key);
-
-    printf("### TREE PRINT ###\n\n");
-    foreach(n; tree[]) {
-        printf("key=%d\n", n.key);
+    // Check exists
+    foreach(i; indices) {
+        const key=result[i];
+        assert(tree.exists(key));
     }
-//    tree.tree_print;
-    printf("\n");
-    printf("RBTest passed\n");
+
+    // Check search
+    foreach(i; indices) {
+        const key=result[i];
+        const n=tree.search(key);
+        assert(n !is null);
+        assert(key == n.key);
+    }
+
+    // Check remove
+    foreach(i; indices) {
+        const key=result[i];
+        const n_exists=tree.search(key);
+        assert(n_exists !is null);
+        tree.remove(key);
+        assert(!tree.exists(key));
+        const n=tree.search(key);
+        assert(n is null);
+        count--;
+        assert(tree.length == count);
+    }
 }
