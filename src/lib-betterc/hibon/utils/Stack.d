@@ -1,10 +1,11 @@
 module hibon.utils.Stack;
 
 extern(C):
+@nogc:
+
 import hibon.utils.Memory;
 import core.stdc.stdio;
 
-@nogc:
 struct Stack(T) {
     struct Element {
         Element* next;
@@ -14,7 +15,7 @@ struct Stack(T) {
         Element* root;
     }
     // this() {
-    //     root=null;
+    //     top=null;
     // }
     ~this() {
         dispose;
@@ -50,8 +51,20 @@ struct Stack(T) {
         return root.value;
     }
 
-    @property empty() const pure {
+    @property T top() {
+        return root.value;
+    }
+
+    @property bool empty() const pure {
         return root is null;
+    }
+
+    @property size_t length() const pure {
+        size_t count;
+        for(Element* e=cast(Element*)root; e !is null; e=e.next) {
+            count++;
+        }
+        return count;
     }
 
     Range opSlice() {
@@ -77,16 +90,26 @@ struct Stack(T) {
 
 unittest {
     Stack!int q;
-    enum table=[7, 6, 5, 4, 3, 2, 1];
+    const(int[7]) table=[7, 6, 5, 4, 3, 2, 1];
+
+    assert(q.empty);
     foreach(t; table) {
         q.push(t);
     }
 
-//    check=table;
+    assert(!q.empty);
+    assert(table.length == q.length);
+    assert(q.top == table[table.length-1]);
+
     size_t i=table.length;
     int[table.length] check=table;
     foreach(b; q[]) {
         i--;
         assert(check[i] is b);
+    }
+
+    foreach_reverse(j;0..table.length) {
+        assert(q.top == table[j]);
+        q.pop;
     }
 }

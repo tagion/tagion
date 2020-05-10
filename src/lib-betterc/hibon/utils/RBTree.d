@@ -65,7 +65,6 @@ struct RBTree(K, V=void) {
     }
 
     ~this() {
-        debug printf("%s dispose\n", __FUNCTION__.ptr);
         dispose;
     }
 
@@ -90,18 +89,6 @@ struct RBTree(K, V=void) {
     }
     /* Print tree keys by inorder tree walk */
 
-    version(none)
-    void tree_print() {
-        void tree_print(Node* x) {
-            if (x !is nill) {
-                tree_print(x.left);
-                printf("%d\t", x.key);
-                tree_print(x.right);
-            }
-        }
-        tree_print(root);
-    }
-
     @property empty() const pure {
         return root is nill;
     }
@@ -119,11 +106,10 @@ struct RBTree(K, V=void) {
         return x;
     }
 
-    const(Node*) search(K key) const {
-        const(Node*) _search(const(Node*) current) {
+    const(Node*) search(K key) const pure {
+        const(Node*) _search(const(Node*) current) pure {
             if (current !is nill) {
                 if (current.key == key) {
-                    printf("Found %d\n", key);
                     return current;
                 }
                 else if (current.key > key) {
@@ -152,7 +138,6 @@ struct RBTree(K, V=void) {
         foreach(m; this[]) {
             count++;
         }
-        printf("before range.count!(\"true\")\n");
         return count;
     }
 
@@ -270,7 +255,6 @@ struct RBTree(K, V=void) {
      */
 
     protected void insert_fixup(Node *z) {
-        printf("z.parent.color=%d\n", z.parent.color);
         while (z.parent.color is Color.RED) {
 
             /* z's parent is left child of z's grand parent*/
@@ -596,9 +580,6 @@ struct RBTree(K, V=void) {
     Range opSlice() const {
         // In betterC the descructor of RBTree is call if the argument is passed to the Range struct
         // This is the reason why the pointer to RBTree is used
-        scope(exit) {
-            printf("%s scope(exit)\n", __FUNCTION__.ptr);
-        }
         auto range=Range(&this);
         return range;
     }
@@ -614,14 +595,12 @@ struct RBTree(K, V=void) {
         }
 
         this(const(RBTree*) owner)  {
-            printf("Create RBTree range %p\n", &stack);
             this.nill=cast(Node*)(owner.nill);
             walker=current=cast(Node*)(owner.root);
             popFront;
         }
 
         ~this() {
-            printf("Dispose RBTree range %p\n", &stack);
             dispose;
         }
 
@@ -679,26 +658,11 @@ struct RBTree(K, V=void) {
         _inorder(root);
 
     }
-
-//    alias Stack=Stack!(K);
-    // version(none)
-    // void inOrder(T)(scope ref Stack queue)  {
-    //     void _inorder(Node* current) {
-    //         if (current is nill) {
-    //             sort(current.right);
-    //             queue.push(current);
-    //             sort(current.letf);
-    //         }
-    //     }
-    //     _inorder(root);
-    // }
 }
 
 unittest {
     auto tree=RBTree!int(false);
 
-
-    printf("### RED-BLACK TREE INSERT ###\n\n");
     enum tcase=[ 60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
     const(int[17]) result=[ 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170];
 
