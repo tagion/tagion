@@ -5,11 +5,11 @@ extern(C):
 import core.stdc.stdlib : calloc, malloc, realloc, free;
 import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
 import std.traits : isNumeric, isArray, Unqual;
-import std.exception : assumeUnique;
 import hibon.utils.Memory;
 import hibon.utils.utc;
 
 struct BinBuffer {
+    @nogc:
     protected {
         ubyte[] _data;
         size_t _index;
@@ -17,9 +17,10 @@ struct BinBuffer {
     enum DEFAULT_SIZE=256;
     this(const size_t size) {
         if (size>0) {
-            _data.create(size);
+//            _data.create(size);
         }
     }
+
 
    ~this() {
         dispose;
@@ -31,7 +32,7 @@ struct BinBuffer {
             _index=0;
         }
     }
-    version(node) {
+
 
     void recreate(const size_t size) {
         if (_data !is null) {
@@ -41,6 +42,7 @@ struct BinBuffer {
             _data=create!(ubyte[])(size);
         }
     }
+
     private void append(scope const(ubyte[]) add, size_t* index) {
         if (_data is null) {
             const new_size=(add.length < DEFAULT_SIZE)?DEFAULT_SIZE:add.length;
@@ -65,19 +67,24 @@ struct BinBuffer {
     void write(const(ubyte[]) x, size_t* index) {
         append(x, index);
     }
+
     void write(T)(T x, size_t* index) if(isArray!T) {
         append(cast(ubyte[])x, index);
     }
+
     void write(utc_t utc, size_t* index) {
         write(utc.time, index);
     }
+
     void write(T)(T x) {
         write(x, &_index);
     }
+
     void write(T)(T x, const size_t index) {
         size_t temp_index=index;
         write(x, &temp_index);
     }
+
     BinBuffer opSlice(const size_t from, const size_t to)
         in {
             assert(from<=to);
@@ -93,23 +100,28 @@ struct BinBuffer {
         return _index;
     }
 
-    //  version(none)
     immutable(ubyte[]) serialize() const {
-        auto result=_data[0.._index];
-        return null;
-//        return assumeUnique(result);
-    }
+        return cast(immutable)_data[0.._index];
     }
 }
 
-@nogc
 unittest {
+    import core.stdc.stdio;
     auto buf=BinBuffer(100);
-//    buf.write(10);
 
-    // buf.write(10.0);
-    // buf.write("test");
-    // ubyte x=7;
-    // buf.write(x);
+    buf.write(10);
+    size_t size=int.sizeof;
+    assert(buf.length == size);
+    buf.write(10.0);
+    size+=double.sizeof;
+    assert(buf.length == size);
+    buf.write("test");
+    size+="test".length;
+    assert(buf.length == size);
+    ubyte x=7;
+    buf.write(x);
+    size+=ubyte.sizeof;
+    assert(buf.length == size);
+    printf("BinBuffer passed\n");
 
 }
