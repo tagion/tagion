@@ -17,7 +17,7 @@ struct BinBuffer {
     enum DEFAULT_SIZE=256;
     this(const size_t size) {
         if (size>0) {
-//            _data.create(size);
+            _data.create(size);
         }
     }
 
@@ -106,22 +106,45 @@ struct BinBuffer {
 }
 
 unittest {
+    string text="text";
     import core.stdc.stdio;
     auto buf=BinBuffer(100);
 
-    buf.write(10);
+    buf.write(42);
     size_t size=int.sizeof;
     assert(buf.length == size);
-    buf.write(10.0);
+    buf.write(10.1);
     size+=double.sizeof;
     assert(buf.length == size);
-    buf.write("test");
-    size+="test".length;
+    buf.write(text);
+    size+=text.length;
     assert(buf.length == size);
     ubyte x=7;
     buf.write(x);
     size+=ubyte.sizeof;
     assert(buf.length == size);
+    printf("size=%d\n", size);
+    assert(size == 17);
+
+    ubyte[17] check;
+
+    size=0;
+    check[size..size+int.sizeof]=nativeToLittleEndian(42);
+    size+=int.sizeof;
+    check[size..size+double.sizeof]=nativeToLittleEndian(10.1);
+    size+=double.sizeof;
+    check[size..size+text.length]=cast(const(ubyte[]))text;
+    size+=text.length;
+    check[size]=x;
+
+    foreach(i, c; check) {
+        printf("%d] %d\n", i, c);
+    }
+    foreach(i, a; buf.serialize) {
+        printf("a=%d %d\n", a, check[i]);
+        assert(a == check[i]);
+    }
+    assert(check == buf.serialize);
     printf("BinBuffer passed\n");
 
 }
