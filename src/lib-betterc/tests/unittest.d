@@ -10,8 +10,8 @@ import hibon.utils.BinBuffer;
 import hibon.utils.Memory;
 import hibon.utils.Bailout;
 import hibon.utils.Text;
-import hibon.HiBON;
-import hibon.Document;
+//import hibon.HiBON;
+//import hibon.Document;
 
 import core.stdc.stdio;
 
@@ -68,9 +68,12 @@ version(unittest) {
         {
             printf("Main\n");
             import core.stdc.stdlib;
-            callUnittest!(hibon.utils.BinBuffer)();
-            callUnittest!(hibon.utils.Stack)();
-            callUnittest!(hibon.utils.RBTree)();
+            callUnittest!(hibon.utils.Memory)();
+            printf("After\n");
+            // callUnittest!(hibon.utils.BinBuffer)();
+            // callUnittest!(hibon.utils.Text)();
+            // callUnittest!(hibon.utils.Stack)();
+            // callUnittest!(hibon.utils.RBTree)();
             return 0;
         }
     }

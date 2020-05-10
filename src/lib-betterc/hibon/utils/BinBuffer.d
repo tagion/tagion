@@ -11,18 +11,28 @@ import hibon.utils.utc;
 
 struct BinBuffer {
     protected {
-        ubyte[] _data;
+        @nogc ubyte[] _data;
         size_t _index;
     }
     enum DEFAULT_SIZE=256;
-    this(const size_t size) {
+    @nogc this(const size_t size) {
         if (size>0) {
             _data=create!(ubyte[])(size);
         }
     }
-    ~this() {
+
+    @nogc ~this() {
         dispose;
     }
+
+    @nogc void dispose() {
+//        dispose(_data);
+        scope(exit) {
+            _index=0;
+        }
+    }
+    version(node) {
+
     void recreate(const size_t size) {
         if (_data !is null) {
             dispose;
@@ -68,13 +78,6 @@ struct BinBuffer {
         size_t temp_index=index;
         write(x, &temp_index);
     }
-    void dispose() {
-        free(_data.ptr);
-        scope(exit) {
-            _data=null;
-            _index=0;
-        }
-    }
     BinBuffer opSlice(const size_t from, const size_t to)
         in {
             assert(from<=to);
@@ -90,19 +93,23 @@ struct BinBuffer {
         return _index;
     }
 
+    //  version(none)
     immutable(ubyte[]) serialize() const {
         auto result=_data[0.._index];
-        return assumeUnique(result);
+        return null;
+//        return assumeUnique(result);
+    }
     }
 }
 
+@nogc
 unittest {
-    BinBuffer buf;
-    buf.write(10);
+    auto buf=BinBuffer(100);
+//    buf.write(10);
 
-    buf.write(10.0);
-    buf.write("test");
-    ubyte x=7;
-    buf.write(x);
+    // buf.write(10.0);
+    // buf.write("test");
+    // ubyte x=7;
+    // buf.write(x);
 
 }
