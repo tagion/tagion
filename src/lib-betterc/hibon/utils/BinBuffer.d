@@ -137,14 +137,8 @@ unittest {
     size+=text.length;
     check[size]=x;
 
-    foreach(i, c; check) {
-        printf("%d] %d\n", i, c);
-    }
     foreach(i, a; buf.serialize) {
-        printf("a=%d %d\n", a, check[i]);
         assert(a == check[i]);
     }
     assert(check == buf.serialize);
-    printf("BinBuffer passed\n");
-
 }

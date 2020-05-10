@@ -5,15 +5,17 @@ extern(C):
 
 import std.traits : isIntegral, isSigned, Unqual;
 import hibon.utils.Memory;
+import core.stdc.stdio;
 
 struct Text {
+    @nogc:
     protected {
         char[] str;
         size_t index;
     }
     this(const size_t size) {
         if (size > 0) {
-            str=create!(char[])(size);
+            str.create(size);
         }
     }
 
@@ -37,6 +39,7 @@ struct Text {
         }
         return '\0';
     }
+
     string opSlice(const size_t from, const size_t to) const
         in {
             assert(from<=to);
@@ -45,9 +48,11 @@ struct Text {
     do {
         return cast(string)(str[from..to]);
     }
+
     const(char[]) opSlice() const pure {
         return str[0..index];
     }
+
     alias serialize=opSlice;
     void opOpAssign(string op)(const(char[]) cat) if (op == "~") {
         const new_index=index+cat.length;
@@ -59,9 +64,9 @@ struct Text {
         }
         str[index..new_index]=cat;
     }
-    // void opOpAssign(string op, T)(T num) if(op == "~" && isIntegral!T) {
-    //     append(num, 10);
-    // }
+
+    //alias opCall=opOpAssign;
+
     ref Text opCall(T)(T num, const uint base=10) if(isIntegral!T) {
         //const negative=(num < 0);
         enum numbers="0123456789abcdef";
@@ -77,7 +82,7 @@ struct Text {
         }
         static if (isSigned!T) {
             if (num<0) {
-                str[index]="-";
+                str[index]='-';
                 num=-num;
                 index++;
             }
@@ -87,20 +92,41 @@ struct Text {
             Mutable n=num;
             uint i;
             do {
-                s[i++] = numbers[base % base];
+                s[i++] = numbers[n % base];
                 n/=base;
             } while (n  > 0);
             return s[0..i];
         }
         char[max_size] buf;
-        auto reverse_numbers=fill_numbers(num, buf);
+        const reverse_numbers=fill_numbers(num, buf);
         foreach_reverse(i, c; reverse_numbers) {
-            str[index+i]=c;
+            str[index]=c;
+            index++;
         }
-        index+=reverse_numbers.length;
         return this;
     }
+
     ~this() {
         str.dispose;
     }
+}
+
+unittest {
+    import core.stdc.stdio;
+    Text text; //=Text("");
+    immutable(char[12]) check="Some text 42";
+    size_t size=4;
+    text~=check[0..size];
+//    printf("check=%s\n", check);
+    assert(text.serialize == check[0..size]);
+    text~=check[size..size+6];
+    size+=6;
+    assert(text.serialize == check[0..size]);
+    text(42);
+    // foreach(c; text.serialize) {
+    //     printf("%c", c);
+    // }
+    assert(text.serialize == check);
+    printf("Text passed<\n");
+
 }
