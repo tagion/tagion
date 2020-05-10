@@ -12,18 +12,13 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, E
 import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
-import std.range.primitives : walkLength;
+//import std.range.primitives : walkLength;
 
-//import tagion.Types : decimal_t;
-
-//import tagion.Base : isOneOf;
-//import .Message : message;
 import hibon.utils.BinBuffer;
 import hibon.utils.Text;
 import hibon.utils.Bailout;
 import hibon.BigNumber;
 import hibon.HiBONBase;
-//import hibon.HiBONException;
 
 import std.stdio;
 import std.exception;
@@ -35,6 +30,7 @@ static assert(uint.sizeof == 4);
 */
 
 struct Document {
+    @nogc:
     alias Value=ValueT!(false, void, Document); /// HiBON Document value type
     protected immutable(ubyte)[] _data;
 
@@ -90,7 +86,11 @@ struct Document {
      Number of members in in the Document
      +/
     @property uint length() const {
-        return cast(uint)(this[].walkLength);
+        uint count;
+        foreach(e; this[]) {
+            count++;
+        }
+        return count;
     }
 
     /++
@@ -149,6 +149,7 @@ struct Document {
      Range of the Document
      +/
     struct Range {
+        @nogc:
         immutable(ubyte[]) data;
     protected:
         size_t            _index;
@@ -208,8 +209,28 @@ struct Document {
      Returns:
      A range of the member keys in the document
      +/
-    auto keys() const {
-        return map!"a.key"(this[]);
+    KeyRange keys() const {
+        return KeyRange(_data);
+    }
+
+    protected struct KeyRange {
+        @nogc:
+        Range range;
+        this(immutable(ubyte[]) data) {
+            range=Range(data);
+        }
+
+        @property bool empty() const pure {
+            return range.empty;
+        }
+
+        @property  void popFront() {
+            range.popFront;
+        }
+
+        string front() {
+            return range.front.key;
+        }
     }
 
     /++
@@ -220,8 +241,40 @@ struct Document {
      A range of indices of the type of uint in the Document
     +/
 
-    auto indices() const {
-        return map!(a => to_uint(a.key))(this[]);
+    IndexRange indices() const {
+        return IndexRange(_data);
+    }
+
+    protected struct IndexRange {
+        @nogc:
+        private {
+            Range range;
+            bool _error;
+        }
+        this(immutable(ubyte[]) data) {
+            range=Range(data);
+        }
+
+        @property bool empty() const pure {
+            return range.empty;
+        }
+
+        uint front()  {
+            const key=range.front.key;
+            uint index;
+            if (!is_index(key, index)) {
+                _error=true;
+            }
+            return index;
+        }
+
+        @property  void popFront() {
+            range.popFront;
+        }
+
+        @property error() const pure {
+            return _error;
+        }
     }
 
 
@@ -231,7 +284,14 @@ struct Document {
      Is true if all the keys in ordred numbers
      +/
     bool isArray() const {
-        return .isArray(keys);
+        auto range=indices;
+        while(!range.empty) {
+            range.popFront;
+            if (range.error) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /++
@@ -412,15 +472,6 @@ struct Document {
         auto S=doc.range!(string[]);
 
         assert(!S.empty);
-        // bool should_fail;
-        // try {
-        //     auto s=S.front;
-        // }
-        // catch (HiBONException e) {
-        //     should_fail=true;
-        // }
-
-        // assert(should_fail);
     }
 
     struct RangeT(T) {
@@ -731,12 +782,12 @@ struct Document {
 
             }
         }
-
     }
 /**
  * HiBON Element representation
  */
     struct Element {
+        @nogc:
         /*
          * -----
          * //data image:

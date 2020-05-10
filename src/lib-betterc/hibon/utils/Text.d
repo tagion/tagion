@@ -113,20 +113,14 @@ struct Text {
 
 unittest {
     import core.stdc.stdio;
-    Text text; //=Text("");
+    Text text;
     immutable(char[12]) check="Some text 42";
     size_t size=4;
     text~=check[0..size];
-//    printf("check=%s\n", check);
     assert(text.serialize == check[0..size]);
     text~=check[size..size+6];
     size+=6;
     assert(text.serialize == check[0..size]);
     text(42);
-    // foreach(c; text.serialize) {
-    //     printf("%c", c);
-    // }
     assert(text.serialize == check);
-    printf("Text passed<\n");
-
 }

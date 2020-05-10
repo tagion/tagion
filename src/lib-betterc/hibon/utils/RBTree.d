@@ -23,8 +23,8 @@ extern(C):
 @nogc:
 import hibon.utils.Memory;
 import hibon.utils.Stack;
-import core.stdc.stdio;
-import std.algorithm.searching : count;
+//import core.stdc.stdio;
+//import std.algorithm.searching : count;
 
 struct RBTree(K, V=void) {
     enum Color { RED, BLACK };
@@ -156,7 +156,7 @@ struct RBTree(K, V=void) {
 
     static if (is(V==void)) {
         void insert(K key) {
-            Node* z = create!(Node*);
+            Node* z = create!Node;
             z.key=key;
             insert(z);
         }
@@ -172,7 +172,7 @@ struct RBTree(K, V=void) {
     }
     else {
         void insert(K key, V value) {
-            Node* z = create!(Node*);
+            Node* z = create!Node;
             z.key=key;
             z.value=value;
             insert(z);

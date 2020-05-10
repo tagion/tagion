@@ -1,7 +1,7 @@
 module hibon.HiBONBase;
 
 extern(C):
-@system:
+@nogc:
 
 
 //alias utc_t = Typedef!(ulong, ulong.init, UTC);
@@ -492,6 +492,7 @@ uint to_uint(string num) pure {
  Returns:
  true if keys is the indices of an HiBON array
 +/
+version(none)
 bool isArray(R)(R keys) {
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {

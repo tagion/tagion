@@ -4,9 +4,10 @@ extern(C):
 @nogc:
 
 import hibon.utils.Memory;
-import core.stdc.stdio;
+//import core.stdc.stdio;
 
 struct Stack(T) {
+    @nogc:
     struct Element {
         Element* next;
         T value;
@@ -28,13 +29,11 @@ struct Stack(T) {
                 e.dispose;
             }
         }
-        printf("before _dispose(root)=%p\n", root);
         _dispose(root);
-        printf("after _dispose(root)=%p\n", root);
     }
 
     void push(T x) {
-        auto new_e=create!(Element*);
+        auto new_e=create!Element;
         new_e.value=x;
         new_e.next=root;
         root=new_e;

@@ -2,6 +2,7 @@ module hibon.utils.Bailout;
 
 
 extern(C):
+@nogc:
 import core.stdc.string;
 import core.stdc.stdio;
 

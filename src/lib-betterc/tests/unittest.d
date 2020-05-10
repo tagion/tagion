@@ -11,20 +11,20 @@ import hibon.utils.Memory;
 import hibon.utils.Bailout;
 import hibon.utils.Text;
 //import hibon.HiBON;
-//import hibon.Document;
+import hibon.Document;
 
 import core.stdc.stdio;
 
 static void callUnittest(string parent, Members...)() {
-    pragma(msg, "CALLED:",__FUNCTION__);
-    pragma(msg, Members);
+    //  pragma(msg, "CALLED:",__FUNCTION__);
+//    pragma(msg, Members);
     static foreach(i, x; Members) {
         {
-            pragma(msg, Members[i]);
+            //pragma(msg, Members[i]);
             enum parentDot=(parent is null)?"":parent~".";
-            pragma(msg, "parentDot=", parentDot);
+//            pragma(msg, "parentDot=", parentDot);
             enum dotMember=parentDot~Members[i];
-            pragma(msg , dotMember, " is type ", is(mixin(dotMember)));
+            //           pragma(msg , dotMember, " is type ", is(mixin(dotMember)));
             static if(is(mixin(dotMember))) {
                 enum code1="alias T1="~parentDot~Members[i]~";";
                 pragma(msg, "code1=", code1);
@@ -37,10 +37,6 @@ static void callUnittest(string parent, Members...)() {
                 //    pragma(msg, T1, " members ", __traits(allMembers, T1));
                 pragma(msg, T1, " unttests ", __traits(getUnitTests, T1));
                 static foreach(u; __traits(getUnitTests, T1)) {
-                    {
-                        enum name=u.stringof;
-                        printf("%s\n", name.ptr);
-                    }
                     u();
                 }
                 enum SubName=parentDot~T1.stringof;
@@ -58,7 +54,7 @@ static void callUnittest(alias Module)() {
     static foreach(u; __traits(getUnitTests, Module)) {
         u();
     }
-    callUnittest!(null, Members)();
+    //   callUnittest!(null, Members)();
 
 }
 
@@ -71,10 +67,14 @@ version(unittest) {
             callUnittest!(hibon.utils.Memory)();
             callUnittest!(hibon.utils.BinBuffer)();
             callUnittest!(hibon.utils.Text)();
+            callUnittest!(hibon.utils.Stack)();
+            callUnittest!(hibon.utils.RBTree)();
+            callUnittest!(hibon.Document)();
             printf("After\n");
 
-            // callUnittest!(hibon.utils.Stack)();
-            // callUnittest!(hibon.utils.RBTree)();
+
+
+
             return 0;
         }
     }

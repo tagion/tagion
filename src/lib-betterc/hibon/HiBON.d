@@ -31,14 +31,10 @@ import hibon.utils.Text;
 import hibon.utils.BinBuffer;
 
 import core.stdc.stdio;
-//import tagion.hibon.HiBONException;
-//import tagion.Message : message;
-//import tagion.Base : CastTo;
 
 /++
  HiBON is a generate object of the HiBON format
 +/
-
 struct HiBON {
     uint error;
     /++
@@ -537,9 +533,9 @@ struct HiBON {
             range.dispose;
         }
 
-        @property bool empty() const pure {
-            return range.empty;
-        }
+        alias empty=range.empty;
+        alias popFront=range.popFront;
+
         uint front()  {
             const key=range.front.key.key.serialize;
             uint index;
@@ -547,10 +543,6 @@ struct HiBON {
                 _error=true;
             }
             return index;
-        }
-
-        void popFront() {
-            range.popFront;
         }
 
         @property error() const pure {
