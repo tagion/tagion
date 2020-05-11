@@ -22,6 +22,16 @@ do {
     data=(cast(BaseT*)calloc(size, BaseT.sizeof))[0..size];
 }
 
+void create(U)(ref U[] data, const(U[]) src) //{ //if (isArray!T && ForeachE
+    in {
+        assert(data is null);
+    }
+do {
+//    alias BaseT=ForeachType!T;
+    data=(cast(U*)calloc(src.length, U.sizeof))[0..src.length];
+    data[0..src.length]=src;
+}
+
 T* create(T, Args...)(Args args) if(is(T == struct)) {
     auto result=cast(T*)calloc(T.sizeof, 1);
     emplace!T(result, args);

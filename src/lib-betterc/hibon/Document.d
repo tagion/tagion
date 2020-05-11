@@ -17,6 +17,7 @@ import std.algorithm.searching : count;
 import hibon.utils.BinBuffer;
 import hibon.utils.Text;
 import hibon.utils.Bailout;
+import hibon.utils.Memory;
 import hibon.BigNumber;
 import hibon.HiBONBase;
 
@@ -450,7 +451,7 @@ struct Document {
 
     ///
     unittest {
-        alias TabelRange = Tuple!( immutable(ubyte)[],  immutable(ubyte)[], immutable(ubyte)[]);
+        alias TabelRange = Tuple!( ubyte[3],  ubyte[4], ubyte[4]);
         TabelRange tabel_range;
 
         tabel_range[0]=[1,2,4];
@@ -560,7 +561,7 @@ struct Document {
         alias Tabel = Tuple!(
             float,  Type.FLOAT32.stringof,
             double, Type.FLOAT64.stringof,
-            BigNumber, Type.BIGINT.stringof,
+            //     BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             int,    Type.INT32.stringof,
             long,   Type.INT64.stringof,
@@ -578,33 +579,52 @@ struct Document {
         test_tabel.UINT32   = 42;
         test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
         test_tabel.BOOLEAN  = true;
-        test_tabel.BIGINT   = BigNumber([42, 17, 3333, 4444], true);
+//        test_tabel.BIGINT   = BigNumber([42, 17, 3333, 4444], true);
 
         alias TabelArray = Tuple!(
-            immutable(ubyte)[],  Type.BINARY.stringof,
-            immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
-            immutable(double)[], Type.FLOAT64_ARRAY.stringof,
-            immutable(int)[],    Type.INT32_ARRAY.stringof,
-            immutable(long)[],   Type.INT64_ARRAY.stringof,
-            immutable(uint)[],   Type.UINT32_ARRAY.stringof,
-            immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
-            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
+            ubyte[],  Type.BINARY.stringof,
+            float[],  Type.FLOAT32_ARRAY.stringof,
+            double[], Type.FLOAT64_ARRAY.stringof,
+            int[],    Type.INT32_ARRAY.stringof,
+            long[],   Type.INT64_ARRAY.stringof,
+            uint[],   Type.UINT32_ARRAY.stringof,
+            ulong[],  Type.UINT64_ARRAY.stringof,
+            bool[],   Type.BOOLEAN_ARRAY.stringof,
             string,              Type.STRING.stringof,
 
 
             );
 
         TabelArray test_tabel_array;
-        test_tabel_array.BINARY        = [1, 2, 3];
-        test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
-        test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
-        test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
-        test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
-        test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 42];
-        test_tabel_array.BOOLEAN_ARRAY = [true, false];
-        test_tabel_array.STRING        = "Text";
+        const(ubyte[3]) binary=[1, 2, 3];
+        test_tabel_array.BINARY.create(binary); //cast(ubyte[3])[1, 2, 3]); //ubyte[])(3);
+        const(float[3]) float32_array=[-1.23, 3, 20e30];
+        test_tabel_array.FLOAT32_ARRAY.create(float32_array);
+        const(double[2]) float64_array=[10.3e200, -1e-201];
+        test_tabel_array.FLOAT64_ARRAY.create(float64_array);
+        const(int[4]) int32_array=[-11, -22, 33, 44];
+        test_tabel_array.INT32_ARRAY.create(int32_array);
+        const(long[4]) int64_array=[0x17, 0xffff_aaaa, -1, 42];
+        test_tabel_array.INT64_ARRAY.create(int64_array);
+        const(uint[4]) uint32_array=[11, 22, 33, 44];
+        test_tabel_array.UINT32_ARRAY.create(uint32_array);
+        const(ulong[4]) uint64_array=[0x17, 0xffff_aaaa, 1, 42];
+        test_tabel_array.UINT64_ARRAY.create(uint64_array);
+        const(bool[2]) boolean_array=[true, false];
+        test_tabel_array.BOOLEAN_ARRAY.create(boolean_array);
+        test_tabel_array.STRING="Text";//.create(text);
 
+        scope(exit) {
+            foreach(i, t; test_tabel_array) {
+                enum name = test_tabel_array.fieldNames[i];
+                static if (Type.STRING.stringof != test_tabel_array.fieldNames[i]) {
+                    pragma(msg, name);
+                    t.dispose;
+                }
+            }
+        }
+
+        //       version(none)
         { // Document with simple types
             //test_tabel.UTC      = 1234;
 
@@ -635,7 +655,7 @@ struct Document {
                 auto keys=doc.keys;
                 foreach(i, t; test_tabel) {
                     enum name = test_tabel.fieldNames[i];
-                    alias U = test_tabel.Types[i];
+                    alias U = immutable(test_tabel.Types[i]);
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
@@ -654,7 +674,7 @@ struct Document {
                     }
                 }
             }
-
+            version(none) {
             { // Document which includes basic arrays and string
                 index = make(buffer, test_tabel_array);
                 const doc_buffer = buffer[0..index];
@@ -765,8 +785,6 @@ struct Document {
                 const doc=Document(doc_buffer.serialize);
 
 
-                auto typed_range = doc.range!(string[])();
-
                 foreach(i, text; texts) {
                     assert(!typed_range.empty);
                     auto converter=Text(ulong.max.stringof.length);
@@ -776,7 +794,7 @@ struct Document {
                     assert(typed_range.front == text);
                     typed_range.popFront;
 
-
+                }
 
                 }
 

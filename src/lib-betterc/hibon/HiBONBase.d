@@ -145,6 +145,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 +/
 //@safe
 union ValueT(bool NATIVE=false, HiBON,  Document) {
+    @nogc:
     @Type(Type.FLOAT32)   float     float32;
     @Type(Type.FLOAT64)   double    float64;
     // @Type(Type.FLOAT128)  decimal_t float128;
@@ -295,7 +296,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                 }
             }
         }
-        assert (0, format("%s is not supported", T.stringof ) );
+        assert (0, T.stringof~" is not supported" );
     }
 
     /++
