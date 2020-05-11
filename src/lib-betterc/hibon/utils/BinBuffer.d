@@ -105,7 +105,6 @@ struct BinBuffer {
 
 unittest {
     string text="text";
-    import core.stdc.stdio;
     auto buf=BinBuffer(100);
 
     buf.write(42);
@@ -121,7 +120,6 @@ unittest {
     buf.write(x);
     size+=ubyte.sizeof;
     assert(buf.length == size);
-    printf("size=%d\n", size);
     assert(size == 17);
 
     ubyte[17] check;

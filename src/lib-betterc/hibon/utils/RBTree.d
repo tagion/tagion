@@ -23,8 +23,6 @@ extern(C):
 @nogc:
 import hibon.utils.Memory;
 import hibon.utils.Stack;
-//import core.stdc.stdio;
-//import std.algorithm.searching : count;
 
 struct RBTree(K, V=void) {
     enum Color { RED, BLACK };
@@ -47,13 +45,6 @@ struct RBTree(K, V=void) {
         Node* nill;
         Node* root;
         bool owner;
-    }
-    version(none)
-    invariant {
-        if ( root is null ) {
-            printf("%s root is null\n", __FUNCTION__.ptr);
-        }
-        assert(root !is null, "Must ctor must be called");
     }
 
     @disable this();
