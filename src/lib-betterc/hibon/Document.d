@@ -710,9 +710,13 @@ struct Document {
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
-                    printf("name=%s U=%s\n", name.ptr, U.stringof.ptr);
-                    assert(e.get!U == test_tabel[i]);
                     assert(keys.front == name);
+                    printf("%d name=%s U=%s\n", i, name.ptr, U.stringof.ptr);
+                    static if (is(U==immutable(float))) {
+                        printf("e.get!U=%f test_tabel[i]=%f\n", e.get!U, test_tabel[i]);
+                    }
+                    assert(e.get!U == test_tabel[i]);
+
                     keys.popFront;
 
                     auto e_in = name in doc;
@@ -895,7 +899,7 @@ struct Document {
              throws:
              if  the type is invalid and HiBONException is thrown
              +/
-            Value value() {
+            const(Value) value() {
                 with(Type)
                 TypeCase:
                 switch(type) {
@@ -928,7 +932,8 @@ struct Document {
                             }
                             else {
                                 if (isHiBONType(type)) {
-                                    return cast(Value)(data[valuePos..$]);
+                                    Value* result=cast(Value*)(data[valuePos..$].ptr);
+                                    return *result;
                                 }
                             }
                             break TypeCase;
@@ -963,6 +968,7 @@ struct Document {
              +/
             const(T) get(T)() const {
                 enum E = Value.asType!T;
+                printf("E=%s\n", E.stringof.ptr);
                 static assert(E !is Type.NONE, "Unsupported type "~T.stringof);
                 return by!E;
             }
