@@ -21,8 +21,8 @@ import hibon.utils.Memory;
 import hibon.BigNumber;
 import hibon.HiBONBase;
 
-import std.stdio;
-import std.exception;
+// import std.stdio;
+// import std.exception;
 
 static assert(uint.sizeof == 4);
 
@@ -172,7 +172,6 @@ struct Document {
         }
 
         ~this() {
-            printf("Destry Range\n");
             emplace(&data, data.init);
         }
 
@@ -186,13 +185,6 @@ struct Document {
              * InputRange primitive operation that returns the currently iterated element.
              */
             const(Element) front() {
-                debug {
-                    printf("Range.front\n");
-                    printf("index=%d\n", _index);
-                    printf("element.key=%s\n", _element.key.ptr);
-                    printf("element.size=%d\n", _element.size);
-                    printf("element.type=%d\n", _element.type);
-                }
                 return _element;
             }
         }
@@ -475,31 +467,8 @@ struct Document {
         index = make(buffer, tabel_range);
         const doc_buffer = buffer[0..index]; //.idup;
         const doc=Document(doc_buffer.serialize);
-        printf("X [");
-        foreach(d; doc_buffer.serialize) {
-            printf("%d,", d);
-        }
-        printf("]\n");
-
         auto tabelR=doc.range!(immutable(ubyte)[][]);
-        printf("Y [");
-        foreach(d; tabelR.data) {//doc_buffer.serialize) {
-            printf("%d,", d);
-        }
-        printf("]\n");
-
         foreach(t; tabel_range) {
-            printf("A [");
-            foreach(_b; t) {
-                printf("%d ", _b);
-            }
-            printf("]\n");
-            printf("tabelR.front %p\n", tabelR.front.ptr);
-            printf("B [");
-            foreach(_b; tabelR.front) {
-                printf("%d ", _b);
-            }
-            printf("]\n");
             assert(tabelR.front == t);
             tabelR.popFront;
         }
@@ -507,7 +476,6 @@ struct Document {
         auto S=doc.range!(string[]);
 
         assert(!S.empty);
-        printf("Document %s\n", __FUNCTION__.ptr);
     }
 
     struct RangeT(T) {
@@ -529,7 +497,6 @@ struct Document {
             }
 
             const(T) front() const {
-                printf("front %s %p\n", T.stringof.ptr, &(range.front));
                 return range.front.get!T;
             }
 
@@ -577,7 +544,6 @@ struct Document {
                 else {
                     enum  E = Value.asType!T;
                 }
-                printf("%d] name=%s %s E=%s\n", i, name.ptr, T.stringof.ptr, E.stringof.ptr);
                 build(buffer, E, name, t, index);
             }
             buffer.write(Type.NONE, &index);
@@ -711,10 +677,6 @@ struct Document {
                     assert(doc.hasElement(name));
                     const e = doc[name];
                     assert(keys.front == name);
-                    printf("%d name=%s U=%s\n", i, name.ptr, U.stringof.ptr);
-                    static if (is(U==immutable(float))) {
-                        printf("e.get!U=%f test_tabel[i]=%f\n", e.get!U, test_tabel[i]);
-                    }
                     assert(e.get!U == test_tabel[i]);
 
                     keys.popFront;
@@ -968,7 +930,6 @@ struct Document {
              +/
             const(T) get(T)() const {
                 enum E = Value.asType!T;
-                printf("E=%s\n", E.stringof.ptr);
                 static assert(E !is Type.NONE, "Unsupported type "~T.stringof);
                 return by!E;
             }
