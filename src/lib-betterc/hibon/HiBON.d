@@ -146,6 +146,10 @@ struct HiBONT {
         bool opEquals(T)(T b) const pure {
             return opCmp(b) == 0;
         }
+
+        private void surrender() {
+            data=null;
+        }
     }
 
 
@@ -190,9 +194,9 @@ struct HiBONT {
          key = the name of the member
          +/
 
-        this(T)(T x, string key) { //const pure if ( is(T == const) ) {
-            alias BaseT=TypedefType!T;
-            alias UnqualT = Unqual!BaseT;
+        this(T)(T x, in const(char[]) key) {
+//            alias BaseT=TypedefType!T;
+            alias UnqualT = Unqual!T;
             enum E=Value.asType!UnqualT;
             this.key  = Key(key);
             static if (E is Type.NONE) {
@@ -214,6 +218,9 @@ struct HiBONT {
 
         }
 
+        private void surrender() {
+            key.surrender;
+        }
         /++
          If the value of the Member contains a Document it returns it or else an error is asserted
          Returns:
@@ -392,9 +399,15 @@ struct HiBONT {
      +/
      void opIndexAssign(T)(T x, in const(char[]) key) {
          if (is_key_valid(key)) {
-             auto new_member=create!(Member*);
-             new_member.value=x;
-             new_member.key=Key(key);
+             auto _member=Member(x, key);
+//             auto _key=create!(Key)(key);
+             auto new_member=create!Member; //(x, key);
+             *new_member=_member;
+             _member.surrender;
+//             new_member.value=x;
+
+             printf("opIndexAssign %s T=%s type %d\n", key.ptr, T.stringof.ptr, new_member.type);
+//             new_member.key=Key(key);
              _members.insert(new_member);
          }
          else {
@@ -695,9 +708,9 @@ struct HiBONT {
             assert(hibon.length is 1);
 
             const m=hibon[test_tabel.fieldNames[pos]];
-
+            printf("m=%s %d\n", m.key.serialize.ptr, m.type);
             assert(m.type is Type.FLOAT32);
-            assert(m.key.serialize is Type.FLOAT32.stringof);
+            assert(m.key.serialize == Type.FLOAT32.stringof);
             assert(m.get!(test_tabel.Types[pos]) == test_tabel[pos]);
             assert(m.by!(Type.FLOAT32) == test_tabel[pos]);
 

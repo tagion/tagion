@@ -114,7 +114,6 @@ template Init_HiBON_Types(string text, uint i) {
 
 
 ///
-
 static unittest {
     with(Type) {
         static assert(!isHiBONType(NONE));
