@@ -24,6 +24,7 @@ import std.exception;
 import hibon.utils.BinBuffer;
 import hibon.BigNumber;
 import hibon.utils.Bailout;
+import hibon.utils.Memory;
 import hibon.utils.utc;
 
 
@@ -379,7 +380,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
 
 };
 
-version(none)
 unittest {
     import std.typecons;
     alias Value = ValueT!(false, void, void);
@@ -406,7 +406,7 @@ unittest {
     { // utc test,
         static assert(Value.asType!utc_t is Type.UTC);
 
-        utc_t time = 1234UL;
+        utc_t time = utc_t(1234UL);
         Value v;
         v = time;
         assert(v.by!(Type.UTC) == 1234UL);
@@ -421,14 +421,22 @@ unittest {
             immutable(long)[], immutable(ulong)[], immutable(float)[], immutable(double)[]
             );
         Tabel test_tabel;
-        test_tabel[0]=[1, 2, 3];
-        test_tabel[1]=[false, true, true];
-        test_tabel[2]=[-1, 7, -42];
-        test_tabel[3]=[1, 7, 42];
-        test_tabel[4]=[-1, 7, -42_000_000_000_000];
-        test_tabel[5]=[1, 7, 42_000_000_000_000];
-        test_tabel[6]=[-1.7, 7, 42.42e10];
-        test_tabel[7]=[1.7, -7, 42,42e207];
+        immutable(ubyte[3]) test_tabel_0_=[1, 2, 3];
+        test_tabel[0]=test_tabel_0_; //[1, 2, 3]; //const(ubyte[3])([1, 2, 3]));
+        immutable(bool[3]) test_tabel_1_=[false, true, true];
+        test_tabel[1]=test_tabel_1_; //[false, true, true];
+        immutable(int[3]) test_tabel_2_=[-1, 7, -42];
+        test_tabel[2]=test_tabel_2_; //[-1, 7, -42];
+        immutable(uint[3]) test_tabel_3_=[1, 7, 42];
+        test_tabel[3]=test_tabel_3_;//[1, 7, 42];
+        immutable(long[3]) test_tabel_4_=[-1, 7, -42_000_000_000_000];
+        test_tabel[4]=test_tabel_4_; //[-1, 7, -42_000_000_000_000];
+        immutable(ulong[3]) test_tabel_5_=[1, 7, 42_000_000_000_000];
+        test_tabel[5]=test_tabel_5_; //[1, 7, 42_000_000_000_000];
+        immutable(float[3]) test_tabel_6_=[-1.7, 7, 42.42e10];
+        test_tabel[6]=test_tabel_6_; //[-1.7, 7, 42.42e10];
+        immutable(double[3]) test_tabel_7_=[1.7, -7, 42.42e207];
+        test_tabel[7]=test_tabel_7_; //[1.7, -7, 42,42e207];
 
         foreach(i, t; test_tabel) {
             Value v;

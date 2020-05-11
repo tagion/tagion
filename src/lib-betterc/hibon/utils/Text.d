@@ -33,6 +33,10 @@ struct Text {
         _surrender.index=0;
     }
 
+    @property size_t length() const pure {
+        return index;
+    }
+
     char opIndex(const size_t i) pure const {
         if (i < index) {
             return str[i];
@@ -65,7 +69,10 @@ struct Text {
         str[index..new_index]=cat;
     }
 
-    //alias opCall=opOpAssign;
+    ref Text opCall(const(char[]) cat) {
+        opOpAssign!"~"(cat);
+        return this;
+    }
 
     ref Text opCall(T)(T num, const uint base=10) if(isIntegral!T) {
         //const negative=(num < 0);

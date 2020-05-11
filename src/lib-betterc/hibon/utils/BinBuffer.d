@@ -14,13 +14,13 @@ struct BinBuffer {
         ubyte[] _data;
         size_t _index;
     }
+
     enum DEFAULT_SIZE=256;
     this(const size_t size) {
         if (size>0) {
             _data.create(size);
         }
     }
-
 
    ~this() {
         dispose;
@@ -32,7 +32,6 @@ struct BinBuffer {
             _index=0;
         }
     }
-
 
     void recreate(const size_t size) {
         if (_data !is null) {
@@ -57,7 +56,6 @@ struct BinBuffer {
         }
         _data[*index..*index+add.length]=add;
     }
-
 
     void write(T)(const T x, size_t* index) if (isNumeric!T || is(Unqual!(T)==bool)) {
         const res=nativeToLittleEndian(x);

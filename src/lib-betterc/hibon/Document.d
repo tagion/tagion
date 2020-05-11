@@ -182,6 +182,7 @@ struct Document {
              * InputRange primitive operation that returns the currently iterated element.
              */
             const(Element) front() {
+                debug printf("element.key=%s\n", _element.key);
                 return _element;
             }
         }
@@ -190,7 +191,6 @@ struct Document {
         /**
          * InputRange primitive operation that advances the range to its next element.
          */
-        @trusted
         void popFront() {
             emplace!Element(&_element, data[_index..$]);
             _index += _element.size;
@@ -339,7 +339,6 @@ struct Document {
         return result;
     }
 
-
     /++
      Returns:
      The element with the index
@@ -466,6 +465,17 @@ struct Document {
 
         auto tabelR=doc.range!(immutable(ubyte)[][]);
         foreach(t; tabel_range) {
+            printf("A [");
+            foreach(_b; t) {
+                printf("%d ", _b);
+            }
+            printf("]\n");
+            printf("tabelR.front %p\n", tabelR.front.ptr);
+            printf("B [");
+            foreach(_b; tabelR.front) {
+                printf("%d ", _b);
+            }
+            printf("]\n");
             assert(tabelR.front == t);
             tabelR.popFront;
         }
@@ -473,9 +483,11 @@ struct Document {
         auto S=doc.range!(string[]);
 
         assert(!S.empty);
+        printf("Document %s\n", __FUNCTION__.ptr);
     }
 
     struct RangeT(T) {
+        @nogc:
         Range range;
         enum EType=Value.asType!T;
         static assert(EType !is Type.NONE, format("Range type %s not supported", T.stringof));
@@ -483,13 +495,13 @@ struct Document {
             range = Range(data);
         }
 
-
         @property {
             void popFront() {
                 range.popFront;
             }
 
             const(T) front() const {
+                printf("front %s %p\n", T.stringof.ptr, &(range.front));
                 return range.front.get!T;
             }
 
@@ -498,15 +510,13 @@ struct Document {
             }
 
             const pure {
-                bool empty() nothrow {
+                bool empty() {
                     return range.empty;
                 }
 
-
-                string key() nothrow {
+                string key() {
                     return range.front.key;
                 }
-
             }
         }
     }
@@ -674,14 +684,14 @@ struct Document {
                     }
                 }
             }
-            version(none) {
+
             { // Document which includes basic arrays and string
                 index = make(buffer, test_tabel_array);
                 const doc_buffer = buffer[0..index];
                 const doc=Document(doc_buffer.serialize);
                 foreach(i, t; test_tabel_array) {
                     enum name = test_tabel_array.fieldNames[i];
-                    alias U   = test_tabel_array.Types[i];
+                    alias U   = immutable(test_tabel_array.Types[i]);
                     const v = doc[name].get!U;
                     assert(v.length is test_tabel_array[i].length);
                     assert(v == test_tabel_array[i]);
@@ -770,7 +780,7 @@ struct Document {
                 index = 0;
                 uint size;
                 buffer.write(uint.init, &index);
-                auto texts=["Text1", "Text2", "Text3"];
+                const(char[5][3]) texts=["Text1", "Text2", "Text3"];
 
                 foreach(i, text; texts) {
                     auto converter=Text(long.max.stringof.length);
@@ -785,6 +795,7 @@ struct Document {
                 const doc=Document(doc_buffer.serialize);
 
 
+                auto typed_range = doc.range!(string[])();
                 foreach(i, text; texts) {
                     assert(!typed_range.empty);
                     auto converter=Text(ulong.max.stringof.length);
@@ -795,9 +806,6 @@ struct Document {
                     typed_range.popFront;
 
                 }
-
-                }
-
             }
         }
     }
@@ -888,8 +896,8 @@ struct Document {
                     //empty
                 }
                 .check(0, message("Invalid type %s", type));
-
-                assert(0);
+                return Value.init;
+//                assert(0);
             }
 
             /++

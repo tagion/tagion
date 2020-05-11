@@ -8,7 +8,7 @@ import hibon.utils.Stack;
 import hibon.utils.RBTree;
 import hibon.utils.BinBuffer;
 import hibon.utils.Memory;
-import hibon.utils.Bailout;
+import Bailout=hibon.utils.Bailout;
 import hibon.utils.Text;
 //import hibon.HiBON;
 import hibon.Document;
@@ -37,7 +37,12 @@ static void callUnittest(string parent, Members...)() {
                 //    pragma(msg, T1, " members ", __traits(allMembers, T1));
                 pragma(msg, T1, " unttests ", __traits(getUnitTests, T1));
                 static foreach(u; __traits(getUnitTests, T1)) {
+                    Bailout.clear;
                     u();
+                    Bailout.dump;
+                    // if (Bailout.message) {
+                    //     printf("%s:%s:%s\n", Bailout.file.ptr, Bailout.line, Bailout.message.ptr);
+                    // }
                 }
                 enum SubName=parentDot~T1.stringof;
                 callUnittest!(SubName, SubMembers)();
@@ -49,12 +54,12 @@ static void callUnittest(string parent, Members...)() {
 
 static void callUnittest(alias Module)() {
     alias Members=__traits(allMembers, Module);
-    pragma(msg, "Members=", Members);
-    pragma(msg, __FUNCTION__, " unttests ", __traits(getUnitTests, Module));
+//    pragma(msg, "Members=", Members);
+//    pragma(msg, __FUNCTION__, " unttests ", __traits(getUnitTests, Module));
     static foreach(u; __traits(getUnitTests, Module)) {
         u();
     }
-    //   callUnittest!(null, Members)();
+    callUnittest!(null, Members)();
 
 }
 
@@ -69,7 +74,9 @@ version(unittest) {
             callUnittest!(hibon.utils.Text)();
             callUnittest!(hibon.utils.Stack)();
             callUnittest!(hibon.utils.RBTree)();
-            callUnittest!(hibon.Document)();
+            callUnittest!(hibon.HiBONBase)();
+
+            //callUnittest!(hibon.Document)();
             printf("After\n");
 
 
