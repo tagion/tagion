@@ -23,6 +23,8 @@ extern(C):
 @nogc:
 import hibon.utils.Memory;
 import hibon.utils.Stack;
+import std.traits : isPointer;
+    import core.stdc.stdio;
 
 RBTreeT!(K) RBTree(K)(const bool owns=true) {
     RBTreeT!(K) result;
@@ -41,12 +43,12 @@ struct RBTreeT(K) {
     enum Color { RED, BLACK };
     struct Node {
         @nogc:
-        K key;
+        K item;
         // static if (!is(V==void)) {
         //     V value;
         // }
         // else {
-        //     alias value=key;
+        //     alias value=item;
         // }
         Color color;
         Node* parent;
@@ -87,8 +89,8 @@ struct RBTreeT(K) {
                 _dispose(current.left);
                 _dispose(current.right);
                 if (owns) {
-                    static if (__traits(compiles, current.key.dispose)) {
-                        current.key.dispose;
+                    static if (__traits(compiles, current.item.dispose)) {
+                        current.item.dispose;
                     }
                     static if (__traits(compiles, current.value.dispose)) {
                         current.value.dispose;
@@ -100,16 +102,16 @@ struct RBTreeT(K) {
         _dispose(root);
         root=nill;
     }
-    /* Print tree keys by inorder tree walk */
+    /* Print tree items by inorder tree walk */
 
     @property empty() const pure {
         return root is nill;
     }
 
-    protected Node* _search(K key) {
+    protected Node* _search(const(K) item) {
         Node* x = root;
-        while ((x !is nill) && (x.key != key)) {
-            if (x.key > key) {
+        while ((x !is nill) && (compare(x.item, item) != 0)) {
+            if (compare(x.item, item) > 0) {
                 x = x.left;
             }
             else {
@@ -119,13 +121,54 @@ struct RBTreeT(K) {
         return x;
     }
 
-    const(Node*) search(K key) const pure {
+    static int compare(K)(scope const(K) a, scope const(K) b) pure {
+        static if (__traits(compiles, a.opCmp(b))) {
+            return a.opCmp(b);
+        }
+        else {
+            if (a < b) {
+                return -1;
+            }
+            else if (a == b) {
+                return 0;
+            }
+            return 1;
+        }
+    }
+
+    //static int compare
+    // static bool equal_to(K)(scope const(K) a, scope const(K) b) pure {
+    //     static if (isPointer!K) { //isBasicType!K || (is(T:U[], U) && isBasicType!U)) {
+    //         return a.opEquals(b);
+    //     }
+    //     else {
+    //         return a == b;
+    //     }
+    // }
+
+    // static int compare(K)(K a, K b) pure {
+    //     static if (isisBasicType!K || (is(T:U[], U) && isBasicType!U)) {
+    //         return a > b;
+    //     }
+    //     else {
+    //         return a.opCmp(b);
+    //     }
+    // }
+
+
+    const(Node*) search(const(K) item) const pure {
         const(Node*) _search(const(Node*) current) pure {
             if (current !is nill) {
-                if (current.key == key) {
+                import std.traits;
+                import core.stdc.stdio;
+                static if (__traits(compiles,current.item.key) &&  !isIntegral!(typeof(current.item.key)) ) {
+                    debug printf("Search %s\n", current.item.key.serialize.ptr);
+                }
+                const cmp=compare(current.item, item);
+                if (cmp == 0) {
                     return current;
                 }
-                else if (current.key > key) {
+                else if (cmp > 0) {
                     return _search(current.left);
                 }
                 else {
@@ -141,9 +184,9 @@ struct RBTreeT(K) {
         return null;
     }
 
-    bool exists(K key) const {
-//        const result=search(key);
-        return search(key) !is null;
+    bool exists(K item) const {
+//        const result=search(item);
+        return search(item) !is null;
     }
 
     @property size_t length() const {
@@ -167,17 +210,17 @@ struct RBTreeT(K) {
      * auxilary procedure called insert_fixup is called to fix these violation.
      */
 
-    void insert(K key) {
+    void insert(K item) {
         Node* z = create!Node;
-        z.key=key;
+        z.item=item;
         insert(z);
     }
 
-    const(K) get(const(K) key) const {
+    const(K) get(const(K) item) const {
         alias _K=const(K);
-        auto result=search(key);
+        auto result=search(item);
         if (result !is null) {
-            return result.key;
+            return result.item;
         }
         return K.init;
     }
@@ -197,7 +240,7 @@ struct RBTreeT(K) {
          */
         while (x !is nill) {
             y = x;
-            if (z.key <= x.key) {
+            if (compare(z.item, x.item) <= 0) {
                 x = x.left;
             }
             else {
@@ -208,7 +251,7 @@ struct RBTreeT(K) {
         if (y is nill) {
             root = z;
         }
-        else if (z.key <= y.key) {
+        else if (compare(z.item, y.item) <= 0) {
             y.left = z;
         }
         else {
@@ -398,8 +441,8 @@ struct RBTreeT(K) {
      * procedure remove_fixup(x) is called to recover this.
      */
 
-    bool remove(K key) {
-        auto remove_node=_search(key);
+    bool remove(K item) {
+        auto remove_node=_search(item);
         if (remove_node !is nill) {
             remove(remove_node);
             return true;
@@ -637,19 +680,6 @@ struct RBTreeT(K) {
             }
         }
     }
-
-    version(none)
-    void inOrder(scope ref Stack queue) const {
-        void _inorder(const(Node*) current) {
-            if (current is nill) {
-                _inorder(current.right);
-                queue.push(current.key);
-                _inorder(current.left);
-            }
-        }
-        _inorder(root);
-
-    }
 }
 
 unittest {
@@ -660,17 +690,26 @@ unittest {
 
     assert(tcase.length == result.length);
 
-    foreach(key; tcase) {
-        tree.insert(key);
+    printf("***** [");
+
+    foreach(item; tcase) {
+        tree.insert(item);
+        printf("%d ", item);
     }
+    printf("]\n");
 
 
     // Check that all the elements has been added
     uint count;
+
+    printf("***** [");
+
     foreach(n; tree[]) {
-        const key=result[count++];
-        assert(n.key == key);
+        const item=result[count++];
+        printf("%d ", n.item);
+        assert(n.item == item);
     }
+    printf("]\n");
 
     // Check the size of the check lists
     assert(tcase.length == count);
@@ -679,28 +718,59 @@ unittest {
 
     // Check exists
     foreach(i; indices) {
-        const key=result[i];
-        assert(tree.exists(key));
+        const item=result[i];
+        assert(tree.exists(item));
     }
 
     // Check search
     foreach(i; indices) {
-        const key=result[i];
-        const n=tree.search(key);
+        const item=result[i];
+        const n=tree.search(item);
         assert(n !is null);
-        assert(key == n.key);
+        assert(item == n.item);
     }
 
     // Check remove
     foreach(i; indices) {
-        const key=result[i];
-        const n_exists=tree.search(key);
+        const item=result[i];
+        const n_exists=tree.search(item);
         assert(n_exists !is null);
-        tree.remove(key);
-        assert(!tree.exists(key));
-        const n=tree.search(key);
+        tree.remove(item);
+        assert(!tree.exists(item));
+        const n=tree.search(item);
         assert(n is null);
         count--;
         assert(tree.length == count);
     }
+}
+
+unittest
+{
+    import hibon.HiBON;
+//    import hibon.Memory;
+    alias Key=HiBONT.Key;
+    auto tree=RBTree!(Key*)(true);
+
+    Key* a=create!Key("a");
+    Key* b=create!Key("b");
+    Key* c=create!Key("c");
+    Key* _42=create!Key(42);
+    Key* _17=create!Key(17);
+    Key* _07=create!Key("07");
+    tree.insert(b);
+    tree.insert(_17);
+    tree.insert(_42);
+    tree.insert(a);
+
+    tree.insert(_07);
+    tree.insert(c);
+
+    printf("07 < a %d\n", "07" < "a");
+    printf("07 < 7 %d\n", "08" < "7");
+
+    foreach(n; tree[]) {
+        printf("KEY=%s\n", n.item.serialize.ptr);
+    }
+
+
 }

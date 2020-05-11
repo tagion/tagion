@@ -78,8 +78,8 @@ struct HiBONT {
      +/
     size_t size() const {
         size_t result = uint.sizeof+Type.sizeof;
-        foreach(m; _members[]) {
-            result+=m.key.size;
+        foreach(n; _members[]) {
+            result+=n.item.size;
         }
         return result;
     }
@@ -104,7 +104,7 @@ struct HiBONT {
         immutable size_index = index;
         buffer.write(uint.init, &index);
         foreach(m; _members[]) {
-            m.key.append(buffer, index);
+            m.item.append(buffer, index);
         }
         buffer.write(Type.NONE, &index);
         immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
@@ -129,25 +129,23 @@ struct HiBONT {
         string serialize() const pure {
             return cast(string)data;
         }
-        int opCmp(const(char[]) b) const {
-            if (less_than(data, b)) {
-                return -1;
-            }
-            else if (data==b) {
-                return 0;
-            }
-            return 0;
-        }
-        int opCmp(const Key b) const {
-            return opCmp(b.data);
-        }
-        bool opEquals(const(char[]) b) const {
-            return data == b;
-        }
-        bool opEquals(const Key b) const {
-            return opEquals(b.data);
+
+
+        int opCmp(const(char[]) b) const pure {
+            return key_compare(data, b);
         }
 
+        int opCmp(ref const Key b) const pure {
+            return opCmp(b.data);
+        }
+
+        int opCmp(const(Key*) b) const pure {
+            return opCmp(b.data);
+        }
+
+        bool opEquals(T)(T b) const pure {
+            return opCmp(b) == 0;
+        }
     }
 
 
@@ -159,18 +157,25 @@ struct HiBONT {
          Key key;
          Type type;
          Value value;
-         int opCmp(const(Member) b) const {
+
+         int opCmp(const(Member*) b) const pure {
              return key.opCmp(b.key);
          }
-         int opCmp(const(char[]) b) const {
+
+         int opCmp(const(char[]) b) const pure {
              return key.opCmp(b);
          }
-         bool opEquals(const(Member) b) const {
-             return key.opEquals(b.key);
+
+         bool opEquals(T)(T b) const pure {
+             return opCmp(b) == 0;
          }
-         bool opEquals(const(char[]) b) const {
-             return key.opEquals(b);
-         }
+         // bool opEquals(const(Member*) b) const pure {
+         //     return key.opEquals(b.key);
+         // }
+
+         // bool opEquals(const(char[]) b) const pure {
+         //     return key.opEquals(b);
+         // }
 
         // protected this() pure nothrow {
         //     value = uint.init;
@@ -465,6 +470,7 @@ struct HiBONT {
     bool hasMember(in const(char[]) key) const {
         Member m;
         m.key=Key(key);
+        printf("m.key=%s\n", m.key.serialize.ptr);
 //        foreach(xm;
         return _members.exists(&m);
     }
@@ -475,7 +481,7 @@ struct HiBONT {
      key = name of the member to be removed
      +/
 
-    void remove(const(char[]) key) {
+    void remove(in const(char[]) key) {
         Member m;
         m.key=Key(key);
         _members.remove(&m);
@@ -484,11 +490,16 @@ struct HiBONT {
     ///
     unittest { // remove
         auto hibon=HiBON();
-        hibon["a"] =1;
+        hibon["d"] =4;
         hibon["b"] =2;
         hibon["c"] =3;
-        hibon["d"] =4;
+        hibon["a"] =1;
 
+        printf(">[");
+        foreach(m; hibon[]) {
+            printf("%s ", m.item.key.serialize.ptr);
+        }
+        printf("]\n");
         assert(hibon.hasMember("b"));
         hibon.remove("b");
         assert(!hibon.hasMember("b"));
@@ -522,7 +533,7 @@ struct HiBONT {
         alias empty=range.empty;
         alias popFront=range.popFront;
         string front() {
-            return range.front.key.key.serialize;
+            return range.front.item.key.serialize;
         }
     }
     /++
@@ -556,9 +567,11 @@ struct HiBONT {
         }
 
         uint front()  {
-            const key=range.front.key.key.serialize;
+            const key=range.front.item.key.serialize;
             uint index;
+            printf("key=%s\n", key.ptr);
             if (!is_index(key, index)) {
+                printf("Index error\n");
                 _error=true;
             }
             return index;
@@ -577,11 +590,14 @@ struct HiBONT {
      +/
     bool isArray() const {
         auto range=indices;
+        long prev_index=-1;
         while(!range.empty) {
-            range.popFront;
-            if (range.error) {
+            const index=range.front;
+            if (range.error || (prev_index+1 != index)) {
                 return false;
             }
+            prev_index=index;
+            range.popFront;
         }
         return true;
     }
@@ -590,7 +606,7 @@ struct HiBONT {
     unittest {
         {
             auto hibon=HiBON();
-            assert(!hibon.isArray);
+            assert(hibon.isArray);
 
             hibon["0"]=1;
             assert(hibon.isArray);
@@ -604,11 +620,23 @@ struct HiBONT {
 
         {
             auto hibon=HiBON();
-            hibon["1"]=1;
-            assert(!hibon.isArray);
-            hibon["0"]=2;
-            assert(hibon.isArray);
+            hibon["2"]=1;
+//            assert(!hibon.isArray);
+            hibon["1"]=2;
+            printf(">>[");
+            foreach(m; hibon[]) {
+                printf("%s ", m.item.key.serialize.ptr);
+            }
+            printf("]\n");
+
+            //          assert(hibon.isArray);
             hibon["4"]=2;
+            hibon["3"]=2;
+            printf(">>[");
+            foreach(m; hibon[]) {
+                printf("%s ", m.item.key.serialize.ptr);
+            }
+            printf("]\n");
             assert(!hibon.isArray);
         }
     }

@@ -532,7 +532,7 @@ unittest { // check is_index
 /++
  This function decides the order of the HiBON keys
 +/
-bool less_than(const(char[]) a, const(char[]) b) pure
+int key_compare(const(char[]) a, const(char[]) b) pure
     in {
         assert(a.length > 0);
         assert(b.length > 0);
@@ -541,17 +541,33 @@ body {
     uint a_index;
     uint b_index;
     if ( is_index(a, a_index) && is_index(b, b_index) ) {
-        return a_index < b_index;
+        if (a_index < b_index) {
+            return -1;
+        }
+        else if (a_index == b_index) {
+            return 0;
+        }
+        return 1;
     }
-    return a < b;
+    if (a == b) {
+        return 0;
+    }
+    else if (a < b) {
+        return -1;
+    }
+    return 1;
 }
 
 ///
 unittest { // Check less_than
-    assert(less_than("a", "b"));
-    assert(less_than("0", "1"));
-    assert(!less_than("00", "0"));
-    assert(less_than("0", "abe"));
+    assert(key_compare("a", "b") < 0);
+    assert(key_compare("0", "1") < 0);
+    assert(key_compare("00", "0") > 0);
+    assert(key_compare("0", "abe") < 0);
+    assert(key_compare("42", "abe") < 0);
+    assert(key_compare("42", "17") > 0);
+    assert(key_compare("42", "42") == 0);
+    assert(key_compare("abc", "abc") == 0);
 }
 
 /++

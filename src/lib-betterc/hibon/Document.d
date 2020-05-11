@@ -112,7 +112,7 @@ struct Document {
         bool not_first;
         foreach(ref e; this[]) {
             Element.ErrorCode error_code;
-            if (not_first && !less_than(previous.front.key, e.key)) {
+            if (not_first && (key_compare(previous.front.key, e.key) >= 0)) {
                 error_code = Element.ErrorCode.KEY_ORDER;
             }
             else if ( e.type is Type.DOCUMENT ) {
