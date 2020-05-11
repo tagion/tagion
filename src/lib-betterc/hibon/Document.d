@@ -710,6 +710,7 @@ struct Document {
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
+                    printf("name=%s U=%s\n", name.ptr, U.stringof.ptr);
                     assert(e.get!U == test_tabel[i]);
                     assert(keys.front == name);
                     keys.popFront;
