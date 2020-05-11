@@ -24,16 +24,30 @@ extern(C):
 import hibon.utils.Memory;
 import hibon.utils.Stack;
 
-struct RBTree(K, V=void) {
+RBTreeT!(K) RBTree(K)(const bool owns=true) {
+    RBTreeT!(K) result;
+    with(result) {
+        NILL.color=Color.BLACK;
+        nill=&NILL;
+        root=nill;
+
+    }
+    result.owns=owns;
+    return result;
+}
+
+struct RBTreeT(K) {
+    @nogc:
     enum Color { RED, BLACK };
     struct Node {
+        @nogc:
         K key;
-        static if (!is(V==void)) {
-            V value;
-        }
-        else {
-            alias value=key;
-        }
+        // static if (!is(V==void)) {
+        //     V value;
+        // }
+        // else {
+        //     alias value=key;
+        // }
         Color color;
         Node* parent;
         Node* left;
@@ -44,16 +58,24 @@ struct RBTree(K, V=void) {
         Node NILL;
         Node* nill;
         Node* root;
-        bool owner;
+        bool owns;
     }
 
-    @disable this();
-    this(const bool _owner) {
-        NILL.color=Color.BLACK;
-        nill=&NILL;
-        root=nill;
-        owner=_owner;
-    }
+    // @disable this();
+    // static RBTree opCall() {
+    //     return RBTree(true);
+    // }
+
+    // static opCall(const bool _owns) {
+    //     RBTree result;
+    //     with(result) {
+    //         NILL.color=Color.BLACK;
+    //         nill=&NILL;
+    //         root=nill;
+    //         owns=_owns;
+    //     }
+    //     return result;
+    // }
 
     ~this() {
         dispose;
@@ -64,7 +86,7 @@ struct RBTree(K, V=void) {
             if (current !is nill) {
                 _dispose(current.left);
                 _dispose(current.right);
-                if (owner) {
+                if (owns) {
                     static if (__traits(compiles, current.key.dispose)) {
                         current.key.dispose;
                     }
@@ -145,40 +167,19 @@ struct RBTree(K, V=void) {
      * auxilary procedure called insert_fixup is called to fix these violation.
      */
 
-    static if (is(V==void)) {
-        void insert(K key) {
-            Node* z = create!Node;
-            z.key=key;
-            insert(z);
-        }
-        const(K) get(const(K) key) const {
-            alias _K=const(K);
-            auto result=search(key);
-            if (result !is null) {
-                return result.key;
-            }
-            return K.init;
-        }
-
+    void insert(K key) {
+        Node* z = create!Node;
+        z.key=key;
+        insert(z);
     }
-    else {
-        void insert(K key, V value) {
-            Node* z = create!Node;
-            z.key=key;
-            z.value=value;
-            insert(z);
-        }
 
-        void opIndexAssign(V value, K key) {
-            insert(key, value);
+    const(K) get(const(K) key) const {
+        alias _K=const(K);
+        auto result=search(key);
+        if (result !is null) {
+            return result.key;
         }
-
-        const(V) opIndex(K key) const {
-            if (auto result=serach(key) !is nill) {
-                return result.value;
-            }
-            return V.init;
-        }
+        return K.init;
     }
 
     private void insert(Node* z) {
@@ -585,7 +586,7 @@ struct RBTree(K, V=void) {
             Stack!(Node*) stack;
         }
 
-        this(const(RBTree*) owner)  {
+        this(const(RBTreeT*) owner)  {
             this.nill=cast(Node*)(owner.nill);
             walker=current=cast(Node*)(owner.root);
             popFront;

@@ -32,29 +32,38 @@ import hibon.utils.BinBuffer;
 
 import core.stdc.stdio;
 
+HiBONT HiBON() {
+    HiBONT result; //=HiBONT(RBTree!(HiBONT.Members)());
+    result._members=RBTree!(const(HiBONT.Member)*)();
+    return result;
+}
 /++
- HiBON is a generate object of the HiBON format
+ HiBON is a generate obje52ct of the HiBON format
 +/
-struct HiBON {
-    uint error;
+struct HiBONT {
+    @nogc:
     /++
      Gets the internal buffer
      Returns:
      The buffer of the HiBON document
     +/
-    alias Members=RBTree!(const(Member)*);
+    alias Members=RBTreeT!(const(Member)*);
 //     RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
-    protected {
+    private {
         Members _members;
         BinBuffer _buffer;
     }
+    uint error;
 
-    alias Value=ValueT!(true, HiBON*,  Document);
-    static HiBON* opCall() {
-        auto result=create!(HiBON*);
-        printf("before\n");
-        result._members = Members(true);
-        printf("after\n");
+    alias Value=ValueT!(true, HiBONT*,  Document);
+    // this();
+    version(none)
+    static HiBON opCall() {
+        HiBON result; //=HiBON(Members(true), null, 0);
+//        auto result=create!(HiBON*);
+        // printf("before\n");
+        // result._members = Members(true);
+        // printf("after\n");
         return result;
     }
 
@@ -104,6 +113,7 @@ struct HiBON {
 
 
     struct Key {
+        @nogc:
         protected char[] data;
         this(const(char[]) key) {
             data=create!(char[])(key.length);
@@ -145,21 +155,22 @@ struct HiBON {
      Internal Member in the HiBON class
      +/
      struct Member {
-        Key key;
-        Type type;
-        Value value;
-        int opCmp(const(Member) b) const {
-            return key.opCmp(b.key);
-        }
-        int opCmp(const(char[]) b) const {
-            return key.opCmp(b);
-        }
-        bool opEquals(const(Member) b) const {
-            return key.opEquals(b.key);
-        }
-        bool opEquals(const(char[]) b) const {
-            return key.opEquals(b);
-        }
+         @nogc:
+         Key key;
+         Type type;
+         Value value;
+         int opCmp(const(Member) b) const {
+             return key.opCmp(b.key);
+         }
+         int opCmp(const(char[]) b) const {
+             return key.opCmp(b);
+         }
+         bool opEquals(const(Member) b) const {
+             return key.opEquals(b.key);
+         }
+         bool opEquals(const(char[]) b) const {
+             return key.opEquals(b);
+         }
 
         // protected this() pure nothrow {
         //     value = uint.init;
@@ -204,7 +215,7 @@ struct HiBON {
          the value as a Document
          +/
 
-        inout(HiBON*) document() inout pure
+        inout(HiBONT*) document() inout pure
         in {
             assert(type is Type.DOCUMENT);
         }
@@ -473,10 +484,10 @@ struct HiBON {
     ///
     unittest { // remove
         auto hibon=HiBON();
-        (*hibon)["a"] =1;
-        (*hibon)["b"] =2;
-        (*hibon)["c"] =3;
-        (*hibon)["d"] =4;
+        hibon["a"] =1;
+        hibon["b"] =2;
+        hibon["c"] =3;
+        hibon["d"] =4;
 
         assert(hibon.hasMember("b"));
         hibon.remove("b");
@@ -500,8 +511,9 @@ struct HiBON {
     }
 
     protected struct KeyRange {
+        @nogc:
         Members.Range range;
-        this(const(HiBON*) owner) {
+        this(const(HiBONT*) owner) {
             range=owner.opSlice;
         }
         ~this() {
@@ -523,11 +535,12 @@ struct HiBON {
     }
 
     protected struct IndexRange {
+        @nogc:
         private {
             Members.Range range;
             bool _error;
         }
-        this(const(HiBON*) owner) {
+        this(const(HiBONT*) owner) {
             range=owner.opSlice;
         }
         ~this() {
@@ -579,23 +592,23 @@ struct HiBON {
             auto hibon=HiBON();
             assert(!hibon.isArray);
 
-            (*hibon)["0"]=1;
+            hibon["0"]=1;
             assert(hibon.isArray);
-            (*hibon)["1"]=2;
+            hibon["1"]=2;
             assert(hibon.isArray);
-            (*hibon)["2"]=3;
+            hibon["2"]=3;
             assert(hibon.isArray);
-            (*hibon)["x"]=3;
+            hibon["x"]=3;
             assert(!hibon.isArray);
         }
 
         {
             auto hibon=HiBON();
-            (*hibon)["1"]=1;
+            hibon["1"]=1;
             assert(!hibon.isArray);
-            (*hibon)["0"]=2;
+            hibon["0"]=2;
             assert(hibon.isArray);
-            (*hibon)["4"]=2;
+            hibon["4"]=2;
             assert(!hibon.isArray);
         }
     }
@@ -649,11 +662,11 @@ struct HiBON {
             auto hibon = HiBON();
             enum pos=1;
             static assert(is(test_tabel.Types[pos] == float));
-            (*hibon)[test_tabel.fieldNames[pos]] = test_tabel[pos];
+            hibon[test_tabel.fieldNames[pos]] = test_tabel[pos];
 
             assert(hibon.length is 1);
 
-            const m=(*hibon)[test_tabel.fieldNames[pos]];
+            const m=hibon[test_tabel.fieldNames[pos]];
 
             assert(m.type is Type.FLOAT32);
             assert(m.key.serialize is Type.FLOAT32.stringof);
@@ -695,12 +708,12 @@ struct HiBON {
 
             string[test_tabel.length] keys;
             foreach(i, t; test_tabel) {
-                (*hibon)[test_tabel.fieldNames[i]] = t;
+                hibon[test_tabel.fieldNames[i]] = t;
                 keys[i]=test_tabel.fieldNames[i];
             }
             version(none) {
             size_t index;
-            foreach(m; (*hibon)[]) {
+            foreach(m; hibon[]) {
                 assert(m.key == keys[index]);
                 index++;
             }
