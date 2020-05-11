@@ -33,8 +33,8 @@ import hibon.utils.BinBuffer;
 import core.stdc.stdio;
 
 HiBONT HiBON() {
-    HiBONT result; //=HiBONT(RBTree!(HiBONT.Members)());
-    result._members=RBTree!(const(HiBONT.Member)*)();
+    HiBONT result=HiBONT(RBTree!(const(HiBONT.Member)*)()); //RBTree!(HiBONT.Members)());
+//    result._members=RBTree!(const(HiBONT.Member)*)();
     return result;
 }
 /++
