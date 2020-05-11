@@ -10,7 +10,7 @@ import hibon.utils.BinBuffer;
 import hibon.utils.Memory;
 import Bailout=hibon.utils.Bailout;
 import hibon.utils.Text;
-//import hibon.HiBON;
+import hibon.HiBON;
 import hibon.Document;
 
 import core.stdc.stdio;
@@ -77,6 +77,7 @@ version(unittest) {
             callUnittest!(hibon.HiBONBase)();
 
             callUnittest!(hibon.Document)();
+//            callUnittest!(hibon.HiBON);
             printf("After\n");
             return 0;
         }

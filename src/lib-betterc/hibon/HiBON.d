@@ -454,6 +454,7 @@ struct HiBON {
     bool hasMember(in const(char[]) key) const {
         Member m;
         m.key=Key(key);
+//        foreach(xm;
         return _members.exists(&m);
     }
 
@@ -533,8 +534,13 @@ struct HiBON {
             range.dispose;
         }
 
-        alias empty=range.empty;
-        alias popFront=range.popFront;
+        @property bool empty() const pure {
+            return range.empty;
+        }
+
+        @property  void popFront() {
+            range.popFront;
+        }
 
         uint front()  {
             const key=range.front.key.key.serialize;

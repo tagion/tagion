@@ -462,6 +462,11 @@ struct Document {
         const(ubyte[4]) tabel_range_2_=[8,4,2,1];
         tabel_range[2].create(tabel_range_2_);
 
+        scope(exit) {
+            foreach(t; tabel_range) {
+                t.dispose;
+            }
+        }
         size_t index;
         auto buffer=BinBuffer(0x200); //new ubyte[0x200];
         index = make(buffer, tabel_range);
@@ -636,7 +641,7 @@ struct Document {
             foreach(i, t; test_tabel_array) {
                 enum name = test_tabel_array.fieldNames[i];
                 static if (Type.STRING.stringof != test_tabel_array.fieldNames[i]) {
-                    pragma(msg, name);
+                    pragma(msg, name, " dispose");
                     t.dispose;
                 }
             }
@@ -894,7 +899,7 @@ struct Document {
                             }
                             else {
                                 if (isHiBONType(type)) {
-                                    Value* result=cast(Value*)(data[valuePos..$].ptr);
+                                    Value* result=cast(Value*)(&data[valuePos]);
                                     return *result;
                                 }
                             }
