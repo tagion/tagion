@@ -1,6 +1,6 @@
 module hibon.utils.Memory;
 
-import std.traits : isArray, ForeachType, isPointer, PointerTarget;
+import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
 import core.stdc.stdlib : calloc,  realloc, free;
 import core.stdc.stdio;
 import std.conv : emplace;
@@ -27,9 +27,10 @@ void create(U)(ref U[] data, const(U[]) src) //{ //if (isArray!T && ForeachE
         assert(data is null);
     }
 do {
-//    alias BaseT=ForeachType!T;
-    data=(cast(U*)calloc(src.length, U.sizeof))[0..src.length];
-    data[0..src.length]=src;
+    alias BaseU=Unqual!U;
+    auto temp=(cast(BaseU*)calloc(src.length, U.sizeof))[0..src.length];
+    temp[0..src.length]=src;
+    data=cast(U[])temp;
 }
 
 T* create(T, Args...)(Args args) if(is(T == struct)) {

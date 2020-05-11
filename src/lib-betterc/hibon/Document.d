@@ -158,7 +158,6 @@ struct Document {
     public:
         this(immutable(ubyte[]) data) {
             this.data = data;
-
             if (data.length == 0) {
                 _index = 0;
             }
@@ -172,6 +171,11 @@ struct Document {
             this(doc.data);
         }
 
+        ~this() {
+            printf("Destry Range\n");
+            emplace(&data, data.init);
+        }
+
         @property pure nothrow const {
             bool empty() {
                 return _index >= data.length;
@@ -182,7 +186,13 @@ struct Document {
              * InputRange primitive operation that returns the currently iterated element.
              */
             const(Element) front() {
-                debug printf("element.key=%s\n", _element.key);
+                debug {
+                    printf("Range.front\n");
+                    printf("index=%d\n", _index);
+                    printf("element.key=%s\n", _element.key.ptr);
+                    printf("element.size=%d\n", _element.size);
+                    printf("element.type=%d\n", _element.type);
+                }
                 return _element;
             }
         }
@@ -450,20 +460,34 @@ struct Document {
 
     ///
     unittest {
-        alias TabelRange = Tuple!( ubyte[3],  ubyte[4], ubyte[4]);
+        alias TabelRange = Tuple!( ubyte[],  ubyte[], ubyte[]);
         TabelRange tabel_range;
 
-        tabel_range[0]=[1,2,4];
-        tabel_range[1]=[3,4,5,6];
-        tabel_range[2]=[8,4,2,1];
+        const(ubyte[3]) tabel_range_0_=[1,2,4];
+        tabel_range[0].create(tabel_range_0_);
+        const(ubyte[4]) tabel_range_1_=[3,4,5,6];
+        tabel_range[1].create(tabel_range_1_);
+        const(ubyte[4]) tabel_range_2_=[8,4,2,1];
+        tabel_range[2].create(tabel_range_2_);
 
         size_t index;
         auto buffer=BinBuffer(0x200); //new ubyte[0x200];
         index = make(buffer, tabel_range);
         const doc_buffer = buffer[0..index]; //.idup;
         const doc=Document(doc_buffer.serialize);
+        printf("X [");
+        foreach(d; doc_buffer.serialize) {
+            printf("%d,", d);
+        }
+        printf("]\n");
 
         auto tabelR=doc.range!(immutable(ubyte)[][]);
+        printf("Y [");
+        foreach(d; tabelR.data) {//doc_buffer.serialize) {
+            printf("%d,", d);
+        }
+        printf("]\n");
+
         foreach(t; tabel_range) {
             printf("A [");
             foreach(_b; t) {
@@ -496,6 +520,10 @@ struct Document {
         }
 
         @property {
+            immutable(ubyte[]) data() {
+                return range.data;
+            }
+
             void popFront() {
                 range.popFront;
             }
@@ -533,9 +561,23 @@ struct Document {
                 if ( i is count ) {
                     break;
                 }
-                enum name = range.fieldNames[i];
-                alias U = range.Types[i];
-                enum  E = Value.asType!U;
+                static if (range.fieldNames[i].length == 0) {
+                    enum zero=size_t(0);
+                    enum suffix_length=zero.stringof.length-"0".length;
+                    enum name=i.stringof[0..$-suffix_length];
+                }
+                else {
+                    enum name = range.fieldNames[i];
+                }
+
+                alias T = range.Types[i];
+                static if (is(T:U[], U) && isBasicType!U) {
+                    enum  E = Value.asType!(immutable(T));
+                }
+                else {
+                    enum  E = Value.asType!T;
+                }
+                printf("%d] name=%s %s E=%s\n", i, name.ptr, T.stringof.ptr, E.stringof.ptr);
                 build(buffer, E, name, t, index);
             }
             buffer.write(Type.NONE, &index);
@@ -634,7 +676,6 @@ struct Document {
             }
         }
 
-        //       version(none)
         { // Document with simple types
             //test_tabel.UTC      = 1234;
 
@@ -1019,7 +1060,6 @@ struct Document {
              Returns:
              the size of the element in bytes
              +/
-            //  version(none)
             @trusted size_t size() {
                 with(Type) {
                 TypeCase:
