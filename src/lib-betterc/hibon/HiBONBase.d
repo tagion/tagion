@@ -4,31 +4,18 @@ extern(C):
 @nogc:
 
 
-//alias utc_t = Typedef!(ulong, ulong.init, UTC);
-/*
-import tagion.Types;
-import tagion.Base : isOneOf;
-
-import tagion.utils.UTCTime;
-*/
-
-//import std.format;
 import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
 
 import std.system : Endian;
-//import bin = std.bitmanip;
 import std.exception;
+import core.stdc.stdio;
 
-// import tagion.hibon.HiBONException;
 import hibon.utils.BinBuffer;
 import hibon.BigNumber;
 import hibon.utils.Bailout;
 import hibon.utils.Memory;
 import hibon.utils.utc;
-
-
-//alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 
 /++
  HiBON Type codes
@@ -256,15 +243,11 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      convert the T to a HiBON-Type
      +/
     enum asType(T) = GetType!(Unqual!T, __traits(allMembers, ValueT));
+
     /++
      is true if the type T is support by the HiBON
      +/
     enum hasType(T) = asType!T !is Type.NONE;
-
-    version(none)
-    static unittest {
-        static assert(hasType!int);
-    }
 
     static if (!is(Document == void) && is(HiBON == void)) {
             this(Document doc) {
@@ -291,6 +274,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                 static if ( hasUDA!(member, Type ) ) {
                     alias MemberT   = typeof(member);
                     static if ( is(T == MemberT) ) {
+                        printf("m=%s\n", MemberT.stringof.ptr);
                         __traits(getMember, this, m) = x;
                         return;
                     }
@@ -321,6 +305,8 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                     mixin(code);
                     enum MemberType=getUDAs!(member, Type)[0];
                     static assert ( MemberType !is Type.NONE, format("%s is not supported", T ) );
+                    printf("opAssign %s\n", MemberType.stringof.ptr);
+
                     x.copy(__traits(getMember, this, m));
                 }
                 else {
@@ -347,6 +333,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         alias CastT=castTo!(UnqualT, CastTypes);
         static assert(is(CastT==void), format("Type %s not supported", T.stringof));
         alias E=asType!UnqualT;
+        printf("opAssign %s\n", E.stringof.ptr);
         opAssing(cast(CastT)x);
     }
 
@@ -354,7 +341,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Convert a HiBON Type to a D-type
      +/
     alias TypeT(Type aType) = typeof(by!aType());
-
 
     /++
      Returns:
@@ -422,23 +408,24 @@ unittest {
             );
         Tabel test_tabel;
         immutable(ubyte[3]) test_tabel_0_=[1, 2, 3];
-        test_tabel[0]=test_tabel_0_; //[1, 2, 3]; //const(ubyte[3])([1, 2, 3]));
+        test_tabel[0]=test_tabel_0_;
         immutable(bool[3]) test_tabel_1_=[false, true, true];
-        test_tabel[1]=test_tabel_1_; //[false, true, true];
+        test_tabel[1]=test_tabel_1_;
         immutable(int[3]) test_tabel_2_=[-1, 7, -42];
-        test_tabel[2]=test_tabel_2_; //[-1, 7, -42];
+        test_tabel[2]=test_tabel_2_;
         immutable(uint[3]) test_tabel_3_=[1, 7, 42];
-        test_tabel[3]=test_tabel_3_;//[1, 7, 42];
+        test_tabel[3]=test_tabel_3_;
         immutable(long[3]) test_tabel_4_=[-1, 7, -42_000_000_000_000];
-        test_tabel[4]=test_tabel_4_; //[-1, 7, -42_000_000_000_000];
+        test_tabel[4]=test_tabel_4_;
         immutable(ulong[3]) test_tabel_5_=[1, 7, 42_000_000_000_000];
-        test_tabel[5]=test_tabel_5_; //[1, 7, 42_000_000_000_000];
+        test_tabel[5]=test_tabel_5_;
         immutable(float[3]) test_tabel_6_=[-1.7, 7, 42.42e10];
-        test_tabel[6]=test_tabel_6_; //[-1.7, 7, 42.42e10];
+        test_tabel[6]=test_tabel_6_;
         immutable(double[3]) test_tabel_7_=[1.7, -7, 42.42e207];
-        test_tabel[7]=test_tabel_7_; //[1.7, -7, 42,42e207];
+        test_tabel[7]=test_tabel_7_;
 
         foreach(i, t; test_tabel) {
+            printf("i=%d\n", i);
             Value v;
             v=t;
             alias U = test_tabel.Types[i];
@@ -526,15 +513,14 @@ bool isArray(R)(R keys) {
     return false;
 }
 
-version(none) {
 ///
 unittest { // check is_index
-//    import std.conv : to;
     uint index;
     assert(is_index("0", index));
     assert(index is 0);
     assert(!is_index("-1", index));
-    assert(is_index(uint.max.stringof, index));
+
+    assert(is_index(uint.max.stringof[0..$-1], index));
     assert(index is uint.max);
 
     enum overflow=((cast(ulong)uint.max)+1);
@@ -546,7 +532,6 @@ unittest { // check is_index
     assert(!is_index("0x0", index));
     assert(!is_index("00", index));
     assert(!is_index("01", index));
-}
 }
 
 /++
@@ -566,16 +551,14 @@ body {
     return a < b;
 }
 
-version(none) {
 ///
 unittest { // Check less_than
-    import std.conv : to;
     assert(less_than("a", "b"));
-    assert(less_than(0.to!string, 1.to!string));
+    assert(less_than("0", "1"));
     assert(!less_than("00", "0"));
     assert(less_than("0", "abe"));
 }
-}
+
 /++
  Returns:
  true if the key is a valid HiBON key
@@ -603,19 +586,14 @@ unittest { // Check less_than
     return false;
 }
 
-version(none) {
 ///
 unittest { // Check is_key_valid
-    import std.conv : to;
-    import std.range : iota;
-    import std.algorithm.iteration : map, each;
-
     assert(!is_key_valid(""));
     string text=" "; // SPACE
     assert(!is_key_valid(text));
-    text=[0x80]; // Only simple ASCII
+    text="\x80"; // Only simple ASCII
     assert(!is_key_valid(text));
-    text=[char(34)]; // Double quote
+    text="\""; // Double quote
     assert(!is_key_valid(text));
     text="'"; // Sigle quote
     assert(!is_key_valid(text));
@@ -626,15 +604,17 @@ unittest { // Check is_key_valid
 
 
     assert(is_key_valid("abc"));
-    assert(is_key_valid(42.to!string));
+    assert(is_key_valid("42"));
 
     text="";
-    iota(0,ubyte.max).each!((i) => text~='a');
-    assert(is_key_valid(text));
-    text~='B';
-    assert(!is_key_valid(text));
+    char[ubyte.max+1] max_key_size;
+    foreach(ref a; max_key_size) {
+        a='a';
+    }
+    assert(is_key_valid(max_key_size[0..$-1]));
+    assert(!is_key_valid(max_key_size));
 }
-}
+
 
 template isOneOf(T, TList...) {
     static if ( TList.length == 0 ) {

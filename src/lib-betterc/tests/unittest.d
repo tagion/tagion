@@ -76,12 +76,8 @@ version(unittest) {
             callUnittest!(hibon.utils.RBTree)();
             callUnittest!(hibon.HiBONBase)();
 
-            //callUnittest!(hibon.Document)();
+            callUnittest!(hibon.Document)();
             printf("After\n");
-
-
-
-
             return 0;
         }
     }
