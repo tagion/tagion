@@ -8,8 +8,8 @@ import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
 
 import std.system : Endian;
-import std.exception;
-import core.stdc.stdio;
+// import std.exception;
+// import core.stdc.stdio;
 
 import hibon.utils.BinBuffer;
 import hibon.BigNumber;
@@ -274,7 +274,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                 static if ( hasUDA!(member, Type ) ) {
                     alias MemberT   = typeof(member);
                     static if ( is(T == MemberT) ) {
-                        printf("m=%s\n", MemberT.stringof.ptr);
                         __traits(getMember, this, m) = x;
                         return;
                     }
@@ -305,8 +304,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                     mixin(code);
                     enum MemberType=getUDAs!(member, Type)[0];
                     static assert ( MemberType !is Type.NONE, format("%s is not supported", T ) );
-                    printf("opAssign %s\n", MemberType.stringof.ptr);
-
                     x.copy(__traits(getMember, this, m));
                 }
                 else {
@@ -333,7 +330,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         alias CastT=castTo!(UnqualT, CastTypes);
         static assert(is(CastT==void), format("Type %s not supported", T.stringof));
         alias E=asType!UnqualT;
-        printf("opAssign %s\n", E.stringof.ptr);
         opAssing(cast(CastT)x);
     }
 
@@ -425,7 +421,6 @@ unittest {
         test_tabel[7]=test_tabel_7_;
 
         foreach(i, t; test_tabel) {
-            printf("i=%d\n", i);
             Value v;
             v=t;
             alias U = test_tabel.Types[i];
