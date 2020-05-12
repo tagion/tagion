@@ -113,7 +113,9 @@ template Init_HiBON_Types(string text, uint i) {
 }
 
 
+/*
 ///
+version(none)
 static unittest {
     with(Type) {
         static assert(!isHiBONType(NONE));
@@ -122,7 +124,7 @@ static unittest {
     }
 
 }
-
+*/
 version(none) {
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);

@@ -93,25 +93,24 @@ struct HiBONT {
     immutable(ubyte[]) serialize() {
         _buffer.recreate(size);
         printf("size=%d\n", size);
-        size_t index;
-        append(_buffer, index);
+        append(_buffer);
 
-        printf("buffer length=%d %d\n", _buffer.length, index);
+        printf("buffer length=%d\n", _buffer.length);
         return _buffer.serialize;
     }
 
     // /++
     //  Helper function to append
     //  +/
-    private void append(ref BinBuffer buffer, ref size_t index) const {
-        immutable size_index = index;
-        buffer.write(uint.init, &index);
+    private void append(ref BinBuffer buffer) const {
+        immutable size_index = buffer.length; //index;
+        buffer.write(uint.init);
         foreach(n; _members[]) {
             printf("n.key=%s\n", n.item.key.serialize.ptr);
-            n.item.append(buffer, index);
+            n.item.append(buffer);
         }
-        buffer.write(Type.NONE, &index);
-        immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
+        buffer.write(Type.NONE);
+        immutable doc_size=cast(uint)(buffer.length - size_index - uint.sizeof);
         buffer.write(doc_size, size_index);
     }
 
@@ -316,28 +315,28 @@ struct HiBONT {
             }
         }
 
-        protected void appendList(Type E)(ref BinBuffer buffer, ref size_t index)  const if (isNativeArray(E)) {
-            immutable size_index = index;
-            buffer.write(uint.init, &index);
+        protected void appendList(Type E)(ref BinBuffer buffer)  const if (isNativeArray(E)) {
+            immutable size_index = buffer.length;
+            buffer.write(uint.init);
             scope(exit) {
-                buffer.write(Type.NONE, &index);
-                immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-                buffer.write(doc_size, size_index);
+                buffer.write(Type.NONE);
+                immutable doc_size=cast(uint)(buffer.length - size_index - uint.sizeof);
+                buffer.write(doc_size);
             }
             with(Type) {
                 foreach(i, h; value.by!E) {
                     const key=Text()(i);
                     //immutable key=i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
-                        Document.build(buffer, STRING, key.serialize, h, index);
+                        Document.build(buffer, STRING, key.serialize, h);
                     }
                     else {
-                        Document.buildKey(buffer, DOCUMENT, key.serialize, index);
+                        Document.buildKey(buffer, DOCUMENT, key.serialize);
                         static if (E is NATIVE_HIBON_ARRAY) {
-                            h.append(buffer, index);
+                            h.append(buffer);
                         }
                         else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                            buffer.write(h.data, index);
+                            buffer.write(h.data);
                         }
 
                         else {
@@ -349,8 +348,8 @@ struct HiBONT {
 
         }
 
-        void append(ref BinBuffer buffer, ref size_t index) const {
-            printf("%s index=%d\n", key.serialize.ptr, index);
+        void append(ref BinBuffer buffer) const {
+            printf("%s index=%d\n", key.serialize.ptr, buffer.length);
             with(Type) {
             TypeCase:
                 switch(type) {
@@ -360,18 +359,18 @@ struct HiBONT {
                             printf("\tE=%s\n", E.stringof.ptr);
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
-                                Document.buildKey(buffer, E, key.serialize, index);
-                                value.by!(E).append(buffer, index);
+                                Document.buildKey(buffer, E, key.serialize);
+                                value.by!(E).append(buffer);
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
-                                    Document.buildKey(buffer, DOCUMENT, key.serialize, index);
+                                    Document.buildKey(buffer, DOCUMENT, key.serialize);
                                     const doc=value.by!(E);
-                                    buffer.write(value.by!(E).data, index);
+                                    buffer.write(value.by!(E).data);
                                 }
                                 else static if (isNativeArray(E)) {
-                                    Document.buildKey(buffer, DOCUMENT, key.serialize, index);
-                                    appendList!E(buffer, index);
+                                    Document.buildKey(buffer, DOCUMENT, key.serialize);
+                                    appendList!E(buffer);
                                 }
                                 else {
                                     goto default;
@@ -385,8 +384,8 @@ struct HiBONT {
                                 }
 //                                static
                                 printf("\tkey=%s T=%s\n", key.serialize.ptr, U.stringof.ptr);
-                                Document.build(buffer, E, key.serialize, value.by!E, index);
-                                printf("After index=%d\n", index);
+                                Document.build(buffer, E, key.serialize, value.by!E);
+                                printf("After index=%d\n", buffer.length);
                             }
                             break TypeCase;
                         }

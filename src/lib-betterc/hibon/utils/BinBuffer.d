@@ -48,7 +48,6 @@ struct BinBuffer {
 
     private void append(scope const(ubyte[]) add, size_t* index) {
         printf("Append %d\n", *index);
-        *index=_index;
         if (_data is null) {
             const new_size=(add.length < DEFAULT_SIZE)?DEFAULT_SIZE:add.length;
             _data=create!(ubyte[])(new_size);
@@ -64,20 +63,20 @@ struct BinBuffer {
         _data[*index..*index+add.length]=add;
     }
 
-    void write(T)(const T x, size_t* index) if (isNumeric!T || is(Unqual!(T)==bool)) {
+    private void write(T)(const T x, size_t* index) if (isNumeric!T || is(Unqual!(T)==bool)) {
         const res=nativeToLittleEndian(x);
         append(res, index);
     }
 
-    void write(const(ubyte[]) x, size_t* index) {
+    private void write(const(ubyte[]) x, size_t* index) {
         append(x, index);
     }
 
-    void write(T)(T x, size_t* index) if(isArray!T) {
+    private void write(T)(T x, size_t* index) if(isArray!T) {
         append(cast(ubyte[])x, index);
     }
 
-    void write(utc_t utc, size_t* index) {
+    private void write(utc_t utc, size_t* index) {
         write(utc.time, index);
     }
 
@@ -85,9 +84,18 @@ struct BinBuffer {
         write(x, &_index);
     }
 
+//    version(none)
     void write(T)(T x, const size_t index) {
+        size_t previous_index=_index;
         size_t temp_index=index;
         write(x, &temp_index);
+        if (temp_index > _index) {
+            _index=temp_index;
+        }
+        else {
+            _index=previous_index;
+        }
+        printf("write after index=%d\n", _index);
     }
 
     BinBuffer opSlice(const size_t from, const size_t to)
@@ -99,6 +107,10 @@ struct BinBuffer {
         auto result=BinBuffer(to-from);
         result.write(_data[from..to]);
         return result;
+    }
+
+    @property size_t opDollar(size_t dim : 0)() const pure {
+        return _index;
     }
 
     @property size_t length() const pure {

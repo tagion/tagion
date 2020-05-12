@@ -402,11 +402,11 @@ struct Document {
      key = is the member key
      index = is offset index in side the buffer and index with be progressed
      +/
-    static void buildKey(ref BinBuffer buffer, Type type, const(char[]) key, ref size_t index) {
-        buffer.write(type, &index);
-        buffer.write(cast(ubyte)(key.length), &index);
-        buffer.write(key, &index);
-        printf("buildKey index=%d\n", index);
+    static void buildKey(ref BinBuffer buffer, Type type, const(char[]) key) {
+        buffer.write(type);
+        buffer.write(cast(ubyte)(key.length));
+        buffer.write(key);
+        printf("buildKey index=%d\n", buffer.length);
 
     }
 
@@ -419,27 +419,27 @@ struct Document {
      x = is the value of the element
      index = is offset index in side the buffer and index with be progressed
      +/
-    static void build(T)(ref BinBuffer buffer, Type type, const(char[]) key, const(T) x, ref size_t index) {
+    static void build(T)(ref BinBuffer buffer, Type type, const(char[]) key, const(T) x) {
         printf("Before build key\n");
-        buildKey(buffer, type, key, index);
+        buildKey(buffer, type, key);
         static if ( is(T: U[], U) ) {
             immutable size=cast(uint)(x.length*U.sizeof);
-            buffer.write(size, &index);
-            buffer.write(x, &index);
-            printf("build index=%d\n", index);
+            buffer.write(size);
+            buffer.write(x);
+            printf("build index=%d\n", buffer.length);
         }
         else static if (is(T : const Document)) {
-            buffer.write(x.data, &index);
+            buffer.write(x.data);
         }
         else static if (is(T : const BigNumber)) {
             import std.internal.math.biguintnoasm : BigDigit;
             immutable size=cast(uint)(bool.sizeof+x.data.length*BigDigit.sizeof);
-            buffer.write(size, &index);
-            buffer.write(x.data, &index);
-            buffer.write(x.sign, &index);
+            buffer.write(size);
+            buffer.write(x.data);
+            buffer.write(x.sign);
         }
         else {
-            buffer.write(x, &index);
+            buffer.write(x);
         }
     }
 
@@ -470,11 +470,11 @@ struct Document {
                 t.dispose;
             }
         }
-        size_t index;
+
         auto buffer=BinBuffer(0x200); //new ubyte[0x200];
-        index = make(buffer, tabel_range);
-        const doc_buffer = buffer[0..index]; //.idup;
-        const doc=Document(doc_buffer.serialize);
+        make(buffer, tabel_range);
+//        const doc_buffer = buffer[0..index]; //.idup;
+        const doc=Document(buffer.serialize);
         auto tabelR=doc.range!(immutable(ubyte)[][]);
         foreach(t; tabel_range) {
             assert(tabelR.front == t);
@@ -529,9 +529,9 @@ struct Document {
     version(unittest) {
         import std.typecons : Tuple, isTuple;
 
-        static private size_t make(R)(ref BinBuffer buffer, R range, size_t count=size_t.max) if (isTuple!R) {
-            size_t index;
-            buffer.write(uint.init, &index);
+        static private void make(R)(ref BinBuffer buffer, R range, size_t count=size_t.max) if (isTuple!R) {
+            const start_index=buffer.length;
+            buffer.write(uint.init);
             foreach(i, t; range) {
                 if ( i is count ) {
                     break;
@@ -552,13 +552,11 @@ struct Document {
                 else {
                     enum  E = Value.asType!T;
                 }
-                build(buffer, E, name, t, index);
+                build(buffer, E, name, t);
             }
-            buffer.write(Type.NONE, &index);
-            uint size;
-            size = cast(uint)(index - uint.sizeof);
-            buffer.write(size, 0);
-            return index;
+            buffer.write(Type.NONE);
+            const size = cast(uint)(buffer.length - uint.sizeof);
+            buffer.write(size, start_index);
         }
     }
 
@@ -572,8 +570,8 @@ struct Document {
         { // Test of empty Document
             auto buffer=BinBuffer(0x200);
             size_t index;
-            buffer.write(uint.init, &index);
-            buffer.write(Type.NONE, &index);
+            buffer.write(uint.init);
+            buffer.write(Type.NONE);
             buffer.write(uint(1), 0);
             const doc_buffer=buffer[0..index];
             const doc = Document(doc_buffer.serialize);
@@ -651,23 +649,23 @@ struct Document {
         { // Document with simple types
             //test_tabel.UTC      = 1234;
 
-            size_t index;
+//            size_t index;
 
             { // Document with a single value
                 auto buffer=BinBuffer(0x200);
-                index = make(buffer, test_tabel, 1);
-                printf("MAKE index=%d\n", index);
-                const doc_buffer = buffer[0..index];
-                const doc=Document(doc_buffer.serialize);
+                make(buffer, test_tabel, 1);
+                printf("MAKE index=%d\n", buffer.length);
+                //const doc_buffer = buffer[0..index];
+                const doc=Document(buffer.serialize);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
             }
 
             { // Document with a single value
                 auto buffer=BinBuffer(0x200);
-                index = make(buffer, test_tabel, 1);
-                const doc_buffer = buffer[0..index];
-                const doc=Document(doc_buffer.serialize);
+                make(buffer, test_tabel, 1);
+                //const doc_buffer = buffer[0..index];
+                const doc=Document(buffer.serialize);
 //                writefln("doc.length=%d", doc.length);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!BigNumber == test_tabel[0]);
@@ -675,9 +673,9 @@ struct Document {
 
             { // Document including basic types
                 auto buffer=BinBuffer(0x200);
-                index = make(buffer, test_tabel);
-                const doc_buffer = buffer[0..index];
-                const doc=Document(doc_buffer.serialize);
+                make(buffer, test_tabel);
+                //              const doc_buffer = buffer[0..index];
+                const doc=Document(buffer.serialize);
 
                 auto keys=doc.keys;
                 foreach(i, t; test_tabel) {
@@ -705,9 +703,9 @@ struct Document {
 
             { // Document which includes basic arrays and string
                 auto buffer=BinBuffer(0x200);
-                index = make(buffer, test_tabel_array);
-                const doc_buffer = buffer[0..index];
-                const doc=Document(doc_buffer.serialize);
+                make(buffer, test_tabel_array);
+//                const doc_buffer = buffer[0..index];
+                const doc=Document(buffer.serialize);
                 foreach(i, t; test_tabel_array) {
                     enum name = test_tabel_array.fieldNames[i];
                     alias U   = immutable(test_tabel_array.Types[i]);
@@ -725,29 +723,29 @@ struct Document {
             { // Document which includes sub-documents
                 auto buffer=BinBuffer(0x200);
                 auto buffer_subdoc=BinBuffer(0x200);
-                index = make(buffer_subdoc, test_tabel);
-                const data_sub_doc = buffer_subdoc[0..index];
-                const sub_doc=Document(data_sub_doc.serialize);
+                make(buffer_subdoc, test_tabel);
+                const data_sub_doc = buffer_subdoc.serialize;
+                const sub_doc=Document(buffer_subdoc.serialize);
 
-                index = 0;
+                //index = 0;
                 uint size;
-                buffer.write(uint.init, &index);
+                buffer.write(uint.init);
                 enum doc_name="doc";
 
-                immutable index_before=index;
-                build(buffer, Type.INT32, Type.INT32.stringof, int(42), index);
-                const data_int32 = buffer[index_before..index];
+                immutable index_before=buffer.length;
+                build(buffer, Type.INT32, Type.INT32.stringof, int(42));
+                const data_int32 = buffer[index_before..$];
 
-                build(buffer, Type.DOCUMENT, doc_name, sub_doc, index);
-                build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
+                build(buffer, Type.DOCUMENT, doc_name, sub_doc);
+                build(buffer, Type.STRING, Type.STRING.stringof, "Text");
 
-                buffer.write(Type.NONE, &index);
+                buffer.write(Type.NONE);
 
-                size = cast(uint)(index - uint.sizeof);
+                size = cast(uint)(buffer.length - uint.sizeof);
                 buffer.write(size, 0);
 
-                const doc_buffer = buffer[0..index];
-                const doc=Document(doc_buffer.serialize);
+                //const doc_buffer = buffer[0..index];
+                const doc=Document(buffer.serialize);
 
                 { // Check int32 in doc
                     const int32_e = doc[Type.INT32.stringof];
@@ -766,10 +764,18 @@ struct Document {
                 }
 
                 { // Check the sub/under document
+                    printf("Check the sub/under document\n");
                     const under_e = doc[doc_name];
                     assert(under_e.key == doc_name);
                     assert(under_e.type == Type.DOCUMENT);
+                    printf("under_e.key=%s under_e.type=%d\n", under_e.key.ptr, under_e.type);
                     printf("under_e.size=%d %d\n", under_e.size, data_sub_doc.length + Type.sizeof + ubyte.sizeof + doc_name.length);
+                    immutable _data=doc[doc_name].get!Document;
+                    printf("###[");
+                    foreach(d; _data) {
+                        printf("%d, ", d);
+                    }
+                    printf("]\n");
                     assert(under_e.size == data_sub_doc.length + Type.sizeof + ubyte.sizeof + doc_name.length);
 
                     const under_doc = doc[doc_name].get!Document;
@@ -799,22 +805,22 @@ struct Document {
 
             { // Test opCall!(string[])
                 auto buffer=BinBuffer(0x200);
-                index = 0;
+                //index = 0;
                 uint size;
-                buffer.write(uint.init, &index);
+                buffer.write(uint.init);
                 const(char[5][3]) texts=["Text1", "Text2", "Text3"];
 
                 foreach(i, text; texts) {
                     auto converter=Text(long.max.stringof.length);
                     converter(i); //Convert i to string like i.to!string;
-                    build(buffer, Type.STRING, converter.serialize, text, index);
+                    build(buffer, Type.STRING, converter.serialize, text);
                 }
 
-                buffer.write(Type.NONE, &index);
-                size = cast(uint)(index - uint.sizeof);
+                buffer.write(Type.NONE);
+                size = cast(uint)(buffer.length - uint.sizeof);
                 buffer.write(size, 0);
-                const doc_buffer = buffer[0..index];
-                const doc=Document(doc_buffer.serialize);
+                //const doc_buffer = buffer[0..index];
+                const doc=Document(buffer.serialize);
 
 
                 auto typed_range = doc.range!(string[])();
@@ -1053,11 +1059,13 @@ struct Document {
                                 static if ( .isArray(E) || (E is STRING) || (E is DOCUMENT) ) {
                                     immutable binary_array_pos = valuePos+uint.sizeof;
                                     immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
+                                    debug printf("A byte_size=%d\n", byte_size);
                                     return binary_array_pos + byte_size;
                                 }
                                 static if (E is BIGINT) {
                                     immutable binary_array_pos = valuePos+uint.sizeof;
                                     immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
+                                    debug printf("B byte_size=%d\n", byte_size);
                                     return binary_array_pos+byte_size;
                                 }
                                 else {
@@ -1066,6 +1074,7 @@ struct Document {
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
+                                    debug printf("data[valuePos..$]=%d\n", data[valuePos..$].length);
                                     const doc = Document(data[valuePos..$]);
                                     return valuePos + uint.sizeof + doc.size;
                                 }
