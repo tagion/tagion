@@ -12,6 +12,7 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, E
 import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
+import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
 import hibon.utils.BinBuffer;
@@ -90,6 +91,7 @@ struct Document {
         uint count;
         foreach(e; this[]) {
             count++;
+            printf("e.key=%s\n", e.key.ptr);
         }
         return count;
     }
@@ -404,6 +406,8 @@ struct Document {
         buffer.write(type, &index);
         buffer.write(cast(ubyte)(key.length), &index);
         buffer.write(key, &index);
+        printf("buildKey index=%d\n", index);
+
     }
 
     /++
@@ -416,14 +420,13 @@ struct Document {
      index = is offset index in side the buffer and index with be progressed
      +/
     static void build(T)(ref BinBuffer buffer, Type type, const(char[]) key, const(T) x, ref size_t index) {
+        printf("Before build key\n");
         buildKey(buffer, type, key, index);
-        // buffer.binwrite(type, &index);
-        // buffer.binwrite(cast(ubyte)(key.length), &index);
-        // buffer.array_write(key, index);
         static if ( is(T: U[], U) ) {
             immutable size=cast(uint)(x.length*U.sizeof);
             buffer.write(size, &index);
             buffer.write(x, &index);
+            printf("build index=%d\n", index);
         }
         else static if (is(T : const Document)) {
             buffer.write(x.data, &index);
@@ -560,9 +563,6 @@ struct Document {
     }
 
     unittest {
-        auto buffer=BinBuffer(0x200);
-
-
         { // Test of null document
             const doc = Document(null);
             assert(doc.length is 0);
@@ -570,6 +570,7 @@ struct Document {
         }
 
         { // Test of empty Document
+            auto buffer=BinBuffer(0x200);
             size_t index;
             buffer.write(uint.init, &index);
             buffer.write(Type.NONE, &index);
@@ -653,7 +654,9 @@ struct Document {
             size_t index;
 
             { // Document with a single value
+                auto buffer=BinBuffer(0x200);
                 index = make(buffer, test_tabel, 1);
+                printf("MAKE index=%d\n", index);
                 const doc_buffer = buffer[0..index];
                 const doc=Document(doc_buffer.serialize);
                 assert(doc.length is 1);
@@ -661,6 +664,7 @@ struct Document {
             }
 
             { // Document with a single value
+                auto buffer=BinBuffer(0x200);
                 index = make(buffer, test_tabel, 1);
                 const doc_buffer = buffer[0..index];
                 const doc=Document(doc_buffer.serialize);
@@ -670,6 +674,7 @@ struct Document {
             }
 
             { // Document including basic types
+                auto buffer=BinBuffer(0x200);
                 index = make(buffer, test_tabel);
                 const doc_buffer = buffer[0..index];
                 const doc=Document(doc_buffer.serialize);
@@ -699,6 +704,7 @@ struct Document {
             }
 
             { // Document which includes basic arrays and string
+                auto buffer=BinBuffer(0x200);
                 index = make(buffer, test_tabel_array);
                 const doc_buffer = buffer[0..index];
                 const doc=Document(doc_buffer.serialize);
@@ -717,6 +723,7 @@ struct Document {
             }
 
             { // Document which includes sub-documents
+                auto buffer=BinBuffer(0x200);
                 auto buffer_subdoc=BinBuffer(0x200);
                 index = make(buffer_subdoc, test_tabel);
                 const data_sub_doc = buffer_subdoc[0..index];
@@ -762,6 +769,7 @@ struct Document {
                     const under_e = doc[doc_name];
                     assert(under_e.key == doc_name);
                     assert(under_e.type == Type.DOCUMENT);
+                    printf("under_e.size=%d %d\n", under_e.size, data_sub_doc.length + Type.sizeof + ubyte.sizeof + doc_name.length);
                     assert(under_e.size == data_sub_doc.length + Type.sizeof + ubyte.sizeof + doc_name.length);
 
                     const under_doc = doc[doc_name].get!Document;
@@ -790,6 +798,7 @@ struct Document {
             }
 
             { // Test opCall!(string[])
+                auto buffer=BinBuffer(0x200);
                 index = 0;
                 uint size;
                 buffer.write(uint.init, &index);
@@ -1042,22 +1051,14 @@ struct Document {
                             static if (isHiBONType(E)) {
                                 alias T = Value.TypeT!E;
                                 static if ( .isArray(E) || (E is STRING) || (E is DOCUMENT) ) {
-                                    // static if (isNative(E)) {
-                                    //     return 0;
-                                    // }
-                                    // else {
                                     immutable binary_array_pos = valuePos+uint.sizeof;
                                     immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
                                     return binary_array_pos + byte_size;
-                                    // }
                                 }
                                 static if (E is BIGINT) {
                                     immutable binary_array_pos = valuePos+uint.sizeof;
                                     immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
-                                    //debug writefln("byte_size=%d", byte_size);
                                     return binary_array_pos+byte_size;
-
-//                                    assert(0, format("Size of %s not supported yet", E));
                                 }
                                 else {
                                     return valuePos + T.sizeof;

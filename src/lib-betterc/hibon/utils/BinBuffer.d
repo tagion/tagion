@@ -8,6 +8,8 @@ import std.traits : isNumeric, isArray, Unqual;
 import hibon.utils.Memory;
 import hibon.utils.utc;
 
+import core.stdc.stdio;
+
 struct BinBuffer {
     @nogc:
     protected {
@@ -20,9 +22,11 @@ struct BinBuffer {
         if (size>0) {
             _data.create(size);
         }
+        printf("BinBuffer create %p\n", _data.ptr);
     }
 
    ~this() {
+       printf("BinBuffer dispose %p\n", _data.ptr);
         dispose;
     }
 
@@ -43,12 +47,15 @@ struct BinBuffer {
     }
 
     private void append(scope const(ubyte[]) add, size_t* index) {
+        printf("Append %d\n", *index);
+        *index=_index;
         if (_data is null) {
             const new_size=(add.length < DEFAULT_SIZE)?DEFAULT_SIZE:add.length;
             _data=create!(ubyte[])(new_size);
         }
         scope(exit) {
             *index+=add.length;
+            _index=*index;
         }
         if (*index+add.length > _data.length) {
             const new_size=_data.length+((add.length < DEFAULT_SIZE)?DEFAULT_SIZE:add.length);
@@ -99,6 +106,7 @@ struct BinBuffer {
     }
 
     immutable(ubyte[]) serialize() const {
+        printf("serialize _index=%d\n", _index);
         return cast(immutable)_data[0.._index];
     }
 }

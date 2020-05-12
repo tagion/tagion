@@ -92,8 +92,11 @@ struct HiBONT {
      +/
     immutable(ubyte[]) serialize() {
         _buffer.recreate(size);
+        printf("size=%d\n", size);
         size_t index;
         append(_buffer, index);
+
+        printf("buffer length=%d %d\n", _buffer.length, index);
         return _buffer.serialize;
     }
 
@@ -103,8 +106,9 @@ struct HiBONT {
     private void append(ref BinBuffer buffer, ref size_t index) const {
         immutable size_index = index;
         buffer.write(uint.init, &index);
-        foreach(m; _members[]) {
-            m.item.append(buffer, index);
+        foreach(n; _members[]) {
+            printf("n.key=%s\n", n.item.key.serialize.ptr);
+            n.item.append(buffer, index);
         }
         buffer.write(Type.NONE, &index);
         immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
@@ -116,8 +120,9 @@ struct HiBONT {
         @nogc:
         protected char[] data;
         this(const(char[]) key) {
-            data=create!(char[])(key.length);
-            data[0..$]=key[0..$];
+            data=create!(char[])(key.length+1);
+            data[0..$-1]=key[0..$];
+            data[key.length]='\0';
         }
         this(const uint index) {
             auto _key=Text()(index);
@@ -127,7 +132,7 @@ struct HiBONT {
             data.dispose;
         }
         string serialize() const pure {
-            return cast(string)data;
+            return cast(string)data[0..$-1];
         }
 
 
@@ -345,12 +350,14 @@ struct HiBONT {
         }
 
         void append(ref BinBuffer buffer, ref size_t index) const {
+            printf("%s index=%d\n", key.serialize.ptr, index);
             with(Type) {
             TypeCase:
                 switch(type) {
                     static foreach(E; EnumMembers!Type) {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
+                            printf("\tE=%s\n", E.stringof.ptr);
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
                                 Document.buildKey(buffer, E, key.serialize, index);
@@ -371,7 +378,15 @@ struct HiBONT {
                                 }
                             }
                             else {
+                                alias U=typeof(value.by!E());
+                                static if (is(U==const(float))) {
+                                    auto x=value.by!E;
+                                    printf("\tx=%f\n", x);
+                                }
+//                                static
+                                printf("\tkey=%s T=%s\n", key.serialize.ptr, U.stringof.ptr);
                                 Document.build(buffer, E, key.serialize, value.by!E, index);
+                                printf("After index=%d\n", index);
                             }
                             break TypeCase;
                         }
@@ -502,6 +517,8 @@ struct HiBONT {
 
     ///
     unittest { // remove
+        printf("#### Unittest -3\n");
+
         auto hibon=HiBON();
         hibon["d"] =4;
         hibon["b"] =2;
@@ -617,6 +634,8 @@ struct HiBONT {
 
     ///
     unittest {
+        printf("#### Unittest -1\n");
+
         {
             auto hibon=HiBON();
             assert(hibon.isArray);
@@ -630,6 +649,7 @@ struct HiBONT {
             hibon["x"]=3;
             assert(!hibon.isArray);
         }
+        printf("#### Unittest 0\n");
 
         {
             auto hibon=HiBON();
@@ -684,6 +704,7 @@ struct HiBONT {
         test_tabel.BOOLEAN  = true;
         //test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
+        printf("#### Unittest 1\n");
 
         { // empty
             auto hibon = HiBON();
@@ -696,6 +717,7 @@ struct HiBONT {
             assert(doc.length is 0);
             assert(doc[].empty);
         }
+        printf("#### Unittest 2\n");
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
@@ -715,7 +737,7 @@ struct HiBONT {
             assert(m.by!(Type.FLOAT32) == test_tabel[pos]);
 
             immutable size = hibon.size;
-
+            printf("hibon.size=%d\n", hibon.size);
 
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size
@@ -732,6 +754,11 @@ struct HiBONT {
             assert(size is hibon_size);
 
             immutable data = hibon.serialize;
+            printf(">[");
+            foreach(i,d; data) {
+                printf("%d:%d ", i, m);
+            }
+            printf("]\n");
 
             const doc = Document(data);
 
@@ -744,6 +771,7 @@ struct HiBONT {
 
         }
 
+        printf("#### Unittest 3\n");
         { // HiBON Test for basic types
             auto hibon = HiBON();
 
@@ -780,7 +808,7 @@ struct HiBONT {
                 //assert(e.type.to!string == key);
                 assert(e.get!(test_tabel.Types[i]) == t);
             }
-        }
+            }
         }
             version(none) {
         alias TabelArray = Tuple!(
