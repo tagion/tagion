@@ -113,7 +113,7 @@ template Init_HiBON_Types(string text, uint i) {
 }
 
 
-/*
+
 ///
 version(none)
 static unittest {
@@ -124,7 +124,7 @@ static unittest {
     }
 
 }
-*/
+
 version(none) {
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
@@ -178,7 +178,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     // }
     protected template GetFunctions(string text, bool first, TList...) {
         static if ( TList.length is 0 ) {
-            enum GetFunctions=text~"else {\n    static assert(0, format(\"Not support illegal %s \", type )); \n}";
+            enum GetFunctions=text~"else {\n    static assert(0, \"Not support illegal \"); \n}";
         }
         else {
             enum name=TList[0];
@@ -269,8 +269,9 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         alias MutableT = Unqual!T;
         static foreach(m; __traits(allMembers, ValueT) ) {
             static if ( is(typeof(__traits(getMember, this, m)) == MutableT ) ){
-                import std.format;
-                enum code=format("alias member=ValueT.%s;", m);
+//                import std.format;
+//                enum code=format("alias member=ValueT.%s;", m);
+                enum code="alias member=ValueT."~m~";";
                 mixin(code);
                 static if ( hasUDA!(member, Type ) ) {
                     alias MemberT   = typeof(member);
@@ -304,7 +305,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                     enum code="alias member=ValueT."~m~";";
                     mixin(code);
                     enum MemberType=getUDAs!(member, Type)[0];
-                    static assert ( MemberType !is Type.NONE, format("%s is not supported", T ) );
+                    static assert ( MemberType !is Type.NONE, T.stringof~" is not supported" );
                     x.copy(__traits(getMember, this, m));
                 }
                 else {
@@ -329,7 +330,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     void opAssign(T)(T x) if (!isOneOf!(T, typeof(this.tupleof))) {
         alias UnqualT=Unqual!T;
         alias CastT=castTo!(UnqualT, CastTypes);
-        static assert(is(CastT==void), format("Type %s not supported", T.stringof));
+        static assert(is(CastT==void), "Type "~T.stringof~" not supported");
         alias E=asType!UnqualT;
         opAssing(cast(CastT)x);
     }
@@ -353,11 +354,11 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                 return cast(uint)(by!(E).length * U.sizeof);
             }
             else {
-                static assert(0, format("Type %s of %s is not defined", E, T.stringof));
+                static assert(0, "Type "~E.stringof~" of "~T.stringof~" is not defined");
             }
         }
         else {
-            static assert(0, format("Illegal type %s", E));
+            static assert(0, "Illegal type "~E.stringof);
         }
     }
 

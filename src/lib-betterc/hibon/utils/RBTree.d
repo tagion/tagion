@@ -44,12 +44,6 @@ struct RBTreeT(K) {
     struct Node {
         @nogc:
         K item;
-        // static if (!is(V==void)) {
-        //     V value;
-        // }
-        // else {
-        //     alias value=item;
-        // }
         Color color;
         Node* parent;
         Node* left;
@@ -79,6 +73,20 @@ struct RBTreeT(K) {
     //     return result;
     // }
 
+    version(none)
+    this(ref RBTreeT _surrender) {
+        this=RBTree!K(_surrender.owns);
+        this.root=_surrender.root;
+        _surrender.root=_surrender.nill;
+    }
+
+    RBTreeT surrender() {
+        auto result=RBTree!K(owns);
+        result.root=root;
+        root=nill;
+        return result;
+    }
+
     ~this() {
         dispose;
     }
@@ -92,9 +100,6 @@ struct RBTreeT(K) {
                     static if (__traits(compiles, current.item.dispose)) {
                         current.item.dispose;
                     }
-                    static if (__traits(compiles, current.value.dispose)) {
-                        current.value.dispose;
-                    }
                 }
                 current.dispose;
             }
@@ -102,6 +107,7 @@ struct RBTreeT(K) {
         _dispose(root);
         root=nill;
     }
+
     /* Print tree items by inorder tree walk */
 
     @property empty() const pure {
@@ -658,11 +664,11 @@ struct RBTreeT(K) {
             return (current is nill);
         }
 
-        @property const(Node*) front() const pure {
+        @property const(K) front() const pure {
             if (current is nill) {
-                return null;
+                return K.init;
             }
-            return current;
+            return current.item;
         }
 
         void popFront() {
@@ -706,8 +712,8 @@ unittest {
 
     foreach(n; tree[]) {
         const item=result[count++];
-        printf("%d ", n.item);
-        assert(n.item == item);
+        printf("%d ", n);
+        assert(n == item);
     }
     printf("]\n");
 
@@ -769,7 +775,7 @@ unittest
     printf("07 < 7 %d\n", "08" < "7");
 
     foreach(n; tree[]) {
-        printf("KEY=%s\n", n.item.serialize.ptr);
+        printf("KEY=%s\n", n.serialize.ptr);
     }
 
 

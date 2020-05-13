@@ -29,6 +29,7 @@ import hibon.utils.RBTree;
 import hibon.utils.Memory;
 import hibon.utils.Text;
 import hibon.utils.BinBuffer;
+import hibon.utils.Basic;
 
 import core.stdc.stdio;
 
@@ -56,19 +57,10 @@ struct HiBONT {
     uint error;
 
     alias Value=ValueT!(true, HiBONT*,  Document);
-    // this();
-    version(none)
-    static HiBON opCall() {
-        HiBON result; //=HiBON(Members(true), null, 0);
-//        auto result=create!(HiBON*);
-        // printf("before\n");
-        // result._members = Members(true);
-        // printf("after\n");
-        return result;
-    }
 
     ~this() {
         _members.dispose;
+        _buffer.dispose;
     }
 
     /++
@@ -79,11 +71,18 @@ struct HiBONT {
     size_t size() const {
         size_t result = uint.sizeof+Type.sizeof;
         foreach(n; _members[]) {
-            result+=n.item.size;
+            result+=n.size;
         }
         return result;
     }
 
+
+    HiBONT* surrender() {
+        auto result=create!(HiBONT);
+        // Surrender the RBTree to the result;
+        result._members=_members.surrender;
+        return result;
+    }
 
     /++
      Generated the serialized HiBON
@@ -106,8 +105,8 @@ struct HiBONT {
         immutable size_index = buffer.length; //index;
         buffer.write(uint.init);
         foreach(n; _members[]) {
-            printf("n.key=%s\n", n.item.key.serialize.ptr);
-            n.item.append(buffer);
+            printf("n.key=%s\n", n.key.serialize.ptr);
+            n.append(buffer);
         }
         buffer.write(Type.NONE);
         immutable doc_size=cast(uint)(buffer.length - size_index - uint.sizeof);
@@ -192,6 +191,10 @@ struct HiBONT {
 
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
 
+        this(ref HiBONT hibon, in const(char[]) key) {
+            auto x=hibon.surrender;
+            this(x, key);
+        }
         /++
          Params:
          x = the parameter value
@@ -205,7 +208,7 @@ struct HiBONT {
             this.key  = Key(key);
             static if (E is Type.NONE) {
                 alias CastT=CastTo!(UnqualT, CastTypes);
-                static assert(!is(CastT==void), format("Type %s is not valid", T.stringof));
+                static assert(!is(CastT==void), "Type "~T.stringof~" is not valid");
                 alias CastE=Value.asType!CastT;
                 this.type = CastE;
                 this.value=cast(CastT)x;
@@ -526,7 +529,7 @@ struct HiBONT {
 
         printf(">[");
         foreach(m; hibon[]) {
-            printf("%s ", m.item.key.serialize.ptr);
+            printf("%s ", m.key.serialize.ptr);
         }
         printf("]\n");
         assert(hibon.hasMember("b"));
@@ -562,7 +565,7 @@ struct HiBONT {
         alias empty=range.empty;
         alias popFront=range.popFront;
         string front() {
-            return range.front.item.key.serialize;
+            return range.front.key.serialize;
         }
     }
     /++
@@ -596,7 +599,7 @@ struct HiBONT {
         }
 
         uint front()  {
-            const key=range.front.item.key.serialize;
+            const key=range.front.key.serialize;
             uint index;
             printf("key=%s\n", key.ptr);
             if (!is_index(key, index)) {
@@ -657,7 +660,7 @@ struct HiBONT {
             hibon["1"]=2;
             printf(">>[");
             foreach(m; hibon[]) {
-                printf("%s ", m.item.key.serialize.ptr);
+                printf("%s ", m.key.serialize.ptr);
             }
             printf("]\n");
 
@@ -666,7 +669,7 @@ struct HiBONT {
             hibon["3"]=2;
             printf(">>[");
             foreach(m; hibon[]) {
-                printf("%s ", m.item.key.serialize.ptr);
+                printf("%s ", m.key.serialize.ptr);
             }
             printf("]\n");
             assert(!hibon.isArray);
@@ -755,7 +758,7 @@ struct HiBONT {
             immutable data = hibon.serialize;
             printf(">[");
             foreach(i,d; data) {
-                printf("%d:%d ", i, m);
+                printf("%d:%d ", i, d);
             }
             printf("]\n");
 
@@ -779,18 +782,19 @@ struct HiBONT {
                 hibon[test_tabel.fieldNames[i]] = t;
                 keys[i]=test_tabel.fieldNames[i];
             }
-            version(none) {
+
             size_t index;
             foreach(m; hibon[]) {
-                assert(m.key == keys[index]);
+                assert(m.key.serialize == keys[index]);
                 index++;
             }
 
+//            version(none) {
             foreach(i, t; test_tabel) {
                 enum key=test_tabel.fieldNames[i];
                 const m = hibon[key];
-                assert(m.key == key);
-                assert(m.type.to!string == key);
+                assert(m.key.serialize == key);
+                //assert(m.type.to!string == key);
                 assert(m.get!(test_tabel.Types[i]) == t);
             }
 
@@ -807,43 +811,49 @@ struct HiBONT {
                 //assert(e.type.to!string == key);
                 assert(e.get!(test_tabel.Types[i]) == t);
             }
-            }
+            //          }
         }
-            version(none) {
+
         alias TabelArray = Tuple!(
-            immutable(ubyte)[],  Type.BINARY.stringof,
-            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
+            ubyte[],  Type.BINARY.stringof,
+            bool[],   Type.BOOLEAN_ARRAY.stringof,
+            float[],  Type.FLOAT32_ARRAY.stringof,
+            double[], Type.FLOAT64_ARRAY.stringof,
 
-            immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
-            immutable(double)[], Type.FLOAT64_ARRAY.stringof,
+            int[],    Type.INT32_ARRAY.stringof,
+            long[],   Type.INT64_ARRAY.stringof,
             string,              Type.STRING.stringof,
-            immutable(int)[],    Type.INT32_ARRAY.stringof,
-            immutable(long)[],   Type.INT64_ARRAY.stringof,
-            immutable(uint)[],   Type.UINT32_ARRAY.stringof,
-            immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
+            uint[],   Type.UINT32_ARRAY.stringof,
+            ulong[],  Type.UINT64_ARRAY.stringof,
 
-            /*
-
-
-
-
-
-            */
             );
 //        immutable(int)[] test;
 
         TabelArray test_tabel_array;
 
-        test_tabel_array.BINARY        = [1, 2, 3];
-//                            version(none) {
-        test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
-        test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
+        const(ubyte[3]) binary = [1, 2, 3];
+        test_tabel_array.BINARY.create(binary);
 
-        test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
-        test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
-        test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 42];
-        test_tabel_array.BOOLEAN_ARRAY = [true, false];
+        const(float[3]) float32_array = [-1.23, 3, 20e30];
+        test_tabel_array.FLOAT32_ARRAY.create(float32_array);
+
+        const(double[2]) float64_array = [10.3e200, -1e-201];
+        test_tabel_array.FLOAT64_ARRAY.create(float64_array);
+
+        const(int[4]) int32_array   = [-11, -22, 33, 44];
+        test_tabel_array.INT32_ARRAY.create(int32_array);
+
+        const(long[4]) int64_array   = [0x17, 0xffff_aaaa, -1, 42];
+        test_tabel_array.INT64_ARRAY.create(int64_array);
+
+        const(uint[4]) uint32_array  = [11, 22, 33, 44];
+        test_tabel_array.UINT32_ARRAY.create(uint32_array); //  = [11, 22, 33, 44];
+
+        const(ulong[4]) uint64_array  = [0x17, 0xffff_aaaa, 1, 42];
+        test_tabel_array.UINT64_ARRAY.create(uint64_array);//  = [0x17, 0xffff_aaaa, 1, 42];
+
+        const(bool[2]) boolean_array = [true, false];
+        test_tabel_array.BOOLEAN_ARRAY.create(boolean_array);// = [true, false];
         test_tabel_array.STRING        = "Text";
 
 
@@ -853,22 +863,24 @@ struct HiBONT {
 
             string[test_tabel_array.length] keys;
             foreach(i, t; test_tabel_array) {
-                hibon[test_tabel_array.fieldNames[i]] = t;
+                hibon[test_tabel_array.fieldNames[i]] = cast(immutable)t;
                 keys[i]=test_tabel_array.fieldNames[i];
             }
 
             size_t index;
             foreach(m; hibon[]) {
-                assert(m.key == keys[index]);
+                assert(m.key.serialize == keys[index]);
                 index++;
             }
 
             foreach(i, t; test_tabel_array) {
                 enum key=test_tabel_array.fieldNames[i];
                 const m = hibon[key];
-                assert(m.key == key);
-                assert(m.type.to!string == key);
-                assert(m.get!(test_tabel_array.Types[i]) == t);
+                printf("m.key.serialize=%s key=%s\n", m.key.serialize.ptr, keys.ptr);
+                assert(m.key.serialize == key);
+                //assert(m.type.to!string == key);
+                alias U=immutable(test_tabel_array.Types[i]);
+                assert(m.get!(U) == t);
             }
 
             immutable data = hibon.serialize;
@@ -880,15 +892,16 @@ struct HiBONT {
                 enum key=test_tabel_array.fieldNames[i];
                 const e = doc[key];
                 assert(e.key == key);
-                assert(e.type.to!string == key);
-                assert(e.get!(test_tabel_array.Types[i]) == t);
+//                assert(e.type.to!string == key);
+                alias U=immutable(test_tabel_array.Types[i]);
+                assert(e.get!(U) == t);
             }
 
         }
 
         { // HIBON test containg an child HiBON
-            auto hibon = new HiBON;
-            auto hibon_child = new HiBON;
+            auto hibon = HiBON();
+            auto hibon_child = HiBON();
             enum chile_name = "child";
 
             hibon["string"] = "Text";
@@ -907,6 +920,7 @@ struct HiBONT {
             const doc = Document(data);
 
         }
+                    version(none) {
                version(none) {
         { // Use of native Documet in HiBON
             auto native_hibon = new HiBON;
