@@ -702,6 +702,38 @@ struct HiBONT {
         return true;
     }
 
+    int last_index() {
+        int result=-1;
+        auto range=indices;
+        while (!range.empty) {
+            const index=range.front;
+            if (!range.error) {
+                result=index;
+            }
+            range.popFront;
+        }
+        return result;
+    }
+
+    void opOpAssign(op)(ref HiBONT cat) if (op == "~") {
+        uint index;
+        const last=last_index;
+        if (last >=0) {
+            index=cast(uint)last;
+        }
+        this[i]=cat;
+    }
+
+    void opOpAssign(op, T)(T cat) if (op == "~") {
+        uint index;
+        const last=last_index;
+        if (last >=0) {
+            index=cast(uint)last;
+        }
+        this[i]=cat;
+    }
+
+
     ///
     unittest {
         printf("#### Unittest -1\n");
@@ -1005,15 +1037,15 @@ struct HiBONT {
             const doc = Document(data);
 
         }
-        version(none) {                    version(none) {
-               version(none) {
+
+
         { // Use of native Documet in HiBON
-            auto native_hibon = new HiBON;
+            auto native_hibon = HiBON();
             native_hibon["int"] = int(42);
             immutable native_data = native_hibon.serialize;
             auto native_doc = Document(native_hibon.serialize);
 
-            auto hibon = new HiBON;
+            auto hibon = HiBON();
             hibon["string"] = "Text";
 
             immutable hibon_no_native_document_size = hibon.size;
@@ -1040,6 +1072,7 @@ struct HiBONT {
             }
         }
 
+        version(none) {
         { // Document array
             HiBON[] hibon_array;
             alias TabelDocArray = Tuple!(
@@ -1131,8 +1164,7 @@ struct HiBONT {
                 assert(e.get!string == s);
             }
         }
-         }
-    }
+
     }
     }
 }

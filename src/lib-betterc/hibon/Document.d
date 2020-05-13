@@ -41,14 +41,14 @@ struct Document {
      Returns:
      The buffer of the HiBON document
     +/
-    immutable(ubyte[]) data() const pure nothrow {
+    immutable(ubyte[]) data() const pure {
         return _data;
     }
 
     /++
      Creates a HiBON Document from a buffer
      +/
-    this(immutable(ubyte[]) data) pure nothrow {
+    this(immutable(ubyte[]) data) pure {
         this._data = data;
     }
 
@@ -58,8 +58,12 @@ struct Document {
      Params:
      doc is the Document which is replicated
      +/
-    this(const Document doc) pure nothrow {
+    this(const Document doc) pure {
         this._data = doc._data;
+    }
+
+     void surrender() pure {
+        _data=null;
     }
 
     /++
@@ -67,12 +71,11 @@ struct Document {
      Returns:
      Document copy
      +/
-
     void copy(ref const Document doc) {
         emplace(&this, doc);
     }
 
-    @property nothrow pure const {
+    @property pure const {
         bool empty() {
             return data.length < 5;
         }
@@ -177,7 +180,7 @@ struct Document {
             emplace(&data, data.init);
         }
 
-        @property pure nothrow const {
+        @property pure const {
             bool empty() {
                 return _index >= data.length;
             }
@@ -363,7 +366,7 @@ struct Document {
      Retruns:
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
-    static size_t sizeKey(const(char[]) key) pure nothrow {
+    static size_t sizeKey(const(char[]) key) pure {
         return Type.sizeof + ubyte.sizeof + key.length;
     }
 
@@ -376,7 +379,7 @@ struct Document {
      Returns:
      The number of bytes taken up by the element
      +/
-    static size_t sizeT(T)(Type type, string key, const(T) x) pure nothrow {
+    static size_t sizeT(T)(Type type, string key, const(T) x) pure {
         size_t size = sizeKey(key);
         static if ( is(T: U[], U) ) {
             size += uint.sizeof + (x.length*U.sizeof);
@@ -1000,7 +1003,7 @@ struct Document {
             }
         }
 
-        @property const pure nothrow {
+        @property const pure {
             /++
              Returns:
              true if the buffer block ends
