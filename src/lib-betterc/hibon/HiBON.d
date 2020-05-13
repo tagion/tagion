@@ -59,7 +59,7 @@ struct HiBONT {
     alias Value=ValueT!(true, HiBONT*,  Document);
 
     ~this() {
-        printf("Dispose HiBON\n");
+        printf("Dispose HiBON members=%d\n", _members.length);
         _members.dispose;
         _buffer.dispose;
     }
@@ -71,8 +71,16 @@ struct HiBONT {
      +/
     size_t size() const {
         size_t result = uint.sizeof+Type.sizeof;
+        printf("HiBON Size\n");
+        scope(exit) {
+            printf("End HiBON\n");
+        }
         foreach(n; _members[]) {
-            result+=n.size;
+            printf("\t%s ", n.key.serialize.ptr);
+            const s=n.size;
+            printf("size=%d\n", n.key.serialize.ptr, s);
+            result+=s;
+//            result+=n.size;
         }
         return result;
     }
@@ -183,22 +191,14 @@ struct HiBONT {
          bool opEquals(T)(T b) const pure {
              return opCmp(b) == 0;
          }
-         // bool opEquals(const(Member*) b) const pure {
-         //     return key.opEquals(b.key);
-         // }
-
-         // bool opEquals(const(char[]) b) const pure {
-         //     return key.opEquals(b);
-         // }
-
-        // protected this() pure nothrow {
-        //     value = uint.init;
-        // }
-//        @disable this();
 
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
 
         this(ref HiBONT hibon, in const(char[]) key) {
+            printf("Surrender %s\n", key.ptr);
+            scope(exit) {
+                printf("::this ref HiBONT\n");
+            }
             auto x=hibon.surrender;
             this(x, key);
         }
@@ -211,24 +211,49 @@ struct HiBONT {
 
         this(T)(T x, in const(char[]) key) {
 //            alias BaseT=TypedefType!T;
-            alias UnqualT = Unqual!T;
-            enum E=Value.asType!UnqualT;
+
             this.key  = Key(key);
-            static if (E is Type.NONE) {
-                alias CastT=CastTo!(UnqualT, CastTypes);
-                static assert(!is(CastT==void), "Type "~T.stringof~" is not valid");
-                alias CastE=Value.asType!CastT;
-                this.type = CastE;
-                this.value=cast(CastT)x;
-            }
-            else {
-                this.type = E;
-                static if (E is Type.BIGINT) {
+            void _init(S)(S x) {
+                enum E=Value.asType!S;
+                this.type=E;
+                static if (.isArray(E)) {
+                    alias U=Unqual!(ForeachType!S);
+                    U[] temp_x;
+                    temp_x.create(x);
+                    this.value=cast(S)temp_x;
+                }
+                else static if (E is Type.BIGINT) {
                     this.value=x;
                 }
                 else {
                     this.value= cast(UnqualT)x;
                 }
+
+            }
+            alias UnqualT = Unqual!T;
+            enum E=Value.asType!UnqualT;
+            static if (E is Type.NONE) {
+                alias CastT=CastTo!(UnqualT, CastTypes);
+                static assert(!is(CastT==void), "Type "~T.stringof~" is not valid");
+                _init(x);
+//                alias CastE=Value.asType!CastT;
+//                this.type = CastE;
+//                this.value=cast(CastT)x;
+            }
+            else {
+//                this.type = E;
+                _init(x);
+                /*
+                static if (isArray(E)) {
+
+                }
+                else static if (E is Type.BIGINT) {
+                    this.value=x;
+                }
+                else {
+                    this.value= cast(UnqualT)x;
+                }
+                */
             }
 
         }
@@ -240,11 +265,26 @@ struct HiBONT {
         void dispose() {
             printf("Member dispose %s\n", key.serialize.ptr);
             key.dispose;
-            value.dispose;
+            with(Type) {
+            TypeCase:
+                final switch(type) {
+                    static foreach(E; EnumMembers!Type) {
+                    case E:
+                        static if (.isArray(E)) {
+                            alias U=Unqual!(ForeachType!(Value.TypeT!E));
+                            auto remove_this=cast(U[])value.by!E;
+                            .dispose(remove_this);
+                        }
+                        break TypeCase;
+                    }
+                }
+            }
+//            value.dispose;
         }
 
         private void surrender() {
             key.surrender;
+            value.binary=null;
         }
         /++
          If the value of the Member contains a Document it returns it or else an error is asserted
@@ -291,6 +331,7 @@ struct HiBONT {
          +/
 
         size_t size() const {
+            printf("s \n");
             with(Type) {
             TypeCase:
                 switch(type) {
@@ -433,16 +474,16 @@ struct HiBONT {
      key = member key
      +/
      void opIndexAssign(T)(T x, in const(char[]) key) {
+         printf(">>>>> '%s' T=%s\n", key.ptr, T.stringof.ptr);
+         scope(exit) {
+         printf("<<<<\n");
+         }
          if (is_key_valid(key)) {
              auto _member=Member(x, key);
-//             auto _key=create!(Key)(key);
              auto new_member=create!Member; //(x, key);
              *new_member=_member;
              _member.surrender;
-//             new_member.value=x;
-
              printf("opIndexAssign %s T=%s type %d\n", key.ptr, T.stringof.ptr, new_member.type);
-//             new_member.key=Key(key);
              _members.insert(new_member);
          }
          else {
@@ -519,7 +560,6 @@ struct HiBONT {
         Member m;
         m.key=Key(key);
         printf("m.key=%s\n", m.key.serialize.ptr);
-//        foreach(xm;
         return _members.exists(&m);
     }
 
@@ -528,7 +568,6 @@ struct HiBONT {
      Params:
      key = name of the member to be removed
      +/
-
     void remove(in const(char[]) key) {
         Member m;
         m.key=Key(key);
@@ -585,12 +624,20 @@ struct HiBONT {
         ~this() {
             range.dispose;
         }
-        alias empty=range.empty;
-        alias popFront=range.popFront;
+
+        @property bool empty() const pure {
+            return range.empty;
+        }
+
+        @property  void popFront() {
+            range.popFront;
+        }
+
         string front() {
             return range.front.key.serialize;
         }
     }
+
     /++
      A list of indices
      Returns:
@@ -893,8 +940,17 @@ struct HiBONT {
 
             string[test_tabel_array.length] keys;
             foreach(i, t; test_tabel_array) {
-                hibon[test_tabel_array.fieldNames[i]] = cast(immutable)t;
-                keys[i]=test_tabel_array.fieldNames[i];
+                enum name=test_tabel_array.fieldNames[i];
+                printf("::::%d %s\n", i, name.ptr);
+
+                hibon[name] = cast(immutable)t;
+                keys[i]=name;
+                if (i==0) {
+                    auto x=hibon[test_tabel_array.fieldNames[i]].get!(immutable(ubyte[]));
+                    foreach(j, b; x) {
+                        printf("\t%d %d\n", b, t[j]);
+                    }
+                }
             }
 
             size_t index;
@@ -903,13 +959,18 @@ struct HiBONT {
                 index++;
             }
 
+            printf("BEFORE foreach(i, t; test_tabel_array)\n");
             foreach(i, t; test_tabel_array) {
                 enum key=test_tabel_array.fieldNames[i];
                 const m = hibon[key];
-                printf("m.key.serialize=%s key=%s\n", m.key.serialize.ptr, keys.ptr);
+                printf("m.key.serialize=%s key=%s\n", m.key.serialize.ptr, key.ptr);
                 assert(m.key.serialize == key);
                 //assert(m.type.to!string == key);
                 alias U=immutable(test_tabel_array.Types[i]);
+                printf("U = %s %p %d\n", U.stringof.ptr, m.get!(U).ptr, m.get!(U).length);
+                foreach(j, b; m.get!(U)) {
+                    printf("\t%d %c %d\n", b, b, t[j]);
+                }
                 assert(m.get!(U) == t);
             }
 
@@ -924,31 +985,55 @@ struct HiBONT {
                 assert(e.key == key);
 //                assert(e.type.to!string == key);
                 alias U=immutable(test_tabel_array.Types[i]);
+                printf("U = %s\n", U.stringof.ptr);
                 assert(e.get!(U) == t);
             }
 
         }
-
+        version(none) {
         { // HIBON test containg an child HiBON
+            printf("\n########## HIBON test containg an child HiBON\n");
             auto hibon = HiBON();
             auto hibon_child = HiBON();
             enum chile_name = "child";
 
-            hibon["string"] = "Text";
+            printf("### Before assign hibon\n");
+             hibon["string"] = "Text";
             hibon["float"]  = float(1.24);
+            printf("### Before size of hibon\n");
 
+            foreach(k; hibon.keys) {
+                printf("\thibon.k=%s\n", k.ptr);
+            }
             immutable hibon_size_no_child = hibon.size;
             hibon[chile_name]      = hibon_child;
+            /*
             hibon_child["int32"]= 42;
 
+            foreach(k; hibon_child.keys) {
+                printf("\thibon_child.k=%s\n", k.ptr);
+            }
+
             immutable hibon_child_size    = hibon_child.size;
+            printf("## hibon_child.size=%d\n", hibon_child_size);
             immutable child_key_size = Document.sizeKey(chile_name);
+            printf("## child_key_size=%d\n", child_key_size);
+            */
+            foreach(k; hibon.keys) {
+                printf("\thibon.k=%s\n", k.ptr);
+            }
+            printf("Before hibon.length=%d\n", hibon.length);
+            printf("Before hibon.size\n");
+            hibon._members.dump();
             immutable hibon_size = hibon.size;
+            printf("## hibon_size=%d\n", hibon_size);
+            /*
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
+            printf("## data is null %d\n", data is null);
             const doc = Document(data);
-
+            */
         }
                     version(none) {
                version(none) {
@@ -1079,5 +1164,5 @@ struct HiBONT {
          }
     }
     }
-
+    }
 }

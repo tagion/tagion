@@ -5,7 +5,7 @@ extern(C):
 
 
 import std.meta : AliasSeq;
-import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
+import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA;
 
 import std.system : Endian;
 // import std.exception;
@@ -53,9 +53,12 @@ enum Type : ubyte {
         //     FLOAT128_ARRAY   = DEFINED_ARRAY | FLOAT128,
 
         /// Native types is only used inside the BSON object
-        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT, /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT, /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING, /// Represetents (string[]) is convert to an ARRAY of string's
+        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT,
+        /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
+        NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT,
+        /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
+        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING,
+        /// Represetents (string[]) is convert to an ARRAY of string's
         }
 
 /++
@@ -272,8 +275,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         alias MutableT = Unqual!T;
         static foreach(m; __traits(allMembers, ValueT) ) {
             static if ( is(typeof(__traits(getMember, this, m)) == MutableT ) ){
-//                import std.format;
-//                enum code=format("alias member=ValueT.%s;", m);
                 enum code="alias member=ValueT."~m~";";
                 mixin(code);
                 static if ( hasUDA!(member, Type ) ) {

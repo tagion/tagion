@@ -51,7 +51,7 @@ struct RBTreeT(K) {
     };
 
     private {
-        Node NILL;
+        static Node NILL;
         Node* nill;
         Node* root;
         bool owns;
@@ -146,6 +146,24 @@ struct RBTreeT(K) {
             }
             return 1;
         }
+    }
+
+    void dump(int iter_max=20) const {
+        const(char[4]) INDENT="  ->";
+        void _dump(const(Node*) current, const uint level=1) @nogc {
+            if (current !is nill) {
+                _dump(current.left, level+1);
+                foreach(i;0..level) {
+                    printf("%s",INDENT.ptr);
+                }
+                printf("%p\n",  current);
+                iter_max--;
+                assert(iter_max>0);
+                _dump(current.right, level+1);
+            }
+        }
+        printf("DUMP %p %p\n", root, nill);
+        _dump(root);
     }
 
     //static int compare
@@ -704,13 +722,24 @@ struct RBTreeT(K) {
 
 version(none)
 unittest {
-    auto tree=RBTree!int(false);
+
 
     enum tcase=[ 60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
     const(int[17]) result=[ 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170];
 
     assert(tcase.length == result.length);
 
+    {
+        auto tree=RBTree!int(false);
+        tree.insert(tcase[0]);
+        foreach(item; tcase) {
+            printf("%d ", item);
+        }
+
+    }
+
+    {
+        auto tree=RBTree!int(false);
     printf("***** [");
 
     foreach(item; tcase) {
@@ -762,6 +791,7 @@ unittest {
         assert(n is null);
         count--;
         assert(tree.length == count);
+    }
     }
 }
 

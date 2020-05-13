@@ -59,13 +59,14 @@ void dispose(T)(ref T die) if (isArray!T) {
     die=null;
 }
 
-void dispose(T)(ref T die) if (isPointer!T) {
-    static if (__traits(compiles, T.dispose)) {
+void dispose(bool OWNS=true, T)(ref T die) if (isPointer!T) {
+    static if (OWNS && __traits(compiles, T.dispose)) {
         die.dispose;
     }
     free(die);
     die=null;
 }
+
 
 unittest {
     { // Check Array
