@@ -976,39 +976,19 @@ struct HiBONT {
         }
 
         { // HIBON test containg an child HiBON
-            printf("\n########## HIBON test containg an child HiBON\n");
             auto hibon = HiBON();
             auto hibon_child = HiBON();
             enum chile_name = "child";
 
-            printf("### Before assign hibon\n");
-             hibon["string"] = "Text";
+            hibon["string"] = "Text";
             hibon["float"]  = float(1.24);
-            printf("### Before size of hibon\n");
 
-            foreach(k; hibon.keys) {
-                printf("\thibon.k=%s\n", k.ptr);
-            }
             immutable hibon_size_no_child = hibon.size;
             hibon[chile_name]      = hibon_child;
-            /*
             hibon_child["int32"]= 42;
 
-            foreach(k; hibon_child.keys) {
-                printf("\thibon_child.k=%s\n", k.ptr);
-            }
-
             immutable hibon_child_size    = hibon_child.size;
-            printf("## hibon_child.size=%d\n", hibon_child_size);
             immutable child_key_size = Document.sizeKey(chile_name);
-            printf("## child_key_size=%d\n", child_key_size);
-            */
-            foreach(k; hibon.keys) {
-                printf("\thibon.k=%s\n", k.ptr);
-            }
-            printf("Before hibon.length=%d\n", hibon.length);
-            printf("Before hibon.size\n");
-            hibon._members.dump();
             immutable hibon_size = hibon.size;
             printf("## hibon_size=%d\n", hibon_size);
             /*
