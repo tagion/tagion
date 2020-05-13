@@ -464,6 +464,14 @@ struct RBTreeT(K) {
 
     protected void remove(ref Node* z) {
         scope(exit) {
+            if (owns) {
+                static if (isPointer!K) {
+                    .dispose(z.item);
+                }
+                else static if (__traits(compiles, z.item.dispose)) {
+                    z.item.dispose;
+                }
+            }
             z.dispose;
         }
         Node* y, x;
@@ -784,6 +792,12 @@ unittest
     printf("07 < 7 %d\n", "08" < "7");
 
 
+
+    foreach(n; tree[]) {
+        printf("KEY=%s\n", n.serialize.ptr);
+    }
+
+    tree.remove(_42);
 
     foreach(n; tree[]) {
         printf("KEY=%s\n", n.serialize.ptr);
