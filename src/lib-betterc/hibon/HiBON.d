@@ -15,7 +15,7 @@ extern(C):
 //import std.format;
 import std.meta : staticIndexOf;
 import std.algorithm.iteration : map, fold, each;
-import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
+import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, PointerTarget;
 import std.meta : AliasSeq;
 
 //import std.conv : to;
@@ -270,6 +270,12 @@ struct HiBONT {
                             alias U=Unqual!(ForeachType!(Value.TypeT!E));
                             auto remove_this=cast(U[])value.by!E;
                             .dispose(remove_this);
+                        }
+                        else static if (E is Type.DOCUMENT) {
+                            alias T=Unqual!(PointerTarget!(Value.TypeT!E));
+                            pragma(msg, "Unqual!(Value.TypeT!E)=", T);
+                            auto remove_this=cast(T*)(value.by!(E));
+                            remove_this.dispose;
                         }
                         break TypeCase;
                     }
@@ -968,7 +974,7 @@ struct HiBONT {
             }
 
         }
-        version(none) {
+
         { // HIBON test containg an child HiBON
             printf("\n########## HIBON test containg an child HiBON\n");
             auto hibon = HiBON();
@@ -1013,7 +1019,7 @@ struct HiBONT {
             const doc = Document(data);
             */
         }
-                    version(none) {
+        version(none) {                    version(none) {
                version(none) {
         { // Use of native Documet in HiBON
             auto native_hibon = new HiBON;
