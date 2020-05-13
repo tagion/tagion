@@ -71,10 +71,6 @@ struct HiBONT {
      +/
     size_t size() const {
         size_t result = uint.sizeof+Type.sizeof;
-        printf("HiBON Size\n");
-        scope(exit) {
-            printf("End HiBON\n");
-        }
         foreach(n; _members[]) {
             printf("\t%s ", n.key.serialize.ptr);
             const s=n.size;
@@ -331,7 +327,6 @@ struct HiBONT {
          +/
 
         size_t size() const {
-            printf("s \n");
             with(Type) {
             TypeCase:
                 switch(type) {
@@ -474,10 +469,6 @@ struct HiBONT {
      key = member key
      +/
      void opIndexAssign(T)(T x, in const(char[]) key) {
-         printf(">>>>> '%s' T=%s\n", key.ptr, T.stringof.ptr);
-         scope(exit) {
-         printf("<<<<\n");
-         }
          if (is_key_valid(key)) {
              auto _member=Member(x, key);
              auto new_member=create!Member; //(x, key);
@@ -941,16 +932,8 @@ struct HiBONT {
             string[test_tabel_array.length] keys;
             foreach(i, t; test_tabel_array) {
                 enum name=test_tabel_array.fieldNames[i];
-                printf("::::%d %s\n", i, name.ptr);
-
                 hibon[name] = cast(immutable)t;
                 keys[i]=name;
-                if (i==0) {
-                    auto x=hibon[test_tabel_array.fieldNames[i]].get!(immutable(ubyte[]));
-                    foreach(j, b; x) {
-                        printf("\t%d %d\n", b, t[j]);
-                    }
-                }
             }
 
             size_t index;
@@ -959,7 +942,6 @@ struct HiBONT {
                 index++;
             }
 
-            printf("BEFORE foreach(i, t; test_tabel_array)\n");
             foreach(i, t; test_tabel_array) {
                 enum key=test_tabel_array.fieldNames[i];
                 const m = hibon[key];
@@ -967,10 +949,6 @@ struct HiBONT {
                 assert(m.key.serialize == key);
                 //assert(m.type.to!string == key);
                 alias U=immutable(test_tabel_array.Types[i]);
-                printf("U = %s %p %d\n", U.stringof.ptr, m.get!(U).ptr, m.get!(U).length);
-                foreach(j, b; m.get!(U)) {
-                    printf("\t%d %c %d\n", b, b, t[j]);
-                }
                 assert(m.get!(U) == t);
             }
 
