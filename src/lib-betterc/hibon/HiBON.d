@@ -929,7 +929,6 @@ struct HiBONT {
 
         }
 
-        version(none)
         { // HIBON test containg an child HiBON
             auto hibon = HiBON();
             auto hibon_child = HiBON();
