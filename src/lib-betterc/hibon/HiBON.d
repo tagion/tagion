@@ -74,10 +74,11 @@ struct HiBONT {
         foreach(n; _members[]) {
             printf("\t%s ", n.key.serialize.ptr);
             const s=n.size;
-            printf("size=%d\n", n.key.serialize.ptr, s);
+            printf("size=%d\n", s);
             result+=s;
 //            result+=n.size;
         }
+        printf("->result=%d\n", result);
         return result;
     }
 
@@ -984,20 +985,25 @@ struct HiBONT {
             hibon["float"]  = float(1.24);
 
             immutable hibon_size_no_child = hibon.size;
-            hibon[chile_name]      = hibon_child;
             hibon_child["int32"]= 42;
+            hibon[chile_name]      = hibon_child;
+
 
             immutable hibon_child_size    = hibon_child.size;
             immutable child_key_size = Document.sizeKey(chile_name);
             immutable hibon_size = hibon.size;
+            printf("hibon_size_no_child=%d\n", hibon_size_no_child);
+            printf("hibon_child_size=%d\n", hibon_child_size);
+            printf("child_key_size=%d\n", child_key_size);
             printf("## hibon_size=%d\n", hibon_size);
-            /*
+            printf("hibon_size_no_child+child_key_size+hibon_child_size=%d\n", hibon_size_no_child+child_key_size+hibon_child_size);
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
-            printf("## data is null %d\n", data is null);
+            assert(data.length is hibon_size);
+            //printf("## data is null %d\n", data is null);
             const doc = Document(data);
-            */
+
         }
         version(none) {                    version(none) {
                version(none) {
