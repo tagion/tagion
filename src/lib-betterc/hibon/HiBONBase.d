@@ -9,7 +9,7 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, En
 
 import std.system : Endian;
 // import std.exception;
-// import core.stdc.stdio;
+import core.stdc.stdio;
 
 import hibon.utils.BinBuffer;
 import hibon.BigNumber;
@@ -143,6 +143,9 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     //  @Type(Type.LIST)
     static if ( !is(HiBON == void ) ) {
         @Type(Type.DOCUMENT)  HiBON      document;
+        void dispose() {
+            printf("VALUE Dispose\n");
+        }
     }
     else static if ( !is(Document == void ) ) {
         @Type(Type.DOCUMENT)  Document      document;

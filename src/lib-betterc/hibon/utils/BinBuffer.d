@@ -47,7 +47,6 @@ struct BinBuffer {
     }
 
     private void append(scope const(ubyte[]) add, size_t* index) {
-        printf("Append %d\n", *index);
         if (_data is null) {
             const new_size=(add.length < DEFAULT_SIZE)?DEFAULT_SIZE:add.length;
             _data=create!(ubyte[])(new_size);
@@ -95,7 +94,6 @@ struct BinBuffer {
         else {
             _index=previous_index;
         }
-        printf("write after index=%d\n", _index);
     }
 
     BinBuffer opSlice(const size_t from, const size_t to)
@@ -118,7 +116,6 @@ struct BinBuffer {
     }
 
     immutable(ubyte[]) serialize() const {
-        printf("serialize _index=%d\n", _index);
         return cast(immutable)_data[0.._index];
     }
 }

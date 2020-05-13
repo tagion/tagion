@@ -96,8 +96,14 @@ struct RBTreeT(K) {
             if (current !is nill) {
                 _dispose(current.left);
                 _dispose(current.right);
+                printf("Tree Dispose\n");
                 if (owns) {
-                    static if (__traits(compiles, current.item.dispose)) {
+                    printf("\tOwns\n");
+                    static if (isPointer!K) {
+                        .dispose(current.item);
+                    }
+                    else static if (__traits(compiles, current.item.dispose)) {
+                        printf("\tcurrent.item.dispose %s\n", K.stringof.ptr);
                         current.item.dispose;
                     }
                 }
@@ -688,6 +694,7 @@ struct RBTreeT(K) {
     }
 }
 
+version(none)
 unittest {
     auto tree=RBTree!int(false);
 
@@ -758,6 +765,7 @@ unittest
     auto tree=RBTree!(Key*)(true);
 
     Key* a=create!Key("a");
+
     Key* b=create!Key("b");
     Key* c=create!Key("c");
     Key* _42=create!Key(42);
@@ -766,17 +774,18 @@ unittest
     tree.insert(b);
     tree.insert(_17);
     tree.insert(_42);
+
     tree.insert(a);
+
 
     tree.insert(_07);
     tree.insert(c);
-
     printf("07 < a %d\n", "07" < "a");
     printf("07 < 7 %d\n", "08" < "7");
+
+
 
     foreach(n; tree[]) {
         printf("KEY=%s\n", n.serialize.ptr);
     }
-
-
 }

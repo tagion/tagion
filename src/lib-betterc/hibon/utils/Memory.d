@@ -60,6 +60,9 @@ void dispose(T)(ref T die) if (isArray!T) {
 }
 
 void dispose(T)(ref T die) if (isPointer!T) {
+    static if (__traits(compiles, T.dispose)) {
+        die.dispose;
+    }
     free(die);
     die=null;
 }

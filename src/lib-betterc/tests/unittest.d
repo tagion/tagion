@@ -73,11 +73,12 @@ version(unittest) {
             callUnittest!(hibon.utils.BinBuffer)();
             callUnittest!(hibon.utils.Text)();
             callUnittest!(hibon.utils.Stack)();
+
             callUnittest!(hibon.utils.RBTree)();
             callUnittest!(hibon.HiBONBase)();
 
-            callUnittest!(hibon.Document)();
-            callUnittest!(hibon.HiBON);
+//            callUnittest!(hibon.Document)();
+//            callUnittest!(hibon.HiBON);
             printf("After\n");
             return 0;
         }

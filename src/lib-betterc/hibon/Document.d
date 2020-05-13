@@ -1059,13 +1059,11 @@ struct Document {
                                 static if ( .isArray(E) || (E is STRING) || (E is DOCUMENT) ) {
                                     immutable binary_array_pos = valuePos+uint.sizeof;
                                     immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
-                                    debug printf("A byte_size=%d\n", byte_size);
                                     return binary_array_pos + byte_size;
                                 }
                                 static if (E is BIGINT) {
                                     immutable binary_array_pos = valuePos+uint.sizeof;
                                     immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
-                                    debug printf("B byte_size=%d\n", byte_size);
                                     return binary_array_pos+byte_size;
                                 }
                                 else {
@@ -1074,7 +1072,6 @@ struct Document {
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
-                                    debug printf("data[valuePos..$]=%d\n", data[valuePos..$].length);
                                     const doc = Document(data[valuePos..$]);
                                     return valuePos + uint.sizeof + doc.size;
                                 }

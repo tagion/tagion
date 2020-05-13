@@ -34,7 +34,7 @@ import hibon.utils.Basic;
 import core.stdc.stdio;
 
 HiBONT HiBON() {
-    HiBONT result=HiBONT(RBTree!(const(HiBONT.Member)*)()); //RBTree!(HiBONT.Members)());
+    HiBONT result=HiBONT(RBTree!(HiBONT.Member*)()); //RBTree!(HiBONT.Members)());
 //    result._members=RBTree!(const(HiBONT.Member)*)();
     return result;
 }
@@ -48,7 +48,7 @@ struct HiBONT {
      Returns:
      The buffer of the HiBON document
     +/
-    alias Members=RBTreeT!(const(Member)*);
+    alias Members=RBTreeT!(Member*);
 //     RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
     private {
         Members _members;
@@ -91,10 +91,7 @@ struct HiBONT {
      +/
     immutable(ubyte[]) serialize() {
         _buffer.recreate(size);
-        printf("size=%d\n", size);
         append(_buffer);
-
-        printf("buffer length=%d\n", _buffer.length);
         return _buffer.serialize;
     }
 
@@ -105,7 +102,6 @@ struct HiBONT {
         immutable size_index = buffer.length; //index;
         buffer.write(uint.init);
         foreach(n; _members[]) {
-            printf("n.key=%s\n", n.key.serialize.ptr);
             n.append(buffer);
         }
         buffer.write(Type.NONE);
@@ -127,8 +123,15 @@ struct HiBONT {
             this(_key.serialize);
         }
         ~this() {
+
+            dispose;
+        }
+
+        void dispose() {
+            printf("Dispose key %s\n", data.ptr);
             data.dispose;
         }
+
         string serialize() const pure {
             return cast(string)data[0..$-1];
         }
@@ -165,7 +168,7 @@ struct HiBONT {
          Type type;
          Value value;
 
-         int opCmp(const(Member*) b) const pure {
+         int opCmp(ref const(Member*) b) const pure {
              return key.opCmp(b.key);
          }
 
@@ -195,6 +198,7 @@ struct HiBONT {
             auto x=hibon.surrender;
             this(x, key);
         }
+
         /++
          Params:
          x = the parameter value
@@ -223,6 +227,16 @@ struct HiBONT {
                 }
             }
 
+        }
+
+        ~this() {
+            dispose;
+        }
+
+        void dispose() {
+            printf("Member dispose %s\n", key.serialize.ptr);
+            key.dispose;
+            value.dispose;
         }
 
         private void surrender() {
@@ -899,6 +913,7 @@ struct HiBONT {
 
         }
 
+        version(none)
         { // HIBON test containg an child HiBON
             auto hibon = HiBON();
             auto hibon_child = HiBON();
