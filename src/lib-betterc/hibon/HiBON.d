@@ -658,7 +658,6 @@ struct HiBONT {
     }
 
     ///
-    version(none)
     unittest {
         printf("#### Unittest -1\n");
 
@@ -701,7 +700,6 @@ struct HiBONT {
     }
 
 
-    version(none)
     unittest {
         // import std.stdio;
         import std.typecons : Tuple, isTuple;
@@ -847,14 +845,20 @@ struct HiBONT {
 
             int[],    Type.INT32_ARRAY.stringof,
             long[],   Type.INT64_ARRAY.stringof,
-            string,              Type.STRING.stringof,
+            char[],              Type.STRING.stringof,
             uint[],   Type.UINT32_ARRAY.stringof,
             ulong[],  Type.UINT64_ARRAY.stringof,
 
             );
+
 //        immutable(int)[] test;
 
         TabelArray test_tabel_array;
+        scope(exit) {
+            foreach(i, t; test_tabel_array) {
+                .dispose(t);
+            }
+        }
 
         const(ubyte[3]) binary = [1, 2, 3];
         test_tabel_array.BINARY.create(binary);
@@ -879,8 +883,9 @@ struct HiBONT {
 
         const(bool[2]) boolean_array = [true, false];
         test_tabel_array.BOOLEAN_ARRAY.create(boolean_array);// = [true, false];
-        test_tabel_array.STRING        = "Text";
 
+        const(char[4]) text = "Text";
+        test_tabel_array.STRING.create(text);
 
 
         { // HiBON Test for basic-array types
