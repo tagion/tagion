@@ -34,7 +34,7 @@ import hibon.utils.Basic;
 import core.stdc.stdio;
 
 HiBONT HiBON() {
-    HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true); //RBTree!(HiBONT.Members)());
+    HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true, false); //RBTree!(HiBONT.Members)());
     return result;
 }
 
@@ -54,8 +54,8 @@ struct HiBONT {
     private {
         Members _members;
         bool _owns;
-        BinBuffer _buffer;
         bool _readonly;
+        BinBuffer _buffer;
     }
 
     uint error;
@@ -68,6 +68,7 @@ struct HiBONT {
             _members.dispose;
         }
         else {
+            printf("Surrender members\n");
             _members.surrender;
         }
         _buffer.dispose;
@@ -84,10 +85,25 @@ struct HiBONT {
      Returns:
      the size in bytes
      +/
-    size_t size() const {
+
+    debug protected bool in_use;
+    size_t size()  const {
+
         size_t result = uint.sizeof+Type.sizeof;
+//        int count=10;
+        debug {
+            bool* _in_use=cast(bool*)(&in_use);
+//            static int in_use;
+            assert(!in_use);
+            *_in_use=true;
+            scope(exit) {
+                *_in_use=false;
+            }
+        }
         foreach(n; _members[]) {
-            printf("\t%s ", n.key.serialize.ptr);
+            // count--;
+            // assert(count > 0);
+            printf("\t'%s' %p ", n.key.serialize.ptr, &this);
             const s=n.size;
             printf("size=%d\n", s);
             result+=s;
@@ -234,19 +250,19 @@ struct HiBONT {
          }
 
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
-
+/*
         this(ref HiBONT hibon, in const(char[]) key) {
-            printf("Expropriate %s\n", key.ptr);
+            printf("\t\t\tExpropriate %s hibon.owns=%d %p\n", key.ptr, hibon.owns, &hibon);
             scope(exit) {
-                printf("::this ref HiBONT\n");
+                printf("\t\t\t::this ref HiBONT\n");
             }
             auto x=hibon.expropriate;
             x._readonly=true;
-            printf("OLD %s readonly=%d owns=%d\n", key.ptr, hibon._readonly, hibon._owns);
-            printf("NEW %s readonly=%d owns=%d\n", key.ptr, x._readonly, x._owns);
+            printf("\t\t\tOLD %s readonly=%d owns=%d\n", key.ptr, hibon._readonly, hibon._owns);
+            printf("\t\t\tNEW %s readonly=%d owns=%d\n", key.ptr, x._readonly, x._owns);
             this(x, key);
         }
-
+*/
         /++
          Params:
          x = the parameter value
@@ -391,6 +407,10 @@ struct HiBONT {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
+                                printf("E is Type.DOCUMENT\n");
+                                foreach(nn; value.by!(E)._members[]) {
+                                    printf("\t\tkey=%s\n", nn.key.serialize.ptr);
+                                }
                                 return Document.sizeKey(key.serialize)+value.by!(E).size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
@@ -400,8 +420,6 @@ struct HiBONT {
                                 size_t result = Document.sizeKey(key.serialize)+uint.sizeof+Type.sizeof;
                                 foreach(i, e; value.by!(E)[]) {
                                     auto key=Text(uint.max.stringof.length)(i);
-                                    //key.append(i);
-                                    //immutable key=i.to!string;
                                     result += Document.sizeKey(key.serialize);
                                     static if(E is NATIVE_HIBON_ARRAY) {
                                         result += e.size;
@@ -522,11 +540,14 @@ struct HiBONT {
 //     version(none)
      void opIndexAssign(ref HiBONT x, in const(char[]) key) {
          if (!readonly && is_key_valid(key)) {
-//             auto _member=Member(x, key);
-             auto new_member=create!Member(x, key);
-//             *new_member=_member;
+             printf("\t\tBefore x.owns=%d %p\n", x.owns, &x);
+             auto new_x=x.expropriate;
+             auto new_member=create!Member(new_x, key);
+             printf("\t\topIndexAssign %s type %d\n", key.ptr, new_member.type);
+             scope(exit) {
+                 printf("\t\tAfter x.owns=%d\n", x.owns);
+             }
              _members.insert(new_member);
-//             _member.surrender;
          }
          else {
              error++;
@@ -541,11 +562,8 @@ struct HiBONT {
      +/
      void opIndexAssign(T)(T x, in const(char[]) key) if (!is(T:const(HiBONT))) {
          if (!readonly && is_key_valid(key)) {
-             //auto _member=Member(x, key);
              auto new_member=create!Member(x, key);
-             //*new_member=_member;
-             //_member.surrender;
-             printf("opIndexAssign %s T=%s type %d\n", key.ptr, T.stringof.ptr, new_member.type);
+             printf("\t\topIndexAssign %s T=%s type %d\n", key.ptr, T.stringof.ptr, new_member.type);
              _members.insert(new_member);
          }
          else {
@@ -559,7 +577,7 @@ struct HiBONT {
      x = parameter value
      index = member index
      +/
-    void opIndexAssign(T)(T x, const size_t index) if (!is(T==HiBONT)) {
+     void opIndexAssign(T)(T x, const size_t index) if (!is(T:const(HiBONT))) {
         if (index <=uint.max) {
             auto _key=Key(cast(uint)index);
             opIndexAssign(x, _key.serialize);
@@ -572,7 +590,9 @@ struct HiBONT {
     void opIndexAssign(ref HiBONT x, const size_t index) {
         if (index <=uint.max) {
             auto _key=Key(cast(uint)index);
-            opIndexAssign(x, _key.serialize);
+            printf("\t\t\t--- %p\n", &x);
+//            opIndexAssign(x, _key.serialize);
+            this[_key.serialize]=x;
         }
         else {
             error++;
@@ -789,7 +809,10 @@ struct HiBONT {
 
     void opOpAssign(string op)(ref HiBONT cat) if (op == "~") {
         const index=cast(uint)(last_index+1);
+        printf("\t Before opOpAssign owns=%d %p\n", cat.owns, &cat);
         this[index]=cat;
+        printf("\t After opOpAssign owns=%d\n", cat.owns);
+
     }
 
     void opOpAssign(string op, T)(T cat) if (op == "~") {
@@ -888,6 +911,7 @@ struct HiBONT {
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
+        version(none)
         { // Single element
             auto hibon = HiBON();
             enum pos=1;
@@ -939,7 +963,7 @@ struct HiBONT {
         }
 
         printf("#### Unittest 3\n");
-
+        version(none)
         { // HiBON Test for basic types
             auto hibon = HiBON();
 
@@ -1031,6 +1055,7 @@ struct HiBONT {
         test_tabel_array.STRING.create(text);
 
 
+        version(none)
         { // HiBON Test for basic-array types
             auto hibon = HiBON();
 
@@ -1074,7 +1099,7 @@ struct HiBONT {
 
         }
 
-
+        version(none)
         { // HIBON test containg an child HiBON
             printf("\n\n\n");
             auto hibon = HiBON();
@@ -1109,7 +1134,7 @@ struct HiBONT {
 //            }
         }
 
-//        version(none)
+        version(none)
         { // Use of native Documet in HiBON
             auto native_hibon = HiBON();
             native_hibon["int"] = int(42);
@@ -1143,7 +1168,7 @@ struct HiBONT {
             }
         }
 
-
+        version(none)
         { // Document array
             auto hibon_array=HiBON();
             alias TabelDocArray = Tuple!(
@@ -1161,14 +1186,38 @@ struct HiBONT {
                 enum name=tabel_doc_array.fieldNames[i];
                 auto local_hibon=HiBON();
                 local_hibon[name]=t;
+                printf("Before %d local_hibon.owns=%d local_hibon.readonly=%d\n", i, local_hibon.owns, local_hibon.readonly);
                 hibon_array~=local_hibon;
+                printf("After %d local_hibon.owns=%d local_hibon.readonly=%d\n", i, local_hibon.owns, local_hibon.readonly);
+
                 max_count--;
                 assert(max_count>0);
             }
+            foreach(k; hibon_array.keys) {
+                printf("++++++++ key=%s\n", k.ptr);
+                max_count--;
+                assert(max_count > 0);
+            }
+            immutable array_data_1 = hibon_array.serialize;
 
             auto hibon = HiBON();
             hibon["int"]  = int(42);
             hibon["array"]= hibon_array;
+            max_count=10;
+            foreach(k; hibon_array.keys) {
+                printf("++++++++ key=%s\n", k.ptr);
+                max_count--;
+                assert(max_count > 0);
+            }
+            printf("--------\n");
+            version(none)
+            foreach(k; hibon.keys) {
+                printf("++++++++ key=%s\n", k.ptr);
+                max_count--;
+                assert(max_count > 0);
+            }
+            immutable array_data = hibon_array.serialize;
+
             version(none) {
             immutable data = hibon.serialize;
 

@@ -221,10 +221,16 @@ struct RBTreeT(K) {
      * auxilary procedure called insert_fixup is called to fix these violation.
      */
 
-    void insert(K item) {
+    bool insert(K item) {
+        bool result;
         Node* z = create!Node;
+        scope(exit) {
+            if (!result) {
+                z.dispose;
+            }
+        }
         z.item=item;
-        insert(z);
+        return result=insert(z);
     }
 
     const(K) get(const(K) item) const {
@@ -236,7 +242,7 @@ struct RBTreeT(K) {
         return K.init;
     }
 
-    private void insert(Node* z) {
+    private bool insert(Node* z) {
         Node*  x, y;
         z.color = Color.RED;
         z.left = nill;
@@ -257,7 +263,7 @@ struct RBTreeT(K) {
             }
             else if (cmp == 0) {
                 // Item already exists
-                return;
+                return false;
             }
             else {
                 x = x.right;
@@ -277,6 +283,7 @@ struct RBTreeT(K) {
         z.parent = y;
 
         insert_fixup(z);
+        return true;
     }
 
     /*
@@ -639,13 +646,13 @@ struct RBTreeT(K) {
     Range opSlice() const {
         // In betterC the descructor of RBTree is call if the argument is passed to the Range struct
         // This is the reason why the pointer to RBTree is used
-        auto range=Range(&this);
+        auto range=Range(root);
         return range;
     }
 
     struct Range {
         import std.traits;
-//        int level;
+
         private {
             Node* nill;
             Node* current;
@@ -653,9 +660,9 @@ struct RBTreeT(K) {
             Stack!(Node*) stack;
         }
 
-        this(const(RBTreeT*) owner)  {
-            this.nill=cast(Node*)(owner.nill);
-            walker=current=cast(Node*)(owner.root);
+        this(const(Node*) root)  {
+            this.nill=&RBTreeT.NILL;
+            walker=current=cast(Node*)root;
             popFront;
         }
 
@@ -665,7 +672,7 @@ struct RBTreeT(K) {
 
         void dispose() {
             stack.dispose;
-            nill=walker=current=null;
+            walker=current=null;
         }
 
         private void push(Node* node) {
