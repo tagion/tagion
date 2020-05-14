@@ -32,7 +32,6 @@ RBTreeT!(K) RBTree(K)(const bool owns=true) {
         NILL.color=Color.BLACK;
         nill=&NILL;
         root=nill;
-
     }
     result.owns=owns;
     return result;
@@ -57,34 +56,16 @@ struct RBTreeT(K) {
         bool owns;
     }
 
-    // @disable this();
-    // static RBTree opCall() {
-    //     return RBTree(true);
-    // }
-
-    // static opCall(const bool _owns) {
-    //     RBTree result;
-    //     with(result) {
-    //         NILL.color=Color.BLACK;
-    //         nill=&NILL;
-    //         root=nill;
-    //         owns=_owns;
-    //     }
-    //     return result;
-    // }
-
-    version(none)
-    this(ref RBTreeT _surrender) {
-        this=RBTree!K(_surrender.owns);
-        this.root=_surrender.root;
-        _surrender.root=_surrender.nill;
-    }
-
-    RBTreeT surrender() {
+    RBTreeT expropriate() {
         auto result=RBTree!K(owns);
         result.root=root;
         root=nill;
         return result;
+    }
+
+    void surrender() {
+        root=nill;
+        owns=false;
     }
 
     ~this() {

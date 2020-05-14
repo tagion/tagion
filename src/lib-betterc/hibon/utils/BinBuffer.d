@@ -26,7 +26,9 @@ struct BinBuffer {
     }
 
    ~this() {
-       printf("BinBuffer dispose %p\n", _data.ptr);
+       if (_data !is null) {
+           printf("BinBuffer dispose %p\n", _data.ptr);
+       }
         dispose;
     }
 

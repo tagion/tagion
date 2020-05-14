@@ -34,10 +34,10 @@ import hibon.utils.Basic;
 import core.stdc.stdio;
 
 HiBONT HiBON() {
-    HiBONT result=HiBONT(RBTree!(HiBONT.Member*)()); //RBTree!(HiBONT.Members)());
-//    result._members=RBTree!(const(HiBONT.Member)*)();
+    HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true); //RBTree!(HiBONT.Members)());
     return result;
 }
+
 /++
  HiBON is a generate obje52ct of the HiBON format
 +/
@@ -49,21 +49,36 @@ struct HiBONT {
      The buffer of the HiBON document
     +/
     alias Members=RBTreeT!(Member*);
+
 //     RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
     private {
         Members _members;
+        bool _owns;
         BinBuffer _buffer;
+        bool _readonly;
     }
+
     uint error;
 
     alias Value=ValueT!(true, HiBONT*,  Document);
 
     ~this() {
         printf("Dispose HiBON members=%d\n", _members.length);
-        _members.dispose;
+        if (_owns) {
+            _members.dispose;
+        }
+        else {
+            _members.surrender;
+        }
         _buffer.dispose;
     }
 
+    invariant {
+        if (!(_owns || (!_owns && _readonly))) {
+            printf("_owns=%d _readonly=%d\n", _owns, _readonly);
+        }
+        assert(_owns || (!_owns && _readonly));
+    }
     /++
      Calculated the size in bytes of serialized HiBON
      Returns:
@@ -83,11 +98,38 @@ struct HiBONT {
     }
 
 
-    HiBONT* surrender() {
+    /++
+     Expropriate the members to the return
+     Returns:
+     The new owner of the members
+     +/
+    HiBONT* expropriate() {
         auto result=create!(HiBONT);
         // Surrender the RBTree to the result;
-        result._members=_members.surrender;
+        result._members=_members.expropriate;
+        result._owns=true;
+        _readonly=true;
+        _owns=false;
+
+//        expropriate;
         return result;
+    }
+
+    /++
+     This does not owns the members any longer but can read the data
+     +/
+    version(none)
+    void expropriate() {
+        _readonly=true;
+        _owns=false;
+    }
+
+    @property bool readonly() const pure {
+        return _readonly;
+    }
+
+    @property bool owns() const pure {
+        return _owns;
     }
 
     /++
@@ -129,12 +171,13 @@ struct HiBONT {
             this(_key.serialize);
         }
         ~this() {
-
             dispose;
         }
 
         void dispose() {
-            printf("Dispose key %s\n", data.ptr);
+            if (data !is null) {
+                printf("Dispose key %s\n", data.ptr);
+            }
             data.dispose;
         }
 
@@ -192,11 +235,14 @@ struct HiBONT {
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
 
         this(ref HiBONT hibon, in const(char[]) key) {
-            printf("Surrender %s\n", key.ptr);
+            printf("Expropriate %s\n", key.ptr);
             scope(exit) {
                 printf("::this ref HiBONT\n");
             }
-            auto x=hibon.surrender;
+            auto x=hibon.expropriate;
+            x._readonly=true;
+            printf("OLD %s readonly=%d owns=%d\n", key.ptr, hibon._readonly, hibon._owns);
+            printf("NEW %s readonly=%d owns=%d\n", key.ptr, x._readonly, x._owns);
             this(x, key);
         }
 
@@ -260,7 +306,9 @@ struct HiBONT {
         }
 
         void dispose() {
-            printf("Member dispose %s\n", key.serialize.ptr);
+            if (key.serialize !is null) {
+                printf("Member dispose %s\n", key.serialize.ptr);
+            }
             key.dispose;
             with(Type) {
             TypeCase:
@@ -469,18 +517,32 @@ struct HiBONT {
          return _members[];
      }
 
+//     version(none)
+     void opIndexAssign(ref HiBONT x, in const(char[]) key) {
+         if (!readonly && is_key_valid(key)) {
+//             auto _member=Member(x, key);
+             auto new_member=create!Member(x, key);
+//             *new_member=_member;
+             _members.insert(new_member);
+//             _member.surrender;
+         }
+         else {
+             error++;
+         }
+    }
+
      /++
      Assign and member x with the key
      Params:
      x = parameter value
      key = member key
      +/
-     void opIndexAssign(T)(T x, in const(char[]) key) {
-         if (is_key_valid(key)) {
-             auto _member=Member(x, key);
-             auto new_member=create!Member; //(x, key);
-             *new_member=_member;
-             _member.surrender;
+     void opIndexAssign(T)(T x, in const(char[]) key) if (!is(T:const(HiBONT))) {
+         if (!readonly && is_key_valid(key)) {
+             //auto _member=Member(x, key);
+             auto new_member=create!Member(x, key);
+             //*new_member=_member;
+             //_member.surrender;
              printf("opIndexAssign %s T=%s type %d\n", key.ptr, T.stringof.ptr, new_member.type);
              _members.insert(new_member);
          }
@@ -495,17 +557,25 @@ struct HiBONT {
      x = parameter value
      index = member index
      +/
-    void opIndexAssign(T)(T x, const size_t index) {
+    void opIndexAssign(T)(T x, const size_t index) if (!is(T==HiBONT)) {
         if (index <=uint.max) {
-            auto _key=Key(index);
-
-            opIndexAssign(x, key.serialize);
+            auto _key=Key(cast(uint)index);
+            opIndexAssign(x, _key.serialize);
         }
         else {
             error++;
         }
     }
 
+    void opIndexAssign(ref HiBONT x, const size_t index) {
+        if (index <=uint.max) {
+            auto _key=Key(cast(uint)index);
+            opIndexAssign(x, _key.serialize);
+        }
+        else {
+            error++;
+        }
+    }
 
     /++
      Access an member at key
@@ -715,22 +785,22 @@ struct HiBONT {
         return result;
     }
 
-    void opOpAssign(op)(ref HiBONT cat) if (op == "~") {
+    void opOpAssign(string op)(ref HiBONT cat) if (op == "~") {
         uint index;
         const last=last_index;
         if (last >=0) {
             index=cast(uint)last;
         }
-        this[i]=cat;
+        this[index]=cat;
     }
 
-    void opOpAssign(op, T)(T cat) if (op == "~") {
+    void opOpAssign(string op, T)(T cat) if (op == "~") {
         uint index;
         const last=last_index;
         if (last >=0) {
             index=cast(uint)last;
         }
-        this[i]=cat;
+        this[index]=cat;
     }
 
 
@@ -775,6 +845,7 @@ struct HiBONT {
             assert(!hibon.isArray);
         }
     }
+
 
 
     unittest {
@@ -874,6 +945,7 @@ struct HiBONT {
         }
 
         printf("#### Unittest 3\n");
+
         { // HiBON Test for basic types
             auto hibon = HiBON();
 
@@ -1008,7 +1080,9 @@ struct HiBONT {
 
         }
 
+
         { // HIBON test containg an child HiBON
+            printf("\n\n\n");
             auto hibon = HiBON();
             auto hibon_child = HiBON();
             enum chile_name = "child";
@@ -1018,10 +1092,12 @@ struct HiBONT {
 
             immutable hibon_size_no_child = hibon.size;
             hibon_child["int32"]= 42;
-            hibon[chile_name]      = hibon_child;
-
-
             immutable hibon_child_size    = hibon_child.size;
+
+            printf("&&&& Before hibon_child.readonly=%d owns=%d\n", hibon_child.readonly, hibon_child.owns);
+            hibon[chile_name]      = hibon_child;
+            printf("&&&& After hibon_child.readonly=%d owns=%d\n", hibon_child.readonly, hibon_child.owns);
+
             immutable child_key_size = Document.sizeKey(chile_name);
             immutable hibon_size = hibon.size;
             printf("hibon_size_no_child=%d\n", hibon_size_no_child);
@@ -1029,16 +1105,17 @@ struct HiBONT {
             printf("child_key_size=%d\n", child_key_size);
             printf("## hibon_size=%d\n", hibon_size);
             printf("hibon_size_no_child+child_key_size+hibon_child_size=%d\n", hibon_size_no_child+child_key_size+hibon_child_size);
+            version(none) {
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
             assert(data.length is hibon_size);
             //printf("## data is null %d\n", data is null);
             const doc = Document(data);
-
+            }
         }
 
-
+        version(none)
         { // Use of native Documet in HiBON
             auto native_hibon = HiBON();
             native_hibon["int"] = int(42);
