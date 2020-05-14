@@ -24,7 +24,7 @@ extern(C):
 import hibon.utils.Memory;
 import hibon.utils.Stack;
 import std.traits : isPointer;
-    import core.stdc.stdio;
+import core.stdc.stdio;
 
 RBTreeT!(K) RBTree(K)(const bool owns=true) {
     RBTreeT!(K) result;
@@ -251,8 +251,13 @@ struct RBTreeT(K) {
          */
         while (x !is nill) {
             y = x;
-            if (compare(z.item, x.item) <= 0) {
+            const cmp=compare(z.item, x.item);
+            if (cmp < 0) {
                 x = x.left;
+            }
+            else if (cmp == 0) {
+                // Item already exists
+                return;
             }
             else {
                 x = x.right;
@@ -813,4 +818,13 @@ unittest
     foreach(n; tree[]) {
         printf("KEY=%s\n", n.serialize.ptr);
     }
+}
+
+unittest {
+    auto tree=RBTree!int(false);
+    tree.insert(42);
+    assert(tree.length is 1);
+    tree.insert(42);
+    assert(tree.length is 1);
+//    assert(0);
 }

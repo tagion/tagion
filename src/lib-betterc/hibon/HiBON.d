@@ -788,20 +788,12 @@ struct HiBONT {
     }
 
     void opOpAssign(string op)(ref HiBONT cat) if (op == "~") {
-        uint index;
-        const last=last_index;
-        if (last >=0) {
-            index=cast(uint)last;
-        }
+        const index=cast(uint)(last_index+1);
         this[index]=cat;
     }
 
     void opOpAssign(string op, T)(T cat) if (op == "~") {
-        uint index;
-        const last=last_index;
-        if (last >=0) {
-            index=cast(uint)last;
-        }
+        const index=cast(uint)(last_index+1);
         this[index]=cat;
     }
 
@@ -1117,7 +1109,7 @@ struct HiBONT {
 //            }
         }
 
-        version(none)
+//        version(none)
         { // Use of native Documet in HiBON
             auto native_hibon = HiBON();
             native_hibon["int"] = int(42);
@@ -1151,29 +1143,33 @@ struct HiBONT {
             }
         }
 
-        version(none) {
+
         { // Document array
-            HiBON[] hibon_array;
+            auto hibon_array=HiBON();
             alias TabelDocArray = Tuple!(
                 int, "a",
-                string, "b",
+                bool, "b",
                 float, "c"
                 );
             TabelDocArray tabel_doc_array;
             tabel_doc_array.a=42;
-            tabel_doc_array.b="text";
+            tabel_doc_array.b=true;
             tabel_doc_array.c=42.42;
 
+            int max_count=10;
             foreach(i, t; tabel_doc_array) {
                 enum name=tabel_doc_array.fieldNames[i];
-                auto local_hibon=new HiBON;
+                auto local_hibon=HiBON();
                 local_hibon[name]=t;
                 hibon_array~=local_hibon;
+                max_count--;
+                assert(max_count>0);
             }
-            auto hibon = new HiBON;
+
+            auto hibon = HiBON();
             hibon["int"]  = int(42);
             hibon["array"]= hibon_array;
-
+            version(none) {
             immutable data = hibon.serialize;
 
             const doc = Document(data);
@@ -1226,7 +1222,7 @@ struct HiBONT {
             }
 
         }
-
+        version(none)
         {  // Test of string[]
             auto texts=["Hugo", "Vigo", "Borge"];
             auto hibon=new HiBON;
@@ -1244,6 +1240,6 @@ struct HiBONT {
             }
         }
 
-    }
+        }
     }
 }
