@@ -205,6 +205,7 @@ struct HiBONT {
             return opCmp(b) == 0;
         }
 
+        version(none)
         private void surrender() {
             data=null;
         }
@@ -333,6 +334,7 @@ struct HiBONT {
 //            value.dispose;
         }
 
+        version(none)
         private void surrender() {
             key.surrender;
             value.binary=null;
@@ -1105,14 +1107,14 @@ struct HiBONT {
             printf("child_key_size=%d\n", child_key_size);
             printf("## hibon_size=%d\n", hibon_size);
             printf("hibon_size_no_child+child_key_size+hibon_child_size=%d\n", hibon_size_no_child+child_key_size+hibon_child_size);
-            version(none) {
+//            version(none) {
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
             assert(data.length is hibon_size);
             //printf("## data is null %d\n", data is null);
             const doc = Document(data);
-            }
+//            }
         }
 
         version(none)
