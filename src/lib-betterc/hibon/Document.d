@@ -12,7 +12,7 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, E
 import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
-import core.stdc.stdio;
+//import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
 import hibon.utils.BinBuffer;
@@ -94,7 +94,6 @@ struct Document {
         uint count;
         foreach(e; this[]) {
             count++;
-            printf("e.key=%s\n", e.key.ptr);
         }
         return count;
     }
@@ -409,8 +408,6 @@ struct Document {
         buffer.write(type);
         buffer.write(cast(ubyte)(key.length));
         buffer.write(key);
-        printf("buildKey index=%d\n", buffer.length);
-
     }
 
     /++
@@ -423,13 +420,11 @@ struct Document {
      index = is offset index in side the buffer and index with be progressed
      +/
     static void build(T)(ref BinBuffer buffer, Type type, const(char[]) key, const(T) x) {
-        printf("Before build key\n");
         buildKey(buffer, type, key);
         static if ( is(T: U[], U) ) {
             immutable size=cast(uint)(x.length*U.sizeof);
             buffer.write(size);
             buffer.write(x);
-            printf("build index=%d\n", buffer.length);
         }
         else static if (is(T : const Document)) {
             buffer.write(x.data);
@@ -657,7 +652,6 @@ struct Document {
             { // Document with a single value
                 auto buffer=BinBuffer(0x200);
                 make(buffer, test_tabel, 1);
-                printf("MAKE index=%d\n", buffer.length);
                 //const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
                 assert(doc.length is 1);
@@ -767,18 +761,11 @@ struct Document {
                 }
 
                 { // Check the sub/under document
-                    printf("Check the sub/under document\n");
                     const under_e = doc[doc_name];
                     assert(under_e.key == doc_name);
                     assert(under_e.type == Type.DOCUMENT);
-                    printf("under_e.key=%s under_e.type=%d\n", under_e.key.ptr, under_e.type);
-                    printf("under_e.size=%d %d\n", under_e.size, data_sub_doc.length + Type.sizeof + ubyte.sizeof + doc_name.length);
+
                     immutable _data=doc[doc_name].get!Document;
-                    printf("###[");
-                    foreach(d; _data) {
-                        printf("%d, ", d);
-                    }
-                    printf("]\n");
                     assert(under_e.size == data_sub_doc.length + Type.sizeof + ubyte.sizeof + doc_name.length);
 
                     const under_doc = doc[doc_name].get!Document;

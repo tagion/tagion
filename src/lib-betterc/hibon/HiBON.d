@@ -911,7 +911,7 @@ struct HiBONT {
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
-        version(none)
+
         { // Single element
             auto hibon = HiBON();
             enum pos=1;
@@ -963,7 +963,7 @@ struct HiBONT {
         }
 
         printf("#### Unittest 3\n");
-        version(none)
+
         { // HiBON Test for basic types
             auto hibon = HiBON();
 
@@ -1055,7 +1055,7 @@ struct HiBONT {
         test_tabel_array.STRING.create(text);
 
 
-        version(none)
+
         { // HiBON Test for basic-array types
             auto hibon = HiBON();
 
