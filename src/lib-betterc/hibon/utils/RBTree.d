@@ -24,7 +24,7 @@ extern(C):
 import hibon.utils.Memory;
 import hibon.utils.Stack;
 import std.traits : isPointer;
-import core.stdc.stdio;
+//port core.stdc.stdio;
 
 RBTreeT!(K) RBTree(K)(const bool owns=true) {
     RBTreeT!(K) result;
@@ -77,26 +77,11 @@ struct RBTreeT(K) {
             if (current !is nill) {
                 _dispose(current.left);
                 _dispose(current.right);
-                printf("Tree Dispose\n");
                 if (owns) {
-                    printf("\tOwns\n");
                     static if (isPointer!K) {
-                        static if (__traits(compiles, current.item.key.serialize)) {
-                            printf("\t\tDispose Member %s\n", current.item.key.serialize.ptr);
-                            import hibon.HiBONBase;
-                            if (current.item.type is Type.DOCUMENT) {
-                                auto h=current.item.value.by!(Type.DOCUMENT);
-                                printf("\t\t\th.owns=%d\n", h.owns);
-                                foreach(k; h.keys) {
-                                    printf("\t\t\tk=%s\n", k.ptr);
-                                }
-
-                            }
-                        }
                         .dispose(current.item);
                     }
                     else static if (__traits(compiles, current.item.dispose)) {
-                        printf("\tcurrent.item.dispose %s\n", K.stringof.ptr);
                         current.item.dispose;
                     }
                 }
@@ -142,6 +127,7 @@ struct RBTreeT(K) {
     }
 
     void dump(int iter_max=20) const {
+        import core.stdc.stdio;
         const(char[4]) INDENT="  ->";
         void _dump(const(Node*) current, const uint level=1) @nogc {
             if (current !is nill) {
@@ -183,10 +169,6 @@ struct RBTreeT(K) {
         const(Node*) _search(const(Node*) current) pure {
             if (current !is nill) {
                 import std.traits;
-                import core.stdc.stdio;
-                static if (__traits(compiles,current.item.key) &&  !isIntegral!(typeof(current.item.key)) ) {
-                    debug printf("Search %s\n", current.item.key.serialize.ptr);
-                }
                 const cmp=compare(current.item, item);
                 if (cmp == 0) {
                     return current;
@@ -733,17 +715,7 @@ unittest {
 
     assert(tcase.length == result.length);
 
-    {
-        auto tree=RBTree!int(false);
-        tree.insert(tcase[0]);
-        foreach(item; tcase) {
-            printf("%d ", item);
-        }
-
-    }
-
-    {
-        auto tree=RBTree!int(false);
+    auto tree=RBTree!int(false);
 
     foreach(item; tcase) {
         tree.insert(item);
@@ -788,11 +760,9 @@ unittest {
         count--;
         assert(tree.length == count);
     }
-    }
 }
 
-unittest
-{
+unittest {
     import hibon.HiBON;
 //    import hibon.Memory;
     alias Key=HiBONT.Key;
@@ -800,7 +770,7 @@ unittest
     import std.typecons : Tuple;
     Tuple!(char[2], char[2], char[2], char[1], char[1], char[1]) check_list=[
         "07", "17", "42", "a", "b", "c"
-    ];
+        ];
 
     Key*[check_list.length] key_list;
     foreach(i, k; check_list) {
@@ -821,15 +791,21 @@ unittest
     {
         auto range=tree[];
         foreach(k; check_list) {
-            printf("KEY=%s %s\n", range.front.serialize.ptr, k.ptr);
+            assert(k == range.front.serialize);
             range.popFront;
         }
     }
 
     tree.remove(key_list[2]);
 
-    foreach(n; tree[]) {
-        printf("KEY=%s\n", n.serialize.ptr);
+    {
+        auto range=tree[];
+        foreach(i, k; check_list) {
+            if (i !is 2) {
+                assert(k == range.front.serialize);
+                range.popFront;
+            }
+        }
     }
 }
 

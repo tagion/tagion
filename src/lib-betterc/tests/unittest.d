@@ -13,8 +13,6 @@ import hibon.utils.Text;
 import hibon.HiBON;
 import hibon.Document;
 
-import core.stdc.stdio;
-
 static void callUnittest(string parent, Members...)() {
     //  pragma(msg, "CALLED:",__FUNCTION__);
 //    pragma(msg, Members);
