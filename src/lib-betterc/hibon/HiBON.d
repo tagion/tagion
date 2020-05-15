@@ -55,6 +55,7 @@ struct HiBONT {
         Members _members;
         bool _owns;
         bool _readonly;
+        bool _self_destruct;
         BinBuffer _buffer;
     }
 
@@ -63,6 +64,10 @@ struct HiBONT {
     alias Value=ValueT!(true, HiBONT*,  Document);
 
     ~this() {
+        dispose;
+    }
+
+    void dispose() {
         printf("Dispose HiBON members=%d\n", _members.length);
         if (_owns) {
             _members.dispose;
@@ -72,6 +77,13 @@ struct HiBONT {
             _members.surrender;
         }
         _buffer.dispose;
+//        version(none)
+        if ( _self_destruct ) {
+            HiBONT* self=&this;
+
+            .dispose!false(self);
+        }
+
     }
 
     invariant {
@@ -124,8 +136,10 @@ struct HiBONT {
         // Surrender the RBTree to the result;
         result._members=_members.expropriate;
         result._owns=true;
+        result._self_destruct=true;
         _readonly=true;
         _owns=false;
+
 
 //        expropriate;
         return result;
@@ -181,6 +195,7 @@ struct HiBONT {
             data=create!(char[])(key.length+1);
             data[0..$-1]=key[0..$];
             data[key.length]='\0';
+            printf("key data=%s\n", data.ptr);
         }
         this(const uint index) {
             auto _key=Text()(index);
@@ -326,7 +341,7 @@ struct HiBONT {
             if (key.serialize !is null) {
                 printf("Member dispose %s\n", key.serialize.ptr);
             }
-            key.dispose;
+
             with(Type) {
             TypeCase:
                 final switch(type) {
@@ -340,13 +355,21 @@ struct HiBONT {
                         else static if (E is Type.DOCUMENT) {
                             alias T=Unqual!(PointerTarget!(Value.TypeT!E));
                             pragma(msg, "Unqual!(Value.TypeT!E)=", T);
+                            auto sub=value.by!(E);
+                            printf("\t\t\tsub.owns=%d\n", sub.owns);
+                            foreach(k; sub.keys) {
+                                printf("\t\t\t->k=%s\n", k.ptr);
+                            }
                             auto remove_this=cast(T*)(value.by!(E));
+                            printf("\t\t\tDispose child->%s\n", key.serialize.ptr);
                             remove_this.dispose;
+                            printf("---- after dispose child %p\n", remove_this);
                         }
                         break TypeCase;
                     }
                 }
             }
+            key.dispose;
 //            value.dispose;
         }
 
@@ -543,11 +566,15 @@ struct HiBONT {
              printf("\t\tBefore x.owns=%d %p\n", x.owns, &x);
              auto new_x=x.expropriate;
              auto new_member=create!Member(new_x, key);
-             printf("\t\topIndexAssign %s type %d\n", key.ptr, new_member.type);
+             printf("\t\topIndexAssign %s type %d new_x.owns=%d\n", key.ptr, new_member.type, new_x.owns);
              scope(exit) {
-                 printf("\t\tAfter x.owns=%d\n", x.owns);
+                 printf("\t\tAfter x.owns=%d new_x.owns=%d\n", x.owns, new_x.owns);
              }
              _members.insert(new_member);
+             printf("---- LIST keys %d\n", _members.length);
+             foreach(m; _members[]) {
+                 printf("\tk=%s\n", m.key.serialize.ptr);
+             }
          }
          else {
              error++;
@@ -565,6 +592,10 @@ struct HiBONT {
              auto new_member=create!Member(x, key);
              printf("\t\topIndexAssign %s T=%s type %d\n", key.ptr, T.stringof.ptr, new_member.type);
              _members.insert(new_member);
+             printf("---- >LIST keys %d\n", _members.length);
+             foreach(m; _members[]) {
+                 printf("\tk=%s\n", m.key.serialize.ptr);
+             }
          }
          else {
              error++;
@@ -665,6 +696,7 @@ struct HiBONT {
     }
 
     ///
+    version(none)
     unittest { // remove
         printf("#### Unittest -3\n");
 
@@ -822,6 +854,7 @@ struct HiBONT {
 
 
     ///
+    version(none)
     unittest {
         printf("#### Unittest -1\n");
 
@@ -864,7 +897,7 @@ struct HiBONT {
     }
 
 
-
+    version(none)
     unittest {
         // import std.stdio;
         import std.typecons : Tuple, isTuple;
@@ -1098,47 +1131,52 @@ struct HiBONT {
             }
 
         }
+    }
 
-        version(none)
-        { // HIBON test containg an child HiBON
-            printf("\n\n\n");
-            auto hibon = HiBON();
-            auto hibon_child = HiBON();
-            enum chile_name = "child";
+//    version(none)
+    unittest { // HIBON test containg an child HiBON
+        printf("\n\n\n");
+        auto hibon = HiBON();
+        auto hibon_child = HiBON();
+        enum child_name = "child";
 
-            hibon["string"] = "Text";
-            hibon["float"]  = float(1.24);
+        // hibon["string"] = "Text";
+        // hibon["float"]  = float(1.24);
 
-            immutable hibon_size_no_child = hibon.size;
-            hibon_child["int32"]= 42;
-            immutable hibon_child_size    = hibon_child.size;
+        immutable hibon_size_no_child = hibon.size;
+        hibon_child["int32"]= 42;
+        immutable hibon_child_size    = hibon_child.size;
 
-            printf("&&&& Before hibon_child.readonly=%d owns=%d\n", hibon_child.readonly, hibon_child.owns);
-            hibon[chile_name]      = hibon_child;
-            printf("&&&& After hibon_child.readonly=%d owns=%d\n", hibon_child.readonly, hibon_child.owns);
+        printf("&&&& Before hibon_child.readonly=%d owns=%d %p\n", hibon_child.readonly, hibon_child.owns, &hibon_child);
+        hibon[child_name]      = hibon_child;
+        printf("&&&& After hibon_child.readonly=%d owns=%d\n", hibon_child.readonly, hibon_child.owns);
 
-            immutable child_key_size = Document.sizeKey(chile_name);
-            immutable hibon_size = hibon.size;
-            printf("hibon_size_no_child=%d\n", hibon_size_no_child);
-            printf("hibon_child_size=%d\n", hibon_child_size);
-            printf("child_key_size=%d\n", child_key_size);
-            printf("## hibon_size=%d\n", hibon_size);
-            printf("hibon_size_no_child+child_key_size+hibon_child_size=%d\n", hibon_size_no_child+child_key_size+hibon_child_size);
-//            version(none) {
+        auto exists=hibon.hasMember(child_name);
+        printf("&&&& %s exist %d\n", child_name.ptr, exists);
+        exists=hibon_child.hasMember("int32");
+        printf("&&&& child.%s exist %d\n", "ini32".ptr, exists);
+        immutable child_key_size = Document.sizeKey(child_name);
+        immutable hibon_size = hibon.size;
+        printf("hibon_size_no_child=%d\n", hibon_size_no_child);
+        printf("hibon_child_size=%d\n", hibon_child_size);
+        printf("child_key_size=%d\n", child_key_size);
+        printf("## hibon_size=%d\n", hibon_size);
+        printf("hibon_size_no_child+child_key_size+hibon_child_size=%d\n", hibon_size_no_child+child_key_size+hibon_child_size);
+        version(none) {
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
             assert(data.length is hibon_size);
             //printf("## data is null %d\n", data is null);
             const doc = Document(data);
-//            }
         }
+    }
 
-        version(none)
-        { // Use of native Documet in HiBON
-            auto native_hibon = HiBON();
-            native_hibon["int"] = int(42);
-            immutable native_data = native_hibon.serialize;
+    version(none)
+    unittest { // Use of native Documet in HiBON
+        auto native_hibon = HiBON();
+        native_hibon["int"] = int(42);
+        immutable native_data = native_hibon.serialize;
             auto native_doc = Document(native_hibon.serialize);
 
             auto hibon = HiBON();
@@ -1166,10 +1204,10 @@ struct HiBONT {
                 assert(sub_e.type is Type.INT32);
                 assert(sub_e.get!int is 42);
             }
-        }
+    }
 
-        version(none)
-        { // Document array
+    version(none)
+        unittest { // Document array
             auto hibon_array=HiBON();
             alias TabelDocArray = Tuple!(
                 int, "a",
@@ -1270,7 +1308,7 @@ struct HiBONT {
 
             }
 
-        }
+            }
         version(none)
         {  // Test of string[]
             auto texts=["Hugo", "Vigo", "Borge"];
@@ -1290,5 +1328,4 @@ struct HiBONT {
         }
 
         }
-    }
 }

@@ -81,6 +81,18 @@ struct RBTreeT(K) {
                 if (owns) {
                     printf("\tOwns\n");
                     static if (isPointer!K) {
+                        static if (__traits(compiles, current.item.key.serialize)) {
+                            printf("\t\tDispose Member %s\n", current.item.key.serialize.ptr);
+                            import hibon.HiBONBase;
+                            if (current.item.type is Type.DOCUMENT) {
+                                auto h=current.item.value.by!(Type.DOCUMENT);
+                                printf("\t\t\th.owns=%d\n", h.owns);
+                                foreach(k; h.keys) {
+                                    printf("\t\t\tk=%s\n", k.ptr);
+                                }
+
+                            }
+                        }
                         .dispose(current.item);
                     }
                     else static if (__traits(compiles, current.item.dispose)) {

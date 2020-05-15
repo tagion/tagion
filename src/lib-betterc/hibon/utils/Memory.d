@@ -8,63 +8,130 @@ import std.conv : emplace;
 extern(C):
 @nogc:
 
-T create(T)(const size_t size) if(isArray!T) {
-    alias BaseT=ForeachType!T;
-    return (cast(BaseT*)calloc(size, BaseT.sizeof))[0..size];
+version(memtrace) {
+    enum memalloc_format="#%p:%06d\t\t\t\t%04d %c %s\n";
+    static const memalloc_trace=memalloc_format.ptr;
+    enum memfree_format="#%p:000000\t\t\t\t%04d %c %s\n";
+    static const memfree_trace=memfree_format.ptr;
+    enum mempos_format="#%p:%06d\t\t\t\t%d:%s\n";
+    static const mempos=mempos_format.ptr;
+    static uint block;
 }
 
-void create(T)(ref T data, const size_t size) if(isArray!T)
+T create(T)(const size_t size, string file=__FILE__, size_t line=__LINE__) if(isArray!T) {
+    alias BaseT=ForeachType!T;
+    auto mem=calloc(size, BaseT.sizeof);
+    version(memtrace) {
+        const _size=size*BaseT.sizeof;
+        printf(memalloc_trace, mem, _size, block, 'a', T.stringof.ptr);
+        printf(mempos, mem, _size, line, file.ptr);
+        block++;
+    }
+    return (cast(BaseT*)mem)[0..size];
+}
+
+void create(T)(ref T data, const size_t size, string file=__FILE__, size_t line=__LINE__) if(isArray!T)
     in {
         assert(data is null);
     }
 do {
     alias BaseT=ForeachType!T;
-    data=(cast(BaseT*)calloc(size, BaseT.sizeof))[0..size];
+    auto mem=calloc(size, BaseT.sizeof);
+    version(memtrace) {
+        const _size=size*BaseT.sizeof;
+        printf(memalloc_trace, mem, _size,  block, 'A', T.stringof.ptr);
+        printf(mempos, mem, _size, line, file.ptr);
+        block++;
+
+    }
+    data=(cast(BaseT*)mem)[0..size];
 }
 
-void create(U)(ref U[] data, const(U[]) src) //{ //if (isArray!T && ForeachE
+void create(U)(ref U[] data, const(U[]) src, string file=__FILE__, size_t line=__LINE__) //{ //if (isArray!T && ForeachE
     in {
         assert(data is null);
     }
 do {
     alias BaseU=Unqual!U;
-    auto temp=(cast(BaseU*)calloc(src.length, U.sizeof))[0..src.length];
+    auto mem=calloc(src.length, U.sizeof);
+    version(memtrace) {
+        printf(memalloc_trace, mem, src.length*U.sizeof,  block, 'B', (U[]).stringof.ptr);
+        printf(mempos, mem, 0, line, file.ptr);
+        block++;
+
+    }
+    auto temp=(cast(BaseU*)mem)[0..src.length];
     temp[0..src.length]=src;
     data=cast(U[])temp;
 }
 
-T* create(T, Args...)(Args args) if(is(T == struct)) {
-    auto result=cast(T*)calloc(T.sizeof, 1);
+T* create(T, Args...)(Args args, string file=__FILE__, size_t line=__LINE__) if(is(T == struct)) {
+    auto mem=calloc(T.sizeof, 1);
+    version(memtrace) {
+        const _size=T.sizeof;
+        printf(memalloc_trace, mem, _size, block, 'S', T.stringof.ptr);
+        printf(mempos, mem, _size, line, file.ptr);
+        block++;
+    }
+    auto result=cast(T*)mem;
     emplace!T(result, args);
     return result;
 }
 
-T create(T)() if (isPointer!T) {
-    return cast(T)calloc(PointerTarget!(T).sizeof, 1);
+T create(T)(string file=__FILE__, size_t line=__LINE__) if (isPointer!T) {
+    auto mem=calloc(PointerTarget!(T).sizeof, 1);
+    version(memtrace) {
+        const _size=PointerTarget!(T).sizeof;
+        printf(memalloc_trace, mem, _size, block, '*', T.stringof.ptr);
+        printf(mempos, mem, _size, line, file.ptr);
+        block++;
+
+    }
+    return cast(T)mem;
 }
 
-void resize(T)(ref T data, const size_t len) if(isArray!T) {
+void resize(T)(ref T data, const size_t len, string file=__FILE__, size_t line=__LINE__) if(isArray!T) {
     alias BaseT=ForeachType!T;
     const size=len*BaseT.sizeof;
-    data=(cast(BaseT*)realloc(data.ptr, size))[0..len];
+    auto mem=realloc(data.ptr, size);
+    version(memtrace) {
+        printf(memfree_trace,  &data, block, 'R', T.stringof.ptr);
+        printf(memalloc_trace,  mem, size, block, 'R', T.stringof.ptr);
+        printf(mempos, mem, size, line, file.ptr);
+    }
+    data=(cast(BaseT*)mem)[0..len];
 }
 
-void dispose(T)(ref T die) if (isArray!T) {
+void dispose(T)(ref T die, string file=__FILE__, size_t line=__LINE__) if (isArray!T) {
+    if (die !is null) {
     static if(__traits(compiles, die[0].dispose)) {
         foreach(ref d; die) {
             d.dispose;
         }
     }
+    version(memtrace) {
+        block--;
+        printf(memfree_trace,  die.ptr, block, 'd', T.stringof.ptr);
+        printf(mempos, die.ptr, 0, line, file.ptr);
+    }
     free(die.ptr);
     die=null;
+    }
 }
 
-void dispose(bool OWNS=true, T)(ref T die) if (isPointer!T) {
-    static if (OWNS && __traits(compiles, T.dispose)) {
-        die.dispose;
+void dispose(bool OWNS=true, T)(ref T die, string file=__FILE__, size_t line=__LINE__) if (isPointer!T) {
+    if (die !is null) {
+    static if (OWNS && __traits(compiles, (*die).dispose)) {
+        (*die).dispose;
+    }
+    version(memtrace) {
+        block--;
+        printf(memfree_trace, die, block, 'D', T.stringof.ptr);
+        printf(mempos, die, 0, line, file.ptr);
     }
     free(die);
     die=null;
+    }
 }
 
 
