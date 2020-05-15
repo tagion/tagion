@@ -24,12 +24,13 @@ static void callUnittest(string parent, Members...)() {
                 enum code1="alias T1="~parentDot~Members[i]~";";
                 mixin(code1);
                 static if (is(T1 == struct)) {
-                printf("x=%s\n", x.ptr);
                 alias SubMembers=__traits(allMembers, T1);
-                printf("Sub module %s\n", T1.stringof.ptr);
+                printf("\tSub %s\n", T1.stringof.ptr);
                 static foreach(u; __traits(getUnitTests, T1)) {
                     Bailout.clear;
+                    printf("\t\t%s\n", u.stringof.ptr);
                     u();
+                    printf("\t\t");
                     Bailout.dump;
                 }
                 enum SubName=parentDot~T1.stringof;
@@ -42,8 +43,13 @@ static void callUnittest(string parent, Members...)() {
 
 static void callUnittest(alias Module)() {
     alias Members=__traits(allMembers, Module);
+    printf("%s\n", Module.stringof.ptr);
     static foreach(u; __traits(getUnitTests, Module)) {
+        Bailout.clear;
+        printf("\t%s\n", u.stringof.ptr);
         u();
+        printf("\t");
+        Bailout.dump;
     }
     callUnittest!(null, Members)();
 
@@ -53,7 +59,7 @@ version(unittest) {
     static if (!__traits(compiles, main())) {
         extern(C) int main()
         {
-            printf("Main\n");
+            printf("Unittest\n");
             import core.stdc.stdlib;
             callUnittest!(hibon.utils.Memory)();
             callUnittest!(hibon.utils.BinBuffer)();
@@ -65,7 +71,7 @@ version(unittest) {
 
             callUnittest!(hibon.Document)();
             callUnittest!(hibon.HiBON);
-            printf("After\n");
+            printf("Passed\n");
             return 0;
         }
     }
