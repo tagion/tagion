@@ -249,19 +249,6 @@ struct HiBONT {
          }
 
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
-/*
-        this(ref HiBONT hibon, in const(char[]) key) {
-            printf("\t\t\tExpropriate %s hibon.owns=%d %p\n", key.ptr, hibon.owns, &hibon);
-            scope(exit) {
-                printf("\t\t\t::this ref HiBONT\n");
-            }
-            auto x=hibon.expropriate;
-            x._readonly=true;
-            printf("\t\t\tOLD %s readonly=%d owns=%d\n", key.ptr, hibon._readonly, hibon._owns);
-            printf("\t\t\tNEW %s readonly=%d owns=%d\n", key.ptr, x._readonly, x._owns);
-            this(x, key);
-        }
-*/
         /++
          Params:
          x = the parameter value
@@ -774,10 +761,7 @@ struct HiBONT {
 
     void opOpAssign(string op)(ref HiBONT cat) if (op == "~") {
         const index=cast(uint)(last_index+1);
-        printf("\t Before opOpAssign owns=%d %p\n", cat.owns, &cat);
         this[index]=cat;
-        printf("\t After opOpAssign owns=%d\n", cat.owns);
-
     }
 
     void opOpAssign(string op, T)(T cat) if (op == "~") {
@@ -789,8 +773,6 @@ struct HiBONT {
     ///
 //    version(none)
     unittest {
-        printf("#### Unittest -1\n");
-
         {
             auto hibon=HiBON();
             assert(hibon.isArray);
@@ -804,27 +786,14 @@ struct HiBONT {
             hibon["x"]=3;
             assert(!hibon.isArray);
         }
-        printf("#### Unittest 0\n");
-
         {
             auto hibon=HiBON();
             hibon["2"]=1;
 //            assert(!hibon.isArray);
             hibon["1"]=2;
-            printf(">>[");
-            foreach(m; hibon[]) {
-                printf("%s ", m.key.serialize.ptr);
-            }
-            printf("]\n");
-
             //          assert(hibon.isArray);
             hibon["4"]=2;
             hibon["3"]=2;
-            printf(">>[");
-            foreach(m; hibon[]) {
-                printf("%s ", m.key.serialize.ptr);
-            }
-            printf("]\n");
             assert(!hibon.isArray);
         }
     }
@@ -860,8 +829,6 @@ struct HiBONT {
         test_tabel.BOOLEAN  = true;
         //test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
-        printf("#### Unittest 1\n");
-
         { // empty
             auto hibon = HiBON();
             assert(hibon.length is 0);
@@ -873,7 +840,6 @@ struct HiBONT {
             assert(doc.length is 0);
             assert(doc[].empty);
         }
-        printf("#### Unittest 2\n");
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
@@ -887,15 +853,12 @@ struct HiBONT {
             assert(hibon.length is 1);
 
             const m=hibon[test_tabel.fieldNames[pos]];
-            printf("m=%s %d\n", m.key.serialize.ptr, m.type);
             assert(m.type is Type.FLOAT32);
             assert(m.key.serialize == Type.FLOAT32.stringof);
             assert(m.get!(test_tabel.Types[pos]) == test_tabel[pos]);
             assert(m.by!(Type.FLOAT32) == test_tabel[pos]);
 
             immutable size = hibon.size;
-            printf("hibon.size=%d\n", hibon.size);
-
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size
                 = uint.sizeof                    // Size of the object in ubytes (uint(14))
@@ -911,12 +874,6 @@ struct HiBONT {
             assert(size is hibon_size);
 
             immutable data = hibon.serialize;
-            printf(">[");
-            foreach(i,d; data) {
-                printf("%d:%d ", i, d);
-            }
-            printf("]\n");
-
             const doc = Document(data);
 
             assert(doc.length is 1);
