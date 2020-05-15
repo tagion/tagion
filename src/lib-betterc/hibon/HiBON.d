@@ -885,8 +885,6 @@ struct HiBONT {
 
         }
 
-        printf("#### Unittest 3\n");
-
         { // HiBON Test for basic types
             auto hibon = HiBON();
 
@@ -998,7 +996,6 @@ struct HiBONT {
             foreach(i, t; test_tabel_array) {
                 enum key=test_tabel_array.fieldNames[i];
                 const m = hibon[key];
-                printf("m.key.serialize=%s key=%s\n", m.key.serialize.ptr, key.ptr);
                 assert(m.key.serialize == key);
                 //assert(m.type.to!string == key);
                 alias U=immutable(test_tabel_array.Types[i]);
@@ -1016,7 +1013,6 @@ struct HiBONT {
                 assert(e.key == key);
 //                assert(e.type.to!string == key);
                 alias U=immutable(test_tabel_array.Types[i]);
-                printf("U = %s\n", U.stringof.ptr);
                 assert(e.get!(U) == t);
             }
 
@@ -1025,7 +1021,6 @@ struct HiBONT {
 
 //    version(none)
     unittest { // HIBON test containg an child HiBON
-        printf("\n\n\n");
         auto hibon = HiBON();
         auto hibon_child = HiBON();
         enum child_name = "child";
@@ -1037,22 +1032,12 @@ struct HiBONT {
         hibon_child["int32"]= 42;
         immutable hibon_child_size    = hibon_child.size;
 
-        printf("&&&& Before hibon_child.readonly=%d owns=%d %p\n", hibon_child.readonly, hibon_child.owns, &hibon_child);
         hibon[child_name]      = hibon_child;
-        printf("&&&& After hibon_child.readonly=%d owns=%d\n", hibon_child.readonly, hibon_child.owns);
 
         auto exists=hibon.hasMember(child_name);
-        printf("&&&& %s exist %d\n", child_name.ptr, exists);
         exists=hibon_child.hasMember("int32");
-        printf("&&&& child.%s exist %d\n", "ini32".ptr, exists);
         immutable child_key_size = Document.sizeKey(child_name);
         immutable hibon_size = hibon.size;
-        printf("hibon_size_no_child=%d\n", hibon_size_no_child);
-        printf("hibon_child_size=%d\n", hibon_child_size);
-        printf("child_key_size=%d\n", child_key_size);
-        printf("## hibon_size=%d\n", hibon_size);
-        printf("hibon_size_no_child+child_key_size+hibon_child_size=%d\n", hibon_size_no_child+child_key_size+hibon_child_size);
-
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
