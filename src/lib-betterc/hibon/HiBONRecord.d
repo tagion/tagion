@@ -1,10 +1,9 @@
 module tagion.hibon.HiBONRecord;
 
 extern(C):
-import file=std.file;
-import std.exception : assumeUnique;
+@nogc:
 
-import tagion.Base : basename;
+import hibon.utils.Basic : basename;
 import hibon.HiBONBase : ValueT;
 
 import hibon.HiBON : HiBON;
@@ -48,13 +47,12 @@ template GetLabel(alias member) {
  }
  --------------------
 +/
+
 mixin template HiBONRecord(string TYPE="") {
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
     import std.typecons : TypedefType;
-    import tagion.hibon.HiBONException : check;
-    import tagion.Message : message;
-    import tagion.Base : basename;
-    import std.format;
+    import tagion.hibon.Bailout : check;
+    import hibon.utils.Basic : basename;
 
     enum TYPENAME="$type";
     static if (TYPE.length) {
@@ -217,29 +215,4 @@ mixin template HiBONRecord(string TYPE="") {
             }
         }
     }
-}
-
-/++
- Serialize the hibon and writes it a file
- Params:
- filename = is the name of the file
- hibon = is the HiBON object
-+/
-void fwrite(string filename, const HiBON hibon) {
-    file.write(filename, hibon.serialize);
-}
-
-
-/++
- Reads a HiBON document from a file
- Params:
- filename = is the name of the file
- Returns:
- The Document read from the file
-+/
-const(Document) fread(string filename) {
-    immutable data=assumeUnique(cast(ubyte[])file.read(filename));
-    const doc=Document(data);
-    .check(doc.isInorder, "HiBON Document format failed");
-    return doc;
 }
