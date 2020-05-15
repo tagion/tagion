@@ -31,7 +31,7 @@ import hibon.utils.Text;
 import hibon.utils.BinBuffer;
 import hibon.utils.Basic;
 
-import core.stdc.stdio;
+//import core.stdc.stdio;
 
 HiBONT HiBON() {
     HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true, false); //RBTree!(HiBONT.Members)());
