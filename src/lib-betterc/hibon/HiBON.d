@@ -321,7 +321,6 @@ struct HiBONT {
                         }
                         else static if (E is Type.DOCUMENT) {
                             alias T=Unqual!(PointerTarget!(Value.TypeT!E));
-                            pragma(msg, "Unqual!(Value.TypeT!E)=", T);
                             auto sub=value.by!(E);
                             auto remove_this=cast(T*)(value.by!(E));
                             remove_this.dispose;

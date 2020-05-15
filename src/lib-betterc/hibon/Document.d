@@ -638,7 +638,6 @@ struct Document {
             foreach(i, t; test_tabel_array) {
                 enum name = test_tabel_array.fieldNames[i];
                 static if (Type.STRING.stringof != test_tabel_array.fieldNames[i]) {
-                    pragma(msg, name, " dispose");
                     t.dispose;
                 }
             }
