@@ -77,11 +77,11 @@ bool isNative(Type type) pure nothrow {
  Returns:
  true if the type is a internal native array HiBON type
 +/
-bool isNativeArray(Type type) pure nothrow {
-    with(Type) {
-        return ((type & DEFINED_ARRAY) !is 0) && (isNative(type));
-    }
-}
+// bool isNativeArray(Type type) pure nothrow {
+//     with(Type) {
+//         return ((type & DEFINED_ARRAY) !is 0) && (isNative(type));
+//     }
+// }
 
 /++
  Returns:

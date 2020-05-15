@@ -439,23 +439,23 @@ struct HiBONT {
                             else static if ( E is NATIVE_DOCUMENT ) {
                                 return Document.sizeKey(key.serialize)+value.by!(E).size+uint.sizeof;
                             }
-                            else static if ( isNativeArray(E) ) {
-                                size_t result = Document.sizeKey(key.serialize)+uint.sizeof+Type.sizeof;
-                                foreach(i, e; value.by!(E)[]) {
-                                    auto key=Text(uint.max.stringof.length)(i);
-                                    result += Document.sizeKey(key.serialize);
-                                    static if(E is NATIVE_HIBON_ARRAY) {
-                                        result += e.size;
-                                    }
-                                    else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                                        result += uint.sizeof+e.size;
-                                    }
-                                    else static if (E is NATIVE_STRING_ARRAY) {
-                                        result += uint.sizeof+e.length;
-                                    }
-                                }
-                                return result;
-                            }
+                            // else static if ( isNativeArray(E) ) {
+                            //     size_t result = Document.sizeKey(key.serialize)+uint.sizeof+Type.sizeof;
+                            //     foreach(i, e; value.by!(E)[]) {
+                            //         auto key=Text(uint.max.stringof.length)(i);
+                            //         result += Document.sizeKey(key.serialize);
+                            //         // static if(E is NATIVE_HIBON_ARRAY) {
+                            //         //     result += e.size;
+                            //         // }
+                            //         // else static if (E is NATIVE_DOCUMENT_ARRAY) {
+                            //         //     result += uint.sizeof+e.size;
+                            //         // }
+                            //         // else static if (E is NATIVE_STRING_ARRAY) {
+                            //         //     result += uint.sizeof+e.length;
+                            //         // }
+                            //     }
+                            //     return result;
+                            // }
                             else {
                                 const v = value.by!(E);
                                 return Document.sizeT(E, key.serialize, v);
@@ -523,10 +523,10 @@ struct HiBONT {
                                     const doc=value.by!(E);
                                     buffer.write(value.by!(E).data);
                                 }
-                                else static if (isNativeArray(E)) {
-                                    Document.buildKey(buffer, DOCUMENT, key.serialize);
-                                    appendList!E(buffer);
-                                }
+                                // else static if (isNativeArray(E)) {
+                                //     Document.buildKey(buffer, DOCUMENT, key.serialize);
+                                //     appendList!E(buffer);
+                                // }
                                 else {
                                     goto default;
                                 }
@@ -696,7 +696,7 @@ struct HiBONT {
     }
 
     ///
-    version(none)
+//    version(none)
     unittest { // remove
         printf("#### Unittest -3\n");
 
@@ -854,7 +854,7 @@ struct HiBONT {
 
 
     ///
-    version(none)
+//    version(none)
     unittest {
         printf("#### Unittest -1\n");
 
@@ -897,7 +897,7 @@ struct HiBONT {
     }
 
 
-    version(none)
+//    version(none)
     unittest {
         // import std.stdio;
         import std.typecons : Tuple, isTuple;
@@ -1140,8 +1140,8 @@ struct HiBONT {
         auto hibon_child = HiBON();
         enum child_name = "child";
 
-        // hibon["string"] = "Text";
-        // hibon["float"]  = float(1.24);
+        hibon["string"] = "Text";
+        hibon["float"]  = float(1.24);
 
         immutable hibon_size_no_child = hibon.size;
         hibon_child["int32"]= 42;
@@ -1162,17 +1162,17 @@ struct HiBONT {
         printf("child_key_size=%d\n", child_key_size);
         printf("## hibon_size=%d\n", hibon_size);
         printf("hibon_size_no_child+child_key_size+hibon_child_size=%d\n", hibon_size_no_child+child_key_size+hibon_child_size);
-        version(none) {
+
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
             assert(data.length is hibon_size);
             //printf("## data is null %d\n", data is null);
             const doc = Document(data);
-        }
+
     }
 
-    version(none)
+
     unittest { // Use of native Documet in HiBON
         auto native_hibon = HiBON();
         native_hibon["int"] = int(42);
@@ -1206,8 +1206,9 @@ struct HiBONT {
             }
     }
 
-    version(none)
+
         unittest { // Document array
+            import std.typecons : Tuple, isTuple;
             auto hibon_array=HiBON();
             alias TabelDocArray = Tuple!(
                 int, "a",
@@ -1256,7 +1257,7 @@ struct HiBONT {
             }
             immutable array_data = hibon_array.serialize;
 
-            version(none) {
+            //          version(none) {
             immutable data = hibon.serialize;
 
             const doc = Document(data);
@@ -1265,6 +1266,7 @@ struct HiBONT {
                 assert(doc["int"].get!int is 42);
             }
 
+            version(none)
             {
                 const doc_e =doc["array"];
                 assert(doc_e.type is Type.DOCUMENT);
@@ -1279,6 +1281,7 @@ struct HiBONT {
                 }
             }
 
+            version(none)
             { // Test of Document[]
                 Document[] docs;
                 foreach(h; hibon_array) {
@@ -1308,7 +1311,7 @@ struct HiBONT {
 
             }
 
-            }
+//            }
         version(none)
         {  // Test of string[]
             auto texts=["Hugo", "Vigo", "Borge"];
