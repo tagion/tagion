@@ -725,7 +725,6 @@ struct RBTreeT(K) {
     }
 }
 
-version(none)
 unittest {
 
 
@@ -745,26 +744,18 @@ unittest {
 
     {
         auto tree=RBTree!int(false);
-    printf("***** [");
 
     foreach(item; tcase) {
         tree.insert(item);
-        printf("%d ", item);
     }
-    printf("]\n");
-
 
     // Check that all the elements has been added
     uint count;
 
-    printf("***** [");
-
     foreach(n; tree[]) {
         const item=result[count++];
-        printf("%d ", n);
         assert(n == item);
     }
-    printf("]\n");
 
     // Check the size of the check lists
     assert(tcase.length == count);
@@ -806,33 +797,36 @@ unittest
 //    import hibon.Memory;
     alias Key=HiBONT.Key;
     auto tree=RBTree!(Key*)(true);
+    import std.typecons : Tuple;
+    Tuple!(char[2], char[2], char[2], char[1], char[1], char[1]) check_list=[
+        "07", "17", "42", "a", "b", "c"
+    ];
 
-    Key* a=create!Key("a");
+    Key*[check_list.length] key_list;
+    foreach(i, k; check_list) {
+        key_list[i]=create!Key(k);
+    }
+    // Key* b=create!Key("b" check_list[4]);
+    // Key* c=create!Key("c" check_list[5]);
+    // Key* _42=create!Key(42);
+    // Key* _17=create!Key(17);
+    // Key* _07=create!Key("07");
+    tree.insert(key_list[4]);
+    tree.insert(key_list[1]);
+    tree.insert(key_list[2]);
+    tree.insert(key_list[3]);
+    tree.insert(key_list[0]);
+    tree.insert(key_list[5]);
 
-    Key* b=create!Key("b");
-    Key* c=create!Key("c");
-    Key* _42=create!Key(42);
-    Key* _17=create!Key(17);
-    Key* _07=create!Key("07");
-    tree.insert(b);
-    tree.insert(_17);
-    tree.insert(_42);
-
-    tree.insert(a);
-
-
-    tree.insert(_07);
-    tree.insert(c);
-    printf("07 < a %d\n", "07" < "a");
-    printf("07 < 7 %d\n", "08" < "7");
-
-
-
-    foreach(n; tree[]) {
-        printf("KEY=%s\n", n.serialize.ptr);
+    {
+        auto range=tree[];
+        foreach(k; check_list) {
+            printf("KEY=%s %s\n", range.front.serialize.ptr, k.ptr);
+            range.popFront;
+        }
     }
 
-    tree.remove(_42);
+    tree.remove(key_list[2]);
 
     foreach(n; tree[]) {
         printf("KEY=%s\n", n.serialize.ptr);
