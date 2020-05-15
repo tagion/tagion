@@ -1120,11 +1120,6 @@ struct Document {
                         return INVALID_TYPE;
                     }
                     if ( size > data.length ) {
-                        debug {
-                            import std.stdio;
-                            import std.exception;
-                            assumeWontThrow(writefln("size=%d data.length=%d", size, data.length));
-                        }
                         return OVERFLOW;
                     }
                     if ( .isArray(type) ) {

@@ -403,33 +403,52 @@ unittest {
         static assert(!is(U == const ulong));
     }
 
-    { // data arrays
-        alias Tabel=Tuple!(
-            immutable(ubyte)[], immutable(bool)[], immutable(int)[], immutable(uint)[],
-            immutable(long)[], immutable(ulong)[], immutable(float)[], immutable(double)[]
-            );
-        Tabel test_tabel;
-        immutable(ubyte[3]) test_tabel_0_=[1, 2, 3];
-        test_tabel[0]=test_tabel_0_;
-        immutable(bool[3]) test_tabel_1_=[false, true, true];
-        test_tabel[1]=test_tabel_1_;
-        immutable(int[3]) test_tabel_2_=[-1, 7, -42];
-        test_tabel[2]=test_tabel_2_;
-        immutable(uint[3]) test_tabel_3_=[1, 7, 42];
-        test_tabel[3]=test_tabel_3_;
-        immutable(long[3]) test_tabel_4_=[-1, 7, -42_000_000_000_000];
-        test_tabel[4]=test_tabel_4_;
-        immutable(ulong[3]) test_tabel_5_=[1, 7, 42_000_000_000_000];
-        test_tabel[5]=test_tabel_5_;
-        immutable(float[3]) test_tabel_6_=[-1.7, 7, 42.42e10];
-        test_tabel[6]=test_tabel_6_;
-        immutable(double[3]) test_tabel_7_=[1.7, -7, 42.42e207];
-        test_tabel[7]=test_tabel_7_;
+    {
+        struct S {
+            int x;
+            int y;
+        }
 
-        foreach(i, t; test_tabel) {
+        S s;
+        auto t=s.tupleof;
+    }
+    { // data arrays
+
+        struct Table {
+            immutable(ubyte)[] _0;
+            immutable(bool)[] _1;
+            immutable(int)[] _2;
+            immutable(uint)[] _3;
+            immutable(long)[] _4;
+            immutable(ulong)[] _5;
+            immutable(float)[] _6;
+            immutable(double)[] _7;
+            immutable(ubyte)[] _8;
+        }
+
+        Table table;
+        auto test_table=table.tupleof;
+
+        immutable(ubyte[3]) test_table_0_=[1, 2, 3];
+        test_table[0]=test_table_0_;
+        immutable(bool[3]) test_table_1_=[false, true, true];
+        test_table[1]=test_table_1_;
+        immutable(int[3]) test_table_2_=[-1, 7, -42];
+        test_table[2]=test_table_2_;
+        immutable(uint[3]) test_table_3_=[1, 7, 42];
+        test_table[3]=test_table_3_;
+        immutable(long[3]) test_table_4_=[-1, 7, -42_000_000_000_000];
+        test_table[4]=test_table_4_;
+        immutable(ulong[3]) test_table_5_=[1, 7, 42_000_000_000_000];
+        test_table[5]=test_table_5_;
+        immutable(float[3]) test_table_6_=[-1.7, 7, 42.42e10];
+        test_table[6]=test_table_6_;
+        immutable(double[3]) test_table_7_=[1.7, -7, 42.42e207];
+        test_table[7]=test_table_7_;
+        foreach(i, t; test_table) {
             Value v;
             v=t;
-            alias U = test_tabel.Types[i];
+            alias U = typeof(t);
             enum  E = Value.asType!U;
             static assert(is(const U == Value.TypeT!E));
             assert(t == v.by!E);
