@@ -526,31 +526,33 @@ struct Document {
 
     version(unittest) {
         import std.typecons : Tuple, isTuple;
+        import hibon.utils.Basic : basename;
+        static private void make(S)(ref BinBuffer buffer, S _struct, size_t count=size_t.max) if (is(S==struct)) {
 
-        static private void make(R)(ref BinBuffer buffer, R range, size_t count=size_t.max) if (isTuple!R) {
             const start_index=buffer.length;
             buffer.write(uint.init);
-            foreach(i, t; range) {
+            foreach(i, t; _struct.tupleof) {
+                enum name=basename!(_struct.tupleof[i]);
                 if ( i is count ) {
                     break;
                 }
-                static if (range.fieldNames[i].length == 0) {
+                static if (name[0] == '_') {
                     enum zero=size_t(0);
                     enum suffix_length=zero.stringof.length-"0".length;
-                    enum name=i.stringof[0..$-suffix_length];
+                    enum key=i.stringof[0..$-suffix_length];
                 }
                 else {
-                    enum name = range.fieldNames[i];
+                    enum key = name;
                 }
 
-                alias T = range.Types[i];
+                alias T = typeof(t);
                 static if (is(T:U[], U) && isBasicType!U) {
                     enum  E = Value.asType!(immutable(T));
                 }
                 else {
                     enum  E = Value.asType!T;
                 }
-                build(buffer, E, name, t);
+                build(buffer, E, key, t);
             }
             buffer.write(Type.NONE);
             const size = cast(uint)(buffer.length - uint.sizeof);
@@ -577,116 +579,103 @@ struct Document {
             assert(doc[].empty);
 
         }
+    }
 
-        alias Tabel = Tuple!(
-            float,  Type.FLOAT32.stringof,
-            double, Type.FLOAT64.stringof,
-            //     BigNumber, Type.BIGINT.stringof,
-            bool,   Type.BOOLEAN.stringof,
-            int,    Type.INT32.stringof,
-            long,   Type.INT64.stringof,
-            uint,   Type.UINT32.stringof,
-            ulong,  Type.UINT64.stringof,
+    unittest {
+        struct Table {
+            float FLOAT32;
+            double FLOAT64;
+            //     BigNumberBIGINT;
+            bool  BOOLEAN;
+            int   INT32;
+            long  INT64;
+            uint  UINT32;
+            ulong UINT64;
+            }
+        Table table;
+        table.FLOAT32 = 1.23;
+        table.FLOAT64 = 1.23e200;
+        table.INT32   = -42;
+        table.INT64   = -0x0123_3456_789A_BCDF;
+        table.UINT32   = 42;
+        table.UINT64   = 0x0123_3456_789A_BCDF;
+        table.BOOLEAN  = true;
+        auto test_table=table.tupleof;
 
-//                utc_t,  Type.UTC.stringof
-            );
-
-        Tabel test_tabel;
-        test_tabel.FLOAT32 = 1.23;
-        test_tabel.FLOAT64 = 1.23e200;
-        test_tabel.INT32   = -42;
-        test_tabel.INT64   = -0x0123_3456_789A_BCDF;
-        test_tabel.UINT32   = 42;
-        test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
-        test_tabel.BOOLEAN  = true;
-//        test_tabel.BIGINT   = BigNumber([42, 17, 3333, 4444], true);
-
-        alias TabelArray = Tuple!(
-            ubyte[],  Type.BINARY.stringof,
-            float[],  Type.FLOAT32_ARRAY.stringof,
-            double[], Type.FLOAT64_ARRAY.stringof,
-            int[],    Type.INT32_ARRAY.stringof,
-            long[],   Type.INT64_ARRAY.stringof,
-            uint[],   Type.UINT32_ARRAY.stringof,
-            ulong[],  Type.UINT64_ARRAY.stringof,
-            bool[],   Type.BOOLEAN_ARRAY.stringof,
-            string,              Type.STRING.stringof,
+        struct TableArray {
+            ubyte[] BINARY;
+            float[] FLOAT32_ARRAY;
+            double[]FLOAT64_ARRAY;
+            int[]   INT32_ARRAY;
+            long[]  INT64_ARRAY;
+            uint[]  UINT32_ARRAY;
+            ulong[] UINT64_ARRAY;
+            bool[]  BOOLEAN_ARRAY;
+            string  STRING;
+        }
 
 
-            );
-
-        TabelArray test_tabel_array;
+        TableArray table_array;
         const(ubyte[3]) binary=[1, 2, 3];
-        test_tabel_array.BINARY.create(binary); //cast(ubyte[3])[1, 2, 3]); //ubyte[])(3);
+        table_array.BINARY.create(binary);
         const(float[3]) float32_array=[-1.23, 3, 20e30];
-        test_tabel_array.FLOAT32_ARRAY.create(float32_array);
+        table_array.FLOAT32_ARRAY.create(float32_array);
         const(double[2]) float64_array=[10.3e200, -1e-201];
-        test_tabel_array.FLOAT64_ARRAY.create(float64_array);
+        table_array.FLOAT64_ARRAY.create(float64_array);
         const(int[4]) int32_array=[-11, -22, 33, 44];
-        test_tabel_array.INT32_ARRAY.create(int32_array);
+        table_array.INT32_ARRAY.create(int32_array);
         const(long[4]) int64_array=[0x17, 0xffff_aaaa, -1, 42];
-        test_tabel_array.INT64_ARRAY.create(int64_array);
+        table_array.INT64_ARRAY.create(int64_array);
         const(uint[4]) uint32_array=[11, 22, 33, 44];
-        test_tabel_array.UINT32_ARRAY.create(uint32_array);
+        table_array.UINT32_ARRAY.create(uint32_array);
         const(ulong[4]) uint64_array=[0x17, 0xffff_aaaa, 1, 42];
-        test_tabel_array.UINT64_ARRAY.create(uint64_array);
+        table_array.UINT64_ARRAY.create(uint64_array);
         const(bool[2]) boolean_array=[true, false];
-        test_tabel_array.BOOLEAN_ARRAY.create(boolean_array);
-        test_tabel_array.STRING="Text";//.create(text);
+        table_array.BOOLEAN_ARRAY.create(boolean_array);
+        table_array.STRING="Text";//.create(text);
+
+        auto test_table_array=table_array.tupleof;
 
         scope(exit) {
-            foreach(i, t; test_tabel_array) {
-                enum name = test_tabel_array.fieldNames[i];
-                static if (Type.STRING.stringof != test_tabel_array.fieldNames[i]) {
+            foreach(i, t; test_table_array) {
+                alias U=typeof(t);
+                static if (!is(U==string)) {
                     t.dispose;
                 }
             }
         }
 
         { // Document with simple types
-            //test_tabel.UTC      = 1234;
-
-//            size_t index;
-
+            //test_table.UTC      = 1234;
             { // Document with a single value
                 auto buffer=BinBuffer(0x200);
-                make(buffer, test_tabel, 1);
+                make(buffer, table, 1);
                 //const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
                 assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
-            }
-
-            { // Document with a single value
-                auto buffer=BinBuffer(0x200);
-                make(buffer, test_tabel, 1);
-                //const doc_buffer = buffer[0..index];
-                const doc=Document(buffer.serialize);
-//                writefln("doc.length=%d", doc.length);
-                assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!BigNumber == test_tabel[0]);
+                // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
             { // Document including basic types
                 auto buffer=BinBuffer(0x200);
-                make(buffer, test_tabel);
+                make(buffer, table);
                 //              const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
 
                 auto keys=doc.keys;
-                foreach(i, t; test_tabel) {
-                    enum name = test_tabel.fieldNames[i];
-                    alias U = immutable(test_tabel.Types[i]);
+                foreach(i, t; table.tupleof) {
+                    enum name = basename!(table.tupleof[i]);
+                    alias U = immutable(typeof(t));
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
                     assert(keys.front == name);
-                    assert(e.get!U == test_tabel[i]);
+                    assert(e.get!U == test_table[i]);
 
                     keys.popFront;
 
                     auto e_in = name in doc;
-                    assert(e.get!U == test_tabel[i]);
+                    assert(e.get!U == test_table[i]);
 
                     assert(e.type is E);
                     assert(e.isType!U);
@@ -697,17 +686,18 @@ struct Document {
                 }
             }
 
+
             { // Document which includes basic arrays and string
                 auto buffer=BinBuffer(0x200);
-                make(buffer, test_tabel_array);
+                make(buffer, table_array);
 //                const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
-                foreach(i, t; test_tabel_array) {
-                    enum name = test_tabel_array.fieldNames[i];
-                    alias U   = immutable(test_tabel_array.Types[i]);
+                foreach(i, t; table_array.tupleof) {
+                    enum name = basename!(table_array.tupleof[i]);
+                    alias U = immutable(typeof(t));
                     const v = doc[name].get!U;
-                    assert(v.length is test_tabel_array[i].length);
-                    assert(v == test_tabel_array[i]);
+                    assert(v.length is test_table_array[i].length);
+                    assert(v == test_table_array[i]);
                     import traits=std.traits; // : isArray;
                     const e = doc[name];
                     assert(!e.isThat!isBasicType);
@@ -719,7 +709,7 @@ struct Document {
             { // Document which includes sub-documents
                 auto buffer=BinBuffer(0x200);
                 auto buffer_subdoc=BinBuffer(0x200);
-                make(buffer_subdoc, test_tabel);
+                make(buffer_subdoc, table);
                 const data_sub_doc = buffer_subdoc.serialize;
                 const sub_doc=Document(buffer_subdoc.serialize);
 
@@ -771,26 +761,28 @@ struct Document {
                     assert(under_doc.data.length == data_sub_doc.length);
 
                     auto keys=under_doc.keys;
-                    foreach(i, t; test_tabel) {
-                        enum name = test_tabel.fieldNames[i];
-                        alias U = test_tabel.Types[i];
+                    foreach(i, t; table.tupleof) {
+                        enum name = basename!(table.tupleof[i]);
+                        alias U = typeof(t);
                         enum  E = Value.asType!U;
                         assert(under_doc.hasElement(name));
                         const e = under_doc[name];
-                        assert(e.get!U == test_tabel[i]);
+                        assert(e.get!U == test_table[i]);
                         assert(keys.front == name);
                         keys.popFront;
 
                         auto e_in = name in doc;
-                        assert(e.get!U == test_tabel[i]);
+                        assert(e.get!U == test_table[i]);
                     }
                 }
+
 
                 { // Check opEqual
                     const data_int32_e = Element(data_int32.serialize);
                     assert(doc[Type.INT32.stringof] == data_int32_e);
                 }
             }
+
 
             { // Test opCall!(string[])
                 auto buffer=BinBuffer(0x200);
@@ -826,6 +818,7 @@ struct Document {
             }
         }
     }
+
 /**
  * HiBON Element representation
  */
