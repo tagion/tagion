@@ -68,12 +68,10 @@ struct HiBONT {
     }
 
     void dispose() {
-        printf("Dispose HiBON members=%d\n", _members.length);
         if (_owns) {
             _members.dispose;
         }
         else {
-            printf("Surrender members\n");
             _members.surrender;
         }
         _buffer.dispose;
@@ -87,9 +85,6 @@ struct HiBONT {
     }
 
     invariant {
-        if (!(_owns || (!_owns && _readonly))) {
-            printf("_owns=%d _readonly=%d\n", _owns, _readonly);
-        }
         assert(_owns || (!_owns && _readonly));
     }
     /++
@@ -113,15 +108,8 @@ struct HiBONT {
             }
         }
         foreach(n; _members[]) {
-            // count--;
-            // assert(count > 0);
-            printf("\t'%s' %p ", n.key.serialize.ptr, &this);
-            const s=n.size;
-            printf("size=%d\n", s);
-            result+=s;
-//            result+=n.size;
+            result+=n.size;
         }
-        printf("->result=%d\n", result);
         return result;
     }
 
@@ -195,7 +183,6 @@ struct HiBONT {
             data=create!(char[])(key.length+1);
             data[0..$-1]=key[0..$];
             data[key.length]='\0';
-            printf("key data=%s\n", data.ptr);
         }
         this(const uint index) {
             auto _key=Text()(index);
@@ -206,9 +193,6 @@ struct HiBONT {
         }
 
         void dispose() {
-            if (data !is null) {
-                printf("Dispose key %s\n", data.ptr);
-            }
             data.dispose;
         }
 
@@ -338,10 +322,6 @@ struct HiBONT {
         }
 
         void dispose() {
-            if (key.serialize !is null) {
-                printf("Member dispose %s\n", key.serialize.ptr);
-            }
-
             with(Type) {
             TypeCase:
                 final switch(type) {
@@ -356,14 +336,8 @@ struct HiBONT {
                             alias T=Unqual!(PointerTarget!(Value.TypeT!E));
                             pragma(msg, "Unqual!(Value.TypeT!E)=", T);
                             auto sub=value.by!(E);
-                            printf("\t\t\tsub.owns=%d\n", sub.owns);
-                            foreach(k; sub.keys) {
-                                printf("\t\t\t->k=%s\n", k.ptr);
-                            }
                             auto remove_this=cast(T*)(value.by!(E));
-                            printf("\t\t\tDispose child->%s\n", key.serialize.ptr);
                             remove_this.dispose;
-                            printf("---- after dispose child %p\n", remove_this);
                         }
                         break TypeCase;
                     }
@@ -430,10 +404,6 @@ struct HiBONT {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
-                                printf("E is Type.DOCUMENT\n");
-                                foreach(nn; value.by!(E)._members[]) {
-                                    printf("\t\tkey=%s\n", nn.key.serialize.ptr);
-                                }
                                 return Document.sizeKey(key.serialize)+value.by!(E).size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
@@ -504,14 +474,12 @@ struct HiBONT {
         }
 
         void append(ref BinBuffer buffer) const {
-            printf("%s index=%d\n", key.serialize.ptr, buffer.length);
             with(Type) {
             TypeCase:
                 switch(type) {
                     static foreach(E; EnumMembers!Type) {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
-                            printf("\tE=%s\n", E.stringof.ptr);
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
                                 Document.buildKey(buffer, E, key.serialize);
@@ -535,12 +503,8 @@ struct HiBONT {
                                 alias U=typeof(value.by!E());
                                 static if (is(U==const(float))) {
                                     auto x=value.by!E;
-                                    printf("\tx=%f\n", x);
                                 }
-//                                static
-                                printf("\tkey=%s T=%s\n", key.serialize.ptr, U.stringof.ptr);
                                 Document.build(buffer, E, key.serialize, value.by!E);
-                                printf("After index=%d\n", buffer.length);
                             }
                             break TypeCase;
                         }
@@ -563,18 +527,9 @@ struct HiBONT {
 //     version(none)
      void opIndexAssign(ref HiBONT x, in const(char[]) key) {
          if (!readonly && is_key_valid(key)) {
-             printf("\t\tBefore x.owns=%d %p\n", x.owns, &x);
              auto new_x=x.expropriate;
              auto new_member=create!Member(new_x, key);
-             printf("\t\topIndexAssign %s type %d new_x.owns=%d\n", key.ptr, new_member.type, new_x.owns);
-             scope(exit) {
-                 printf("\t\tAfter x.owns=%d new_x.owns=%d\n", x.owns, new_x.owns);
-             }
              _members.insert(new_member);
-             printf("---- LIST keys %d\n", _members.length);
-             foreach(m; _members[]) {
-                 printf("\tk=%s\n", m.key.serialize.ptr);
-             }
          }
          else {
              error++;
@@ -590,12 +545,7 @@ struct HiBONT {
      void opIndexAssign(T)(T x, in const(char[]) key) if (!is(T:const(HiBONT))) {
          if (!readonly && is_key_valid(key)) {
              auto new_member=create!Member(x, key);
-             printf("\t\topIndexAssign %s T=%s type %d\n", key.ptr, T.stringof.ptr, new_member.type);
              _members.insert(new_member);
-             printf("---- >LIST keys %d\n", _members.length);
-             foreach(m; _members[]) {
-                 printf("\tk=%s\n", m.key.serialize.ptr);
-             }
          }
          else {
              error++;
@@ -621,8 +571,6 @@ struct HiBONT {
     void opIndexAssign(ref HiBONT x, const size_t index) {
         if (index <=uint.max) {
             auto _key=Key(cast(uint)index);
-            printf("\t\t\t--- %p\n", &x);
-//            opIndexAssign(x, _key.serialize);
             this[_key.serialize]=x;
         }
         else {
@@ -680,7 +628,6 @@ struct HiBONT {
     bool hasMember(in const(char[]) key) const {
         Member m;
         m.key=Key(key);
-        printf("m.key=%s\n", m.key.serialize.ptr);
         return _members.exists(&m);
     }
 
@@ -698,27 +645,15 @@ struct HiBONT {
     ///
 //    version(none)
     unittest { // remove
-        printf("#### Unittest -3\n");
-
         auto hibon=HiBON();
         hibon["d"] =4;
         hibon["b"] =2;
         hibon["c"] =3;
         hibon["a"] =1;
 
-        printf(">[");
-        foreach(m; hibon[]) {
-            printf("%s ", m.key.serialize.ptr);
-        }
-
-        printf("]\n");
         assert(hibon.hasMember("b"));
 
         hibon.remove("b");
-                /*
-        assert(!hibon.hasMember("b"));
-*/
-        printf("-----------\n");
     }
 
     /++
@@ -793,9 +728,7 @@ struct HiBONT {
         uint front()  {
             const key=range.front.key.serialize;
             uint index;
-            printf("key=%s\n", key.ptr);
             if (!is_index(key, index)) {
-                printf("Index error\n");
                 _error=true;
             }
             return index;
