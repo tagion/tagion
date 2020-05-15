@@ -8,8 +8,6 @@ import std.traits : isNumeric, isArray, Unqual;
 import hibon.utils.Memory;
 import hibon.utils.utc;
 
-import core.stdc.stdio;
-
 struct BinBuffer {
     @nogc:
     protected {
@@ -22,13 +20,9 @@ struct BinBuffer {
         if (size>0) {
             _data.create(size);
         }
-        printf("BinBuffer create %p\n", _data.ptr);
     }
 
    ~this() {
-       if (_data !is null) {
-           printf("BinBuffer dispose %p\n", _data.ptr);
-       }
         dispose;
     }
 
