@@ -1042,7 +1042,6 @@ struct HiBONT {
 
             immutable data = hibon.serialize;
             assert(data.length is hibon_size);
-            //printf("## data is null %d\n", data is null);
             const doc = Document(data);
 
     }
@@ -1095,41 +1094,19 @@ struct HiBONT {
             tabel_doc_array.b=true;
             tabel_doc_array.c=42.42;
 
-            int max_count=10;
             foreach(i, t; tabel_doc_array) {
                 enum name=tabel_doc_array.fieldNames[i];
                 auto local_hibon=HiBON();
                 local_hibon[name]=t;
-                printf("Before %d local_hibon.owns=%d local_hibon.readonly=%d\n", i, local_hibon.owns, local_hibon.readonly);
                 hibon_array~=local_hibon;
-                printf("After %d local_hibon.owns=%d local_hibon.readonly=%d\n", i, local_hibon.owns, local_hibon.readonly);
+            }
 
-                max_count--;
-                assert(max_count>0);
-            }
-            foreach(k; hibon_array.keys) {
-                printf("++++++++ key=%s\n", k.ptr);
-                max_count--;
-                assert(max_count > 0);
-            }
             immutable array_data_1 = hibon_array.serialize;
 
             auto hibon = HiBON();
             hibon["int"]  = int(42);
             hibon["array"]= hibon_array;
-            max_count=10;
-            foreach(k; hibon_array.keys) {
-                printf("++++++++ key=%s\n", k.ptr);
-                max_count--;
-                assert(max_count > 0);
-            }
-            printf("--------\n");
-            version(none)
-            foreach(k; hibon.keys) {
-                printf("++++++++ key=%s\n", k.ptr);
-                max_count--;
-                assert(max_count > 0);
-            }
+
             immutable array_data = hibon_array.serialize;
 
             //          version(none) {
