@@ -15,14 +15,15 @@ SCRIPTROOT:=${REPOROOT}/scripts/
 WAVMROOT:=${REPOROOT}/../WAVM/
 # WAVM C-header file
 WAVM_H:=${WAVMROOT}/Include/WAVM/wavm-c/wavm-c.h
+WAVM_DI_ROOT:=../../../wavm/
 WAVM_DI:=wavm/c/wavm.di
 WAVM_PACKAGE:=wavm.c
 # Change c-array to pointer
 WAVMa2p:=${SCRIPTROOT}/wasm_array2pointer.pl
 
-WAYS+=wavm/c/
+WAYS+=$(WAVM_DI_ROOT)
 
-LIBNAME:=libwavm.a
+LIBNAME:=libwasm.a
 
 # DDOC Configuration
 #
@@ -34,6 +35,14 @@ BUILD?=$(REPOROOT)/build
 WAYS+=${BIN}
 WAYS+=${BUILD}
 
-SOURCE:=wavm
+SOURCE:=tagion
 
 -include dstep.mk
+
+TAGION_CORE:=$(REPOROOT)/../tagion_core/
+
+INC+=$(REPOROOT)/tagion
+INC+=$(TAGION_CORE)
+INC+=$(P2PLIB)
+INC+=$(SECP256K1ROOT)/src/
+INC+=$(SECP256K1ROOT)/

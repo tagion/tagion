@@ -1,10 +1,10 @@
-module wavm.WasmParser;
+module tagion.vm.wavm.WasmParser;
 
 import std.uni : toUpper;
 import std.traits : EnumMembers;
 import std.format;
 
-import wavm.LEB128;
+import tagion.utils.LEB128;
 
 //import tagion.Message : message;
 

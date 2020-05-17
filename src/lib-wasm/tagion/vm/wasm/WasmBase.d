@@ -1,4 +1,4 @@
-module wavm.WasmBase;
+module tagion.vm.wavm.WasmBase;
 
 import std.traits : EnumMembers, Unqual, isAssociativeArray;
 import std.typecons : Tuple;
@@ -9,7 +9,7 @@ import std.range.primitives : isInputRange;
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
 import std.stdio;
-import wavm.WasmException;
+import tagion.vm.wavm.WasmException;
 
 import LEB128=wavm.LEB128;
 

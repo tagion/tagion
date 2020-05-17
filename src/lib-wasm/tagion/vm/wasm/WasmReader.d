@@ -1,8 +1,8 @@
-module wavm.WasmReader;
+module tagion.vm.wavm.WasmReader;
 
 import std.format;
-import wavm.WasmException;
-import wavm.WasmBase;
+import tagion.vm.wavm.WasmException;
+import tagion.vm.wavm.WasmBase;
 
 import std.stdio;
 import std.meta : AliasSeq;

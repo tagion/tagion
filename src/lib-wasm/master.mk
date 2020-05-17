@@ -26,10 +26,6 @@ OBJS=${DFILES:.d=.o}
 .SECONDARY: $(TOUCHHOOK)
 .PHONY: ddoc makeway
 
-INC+=$(REPOROOT)
-INC+=$(P2PLIB)
-INC+=$(SECP256K1ROOT)/src/
-INC+=$(SECP256K1ROOT)/
 
 INCFLAGS=${addprefix -I,${INC}}
 

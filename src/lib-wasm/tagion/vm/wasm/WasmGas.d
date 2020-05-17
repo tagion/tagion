@@ -1,9 +1,9 @@
-module wavm.WasmGas;
+module tagion.vm.wavm.WasmGas;
 
-import wavm.WasmWriter;
-import wavm.WasmBase;
-import wavm.WasmExpr;
-import wavm.LEB128;
+import tagion.vm.wavm.WasmWriter;
+import tagion.vm.wavm.WasmBase;
+import tagion.vm.wavm.WasmExpr;
+import tagion.utils.LEB128;
 
 import std.traits : Unqual, TemplateArgsOf, PointerTarget, EnumMembers;
 import std.meta : staticMap;

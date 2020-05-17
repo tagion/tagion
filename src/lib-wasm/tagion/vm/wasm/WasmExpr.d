@@ -1,12 +1,12 @@
-module wavm.WasmExpr;
+module tagion.vm.wavm.WasmExpr;
 
 import std.bitmanip : nativeToLittleEndian;
 import std.traits : Unqual, isArray, isIntegral, ForeachType;
 import std.outbuffer;
 import std.format;
 
-import wavm.WasmBase;
-import wavm.LEB128;
+import tagion.vm.wavm.WasmBase;
+import tagion.utils.LEB128;
 
 struct WasmExpr {
     protected OutBuffer bout;
