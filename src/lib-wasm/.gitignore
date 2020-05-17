@@ -7,3 +7,5 @@ dfiles.mk
 wavm.di
 embedder_example
 revision.di
+bin
+build
