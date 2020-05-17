@@ -1,4 +1,4 @@
-module wavm.Wast;
+module tagion.vm.wasm.Wast;
 
 import std.format;
 import std.stdio;
@@ -9,14 +9,14 @@ import std.conv : to;
 import std.range.primitives : isOutputRange;
 import std.range : StoppingPolicy, lockstep;
 
-import wavm.WasmReader;
-import wavm.WasmBase;
-import wavm.WavmException;
-import wavm.WasmException;
+import tagion.vm.wasm.WasmReader;
+import tagion.vm.wasm.WasmBase;
+import tagion.vm.wasm.WasmException;
+import tagion.TagionExceptions;
 
 @safe
 class WastException : WasmException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
         super( msg, file, line );
     }
 }
@@ -25,7 +25,7 @@ alias check=Check!WastException;
 
 
 @safe
-WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) { // if (is(WasmStream == WasmReader)) {
+WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) {
     return new WastT!(Output)(wasmreader, output);
 }
 
@@ -280,7 +280,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
                     output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
                     break;
                 case BRANCH_TABLE:
-                    static string branch_table(const(WasmArg[]) args) pure {
+                    static string branch_table(const(WasmArg[]) args) {
                         string result;
                         foreach(a; args) {
                             result~=format(" %d", a.get!uint);

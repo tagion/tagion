@@ -1,4 +1,4 @@
-module tagion.vm.wavm.WasmWriter;
+module tagion.vm.wasm.WasmWriter;
 
 import std.outbuffer;
 import std.bitmanip : nativeToLittleEndian;
@@ -15,9 +15,9 @@ import std.range : lockstep;
 import std.stdio;
 
 import tagion.utils.LEB128 : encode;
-import tagion.vm.wavm.WasmBase;
-import tagion.vm.wavm.WasmReader;
-import tagion.vm.wavm.WasmException;
+import tagion.vm.wasm.WasmBase;
+import tagion.vm.wasm.WasmReader;
+import tagion.vm.wasm.WasmException;
 //import wavm.Wdisasm;
 
 @safe
@@ -733,7 +733,7 @@ unittest {
     import std.stdio;
     import std.file;
     import std.exception : assumeUnique;
-    import wavm.Wast;
+    import tagion.vm.wavm.Wast;
     //      import std.file : fread=read, fwrite=write;
 
 

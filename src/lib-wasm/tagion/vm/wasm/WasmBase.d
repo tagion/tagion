@@ -1,4 +1,4 @@
-module tagion.vm.wavm.WasmBase;
+module tagion.vm.wasm.WasmBase;
 
 import std.traits : EnumMembers, Unqual, isAssociativeArray;
 import std.typecons : Tuple;
@@ -9,9 +9,9 @@ import std.range.primitives : isInputRange;
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
 import std.stdio;
-import tagion.vm.wavm.WasmException;
+import tagion.vm.wasm.WasmException;
 
-import LEB128=wavm.LEB128;
+import LEB128=tagion.utils.LEB128;
 
 
 enum Section : ubyte {
@@ -615,7 +615,7 @@ struct WasmArg {
         }
     }
 
-    T get(T)() const pure {
+    T get(T)() const {
         alias BaseT=Unqual!T;
         static if (is(BaseT == int) || is(BaseT == uint)) {
             check(_type is Types.I32, format("Wrong to type %s execpted %s", _type, Types.I32));

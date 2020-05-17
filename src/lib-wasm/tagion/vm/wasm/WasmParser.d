@@ -1,4 +1,4 @@
-module tagion.vm.wavm.WasmParser;
+module tagion.vm.wasm.WasmParser;
 
 import std.uni : toUpper;
 import std.traits : EnumMembers;

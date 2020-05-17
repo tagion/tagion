@@ -1,4 +1,4 @@
-module tagion.vm.wavm.WasmException;
+module tagion.vm.wasm.WasmException;
 
 import tagion.TagionExceptions;
 
