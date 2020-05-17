@@ -540,7 +540,7 @@ struct WasmReader {
                 }
 
                 ExprRange opSlice() const {
-                    scope range=LocalRange(data);
+                    auto range=LocalRange(data);
                     while(!range.empty) {
                         range.popFront;
                     }

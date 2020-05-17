@@ -1,10 +1,10 @@
 module wavm.WasmBase;
 
-import std.traits : EnumMembers, Unqual;
+import std.traits : EnumMembers, Unqual, isAssociativeArray;
 import std.typecons : Tuple;
 import std.format;
 import std.uni : toLower;
-import std.conv : to;
+import std.conv : to, emplace;
 import std.range.primitives : isInputRange;
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
@@ -247,7 +247,7 @@ enum IR : ubyte {
 
         }
 
-shared static  immutable(Instr[IR]) instrTable;
+shared static immutable(Instr[IR]) instrTable;
 
 shared static this() {
     with(IR) {
@@ -522,28 +522,35 @@ static string secname(immutable Section s) {
     return assumeUnique(format("%s_sec", toLower(s.to!string)));
 }
 
-protected  template Ptr(T, bool CONST) {
-    static if (CONST) {
-        alias Ptr=const(T)*;
+
+protected template SecType(T, bool READ_ONLY) {
+    static if (READ_ONLY) {
+        static assert(!isAssociativeArray!T);
+        alias SecType=const(T)*;
     }
     else {
-        alias Ptr=T*;
+        static if (isAssociativeArray!T) {
+            alias SecType=T;
+        }
+        else {
+            alias SecType=T*;
+        }
     }
 }
 
-alias ModuleT(SectionType, bool CONST=true)=Tuple!(
-    Ptr!(SectionType.Custom, CONST),   secname(Section.CUSTOM),
-    Ptr!(SectionType.Type, CONST),     secname(Section.TYPE),
-    Ptr!(SectionType.Import, CONST),   secname(Section.IMPORT),
-    Ptr!(SectionType.Function, CONST), secname(Section.FUNCTION),
-    Ptr!(SectionType.Table, CONST),    secname(Section.TABLE),
-    Ptr!(SectionType.Memory, CONST),   secname(Section.MEMORY),
-    Ptr!(SectionType.Global, CONST),   secname(Section.GLOBAL),
-    Ptr!(SectionType.Export, CONST),   secname(Section.EXPORT),
-    Ptr!(SectionType.Start, CONST),    secname(Section.START),
-    Ptr!(SectionType.Element, CONST),  secname(Section.ELEMENT),
-    Ptr!(SectionType.Code, CONST),     secname(Section.CODE),
-    Ptr!(SectionType.Data, CONST),     secname(Section.DATA),
+alias ModuleT(SectionType, bool READ_ONLY=true)=Tuple!(
+    SecType!(SectionType.Custom, READ_ONLY),  // secname(Section.CUSTOM),
+    SecType!(SectionType.Type, READ_ONLY),    // secname(Section.TYPE),
+    SecType!(SectionType.Import, READ_ONLY),  // secname(Section.IMPORT),
+    SecType!(SectionType.Function, READ_ONLY),// secname(Section.FUNCTION),
+    SecType!(SectionType.Table, READ_ONLY),   // secname(Section.TABLE),
+    SecType!(SectionType.Memory, READ_ONLY),  // secname(Section.MEMORY),
+    SecType!(SectionType.Global, READ_ONLY),  // secname(Section.GLOBAL),
+    SecType!(SectionType.Export, READ_ONLY),  // secname(Section.EXPORT),
+    SecType!(SectionType.Start, READ_ONLY),   // secname(Section.START),
+    SecType!(SectionType.Element, READ_ONLY), // secname(Section.ELEMENT),
+    SecType!(SectionType.Code, READ_ONLY),    // secname(Section.CODE),
+    SecType!(SectionType.Data, READ_ONLY),    // secname(Section.DATA),
     );
 
 
@@ -574,11 +581,13 @@ struct WasmArg {
         }
     }
 
-    void undefine() nothrow {
-        _type=Types.EMPTY;
+    static WasmArg undefine() pure nothrow {
+        WasmArg result;
+        result._type=Types.EMPTY;
+        return result;
     }
 
-    void opAssign(T)(T x) {
+    void opAssign(T)(T x) nothrow {
         alias BaseT=Unqual!T;
         static if (is(BaseT == int) || is(BaseT == uint)) {
             _type=Types.I32;
@@ -653,11 +662,13 @@ struct ExprRange {
             const(Types)[] _types;
         }
 
-        void unreachable() nothrow {
-            code=IR.UNREACHABLE;
-            _warg.undefine;
-            _wargs=null;
-            _types=null;
+        static IRElement unreachable() nothrow {
+            IRElement elm;
+            elm.code=IR.UNREACHABLE;
+            elm._warg=WasmArg.undefine;
+            elm._wargs=null;
+            elm._types=null;
+            return elm;
         }
 
         const(WasmArg) warg() const pure nothrow {
@@ -802,7 +813,7 @@ struct ExprRange {
             if (index == data.length) {
                 index++;
             }
-            elm.unreachable;
+            elm=IRElement.unreachable;
             // IRElement result;
             // elm=result; //IRElement(IR.UNREACHABLE);
         }

@@ -2,12 +2,12 @@ module wavm.WasmWriter;
 
 import std.outbuffer;
 import std.bitmanip : nativeToLittleEndian;
-import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember;
+import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual, TemplateArgsOf, PointerTarget, getUDAs, isPointer;
 import std.typecons : Tuple;
 import std.format;
 import std.algorithm.iteration : each, map, sum, fold, filter;
 import std.range.primitives : isInputRange;
-import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
+//import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
 import std.meta : AliasSeq, staticMap;
 import std.exception : assumeUnique;
 import std.range : lockstep;
@@ -17,6 +17,7 @@ import std.stdio;
 import wavm.LEB128 : encode;
 import wavm.WasmBase;
 import wavm.WasmReader;
+import wavm.WasmException;
 //import wavm.Wdisasm;
 
 @safe
@@ -55,20 +56,21 @@ class WasmWriter {
     template FromSecType(SecType, TList...) {
         alias T=WasmSection.SectionT!SecType;
         static foreach(E; EnumMembers!Section) {
-            static if (is(T == TList[E])) {
+            static if (is(T == TList[E]) || (isPointer!(TList[E])) && is(T == PointerTarget!(TList[E]))) {
                 enum FromSecType=E;
             }
         }
     }
 
-    enum fromSecType(T)=FromSecType!(T, staticMap!(PointerTarget, Module.Types));
+
+    enum fromSecType(T)=FromSecType!(T, Module.Types);
 
     alias getType(Section sec)=WasmSection.Sections[sec];
 
     class WasmLoader : WasmReader.InterfaceModule {
-
         alias SecType(Section sec)=Unqual!(PointerTarget!(Unqual!(Module.Types[sec])));
         alias SecElement(Section sec)=TemplateArgsOf!(SecType!sec)[0];
+        private Section previous_sec;
         void section_secT(Section sec)(ref scope const(ReaderModule) reader_mod) {
             if (reader_mod[sec] !is null) {
             auto _reader_sec=*reader_mod[sec];
@@ -88,79 +90,90 @@ class WasmWriter {
         }
 
         final void custom_sec(ref scope const(ReaderModule) reader_mod) {
-            pragma(msg, Module.Types[Section.CUSTOM], " : ", WasmSection.Custom);
-            mod[Section.CUSTOM]=new WasmSection.Custom(*reader_mod[Section.CUSTOM]);
+            pragma(msg, "Module.Types[Section.CUSTOM] ", Module.Types[Section.CUSTOM]);
+            pragma(msg, "Module.Types ", Module.Types);
+            check((previous_sec in mod[Section.CUSTOM]) is null,
+                format("Custom section after %s has already been definded", previous_sec));
+            mod[Section.CUSTOM][previous_sec]=WasmSection.CustomType(*reader_mod[Section.CUSTOM]);
         }
 
         final void type_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.TYPE;
             section_secT!(Section.TYPE)(reader_mod);
         }
 
         final void import_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.IMPORT;
             section_secT!(Section.IMPORT)(reader_mod);
         }
 
         final void function_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.FUNCTION;
             section_secT!(Section.FUNCTION)(reader_mod);
         }
 
         final void table_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.TABLE;
             section_secT!(Section.TABLE)(reader_mod);
         }
 
         final void memory_sec(ref scope const(ReaderModule) reader_mod) {
-//            writefln("MEMORY_SEC");
+            previous_sec=Section.MEMORY;
             section_secT!(Section.MEMORY)(reader_mod);
         }
 
         final void global_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.GLOBAL;
             section_secT!(Section.GLOBAL)(reader_mod);
         }
 
         final void export_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.EXPORT;
             section_secT!(Section.EXPORT)(reader_mod);
         }
 
         final void start_sec(ref scope const(ReaderModule) reader_mod) {
-            pragma(msg, Module.Types[Section.START], " : ", WasmSection.Start);
+            previous_sec=Section.START;
             mod[Section.START]=new WasmSection.Start(*reader_mod[Section.START]);
         }
 
 
         final void element_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.ELEMENT;
             section_secT!(Section.ELEMENT)(reader_mod);
         }
 
         final void code_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.CODE;
             section_secT!(Section.CODE)(reader_mod);
         }
 
         final void data_sec(ref scope const(ReaderModule) reader_mod) {
+            previous_sec=Section.DATA;
             section_secT!(Section.DATA)(reader_mod);
         }
     }
 
 
     immutable(ubyte[]) serialize() const {
-        scope OutBuffer[EnumMembers!Section.length] buffers;
+        OutBuffer[EnumMembers!Section.length] buffers;
         scope(exit) {
             buffers=null;
         }
         size_t output_size;
+        Section previous_sec;
         foreach(E; EnumMembers!Section) {
             if (mod[E] !is null) {
                 buffers[E]=new OutBuffer;
-                //buffers[E].write(cast(ubyte)E);
-                mod[E].serialize(buffers[E]);//tmp_bout); //buffers[E]);
-                // {
-                //     scope tmp_bout=new OutBuffer;
-                //     mod[E].serialize(tmp_bout); //buffers[E]);
-                //     buffers[E].write(encode(tmp_bout.offset));
-                //     buffers[E].write(tmp_bout);
-                // }
-//                writefln("buffers[%s]=%s", E, buffers[E].toBytes);
-                output_size+=buffers[E].offset+uint.sizeof+Section.sizeof;
+                static if (E !is Section.CUSTOM) {
+                    mod[E].serialize(buffers[E]);//tmp_bout); //buffers[E]);
+                    output_size+=buffers[E].offset+uint.sizeof+Section.sizeof;
+                }
+                if (E in mod[Section.CUSTOM]) {
+                    mod[E][Section.CUSTOM].serialize(buffers[E]);
+                }
             }
+            previous_sec=E;
         }
         auto output=new OutBuffer;
         output_size+=magic.length+wasm_version.length;
@@ -185,6 +198,7 @@ class WasmWriter {
         return output.toBytes.idup;
     }
 
+    version(none)
     @trusted
     void opCall(T)(T reader) if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
         //scope Module mod;
@@ -201,10 +215,10 @@ class WasmWriter {
                         const sec=a.sec!E;
                         mod[E]=&sec;
                         static if (is(T==ModuleIterator)) {
-                                iter(a.section, xmod);
+                                iter(a.section, mod);
                         }
                         else {
-                            enum code=format(q{reader.%s(xmod);}, secname(E));
+                            enum code=format(q{reader.%s(mod);}, secname(E));
                             mixin(code);
                         }
                         break;
@@ -314,7 +328,7 @@ class WasmWriter {
         }
 
      alias Sections=AliasSeq!(
-         Custom,
+         Custom[Section],
          Type,
          Import,
          Function,
@@ -339,7 +353,7 @@ class WasmWriter {
         //     }
         // }
 
-        struct Custom {
+        struct CustomType {
             string name;
             immutable(ubyte)[] bytes;
             size_t guess_size() const pure nothrow {
@@ -354,7 +368,8 @@ class WasmWriter {
             mixin Serialize;
         }
 
-        // alias Custom=SectionT!(CustomType);
+
+        alias Custom=CustomType[Section]; //SectionT!(CustomType);
 
         struct FuncType {
             Types type;
@@ -684,7 +699,7 @@ class WasmWriter {
                 return ExprRange(expr);
             }
             void serialize(ref OutBuffer bout) const {
-                scope tmp_out=new OutBuffer;
+                auto tmp_out=new OutBuffer;
                 tmp_out.reserve(guess_size);
                 tmp_out.write(encode(locals.length));
                 locals.each!((l) => l.serialize(tmp_out));//.write(encode(e)));

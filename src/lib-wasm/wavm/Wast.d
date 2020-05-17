@@ -87,7 +87,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void custom_sec(ref scope const(Module) mod) {
-        auto _custom=*mod.custom_sec;
+        auto _custom=*mod[Section.CUSTOM];//.custom_sec;
         //foreach(c; _custom[]) {
         writefln("_custom=%s",  _custom);
                 //output.writef("%s(custom (%s %s))", indent, c.name, cast(string)(c.bytes));
@@ -95,7 +95,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void type_sec(ref scope const(Module) mod) {
-        auto _type=*mod.type_sec;
+        auto _type=*mod[Section.TYPE]; //type_sec;
         foreach(t; _type[]) {
             output.writef("%s(type (%s", indent, typesName(t.type));
             if (t.params.length) {
@@ -117,7 +117,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void import_sec(ref scope const(Module) mod) {
-        auto _import=*mod.import_sec;
+        auto _import=*mod[Section.IMPORT];//.import_sec;
         static string importdesc(ref const ImportType imp) {
             const desc=imp.importdesc.desc;
             with(IndexType) {
@@ -149,21 +149,21 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void table_sec(ref scope const(Module) mod) {
-        auto _table=*mod.table_sec;
+        auto _table=*mod[Section.TABLE];
         foreach(t; _table[]) {
             output.writefln("%s(table %s %s)", indent, limitToString(t.limit), typesName(t.type));
         }
     }
 
     void memory_sec(ref scope const(Module) mod) {
-        auto _memory=*mod.memory_sec;
-        foreach(m; _memory[]) {
+        auto _memory=*mod[Section.MEMORY];
+         foreach(m; _memory[]) {
             output.writefln("%s(memory %s)", indent, limitToString(m.limit));
         }
     }
 
     void global_sec(ref scope const(Module) mod) {
-        auto _global=*mod.global_sec;
+        auto _global=*mod[Section.GLOBAL];
         foreach(g; _global[]) {
             output.writefln("%s(global %s (", indent, globalToString(g.global));
             auto expr=g[];
@@ -173,7 +173,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void export_sec(ref scope const(Module) mod) {
-        auto _export=*mod.export_sec;
+        auto _export=*mod[Section.EXPORT];
         foreach(exp; _export[]) {
             output.writefln(`%s(export "%s" (%s %d))`, indent, exp.name, indexName(exp.desc), exp.idx);
         }
@@ -181,11 +181,11 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void start_sec(ref scope const(Module) mod) {
-        output.writefln("%s(start %d),", indent, mod.start_sec.idx);
+        output.writefln("%s(start %d),", indent, mod[Section.START].idx);
     }
 
     void element_sec(ref scope const(Module) mod) {
-        auto _element=*mod.element_sec;
+        auto _element=*mod[Section.ELEMENT];
         foreach(e; _element[]) {
             output.writefln("%s(elem (", indent);
             auto expr=e[];
@@ -201,8 +201,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
 
     @trusted
     void code_sec(ref scope const(Module) mod) {
-        auto _code=*mod.code_sec;
-        auto _func=*mod.function_sec;
+        auto _code=*mod[Section.CODE];
+        auto _func=*mod[Section.FUNCTION];
         //writefln("code.data=%s", _code.data);
 
         foreach(f, c; lockstep(_func[], _code[], StoppingPolicy.requireSameLength)) {
@@ -223,7 +223,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     void data_sec(ref scope const(Module) mod) {
-        auto _data=*mod.data_sec;
+        auto _data=*mod[Section.DATA];
         foreach(d; _data[]) {
             output.writefln("%s(data (", indent);
             auto expr=d[];

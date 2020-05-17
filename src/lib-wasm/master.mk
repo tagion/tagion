@@ -119,8 +119,6 @@ $(1): $(1).d $(LIBRARY)
 	@echo "## Linking $(1)"
 #	@echo "########################################################################################"
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(1).d $(OUTPUT)$(BIN)/$(1) $(LDCFLAGS)
-
-
 endef
 
 $(eval $(foreach main,$(MAIN),$(call LINK,$(main))))
