@@ -1,10 +1,9 @@
 module hibon.utils.Memory;
 
 import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
-import core.stdc.stdlib : calloc,  realloc, free;
-import core.stdc.stdio;
-import std.conv : emplace;
+import hibon.utils.platform;
 
+import std.conv : emplace;
 extern(C):
 @nogc:
 
@@ -47,7 +46,7 @@ do {
     data=(cast(BaseT*)mem)[0..size];
 }
 
-void create(U)(ref U[] data, const(U[]) src, string file=__FILE__, size_t line=__LINE__) //{ //if (isArray!T && ForeachE
+void create(U)(ref U[] data, const(U[]) src, string file=__FILE__, size_t line=__LINE__)
     in {
         assert(data is null);
     }
@@ -133,7 +132,6 @@ void dispose(bool OWNS=true, T)(ref T die, string file=__FILE__, size_t line=__L
     die=null;
     }
 }
-
 
 unittest {
     { // Check Array

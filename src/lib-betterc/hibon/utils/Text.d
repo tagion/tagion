@@ -5,7 +5,8 @@ extern(C):
 
 import std.traits : isIntegral, isSigned, Unqual;
 import hibon.utils.Memory;
-import core.stdc.stdio;
+import hibon.utils.platform : calloc;
+//import core.stdc.stdio;
 
 struct Text {
     @nogc:

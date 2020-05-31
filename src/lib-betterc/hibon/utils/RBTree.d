@@ -126,6 +126,12 @@ struct RBTreeT(K) {
         }
     }
 
+    version(WebAssembly) {
+        void dump(int iter_max=20) const {
+            // empty
+        }
+    }
+    else {
     void dump(int iter_max=20) const {
         import core.stdc.stdio;
         const(char[4]) INDENT="  ->";
@@ -144,7 +150,7 @@ struct RBTreeT(K) {
         printf("DUMP %p %p\n", root, nill);
         _dump(root);
     }
-
+    }
     //static int compare
     // static bool equal_to(K)(scope const(K) a, scope const(K) b) pure {
     //     static if (isPointer!K) { //isBasicType!K || (is(T:U[], U) && isBasicType!U)) {

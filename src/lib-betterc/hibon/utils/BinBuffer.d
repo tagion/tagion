@@ -2,8 +2,13 @@ module hibon.utils.BinBuffer;
 
 extern(C):
 @nogc:
-import core.stdc.stdlib : calloc, malloc, realloc, free;
-import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
+import hibon.utils.platform;
+//import core.stdc.stdlib : calloc, malloc, realloc, free;
+version(WebAssembly) {
+}
+else {
+    import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
+}
 import std.traits : isNumeric, isArray, Unqual;
 import hibon.utils.Memory;
 import hibon.utils.utc;
@@ -59,8 +64,14 @@ struct BinBuffer {
     }
 
     private void write(T)(const T x, size_t* index) if (isNumeric!T || is(Unqual!(T)==bool)) {
-        const res=nativeToLittleEndian(x);
-        append(res, index);
+        version(WebAssembly) {
+            auto res=(cast(ubyte*)&x)[0..T.sizeof];
+            append(res, index);
+        }
+        else {
+            const res=nativeToLittleEndian(x);
+            append(res, index);
+        }
     }
 
     private void write(const(ubyte[]) x, size_t* index) {
@@ -116,6 +127,7 @@ struct BinBuffer {
     }
 }
 
+version(none)
 unittest {
     string text="text";
     auto buf=BinBuffer(100);

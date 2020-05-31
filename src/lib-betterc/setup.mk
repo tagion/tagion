@@ -19,3 +19,5 @@ TESTFLAGS+=-debug
 UNITTEST:=tests/unittest.d
 
 BIN:=$(REPOROOT)/bin/
+
+TEST:=$(BIN)/unittest

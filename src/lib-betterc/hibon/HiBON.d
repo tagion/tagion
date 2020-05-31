@@ -14,7 +14,7 @@ extern(C):
 //import std.container : RedBlackTree;
 //import std.format;
 import std.meta : staticIndexOf;
-import std.algorithm.iteration : map, fold, each;
+//import std.algorithm.iteration : map, fold, each;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, PointerTarget;
 import std.meta : AliasSeq;
 
@@ -31,7 +31,8 @@ import hibon.utils.Text;
 import hibon.utils.BinBuffer;
 import hibon.utils.Basic;
 
-import core.stdc.stdio;
+import hibon.utils.platform;
+//import core.stdc.stdio;
 
 HiBONT HiBON() {
     HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true, false); //RBTree!(HiBONT.Members)());

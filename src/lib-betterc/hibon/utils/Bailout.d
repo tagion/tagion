@@ -3,8 +3,9 @@ module hibon.utils.Bailout;
 
 extern(C):
 @nogc:
-import core.stdc.string;
-import core.stdc.stdio;
+import hibon.utils.platform;
+// import core.stdc.string;
+// import core.stdc.stdio;
 import hibon.utils.Text;
 
 enum MESSAGE_BUFFER_SIZE=0x80;
@@ -74,11 +75,18 @@ const(char[]) file() {
     return _file;
 }
 
-void dump() {
-    if (message) {
-        printf("%s:%s:%s\n", file.ptr, line, message.ptr);
+version(WebAssembly) {
+    void dump() {
+        // empty
     }
-    else {
-        printf("No error\n");
+}
+else {
+    void dump() {
+        if (message) {
+            printf("%s:%s:%s\n", file.ptr, line, message.ptr);
+        }
+        else {
+            printf("No error\n");
+        }
     }
 }

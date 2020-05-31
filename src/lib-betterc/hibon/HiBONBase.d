@@ -7,9 +7,12 @@ extern(C):
 import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA;
 
-import std.system : Endian;
-// import std.exception;
-import core.stdc.stdio;
+version(WebAssembly) {
+    pragma(msg, "WebAssembler");
+}
+else {
+    import core.stdc.stdio;
+}
 
 import hibon.utils.BinBuffer;
 import hibon.BigNumber;
@@ -147,7 +150,10 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     static if ( !is(HiBON == void ) ) {
         @Type(Type.DOCUMENT)  HiBON      document;
         void dispose() {
-            printf("VALUE Dispose\n");
+            version(WebAssembly) {}
+            else {
+                printf("VALUE Dispose\n");
+            }
         }
     }
     else static if ( !is(Document == void ) ) {
