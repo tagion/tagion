@@ -1,7 +1,4 @@
 include git.mk
-REVNO?=$(GIT_REVNO)
-HASH?=$(GIT_HASH)
-
 
 ifndef $(VERBOSE)
 PRECMD?=@
@@ -12,56 +9,20 @@ AR?=ar
 include $(REPOROOT)/command.mk
 
 include setup.mk
-WORKDIR?=$(REPOROOT)
--include $(WORKDIR)/dfiles.mk
+
+-include $(REPOROOT)/dfiles.mk
 
 BIN:=bin/
 LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
-#OBJS=${DFILES:.d=.o}
 
 .SECONDARY: $(TOUCHHOOK)
 .PHONY: ddoc makeway
 
-INC+=$(REPOROOT)
-INC+=$(P2PLIB)
-INC+=$(SECP256K1ROOT)/src/
-INC+=$(SECP256K1ROOT)/
 
 INCFLAGS=${addprefix -I,${INC}}
-
-
-
-#External libaries
-#openssl
-#secp256k1 (elliptic curve signature library)
-# SECP256K1ROOT:=$(REPOROOT)/../secp256k1
-# SECP256K1LIB:=$(SECP256K1ROOT)/.libs/libsecp256k1.a
-
-# P2PLIB:=$(REPOROOT)/../libp2pDWrapper/
-# #DCFLAGS+=-I$(P2PLIB)
-
-# LDCFLAGS+=$(LINKERFLAG)-lssl
-# LDCFLAGS+=$(LINKERFLAG)-lgmp
-# LDCFLAGS+=$(LINKERFLAG)-lcrypto
-
-# LDCFLAGS+=-L$(P2PLIB)bin/libp2p.a
-# LDCFLAGS+=-L$(P2PLIB)bin/libp2p_go.a
-# SECP256K1_LDCFLAGS+=$(LINKERFLAG)-L$(SECP256K1ROOT)/.libs/
-# SECP256K1_LDCFLAGS+=$(LINKERFLAG)-Lsecp256k1
-
-
-# # CFLAGS
-# CFLAGS+=-I$(SECP256K1ROOT)/src/
-# CFLAGS+=-I$(SECP256K1ROOT)/
-# CFLAGS+=-DUSE_NUM_GMP=1
-# LDFLAGS+=-L$(SECP256K1ROOT)/.libs/
-# LDFLAGS+=${SECP256K1LIB}
-# LDFLAGS+=-lgmp
-#${SECP256K1LIB}
-#CFLAGS+=-DUSE_FIELD_10X2=1
 
 LIBRARY:=$(BIN)/$(LIBNAME)
 LIBOBJ:=${LIBRARY:.a=.o};
@@ -85,6 +46,8 @@ HELPER:=help-main
 help-master: help-main
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
+	@echo "make test      : Run the unittests"
+	@echo
 
 help-main:
 	@echo "Usage "
@@ -107,13 +70,23 @@ info:
 	@echo "DCFLAGS =$(DCFLAGS)"
 	@echo "INCFLAGS=$(INCFLAGS)"
 
-include $(REPOROOT)/revsion.mk
+include revsion.mk
+
+include source.mk
 
 ifndef DFILES
 lib: dfiles.mk
 	$(MAKE) lib
 else
 lib: $(REVISION) $(LIBRARY)
+
+test: $(UNITTEST)
+	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
+
+$(UNITTEST):
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
+#$(LDCFLAGS)
+
 endif
 
 define LINK
@@ -121,11 +94,7 @@ $(1): $(1).d $(LIBRARY)
 	@echo "########################################################################################"
 	@echo "## Linking $(1)"
 #	@echo "########################################################################################"
-	echo prog=$(1)
-	echo LDCFLAGS=$(LDCFLAGS)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(1).d $(OUTPUT)$(BIN)/$(1) $(LDCFLAGS)
-
-
 endef
 
 $(eval $(foreach main,$(MAIN),$(call LINK,$(main))))
@@ -155,9 +124,10 @@ ddoc: $(DDOCMODULES)
 	@echo "## compile "$(notdir $<)
 	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
 
-secp256k1_test: secp256k1_test.c
-	echo $@
-	gcc $(CFLAGS) -o $@ $< ${LDFLAGS}
+%.o: %.d
+	@echo "########################################################################################"
+	@echo "## compile "$(notdir $<)
+	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $< -c $(OUTPUT)$@
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -169,12 +139,11 @@ CLEANER+=clean
 
 clean:
 	rm -f $(LIBRARY)
-	rm -f ${OBJS}
+#	rm -f ${OBJS}
+	rm -f $(UNITTEST) $(UNITTEST).o
 
 proper: $(CLEANER)
-	@echo $(WAYS)
 	rm -fR $(WAYS)
-	rm -f dfiles.mk
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
