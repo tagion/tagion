@@ -15,8 +15,8 @@ DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
 SCRIPTROOT:=${REPOROOT}/scripts/
 
 
-WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
-LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
+# WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
+# LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
 
 # DDOC Configuration
 #
@@ -28,6 +28,7 @@ LIBNAME:=libtagion_hibon.a
 LIBRARY:=$(BIN)/$(LIBNAME)
 
 WAYS+=${BIN}
+WAYS+=tests
 
 SOURCE:=tagion/hibon
 PACKAGE:=${subst /,.,$(SOURCE)}
@@ -40,10 +41,11 @@ TAGION_UTILS:=$(REPOROOT)/../tagion_utils/
 TAGION_CORE:=$(REPOROOT)/../tagion_core/
 
 -include core_dfiles.mk
-TAGION_DFILES:=${addprefix $(TAGION_CORE), $(TAGION_DFILES)}
+include tagion_dfiles.mk
+
 INC+=$(TAGION_BASIC)
 INC+=$(TAGION_UTILS)
-INC+=$(TAGION_CORE)
+#INC+=$(TAGION_CORE)
 INC+=$(REPOROOT)
 
 include unittest_setup.mk

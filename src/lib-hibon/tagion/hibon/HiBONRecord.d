@@ -3,7 +3,7 @@ module tagion.hibon.HiBONRecord;
 import file=std.file;
 import std.exception : assumeUnique;
 
-import tagion.Base : basename;
+import tagion.basic.Basic : basename;
 import tagion.hibon.HiBONBase : ValueT;
 
 import tagion.hibon.HiBON : HiBON;

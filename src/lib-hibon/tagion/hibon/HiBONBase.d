@@ -1,20 +1,41 @@
 module tagion.hibon.HiBONBase;
 
-import tagion.Types;
-import tagion.Base : isOneOf;
+//import tagion.Types;
+import tagion.basic.Basic : isOneOf;
 
 import tagion.utils.UTCTime;
 
 import std.format;
 import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
+import std.typecons : tuple;
 
 import std.system : Endian;
 import bin = std.bitmanip;
 import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
+import LEB128=tagion.utils.LEB128;
+
+
+@safe
+uint calc_size(const(ubyte[]) data) pure {
+    size_t size=LEB128.calc_size(data);
+    return cast(uint)size;
+}
+
+@safe
+uint calc_size(const size_t x) pure {
+    return cast(uint)(LEB128.calc_size(x));
+}
+
+static auto leb128(T)(const(ubyte[]) data) pure {
+    size_t size;
+    const value=LEB128.decode!T(data, size);
+    return tuple!("size", "value")(size, value);
+}
 
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
+
 
 /++
  Helper function to serialize a HiBON
@@ -488,11 +509,13 @@ unittest {
  true if keys is the indices of an HiBON array
 +/
 @safe bool isArray(R)(R keys) {
+    import std.stdio;
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {
             uint current_index;
+            writefln("index=%s", keys.front);
             if (is_index(keys.front, current_index)) {
-                if (previous_index+1 is current_index) {
+                if (previous_index < current_index) {
                     keys.popFront;
                     return check_array_index(current_index);
                 }
@@ -502,13 +525,23 @@ unittest {
         return true;
     }
     if (!keys.empty) {
-        uint previous_index=uint.max;
-        if (is_index(keys.front, previous_index) && (previous_index is 0)) {
+        uint previous_index;
+        if (is_index(keys.front, previous_index)) {
             keys.popFront;
             return check_array_index(previous_index);
         }
     }
     return true;
+}
+
+unittest {
+    import std.algorithm : map;
+    import std.conv : to;
+    const(uint[]) null_index;
+    assert(isArray(null_index.map!(a => a.to!string)));
+    assert(isArray([1].map!(a => a.to!string)));
+    assert(isArray([0, 1].map!(a => a.to!string)));
+    assert(isArray([0, 2].map!(a => a.to!string)));
 }
 
 ///

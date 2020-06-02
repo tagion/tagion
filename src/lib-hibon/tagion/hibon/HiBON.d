@@ -12,7 +12,7 @@ module tagion.hibon.HiBON;
 import std.container : RedBlackTree;
 import std.format;
 import std.meta : staticIndexOf;
-import std.algorithm.iteration : map, fold, each;
+import std.algorithm.iteration : map, fold, each, sum;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
 import std.meta : AliasSeq;
 
@@ -23,8 +23,46 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.Message : message;
-import tagion.Base : CastTo;
+import tagion.basic.Message : message;
+import tagion.basic.Basic : CastTo;
+import LEB128=tagion.utils.LEB128;
+
+import std.stdio;
+
+static size_t size(U)(const(U[]) docs) pure if (is(U:HiBON) || is(U:Document)) {
+    if (docs.length is 0) {
+        return ubyte.sizeof;
+    }
+    size_t _size;
+    scope(exit) {
+        debug writefln("#size result %d", _size);
+    }
+    foreach(i, h; docs) {
+        immutable index_key=i.to!string;
+        _size += Document.sizeKey(index_key);
+        debug writefln("#\tkey=%s size =%d", i, _size);
+        const h_size=h.size;
+        debug writefln("#\t     h.size =%d", h_size);
+        _size += h_size;
+        debug writefln("#\t      size =%d", _size);
+    }
+    return _size;
+}
+
+static size_t size(const(string[]) strs) pure {
+    if (strs.length is 0) {
+        return ubyte.sizeof;
+    }
+    size_t _size;
+    foreach(i, s; strs) {
+        immutable index_key=i.to!string;
+        _size += Document.sizeKey(index_key);
+        const str_size=s.length;
+        _size += str_size;
+    }
+    return _size;
+}
+
 
 /++
  HiBON is a generate object of the HiBON format
@@ -47,12 +85,18 @@ import tagion.Base : CastTo;
      Returns:
      the size in bytes
      +/
-    size_t size() const {
-        size_t result = uint.sizeof+Type.sizeof;
+    size_t size() const pure {
+        size_t result;
+        //= uint.sizeof+Type.sizeof;
         if (_members.length) {
             result += _members[].map!(a => a.size).fold!( (a, b) => a + b);
         }
-        return result;
+        if (result>0) {
+            return result+calc_size(result);
+        }
+        else {
+            return ubyte.sizeof;
+        }
     }
 
     /++
@@ -72,14 +116,14 @@ import tagion.Base : CastTo;
     //  +/
     @trusted
     private void append(ref ubyte[] buffer, ref size_t index) const pure {
-        immutable size_index = index;
-        buffer.binwrite(uint.init, &index);
         if (_members.length) {
+            uint size=cast(uint)_members[].map!(a => a.size).sum;
+            buffer.array_write(LEB128.encode(size), index);
             _members[].each!(a => a.append(buffer, index));
         }
-        buffer.binwrite(Type.NONE, &index);
-        immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-        buffer.binwrite(doc_size, size_index);
+        else {
+            buffer.binwrite(ubyte(0), &index);
+        }
     }
 
     /++
@@ -188,7 +232,7 @@ import tagion.Base : CastTo;
          the size in bytes
          +/
         @trusted
-        size_t size() const {
+        size_t size() const pure {
             with(Type) {
             TypeCase:
                 switch(type) {
@@ -197,7 +241,8 @@ import tagion.Base : CastTo;
                         case E:
                             static if ( E is Type.DOCUMENT ) {
                                 const _size = value.by!(E).size;
-                                return Document.sizeKey(key) + calc_size(_size) + _size;
+                                debug writefln("E=%s calc_size(_size)=%d  _size+%d", E, calc_size(_size),  _size);
+                                return Document.sizeKey(key) + _size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
                                 const _size = value.by!(E).size;
@@ -237,14 +282,15 @@ import tagion.Base : CastTo;
 
         @trusted
         protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index)  const pure if (isNativeArray(E)) {
-            immutable size_index = index;
-            buffer.binwrite(uint.init, &index);
-            scope(exit) {
-                buffer.binwrite(Type.NONE, &index);
-                immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-                buffer.binwrite(doc_size, size_index);
-            }
+//            buffer.binwrite(uint.init, &index);
+            // scope(exit) {
+            //     buffer.binwrite(Type.NONE, &index);
+            //     immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
+            //     buffer.binwrite(doc_size, size_index);
+            // }
             with(Type) {
+                immutable list_size = value.by!(E).size;
+                buffer.array_write(LEB128.encode(list_size), index);
                 foreach(i, h; value.by!E) {
                     immutable key=i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
@@ -258,7 +304,6 @@ import tagion.Base : CastTo;
                         else static if (E is NATIVE_DOCUMENT_ARRAY) {
                             buffer.array_write(h.data, index);
                         }
-
                         else {
                             assert(0, format("%s is not implemented yet", E));
                         }
@@ -452,7 +497,7 @@ import tagion.Base : CastTo;
     unittest {
         {
             auto hibon=new HiBON;
-            assert(!hibon.isArray);
+            assert(hibon.isArray);
 
             hibon["0"]=1;
             assert(hibon.isArray);
@@ -466,10 +511,12 @@ import tagion.Base : CastTo;
         {
             auto hibon=new HiBON;
             hibon["1"]=1;
-            assert(!hibon.isArray);
+            assert(hibon.isArray);
             hibon["0"]=2;
             assert(hibon.isArray);
             hibon["4"]=2;
+            assert(hibon.isArray);
+            hibon["05"]=2;
             assert(!hibon.isArray);
         }
     }
@@ -523,7 +570,7 @@ import tagion.Base : CastTo;
         test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
         test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
         test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 42];
+        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 0x823d_823d_823d_823dUL];
         test_tabel_array.BOOLEAN_ARRAY = [true, false];
         test_tabel_array.STRING        = "Text";
 
@@ -531,7 +578,8 @@ import tagion.Base : CastTo;
             auto hibon = new HiBON;
             assert(hibon.length is 0);
 
-            assert(hibon.size is uint.sizeof+Type.sizeof);
+            writefln("hibon.size=%d", hibon.size);
+            assert(hibon.size is ubyte.sizeof);
             immutable data = hibon.serialize;
 
             const doc = Document(data);
@@ -559,12 +607,12 @@ import tagion.Base : CastTo;
 
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size
-                = uint.sizeof                    // Size of the object in ubytes (uint(14))
+                = calc_size(14)                  // Size of the object in ubytes (uint(14))
                 + Type.sizeof                    // The HiBON Type  (Type.FLOAT32)  1
                 + ubyte.sizeof                   // Length of the key (ubyte(7))    2
                 + Type.FLOAT32.stringof.length   // The key text string ("FLOAT32") 9
                 + float.sizeof                   // The data            (float(1.23)) 13
-                + Type.sizeof                    // The HiBON object ends with a (Type.NONE) 14
+                //    + Type.sizeof                    // The HiBON object ends with a (Type.NONE) 14
                 ;
 
             const doc_size = Document.sizeT(Type.FLOAT32, Type.FLOAT32.stringof, test_tabel[pos]);
@@ -575,6 +623,7 @@ import tagion.Base : CastTo;
 
             const doc = Document(data);
 
+            writefln("### doc.keys=%s", doc.keys);
             assert(doc.length is 1);
             const e = doc[Type.FLOAT32.stringof];
 
@@ -584,9 +633,24 @@ import tagion.Base : CastTo;
 
         }
 
+        // {
+        //     auto hibon = new HiBON;
+        //     hibon["X"]=int(42);
+        //     immutable data = hibon.serialize;
+        //     const doc = Document(data);
+
+        //     writefln("data=%s", doc.data);
+        //     writefln("hibon.size=%d", hibon.size);
+        //     writefln("doc.data.length=%d", doc.data.length);
+        //     writefln("doc.size=%s", leb128!uint(doc.data));
+        //     assert(hibon.size == doc.data.size);
+        //     assert(hibon.size= == doc.data.size);
+
+
+        // }
+
         { // HiBON Test for basic types
             auto hibon = new HiBON;
-
             string[] keys;
             foreach(i, t; test_tabel) {
                 hibon[test_tabel.fieldNames[i]] = t;
@@ -600,7 +664,9 @@ import tagion.Base : CastTo;
             }
 
             foreach(i, t; test_tabel) {
+
                 enum key=test_tabel.fieldNames[i];
+
                 const m = hibon[key];
                 assert(m.key == key);
                 assert(m.type.to!string == key);
@@ -614,6 +680,7 @@ import tagion.Base : CastTo;
 
             foreach(i, t; test_tabel) {
                 enum key=test_tabel.fieldNames[i];
+
                 const e = doc[key];
                 assert(e.key == key);
                 assert(e.type.to!string == key);
@@ -638,6 +705,7 @@ import tagion.Base : CastTo;
 
             foreach(i, t; test_tabel_array) {
                 enum key=test_tabel_array.fieldNames[i];
+                writefln("%d %s", i, key);
                 const m = hibon[key];
                 assert(m.key == key);
                 assert(m.type.to!string == key);
@@ -646,6 +714,13 @@ import tagion.Base : CastTo;
 
             immutable data = hibon.serialize;
             const doc = Document(data);
+            //const(ubyte[]) buffer_len=leb128!uint(data); //[129, 2, 133, 6, 66]; //0, 133, 6, 66, 73];
+            // writefln("leb128=%s", buffer_len); //leb128!uint(test));
+            // writefln("doc.keys=%s", doc.keys);
+            // writefln("doc.data=%s", doc.data);
+            // writefln("doc.data.length=%d", doc.data.length);
+
+            // writefln("doc.length=%d hibon.length=%d test_tabel_array.length=%d", doc.length, hibon.length, test_tabel_array.length);
 
             assert(doc.length is test_tabel_array.length);
 
@@ -672,12 +747,25 @@ import tagion.Base : CastTo;
             hibon_child["int32"]= 42;
 
             immutable hibon_child_size    = hibon_child.size;
+            writefln("hibon_child.serialize=%s", hibon_child.serialize);
             immutable child_key_size = Document.sizeKey(chile_name);
             immutable hibon_size = hibon.size;
-            assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
+            writefln("hibon_size=%d", hibon_size);
+            writefln("hibon_size_no_child=%d", hibon_size_no_child);
+            writefln("child_key_size=%d", child_key_size);
+            writefln("hibon_child_size=%d", hibon_child_size);
+            writefln("hibon_size_no_child+child_key_size+hibon_child_size=%d", hibon_size_no_child+child_key_size+hibon_child_size);
+
+//            assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
+
 
             immutable data = hibon.serialize;
+
             const doc = Document(data);
+            writefln("doc.data=%s", doc.data);
+            writefln("doc.data.length=%d", doc.data.length);
+            assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
+
 
         }
 
@@ -732,15 +820,27 @@ import tagion.Base : CastTo;
                 local_hibon[name]=t;
                 hibon_array~=local_hibon;
             }
+
+            // foreach(k, h; hibon_array) {
+            //     writefln("hibon_array[%s].size=%d", k, h.size);
+            //     writefln("hibon_array[%s].serialize=%s", k, h.serialize);
+            // }
+            // writefln("\thibon_array.size=%d", hibon_array.size);
+
             auto hibon = new HiBON;
             hibon["int"]  = int(42);
             hibon["array"]= hibon_array;
 
+            // writefln("hibon.serialize=%s", hibon.serialize);
             immutable data = hibon.serialize;
 
             const doc = Document(data);
 
             {
+// //                writefln(`doc["int"].type=%d`, doc["int"].type);
+//                 writeln("-------------- --------------");
+//                 auto test=doc["int"];
+//                 writeln("-------------- get  --------------");
                 assert(doc["int"].get!int is 42);
             }
 

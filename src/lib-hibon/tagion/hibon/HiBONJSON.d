@@ -13,11 +13,11 @@ import tagion.hibon.HiBONBase : Type, isNative, isArray, isHiBONType;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.Message : message;
+import tagion.basic.Message : message;
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
-import tagion.TagionExceptions : Check;
+import tagion.basic.TagionExceptions : Check;
 import tagion.utils.Miscellaneous : toHex=toHexString, decode;
 
 /**

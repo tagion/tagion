@@ -13,10 +13,12 @@ import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 
+
+import std.stdio;
 //import tagion.Types : decimal_t;
 
-import tagion.Base : isOneOf;
-import tagion.Message : message;
+import tagion.basic.Basic : isOneOf;
+import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
@@ -29,17 +31,6 @@ import LEB128=tagion.utils.LEB128;
 //     LEB128.decode!uint(data, result);
 //     return cast(result;
 // }
-
-@safe
-uint calc_size(const(ubyte[]) data) pure {
-    size_t size=LEB128.calc_size(data);
-    return cast(uint)size;
-}
-
-@safe
-uint calc_size(const size_t x) pure {
-    return cast(uint)(LEB128.calc_size(x));
-}
 
 import std.stdio;
 import std.exception;
@@ -97,7 +88,6 @@ static assert(uint.sizeof == 4);
         @trusted uint size() {
             size_t len;
             return LEB128.decode!uint(data, len);
-//            return *cast(uint*)(data[0..uint.sizeof].ptr);
         }
     }
 
@@ -188,7 +178,7 @@ static assert(uint.sizeof == 4);
 
         @property pure nothrow const {
             bool empty() {
-                return _index >= data.length;
+                return _index > data.length;
             }
 
 
@@ -206,8 +196,13 @@ static assert(uint.sizeof == 4);
          */
         @trusted
         void popFront() {
-            emplace!Element(&_element, data[_index..$]);
-            _index += _element.size;
+            if (_index >= data.length) {
+                _index = data.length+1;
+            }
+            else {
+                emplace!Element(&_element, data[_index..$]);
+                _index += _element.size;
+            }
         }
     }
 
@@ -271,6 +266,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opBinaryRight(string op)(in string key) const if(op == "in") {
         foreach (ref element; this[]) {
+            writefln("element.key=%s key=%s %s", element.key, key, element.data);
             if (element.key == key) {
                 return element;
             }
@@ -286,6 +282,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(in string key) const {
         auto result=key in this;
+        writefln("opIndex %s data-%s type=%s", key, result.data, result.type);
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -746,8 +743,8 @@ static assert(uint.sizeof == 4);
          * | [Type] | [len] | [key] | [val | unused... |
          * +-------------------------------------------+
          *          ^ type offset(1)
-         *                  ^ len offset(2)
-         *                          ^ keySize + 2
+         *                  ^ len offset(len.size)
+         *                          ^ keySize + 1 + len.size
          *                                 ^ size
          *                                             ^ data.length
          *
@@ -790,25 +787,23 @@ static assert(uint.sizeof == 4);
                         static if (isHiBONType(E)) {
                         case E:
                             static if (E is Type.DOCUMENT) {
-                                immutable byte_size = *cast(uint*)(data[valuePos..valuePos+uint.sizeof].ptr);
-                                return new Value(Document(data[valuePos..valuePos+uint.sizeof+byte_size]));
+                                immutable len=leb128!uint(data[valuePos..$]);
+                                return new Value(Document(data[valuePos..valuePos+len.size+len.value]));
                             }
                             else static if (.isArray(E) || (E is Type.STRING)) {
                                 alias T = Value.TypeT!E;
                                 static if ( is(T: U[], U) ) {
-                                    immutable birary_array_pos = valuePos+uint.sizeof;
-                                    immutable byte_size = *cast(uint*)(data[valuePos..birary_array_pos].ptr);
-                                    immutable len = byte_size / U.sizeof;
-                                    return new Value((cast(immutable(U)*)(data[birary_array_pos..$].ptr))[0..len]);
+                                    immutable binary_len=leb128!uint(data[valuePos..$]);
+                                    immutable len = binary_len.value / U.sizeof;
+                                    return new Value((cast(immutable(U)*)(data[valuePos+binary_len.size..$].ptr))[0..len]);
                                 }
                             }
                             else static if (E is BIGINT) {
                                 import std.internal.math.biguintnoasm : BigDigit;
-                                immutable birary_array_pos = valuePos+uint.sizeof;
-                                immutable byte_size = *cast(uint*)(data[valuePos..birary_array_pos].ptr);
-                                immutable len = byte_size / BigDigit.sizeof;
-                                immutable dig=(cast(immutable(BigDigit*))(data[birary_array_pos..$].ptr))[0..len];
-                                const sign=data[birary_array_pos+byte_size] !is 0;
+                                immutable binary_len=leb128!uint(data[valuePos..$]);
+                                immutable len = binary_len.value / BigDigit.sizeof;
+                                immutable dig=(cast(immutable(BigDigit*))(data[valuePos+binary_len.size..$].ptr))[0..len];
+                                const sign=data[valuePos+binary_len.size+binary_len.value] !is 0;
                                 const big=BigNumber(sign, dig);
                                 return new Value(big);
                                 //  assert(0, format("Type %s not implemented", E));
@@ -852,6 +847,8 @@ static assert(uint.sizeof == 4);
                 enum E = Value.asType!T;
                 import std.format;
                 static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));
+                import std.stdio;
+                writefln("get data %s", data);
                 return by!E;
             }
 
@@ -991,11 +988,12 @@ static assert(uint.sizeof == 4);
                             break TypeCase;
                         }
                     default:
+                        import std.format;
+                        throw new HiBONExceptionT!true(format("Bad type %d", type));
                         // empty
                     }
                 }
-                import std.format;
-                assert(0, format("Bad type %s", type));
+                assert(0);
             }
 
 
