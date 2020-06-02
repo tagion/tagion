@@ -289,10 +289,11 @@ HiBON toHiBON(scope const JSONValue json) {
     }
 
     //static HiBON Obj(scope JSONValue json);
-
-
-    static HiBON Obj(scope JSONValue json) {
-        static bool set(ref HiBON sub_result, string key, scope JSONValue jvalue) {
+    static HiBON JSON(Key)(scope JSONValue json) {
+        static bool set(ref HiBON sub_result, Key key, scope JSONValue jvalue) {
+            if (jvalue.array[TYPE].type !is JSONType.STRING) {
+                return false;
+            }
             immutable label=jvalue.array[TYPE].str;
             .check((label in labelMap) !is null, "HiBON type name '%s' is not valid", label);
             immutable type=labelMap[label];
@@ -352,7 +353,9 @@ HiBON toHiBON(scope const JSONValue json) {
         // static foreach(E; EnumMembers!JSONType) {
         //     writefln("case %s:\nbreak;", E);
         // }
-        foreach(string key, ref jvalue;json) {
+        writefln("json.type=%s", json.type);
+        writefln("json=%s", json);
+        foreach(Key key, ref jvalue;json) {
             writefln("key=%s", key);
             with(JSONType) {
                 final switch(jvalue.type) {
@@ -390,6 +393,21 @@ HiBON toHiBON(scope const JSONValue json) {
         }
         return result;
     }
+
+
+    static HiBON Obj(scope JSONValue json) {
+        if ( json.type is JSONType.ARRAY ) {
+            return JSON!size_t(json);
+
+        }
+        else if ( json.type is JSONType.OBJECT ) {
+            return JSON!string(json);
+        }
+        .check(0, format("JSON_TYPE must be of %s or %s not %s", JSONType.OBJECT, JSONType.ARRAY, json.type));
+        assert(0);
+    }
+
+
     return Obj(json);
 }
 
@@ -464,14 +482,17 @@ unittest {
     const doc=Document(hibon.serialize);
 
     auto json=doc.toJSON(true);
-    // import std.stdio;
-    // writefln("%s", json.toPrettyString);
+    import std.stdio;
+    writefln("Before\n%s", json.toPrettyString);
     string str=json.toString;
     auto parse=str.parseJSON;
     auto h=parse.toHiBON;
 
     const parse_doc=Document(h.serialize);
-//    writefln("After %s", parse_doc.toJSON(true).toPrettyString);
+    writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
+
+    writefln("doc.keys      =%s", doc.keys);
+    writefln("parse_doc.keys=%s", parse_doc.keys);
 
     assert(doc == parse_doc);
     assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);

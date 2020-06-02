@@ -528,6 +528,7 @@ unittest {
             keys.popFront;
             return check_array_index(previous_index);
         }
+        return false;
     }
     return true;
 }
@@ -540,6 +541,10 @@ unittest {
     assert(isArray([1].map!(a => a.to!string)));
     assert(isArray([0, 1].map!(a => a.to!string)));
     assert(isArray([0, 2].map!(a => a.to!string)));
+    assert(!isArray(["x", "2"].map!(a => a)));
+    assert(!isArray(["1", "x"].map!(a => a)));
+    assert(!isArray(["0", "1", "x"].map!(a => a)));
+
 }
 
 ///
