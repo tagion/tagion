@@ -27,24 +27,18 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-import std.stdio;
+//import std.stdio;
 
 static size_t size(const(HiBON[]) hibons) pure {
     if (hibons.length is 0) {
         return ubyte.sizeof;
     }
     size_t _size;
-    scope(exit) {
-        debug writefln("#size result %d", _size);
-    }
     foreach(i, h; hibons) {
         immutable index_key=i.to!string;
         _size += Document.sizeKey(index_key);
-        debug writefln("#\tkey=%s size =%d", i, _size);
         const h_size=h.size;
-        debug writefln("#\t     h.size =%d", h_size);
         _size += calc_size(h_size) + h_size;
-        debug writefln("#\t      size =%d", _size);
     }
     return _size;
 }
@@ -54,17 +48,11 @@ static size_t size(const(Document[]) docs) pure  {
         return ubyte.sizeof;
     }
     size_t _size;
-    scope(exit) {
-        debug writefln("#size result %d", _size);
-    }
     foreach(i, d; docs) {
         immutable index_key=i.to!string;
         _size += Document.sizeKey(index_key);
-        debug writefln("#\tkey=%s size =%d", i, _size);
         const d_size=d.size;
-        debug writefln("#\t     d.size =%d", d_size);
         _size += calc_size(d_size) + d_size;
-        debug writefln("#\t      size =%d", _size);
     }
     return _size;
 }
@@ -273,7 +261,6 @@ static size_t size(const(string[]) strs) pure {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
                                 const _size = value.by!(E).size;
-                                debug writefln("E=%s calc_size(_size)=%d  _size+%d", E, calc_size(_size),  _size);
                                 return Document.sizeKey(key) + calc_size(_size) + _size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
@@ -611,7 +598,6 @@ static size_t size(const(string[]) strs) pure {
             auto hibon = new HiBON;
             assert(hibon.length is 0);
 
-            writefln("hibon.size=%d", hibon.size);
             assert(hibon.size is ubyte.sizeof);
             immutable data = hibon.serialize;
 
@@ -656,7 +642,6 @@ static size_t size(const(string[]) strs) pure {
 
             const doc = Document(data);
 
-            writefln("### doc.keys=%s", doc.keys);
             assert(doc.length is 1);
             const e = doc[Type.FLOAT32.stringof];
 
@@ -738,7 +723,6 @@ static size_t size(const(string[]) strs) pure {
 
             foreach(i, t; test_tabel_array) {
                 enum key=test_tabel_array.fieldNames[i];
-                writefln("%d %s", i, key);
                 const m = hibon[key];
                 assert(m.key == key);
                 assert(m.type.to!string == key);
@@ -780,23 +764,11 @@ static size_t size(const(string[]) strs) pure {
             hibon_child["int32"]= 42;
 
             immutable hibon_child_size    = hibon_child.serialize_size;
-            writefln("hibon_child.serialize=%s", hibon_child.serialize);
             immutable child_key_size = Document.sizeKey(chile_name);
             immutable hibon_size = hibon.serialize_size;
-            writefln("hibon_size=%d", hibon_size);
-            writefln("hibon_size_no_child=%d", hibon_size_no_child);
-            writefln("child_key_size=%d", child_key_size);
-            writefln("hibon_child_size=%d", hibon_child_size);
-            writefln("hibon_size_no_child+child_key_size+hibon_child_size=%d", hibon_size_no_child+child_key_size+hibon_child_size);
-
-//            assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
-
-
             immutable data = hibon.serialize;
 
             const doc = Document(data);
-            writefln("doc.data=%s", doc.data);
-            writefln("doc.data.length=%d", doc.data.length);
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
 
@@ -905,7 +877,6 @@ static size_t size(const(string[]) strs) pure {
 
                 immutable data_array=hibon_doc_array.serialize;
 
-                writefln("data_array.data=%s data_array.data.length=%d", data_array, data_array.length);
                 const doc_all=Document(data_array);
                 const doc_array=doc_all["doc_array"].by!(Type.DOCUMENT);
 
@@ -932,7 +903,6 @@ static size_t size(const(string[]) strs) pure {
             immutable data=hibon.serialize;
             const doc=Document(data);
             const doc_texts=doc["texts"].by!(Type.DOCUMENT);
-            writefln("doc_texts.data=%s", doc_texts.data);
             assert(doc_texts.length is texts.length);
             foreach(i, s; texts) {
                 const e=doc_texts[i];

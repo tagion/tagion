@@ -32,7 +32,7 @@ import LEB128=tagion.utils.LEB128;
 //     return cast(result;
 // }
 
-import std.stdio;
+//import std.stdio;
 import std.exception;
 
 static assert(uint.sizeof == 4);
@@ -878,8 +878,6 @@ static assert(uint.sizeof == 4);
                 enum E = Value.asType!T;
                 import std.format;
                 static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));
-                import std.stdio;
-                writefln("get data %s", data);
                 return by!E;
             }
 
@@ -1069,11 +1067,6 @@ static assert(uint.sizeof == 4);
                         return INVALID_TYPE;
                     }
                     if ( size > data.length ) {
-                        debug {
-                            import std.stdio;
-                            import std.exception;
-                            assumeWontThrow(writefln("size=%d data.length=%d", size, data.length));
-                        }
                         return OVERFLOW;
                     }
                     if ( .isArray(type) ) {

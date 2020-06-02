@@ -8,6 +8,8 @@ import std.format;
 import std.traits : EnumMembers, Unqual, ReturnType, ForeachType;
 import std.range.primitives : isInputRange;
 
+import std.stdio;
+
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase : Type, isNative, isArray, isHiBONType;
 import tagion.hibon.HiBONException;
@@ -351,6 +353,7 @@ HiBON toHiBON(scope const JSONValue json) {
         //     writefln("case %s:\nbreak;", E);
         // }
         foreach(string key, ref jvalue;json) {
+            writefln("key=%s", key);
             with(JSONType) {
                 final switch(jvalue.type) {
                 case null_:
