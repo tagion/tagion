@@ -14,7 +14,7 @@ import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 
 
-import std.stdio;
+//import std.stdio;
 //import tagion.Types : decimal_t;
 
 import tagion.basic.Basic : isOneOf;
@@ -176,9 +176,6 @@ static assert(uint.sizeof == 4);
             this(doc.data);
         }
 
-        void dump() {
-            writefln("Doc range _index=%d", _index);
-        }
         @property pure nothrow const {
             bool empty() {
                 return _index > data.length;
@@ -269,7 +266,6 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opBinaryRight(string op)(in string key) const if(op == "in") {
         foreach (ref element; this[]) {
-            writefln("element.key=%s key=%s %s", element.key, key, element.data);
             if (element.key == key) {
                 return element;
             }
@@ -285,7 +281,6 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(in string key) const {
         auto result=key in this;
-        writefln("opIndex %s data-%s type=%s", key, result.data, result.type);
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -416,7 +411,6 @@ static assert(uint.sizeof == 4);
         index = make(buffer, tabel_range);
         immutable data = buffer[0..index].idup;
         const doc=Document(data);
-        writefln("doc.data=%s", doc.data);
         auto tabelR=doc.range!(immutable(ubyte)[][]);
         foreach(t; tabel_range) {
             assert(tabelR.front == t);
@@ -511,7 +505,6 @@ static assert(uint.sizeof == 4);
 
         { // Test of null document
             const doc = Document(null);
-            doc[].dump;
             assert(doc.length is 0);
             assert(doc[].empty);
         }
@@ -669,7 +662,6 @@ static assert(uint.sizeof == 4);
 
                 size = cast(uint)(index - start_index);
 
-                writefln("### size=%s size_guess=%d start_index=%d", size, size_guess, start_index);
                 assert(size == size_guess);
                 size_t dummy_index=0;
                 buffer.array_write(LEB128.encode(size), dummy_index);
@@ -739,7 +731,6 @@ static assert(uint.sizeof == 4);
                 }
                 //buffer.binwrite(Type.NONE, &index);
                 size = cast(uint)(index - start_index);
-                writefln("### size=%s size_guess=%d start_index=%d", size, size_guess, start_index);
                 assert(size == size_guess);
 
                 //size = cast(uint)(index - uint.sizeof);
@@ -1080,11 +1071,6 @@ static assert(uint.sizeof == 4);
                                     alias T = Value.TypeT!E;
                                     static if ( is(T == U[], U) ) {
                                         if ( byte_size % U.sizeof !is 0 ) {
-
-                                            debug {
-                                                assumeWontThrow(writefln("E=%s key=%s type=%s T=%s byte_size=%d U.sizeof=%d %d",
-                                                        E, key, type, T.stringof, byte_size, U.sizeof, byte_size % U.sizeof));
-                                            }
                                             return ARRAY_SIZE_BAD;
                                         }
                                     }

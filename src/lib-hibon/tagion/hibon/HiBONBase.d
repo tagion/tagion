@@ -509,11 +509,9 @@ unittest {
  true if keys is the indices of an HiBON array
 +/
 @safe bool isArray(R)(R keys) {
-    import std.stdio;
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {
             uint current_index;
-            writefln("index=%s", keys.front);
             if (is_index(keys.front, current_index)) {
                 if (previous_index < current_index) {
                     keys.popFront;
