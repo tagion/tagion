@@ -164,7 +164,7 @@ static assert(uint.sizeof == 4);
         this(immutable(ubyte[]) data) {
             this.data = data;
             if (data.length == 0) {
-                _index = 0;
+                _index = ubyte.sizeof;
             }
             else {
                 _index = calc_size(data);
@@ -176,6 +176,9 @@ static assert(uint.sizeof == 4);
             this(doc.data);
         }
 
+        void dump() {
+            writefln("Doc range _index=%d", _index);
+        }
         @property pure nothrow const {
             bool empty() {
                 return _index > data.length;
@@ -413,7 +416,7 @@ static assert(uint.sizeof == 4);
         index = make(buffer, tabel_range);
         immutable data = buffer[0..index].idup;
         const doc=Document(data);
-
+        writefln("doc.data=%s", doc.data);
         auto tabelR=doc.range!(immutable(ubyte)[][]);
         foreach(t; tabel_range) {
             assert(tabelR.front == t);
@@ -474,8 +477,9 @@ static assert(uint.sizeof == 4);
         import std.typecons : Tuple, isTuple;
 
         static private size_t make(R)(ref ubyte[] buffer, R range, size_t count=size_t.max) if (isTuple!R) {
-            size_t index;
-            buffer.binwrite(uint.init, &index);
+            size_t temp_index;
+            auto temp_buffer=buffer.dup;
+//            temp_buffer.binwrite(uint.init, &index);
             foreach(i, t; range) {
                 if ( i is count ) {
                     break;
@@ -483,12 +487,20 @@ static assert(uint.sizeof == 4);
                 enum name = range.fieldNames[i];
                 alias U = range.Types[i];
                 enum  E = Value.asType!U;
-                build(buffer, E, name, t, index);
+                build(temp_buffer, E, name, t, temp_index);
             }
-            buffer.binwrite(Type.NONE, &index);
-            uint size;
-            size = cast(uint)(index - uint.sizeof);
-            buffer.binwrite(size, 0);
+            auto leb128_size_buffer=LEB128.encode(temp_index);
+            size_t index;
+            buffer.array_write(leb128_size_buffer, index);
+            buffer.array_write(temp_buffer[0..temp_index], index);
+
+            // auto index=leb128_size_buffer.length
+            // buffer[0..index]=leb128_size_buffer;
+            // buffer.array_write(LEB128.encode(index),
+            // //buffer.binwrite(Type.NONE, &index);
+            // uint size;
+            // size = cast(uint)(index - uint.sizeof);
+            // buffer.binwrite(size, 0);
             return index;
         }
     }
@@ -499,15 +511,16 @@ static assert(uint.sizeof == 4);
 
         { // Test of null document
             const doc = Document(null);
+            doc[].dump;
             assert(doc.length is 0);
             assert(doc[].empty);
         }
 
         { // Test of empty Document
             size_t index;
-            buffer.binwrite(uint.init, &index);
-            buffer.binwrite(Type.NONE, &index);
-            buffer.binwrite(uint(1), 0);
+            buffer.binwrite(ubyte.init, &index);
+            // buffer.binwrite(Type.NONE, &index);
+            // buffer.binwrite(uint(1), 0);
             immutable data=buffer[0..index].idup;
             const doc = Document(data);
             assert(doc.length is 0);

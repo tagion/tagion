@@ -285,13 +285,13 @@ static size_t size(const(string[]) strs) pure {
                                 foreach(i, e; value.by!(E)[]) {
                                     immutable index_key=i.to!string;
                                     _size += Document.sizeKey(index_key);
-                                    static if(E is NATIVE_HIBON_ARRAY) {
-                                        const _hibon_size=e.size;
-                                        _size += calc_size(_hibon_size) + _hibon_size;
-                                    }
-                                    else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                                        const _document_size=e.size;
-                                        _size += calc_size(_document_size) + _document_size;
+                                    static if(E is NATIVE_HIBON_ARRAY || E is NATIVE_DOCUMENT_ARRAY) {
+                                        const _doc_size=e.size;
+                                        _size += calc_size(_doc_size) + _doc_size;
+                                    // }
+                                    // else static if (E is NATIVE_DOCUMENT_ARRAY) {
+                                    //     const _document_size=e.size;
+                                    //     _size += calc_size(_document_size) + _document_size;
                                     }
                                     else static if (E is NATIVE_STRING_ARRAY) {
                                         _size += calc_size(e.length) + e.length;

@@ -290,62 +290,62 @@ HiBON toHiBON(scope const JSONValue json) {
 
 
     static HiBON Obj(scope JSONValue json) {
-    static bool set(ref HiBON sub_result, string key, scope JSONValue jvalue) {
-        immutable label=jvalue.array[TYPE].str;
-        .check((label in labelMap) !is null, "HiBON type name '%s' is not valid", label);
-        immutable type=labelMap[label];
+        static bool set(ref HiBON sub_result, string key, scope JSONValue jvalue) {
+            immutable label=jvalue.array[TYPE].str;
+            .check((label in labelMap) !is null, "HiBON type name '%s' is not valid", label);
+            immutable type=labelMap[label];
 
-        with(Type) {
-            final switch(type) {
-                static foreach(E; EnumMembers!Type) {
-                case E:
-                    static if (isHiBONType(E)) {
-                        alias T=HiBON.Value.TypeT!E;
-                        scope value=jvalue.array[VALUE];
+            with(Type) {
+                final switch(type) {
+                    static foreach(E; EnumMembers!Type) {
+                    case E:
+                        static if (isHiBONType(E)) {
+                            alias T=HiBON.Value.TypeT!E;
+                            scope value=jvalue.array[VALUE];
 
-                        static if(E is DOCUMENT) {
-                            return false;
+                            static if(E is DOCUMENT) {
+                                return false;
+                            }
+                            else {
+                                static if(E is UTC) {
+                                    assert(0, format("Type %s is supported yet", E));
+                                }
+                                else static if(E is BINARY) {
+                                    import std.uni : toLower;
+                                    scope str=value.str;
+                                    enum HEX_PREFIX="0x";
+                                    .check(str[0..HEX_PREFIX.length].toLower == HEX_PREFIX,
+                                        message("Hex prefix %s expected for type %s", HEX_PREFIX, E));
+                                    sub_result[key]=decode(str[HEX_PREFIX.length..$]);
+                                }
+                                else static if (isArray(E)) {
+                                    .check(value.type is JSONType.array, message("JSON array expected for %s for member %s", E, key));
+                                    alias U=Unqual!(ForeachType!T);
+                                    scope array=new U[value.array.length];
+                                    foreach(size_t i, ref e; value) {
+                                        array[i]=get!U(e);
+                                    }
+                                    sub_result[key]=array.idup;
+
+                                }
+                                // else static if (E is BIGINT) {
+
+                                //     assert(0, format("%s is not supported yet", E));
+                                //}
+                                else {
+                                    sub_result[key]=get!T(value);
+                                }
+                                return true;
+                            }
                         }
                         else {
-                            static if(E is UTC) {
-                                assert(0, format("Type %s is supported yet", E));
-                            }
-                            else static if(E is BINARY) {
-                                import std.uni : toLower;
-                                scope str=value.str;
-                                enum HEX_PREFIX="0x";
-                                .check(str[0..HEX_PREFIX.length].toLower == HEX_PREFIX,
-                                    message("Hex prefix %s expected for type %s", HEX_PREFIX, E));
-                                sub_result[key]=decode(str[HEX_PREFIX.length..$]);
-                            }
-                            else static if (isArray(E)) {
-                                .check(value.type is JSONType.array, message("JSON array expected for %s for member %s", E, key));
-                                alias U=Unqual!(ForeachType!T);
-                                scope array=new U[value.array.length];
-                                foreach(size_t i, ref e; value) {
-                                    array[i]=get!U(e);
-                                }
-                                sub_result[key]=array.idup;
-
-                            }
-                            // else static if (E is BIGINT) {
-
-                            //     assert(0, format("%s is not supported yet", E));
-                            //}
-                            else {
-                                sub_result[key]=get!T(value);
-                            }
-                            return true;
+                            assert(0, format("Unsupported type %s for member %s", E, key));
                         }
-                    }
-                    else {
-                        assert(0, format("Unsupported type %s for member %s", E, key));
                     }
                 }
             }
+            assert(0);
         }
-        assert(0);
-    }
         HiBON result=new HiBON;
         // static foreach(E; EnumMembers!JSONType) {
         //     writefln("case %s:\nbreak;", E);
