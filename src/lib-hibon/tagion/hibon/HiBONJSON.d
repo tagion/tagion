@@ -8,7 +8,7 @@ import std.format;
 import std.traits : EnumMembers, Unqual, ReturnType, ForeachType;
 import std.range.primitives : isInputRange;
 
-import std.stdio;
+//import std.stdio;
 
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase : Type, isNative, isArray, isHiBONType;
@@ -350,13 +350,7 @@ HiBON toHiBON(scope const JSONValue json) {
             assert(0);
         }
         HiBON result=new HiBON;
-        // static foreach(E; EnumMembers!JSONType) {
-        //     writefln("case %s:\nbreak;", E);
-        // }
-        writefln("json.type=%s", json.type);
-        writefln("json=%s", json);
         foreach(Key key, ref jvalue;json) {
-            writefln("key=%s", key);
             with(JSONType) {
                 final switch(jvalue.type) {
                 case null_:
@@ -483,16 +477,16 @@ unittest {
 
     auto json=doc.toJSON(true);
     import std.stdio;
-    writefln("Before\n%s", json.toPrettyString);
+    // writefln("Before\n%s", json.toPrettyString);
     string str=json.toString;
     auto parse=str.parseJSON;
     auto h=parse.toHiBON;
 
     const parse_doc=Document(h.serialize);
-    writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
+    // writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
 
-    writefln("doc.keys      =%s", doc.keys);
-    writefln("parse_doc.keys=%s", parse_doc.keys);
+    // writefln("doc.keys      =%s", doc.keys);
+    // writefln("parse_doc.keys=%s", parse_doc.keys);
 
     assert(doc == parse_doc);
     assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
