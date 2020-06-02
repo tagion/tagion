@@ -651,8 +651,11 @@ static assert(uint.sizeof == 4);
                 const sub_doc=Document(data_sub_doc);
 
                 index = 0;
+
+                enum size_guess=150;
                 uint size;
-                buffer.binwrite(uint.init, &index);
+                buffer.array_write(LEB128.encode(size_guess), index);
+                const start_index=index;
                 enum doc_name="doc";
 
                 immutable index_before=index;
@@ -662,14 +665,18 @@ static assert(uint.sizeof == 4);
                 build(buffer, Type.DOCUMENT, doc_name, sub_doc, index);
                 build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
 
-                buffer.binwrite(Type.NONE, &index);
+                //buffer.binwrite(Type.NONE, &index);
 
-                size = cast(uint)(index - uint.sizeof);
-                buffer.binwrite(size, 0);
+                size = cast(uint)(index - start_index);
+
+                writefln("### size=%s size_guess=%d start_index=%d", size, size_guess, start_index);
+                assert(size == size_guess);
+                size_t dummy_index=0;
+                buffer.array_write(LEB128.encode(size), dummy_index);
 
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
-
+//                assert(0);
                 { // Check int32 in doc
                     const int32_e = doc[Type.INT32.stringof];
                     assert(int32_e.type is Type.INT32);
@@ -718,16 +725,27 @@ static assert(uint.sizeof == 4);
             }
 
             { // Test opCall!(string[])
+                enum size_guess=27;
+
                 index = 0;
                 uint size;
-                buffer.binwrite(uint.init, &index);
+                buffer.array_write(LEB128.encode(size_guess), index);
+                const start_index=index;
+
+                //buffer.binwrite(uint.init, &index);
                 auto texts=["Text1", "Text2", "Text3"];
                 foreach(i, text; texts) {
                     build(buffer, Type.STRING, i.to!string, text, index);
                 }
-                buffer.binwrite(Type.NONE, &index);
-                size = cast(uint)(index - uint.sizeof);
-                buffer.binwrite(size, 0);
+                //buffer.binwrite(Type.NONE, &index);
+                size = cast(uint)(index - start_index);
+                writefln("### size=%s size_guess=%d start_index=%d", size, size_guess, start_index);
+                assert(size == size_guess);
+
+                //size = cast(uint)(index - uint.sizeof);
+                //buffer.binwrite(size, 0);
+                size_t dummy_index=0;
+                buffer.array_write(LEB128.encode(size), dummy_index);
 
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
