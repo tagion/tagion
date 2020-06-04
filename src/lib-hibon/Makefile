@@ -78,7 +78,7 @@ ifndef DFILES
 lib: dfiles.mk
 	$(MAKE) lib
 
-test: dodi lib
+test: lib
 	$(MAKE) test
 else
 lib: $(REVISION) $(LIBRARY)

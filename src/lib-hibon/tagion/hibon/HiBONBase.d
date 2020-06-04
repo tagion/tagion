@@ -7,7 +7,7 @@ import tagion.utils.UTCTime;
 
 import std.format;
 import std.meta : AliasSeq;
-import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
+import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
 import std.typecons : tuple;
 
 import std.system : Endian;
@@ -16,15 +16,15 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
 import LEB128=tagion.utils.LEB128;
 
+import std.stdio;
+// @safe
+// uint calc_size(const(ubyte[]) data) pure {
+//     size_t size=LEB128.calc_size(data);
+//     return cast(uint)size;
+// }
 
 @safe
-uint calc_size(const(ubyte[]) data) pure {
-    size_t size=LEB128.calc_size(data);
-    return cast(uint)size;
-}
-
-@safe
-uint calc_size(const size_t x) pure {
+uint calc_size(T)(const T x) pure {
     return cast(uint)(LEB128.calc_size(x));
 }
 
@@ -246,8 +246,16 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      the value as HiBON type E
      +/
     @trusted
-    auto by(Type type)() pure const {
+    auto by(Type type)() pure const
+        out(result) {
+                debug writefln("result=%s", result);
+        }
+    do {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
+        debug static if (type == Type.INT32) {
+            writefln("int32=%d", int32);
+        }
+        //pragma(msg, code);
         mixin(code);
         assert(0);
     }
@@ -258,7 +266,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
         else {
             enum name = TList[0];
-            enum member_code = "alias member=ValueT."~name~";";
+            enum member_code = format(q{alias member=ValueT.%s;}, name);
             mixin(member_code);
             static if ( __traits(compiles, typeof(member)) && hasUDA!(member, Type) ) {
                 enum MemberType=getUDAs!(member, Type)[0];
@@ -311,11 +319,29 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Construct a Value of the type T
      +/
     @trusted
-    this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct) ) {
+    this(T)(T x) pure if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct) ) {
         alias MutableT = Unqual!T;
+//        debug writefln("__traits(allMembers, ValueT)=%s", __traits(allMembers, ValueT).stringof);
+        //       pragma(msg, "__traits(allMembers, ValueT) ", __traits(allMembers, ValueT));
+//        string text;
+        alias Types=typeof(this.tupleof);
+        foreach(i, ref m; this.tupleof) {
+//            {
+//                alias T=Unqual!(typeof(m));
+            static if (is(Types[i]==MutableT)) {
+                m=x;
+//                static if (LEB128.isLEB128Integral!T) {
+                debug writefln("x=%s T=%s %s %s", x, T.stringof, m, Types[i].stringof);
+                return;
+                //              }
+            }
+        }
+        version(none)
         static foreach(m; __traits(allMembers, ValueT) ) {
-            static if ( is(typeof(__traits(getMember, this, m)) == MutableT ) ){
-                enum code=format("alias member=ValueT.%s;", m);
+            text=__traits(getMember, this, m).stringof;
+            debug writefln("This type=%s", text);
+            static if ( is(Unqual!(typeof(__traits(getMember, this, m))) == MutableT ) ){
+                enum code=format(q{alias member=ValueT.%s;}, m);
                 mixin(code);
                 static if ( hasUDA!(member, Type ) ) {
                     alias MemberT   = typeof(member);
@@ -325,7 +351,9 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
                     }
                 }
             }
+
         }
+        debug writefln("HiBONBase.this %s", MutableT.stringof);
         assert (0, format("%s is not supported", T.stringof ) );
     }
 
@@ -333,9 +361,15 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Constructs a Value of the type BigNumber
      +/
     @trusted
-    this(const BigNumber big) {
+    this(const BigNumber big) pure {
         bigint=big;
     }
+
+    @trusted
+    this(const utc_t x) pure {
+        date=x;
+    }
+
 
     /++
      Assign the value to x
@@ -348,7 +382,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         static foreach(m; __traits(allMembers, ValueT) ) {
             static if ( is(typeof(__traits(getMember, this, m)) == T ) ){
                 static if ( (is(T == struct) || is(T == class)) && !__traits(compiles, __traits(getMember, this, m) = x) ) {
-                    enum code="alias member=ValueT."~m~";";
+                    enum code=format(q{alias member=ValueT.%s;}, m);
                     mixin(code);
                     enum MemberType=getUDAs!(member, Type)[0];
                     static assert ( MemberType !is Type.NONE, format("%s is not supported", T ) );
@@ -361,10 +395,15 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
     }
 
+    void opAssign(T)(T x) if (is(T==const) && isBasicType!T) {
+        alias UnqualT=Unqual!T;
+        opAssign(cast(UnqualT)x);
+    }
 
     /++
      List if valud cast-types
      +/
+    version(none)
     alias CastTypes=AliasSeq!(uint, int, ulong, long, float, double, string);
 
     /++
@@ -373,14 +412,19 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Params:
      x = sign value
      +/
-    void opAssign(T)(T x) if (!isOneOf!(T, typeof(this.tupleof))) {
+    version(none)
+    void opAssign(T)(const(T) x) if (!isOneOf!(T, CastTypes)) {
         alias UnqualT=Unqual!T;
-        alias CastT=castTo!(UnqualT, CastTypes);
-        static assert(is(CastT==void), format("Type %s not supported", T.stringof));
-        alias E=asType!UnqualT;
-        opAssing(cast(CastT)x);
+        pragma(msg, UnqualT, " ", T);
+        alias CastT=CastTo!(UnqualT, CastTypes);
+        static assert(!is(CastT==void), format("Type %s not supported", T.stringof));
+        //alias E=asType!UnqualT;
+        opAssign(cast(CastT)x);
     }
 
+    void opAssign(const utc_t x) {
+        date=cast(utc_t)x;
+    }
     /++
      Convert a HiBON Type to a D-type
      +/
@@ -411,6 +455,22 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
 
 };
 
+
+unittest {
+    alias Value = ValueT!(false, void, void);
+    Value test;
+    with(Type) {
+        test=Value(int(-42)); assert(test.by!INT32 == -42);
+        test=Value(long(-42)); assert(test.by!INT64 == -42);
+        test=Value(uint(42)); assert(test.by!UINT32 == 42);
+        test=Value(ulong(42)); assert(test.by!UINT64 == 42);
+        test=Value(float(42.42)); assert(test.by!FLOAT32 == float(42.42));
+        test=Value(double(17.42)); assert(test.by!FLOAT64 == double(17.42));
+        utc_t time=1001;
+        test=Value(time); assert(test.by!UTC == time);
+        test=Value("Hello"); assert(test.by!STRING == "Hello");
+    }
+}
 
 unittest {
     import std.typecons;

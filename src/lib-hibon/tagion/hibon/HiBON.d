@@ -27,7 +27,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-//import std.stdio;
+import std.stdio;
 
 static size_t size(const(HiBON[]) hibons) pure {
     if (hibons.length is 0) {
@@ -154,7 +154,7 @@ static size_t size(const(string[]) strs) pure {
         Type type;
         Value value;
 
-        protected this() pure nothrow {
+        protected this() pure {
             value = uint.init;
         }
 
@@ -275,10 +275,6 @@ static size_t size(const(string[]) strs) pure {
                                     static if(E is NATIVE_HIBON_ARRAY || E is NATIVE_DOCUMENT_ARRAY) {
                                         const _doc_size=e.size;
                                         _size += calc_size(_doc_size) + _doc_size;
-                                    // }
-                                    // else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                                    //     const _document_size=e.size;
-                                    //     _size += calc_size(_document_size) + _document_size;
                                     }
                                     else static if (E is NATIVE_STRING_ARRAY) {
                                         _size += calc_size(e.length) + e.length;
@@ -548,7 +544,7 @@ static size_t size(const(string[]) strs) pure {
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias Tabel = Tuple!(
-            BigNumber, Type.BIGINT.stringof,
+             BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             float,  Type.FLOAT32.stringof,
             double, Type.FLOAT64.stringof,
@@ -691,9 +687,20 @@ static size_t size(const(string[]) strs) pure {
                 assert(m.get!(test_tabel.Types[i]) == t);
             }
 
-            immutable data = hibon.serialize;
-            const doc = Document(data);
 
+            immutable data = hibon.serialize;
+            writefln("hibon[INT32].by!int=%d", hibon["INT32"].get!int);
+            const doc = Document(data);
+            writefln("doc.data=%s", doc.data);
+            foreach(e; doc[]) {
+                writefln("\ne.data=%s", e.data);
+                writefln("e.valuePos=%s", e.valuePos);
+                writefln("e.key=%s", e.key);
+                writefln("e.type=%s", e.type);
+            }
+            writeln("------- ----------- ----------- -----------");
+
+            writefln("doc.data doc.length=%d test_tabel.length=%d", doc.length, test_tabel.length);
             assert(doc.length is test_tabel.length);
 
             foreach(i, t; test_tabel) {
@@ -702,6 +709,10 @@ static size_t size(const(string[]) strs) pure {
                 const e = doc[key];
                 assert(e.key == key);
                 assert(e.type.to!string == key);
+                static if (!is(test_tabel.Types[i]==BigNumber)) {
+                    writefln("e.get!(test_tabel.Types[i])=%s t=%s", e.get!(test_tabel.Types[i]), t);
+                }
+                writefln("test_tabel.Types[i]=%s", test_tabel.Types[i].stringof);
                 assert(e.get!(test_tabel.Types[i]) == t);
             }
         }

@@ -7,14 +7,14 @@ module tagion.hibon.Document;
 
 //import std.format;
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, EnumMembers, Unqual;
+import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 
 
-//import std.stdio;
+import std.stdio;
 //import tagion.Types : decimal_t;
 
 import tagion.basic.Basic : isOneOf;
@@ -23,6 +23,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import LEB128=tagion.utils.LEB128;
+import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
 
 //alias u32=LEB128.decode!uint;
 
@@ -335,7 +336,12 @@ static assert(uint.sizeof == 4);
             size += calc_size(_size) + _size;
         }
         else {
-            size += T.sizeof;
+            static if (isIntegral!T) {
+                size += calc_size(x);
+            }
+            else {
+                size += T.sizeof;
+            }
         }
         return size;
     }
@@ -381,6 +387,12 @@ static assert(uint.sizeof == 4);
             buffer.array_write(size, index);
             buffer.array_write(x.data, index);
             buffer.binwrite(x.sign, &index);
+        }
+        else static if (isIntegral!T) {
+            //debug writefln("x=%d leb128=%s", x, LEB128.encode(x));
+            buffer.array_write(LEB128.encode(x), index);
+            //debug writefln("buffer.length=%d %s", buffer.length, buffer);
+
         }
         else {
             buffer.binwrite(x, &index);
@@ -832,7 +844,23 @@ static assert(uint.sizeof == 4);
                             }
                             else {
                                 if (isHiBONType(type)) {
-                                    return cast(Value*)(data[valuePos..$].ptr);
+                                    alias T = Value.TypeT!E;
+                                    writefln("get by T=%s %s", T.stringof, isIntegral!T);
+                                    static if (isIntegral!T) {
+                                        size_t len;
+                                        T x=LEB128.decode!T(data[valuePos..$], len);
+                                        writefln("\t%s", data[valuePos..$]);
+                                        writefln("\tx=%s len=%d", x, len);
+                                        pragma(msg, T, " ###");
+                                        auto result=new Value(x);
+                                        // Value result;
+                                        // result=x;
+                                        return result;
+                                        //return cast(Value*)(LEB128.decode!T(data[valuePos..$], len).ptr);
+                                    }
+                                    else {
+                                        return cast(Value*)(data[valuePos..$].ptr);
+                                    }
                                 }
                             }
                             break TypeCase;
@@ -993,7 +1021,12 @@ static assert(uint.sizeof == 4);
                                     return dataPos + dataSize;
                                 }
                                 else {
-                                    return valuePos + T.sizeof;
+                                    static if (isIntegral!T) {
+                                        return valuePos+calc_size(data[valuePos..$]);
+                                    }
+                                    else {
+                                        return valuePos + T.sizeof;
+                                    }
                                 }
                             }
                             else static if (isNative(E)) {
@@ -1003,13 +1036,15 @@ static assert(uint.sizeof == 4);
                                 }
                             }
                             else static if ( E is Type.NONE ) {
-                                return Type.sizeof;
+                                goto default;
+                                //return Type.sizeof;
                             }
                             break TypeCase;
                         }
                     default:
+                        debug writefln("Bad %s", data);
                         import std.format;
-                        throw new HiBONExceptionT!true(format("Bad type %d", type));
+                        throw new HiBONExceptionT!true(format("Bad HiBON type %d", type));
                         // empty
                     }
                 }
@@ -1036,7 +1071,7 @@ static assert(uint.sizeof == 4);
 
             +/
             @trusted ErrorCode valid() {
-                enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + uint.sizeof;
+                enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
                 with(ErrorCode) {
                     if ( type is Type.DOCUMENT ) {
@@ -1061,7 +1096,7 @@ static assert(uint.sizeof == 4);
                         return OVERFLOW;
                     }
                     if ( .isArray(type) ) {
-                        immutable binary_array_pos = valuePos+uint.sizeof;
+                        immutable binary_array_pos = valuePos+calc_size(data[valuePos..$]);
                         immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
                     ArrayTypeCase:
                         switch(type) {
