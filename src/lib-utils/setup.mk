@@ -16,17 +16,20 @@ DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
 SCRIPTROOT:=${REPOROOT}/scripts/
 
 
-WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
-LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
+# WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
+# LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
 
 # DDOC Configuration
 #
 -include ddoc.mk
 
-BIN?=bin/
-BUILD?=build
+BIN:=bin
+
+LIBNAME:=libtagion_utils.a
+LIBRARY:=$(BIN)/$(LIBNAME)
 
 WAYS+=${BIN}
+WAYS+=tests
 
 SOURCE:=tagion/utils
 PACKAGE:=${subst /,.,$(SOURCE)}
@@ -37,8 +40,8 @@ REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 TAGION_BASIC:=$(REPOROOT)/../tagion_basic/
 TAGION_CORE:=$(REPOROOT)/../tagion_core/
 
--include core_dfiles.mk
-TAGION_DFILES:=${addprefix $(TAGION_CORE), $(TAGION_DFILES)}
+include tagion_dfiles.mk
+
 INC+=$(TAGION_BASIC)
 INC+=$(TAGION_CORE)
 INC+=$(REPOROOT)

@@ -77,6 +77,9 @@ include source.mk
 ifndef DFILES
 lib: dfiles.mk
 	$(MAKE) lib
+
+test: lib
+	$(MAKE) test
 else
 lib: $(REVISION) $(LIBRARY)
 
