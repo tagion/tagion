@@ -8,7 +8,7 @@ import tagion.utils.UTCTime;
 import std.format;
 import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
-import std.typecons : tuple;
+import std.typecons : tuple, TypedefType;
 
 import std.system : Endian;
 import bin = std.bitmanip;
@@ -16,23 +16,26 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
 import LEB128=tagion.utils.LEB128;
 
-import std.stdio;
+//import std.stdio;
 // @safe
 // uint calc_size(const(ubyte[]) data) pure {
 //     size_t size=LEB128.calc_size(data);
 //     return cast(uint)size;
 // }
 
-@safe
-uint calc_size(T)(const T x) pure {
-    return cast(uint)(LEB128.calc_size(x));
-}
+// @safe
+// uint calc_size(T)(const T x) pure {
+//     alias BaseT=TypedefType!T;
+//     return cast(uint)(LEB128.calc_size(cast(BaseT)x));
+// }
 
-static auto leb128(T)(const(ubyte[]) data) pure {
-    size_t size;
-    const value=LEB128.decode!T(data, size);
-    return tuple!("size", "value")(size, value);
-}
+// LEB128.DecoderLEB128!T decode(T)(const(ubyte[]) data) pure {
+//     alias BaseT=TypedefType!T;
+//     return LEB128.decode!T(cas
+//     size_t size;
+//     const value=LEB128.decode!T(data, size);
+//     return tuple!("size", "value")(size, value);
+// }
 
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 
@@ -245,17 +248,8 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Returns:
      the value as HiBON type E
      +/
-    @trusted
-    auto by(Type type)() pure const
-        out(result) {
-                debug writefln("result=%s", result);
-        }
-    do {
+    @trusted auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
-        debug static if (type == Type.INT32) {
-            writefln("int32=%d", int32);
-        }
-        //pragma(msg, code);
         mixin(code);
         assert(0);
     }
@@ -331,7 +325,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
             static if (is(Types[i]==MutableT)) {
                 m=x;
 //                static if (LEB128.isLEB128Integral!T) {
-                debug writefln("x=%s T=%s %s %s", x, T.stringof, m, Types[i].stringof);
                 return;
                 //              }
             }
@@ -353,7 +346,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
             }
 
         }
-        debug writefln("HiBONBase.this %s", MutableT.stringof);
         assert (0, format("%s is not supported", T.stringof ) );
     }
 

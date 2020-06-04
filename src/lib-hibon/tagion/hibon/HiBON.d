@@ -27,22 +27,28 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-import std.stdio;
+//import std.stdio;
 
-static size_t size(const(HiBON[]) hibons) pure {
-    if (hibons.length is 0) {
+static size_t size(U)(const(U[]) array) pure {
+    if (array.length is 0) {
         return ubyte.sizeof;
     }
     size_t _size;
-    foreach(i, h; hibons) {
+    foreach(i, h; array) {
         immutable index_key=i.to!string;
         _size += Document.sizeKey(index_key);
-        const h_size=h.size;
-        _size += calc_size(h_size) + h_size;
+        static if (__traits(compiles, h.size)) {
+            const h_size=h.size;
+        }
+        else {
+            const h_size=h.length;
+        }
+        _size += LEB128.calc_size(h_size) + h_size;
     }
     return _size;
 }
 
+version(none)
 static size_t size(const(Document[]) docs) pure  {
     if (docs.length is 0) {
         return ubyte.sizeof;
@@ -52,11 +58,12 @@ static size_t size(const(Document[]) docs) pure  {
         immutable index_key=i.to!string;
         _size += Document.sizeKey(index_key);
         const d_size=d.size;
-        _size += calc_size(d_size) + d_size;
+        _size += LEB128.calc_size(d_size) + d_size;
     }
     return _size;
 }
 
+version(none)
 static size_t size(const(string[]) strs) pure {
     if (strs.length is 0) {
         return ubyte.sizeof;
@@ -66,7 +73,7 @@ static size_t size(const(string[]) strs) pure {
         immutable index_key=i.to!string;
         _size += Document.sizeKey(index_key);
         const str_size=s.length;
-        _size += calc_size(str_size) + str_size;
+        _size += LEB128.calc_size(str_size) + str_size;
     }
     return _size;
 }
@@ -115,7 +122,7 @@ static size_t size(const(string[]) strs) pure {
     size_t serialize_size() const pure {
         auto _size=size;
         if (_size !is ubyte.sizeof ) {
-            _size += calc_size(_size);
+            _size += LEB128.calc_size(_size);
         }
         return _size;
     }
@@ -261,11 +268,11 @@ static size_t size(const(string[]) strs) pure {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
                                 const _size = value.by!(E).size;
-                                return Document.sizeKey(key) + calc_size(_size) + _size;
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
                                 const _size = value.by!(E).size;
-                                return Document.sizeKey(key)+calc_size(_size) + _size;
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else static if ( isNativeArray(E) ) {
                                 size_t _size;
@@ -274,13 +281,13 @@ static size_t size(const(string[]) strs) pure {
                                     _size += Document.sizeKey(index_key);
                                     static if(E is NATIVE_HIBON_ARRAY || E is NATIVE_DOCUMENT_ARRAY) {
                                         const _doc_size=e.size;
-                                        _size += calc_size(_doc_size) + _doc_size;
+                                        _size += LEB128.calc_size(_doc_size) + _doc_size;
                                     }
                                     else static if (E is NATIVE_STRING_ARRAY) {
-                                        _size += calc_size(e.length) + e.length;
+                                        _size += LEB128.calc_size(e.length) + e.length;
                                     }
                                 }
-                                return Document.sizeKey(key)+calc_size(_size) + _size;
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else {
                                 const v = value.by!(E);
@@ -622,7 +629,7 @@ static size_t size(const(string[]) strs) pure {
 
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size
-                = calc_size(14)                  // Size of the object in ubytes (uint(14))
+                = LEB128.calc_size(14)           // Size of the object in ubytes (uint(14))
                 + Type.sizeof                    // The HiBON Type  (Type.FLOAT32)  1
                 + ubyte.sizeof                   // Length of the key (ubyte(7))    2
                 + Type.FLOAT32.stringof.length   // The key text string ("FLOAT32") 9
@@ -689,18 +696,7 @@ static size_t size(const(string[]) strs) pure {
 
 
             immutable data = hibon.serialize;
-            writefln("hibon[INT32].by!int=%d", hibon["INT32"].get!int);
             const doc = Document(data);
-            writefln("doc.data=%s", doc.data);
-            foreach(e; doc[]) {
-                writefln("\ne.data=%s", e.data);
-                writefln("e.valuePos=%s", e.valuePos);
-                writefln("e.key=%s", e.key);
-                writefln("e.type=%s", e.type);
-            }
-            writeln("------- ----------- ----------- -----------");
-
-            writefln("doc.data doc.length=%d test_tabel.length=%d", doc.length, test_tabel.length);
             assert(doc.length is test_tabel.length);
 
             foreach(i, t; test_tabel) {
@@ -709,10 +705,6 @@ static size_t size(const(string[]) strs) pure {
                 const e = doc[key];
                 assert(e.key == key);
                 assert(e.type.to!string == key);
-                static if (!is(test_tabel.Types[i]==BigNumber)) {
-                    writefln("e.get!(test_tabel.Types[i])=%s t=%s", e.get!(test_tabel.Types[i]), t);
-                }
-                writefln("test_tabel.Types[i]=%s", test_tabel.Types[i].stringof);
                 assert(e.get!(test_tabel.Types[i]) == t);
             }
         }

@@ -12,9 +12,9 @@ import std.conv : to, emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
+import std.typecons : TypedefType;
 
-
-import std.stdio;
+//import std.stdio;
 //import tagion.Types : decimal_t;
 
 import tagion.basic.Basic : isOneOf;
@@ -87,8 +87,7 @@ static assert(uint.sizeof == 4);
         }
 
         @trusted uint size() {
-            size_t len;
-            return LEB128.decode!uint(data, len);
+            return LEB128.decode!uint(data).value;
         }
     }
 
@@ -168,7 +167,7 @@ static assert(uint.sizeof == 4);
                 _index = ubyte.sizeof;
             }
             else {
-                _index = calc_size(data);
+                _index = LEB128.calc_size(data);
                 popFront();
             }
         }
@@ -309,7 +308,7 @@ static assert(uint.sizeof == 4);
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
     static size_t sizeKey(string key) pure {
-        return Type.sizeof + calc_size(key.length) + key.length;
+        return Type.sizeof + LEB128.calc_size(key.length) + key.length;
     }
 
     /++
@@ -325,7 +324,7 @@ static assert(uint.sizeof == 4);
         size_t size = sizeKey(key);
         static if ( is(T: U[], U) ) {
             const _size=x.length*U.sizeof;
-            size += calc_size(_size) + _size;
+            size += LEB128.calc_size(_size) + _size;
         }
         else static if(is(T : const Document)) {
             size += calc_size(x.data.length) + x.data.length;
@@ -333,11 +332,12 @@ static assert(uint.sizeof == 4);
         else static if(is(T : const BigNumber)) {
             import std.internal.math.biguintnoasm : BigDigit;
             const _size= bool.sizeof+x.data.length*BigDigit.sizeof;
-            size += calc_size(_size) + _size;
+            size += LEB128.calc_size(_size) + _size;
         }
         else {
             static if (isIntegral!T) {
-                size += calc_size(x);
+                alias BaseT=TypedefType!T;
+                size += LEB128.calc_size(cast(BaseT)x);
             }
             else {
                 size += T.sizeof;
@@ -657,7 +657,7 @@ static assert(uint.sizeof == 4);
 
                 index = 0;
 
-                enum size_guess=150;
+                enum size_guess=143;
                 uint size;
                 buffer.array_write(LEB128.encode(size_guess), index);
                 const start_index=index;
@@ -794,7 +794,7 @@ static assert(uint.sizeof == 4);
         //enum KEY_POS = Type.sizeof + keyLen.sizeof;
 
         @property uint key_pos() const pure {
-            return cast(uint)(Type.sizeof+calc_size(data[Type.sizeof..$]));
+            return cast(uint)(Type.sizeof+LEB128.calc_size(data[Type.sizeof..$]));
         }
 
         @property const {
@@ -821,20 +821,20 @@ static assert(uint.sizeof == 4);
                         static if (isHiBONType(E)) {
                         case E:
                             static if (E is Type.DOCUMENT) {
-                                immutable len=leb128!uint(data[valuePos..$]);
+                                immutable len=LEB128.decode!uint(data[valuePos..$]);
                                 return new Value(Document(data[valuePos..valuePos+len.size+len.value]));
                             }
                             else static if (.isArray(E) || (E is Type.STRING)) {
                                 alias T = Value.TypeT!E;
                                 static if ( is(T: U[], U) ) {
-                                    immutable binary_len=leb128!uint(data[valuePos..$]);
+                                    immutable binary_len=LEB128.decode!uint(data[valuePos..$]);
                                     immutable len = binary_len.value / U.sizeof;
                                     return new Value((cast(immutable(U)*)(data[valuePos+binary_len.size..$].ptr))[0..len]);
                                 }
                             }
                             else static if (E is BIGINT) {
                                 import std.internal.math.biguintnoasm : BigDigit;
-                                immutable binary_len=leb128!uint(data[valuePos..$]);
+                                immutable binary_len=LEB128.decode!uint(data[valuePos..$]);
                                 immutable len = binary_len.value / BigDigit.sizeof;
                                 immutable dig=(cast(immutable(BigDigit*))(data[valuePos+binary_len.size..$].ptr))[0..len];
                                 const sign=data[valuePos+binary_len.size+binary_len.value] !is 0;
@@ -845,14 +845,13 @@ static assert(uint.sizeof == 4);
                             else {
                                 if (isHiBONType(type)) {
                                     alias T = Value.TypeT!E;
-                                    writefln("get by T=%s %s", T.stringof, isIntegral!T);
                                     static if (isIntegral!T) {
-                                        size_t len;
-                                        T x=LEB128.decode!T(data[valuePos..$], len);
-                                        writefln("\t%s", data[valuePos..$]);
-                                        writefln("\tx=%s len=%d", x, len);
-                                        pragma(msg, T, " ###");
-                                        auto result=new Value(x);
+                                        // size_t len;
+                                        // T x=LEB128.decode!T(data[valuePos..$], len);
+                                        // writefln("\t%s", data[valuePos..$]);
+                                        // writefln("\tx=%s len=%d", x, len);
+                                        // pragma(msg, T, " ###");
+                                        auto result=new Value(LEB128.decode!T(data[valuePos..$]).value);
                                         // Value result;
                                         // result=x;
                                         return result;
@@ -973,8 +972,7 @@ static assert(uint.sizeof == 4);
              the key length
              +/
             uint keyLen() {
-                size_t len;
-                return LEB128.decode!uint(data[Type.sizeof..$], len);
+                return LEB128.decode!uint(data[Type.sizeof..$]).value;
             }
 
             /++
@@ -994,12 +992,12 @@ static assert(uint.sizeof == 4);
             }
 
             uint dataPos() {
-                return valuePos+calc_size(data[valuePos..$]);
+                return valuePos + cast(uint)LEB128.calc_size(data[valuePos..$]);
             }
 
             uint dataSize() {
                 size_t len;
-                return LEB128.decode!uint(data[valuePos..$], len);
+                return LEB128.decode!uint(data[valuePos..$]).value;
             }
 
             /++
@@ -1022,7 +1020,7 @@ static assert(uint.sizeof == 4);
                                 }
                                 else {
                                     static if (isIntegral!T) {
-                                        return valuePos+calc_size(data[valuePos..$]);
+                                        return valuePos + LEB128.calc_size(data[valuePos..$]);
                                     }
                                     else {
                                         return valuePos + T.sizeof;
@@ -1042,7 +1040,6 @@ static assert(uint.sizeof == 4);
                             break TypeCase;
                         }
                     default:
-                        debug writefln("Bad %s", data);
                         import std.format;
                         throw new HiBONExceptionT!true(format("Bad HiBON type %d", type));
                         // empty
@@ -1096,7 +1093,7 @@ static assert(uint.sizeof == 4);
                         return OVERFLOW;
                     }
                     if ( .isArray(type) ) {
-                        immutable binary_array_pos = valuePos+calc_size(data[valuePos..$]);
+                        immutable binary_array_pos = valuePos + LEB128.calc_size(data[valuePos..$]);
                         immutable byte_size = *cast(uint*)(data[valuePos..binary_array_pos].ptr);
                     ArrayTypeCase:
                         switch(type) {
