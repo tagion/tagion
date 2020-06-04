@@ -27,7 +27,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-import std.stdio;
+//import std.stdio;
 
 static size_t size(U)(const(U[]) array) pure {
     if (array.length is 0) {
@@ -37,16 +37,13 @@ static size_t size(U)(const(U[]) array) pure {
     foreach(i, h; array) {
         immutable index_key=i.to!string;
         _size += Document.sizeKey(index_key);
-        debug writefln("index_key '%s' _size=%d", index_key, _size);
         static if (__traits(compiles, h.size)) {
             const h_size=h.size;
         }
         else {
             const h_size=h.length;
         }
-        debug writefln("\th_size=%d %s", h_size, __traits(compiles, h.size));
         _size += LEB128.calc_size(h_size) + h_size;
-        debug writefln("               _size=%d", _size);
     }
     return _size;
 }
@@ -308,13 +305,6 @@ static size_t size(const(string[]) strs) pure {
 
         @trusted
         protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index)  const pure if (isNativeArray(E)) {
-//            buffer.binwrite(uint.init, &index);
-            // scope(exit) {
-            //     buffer.binwrite(Type.NONE, &index);
-            //     immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-            //     buffer.binwrite(doc_size, size_index);
-            // }
-            debug writeln("appendList");
             with(Type) {
                 immutable list_size = value.by!(E).size;
                 buffer.array_write(LEB128.encode(list_size), index);
@@ -740,13 +730,6 @@ static size_t size(const(string[]) strs) pure {
 
             immutable data = hibon.serialize;
             const doc = Document(data);
-            //const(ubyte[]) buffer_len=leb128!uint(data); //[129, 2, 133, 6, 66]; //0, 133, 6, 66, 73];
-            // writefln("leb128=%s", buffer_len); //leb128!uint(test));
-            // writefln("doc.keys=%s", doc.keys);
-            // writefln("doc.data=%s", doc.data);
-            // writefln("doc.data.length=%d", doc.data.length);
-
-            // writefln("doc.length=%d hibon.length=%d test_tabel_array.length=%d", doc.length, hibon.length, test_tabel_array.length);
 
             assert(doc.length is test_tabel_array.length);
 
@@ -851,9 +834,6 @@ static size_t size(const(string[]) strs) pure {
             // writefln("data_array.length=%d size=%d", data_array.length, hibon_array.size);
             // writefln("hibon.serialize=%s", hibon.serialize);
             immutable data = hibon.serialize;
-            writefln("data=%s", data);
-            writefln("data.length=%d size=%d", data.length, hibon.serialize_size);
-
 
             const doc = Document(data);
 
