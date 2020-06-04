@@ -6,7 +6,7 @@ import tagion.basic.Basic : isOneOf;
 import tagion.utils.UTCTime;
 
 import std.format;
-import std.meta : AliasSeq;
+import std.meta : AliasSeq, allSatisfy;
 import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
 import std.typecons : tuple, TypedefType;
 
@@ -534,7 +534,7 @@ unittest {
  Returns:
  true if the a is an index
 +/
-@safe bool is_index(string a, out uint result) pure {
+@safe bool is_index(const(char[]) a, out uint result) pure {
     import std.conv : to;
     enum MAX_UINT_SIZE=to!string(uint.max).length;
     if ( a.length <= MAX_UINT_SIZE ) {
@@ -636,6 +636,28 @@ body {
     return a < b;
 }
 
+enum isKeyString(T)=is(T:const(char[]));
+
+enum isKey(T)=(isIntegral!(T) || isKeyString!(T));
+
+version(none) {
+enum isKeyNotBothString(K1, K2)=allSatisfy!(isKey, K1, K2) && !allSatisfy!(isKeyString, K1, K2);
+
+@safe bool less_than(K1, K2)(K1 a, K2 b) pure if (allSatisfy!(isKeyNotBothString, K1, K2)) {
+    static if (isIntegral!K1) {
+        static if (isKeyString!K2) {
+            return _less_than(a.to!string, b);
+        }
+        else {
+            return a < b;
+        }
+    }
+    else {
+        static assert(isKeyString!K2, "Should never go here");
+        return less_than(a, b.to!string);
+    }
+}
+}
 ///
 unittest { // Check less_than
     import std.conv : to;
@@ -643,13 +665,15 @@ unittest { // Check less_than
     assert(less_than(0.to!string, 1.to!string));
     assert(!less_than("00", "0"));
     assert(less_than("0", "abe"));
+    // assert(less_than(0, "1"));
+    // assert(less_than(5, 7));
 }
 
 /++
  Returns:
  true if the key is a valid HiBON key
 +/
-@safe bool is_key_valid(string a) pure nothrow {
+@safe bool is_key_valid(const(char[]) a) pure nothrow {
     enum : char {
         SPACE = 0x20,
             DEL = 0x7F,

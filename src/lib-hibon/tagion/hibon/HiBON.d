@@ -27,7 +27,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-//import std.stdio;
+import std.stdio;
 
 static size_t size(U)(const(U[]) array) pure {
     if (array.length is 0) {
@@ -37,13 +37,16 @@ static size_t size(U)(const(U[]) array) pure {
     foreach(i, h; array) {
         immutable index_key=i.to!string;
         _size += Document.sizeKey(index_key);
+        debug writefln("index_key '%s' _size=%d", index_key, _size);
         static if (__traits(compiles, h.size)) {
             const h_size=h.size;
         }
         else {
             const h_size=h.length;
         }
+        debug writefln("\th_size=%d %s", h_size, __traits(compiles, h.size));
         _size += LEB128.calc_size(h_size) + h_size;
+        debug writefln("               _size=%d", _size);
     }
     return _size;
 }
@@ -311,6 +314,7 @@ static size_t size(const(string[]) strs) pure {
             //     immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
             //     buffer.binwrite(doc_size, size_index);
             // }
+            debug writeln("appendList");
             with(Type) {
                 immutable list_size = value.by!(E).size;
                 buffer.array_write(LEB128.encode(list_size), index);
@@ -597,6 +601,7 @@ static size_t size(const(string[]) strs) pure {
         test_tabel_array.BOOLEAN_ARRAY = [true, false];
         test_tabel_array.STRING        = "Text";
 
+
         { // empty
             auto hibon = new HiBON;
             assert(hibon.length is 0);
@@ -709,6 +714,7 @@ static size_t size(const(string[]) strs) pure {
             }
         }
 
+
         { // HiBON Test for basic-array types
             auto hibon = new HiBON;
 
@@ -777,6 +783,7 @@ static size_t size(const(string[]) strs) pure {
 
         }
 
+
         { // Use of native Documet in HiBON
             auto native_hibon = new HiBON;
             native_hibon["int"] = int(42);
@@ -839,8 +846,14 @@ static size_t size(const(string[]) strs) pure {
             hibon["int"]  = int(42);
             hibon["array"]= hibon_array;
 
+            // immutable data_array = hibon_array.serialize;
+            // writefln("data=%s", data_array);
+            // writefln("data_array.length=%d size=%d", data_array.length, hibon_array.size);
             // writefln("hibon.serialize=%s", hibon.serialize);
             immutable data = hibon.serialize;
+            writefln("data=%s", data);
+            writefln("data.length=%d size=%d", data.length, hibon.serialize_size);
+
 
             const doc = Document(data);
 

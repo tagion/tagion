@@ -14,7 +14,7 @@ import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 import std.typecons : TypedefType;
 
-//import std.stdio;
+import std.stdio;
 //import tagion.Types : decimal_t;
 
 import tagion.basic.Basic : isOneOf;
@@ -230,7 +230,7 @@ static assert(uint.sizeof == 4);
      A range of indices of the type of uint in the Document
     +/
     auto indices() const {
-        return map!"a.key.to!uint"(this[]);
+        return map!"a.index"(this[]);
     }
 
     /++
@@ -269,6 +269,21 @@ static assert(uint.sizeof == 4);
             if (element.key == key) {
                 return element;
             }
+            else if (element.key > key) {
+                break;
+            }
+        }
+        return Element();
+    }
+
+    const(Element) opBinaryRight(string op, Index)(const Index key) const if ((op == "in") && (isIntegral!Index)) {
+        foreach (ref element; this[]) {
+            if (element.isIndex && (element.index == key)) {
+                return element;
+            }
+            else if (element.key[0] > '9') {
+                break;
+            }
         }
         return Element();
     }
@@ -294,7 +309,9 @@ static assert(uint.sizeof == 4);
      Or of the key is not an index a std.conv.ConvException is thrown
      +/
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
-        return opIndex(index.to!string);
+        auto result=index in this;
+        .check(!result.isEod, message("Member index %d not found", index));
+        return result;
     }
 
 
@@ -307,8 +324,16 @@ static assert(uint.sizeof == 4);
      Retruns:
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
-    static size_t sizeKey(string key) pure {
+    static size_t sizeKey(const(char[]) key) pure {
+        uint index;
+        if (is_index(key, index)) {
+            return sizeKey(index);
+        }
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
+    }
+
+    static size_t sizeKey(uint key) pure {
+        return Type.sizeof +  ubyte.sizeof + LEB128.calc_size(key);
     }
 
     /++
@@ -320,7 +345,7 @@ static assert(uint.sizeof == 4);
      Returns:
      The number of bytes taken up by the element
      +/
-    static size_t sizeT(T)(Type type, string key, const(T) x) pure {
+    static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure if (is(Key:const(char[])) || is(Key==uint)) {
         size_t size = sizeKey(key);
         static if ( is(T: U[], U) ) {
             const _size=x.length*U.sizeof;
@@ -355,10 +380,27 @@ static assert(uint.sizeof == 4);
      index = is offset index in side the buffer and index with be progressed
      +/
     @trusted
-    static void buildKey(ref ubyte[] buffer, Type type, string key, ref size_t index) pure {
+    static void buildKey(Key)(
+        ref ubyte[] buffer, Type type, Key key, ref size_t index) pure if (is(Key:const(char[])) || is(Key==uint)) {
+        static if (is(Key:const(char[]))) {
+            uint key_index;
+            if (is_index(key, key_index)) {
+                debug writefln("key '%s' to %d", key, key_index);
+                buildKey(buffer, type, key_index, index);
+                return;
+            }
+        }
         buffer.binwrite(type, &index);
-        buffer.array_write(LEB128.encode(key.length), index);
-        buffer.array_write(key, index);
+
+        static if (is(Key:const(char[]))) {
+            buffer.array_write(LEB128.encode(key.length), index);
+            buffer.array_write(key, index);
+        }
+        else {
+            buffer.binwrite(ubyte.init, &index);
+            const key_leb128=LEB128.encode(key);
+            buffer.array_write(key_leb128, index);
+        }
     }
 
     /++
@@ -371,7 +413,8 @@ static assert(uint.sizeof == 4);
      index = is offset index in side the buffer and index with be progressed
      +/
     @trusted
-    static void build(T)(ref ubyte[] buffer, Type type, string key, const(T) x, ref size_t index) pure {
+    static void build(T, Key)(
+        ref ubyte[] buffer, Type type, Key key, const(T) x, ref size_t index) pure if (is(Key:const(char[])) || is(Key==uint)) {
         buildKey(buffer, type, key, index);
         static if ( is(T: U[], U) ) {
             immutable size=LEB128.encode(x.length*U.sizeof);
@@ -778,7 +821,7 @@ static assert(uint.sizeof == 4);
          * +-------------------------------------------+
          *          ^ type offset(1)
          *                  ^ len offset(len.size)
-         *                          ^ keySize + 1 + len.size
+         *                          ^ sizeKey + 1 + len.size
          *                                 ^ size
          *                                             ^ data.length
          *
@@ -793,7 +836,10 @@ static assert(uint.sizeof == 4);
 
         //enum KEY_POS = Type.sizeof + keyLen.sizeof;
 
-        @property uint key_pos() const pure {
+        @property uint keyPos() const pure {
+            if (isIndex) {
+                return Type.sizeof+ubyte.sizeof;
+            }
             return cast(uint)(Type.sizeof+LEB128.calc_size(data[Type.sizeof..$]));
         }
 
@@ -930,15 +976,15 @@ static assert(uint.sizeof == 4);
              if the key is not an index an HiBONException is thrown
              +/
             uint index() {
-                uint result;
-                .check(is_index(key, result), message("Key '%s' is not an index", key));
-                return result;
+                .check(isIndex, message("Key '%s' is not an index", key));
+                return LEB128.decode!uint(data[keyPos..$]).value;
             }
 
             /++
              Returns:
              true if element key is an index
              +/
+            version(none)
             bool isIndex() {
                 uint result;
                 return is_index(key, result);
@@ -964,6 +1010,10 @@ static assert(uint.sizeof == 4);
                 }
                 return cast(Type)(data[0]);
             }
+
+            bool isIndex() {
+                return data[Type.sizeof] is 0;
+            }
         }
 
         @property const pure {
@@ -972,6 +1022,9 @@ static assert(uint.sizeof == 4);
              the key length
              +/
             uint keyLen() {
+                if (isIndex) {
+                    return cast(uint)LEB128.calc_size(data[keyPos..$]);
+                }
                 return LEB128.decode!uint(data[Type.sizeof..$]).value;
             }
 
@@ -980,7 +1033,11 @@ static assert(uint.sizeof == 4);
              the key
              +/
             string key() {
-                return cast(string)data[key_pos..valuePos];
+                if (isIndex) {
+                    const index=LEB128.decode!uint(data[keyPos..$]).value;
+                    return index.to!string;
+                }
+                return cast(string)data[keyPos..valuePos];
             }
 
             /++
@@ -988,7 +1045,7 @@ static assert(uint.sizeof == 4);
              the position of the value inside the element buffer
              +/
             uint valuePos() {
-                return key_pos+keyLen;
+                return keyPos+keyLen;
             }
 
             uint dataPos() {
