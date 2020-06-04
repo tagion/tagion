@@ -58,8 +58,8 @@ static size_t size(const(Document[]) docs) pure  {
     }
     size_t _size;
     foreach(i, d; docs) {
-        immutable index_key=i.to!string;
-        _size += Document.sizeKey(index_key);
+        //immutable index_key=i.to!string;
+        _size += Document.sizeKey(i);
         const d_size=d.size;
         _size += LEB128.calc_size(d_size) + d_size;
     }

@@ -9,6 +9,7 @@ import std.format;
 import std.meta : AliasSeq, allSatisfy;
 import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
 import std.typecons : tuple, TypedefType;
+import std.range.primitives : isInputRange;
 
 import std.system : Endian;
 import bin = std.bitmanip;
@@ -16,7 +17,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
 import LEB128=tagion.utils.LEB128;
 
-//import std.stdio;
+import std.stdio;
 // @safe
 // uint calc_size(const(ubyte[]) data) pure {
 //     size_t size=LEB128.calc_size(data);
@@ -535,6 +536,7 @@ unittest {
  true if the a is an index
 +/
 @safe bool is_index(const(char[]) a, out uint result) pure {
+    debug writefln("is_index %s", a);
     import std.conv : to;
     enum MAX_UINT_SIZE=to!string(uint.max).length;
     if ( a.length <= MAX_UINT_SIZE ) {
@@ -634,6 +636,21 @@ body {
         return a_index < b_index;
     }
     return a < b;
+}
+
+@safe bool is_in_order(R)(R range) if (isInputRange!R) {
+    string prev_key;
+    while(!range.empty) {
+        writefln("is in order key=%s", range.front);
+        if ((prev_key.length == 0) || (less_than(prev_key, range.front))) {
+            prev_key=range.front;
+            range.popFront;
+        }
+        else {
+            return false;
+        }
+    }
+    return true;
 }
 
 enum isKeyString(T)=is(T:const(char[]));

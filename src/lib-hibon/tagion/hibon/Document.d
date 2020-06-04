@@ -17,6 +17,7 @@ import std.typecons : TypedefType;
 import std.stdio;
 //import tagion.Types : decimal_t;
 
+import tagion.utils.UTCTime;
 import tagion.basic.Basic : isOneOf;
 import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
@@ -382,6 +383,7 @@ static assert(uint.sizeof == 4);
     @trusted
     static void buildKey(Key)(
         ref ubyte[] buffer, Type type, Key key, ref size_t index) pure if (is(Key:const(char[])) || is(Key==uint)) {
+        debug writefln("Build key '%s'", key);
         static if (is(Key:const(char[]))) {
             uint key_index;
             if (is_index(key, key_index)) {
@@ -415,6 +417,7 @@ static assert(uint.sizeof == 4);
     @trusted
     static void build(T, Key)(
         ref ubyte[] buffer, Type type, Key key, const(T) x, ref size_t index) pure if (is(Key:const(char[])) || is(Key==uint)) {
+
         buildKey(buffer, type, key, index);
         static if ( is(T: U[], U) ) {
             immutable size=LEB128.encode(x.length*U.sizeof);
@@ -528,6 +531,7 @@ static assert(uint.sizeof == 4);
         static private size_t make(R)(ref ubyte[] buffer, R range, size_t count=size_t.max) if (isTuple!R) {
             size_t temp_index;
             auto temp_buffer=buffer.dup;
+            writefln("range.fieldNames =%s", range.fieldNames);
 //            temp_buffer.binwrite(uint.init, &index);
             foreach(i, t; range) {
                 if ( i is count ) {
@@ -536,7 +540,13 @@ static assert(uint.sizeof == 4);
                 enum name = range.fieldNames[i];
                 alias U = range.Types[i];
                 enum  E = Value.asType!U;
-                build(temp_buffer, E, name, t, temp_index);
+                writefln("# name=%s", name);
+                static if (name.length is 0) {
+                    build(temp_buffer, E, cast(uint)i, t, temp_index);
+                }
+                else {
+                    build(temp_buffer, E, name, t, temp_index);
+                }
             }
             auto leb128_size_buffer=LEB128.encode(temp_index);
             size_t index;
@@ -555,6 +565,7 @@ static assert(uint.sizeof == 4);
     }
 
     unittest {
+        import std.algorithm.sorting : isSorted;
         auto buffer=new ubyte[0x200];
 
 
@@ -577,16 +588,16 @@ static assert(uint.sizeof == 4);
         }
 
         alias Tabel = Tuple!(
-            float,  Type.FLOAT32.stringof,
-            double, Type.FLOAT64.stringof,
             BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
+            float,  Type.FLOAT32.stringof,
+            double, Type.FLOAT64.stringof,
             int,    Type.INT32.stringof,
             long,   Type.INT64.stringof,
             uint,   Type.UINT32.stringof,
             ulong,  Type.UINT64.stringof,
 
-//                utc_t,  Type.UTC.stringof
+            utc_t,  Type.UTC.stringof
             );
 
         Tabel test_tabel;
@@ -596,21 +607,20 @@ static assert(uint.sizeof == 4);
         test_tabel.INT64   = -0x0123_3456_789A_BCDF;
         test_tabel.UINT32   = 42;
         test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
-        test_tabel.BOOLEAN  = true;
         test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+        test_tabel.BOOLEAN  = true;
+        test_tabel.UTC      = 1001;
 
         alias TabelArray = Tuple!(
             immutable(ubyte)[],  Type.BINARY.stringof,
+            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
             immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
             immutable(double)[], Type.FLOAT64_ARRAY.stringof,
             immutable(int)[],    Type.INT32_ARRAY.stringof,
             immutable(long)[],   Type.INT64_ARRAY.stringof,
+            string,              Type.STRING.stringof,
             immutable(uint)[],   Type.UINT32_ARRAY.stringof,
             immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
-            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
-            string,              Type.STRING.stringof,
-
-
             );
 
         TabelArray test_tabel_array;
@@ -650,12 +660,37 @@ static assert(uint.sizeof == 4);
                 index = make(buffer, test_tabel);
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
+                // writefln("keys=%s", doc.keys);
 
+                // writefln("inorder=%s", doc.keys.is_in_order);
+                assert(doc.keys.is_in_order);
                 auto keys=doc.keys;
+//                 version(none) {
+//                 import std.traits;
+//                 import std.range : frontTransversal;
+//                 import std.range.primitives : isForwardRange, isInputRange;
+// //                import std.range.primitives : isForwardRange, isInputRange;
+//                 import std.algorithm.iteration : fold;
+
+//                 writefln("keys=%s", keys).fold!((a, b) => a<b));
+//                 auto test=frontTransversal(doc.keys);
+// //                auto test1=test.save;
+//                 pragma(msg, ReturnType!(typeof(doc.keys)));
+//                 alias RangeT=typeof(test);
+//                 pragma(msg, typeof(test));
+//                 //pragma(msg, ReturnType!((RangeT r) => r.save));
+//                 pragma(msg, "isInputRange!(RangeT)=", isInputRange!(RangeT));
+//                 pragma(msg, "isForwardRange!(RangeT)=", isForwardRange!(RangeT));
+//                 //writefln("test.isSorted=%s", test.isSorted);
+// //                    "isForwardRange!(typeof(doc.keys.frontTransversal))=", isForwardRange!(typeof(doc.keys.frontTransversal)));
+//             }
+                // assert(0);
+                //assert(isSorted(doc.keys));
                 foreach(i, t; test_tabel) {
                     enum name = test_tabel.fieldNames[i];
                     alias U = test_tabel.Types[i];
                     enum  E = Value.asType!U;
+                    writefln("name=%s", name);
                     assert(doc.hasElement(name));
                     const e = doc[name];
                     assert(e.get!U == test_tabel[i]);
@@ -668,7 +703,7 @@ static assert(uint.sizeof == 4);
                     assert(e.type is E);
                     assert(e.isType!U);
 
-                    static if(E !is Type.BIGINT) {
+                    static if(E !is Type.BIGINT && E !is Type.UTC) {
                         assert(e.isThat!isBasicType);
                     }
                 }
@@ -678,6 +713,11 @@ static assert(uint.sizeof == 4);
                 index = make(buffer, test_tabel_array);
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
+                writefln("keys=%s", doc.keys);
+
+                writefln("inorder=%s", doc.keys.is_in_order);
+                assert(doc.keys.is_in_order);
+
                 foreach(i, t; test_tabel_array) {
                     enum name = test_tabel_array.fieldNames[i];
                     alias U   = test_tabel_array.Types[i];
@@ -700,11 +740,11 @@ static assert(uint.sizeof == 4);
 
                 index = 0;
 
-                enum size_guess=143;
+                enum size_guess=151;
                 uint size;
                 buffer.array_write(LEB128.encode(size_guess), index);
                 const start_index=index;
-                enum doc_name="doc";
+                enum doc_name="KDOC";
 
                 immutable index_before=index;
                 build(buffer, Type.INT32, Type.INT32.stringof, int(42), index);
@@ -717,12 +757,17 @@ static assert(uint.sizeof == 4);
 
                 size = cast(uint)(index - start_index);
 
+                writefln("size=%d size_guess=%d", size, size_guess);
                 assert(size == size_guess);
                 size_t dummy_index=0;
                 buffer.array_write(LEB128.encode(size), dummy_index);
 
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
+                writefln("doc.data=%s", doc.data);
+                writefln("keys=%s", doc.keys);
+                assert(doc.keys.is_in_order);
+
 //                assert(0);
                 { // Check int32 in doc
                     const int32_e = doc[Type.INT32.stringof];
