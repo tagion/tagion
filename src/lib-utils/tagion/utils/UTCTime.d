@@ -2,7 +2,7 @@ module tagion.utils.UTCTime;
 
 import std.datetime;
 import std.typecons : Typedef;
-import tagion.Base: nameOf;
+import tagion.basic.Basic: nameOf;
 
 enum UTC = "UTC";
 

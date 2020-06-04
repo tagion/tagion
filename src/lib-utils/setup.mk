@@ -1,6 +1,7 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
 
+LIBNAME:=libtagion_utils.a
 ifndef NOUNITTEST
 DCFLAGS+=-I$(REPOROOT)/tests/
 DCFLAGS+=-unittest
@@ -15,9 +16,8 @@ DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
 SCRIPTROOT:=${REPOROOT}/scripts/
 
 
-include dstep_setup.mk
-WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
-LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
+# WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
+# LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
 
 # DDOC Configuration
 #
@@ -25,10 +25,11 @@ LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
 
 BIN:=bin
 
-LIBNAME:=libiwavm.a
+LIBNAME:=libtagion_utils.a
 LIBRARY:=$(BIN)/$(LIBNAME)
 
 WAYS+=${BIN}
+WAYS+=tests
 
 SOURCE:=tagion/utils
 PACKAGE:=${subst /,.,$(SOURCE)}
@@ -36,10 +37,12 @@ REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 
 -include dstep.mk
 
+TAGION_BASIC:=$(REPOROOT)/../tagion_basic/
 TAGION_CORE:=$(REPOROOT)/../tagion_core/
 
--include core_dfiles.mk
-TAGION_DFILES:=${addprefix $(TAGION_CORE), $(TAGION_DFILES)}
+include tagion_dfiles.mk
+
+INC+=$(TAGION_BASIC)
 INC+=$(TAGION_CORE)
 INC+=$(REPOROOT)
 

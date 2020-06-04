@@ -1,6 +1,6 @@
 module tagion.utils.Miscellaneous;
 
-import tagion.Base : Buffer, isBufferType;
+import tagion.basic.Basic : Buffer, isBufferType;
 
 @safe
 string toHexString(bool UCASE=false, BUF)(BUF buffer) pure if ( isBufferType!BUF ) {
