@@ -5,6 +5,7 @@ import std.typecons;
 import std.format;
 import tagion.basic.TagionExceptions;
 import std.algorithm.comparison : min;
+import std.algorithm.iteration : map, sum;
 //import std.stdio;
 
 @safe
@@ -66,7 +67,7 @@ size_t calc_size(T)(const T v) pure if(isLEB128Signed!(T)) {
 }
 
 @safe
-const(ubyte[]) encode(T)(const T v) pure if(isLEB128Unsigned!T && isLEB128Integral!T) {
+immutable(ubyte[]) encode(T)(const T v) pure if(isLEB128Unsigned!T && isLEB128Integral!T) {
     ubyte[T.sizeof+2] data;
     alias BaseT=TypedefType!T;
     BaseT value=cast(BaseT)v;
@@ -74,7 +75,7 @@ const(ubyte[]) encode(T)(const T v) pure if(isLEB128Unsigned!T && isLEB128Integr
         d = value & 0x7f;
         value >>= 7;
         if (value == 0) {
-            return data[0..i+1].dup;
+            return data[0..i+1].idup;
         }
         d |= 0x80;
     }
@@ -82,7 +83,7 @@ const(ubyte[]) encode(T)(const T v) pure if(isLEB128Unsigned!T && isLEB128Integr
 }
 
 @safe
-const(ubyte[]) encode(T)(const T v) pure if(isLEB128Signed!T && isLEB128Integral!T) {
+immutable(ubyte[]) encode(T)(const T v) pure if(isLEB128Signed!T && isLEB128Integral!T) {
     enum DATA_SIZE=(T.sizeof*9+1)/8+1;
     ubyte[DATA_SIZE] data;
     if (v == T.min) {
@@ -99,7 +100,7 @@ const(ubyte[]) encode(T)(const T v) pure if(isLEB128Signed!T && isLEB128Integral
         value >>= 7;
         /* sign bit of byte is second high order bit (0x40) */
         if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-            return data[0..i+1].dup;
+            return data[0..i+1].idup;
         }
         d |= 0x80;
     }
