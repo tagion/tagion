@@ -450,41 +450,6 @@ static assert(uint.sizeof == 4);
         return RangeT!U(data);
     }
 
-    ///
-    version(none)
-    unittest {
-        alias TabelRange = Tuple!( immutable(ubyte)[],  immutable(ubyte)[], immutable(ubyte)[]);
-        TabelRange tabel_range;
-
-        tabel_range[0]=[1,2,4];
-        tabel_range[1]=[3,4,5,6];
-        tabel_range[2]=[8,4,2,1];
-
-        size_t index;
-        auto buffer=new ubyte[0x200];
-        index = make(buffer, tabel_range);
-        immutable data = buffer[0..index].idup;
-        const doc=Document(data);
-        auto tabelR=doc.range!(immutable(ubyte)[][]);
-        foreach(t; tabel_range) {
-            assert(tabelR.front == t);
-            tabelR.popFront;
-        }
-
-        auto S=doc.range!(string[]);
-
-        assert(!S.empty);
-        bool should_fail;
-        try {
-            auto s=S.front;
-        }
-        catch (HiBONException e) {
-            should_fail=true;
-        }
-
-        assert(should_fail);
-    }
-
     @safe struct RangeT(T) {
         Range range;
         enum EType=Value.asType!T;
@@ -603,28 +568,14 @@ static assert(uint.sizeof == 4);
         test_tabel.BOOLEAN  = true;
         test_tabel.UTC      = 1001;
 
-        // alias TabelArray = Tuple!(
-        //     immutable(ubyte)[],  Type.BINARY.stringof,
-        //     immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
-        //     immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
-        //     immutable(double)[], Type.FLOAT64_ARRAY.stringof,
-        //     immutable(int)[],    Type.INT32_ARRAY.stringof,
-        //     immutable(long)[],   Type.INT64_ARRAY.stringof,
-        //     string,              Type.STRING.stringof,
-        //     immutable(uint)[],   Type.UINT32_ARRAY.stringof,
-        //     immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
-        //     );
+        alias TabelArray = Tuple!(
+            immutable(ubyte)[],  Type.BINARY.stringof,
+            string,              Type.STRING.stringof,
+            );
 
-        // TabelArray test_tabel_array;
-        // test_tabel_array.BINARY        = [1, 2, 3];
-        // test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
-        // test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
-        // test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
-        // test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
-        // test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        // test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 42];
-        // test_tabel_array.BOOLEAN_ARRAY = [true, false];
-        // test_tabel_array.STRING        = "Text";
+        TabelArray test_tabel_array;
+        test_tabel_array.BINARY        = [1, 2, 3];
+        test_tabel_array.STRING        = "Text";
 
         { // Document with simple types
             //test_tabel.UTC      = 1234;
@@ -674,27 +625,6 @@ static assert(uint.sizeof == 4);
                     static if(E !is Type.BIGINT && E !is Type.UTC) {
                         assert(e.isThat!isBasicType);
                     }
-                }
-            }
-
-            version(none)
-            { // Document which includes basic arrays and string
-                index = make(buffer, test_tabel_array);
-                immutable data = buffer[0..index].idup;
-                const doc=Document(data);
-                assert(doc.keys.is_in_order);
-
-                foreach(i, t; test_tabel_array) {
-                    enum name = test_tabel_array.fieldNames[i];
-                    alias U   = test_tabel_array.Types[i];
-                    const v = doc[name].get!U;
-                    assert(v.length is test_tabel_array[i].length);
-                    assert(v == test_tabel_array[i]);
-                    import traits=std.traits; // : isArray;
-                    const e = doc[name];
-                    assert(!e.isThat!isBasicType);
-                    assert(e.isThat!(traits.isArray));
-
                 }
             }
 
@@ -882,13 +812,7 @@ static assert(uint.sizeof == 4);
                                 immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
                                 immutable buffer_pos=value_pos+binary_len.size;
                                 immutable buffer=(cast(immutable(U)*)(data[buffer_pos..$].ptr))[0..binary_len.value];
-                                writefln("buffer=%s", buffer);
                                 return new Value(buffer);
-
-                                //static if ( is(T: U[], U) ) {
-                                // immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
-                                // immutable len = binary_len.value ;
-                                // return new Value((cast(immutable(U)*)(data[value_pos+binary_len.size..$].ptr))[0..len]);
                             }
                             else static if (E is BIGINT) {
                                 import std.internal.math.biguintnoasm : BigDigit;
@@ -904,11 +828,6 @@ static assert(uint.sizeof == 4);
                                 if (isHiBONType(type)) {
                                     alias T = Value.TypeT!E;
                                     static if (isIntegral!T) {
-                                        // size_t len;
-                                        // T x=LEB128.decode!T(data[value_pos..$], len);
-                                        // writefln("\t%s", data[value_pos..$]);
-                                        // writefln("\tx=%s len=%d", x, len);
-                                        // pragma(msg, T, " ###");
                                         auto result=new Value(LEB128.decode!T(data[value_pos..$]).value);
                                         return result;
                                     }
