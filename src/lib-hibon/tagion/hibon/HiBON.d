@@ -27,7 +27,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-//import std.stdio;
+import std.stdio;
 
 static size_t size(U)(const(U[]) array) pure {
     if (array.length is 0) {
@@ -47,37 +47,6 @@ static size_t size(U)(const(U[]) array) pure {
     }
     return _size;
 }
-
-version(none)
-static size_t size(const(Document[]) docs) pure  {
-    if (docs.length is 0) {
-        return ubyte.sizeof;
-    }
-    size_t _size;
-    foreach(i, d; docs) {
-        //immutable index_key=i.to!string;
-        _size += Document.sizeKey(i);
-        const d_size=d.size;
-        _size += LEB128.calc_size(d_size) + d_size;
-    }
-    return _size;
-}
-
-version(none)
-static size_t size(const(string[]) strs) pure {
-    if (strs.length is 0) {
-        return ubyte.sizeof;
-    }
-    size_t _size;
-    foreach(i, s; strs) {
-        immutable index_key=i.to!string;
-        _size += Document.sizeKey(index_key);
-        const str_size=s.length;
-        _size += LEB128.calc_size(str_size) + str_size;
-    }
-    return _size;
-}
-
 
 /++
  HiBON is a generate object of the HiBON format
@@ -196,6 +165,7 @@ static size_t size(const(string[]) strs) pure {
                     this.value=x;
                 }
                 else {
+                    writefln("this[%s]=%s", key, x);
                     this.value= cast(UnqualT)x;
                 }
             }
@@ -473,6 +443,8 @@ static size_t size(const(string[]) strs) pure {
         assert(hibon.hasMember("b"));
         hibon.remove("b");
         assert(!hibon.hasMember("b"));
+        writefln("HiBON passed 1");
+
     }
 
     /++
@@ -536,6 +508,8 @@ static size_t size(const(string[]) strs) pure {
             hibon["05"]=2;
             assert(!hibon.isArray);
         }
+        writefln("HiBON passed 2");
+
     }
 
     unittest {
@@ -569,27 +543,27 @@ static size_t size(const(string[]) strs) pure {
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
-        alias TabelArray = Tuple!(
-            immutable(ubyte)[],  Type.BINARY.stringof,
-            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
-            immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
-            immutable(double)[], Type.FLOAT64_ARRAY.stringof,
-            immutable(int)[],    Type.INT32_ARRAY.stringof,
-            immutable(long)[],   Type.INT64_ARRAY.stringof,
-            string,              Type.STRING.stringof,
-            immutable(uint)[],   Type.UINT32_ARRAY.stringof,
-            immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
-            );
-        TabelArray test_tabel_array;
-        test_tabel_array.BINARY        = [1, 2, 3];
-        test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
-        test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
-        test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
-        test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
-        test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 0x823d_823d_823d_823dUL];
-        test_tabel_array.BOOLEAN_ARRAY = [true, false];
-        test_tabel_array.STRING        = "Text";
+        // alias TabelArray = Tuple!(
+        //     immutable(ubyte)[],  Type.BINARY.stringof,
+        //     immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
+        //     immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
+        //     immutable(double)[], Type.FLOAT64_ARRAY.stringof,
+        //     immutable(int)[],    Type.INT32_ARRAY.stringof,
+        //     immutable(long)[],   Type.INT64_ARRAY.stringof,
+        //     string,              Type.STRING.stringof,
+        //     immutable(uint)[],   Type.UINT32_ARRAY.stringof,
+        //     immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
+        //     );
+        // TabelArray test_tabel_array;
+        // test_tabel_array.BINARY        = [1, 2, 3];
+        // test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
+        // test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
+        // test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
+        // test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
+        // test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
+        // test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 0x823d_823d_823d_823dUL];
+        // test_tabel_array.BOOLEAN_ARRAY = [true, false];
+        // test_tabel_array.STRING        = "Text";
 
 
         { // empty
@@ -704,7 +678,7 @@ static size_t size(const(string[]) strs) pure {
             }
         }
 
-
+        version(none)
         { // HiBON Test for basic-array types
             auto hibon = new HiBON;
 
@@ -906,5 +880,7 @@ static size_t size(const(string[]) strs) pure {
                 assert(e.get!string == s);
             }
         }
+        writefln("HiBON passed 3");
+
     }
 }

@@ -17,26 +17,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
 import LEB128=tagion.utils.LEB128;
 
-//import std.stdio;
-// @safe
-// uint calc_size(const(ubyte[]) data) pure {
-//     size_t size=LEB128.calc_size(data);
-//     return cast(uint)size;
-// }
-
-// @safe
-// uint calc_size(T)(const T x) pure {
-//     alias BaseT=TypedefType!T;
-//     return cast(uint)(LEB128.calc_size(cast(BaseT)x));
-// }
-
-// LEB128.DecoderLEB128!T decode(T)(const(ubyte[]) data) pure {
-//     alias BaseT=TypedefType!T;
-//     return LEB128.decode!T(cas
-//     size_t size;
-//     const value=LEB128.decode!T(data, size);
-//     return tuple!("size", "value")(size, value);
-// }
+import std.stdio;
 
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 
@@ -89,13 +70,13 @@ enum Type : ubyte {
 
         DEFINED_ARRAY   = 0x80,  // Indicated an Intrinsic array types
         BINARY          = DEFINED_ARRAY | 0x05, /// Binary data
-        INT32_ARRAY     = DEFINED_ARRAY | INT32, /// 32bit integer array (int[])
-        INT64_ARRAY     = DEFINED_ARRAY | INT64, /// 64bit integer array (long[])
-        FLOAT64_ARRAY   = DEFINED_ARRAY | FLOAT64, /// 64bit floating point array (double[])
-        BOOLEAN_ARRAY   = DEFINED_ARRAY | BOOLEAN, /// boolean array (bool[])
-        UINT32_ARRAY    = DEFINED_ARRAY | UINT32,  /// Unsigned 32bit integer array (uint[])
-        UINT64_ARRAY    = DEFINED_ARRAY | UINT64,  /// Unsigned 64bit integer array (uint[])
-        FLOAT32_ARRAY   = DEFINED_ARRAY | FLOAT32, /// 64bit floating point array (double[])
+        // INT32_ARRAY     = DEFINED_ARRAY | INT32, /// 32bit integer array (int[])
+        // INT64_ARRAY     = DEFINED_ARRAY | INT64, /// 64bit integer array (long[])
+        // FLOAT64_ARRAY   = DEFINED_ARRAY | FLOAT64, /// 64bit floating point array (double[])
+        // BOOLEAN_ARRAY   = DEFINED_ARRAY | BOOLEAN, /// boolean array (bool[])
+        // UINT32_ARRAY    = DEFINED_ARRAY | UINT32,  /// Unsigned 32bit integer array (uint[])
+        // UINT64_ARRAY    = DEFINED_ARRAY | UINT64,  /// Unsigned 64bit integer array (uint[])
+        // FLOAT32_ARRAY   = DEFINED_ARRAY | FLOAT32, /// 64bit floating point array (double[])
         //     FLOAT128_ARRAY   = DEFINED_ARRAY | FLOAT128,
 
         /// Native types is only used inside the BSON object
@@ -130,12 +111,12 @@ bool isNativeArray(Type type) pure nothrow {
  Returns:
  true if the type is a HiBON data array (This is not the same as HiBON.isArray)
 +/
-@safe
-bool isArray(Type type) pure nothrow {
-    with(Type) {
-        return ((type & DEFINED_ARRAY) !is 0) && (type !is DEFINED_ARRAY) && (!isNative(type));
-    }
-}
+// @safe
+// bool isArray(Type type) pure nothrow {
+//     with(Type) {
+//         return ((type & DEFINED_ARRAY) !is 0) && (type !is DEFINED_ARRAY) && (!isNative(type));
+//     }
+// }
 
 /++
  Returns:
@@ -155,6 +136,12 @@ bool isHiBONType(Type type) pure nothrow {
     }
     enum flags = make_flags;
     return flags[type];
+}
+
+@safe bool isLEB128Basic(Type type) pure nothrow {
+    with(Type) {
+        return (type is INT32) || (type is INT64) || (type is UINT32) || (type is INT64);
+    }
 }
 
 ///
@@ -200,13 +187,13 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         @Type(Type.NATIVE_DOCUMENT) Document    native_document;
     }
     @Type(Type.BINARY)         immutable(ubyte)[]   binary;
-    @Type(Type.BOOLEAN_ARRAY)  immutable(bool)[]    boolean_array;
-    @Type(Type.INT32_ARRAY)    immutable(int)[]     int32_array;
-    @Type(Type.UINT32_ARRAY)   immutable(uint)[]    uint32_array;
-    @Type(Type.INT64_ARRAY)    immutable(long)[]    int64_array;
-    @Type(Type.UINT64_ARRAY)   immutable(ulong)[]   uint64_array;
-    @Type(Type.FLOAT32_ARRAY)  immutable(float)[]   float32_array;
-    @Type(Type.FLOAT64_ARRAY)  immutable(double)[]  float64_array;
+    // @Type(Type.BOOLEAN_ARRAY)  immutable(bool)[]    boolean_array;
+    // @Type(Type.INT32_ARRAY)    immutable(int)[]     int32_array;
+    // @Type(Type.UINT32_ARRAY)   immutable(uint)[]    uint32_array;
+    // @Type(Type.INT64_ARRAY)    immutable(long)[]    int64_array;
+    // @Type(Type.UINT64_ARRAY)   immutable(ulong)[]   uint64_array;
+    // @Type(Type.FLOAT32_ARRAY)  immutable(float)[]   float32_array;
+    // @Type(Type.FLOAT64_ARRAY)  immutable(double)[]  float64_array;
     // @Type(Type.FLOAT128_ARRAY) immutable(decimal_t)[] float128_array;
     static if ( NATIVE ) {
         @Type(Type.NATIVE_HIBON_ARRAY)    HiBON[]     native_hibon_array;
@@ -499,6 +486,7 @@ unittest {
         static assert(!is(U == const ulong));
     }
 
+    version(none)
     { // data arrays
         alias Tabel=Tuple!(
             immutable(ubyte)[], immutable(bool)[], immutable(int)[], immutable(uint)[],
@@ -597,7 +585,7 @@ unittest {
     assert(!isArray(["x", "2"].map!(a => a)));
     assert(!isArray(["1", "x"].map!(a => a)));
     assert(!isArray(["0", "1", "x"].map!(a => a)));
-
+    writefln("HiBONBase passed 1");
 }
 
 ///
@@ -618,6 +606,8 @@ unittest { // check is_index
     assert(!is_index("0x0", index));
     assert(!is_index("00", index));
     assert(!is_index("01", index));
+    writefln("HiBONBase passed 2");
+
 }
 
 /++
@@ -682,6 +672,8 @@ unittest { // Check less_than
     assert(less_than("0", "abe"));
     // assert(less_than(0, "1"));
     // assert(less_than(5, 7));
+    writefln("HiBONBase passed 3");
+
 }
 
 /++
@@ -740,4 +732,6 @@ unittest { // Check is_key_valid
     assert(is_key_valid(text));
     text~='B';
     assert(!is_key_valid(text));
+    writefln("HiBONBase passed 4");
+
 }
