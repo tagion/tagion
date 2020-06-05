@@ -27,7 +27,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-import std.stdio;
+//import std.stdio;
 
 static size_t size(U)(const(U[]) array) pure {
     if (array.length is 0) {
@@ -165,7 +165,6 @@ static size_t size(U)(const(U[]) array) pure {
                     this.value=x;
                 }
                 else {
-                    writefln("this[%s]=%s", key, x);
                     this.value= cast(UnqualT)x;
                 }
             }
@@ -443,8 +442,6 @@ static size_t size(U)(const(U[]) array) pure {
         assert(hibon.hasMember("b"));
         hibon.remove("b");
         assert(!hibon.hasMember("b"));
-        writefln("HiBON passed 1");
-
     }
 
     /++
@@ -508,8 +505,6 @@ static size_t size(U)(const(U[]) array) pure {
             hibon["05"]=2;
             assert(!hibon.isArray);
         }
-        writefln("HiBON passed 2");
-
     }
 
     unittest {
@@ -880,7 +875,5 @@ static size_t size(U)(const(U[]) array) pure {
                 assert(e.get!string == s);
             }
         }
-        writefln("HiBON passed 3");
-
     }
 }

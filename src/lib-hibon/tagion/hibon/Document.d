@@ -170,7 +170,6 @@ static assert(uint.sizeof == 4);
             else {
                 _index = LEB128.calc_size(data);
                 popFront();
-
             }
         }
 
@@ -202,11 +201,8 @@ static assert(uint.sizeof == 4);
                 _index = data.length+1;
             }
             else {
-                writefln("_index=%s %s", _index, data[_index..$]);
                 emplace!Element(&_element, data[_index..$]);
-                writefln("\tkey=%s %s _element.size=%d", front.key, front.type, _element.size);
                 _index += _element.size;
-                writefln("\t_index=%d length=%s", _index, data.length);
             }
         }
     }
@@ -270,9 +266,7 @@ static assert(uint.sizeof == 4);
      If on element with this key has been found an empty element is returned
      +/
     const(Element) opBinaryRight(string op)(in string key) const if(op == "in") {
-        writefln("%s this[].empty=%s",  __FUNCTION__, this[].empty);
         foreach (ref element; this[]) {
-            writefln("element.key=%s", key);
             if (element.key == key) {
                 return element;
             }
@@ -424,7 +418,6 @@ static assert(uint.sizeof == 4);
         buildKey(buffer, type, key, index);
 
         static if (is(T: U[], U) && (U.sizeof == ubyte.sizeof)) {
-            debug writefln("build %s", x);
             immutable size=LEB128.encode(x.length);
             buffer.array_write(size, index);
             buffer.array_write(x, index);
@@ -568,14 +561,11 @@ static assert(uint.sizeof == 4);
         import std.algorithm.sorting : isSorted;
         auto buffer=new ubyte[0x200];
 
-        size_t count;
         { // Test of null document
             const doc = Document(null);
             assert(doc.length is 0);
             assert(doc[].empty);
         }
-
-        writefln("Document  passed %d", count++);
 
         { // Test of empty Document
             size_t index;
@@ -648,7 +638,6 @@ static assert(uint.sizeof == 4);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
             }
-        writefln("Document  passed %d", count++);
 
             { // Document with a single value
                 index = make(buffer, test_tabel, 1);
@@ -658,7 +647,6 @@ static assert(uint.sizeof == 4);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!BigNumber == test_tabel[0]);
             }
-        writefln("Document  passed %d", count++);
 
             { // Document including basic types
                 index = make(buffer, test_tabel);
@@ -688,7 +676,6 @@ static assert(uint.sizeof == 4);
                     }
                 }
             }
-        writefln("Document  passed %d", count++);
 
             version(none)
             { // Document which includes basic arrays and string
@@ -710,7 +697,6 @@ static assert(uint.sizeof == 4);
 
                 }
             }
-        writefln("Document  passed %d", count++);
 
             { // Document which includes sub-documents
                 auto buffer_subdoc=new ubyte[0x200];
@@ -749,7 +735,6 @@ static assert(uint.sizeof == 4);
                     assert(int32_e.get!int is int(42));
                     assert(int32_e.by!(Type.INT32) is int(42));
                 }
-        writefln("Document  passed %d", count++);
 
                 { // Check string in doc )
                     const string_e = doc[Type.STRING.stringof];
@@ -759,7 +744,6 @@ static assert(uint.sizeof == 4);
                     assert(text == "Text");
                     assert(text == string_e.by!(Type.STRING));
                 }
-        writefln("Document  passed %d", count++);
 
                 { // Check the sub/under document
                     const under_e = doc[doc_name];
@@ -785,14 +769,12 @@ static assert(uint.sizeof == 4);
                         assert(e.get!U == test_tabel[i]);
                     }
                 }
-        writefln("Document  passed %d", count++);
 
                 { // Check opEqual
                     const data_int32_e = Element(data_int32);
                     assert(doc[Type.INT32.stringof] == data_int32_e);
                 }
             }
-        writefln("Document  passed %d", count++);
 
             { // Test opCall!(string[])
                 enum size_guess=27;
@@ -828,7 +810,6 @@ static assert(uint.sizeof == 4);
                     typed_range.popFront;
                 }
             }
-            writefln("Passed 1");
         }
     }
 
@@ -931,12 +912,6 @@ static assert(uint.sizeof == 4);
                                         auto result=new Value(LEB128.decode!T(data[value_pos..$]).value);
                                         return result;
                                     }
-                                    // else static if (E is BINARY) {
-                                    //     immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
-                                    //     immutable buffer_pos=value_pos+binary_len.size;
-                                    //     immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
-                                    //     return new Value(buffer);
-                                    // }
                                     else {
                                         return cast(Value*)(data[valuePos..$].ptr);
                                     }
@@ -1108,9 +1083,6 @@ static assert(uint.sizeof == 4);
                                     (E is BINARY) || (E is BIGINT) ) {
                                     return dataPos + dataSize;
                                 }
-                                // static if (E is BIGINT) {
-                                //     return dataPos + dataSize;
-                                // }
                                 else {
                                     static if (isIntegral!T) {
                                         return valuePos + LEB128.calc_size(data[valuePos..$]);

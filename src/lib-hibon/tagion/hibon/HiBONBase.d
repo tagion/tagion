@@ -17,7 +17,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
 import LEB128=tagion.utils.LEB128;
 
-import std.stdio;
+//import std.stdio;
 
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 
@@ -70,13 +70,6 @@ enum Type : ubyte {
 
         DEFINED_ARRAY   = 0x80,  // Indicated an Intrinsic array types
         BINARY          = DEFINED_ARRAY | 0x05, /// Binary data
-        // INT32_ARRAY     = DEFINED_ARRAY | INT32, /// 32bit integer array (int[])
-        // INT64_ARRAY     = DEFINED_ARRAY | INT64, /// 64bit integer array (long[])
-        // FLOAT64_ARRAY   = DEFINED_ARRAY | FLOAT64, /// 64bit floating point array (double[])
-        // BOOLEAN_ARRAY   = DEFINED_ARRAY | BOOLEAN, /// boolean array (bool[])
-        // UINT32_ARRAY    = DEFINED_ARRAY | UINT32,  /// Unsigned 32bit integer array (uint[])
-        // UINT64_ARRAY    = DEFINED_ARRAY | UINT64,  /// Unsigned 64bit integer array (uint[])
-        // FLOAT32_ARRAY   = DEFINED_ARRAY | FLOAT32, /// 64bit floating point array (double[])
         //     FLOAT128_ARRAY   = DEFINED_ARRAY | FLOAT128,
 
         /// Native types is only used inside the BSON object
@@ -106,17 +99,6 @@ bool isNativeArray(Type type) pure nothrow {
         return ((type & DEFINED_ARRAY) !is 0) && (isNative(type));
     }
 }
-
-/++
- Returns:
- true if the type is a HiBON data array (This is not the same as HiBON.isArray)
-+/
-// @safe
-// bool isArray(Type type) pure nothrow {
-//     with(Type) {
-//         return ((type & DEFINED_ARRAY) !is 0) && (type !is DEFINED_ARRAY) && (!isNative(type));
-//     }
-// }
 
 /++
  Returns:
@@ -187,14 +169,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         @Type(Type.NATIVE_DOCUMENT) Document    native_document;
     }
     @Type(Type.BINARY)         immutable(ubyte)[]   binary;
-    // @Type(Type.BOOLEAN_ARRAY)  immutable(bool)[]    boolean_array;
-    // @Type(Type.INT32_ARRAY)    immutable(int)[]     int32_array;
-    // @Type(Type.UINT32_ARRAY)   immutable(uint)[]    uint32_array;
-    // @Type(Type.INT64_ARRAY)    immutable(long)[]    int64_array;
-    // @Type(Type.UINT64_ARRAY)   immutable(ulong)[]   uint64_array;
-    // @Type(Type.FLOAT32_ARRAY)  immutable(float)[]   float32_array;
-    // @Type(Type.FLOAT64_ARRAY)  immutable(double)[]  float64_array;
-    // @Type(Type.FLOAT128_ARRAY) immutable(decimal_t)[] float128_array;
     static if ( NATIVE ) {
         @Type(Type.NATIVE_HIBON_ARRAY)    HiBON[]     native_hibon_array;
         @Type(Type.NATIVE_DOCUMENT_ARRAY) Document[]  native_document_array;
@@ -486,33 +460,6 @@ unittest {
         static assert(!is(U == const ulong));
     }
 
-    version(none)
-    { // data arrays
-        alias Tabel=Tuple!(
-            immutable(ubyte)[], immutable(bool)[], immutable(int)[], immutable(uint)[],
-            immutable(long)[], immutable(ulong)[], immutable(float)[], immutable(double)[]
-            );
-        Tabel test_tabel;
-        test_tabel[0]=[1, 2, 3];
-        test_tabel[1]=[false, true, true];
-        test_tabel[2]=[-1, 7, -42];
-        test_tabel[3]=[1, 7, 42];
-        test_tabel[4]=[-1, 7, -42_000_000_000_000];
-        test_tabel[5]=[1, 7, 42_000_000_000_000];
-        test_tabel[6]=[-1.7, 7, 42.42e10];
-        test_tabel[7]=[1.7, -7, 42,42e207];
-
-        foreach(i, t; test_tabel) {
-            Value v;
-            v=t;
-            alias U = test_tabel.Types[i];
-            enum  E = Value.asType!U;
-            static assert(is(const U == Value.TypeT!E));
-            assert(t == v.by!E);
-            assert(t.length == v.by!E.length);
-            assert(t is v.by!E);
-        }
-    }
 }
 
 /++
@@ -585,7 +532,6 @@ unittest {
     assert(!isArray(["x", "2"].map!(a => a)));
     assert(!isArray(["1", "x"].map!(a => a)));
     assert(!isArray(["0", "1", "x"].map!(a => a)));
-    writefln("HiBONBase passed 1");
 }
 
 ///
@@ -606,8 +552,6 @@ unittest { // check is_index
     assert(!is_index("0x0", index));
     assert(!is_index("00", index));
     assert(!is_index("01", index));
-    writefln("HiBONBase passed 2");
-
 }
 
 /++
@@ -672,8 +616,6 @@ unittest { // Check less_than
     assert(less_than("0", "abe"));
     // assert(less_than(0, "1"));
     // assert(less_than(5, 7));
-    writefln("HiBONBase passed 3");
-
 }
 
 /++
@@ -732,6 +674,4 @@ unittest { // Check is_key_valid
     assert(is_key_valid(text));
     text~='B';
     assert(!is_key_valid(text));
-    writefln("HiBONBase passed 4");
-
 }
