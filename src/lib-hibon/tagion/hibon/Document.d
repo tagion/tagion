@@ -14,8 +14,7 @@ import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 import std.typecons : TypedefType;
 
-import std.stdio;
-//import tagion.Types : decimal_t;
+//import std.stdio;
 
 import tagion.utils.StdTime;
 import tagion.basic.Basic : isOneOf;
@@ -371,7 +370,6 @@ static assert(uint.sizeof == 4);
      +/
     static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure if (is(Key:const(char[])) || is(Key==uint)) {
         size_t size = sizeKey(key);
-        debug writefln("type=%s key=%s x=%s %s", type, key, x, isDataBlock!T);
         static if ( is(T: U[], U) ) {
             const _size=x.length*U.sizeof;
             size += LEB128.calc_size(_size) + _size;
@@ -387,13 +385,11 @@ static assert(uint.sizeof == 4);
         else static if(isDataBlock!T) {
 
             const _size=x.size;
-            debug writefln("\t_size=%d", _size);
             size += LEB128.calc_size(_size) + _size;
         }
         else {
             alias BaseT=TypedefType!T;
             static if (isIntegral!BaseT) {
-                debug writefln("\tBaseT=%s  T=%s", BaseT.stringof, T.stringof);
                 size += LEB128.calc_size(cast(BaseT)x);
             }
             else {
@@ -551,7 +547,6 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    @trusted
     unittest {
         import std.algorithm.sorting : isSorted;
         auto buffer=new ubyte[0x200];
@@ -620,8 +615,6 @@ static assert(uint.sizeof == 4);
                 index = make(buffer, test_tabel, 1);
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
-                writefln("data=%s", data);
-                writefln("keys=%s", doc.keys);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
             }
@@ -639,7 +632,6 @@ static assert(uint.sizeof == 4);
                 index = make(buffer, test_tabel);
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
-                writefln("doc=%s", doc.data);
                 assert(doc.keys.is_key_ordered);
 
                 auto keys=doc.keys;
@@ -671,25 +663,14 @@ static assert(uint.sizeof == 4);
                 const doc=Document(data);
                 assert(doc.keys.is_key_ordered);
 
-                writefln("doc.data=%s", doc.data);
-
-                writefln("doc.keys=%s", doc.keys);
                 foreach(i, t; test_tabel_array) {
                     enum name = test_tabel_array.fieldNames[i];
                     alias U   = test_tabel_array.Types[i];
-                    writefln("%d U=%s", i, U.stringof);
-                    writefln("\t%s in doc %s", name, name in doc);
                     const v = doc[name].get!U;
-                    //assert(v.length is test_tabel_array[i].length);
-                    writefln("t=%s", t);
-                    writefln("v=%s", v);
 
                     assert(v == test_tabel_array[i]);
                     import traits=std.traits; // : isArray;
                     const e = doc[name];
-                    //assert(!e.isThat!isBasicType);
-                    //assert(e.isThat!(traits.isArray));
-
                 }
             }
 
@@ -1079,7 +1060,6 @@ static assert(uint.sizeof == 4);
                                     return dataPos + dataSize;
                                 }
                                 else static if (isDataBlock(E)) {
-                                    debug writefln("dataPos=%d  dataSize=%d", dataPos, dataSize);
                                     return dataPos + dataSize;
                                 }
                                 else {
