@@ -73,6 +73,20 @@ static assert(uint.sizeof == 4);
     }
 
     /++
+     This function returns the HiBON version
+     Returns:
+     HiBON version
+     +/
+    uint ver() const pure {
+        if (data.length > ubyte.sizeof) {
+            if (data[ubyte.sizeof] == Type.VER) {
+                const leb128_version=LEB128.decode!uint(data[ubyte.sizeof..$]);
+                return leb128_version.value;
+            }
+        }
+        return 0;
+    }
+    /++
      Makes a copy of $(PARAM doc)
      Returns:
      Document copy
@@ -158,9 +172,11 @@ static assert(uint.sizeof == 4);
     @safe
     struct Range {
         immutable(ubyte[]) data;
+        immutable uint     ver;
     protected:
         size_t            _index;
         Element           _element;
+
     public:
         this(immutable(ubyte[]) data) {
             this.data = data;
@@ -170,6 +186,13 @@ static assert(uint.sizeof == 4);
             else {
                 _index = LEB128.calc_size(data);
                 popFront();
+                uint _ver;
+                if (!empty && (front.type is Type.VER)) {
+                    const leb128_ver=LEB128.decode!uint(data[_index..$]);
+                    _ver=leb128_ver.value;
+                    _index+=leb128_ver.size;
+                }
+                ver=_ver;
             }
         }
 
