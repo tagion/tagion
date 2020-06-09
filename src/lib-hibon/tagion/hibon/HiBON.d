@@ -26,7 +26,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-import std.stdio;
+//import std.stdio;
 
 static size_t size(U)(const(U[]) array) pure {
     if (array.length is 0) {
@@ -267,7 +267,6 @@ static size_t size(U)(const(U[]) array) pure {
                             }
                             else {
                                 const v = value.by!(E);
-                                debug writefln("#### E=%s key=%s size=%d %s", E, key, Document.sizeT(E, key, v), typeof(v).stringof);
                                 return Document.sizeT(E, key, v);
                             }
                             break TypeCase;
@@ -701,11 +700,6 @@ static size_t size(U)(const(U[]) array) pure {
 
             immutable data = hibon.serialize;
             const doc = Document(data);
-            writefln("hibon.keys=%s", hibon.keys);
-            writefln("  doc.data=%s", doc.data);
-            writefln("  doc.keys=%s", doc.keys);
-            writefln("doc.length=%d test_tabel_array.length=%d", doc.length, test_tabel_array.length);
-
             assert(doc.length is test_tabel_array.length);
 
             foreach(i, t; test_tabel_array) {
