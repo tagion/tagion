@@ -20,7 +20,7 @@ import LEB128=tagion.utils.LEB128;
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION=0;
 
-import std.stdio;
+//import std.stdio;
 
 /++
  Helper function to serialize a HiBON
@@ -97,10 +97,8 @@ struct DataBlock(Type datatype) {
         _data=data;
     }
     this(immutable(ubyte[]) data) {
-        writefln("DataBlock data=%s", data);
         const leb128=LEB128.decode!uint(data);
         _type=leb128.value;
-        writefln("leb128.size=%d", leb128.size);
         this._data=data[leb128.size..$];
     }
     immutable(ubyte[]) serialize() pure const nothrow {
