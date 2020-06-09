@@ -8,6 +8,8 @@ import std.internal.math.biguintnoasm : BigDigit;
 import std.range.primitives;
 import std.traits;
 import std.system : Endian;
+import std.base64;
+import std.exception : assumeUnique;
 
 import tagion.hibon.HiBONException : check;
 import tagion.hibon.BigNumber;
@@ -107,6 +109,22 @@ struct BigNumber {
         _data=dig.dup;
     }
 
+    @trusted this(const(ubyte[]) buffer) {
+        const digits_len=buffer.length / BigDigit.sizeof;
+        .check(digits_len > 0, "BigNumber must contain some digits");
+        _data=(cast(BigDigit*)(buffer.ptr))[0..digits_len].dup;
+        if (buffer.length % BigDigit.sizeof == 0) {
+            _sign=false;
+        }
+        else if (buffer.length % BigDigit.sizeof == 1) {
+            .check(buffer[$-1] is 0 || buffer[$-1] is 1,
+                format("BigNuber has incorrect sign %d value should 0 or 1", buffer[$-1]));
+            _sign=cast(bool)buffer[$-1];
+        }
+        else {
+            .check(0, "Buffer does not have the correct size");
+        }
+    }
     /++
      Binary operator of op
      Params:
@@ -121,7 +139,6 @@ struct BigNumber {
             enum code=format("auto result=x %s y;", op);
         }
         mixin(code);
-        return BigNumber(result);
     }
 
     /++
@@ -143,7 +160,6 @@ struct BigNumber {
      +/
     @trusted
     BigNumber opUnary(string op)() pure nothrow const {
-        return BigNumber(mixin("%sx;",op));
     }
 
     /++
@@ -266,6 +282,18 @@ struct BigNumber {
     @trusted
     string toDecimalString() const pure nothrow {
         return x.toDecimalString;
+    }
+
+    /++
+     Coverts to a base64 format
+     +/
+    @trusted
+    immutable(ubyte[]) serialize() const pure nothrow {
+        immutable digits_size=BigDigit.sizeof*_data.length;
+        auto buffer=new ubyte[digits_size+_sign.sizeof];
+        buffer[0..digits_size]=cast(ubyte[])_data;
+        buffer[$-1]=cast(bool)_sign;
+        return assumeUnique(buffer);
     }
 
 }

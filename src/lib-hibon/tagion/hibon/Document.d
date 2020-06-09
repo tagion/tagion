@@ -7,7 +7,7 @@ module tagion.hibon.Document;
 
 //import std.format;
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType;
+import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType, isIntegral;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
@@ -17,14 +17,14 @@ import std.typecons : TypedefType;
 import std.stdio;
 //import tagion.Types : decimal_t;
 
-import tagion.utils.UTCTime;
+import tagion.utils.StdTime;
 import tagion.basic.Basic : isOneOf;
 import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import LEB128=tagion.utils.LEB128;
-import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
+//import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
 
 //alias u32=LEB128.decode!uint;
 
@@ -361,12 +361,13 @@ static assert(uint.sizeof == 4);
             size += LEB128.calc_size(_size) + _size;
         }
         else {
-            static if (isIntegral!T) {
-                alias BaseT=TypedefType!T;
+            alias BaseT=TypedefType!T;
+            static if (isIntegral!BaseT) {
+                debug writefln("\tBaseT=%s  T=%s", BaseT.stringof, T.stringof);
                 size += LEB128.calc_size(cast(BaseT)x);
             }
             else {
-                size += T.sizeof;
+                size += BaseT.sizeof;
             }
         }
         return size;
@@ -416,7 +417,7 @@ static assert(uint.sizeof == 4);
     static void build(T, Key)(
         ref ubyte[] buffer, Type type, Key key, const(T) x, ref size_t index) pure if (is(Key:const(char[])) || is(Key==uint)) {
         buildKey(buffer, type, key, index);
-
+        alias BaseT=TypedefType!T;
         static if (is(T: U[], U) && (U.sizeof == ubyte.sizeof)) {
             immutable size=LEB128.encode(x.length);
             buffer.array_write(size, index);
@@ -432,10 +433,21 @@ static assert(uint.sizeof == 4);
             buffer.array_write(x.data, index);
             buffer.binwrite(x.sign, &index);
         }
-        else static if (isIntegral!T) {
-            buffer.array_write(LEB128.encode(x), index);
+        else static if (
+            is(T == DataBlock!(Type.HASHDOC)) ||
+            is(T == DataBlock!(Type.CRYPTDOC)) ||
+            is(T == DataBlock!(Type.CREDENTIAL)) ) {
+            buffer.array_write(x.serialize, index);
+        }
+        // else static if (is(T : sdt_t)) {
+        //     alias BaseT=TypedefType!sdt_t;
+        //     buffer.array_write(LEB128.encode(cast(BaseT)x), index);
+        // }
+        else static if (isIntegral!BaseT) {
+            buffer.array_write(LEB128.encode(cast(BaseT)x), index);
         }
         else {
+            pragma(msg, T, " ", is(T==DataBlock!(Type.HASHDOC)), " - ", is(T==DataBlock!U, U));
             buffer.binwrite(x, &index);
         }
     }
@@ -510,14 +522,6 @@ static assert(uint.sizeof == 4);
             size_t index;
             buffer.array_write(leb128_size_buffer, index);
             buffer.array_write(temp_buffer[0..temp_index], index);
-
-            // auto index=leb128_size_buffer.length
-            // buffer[0..index]=leb128_size_buffer;
-            // buffer.array_write(LEB128.encode(index),
-            // //buffer.binwrite(Type.NONE, &index);
-            // uint size;
-            // size = cast(uint)(index - uint.sizeof);
-            // buffer.binwrite(size, 0);
             return index;
         }
     }
@@ -535,8 +539,6 @@ static assert(uint.sizeof == 4);
         { // Test of empty Document
             size_t index;
             buffer.binwrite(ubyte.init, &index);
-            // buffer.binwrite(Type.NONE, &index);
-            // buffer.binwrite(uint(1), 0);
             immutable data=buffer[0..index].idup;
             const doc = Document(data);
             assert(doc.length is 0);
@@ -551,10 +553,10 @@ static assert(uint.sizeof == 4);
             double, Type.FLOAT64.stringof,
             int,    Type.INT32.stringof,
             long,   Type.INT64.stringof,
+            sdt_t,  Type.TIME.stringof,
             uint,   Type.UINT32.stringof,
             ulong,  Type.UINT64.stringof,
 
-            utc_t,  Type.UTC.stringof
             );
 
         Tabel test_tabel;
@@ -566,7 +568,7 @@ static assert(uint.sizeof == 4);
         test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
         test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
         test_tabel.BOOLEAN  = true;
-        test_tabel.UTC      = 1001;
+        test_tabel.TIME      = 1001;
 
         alias TabelArray = Tuple!(
             immutable(ubyte)[],  Type.BINARY.stringof,
@@ -586,6 +588,8 @@ static assert(uint.sizeof == 4);
                 index = make(buffer, test_tabel, 1);
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
+                writefln("data=%s", data);
+                writefln("keys=%s", doc.keys);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
             }
@@ -603,7 +607,8 @@ static assert(uint.sizeof == 4);
                 index = make(buffer, test_tabel);
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
-                assert(doc.keys.is_in_order);
+                writefln("doc=%s", doc.data);
+                assert(doc.keys.is_key_ordered);
 
                 auto keys=doc.keys;
                 foreach(i, t; test_tabel) {
@@ -622,7 +627,7 @@ static assert(uint.sizeof == 4);
                     assert(e.type is E);
                     assert(e.isType!U);
 
-                    static if(E !is Type.BIGINT && E !is Type.UTC) {
+                    static if(E !is Type.BIGINT && E !is Type.TIME) {
                         assert(e.isThat!isBasicType);
                     }
                 }
@@ -636,7 +641,7 @@ static assert(uint.sizeof == 4);
 
                 index = 0;
 
-                enum size_guess=151;
+                enum size_guess=152;
                 uint size;
                 buffer.array_write(LEB128.encode(size_guess), index);
                 const start_index=index;
@@ -657,7 +662,7 @@ static assert(uint.sizeof == 4);
 
                 immutable data = buffer[0..index].idup;
                 const doc=Document(data);
-                assert(doc.keys.is_in_order);
+                assert(doc.keys.is_key_ordered);
 
                 { // Check int32 in doc
                     const int32_e = doc[Type.INT32.stringof];
@@ -826,7 +831,12 @@ static assert(uint.sizeof == 4);
                             }
                             else {
                                 if (isHiBONType(type)) {
-                                    alias T = Value.TypeT!E;
+                                    static if (E is TIME) {
+                                        alias T=long;
+                                    }
+                                    else {
+                                        alias T = Value.TypeT!E;
+                                    }
                                     static if (isIntegral!T) {
                                         auto result=new Value(LEB128.decode!T(data[value_pos..$]).value);
                                         return result;
@@ -1003,11 +1013,17 @@ static assert(uint.sizeof == 4);
                                     return dataPos + dataSize;
                                 }
                                 else {
-                                    static if (isIntegral!T) {
+                                    static if (E is TIME) {
+                                        alias BaseT=long;
+                                    }
+                                    else {
+                                        alias BaseT=T;
+                                    }
+                                    static if (isIntegral!BaseT) {
                                         return valuePos + LEB128.calc_size(data[valuePos..$]);
                                     }
                                     else {
-                                        return valuePos + T.sizeof;
+                                        return valuePos + BaseT.sizeof;
                                     }
                                 }
                             }
@@ -1025,7 +1041,7 @@ static assert(uint.sizeof == 4);
                         }
                     default:
                         import std.format;
-                        throw new HiBONExceptionT!true(format("Bad HiBON type %d", type));
+                        throw new HiBONExceptionT!true(format("Bad HiBON type %s", type));
                         // empty
                     }
                 }

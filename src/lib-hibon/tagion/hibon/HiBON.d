@@ -17,7 +17,6 @@ import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
 import std.meta : AliasSeq;
 
 import std.conv : to;
-import std.typecons : TypedefType;
 
 import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
@@ -148,11 +147,11 @@ static size_t size(U)(const(U[]) array) pure {
          +/
         @trusted
         this(T)(T x, string key) { //const pure if ( is(T == const) ) {
-            alias BaseT=TypedefType!T;
-            alias UnqualT = Unqual!BaseT;
+            alias UnqualT = Unqual!T;
             enum E=Value.asType!UnqualT;
             this.key  = key;
-            static if (E is Type.NONE) {
+            with(Type) {
+            static if (E is NONE) {
                 alias CastT=CastTo!(UnqualT, CastTypes);
                 static assert(!is(CastT==void), format("Type %s is not valid", T.stringof));
                 alias CastE=Value.asType!CastT;
@@ -161,14 +160,19 @@ static size_t size(U)(const(U[]) array) pure {
             }
             else {
                 this.type = E;
-                static if (E is Type.BIGINT) {
+                pragma(msg, E, " ", UnqualT);
+                static if (E is BIGINT || E is BINARY) {
+                    this.value=x;
+                }
+                else static if (E is HASHDOC || E is CRYPTDOC || E is CREDENTIAL) {
+                    pragma(msg, "T=", T);
                     this.value=x;
                 }
                 else {
                     this.value= cast(UnqualT)x;
                 }
             }
-
+            }
         }
 
         /++
@@ -258,6 +262,9 @@ static size_t size(U)(const(U[]) array) pure {
                                 }
                                 return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
+                            else static if (E is VER) {
+                                return LEB128.calc_size(HIBON_VERSION);
+                            }
                             else {
                                 const v = value.by!(E);
                                 return Document.sizeT(E, key, v);
@@ -306,6 +313,7 @@ static size_t size(U)(const(U[]) array) pure {
                     static foreach(E; EnumMembers!Type) {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
+
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
                                 Document.buildKey(buffer, E, key, index);
@@ -327,6 +335,7 @@ static size_t size(U)(const(U[]) array) pure {
                             }
                             else {
                                 Document.build(buffer, E, key, value.by!E, index);
+
                             }
                             break TypeCase;
                         }

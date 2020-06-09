@@ -11,17 +11,18 @@ import std.base64;
 import std.stdio;
 
 import tagion.hibon.BigNumber;
-import tagion.hibon.HiBONBase : Type, isNative, isArray, isHiBONType;
+import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONtoText;
+
 import tagion.basic.Message : message;
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
 import tagion.basic.TagionExceptions : Check;
-import tagion.utils.Miscellaneous : toHex=toHexString, decode;
-import tagion.utils.UTCTime;
+import tagion.utils.StdTime;
 
 /**
  * Exception type used by tagion.hibon.HiBON module
@@ -48,25 +49,30 @@ protected Type[string] generateLabelMap(const(string[Type]) typemap) {
 }
 
 enum typeMap=[
-    Type.NONE     : NotSupported,
-    Type.FLOAT32  : "f32",
-    Type.FLOAT64  : "f64",
-    Type.STRING   : "text",
-    Type.DOCUMENT : "{}",
-    Type.BOOLEAN  : "bool",
-    Type.UTC      : "utc",
-    Type.INT32    : "i32",
-    Type.INT64    : "i64",
-    Type.UINT32   : "u32",
-    Type.UINT64   : "u64",
-    Type.BIGINT   : "int",
+    Type.NONE       : NotSupported,
+    Type.VER        : NotSupported,
+    Type.FLOAT32    : "f32",
+    Type.FLOAT64    : "f64",
+    Type.STRING     : "$",
+    Type.BINARY     : "*",
+    Type.DOCUMENT   : "{}",
+    Type.BOOLEAN    : "bool",
+    Type.TIME       : "sdt",
+    Type.INT32      : "i32",
+    Type.INT64      : "i64",
+    Type.UINT32     : "u32",
+    Type.UINT64     : "u64",
+    Type.BIGINT     : "big",
+    Type.HASHDOC    : "#",
+    Type.CRYPTDOC   : "(#)",
+    Type.CREDENTIAL : "&",
 
     Type.DEFINED_NATIVE : NotSupported,
-    Type.BINARY         : "bin",
+
     Type.DEFINED_ARRAY         : NotSupported,
-    Type.NATIVE_DOCUMENT       : NotSupported ,
+    Type.NATIVE_DOCUMENT       : NotSupported,
     Type.NATIVE_HIBON_ARRAY    : NotSupported,
-    Type.NATIVE_DOCUMENT_ARRAY : NotSupported ,
+    Type.NATIVE_DOCUMENT_ARRAY : NotSupported,
     Type.NATIVE_STRING_ARRAY   : NotSupported
     ];
 
@@ -112,7 +118,7 @@ struct toJSONT(bool HASHSAFE) {
                     static foreach(E; EnumMembers!Type) {
                         static if (isHiBONType(E)) {
                         case E:
-                            static if (E is Type.DOCUMENT) {
+                            static if (E is DOCUMENT) {
                                 const sub_doc=e.by!E;
                                 auto doc_element=toJSONT(sub_doc);
                                 if ( isarray ) {
@@ -127,28 +133,22 @@ struct toJSONT(bool HASHSAFE) {
                                     result[e.key]=doc_element;
                                 }
                             }
+                            else static if ((E is BOOLEAN) || (E is STRING)) {
+                                if ( isarray ) {
+                                    result.array~=JSONValue(e.by!E);
+                                }
+                                else {
+                                    result[e.key]=JSONValue(e.by!E);
+                                }
+                            }
                             else {
                                 auto doc_element=new JSONValue[2];
                                 doc_element[TYPE]=JSONValue(typeMap[E]);
-                                static if (E is UTC) {
-                                    assert(0, format("%s is not implemented yet", E));
-                                }
-                                else static if (E is BINARY) {
-                                    const buffer=e.by!E;
-                                    doc_element[VALUE]=Base64.encode(e.by!E).idup;
-                                }
-                                else static if(E is BIGINT) {
-                                    doc_element[VALUE]=e.by!(E).toDecimalString;
-                                }
-                                else {
-                                    doc_element[VALUE]=toJSONType(e.by!E);
-                                }
-
                                 if ( isarray ) {
-                                    result.array~=JSONValue(doc_element);
+                                    result.array~=toJSONType(e);
                                 }
                                 else {
-                                    result[e.key]=doc_element;
+                                    result[e.key]=toJSONType(e);
                                 }
                             }
                             break CaseType;
@@ -162,73 +162,55 @@ struct toJSONT(bool HASHSAFE) {
         return result;
     }
 
+    static JSONValue[] toJSONType(Document.Element e) {
+        auto doc_element=new JSONValue[2];
+        writefln("%s JSONValue(typeMap[e.type])=%s %s", e.key, typeMap[e.type], e.type);
+        doc_element[TYPE]=JSONValue(typeMap[e.type]);
+        with(Type) {
+        TypeCase:
+            switch(e.type) {
+                static foreach(E; EnumMembers!Type) {
+                case E:
+                    static if (E is BOOLEAN) {
+                        doc_element[VALUE]=e.by!E;
+                    }
+                    else static if(E is INT32 || E is UINT32) {
 
-    template JSONTypeT(T) {
-        alias UnqualT=Unqual!T;
-        static if (is(UnqualT == bool)) {
-            alias JSONTypeT=bool;
-        }
-        else static if (is(UnqualT == string)) {
-            alias JSONTypeT=string;
-        }
-        else static if(is(UnqualT == ulong) || is(UnqualT == long)) {
-            alias JSONTypeT=string;
-        }
-        else static if(is(UnqualT == uint) || is(UnqualT == int)) {
-            alias JSONTypeT=UnqualT;
-        }
-        else static if(is(T : immutable(ubyte)[])) {
-            alias JSONTypeT=string;
-        }
-        else static if(is(T : const BigNumber)) {
-            alias JSONTypeT=string;
-        }
-        else static if(is(UnqualT  : double)) {
-            static if (HASHSAFE) {
-                alias JSONTypeT=string;
+                        doc_element[VALUE]=e.by!(E);
+                    }
+                    else static if(E is INT64 || E is UINT64) {
+                        doc_element[VALUE]=format("0x%x", e.by!(E));
+                    }
+                    else static if(E is HASHDOC || E is CRYPTDOC || E is CREDENTIAL || E is BIGINT) {
+                        writefln("typeof(e.by!(E).serialize)=%s %s %s", typeof(e.by!(E).serialize).stringof, E, e.type);
+                        doc_element[VALUE]=encodeBase64(e.by!(E).serialize);
+                    }
+                    else static if(E is BINARY) {
+                        doc_element[VALUE]=encodeBase64(e.by!(E));
+                    }
+                    else static if(E is FLOAT32 || E is FLOAT64) {
+                        static if (HASHSAFE) {
+                            doc_element[VALUE]=format("%a", e.by!E);
+                        }
+                        else {
+                            doc_element[VALUE]=e.by!E;
+                        }
+                    }
+                    else static if(E is TIME) {
+                        doc_element[VALUE]=format("0x%x", e.by!(E));
+                        writefln("time=%d", e.by!E);
+                    }
+                    else {
+                        goto default;
+                    }
+                    break TypeCase;
+                }
+            default:
+                throw new HiBONException(format("Unsuported HiBON type %s", e.type));
             }
-            else {
-                alias JSONTypeT=double;
-            }
         }
-        else {
-            static assert(0, format("Unsuported type %s", T.stringof));
-        }
+        return doc_element;
     }
-
-    static auto toJSONType(T)(T x) {
-        alias UnqualT=Unqual!T;
-        static if (is(UnqualT == bool)) {
-            return x;
-        }
-        else static if(is(UnqualT == string)) {
-            return x;
-        }
-        else static if(is(UnqualT == ulong) || is(UnqualT == long)) {
-            return format("%d", x);
-        }
-        else static if(is(UnqualT == uint) || is(UnqualT == int)) {
-            return x;
-        }
-        else static if(is(T : immutable(ubyte)[])) {
-            return format("0x%s", x.toHex);
-        }
-        else static if(is(UnqualT  : double)) {
-            static if (HASHSAFE) {
-                return format("%a", x);
-            }
-            else {
-                return cast(double)x;
-            }
-        }
-        else static if(is(T : const BigNumber)) {
-            return x.to!string;
-        }
-        else {
-            static assert(0, message("Unsuported type %s", T.stringof));
-        }
-    }
-
 }
 
 HiBON toHiBON(scope const JSONValue json) {
@@ -238,13 +220,30 @@ HiBON toHiBON(scope const JSONValue json) {
             return jvalue.boolean;
         }
         else static if(is(UnqualT==uint)) {
-            return jvalue.integer.to!uint;
+            long x=jvalue.integer;
+            writefln("jvalue.type=%s %s %d %s", jvalue.type, jvalue.toString, jvalue.integer, x <=uint.max);
+            .check((x>0) && (x<=uint.max), format("%s not a u32", jvalue));
+            return cast(uint)x;
         }
         else static if(is(UnqualT==int)) {
             return jvalue.integer.to!int;
         }
         else static if(is(UnqualT==long) || is(UnqualT==ulong)) {
-            return jvalue.str.to!UnqualT;
+            const text=jvalue.str;
+            ulong result;
+            if (isHexPrefix(text)) {
+                writefln("->%s %s", text[hex_prefix.length..$], UnqualT.stringof);
+                result=text[hex_prefix.length..$].to!ulong(16);
+            }
+            else {
+                result=text.to!UnqualT;
+            }
+            static if (is(UnqualT==long)) {
+                return cast(long)result;
+            }
+            else {
+                return result;
+            }
         }
         else static if(is(UnqualT==string)) {
             return jvalue.str;
@@ -268,7 +267,22 @@ HiBON toHiBON(scope const JSONValue json) {
             return array.idup;
         }
         else static if (is(T : const BigNumber)) {
+            const text=jvalue.str;
+            if (isBase64Prefix(text) || isHexPrefix(text)) {
+                const data=HiBONdecode(text);
+                return BigNumber(data);
+            }
             return BigNumber(jvalue.str);
+        }
+        else static if (
+            is(UnqualT==HashDoc) ||
+            is(UnqualT==CryptDoc) ||
+            is(UnqualT==Credential) ) {
+            const buffer=HiBONdecode(jvalue.str);
+            return T(buffer);
+        }
+        else static if (is(T : const sdt_t)) {
+            return sdt_t(get!long(jvalue));
         }
         else {
             static assert(0, format("Type %s is not supported", T.stringof));
@@ -279,6 +293,14 @@ HiBON toHiBON(scope const JSONValue json) {
     //static HiBON Obj(scope JSONValue json);
     static HiBON JSON(Key)(scope JSONValue json) {
         static bool set(ref HiBON sub_result, Key key, scope JSONValue jvalue) {
+            if (jvalue.type is JSONType.string) {
+                sub_result[key] = jvalue.str;
+                return true;
+            }
+            else if ((jvalue.type is JSONType.true_) ||  (jvalue.type is JSONType.false_)) {
+                sub_result[key] = jvalue.boolean;
+                return true;
+            }
             if (jvalue.array[TYPE].type !is JSONType.STRING) {
                 return false;
             }
@@ -298,12 +320,13 @@ HiBON toHiBON(scope const JSONValue json) {
                                 return false;
                             }
                             else {
-                                static if(E is UTC) {
-                                    assert(0, format("Type %s is supported yet", E));
-                                }
-                                else static if(E is BINARY) {
+                                // static if(E is TIME) {
+                                //     assert(0, format("Type %s is supported yet", E));
+                                // }
+                                // else
+                                static if(E is BINARY) {
                                     import std.uni : toLower;
-                                    sub_result[key]=Base64.decode(value.str).idup; //str[HEX_PREFIX.length..$]);
+                                    sub_result[key]=HiBONdecode(value.str).idup; //str[HEX_PREFIX.length..$]);
                                 }
                                 else {
                                     sub_result[key]=get!T(value);
@@ -358,11 +381,9 @@ HiBON toHiBON(scope const JSONValue json) {
         return result;
     }
 
-
     static HiBON Obj(scope JSONValue json) {
         if ( json.type is JSONType.ARRAY ) {
             return JSON!size_t(json);
-
         }
         else if ( json.type is JSONType.OBJECT ) {
             return JSON!string(json);
@@ -388,7 +409,7 @@ unittest {
         ulong,  Type.UINT64.stringof,
         BigNumber, Type.BIGINT.stringof,
 
-        utc_t,  Type.UTC.stringof
+        //  sdt_t,  Type.TIME.stringof
         );
 
     Tabel test_tabel;
@@ -400,7 +421,7 @@ unittest {
     test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
     test_tabel.BOOLEAN  = true;
     test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
-    test_tabel.UTC      = 1001;
+    // test_tabel.TIME     = sdt_t(1001);
 
     alias TabelArray = Tuple!(
         immutable(ubyte)[],  Type.BINARY.stringof,
@@ -416,6 +437,7 @@ unittest {
         foreach(i, t; test_tabel) {
             enum name=test_tabel.fieldNames[i];
             hibon[name]=t;
+            writefln("key=%s type=%s", name, hibon[name].type);
         }
         auto sub_hibon = new HiBON;
         hibon[sub_hibon.stringof]=sub_hibon;
@@ -433,7 +455,7 @@ unittest {
 
     auto json=doc.toJSON(true);
     import std.stdio;
-    // writefln("Before\n%s", json.toPrettyString);
+    writefln("Before\n%s", json.toPrettyString);
     string str=json.toString;
     auto parse=str.parseJSON;
     auto h=parse.toHiBON;

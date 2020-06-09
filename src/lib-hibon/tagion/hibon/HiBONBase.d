@@ -3,7 +3,7 @@ module tagion.hibon.HiBONBase;
 //import tagion.Types;
 import tagion.basic.Basic : isOneOf;
 
-import tagion.utils.UTCTime;
+import tagion.utils.StdTime;
 
 import std.format;
 import std.meta : AliasSeq, allSatisfy;
@@ -17,10 +17,8 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
 import LEB128=tagion.utils.LEB128;
 
-//import std.stdio;
-
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
-
+enum HIBON_VERSION=0;
 
 /++
  Helper function to serialize a HiBON
@@ -48,35 +46,67 @@ void array_write(T)(ref ubyte[] buffer, T array, ref size_t index) pure if ( is(
  HiBON Type codes
 +/
 enum Type : ubyte {
-    NONE            = 0x00,  /// End Of Document
+    NONE            = 0x00,      /// End Of Document
         FLOAT64         = 0x01,  /// Floating point
         STRING          = 0x02,  /// UTF8 STRING
         DOCUMENT        = 0x03,  /// Embedded document (Both Object and Documents)
+        BINARY          = 0x05,  /// Binary data
+        CRYPTDOC        = 0x06,  /// Encrypted document
+
         BOOLEAN         = 0x08,  /// Boolean - true or false
-        UTC             = 0x09,  /// UTC datetime
+        TIME            = 0x09,  /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
         INT32           = 0x10,  /// 32-bit integer
         INT64           = 0x12,  /// 64-bit integer,
         //       FLOAT128        = 0x13, /// Decimal 128bits
         BIGINT          = 0x1B,  /// Signed Bigint
-
-        UINT32          = 0x20,  // 32 bit unsigend integer
-        FLOAT32         = 0x21,  // 32 bit Float
-        UINT64          = 0x22,  // 64 bit unsigned integer
-//        HASHDOC         = 0x23,  // Hash point to documement
-//        UBIGINT         = 0x2B,  /// Unsigned Bigint
-
+        CREDENTIAL      = 0x1F,  /// Used to store public and or signatures
+        UINT32          = 0x20,  /// 32 bit unsigend integer
+        FLOAT32         = 0x21,  /// 32 bit Float
+        UINT64          = 0x22,  /// 64 bit unsigned integer
+        HASHDOC         = 0x23,  /// Hash point to documement, public key or signature
+        VER             = 0x3F,  /// Version field
         DEFINED_NATIVE  = 0x40,  /// Reserved as a definition tag it's for Native types
         NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
 
-        DEFINED_ARRAY   = 0x80,  // Indicated an Intrinsic array types
-        BINARY          = DEFINED_ARRAY | 0x05, /// Binary data
-        //     FLOAT128_ARRAY   = DEFINED_ARRAY | FLOAT128,
-
+        DEFINED_ARRAY   = 0x80,  /// Indicated an Intrinsic array types
         /// Native types is only used inside the BSON object
-        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT, /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
+        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT,        /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
         NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT, /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING, /// Represetents (string[]) is convert to an ARRAY of string's
+        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING,          /// Represetents (string[]) is convert to an ARRAY of string's
         }
+
+struct DataBlock(Type datatype) {
+    protected {
+        uint _type;
+        immutable(ubyte)[] _data;
+    }
+    @property uint type() const pure nothrow {
+        return _type;
+    }
+    @property immutable(ubyte[]) data() const pure nothrow {
+        return _data;
+    }
+    this(const DataBlock x) {
+        _type=x._type;
+        _data=x._data;
+    }
+    this(const uint type, immutable(ubyte[]) data) {
+        _type=type;
+        _data=data;
+    }
+    this(immutable(ubyte[]) data) {
+        const leb128=LEB128.decode!uint(data);
+        _type=leb128.value;
+        this._data=_data[leb128.size..$];
+    }
+    immutable(ubyte[]) serialize() pure const nothrow {
+        return LEB128.encode(_type)~_data;
+    }
+}
+
+alias HashDoc = DataBlock!(Type.HASHDOC);
+alias CryptDoc = DataBlock!(Type.CRYPTDOC);
+alias Credential = DataBlock!(Type.CREDENTIAL);
 
 /++
  Returns:
@@ -111,7 +141,7 @@ bool isHiBONType(Type type) pure nothrow {
         str.length = ubyte.max+1;
         with(Type) {
             static foreach(E; EnumMembers!Type) {
-                str[E]=(!isNative(E) && (E !is NONE) && (E !is DEFINED_ARRAY) && (E !is DEFINED_NATIVE));
+                str[E]=(!isNative(E) && (E !is NONE) && (E !is VER) && (E !is DEFINED_ARRAY) && (E !is DEFINED_NATIVE));
             }
         }
         return str;
@@ -132,8 +162,8 @@ static unittest {
         static assert(!isHiBONType(NONE));
         static assert(!isHiBONType(DEFINED_ARRAY));
         static assert(!isHiBONType(DEFINED_NATIVE));
+        static assert(!isHiBONType(VER));
     }
-
 }
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
@@ -153,17 +183,17 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         @Type(Type.DOCUMENT)  HiBON      document;
     }
     else static if ( !is(Document == void ) ) {
-        @Type(Type.DOCUMENT)  Document      document;
+        @Type(Type.DOCUMENT)  Document   document;
     }
-    // static if ( !is(HiList == void ) ) {
-    //     @Type(Type.LIST)  HiList    list;
-    // }
-    @Type(Type.UTC)       utc_t     date;
-    @Type(Type.INT32)     int       int32;
-    @Type(Type.INT64)     long      int64;
-    @Type(Type.UINT32)    uint      uint32;
-    @Type(Type.UINT64)    ulong     uint64;
-    @Type(Type.BIGINT)    BigNumber bigint;
+    @Type(Type.TIME)        sdt_t      date;
+    @Type(Type.INT32)      int        int32;
+    @Type(Type.INT64)      long       int64;
+    @Type(Type.UINT32)     uint       uint32;
+    @Type(Type.UINT64)     ulong      uint64;
+    @Type(Type.BIGINT)     BigNumber bigint;
+    @Type(Type.HASHDOC)    DataBlock!(Type.HASHDOC)    hashdoc;
+    @Type(Type.CREDENTIAL) DataBlock!(Type.CREDENTIAL) credential;
+    @Type(Type.CRYPTDOC)   DataBlock!(Type.CRYPTDOC)   cryptdoc;
 
     static if ( !is(Document == void) ) {
         @Type(Type.NATIVE_DOCUMENT) Document    native_document;
@@ -173,7 +203,6 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         @Type(Type.NATIVE_HIBON_ARRAY)    HiBON[]     native_hibon_array;
         @Type(Type.NATIVE_DOCUMENT_ARRAY) Document[]  native_document_array;
         @Type(Type.NATIVE_STRING_ARRAY) string[]    native_string_array;
-        //  @Type(Type.NONE) alias NativeValueDataTypes = AliasSeq!(HiBON, HiBON[], Document[]);
 
     }
     // else {
@@ -227,7 +256,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
             static if ( __traits(compiles, typeof(member)) && hasUDA!(member, Type) ) {
                 enum MemberType=getUDAs!(member, Type)[0];
                 alias MemberT=typeof(member);
-                static if ( (MemberType is Type.UTC) && is(T == utc_t) ) {
+                static if ( (MemberType is Type.TIME) && is(T == sdt_t) ) {
                     enum GetType = MemberType;
                 }
                 else static if ( is(T == MemberT) ) {
@@ -277,36 +306,25 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @trusted
     this(T)(T x) pure if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct) ) {
         alias MutableT = Unqual!T;
-//        debug writefln("__traits(allMembers, ValueT)=%s", __traits(allMembers, ValueT).stringof);
-        //       pragma(msg, "__traits(allMembers, ValueT) ", __traits(allMembers, ValueT));
-//        string text;
         alias Types=typeof(this.tupleof);
         foreach(i, ref m; this.tupleof) {
-//            {
-//                alias T=Unqual!(typeof(m));
             static if (is(Types[i]==MutableT)) {
                 m=x;
-//                static if (LEB128.isLEB128Integral!T) {
                 return;
-                //              }
             }
         }
-        version(none)
-        static foreach(m; __traits(allMembers, ValueT) ) {
-            text=__traits(getMember, this, m).stringof;
-            debug writefln("This type=%s", text);
-            static if ( is(Unqual!(typeof(__traits(getMember, this, m))) == MutableT ) ){
-                enum code=format(q{alias member=ValueT.%s;}, m);
-                mixin(code);
-                static if ( hasUDA!(member, Type ) ) {
-                    alias MemberT   = typeof(member);
-                    static if ( is(T == MemberT) ) {
-                        __traits(getMember, this, m) = x;
-                        return;
-                    }
-                }
-            }
+        assert (0, format("%s is not supported", T.stringof ) );
+    }
 
+    @trusted
+        this(T)(const T x) pure if (is(T==HashDoc) || is(T==CryptDoc) || is(T==Credential)) {
+        alias MutableT = Unqual!T;
+        alias Types=typeof(this.tupleof);
+        foreach(i, ref m; this.tupleof) {
+            static if (is(Types[i]==MutableT)) {
+                m=x;
+                return;
+            }
         }
         assert (0, format("%s is not supported", T.stringof ) );
     }
@@ -319,11 +337,11 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         bigint=big;
     }
 
-    @trusted
-    this(const utc_t x) pure {
-        date=x;
-    }
 
+
+    @trusted this(const sdt_t x) pure {
+        date=sdt_t(x);
+    }
 
     /++
      Assign the value to x
@@ -349,36 +367,21 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
     }
 
-    void opAssign(T)(T x) if (is(T==const) && isBasicType!T) {
-        alias UnqualT=Unqual!T;
-        opAssign(cast(UnqualT)x);
-    }
-
-    /++
-     List if valud cast-types
-     +/
-    version(none)
-    alias CastTypes=AliasSeq!(uint, int, ulong, long, float, double, string);
-
     /++
      Assign of none standard HiBON types.
      This function will cast to type has the best match to the parameter x
      Params:
      x = sign value
      +/
-    version(none)
-    void opAssign(T)(const(T) x) if (!isOneOf!(T, CastTypes)) {
+    void opAssign(T)(T x) if (is(T==const) && isBasicType!T) {
         alias UnqualT=Unqual!T;
-        pragma(msg, UnqualT, " ", T);
-        alias CastT=CastTo!(UnqualT, CastTypes);
-        static assert(!is(CastT==void), format("Type %s not supported", T.stringof));
-        //alias E=asType!UnqualT;
-        opAssign(cast(CastT)x);
+        opAssign(cast(UnqualT)x);
     }
 
-    void opAssign(const utc_t x) {
-        date=cast(utc_t)x;
+    void opAssign(const sdt_t x) {
+        date=cast(sdt_t)x;
     }
+
     /++
      Convert a HiBON Type to a D-type
      +/
@@ -420,8 +423,8 @@ unittest {
         test=Value(ulong(42)); assert(test.by!UINT64 == 42);
         test=Value(float(42.42)); assert(test.by!FLOAT32 == float(42.42));
         test=Value(double(17.42)); assert(test.by!FLOAT64 == double(17.42));
-        utc_t time=1001;
-        test=Value(time); assert(test.by!UTC == time);
+        sdt_t time=1001;
+        test=Value(time); assert(test.by!TIME == time);
         test=Value("Hello"); assert(test.by!STRING == "Hello");
     }
 }
@@ -450,13 +453,13 @@ unittest {
     }
 
     { // utc test,
-        static assert(Value.asType!utc_t is Type.UTC);
-        utc_t time = 1234;
+        static assert(Value.asType!sdt_t is Type.TIME);
+        sdt_t time = 1234;
         Value v;
         v = time;
-        assert(v.by!(Type.UTC) == 1234);
-        alias U = Value.TypeT!(Type.UTC);
-        static assert(is(U == const utc_t));
+        assert(v.by!(Type.TIME) == 1234);
+        alias U = Value.TypeT!(Type.TIME);
+        static assert(is(U == const sdt_t));
         static assert(!is(U == const ulong));
     }
 
@@ -468,7 +471,7 @@ unittest {
  a = the string to be converted to an index
  result = index value
  Returns:
- true if the a is an index
+ true if a is an index
 +/
 @safe bool is_index(const(char[]) a, out uint result) pure {
     import std.conv : to;
@@ -556,6 +559,8 @@ unittest { // check is_index
 
 /++
  This function decides the order of the HiBON keys
+ Returns:
+ true if the value of key a is less than the value of key b
 +/
 @safe bool less_than(string a, string b) pure
     in {
@@ -571,7 +576,12 @@ body {
     return a < b;
 }
 
-@safe bool is_in_order(R)(R range) if (isInputRange!R) {
+/++
+ Checks if the keys in the range is ordred
+ Returns:
+ ture if all keys in the range is ordered
++/
+@safe bool is_key_ordered(R)(R range) if (isInputRange!R) {
     string prev_key;
     while(!range.empty) {
         if ((prev_key.length == 0) || (less_than(prev_key, range.front))) {
@@ -589,24 +599,6 @@ enum isKeyString(T)=is(T:const(char[]));
 
 enum isKey(T)=(isIntegral!(T) || isKeyString!(T));
 
-version(none) {
-enum isKeyNotBothString(K1, K2)=allSatisfy!(isKey, K1, K2) && !allSatisfy!(isKeyString, K1, K2);
-
-@safe bool less_than(K1, K2)(K1 a, K2 b) pure if (allSatisfy!(isKeyNotBothString, K1, K2)) {
-    static if (isIntegral!K1) {
-        static if (isKeyString!K2) {
-            return _less_than(a.to!string, b);
-        }
-        else {
-            return a < b;
-        }
-    }
-    else {
-        static assert(isKeyString!K2, "Should never go here");
-        return less_than(a, b.to!string);
-    }
-}
-}
 ///
 unittest { // Check less_than
     import std.conv : to;
@@ -630,7 +622,7 @@ unittest { // Check less_than
             QUOTE = 39,
             BACK_QUOTE = 0x60
             }
-    if ( (a.length > 0) && (a.length <= ubyte.max) ) {
+    if (a.length > 0) {
         foreach(c; a) {
             // Chars between SPACE and DEL is valid
             // except for " ' ` is not valid
@@ -673,5 +665,5 @@ unittest { // Check is_key_valid
     iota(0,ubyte.max).each!((i) => text~='a');
     assert(is_key_valid(text));
     text~='B';
-    assert(!is_key_valid(text));
+    assert(is_key_valid(text));
 }
