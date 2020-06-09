@@ -371,6 +371,7 @@ static assert(uint.sizeof == 4);
      +/
     static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure if (is(Key:const(char[])) || is(Key==uint)) {
         size_t size = sizeKey(key);
+        debug writefln("type=%s key=%s x=%s %s", type, key, x, isDataBlock!T);
         static if ( is(T: U[], U) ) {
             const _size=x.length*U.sizeof;
             size += LEB128.calc_size(_size) + _size;
@@ -381,6 +382,12 @@ static assert(uint.sizeof == 4);
         else static if(is(T : const BigNumber)) {
             import std.internal.math.biguintnoasm : BigDigit;
             const _size= bool.sizeof+x.data.length*BigDigit.sizeof;
+            size += LEB128.calc_size(_size) + _size;
+        }
+        else static if(isDataBlock!T) {
+
+            const _size=x.size;
+            debug writefln("\t_size=%d", _size);
             size += LEB128.calc_size(_size) + _size;
         }
         else {
@@ -456,21 +463,16 @@ static assert(uint.sizeof == 4);
             buffer.array_write(x.data, index);
             buffer.binwrite(x.sign, &index);
         }
-        else static if (
-            is(T == DataBlock!(Type.HASHDOC)) ||
-            is(T == DataBlock!(Type.CRYPTDOC)) ||
-            is(T == DataBlock!(Type.CREDENTIAL)) ) {
-            buffer.array_write(x.serialize, index);
+        else static if (isDataBlock!T) {
+            immutable data=x.serialize;
+            immutable size=LEB128.encode(data.length);
+            buffer.array_write(size, index);
+            buffer.array_write(data, index);
         }
-        // else static if (is(T : sdt_t)) {
-        //     alias BaseT=TypedefType!sdt_t;
-        //     buffer.array_write(LEB128.encode(cast(BaseT)x), index);
-        // }
         else static if (isIntegral!BaseT) {
             buffer.array_write(LEB128.encode(cast(BaseT)x), index);
         }
         else {
-            pragma(msg, T, " ", is(T==DataBlock!(Type.HASHDOC)), " - ", is(T==DataBlock!U, U));
             buffer.binwrite(x, &index);
         }
     }
@@ -549,6 +551,7 @@ static assert(uint.sizeof == 4);
         }
     }
 
+    @trusted
     unittest {
         import std.algorithm.sorting : isSorted;
         auto buffer=new ubyte[0x200];
@@ -595,12 +598,18 @@ static assert(uint.sizeof == 4);
 
         alias TabelArray = Tuple!(
             immutable(ubyte)[],  Type.BINARY.stringof,
+            Credential,          Type.CREDENTIAL.stringof,
+            CryptDoc,            Type.CRYPTDOC.stringof,
+            HashDoc,             Type.HASHDOC.stringof,
             string,              Type.STRING.stringof,
             );
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY        = [1, 2, 3];
         test_tabel_array.STRING        = "Text";
+        test_tabel_array.HASHDOC       = HashDoc(27, [3,4,5]);
+        test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
+        test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
         { // Document with simple types
             //test_tabel.UTC      = 1234;
@@ -653,6 +662,34 @@ static assert(uint.sizeof == 4);
                     static if(E !is Type.BIGINT && E !is Type.TIME) {
                         assert(e.isThat!isBasicType);
                     }
+                }
+            }
+
+            { // Document which includes basic arrays and string
+                index = make(buffer, test_tabel_array);
+                immutable data = buffer[0..index].idup;
+                const doc=Document(data);
+                assert(doc.keys.is_key_ordered);
+
+                writefln("doc.data=%s", doc.data);
+
+                writefln("doc.keys=%s", doc.keys);
+                foreach(i, t; test_tabel_array) {
+                    enum name = test_tabel_array.fieldNames[i];
+                    alias U   = test_tabel_array.Types[i];
+                    writefln("%d U=%s", i, U.stringof);
+                    writefln("\t%s in doc %s", name, name in doc);
+                    const v = doc[name].get!U;
+                    //assert(v.length is test_tabel_array[i].length);
+                    writefln("t=%s", t);
+                    writefln("v=%s", v);
+
+                    assert(v == test_tabel_array[i]);
+                    import traits=std.traits; // : isArray;
+                    const e = doc[name];
+                    //assert(!e.isThat!isBasicType);
+                    //assert(e.isThat!(traits.isArray));
+
                 }
             }
 
@@ -852,6 +889,12 @@ static assert(uint.sizeof == 4);
                                 return new Value(big);
                                 //  assert(0, format("Type %s not implemented", E));
                             }
+                            else static if (isDataBlock(E)) {
+                                immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
+                                immutable buffer_pos=value_pos+binary_len.size;
+                                immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
+                                return new Value(DataBlock!E(buffer));
+                            }
                             else {
                                 if (isHiBONType(type)) {
                                     static if (E is TIME) {
@@ -1032,7 +1075,11 @@ static assert(uint.sizeof == 4);
                                 alias T = Value.TypeT!E;
                                 static if (
                                     (E is STRING) || (E is DOCUMENT) ||
-                                    (E is BINARY) || (E is BIGINT) ) {
+                                    (E is BINARY) || (E is BIGINT)) {
+                                    return dataPos + dataSize;
+                                }
+                                else static if (isDataBlock(E)) {
+                                    debug writefln("dataPos=%d  dataSize=%d", dataPos, dataSize);
                                     return dataPos + dataSize;
                                 }
                                 else {
@@ -1058,7 +1105,6 @@ static assert(uint.sizeof == 4);
                             }
                             else static if ( E is Type.NONE ) {
                                 goto default;
-                                //return Type.sizeof;
                             }
                             break TypeCase;
                         }

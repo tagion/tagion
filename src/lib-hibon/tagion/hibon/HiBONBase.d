@@ -20,6 +20,8 @@ import LEB128=tagion.utils.LEB128;
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION=0;
 
+import std.stdio;
+
 /++
  Helper function to serialize a HiBON
 +/
@@ -95,12 +97,17 @@ struct DataBlock(Type datatype) {
         _data=data;
     }
     this(immutable(ubyte[]) data) {
+        writefln("DataBlock data=%s", data);
         const leb128=LEB128.decode!uint(data);
         _type=leb128.value;
-        this._data=_data[leb128.size..$];
+        writefln("leb128.size=%d", leb128.size);
+        this._data=data[leb128.size..$];
     }
     immutable(ubyte[]) serialize() pure const nothrow {
         return LEB128.encode(_type)~_data;
+    }
+    @property size_t size() pure const {
+        return LEB128.calc_size(_type)+_data.length;
     }
 }
 
@@ -108,6 +115,7 @@ alias HashDoc = DataBlock!(Type.HASHDOC);
 alias CryptDoc = DataBlock!(Type.CRYPTDOC);
 alias Credential = DataBlock!(Type.CREDENTIAL);
 
+enum isDataBlock(T)=is(T : const(HashDoc)) || is(T : const CryptDoc) || is(T : const Credential);
 /++
  Returns:
  true if the type is a internal native HiBON type
@@ -148,6 +156,13 @@ bool isHiBONType(Type type) pure nothrow {
     }
     enum flags = make_flags;
     return flags[type];
+}
+
+@safe
+bool isDataBlock(Type type) pure nothrow {
+    with(Type) {
+        return (type is HASHDOC || type is CRYPTDOC || type is CREDENTIAL);
+    }
 }
 
 @safe bool isLEB128Basic(Type type) pure nothrow {

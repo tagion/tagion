@@ -26,7 +26,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo;
 import LEB128=tagion.utils.LEB128;
 
-//import std.stdio;
+import std.stdio;
 
 static size_t size(U)(const(U[]) array) pure {
     if (array.length is 0) {
@@ -164,7 +164,7 @@ static size_t size(U)(const(U[]) array) pure {
                 static if (E is BIGINT || E is BINARY) {
                     this.value=x;
                 }
-                else static if (E is HASHDOC || E is CRYPTDOC || E is CREDENTIAL) {
+                else static if (isDataBlock(E)) {
                     pragma(msg, "T=", T);
                     this.value=x;
                 }
@@ -267,6 +267,7 @@ static size_t size(U)(const(U[]) array) pure {
                             }
                             else {
                                 const v = value.by!(E);
+                                debug writefln("#### E=%s key=%s size=%d %s", E, key, Document.sizeT(E, key, v), typeof(v).stringof);
                                 return Document.sizeT(E, key, v);
                             }
                             break TypeCase;
@@ -547,27 +548,20 @@ static size_t size(U)(const(U[]) array) pure {
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
-        // alias TabelArray = Tuple!(
-        //     immutable(ubyte)[],  Type.BINARY.stringof,
-        //     immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
-        //     immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
-        //     immutable(double)[], Type.FLOAT64_ARRAY.stringof,
-        //     immutable(int)[],    Type.INT32_ARRAY.stringof,
-        //     immutable(long)[],   Type.INT64_ARRAY.stringof,
-        //     string,              Type.STRING.stringof,
-        //     immutable(uint)[],   Type.UINT32_ARRAY.stringof,
-        //     immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
-        //     );
-        // TabelArray test_tabel_array;
-        // test_tabel_array.BINARY        = [1, 2, 3];
-        // test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
-        // test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
-        // test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
-        // test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
-        // test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        // test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 0x823d_823d_823d_823dUL];
-        // test_tabel_array.BOOLEAN_ARRAY = [true, false];
-        // test_tabel_array.STRING        = "Text";
+        alias TabelArray = Tuple!(
+            immutable(ubyte)[],  Type.BINARY.stringof,
+            Credential,          Type.CREDENTIAL.stringof,
+            CryptDoc,            Type.CRYPTDOC.stringof,
+             HashDoc,             Type.HASHDOC.stringof,
+            string,              Type.STRING.stringof,
+            );
+
+        TabelArray test_tabel_array;
+        test_tabel_array.BINARY        = [1, 2, 3];
+        test_tabel_array.STRING        = "Text";
+        test_tabel_array.HASHDOC       = HashDoc(27, [3,4,5]);
+        test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
+        test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
 
         { // empty
@@ -682,8 +676,7 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
 
-        version(none)
-        { // HiBON Test for basic-array types
+        { // HiBON Test for none basic types
             auto hibon = new HiBON;
 
             string[] keys;
@@ -708,6 +701,10 @@ static size_t size(U)(const(U[]) array) pure {
 
             immutable data = hibon.serialize;
             const doc = Document(data);
+            writefln("hibon.keys=%s", hibon.keys);
+            writefln("  doc.data=%s", doc.data);
+            writefln("  doc.keys=%s", doc.keys);
+            writefln("doc.length=%d test_tabel_array.length=%d", doc.length, test_tabel_array.length);
 
             assert(doc.length is test_tabel_array.length);
 
