@@ -17,9 +17,9 @@ class LEB128Exception : TagionExceptionT!true {
 
 alias check=Check!LEB128Exception;
 
-public alias isLEB128Integral(T)=traits.isIntegral!(TypedefType!T);
-public alias isLEB128Signed(T)=traits.isSigned!(TypedefType!T);
-public alias isLEB128Unsigned(T)=traits.isUnsigned!(TypedefType!T);
+// public alias isLEB128Integral(T)=traits.isIntegral!(TypedefType!T);
+// public alias isLEB128Signed(T)=traits.isSigned!(TypedefType!T);
+// public alias isLEB128Unsigned(T)=traits.isUnsigned!(TypedefType!T);
 
 @safe
 size_t calc_size(const(ubyte[]) data) pure {
@@ -34,7 +34,7 @@ size_t calc_size(const(ubyte[]) data) pure {
 }
 
 @safe
-size_t calc_size(T)(const T v) pure if(isLEB128Unsigned!(T)) {
+size_t calc_size(T)(const T v) pure if(isUnsigned!(T)) {
     size_t result;
     ulong value=v;
     do {
@@ -45,7 +45,7 @@ size_t calc_size(T)(const T v) pure if(isLEB128Unsigned!(T)) {
 }
 
 @safe
-size_t calc_size(T)(const T v) pure if(isLEB128Signed!(T)) {
+size_t calc_size(T)(const T v) pure if(isSigned!(T)) {
     if (v == T.min) {
         return T.sizeof+(is(T==int)?1:2);
     }
@@ -67,7 +67,7 @@ size_t calc_size(T)(const T v) pure if(isLEB128Signed!(T)) {
 }
 
 @safe
-immutable(ubyte[]) encode(T)(const T v) pure if(isLEB128Unsigned!T && isLEB128Integral!T) {
+immutable(ubyte[]) encode(T)(const T v) pure if(isUnsigned!T && isIntegral!T) {
     ubyte[T.sizeof+2] data;
     alias BaseT=TypedefType!T;
     BaseT value=cast(BaseT)v;
@@ -83,7 +83,7 @@ immutable(ubyte[]) encode(T)(const T v) pure if(isLEB128Unsigned!T && isLEB128In
 }
 
 @safe
-immutable(ubyte[]) encode(T)(const T v) pure if(isLEB128Signed!T && isLEB128Integral!T) {
+immutable(ubyte[]) encode(T)(const T v) pure if(isSigned!T && isIntegral!T) {
     enum DATA_SIZE=(T.sizeof*9+1)/8+1;
     ubyte[DATA_SIZE] data;
     if (v == T.min) {
@@ -110,7 +110,8 @@ immutable(ubyte[]) encode(T)(const T v) pure if(isLEB128Signed!T && isLEB128Inte
 
 alias DecodeLEB128(T)=Tuple!(T, "value", size_t, "size");
 
-DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) pure if (isLEB128Unsigned!T) {
+@safe
+DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) pure if (isUnsigned!T) {
     alias BaseT=TypedefType!T;
     ulong result;
     uint shift;
@@ -134,7 +135,8 @@ DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) pure if (isLEB128Unsigned!T)
     assert(0);
 }
 
-DecodeLEB128!T decode(T=long)(const(ubyte[]) data) pure if (isLEB128Signed!T) {
+@safe
+DecodeLEB128!T decode(T=long)(const(ubyte[]) data) pure if (isSigned!T) {
     alias BaseT=TypedefType!T;
     long result;
     uint shift;
@@ -161,7 +163,7 @@ DecodeLEB128!T decode(T=long)(const(ubyte[]) data) pure if (isLEB128Signed!T) {
     assert(0);
 }
 
-
+///
 unittest {
     import std.algorithm.comparison : equal;
     void ok(T)(T x, const(ubyte[]) expected) {
@@ -176,7 +178,6 @@ unittest {
 
     {
         ok!int(int.max, [255, 255, 255, 255, 7]);
-
         ok!ulong(27, [27]);
         ok!ulong(2727, [167, 21]);
         ok!ulong(272727, [215, 210, 16]);
@@ -213,5 +214,9 @@ unittest {
         ok!long(long.max, [255, 255, 255, 255, 255, 255, 255, 255, 255, 0]);
         ok!long(long.min+1, [129, 128, 128, 128, 128, 128, 128, 128, 128, 127]);
         ok!long(long.min  , [128, 128, 128, 128, 128, 128, 128, 128, 128, 127]);
+    }
+
+    {
+        assert(decode!int([127]).value == -1);
     }
 }

@@ -40,7 +40,7 @@ unittest {
 }
 
 @safe
-immutable(ubyte[]) decode(string hex)
+immutable(ubyte[]) decode(const(char[]) hex) pure nothrow
 in {
     assert(hex.length % 2 == 0);
 }
