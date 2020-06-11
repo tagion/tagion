@@ -11,7 +11,9 @@ import tagion.Options;
 //import tagion.services.LoggerService;
 import tagion.utils.Random;
 
-import tagion.basic.Basic : Pubkey, Payload, Control, abort, nameOf;
+import tagion.GlobalSignals : abort;
+
+import tagion.basic.Basic : Pubkey, Payload, Control, nameOf;
 import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
