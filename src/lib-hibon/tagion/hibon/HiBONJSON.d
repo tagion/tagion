@@ -107,10 +107,10 @@ struct toJSONT(bool HASHSAFE) {
         JSONValue result;
         immutable isarray=doc.isArray;
         if (isarray) {
-            // Array needs to be initialized
             result.array=null;
+            result.array.length=doc.length;
+            pragma(msg, typeof(result.array));
         }
-//        writefln("HASHSAFE=%s",HASHSAFE);
         foreach(e; doc[]) {
             with(Type) {
             CaseType:
@@ -121,13 +121,14 @@ struct toJSONT(bool HASHSAFE) {
                             static if (E is DOCUMENT) {
                                 const sub_doc=e.by!E;
                                 auto doc_element=toJSONT(sub_doc);
+                                writefln("doc_element.type=%s e.key=%s", doc_element.type, e.key);
                                 if ( isarray ) {
-                                    if (doc_element.type is JSONType.array) {
-                                        result.array~=JSONValue(doc_element);
-                                    }
-                                    else {
-                                        result.array~=doc_element;
-                                    }
+                                    // if (doc_element.type is JSONType.array) {
+                                    //     result.array~=JSONValue(doc_element);
+                                    // }
+                                    // else {
+                                    result.array[e.index]=JSONValue(doc_element);
+                                    // }
                                 }
                                 else {
                                     result[e.key]=doc_element;
@@ -135,7 +136,7 @@ struct toJSONT(bool HASHSAFE) {
                             }
                             else static if ((E is BOOLEAN) || (E is STRING)) {
                                 if ( isarray ) {
-                                    result.array~=JSONValue(e.by!E);
+                                    result.array[e.index]=JSONValue(e.by!E);
                                 }
                                 else {
                                     result[e.key]=JSONValue(e.by!E);
@@ -145,7 +146,7 @@ struct toJSONT(bool HASHSAFE) {
                                 auto doc_element=new JSONValue[2];
                                 doc_element[TYPE]=JSONValue(typeMap[E]);
                                 if ( isarray ) {
-                                    result.array~=toJSONType(e);
+                                    result.array[e.index]=toJSONType(e);
                                 }
                                 else {
                                     result[e.key]=toJSONType(e);
@@ -164,7 +165,6 @@ struct toJSONT(bool HASHSAFE) {
 
     static JSONValue[] toJSONType(Document.Element e) {
         auto doc_element=new JSONValue[2];
-        writefln("%s JSONValue(typeMap[e.type])=%s %s", e.key, typeMap[e.type], e.type);
         doc_element[TYPE]=JSONValue(typeMap[e.type]);
         with(Type) {
         TypeCase:
@@ -182,7 +182,6 @@ struct toJSONT(bool HASHSAFE) {
                         doc_element[VALUE]=format("0x%x", e.by!(E));
                     }
                     else static if(E is HASHDOC || E is CRYPTDOC || E is CREDENTIAL || E is BIGINT) {
-                        writefln("typeof(e.by!(E).serialize)=%s %s %s", typeof(e.by!(E).serialize).stringof, E, e.type);
                         doc_element[VALUE]=encodeBase64(e.by!(E).serialize);
                     }
                     else static if(E is BINARY) {
@@ -198,7 +197,6 @@ struct toJSONT(bool HASHSAFE) {
                     }
                     else static if(E is TIME) {
                         doc_element[VALUE]=format("0x%x", e.by!(E));
-                        writefln("time=%d", e.by!E);
                     }
                     else {
                         goto default;
@@ -221,7 +219,6 @@ HiBON toHiBON(scope const JSONValue json) {
         }
         else static if(is(UnqualT==uint)) {
             long x=jvalue.integer;
-            writefln("jvalue.type=%s %s %d %s", jvalue.type, jvalue.toString, jvalue.integer, x <=uint.max);
             .check((x>0) && (x<=uint.max), format("%s not a u32", jvalue));
             return cast(uint)x;
         }
@@ -232,7 +229,6 @@ HiBON toHiBON(scope const JSONValue json) {
             const text=jvalue.str;
             ulong result;
             if (isHexPrefix(text)) {
-                writefln("->%s %s", text[hex_prefix.length..$], UnqualT.stringof);
                 result=text[hex_prefix.length..$].to!ulong(16);
             }
             else {
@@ -320,10 +316,6 @@ HiBON toHiBON(scope const JSONValue json) {
                                 return false;
                             }
                             else {
-                                // static if(E is TIME) {
-                                //     assert(0, format("Type %s is supported yet", E));
-                                // }
-                                // else
                                 static if(E is BINARY) {
                                     import std.uni : toLower;
                                     sub_result[key]=HiBONdecode(value.str).idup; //str[HEX_PREFIX.length..$]);
@@ -396,6 +388,7 @@ HiBON toHiBON(scope const JSONValue json) {
     return Obj(json);
 }
 
+///
 unittest {
     import tagion.hibon.HiBON : HiBON;
     import std.typecons : Tuple;
@@ -425,47 +418,127 @@ unittest {
 
     alias TabelArray = Tuple!(
         immutable(ubyte)[],  Type.BINARY.stringof,
-        string,              Type.STRING.stringof
-
+        string,              Type.STRING.stringof,
+        HashDoc,             Type.HASHDOC.stringof,
+        Credential,          Type.CREDENTIAL.stringof,
+        CryptDoc,            Type.CRYPTDOC.stringof,
         );
     TabelArray test_tabel_array;
     test_tabel_array.BINARY        = [1, 2, 3];
     test_tabel_array.STRING        = "Text";
+    test_tabel_array.HASHDOC       = HashDoc(27, [3,4,5]);
+    test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
+    test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
-    auto hibon=new HiBON;
-    {
-        foreach(i, t; test_tabel) {
-            enum name=test_tabel.fieldNames[i];
-            hibon[name]=t;
-            writefln("key=%s type=%s", name, hibon[name].type);
+
+    { // Test sample 1 HiBON Objects
+        auto hibon=new HiBON;
+        {
+            foreach(i, t; test_tabel) {
+                enum name=test_tabel.fieldNames[i];
+                hibon[name]=t;
+            }
+            auto sub_hibon = new HiBON;
+            hibon[sub_hibon.stringof]=sub_hibon;
+            foreach(i, t; test_tabel_array) {
+                enum name=test_tabel_array.fieldNames[i];
+                sub_hibon[name]=t;
+            }
         }
-        auto sub_hibon = new HiBON;
-        hibon[sub_hibon.stringof]=sub_hibon;
-        foreach(i, t; test_tabel_array) {
-            enum name=test_tabel_array.fieldNames[i];
-            sub_hibon[name]=t;
-        }
+
+        //
+        // Checks
+        // HiBON -> Document -> JSON -> HiBON -> Document
+        //
+        const doc=Document(hibon.serialize);
+
+        auto json=doc.toJSON(true);
+        import std.stdio;
+        // writefln("Before\n%s", json.toPrettyString);
+        // writefln("%s", doc.data);
+        string str=json.toString;
+        auto parse=str.parseJSON;
+        auto h=parse.toHiBON;
+
+        const parse_doc=Document(h.serialize);
+        // writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
+
+        assert(doc == parse_doc);
+        assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
     }
 
-    //
-    // Checks
-    // HiBON -> Document -> JSON -> HiBON -> Document
-    //
-    const doc=Document(hibon.serialize);
+    { // Test sample 2 HiBON Array and Object
+        auto hibon=new HiBON;
+        {
+            foreach(i, t; test_tabel) {
+                enum name=test_tabel.fieldNames[i];
+                hibon[i]=t;
+            }
+            auto sub_hibon = new HiBON;
+            hibon[sub_hibon.stringof]=sub_hibon;
+            foreach(i, t; test_tabel_array) {
+                enum name=test_tabel_array.fieldNames[i];
+                sub_hibon[i]=t;
+            }
+        }
 
-    auto json=doc.toJSON(true);
-    import std.stdio;
-    writefln("Before\n%s", json.toPrettyString);
-    string str=json.toString;
-    auto parse=str.parseJSON;
-    auto h=parse.toHiBON;
+        //
+        // Checks
+        // HiBON -> Document -> JSON -> HiBON -> Document
+        //
+        const doc=Document(hibon.serialize);
 
-    const parse_doc=Document(h.serialize);
-    // writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
+        auto json=doc.toJSON(true);
+        import std.stdio;
+        // writefln("Before\n%s", json.toPrettyString);
+        // writefln("%s", doc.data);
+        string str=json.toString;
+        auto parse=str.parseJSON;
+        auto h=parse.toHiBON;
 
-    // writefln("doc.keys      =%s", doc.keys);
-    // writefln("parse_doc.keys=%s", parse_doc.keys);
+        const parse_doc=Document(h.serialize);
+        //      writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
 
-    assert(doc == parse_doc);
-    assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
+        assert(doc == parse_doc);
+        assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
+    }
+
+    { // Test sample 3 HiBON Array and Object
+        auto hibon=new HiBON;
+        {
+            foreach(i, t; test_tabel) {
+                enum name=test_tabel.fieldNames[i];
+                hibon[i]=t;
+            }
+            auto sub_hibon = new HiBON;
+            // Sub hibon is added to the last index of the hibon
+            // Which result keep hibon as an array
+            hibon[hibon.length]=sub_hibon;
+            foreach(i, t; test_tabel_array) {
+                enum name=test_tabel_array.fieldNames[i];
+                sub_hibon[i]=t;
+            }
+        }
+
+        //
+        // Checks
+        // HiBON -> Document -> JSON -> HiBON -> Document
+        //
+        const doc=Document(hibon.serialize);
+
+        auto json=doc.toJSON(true);
+        import std.stdio;
+        // writefln("Before\n%s", json.toPrettyString);
+        // writefln("%s", doc.data);
+
+        string str=json.toString;
+        auto parse=str.parseJSON;
+        auto h=parse.toHiBON;
+
+        const parse_doc=Document(h.serialize);
+        //writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
+
+        assert(doc == parse_doc);
+        assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
+    }
 }

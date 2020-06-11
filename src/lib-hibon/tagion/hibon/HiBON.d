@@ -160,12 +160,10 @@ static size_t size(U)(const(U[]) array) pure {
             }
             else {
                 this.type = E;
-                pragma(msg, E, " ", UnqualT);
                 static if (E is BIGINT || E is BINARY) {
                     this.value=x;
                 }
                 else static if (isDataBlock(E)) {
-                    pragma(msg, "T=", T);
                     this.value=x;
                 }
                 else {
@@ -506,10 +504,14 @@ static size_t size(U)(const(U[]) array) pure {
         {
             auto hibon=new HiBON;
             hibon["1"]=1;
-            assert(hibon.isArray);
+            assert(!hibon.isArray);
             hibon["0"]=2;
             assert(hibon.isArray);
-            hibon["4"]=2;
+            hibon["4"]=3;
+            assert(!hibon.isArray);
+            hibon["3"]=4;
+            assert(!hibon.isArray);
+            hibon["2"]=7;
             assert(hibon.isArray);
             hibon["05"]=2;
             assert(!hibon.isArray);

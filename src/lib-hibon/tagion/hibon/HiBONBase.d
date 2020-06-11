@@ -517,7 +517,7 @@ unittest {
         if (!keys.empty) {
             uint current_index;
             if (is_index(keys.front, current_index)) {
-                if (previous_index < current_index) {
+                if (previous_index+1 == current_index) {
                     keys.popFront;
                     return check_array_index(current_index);
                 }
@@ -529,6 +529,9 @@ unittest {
     if (!keys.empty) {
         uint previous_index;
         if (is_index(keys.front, previous_index)) {
+            if (previous_index !is 0) {
+                return false;
+            }
             keys.popFront;
             return check_array_index(previous_index);
         }
@@ -542,9 +545,10 @@ unittest {
     import std.conv : to;
     const(uint[]) null_index;
     assert(isArray(null_index.map!(a => a.to!string)));
-    assert(isArray([1].map!(a => a.to!string)));
+    assert(!isArray([1].map!(a => a.to!string)));
     assert(isArray([0, 1].map!(a => a.to!string)));
-    assert(isArray([0, 2].map!(a => a.to!string)));
+    assert(!isArray([0, 2].map!(a => a.to!string)));
+    assert(isArray([0, 1, 2].map!(a => a.to!string)));
     assert(!isArray(["x", "2"].map!(a => a)));
     assert(!isArray(["1", "x"].map!(a => a)));
     assert(!isArray(["0", "1", "x"].map!(a => a)));
