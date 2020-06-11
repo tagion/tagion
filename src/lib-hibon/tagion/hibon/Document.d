@@ -15,8 +15,8 @@ import std.range.primitives : walkLength;
 
 //import tagion.Types : decimal_t;
 
-import tagion.Base : isOneOf;
-import tagion.Message : message;
+import tagion.basic.Basic : isOneOf;
+import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
@@ -26,22 +26,44 @@ import std.exception;
 
 static assert(uint.sizeof == 4);
 
+/**
+   Document is a lazy handler of HiBON serialized buffer
+*/
 @safe struct Document {
-    alias Value=ValueT!(false, void, Document);
+    alias Value=ValueT!(false, void, Document); /// HiBON Document value type
     protected immutable(ubyte)[] _data;
 
+    /++
+     Gets the internal buffer
+     Returns:
+     The buffer of the HiBON document
+    +/
     immutable(ubyte[]) data() const pure nothrow {
         return _data;
     }
 
+    /++
+     Creates a HiBON Document from a buffer
+     +/
     this(immutable(ubyte[]) data) pure nothrow {
         this._data = data;
     }
 
-    this(const Document document) nothrow {
-        this._data = document._data;
+    /++
+     Creates a replicate of a Document from another Document
+     The buffer reused not copied
+     Params:
+     doc is the Document which is replicated
+     +/
+    this(const Document doc) pure nothrow {
+        this._data = doc._data;
     }
 
+    /++
+     Makes a copy of $(PARAM doc)
+     Returns:
+     Document copy
+     +/
     @trusted
     void copy(ref const Document doc) {
         emplace(&this, doc);
@@ -57,13 +79,28 @@ static assert(uint.sizeof == 4);
         }
     }
 
+    /++
+     Counts the number of members in a Document
+     Returns:
+     Number of members in in the Document
+     +/
     @property uint length() const {
         return cast(uint)(this[].walkLength);
     }
 
+    /++
+     The deligate used by the valid function to report errors
+     +/
     alias ErrorCallback = void delegate(scope const(Element) current,
         scope const(Element) previous);
 
+    /++
+     This function check's if the Document is a valid HiBON format
+     Params:
+     If the delegate error_callback is the this function is call when a error occures
+     Returns:
+     Error code of the validation
+     +/
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
         auto previous=this[];
         bool not_first;
@@ -92,10 +129,19 @@ static assert(uint.sizeof == 4);
         return Element.ErrorCode.NONE;
     }
 
-    bool isInOrder() const {
+    /++
+     Check if a Document format is the correct HiBON format.
+     Uses the valid function
+     Params:
+     true if the Document is inorder
+     +/
+    bool isInorder() const {
         return valid() is Element.ErrorCode.NONE;
     }
 
+    /++
+     Range of the Document
+     +/
     @safe
     struct Range {
         immutable(ubyte[]) data;
@@ -144,31 +190,64 @@ static assert(uint.sizeof == 4);
         }
     }
 
+    /++
+     Returns:
+     A range of Element's
+     +/
     Range opSlice() const {
         return Range(data);
     }
 
+    /++
+     Returns:
+     A range of the member keys in the document
+     +/
     auto keys() const {
         return map!"a.key"(this[]);
     }
 
-    // Throws an std.conv.ConvException if the keys can not be convert to an uint
+    /++
+     The Document must only contain member names which represents an uint number
+     Throws:
+     an std.conv.ConvException if the keys can not be convert to an uint
+     Returns:
+     A range of indices of the type of uint in the Document
+    +/
     auto indices() const {
         return map!"a.key.to!uint"(this[]);
     }
 
+    /++
+     Check if the Document can be clasified as an Array
+     Returns:
+     Is true if all the keys in ordred numbers
+     +/
     bool isArray() const {
         return .isArray(keys);
     }
 
+    /++
+     Returns:
+     true if the key exist in the Document
+     +/
     bool hasElement(in string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
 
+    /++
+     Returns:
+     true if the index exist in the Document
+     +/
     bool hasElement(Index)(in Index index) const if (isIntegral!Index) {
         return hasElement(index.to!string);
     }
 
+    /++
+     Find the element with key
+     Returns:
+     Returns the element with the key
+     If on element with this key has been found an empty element is returned
+     +/
     const(Element) opBinaryRight(string op)(in string key) const if(op == "in") {
         foreach (ref element; this[]) {
             if (element.key == key) {
@@ -178,23 +257,53 @@ static assert(uint.sizeof == 4);
         return Element();
     }
 
+    /++
+     Returns:
+     The element with the key
+     Throws:
+     If the element with the key is not found then and HiBONException is thrown
+     +/
     const(Element) opIndex(in string key) const {
         auto result=key in this;
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
 
+
+    /++
+     Returns:
+     The element with the index
+     Throws:
+     If the element with the key is not found then and HiBONException is thrown
+     Or of the key is not an index a std.conv.ConvException is thrown
+     +/
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         return opIndex(index.to!string);
     }
 
 
+    /++
+     same as data
+     +/
     alias serialize=data;
 
+    /++
+     Retruns:
+     The number of bytes taken up by the key in the HiBON serialized stream
+     +/
     static size_t sizeKey(string key) pure nothrow {
         return Type.sizeof + ubyte.sizeof + key.length;
     }
 
+    /++
+     Calculates the number of bytes taken up by an element in the HiBON serialized stream
+     Params:
+     type = is the HIBON type
+     key = is the key name
+     x = is the value
+     Returns:
+     The number of bytes taken up by the element
+     +/
     static size_t sizeT(T)(Type type, string key, const(T) x) pure nothrow {
         size_t size = sizeKey(key);
         static if ( is(T: U[], U) ) {
@@ -213,6 +322,14 @@ static assert(uint.sizeof == 4);
         return size;
     }
 
+    /++
+     Append the key to the buffer
+     Params:
+     buffer = is the target buffer
+     type = is the HiBON type
+     key = is the member key
+     index = is offset index in side the buffer and index with be progressed
+     +/
     @trusted
     static void buildKey(ref ubyte[] buffer, Type type, string key, ref size_t index) pure {
         buffer.binwrite(type, &index);
@@ -220,6 +337,15 @@ static assert(uint.sizeof == 4);
         buffer.array_write(key, index);
     }
 
+    /++
+     Append a full element to a buffer
+     Params:
+     buffer = is the target buffer
+     type = is the HiBON type
+     key = is the member key
+     x = is the value of the element
+     index = is offset index in side the buffer and index with be progressed
+     +/
     @trusted
     static void build(T)(ref ubyte[] buffer, Type type, string key, const(T) x, ref size_t index) pure {
         buildKey(buffer, type, key, index);
@@ -246,10 +372,17 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    RangeT!U range(T : U[], U)() const { //if(!isBasicType(U)) {
+    /++
+     This range is used to generate and range of same type U
+     If the Document contains and Array of the elements this range can be used
+     Returns:
+     Range (Array) of the type U
+     +/
+    RangeT!U range(T : U[], U)() const {
         return RangeT!U(data);
     }
 
+    ///
     unittest {
         alias TabelRange = Tuple!( immutable(ubyte)[],  immutable(ubyte)[], immutable(ubyte)[]);
         TabelRange tabel_range;
@@ -583,7 +716,7 @@ static assert(uint.sizeof == 4);
 
 
 /**
- * HiBON element representation
+ * HiBON Element representation
  */
     @safe struct Element {
         /*
@@ -610,11 +743,21 @@ static assert(uint.sizeof == 4);
         enum KEY_POS = Type.sizeof + keyLen.sizeof;
 
         @property const {
+            /++
+             Retruns:
+             true if the elemnt is of T
+             +/
             bool isType(T)() {
                 enum E = Value.asType!T;
                 return (E !is Type.NONE) && (type is E);
             }
 
+            /++
+             Returns:
+             The HiBON Value of the element
+             throws:
+             if  the type is invalid and HiBONException is thrown
+             +/
             @trusted const(Value*) value() {
                 with(Type)
                 TypeCase:
@@ -633,7 +776,6 @@ static assert(uint.sizeof == 4);
                                     immutable byte_size = *cast(uint*)(data[valuePos..birary_array_pos].ptr);
                                     immutable len = byte_size / U.sizeof;
                                     return new Value((cast(immutable(U)*)(data[birary_array_pos..$].ptr))[0..len]);
-//                                }
                                 }
                             }
                             else static if (E is BIGINT) {
@@ -663,6 +805,12 @@ static assert(uint.sizeof == 4);
                 assert(0);
             }
 
+            /++
+             Returns:
+             the value as the HiBON type Type
+             throws:
+             if the element does not contain the type E and HiBONException is thrown
+             +/
             auto by(Type E)() {
                 .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
                 .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
@@ -670,6 +818,12 @@ static assert(uint.sizeof == 4);
 
             }
 
+            /++
+             Returns:
+             the value as the type T
+             throws:
+             if the element does not contain the type and HiBONException is thrown
+             +/
             T get(T)() const {
                 enum E = Value.asType!T;
                 import std.format;
@@ -677,10 +831,11 @@ static assert(uint.sizeof == 4);
                 return by!E;
             }
 
-            /**
+            /++
                Tryes to convert the value to the type T.
-               Returns true if the function succeeds
-            */
+               Returns:
+               true if the function succeeds
+            +/
             bool as(T)(ref T result) {
                 switch(type) {
                     static foreach(E; EnumMembers!Type) {
@@ -700,12 +855,22 @@ static assert(uint.sizeof == 4);
                 return false;
             }
 
+            /++
+             Returns:
+             the index of the key
+             throws:
+             if the key is not an index an HiBONException is thrown
+             +/
             uint index() {
                 uint result;
                 .check(is_index(key, result), message("Key '%s' is not an index", key));
                 return result;
             }
 
+            /++
+             Returns:
+             true if element key is an index
+             +/
             bool isIndex() {
                 uint result;
                 return is_index(key, result);
@@ -713,10 +878,18 @@ static assert(uint.sizeof == 4);
         }
 
         @property const pure nothrow {
+            /++
+             Returns:
+             true if the buffer block ends
+             +/
             bool isEod() {
                 return data.length == 0;
             }
 
+            /++
+             Returns:
+             the Type of the element
+             +/
             Type type() {
                 if (isEod) {
                     return Type.NONE;
@@ -724,18 +897,34 @@ static assert(uint.sizeof == 4);
                 return cast(Type)(data[0]);
             }
 
+            /++
+             Returns:
+             the key length
+             +/
             ubyte keyLen() {
                 return cast(Type)(data[Type.sizeof]);
             }
 
+            /++
+             Returns:
+             the key
+             +/
             string key() {
                 return cast(string)data[KEY_POS..valuePos];
             }
 
+            /++
+             Returns:
+             the position of the value inside the element buffer
+             +/
             uint valuePos() {
                 return KEY_POS+keyLen;
             }
 
+            /++
+             Returns:
+             the size of the element in bytes
+             +/
             @trusted size_t size() {
                 with(Type) {
                 TypeCase:
@@ -785,6 +974,7 @@ static assert(uint.sizeof == 4);
                 assert(0, format("Bad type %s", type));
             }
 
+
             enum ErrorCode {
                 NONE,           // No errors
                 KEY_ORDER,      // Error in the key order
@@ -796,11 +986,14 @@ static assert(uint.sizeof == 4);
                 ARRAY_SIZE_BAD  // The binary-array size in bytes is not a multipla of element size in the array
             }
 
-            /**
+            /++
                Check if the element is valid
-            */
-            @trusted
-                ErrorCode valid() {
+               Returns:
+               The error code the element.
+               ErrorCode.NONE means that the element is valid
+
+            +/
+            @trusted ErrorCode valid() {
                 enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + uint.sizeof;
 
                 with(ErrorCode) {
@@ -860,11 +1053,12 @@ static assert(uint.sizeof == 4);
                 }
             }
 
-            /**
+            /++
                Check if the type match That template.
                That template must have one parameter T as followes
-               alias That(T) = ...;
-            */
+               Returns:
+               true if the element is the type That
+            +/
             bool isThat(alias That)() {
             TypeCase:
                 switch(type) {
@@ -883,6 +1077,9 @@ static assert(uint.sizeof == 4);
             }
         }
 
+        /++
+         Compare two elements
+         +/
         @safe
         bool opEquals(ref const Element other) const {
             immutable s = size;

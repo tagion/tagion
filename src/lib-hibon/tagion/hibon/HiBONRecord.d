@@ -1,19 +1,27 @@
 module tagion.hibon.HiBONRecord;
-//import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual;
-import tagion.Base : basename;
+
+import file=std.file;
+import std.exception : assumeUnique;
+
+import tagion.basic.Basic : basename;
 import tagion.hibon.HiBONBase : ValueT;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONException;
 /++
  Label use to set the HiBON member name
 +/
 struct Label {
-    string name;
-    bool optional;
-//    string method;
+    string name; /// Name of the HiBON member
+    bool optional; /// This flag is set to true if this paramer is optional
 }
 
+/++
+ Gets the Label for HiBON member
+ Params:
+ member = is the member alias
++/
 template GetLabel(alias member) {
     import std.traits : getUDAs, hasUDA;
     static if (hasUDA!(member, Label)) {
@@ -24,12 +32,27 @@ template GetLabel(alias member) {
     }
 }
 
+/++
+ HiBON Helper template to implement constructor and toHiBON member functions
+ Params:
+ TYPE = is used to set a HiBON record type ('$type')
+ Examples:
+ --------------------
+ struct Test {
+ @Label("$X") uint x; // The member in HiBON is "$X"
+ string name;         // The member in HiBON is "name"
+ @Label("num", true); // The member in HiBON is "num" and is optional
+ @Label("") bool dummy; // This parameter is not included in the HiBON
+ HiBONRecord("TEST");   // The "$type" is set to "TEST"
+ }
+ --------------------
++/
 mixin template HiBONRecord(string TYPE="") {
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
     import std.typecons : TypedefType;
     import tagion.hibon.HiBONException : check;
-    import tagion.Message : message;
-    import tagion.Base : basename;
+    import tagion.basic.Message : message;
+    import tagion.basic.Basic : basename;
     import std.format;
 
     enum TYPENAME="$type";
@@ -101,7 +124,6 @@ mixin template HiBONRecord(string TYPE="") {
     }
 
     this(const Document doc) {
-        import std.stdio;
         static if (TYPE.length) {
             string _type=doc[TYPENAME].get!string;
             .check(_type == TYPE, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
@@ -135,7 +157,6 @@ mixin template HiBONRecord(string TYPE="") {
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
                     static if (is(BaseT == struct)) {
-                        pragma(msg, "@@@ ", TypedefType!BaseT);
                         auto dub_doc = doc[name].get!Document;
                         enum doc_code=format("%s=BaseT(dub_doc);", member_name);
                         mixin(doc_code);
@@ -150,12 +171,28 @@ mixin template HiBONRecord(string TYPE="") {
                     }
                     else {
                         static if (is(BaseT:U[], U)) {
-                            static if (Document.Value.hasType!U) {
+                            static if (hasMember!(U, "toHiBON")) {
                                 MemberT array;
                                 auto doc_array=doc[name].get!Document;
                                 static if (optional) {
                                     if (doc_array.length == 0) {
-                                        break ForeachTuple;
+                                        continue ForeachTuple;
+                                    }
+                                }
+                                check(doc_array.isArray, message("Document array expected for %s member",  name));
+                                foreach(e; doc_array[]) {
+                                    const sub_doc=e.get!Document;
+                                    array~=U(sub_doc);
+                                }
+                                enum doc_array_code=format("%s=array;", member_name);
+                                mixin(doc_array_code);
+                            }
+                            else static if (Document.Value.hasType!U) {
+                                MemberT array;
+                                auto doc_array=doc[name].get!Document;
+                                static if (optional) {
+                                    if (doc_array.length == 0) {
+                                        continue ForeachTuple;
                                     }
                                 }
                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
@@ -165,23 +202,6 @@ mixin template HiBONRecord(string TYPE="") {
                                 m=array;
 //                                static assert(0, format("Special handling of array %s", MemberT.stringof));
                             }
-                            else static if (hasMember!(U, "toHiBON")) {
-                                MemberT array;
-                                auto doc_array=doc[name].get!Document;
-                                static if (optional) {
-                                    if (doc_array.length == 0) {
-                                        break ForeachTuple;
-                                    }
-                                }
-                                check(doc_array.isArray, message("Document array expected for %s member",  name));
-                                foreach(e; doc_array[]) {
-                                    const sub_doc=e.get!Document;
-                                    array~=U(sub_doc);
-                                }
-                                enum doc_array_code=format("%s=array;", member_name);
-                                pragma(msg, doc_array_code);
-                                mixin(doc_array_code);
-                            }
                             else {
                                 static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
                                         BaseT.stringof, cast(immutable(U)[]).stringof));
@@ -189,7 +209,6 @@ mixin template HiBONRecord(string TYPE="") {
                             }
                         }
                         else {
-                            pragma(msg, code);
                             mixin(code);
                         }
                     }
@@ -197,4 +216,29 @@ mixin template HiBONRecord(string TYPE="") {
             }
         }
     }
+}
+
+/++
+ Serialize the hibon and writes it a file
+ Params:
+ filename = is the name of the file
+ hibon = is the HiBON object
++/
+void fwrite(string filename, const HiBON hibon) {
+    file.write(filename, hibon.serialize);
+}
+
+
+/++
+ Reads a HiBON document from a file
+ Params:
+ filename = is the name of the file
+ Returns:
+ The Document read from the file
++/
+const(Document) fread(string filename) {
+    immutable data=assumeUnique(cast(ubyte[])file.read(filename));
+    const doc=Document(data);
+    .check(doc.isInorder, "HiBON Document format failed");
+    return doc;
 }

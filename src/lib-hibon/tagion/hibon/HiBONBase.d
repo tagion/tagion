@@ -1,7 +1,7 @@
 module tagion.hibon.HiBONBase;
 
 import tagion.Types;
-import tagion.Base : isOneOf;
+import tagion.basic.Basic : isOneOf;
 
 import tagion.utils.UTCTime;
 
@@ -16,12 +16,18 @@ import tagion.hibon.BigNumber;
 
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 
+/++
+ Helper function to serialize a HiBON
++/
 void binwrite(T, R, I)(R range, const T value, I index) pure {
     import std.typecons : TypedefType;
     alias BaseT=TypedefType!(T);
     bin.write!(BaseT, Endian.littleEndian, R)(range, cast(BaseT)value, index);
 }
 
+/++
+ Helper function to serialize an array of the type T of a HiBON
++/
 @safe
 void array_write(T)(ref ubyte[] buffer, T array, ref size_t index) pure if ( is(T : U[], U) && isBasicType!U ) {
     const ubytes = cast(const(ubyte[]))array;
@@ -32,6 +38,9 @@ void array_write(T)(ref ubyte[] buffer, T array, ref size_t index) pure if ( is(
     buffer[index..new_index] = ubytes;
 }
 
+/++
+ HiBON Type codes
++/
 enum Type : ubyte {
     NONE            = 0x00,  /// End Of Document
         FLOAT64         = 0x01,  /// Floating point
@@ -50,26 +59,30 @@ enum Type : ubyte {
 //        HASHDOC         = 0x23,  // Hash point to documement
 //        UBIGINT         = 0x2B,  /// Unsigned Bigint
 
-        DEFINED_NATIVE  = 0x40,
-        NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, // This type is only used as an internal represention (Document type)
+        DEFINED_NATIVE  = 0x40,  /// Reserved as a definition tag it's for Native types
+        NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
 
         DEFINED_ARRAY   = 0x80,  // Indicated an Intrinsic array types
-        BINARY          = DEFINED_ARRAY | 0x05, // Binary data
-        INT32_ARRAY     = DEFINED_ARRAY | INT32,
-        INT64_ARRAY     = DEFINED_ARRAY | INT64,
-        FLOAT64_ARRAY   = DEFINED_ARRAY | FLOAT64,
-        BOOLEAN_ARRAY   = DEFINED_ARRAY | BOOLEAN,
-        UINT32_ARRAY    = DEFINED_ARRAY | UINT32,
-        UINT64_ARRAY    = DEFINED_ARRAY | UINT64,
-        FLOAT32_ARRAY   = DEFINED_ARRAY | FLOAT32,
+        BINARY          = DEFINED_ARRAY | 0x05, /// Binary data
+        INT32_ARRAY     = DEFINED_ARRAY | INT32, /// 32bit integer array (int[])
+        INT64_ARRAY     = DEFINED_ARRAY | INT64, /// 64bit integer array (long[])
+        FLOAT64_ARRAY   = DEFINED_ARRAY | FLOAT64, /// 64bit floating point array (double[])
+        BOOLEAN_ARRAY   = DEFINED_ARRAY | BOOLEAN, /// boolean array (bool[])
+        UINT32_ARRAY    = DEFINED_ARRAY | UINT32,  /// Unsigned 32bit integer array (uint[])
+        UINT64_ARRAY    = DEFINED_ARRAY | UINT64,  /// Unsigned 64bit integer array (uint[])
+        FLOAT32_ARRAY   = DEFINED_ARRAY | FLOAT32, /// 64bit floating point array (double[])
         //     FLOAT128_ARRAY   = DEFINED_ARRAY | FLOAT128,
 
         /// Native types is only used inside the BSON object
-        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT, // Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT, // Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING, // Represetents (string[]) is convert to an ARRAY of string's
+        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT, /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
+        NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT, /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
+        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING, /// Represetents (string[]) is convert to an ARRAY of string's
         }
 
+/++
+ Returns:
+ true if the type is a internal native HiBON type
++/
 @safe
 bool isNative(Type type) pure nothrow {
     with(Type) {
@@ -77,6 +90,10 @@ bool isNative(Type type) pure nothrow {
     }
 }
 
+/++
+ Returns:
+ true if the type is a internal native array HiBON type
++/
 @safe
 bool isNativeArray(Type type) pure nothrow {
     with(Type) {
@@ -84,6 +101,10 @@ bool isNativeArray(Type type) pure nothrow {
     }
 }
 
+/++
+ Returns:
+ true if the type is a HiBON data array (This is not the same as HiBON.isArray)
++/
 @safe
 bool isArray(Type type) pure nothrow {
     with(Type) {
@@ -91,6 +112,10 @@ bool isArray(Type type) pure nothrow {
     }
 }
 
+/++
+ Returns:
+ true if the type is a valid HiBONType excluding narive types
++/
 @safe
 bool isHiBONType(Type type) pure nothrow {
     bool[] make_flags() {
@@ -107,6 +132,7 @@ bool isHiBONType(Type type) pure nothrow {
     return flags[type];
 }
 
+///
 static unittest {
     with(Type) {
         static assert(!isHiBONType(NONE));
@@ -115,18 +141,12 @@ static unittest {
     }
 
 }
-/*
-  static unittest {
-  with(Type) {
-  assert(isHiBON(
-  }
-*/
-
-//@safe class HiBON;
-//@safe struct Document;
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 
+/++
+ HiBON Generic value used by the HiBON class and the Document struct
++/
 @safe
 union ValueT(bool NATIVE=false, HiBON,  Document) {
     @Type(Type.FLOAT32)   float     float32;
@@ -200,6 +220,10 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
 
     }
 
+    /++
+     Returns:
+     the value as HiBON type E
+     +/
     @trusted
     auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
@@ -234,7 +258,13 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
     }
 
+    /++
+     convert the T to a HiBON-Type
+     +/
     enum asType(T) = GetType!(Unqual!T, __traits(allMembers, ValueT));
+    /++
+     is true if the type T is support by the HiBON
+     +/
     enum hasType(T) = asType!T !is Type.NONE;
 
     version(none)
@@ -256,6 +286,9 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
     }
 
+    /++
+     Construct a Value of the type T
+     +/
     @trusted
     this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct) ) {
         alias MutableT = Unqual!T;
@@ -275,11 +308,19 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         assert (0, format("%s is not supported", T.stringof ) );
     }
 
+    /++
+     Constructs a Value of the type BigNumber
+     +/
     @trusted
     this(const BigNumber big) {
         bigint=big;
     }
 
+    /++
+     Assign the value to x
+     Params:
+     x = value to be assigned
+     +/
     @trusted
     void opAssign(T)(T x) if (isOneOf!(T, typeof(this.tupleof))) {
         alias UnqualT = Unqual!T;
@@ -300,8 +341,17 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     }
 
 
+    /++
+     List if valud cast-types
+     +/
     alias CastTypes=AliasSeq!(uint, int, ulong, long, float, double, string);
 
+    /++
+     Assign of none standard HiBON types.
+     This function will cast to type has the best match to the parameter x
+     Params:
+     x = sign value
+     +/
     void opAssign(T)(T x) if (!isOneOf!(T, typeof(this.tupleof))) {
         alias UnqualT=Unqual!T;
         alias CastT=castTo!(UnqualT, CastTypes);
@@ -310,9 +360,16 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         opAssing(cast(CastT)x);
     }
 
+    /++
+     Convert a HiBON Type to a D-type
+     +/
     alias TypeT(Type aType) = typeof(by!aType());
 
 
+    /++
+     Returns:
+     the size on bytes of the value as a HiBON type E
+     +/
     uint size(Type E)() const pure nothrow {
         static if (isHiBONType(E)) {
             alias T = TypeT!E;
@@ -396,7 +453,14 @@ unittest {
     }
 }
 
-
+/++
+ Converts from a text to a index
+ Params:
+ a = the string to be converted to an index
+ result = index value
+ Returns:
+ true if the a is an index
++/
 @safe bool is_index(string a, out uint result) pure {
     import std.conv : to;
     enum MAX_UINT_SIZE=to!string(uint.max).length;
@@ -418,6 +482,11 @@ unittest {
     return false;
 }
 
+/++
+ Check if all the keys in range is indices and are consecutive
+ Returns:
+ true if keys is the indices of an HiBON array
++/
 @safe bool isArray(R)(R keys) {
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {
@@ -442,7 +511,7 @@ unittest {
     return false;
 }
 
-
+///
 unittest { // check is_index
     import std.conv : to;
     uint index;
@@ -462,6 +531,9 @@ unittest { // check is_index
     assert(!is_index("01", index));
 }
 
+/++
+ This function decides the order of the HiBON keys
++/
 @safe bool less_than(string a, string b) pure
     in {
         assert(a.length > 0);
@@ -476,6 +548,7 @@ body {
     return a < b;
 }
 
+///
 unittest { // Check less_than
     import std.conv : to;
     assert(less_than("a", "b"));
@@ -484,6 +557,10 @@ unittest { // Check less_than
     assert(less_than("0", "abe"));
 }
 
+/++
+ Returns:
+ true if the key is a valid HiBON key
++/
 @safe bool is_key_valid(string a) pure nothrow {
     enum : char {
         SPACE = 0x20,
@@ -507,6 +584,7 @@ unittest { // Check less_than
     return false;
 }
 
+///
 unittest { // Check is_key_valid
     import std.conv : to;
     import std.range : iota;

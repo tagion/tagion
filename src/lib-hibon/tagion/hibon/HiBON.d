@@ -15,7 +15,7 @@ import std.meta : staticIndexOf;
 import std.algorithm.iteration : map, fold, each;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
 import std.meta : AliasSeq;
-//import std.bitmanip : write;
+
 import std.conv : to;
 import std.typecons : TypedefType;
 
@@ -23,16 +23,30 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.Message : message;
-import tagion.Base : CastTo;
+import tagion.basic.Message : message;
+import tagion.basic.Basic : CastTo;
 
+/++
+ HiBON is a generate object of the HiBON format
++/
 @safe class HiBON {
+    /++
+     Gets the internal buffer
+     Returns:
+     The buffer of the HiBON document
+    +/
+
     alias Value=ValueT!(true, HiBON,  Document);
 
     this() {
         _members = new Members;
     }
 
+    /++
+     Calculated the size in bytes of serialized HiBON
+     Returns:
+     the size in bytes
+     +/
     size_t size() const pure {
         size_t result = uint.sizeof+Type.sizeof;
         if (_members.length) {
@@ -41,6 +55,11 @@ import tagion.Base : CastTo;
         return result;
     }
 
+    /++
+     Generated the serialized HiBON
+     Returns:
+     The byte stream
+     +/
     immutable(ubyte[]) serialize() const pure {
         scope buffer = new ubyte[size];
         size_t index;
@@ -48,6 +67,9 @@ import tagion.Base : CastTo;
         return buffer.idup;
     }
 
+    // /++
+    //  Helper function to append
+    //  +/
     @trusted
     private void append(ref ubyte[] buffer, ref size_t index) const pure {
         immutable size_index = index;
@@ -60,6 +82,9 @@ import tagion.Base : CastTo;
         buffer.binwrite(doc_size, size_index);
     }
 
+    /++
+     Internal Member in the HiBON class
+     +/
     @safe static class Member {
         string key;
         Type type;
@@ -76,6 +101,11 @@ import tagion.Base : CastTo;
         // }
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
 
+        /++
+         Params:
+         x = the parameter value
+         key = the name of the member
+         +/
         @trusted
         this(T)(T x, string key) { //const pure if ( is(T == const) ) {
             alias BaseT=TypedefType!T;
@@ -101,6 +131,11 @@ import tagion.Base : CastTo;
 
         }
 
+        /++
+         If the value of the Member contains a Document it returns it or else an error is asserted
+         Returns:
+         the value as a Document
+         +/
         @trusted
         inout(HiBON) document() inout pure
         in {
@@ -110,18 +145,35 @@ import tagion.Base : CastTo;
             return value.document;
         }
 
+        /++
+         Sets the key of the Member
+         Returns:
+         The a member with a name of key
+         +/
         static Member search(string key) pure {
             auto result=new Member();
             result.key = key;
             return result;
         }
 
+        /++
+         Returns:
+         The value as type T
+         Throws:
+         If the member does not match the type T and HiBONException is thrown
+         +/
         const(T) get(T)() const {
             enum E = Value.asType!T;
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
             return value.by!E;
         }
 
+        /++
+         Returns:
+         The value as HiBON Type E
+         Throws:
+         If the member does not match the type T and HiBONException is thrown
+         +/
         auto by(Type type)() inout {
             return value.by!type;
         }
@@ -130,6 +182,11 @@ import tagion.Base : CastTo;
             return Member.search(key);
         }
 
+        /++
+         Calculates the size in bytes of the Member
+         Returns:
+         the size in bytes
+         +/
         @trusted
         size_t size() const pure {
             with(Type) {
@@ -251,16 +308,32 @@ import tagion.Base : CastTo;
 
     protected Members _members;
 
+    /++
+     Returns:
+     A range of members
+     +/
     auto opSlice() const {
         return _members[];
     }
 
+    /++
+     Assign and member x with the key
+     Params:
+     x = parameter value
+     key = member key
+     +/
     void opIndexAssign(T)(T x, in string key) {
         .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
         _members.insert(new_member);
     }
 
+    /++
+     Assign and member x with the index
+     Params:
+     x = parameter value
+     index = member index
+     +/
     void opIndexAssign(T)(T x, const size_t index) {
         const key=index.to!string;
         static if(!is(size_t == uint) ) {
@@ -269,12 +342,32 @@ import tagion.Base : CastTo;
         opIndexAssign(x, key);
     }
 
+    /++
+     Access an member at key
+     Params:
+     key = member key
+     Returns:
+     the Member at the key
+     Throws:
+     if the an member with the key does not exist an HiBONException is thrown
+     +/
     const(Member) opIndex(in string key) const {
         auto range=_members.equalRange(Member.search(key));
         .check(!range.empty, message("Member '%s' does not exist", key) );
         return range.front;
     }
 
+
+    /++
+     Access an member at index
+     Params:
+     index = member index
+     Returns:
+     the Member at the index
+     Throws:
+     if the an member with the index does not exist an HiBONException is thrown
+     Or an std.conv.ConvException is thrown if the key is not an index
+     +/
     const(Member) opIndex(const size_t index) const {
         const key=index.to!string;
         static if(!is(size_t == uint) ) {
@@ -283,16 +376,28 @@ import tagion.Base : CastTo;
         return opIndex(key);
     }
 
+    /++
+     Params:
+     key = member key
+     Returns:
+     true if the member with the key exists
+     +/
     bool hasMember(in string key) const {
         auto range=_members.equalRange(Member.search(key));
         return !range.empty;
     }
 
+    /++
+     Removes a member with name of key
+     Params:
+     key = name of the member to be removed
+     +/
     @trusted
     void remove(string key) {
         _members.removeKey(Member.search(key));
     }
 
+    ///
     unittest { // remove
         auto hibon=new HiBON;
         hibon["a"] =1;
@@ -305,23 +410,42 @@ import tagion.Base : CastTo;
         assert(!hibon.hasMember("b"));
     }
 
+    /++
+     Returns:
+     the number of members in the HiBON
+     +/
     size_t length() const {
         return _members.length;
     }
 
+    /++
+     Returns:
+     A range of the member keys
+     +/
     auto keys() const {
         return map!"a.key"(this[]);
     }
 
-    // Throws an std.conv.ConvException if the keys can not be convert to an uint
+    /++
+     Returns:
+     A range of indices
+     Throws:
+     The range will throw an std.conv.ConvException if the key is not an index
+    +/
     auto indices() const {
         return map!"a.key.to!uint"(this[]);
     }
 
+    /++
+     Check if the HiBON is an Array
+     Returns:
+     true if all keys is indices and are consecutive
+     +/
     bool isArray() const {
         return .isArray(keys);
     }
 
+    ///
     unittest {
         {
             auto hibon=new HiBON;
@@ -348,7 +472,7 @@ import tagion.Base : CastTo;
     }
 
     unittest {
-        import std.stdio;
+        // import std.stdio;
         import std.conv : to;
         import std.typecons : Tuple, isTuple;
         // Note that the keys are in alphabetic order
@@ -679,5 +803,4 @@ import tagion.Base : CastTo;
             }
         }
     }
-
 }
