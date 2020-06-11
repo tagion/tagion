@@ -1,8 +1,9 @@
 module tagion.GlobalSignals;
-import tagion.basic.Basic: abort;
 import core.stdc.signal;
 import std.stdio;
 import core.stdc.stdlib: exit;
+
+shared bool abort=false;
 
 static extern(C) void shutdown(int sig) @nogc nothrow {
 
