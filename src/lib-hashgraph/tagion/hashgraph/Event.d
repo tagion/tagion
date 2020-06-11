@@ -1,24 +1,28 @@
 module tagion.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
-import tagion.utils.BSON : HBSON, Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 
-import tagion.crypto.Hash;
+import tagion.utils.Miscellaneous;
 
-import tagion.hashgraph.GossipNet;
+import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.ConsensusExceptions;
 import std.conv;
 import std.bitmanip;
 
 import std.format;
 import std.typecons;
+import std.traits : Unqual;
 
-import tagion.Base : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, isMajority;
-
+import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, EnumText;
+import tagion.hashgraph.HashGraphBasic : isMajority;
 import tagion.Keywords;
 
+import tagion.services.LoggerService;
+
 @safe
-void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+package void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
     if (!flag) {
         throw new EventConsensusException(code, file, line);
     }
@@ -83,11 +87,11 @@ struct EventBody {
         this.altitude  =    altitude;
         this.father    =    father;
         this.mother    =    mother;
-        this.payload   =    payload.idup;
+        this.payload   =    cast(Buffer)payload;
         consensus();
     }
 
-    this(immutable(ubyte)[] data) inout {
+    this(immutable(ubyte[]) data) inout {
         auto doc=Document(data);
         this(doc);
     }
@@ -98,7 +102,8 @@ struct EventBody {
 
     this(Document doc, RequestNet request_net=null) inout {
         foreach(i, ref m; this.tupleof) {
-            alias typeof(m) type;
+            alias Type=typeof(m);
+            alias UnqualT=Unqual!Type;
             enum name=basename!(this.tupleof[i]);
             if ( doc.hasElement(name) ) {
                 static if ( name == mother.stringof || name == father.stringof ) {
@@ -111,11 +116,11 @@ struct EventBody {
                     }
                 }
                 else {
-                    static if ( is(type : immutable(ubyte[])) ) {
-                        this.tupleof[i]=(doc[name].get!type).idup;
+                    static if ( is(Type : immutable(ubyte[])) ) {
+                        this.tupleof[i]=(doc[name].get!UnqualT).idup;
                     }
                     else {
-                        this.tupleof[i]=doc[name].get!type;
+                        this.tupleof[i]=doc[name].get!UnqualT;
                     }
                 }
             }
@@ -137,12 +142,12 @@ struct EventBody {
         }
     }
 
-    HBSON toBSON(const(Event) use_event=null) const {
-        auto bson=new HBSON;
+    HiBON toHiBON(const(Event) use_event=null) const {
+        auto hibon=new HiBON;
         foreach(i, m; this.tupleof) {
             enum name=basename!(this.tupleof[i]);
-            static if ( __traits(compiles, m.toBSON) ) {
-                bson[name]=m.toBSON;
+            static if ( __traits(compiles, m.toHiBON) ) {
+                hibon[name]=m.toHiBON;
             }
             else {
                 bool include_member=true;
@@ -151,23 +156,23 @@ struct EventBody {
                 }
                 if ( include_member ) {
                     if ( use_event && name == basename!mother &&  use_event._mother ) {
-                        bson[name]=use_event._mother.id;
+                        hibon[name]=use_event._mother.id;
                     }
                     else if ( use_event && name == basename!father && use_event._father ) {
-                        bson[name]=use_event._father.id;
+                        hibon[name]=use_event._father.id;
                     }
                     else {
-                        bson[name]=m;
+                        hibon[name]=m;
                     }
                 }
             }
         }
-        return bson;
+        return hibon;
     }
 
     @trusted
     immutable(ubyte[]) serialize(const(Event) use_event=null) const {
-        return toBSON(use_event).serialize;
+        return toHiBON(use_event).serialize;
     }
 
 }
@@ -205,8 +210,10 @@ interface EventMonitorCallbacks {
 
 @safe
 interface EventScriptCallbacks {
-    void epoch(const(Event[]) received_event, const long time);
-    void send(immutable(Buffer) ebody);
+    void epoch(const(Event[]) received_event, immutable long epoch_time);
+    void send(ref Payload[] payloads, immutable long epoch_time); // Should be execute when and epoch is finished
+
+    void send(immutable(EventBody) ebody);
     bool stop(); // Stops the task
 }
 
@@ -236,9 +243,9 @@ class Round {
     //
     private BitArray _ground_mask;
     static void dump() {
-        Event.fout.writefln("ROUND dump");
+        log("ROUND dump");
         for(Round r=_rounds; r !is null; r=r._previous) {
-            Event.fout.writefln("\tRound %d %s", r.number, r.decided);
+            log("\tRound %d %s", r.number, r.decided);
         }
     }
 
@@ -341,9 +348,9 @@ class Round {
 
     package int opApply(scope int delegate(const uint node_id, ref Event event) @safe dg) {
         int result;
-        foreach(uint node_id, ref e; _events) {
+        foreach(node_id, ref e; _events) {
             if ( e ) {
-                result=dg(node_id, e);
+                result=dg(cast(uint)node_id, e);
                 if ( result ) {
                     break;
                 }
@@ -354,9 +361,9 @@ class Round {
 
     int opApply(scope int delegate(const uint node_id, const(Event) event) @safe dg) const {
         int result;
-        foreach(uint node_id, e; _events) {
+        foreach(node_id, e; _events) {
             if ( e ) {
-                result=dg(node_id, e);
+                result=dg(cast(uint)node_id, e);
                 if ( result ) {
                     break;
                 }
@@ -444,8 +451,8 @@ class Round {
         import std.algorithm : sort, SwapStrategy;
         import std.functional;
         scope Event[] famous_events=new Event[_events.length];
-        scope BitArray unique_famous_mask;
-        bitarray_clear(unique_famous_mask, node_size);
+        BitArray unique_famous_mask;
+        bitarray_change(unique_famous_mask, node_size);
         @trusted
         ulong find_middel_time() {
             uint famous_node_id;
@@ -661,6 +668,21 @@ class Round {
 
 @safe
 class Event {
+    protected enum _params = [
+        "altitude",   // altitude
+        Keywords.pubkey,
+        Keywords.signature,
+        // "pubkey",
+        // "signature" Keywords.,
+        "type",
+        "event",
+        "ebody",
+
+        ];
+
+    mixin(EnumText!("Params", _params));
+
+
     @safe
     class Witness {
         private Event _previous_witness_event;
@@ -784,12 +806,12 @@ class Event {
     alias bool delegate(Event) @safe Assign;
     static EventMonitorCallbacks callbacks;
     static EventScriptCallbacks scriptcallbacks;
-    import std.stdio;
-    static File* fout;
+//    import std.stdio;
+//    static File* fout;
     immutable(ubyte[]) signature;
     immutable(Buffer) pubkey;
-    Pubkey channel() pure const nothrow {
-        return cast(Pubkey)pubkey;
+    immutable(Pubkey) channel() pure const nothrow {
+        return Pubkey(pubkey);
     }
 
     // Recursive markes
@@ -843,26 +865,26 @@ class Event {
         return id_count;
     }
 
-    HBSON toBSON() const {
-        auto bson=new HBSON;
+    HiBON toHiBON() const {
+        auto hibon=new HiBON;
         foreach(i, m; this.tupleof) {
             enum member_name=basename!(this.tupleof[i]);
             static if ( member_name == basename!(event_body) ) {
-                enum name=Keywords.ebody;
+                enum name=Params.ebody;
             }
             else {
                 enum name=member_name;
             }
             static if ( name[0] != '_' ) {
-                static if ( __traits(compiles, m.toBSON) ) {
-                    bson[name]=m.toBSON;
+                static if ( __traits(compiles, m.toHiBON) ) {
+                    hibon[name]=m.toHiBON;
                 }
                 else {
-                    bson[name]=m;
+                    hibon[name]=m;
                 }
             }
         }
-        return bson;
+        return hibon;
     }
 
     static int timeCmp(const(Event) a, const(Event) b) {
@@ -1463,10 +1485,11 @@ class Event {
 }
 
 unittest { // Serialize and unserialize EventBody
-    import tagion.crypto.SHA256;
+    import std.digest.sha;
     Payload payload=cast(immutable(ubyte)[])"Some payload";
-    auto mother=SHA256("self").digits;
-    auto father=SHA256("other").digits;
+//    auto mother=SHA256(cast(uint[])"self").digits;
+    immutable mother=sha256Of("self");
+    immutable father=sha256Of("other");
     auto seed_body=EventBody(payload, mother, father, 0, 0);
 
     auto raw=seed_body.serialize;

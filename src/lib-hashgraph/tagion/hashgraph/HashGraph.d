@@ -3,15 +3,16 @@ module tagion.hashgraph.HashGraph;
 import std.stdio;
 import std.conv;
 import tagion.hashgraph.Event;
-import tagion.hashgraph.GossipNet;
+import tagion.gossip.InterfaceNet;
 import tagion.utils.LRU;
-import tagion.utils.BSON : Document;
-import tagion.crypto.Hash;
+import tagion.hibon.Document;
+import tagion.utils.Miscellaneous;
 import tagion.hashgraph.ConsensusExceptions;
 import std.bitmanip : BitArray;
-import tagion.Base : Pubkey, Buffer, bitarray_clear, countVotes;
-import Base=tagion.Base;
+import tagion.basic.Basic : Pubkey, Buffer, bitarray_clear, countVotes;
+import tagion.hashgraph.HashGraphBasic;
 
+import tagion.services.LoggerService;
 @safe
 class HashGraph {
     //alias Pubkey=immutable(ubyte)[];
@@ -158,8 +159,13 @@ class HashGraph {
     private uint[] unused_node_ids; // Stack of unused node ids
 
 
+
     NodeIterator!(const(Node)) nodeiterator() {
         return NodeIterator!(const(Node))(this);
+    }
+
+    NodeIterator!Node opSlice() {
+        return NodeIterator!Node(this);
     }
 
     bool isOnline(Pubkey pubkey) {
@@ -198,15 +204,15 @@ class HashGraph {
     void dumpNodes() {
         import std.stdio;
         foreach(i, n; nodes) {
-            Event.fout.writef("%d:%s:", i, n !is null);
+            log("%d:%s:", i, n !is null);
             if ( n !is null ) {
-                Event.fout.writef("%s ",n.pubkey[0..7].toHexString);
+                log("%s ",n.pubkey[0..7].toHexString);
             }
             else {
-                Event.fout.write("Non ");
+                log("Non ");
             }
         }
-        Event.fout.writefln("");
+        log("");
     }
 
     @safe
@@ -297,7 +303,7 @@ class HashGraph {
     }
 
     bool isMajority(const uint voting) const pure nothrow {
-        return Base.isMajority(voting, active_nodes);
+        return isMajority(voting, active_nodes);
     }
 
     private void remove_node(Node n)
@@ -324,7 +330,7 @@ class HashGraph {
         immutable fingerprint=request_net.calcHash(ebody);
         if ( Event.scriptcallbacks ) {
             // Sends the eventbody to the scripting engine
-            Event.scriptcallbacks.send(ebody);
+            Event.scriptcallbacks.send(eventbody);
         }
         Event event=lookup(fingerprint);
         if ( !event ) {
@@ -332,7 +338,7 @@ class HashGraph {
             uint node_id;
             Node node;
 
-            // Find a resuable node id if possible
+            // Find a reusable node id if possible
             if ( get_node_id is null ) {
                 if ( unused_node_ids.length ) {
                     node_id=unused_node_ids[0];
