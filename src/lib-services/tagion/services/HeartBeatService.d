@@ -10,22 +10,30 @@ import tagion.Options;
 //import tagion.services.LoggerService;
 import tagion.utils.Random;
 
-import tagion.Base : Pubkey, Control, abort;
+import tagion.basic.Basic : Pubkey, Control, abort;
 import tagion.services.LoggerService;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.gossip.InterfaceNet : SecureNet;
 import tagion.gossip.GossipNet : StdSecureNet;
 import tagion.services.ServiceNames : get_node_name;
-import tagion.TagionExceptions;
+import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
+import tagion.services.DartService;
 import tagion.services.DartSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import std.conv;
+import tagion.services.MdnsDiscoveryService;
+
+import tagion.Keywords: NetworkMode;
 
 import std.stdio;
-void heartBeatServiceTask(immutable(Options) opts) {
+void heartBeatServiceTask(immutable(Options) opts)
+in{
+    assert(opts.net_mode == NetworkMode.internal);
+}
+do {
     setOptions(opts);
 
     immutable tast_name=opts.heartbeat.task_name;
@@ -67,7 +75,30 @@ void heartBeatServiceTask(immutable(Options) opts) {
     stderr.writeln("@@@@@ Before node loop");
     auto sector_range = DART.SectorRange(0,0);
     Tid[] dart_sync_tids;
+    Tid[] dart_tids;
+    Tid[] discovery_tids;
+
     scope(exit) {
+        log("---- Stop discovery tasks(%d) ----", discovery_tids.length);
+        foreach (i; 0..opts.nodes) {
+            auto discovery_tid = locate(opts.discovery.task_name~to!string(i));
+            if(discovery_tid != Tid.init){
+                send(discovery_tid, Control.STOP);
+                const discoveryControl = receiveOnly!Control;
+            }else{
+                log("couldn't locate task: %s", opts.discovery.task_name~to!string(i));
+            }
+        }
+        log("---- Stop dart tasks(%d) ----", dart_tids.length);
+        foreach (i; 0..opts.nodes) {
+            auto dart_tid = locate(opts.dart.task_name~to!string(i));
+            if(dart_tid != Tid.init){
+                send(dart_tid, Control.STOP);
+                const dartControl = receiveOnly!Control;
+            }else{
+                log("couldn't locate task: %s", opts.dart.task_name~to!string(i));
+            }
+        }
         log("---- Stop dart sync tasks(%d) ----", dart_sync_tids.length);
         foreach (i; 0..opts.nodes) {
             auto dart_sync_tid = locate(opts.dart.sync.task_name~to!string(i));
@@ -94,6 +125,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
             service_options.dart.initialize = false;
             service_options.dart.synchronize = false;
             local_port = opts.dart.sync.maxSlavePort;
+            service_options.discovery.notify_enabled = true;
         }
 
         service_options.port = local_port;
@@ -108,9 +140,10 @@ void heartBeatServiceTask(immutable(Options) opts) {
                 service_options.dart.path = stripExtension(opts.dart.path) ~ to!string(i) ~ extension(opts.dart.path);
             }
         }
+        service_options.transaction.service.response_task_name = opts.transaction.service.response_task_name~to!string(i);
         service_options.dart.task_name = opts.dart.task_name~to!string(i);
         service_options.dart.sync.task_name = opts.dart.sync.task_name~to!string(i);
-        service_options.dart.mdns.task_name = opts.dart.mdns.task_name~to!string(i);
+        service_options.discovery.task_name = opts.discovery.task_name~to!string(i);
         if ( (opts.monitor.port >= opts.min_port) && ((opts.monitor.max == 0) || (i < opts.monitor.max) ) ) {
             service_options.monitor.port=cast(ushort)(opts.monitor.port + i);
         }
@@ -123,7 +156,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
 
         node_opts[i] = service_options;
     }
-
+    log("options configurated");
     foreach (i; 0..opts.nodes) {
         auto sync_opts = node_opts[i];
 
@@ -135,8 +168,15 @@ void heartBeatServiceTask(immutable(Options) opts) {
 
             master_net.generateKeyPair(passphrase);
             shared shared_net=cast(shared)master_net;
+            Tid discovery_tid = spawn(&mdnsDiscoveryService, p2pnode, sync_opts);
+            discovery_tids~=discovery_tid;
+
             auto dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet, sync_opts, p2pnode, shared_net, sector_range);
             dart_sync_tids ~= dart_sync_tid;
+
+            auto dart_tid = spawn(&dartServiceTask!StdSecureNet, sync_opts, p2pnode, shared_net, sector_range);
+            dart_tids ~= dart_tid;
+            // send(dart_sync_tid, cast(immutable) address_book);
         }
         // const service_control = receiveOnly!Control;
         // log("received %s from %d", service_control, i);
@@ -144,7 +184,7 @@ void heartBeatServiceTask(immutable(Options) opts) {
         // dartTid = spawn(&dartServiceTask!MyFakeNet, local_options, node, shared_net, sector_range);
     }
     uint ready_counter = opts.nodes;
-    uint live_counter = opts.nodes;
+    uint live_counter = opts.nodes * 3;
     bool force_stop = false;
     do{
         receive(
@@ -157,6 +197,17 @@ void heartBeatServiceTask(immutable(Options) opts) {
                 }
                 if(control == Control.STOP){
                     force_stop = true;
+                }
+            },
+            (immutable(AddressBook!Pubkey) address_book){
+                log("received address book");
+                foreach (discovery_tid; discovery_tids){
+                    discovery_tid.send(Control.STOP);
+                    receiveOnly!Control;    //use receive instead..
+                }
+                log("discovery services stoped");
+                foreach (dart_sync_tid; dart_sync_tids) {
+                    dart_sync_tid.send(address_book);
                 }
             },
             (DartSynchronizeState state){

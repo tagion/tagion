@@ -5,7 +5,7 @@ import std.datetime;   // Date, DateTime
 import std.exception : assumeUnique;
 
 import tagion.hashgraph.Event : Event, EventScriptCallbacks, EventBody;
-import tagion.Base : Buffer, Payload, Control;
+import tagion.basic.Basic : Buffer, Payload, Control;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.Keywords;
@@ -44,20 +44,26 @@ import tagion.services.LoggerService;
    @trusted
    void send(ref Payload[] payloads, immutable long epoch_time) {
        immutable unique_payloads=assumeUnique(payloads);
-       log("send data=%d", unique_payloads.length);
-       _event_script_tid.send(unique_payloads);
+       log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
+       pragma(msg, "Scripts: " ,typeof(unique_payloads));
+        HiBON params = new HiBON;
+        foreach(i, payload; unique_payloads){
+            params[i] = payload;
+        }
+       _event_script_tid.send(params.serialize);
    }
 
     @trusted
     void send(immutable(EventBody) ebody) {
-        log("ebody.payload=%d", ebody.payload.length);
         if (ebody.payload.length) {
+            log("ebody.payload=%d", ebody.payload.length);
             _event_script_tid.send(ebody);
         }
     }
 
     @trusted
     bool stop() {
+        log("stop here");
         immutable result= _event_script_tid != _event_script_tid.init;
         if ( result ) {
             _event_script_tid.prioritySend(Control.STOP);

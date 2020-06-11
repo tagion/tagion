@@ -9,7 +9,7 @@ import std.string;
 
 extern(C) int pthread_setname_np(pthread_t, const char*);
 
-import tagion.Base : Control;
+import tagion.basic.Basic : Control;
 
 import tagion.Options : Options, setOptions, options;
 

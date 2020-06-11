@@ -8,12 +8,12 @@ import std.concurrency;
 
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
-import tagion.Base : Control, basename, bitarray2bool, Pubkey;
-import tagion.TagionExceptions : TagionException;
+import tagion.basic.Basic : Control, basename, bitarray2bool, Pubkey;
+import tagion.basic.TagionExceptions : TagionException;
 
 import tagion.hibon.Document;
 import tagion.communication.ListenerSocket;
-import tagion.TagionExceptions;
+import tagion.basic.TagionExceptions;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceTask(immutable(Options) opts) {
@@ -22,6 +22,7 @@ void monitorServiceTask(immutable(Options) opts) {
     immutable task_name=opts.monitor.task_name;
     log.register(task_name);
 
+    try{
     log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
     // scope(failure) {
     //     log.error("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
@@ -32,7 +33,6 @@ void monitorServiceTask(immutable(Options) opts) {
         log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
         ownerTid.prioritySend(Control.END);
     }
-
     auto listener_socket = ListenerSocket(
         opts,
         opts.url,
@@ -40,6 +40,7 @@ void monitorServiceTask(immutable(Options) opts) {
         opts.monitor.timeout,
         opts.monitor.task_name);
     auto listener_socket_thread=listener_socket.start;
+
     // void delegate() listerner;
     // listerner.funcptr = &ListenerSocket.run;
     // listerner.ptr = &listener_socket;
@@ -147,4 +148,8 @@ void monitorServiceTask(immutable(Options) opts) {
 // //        log.fatal(t.toString);
 //         ownerTid.send(cast(immutable)t);
 //     }
+    }catch(Exception e){
+        log.fatal(e.msg);
+        throw e;
+    }
 }

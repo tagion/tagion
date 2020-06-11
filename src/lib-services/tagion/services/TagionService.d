@@ -13,7 +13,7 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.TagionExceptions : TagionException;
+import tagion.basic.TagionExceptions : TagionException;
 
 
 import tagion.services.ScriptCallbacks;
@@ -26,10 +26,10 @@ import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 //import tagion.services.ScriptingEngineService;
 import tagion.services.LoggerService;
-import tagion.TagionExceptions;
+import tagion.basic.TagionExceptions;
 
 import tagion.Options : Options, setOptions, options;
-import tagion.Base : Pubkey, Payload, Control;
+import tagion.basic.Basic : Pubkey, Payload, Control;
 import tagion.hibon.HiBON : HiBON;
 
 
@@ -254,7 +254,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
     void next_mother(Payload payload) {
         auto own_node=hashgraph.getNode(net.pubkey);
-        if ( gossip_count >= max_gossip ) {
+        if ( (gossip_count >= max_gossip) || (payload.length) ) {
             // fout.writeln("After build wave front");
             if ( own_node.event is null ) {
                 immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);

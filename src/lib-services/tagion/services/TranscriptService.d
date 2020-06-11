@@ -7,14 +7,14 @@ import std.array : join;
 import std.exception : assumeUnique;
 
 import tagion.Options;
-import tagion.Base : Payload, Control, Buffer;
+import tagion.basic.Basic : Payload, Control, Buffer;
 import tagion.hashgraph.Event : EventBody;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
 import tagion.services.LoggerService;
 import tagion.utils.Random;
-import tagion.TagionExceptions;
+import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
@@ -34,13 +34,15 @@ void transcriptServiceTask(immutable(Options) opts) {
     // assert(opts.transcript.pause_from < opts.transcript.pause_to);
 
     uint current_epoch;
+    log("A");
     Random!uint rand;
     rand.seed(opts.seed);
+    log("B");
 //    immutable name=[opts.node_name, options.transcript.name].join;
     log("Scripting-Api script test %s started", task_name);
     Tid node_tid=locate(opts.node_name);
     node_tid.send(Control.LIVE);
-    Tid dart_sync_tid = locate(opts.dart.sync.task_name);
+    Tid dart_tid = locate(opts.dart.task_name);
 
     auto net=new StdSecureNet;
     auto empty_hirpc = HiRPC(null);
@@ -55,8 +57,8 @@ void transcriptServiceTask(immutable(Options) opts) {
     }
 
     void modifyDART(DARTFile.Recorder recorder){
-        auto sender = DART.dartModify(recorder, empty_hirpc);
-        dart_sync_tid.send(task_name, empty_hirpc.toHiBON(sender).serialize);
+        // auto sender = DART.dartModify(recorder, empty_hirpc);
+        dart_tid.send(cast(immutable) recorder); //TODO: remove blackhole
     }
     void receive_epoch(Buffer payloads_buff) {
         try{
@@ -183,13 +185,13 @@ void transcriptServiceTask(immutable(Options) opts) {
             &tagionexception,
             &exception,
             &throwable,
-            (Buffer response, bool flag){
-                auto receiver = empty_hirpc.receive(Document(response));
-                auto bullseye = receiver.params[DARTFile.Params.bullseye].get!Buffer;
+            // (Buffer response, bool flag){
+            //     auto receiver = empty_hirpc.receive(Document(response));
+            //     auto bullseye = receiver.params[DARTFile.Params.bullseye].get!Buffer;
 
-                import tagion.utils.Miscellaneous: cutHex;
-                log("Bullseye %s", bullseye.cutHex);
-            }
+            //     import tagion.utils.Miscellaneous: cutHex;
+            //     log("Bullseye %s", bullseye.cutHex);
+            // }
             );
         // immutable message_received=receiveTimeout(delay.msecs, &controller);
         // log("message_received=%s", message_received);
