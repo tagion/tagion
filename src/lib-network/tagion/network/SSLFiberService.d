@@ -479,7 +479,7 @@ class SSLFiberService {
     @trusted
     static void responseService(immutable(string) task_name, shared Response handler) {
 
-        import tagion.Base : Control;
+        import tagion.basic.Basic : Control;
         import tagion.communication.HiRPC;
         import tagion.hibon.Document;
 
