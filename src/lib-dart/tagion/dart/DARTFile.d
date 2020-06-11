@@ -1547,7 +1547,7 @@ class DARTFile {
 
     unittest {
         import std.algorithm.sorting : sort;
-        import tagion.Base;
+        import tagion.basic.Basic;
         import std.typecons;
         import tagion.utils.Random;
         import std.bitmanip : BitArray;
