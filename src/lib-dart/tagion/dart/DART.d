@@ -1,1003 +1,1267 @@
-module tagion.vault.DART;
+module tagion.dart.DART;
 
-import tagion.hashgraph.GossipNet : SecureNet, DARTNet;
-import tagion.utils.BSON : HBSON, Document;
-import tagion.hashgraph.ConsensusExceptions;
+//import std.stdio;
+import core.thread : Fiber;
+import core.exception : RangeError;
+import std.conv : ConvException;
+//import std.stdio;
 
+import std.traits : EnumMembers;
+import std.format : format;
+
+import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
 import tagion.Keywords;
-import std.conv : to;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 
-import tagion.Base : cutHex;
-import tagion.crypto.Hash : toHexString;
-import std.stdio;
-@safe
-void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
-    if (!flag) {
-        throw new DARTConsensusException(code, file, line);
-    }
+import tagion.dart.DARTFile;
+import tagion.gossip.InterfaceNet : SecureNet;
+import tagion.communication.HiRPC;
+import tagion.basic.Basic : EnumText;
+
+import tagion.utils.Miscellaneous : toHexString, cutHex;
+import tagion.Keywords : isValid;
+//import tagion.Base : Check;
+import tagion.basic.TagionExceptions : Check;
+import tagion.dart.BlockFile : BlockFile;
+
+alias hex=toHexString;
+
+//import tagion.Debug;
+
+enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof*8);
+uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothrow {
+    return to_sector+((from_sector >= to_sector)?SECTOR_MAX_SIZE:0);
 }
 
-@safe
-uint cover(const uint n) pure nothrow {
-    uint local_cover(immutable uint width, immutable uint step) pure nothrow {
-        immutable uint result=1 << width;
-        if ( step != 0 ) {
-            if ( result > n ) {
-                if ( (result >> 1) >= n ) {
-                    return local_cover(width-step, step >> 1);
-                }
-            }
-            else if ( result < n ) {
-                return local_cover(width+step, step >> 1);
-            }
-        }
-        return result;
-    }
-    immutable width=(uint.sizeof*8) >> 1;
-    return local_cover(width, width >> 1);
+uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow {
+    immutable from=from_sector;
+    immutable to=calc_to_value(from_sector, to_sector);
+    return to-from;
 }
 
-unittest {
-    assert(cover(0x1FFF) == 0x2000);
-    assert(cover(0x1200) == 0x2000);
-    assert(cover(0x210) == 0x400);
-    assert(cover(0x1000) == 0x1000);
+Buffer convert_sector_to_rims(const ushort sector) pure nothrow {
+    Buffer result=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
+    return result;
 }
 
+/++
+ some text
+ +/
 
-@safe
-class DART {
-    private DARTNet _net;
-    private ushort _from_sector;
-    private ushort _to_sector;
-//    private Bucket[] _root_buckets;
-    enum bucket_max_size=1 << (ubyte.sizeof*8);
-    private Bucket _bulls_eye_bucket;
-    private Bucket[bucket_max_size] _zero_rim_buckets;
-    private Bucket[bucket_max_size*bucket_max_size] _first_rim_buckets;
-    enum uint bucket_rim=cast(uint)ushort.sizeof;
-    enum sector_max = ushort.max;
-    enum sector_max_size = 1 << (ushort.sizeof*8);
-
-    this(DARTNet net, const ushort from_sector, const ushort to_sector) {
-        _net = net;
-        _from_sector  = from_sector;
-        _to_sector    = to_sector;
-        _bulls_eye_bucket = new Bucket;
-        _bulls_eye_bucket._buckets=_zero_rim_buckets;
-        @trusted void build_buckets() {
-            foreach(i,ref b; _zero_rim_buckets) {
-                b=new Bucket;
-                b._buckets=_first_rim_buckets[i*bucket_max_size..(i+1)*bucket_max_size];
-            }
-        }
-        build_buckets;
+class DART : DARTFile, HiRPC.Supports {
+    immutable ushort from_sector;
+    immutable ushort to_sector;
+    HiRPC hirpc;
+    this(SecureNet net, string filename, const ushort from_sector=0, const ushort to_sector=0) {
+        super(net, filename);
+        this.from_sector=from_sector;
+        this.to_sector=to_sector;
+        this.hirpc.net = net;
+    }
+    bool inRange(const ushort sector) pure nothrow  {
+        return SectorRange.sectorInRange(sector, from_sector, to_sector);
     }
 
-
-    ushort root_sector(const(ubyte[]) data) pure const nothrow {
-        return data[1] | (data[0] << 8);
-    }
-
-    // ushort sector_to_index(const ushort sector) const pure nothrow {
-    //     return (sector-_from_sector) & ushort.max;
+    // override Buffer modify(Recorder modify_records) {
+    //     modify_records.removeOutOfRange(from_sector, to_sector);
+    //     return super.modify(modify_records);
     // }
-    void add(ArchiveTab archive) {
-        immutable sector=root_sector(archive.fingerprint);
-        if ( inRange(sector) ) {
-            void second(ref Bucket second_bucket) {
-                scope(exit) {
-                    second_bucket._merkle_root=null;
-                }
-                if ( second_bucket is null ) {
-                    second_bucket=new Bucket();
-                }
-                second_bucket.add(archive, bucket_rim);
+
+    SectorRange sectors() {
+        return SectorRange(from_sector, to_sector);
+    }
+
+    static struct SectorRange {
+        private ushort _sector;
+        private ushort _from_sector;
+        private ushort _to_sector;
+        @property ushort from_sector() inout { return _from_sector; }
+        @property ushort to_sector() inout { return _to_sector; }
+        protected bool flag;
+        this(const ushort from_sector, const ushort to_sector) {
+            _from_sector = from_sector;
+            _to_sector = to_sector;
+            _sector=from_sector;
+        }
+
+        bool isFullRange() const pure nothrow{
+            return _from_sector == _to_sector;
+        }
+
+        bool inRange(const ushort sector) const pure nothrow{
+            return sectorInRange(sector, _from_sector, _to_sector);
+        }
+
+        bool inRange(Buffer sector) const pure nothrow{
+            if(sector == []) return true;
+            return sectorInRange(sector[0] | sector[1], _from_sector, _to_sector);
+        }
+
+        static bool sectorInRange(const ushort sector, const ushort from_sector, const ushort to_sector) pure nothrow  {
+            if ( to_sector == from_sector ) {
+                return true;
             }
-            auto first_bucket =_bulls_eye_bucket._buckets[archive.fingerprint[0]];
-            scope(exit) {
-                first_bucket._merkle_root=null;
+            else {
+                immutable ushort sector_origin=(sector-from_sector) & ushort.max;
+                immutable ushort to_origin=(to_sector-from_sector) & ushort.max;
+                return ( sector_origin < to_origin );
             }
-            second(first_bucket._buckets[archive.fingerprint[1]]);
+        }
+
+        bool empty() const pure nothrow {
+            return !inRange(_sector) || flag;
+        }
+
+        void popFront() {
+            if (!empty) {
+                _sector++;
+                if(_sector == _from_sector) flag = true;
+            }
+        }
+
+        ushort front() const pure nothrow {
+            return _sector;
+        }
+
+        string toString() inout{
+            import std.string;
+            return format("(%d, %d)", _from_sector, _to_sector);
+        }
+
+        unittest{
+            enum full_dart_sectors_count = ushort.max+1;
+            {//SectorRange: full sector iterator
+                auto sector_range = SectorRange(0, 0);
+                auto iteration = 0;
+                foreach(sector; sector_range){
+                    iteration++;
+
+                    if(iteration > full_dart_sectors_count) assert(0, "Range overflow");
+                }
+                assert(iteration == full_dart_sectors_count);
+            }
+            {//SectorRange: full sector iterator
+                auto sector_range = SectorRange(5, 5);
+                auto iteration = 0;
+                foreach(sector; sector_range){
+                    iteration++;
+
+                    if(iteration > full_dart_sectors_count) assert(0, "Range overflow");
+                }
+                assert(iteration == full_dart_sectors_count);
+            }
+            {//SectorRange:
+                auto sector_range = SectorRange(1, 10);
+                auto iteration = 0;
+                foreach(sector; sector_range){
+                    iteration++;
+
+                    if(iteration > 9) assert(0, "Range overflow");
+                }
+                assert(iteration == 9);
+            }
+        }
+    }
+    protected enum _quries = [
+        nameOf!dartRead,
+        nameOf!dartRim,
+        nameOf!dartModify,
+        nameOf!dartFullRead
+        ];
+
+
+    mixin(EnumText!("Quries", _quries));
+
+    mixin HiRPC.Support!Quries;
+
+    alias HiRPCSender=HiRPC.HiRPCSender;
+    alias HiRPCReceiver=HiRPC.HiRPCReceiver;
+
+    static {
+        const(HiRPCSender) dartRead(Range)(scope Range fingerprints, HiRPC hirpc = HiRPC(null), uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
+            auto params=new HiBON;
+            auto params_fingerprints=new HiBON;
+            foreach(i, b; fingerprints) {
+                if ( b.length !is 0 ) {
+                    params_fingerprints[i]=b;
+                }
+            }
+            params[Params.fingerprints]=params_fingerprints;
+            return hirpc.dartRead(params, id);
+        }
+
+        const(HiRPCSender) dartRim(scope const(Buffer) rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
+            auto params=new HiBON;
+            params[Params.rims]=rims;
+            return hirpc.dartRim(params, id);
+        }
+
+        const(HiRPCSender) dartModify(scope const Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
+            auto params=new HiBON;
+            params[Params.recorder]=recorder.toHiBON;
+            return hirpc.dartModify(params, id);
         }
     }
 
-    immutable(ubyte[]) add(immutable(ubyte[]) data) {
-        auto archive=new ArchiveTab(_net, data);
-        add(archive);
-        return archive.fingerprint;
-    }
-
-    void remove(const ArchiveTab archive) {
-        immutable sector=root_sector(archive.fingerprint);
-        if ( inRange(sector) ) {
-            void remove_second(ref Bucket bucket) {
-                if ( bucket ) {
-                    Bucket.remove(bucket, archive);
-                    if ( bucket ) {
-                        bucket._merkle_root=null;
-                    }
-                }
-            }
-            auto first_bucket =_bulls_eye_bucket._buckets[archive.fingerprint[0]];
-            scope(exit) {
-                first_bucket._merkle_root=null;
-            }
-            remove_second(first_bucket._buckets[archive.fingerprint[1]]);
-        }
-    }
-
-    void remove(immutable(ubyte[]) data) {
-        auto archive=new ArchiveTab(_net, data);
-        remove(archive);
-    }
-
-    ArchiveTab opIndex(const(ubyte[]) key) {
-        immutable sector=root_sector(key);
-        if ( inRange(sector) ) {
-            auto first_bucket =_bulls_eye_bucket._buckets[key[0]];
-            auto second_bucket=first_bucket._buckets[key[1]];
-            if ( second_bucket ) {
-                return second_bucket.find(key, bucket_rim);
-            }
-        }
-        return null;
-    }
-
-    inout(Bucket) get(const(ubyte[]) key) inout {
-        uint sector_rim=bucket_rim;
-        return get(key, sector_rim);
-    }
-
-    inout(Bucket) get(const(ubyte[]) key, ref uint rim) inout
+ private const(HiRPCSender) dartFullRead(ref const(HiRPCReceiver) received, const bool read_only)
         in {
-            assert(rim >= bucket_rim);
+            mixin FUNCTION_NAME;
+            assert(received.message.method == __FUNCTION_NAME__);
         }
     do {
-        uint found_rim=rim;
-        inout(Bucket) search(inout(Bucket) bucket, const uint search_rim) pure inout {
-            if ( bucket.isBucket ) {
-                found_rim=search_rim;
-                int index=key[rim];
-                immutable pos=bucket.find_bucket_pos(index, search_rim+1);
-                if ( (pos < bucket._buckets.length) && (key[rim] == bucket._buckets[pos].index(rim)) ) {
-                    return search(bucket._buckets[pos], search_rim+1);
+        // HiRPC.check_element!Document(received.params, Params.fingerprints);
+        scope result=loadAll(Recorder.Archive.Type.ADD);
+        return hirpc.result(received, result);
+    }
+    /++
+     + The dartRead method is called from opCall function
+     + This function reads list of archive specified in the list of fingerprints.
+
+     + The result is returned as a Recorder object
+     + read from the DART
+
+     + Note:
+     + Because this function is a read only the read_only parameter has no effect
+
+     + params: received is the HiRPC package
+     + Example:
+     ---
+     + // HiRPC metode
+     + {
+     +  ....
+     +    message : {
+     +        method : "dartRead"
+     +            params : {
+     +                fingerprints : [
+     +                     <GENERIC>,
+     +                     <GENERIC>,
+     +                     .....
+     +                          ]
+     +                     }
+     +                 ...
+     +                }
+     +             }
+
+     + // HiRPC Result
+     +   {
+     +   ....
+     +       message : {
+     +           result : {
+     +               recoder : <DOCUMENT> // Recorder
+     +                   limit   : <UINT32> // Optional
+     +       // This parameter is set if fingerprints list exceeds the limit
+     +                    }
+     +               }
+     +   }
+     ---
+     +/
+    private const(HiRPCSender) dartRead(ref const(HiRPCReceiver) received, const bool read_only)
+        in {
+            mixin FUNCTION_NAME;
+            assert(received.message.method == __FUNCTION_NAME__);
+        }
+    do {
+        HiRPC.check_element!Document(received.params, Params.fingerprints);
+        scope doc_fingerprints=received.params[Params.fingerprints].get!(Document);
+        scope fingerprints=doc_fingerprints.range!(Buffer[]);
+        scope recorder=loads(fingerprints, Recorder.Archive.Type.ADD);
+        return hirpc.result(received, recorder.toHiBON);
+    }
+    /++
+     +  The dartRim method is called from opCall function
+     +
+     +  This method reads the Branches object at the specified rim
+     +
+     +  Note:
+     +  Because this function is a read only the read_only parameter has no effect
+     +
+     +  Params:
+     +      received is the HiRPC package
+     +  Example:
+     +  ---
+     +  // HiRPC format
+     +
+     +  {
+     +      ....
+     +      message : {
+     +        method : "dartRim",
+     +            params : {
+     +                rims : <GENERIC>
+     +            }
+     +        }
+     +  }
+     +
+     +  // HiRPC Result
+     +  {
+     +    ....
+     +    message : {
+     +        result : {
+     +            branches : <DOCUMENT> // Branches
+     +            limit    : <UINT32> // Optional
+     +                // This parameter is set if fingerprints list exceeds the limit
+     +            }
+     +        }
+     +  }
+     +
+     + ----
+     +/
+    private const(HiRPCSender) dartRim(ref const(HiRPCReceiver) received, const bool read_only)
+        in {
+            mixin FUNCTION_NAME;
+            assert(received.message.method == __FUNCTION_NAME__);
+        }
+    do {
+        HiRPC.check_element!Buffer(received.params, Params.rims);
+        immutable rims=received.params[Params.rims].get!Buffer;
+        auto hibon_params=new HiBON;
+        scope rim_branches=branches(rims);
+        if ( !rim_branches.empty ) {
+            hibon_params[Params.branches]=rim_branches.toHiBON(true);
+        }
+        else if ( rims.length > ushort.sizeof ) {
+            // It not branches so maybe it is an archive
+            immutable key=rims[$-1];
+            scope super_branches=branches(rims[0..$-1]);
+            if ( !super_branches.empty ) {
+                immutable index=super_branches.indices[key];
+                if ( index !is INDEX_NULL ) {
+                    // The archive is added to a recorder
+                    immutable data=blockfile.load(index);
+                    auto super_recorder=recorder;
+                    super_recorder.add(data);
+                    hibon_params[Params.recorder]=super_recorder.toHiBON;
                 }
             }
-            return bucket;
         }
 
-        immutable sector=root_sector(key);
-        if ( inRange(sector) ) {
-            auto first_bucket =_bulls_eye_bucket._buckets[key[0]];
-            auto second_bucket=first_bucket._buckets[key[1]];
-            if ( (second_bucket) && (rim >= bucket_rim) ) {
-                return search(second_bucket, rim);
-            }
-        }
-        return null;
+        return hirpc.result(received, hibon_params);
     }
 
-    static class ArchiveTab {
-        immutable(ubyte[])  data;
-        immutable(ubyte[])  fingerprint;
-        Document document() const {
-            return Document(data);
+
+    /++
+     +  The dartModify method is called from opCall function
+     +
+     +  This function execute and modify function according to the recorder parameter
+     +
+     +  Note:
+     +  This function will fail if read only the read_only is true
+     +
+     +  Params: received is the HiRPC package
+     +
+     +   Example:
+     +  ---
+     +     // HiRPC format
+     +   {
+     +       ....
+     +       message : {
+     +           method : "dartModify"
+     +           params : {
+     +               recorder : <DOCUNENT> // Recorder object
+     +           }
+     +       }
+     +   }
+     +
+     +  // HiRPC Result
+     +  {
+     +       ....
+     +       message : {
+     +           result   : {
+     +           bullseye : <GENERIC> // Returns the update bullseye of the DART
+     +           }
+     +       }
+     +  }
+     +
+     ---
+     +/
+
+    private const(HiRPCSender) dartModify(ref const(HiRPCReceiver) received, const bool read_only)
+        in {
+            mixin FUNCTION_NAME;
+            assert(received.message.method == __FUNCTION_NAME__);
         }
-        this(SecureNet net, immutable(ubyte[]) data) {
-            fingerprint=net.calcHash(data);
-            this.data=data;
+    do {
+        HiRPC.check(!read_only, "The DART is read only");
+        HiRPC.check_element!Document(received.params, Params.recorder);
+        scope recorder_doc=received.params[Params.recorder].get!Document;
+        scope recorder=Recorder(net, recorder_doc);
+        immutable bullseye=modify(recorder);
+        auto hibon_params=new HiBON;
+        hibon_params[Params.bullseye]=bullseye;
+        return hirpc.result(received, hibon_params);
+    }
+
+    /++
+     + This function handels HPRC quries to the DART
+     + Params:
+     +     received = Request HiRPC object
+     + If read_only is true deleting and erasing data in the DART will return an error
+     + Note.
+     + When the DART is accessed from an external HiRPC this flag should be kept false.
+     +
+     + Returns:
+     +     The response from HPRC if the method is supported
+     +     else the response return is marked empty
+     +/
+    const(HiRPCSender) opCall(ref scope const(HiRPCReceiver) received, const bool read_only=true) {
+        switch (received.message.method) {
+            static foreach(method; EnumMembers!Quries) {
+                mixin(format("case Quries.%s: return %s(received, read_only);", method, method));
+            }
+        default:
+            immutable message=format("Method '%s' not supported", received.message.method);
+            return hirpc.error(received, message, 22);
+        }
+        assert(0);
+    }
+
+    interface Synchronizer {
+        /++
+         + Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
+         +/
+        const(HiRPCReceiver) query(scope ref const(HiRPCSender) request);
+        /++
+         + Stores the add and remove actions in the journal replay log file
+         +/
+        void record(Recorder recorder);
+        /++
+         + This function is call when hole branches doesn't exist in the foreign DART
+         + and need to be removed in the local DART
+         +/
+        void remove_recursive(const(Buffer) rims);
+        /++
+         + This function is called when the SynchronizationFiber run function finishes
+         +/
+        void finish();
+        /++
+         + Called in by the SynchronizationFiber constructor
+         + which enable the query function to yield the run function in SynchronizationFiber
+         +
+         + Params:
+         +     owner = is the dart to be modified
+         +     fiber = is the synchronizer fiber object
+         +/
+        void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc);
+        /++
+         + Returns:
+         +     If the SynchronizationFiber has finished then this function returns `true`
+         +/
+        bool empty() const pure nothrow;
+    }
+
+            import std.stdio;
+    static abstract class StdSynchronizer : Synchronizer {
+
+        protected SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
+        immutable uint chunck_size;         /// Max number of archives operates in one recorder action
+        protected {
+            BlockFile journalfile;          /// The actives is stored in this journal file. Which late can be run via the replay function
+            bool _finished;                 /// Finish flag set when the Fiber function returns
+            bool _timeout;                  /// Set via the timeout method to indicate and network timeout
+            DART owner;
+            uint index;                     /// Current block index
+            HiRPC hirpc;
+        }
+        /++
+         + Params:
+         +     journal_filename = Name of blockfile used for recording the modification journal
+         +                        Must be created by BlockFile.create method
+         +     chunck_size = Set the max number of archives removed per chuck
+         +/
+        this(string journal_filename, const uint chunck_size=0x400) {
+            journalfile=BlockFile(journal_filename);
+            this.chunck_size=chunck_size;
+        }
+
+        void record(Recorder recorder) {
+//            writefln("RECORD %s", recorder.empty);
+            if ( !recorder.empty ) {
+                auto hibon=new HiBON;
+                hibon[Params.index]=index;
+                hibon[Params.recorder]=recorder.toHiBON;
+                auto data=hibon.serialize;
+                auto doc=Document(data);
+//                writefln("--->%s", doc.toText);
+                const allocated=journalfile.save(data);
+                index=allocated.begin_index;
+                journalfile.root_index=index;
+                scope(exit) {
+                    journalfile.store;
+                }
+            }
+//            writeln("END RECORD");
+        }
+
+        void remove_recursive(Buffer rims) {
+            scope rim_walker=owner.rimWalkerRange(rims);
+            uint count=0;
+            scope recorder_worker=owner.recorder;
+//            writefln("Recursive remove %s", rims.cutHex);
+            foreach(archive_data; rim_walker) {
+                recorder_worker.remove(archive_data);
+                auto archive_doc=Document(archive_data);
+//                writefln("\tremove archive %s", archive_doc.toText);
+//                scope archive=new Recorder.Archive(owner.net, archive_doc);
+                // immutable print=owner.net.calcHash(archive_data);
+                // auto doc=Document(archive_data);
+
+                //recorder_worker.remove_by_print(archive.fingerprint);
+                count++;
+                if ( count > chunck_size ) {
+                    // Remove the collected archives
+                    //owner.modify(recorder_worker);
+                    record(recorder_worker);
+                    count=0;
+                    // journalfile.save(recorder_worker.toHiBON.serialize);
+                    // journalfile.store;
+                    recorder_worker.clear;
+                }
+            }
+            record(recorder_worker);
+        }
+
+        void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc) nothrow {
+            this.fiber=fiber;
+            this.owner=owner;
+            this.hirpc = hirpc;
+        }
+
+        void finish() {
+            journalfile.close;
+            _finished=true;
+        }
+
+        void timeout() {
+            journalfile.close;
+            _timeout=true;
+        }
+
+        bool empty() const pure nothrow {
+            return (_finished || _timeout);
+        }
+
+        bool timeout() const pure nothrow {
+            return _timeout;
         }
     }
 
-    static immutable(ubyte[]) to_key(const ushort sector) nothrow {
-        immutable(ubyte)[] key;
-        key~=sector >> 8;
-        key~=sector & ubyte.max;
-        return key;
+    SynchronizationFiber synchronizer(Synchronizer synchonizer, const(Buffer) rims) {
+        return new SynchronizationFiber(rims, synchonizer);
     }
 
-    Bucket.Iterator iterator(const ushort sector) {
-        return iterator(to_key(sector));
+    private DART that() {
+        return this;
     }
 
-    Bucket.Iterator iterator(const(ubyte[]) key) {
-        immutable sector=root_sector(key);
-        check(inRange(sector),  ConsensusFailCode.DART_ARCHIVE_SECTOR_NOT_FOUND);
-        auto first_bucket =_bulls_eye_bucket._buckets[key[0]];
-        auto second_bucket=first_bucket._buckets[key[1]];
-        check(second_bucket !is null,  ConsensusFailCode.DART_ARCHIVE_SECTOR_NOT_FOUND);
-        return second_bucket.iterator(bucket_rim);
-    }
+    class SynchronizationFiber : Fiber {
+        protected Synchronizer sync;
 
-    void dump() const {
-        immutable uint from=_from_sector;
-        immutable uint to=(_to_sector==_from_sector)?_to_sector+sector_max_size:_to_sector;
-        foreach(s;from..to) {
-            immutable ushort sector=s & sector_max;
-            immutable key=to_key(sector);
-            auto first_bucket =_bulls_eye_bucket._buckets[key[0]];
-            auto second_bucket=first_bucket._buckets[key[1]];
-            //immutable index=sector_to_index(sector);
-            if ( second_bucket ) {
-                writefln("Sector %04X", sector);
-                second_bucket.dump;
-            }
-        }
-        writeln("###### ##### ######");
-    }
+        immutable(Buffer) root_rims;
 
-    static class Bucket {
-        private Bucket[] _buckets;
-        private ArchiveTab _archive;
-        private immutable(ubyte)[]  _merkle_root;
-        bool isBucket() const pure nothrow {
-            return _buckets !is null;
+        this(Buffer root_rims, Synchronizer sync) {
+            this.root_rims=root_rims;
+            this.sync=sync;
+            sync.set(that, this, that.hirpc);
+            super(&run);
         }
 
-        private ubyte index(const uint rim) const pure {
-            if ( isBucket ) {
-                return _buckets[0].index(rim);
+        protected uint _id;
+        @property uint id(){
+            if(_id==0){
+                _id = hirpc.generateId();
             }
-            else {
-                return _archive.fingerprint[rim];
-            }
+            return _id;
         }
 
-        immutable(ubyte[]) prefix(immutable uint rim) const pure {
-            if ( isBucket ) {
-                return _buckets[0].prefix(rim);
-            }
-            else {
-                return _archive.fingerprint[0..rim];
-            }
-        }
-
-        private uint find_bucket_pos(const int index, const uint rim) const pure
+        final void run()
             in {
-                assert(index <= ubyte.max);
-                assert(index >= 0);
+                assert(sync);
+                assert(blockfile);
             }
-        out(pos) {
-            assert(pos <= _buckets.length);
-        }
         do {
-            int find_bucket_pos(immutable int search_j, immutable int division_j) {
-                if ( search_j < _buckets.length ) {
-                    immutable search_index=_buckets[search_j].index(rim);
-                    if ( index == search_index ) {
-                        return search_j;
+            import std.stdio;
+            void iterate(Buffer rims, immutable(string) indent) {
+                //
+                // Request Branches or Recorder at rims from the foreign DART.
+                //
+                scope local_branches=branches(rims);
+                scope request_branches=dartRim(rims, hirpc, id);
+                scope result_branches =sync.query(request_branches);
+//                scope Recorder foreign_recoder;
+                if ( !result_branches.params.hasElement(Params.branches) ) {
+                    if ( result_branches.params.hasElement(Params.recorder) ) {
+                        scope foreign_recoder=Recorder(net, result_branches.params);
+                        sync.record(foreign_recoder);
                     }
-                    else if ( division_j > 0 ) {
-                        if ( index < search_index ) {
-                            return find_bucket_pos(search_j-division_j, division_j/2);
-                        }
-                        else if ( index > search_index ) {
-                            return find_bucket_pos(search_j+division_j, division_j/2);
-                        }
-                    }
-                    else if ( index > search_index ) {
-                        return search_j+1;
-                    }
-                }
-                else if ( division_j > 0 ) {
-                    if ( index > _buckets[$-1].index(rim) ) {
-                        return cast(int)_buckets.length;
-                    }
-                    return find_bucket_pos(search_j-division_j, division_j/2);
-                }
-                return search_j;
-            }
-            immutable start_j=cover(cast(int)_buckets.length) >> 1;
-            auto result=find_bucket_pos(start_j, start_j);
-            if ( result < 0 ) {
-                return 0;
-            }
-            return cast(uint)result;
-        }
-
-        static size_t calc_extend(size_t rim) {
-            switch ( rim ) {
-            case 0, 1, 2:
-                return 16;
-                break;
-            case 3:
-                return 4;
-                break;
-            default:
-                return 1;
-            }
-        }
-
-        private this() {
-            /* empty */
-        }
-
-        private this(ArchiveTab archive) {
-            _archive=archive;
-        }
-
-        this(Document doc, SecureNet net) {
-            if ( doc.hasElement(Keywords.buckets) ) {
-                auto buckets_doc=doc[Keywords.buckets].get!Document;
-                _buckets=new Bucket[buckets_doc.length];
-                foreach(elm; buckets_doc[]) {
-                    auto arcive_doc=elm.get!Document;
-                    immutable index=elm.key.to!ubyte;
-                }
-            }
-            else if (doc.hasElement(Keywords.tab)) {
-                // Fixme check that the Doc is HBSON
-                auto arcive_doc=doc[Keywords.tab].get!Document;
-                _archive=new ArchiveTab(net, arcive_doc.data);
-            }
-        }
-
-        void dump() const {
-            dump(bucket_rim);
-        }
-
-        @trusted
-        private void dump(const uint rim) const {
-            writefln("bucket rim=%d cache=%d capacity=%d", rim, _buckets.length, _buckets.capacity);
-            foreach(i, b;_buckets) {
-                if ( b.isBucket ) {
-                    writef("=>|%s ", b.prefix(rim+1).toHexString);
-                    b.dump(rim+1);
+                    //
+                    // The foreign DART does not contain data at the rims
+                    //
+                    sync.remove_recursive(rims);
                 }
                 else {
-                    writefln("  |%s b.rim=%d b.index(rim)=%02x  index(rim-1)=%02x", b._archive.fingerprint.toHexString,
-                        rim, b.index(rim), index(rim-1));
-                }
-            }
-            writefln("<=|%s rim=%d", prefix(rim).toHexString, rim);
-        }
-
-        HBSON toBSON() const {
-            auto bson=new HBSON;
-            if ( isBucket ) {
-                HBSON[] buckets;
-                foreach(b;_buckets) {
-                    buckets~=b.toBSON;
-                }
-                bson[Keywords.buckets]=buckets;
-            }
-            else if ( _archive ) {
-                bson[Keywords.tab]=_archive.document;
-            }
-            return bson;
-        }
-
-        immutable(ubyte[]) serialize() const {
-            return toBSON.serialize;
-        }
-
-        private ArchiveTab find(const(ubyte[]) key, const uint rim) {
-            if ( isBucket ) {
-                immutable pos=find_bucket_pos(key[rim], rim);
-                if ( (pos >= 0) && (pos < _buckets.length) && _buckets[pos] ) {
-                    return _buckets[pos].find(key, rim+1);
-                }
-            }
-            else if ( _archive && (_archive.fingerprint == key) ) {
-                return _archive;
-            }
-            return null;
-        }
-
-        private void add(ArchiveTab archive, const uint rim) {
-            void insert(immutable int pos, ArchiveTab archive) {
-                import std.array : insertInPlace;
-                _buckets.insertInPlace(pos, new Bucket(archive));
-            }
-
-            bool same_index(const int pos, const ubyte index) pure {
-                if ( (pos >= 0) && (pos < _buckets.length) ) {
-                    return _buckets[pos].index(rim) == index;
-                }
-                return false;
-            }
-            _merkle_root=null;
-            if ( isBucket ) {
-                immutable index=archive.fingerprint[rim];
-                immutable pos=find_bucket_pos(index, rim);
-
-                if ( same_index(pos, index) ) {
-                    _buckets[pos].add(archive, rim+1);
-                }
-                else {
-                    insert(pos, archive);
-                }
-            }
-            else if ( _archive is null ) {
-                _archive=archive;
-            }
-            else {
-                _buckets=new Bucket[1];
-                if ( archive.fingerprint[rim] == _archive.fingerprint[rim] ) {
-                    auto temp_bucket=new Bucket();
-                    _buckets[0]=temp_bucket;
-                    temp_bucket.add(_archive, rim+1);
-                    temp_bucket.add(archive, rim+1);
-                }
-                else {
-                    _buckets[0]=new Bucket(_archive);
-                    add(archive, rim);
-                }
-                _archive=null;
-             }
-        }
-
-        static void remove(ref Bucket bucket, const ArchiveTab archive) {
-            bucket=Bucket.remove(bucket, archive, bucket_rim);
-        }
-
-        @trusted
-        private static Bucket remove(Bucket bucket, const ArchiveTab archive, immutable uint rim) {
-            import std.algorithm.mutation : array_remove=remove;
-            scope(success) {
-                if ( bucket ) {
-                    bucket._merkle_root=null;
-                }
-            }
-            if ( bucket.isBucket ) {
-                immutable index=archive.fingerprint[rim];
-                immutable pos=bucket.find_bucket_pos(index, rim);
-                check(bucket._buckets[pos] !is null, ConsensusFailCode.DART_ARCHIVE_DOES_NOT_EXIST);
-                bucket._buckets[pos]=Bucket.remove(bucket._buckets[pos], archive, rim+1);
-                if ( bucket._buckets[pos] is null ) {
-                    bucket._buckets=array_remove(bucket._buckets, pos);
-                    if ( bucket._buckets.length == 1 ) {
-                        if ( !bucket._buckets[0].isBucket ) {
-                            auto temp_bucket=new Bucket();
-                            temp_bucket._archive=bucket._buckets[0]._archive;
-                            bucket.destroy;
-                            bucket=temp_bucket;
-                        }
+                    scope foreign_branches_doc=result_branches.params[Params.branches].get!Document;
+                    scope foreign_branches=Branches(foreign_branches_doc);
+                    //
+                    // Read all the archives from the foreign DART
+                    //
+                    scope request_archives=dartRead(foreign_branches.fingerprints, hirpc, id);
+                    scope result_archives=sync.query(request_archives);
+                    scope foreign_recoder=Recorder(net, result_archives.params);
+                    //
+                    // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
+                    // The archive fingerprints is removed from the branches
+                    Recorder.Archive[Buffer] set_of_archives;
+                    foreach(a; foreign_recoder.archives[]) {
+                        set_of_archives[a.fingerprint]=a;
                     }
-                    else if ( bucket._buckets.length == 0 ) {
-                        bucket.destroy;
-                        bucket=null;
+//                    sync.record(foreign_recoder);
+
+                    auto foreign_fingerprints=foreign_branches.fingerprints.dup;
+                    auto local_recorder=recorder;
+                    scope(success) {
+                        sync.record(local_recorder);
                     }
-                }
-            }
-            else {
-                bucket.destroy;
-                bucket=null;
-            }
-            return bucket;
-        }
-
-        immutable(ubyte[]) merkle_root(SecureNet net, const uint rim) {
-            if ( _merkle_root ) {
-                return _merkle_root;
-            }
-            else if ( isBucket ) {
-                scope auto temp_buckets=new Bucket[bucket_max_size];
-                foreach(i;0.._buckets.length) {
-                    auto b=_buckets[i];
-                    temp_buckets[b.index(rim)]=b;
-                }
-                _merkle_root=sparsed_merkletree(net, temp_buckets, rim);
-                return _merkle_root;
-            }
-            else {
-                return _archive.fingerprint;
-            }
-        }
-
-        static immutable(ubyte[]) sparsed_merkletree(SecureNet net, Bucket[] table, const uint rim) {
-            immutable(ubyte[]) merkletree(Bucket[] left, Bucket[] right) {
-                scope immutable(ubyte)[] _left_fingerprint;
-                scope immutable(ubyte)[] _right_fingerprint;
-                if ( (left.length == 1) && (right.length == 1 ) ) {
-                    auto _left=left[0];
-                    auto _right=right[0];
-                    if ( _left ) {
-                        _left_fingerprint=_left.merkle_root(net, rim);
-                    }
-                    if ( _right ) {
-                        _right_fingerprint=_right.merkle_root(net, rim);
-                    }
-                }
-                else {
-                    immutable left_mid=left.length >> 1;
-                    immutable right_mid=right.length >> 1;
-                    _left_fingerprint=merkletree(left[0..left_mid], left[left_mid..$]);
-                    _right_fingerprint=merkletree(right[0..right_mid], right[right_mid..$]);
-                }
-                if ( _left_fingerprint is null ) {
-                    return _right_fingerprint;
-                }
-                else if ( _right_fingerprint is null ) {
-                    return _left_fingerprint;
-                }
-                else {
-                    return net.calcHash(_left_fingerprint~_right_fingerprint);
-                }
-            }
-            immutable mid=table.length >> 1;
-            return merkletree(table[0..mid], table[mid..$]);
-        }
-
-        private Iterator iterator(const uint rim) {
-            return Iterator(this, rim);
-        }
-
-        struct Iterator {
-            immutable uint rim;
-            static class BucketStack {
-                Bucket bucket;
-                ubyte pos;
-                BucketStack stack;
-                this(Bucket b) {
-                    bucket=b;
-                }
-            }
-
-            this(Bucket b, immutable uint rim) {
-                this.rim=rim;
-                _stack=new BucketStack(b);
-            }
-
-            private void push(ref BucketStack b, Bucket bucket) {
-                auto top_stack=new BucketStack(bucket);
-                top_stack.stack=_stack;
-                _stack=top_stack;
-            }
-
-            private void pop(ref BucketStack b) {
-                _stack=b.stack;
-            }
-
-            private BucketStack _stack;
-            private Bucket _current;
-            void popFront() {
-                if ( _stack ) {
-                    if ( _stack.bucket.isBucket ) {
-                        if ( _stack.pos < _stack.bucket._buckets.length ) {
-                            _current=_stack.bucket._buckets[_stack.pos];
-                            _stack.pos++;
-                            if ( _current.isBucket ) {
-                                push(_stack, _current);
-                                popFront;
+                    foreach(k, foreign_print; foreign_fingerprints) {
+                        immutable key=cast(ubyte)k;
+                        immutable sub_rims=rims~key;
+                        immutable local_print  =local_branches.fingerprint(key);
+                        auto foreign_archive=(foreign_print in set_of_archives);
+                        if ( foreign_archive ) {
+                            if ( local_print != foreign_print ) {
+                                local_recorder.insert(*foreign_archive);
+                                sync.remove_recursive(sub_rims);
                             }
                         }
-                        else {
-                            pop(_stack);
-                            popFront;
+                        else if ( foreign_print ) {
+                            // Foreign is poits to branches
+                            if ( local_print ) {
+                                scope possible_branches_data=load(local_branches, key);
+                                if ( !Branches.isBranches(Document(possible_branches_data)) ) {
+                                    // If branch is an archive then it is removed because if it exists in foreign DART
+                                    // this archive will be added later
+                                    local_recorder.remove_by_print(local_print);
+                                }
+                            }
+                            iterate(sub_rims, indent~"**");
+                        }
+                        else if ( local_print ) {
+                            sync.remove_recursive(sub_rims);
+                        }
+                    }
+                }
+            }
+//            scope local_branches=branches(root_rims);
+            iterate(root_rims, "");
+            import std.stdio;
+//            sync.store_remove_recursive;
+            sync.finish;
+        }
+
+        final bool empty() const pure nothrow {
+            return sync.empty;
+        }
+    }
+
+    /++
+     + Replays the journal file to update the DART
+     + The update blockfile can be generated from the synchroning process from an foreign dart
+     +
+     + If the process is broken for some reason this the resumed by running the replay function again
+     + on the same block file
+     +
+     + Params:
+     +     journal_filename = Name of the BlockFile to be replaied
+     +
+     + Throws:
+     +     The function will throw an exception if something went wrong in the process.
+     +/
+    void replay(const(string) journal_filename) {
+        auto journalfile=BlockFile(journal_filename, true);
+        scope(exit) {
+            journalfile.close;
+        }
+        // Adding and Removing archives
+        void local_replay(bool remove)() {
+//            writefln("journalfile.masterBlock.root_index=%d", journalfile.masterBlock.root_index);
+            for(uint index=journalfile.masterBlock.root_index; index !is INDEX_NULL;) {
+//                writefln("INDEX=%d", index);
+                immutable data=journalfile.load(index);
+                scope doc=Document(data);
+                index=doc[Params.index].get!uint;
+
+                scope replay_recorder_doc=doc[Params.recorder].get!Document;
+//                writefln("%s", replay_recorder_doc.toText);
+
+                scope replay_recorder=Recorder(net, replay_recorder_doc);
+                scope action_recorder=recorder;
+                foreach(a; replay_recorder.archives[]) {
+                    static if (remove) {
+                        if ( a.type is Recorder.Archive.Type.REMOVE ) {
+                            action_recorder.insert(a);
                         }
                     }
                     else {
-                        _current=_stack.bucket;
-                        pop(_stack);
+                        if ( a.type !is Recorder.Archive.Type.REMOVE ) {
+                            action_recorder.insert(a);
+                        }
                     }
                 }
+                modify(action_recorder);
             }
 
-            bool empty() const pure nothrow {
-                return _stack is null;
-            }
-
-            const(Bucket) front()
-            in {
-                if ( _current ) {
-                    assert(!_current.isBucket, "Should be an archive tab not bucket");
-                }
-            }
-            do {
-                return _current;
-            }
         }
+        // All the remove actives is perform before the new archives are added
+        // Remove
+        local_replay!true;
+        // Add
+        local_replay!false;
+
     }
 
-    unittest { // Test of add, find, remove, merkle_root
-        import tagion.Base;
-        import std.typecons;
-        static class TestNet : BlackHole!DARTNet {
-            override immutable(Buffer) calcHash(immutable(ubyte[]) data) inout {
-                if ( data.length == ulong.sizeof ) {
-                    return data;
+    version(unittest) {
+        static class TestSynchronizer : StdSynchronizer {
+            protected DART foreign_dart;
+            protected DART owner;
+            this(string journal_filename, DART owner, DART foreign_dart) {
+                this.foreign_dart=foreign_dart;
+                this.owner=owner;
+                super(journal_filename);
+            }
+
+            //
+            // This function emulates the connection between two DART's
+            // in a single thread
+            //
+            const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
+                Buffer send_request_to_forien_dart(Buffer data){
+                    //
+                    // Remote excution
+                    // Receive on the foreign end
+                    auto foreigen_doc=Document(data);
+                    const foreigen_receiver=foreign_dart.hirpc.receive(foreigen_doc);
+                    // Make query in to the foreign DART
+                    const foreign_respones=foreign_dart(foreigen_receiver);
+                    immutable foreign_data=foreign_dart.hirpc.toHiBON(foreign_respones).serialize;
+                    return foreign_data;
                 }
-                else {
-                    import std.digest.sha : SHA256;
-                    import std.digest.digest;
-                    return digest!SHA256(data).idup;
-                }
+
+                immutable foreign_data=owner.hirpc.toHiBON(request).serialize;
+                fiber.yield;
+                // Here a yield loop should be implement to poll for response from the foriegn DART
+                // A timeout should also be implemented in this poll loop
+                immutable response_data=send_request_to_forien_dart(foreign_data);
+                //
+                // Process the response returned for the foreign DART
+                //
+                auto doc=Document(response_data);
+                auto received=owner.hirpc.receive(doc);
+                return received;
             }
         }
 
-        immutable(ubyte[]) data(const ulong x) {
-            import std.bitmanip;
-            return nativeToBigEndian(x).idup;
-        }
 
-        import std.stdio;
-
-        immutable(ulong[]) table=[
-            //  RIM 2 test (rim=2)
-            0x20_21_10_30_40_50_80_90,
-            0x20_21_11_30_40_50_80_90,
-            0x20_21_12_30_40_50_80_90,
-            0x20_21_0a_30_40_50_80_90, // Insert before in rim 2
-
-            // Rim 3 test (rim=3)
-            0x20_21_20_30_40_50_80_90,
-            0x20_21_20_31_40_50_80_90,
-            0x20_21_20_34_40_50_80_90,
-            0x20_21_20_20_40_50_80_90, // Insert before the first in rim 3
-
-            0x20_21_20_32_40_50_80_90, // Insert just the last archive in the bucket  in rim 3
-
-            // Rim 3 test (rim=3)
-            0x20_21_22_30_40_50_80_90,
-            0x20_21_22_31_40_50_80_90,
-            0x20_21_22_34_40_50_80_90,
-            0x20_21_22_20_40_50_80_90, // Insert before the first in rim 3
-            0x20_21_22_36_40_50_80_90, // Insert after the first in rim 3
-
-            0x20_21_22_32_40_50_80_90, // Insert between in rim 3
-
-            // Add in first rim again
-            0x20_21_11_33_40_50_80_90,
-
-            // Rim 4 test
-            0x20_21_20_32_30_40_50_80,
-            0x20_21_20_32_31_40_50_80,
-            0x20_21_20_32_34_40_50_80,
-            0x20_21_20_32_20_40_50_80, // Insert before the first in rim 4
-
-            0x20_21_20_32_32_40_50_80, // Insert just the last archive in the bucket  in rim 4
-
-            ];
+    }
+    version(none)
+    unittest {
+        import tagion.utils.Random;
+        import tagion.dart.BlockFile;
+        import tagion.Base : tempfile;
 
         auto net=new TestNet;
-        DART add_array(const(ulong[]) array) {
-            auto dart=new DART(net, 0x1000, 0x2022);
-            foreach(a; array) {
-                dart.add(data(a));
-                auto key=data(a);
+
+        immutable filename=fileId!DART.fullpath;
+        immutable filename_A=fileId!DART("A_").fullpath;
+        immutable filename_B=fileId!DART("B_").fullpath;
+        immutable filename_C=fileId!DART("C_").fullpath;
+
+        { // Remote Synchronization test
+
+            import std.file : remove;
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=1000;
+            auto random_tabel=new ulong[N];
+            foreach(ref r; random_tabel) {
+                immutable sector=rand.value(0x0000_0000_0000_ABBAUL, 0x0000_0000_0000_ABBDUL) << (8*6);
+                r=rand.value(0x0000_1234_5678_0000UL | sector, 0x0000_1334_FFFF_0000UL | sector);
             }
-            return dart;
-        }
 
-        DART add_and_find_check(const(ulong[]) array) {
-            auto dart=add_array(array);
-            foreach(a; array) {
-                auto d=dart[data(a)];
-                assert(d, "Not found");
+            //
+            // The the following unittest dart A and B covers the same range angle
+            //
+            enum from=0xABB9;
+            enum to=0xABBD;
+
+            import std.stdio;
+            { // Single element same sector sectors
+               const ulong[] same_sector_tabel=[
+                   0xABB9_13ab_cdef_1234,
+                   0xABB9_14ab_cdef_1234,
+                   0xABB9_15ab_cdef_1234
+
+                   ];
+               // writefln("Test 0.0");
+               foreach(test_no; 0..3) {
+                   DARTFile.create_dart(filename_A);
+                   DARTFile.create_dart(filename_B);
+                   Recorder recorder_B;
+                   Recorder recorder_A;
+                   // Recorder recorder_B;
+                   auto dart_A=new DART(net, filename_A, from, to);
+                   auto dart_B=new DART(net, filename_B, from, to);
+                   string[] journal_filenames;
+                   scope(success) {
+                       // writefln("Exit scope");
+                       dart_A.close;
+                       dart_B.close;
+                       filename_A.remove;
+                       filename_B.remove;
+                       foreach(journal_filename; journal_filenames) {
+                           journal_filename.remove;
+                       }
+                   }
+
+                   switch(test_no) {
+                   case 0:
+                       write(dart_A, same_sector_tabel[0..1], recorder_A);
+                       write(dart_B, same_sector_tabel[0..0], recorder_B);
+                       break;
+                   case 1:
+                       write(dart_A, same_sector_tabel[0..1], recorder_A);
+                       write(dart_B, same_sector_tabel[1..2], recorder_B);
+                       break;
+                   case 2:
+                       write(dart_A, same_sector_tabel[0..2], recorder_A);
+                       write(dart_B, same_sector_tabel[1..3], recorder_B);
+                       break;
+                   default:
+                       assert(0);
+                   }
+                   // writefln("dart_A.dump");
+                   // dart_A.dump;
+                   // writefln("dart_B.dump");
+                   // dart_B.dump;
+                   // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                   // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+
+                   foreach(sector; dart_A.sectors) {
+                       immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                       journal_filenames~=journal_filename;
+                       BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                       auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                       auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                       // D!(sector, "%x");
+                       while (!dart_A_synchronizer.empty) {
+                           dart_A_synchronizer.call;
+                       }
+                   }
+                   foreach(journal_filename; journal_filenames) {
+                       dart_A.replay(journal_filename);
+                   }
+                   // writefln("dart_A.dump");
+                   // dart_A.dump;
+                   // writefln("dart_B.dump");
+                   // dart_B.dump;
+                   // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                   // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+
+                   assert(dart_A.fingerprint == dart_B.fingerprint);
+                   if (test_no == 0) {
+                       assert(dart_A.fingerprint is null);
+                   }
+                   else {
+                       assert(dart_A.fingerprint !is null);
+                   }
+//                   assert(0, "UNITTEST END");
+               }
+//                   assert(0, "UNITTEST END");
             }
-            return dart;
-        }
 
-        import tagion.utils.Random;
-        auto rand=Random(1234);
-        immutable(ulong[]) shuffle(const(ulong[]) array, immutable uint count=127) {
-            import std.algorithm.mutation : swap;
-            ulong[] result=array.dup;
-            immutable size=cast(uint)array.length;
-            foreach(i;0..count) {
-                immutable from=rand.value(size);
-                immutable to=rand.value(size);
-                swap(result[from], result[to]);
+            { // Single element different sectors
+              //
+               // writefln("Test 0.1");
+               DARTFile.create_dart(filename_A);
+               create_dart(filename_B);
+               Recorder recorder_B;
+               Recorder recorder_A;
+               // Recorder recorder_B;
+               auto dart_A=new DART(net, filename_A, from, to);
+               auto dart_B=new DART(net, filename_B, from, to);
+               string[] journal_filenames;
+               scope(success) {
+                   // writefln("Exit scope");
+                   dart_A.close;
+                   dart_B.close;
+                   filename_A.remove;
+                   filename_B.remove;
+                   foreach(journal_filename; journal_filenames) {
+                       journal_filename.remove;
+                   }
+               }
+
+                write(dart_B, random_tabel[0..1], recorder_B);
+                write(dart_A, random_tabel[1..2], recorder_A);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+
+               foreach(sector; dart_A.sectors) {
+                   immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                   journal_filenames~=journal_filename;
+                   BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                   auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                   auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                   // D!(sector, "%x");
+                   while (!dart_A_synchronizer.empty) {
+                       dart_A_synchronizer.call;
+                   }
+               }
+               foreach(journal_filename; journal_filenames) {
+                   dart_A.replay(journal_filename);
+               }
+               // writefln("dart_A.dump");
+               // dart_A.dump;
+               // writefln("dart_B.dump");
+               // dart_B.dump;
+               assert(dart_A.fingerprint !is null);
+               assert(dart_A.fingerprint == dart_B.fingerprint);
             }
-            return result.idup;
-        }
 
-        // Add and find test
-        { // First rim test one element
-            auto dart=new DART(net, 0x1000, 0x2022);
-            dart.add(data(table[0]));
-            auto d=dart[data(table[0])];
-            assert(d);
-        }
+            { // Synchronization of an empty DART
+              // from Dart A against Dart B when Dart A is empty
+               // writefln("Test 1");
 
-        // Add and find test
-        { // First rim test one element
-            add_and_find_check(table[0..1]);
-        }
-
-        { // rim 2 test two elements (First rim in the sector)
-            add_and_find_check(table[0..2]);
-        }
-
-        { // Rim 2 test three elements
-            add_and_find_check(table[0..3]);
-        }
-
-        { // Rim 2 test four elements (insert an element before all others)
-            add_and_find_check(table[0..4]);
-        }
-
-        { // Rim 3 test 2 elements
-            add_and_find_check(table[4..6]);
-        }
-
-        { // Rim 3 test 3 elements
-            add_and_find_check(table[4..7]);
-        }
-
-        { // Rim 3 test 4 elements (insert an element before all others)
-            add_and_find_check(table[4..8]);
-        }
-
-        { // Rim 3 test 5 elements (insert an element in the middel)
-            add_and_find_check(table[4..9]);
-        }
-
-        { // Rim 3 test 5 elements (Add insert element before the first and after the last element)
-            add_and_find_check(table[9..14]);
-        }
-
-        { // Rim 3 test 6 elements ( add elememt in rim number 2)
-            add_and_find_check(table[9..15]);
-        }
-
-        { // Rim 3 test 6 elements ( add elememt in rim number 2)
-            add_and_find_check(table[16..21]);
-        }
-
-        { // Rim 3 test 6 all
-            add_and_find_check(table[$-7..$]);
-        }
-
-
-        { // Rim 3 test 6 all
-            add_and_find_check(table);
-        }
-
-        // Merkle root test
-        { // Checks that the merkle root is indifferent from the order the archives is added
-            immutable test_table=table[0..3];
-            auto dart1=add_array(test_table);
-            // Same but shuffled
-            auto dart2=add_array(shuffle(test_table));
-            immutable uint rim=2;
-            immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
-            immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
-            assert(merkle_root1);
-            assert(merkle_root1 == merkle_root2);
-        }
-
-        { // Checks that the merkle root is indifferent from the order the archives is added
-            immutable test_table=table[0..3]~table[15];
-
-            auto dart1=add_array(test_table);
-            // Same but shuffled
-            auto dart2=add_array(shuffle(test_table));
-
-            immutable uint rim=2;
-            immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
-            immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
-            assert(merkle_root1);
-            assert(merkle_root1 == merkle_root2);
-        }
-
-        { // Checks that the merkle root is indifferent from the order the archives is added
-            // With buckets
-            immutable test_table=table;
-            auto dart1=add_array(test_table);
-            // Same but shuffled
-            auto dart2=add_array(shuffle(test_table));
-
-            immutable merkle_root1=dart1.get(data(test_table[0])).merkle_root(net, bucket_rim);
-            immutable merkle_root2=dart2.get(data(test_table[0])).merkle_root(net, bucket_rim);
-            assert(merkle_root1);
-            assert(merkle_root1 == merkle_root2);
-        }
-
-        // Remove test
-        { // add and remove one archive
-            auto dart=add_array(table[0..1]);
-            // Find the arcive
-            auto key=data(table[0]);
-            auto a=dart[key];
-            assert(a);
-            dart.remove(a);
-            a=dart[key];
-            assert(!a);
-        }
-
-        { // add two and remove one archive
-            auto dart1=add_array(table[0..2]);
-            auto dart2=add_array(table[1..2]);
-            // Find the arcive
-            auto key=data(table[0]);
-            auto a=dart1[key];
-            assert(a);
-            dart1.remove(a);
-            a=dart1[key];
-            assert(!a);
-            immutable rim=2;
-            immutable merkle_root1=dart1.get(data(table[1])).merkle_root(net, bucket_rim);
-            immutable merkle_root2=dart2.get(data(table[1])).merkle_root(net, bucket_rim);
-            assert(merkle_root1 == merkle_root2);
-            // For as single archive the merkle root is equal to the hash of the archive
-            assert(merkle_root1 == data(table[1]));
-        }
-
-        { // add three and remove one archive
-            auto dart1=add_array(table[0..3]);
-            auto dart2=add_array([table[0], table[2]]);
-            // Find the arcive
-            auto key1=data(table[1]);
-            auto a=dart1[key1];
-            assert(a);
-            // Remove
-            dart1.remove(a);
-            a=dart1[key1];
-            assert(!a);
-            // Checks if the rest is still in the dart
-            auto key0=data(table[0]);
-            a=dart1[key0];
-            assert(a);
-
-            auto key2=data(table[2]);
-            a=dart1[key2];
-            assert(a);
-
-            immutable rim=2;
-            immutable merkle_root1=dart1.get(data(table[1])).merkle_root(net, bucket_rim);
-            immutable merkle_root2=dart2.get(data(table[1])).merkle_root(net, bucket_rim);
-            assert(merkle_root1 == merkle_root2);
-        }
-
-
-        { // Remove all in one bucket in rim 2
-            auto take_from_dart=add_array(table);
-            immutable(ulong)[] dummy;
-            auto add_to_dart=add_array(dummy);
-            immutable rim=2;
-
-            uint count;
-            foreach(t; table) {
-                immutable key=data(t);
-                if ( key[rim] == 0x20 ) {
-                    count++;
-                    take_from_dart.remove(key);
-                }
-                else {
-                    add_to_dart.add(key);
-                }
-            }
-            assert(count == 10);
-
-            immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            assert(merkle_root1 == merkle_root2);
-        }
-
-        {  // Remove all in one bucket in rim 3
-            auto take_from_dart=add_array(table);
-            immutable(ulong)[] dummy;
-            auto add_to_dart=add_array(dummy);
-            immutable rim=3;
-
-            uint count;
-            foreach(t; table) {
-                immutable key=data(t);
-                if ( key[rim] == 0x32 ) {
-                    count++;
-                    take_from_dart.remove(key);
-                }
-                else {
-                    add_to_dart.add(key);
-                }
-            }
-            assert(count == 7);
-
-            immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-            assert(merkle_root1 == merkle_root2);
-        }
-
-        { // Remove all in random order
-            import std.algorithm;
-            auto take_from_dart=add_array(table);
-            auto add_table=table.dup;
-
-            foreach(k;0..table.length-1) {
-                immutable key_index=rand.value(cast(uint)add_table.length);
-                immutable key=data(add_table[key_index]);
-                add_table=add_table.remove(key_index);
-                auto add_to_dart=add_array(add_table);
-                take_from_dart.remove(key);
-                immutable merkle_root1=take_from_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-                immutable merkle_root2=add_to_dart.get(data(table[1])).merkle_root(net, bucket_rim);
-                assert(merkle_root1 == merkle_root2);
-            }
-        }
-
-        { // Fill the bucket in rim 3..7
-            // and check capacity
-            immutable ulong rim3_data=0x20_21_00_00_00_00_00_00;
-            auto full_bucket_table=new ulong[bucket_max_size];
-            foreach_reverse(rim;bucket_rim..8) {
-                foreach(i, ref t; full_bucket_table) {
-                    t=rim3_data | ((i & ubyte.max) << ((ulong.sizeof-rim-1)*8));
-                }
-                auto dart=add_and_find_check(shuffle(full_bucket_table, 1024));
-            }
-        }
-    }
-
-    static uint calc_to_sector(const ushort from_sector, const ushort to_sector) pure nothrow {
-        return to_sector+((from_sector >= to_sector)?sector_max_size:0);
-    }
-
-    unittest {
-        assert(calc_to_sector(42, 142) == 142);
-        assert(calc_to_sector(42, 41) == 41+sector_max_size);
-        assert(calc_to_sector(0, 0) == sector_max_size);
-
-    }
-
-    static uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow {
-        immutable from=from_sector;
-        immutable to=calc_to_sector(from_sector, to_sector);
-        return to-from;
-    }
-
-    void save() {
-        import std.format;
-        void local_save(Bucket bucket, const(string[]) path, string subdir,  const uint rim) {
-            if ( (bucket) && !bucket._merkle_root ) {
-                if ( bucket.isBucket ) {
-                    foreach(b; bucket._buckets) {
-                        local_save(b, path~subdir, format("%02X", b.index(rim)), rim+1);
+                DARTFile.create_dart(filename_A);
+                create_dart(filename_B);
+                Recorder recorder_B;
+                // Recorder recorder_B;
+                auto dart_A=new DART(net, filename_A, from, to);
+                auto dart_B=new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope(success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                    foreach(journal_filename; journal_filenames) {
+                        journal_filename.remove;
                     }
-//                    _net.save(path, bucket.prefix(rim), bucket.serialize);
-                    bucket.merkle_root(_net, rim);
                 }
-                else {
-                    _net.save(path, bucket.prefix(rim), bucket.serialize);
+
+                write(dart_B, random_tabel[0..17], recorder_B);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+
+                //
+                // Synchronize DART_B -> DART_A
+                //
+                // Collecting the journal file
+
+                foreach(sector; dart_A.sectors) {
+                    immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                    journal_filenames~=journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        dart_A_synchronizer.call;
+                    }
                 }
+                foreach(journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
+            }
+
+            // version(none)
+            { // Synchronization of a Dart A which is a subset of Dart B
+                // writefln("Test 2");
+                create_dart(filename_A);
+                create_dart(filename_B);
+                Recorder recorder_A;
+                Recorder recorder_B;
+                auto dart_A=new DART(net, filename_A, from, to);
+                auto dart_B=new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope(success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                }
+
+
+                write(dart_A, random_tabel[0..17], recorder_A);
+                write(dart_B, random_tabel[0..27], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach(sector; dart_A.sectors) {
+                    immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                    journal_filenames~=journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        dart_A_synchronizer.call;
+                    }
+                }
+
+                foreach(journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
+            }
+
+            // version(none)
+            { // Synchronization of a DART A where DART A is a superset of DART B
+                // writefln("Test 3");
+                create_dart(filename_A);
+                create_dart(filename_B);
+                Recorder recorder_A;
+                Recorder recorder_B;
+                auto dart_A=new DART(net, filename_A, from, to);
+                auto dart_B=new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope(success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                }
+
+
+                write(dart_A, random_tabel[0..27], recorder_A);
+                write(dart_B, random_tabel[0..17], recorder_B);
+//                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach(sector; dart_A.sectors) {
+                    immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                    journal_filenames~=journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        dart_A_synchronizer.call;
+                    }
+                }
+
+//                version(none)
+                foreach(journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
+            }
+
+
+            // ----------------
+            { // Synchronization of a DART A where DART A is complementary of DART B
+                // writefln("Test 4");
+                create_dart(filename_A);
+                create_dart(filename_B);
+                Recorder recorder_A;
+                Recorder recorder_B;
+                auto dart_A=new DART(net, filename_A, from, to);
+                auto dart_B=new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope(success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                }
+
+
+                write(dart_A, random_tabel[0..27], recorder_A);
+                write(dart_B, random_tabel[28..54], recorder_B);
+//                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach(sector; dart_A.sectors) {
+                    immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                    journal_filenames~=journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        dart_A_synchronizer.call;
+                    }
+                }
+
+//                version(none)
+                foreach(journal_filename; journal_filenames) {
+                    // writefln("JOURNAL_FILENAME=%s", journal_filename);
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
+            }
+
+
+
+            { // Synchronization of a DART A where DART A of DART B has common data
+                // writefln("Test 5");
+                create_dart(filename_A);
+                create_dart(filename_B);
+                Recorder recorder_A;
+                Recorder recorder_B;
+                auto dart_A=new DART(net, filename_A, from, to);
+                auto dart_B=new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope(success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                }
+
+
+                write(dart_A, random_tabel[0..54], recorder_A);
+                write(dart_B, random_tabel[28..81], recorder_B);
+//                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach(sector; dart_A.sectors) {
+                    immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                    journal_filenames~=journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        dart_A_synchronizer.call;
+                    }
+                }
+
+//                version(none)
+                foreach(journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
+            }
+
+            { // Synchronization of a Large DART A where DART A of DART B has common data
+                // writefln("Test 6");
+                create_dart(filename_A);
+                create_dart(filename_B);
+                Recorder recorder_A;
+                Recorder recorder_B;
+                auto dart_A=new DART(net, filename_A, from, to);
+                auto dart_B=new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope(success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                }
+
+
+                write(dart_A, random_tabel[0..544], recorder_A);
+                write(dart_B, random_tabel[288..811], recorder_B);
+//                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach(sector; dart_A.sectors) {
+                    immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
+                    journal_filenames~=journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch=new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer=dart_A.synchronizer(synch, convert_sector_to_rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        dart_A_synchronizer.call;
+                    }
+                }
+
+//                version(none)
+                foreach(journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
             }
         }
-        foreach(s;_from_sector..calc_to_sector(_from_sector, _to_sector)) {
-//            writefln("sector=%04x", s);
-            immutable sector=s & sector_max;
-            local_save(_first_rim_buckets[sector], [format("%04X", sector)], "", bucket_rim);
-        }
-    }
-
-    bool inRange(const ushort sector) const pure nothrow  {
-        if ( _to_sector == _from_sector ) {
-            return true;
-        }
-        else {
-            immutable ushort sector_origin=(sector-_from_sector) & ushort.max;
-            immutable ushort to_origin=(_to_sector-_from_sector) & ushort.max;
-            return ( sector_origin < to_origin );
-        }
-    }
-
-    unittest { // Check the inRange function
-        import std.typecons : BlackHole;
-        auto net=new BlackHole!DARTNet;
-
-        enum from1=0x10;
-        enum to1=0x8201;
-        auto dart1=new DART(net, from1, to1);
-        assert(dart1.inRange(from1));
-        assert(dart1.inRange(to1-0x100));
-        assert(dart1.inRange(to1-1));
-        assert(!dart1.inRange(to1));
-
-        enum from2=0xFF80;
-        enum to2=0x10;
-        auto dart2=new DART(net, from2, to2);
-        assert(!dart2.inRange(from2-1));
-        assert(dart2.inRange(from2));
-        assert(dart2.inRange(0));
-        assert(dart2.inRange(to2-1));
-        assert(!dart2.inRange(to2));
-        assert(!dart2.inRange(42));
-
-        // Full dart
-        auto dart3=new DART(net, 0, 0);
-        assert(dart3.inRange(0));
-        assert(dart3.inRange(0xffff));
-        assert(dart3.inRange(0x2345));
     }
 }
