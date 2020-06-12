@@ -98,16 +98,6 @@ void bitarray_change(ref scope BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
-immutable(bool[]) bitarray2bool(ref const(BitArray) bits) @trusted {
-    bool[] mask=new bool[bits.length];
-    foreach(i, m; bits) {
-        if (m) {
-            mask[i]=true;
-        }
-    }
-    return assumeUnique(mask);
-}
-
 unittest {
     {
         BitArray test;
@@ -147,41 +137,6 @@ string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
 }
 
-enum minimum_nodes = 3;
-/++
- + Calculates the majority votes
- + Params:
- +     voting    = Number of votes
- +     node_sizw = Total bumber of votes
- + Returns:
- +     Returns `true` if the votes are more thna 2/3
- +/
-@safe
-bool isMajority(const uint voting, const uint node_size) pure nothrow {
-    return (node_size >= minimum_nodes) && (3*voting > 2*node_size);
-}
-
-
-version(none)
-template basename(alias K) {
-    enum name=K.stringof;
-    static if (
-        (name.length > this_dot.length) &&
-        (name[0..this_dot.length] == this_dot) ) {
-        alias name[this_dot.length..$] basename;
-    }
-    else {
-        enum dot_pos=find_dot!(name);
-        static if ( dot_pos > 0 ) {
-            enum suffix=name[dot_pos..$];
-            alias suffix basename;
-        }
-        else {
-            alias name basename;
-        }
-    }
-}
-
 template suffix(string name, size_t index) {
     static if ( index is 0 ) {
         alias suffix=name;
@@ -211,7 +166,7 @@ template basename(alias K) {
 enum nameOf(alias nameType) =__traits(identifier, nameType);
 
 mixin template FUNCTION_NAME() {
-    import tagion.Base : basename;
+    import tagion.basic.Basic : basename;
     enum __FUNCTION_NAME__=basename!(__FUNCTION__)[0..$-1];
 }
 

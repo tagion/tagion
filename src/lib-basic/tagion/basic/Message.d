@@ -5,7 +5,17 @@ import std.json;
 
 //import tagion.Options;
 
-static string language="";
+protected __gshared static string __language="";
+
+@property void language(string lang) {
+    assert(__language.length is 0, format("Language has already been set to %s", __language));
+    __language=lang;
+}
+
+@property string language() pure nothrow {
+    return __language;
+}
+
 version(UPDATE_MESSAGE_TABEL) {
     @safe synchronized struct Message {
         private static shared string[string] translation;
