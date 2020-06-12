@@ -11,8 +11,11 @@ import std.system : Endian;
 import std.base64;
 import std.exception : assumeUnique;
 
+import std.stdio;
+
 import tagion.hibon.HiBONException : check;
 import tagion.hibon.BigNumber;
+
 
 /++
  BigNumber used in the HiBON format
@@ -20,10 +23,12 @@ import tagion.hibon.BigNumber;
  +/
 @safe
 struct BigNumber {
+
     private union {
         BigInt x;
         struct {
-            BigDigit[] _data;
+            static assert(BigDigit.sizeof == uint.sizeof);
+            uint[] _data;
             bool _sign;
         }
     }
@@ -291,15 +296,14 @@ struct BigNumber {
      Coverts to a base64 format
      +/
     @trusted
-        immutable(ubyte[]) serialize() const pure nothrow {
-        immutable digits_size=BigDigit.sizeof*_data.length;
+        immutable(ubyte[]) serialize() const pure nothrow {        immutable digits_size=BigDigit.sizeof*_data.length;
         auto buffer=new ubyte[digits_size+_sign.sizeof];
         buffer[0..digits_size]=cast(ubyte[])_data;
         buffer[$-1]=cast(ubyte)_sign;
         return assumeUnique(buffer);
     }
 
-    TwoComplementRange two_complement() pure const nothrow {
+    TwoComplementRange two_complement() pure const /*nothrow*/ {
         static assert(BigDigit.sizeof is int.sizeof);
         return TwoComplementRange(this);
     }
@@ -309,17 +313,18 @@ struct BigNumber {
     struct TwoComplementRange {
         protected {
             bool overflow;
-            const(int)[] data;
-            int current;
+            const(BigDigit)[] data;
+            BigDigit current;
         }
         immutable bool sign;
 
         @disable this();
         @trusted
-        this(const BigNumber num) pure nothrow {
+        this(const BigNumber num) pure /*nothrow*/ {
             sign=num._sign;
             overflow=true;
-            data=cast(const(int)[])num._data;
+            data=num._data;
+            popFront;
         }
 
         @property {
@@ -331,8 +336,9 @@ struct BigNumber {
                     return data.length is 0;
                 }
             }
-            void popFront() nothrow pure {
+            void popFront() /+nothrow+/ pure {
                 if (data.length) {
+                    debug writefln("data[0]=%d sign=%s", data[0], sign);
                     if (sign) {
                         current=~data[0];
                         if (overflow) {
@@ -343,10 +349,23 @@ struct BigNumber {
                     else {
                         current=data[0];
                     }
+                    debug writefln("\tcurrent=%d front=%d", current, front);
                     data=data[1..$];
                 }
             }
         }
+    }
+
+    static size_t calc_size(const(ubyte[]) data) pure {
+        size_t result;
+        foreach(d; data) {
+            result++;
+            if ((d & 0x80) is 0) {
+                return result;
+            }
+        }
+        .check(0, format("Bad LEB128 format for %s", BigNumber.stringof));
+        assert(0);
     }
 
     immutable(ubyte[]) encodeLEB128() const pure {
@@ -354,16 +373,21 @@ struct BigNumber {
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
         scope buffer=new ubyte[DATA_SIZE];
         size_t index;
-        static assert(BigDigit.sizeof is int.sizeof);
+        foreach(t; two_complement) {
+            debug writefln(">t=%d", t);
+        }
         auto range2c=two_complement;
 
         long value=range2c.front;
         range2c.popFront;
 
         uint shift=DIGITS_BIT_SIZE;
+        debug writefln("buffer.length=%d", buffer.length);
         foreach(i, ref d; buffer) {
             d = value & 0x7F;
             shift-=7;
+            debug writefln("%d %02x %d %s shift=%d", i, d, value, range2c.empty, shift);
+
             if ((shift < 7) && (!range2c.empty)) {
                 value |= (range2c.front << shift);
                 shift+=DIGITS_BIT_SIZE;
@@ -374,6 +398,7 @@ struct BigNumber {
                 range2c.popFront;
             }
             value >>= 7;
+            debug writefln("\t### value=%d", value);
             //const uint uint_value=value & uint.max;
             if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
                 return buffer[0..i+1].idup;
@@ -387,7 +412,6 @@ struct BigNumber {
         immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+1;
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
         size_t index;
-        static assert(BigDigit.sizeof is int.sizeof);
         auto range2c=two_complement;
 
         long value=range2c.front;
@@ -408,7 +432,7 @@ struct BigNumber {
             }
             value >>= 7;
             if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-                return i;
+                return i+1;
             }
             d |= 0x80;
         }
@@ -416,8 +440,8 @@ struct BigNumber {
     }
 
     static BigNumber decodeLEB128(const(ubyte[]) data) pure {
-        scope values=new BigDigit[data.length/BigDigit.sizeof+1];
-        enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
+        scope values=new uint[data.length/BigDigit.sizeof+1];
+        enum DIGITS_BIT_SIZE=uint.sizeof*8;
         long result;
         uint shift;
         bool sign;
@@ -436,7 +460,10 @@ struct BigNumber {
                     sign=true;
                 }
                 if (shift > 0) {
-                    values[index++]=result & uint.max;
+                    const BigDigit v=result & uint.max;
+                    if ((index is 0) || (v !is 0)) {
+                        values[index++]=v;
+                    }
                 }
                 break;
             }
@@ -466,11 +493,50 @@ struct BigNumber {
 
 
 unittest {
+    import std.algorithm.comparison : equal;
     import std.stdio;
+    import LEB128=tagion.utils.LEB128;
     {
         BigNumber x=0;
         writefln("x.calc_size=%d", x.calc_size);
         writefln("x.encode128=%s", x.encodeLEB128);
+        writefln("x.decodeLEB128=%s", x.decodeLEB128([0]));
 
+        assert(x.calc_size is 1);
+        assert(x.encodeLEB128 == [0]);
+        assert(x.decodeLEB128([0]) == 0);
+    }
+
+    void ok(BigNumber x, const(ubyte[]) expected) {
+        const encoded=x.encodeLEB128;
+        assert(equal(encoded, expected));
+        assert(x.calc_size == expected.length);
+        assert(BigNumber.calc_size(expected) == expected.length);
+        const decoded=BigNumber.decodeLEB128(expected);
+//        assert(decoded.size == expected.length);
+        writefln("decoded=%s x=%s", decoded, x);
+        writefln("decoded=%s._data x=%s._data", decoded._data, x._data);
+
+        assert(decoded == x);
+    }
+
+    {
+        ok(BigNumber(0), [0]);
+        ok(BigNumber(1), [1]);
+        ok(BigNumber(100), LEB128.encode!long(100));
+        ok(BigNumber(1000), LEB128.encode!long(1000));
+        ok(BigNumber(int.max), LEB128.encode!long(int.max));
+        //   ok(BigNumber(long.max), LEB128.encode!long(long.max));
+    }
+    {
+        writefln("\n\n");
+        BigNumber x=long.max;
+        writefln("x.calc_size=%d", x.calc_size);
+        writefln("x.encode128=%s", x.encodeLEB128);
+        writefln("LEB128.decode=%s", LEB128.encode!long(long.max));
+        writefln("x.decodeLEB128=%s", x.decodeLEB128([255, 255, 255, 255, 7])); //[228, 0]));
+        // assert(x.calc_size is 1);
+        // assert(x.encodeLEB128 == [1]);
+        // assert(x.decodeLEB128([1]) == 1);
     }
 }
