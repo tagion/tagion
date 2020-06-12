@@ -12,6 +12,7 @@ extern(C) int pthread_setname_np(pthread_t, const char*);
 import tagion.basic.Basic : Control;
 
 import tagion.Options : Options, setOptions, options;
+import tagion.basic.TagionExceptions;
 
 enum LoggerType {
     INFO    = 1,
@@ -228,6 +229,11 @@ void loggerTask(immutable(Options) opts) {
             if(opts.logger.flush){
                 file.flush();
             }
+        }
+        catch(TagionException e){
+            log.fatal(e.msg);
+            stop=true;
+            ownerTid.send(e.taskException);
         }
         catch ( Exception e ) {
             stderr.writefln("Logger error %s", e.msg);

@@ -31,6 +31,7 @@ import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.utils.HandlerPool;
 import tagion.services.MdnsDiscoveryService;
+import tagion.basic.TagionExceptions;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
@@ -326,7 +327,13 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                     node.listen(pid, &StdHandlerCallback, cast(string) task_name, opts.dart.sync.host.timeout.msecs, cast(uint) opts.dart.sync.host.max_size);
                     request_handling = true;
                 }
-            }catch(Exception e){
+            }
+            catch(TagionException e){
+                log.fatal(e.msg);
+                stop=true;
+                ownerTid.send(e.taskException);
+            }
+            catch(Exception e){
                 log.fatal(e.msg);
                 stop=true;
                 ownerTid.send(cast(immutable)e);
@@ -338,10 +345,10 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             }
         }
     }
-    // catch(ErrnoException e){
-    //     log.fatal(e.msg);
-    //     ownerTid.send(cast(immutable)e);
-    // }
+    catch(TagionException e){
+        log.fatal(e.msg);
+        ownerTid.send(e.taskException);
+    }
     catch(Exception e){
         log.fatal(e.msg);
         ownerTid.send(cast(immutable)e);
