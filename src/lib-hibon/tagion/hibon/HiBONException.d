@@ -6,7 +6,7 @@ import tagion.basic.TagionExceptions : Check, TagionException;
  +/
 @safe
 class HiBONException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
 }

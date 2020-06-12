@@ -25,7 +25,7 @@ import tagion.utils.Miscellaneous : toHex=toHexString, decode;
  */
 @safe
 class HiBON2JSONException : HiBONException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
 }
