@@ -8,7 +8,7 @@ struct Token {
     string name;
     uint line;
     uint pos;
-    string toText() @safe pure const {
+    string toText() @safe const {
         if ( line is 0 ) {
             return name;
         }
