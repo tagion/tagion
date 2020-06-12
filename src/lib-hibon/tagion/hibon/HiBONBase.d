@@ -4,7 +4,7 @@ import tagion.Types;
 import tagion.basic.Basic : isOneOf;
 
 import tagion.utils.StdTime;
-
+alias utc_t = sdt_t;
 import std.format;
 import std.meta : AliasSeq; //, Filter;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, EnumMembers, Unqual, getUDAs, hasUDA;
