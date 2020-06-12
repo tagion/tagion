@@ -372,97 +372,6 @@ struct BigNumber {
         assert(0);
     }
 
-    immutable(ubyte[]) __encodeLEB128() const pure {
-        immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+2;
-        enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
-        scope buffer=new ubyte[DATA_SIZE];
-        foreach(t; two_complement) {
-            debug writefln(">t=%d", t);
-        }
-        auto range2c=two_complement;
-
-        ulong value=range2c.front;
-        range2c.popFront;
-        uint shift=DIGITS_BIT_SIZE;
-        debug writefln("buffer.length=%d", buffer.length);
-        foreach(i, ref d; buffer) {
-
-            if ((shift < 7) && (!range2c.empty)) {
-                debug writefln("@ %016x shift=%d", (range2c.front << shift) , shift);
-                debug writefln("@ %016x %016x", value, int.min);
-                value |= (range2c.front << shift);
-                shift+=DIGITS_BIT_SIZE;
-                if (range2c.front & int.min) {
-                    // Set sign bit
-                    // pragma(msg, "typeof((~0L) << shift)=", typeof((~0L) << shift));
-                    const ulong _x=(~0LU) << shift;
-                    debug writefln(": %016x shift=%d", _x, shift);
-                    debug writefln(": %016x", value);
-                    value |= (~0LU) << shift;
-                }
-                range2c.popFront;
-            }
-            d = value & 0x7F;
-
-            debug writefln("%d %02x %016x %s shift=%d", i, d, value, range2c.empty, shift);
-            shift-=7;
-            value >>= 7;
-            //debug writefln("\t### value=%016x", value);
-            //const uint uint_value=value & uint.max;
-            if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-                return buffer[0..i+1].idup;
-            }
-            d |= 0x80;
-        }
-        assert(0);
-    }
-
-    immutable(ubyte[]) _encodeLEB128() const pure {
-        immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+2;
-        enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
-        scope buffer=new ubyte[DATA_SIZE];
-        foreach(t; two_complement) {
-            debug writefln(">t=%d", t);
-        }
-        auto range2c=two_complement;
-
-        ulong value=range2c.front;
-        range2c.popFront;
-        uint shift=DIGITS_BIT_SIZE;
-        debug writefln("buffer.length=%d", buffer.length);
-        foreach(i, ref d; buffer) {
-
-            if ((shift < 7) && (!range2c.empty)) {
-                debug writefln("@ %016x shift=%d", (range2c.front << shift) , shift);
-                debug writefln("@ %016x %016x", value, int.min);
-                value |= (range2c.front << shift);
-                shift+=DIGITS_BIT_SIZE;
-                version(none)
-                if (range2c.front & int.min) {
-                    // Set sign bit
-                    // pragma(msg, "typeof((~0L) << shift)=", typeof((~0L) << shift));
-                    const ulong _x=(~0LU) << shift;
-                    debug writefln(": %016x shift=%d", _x, shift);
-                    debug writefln(": %016x", value);
-                    value |= (~0LU) << shift;
-                }
-                range2c.popFront;
-            }
-            d = value & 0x7F;
-
-            debug writefln("%d %02x %016x %s shift=%d", i, d, value, range2c.empty, shift);
-            shift-=7;
-            value >>= 7;
-            //debug writefln("\t### value=%016x", value);
-            //const uint uint_value=value & uint.max;
-            if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-                return buffer[0..i+1].idup;
-            }
-            d |= 0x80;
-        }
-        assert(0);
-    }
-
     immutable(ubyte[]) encodeLEB128() const pure {
         immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+2;
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
@@ -499,73 +408,6 @@ struct BigNumber {
         assert(0);
     }
 
-    size_t __calc_size() const pure {
-        immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+1;
-        enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
-        size_t index;
-        auto range2c=two_complement;
-
-        ulong value=range2c.front;
-        range2c.popFront;
-
-        uint shift=DIGITS_BIT_SIZE;
-        debug writefln("DATA_SIZE=%d", DATA_SIZE);
-        foreach(i; 0..DATA_SIZE) {
-            if ((shift < 7) && (!range2c.empty)) {
-                value |= (range2c.front << shift);
-                shift+=DIGITS_BIT_SIZE;
-                if (range2c.front & int.min) {
-                    // Set sign bit
-                    value |= (~0L) << shift;
-                }
-                range2c.popFront;
-            }
-            scope d = value & 0x7F;
-            debug writefln("SIZE %d %02x %016x %s shift=%d", i, d, value, range2c.empty, shift);
-            shift-=7;
-            value >>= 7;
-            if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-                return i+1;
-            }
-            d |= 0x80;
-        }
-        assert(0);
-    }
-
-    size_t _calc_size() const pure {
-        immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+1;
-        enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
-        size_t index;
-        auto range2c=two_complement;
-
-        ulong value=range2c.front;
-        range2c.popFront;
-
-        uint shift=DIGITS_BIT_SIZE;
-        debug writefln("DATA_SIZE=%d", DATA_SIZE);
-        foreach(i; 0..DATA_SIZE) {
-            if ((shift < 7) && (!range2c.empty)) {
-                value |= (range2c.front << shift);
-                shift+=DIGITS_BIT_SIZE;
-                version(none)
-                if (range2c.front & int.min) {
-                    // Set sign bit
-                    value |= (~0L) << shift;
-                }
-                range2c.popFront;
-            }
-            scope d = value & 0x7F;
-            debug writefln("SIZE %d %02x %016x %s shift=%d", i, d, value, range2c.empty, shift);
-            shift-=7;
-            value >>= 7;
-            if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-                return i+1;
-            }
-            d |= 0x80;
-        }
-        assert(0);
-    }
-
     size_t calc_size() const pure {
         immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+1;
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
@@ -576,7 +418,7 @@ struct BigNumber {
         range2c.popFront;
 
         uint shift=DIGITS_BIT_SIZE;
-        debug writefln("DATA_SIZE=%d", DATA_SIZE);
+        //debug writefln("DATA_SIZE=%d", DATA_SIZE);
         foreach(i; 0..DATA_SIZE) {
             if ((shift < 7) && (!range2c.empty)) {
                 value |= (range2c.front << shift);
@@ -589,7 +431,7 @@ struct BigNumber {
                 range2c.popFront;
             }
             scope d = value & 0x7F;
-            debug writefln("SIZE %d %02x %016x %s shift=%d", i, d, value, range2c.empty, shift);
+            //debug writefln("SIZE %d %02x %016x %s shift=%d", i, d, value, range2c.empty, shift);
             shift-=7;
             value >>= 7;
 
@@ -599,59 +441,6 @@ struct BigNumber {
             d |= 0x80;
         }
         assert(0);
-    }
-
-    static BigNumber _decodeLEB128(const(ubyte[]) data) pure {
-        scope values=new uint[data.length/BigDigit.sizeof+1];
-        enum DIGITS_BIT_SIZE=uint.sizeof*8;
-        ulong result;
-        uint shift;
-        bool sign;
-        size_t index;
-        foreach(i, d; data) {
-            debug writefln("result=%016x %02x shift=%d", result, d, shift);
-            result |= ulong(d & 0x7F) << shift;
-            debug writefln("      =%016x", result);
-            shift+=7;
-            if ((d & 0x80) == 0) {
-                if ((d & 0x40) != 0) {
-                    result |= (~0L << shift);
-                    sign=true;
-                }
-                if (shift > 0) {
-                    const BigDigit v=result & uint.max;
-                    if ((index is 0) || (v !is 0)) {
-                        values[index++]=v;
-                    }
-                }
-                break;
-            }
-            else if (shift >= DIGITS_BIT_SIZE) {
-                values[index++]=result & uint.max;
-                result >>= DIGITS_BIT_SIZE;
-                shift-=DIGITS_BIT_SIZE;
-            }
-        }
-        auto result_data=values[0..index].dup;
-        if (sign) {
-            // Takes the to complement of the result because BigInt
-            // is stored as a unsigned value and a sign
-            foreach(ref r; result_data) {
-                r=~r;
-            }
-            bool overflow=true;
-            foreach(ref r; result_data) {
-                if (overflow) {
-                    r++;
-                    overflow=(r==0);
-                }
-                else {
-                    break;
-                }
-            }
-
-        }
-        return BigNumber(result_data, sign);
     }
 
     static BigNumber decodeLEB128(const(ubyte[]) data) pure {
