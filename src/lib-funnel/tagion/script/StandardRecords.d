@@ -119,7 +119,7 @@ alias ListOfRecords=AliasSeq!(
 
 +/
 struct Wallet {
-    import tagion.utils.KeyRecover : KeyRecover;
+    import tagion.wallet.KeyRecover : KeyRecover;
     KeyRecover.RecoverSeed seed;
     Pubkey pubkey;
     Buffer Y;
