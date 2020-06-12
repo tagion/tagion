@@ -65,7 +65,7 @@ void truncate(ref File file, long length) {
  */
 @safe
 class BlockFileException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
 }
