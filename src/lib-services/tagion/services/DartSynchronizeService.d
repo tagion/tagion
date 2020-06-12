@@ -29,7 +29,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.gossip.InterfaceNet: SecureNet;
 import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
-import tagion.utils.HandlerPool;
+import tagion.communication.HandlerPool;
 import tagion.services.MdnsDiscoveryService;
 import tagion.basic.TagionExceptions;
 

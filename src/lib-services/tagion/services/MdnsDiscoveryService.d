@@ -3,7 +3,7 @@ module tagion.services.MdnsDiscoveryService;
 import p2plib = p2p.node;
 import p2p.callback;
 import p2p.cgo.helper;
-import tagion.utils.HandlerPool;
+import tagion.communication.HandlerPool;
 import tagion.dart.DART;
 import core.time;
 import std.datetime;
