@@ -1090,7 +1090,7 @@ static assert(uint.sizeof == 4);
                         }
                     default:
                         import std.format;
-                        throw new HiBONExceptionT!true(format("Bad HiBON type %s", type));
+                        throw new HiBONException(format("Bad HiBON type %s", type));
                         // empty
                     }
                 }

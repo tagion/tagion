@@ -50,7 +50,7 @@ enum {
         return decode(str[hex_prefix.length..$]);
     }
     else {
-        throw new HiBONExceptionT!true(
+        throw new HiBONException(
             format("HiBON binary data missing the hex '%s' or Base64 identifier '%s'",
                 hex_prefix, BASE64Indetifyer));
     }

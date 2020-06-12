@@ -463,3 +463,14 @@ struct BigNumber {
         return BigNumber(result_data, sign);
     }
 }
+
+
+unittest {
+    import std.stdio;
+    {
+        BigNumber x=0;
+        writefln("x.calc_size=%d", x.calc_size);
+        writefln("x.encode128=%s", x.encodeLEB128);
+
+    }
+}
