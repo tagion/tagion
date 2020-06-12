@@ -3,7 +3,7 @@ module tagion.hibon.HiBONBase;
 import tagion.Types;
 import tagion.basic.Basic : isOneOf;
 
-import tagion.utils.UTCTime;
+import tagion.utils.StdTime;
 
 import std.format;
 import std.meta : AliasSeq; //, Filter;
