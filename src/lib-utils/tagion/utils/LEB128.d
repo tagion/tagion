@@ -9,7 +9,7 @@ import std.algorithm.iteration : map, sum;
 //import std.stdio;
 
 @safe
-class LEB128Exception : TagionExceptionT!true {
+class LEB128Exception : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, "undefined",  file, line );
     }
@@ -127,7 +127,7 @@ DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) pure if (isUnsigned!T) {
             static if (!is(BaseT==ulong)) {
                 check(result <= BaseT.max, format("LEB128 decoding overflow of %x for %s", result, T.stringof));
             }
-            return DecodeLEB128!T(cast(T)result, len);
+            return DecodeLEB128!T(cast(BaseT)result, len);
         }
         shift+=7;
     }
@@ -144,7 +144,6 @@ DecodeLEB128!T decode(T=long)(const(ubyte[]) data) pure if (isSigned!T) {
     size_t len;
     foreach(i, d; data) {
         check(shift < MAX_LIMIT, "LEB128 decoding buffer over limit");
-        const long lsbs=(d & 0x7FL);
         result |= (d & 0x7FL) << shift;
         shift+=7;
         if ((d & 0x80) == 0 ) {
