@@ -17,7 +17,7 @@ import tagion.hibon.BigNumber;
 /++
  BigNumber used in the HiBON format
  It is a wrapper of the std.bigint
-+/
+ +/
 @safe
 struct BigNumber {
     private union {
@@ -34,7 +34,7 @@ struct BigNumber {
      the BigNumber as BigDigit array
      +/
     @trusted
-    const(BigDigit[]) data() const pure nothrow {
+        const(BigDigit[]) data() const pure nothrow {
         return _data;
     }
 
@@ -43,7 +43,7 @@ struct BigNumber {
      the sign of the BigNumber
      +/
     @trusted
-    bool sign() const pure nothrow {
+        bool sign() const pure nothrow {
         return _sign;
     }
 
@@ -57,25 +57,27 @@ struct BigNumber {
     /++
      Construct a BigNumber for an integer
      +/
-    @trusted
-    this(T)(T x) pure nothrow if (isIntegral!T) {
+    @trusted this(T)(T x) pure nothrow if (isIntegral!T) {
         this.x=BigInt(x);
     }
 
     /++
      Construct an number for a BigInt
      +/
-    @trusted
-    this(const(BigInt) x) pure nothrow {
+    @trusted this(const(BigInt) x) pure nothrow {
         this.x=x;
     }
 
     /++
      Construct an number for a BigNumber
      +/
-    @trusted
-    this(const(BigNumber) big) pure nothrow {
+    @trusted this(const(BigNumber) big) pure nothrow {
         this.x=big.x;
+    }
+
+    @trusted protected this(BigDigit[] data, const bool sign) pure nothrow {
+        this._data=data;
+        this._sign=sign;
     }
 
 
@@ -83,11 +85,11 @@ struct BigNumber {
      Constructor from a number-string range
      +/
     @trusted
-    this(Range)(Range s) if (
-        isBidirectionalRange!Range &&
-        isSomeChar!(ElementType!Range) &&
-        !isInfinite!Range &&
-        !isSomeString!Range) {
+        this(Range)(Range s) if (
+            isBidirectionalRange!Range &&
+            isSomeChar!(ElementType!Range) &&
+            !isInfinite!Range &&
+            !isSomeString!Range) {
         this.x=BitInt(s);
     }
 
@@ -95,7 +97,7 @@ struct BigNumber {
      Construct an BigNumber from a string of numbers
      +/
     @trusted
-    this(Range)(Range s) pure if (isSomeString!Range) {
+        this(Range)(Range s) pure if (isSomeString!Range) {
         this.x=BigInt(s);
     }
 
@@ -104,7 +106,7 @@ struct BigNumber {
      Construct an BigNumber for explicit sign digit number array
      +/
     @trusted
-    this(const bool sign, const(BigDigit[]) dig) {
+        this(const bool sign, const(BigDigit[]) dig) {
         _sign=sign;
         _data=dig.dup;
     }
@@ -131,14 +133,15 @@ struct BigNumber {
      y = is the right side value
      +/
     @trusted
-    BigNumber opBinary(string op, T)(T y) pure nothrow const {
+        BigNumber opBinary(string op, T)(T y) pure nothrow const {
         static if (is(T:const(BigNumber))) {
-            enum code=format("auto result=x %s y.x;", op);
+            enum code=format(q{BigNumber result=x %s y.x;}, op);
         }
         else {
-            enum code=format("auto result=x %s y;", op);
+            enum code=format(q{BigNumber result=x %s y;}, op);
         }
         mixin(code);
+        return result;
     }
 
     /++
@@ -149,7 +152,7 @@ struct BigNumber {
      The assign value as a BigNumber
      +/
     @trusted
-    BigNumber opAssign(T)(T x) pure nothrow if (isIntegral!T) {
+        BigNumber opAssign(T)(T x) pure nothrow if (isIntegral!T) {
         this.x=x;
         return this;
     }
@@ -159,7 +162,7 @@ struct BigNumber {
      the result of the unitary operation op
      +/
     @trusted
-    BigNumber opUnary(string op)() pure nothrow const {
+        BigNumber opUnary(string op)() pure nothrow const {
     }
 
     /++
@@ -171,7 +174,7 @@ struct BigNumber {
      +/
 
     @trusted
-    BigNumber opOpAssign(string op, T)(T y) pure nothrow {
+        BigNumber opOpAssign(string op, T)(T y) pure nothrow {
         static if (is(T:const(BigNumber))) {
             enum code=format("this.x %s= y.x;", op);
         }
@@ -190,13 +193,13 @@ struct BigNumber {
      true if the values are equal
      +/
     @trusted
-    bool opEquals()(auto ref const BigNumber y) const pure {
+        bool opEquals()(auto ref const BigNumber y) const pure {
         return x == y.x;
     }
 
     /// ditto
     @trusted
-    bool opEquals(T)(T y) const pure nothrow if (isIntegral!T) {
+        bool opEquals(T)(T y) const pure nothrow if (isIntegral!T) {
         return x == y;
     }
 
@@ -208,36 +211,36 @@ struct BigNumber {
      true if the values are equal
      +/
     @trusted
-    int opCmp(ref const BigNumber y) pure nothrow const {
+        int opCmp(ref const BigNumber y) pure nothrow const {
         return x.opCmp(y.x);
     }
 
     /// ditto
     @trusted
-    int opCmp(T)(T y) pure nothrow const if (isIntegral!T) {
+        int opCmp(T)(T y) pure nothrow const if (isIntegral!T) {
         return x.opCmp(x);
     }
 
     /// ditto
     @trusted
-    int opCmp(T:BigNumber)(const T y) pure nothrow const {
+        int opCmp(T:BigNumber)(const T y) pure nothrow const {
         return x.opCmp(y.x);
     }
 
     /// cast BigNumber to a bool
     @trusted
-    T opCast(T:bool)() pure nothrow const {
+        T opCast(T:bool)() pure nothrow const {
         return x.opCast!bool;
     }
 
     /// cast BigNumber to a type T
     @trusted
-    T opCast(T:ulong)() pure const {
+        T opCast(T:ulong)() pure const {
         return cast(T)x;
     }
 
     @trusted
-    @property size_t ulongLength() const pure nothrow {
+        @property size_t ulongLength() const pure nothrow {
         return x.ulongLength;
     }
 
@@ -245,7 +248,7 @@ struct BigNumber {
      Converts to type T
      +/
     @trusted
-    T convert(T)() const if (isIntegral!T) {
+        T convert(T)() const if (isIntegral!T) {
         import std.conv : to;
         .check((x>=T.min) && (x<=T.max),
             format("Coversion range violation for type %s, value %s is outside the [%d..%d]",
@@ -257,13 +260,13 @@ struct BigNumber {
      Coverts to a number string as a format
      +/
     @trusted
-    void toString(scope void delegate(const (char)[]) sink, string formatString) const {
+        void toString(scope void delegate(const (char)[]) sink, string formatString) const {
         return x.toString(sink, formatString);
     }
 
     /// ditto
     @trusted
-    void toString(scope void delegate(const(char)[]) sink, const ref FormatSpec!char f) const {
+        void toString(scope void delegate(const(char)[]) sink, const ref FormatSpec!char f) const {
         return x.toString(sink, f);
     }
 
@@ -272,7 +275,7 @@ struct BigNumber {
      Coverts to a hexa-decimal number as a string as
      +/
     @trusted
-    string toHex() const {
+        string toHex() const {
         return x.toHex;
     }
 
@@ -280,7 +283,7 @@ struct BigNumber {
      Coverts to a decimal number as a string as
      +/
     @trusted
-    string toDecimalString() const pure nothrow {
+        string toDecimalString() const pure nothrow {
         return x.toDecimalString;
     }
 
@@ -288,7 +291,7 @@ struct BigNumber {
      Coverts to a base64 format
      +/
     @trusted
-    immutable(ubyte[]) serialize() const pure nothrow {
+        immutable(ubyte[]) serialize() const pure nothrow {
         immutable digits_size=BigDigit.sizeof*_data.length;
         auto buffer=new ubyte[digits_size+_sign.sizeof];
         buffer[0..digits_size]=cast(ubyte[])_data;
@@ -296,12 +299,11 @@ struct BigNumber {
         return assumeUnique(buffer);
     }
 
-    version(none) {
-        // working on LEB128 for big int
-    TwoComplementRange two_complement() {
+    TwoComplementRange two_complement() pure const nothrow {
         static assert(BigDigit.sizeof is int.sizeof);
         return TwoComplementRange(this);
     }
+
 
 
     struct TwoComplementRange {
@@ -313,10 +315,11 @@ struct BigNumber {
         immutable bool sign;
 
         @disable this();
-        this(const BigNumber num) {
+        @trusted
+        this(const BigNumber num) pure nothrow {
             sign=num._sign;
             overflow=true;
-            data=num._data;
+            data=cast(const(int)[])num._data;
         }
 
         @property {
@@ -328,26 +331,26 @@ struct BigNumber {
                     return data.length is 0;
                 }
             }
-            void popFront() {
-            if (data.length) {
-                if (sign) {
-                    current=~data[0];
-                    if (overflow) {
-                        current++;
-                        overflow=(current == 0);
+            void popFront() nothrow pure {
+                if (data.length) {
+                    if (sign) {
+                        current=~data[0];
+                        if (overflow) {
+                            current++;
+                            overflow=(current == 0);
+                        }
                     }
+                    else {
+                        current=data[0];
+                    }
+                    data=data[1..$];
                 }
-                else {
-                    current=data[0];
-                }
-                data=data[1..$];
             }
-        }
         }
     }
 
-    immutable(ubyte[]) encodeLEB128() const pure nothrow {
-        immutable DATA_SIZE=(BigDigit.sizeof*_data.length*8)/7+1;
+    immutable(ubyte[]) encodeLEB128() const pure {
+        immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+1;
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
         scope buffer=new ubyte[DATA_SIZE];
         size_t index;
@@ -369,19 +372,19 @@ struct BigNumber {
                     value |= (~0L) << shift;
                 }
                 range2c.popFront;
-             }
+            }
             value >>= 7;
             //const uint uint_value=value & uint.max;
             if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-                return data[0..i+1].idup;
+                return buffer[0..i+1].idup;
             }
             d |= 0x80;
         }
         assert(0);
     }
 
-    size_t calc_size() const pure nothrow {
-        immutable DATA_SIZE=(BigDigit.sizeof*_data.length*8)/7+1;
+    size_t calc_size() const pure {
+        immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+1;
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
         size_t index;
         static assert(BigDigit.sizeof is int.sizeof);
@@ -402,7 +405,7 @@ struct BigNumber {
                     value |= (~0L) << shift;
                 }
                 range2c.popFront;
-             }
+            }
             value >>= 7;
             if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
                 return i;
@@ -412,24 +415,51 @@ struct BigNumber {
         assert(0);
     }
 
-    static BigNumber decodeLEB128(const(ubyte[]) data) {
-        scope values=new BigDigits[data.length/BigDigits.length+1];
+    static BigNumber decodeLEB128(const(ubyte[]) data) pure {
+        scope values=new BigDigit[data.length/BigDigit.sizeof+1];
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
         long result;
         uint shift;
+        bool sign;
+        size_t index;
         foreach(i, d; data) {
             result |= (d & 0x7F) << shift;
             shift+=7;
             if (shift >= DIGITS_BIT_SIZE) {
                 values[index++]=result & uint.max;
                 result >>= DIGITS_BIT_SIZE;
+                shift-=DIGITS_BIT_SIZE;
             }
             if ((d & 0x80) == 0) {
                 if ((d & 0x40) != 0) {
-//                    resul
+                    result |= (~0L << shift);
+                    sign=true;
                 }
+                if (shift > 0) {
+                    values[index++]=result & uint.max;
+                }
+                break;
             }
         }
-    }
+        auto result_data=values[0..index].dup;
+        if (sign) {
+            // Takes the to complement of the result because BigInt
+            // is stored as a unsigned value and a sign
+            foreach(ref r; result_data) {
+                r=~r;
+            }
+            bool overflow=true;
+            foreach(ref r; result_data) {
+                if (overflow) {
+                    r++;
+                    overflow=(r==0);
+                }
+                else {
+                    break;
+                }
+            }
+
+        }
+        return BigNumber(result_data, sign);
     }
 }

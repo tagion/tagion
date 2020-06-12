@@ -15,6 +15,7 @@ import std.meta : staticIndexOf;
 import std.algorithm.iteration : map, fold, each, sum;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
 import std.meta : AliasSeq;
+import std.typecons : TypedefType;
 
 import std.conv : to;
 
@@ -23,7 +24,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import tagion.basic.Message : message;
-import tagion.basic.Basic : CastTo;
+import tagion.basic.Basic : CastTo, Buffer;
 import LEB128=tagion.utils.LEB128;
 
 //import std.stdio;
@@ -152,11 +153,20 @@ static size_t size(U)(const(U[]) array) pure {
             this.key  = key;
             with(Type) {
             static if (E is NONE) {
-                alias CastT=CastTo!(UnqualT, CastTypes);
-                static assert(!is(CastT==void), format("Type %s is not valid", T.stringof));
+                alias BaseT=TypedefType!UnqualT;
+                pragma(msg, "UnqualT=", BaseT, " ", is(BaseT==Buffer), " : ", Buffer);
+                static if (is(BaseT==Buffer)) {
+                    alias CastT=Buffer;
+                }
+                else {
+                    alias CastT=CastTo!(BaseT, CastTypes);
+                    static assert(!is(CastT==void), format("Type %s is not valid", T.stringof));
+
+                }
                 alias CastE=Value.asType!CastT;
                 this.type = CastE;
                 this.value=cast(CastT)x;
+
             }
             else {
                 this.type = E;

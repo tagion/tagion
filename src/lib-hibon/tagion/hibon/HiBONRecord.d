@@ -51,8 +51,8 @@ mixin template HiBONRecord(string TYPE="") {
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
     import std.typecons : TypedefType;
     import tagion.hibon.HiBONException : check;
-    import tagion.Message : message;
-    import tagion.Base : basename;
+    import tagion.basic.Message : message;
+    import tagion.basic.Basic : basename;
     import std.format;
 
     enum TYPENAME="$type";
