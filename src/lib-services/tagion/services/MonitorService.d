@@ -8,7 +8,7 @@ import std.concurrency;
 
 import tagion.services.LoggerService;
 import tagion.Options : Options, setOptions, options;
-import tagion.basic.Basic : Control, basename, bitarray2bool, Pubkey;
+import tagion.basic.Basic : Control, basename, Pubkey;
 import tagion.basic.TagionExceptions : TagionException;
 
 import tagion.hibon.Document;
