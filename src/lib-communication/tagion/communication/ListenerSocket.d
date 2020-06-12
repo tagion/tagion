@@ -17,7 +17,7 @@ import tagion.services.LoggerService;
 
 @safe
 class SocketMaxDataSize : TagionException {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
 }
@@ -297,7 +297,7 @@ struct ListenerSocket {
             stderr.writeln(e.msg);
             stop_listener=true;
             if (masterTid != masterTid.init) {
-                masterTid.send(cast(immutable)e);
+                masterTid.send(e.taskException);
             }
         }
         catch(Exception e) {
