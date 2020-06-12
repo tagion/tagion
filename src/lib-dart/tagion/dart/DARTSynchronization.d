@@ -24,7 +24,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.services.LoggerService;
 
 import tagion.communication.HiRPC;
-import tagion.utils.HandlerPool;
+import tagion.communication.HandlerPool;
 
 import tagion.services.MdnsDiscoveryService;
 
