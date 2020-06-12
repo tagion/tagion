@@ -1,5 +1,7 @@
 module tagion.communication.Monitor;
 
+import std.bitmanip : BitArray;
+
 import tagion.communication.ListenerSocket;
 
 import tagion.hashgraph.Event : Event, Round;
@@ -8,9 +10,20 @@ import tagion.gossip.InterfaceNet : NetCallbacks;
 import tagion.gossip.GossipNet : StdGossipNet;
 import tagion.hashgraph.ConsensusExceptions : ConsensusException;
 
-import tagion.basic.Basic : Control, basename, bitarray2bool, Pubkey;
+import tagion.basic.Basic : Control, basename, Pubkey;
 import tagion.hibon.HiBON;
 import tagion.Keywords;
+
+HiBON bitarray2bool(ref const(BitArray) bits) @trusted {
+    auto mask=new HiBON;
+    foreach(i, m; bits) {
+        if (m) {
+            mask[i]=true;
+        }
+    }
+    return mask;
+}
+
 
 //import core.thread : dur, msecs, seconds;
 import std.concurrency;
