@@ -10,7 +10,7 @@ import tagion.utils.Miscellaneous;
 import tagion.hashgraph.ConsensusExceptions;
 import std.bitmanip : BitArray;
 import tagion.basic.Basic : Pubkey, Buffer, bitarray_clear, countVotes;
-import tagion.hashgraph.HashGraphBasic;
+import Basic=tagion.hashgraph.HashGraphBasic;
 
 import tagion.services.LoggerService;
 @safe
@@ -303,7 +303,7 @@ class HashGraph {
     }
 
     bool isMajority(const uint voting) const pure nothrow {
-        return isMajority(voting, active_nodes);
+        return Basic.isMajority(voting, active_nodes);
     }
 
     private void remove_node(Node n)
