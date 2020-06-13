@@ -308,7 +308,13 @@ struct BigNumber {
         return TwoComplementRange(this);
     }
 
-
+    @trusted
+    void check_minuz_zero() const pure {
+        //.check(sign && _data.length is 1 && _data[0] is 0, "The number minus zero is not allowed");
+        if (!(sign && _data.length is 1 && _data[0] is 0)) {
+            debug writefln("minus zero=%s", sign && _data.length is 1 && _data[0] is 0);
+        }
+    }
 
     struct TwoComplementRange {
         protected {
@@ -339,18 +345,30 @@ struct BigNumber {
             }
             void popFront() /+nothrow+/ pure {
                 if (data.length) {
-                    debug writefln("data[0]=%d sign=%s", data[0], sign);
+                    //debug writefln("data[0]=%d sign=%s", data[0], sign);
                     if (sign) {
-                        current=~long(data[0]);
+                        current=data[0];
+                        current=~current;
                         if (overflow) {
+                            overflow= (current == -1);
                             current++;
-                            overflow=(current == 0);
+
+
+                            //current=~current;
+
+
+
+                            // if (overflow) {
+                            //     current |= (~0LU) << uint.sizeof*8;
+                            // }
+                            //debug writefln("             current=%016X %s", current, overflow);
                         }
+                        //debug writefln("data[0]=%08X current=%016X", data[0], current);
                     }
                     else {
                         current=data[0];
                     }
-                    debug writefln("\tcurrent=%d front=%d", current, front);
+                    //debug writefln("\tcurrent=%d front=%d", current, front);
                     data=data[1..$];
                 }
                 else {
@@ -360,6 +378,107 @@ struct BigNumber {
         }
     }
 
+    unittest { // Test of Two complement
+        import std.algorithm.comparison : equal;
+        writeln("\n\nTWO COMPLEMENT");
+        {
+            //enum _x=-0x2_0000_0000;
+            //num _x=long.min+1;
+//            enum _x="-0xab34_1234_6789_abcd_ef01_ab34_1234_6789_abcd_ef01";
+            enum _x="-0xAB341234_6789ABCD_EF01AB34_00000000_00000000";
+            const(ulong[]) a=[~0x0000_0000UL+1, ~0x00000000UL+1, ~0xEF01AB34UL+1, ~0x6789ABCDUL, ~0xAB341234UL];
+            //writefln("a=%s", a);
+            //writefln("%016X", _x);
+            //enum _x=-1;
+            const x=BigNumber(_x);
+            write("   ");
+
+            foreach(t; x.two_complement) {
+                writef("%d, ", t);
+            }
+            writeln("");
+
+            foreach(t; x.two_complement) {
+                writef("%08X ", t);
+            }
+            writeln("");
+            foreach(c; a) {
+                writef("%08X ", c);
+            }
+            writeln("");
+
+        }
+
+        {
+            const x=BigNumber(0);
+            assert(equal(x.two_complement, [0]));
+        }
+
+        {
+            const x=BigNumber(uint.max);
+            assert(equal(x.two_complement, [uint.max]));
+        }
+
+
+        {
+            const x=BigNumber(-1);
+            assert(equal(x.two_complement, [ulong.max]));
+        }
+
+        {
+            const x=BigNumber(-2);
+            assert(equal(x.two_complement, [ulong.max-1]));
+        }
+
+        {
+            const x=BigNumber(-0x2_0000_0000);
+            assert(equal(x.two_complement, [0, 0xFFFFFFFFFFFFFFFE]));
+        }
+
+        {
+            const x=BigNumber(long.min);
+            assert(equal(x.two_complement, [0, 0xFFFFFFFF80000000]));
+        }
+
+        {
+            const x=BigNumber("0xAB341234_6789ABCD_EF01AB34_12346789_ABCDEF01");
+            assert(equal(x.two_complement, [0xABCDEF01, 0x12346789, 0xEF01AB34, 0x6789ABCD, 0xAB341234]));
+        }
+
+        {
+            const x=BigNumber("-0xAB341234_6789ABCD_EF01AB34_12346789_ABCDEF01");
+            const(ulong[]) x_twoc=[~0xABCDEF01UL+1, ~0x12346789UL, ~0xEF01AB34UL, ~0x6789ABCDUL, ~0xAB341234UL];
+            assert(equal(x.two_complement, x_twoc));
+        }
+
+        {
+            const x=BigNumber("-0xAB341234_6789ABCD_EF01AB34_12346789_00000000");
+            const(ulong[]) x_twoc=[~0x0000_0000UL+1, ~0x12346789UL+1, ~0xEF01AB34UL, ~0x6789ABCDUL, ~0xAB341234UL];
+            assert(equal(x.two_complement, x_twoc));
+        }
+
+        {
+            const x=BigNumber("-0xAB341234_6789ABCD_EF01AB34_00000000_00000000");
+            const(ulong[]) x_twoc=[~0x0000_0000UL+1, ~0x00000000UL+1, ~0xEF01AB34UL+1, ~0x6789ABCDUL, ~0xAB341234UL];
+            assert(equal(x.two_complement, x_twoc));
+        }
+
+        {
+            const x=BigNumber("-0xAB341234_6789ABCD_00000000_00000000_00000000");
+            const(ulong[]) x_twoc=[~0x0000_0000UL+1, ~0x00000000UL+1, ~0x00000000UL+1, ~0x6789ABCDUL+1, ~0xAB341234UL];
+            assert(equal(x.two_complement, x_twoc));
+        }
+
+
+        {
+            const x=BigNumber("-0xAB341234_00000000_00000000_00000000_00000000");
+            const(ulong[]) x_twoc=[~0x0000_0000UL+1, ~0x00000000UL+1, ~0x00000000UL+1, ~0x00000000UL+1, ~0xAB341234UL+1];
+            assert(equal(x.two_complement, x_twoc));
+        }
+
+
+        writeln("\nTWO COMPLEMENT END\n\n");
+    }
     static size_t calc_size(const(ubyte[]) data) pure {
         size_t result;
         foreach(d; data) {
@@ -373,11 +492,12 @@ struct BigNumber {
     }
 
     immutable(ubyte[]) encodeLEB128() const pure {
+        check_minuz_zero;
         immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+2;
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;
         scope buffer=new ubyte[DATA_SIZE];
         foreach(t; two_complement) {
-            debug writefln(">t=%08x", t);
+            debug writefln(">t=%016x", t);
         }
         auto range2c=two_complement;
 
@@ -400,7 +520,7 @@ struct BigNumber {
             shift-=7;
             value >>= 7;
             //debug writefln("\t### value=%016x", value);
-            if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
+            if (range2c.empty && (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40)))) {
                 return buffer[0..i+1].idup;
             }
             d |= 0x80;
@@ -435,7 +555,7 @@ struct BigNumber {
             shift-=7;
             value >>= 7;
 
-            if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
+            if (range2c.empty && (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40)))) {
                 return i+1;
             }
             d |= 0x80;
@@ -504,6 +624,68 @@ struct BigNumber {
         }
         return BigNumber(result_data, sign);
     }
+
+    static BigNumber _decodeLEB128(const(ubyte[]) data) pure {
+        scope values=new uint[data.length/BigDigit.sizeof+1];
+        enum DIGITS_BIT_SIZE=uint.sizeof*8;
+        ulong result;
+        uint shift;
+        bool sign;
+        size_t index;
+        foreach(i, d; data) {
+            debug writefln("result=%016x %02x shift=%d i=%d", result, d, shift, i);
+            result |= ulong(d & 0x7F) << shift;
+            debug writefln("      =%016x", result);
+            shift+=7;
+            if (shift >= DIGITS_BIT_SIZE) {
+                debug writefln("\t## value=%08x", result & uint.max);
+                values[index++]=result & uint.max;
+                result >>= DIGITS_BIT_SIZE;
+                shift-=DIGITS_BIT_SIZE;
+            }
+            if ((d & 0x80) == 0) {
+                if ((d & 0x40) != 0) {
+                    result |= (~0L << shift);
+                    sign=true;
+                }
+//                if (index == 0) {
+                const v=result & uint.max;
+                debug writefln("\t## LAST shift=%d result=%016x v=%08x %d", shift, result, v, index);
+                debug writefln("\t## sign=%s (v=-1) = %s %s %s %s %s", sign, cast(int)v == -1, (sign && (cast(int)v == -1)),
+                    (v !is 0) && (((sign && (cast(int)v == -1)))),
+                    sign?(cast(int)v != -1):(v !is 0),
+                    (v != 0) && ((!sign || (cast(int)v != -1))),
+                    );
+                // if ((index is 0) || (v !is 0)) {
+                if ((index is 0) || (sign?(cast(int)v != -1):(v !is 0)) ) {
+                    debug writefln("HER!! %d", v);
+                    values[index++]=v;
+                }
+                break;
+            }
+        }
+        auto result_data=values[0..index].dup;
+        debug writefln("result_data.length=%d sign=%s", result_data.length, sign);
+        if (sign) {
+            // Takes the to complement of the result because BigInt
+            // is stored as a unsigned value and a sign
+            foreach(ref r; result_data) {
+                r=~r;
+            }
+            bool overflow=true;
+            foreach(ref r; result_data) {
+                if (overflow) {
+                    r++;
+                    overflow=(r==0);
+                }
+                else {
+                    break;
+                }
+            }
+
+        }
+        return BigNumber(result_data, sign);
+    }
 }
 
 
@@ -551,23 +733,27 @@ unittest {
         ok(BigNumber(-100), LEB128.encode!long(-100));
         ok(BigNumber(-1000), LEB128.encode!long(-1000));
         ok(BigNumber(int.min), LEB128.encode!long(int.min));
-        //ok(BigNumber(long(int.min)*2), LEB128.encode!long(long(int.min)*2));
+        // ok(BigNumber(long(int.min)*2), LEB128.encode!long(long(int.min)*2));
 
     }
     {
         writefln("\n\n");
         //enum long_x=0x0000_0003_FFFF_FFFF; //long.max/2;
-        enum long_x=long(int.min)*2L; //ulong.max; //0x0000_0003_FFFF_FFFF; //long.max/2;
+        enum long_x=long(int.min)*2; //long(int.min)*4L; //ulong.max; //0x0000_0003_FFFF_FFFF; //long.max/2;
         BigNumber x=long_x;
+        foreach(t; x.two_complement) {
+            writef("%08X ", t & uint.max);
+        }
+        writeln("");
         writefln("x.encode128  =%s", x.encodeLEB128);
         //writefln("x.calc_size  =%d", x.calc_size);
-        writefln("x._calc_size  =%d", x.calc_size);
+        writefln("x.calc_size  =%d", x.calc_size);
         const expected=LEB128.encode!long(long_x);
         writefln("LEB128.decode=%s", expected);
         writefln("x           =%s", x.toHex);
-        writefln("decodeLEB128=%s", x.decodeLEB128(expected).toHex);
+        writefln("decodeLEB128=%s", x._decodeLEB128(expected).toHex);
         writefln("x._data=%s", x._data);
-        writefln("decodeLEB128._data=%s", BigNumber.decodeLEB128(expected)._data);
+        writefln("decodeLEB128._data=%s", BigNumber._decodeLEB128(expected)._data);
 
         // assert(x.calc_size is 1);
         // assert(x.encodeLEB128 == [1]);
