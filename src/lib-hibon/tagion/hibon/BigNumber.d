@@ -383,36 +383,6 @@ struct BigNumber {
     unittest { // Test of Two complement
         import std.algorithm.comparison : equal;
         {
-            // writefln("%08x", -0x1_0000_0001);
-            // BigNumber x;
-            // x=long.min;
-            // x=BigNumber("-0x1_0000_0000_0000_0000_0000_0000");
-            // x-=2;
-            //const x=BigNumber("-0xAB341234_6789ABCD_EF01AB34_12346789_ABCDEF01");
-            //const x=BigNumber("-0xAB341234_6789ABCD_EF01AB34_12346789_00000000");
-            //const x=BigNumber("-0xAB341234_6789ABCD_EF01AB34_00000000_00000000");
-            //const x=BigNumber("-0xAB341234_6789ABCD_00000000_00000000_00000000");
-            //const x=BigNumber("-0xAB341234_00000000_00000000_00000000_00000000");
-            const x=BigNumber("-0xAB341234_6789ABCD_EF01AB34_12346789_ABCDEF01");
-
-            // x*=2;
-            // x-=2;
-            writefln("x=%s", x.toHex);
-            foreach(d; x._data) {
-                writef("%08x ", d);
-            }
-            writeln("");
-            foreach(t; x.two_complement) {
-                writef("%08x ", t);
-            }
-            writeln("\n");
-            const encoded=x.encodeLEB128;
-            writefln("%s", encoded);
-            writefln("%s\n\n", BigNumber.decodeLEB128(encoded).toHex);
-
-        }
-
-        {
             const x=BigNumber(0);
             assert(equal(x.two_complement, [0]));
         }
@@ -514,7 +484,6 @@ struct BigNumber {
             if ((shift < 7) && (!range2c.empty)) {
                 //debug writefln("range2c.front=%08x 0x%08x %d", range2c.front, value, shift);
                 value &= ~(~0L << shift);
-                debug writefln("0x%08x 0x%08x 0x%08x", value, ~(~0L << shift), (range2c.front << shift));
                 value |= (range2c.front << shift);
                 shift+=DIGITS_BIT_SIZE;
                 range2c.popFront;
@@ -522,7 +491,6 @@ struct BigNumber {
             d = value & 0x7F;
             shift-=7;
             value >>= 7;
-            debug writefln("\t### value=%016x", value);
             if (range2c.empty && (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40)))) {
                 return buffer[0..i+1].idup;
             }
@@ -575,52 +543,24 @@ struct BigNumber {
         bool sign;
         size_t index;
         foreach(i, d; data) {
-            debug writefln("result=%016x %02x shift=%d i=%d", result, d, shift, i);
             result |= ulong(d & 0x7F) << shift;
-            debug writefln("      =%016x", result);
             shift+=7;
             if (shift >= DIGITS_BIT_SIZE) {
-                debug writefln("\t## value=%08x", result & uint.max);
                 values[index++]=result & uint.max;
                 result >>= DIGITS_BIT_SIZE;
                 shift-=DIGITS_BIT_SIZE;
             }
             if ((d & 0x80) == 0) {
-                debug writefln("\t## LAST A value=%08x", result);
                 if ((d & 0x40) != 0) {
                     result |= (~0L << shift);
                     sign=true;
                 }
-//                if (index == 0) {
                 const v=cast(int)(result & uint.max);
-                debug writefln("\t## LAST B shift=%d result=%016x v=%08x %d", shift, result, v, index);
-                debug writefln("\t## sign=%s (v=-1) = %s %s %s %s %s %s index=%d", sign, v is -1, (sign && (v == -1)),
-                    (v !is 0) && (((sign && (v == -1)))),
-                    sign?(v !is -1):(v !is 0),
-                    (index > 0) && (v is -1) && (values[index-1]  is 0),
-                    sign?((index > 0) && (v is -1) && (values[index-1] is 0)):(v !is 0),
-                    index
-                    );
-                // if ((index is 0) || (v !is 0)) {
-                // if ((index is 0) || (sign?((index > 0) && (v is -1) && (values[index-1] is 0)):(v !is 0)) ) {
-                debug writefln("HER!! %d sign=%s", v, sign);
-                    values[index++]=v;
-                    // }
+                values[index++]=v;
                 break;
             }
         }
         debug writefln("values=%s", values[0..index]);
-        size_t remove_tail(const size_t j) {
-            if (j > 1) {
-                const current=cast(int)values[j-1];
-                const next=cast(int)values[j-2];
-                if (((current is 0) || (current is -1)) && (current is next)) {
-                    return remove_tail(j-1);
-                }
-            }
-            return j;
-        }
-        index=remove_tail(index);
         debug writefln("index=%d", index);
         auto result_data=values[0..index];
         //auto result_data=remove_tail(values, index);
