@@ -408,7 +408,7 @@ struct BigNumber {
             writeln("\n");
             const encoded=x.encodeLEB128;
             writefln("%s", encoded);
-            writefln("%s\n\n", BigNumber._decodeLEB128(encoded).toHex);
+            writefln("%s\n\n", BigNumber.decodeLEB128(encoded).toHex);
 
         }
 
@@ -602,72 +602,6 @@ struct BigNumber {
                     index
                     );
                 // if ((index is 0) || (v !is 0)) {
-                if ((index is 0) || (sign?((index > 0) && (v is -1) && (values[index-1] is 0)):(v !is 0)) ) {
-                    debug writefln("HER!! %d", v);
-                    values[index++]=v;
-                }
-                break;
-            }
-        }
-        auto result_data=values[0..index]; //.dup;
-        debug writefln("result_data=%s sign=%s", result_data, sign);
-        if (sign) {
-            // Takes the to complement of the result because BigInt
-            // is stored as a unsigned value and a sign
-            foreach(ref r; result_data) {
-                r=~r;
-            }
-            bool overflow=true;
-            foreach(ref r; result_data) {
-                if (overflow) {
-                    r++;
-                    overflow=(r==0);
-                }
-                else {
-                    break;
-                }
-            }
-
-        }
-        return BigNumber(result_data, sign);
-    }
-
-
-    static BigNumber _decodeLEB128(const(ubyte[]) data) pure {
-        scope values=new uint[data.length/BigDigit.sizeof+1];
-        enum DIGITS_BIT_SIZE=uint.sizeof*8;
-        ulong result;
-        uint shift;
-        bool sign;
-        size_t index;
-        foreach(i, d; data) {
-            debug writefln("result=%016x %02x shift=%d i=%d", result, d, shift, i);
-            result |= ulong(d & 0x7F) << shift;
-            debug writefln("      =%016x", result);
-            shift+=7;
-            if (shift >= DIGITS_BIT_SIZE) {
-                debug writefln("\t## value=%08x", result & uint.max);
-                values[index++]=result & uint.max;
-                result >>= DIGITS_BIT_SIZE;
-                shift-=DIGITS_BIT_SIZE;
-            }
-            if ((d & 0x80) == 0) {
-                debug writefln("\t## LAST A value=%08x", result);
-                if ((d & 0x40) != 0) {
-                    result |= (~0L << shift);
-                    sign=true;
-                }
-//                if (index == 0) {
-                const v=cast(int)(result & uint.max);
-                debug writefln("\t## LAST B shift=%d result=%016x v=%08x %d", shift, result, v, index);
-                debug writefln("\t## sign=%s (v=-1) = %s %s %s %s %s %s index=%d", sign, v is -1, (sign && (v == -1)),
-                    (v !is 0) && (((sign && (v == -1)))),
-                    sign?(v !is -1):(v !is 0),
-                    (index > 0) && (v is -1) && (values[index-1]  is 0),
-                    sign?((index > 0) && (v is -1) && (values[index-1] is 0)):(v !is 0),
-                    index
-                    );
-                // if ((index is 0) || (v !is 0)) {
                 // if ((index is 0) || (sign?((index > 0) && (v is -1) && (values[index-1] is 0)):(v !is 0)) ) {
                 debug writefln("HER!! %d sign=%s", v, sign);
                     values[index++]=v;
@@ -758,7 +692,7 @@ unittest {
 
         assert(x.calc_size == expected.length);
         assert(BigNumber.calc_size(expected) == expected.length);
-        const decoded=BigNumber._decodeLEB128(expected);
+        const decoded=BigNumber.decodeLEB128(expected);
 //        assert(decoded.size == expected.length);
         writefln("decoded=%s x=%s", decoded, x);
         writefln("decoded._data=%s x._data=%s", decoded._data, x._data);
@@ -882,7 +816,7 @@ unittest {
 //        const expected=LEB128.encode!long(long_x);
 //        writefln("LEB128.decode=%s", expected);
         writefln("x           =%s", x.toHex);
-        const decoded=BigNumber._decodeLEB128(expected);
+        const decoded=BigNumber.decodeLEB128(expected);
         writefln("decodeLEB128=%s", decoded.toHex);
         writefln("x._data           =%s", x._data);
         writefln("decodeLEB128._data=%s", decoded._data);
