@@ -17,6 +17,7 @@ class TagionException : Exception, TagionExceptionInterface {
         super( msg, file, line );
     }
 
+    @trusted
     immutable(TagionException) taskException() {
         version(LOGGER) {
             import tagion.services.LoggerService;

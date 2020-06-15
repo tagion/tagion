@@ -5,16 +5,18 @@ import std.json;
 
 //import tagion.Options;
 
-protected __gshared static string __language="";
-
-@property void language(string lang) {
-    assert(__language.length is 0, format("Language has already been set to %s", __language));
-    __language=lang;
+struct Language {
+    protected string _name;
+    void set(string name) {
+        _name=name;
+    }
+    immutable(string) name() pure const nothrow {
+        return _name;
+    }
 }
 
-@property string language() pure nothrow {
-    return __language;
-}
+
+__gshared Language language;
 
 version(UPDATE_MESSAGE_TABEL) {
     @safe synchronized struct Message {
@@ -51,7 +53,7 @@ else {
 
 @trusted
 string message(Args...)(string fmt, lazy Args args) {
-    if (language == "" ) {
+    if (language.name == "") {
         version(UPDATE_MESSAGE_TABEL) {
             if (!(fmt in translation)) {
                 Message.set(fmt,fmt);

@@ -7,9 +7,6 @@ private import std.exception : assumeUnique;
 import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
 
-// private import std.algorithm : splitter;
-//private import tagion.Options;
-
 enum this_dot="this.";
 
 import std.conv;
@@ -42,15 +39,6 @@ alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 }
 
-// static string separator;
-// string join(string[] list) {
-//     import std.array : array_join=join;
-//     return list.array_join(separator);
-// }
-
-
-//template isBufferType(T) {
-//    alias isBuffer=true;
 enum isBufferType(T)=is(T : const(ubyte[]) ) || is(TypedefType!T : const(ubyte[]) );
 
 static unittest {
