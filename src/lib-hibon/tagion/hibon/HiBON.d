@@ -170,10 +170,7 @@ static size_t size(U)(const(U[]) array) pure {
             }
             else {
                 this.type = E;
-                static if (E is BIGINT || E is BINARY) {
-                    this.value=x;
-                }
-                else static if (E is HASHDOC) {
+                static if (E is BIGINT || E is BINARY || E is HASHDOC) {
                     this.value=x;
                 }
                 else {
@@ -343,7 +340,6 @@ static size_t size(U)(const(U[]) array) pure {
                             }
                             else {
                                 Document.build(buffer, E, key, value.by!E, index);
-
                             }
                             break TypeCase;
                         }
@@ -528,8 +524,9 @@ static size_t size(U)(const(U[]) array) pure {
         }
     }
 
+    @trusted
     unittest {
-        // import std.stdio;
+        import std.stdio;
         import std.conv : to;
         import std.typecons : Tuple, isTuple;
         // Note that the keys are in alphabetic order
@@ -557,6 +554,7 @@ static size_t size(U)(const(U[]) array) pure {
         test_tabel.BOOLEAN  = true;
         test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
+        writefln("test_tabel.BIGINT.calc_size=%d test_tabel.BIGINT.serialize=%s", test_tabel.BIGINT.calc_size, test_tabel.BIGINT.serialize);
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias TabelArray = Tuple!(
@@ -675,6 +673,11 @@ static size_t size(U)(const(U[]) array) pure {
 
             immutable data = hibon.serialize;
             const doc = Document(data);
+            writefln("data=%s", data);
+            writefln("doc[].front=%s %s %s %d", doc[].front, doc[].front.type, doc[].front.key, doc[].front.size);
+            const x=doc[].front.size;
+
+            writefln("doc.length=%d test_tabel.length=%d", doc.length, test_tabel.length);
             assert(doc.length is test_tabel.length);
 
             foreach(i, t; test_tabel) {
@@ -683,6 +686,7 @@ static size_t size(U)(const(U[]) array) pure {
                 const e = doc[key];
                 assert(e.key == key);
                 assert(e.type.to!string == key);
+                writefln("e.get!(test_tabel.Types[i])=%s t=%s %s", e.get!(test_tabel.Types[i]), t, test_tabel.Types[i].stringof);
                 assert(e.get!(test_tabel.Types[i]) == t);
             }
         }

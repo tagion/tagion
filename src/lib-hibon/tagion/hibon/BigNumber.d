@@ -5,6 +5,7 @@ protected import std.bigint;
 import std.format;
 import std.internal.math.biguintnoasm : BigDigit;
 //import std.conv : emplace;
+import std.typecons : Tuple;
 import std.range.primitives;
 import std.traits;
 import std.system : Endian;
@@ -21,9 +22,9 @@ import tagion.hibon.BigNumber;
  BigNumber used in the HiBON format
  It is a wrapper of the std.bigint
  +/
+
 @safe
 struct BigNumber {
-
     private union {
         BigInt x;
         struct {
@@ -107,30 +108,22 @@ struct BigNumber {
     }
 
 
-    /++
-     Construct an BigNumber for explicit sign digit number array
-     +/
-    @trusted
-        this(const bool sign, const(BigDigit[]) dig) {
-        _sign=sign;
-        _data=dig.dup;
-    }
+    // /++
+    //  Construct an BigNumber for explicit sign digit number array
+    //  +/
+    // @trusted
+    //     this(const bool sign, const(BigDigit[]) dig) {
+    //     _sign=sign;
+    //     _data=dig.dup;
+    // }
 
-    @trusted this(const(ubyte[]) buffer) {
-        const digits_len=buffer.length / BigDigit.sizeof;
-        .check(digits_len > 0, "BigNumber must contain some digits");
-        _data=(cast(BigDigit*)(buffer.ptr))[0..digits_len].dup;
-        if (buffer.length % BigDigit.sizeof == 0) {
-            _sign=false;
-        }
-        else if (buffer.length % BigDigit.sizeof == 1) {
-            .check(buffer[$-1] is 0 || buffer[$-1] is 1,
-                format("BigNuber has incorrect sign %d value should 0 or 1", buffer[$-1]));
-            _sign=cast(bool)buffer[$-1];
-        }
-        else {
-            .check(0, "Buffer does not have the correct size");
-        }
+    /++
+     constructor for BigNumber in LEB128+ formant
+     +/
+    @trusted this(const(ubyte[]) buffer) pure nothrow {
+        auto result=decodeLEB128(buffer);
+        _data=result.value._data;
+        _sign=result.value._sign;
     }
     /++
      Binary operator of op
@@ -302,18 +295,24 @@ struct BigNumber {
         return x.toDecimalString;
     }
 
-    /++
-     Coverts to a base64 format
-     +/
-    @trusted
-        immutable(ubyte[]) serialize() const pure nothrow {        immutable digits_size=BigDigit.sizeof*_data.length;
-        auto buffer=new ubyte[digits_size+_sign.sizeof];
-        buffer[0..digits_size]=cast(ubyte[])_data;
-        buffer[$-1]=cast(ubyte)_sign;
-        return assumeUnique(buffer);
-    }
+    // /++
+    //  Coverts to a base64 format
+    //  +/
+    // @trusted
+    //     immutable(ubyte[]) serialize() const pure nothrow {        immutable digits_size=BigDigit.sizeof*_data.length;
+    //     auto buffer=new ubyte[digits_size+_sign.sizeof];
+    //     buffer[0..digits_size]=cast(ubyte[])_data;
+    //     buffer[$-1]=cast(ubyte)_sign;
+    //     return assumeUnique(buffer);
+    // }
 
-    TwoComplementRange two_complement() pure const /*nothrow*/ {
+
+    /++
+     Converts the BigNumber as a two complement representation
+     Returns:
+     Range of two complement
+     +/
+    TwoComplementRange two_complement() pure const nothrow {
         static assert(BigDigit.sizeof is int.sizeof);
         return TwoComplementRange(this);
     }
@@ -335,7 +334,7 @@ struct BigNumber {
 
         @disable this();
         @trusted
-        this(const BigNumber num) pure /*nothrow*/ {
+        this(const BigNumber num) pure nothrow {
             sign=num._sign;
             overflow=true;
             data=num._data;
@@ -351,7 +350,7 @@ struct BigNumber {
                     return _empty;
                 }
             }
-            void popFront() /+nothrow+/ pure {
+            void popFront() pure nothrow {
                 if (data.length) {
                     //debug writefln("data[0]=%d sign=%s", data[0], sign);
                     if (sign) {
@@ -466,6 +465,7 @@ struct BigNumber {
         assert(0);
     }
 
+    alias serialize=encodeLEB128;
     immutable(ubyte[]) encodeLEB128() const pure {
         check_minuz_zero;
         immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+2;
@@ -531,14 +531,18 @@ struct BigNumber {
         assert(0);
     }
 
-    static BigNumber decodeLEB128(const(ubyte[]) data) pure {
+    alias DecodeLEB128=Tuple!(BigNumber, "value", size_t, "size");
+
+    static DecodeLEB128 decodeLEB128(const(ubyte[]) data) pure nothrow {
         scope values=new uint[data.length/BigDigit.sizeof+1];
         enum DIGITS_BIT_SIZE=uint.sizeof*8;
         ulong result;
         uint shift;
         bool sign;
         size_t index;
+        size_t size;
         foreach(i, d; data) {
+            size++;
             result |= ulong(d & 0x7F) << shift;
             shift+=7;
             if (shift >= DIGITS_BIT_SIZE) {
@@ -553,6 +557,7 @@ struct BigNumber {
                 }
                 const v=cast(int)(result & uint.max);
                 values[index++]=v;
+                //size=i;
                 break;
             }
         }
@@ -575,7 +580,7 @@ struct BigNumber {
         while ((index > 1) && (result_data[index-1] is 0)) {
             index--;
         }
-        return BigNumber(result_data[0..index], sign);
+        return DecodeLEB128(BigNumber(result_data[0..index], sign), size);
     }
 
 }
@@ -583,7 +588,7 @@ struct BigNumber {
 
 unittest {
     import std.algorithm.comparison : equal;
-    //import std.stdio;
+    import std.stdio;
     import LEB128=tagion.utils.LEB128;
 
     void ok(BigNumber x, const(ubyte[]) expected) {
@@ -591,11 +596,13 @@ unittest {
         assert(encoded == expected);
         assert(equal(encoded, expected));
         assert(x.calc_size == expected.length);
-        assert(BigNumber.calc_size(expected) == expected.length);
+        const size=BigNumber.calc_size(expected);
+        assert(size == expected.length);
         const decoded=BigNumber.decodeLEB128(expected);
-        assert(decoded._data == x._data);
-        assert(decoded.sign == x.sign);
-        assert(decoded == x);
+        assert(decoded.value._data == x._data);
+        assert(decoded.value.sign == x.sign);
+        assert(decoded.size == size);
+        assert(decoded.value == x);
     }
 
     { // Small positive numbers

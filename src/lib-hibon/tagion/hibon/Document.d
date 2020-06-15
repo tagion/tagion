@@ -378,9 +378,7 @@ static assert(uint.sizeof == 4);
             size += calc_size(x.data.length) + x.data.length;
         }
         else static if(is(T : const BigNumber)) {
-            import std.internal.math.biguintnoasm : BigDigit;
-            const _size= bool.sizeof+x.data.length*BigDigit.sizeof;
-            size += LEB128.calc_size(_size) + _size;
+            size += x.calc_size;
         }
         else static if (isDataBlock!T) {
             const _size=x.size;
@@ -452,11 +450,7 @@ static assert(uint.sizeof == 4);
             buffer.array_write(x.data, index);
         }
         else static if (is(T : const BigNumber)) {
-            import std.internal.math.biguintnoasm : BigDigit;
-            immutable size=LEB128.encode(bool.sizeof+x.data.length*BigDigit.sizeof);
-            buffer.array_write(size, index);
-            buffer.array_write(x.data, index);
-            buffer.binwrite(x.sign, &index);
+            buffer.array_write(x.serialize, index);
         }
         else static if (isDataBlock!T) {
             immutable data=x.serialize;
@@ -546,10 +540,11 @@ static assert(uint.sizeof == 4);
         }
     }
 
+    @trusted
     unittest {
         import std.algorithm.sorting : isSorted;
         auto buffer=new ubyte[0x200];
-
+        import std.stdio;
         { // Test of null document
             const doc = Document(null);
             assert(doc.length is 0);
@@ -640,6 +635,7 @@ static assert(uint.sizeof == 4);
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
+                    writefln("e.get!U=%s test_tabel[i]=%s", e.get!U, test_tabel[i]);
                     assert(e.get!U == test_tabel[i]);
                     assert(keys.front == name);
                     keys.popFront;
@@ -681,7 +677,7 @@ static assert(uint.sizeof == 4);
 
                 index = 0;
 
-                enum size_guess=152;
+                enum size_guess=151;
                 uint size;
                 buffer.array_write(LEB128.encode(size_guess), index);
                 const start_index=index;
@@ -695,6 +691,7 @@ static assert(uint.sizeof == 4);
                 build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
 
                 size = cast(uint)(index - start_index);
+                writefln("size=%d size_guess=%d", size, size_guess);
                 assert(size == size_guess);
 
                 size_t dummy_index=0;
@@ -800,8 +797,8 @@ static assert(uint.sizeof == 4);
          * | [Type] | [len] | [key] | [val | unused... |
          * +-------------------------------------------+
          *          ^ type offset(1)
-         *                  ^ len offset(len.size)
-         *                          ^ sizeKey + 1 + len.size
+         *                  ^ len(sizeKey)
+         *                          ^ sizeKey + 1 + len(sizeKey)
          *                                 ^ size
          *                                             ^ data.length
          *
@@ -860,14 +857,8 @@ static assert(uint.sizeof == 4);
                                 return new Value(buffer);
                             }
                             else static if (E is BIGINT) {
-                                import std.internal.math.biguintnoasm : BigDigit;
-                                immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
-                                immutable len = binary_len.value / BigDigit.sizeof;
-                                immutable dig=(cast(immutable(BigDigit*))(data[value_pos+binary_len.size..$].ptr))[0..len];
-                                const sign=data[value_pos+binary_len.size+binary_len.value] !is 0;
-                                const big=BigNumber(sign, dig);
-                                return new Value(big);
-                                //  assert(0, format("Type %s not implemented", E));
+                                auto big_leb128=BigNumber.decodeLEB128(data[value_pos..$]);
+                                return new Value(big_leb128.value);
                             }
                             else static if (isDataBlock(E)) {
                                 immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
@@ -1055,11 +1046,14 @@ static assert(uint.sizeof == 4);
                                 alias T = Value.TypeT!E;
                                 static if (
                                     (E is STRING) || (E is DOCUMENT) ||
-                                    (E is BINARY) || (E is BIGINT)) {
+                                    (E is BINARY)) {
                                     return dataPos + dataSize;
                                 }
                                 else static if (isDataBlock(E)) {
                                     return dataPos + dataSize;
+                                }
+                                else static if (E is BIGINT) {
+                                    return valuePos + BigNumber.calc_size(data[valuePos..$]);
                                 }
                                 else {
                                     static if (E is TIME) {
