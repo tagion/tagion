@@ -127,7 +127,7 @@ DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) if (isUnsigned!T) {
         if ((d & 0x80) == 0) {
             len=i+1;
             static if (!is(BaseT==ulong)) {
-                check(result <= BaseT.max, format("LEB128 decoding overflow of %x for %s", result, T.stringof));
+                check(result <= BaseT.max, message("LEB128 decoding overflow of %x for %s", result, T.stringof));
             }
             return DecodeLEB128!T(cast(BaseT)result, len);
         }

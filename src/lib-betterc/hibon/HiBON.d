@@ -30,6 +30,7 @@ import hibon.utils.Memory;
 import hibon.utils.Text;
 import hibon.utils.BinBuffer;
 import hibon.utils.Basic;
+import LEB128=hibon.utils.LEB128;
 
 import hibon.utils.platform;
 //import core.stdc.stdio;
@@ -88,30 +89,36 @@ struct HiBONT {
     invariant {
         assert(_owns || (!_owns && _readonly));
     }
+
+    /++
+     Calculated the size in bytes of HiBON payload
+     Returns:
+     the size in bytes
+     +/
+    size_t size()  const {
+        size_t result;
+        foreach(n; _members[]) {
+            result+=n.size;
+        }
+        if (result>0) {
+            return result; //+calc_size(result);
+        }
+        else {
+            return ubyte.sizeof;
+        }
+    }
+
     /++
      Calculated the size in bytes of serialized HiBON
      Returns:
      the size in bytes
      +/
-
-    debug protected bool in_use;
-    size_t size()  const {
-
-        size_t result = uint.sizeof+Type.sizeof;
-//        int count=10;
-        debug {
-            bool* _in_use=cast(bool*)(&in_use);
-//            static int in_use;
-            assert(!in_use);
-            *_in_use=true;
-            scope(exit) {
-                *_in_use=false;
-            }
+    size_t serialize_size() const {
+        auto _size=size;
+        if (_size !is ubyte.sizeof ) {
+            _size += LEB128.calc_size(_size);
         }
-        foreach(n; _members[]) {
-            result+=n.size;
-        }
-        return result;
+        return _size;
     }
 
 
@@ -148,7 +155,7 @@ struct HiBONT {
      The byte stream
      +/
     immutable(ubyte[]) serialize() {
-        _buffer.recreate(size);
+        _buffer.recreate(serialize_size);
         append(_buffer);
         return _buffer.serialize;
     }
@@ -378,23 +385,9 @@ struct HiBONT {
                             else static if ( E is NATIVE_DOCUMENT ) {
                                 return Document.sizeKey(key.serialize)+value.by!(E).size+uint.sizeof;
                             }
-                            // else static if ( isNativeArray(E) ) {
-                            //     size_t result = Document.sizeKey(key.serialize)+uint.sizeof+Type.sizeof;
-                            //     foreach(i, e; value.by!(E)[]) {
-                            //         auto key=Text(uint.max.stringof.length)(i);
-                            //         result += Document.sizeKey(key.serialize);
-                            //         // static if(E is NATIVE_HIBON_ARRAY) {
-                            //         //     result += e.size;
-                            //         // }
-                            //         // else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                            //         //     result += uint.sizeof+e.size;
-                            //         // }
-                            //         // else static if (E is NATIVE_STRING_ARRAY) {
-                            //         //     result += uint.sizeof+e.length;
-                            //         // }
-                            //     }
-                            //     return result;
-                            // }
+                            else static if (E is VER) {
+                                return LEB128.calc_size(HIBON_VERSION);
+                            }
                             else {
                                 const v = value.by!(E);
                                 return Document.sizeT(E, key.serialize, v);
@@ -460,10 +453,6 @@ struct HiBONT {
                                     const doc=value.by!(E);
                                     buffer.write(value.by!(E).data);
                                 }
-                                // else static if (isNativeArray(E)) {
-                                //     Document.buildKey(buffer, DOCUMENT, key.serialize);
-                                //     appendList!E(buffer);
-                                // }
                                 else {
                                     goto default;
                                 }
@@ -619,7 +608,6 @@ struct HiBONT {
         hibon["a"] =1;
 
         assert(hibon.hasMember("b"));
-
         hibon.remove("b");
     }
 
@@ -767,12 +755,17 @@ struct HiBONT {
         }
         {
             auto hibon=HiBON();
-            hibon["2"]=1;
-//            assert(!hibon.isArray);
-            hibon["1"]=2;
-            //          assert(hibon.isArray);
-            hibon["4"]=2;
-            hibon["3"]=2;
+            hibon["1"]=1;
+            assert(!hibon.isArray);
+            hibon["0"]=2;
+            assert(hibon.isArray);
+            hibon["4"]=3;
+            assert(!hibon.isArray);
+            hibon["3"]=4;
+            assert(!hibon.isArray);
+            hibon["2"]=7;
+            assert(hibon.isArray);
+            hibon["05"]=2;
             assert(!hibon.isArray);
         }
     }
@@ -834,7 +827,7 @@ struct HiBONT {
             immutable size = hibon.size;
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size
-                = uint.sizeof                    // Size of the object in ubytes (uint(14))
+                = LEB128.calc_size(14)           // Size of the object in ubytes (uint(14))
                 + Type.sizeof                    // The HiBON Type  (Type.FLOAT32)  1
                 + ubyte.sizeof                   // Length of the key (ubyte(7))    2
                 + key.length                     // The key text string ("FLOAT64") 9

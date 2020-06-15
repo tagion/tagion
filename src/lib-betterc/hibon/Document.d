@@ -19,6 +19,7 @@ import hibon.utils.BinBuffer;
 import hibon.utils.Text;
 import hibon.utils.Bailout;
 import hibon.utils.Memory;
+import LEB128=hibon.utils.LEB128;
 import hibon.BigNumber;
 import hibon.HiBONBase;
 
@@ -61,6 +62,20 @@ struct Document {
     this(const Document doc) pure {
         this._data = doc._data;
     }
+    /++
+     This function returns the HiBON version
+     Returns:
+     HiBON version
+     +/
+    uint ver() const {
+        if (data.length > ubyte.sizeof) {
+            if (data[ubyte.sizeof] == Type.VER) {
+                const leb128_version=LEB128.decode!uint(data[ubyte.sizeof..$]);
+                return leb128_version.value;
+            }
+        }
+        return 0;
+    }
 
      void surrender() pure {
         _data=null;
@@ -75,13 +90,13 @@ struct Document {
         emplace(&this, doc);
     }
 
-    @property pure const {
+    @property const {
         bool empty() {
-            return data.length < 5;
+            return data.length < 1;
         }
 
         uint size() {
-            return *cast(uint*)(data[0..uint.sizeof].ptr);
+            return LEB128.decode!uint(data).value;
         }
     }
 
@@ -156,6 +171,7 @@ struct Document {
     struct Range {
         @nogc:
         immutable(ubyte[]) data;
+        immutable uint     ver;
     protected:
         size_t            _index;
         Element           _element;
@@ -163,11 +179,18 @@ struct Document {
         this(immutable(ubyte[]) data) {
             this.data = data;
             if (data.length == 0) {
-                _index = 0;
+                _index = ubyte.sizeof;
             }
             else {
-                _index = uint.sizeof;
+                _index = LEB128.calc_size(data);
                 popFront();
+                uint _ver;
+                if (!empty && (front.type is Type.VER)) {
+                    const leb128_ver=LEB128.decode!uint(data[_index..$]);
+                    _ver=leb128_ver.value;
+                    _index+=leb128_ver.size;
+                }
+                ver=_ver;
             }
         }
 
@@ -831,8 +854,8 @@ struct Document {
          * | [Type] | [len] | [key] | [val | unused... |
          * +-------------------------------------------+
          *          ^ type offset(1)
-         *                  ^ len offset(2)
-         *                          ^ keySize + 2
+         *                  ^ len(sizeKey)
+         *                          ^ sizeKey + 1 + len(sizeKey)
          *                                 ^ size
          *                                             ^ data.length
          *
@@ -1025,12 +1048,14 @@ struct Document {
             uint valuePos() {
                 return KEY_POS+keyLen;
             }
+        }
 
+        @property const {
             /++
              Returns:
              the size of the element in bytes
              +/
-            @trusted size_t size() {
+            size_t size() {
                 with(Type) {
                 TypeCase:
                     switch(type) {
@@ -1139,7 +1164,9 @@ struct Document {
                     return NONE;
                 }
             }
+        }
 
+        @property const pure {
             /++
                Check if the type match That template.
                That template must have one parameter T as followes

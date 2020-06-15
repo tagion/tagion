@@ -20,6 +20,8 @@ import hibon.utils.Bailout;
 import hibon.utils.Memory;
 import hibon.utils.utc;
 
+enum HIBON_VERSION=0;
+
 /++
  HiBON Type codes
 +/
@@ -40,6 +42,7 @@ enum Type : ubyte {
         UINT64          = 0x22,  // 64 bit unsigned integer
 //        HASHDOC         = 0x23,  // Hash point to documement
 //        UBIGINT         = 0x2B,  /// Unsigned Bigint
+        VER             = 0x3F,  /// Version field
 
         DEFINED_NATIVE  = 0x40,  /// Reserved as a definition tag it's for Native types
         NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
@@ -113,7 +116,7 @@ template Init_HiBON_Types(string text, uint i) {
     else {
         enum start_bracket=(i is 0)?"[":"";
         enum E=cast(Type)i;
-        enum flag=(!isNative(E) && (E !is Type.NONE) && (E !is Type.DEFINED_ARRAY) && (E !is Type.DEFINED_NATIVE));
+        enum flag=(!isNative(E) && (E !is Type.NONE) && (E !is Type.VER) && (E !is Type.DEFINED_ARRAY) && (E !is Type.DEFINED_NATIVE));
         enum Init_HiBON_Types=Init_HiBON_Types!(text~start_bracket~flag.stringof~",", i+1);
     }
 }
