@@ -561,9 +561,9 @@ static size_t size(U)(const(U[]) array) pure {
         // Because the HiBON keys must be ordered
         alias TabelArray = Tuple!(
             immutable(ubyte)[],  Type.BINARY.stringof,
-            Credential,          Type.CREDENTIAL.stringof,
-            CryptDoc,            Type.CRYPTDOC.stringof,
-             HashDoc,             Type.HASHDOC.stringof,
+            // Credential,          Type.CREDENTIAL.stringof,
+            // CryptDoc,            Type.CRYPTDOC.stringof,
+            HashDoc,             Type.HASHDOC.stringof,
             string,              Type.STRING.stringof,
             );
 
@@ -571,8 +571,8 @@ static size_t size(U)(const(U[]) array) pure {
         test_tabel_array.BINARY        = [1, 2, 3];
         test_tabel_array.STRING        = "Text";
         test_tabel_array.HASHDOC       = HashDoc(27, [3,4,5]);
-        test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
-        test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
+        // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
+        // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
 
         { // empty

@@ -11,7 +11,7 @@ import std.system : Endian;
 import std.base64;
 import std.exception : assumeUnique;
 
-import std.stdio;
+//import std.stdio;
 
 import tagion.hibon.HiBONException : check;
 import tagion.hibon.BigNumber;
@@ -209,9 +209,6 @@ struct BigNumber {
      +/
     @trusted
         bool opEquals()(auto ref const BigNumber y) const pure {
-        debug writefln("x._sign == y._sign=%s", _sign == y._sign);
-        debug writefln("x._data == y._data=%s", _data == y._data);
-        debug writefln("x._data == y._data=%s", x == y.x);
         return x == y.x;
     }
 
@@ -379,7 +376,6 @@ struct BigNumber {
         }
     }
 
-    @trusted
     unittest { // Test of Two complement
         import std.algorithm.comparison : equal;
         {
@@ -560,14 +556,7 @@ struct BigNumber {
                 break;
             }
         }
-        debug writefln("values=%s", values[0..index]);
-        debug writefln("index=%d", index);
         auto result_data=values[0..index];
-        //auto result_data=remove_tail(values, index);
-        foreach(d; result_data) {
-            debug writef("%08x ", d);
-        }
-        debug writefln("sign=%s", sign);
         if (sign) {
             // Takes the to complement of the result because BigInt
             // is stored as a unsigned value and a sign
@@ -580,25 +569,12 @@ struct BigNumber {
                     overflow=(current == -1);
                     current++;
                 }
-                debug writefln("%d 0x%08x 0x%08x", i, current, r);
                 r=current & uint.max;
             }
-
-            // foreach(ref r; result_data) {
-            //     if (overflow) {
-            //         r++;
-            //         overflow=(r==0);
-            //     }
-            //     else {
-            //         break;
-            //     }
-            // }
-
         }
         while ((index > 1) && (result_data[index-1] is 0)) {
             index--;
         }
-        debug writefln("result_data=%s sign=%s", result_data[0..index], sign);
         return BigNumber(result_data[0..index], sign);
     }
 
@@ -607,37 +583,16 @@ struct BigNumber {
 
 unittest {
     import std.algorithm.comparison : equal;
-    import std.stdio;
+    //import std.stdio;
     import LEB128=tagion.utils.LEB128;
-    // {
-    //     BigNumber x=0;
-    //     writefln("x.calc_size=%d", x.calc_size);
-    //     writefln("x.encode128=%s", x.encodeLEB128);
-    //     writefln("x.decodeLEB128=%s", x.decodeLEB128([0]));
-
-    //     // assert(x.calc_size is 1);
-    //     // assert(x.encodeLEB128 == [0]);
-    //     // assert(x.decodeLEB128([0]) == 0);
-    // }
 
     void ok(BigNumber x, const(ubyte[]) expected) {
         const encoded=x.encodeLEB128;
-        writefln("x       =%s", x.toHex);
-        writefln("encoded =%s", encoded);
-        writefln("expected=%s", expected);
         assert(encoded == expected);
         assert(equal(encoded, expected));
-        writefln("x.calc_size    =%d", x.calc_size);
-        writefln("expected.length=%d", expected.length);
-
         assert(x.calc_size == expected.length);
         assert(BigNumber.calc_size(expected) == expected.length);
         const decoded=BigNumber.decodeLEB128(expected);
-//        assert(decoded.size == expected.length);
-        writefln("decoded=%s x=%s", decoded, x);
-        writefln("decoded._data=%s x._data=%s", decoded._data, x._data);
-        writefln("decoded.sign=%s x.sign=%s", decoded.sign, x.sign);
-        writefln("decoded == x =%s", decoded == x);
         assert(decoded._data == x._data);
         assert(decoded.sign == x.sign);
         assert(decoded == x);
@@ -670,7 +625,6 @@ unittest {
             x=x*2;
             ok(x, [254, 255, 255, 255, 255, 255, 255, 255, 255, 3]);
             x++;
-            writefln("\n\nx=%s", x.toHex);
             ok(x, [255, 255, 255, 255, 255, 255, 255, 255, 255, 3]);
         }
 
@@ -679,10 +633,6 @@ unittest {
             ok(x, [129, 222, 183, 222, 154, 241, 153, 154, 146, 232, 172, 141, 240, 189, 243, 213, 137, 207, 209, 145, 193, 230, 42]);
         }
 
-
-//        [254, 255, 255, 255, 255, 255, 255, 255, 255, 3]
-        // auto x=BigNumber("0xAB341234_6789ABCD_EF01AB34_12346789_ABCDEF01");
-        // ok(x, [0xABCDEF01, 0x12346789, 0xEF01AB34, 0x6789ABCD, 0xAB341234]);
     }
 
     { // Big Negative number
@@ -692,10 +642,8 @@ unittest {
             x*=2;
             ok(x, [128, 128, 128, 128, 128, 128, 128, 128, 128, 126]);
             x--;
-            writefln("\n\nx=%s", x.toHex);
             ok(x, [255, 255, 255, 255, 255, 255, 255, 255, 255, 125]);
             x--;
-            writefln("x=%s", x.toHex);
             ok(x, [254, 255, 255, 255, 255, 255, 255, 255, 255, 125]);
         }
 
@@ -724,45 +672,5 @@ unittest {
             x=BigNumber("-0xAB341234_00000000_00000000_00000000_00000000");
             ok(x, [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 176, 238, 190, 153, 85]);
         }
-    }
-
-    {
-        writefln("\n\n");
-        //enum long_x=0x0000_0003_FFFF_FFFF; //long.max/2;
-        //enum long_x=long(int.min)*2; //long(int.min)*4L; //ulong.max; //0x0000_0003_FFFF_FFFF; //long.max/2;
-        //enum long_x=long(int.min); //long(int.min)*4L; //ulong.max; //0x0000_0003_FFFF_FFFF; //long.max/2;
-        //const long_x=BigNumber("0xAB341234_6789ABCD_EF01AB34_12346789_ABCDEF01");// long.min; //long(int.min)*4L; //ulong.max; //0x0000_0003_FFFF_FFFF; //long.max/2;
-
-//        const long_x=BigNumber("0xFB341234_6789ABCD");// long.min; //long(int.min)*4L; //ulong.max; //0x0000        BigNumber x=long_x;
-        //auto x=BigNumber(ulong.max)*2;
-//        long_x
-//        BigNumber x;
-//        const x=BigNumber("0xAB341234_6789ABCD_EF01AB34_12346789_ABCDEF01");
-        BigNumber x;
-        x=long.min;
-        x*=2;
-        //x=x-1;
-        writefln("X=%s", x.toHex);
-        // x--;
-        foreach(t; x.two_complement) {
-            writef("%08X ", t & uint.max);
-        }
-        writeln("");
-        const expected=x.encodeLEB128;
-
-        writefln("x.encode128  =%s", expected);
-        //writefln("x.calc_size  =%d", x.calc_size);
-        writefln("x.calc_size  =%d", x.calc_size);
-//        const expected=LEB128.encode!long(long_x);
-//        writefln("LEB128.decode=%s", expected);
-        writefln("x           =%s", x.toHex);
-        const decoded=BigNumber.decodeLEB128(expected);
-        writefln("decodeLEB128=%s", decoded.toHex);
-        writefln("x._data           =%s", x._data);
-        writefln("decodeLEB128._data=%s", decoded._data);
-
-        // assert(x.calc_size is 1);
-        // assert(x.encodeLEB128 == [1]);
-        // assert(x.decodeLEB128([1]) == 1);
     }
 }

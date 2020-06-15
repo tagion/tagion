@@ -64,8 +64,8 @@ enum typeMap=[
     Type.UINT64     : "u64",
     Type.BIGINT     : "big",
     Type.HASHDOC    : "#",
-    Type.CRYPTDOC   : "(#)",
-    Type.CREDENTIAL : "&",
+    // Type.CRYPTDOC   : "(#)",
+    // Type.CREDENTIAL : "&",
 
     Type.DEFINED_NATIVE : NotSupported,
 
@@ -109,7 +109,6 @@ struct toJSONT(bool HASHSAFE) {
         if (isarray) {
             result.array=null;
             result.array.length=doc.length;
-            pragma(msg, typeof(result.array));
         }
         foreach(e; doc[]) {
             with(Type) {
@@ -121,14 +120,8 @@ struct toJSONT(bool HASHSAFE) {
                             static if (E is DOCUMENT) {
                                 const sub_doc=e.by!E;
                                 auto doc_element=toJSONT(sub_doc);
-                                writefln("doc_element.type=%s e.key=%s", doc_element.type, e.key);
                                 if ( isarray ) {
-                                    // if (doc_element.type is JSONType.array) {
-                                    //     result.array~=JSONValue(doc_element);
-                                    // }
-                                    // else {
                                     result.array[e.index]=JSONValue(doc_element);
-                                    // }
                                 }
                                 else {
                                     result[e.key]=doc_element;
@@ -181,7 +174,7 @@ struct toJSONT(bool HASHSAFE) {
                     else static if(E is INT64 || E is UINT64) {
                         doc_element[VALUE]=format("0x%x", e.by!(E));
                     }
-                    else static if(E is HASHDOC || E is CRYPTDOC || E is CREDENTIAL || E is BIGINT) {
+                    else static if((E is HASHDOC) || (E is BIGINT)) {
                         doc_element[VALUE]=encodeBase64(e.by!(E).serialize);
                     }
                     else static if(E is BINARY) {
@@ -271,9 +264,7 @@ HiBON toHiBON(scope const JSONValue json) {
             return BigNumber(jvalue.str);
         }
         else static if (
-            is(UnqualT==HashDoc) ||
-            is(UnqualT==CryptDoc) ||
-            is(UnqualT==Credential) ) {
+            is(UnqualT==HashDoc) ) {
             const buffer=HiBONdecode(jvalue.str);
             return T(buffer);
         }
@@ -420,15 +411,15 @@ unittest {
         immutable(ubyte)[],  Type.BINARY.stringof,
         string,              Type.STRING.stringof,
         HashDoc,             Type.HASHDOC.stringof,
-        Credential,          Type.CREDENTIAL.stringof,
-        CryptDoc,            Type.CRYPTDOC.stringof,
+        // Credential,          Type.CREDENTIAL.stringof,
+        // CryptDoc,            Type.CRYPTDOC.stringof,
         );
     TabelArray test_tabel_array;
     test_tabel_array.BINARY        = [1, 2, 3];
     test_tabel_array.STRING        = "Text";
     test_tabel_array.HASHDOC       = HashDoc(27, [3,4,5]);
-    test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
-    test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
+    // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
+    // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
 
     { // Test sample 1 HiBON Objects

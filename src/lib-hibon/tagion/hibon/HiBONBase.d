@@ -53,7 +53,7 @@ enum Type : ubyte {
         STRING          = 0x02,  /// UTF8 STRING
         DOCUMENT        = 0x03,  /// Embedded document (Both Object and Documents)
         BINARY          = 0x05,  /// Binary data
-        CRYPTDOC        = 0x06,  /// Encrypted document
+        //CRYPTDOC        = 0x06,  /// Encrypted document
 
         BOOLEAN         = 0x08,  /// Boolean - true or false
         TIME            = 0x09,  /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
@@ -61,7 +61,7 @@ enum Type : ubyte {
         INT64           = 0x12,  /// 64-bit integer,
         //       FLOAT128        = 0x13, /// Decimal 128bits
         BIGINT          = 0x1B,  /// Signed Bigint
-        CREDENTIAL      = 0x1F,  /// Used to store public and or signatures
+        //CREDENTIAL      = 0x1F,  /// Used to store public and or signatures
         UINT32          = 0x20,  /// 32 bit unsigend integer
         FLOAT32         = 0x21,  /// 32 bit Float
         UINT64          = 0x22,  /// 64 bit unsigned integer
@@ -110,10 +110,9 @@ struct DataBlock(Type datatype) {
 }
 
 alias HashDoc = DataBlock!(Type.HASHDOC);
-alias CryptDoc = DataBlock!(Type.CRYPTDOC);
-alias Credential = DataBlock!(Type.CREDENTIAL);
 
-enum isDataBlock(T)=is(T : const(HashDoc)) || is(T : const CryptDoc) || is(T : const Credential);
+enum isDataBlock(T)=is(T : const(HashDoc));
+
 /++
  Returns:
  true if the type is a internal native HiBON type
@@ -159,7 +158,7 @@ bool isHiBONType(Type type) pure nothrow {
 @safe
 bool isDataBlock(Type type) pure nothrow {
     with(Type) {
-        return (type is HASHDOC || type is CRYPTDOC || type is CREDENTIAL);
+        return (type is HASHDOC);
     }
 }
 
@@ -205,8 +204,8 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @Type(Type.UINT64)     ulong      uint64;
     @Type(Type.BIGINT)     BigNumber bigint;
     @Type(Type.HASHDOC)    DataBlock!(Type.HASHDOC)    hashdoc;
-    @Type(Type.CREDENTIAL) DataBlock!(Type.CREDENTIAL) credential;
-    @Type(Type.CRYPTDOC)   DataBlock!(Type.CRYPTDOC)   cryptdoc;
+    // @Type(Type.CREDENTIAL) DataBlock!(Type.CREDENTIAL) credential;
+    // @Type(Type.CRYPTDOC)   DataBlock!(Type.CRYPTDOC)   cryptdoc;
 
     static if ( !is(Document == void) ) {
         @Type(Type.NATIVE_DOCUMENT) Document    native_document;
@@ -330,7 +329,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     }
 
     @trusted
-        this(T)(const T x) pure if (is(T==HashDoc) || is(T==CryptDoc) || is(T==Credential)) {
+        this(T)(const T x) pure if (is(T==HashDoc)) {
         alias MutableT = Unqual!T;
         alias Types=typeof(this.tupleof);
         foreach(i, ref m; this.tupleof) {
