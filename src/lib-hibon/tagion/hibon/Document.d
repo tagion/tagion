@@ -382,8 +382,7 @@ static assert(uint.sizeof == 4);
             const _size= bool.sizeof+x.data.length*BigDigit.sizeof;
             size += LEB128.calc_size(_size) + _size;
         }
-        else static if(isDataBlock!T) {
-
+        else static if (isDataBlock!T) {
             const _size=x.size;
             size += LEB128.calc_size(_size) + _size;
         }
@@ -595,14 +594,14 @@ static assert(uint.sizeof == 4);
             immutable(ubyte)[],  Type.BINARY.stringof,
             // Credential,          Type.CREDENTIAL.stringof,
             // CryptDoc,            Type.CRYPTDOC.stringof,
-            HashDoc,             Type.HASHDOC.stringof,
+            DataBlock,             Type.HASHDOC.stringof,
             string,              Type.STRING.stringof,
             );
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY        = [1, 2, 3];
         test_tabel_array.STRING        = "Text";
-        test_tabel_array.HASHDOC       = HashDoc(27, [3,4,5]);
+        test_tabel_array.HASHDOC       = DataBlock(27, [3,4,5]);
         // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
         // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
@@ -874,7 +873,7 @@ static assert(uint.sizeof == 4);
                                 immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
                                 immutable buffer_pos=value_pos+binary_len.size;
                                 immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
-                                return new Value(DataBlock!E(buffer));
+                                return new Value(DataBlock(buffer));
                             }
                             else {
                                 if (isHiBONType(type)) {

@@ -173,7 +173,7 @@ static size_t size(U)(const(U[]) array) pure {
                 static if (E is BIGINT || E is BINARY) {
                     this.value=x;
                 }
-                else static if (isDataBlock(E)) {
+                else static if (E is HASHDOC) {
                     this.value=x;
                 }
                 else {
@@ -563,14 +563,14 @@ static size_t size(U)(const(U[]) array) pure {
             immutable(ubyte)[],  Type.BINARY.stringof,
             // Credential,          Type.CREDENTIAL.stringof,
             // CryptDoc,            Type.CRYPTDOC.stringof,
-            HashDoc,             Type.HASHDOC.stringof,
+            DataBlock,             Type.HASHDOC.stringof,
             string,              Type.STRING.stringof,
             );
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY        = [1, 2, 3];
         test_tabel_array.STRING        = "Text";
-        test_tabel_array.HASHDOC       = HashDoc(27, [3,4,5]);
+        test_tabel_array.HASHDOC       = DataBlock(27, [3,4,5]);
         // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
         // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 

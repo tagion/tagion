@@ -77,7 +77,8 @@ enum Type : ubyte {
         NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING,          /// Represetents (string[]) is convert to an ARRAY of string's
         }
 
-struct DataBlock(Type datatype) {
+@safe
+struct DataBlock {
     protected {
         uint _type;
         immutable(ubyte)[] _data;
@@ -109,9 +110,9 @@ struct DataBlock(Type datatype) {
     }
 }
 
-alias HashDoc = DataBlock!(Type.HASHDOC);
+//alias HashDoc = DataBlock; //!(Type.HASHDOC);
 
-enum isDataBlock(T)=is(T : const(HashDoc));
+enum isDataBlock(T)=is(T : const(DataBlock));
 
 /++
  Returns:
@@ -203,7 +204,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @Type(Type.UINT32)     uint       uint32;
     @Type(Type.UINT64)     ulong      uint64;
     @Type(Type.BIGINT)     BigNumber bigint;
-    @Type(Type.HASHDOC)    DataBlock!(Type.HASHDOC)    hashdoc;
+    @Type(Type.HASHDOC)    DataBlock    hashdoc;
     // @Type(Type.CREDENTIAL) DataBlock!(Type.CREDENTIAL) credential;
     // @Type(Type.CRYPTDOC)   DataBlock!(Type.CRYPTDOC)   cryptdoc;
 
@@ -328,17 +329,8 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         assert (0, format("%s is not supported", T.stringof ) );
     }
 
-    @trusted
-        this(T)(const T x) pure if (is(T==HashDoc)) {
-        alias MutableT = Unqual!T;
-        alias Types=typeof(this.tupleof);
-        foreach(i, ref m; this.tupleof) {
-            static if (is(Types[i]==MutableT)) {
-                m=x;
-                return;
-            }
-        }
-        assert (0, format("%s is not supported", T.stringof ) );
+    @trusted this(const DataBlock x) pure {
+        hashdoc=x;
     }
 
     /++
