@@ -17,9 +17,6 @@ protected __gshared const(char)[] _file;
 
 const(char[]) message(Args...)(string text, Args args) {
     auto temp=Text(_message_buffer.length);
-//    temp(text);
-//    snprintf(_message_buffer.ptr, _message_buffer.length, text.ptr, args[0]);
-//      version(none)
     enum {
         NUM="%d",
         TEXT="%s"

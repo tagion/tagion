@@ -71,6 +71,7 @@ version(unittest) {
 
             callUnittest!(hibon.Document)();
             callUnittest!(hibon.HiBON);
+            callUnittest!(hibon.utils.LEB128);
             printf("Passed\n");
             return 0;
         }
