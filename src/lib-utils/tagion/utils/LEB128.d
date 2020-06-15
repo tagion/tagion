@@ -11,15 +11,11 @@ import std.algorithm.iteration : map, sum;
 @safe
 class LEB128Exception : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( msg, "undefined",  file, line );
+        super( msg, file, line );
     }
 }
 
 alias check=Check!LEB128Exception;
-
-// public alias isLEB128Integral(T)=traits.isIntegral!(TypedefType!T);
-// public alias isLEB128Signed(T)=traits.isSigned!(TypedefType!T);
-// public alias isLEB128Unsigned(T)=traits.isUnsigned!(TypedefType!T);
 
 @safe
 size_t calc_size(const(ubyte[]) data) pure {
@@ -93,7 +89,6 @@ immutable(ubyte[]) encode(T)(const T v) pure if(isSigned!T && isIntegral!T) {
         data[$-1]=(T.min >> (7*(DATA_SIZE-1))) & 0x7F;
         return data.dup;
     }
-    immutable negative=(v < 0);
     T value=v;
     foreach(i, ref d; data) {
         d = value & 0x7f;
@@ -186,7 +181,6 @@ unittest {
     }
 
     {
-
         ok!int(-1, [127]);
         ok!int(int.max, [255, 255, 255, 255, 7]);
         ok!int(int.min, [128, 128, 128, 128, 120]);
