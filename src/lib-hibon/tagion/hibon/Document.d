@@ -540,11 +540,10 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    @trusted
     unittest {
         import std.algorithm.sorting : isSorted;
         auto buffer=new ubyte[0x200];
-        import std.stdio;
+        //import std.stdio;
         { // Test of null document
             const doc = Document(null);
             assert(doc.length is 0);
@@ -635,7 +634,6 @@ static assert(uint.sizeof == 4);
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
-                    writefln("e.get!U=%s test_tabel[i]=%s", e.get!U, test_tabel[i]);
                     assert(e.get!U == test_tabel[i]);
                     assert(keys.front == name);
                     keys.popFront;
@@ -691,7 +689,6 @@ static assert(uint.sizeof == 4);
                 build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
 
                 size = cast(uint)(index - start_index);
-                writefln("size=%d size_guess=%d", size, size_guess);
                 assert(size == size_guess);
 
                 size_t dummy_index=0;
