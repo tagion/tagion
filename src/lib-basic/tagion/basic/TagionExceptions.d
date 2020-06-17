@@ -36,19 +36,6 @@ class TagionException : Exception, TagionExceptionInterface {
     }
 }
 
-version(none) {
-    @safe
-        template convertEnum(Enum, Consensus) {
-        const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
-            if ( enum_number <= Enum.max) {
-                return cast(Enum)enum_number;
-            }
-            throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
-            assert(0);
-        }
-    }
-}
-
 /++
  + Builds a check function out of a TagionExecption
  +/
