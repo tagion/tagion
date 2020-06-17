@@ -36,7 +36,6 @@ alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
 alias Message    =Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
-
 }
 
 /+
@@ -57,19 +56,19 @@ unittest {
 }
 
 
-// /++
-//  Returns:
-//  a immuatble do
-// +/
-// immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
-//     return cast(BUF)(buffer.idup);
-// }
+/++
+ Returns:
+ a immuatble do
++/
+immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
+    return cast(BUF)(buffer.idup);
+}
 
 
-/**
+/++
    Returns:
    The position of first '.' in string and
- */
+ +/
 template find_dot(string str, size_t index=0) {
     static if ( index >= str.length ) {
         enum zero_index=0;
@@ -85,13 +84,18 @@ template find_dot(string str, size_t index=0) {
     }
 }
 
-/// Creates a new clean bitarray
+/++
+ Creates a new clean bitarray
++/
 void  bitarray_clear(out BitArray bits, uint length) @trusted {
     bits.length=length;
 }
 
-/// Change the size of the bitarray
+/++
+ Change the size of the bitarray
++/
 void bitarray_change(ref scope BitArray bits, uint length) @trusted {
+    pragma(msg, "Fixme(cbr): function name should be change to bitarray_change_size");
     bits.length=length;
 }
 
@@ -128,7 +132,7 @@ uint countVotes(ref const(BitArray) mask) @trusted {
 }
 
 /++
- + Wraps a safe version of to!string for a BitArray
+ Wraps a safe version of to!string for a BitArray
  +/
 string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
@@ -148,8 +152,8 @@ template suffix(string name, size_t index) {
 }
 
 /++
-  + Template function returns the suffux name after the last '.'
-  +/
+ Template function returns the suffux name after the last '.'
+ +/
 template basename(alias K) {
     static if ( is(K==string) ) {
         enum name=K;
@@ -189,7 +193,7 @@ unittest {
 
 
 /++
- + Builds and enum string out of a string array
+ Builds and enum string out of a string array
 +/
 template EnumText(string name, string[] list, bool first=true) {
     static if ( first ) {
@@ -229,10 +233,10 @@ enum Control{
 
 
 /++
-  +  Calculates log2
-  +  Returns:
-  +     log2(n)
-+/
+ Calculates log2
+ Returns:
+ log2(n)
+ +/
 @trusted
 int log2(ulong n) {
     if ( n == 0 ) {
@@ -242,7 +246,7 @@ int log2(ulong n) {
     return bsr(n);
 }
 
-
+///
 unittest {
     // Undefined value returns -1
     assert(log2(0) == -1);
@@ -254,7 +258,7 @@ unittest {
 
 
 /++
- + Generate a temporary file name
+ Generate a temporary file name
 +/
 string tempfile() {
     import std.file : deleteme;
@@ -263,8 +267,8 @@ string tempfile() {
 }
 
 /++
-Returns:
-truw if the type T is one of types in the list TList
+ Returns:
+ true if the type T is one of types in the list TList
 +/
 template isOneOf(T, TList...) {
     static if ( TList.length == 0 ) {
@@ -286,12 +290,11 @@ static unittest {
     static assert(!isOneOf!(double, Seq));
 }
 
-/**
+/++
    Finds the type in the TList which T can be typecast to
    Returns:
    void if not type is found
-
- */
+ +/
 template CastTo(T, TList...) {
     static if(TList.length is 0) {
         alias CastTo=void;

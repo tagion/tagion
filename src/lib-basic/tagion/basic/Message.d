@@ -21,7 +21,7 @@ struct Language {
 __gshared Language language;
 
 /++
- This generates the message transaltion table
+ This generates the message translation table
  If the version flag UPDATE_MESSAGE_TABEL is set then the default translation tabel
  is generated and a json file is written, which then can be edited for other language support
 +/
