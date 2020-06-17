@@ -17,11 +17,20 @@ class TagionException : Exception, TagionExceptionInterface {
         super( msg, file, line );
     }
 
+    /++
+     This function set the taskname set by the logger
+     The version LOGGER must be enabled for this to work
+     The function is used to send the exception to the task owner ownerTid
+     Returns:
+     The immutable version of the Exception
+     +/
     @trusted
-    immutable(TagionException) taskException() {
+    final immutable(TagionException) taskException() {
         version(LOGGER) {
             import tagion.services.LoggerService;
-            task_name=log.task_name;
+            if (modules.ddoc) {
+                task_name=log.task_name;
+            }
         }
         return cast(immutable)this;
     }

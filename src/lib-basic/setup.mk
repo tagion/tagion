@@ -21,7 +21,7 @@ LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
 
 # DDOC Configuration
 #
--include ddoc.mk
+include ddoc.mk
 
 BIN:=bin
 

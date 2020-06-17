@@ -80,9 +80,11 @@ ifndef DFILES
 include $(REPOROOT)/source.mk
 endif
 
-HELPER:=help-main
+HELP+=help-main
+# DDOC help
+include $(DDOCBUILDER)
 
-help-master: help-main
+help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
 
@@ -93,11 +95,11 @@ help-main:
 	@echo
 	@echo "make proper    : Clean all"
 	@echo
-	@echo "make ddoc      : Creates source documentation"
-	@echo
 	@echo "make PRECMD=   : Verbose mode"
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
+
+
 
 info:
 	@echo "DFILES  =$(DFILES)"
@@ -140,14 +142,17 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)mkdir -p $(@D)
 	$(PRECMD)touch $@
 
-$(DDOCMODULES): $(DFILES)
-	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
 
-ddoc: $(DDOCMODULES)
-	@echo "########################################################################################"
-	@echo "## Creating DDOC"
-	${PRECMD}ln -fs ../candydoc ddoc
-	$(PRECMD)$(DC) ${INCFLAGS} $(DDOCFLAGS) $(DDOCFILES) $(DFILES) $(DD)$(DDOCROOT)
+include $(DDOCBUILDER)
+
+# $(DDOCMODULES): $(DFILES)
+# 	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
+
+# ddoc: $(DDOCMODULES)
+# 	@echo "########################################################################################"
+# 	@echo "## Creating DDOC"
+# 	${PRECMD}ln -fs ../candydoc ddoc
+# 	$(PRECMD)$(DC) ${INCFLAGS} $(DDOCFLAGS) $(DDOCFILES) $(DFILES) $(DD)$(DDOCROOT)
 
 %.o: %.c
 	@echo "########################################################################################"

@@ -4,7 +4,9 @@ import std.format;
 import std.json;
 
 //import tagion.Options;
-
+/++
+ Controls the language used by the message function
++/
 struct Language {
     protected string _name;
     void set(string name) {
@@ -18,6 +20,11 @@ struct Language {
 
 __gshared Language language;
 
+/++
+ This generates the message transaltion table
+ If the version flag UPDATE_MESSAGE_TABEL is set then the default translation tabel
+ is generated and a json file is written, which then can be edited for other language support
++/
 version(UPDATE_MESSAGE_TABEL) {
     @safe synchronized struct Message {
         private static shared string[string] translation;
@@ -51,6 +58,10 @@ else {
     }
 }
 
+/++
+ this function works like the std.format except if the language translation table is loaded
+ the text is translated via this table
++/
 @trusted
 string message(Args...)(string fmt, lazy Args args) {
     if (language.name == "") {

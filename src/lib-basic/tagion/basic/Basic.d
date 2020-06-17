@@ -14,12 +14,12 @@ import std.conv;
 import std.typecons : Typedef, TypedefType;
 
 enum BufferType {
-    PUBKEY,
-    PRIVKEY,
-    SIGNATURE,
-    HASHPOINTER,
-    MESSAGE,
-    PAYLOAD
+    PUBKEY,      /// Public key buffer type
+    PRIVKEY,     /// Private key buffer type
+    SIGNATURE,   /// Signature buffer type
+    HASHPOINTER, /// Hash pointre buffer type
+    MESSAGE,     /// Message buffer type
+    PAYLOAD      /// Payload buffer type
 }
 
 enum BillType {
@@ -28,9 +28,9 @@ enum BillType {
     CONTRACTS
 }
 
-alias Buffer=immutable(ubyte)[];
-alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof);
-alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);
+alias Buffer=immutable(ubyte)[]; /// General buffer
+alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer used for public keys
+alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
 version(none) {
 alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
@@ -39,6 +39,10 @@ alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 }
 
+/+
+ Returns:
+ true if T is a buffer
++/
 enum isBufferType(T)=is(T : const(ubyte[]) ) || is(TypedefType!T : const(ubyte[]) );
 
 static unittest {
@@ -52,9 +56,14 @@ unittest {
     immutable pkey=Pubkey(buf);
 }
 
-BUF buf_idup(BUF)(immutable(Buffer) buffer) {
-    return cast(BUF)(buffer.idup);
-}
+
+// /++
+//  Returns:
+//  a immuatble do
+// +/
+// immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
+//     return cast(BUF)(buffer.idup);
+// }
 
 
 /**
@@ -153,6 +162,10 @@ template basename(alias K) {
 
 enum nameOf(alias nameType) =__traits(identifier, nameType);
 
+/++
+ Returns:
+ function name of the current function
++/
 mixin template FUNCTION_NAME() {
     import tagion.basic.Basic : basename;
     enum __FUNCTION_NAME__=basename!(__FUNCTION__)[0..$-1];
@@ -204,13 +217,14 @@ unittest {
 
 }
 
+/++
+ Genera signal
++/
 enum Control{
-    LIVE=1,
-    STOP,
-    FAIL,
-    // ACK,
-    // REQUEST,
-    END
+    LIVE=1, /// Send to the ownerTid when the task has been started
+    STOP,   /// Send when the child task to stop task
+    FAIL,   /// This if a something failed other than an exception
+    END     /// Send for the child to the ownerTid when the task ends
 };
 
 
@@ -248,6 +262,10 @@ string tempfile() {
     return deleteme~(&dummy).to!string;
 }
 
+/++
+Returns:
+truw if the type T is one of types in the list TList
++/
 template isOneOf(T, TList...) {
     static if ( TList.length == 0 ) {
         enum isOneOf = false;
@@ -260,6 +278,7 @@ template isOneOf(T, TList...) {
     }
 }
 
+///
 static unittest {
     import std.meta;
     alias Seq=AliasSeq!(long, int, ubyte);
@@ -288,6 +307,7 @@ template CastTo(T, TList...) {
     }
 }
 
+///
 static unittest {
     static assert(is(void==CastTo!(string, AliasSeq!(int, long, double))));
     static assert(is(double==CastTo!(float, AliasSeq!(int, long, double))));
