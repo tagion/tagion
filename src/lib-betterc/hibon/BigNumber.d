@@ -1,5 +1,7 @@
 module hibon.BigNumber;
 
+import LEB128=hibon.utils.LEB128;
+
 extern(C):
 @nogc:
 /++
@@ -8,6 +10,12 @@ extern(C):
 +/
 struct BigNumber {
     @nogc:
-    uint[] data;
-    bool sign;
-}
+    ubyte[] data;
+    size_t calc_size() const {
+        return LEB128.calc_size(data);
+    }
+
+    const(ubyte[]) serialize() const {
+        return data;
+    }
+ }

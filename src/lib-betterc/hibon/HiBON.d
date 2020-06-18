@@ -77,13 +77,10 @@ struct HiBONT {
             _members.surrender;
         }
         _buffer.dispose;
-//        version(none)
         if ( _self_destruct ) {
             HiBONT* self=&this;
-
             .dispose!false(self);
         }
-
     }
 
     invariant {
@@ -175,6 +172,7 @@ struct HiBONT {
     }
 
 
+    version(none)
     struct Key {
         @nogc:
         protected char[] data;
@@ -227,16 +225,24 @@ struct HiBONT {
      +/
     struct Member {
         @nogc:
-        Key key;
-        Type type;
-        Value value;
-
-        int opCmp(ref const(Member*) b) const pure {
-            return key.opCmp(b.key);
+        private {
+            char[] _key;
+            Type _type;
+            Value _value;
         }
 
-        int opCmp(const(char[]) b) const pure {
-            return key.opCmp(b);
+        int opCmp(ref const(Member*) b) const pure {
+            return opCmp(b._key);
+        }
+
+        int opCmp(const(char[]) key) const pure {
+            if (this._key == key) {
+                return 0;
+            }
+            else if (this._key < key) {
+                return -1;
+            }
+            return 1;
         }
 
         bool opEquals(T)(T b) const pure {
@@ -251,23 +257,21 @@ struct HiBONT {
          +/
 
         this(T)(T x, in const(char[]) key) {
-//            alias BaseT=TypedefType!T;
-
-            this.key  = Key(key);
+            .create(this._key, key);
             void _init(S)(S x) {
                 enum E=Value.asType!S;
-                this.type=E;
+                this._type=E;
                 static if (.isArray(E)) {
                     alias U=Unqual!(ForeachType!S);
                     U[] temp_x;
                     temp_x.create(x);
-                    this.value=cast(S)temp_x;
+                    this._value=cast(S)temp_x;
                 }
                 else static if (E is Type.BIGINT) {
-                    this.value=x;
+                    this._value=x;
                 }
                 else {
-                    this.value= cast(UnqualT)x;
+                    this._value= cast(UnqualT)x;
                 }
 
             }
@@ -277,26 +281,53 @@ struct HiBONT {
                 alias CastT=CastTo!(UnqualT, CastTypes);
                 static assert(!is(CastT==void), "Type "~T.stringof~" is not valid");
                 _init(x);
-//                alias CastE=Value.asType!CastT;
-//                this.type = CastE;
-//                this.value=cast(CastT)x;
             }
             else {
-//                this.type = E;
                 _init(x);
-                /*
-                  static if (isArray(E)) {
-
-                  }
-                  else static if (E is Type.BIGINT) {
-                  this.value=x;
-                  }
-                  else {
-                  this.value= cast(UnqualT)x;
-                  }
-                */
             }
 
+        }
+
+        private this(in const(char[]) key) {
+            _key=Text(key).expropriate;
+        }
+
+        private this(in size_t index) {
+            _key=Text(index).expropriate;
+        }
+
+        static Member* create(T)(T x, in const(char[]) key) {
+            // auto new_member=Member(x, key);
+            // scope(exit) {
+            //     new_member._key=null;
+            // }
+            auto result=.create!Member(x, key);
+            // result._key=new_nember._key;
+            // result._type=new_member._type;
+            // result._value=new_member._value;
+            return result;
+        }
+
+        @property const pure {
+            Type type() {
+                return _type;
+            }
+
+            string key() {
+                return cast(immutable)_key;
+            }
+
+            Value value() {
+                return _value;
+            }
+
+            size_t key_size() {
+                uint index;
+                if (is_index(_key, index)) {
+                    return ubyte.sizeof+LEB128.calc_size(index);
+                }
+                return LEB128.calc_size(_key.length)+_key.length;
+            }
         }
 
         ~this() {
@@ -324,8 +355,7 @@ struct HiBONT {
                     }
                 }
             }
-            key.dispose;
-//            value.dispose;
+            _key.dispose;
         }
 
         /++
@@ -334,7 +364,7 @@ struct HiBONT {
          the value as a Document
          +/
 
-        inout(HiBONT*) document() inout pure
+        const(HiBONT*) document() const pure
             in {
                 assert(type is Type.DOCUMENT);
             }
@@ -380,17 +410,17 @@ struct HiBONT {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
-                                return Document.sizeKey(key.serialize)+value.by!(E).size;
+                                return key_size+value.by!(E).size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
-                                return Document.sizeKey(key.serialize)+value.by!(E).size+uint.sizeof;
+                                return key_size+value.by!(E).size+uint.sizeof;
                             }
                             else static if (E is VER) {
                                 return LEB128.calc_size(HIBON_VERSION);
                             }
                             else {
                                 const v = value.by!(E);
-                                return Document.sizeT(E, key.serialize, v);
+                                return Document.sizeT(E, key, v);
                             }
                             break TypeCase;
                         }
@@ -444,12 +474,12 @@ struct HiBONT {
                         case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
-                                Document.buildKey(buffer, E, key.serialize);
+                                Document.buildKey(buffer, E, key);
                                 value.by!(E).append(buffer);
                             }
                             else static if (isNative(E)) {
                                 static if (E is NATIVE_DOCUMENT) {
-                                    Document.buildKey(buffer, DOCUMENT, key.serialize);
+                                    Document.buildKey(buffer, DOCUMENT, key);
                                     const doc=value.by!(E);
                                     buffer.write(value.by!(E).data);
                                 }
@@ -462,7 +492,7 @@ struct HiBONT {
                                 static if (is(U==const(float))) {
                                     auto x=value.by!E;
                                 }
-                                Document.build(buffer, E, key.serialize, value.by!E);
+                                Document.build(buffer, E, key, value.by!E);
                             }
                             break TypeCase;
                         }
@@ -485,7 +515,13 @@ struct HiBONT {
     void opIndexAssign(ref HiBONT x, in const(char[]) key) {
         if (!readonly && is_key_valid(key)) {
             auto new_x=x.expropriate;
-            auto new_member=create!Member(new_x, key);
+            // auto new_member=Member(new_x, key);
+            // scope(exit) {
+            //     new_member._key=null;
+            // }
+            // char[] new_key;
+            // create(new_key, key);
+            auto new_member=Member.create(new_x, key);
             _members.insert(new_member);
         }
         else {
@@ -516,7 +552,7 @@ struct HiBONT {
      index = member index
      +/
     void opIndexAssign(T)(T x, const size_t index) if (!is(T:const(HiBONT))) {
-        if (index <=uint.max) {
+        if (index <= uint.max) {
             auto _key=Key(cast(uint)index);
             opIndexAssign(x, _key.serialize);
         }
@@ -527,8 +563,10 @@ struct HiBONT {
 
     void opIndexAssign(ref HiBONT x, const size_t index) {
         if (index <=uint.max) {
-            auto _key=Key(cast(uint)index);
-            this[_key.serialize]=x;
+            Text key_text;
+            key_text(index);
+            //auto _key=Key(cast(uint)index);
+            this[key_text.serialize]=x;
         }
         else {
             error++;
@@ -545,8 +583,7 @@ struct HiBONT {
      if the an member with the key does not exist an HiBONException is thrown
      +/
     const(Member*) opIndex(in const(char[]) key) const {
-        Member m;
-        m.key=Key(key);
+        auto m=Member(key);
         return _members.get(&m);
     }
 
@@ -563,13 +600,8 @@ struct HiBONT {
      +/
 
     const(Member*) opIndex(const size_t index) {
-//        const key=index.to!string;
-        // static if(!is(size_t == uint) ) {
-        //     .check(index <= uint.max, message("Index out of range (index=%d)", index));
-        // }
         if (index <= uint.max) {
-            Member m;
-            m.key=Key(cast(uint)index);
+            auto m=Member(index);
             return _members.get(&m);
         }
         error++;
@@ -583,8 +615,7 @@ struct HiBONT {
      true if the member with the key exists
      +/
     bool hasMember(in const(char[]) key) const {
-        Member m;
-        m.key=Key(key);
+        auto m=Member(key);
         return _members.exists(&m);
     }
 
@@ -594,8 +625,7 @@ struct HiBONT {
      key = name of the member to be removed
      +/
     void remove(in const(char[]) key) {
-        Member m;
-        m.key=Key(key);
+        auto m=Member(key);
         _members.remove(&m);
     }
 
@@ -646,7 +676,7 @@ struct HiBONT {
         }
 
         string front() {
-            return range.front.key.serialize;
+            return range.front.key;
         }
     }
 
@@ -681,9 +711,8 @@ struct HiBONT {
         }
 
         uint front()  {
-            const key=range.front.key.serialize;
             uint index;
-            if (!is_index(key, index)) {
+            if (!is_index(range.front.key, index)) {
                 _error=true;
             }
             return index;
@@ -820,7 +849,7 @@ struct HiBONT {
 
             const m=hibon[key];
             assert(m.type is Type.FLOAT64);
-            assert(m.key.serialize == key);
+            assert(m.key == key);
             assert(m.get!(M) == test_table[pos]);
             assert(m.by!(Type.FLOAT64) == test_table[pos]);
 
@@ -846,7 +875,8 @@ struct HiBONT {
             const e = doc[key];
 
             assert(e.type is Type.FLOAT64);
-            assert(e.key == key);
+            Text key_text;
+            assert(e.key(key_text) == key);
             assert(e.by!(Type.FLOAT64) == test_table[pos]);
 
         }
@@ -865,7 +895,7 @@ struct HiBONT {
 
             size_t index;
             foreach(m; hibon[]) {
-                assert(m.key.serialize == keys[index]);
+                assert(m.key == keys[index]);
                 index++;
             }
 
@@ -873,7 +903,7 @@ struct HiBONT {
                 enum key = basename!(table.tupleof[i]);
 
                 const m = hibon[key];
-                assert(m.key.serialize == key);
+                assert(m.key == key);
                 alias U=typeof(t);
                 assert(m.get!(U) == t);
             }
@@ -886,7 +916,8 @@ struct HiBONT {
             foreach(i, t; test_table) {
                 enum key = basename!(table.tupleof[i]);
                 const e = doc[key];
-                assert(e.key == key);
+                Text key_text;
+                assert(e.key(key_text) == key);
                 alias U=typeof(t);
                 assert(e.get!(U) == t);
             }
@@ -897,14 +928,14 @@ struct HiBONT {
     unittest {
         struct TableArray {
             ubyte[] BINARY;
-            bool[]  BOOLEAN_ARRAY;
-            float[] FLOAT32_ARRAY;
-            double[]FLOAT64_ARRAY;
-            int[]   INT32_ARRAY;
-            long[]  INT64_ARRAY;
+            // bool[]  BOOLEAN_ARRAY;
+            // float[] FLOAT32_ARRAY;
+            // double[]FLOAT64_ARRAY;
+            // int[]   INT32_ARRAY;
+            // long[]  INT64_ARRAY;
             char[]  STRING;
-            uint[]  UINT32_ARRAY;
-            ulong[] UINT64_ARRAY;
+            // uint[]  UINT32_ARRAY;
+            // ulong[] UINT64_ARRAY;
 
 
         }
@@ -913,20 +944,20 @@ struct HiBONT {
         TableArray table_array;
         const(ubyte[3]) binary=[1, 2, 3];
         table_array.BINARY.create(binary);
-        const(float[3]) float32_array=[-1.23, 3, 20e30];
-        table_array.FLOAT32_ARRAY.create(float32_array);
-        const(double[2]) float64_array=[10.3e200, -1e-201];
-        table_array.FLOAT64_ARRAY.create(float64_array);
-        const(int[4]) int32_array=[-11, -22, 33, 44];
-        table_array.INT32_ARRAY.create(int32_array);
-        const(long[4]) int64_array=[0x17, 0xffff_aaaa, -1, 42];
-        table_array.INT64_ARRAY.create(int64_array);
-        const(uint[4]) uint32_array=[11, 22, 33, 44];
-        table_array.UINT32_ARRAY.create(uint32_array);
-        const(ulong[4]) uint64_array=[0x17, 0xffff_aaaa, 1, 42];
-        table_array.UINT64_ARRAY.create(uint64_array);
-        const(bool[2]) boolean_array=[true, false];
-        table_array.BOOLEAN_ARRAY.create(boolean_array);
+        // const(float[3]) float32_array=[-1.23, 3, 20e30];
+        // table_array.FLOAT32_ARRAY.create(float32_array);
+        // const(double[2]) float64_array=[10.3e200, -1e-201];
+        // table_array.FLOAT64_ARRAY.create(float64_array);
+        // const(int[4]) int32_array=[-11, -22, 33, 44];
+        // table_array.INT32_ARRAY.create(int32_array);
+        // const(long[4]) int64_array=[0x17, 0xffff_aaaa, -1, 42];
+        // table_array.INT64_ARRAY.create(int64_array);
+        // const(uint[4]) uint32_array=[11, 22, 33, 44];
+        // table_array.UINT32_ARRAY.create(uint32_array);
+        // const(ulong[4]) uint64_array=[0x17, 0xffff_aaaa, 1, 42];
+        // table_array.UINT64_ARRAY.create(uint64_array);
+        // const(bool[2]) boolean_array=[true, false];
+        // table_array.BOOLEAN_ARRAY.create(boolean_array);
         const(char[4]) text="Text";
         table_array.STRING.create(text);
 
@@ -950,14 +981,14 @@ struct HiBONT {
 
             size_t index;
             foreach(m; hibon[]) {
-                assert(m.key.serialize == keys[index]);
+                assert(m.key == keys[index]);
                 index++;
             }
 
             foreach(i, t; test_table_array) {
                 enum key = basename!(table_array.tupleof[i]);
                 const m = hibon[key];
-                assert(m.key.serialize == key);
+                assert(m.key == key);
                 alias U=immutable(typeof(t));
                 assert(m.get!(U) == t);
             }
@@ -970,7 +1001,8 @@ struct HiBONT {
             foreach(i, t; test_table_array) {
                 enum key = basename!(table_array.tupleof[i]);
                 const e = doc[key];
-                assert(e.key == key);
+                Text key_text;
+                assert(e.key(key_text) == key);
                 alias U=immutable(typeof(t));
                 assert(e.get!(U) == t);
             }

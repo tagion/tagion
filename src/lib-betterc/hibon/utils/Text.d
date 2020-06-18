@@ -14,6 +14,7 @@ struct Text {
         char[] str;
         size_t index;
     }
+
     this(const size_t size) {
         if (size > 0) {
             str.create(size);
@@ -32,6 +33,14 @@ struct Text {
         this.index=_surrender.index;
         _surrender.str=null;
         _surrender.index=0;
+    }
+
+    char[] expropriate() {
+        scope(exit) {
+            str=null;
+            index=0;
+        }
+        return str;
     }
 
     @property size_t length() const pure {
@@ -54,8 +63,8 @@ struct Text {
         return cast(string)(str[from..to]);
     }
 
-    const(char[]) opSlice() const pure {
-        return str[0..index];
+    string opSlice() const pure {
+        return cast(immutable)str[0..index];
     }
 
     alias serialize=opSlice;
@@ -75,7 +84,7 @@ struct Text {
         return this;
     }
 
-    ref Text opCall(T)(T num, const uint base=10) if(isIntegral!T) {
+    ref Text opCall(T)(T num, const size_t base=10) if(isIntegral!T) {
         //const negative=(num < 0);
         enum numbers="0123456789abcdef";
         static if (isSigned!T) {
@@ -100,7 +109,8 @@ struct Text {
             Mutable n=num;
             uint i;
             do {
-                s[i++] = numbers[n % base];
+                const n_index=cast(uint)(n % cast(T)base);
+                s[i++] = numbers[n_index];
                 n/=base;
             } while (n  > 0);
             return s[0..i];
@@ -112,6 +122,11 @@ struct Text {
             index++;
         }
         return this;
+    }
+
+    void dispose() {
+        str.dispose;
+        index=0;
     }
 
     ~this() {

@@ -11,7 +11,7 @@ else {
 }
 import std.traits : isNumeric, isArray, Unqual;
 import hibon.utils.Memory;
-import hibon.utils.utc;
+import hibon.utils.sdt;
 
 struct BinBuffer {
     @nogc:
@@ -69,7 +69,7 @@ struct BinBuffer {
             append(res, index);
         }
         else {
-            const res=nativeToLittleEndian(x);
+            auto res=nativeToLittleEndian(x);
             append(res, index);
         }
     }
@@ -82,9 +82,9 @@ struct BinBuffer {
         append(cast(ubyte[])x, index);
     }
 
-    private void write(utc_t utc, size_t* index) {
-        write(utc.time, index);
-    }
+    // private void write(sdt_t sdt, size_t* index) {
+    //     write(utc.time, index);
+    // }
 
     void write(T)(T x) {
         write(x, &_index);

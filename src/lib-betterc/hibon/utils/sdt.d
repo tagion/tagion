@@ -1,14 +1,14 @@
-module hibon.utils.utc;
+module hibon.utils.sdt;
 //import std.typecons : Typedef;
-enum UTC = "UTC";
-struct utc_t {
+enum TIME = "TIME";
+struct sdt_t {
     @nogc:
-    @(UTC) ulong time; //
+    @(TIME) ulong time; //
     this(ulong x) {
         time=x;
     }
     bool opEquals(T)(T x) const pure {
-        static if (is(T:const(utc_t))) {
+        static if (is(T:const(sdt_t))) {
             return this == x;
 
         }

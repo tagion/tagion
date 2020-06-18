@@ -23,6 +23,7 @@ extern(C):
 @nogc:
 import hibon.utils.Memory;
 import hibon.utils.Stack;
+//import hibon.HiBONBase : Key;
 import std.traits : isPointer;
 //port core.stdc.stdio;
 
@@ -771,16 +772,17 @@ unittest {
 unittest {
     import hibon.HiBON;
 //    import hibon.Memory;
-    alias Key=HiBONT.Key;
-    auto tree=RBTree!(Key*)(true);
+//    alias Key=HiBONT.Key;
+    auto tree=RBTree!(char[])(true);
     import std.typecons : Tuple;
     Tuple!(char[2], char[2], char[2], char[1], char[1], char[1]) check_list=[
         "07", "17", "42", "a", "b", "c"
         ];
 
-    Key*[check_list.length] key_list;
+    char[][check_list.length] key_list;
     foreach(i, k; check_list) {
-        key_list[i]=create!Key(k);
+        create(key_list[i], k);
+        //key_list[i]=create!Key(k);
     }
     // Key* b=create!Key("b" check_list[4]);
     // Key* c=create!Key("c" check_list[5]);
@@ -797,7 +799,7 @@ unittest {
     {
         auto range=tree[];
         foreach(k; check_list) {
-            assert(k == range.front.serialize);
+            assert(k == range.front);
             range.popFront;
         }
     }
@@ -808,7 +810,7 @@ unittest {
         auto range=tree[];
         foreach(i, k; check_list) {
             if (i !is 2) {
-                assert(k == range.front.serialize);
+                assert(k == range.front);
                 range.popFront;
             }
         }

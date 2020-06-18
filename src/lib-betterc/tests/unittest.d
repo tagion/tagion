@@ -3,7 +3,7 @@ module test;
 import hibon.HiBONBase;
 //import hibon.HiBONRecord;
 import hibon.BigNumber;
-import hibon.utils.utc;
+import hibon.utils.sdt;
 import hibon.utils.Stack;
 import hibon.utils.RBTree;
 import hibon.utils.BinBuffer;
