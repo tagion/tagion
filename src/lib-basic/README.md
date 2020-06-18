@@ -19,5 +19,5 @@ make lib
 
 Which generated the *bin/tagion_basic.a* archive.
 
-The source code is distributed under the [LICENSE.md](bloc/master/LICENSE.md)
+The source code is distributed under the [LICENSE.md](LICENSE.md)
 
