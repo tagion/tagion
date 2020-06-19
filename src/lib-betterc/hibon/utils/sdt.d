@@ -9,7 +9,7 @@ struct sdt_t {
     }
     bool opEquals(T)(T x) const pure {
         static if (is(T:const(sdt_t))) {
-            return this == x;
+            return this.time == x.time;
 
         }
         else {

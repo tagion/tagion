@@ -12,7 +12,7 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, E
 import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
-//import core.stdc.stdio;
+import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
 import hibon.utils.BinBuffer;
@@ -207,7 +207,7 @@ struct Document {
 
         @property pure const {
             bool empty() {
-                return _index >= data.length;
+                return _index > data.length;
             }
 
 
@@ -224,8 +224,13 @@ struct Document {
          * InputRange primitive operation that advances the range to its next element.
          */
         void popFront() {
-            emplace!Element(&_element, data[_index..$]);
-            _index += _element.size;
+            if (_index >= data.length) {
+                _index = data.length+1;
+            }
+            else {
+                emplace!Element(&_element, data[_index..$]);
+                _index += _element.size;
+            }
         }
     }
 
@@ -568,35 +573,31 @@ struct Document {
         import std.typecons : Tuple, isTuple;
         import hibon.utils.Basic : basename;
         static private void make(S)(ref BinBuffer buffer, S _struct, size_t count=size_t.max) if (is(S==struct)) {
+            //size_t temp_index;
 
-            const start_index=buffer.length;
-            buffer.write(uint.init);
+            //const start_index=buffer.length;
+            BinBuffer temp_buffer; //=BinBuffer(buffer.size);
+            //buffer.write(uint.init);
             foreach(i, t; _struct.tupleof) {
+
                 enum name=basename!(_struct.tupleof[i]);
+                Text text;
+                text(name~"\0");
+                printf("i=%d name=%s\n", i, text.serialize.ptr);
                 if ( i is count ) {
                     break;
                 }
-                static if (name[0] == '_') {
-                    enum zero=size_t(0);
-                    enum suffix_length=zero.stringof.length-"0".length;
-                    enum key=i.stringof[0..$-suffix_length];
+                alias U = typeof(t);
+                enum  E = Value.asType!U;
+                static if (name.length is 0) {
+                    build(temp_buffer, E, cast(uint)i, t);
                 }
                 else {
-                    enum key = name;
+                    build(temp_buffer, E, name, t);
                 }
-
-                alias T = typeof(t);
-                static if (is(T:U[], U) && isBasicType!U) {
-                    enum  E = Value.asType!(immutable(T));
-                }
-                else {
-                    enum  E = Value.asType!T;
-                }
-                build(buffer, E, key, t);
             }
-            buffer.write(Type.NONE);
-            const size = cast(uint)(buffer.length - uint.sizeof);
-            buffer.write(size, start_index);
+            LEB128.encode(buffer, temp_buffer.length);
+            buffer.write(temp_buffer.serialize);
         }
     }
 
@@ -673,11 +674,27 @@ struct Document {
 
         { // Document with simple types
             //test_table.UTC      = 1234;
+
             { // Document with a single value
                 auto buffer=BinBuffer(0x200);
                 make(buffer, table, 1);
+                printf("table after\n");
                 //const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
+                printf("after doc %d\n", buffer.serialize.length);
+                printf("[");
+                foreach(d; buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
+                auto r=doc[];
+                printf("%d \n", r.front.type);
+                Text text;
+                printf("key=%s %d %d size=%d\n", r.front.key(text).ptr, r.empty,
+                    r.front.valuePos, r.front.size);
+                r.popFront;
+                printf("%d \n", r.empty);
+
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
@@ -691,6 +708,11 @@ struct Document {
                 auto keys=doc.keys;
                 foreach(i, t; table.tupleof) {
                     enum name = basename!(table.tupleof[i]);
+                    printf("i=%d name=%s\n", i, name.ptr);
+                    // Text text;
+                    // text(name);
+
+
                     alias U = immutable(typeof(t));
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
@@ -712,7 +734,6 @@ struct Document {
                 }
             }
 
-
             { // Document which includes basic arrays and string
                 auto buffer=BinBuffer(0x200);
                 make(buffer, table_array);
@@ -720,6 +741,7 @@ struct Document {
                 const doc=Document(buffer.serialize);
                 foreach(i, t; table_array.tupleof) {
                     enum name = basename!(table_array.tupleof[i]);
+                    printf("name=%s\n", name.ptr);
                     alias U = immutable(typeof(t));
                     const v = doc[name].get!U;
                     assert(v.length is test_table_array[i].length);
@@ -810,7 +832,7 @@ struct Document {
                 }
             }
 
-
+            version(none)
             { // Test opCall!(string[])
                 auto buffer=BinBuffer(0x200);
                 //index = 0;
@@ -1144,7 +1166,9 @@ struct Document {
                 }
                 // import std.format;
                 // assert(0, format("Bad type %s", type));
-                assert(0);
+                Text error;
+                error("Bad type ")(type);
+                assert(0, error.serialize);
             }
 
 

@@ -171,55 +171,6 @@ struct HiBONT {
         buffer.write(doc_size, size_index);
     }
 
-
-    version(none)
-    struct Key {
-        @nogc:
-        protected char[] data;
-        this(const(char[]) key) {
-            data=create!(char[])(key.length+1);
-            data[0..$-1]=key[0..$];
-            data[key.length]='\0';
-        }
-        this(const uint index) {
-            auto _key=Text()(index);
-            this(_key.serialize);
-        }
-        ~this() {
-            dispose;
-        }
-
-        void dispose() {
-            data.dispose;
-        }
-
-        string serialize() const pure {
-            if (data !is null) {
-                return cast(string)data[0..$-1];
-            }
-            return null;
-        }
-
-
-        int opCmp(const(char[]) b) const pure {
-            return key_compare(data, b);
-        }
-
-        int opCmp(ref const Key b) const pure {
-            return opCmp(b.data);
-        }
-
-        int opCmp(const(Key*) b) const pure {
-            return opCmp(b.data);
-        }
-
-        bool opEquals(T)(T b) const pure {
-            return opCmp(b) == 0;
-        }
-
-    }
-
-
     /++
      Internal Member in the HiBON class
      +/
@@ -1010,7 +961,6 @@ struct HiBONT {
         }
     }
 
-//    version(none)
     unittest { // HIBON test containg an child HiBON
         auto hibon = HiBON();
         auto hibon_child = HiBON();
@@ -1036,7 +986,6 @@ struct HiBONT {
         const doc = Document(data);
 
     }
-
 
     unittest { // Use of native Documet in HiBON
         auto native_hibon = HiBON();

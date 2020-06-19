@@ -22,8 +22,10 @@ struct Text {
     }
 
     this(const(char[]) _str) {
-        this(_str.length);
+        this(_str.length+1);
         str[0..$]=_str[0..$];
+        index=_str.length;
+        str[$-1]='\0';
     }
     /**
        This takes over the overship of the data
@@ -73,10 +75,11 @@ struct Text {
         scope(exit) {
             index=new_index;
         }
-        if (index+cat.length > str.length) {
-            resize(str, index+cat.length);
+        if (index+cat.length+1 > str.length) {
+            resize(str, index+cat.length+1);
         }
         str[index..new_index]=cat;
+        str[new_index]='\0';
     }
 
     ref Text opCall(const(char[]) cat) {
@@ -88,10 +91,10 @@ struct Text {
         //const negative=(num < 0);
         enum numbers="0123456789abcdef";
         static if (isSigned!T) {
-            enum max_size=T.min.stringof.length;
+            enum max_size=T.min.stringof.length+1;
         }
         else {
-            enum max_size=T.max.stringof.length;
+            enum max_size=T.max.stringof.length+1;
         }
 
         if (index+max_size > str.length) {
@@ -121,6 +124,7 @@ struct Text {
             str[index]=c;
             index++;
         }
+        str[index]='\0';
         return this;
     }
 
@@ -140,6 +144,7 @@ unittest {
     immutable(char[12]) check="Some text 42";
     size_t size=4;
     text~=check[0..size];
+    printf("text=%s\n", text.serialize.ptr);
     assert(text.serialize == check[0..size]);
     text~=check[size..size+6];
     size+=6;
