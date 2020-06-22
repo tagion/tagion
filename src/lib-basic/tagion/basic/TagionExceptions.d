@@ -28,7 +28,7 @@ class TagionException : Exception, TagionExceptionInterface {
     final immutable(TagionException) taskException() {
         version(LOGGER) {
             import tagion.services.LoggerService;
-            if (modules.ddoc) {
+            if (task_name.length > 0) {
                 task_name=log.task_name;
             }
         }
