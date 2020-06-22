@@ -53,7 +53,6 @@ enum Type : ubyte {
         STRING          = 0x02,  /// UTF8 STRING
         DOCUMENT        = 0x03,  /// Embedded document (Both Object and Documents)
         BINARY          = 0x05,  /// Binary data
-        //CRYPTDOC        = 0x06,  /// Encrypted document
 
         BOOLEAN         = 0x08,  /// Boolean - true or false
         TIME            = 0x09,  /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
@@ -61,7 +60,7 @@ enum Type : ubyte {
         INT64           = 0x12,  /// 64-bit integer,
         //       FLOAT128        = 0x13, /// Decimal 128bits
         BIGINT          = 0x1B,  /// Signed Bigint
-        //CREDENTIAL      = 0x1F,  /// Used to store public and or signatures
+
         UINT32          = 0x20,  /// 32 bit unsigend integer
         FLOAT32         = 0x21,  /// 32 bit Float
         UINT64          = 0x22,  /// 64 bit unsigned integer
@@ -72,9 +71,12 @@ enum Type : ubyte {
 
         DEFINED_ARRAY   = 0x80,  /// Indicated an Intrinsic array types
         /// Native types is only used inside the BSON object
-        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT,        /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT, /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING,          /// Represetents (string[]) is convert to an ARRAY of string's
+        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT,
+        /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
+        NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT,
+        /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
+        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING,
+        /// Represetents (string[]) is convert to an ARRAY of string's
         }
 
 @safe
@@ -205,9 +207,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @Type(Type.UINT64)     ulong      uint64;
     @Type(Type.BIGINT)     BigNumber bigint;
     @Type(Type.HASHDOC)    DataBlock    hashdoc;
-    // @Type(Type.CREDENTIAL) DataBlock!(Type.CREDENTIAL) credential;
-    // @Type(Type.CRYPTDOC)   DataBlock!(Type.CRYPTDOC)   cryptdoc;
-
+ 
     static if ( !is(Document == void) ) {
         @Type(Type.NATIVE_DOCUMENT) Document    native_document;
     }

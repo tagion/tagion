@@ -876,7 +876,7 @@ static assert(uint.sizeof == 4);
                                         return result;
                                     }
                                     else {
-                                        return cast(Value*)(data[valuePos..$].ptr);
+                                        return cast(Value*)(data[value_pos..$].ptr);
                                     }
                                 }
                             }
@@ -952,15 +952,6 @@ static assert(uint.sizeof == 4);
                 return LEB128.decode!uint(data[keyPos..$]).value;
             }
 
-            /++
-             Returns:
-             true if element key is an index
-             +/
-            version(none)
-            bool isIndex() {
-                uint result;
-                return is_index(key, result);
-            }
         }
 
         @property const pure nothrow {
@@ -983,6 +974,10 @@ static assert(uint.sizeof == 4);
                 return cast(Type)(data[0]);
             }
 
+            /++
+             Returns:
+             true if element key is an index
+             +/
             bool isIndex() {
                 return data[Type.sizeof] is 0;
             }
@@ -1025,7 +1020,6 @@ static assert(uint.sizeof == 4);
             }
 
             uint dataSize() {
-                size_t len;
                 return LEB128.decode!uint(data[valuePos..$]).value;
             }
 
