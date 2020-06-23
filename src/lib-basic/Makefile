@@ -82,7 +82,7 @@ endif
 
 HELP+=help-main
 # DDOC help
-include $(DDOCBUILDER)
+-include $(DDOCBUILDER)
 
 help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
@@ -143,16 +143,7 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)touch $@
 
 
-include $(DDOCBUILDER)
-
-# $(DDOCMODULES): $(DFILES)
-# 	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
-
-# ddoc: $(DDOCMODULES)
-# 	@echo "########################################################################################"
-# 	@echo "## Creating DDOC"
-# 	${PRECMD}ln -fs ../candydoc ddoc
-# 	$(PRECMD)$(DC) ${INCFLAGS} $(DDOCFLAGS) $(DDOCFILES) $(DFILES) $(DD)$(DDOCROOT)
+-include $(DDOCBUILDER)
 
 %.o: %.c
 	@echo "########################################################################################"
