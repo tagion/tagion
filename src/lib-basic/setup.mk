@@ -11,7 +11,9 @@ endif
 DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
 DCFLAGS+=$(DIP25)
 DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
+ifdef LOGGER
 DCFLAGS+=$(DVERSION)=LOGGER # Enables task name to be added for TagionExceptions
+endif
 
 SCRIPTROOT:=${REPOROOT}/scripts/
 
