@@ -474,13 +474,15 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      +/
     this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct) ) {
         alias MutableT = Unqual!T;
+                    printf("MutableT=%s\n", MutableT.stringof.ptr);
         static foreach(m; __traits(allMembers, ValueT) ) {
             static if ( is(typeof(__traits(getMember, this, m)) == MutableT ) ){
                 enum code="alias member=ValueT."~m~";";
                 mixin(code);
                 static if ( hasUDA!(member, Type ) ) {
                     alias MemberT   = typeof(member);
-                    static if ( is(T == MemberT) ) {
+                    printf("MemberT=%s T=%s\n", MemberT.stringof.ptr, T.stringof.ptr);
+                    static if ( is(MutableT == MemberT) ) {
                         __traits(getMember, this, m) = x;
                         return;
                     }

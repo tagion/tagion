@@ -127,7 +127,6 @@ struct BinBuffer {
     }
 }
 
-version(none)
 unittest {
     string text="text";
     auto buf=BinBuffer(100);

@@ -87,13 +87,13 @@ void encode(T)(ref BinBuffer buffer, const T v) if(isUnsigned!T && isIntegral!T)
 void encode(T)(ref BinBuffer buffer,  const T v) if(isSigned!T && isIntegral!T) {
     enum DATA_SIZE=(T.sizeof*9+1)/8+1;
     ubyte[DATA_SIZE] data;
-    size_t index;
+//    size_t index;
     if (v == T.min) {
         foreach(ref d; data[0..$-1]) {
             d=0x80;
         }
         data[$-1]=(T.min >> (7*(DATA_SIZE-1))) & 0x7F;
-        buffer.write(data, &index);
+        buffer.write(data);
         return;
     }
     T value=v;
@@ -102,7 +102,7 @@ void encode(T)(ref BinBuffer buffer,  const T v) if(isSigned!T && isIntegral!T) 
         value >>= 7;
         /* sign bit of byte is second high order bit (0x40) */
         if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
-            buffer.write(data[0..i+1], &index);
+            buffer.write(data[0..i+1]);
             return;
         }
         d |= 0x80;

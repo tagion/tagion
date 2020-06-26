@@ -474,13 +474,9 @@ struct Document {
             buffer.write(key);
         }
         else {
-            //static if (is(Key==uint)) {
             buffer.write(ubyte(0));
             LEB128.encode(buffer, key);
         }
-        // else {
-        //     key.serialize(buffer);
-        // }
     }
 
     /++
@@ -493,7 +489,14 @@ struct Document {
      index = is offset index in side the buffer and index with be progressed
      +/
     static void build(T,K)(ref BinBuffer buffer, Type type, const K key, const(T) x) if (is(K:const(char[])) || is(K==uint)) {
+        const build_size=buffer.length;
         buildKey(buffer, type, key);
+        printf("build=[");
+        foreach(d; buffer.serialize[build_size..$]) {
+            printf("%d, ", d);
+        }
+        printf("]\n");
+
         static if ( is(T: U[], U) ) {
             immutable size=cast(uint)(x.length*U.sizeof);
             LEB128.encode(buffer, size);
@@ -582,22 +585,43 @@ struct Document {
 
                 enum name=basename!(_struct.tupleof[i]);
                 Text text;
-                text(name~"\0");
-                printf("i=%d name=%s\n", i, text.serialize.ptr);
+                text(name);
+                printf("#i=%d name=%s\n", i, text.serialize.ptr);
                 if ( i is count ) {
                     break;
                 }
                 alias U = typeof(t);
-                enum  E = Value.asType!U;
+                pragma(msg, U.stringof);
+                static if (is(U : const(ubyte[]))) {
+                    pragma(msg, "\tU const");
+                    enum  E = Value.asType!(immutable(U));
+                }
+                else {
+                    pragma(msg, "\tasType "~U.stringof);
+                    enum  E = Value.asType!(const(U));
+                }
+                static assert(E !is Type.NONE);
+                printf("E=%d U=%s\n", E, U.stringof.ptr);
                 static if (name.length is 0) {
                     build(temp_buffer, E, cast(uint)i, t);
                 }
                 else {
                     build(temp_buffer, E, name, t);
                 }
+                printf("[");
+                foreach(d; temp_buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
+
             }
             LEB128.encode(buffer, temp_buffer.length);
             buffer.write(temp_buffer.serialize);
+            printf("[");
+            foreach(d; buffer.serialize) {
+                printf("%d, ", d);
+            }
+            printf("]\n");
         }
     }
 
@@ -624,23 +648,38 @@ struct Document {
 
     unittest {
         struct Table {
+            BigNumber BIGINT;
+
             float FLOAT32;
             double FLOAT64;
-            //     BigNumberBIGINT;
             bool  BOOLEAN;
             int   INT32;
             long  INT64;
+            sdt_t TIME;
             uint  UINT32;
             ulong UINT64;
             }
+
         Table table;
-        table.FLOAT32 = 1.23;
-        table.FLOAT64 = 1.23e200;
-        table.INT32   = -42;
-        table.INT64   = -0x0123_3456_789A_BCDF;
+        table.FLOAT32  = 1.23;
+        table.FLOAT64  = 1.23e200;
+        table.INT32    = -42;
+        table.INT64    = -0x0123_3456_789A_BCDF;
         table.UINT32   = 42;
         table.UINT64   = 0x0123_3456_789A_BCDF;
+        ubyte[19]       big_data=[
+            0x80, 0x80, 0x80, 0x80,
+            0x80, 0x80, 0x80, 0x80,
+            0x80, 0x80, 0x80, 0x80,
+            0x80, 0x80, 0x80, 0x80,
+            0x80, 0x80,
+            0x01
+            ];
+        table.BIGINT.data   = big_data;
+//            BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
         table.BOOLEAN  = true;
+        table.TIME.time     = 1001;
+
         auto test_table=table.tupleof;
 
         struct TableArray {
@@ -674,6 +713,7 @@ struct Document {
 
         { // Document with simple types
             //test_table.UTC      = 1234;
+            size_t index;
 
             { // Document with a single value
                 auto buffer=BinBuffer(0x200);
@@ -696,6 +736,8 @@ struct Document {
                 printf("%d \n", r.empty);
 
                 assert(doc.length is 1);
+                printf("end -1\n");
+
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
@@ -704,6 +746,11 @@ struct Document {
                 make(buffer, table);
                 //              const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
+                printf("[");
+                foreach(d; buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
 
                 auto keys=doc.keys;
                 foreach(i, t; table.tupleof) {
@@ -713,7 +760,7 @@ struct Document {
                     // text(name);
 
 
-                    alias U = immutable(typeof(t));
+                    alias U = typeof(t);
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
@@ -721,17 +768,19 @@ struct Document {
                     assert(e.get!U == test_table[i]);
 
                     keys.popFront;
-
+                    printf("\ti=%d\n", i);
                     auto e_in = name in doc;
                     assert(e.get!U == test_table[i]);
 
                     assert(e.type is E);
                     assert(e.isType!U);
 
-                    static if(E !is Type.BIGINT) {
+                    static if(E !is Type.BIGINT && E !is Type.TIME) {
                         assert(e.isThat!isBasicType);
                     }
                 }
+                printf("end 0\n");
+
             }
 
             { // Document which includes basic arrays and string
@@ -752,6 +801,7 @@ struct Document {
                     assert(e.isThat!(traits.isArray));
 
                 }
+                printf("end 1\n");
             }
 
             { // Document which includes sub-documents
@@ -759,27 +809,64 @@ struct Document {
                 auto buffer_subdoc=BinBuffer(0x200);
                 make(buffer_subdoc, table);
                 const data_sub_doc = buffer_subdoc.serialize;
+//                printf("
                 const sub_doc=Document(buffer_subdoc.serialize);
 
-                //index = 0;
-                uint size;
-                buffer.write(uint.init);
-                enum doc_name="doc";
+                index = 0;
 
+                enum size_guess=151;
+                uint size;
+                LEB128.encode(buffer, size_guess);
+                printf("len=[");
+                foreach(d; buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
+                const start_index=buffer.length;
+                enum doc_name="KDOC";
+
+                printf("doc -- %d \n", start_index);
                 immutable index_before=buffer.length;
                 build(buffer, Type.INT32, Type.INT32.stringof, int(42));
-                const data_int32 = buffer[index_before..$];
+                const data_int32 = buffer.serialize[index_before..$];
+                printf("data_int32=[");
+                foreach(d; buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
+                // printf("data_int32=[");
+                // foreach(d; data_int32) {
+                //     printf("%d, ", d);
+                // }
+                // printf("]\n");
 
                 build(buffer, Type.DOCUMENT, doc_name, sub_doc);
+                printf("buffer=[");
+                foreach(d; buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
                 build(buffer, Type.STRING, Type.STRING.stringof, "Text");
+                printf("buffer=[");
+                foreach(d; buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
 
-                buffer.write(Type.NONE);
+                printf("### before size\n");
+                size = cast(uint)(buffer.length - start_index);
+                printf("size_guess=%d buffer.length=%d size=%d\n", size_guess, buffer.length, size);
+                assert(size == size_guess);
 
-                size = cast(uint)(buffer.length - uint.sizeof);
+//                buffer.write(Type.NONE);
+
+//                size = cast(uint)(buffer.length - uint.sizeof);
                 buffer.write(size, 0);
+                printf("doc 2\n");
 
                 //const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
+                //assert(doc.keys.is_key_ordered);
 
                 { // Check int32 in doc
                     const int32_e = doc[Type.INT32.stringof];
@@ -826,10 +913,10 @@ struct Document {
                 }
 
 
-                { // Check opEqual
-                    const data_int32_e = Element(data_int32.serialize);
-                    assert(doc[Type.INT32.stringof] == data_int32_e);
-                }
+                // { // Check opEqual
+                //     const data_int32_e = Element(data_int32.serialize);
+                //     assert(doc[Type.INT32.stringof] == data_int32_e);
+                // }
             }
 
             version(none)
