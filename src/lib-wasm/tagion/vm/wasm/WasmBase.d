@@ -509,7 +509,7 @@ T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
     scope(exit) {
         index+=byte_size;
     }
-    return LEB128.decode!T(data[index..$], byte_size);
+    return LEB128.decode!T(data[index..$]).value;
 }
 
 alias u32=decode!uint;

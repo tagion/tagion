@@ -1,4 +1,4 @@
-REPOROOT?=${shell git root}
+include git.mk
 -include $(REPOROOT)/localsetup.mk
 
 ifndef NOUNITTEST
@@ -35,14 +35,22 @@ BUILD?=$(REPOROOT)/build
 WAYS+=${BIN}
 WAYS+=${BUILD}
 
-SOURCE:=tagion
+SOURCE:=tagion/vm
+PACKAGE:=${subst /,.,$(SOURCE)}
+REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 
 -include dstep.mk
 
+TAGION_BASIC:=$(REPOROOT)/../tagion_basic/
+TAGION_UTILS:=$(REPOROOT)/../tagion_utils/
 TAGION_CORE:=$(REPOROOT)/../tagion_core/
 
-INC+=$(REPOROOT)/tagion
-INC+=$(TAGION_CORE)
-INC+=$(P2PLIB)
-INC+=$(SECP256K1ROOT)/src/
-INC+=$(SECP256K1ROOT)/
+-include core_dfiles.mk
+include tagion_dfiles.mk
+
+INC+=$(TAGION_BASIC)
+INC+=$(TAGION_UTILS)
+#INC+=$(TAGION_CORE)
+INC+=$(REPOROOT)
+
+include unittest_setup.mk

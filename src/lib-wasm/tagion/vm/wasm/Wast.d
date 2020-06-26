@@ -12,11 +12,11 @@ import std.range : StoppingPolicy, lockstep;
 import tagion.vm.wasm.WasmReader;
 import tagion.vm.wasm.WasmBase;
 import tagion.vm.wasm.WasmException;
-import tagion.TagionExceptions;
+import tagion.basic.TagionExceptions;
 
 @safe
 class WastException : WasmException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
 }
