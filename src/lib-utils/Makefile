@@ -1,9 +1,5 @@
 include git.mk
 
-ifndef $(VERBOSE)
-PRECMD?=@
-endif
-
 DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
@@ -19,7 +15,7 @@ BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
 
 .SECONDARY: $(TOUCHHOOK)
-.PHONY: ddoc makeway
+.PHONY: makeway
 
 
 INCFLAGS=${addprefix -I,${INC}}
@@ -41,9 +37,9 @@ ifndef DFILES
 include $(REPOROOT)/source.mk
 endif
 
-HELPER:=help-main
+HELP+=help-main
 
-help-master: help-main
+help-master: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
 	@echo "make test      : Run the unittests"
@@ -55,8 +51,6 @@ help-main:
 	@echo "make info      : Prints the Link and Compile setting"
 	@echo
 	@echo "make proper    : Clean all"
-	@echo
-	@echo "make ddoc      : Creates source documentation"
 	@echo
 	@echo "make PRECMD=   : Verbose mode"
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
@@ -70,9 +64,7 @@ info:
 	@echo "DCFLAGS =$(DCFLAGS)"
 	@echo "INCFLAGS=$(INCFLAGS)"
 
-include revsion.mk
-
-include source.mk
+include $(REPOROOT)/revsion.mk
 
 ifndef DFILES
 lib: dfiles.mk
@@ -113,24 +105,12 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)mkdir -p $(@D)
 	$(PRECMD)touch $@
 
-$(DDOCMODULES): $(DFILES)
-	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
-
-ddoc: $(DDOCMODULES)
-	@echo "########################################################################################"
-	@echo "## Creating DDOC"
-	${PRECMD}ln -fs ../candydoc ddoc
-	$(PRECMD)$(DC) ${INCFLAGS} $(DDOCFLAGS) $(DDOCFILES) $(DFILES) $(DD)$(DDOCROOT)
 
 %.o: %.c
 	@echo "########################################################################################"
 	@echo "## compile "$(notdir $<)
 	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
 
-%.o: %.d
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $< -c $(OUTPUT)$@
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -142,8 +122,7 @@ CLEANER+=clean
 
 clean:
 	rm -f $(LIBRARY)
-#	rm -f ${OBJS}
-	rm -f $(UNITTEST) $(UNITTEST).o
+	rm -f ${OBJS}
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)

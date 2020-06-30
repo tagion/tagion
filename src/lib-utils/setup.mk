@@ -1,7 +1,6 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
 
-LIBNAME:=libtagion_utils.a
 ifndef NOUNITTEST
 DCFLAGS+=-I$(REPOROOT)/tests/
 DCFLAGS+=-unittest
@@ -12,6 +11,9 @@ endif
 DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
 DCFLAGS+=$(DIP25)
 DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
+ifdef LOGGER
+DCFLAGS+=$(DVERSION)=LOGGER # Enables task name to be added for TagionExceptions
+endif
 
 SCRIPTROOT:=${REPOROOT}/scripts/
 
@@ -38,7 +40,6 @@ REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 -include dstep.mk
 
 TAGION_BASIC:=$(REPOROOT)/../tagion_basic/
-TAGION_CORE:=$(REPOROOT)/../tagion_core/
 
 include tagion_dfiles.mk
 
