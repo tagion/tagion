@@ -39,7 +39,7 @@ endif
 
 HELP+=help-main
 
-help-master: $(HELP)
+help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
 	@echo "make test      : Run the unittests"
