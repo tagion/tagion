@@ -33,13 +33,10 @@ DCFLAGS+=-cov
 endif
 
 
-ifndef DFILES
-include $(REPOROOT)/source.mk
-endif
 
 HELP+=help-main
 
-help-master: $(HELP)
+help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
 	@echo "make test      : Run the unittests"
@@ -55,6 +52,10 @@ help-main:
 	@echo "make PRECMD=   : Verbose mode"
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
+
+ifndef DFILES
+include $(REPOROOT)/source.mk
+endif
 
 info:
 	@echo "WAYS    =$(WAYS)"
