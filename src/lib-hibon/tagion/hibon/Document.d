@@ -543,6 +543,12 @@ static assert(uint.sizeof == 4);
     unittest {
         import std.algorithm.sorting : isSorted;
         auto buffer=new ubyte[0x200];
+
+        size_t index;
+        @trusted size_t* index_ptr() {
+            return &index;
+        }
+
         //import std.stdio;
         { // Test of null document
             const doc = Document(null);
@@ -550,9 +556,10 @@ static assert(uint.sizeof == 4);
             assert(doc[].empty);
         }
 
+
         { // Test of empty Document
-            size_t index;
-            buffer.binwrite(ubyte.init, &index);
+
+            buffer.binwrite(ubyte.init, index_ptr);
             immutable data=buffer[0..index].idup;
             const doc = Document(data);
             assert(doc.length is 0);
@@ -602,7 +609,7 @@ static assert(uint.sizeof == 4);
         { // Document with simple types
             //test_tabel.UTC      = 1234;
 
-            size_t index;
+            index=0;
 
             { // Document with a single value
                 index = make(buffer, test_tabel, 1);
