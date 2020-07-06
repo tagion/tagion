@@ -45,20 +45,22 @@ size_t calc_size(T)(const T v) pure if(isSigned!(T)) {
     if (v == T.min) {
         return T.sizeof+(is(T==int)?1:2);
     }
-    ulong value=ulong((v < 0)?-v:v);
+    T value=v;
     static if (is(T==long)) {
         if ((value >> (long.sizeof*8 - 2)) == 1UL) {
             return long.sizeof+2;
         }
     }
     size_t result;
-    auto uv=(v < 0)?-v:v;
-    T nv=-v;
+    // auto uv=(v < 0)?-v:v;
+    // T nv=-v;
 
+    ubyte d;
     do {
+        d = value & 0x7f;
         result++;
         value >>= 7;
-    } while (value);
+    } while ((((value != 0) || (d & 0x40)) && ((value != -1) || !(d & 0x40))));
     return result;
 }
 
@@ -211,5 +213,10 @@ unittest {
 
     {
         assert(decode!int([127]).value == -1);
+    }
+
+    { // Bug fix
+        assert(calc_size(-77) == 2);
+        ok!int(-77, [179,127]);
     }
 }
