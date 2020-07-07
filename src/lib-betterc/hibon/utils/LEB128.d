@@ -58,13 +58,15 @@ size_t calc_size(T)(const T v) pure if(isSigned!(T)) {
         }
     }
     size_t result;
-    auto uv=(v < 0)?-v:v;
-    T nv=-v;
+    // auto uv=(v < 0)?-v:v;
+    // T nv=-v;
 
+    ubyte d;
     do {
+        d = value & 0x7f;
         result++;
         value >>= 7;
-    } while (value);
+    } while ((((value != 0) || (d & 0x40)) && ((value != -1) || !(d & 0x40))));
     return result;
 }
 
@@ -247,4 +249,10 @@ unittest {
         const(ubyte[10]) buffer_21=[128, 128, 128, 128, 128, 128, 128, 128, 128, 127];
         ok!long(long.min, buffer_21);
     }
+
+    { // Bug fix
+        assert(calc_size(-77) == 2);
+        ok!int(-77, [179,127]);
+    }
+
 }

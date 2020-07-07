@@ -2,9 +2,9 @@ REPOROOT?=${shell git rev-parse --show-toplevel}
 include $(REPOROOT)/git.mk
 include $(REPOROOT)/setup.mk
 
-BETTERCMK:=betterc.mk
+makeBETTERCMK:=betterc.mk
 
-run: $(TEST) hibon.valgrind wasm
+run: $(TEST) hibon.valgrind
 	$(TEST)
 
 hibon.valgrind:
