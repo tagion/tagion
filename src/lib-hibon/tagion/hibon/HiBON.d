@@ -886,4 +886,25 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
     }
+
+    unittest { // Check empty/null object
+        {
+            HiBON hibon=new HiBON;
+            auto sub=new HiBON;
+            assert(sub.size == ubyte.sizeof);
+            const sub_doc=Document(sub.serialize);
+            hibon["a"]=sub_doc;
+            assert(hibon.size == Type.sizeof+ubyte.sizeof+"a".length+sub.size);
+
+        }
+
+        {
+            HiBON hibon=new HiBON;
+            auto sub=new HiBON;
+            assert(sub.size == ubyte.sizeof);
+            hibon["a"]=sub;
+            assert(hibon.size == Type.sizeof+ubyte.sizeof+"a".length+sub.size);
+        }
+    }
+
 }
