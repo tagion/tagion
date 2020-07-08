@@ -246,6 +246,9 @@ static size_t size(U)(const(U[]) array) pure {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
                                 const _size = value.by!(E).size;
+                                if (_size is 1) {
+                                    return Document.sizeKey(key) + ubyte.sizeof;
+                                }
                                 return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
@@ -308,7 +311,6 @@ static size_t size(U)(const(U[]) array) pure {
                     }
                 }
             }
-
         }
 
         void append(ref ubyte[] buffer, ref size_t index) const pure {
