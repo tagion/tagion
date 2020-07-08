@@ -319,19 +319,6 @@ template Init_HiBON_Types(string text, uint i) {
     }
 }
 
-
-
-///
-version(none)
-static unittest {
-    with(Type) {
-        static assert(!isHiBONType(NONE));
-        static assert(!isHiBONType(DEFINED_ARRAY));
-        static assert(!isHiBONType(DEFINED_NATIVE));
-    }
-
-}
-
 version(none) {
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
@@ -495,8 +482,8 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     /++
      Constructs a Value of the type BigNumber
      +/
-    this(BigNumber big) pure {
-        bigint=big;
+    this(const BigNumber big) pure {
+        bigint=cast(BigNumber)big;
     }
 
     this(DataBlock datablock) pure {

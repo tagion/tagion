@@ -10,7 +10,10 @@ extern(C):
 +/
 struct BigNumber {
     @nogc:
-    ubyte[] data;
+    const(ubyte)[] data;
+    this(const(ubyte)[] data) {
+        this.data=data[0..LEB128.calc_size(data)];
+    }
     size_t calc_size() const {
         return LEB128.calc_size(data);
     }

@@ -679,7 +679,7 @@ struct Document {
             0x80, 0x80,
             0x01
             ];
-        table.BIGINT.data   = big_data;
+        table.BIGINT   = BigNumber(big_data);
 //            BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
         table.BOOLEAN  = true;
         table.TIME.time     = 1001;
@@ -755,7 +755,7 @@ struct Document {
                 foreach(d; buffer.serialize) {
                     printf("%d, ", d);
                 }
-                printf("]\n");
+                printf("]\n-\n");
 
                 auto keys=doc.keys;
                 foreach(i, t; table.tupleof) {
@@ -771,6 +771,23 @@ struct Document {
                     const e = doc[name];
                     assert(keys.front == name);
                     printf("U=%s\n", U.stringof.ptr);
+                    printf("Value.asType!U=%x\n", Value.asType!U);
+                    static if (E is Type.BIGINT) {
+
+                        printf("e.get!U.length=%d\n", e.get!U.data.length);
+                        printf("test_table[i].length=%d\n", test_table[i].data.length);
+                        printf("test_table[i].data=[");
+                        foreach(d; test_table[i].data) {
+                            printf("%d, ", d);
+                        }
+                        printf("]\n");
+                        printf("e.get!U.data=[");
+                        foreach(d; e.get!U.data) {
+                            printf("%d, ", d);
+                        }
+                        printf("]\n");
+                    }
+                    printf("\n*\n");
                     assert(e.get!U == test_table[i]);
 
                     keys.popFront;
@@ -784,6 +801,7 @@ struct Document {
                     static if(E !is Type.BIGINT && E !is Type.TIME) {
                         assert(e.isThat!isBasicType);
                     }
+                    printf("End of %d\n\n", i);
                 }
                 printf("end 0\n");
 
@@ -1034,7 +1052,7 @@ struct Document {
                                 return Value(buffer);
                             }
                             else static if (E is BIGINT) {
-                                return Value(data[value_pos..$]);
+                                return Value(BigNumber(data[value_pos..$]));
                             }
                             else static if (isDataBlock(E)) {
                                 // immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
