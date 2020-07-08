@@ -596,6 +596,10 @@ struct Document {
                     pragma(msg, "\tU const");
                     enum  E = Value.asType!(immutable(U));
                 }
+                else static if (is(U : const(char[]))) {
+                    pragma(msg, "\tU const");
+                    enum  E = Value.asType!(immutable(U));
+                }
                 else {
                     pragma(msg, "\tasType "~U.stringof);
                     enum  E = Value.asType!(const(U));
@@ -683,7 +687,7 @@ struct Document {
         auto test_table=table.tupleof;
 
         struct TableArray {
-            ubyte[] BINARY;
+            //   ubyte[] BINARY;
             // float[] FLOAT32_ARRAY;
             // double[]FLOAT64_ARRAY;
             // int[]   INT32_ARRAY;
@@ -691,14 +695,15 @@ struct Document {
             // uint[]  UINT32_ARRAY;
             // ulong[] UINT64_ARRAY;
             // bool[]  BOOLEAN_ARRAY;
-            string  STRING;
+            char[]  STRING;
         }
 
 
         TableArray table_array;
         const(ubyte[3]) binary=[1, 2, 3];
-        table_array.BINARY.create(binary);
-        table_array.STRING="Text";//.create(text);
+//        table_array.BINARY.create(binary);
+        const(char[4]) char_array="Text";
+        table_array.STRING.create(char_array);
 
         auto test_table_array=table_array.tupleof;
 
@@ -765,6 +770,7 @@ struct Document {
                     assert(doc.hasElement(name));
                     const e = doc[name];
                     assert(keys.front == name);
+                    printf("U=%s\n", U.stringof.ptr);
                     assert(e.get!U == test_table[i]);
 
                     keys.popFront;

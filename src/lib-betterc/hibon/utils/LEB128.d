@@ -252,7 +252,8 @@ unittest {
 
     { // Bug fix
         assert(calc_size(-77) == 2);
-        ok!int(-77, [179,127]);
+        const(ubyte[2]) buffer_22=[179,127];
+        ok!int(-77, buffer_22);
     }
 
 }

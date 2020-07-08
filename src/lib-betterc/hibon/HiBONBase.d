@@ -200,7 +200,7 @@ struct Key {
         assert(0);
     }
 
-    T to(T)() const if (is(T==string) || is(T==uint)) {
+    T to(T)() const if (is(T:const(char)[]) || is(T==uint)) {
         with(KeyType) {
             final switch(key_type) {
             case DATA:
@@ -210,14 +210,14 @@ struct Key {
                     }
                 }
                 else {
-                    static if (is(T==string)) {
+                    static if (is(T:const(char)[])) {
                         const leb128_len=LEB128.decode!uint(data);
                         return (cast(immutable(char)*)data.ptr)[leb128_len.size..leb128_len.size+leb128_len.value];
                     }
                 }
                 break;
             case TEXT:
-                static if (is(T==string)) {
+                static if (is(T:const(char)[])) {
                     return text.serialize;
                 }
                 else {
