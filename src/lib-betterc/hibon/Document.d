@@ -653,10 +653,10 @@ struct Document {
     unittest {
         struct Table {
             BigNumber BIGINT;
-
+            bool  BOOLEAN;
             float FLOAT32;
             double FLOAT64;
-            bool  BOOLEAN;
+
             int   INT32;
             long  INT64;
             sdt_t TIME;
@@ -671,13 +671,11 @@ struct Document {
         table.INT64    = -0x0123_3456_789A_BCDF;
         table.UINT32   = 42;
         table.UINT64   = 0x0123_3456_789A_BCDF;
-        ubyte[19]       big_data=[
-            0x80, 0x80, 0x80, 0x80,
-            0x80, 0x80, 0x80, 0x80,
-            0x80, 0x80, 0x80, 0x80,
-            0x80, 0x80, 0x80, 0x80,
-            0x80, 0x80,
-            0x01
+        ubyte[17]       big_data=[
+            253, 234, 190, 210, 187,
+            181, 148, 221, 181, 139,
+            184, 234, 252, 135, 199,
+            156, 104
             ];
         table.BIGINT   = BigNumber(big_data);
 //            BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
