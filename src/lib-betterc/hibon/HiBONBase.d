@@ -6,6 +6,7 @@ extern(C):
 
 import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA;
+import std.range.primitives : isInputRange;
 
 version(WebAssembly) {
     pragma(msg, "WebAssembler");
@@ -711,41 +712,6 @@ unittest { // check is_index
     assert(!is_index("01", index));
 }
 
-version(none)
-int key_compare(const(Key) a, const(Key) b) {
-    if (a.isIndex) {
-        if (b.isIndex) {
-            const a_index=a.to!uint;
-            const b_index=b.to!uint;
-            if (a_index == b_index) {
-                return 0;
-            }
-            else if (a_index < b_index) {
-                return -1;
-            }
-            return 1;
-        }
-        else {
-            if (b.to!string[0] > '9') {
-                return 1;
-            }
-            return -1;
-        }
-    }
-    else {
-        if (b.isIndex) {
-            if (a.to!string[0] > '9') {
-                return -1;
-            }
-            return 1;
-        }
-        else {
-            return key_compare(a.to!string, b.to!string);
-        }
-    }
-    assert(0);
-}
-
 /++
  This function decides the order of the HiBON keys
 +/
@@ -773,6 +739,25 @@ body {
         return -1;
     }
     return 1;
+}
+
+/++
+ Checks if the keys in the range is ordred
+ Returns:
+ ture if all keys in the range is ordered
++/
+bool is_key_ordered(R)(R range) if (isInputRange!R) {
+    string prev_key;
+    while(!range.empty) {
+        if ((prev_key.length == 0) || (key_compare(prev_key, range.front) < 0)) {
+            prev_key=range.front;
+            range.popFront;
+        }
+        else {
+            return false;
+        }
+    }
+    return true;
 }
 
 ///

@@ -888,7 +888,7 @@ struct Document {
 
                 //const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
-                //assert(doc.keys.is_key_ordered);
+                assert(doc.keys.is_key_ordered);
 
                 { // Check int32 in doc
                     const int32_e = doc[Type.INT32.stringof];
