@@ -12,7 +12,7 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, E
 import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
-import core.stdc.stdio;
+//import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
 import hibon.utils.BinBuffer;
@@ -702,27 +702,10 @@ struct Document {
             { // Document with a single value
                 auto buffer=BinBuffer(0x200);
                 make(buffer, table, 1);
-                printf("table after\n");
-                //const doc_buffer = buffer[0..index];
+
                 const doc=Document(buffer.serialize);
-                printf("after doc %d\n", buffer.serialize.length);
-                printf("[");
-                foreach(d; buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
-                auto r=doc[];
-                printf("%d \n", r.front.type);
-                Text text;
-                printf("key=%s %d %d size=%d\n", r.front.key(text).ptr, r.empty,
-                    r.front.valuePos, r.front.size);
-                r.popFront;
-                printf("%d \n", r.empty);
 
                 assert(doc.length is 1);
-                printf("end -1\n");
-
-                // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
             { // Document including basic types
@@ -730,47 +713,19 @@ struct Document {
                 make(buffer, table);
                 //              const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
-                printf("[");
-                foreach(d; buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n-\n");
 
                 auto keys=doc.keys;
                 foreach(i, t; table.tupleof) {
                     enum name = basename!(table.tupleof[i]);
-                    printf("i=%d name=%s\n", i, name.ptr);
-                    // Text text;
-                    // text(name);
-
-
                     alias U = typeof(t);
                     enum  E = Value.asType!U;
                     assert(doc.hasElement(name));
                     const e = doc[name];
                     assert(keys.front == name);
-                    printf("U=%s\n", U.stringof.ptr);
-                    printf("Value.asType!U=%x\n", Value.asType!U);
-                    static if (E is Type.BIGINT) {
 
-                        printf("e.get!U.length=%d\n", e.get!U.data.length);
-                        printf("test_table[i].length=%d\n", test_table[i].data.length);
-                        printf("test_table[i].data=[");
-                        foreach(d; test_table[i].data) {
-                            printf("%d, ", d);
-                        }
-                        printf("]\n");
-                        printf("e.get!U.data=[");
-                        foreach(d; e.get!U.data) {
-                            printf("%d, ", d);
-                        }
-                        printf("]\n");
-                    }
-                    printf("\n*\n");
                     assert(e.get!U == test_table[i]);
 
                     keys.popFront;
-                    printf("\ti=%d\n", i);
                     auto e_in = name in doc;
                     assert(e.get!U == test_table[i]);
 
@@ -780,10 +735,7 @@ struct Document {
                     static if(E !is Type.BIGINT && E !is Type.TIME) {
                         assert(e.isThat!isBasicType);
                     }
-                    printf("End of %d\n\n", i);
                 }
-                printf("end 0\n");
-
             }
 
             { // Document which includes basic arrays and string
@@ -793,7 +745,6 @@ struct Document {
                 const doc=Document(buffer.serialize);
                 foreach(i, t; table_array.tupleof) {
                     enum name = basename!(table_array.tupleof[i]);
-                    printf("name=%s\n", name.ptr);
                     alias U = immutable(typeof(t));
                     const v = doc[name].get!U;
                     assert(v.length is test_table_array[i].length);
@@ -804,7 +755,6 @@ struct Document {
                     assert(e.isThat!(traits.isArray));
 
                 }
-                printf("end 1\n");
             }
 
             { // Document which includes sub-documents
@@ -812,7 +762,6 @@ struct Document {
                 auto buffer_subdoc=BinBuffer(0x200);
                 make(buffer_subdoc, table);
                 const data_sub_doc = buffer_subdoc.serialize;
-//                printf("
                 const sub_doc=Document(buffer_subdoc.serialize);
 
                 index = 0;
@@ -820,70 +769,22 @@ struct Document {
                 enum size_guess=151;
                 uint size;
                 LEB128.encode(buffer, size_guess);
-                printf("len=[");
-                foreach(d; buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
+
                 const start_index=buffer.length;
                 enum doc_name="KDOC";
 
-                printf("doc -- %d \n", start_index);
                 immutable index_before=buffer.length;
                 build(buffer, Type.INT32, Type.INT32.stringof, int(42));
                 const data_int32 = buffer.serialize[index_before..$];
-                printf("data_int32=[");
-                foreach(d; buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
-                // printf("data_int32=[");
-                // foreach(d; data_int32) {
-                //     printf("%d, ", d);
-                // }
-                // printf("]\n");
 
                 build(buffer, Type.DOCUMENT, doc_name, sub_doc);
-                printf("buffer=[");
-                foreach(d; buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
                 build(buffer, Type.STRING, Type.STRING.stringof, "Text");
-                printf("buffer=[");
-                foreach(d; buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
-
-                printf("### before size\n");
                 size = cast(uint)(buffer.length - start_index);
-                printf("size_guess=%d buffer.length=%d size=%d\n", size_guess, buffer.length, size);
+
                 assert(size == size_guess);
 
-//                buffer.write(Type.NONE);
-
-//                size = cast(uint)(buffer.length - uint.sizeof);
-//                buffer.write(size, 0);
-                printf("doc 2\n");
-                printf("buffer.serialize=[");
-                foreach(d; buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
-
-                //const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
-                printf("doc.serialize=[");
-                foreach(d; doc.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
 
-                auto range_doc=doc[];
-                foreach(e; doc[]) {
-                    printf("k=%d\n", e.type);
-                }
                 assert(doc.keys.is_key_ordered);
 
                 { // Check int32 in doc
