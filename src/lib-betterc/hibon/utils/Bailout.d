@@ -80,7 +80,7 @@ version(WebAssembly) {
 else {
     void dump() {
         if (message) {
-            printf("%s:%s:%s\n", file.ptr, line, message.ptr);
+            printf("%s:%d:%s\n", file.ptr, line, message.ptr);
         }
         else {
             printf("No error\n");
