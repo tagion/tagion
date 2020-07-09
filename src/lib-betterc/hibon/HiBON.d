@@ -187,6 +187,7 @@ struct HiBONT {
         }
 
         int opCmp(const(char[]) key) const pure {
+            debug printf("opCmp %s:%d %s:%d\n", this._key.ptr, this._key.length, key.ptr, key.length);
             if (this._key == key) {
                 return 0;
             }
@@ -588,8 +589,21 @@ struct HiBONT {
         hibon["c"] =3;
         hibon["a"] =1;
 
+        foreach(k; hibon.keys) {
+            printf("key=%s\n", k.ptr);
+        }
+        auto m=Member("b");
+        const found_member=hibon._members.get(&m);
+        printf("found_member=%p\n", found_member);
+
+        const found=hibon["b"];
+
+
+        printf("found=%p\n", found);
+
         assert(hibon.hasMember("b"));
         hibon.remove("b");
+        assert(!hibon.hasMember("b"));
     }
 
     /++
@@ -622,7 +636,7 @@ struct HiBONT {
             return range.empty;
         }
 
-        @property  void popFront() {
+        @property void popFront() {
             range.popFront;
         }
 

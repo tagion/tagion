@@ -491,12 +491,6 @@ struct Document {
     static void build(T,K)(ref BinBuffer buffer, Type type, const K key, const(T) x) if (is(K:const(char[])) || is(K==uint)) {
         const build_size=buffer.length;
         buildKey(buffer, type, key);
-        printf("build=[");
-        foreach(d; buffer.serialize[build_size..$]) {
-            printf("%d, ", d);
-        }
-        printf("]\n");
-
         static if ( is(T: U[], U) ) {
             immutable size=cast(uint)(x.length*U.sizeof);
             LEB128.encode(buffer, size);
@@ -586,7 +580,6 @@ struct Document {
                 enum name=basename!(_struct.tupleof[i]);
                 Text text;
                 text(name);
-                printf("#i=%d name=%s\n", i, text.serialize.ptr);
                 if ( i is count ) {
                     break;
                 }
@@ -605,27 +598,15 @@ struct Document {
                     enum  E = Value.asType!(const(U));
                 }
                 static assert(E !is Type.NONE);
-                printf("E=%d U=%s\n", E, U.stringof.ptr);
                 static if (name.length is 0) {
                     build(temp_buffer, E, cast(uint)i, t);
                 }
                 else {
                     build(temp_buffer, E, name, t);
                 }
-                printf("[");
-                foreach(d; temp_buffer.serialize) {
-                    printf("%d, ", d);
-                }
-                printf("]\n");
-
             }
             LEB128.encode(buffer, temp_buffer.length);
             buffer.write(temp_buffer.serialize);
-            printf("[");
-            foreach(d; buffer.serialize) {
-                printf("%d, ", d);
-            }
-            printf("]\n");
         }
     }
 
@@ -883,11 +864,26 @@ struct Document {
 //                buffer.write(Type.NONE);
 
 //                size = cast(uint)(buffer.length - uint.sizeof);
-                buffer.write(size, 0);
+//                buffer.write(size, 0);
                 printf("doc 2\n");
+                printf("buffer.serialize=[");
+                foreach(d; buffer.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
 
                 //const doc_buffer = buffer[0..index];
                 const doc=Document(buffer.serialize);
+                printf("doc.serialize=[");
+                foreach(d; doc.serialize) {
+                    printf("%d, ", d);
+                }
+                printf("]\n");
+
+                auto range_doc=doc[];
+                foreach(e; doc[]) {
+                    printf("k=%d\n", e.type);
+                }
                 assert(doc.keys.is_key_ordered);
 
                 { // Check int32 in doc
