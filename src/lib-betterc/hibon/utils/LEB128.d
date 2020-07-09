@@ -27,7 +27,7 @@ import hibon.utils.BinBuffer;
 size_t calc_size(const(ubyte[]) data) {
     foreach(i, d;data) {
         if ((d & 0x80) == 0) {
-            check(i <= ulong.sizeof+1, "LEB128 overflow");
+            //check(i <= ulong.sizeof+1, "LEB128 overflow");
             return i+1;
         }
     }
