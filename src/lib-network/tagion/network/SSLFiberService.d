@@ -373,13 +373,14 @@ class SSLFiberService {
                         else {
                             size+=rec_data_size;
                             while(leb128_index < size) {
+                                .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                                 if ((leb128_len_data[leb128_index++] & 0x80) is 0) {
                                     // End of LEB128 size when bit 7 is 0
                                     break leb128_loop;
                                 }
                             }
                             current=current[size..$];
-                            .check(size < LEN_MAX, message("Bad package size"));
+
                             checkTimeout;
                             yield;
                         }
