@@ -23,7 +23,7 @@ struct Text {
 
     this(const(char[]) _str) {
         this(_str.length+1);
-        str[0..$]=_str[0..$];
+        str[0.._str.length]=_str[0..$];
         index=_str.length;
         str[$-1]='\0';
     }
@@ -42,7 +42,7 @@ struct Text {
             str=null;
             index=0;
         }
-        return str;
+        return str[0..index];
     }
 
     @property size_t length() const pure {

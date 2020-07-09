@@ -25,7 +25,7 @@ import hibon.utils.Memory;
 import hibon.utils.Stack;
 //import hibon.HiBONBase : Key;
 import std.traits : isPointer;
-//port core.stdc.stdio;
+//import core.stdc.stdio;
 
 RBTreeT!(K) RBTree(K)(const bool owns=true) {
     RBTreeT!(K) result;
@@ -133,44 +133,25 @@ struct RBTreeT(K) {
         }
     }
     else {
-    void dump(int iter_max=20) const {
-        import core.stdc.stdio;
-        const(char[4]) INDENT="  ->";
-        void _dump(const(Node*) current, const uint level=1) @nogc {
-            if (current !is nill) {
-                _dump(current.left, level+1);
-                foreach(i;0..level) {
-                    printf("%s",INDENT.ptr);
+        void dump(int iter_max=20) const {
+            import core.stdc.stdio;
+            const(char[4]) INDENT="  ->";
+            void _dump(const(Node*) current, const uint level=1) @nogc {
+                if (current !is nill) {
+                    _dump(current.left, level+1);
+                    foreach(i;0..level) {
+                        printf("%s",INDENT.ptr);
+                    }
+                    printf("%p\n",  current);
+                    iter_max--;
+                    assert(iter_max>0);
+                    _dump(current.right, level+1);
                 }
-                printf("%p\n",  current);
-                iter_max--;
-                assert(iter_max>0);
-                _dump(current.right, level+1);
             }
+            printf("DUMP %p %p\n", root, nill);
+            _dump(root);
         }
-        printf("DUMP %p %p\n", root, nill);
-        _dump(root);
     }
-    }
-    //static int compare
-    // static bool equal_to(K)(scope const(K) a, scope const(K) b) pure {
-    //     static if (isPointer!K) { //isBasicType!K || (is(T:U[], U) && isBasicType!U)) {
-    //         return a.opEquals(b);
-    //     }
-    //     else {
-    //         return a == b;
-    //     }
-    // }
-
-    // static int compare(K)(K a, K b) pure {
-    //     static if (isisBasicType!K || (is(T:U[], U) && isBasicType!U)) {
-    //         return a > b;
-    //     }
-    //     else {
-    //         return a.opCmp(b);
-    //     }
-    // }
-
 
     const(Node*) search(const(K) item) const pure {
         const(Node*) _search(const(Node*) current) pure {
@@ -313,7 +294,7 @@ struct RBTreeT(K) {
      * At this point only property 2 can be violated so make root BLACK
      */
 
-    protected void insert_fixup(Node *z) {
+    protected void insert_fixup(Node* z) {
         while (z.parent.color is Color.RED) {
 
             /* z's parent is left child of z's grand parent*/
@@ -771,8 +752,6 @@ unittest {
 
 unittest {
     import hibon.HiBON;
-//    import hibon.Memory;
-//    alias Key=HiBONT.Key;
     auto tree=RBTree!(char[])(true);
     import std.typecons : Tuple;
     Tuple!(char[2], char[2], char[2], char[1], char[1], char[1]) check_list=[
@@ -782,13 +761,8 @@ unittest {
     char[][check_list.length] key_list;
     foreach(i, k; check_list) {
         create(key_list[i], k);
-        //key_list[i]=create!Key(k);
     }
-    // Key* b=create!Key("b" check_list[4]);
-    // Key* c=create!Key("c" check_list[5]);
-    // Key* _42=create!Key(42);
-    // Key* _17=create!Key(17);
-    // Key* _07=create!Key("07");
+
     tree.insert(key_list[4]);
     tree.insert(key_list[1]);
     tree.insert(key_list[2]);
