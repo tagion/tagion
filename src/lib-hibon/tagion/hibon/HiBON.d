@@ -717,12 +717,11 @@ static size_t size(U)(const(U[]) array) pure {
             immutable hibon_child_size    = hibon_child.serialize_size;
             immutable child_key_size = Document.sizeKey(chile_name);
             immutable hibon_size = hibon.serialize_size;
-            immutable data = hibon.serialize;
 
-            const doc = Document(data);
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
-
+            immutable data = hibon.serialize;
+            const doc = Document(data);
         }
 
 

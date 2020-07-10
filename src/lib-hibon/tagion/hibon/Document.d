@@ -337,7 +337,6 @@ static assert(uint.sizeof == 4);
         return result;
     }
 
-
     /++
      same as data
      +/
@@ -357,6 +356,14 @@ static assert(uint.sizeof == 4);
 
     static size_t sizeKey(uint key) pure {
         return Type.sizeof +  ubyte.sizeof + LEB128.calc_size(key);
+    }
+
+    unittest {
+        // Key is an index
+        assert(sizeKey("0") is 3);
+        assert(sizeKey("1000") is 4);
+        // Key is a labelw
+        assert(sizeKey("01000") is 7);
     }
 
     /++
