@@ -72,7 +72,7 @@ static size_t size(U)(const(U[]) array) pure {
     size_t size() const pure {
         size_t result;
         //= uint.sizeof+Type.sizeof;
-        if (_members.length) {
+        if (!_members[].empty) {
             result += _members[].map!(a => a.size).fold!( (a, b) => a + b);
         }
         if (result>0) {
@@ -112,13 +112,13 @@ static size_t size(U)(const(U[]) array) pure {
     //  +/
     @trusted
     private void append(ref ubyte[] buffer, ref size_t index) const pure {
-        if (_members.length) {
+        if (_members[].empty) {
+           buffer.binwrite(ubyte(0), &index);
+        }
+        else {
             uint size=cast(uint)_members[].map!(a => a.size).sum;
             buffer.array_write(LEB128.encode(size), index);
             _members[].each!(a => a.append(buffer, index));
-        }
-        else {
-            buffer.binwrite(ubyte(0), &index);
         }
     }
 
@@ -134,11 +134,6 @@ static size_t size(U)(const(U[]) array) pure {
             value = uint.init;
         }
 
-        // this(T)(T x, string key) pure if ( is(T==Unqual!T) ) {
-        //     this.value = x;
-        //     this.type  = Value.asType!T;
-        //     this.key  = key;
-        // }
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
 
         /++
@@ -533,7 +528,7 @@ static size_t size(U)(const(U[]) array) pure {
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias Tabel = Tuple!(
-             BigNumber, Type.BIGINT.stringof,
+            BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             float,  Type.FLOAT32.stringof,
             double, Type.FLOAT64.stringof,
@@ -616,6 +611,7 @@ static size_t size(U)(const(U[]) array) pure {
             const doc_size = Document.sizeT(Type.FLOAT32, Type.FLOAT32.stringof, test_tabel[pos]);
 
             assert(size is hibon_size);
+            assert(size is LEB128.calc_size(14)+doc_size);
 
             immutable data = hibon.serialize;
 
@@ -629,22 +625,6 @@ static size_t size(U)(const(U[]) array) pure {
             assert(e.by!(Type.FLOAT32) == test_tabel[pos]);
 
         }
-
-        // {
-        //     auto hibon = new HiBON;
-        //     hibon["X"]=int(42);
-        //     immutable data = hibon.serialize;
-        //     const doc = Document(data);
-
-        //     writefln("data=%s", doc.data);
-        //     writefln("hibon.size=%d", hibon.size);
-        //     writefln("doc.data.length=%d", doc.data.length);
-        //     writefln("doc.size=%s", leb128!uint(doc.data));
-        //     assert(hibon.size == doc.data.size);
-        //     assert(hibon.size= == doc.data.size);
-
-
-        // }
 
         { // HiBON Test for basic types
             auto hibon = new HiBON;
