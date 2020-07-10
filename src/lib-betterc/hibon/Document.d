@@ -12,7 +12,7 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, E
 import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
-import core.stdc.stdio;
+//import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
 import hibon.utils.BinBuffer;
@@ -416,9 +416,6 @@ struct Document {
 
     unittest {
         // Key is an index
-        printf("sizeKey(0)=%d\n", sizeKey("0"));
-        printf("sizeKey(1000)=%d\n", sizeKey("1000"));
-        printf("sizeKey(01000)=%d\n", sizeKey("01000"));
         assert(sizeKey("0") is 3);
         assert(sizeKey("1000") is 4);
         // Key is a labelw
