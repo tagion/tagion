@@ -139,12 +139,11 @@ struct Text {
 }
 
 unittest {
-    import core.stdc.stdio;
+//    import core.stdc.stdio;
     Text text;
     immutable(char[12]) check="Some text 42";
     size_t size=4;
     text~=check[0..size];
-    printf("text=%s\n", text.serialize.ptr);
     assert(text.serialize == check[0..size]);
     text~=check[size..size+6];
     size+=6;
