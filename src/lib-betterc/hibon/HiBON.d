@@ -1127,4 +1127,24 @@ struct HiBONT {
         }
 
     }
+    unittest { // Check empty/null object
+        {
+            auto hibon=HiBON();
+            auto sub=HiBON();
+            assert(sub.size == ubyte.sizeof);
+            const sub_doc=Document(sub.serialize);
+            hibon["a"]=sub_doc;
+            assert(hibon.size == Type.sizeof+ubyte.sizeof+"a".length+sub.size);
+
+        }
+
+        {
+            auto hibon=HiBON();
+            auto sub=HiBON();
+            assert(sub.size == ubyte.sizeof);
+            hibon["a"]=sub;
+            assert(hibon.size == Type.sizeof+ubyte.sizeof+"a".length+sub.size);
+        }
+    }
+
 }
