@@ -12,7 +12,7 @@ import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, E
 import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
-//import core.stdc.stdio;
+import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
 import hibon.utils.BinBuffer;
@@ -354,7 +354,6 @@ struct Document {
         return hasElement(index.to!string);
     }
 
-
     /++
      Find the element with key
      Returns:
@@ -406,14 +405,25 @@ struct Document {
     static size_t sizeKey(const(char[]) key) pure {
         uint index;
         if (is_index(key, index)) {
-            return Type.sizeof + LEB128.calc_size(index);
+            return sizeKey(index);
         }
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
     }
 
-    // static size_t sizeKey(Key key) pure {
-    //     return Type.sizeof + key.size;
-    // }
+    static size_t sizeKey(uint key) pure {
+        return Type.sizeof +  ubyte.sizeof + LEB128.calc_size(key);
+    }
+
+    unittest {
+        // Key is an index
+        printf("sizeKey(0)=%d\n", sizeKey("0"));
+        printf("sizeKey(1000)=%d\n", sizeKey("1000"));
+        printf("sizeKey(01000)=%d\n", sizeKey("01000"));
+        assert(sizeKey("0") is 3);
+        assert(sizeKey("1000") is 4);
+        // Key is a labelw
+        assert(sizeKey("01000") is 7);
+    }
 
     /++
      Calculates the number of bytes taken up by an element in the HiBON serialized stream
@@ -427,10 +437,11 @@ struct Document {
     static size_t sizeT(T, K)(Type type, K key, const(T) x) {
         size_t size = sizeKey(key);
         static if ( is(T: U[], U) ) {
-            size += uint.sizeof + (x.length*U.sizeof);
+            const _size=x.length*U.sizeof;
+            size += LEB128.calc_size(_size) + _size;
         }
         else static if(is(T : const Document)) {
-            size += x.data.length;
+            size += calc_size(x.data.length) + x.data.length;
         }
         else static if(is(T : const BigNumber)) {
             size += x.calc_size;

@@ -36,7 +36,7 @@ import hibon.utils.platform;
 //import core.stdc.stdio;
 
 HiBONT HiBON() {
-    HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true, false); //RBTree!(HiBONT.Members)());
+    HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true, false);
     return result;
 }
 
@@ -97,6 +97,7 @@ struct HiBONT {
         foreach(n; _members[]) {
             result+=n.size;
         }
+        printf("result=%d\n", result);
         if (result>0) {
             return result; //+calc_size(result);
         }
@@ -112,9 +113,13 @@ struct HiBONT {
      +/
     size_t serialize_size() const {
         auto _size=size;
+        printf("\tsize=%d\n", _size);
+
         if (_size !is ubyte.sizeof ) {
             _size += LEB128.calc_size(_size);
         }
+        printf("size_serialize=%d\n", _size);
+
         return _size;
     }
 
@@ -154,6 +159,7 @@ struct HiBONT {
     immutable(ubyte[]) serialize() {
         _buffer.recreate(serialize_size);
         append(_buffer);
+        printf("serialize_size=%d buffer.length=%d\n", serialize_size, _buffer.length);
         return _buffer.serialize;
     }
 
@@ -161,14 +167,22 @@ struct HiBONT {
     //  Helper function to append
     //  +/
     private void append(ref BinBuffer buffer) const {
-        immutable size_index = buffer.length; //index;
-        buffer.write(uint.init);
-        foreach(n; _members[]) {
-            n.append(buffer);
+        printf("_members.empty=%d buffer.length=%d\n", _members.empty, buffer.length);
+
+        if (_members.empty) {
+            buffer.write(ubyte(0));
         }
-        buffer.write(Type.NONE);
-        immutable doc_size=cast(uint)(buffer.length - size_index - uint.sizeof);
-        buffer.write(doc_size, size_index);
+        else {
+            printf("buffer.length=%d\n", buffer.length);
+            uint size;
+            foreach(m; _members[]) {
+                size+=m.size;
+            }
+            LEB128.encode(buffer, size);
+            foreach(n; _members[]) {
+                n.append(buffer);
+            }
+        }
     }
 
     /++
@@ -187,7 +201,6 @@ struct HiBONT {
         }
 
         int opCmp(const(char[]) key) const pure {
-            debug printf("opCmp %s:%d %s:%d\n", this._key.ptr, this._key.length, key.ptr, key.length);
             if (this._key == key) {
                 return 0;
             }
@@ -362,10 +375,15 @@ struct HiBONT {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
-                                return key_size+value.by!(E).size;
+                                const _size = value.by!(E).size;
+                                if (_size is 1) {
+                                    return Document.sizeKey(key) + ubyte.sizeof;
+                                }
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
-                                return key_size+value.by!(E).size+uint.sizeof;
+                                const _size = value.by!(E).size;
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else static if (E is VER) {
                                 return LEB128.calc_size(HIBON_VERSION);
@@ -791,10 +809,16 @@ struct HiBONT {
             auto hibon = HiBON();
             assert(hibon.length is 0);
 
-            assert(hibon.size is uint.sizeof+Type.sizeof);
+            assert(hibon.size is ubyte.sizeof);
             immutable data = hibon.serialize;
+            printf("hibon.serialize_size=%d\n", hibon.serialize_size);
 
             const doc = Document(data);
+            printf("[");
+            foreach(d; data) {
+                printf("%d, ", d);
+            }
+            printf("]\n");
             assert(doc.length is 0);
             assert(doc[].empty);
         }
@@ -803,8 +827,11 @@ struct HiBONT {
         // Because the HiBON keys must be ordered
         { // Single element
             auto hibon = HiBON();
-            enum pos=2;
-            static assert(is(typeof(test_table[pos]) == double));
+            enum pos=1;
+            alias A=typeof(test_table[pos]);
+
+            printf("A=%s\n", A.stringof.ptr);
+            static assert(is(typeof(test_table[pos]) == float));
             alias M=typeof(test_table[pos]);
             enum key = basename!(table.tupleof[pos]);
 
@@ -813,25 +840,26 @@ struct HiBONT {
             assert(hibon.length is 1);
 
             const m=hibon[key];
-            assert(m.type is Type.FLOAT64);
+            assert(m.type is Type.FLOAT32);
             assert(m.key == key);
             assert(m.get!(M) == test_table[pos]);
-            assert(m.by!(Type.FLOAT64) == test_table[pos]);
+            assert(m.by!(Type.FLOAT32) == test_table[pos]);
 
-            immutable size = hibon.size;
+            immutable size = hibon.serialize_size;
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size
                 = LEB128.calc_size(14)           // Size of the object in ubytes (uint(14))
                 + Type.sizeof                    // The HiBON Type  (Type.FLOAT32)  1
                 + ubyte.sizeof                   // Length of the key (ubyte(7))    2
-                + key.length                     // The key text string ("FLOAT64") 9
-                + double.sizeof                   // The data            (float(1.23)) 13
-                + Type.sizeof                    // The HiBON object ends with a (Type.NONE) 14
+                + Type.FLOAT32.stringof.length   // The key text string ("FLOAT32") 9
+                + float.sizeof                   // The data            (float(1.23)) 13
                 ;
 
-            const doc_size = Document.sizeT(Type.FLOAT64, key.stringof, test_table[pos]);
+            const doc_size = Document.sizeT(Type.FLOAT32, Type.FLOAT32.stringof, test_table[pos]);
 
+            printf("size=%d hibon_size=%d doc_size=%d\n", size, hibon_size, doc_size);
             assert(size is hibon_size);
+            assert(size is LEB128.calc_size(14)+doc_size);
 
             immutable data = hibon.serialize;
             const doc = Document(data);
@@ -839,10 +867,10 @@ struct HiBONT {
             assert(doc.length is 1);
             const e = doc[key];
 
-            assert(e.type is Type.FLOAT64);
+            assert(e.type is Type.FLOAT32);
             Text key_text;
             assert(e.key(key_text) == key);
-            assert(e.by!(Type.FLOAT64) == test_table[pos]);
+            assert(e.by!(Type.FLOAT32) == test_table[pos]);
 
         }
 
@@ -983,19 +1011,24 @@ struct HiBONT {
         hibon["string"] = "Text";
         hibon["float"]  = float(1.24);
 
-        immutable hibon_size_no_child = hibon.size;
+        immutable hibon_size_no_child = hibon.serialize_size;
         hibon_child["int32"]= 42;
-        immutable hibon_child_size    = hibon_child.size;
-
+        immutable hibon_child_size    = hibon_child.serialize_size;
         hibon[child_name]      = hibon_child;
 
-        auto exists=hibon.hasMember(child_name);
-        exists=hibon_child.hasMember("int32");
         immutable child_key_size = Document.sizeKey(child_name);
-        immutable hibon_size = hibon.size;
+        immutable hibon_size = hibon.serialize_size;
         assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
         immutable data = hibon.serialize;
+        printf("data=[");
+        foreach(d; data) {
+            printf("%d, ");
+        }
+        printf("]\n");
+        printf("data.length=%d LEB128.calc_size(hibon_size)=%d hibon.size=%d %d\n",
+            data.length, LEB128.calc_size(hibon_size), hibon.size, hibon.serialize_size);
+
         assert(data.length is hibon_size);
         const doc = Document(data);
 
@@ -1051,21 +1084,43 @@ struct HiBONT {
             enum name=tabel_doc_array.fieldNames[i];
             auto local_hibon=HiBON();
             local_hibon[name]=t;
+            if ( i < 1) {
             hibon_array~=local_hibon;
+            }
         }
 
-        immutable array_data_1 = hibon_array.serialize;
+        printf("##### hibon_array.size=%d\n", hibon_array.size);
+        immutable array_data = hibon_array.serialize;
+        printf("array_data=[");
+        foreach(d; array_data) {
+            printf("%d, ");
+        }
+        printf("]\n");
+        const array_doc=Document(array_data);
+        foreach(k; array_doc.keys) {
+            printf("key=%s\n", k.ptr);
+        }
 
         auto hibon = HiBON();
         hibon["int"]  = int(42);
         hibon["array"]= hibon_array;
 
-        immutable array_data = hibon_array.serialize;
+//        immutable array_data = hibon_array.serialize;
+
 
         //          version(none) {
         immutable data = hibon.serialize;
+        printf("data=[");
+        foreach(d; data) {
+            printf("%d, ");
+        }
+        printf("]\n");
 
         const doc = Document(data);
+
+        foreach(k; doc.keys) {
+            printf("key=%s\n", k.ptr);
+        }
 
         {
             assert(doc["int"].get!int is 42);
