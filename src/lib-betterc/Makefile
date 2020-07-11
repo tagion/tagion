@@ -2,7 +2,7 @@ REPOROOT?=${shell git rev-parse --show-toplevel}
 include $(REPOROOT)/git.mk
 include $(REPOROOT)/setup.mk
 
-makeBETTERCMK:=betterc.mk
+BETTERCMK:=betterc.mk
 
 run: $(TEST) hibon.valgrind
 	$(TEST)
