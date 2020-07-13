@@ -49,7 +49,7 @@ static assert(uint.sizeof == 4);
      Gets the internal buffer
      Returns:
      The buffer of the HiBON document
-    +/
+     +/
     immutable(ubyte[]) data() const pure nothrow {
         return _data;
     }
@@ -130,29 +130,45 @@ static assert(uint.sizeof == 4);
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
         auto previous=this[];
         bool not_first;
-        foreach(ref e; this[]) {
-            Element.ErrorCode error_code;
-            if (not_first && !less_than(previous.front.key, e.key)) {
-                error_code = Element.ErrorCode.KEY_ORDER;
-            }
-            else if ( e.type is Type.DOCUMENT ) {
-                error_code = e.get!(Document).valid(error_callback);
-            }
-            else {
-                error_code = e.valid;
-            }
-            if ( error_code !is Element.ErrorCode.NONE ) {
-                if ( error_callback ) {
-                    error_callback(e, previous.front);
+        Element.ErrorCode error_code;
+        try {
+            foreach(ref e; this[]) {
+
+                if (not_first && !less_than(previous.front.key, e.key)) {
+                    error_code = Element.ErrorCode.KEY_ORDER;
                 }
-                return error_code;
+                else if ( e.type is Type.DOCUMENT ) {
+                    error_code = e.get!(Document).valid(error_callback);
+                }
+                else {
+                    error_code = e.valid;
+                }
+                if ( error_code !is Element.ErrorCode.NONE ) {
+                    if ( error_callback ) {
+                        error_callback(e, previous.front);
+                    }
+                    return error_code;
+                }
+                if(not_first) {
+                    previous.popFront;
+                }
+                not_first=true;
             }
-            if(not_first) {
-                previous.popFront;
-            }
-            not_first=true;
         }
-        return Element.ErrorCode.NONE;
+        catch (HiBONException e) {
+            error_code = Element.ErrorCode.KEY_ORDER;
+            if ( error_callback ) {
+                error_callback(e, previous.front);
+            }
+
+        }
+        catch (RangeError e) {
+            error_code = Element.ErrorCode.KEY_ORDER;
+            if ( error_callback ) {
+                error_callback(e, previous.front);
+            }
+        }
+        return error_code;
     }
 
     /++
@@ -218,7 +234,7 @@ static assert(uint.sizeof == 4);
          * InputRange primitive operation that advances the range to its next element.
          */
         @trusted
-        void popFront() {
+            void popFront() {
             if (_index >= data.length) {
                 _index = data.length+1;
             }
@@ -251,7 +267,7 @@ static assert(uint.sizeof == 4);
      an std.conv.ConvException if the keys can not be convert to an uint
      Returns:
      A range of indices of the type of uint in the Document
-    +/
+     +/
     auto indices() const {
         return map!"a.index"(this[]);
     }
@@ -851,55 +867,55 @@ static assert(uint.sizeof == 4);
                 immutable value_pos=valuePos;
                 with(Type)
                 TypeCase:
-                switch(type) {
-                    static foreach(E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
-                        case E:
-                            static if (E is DOCUMENT) {
-                                immutable len=LEB128.decode!uint(data[value_pos..$]);
-                                return new Value(Document(data[value_pos..value_pos+len.size+len.value]));
-                            }
-                            else static if ((E is STRING) || (E is BINARY)) {
-                                alias T = Value.TypeT!E;
-                                alias U = ForeachType!T;
-                                immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
-                                immutable buffer_pos=value_pos+binary_len.size;
-                                immutable buffer=(cast(immutable(U)*)(data[buffer_pos..$].ptr))[0..binary_len.value];
-                                return new Value(buffer);
-                            }
-                            else static if (E is BIGINT) {
-                                auto big_leb128=BigNumber.decodeLEB128(data[value_pos..$]);
-                                return new Value(big_leb128.value);
-                            }
-                            else static if (isDataBlock(E)) {
-                                immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
-                                immutable buffer_pos=value_pos+binary_len.size;
-                                immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
-                                return new Value(DataBlock(buffer));
-                            }
-                            else {
-                                if (isHiBONType(type)) {
-                                    static if (E is TIME) {
-                                        alias T=long;
-                                    }
-                                    else {
-                                        alias T = Value.TypeT!E;
-                                    }
-                                    static if (isIntegral!T) {
-                                        auto result=new Value(LEB128.decode!T(data[value_pos..$]).value);
-                                        return result;
-                                    }
-                                    else {
-                                        return cast(Value*)(data[value_pos..$].ptr);
+                    switch(type) {
+                        static foreach(E; EnumMembers!Type) {
+                            static if (isHiBONType(E)) {
+                            case E:
+                                static if (E is DOCUMENT) {
+                                    immutable len=LEB128.decode!uint(data[value_pos..$]);
+                                    return new Value(Document(data[value_pos..value_pos+len.size+len.value]));
+                                }
+                                else static if ((E is STRING) || (E is BINARY)) {
+                                    alias T = Value.TypeT!E;
+                                    alias U = ForeachType!T;
+                                    immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
+                                    immutable buffer_pos=value_pos+binary_len.size;
+                                    immutable buffer=(cast(immutable(U)*)(data[buffer_pos..$].ptr))[0..binary_len.value];
+                                    return new Value(buffer);
+                                }
+                                else static if (E is BIGINT) {
+                                    auto big_leb128=BigNumber.decodeLEB128(data[value_pos..$]);
+                                    return new Value(big_leb128.value);
+                                }
+                                else static if (isDataBlock(E)) {
+                                    immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
+                                    immutable buffer_pos=value_pos+binary_len.size;
+                                    immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
+                                    return new Value(DataBlock(buffer));
+                                }
+                                else {
+                                    if (isHiBONType(type)) {
+                                        static if (E is TIME) {
+                                            alias T=long;
+                                        }
+                                        else {
+                                            alias T = Value.TypeT!E;
+                                        }
+                                        static if (isIntegral!T) {
+                                            auto result=new Value(LEB128.decode!T(data[value_pos..$]).value);
+                                            return result;
+                                        }
+                                        else {
+                                            return cast(Value*)(data[value_pos..$].ptr);
+                                        }
                                     }
                                 }
+                                break TypeCase;
                             }
-                            break TypeCase;
                         }
+                    default:
+                        //empty
                     }
-                default:
-                    //empty
-                }
                 .check(0, message("Invalid type %s", type));
 
                 assert(0);
@@ -932,10 +948,10 @@ static assert(uint.sizeof == 4);
             }
 
             /++
-               Tryes to convert the value to the type T.
-               Returns:
-               true if the function succeeds
-            +/
+             Tryes to convert the value to the type T.
+             Returns:
+             true if the function succeeds
+             +/
             bool as(T)(ref T result) {
                 switch(type) {
                     static foreach(E; EnumMembers!Type) {
@@ -1105,16 +1121,18 @@ static assert(uint.sizeof == 4);
                 ILLEGAL_TYPE,   // Use of internal types is illegal
                 INVALID_TYPE,   // Type is not defined
                 OVERFLOW,       // The specifed data does not fit into the data stream
-                ARRAY_SIZE_BAD  // The binary-array size in bytes is not a multipla of element size in the array
+                ARRAY_SIZE_BAD, // The binary-array size in bytes is not a multipla of element size in the array
+                RANGE,          // Range Error
+                UNKNOWN         // HiBONException
             }
 
             /++
-               Check if the element is valid
-               Returns:
-               The error code the element.
-               ErrorCode.NONE means that the element is valid
+             Check if the element is valid
+             Returns:
+             The error code the element.
+             ErrorCode.NONE means that the element is valid
 
-            +/
+             +/
             @trusted ErrorCode valid() {
                 enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
@@ -1156,11 +1174,11 @@ static assert(uint.sizeof == 4);
             }
 
             /++
-               Check if the type match That template.
-               That template must have one parameter T as followes
-               Returns:
-               true if the element is the type That
-            +/
+             Check if the type match That template.
+             That template must have one parameter T as followes
+             Returns:
+             true if the element is the type That
+             +/
             bool isThat(alias That)() {
             TypeCase:
                 switch(type) {
