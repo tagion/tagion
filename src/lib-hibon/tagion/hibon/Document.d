@@ -13,6 +13,7 @@ import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 import std.typecons : TypedefType;
+import core.exception : RangeError;
 
 //import std.stdio;
 
@@ -24,14 +25,6 @@ import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import LEB128=tagion.utils.LEB128;
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
-
-//alias u32=LEB128.decode!uint;
-
-// @safe uint u32(const(ubyte[]) data) pure {
-//     size_t result;
-//     LEB128.decode!uint(data, result);
-//     return cast(result;
-// }
 
 //import std.stdio;
 import std.exception;
@@ -127,12 +120,14 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
+    @trusted
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
         auto previous=this[];
         bool not_first;
         Element.ErrorCode error_code;
-        try {
-            foreach(ref e; this[]) {
+        foreach(ref e; this[]) {
+            try {
+
 
                 if (not_first && !less_than(previous.front.key, e.key)) {
                     error_code = Element.ErrorCode.KEY_ORDER;
@@ -154,19 +149,20 @@ static assert(uint.sizeof == 4);
                 }
                 not_first=true;
             }
-        }
-        catch (HiBONException e) {
+
+        catch (HiBONException exp) {
             error_code = Element.ErrorCode.KEY_ORDER;
-            if ( error_callback ) {
+            if ( error_callback && !previous.empty) {
                 error_callback(e, previous.front);
             }
 
         }
-        catch (RangeError e) {
+        catch (RangeError exp) {
             error_code = Element.ErrorCode.KEY_ORDER;
-            if ( error_callback ) {
+            if ( error_callback && !previous.empty) {
                 error_callback(e, previous.front);
             }
+        }
         }
         return error_code;
     }
