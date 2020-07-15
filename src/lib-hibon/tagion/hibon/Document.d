@@ -120,53 +120,32 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
-    @trusted
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
         auto previous=this[];
         bool not_first;
-        Element.ErrorCode error_code;
         foreach(ref e; this[]) {
-            try {
-
-
-                if (not_first && !less_than(previous.front.key, e.key)) {
-                    error_code = Element.ErrorCode.KEY_ORDER;
-                }
-                else if ( e.type is Type.DOCUMENT ) {
-                    error_code = e.get!(Document).valid(error_callback);
-                }
-                else {
-                    error_code = e.valid;
-                }
-                if ( error_code !is Element.ErrorCode.NONE ) {
-                    if ( error_callback ) {
-                        error_callback(e, previous.front);
-                    }
-                    return error_code;
-                }
-                if(not_first) {
-                    previous.popFront;
-                }
-                not_first=true;
-            }
-
-            catch (HiBONException exp) {
+            Element.ErrorCode error_code;
+            if (not_first && !less_than(previous.front.key, e.key)) {
                 error_code = Element.ErrorCode.KEY_ORDER;
-                if ( error_callback && !previous.empty) {
+            }
+            else if ( e.type is Type.DOCUMENT ) {
+                error_code = e.get!(Document).valid(error_callback);
+            }
+            else {
+                error_code = e.valid;
+            }
+            if ( error_code !is Element.ErrorCode.NONE ) {
+                if ( error_callback ) {
                     error_callback(e, previous.front);
                 }
-                break;
-
+                return error_code;
             }
-            catch (RangeError exp) {
-                error_code = Element.ErrorCode.KEY_ORDER;
-                if ( error_callback && !previous.empty) {
-                    error_callback(e, previous.front);
-                }
-                break;
+            if(not_first) {
+                previous.popFront;
             }
+            not_first=true;
         }
-        return error_code;
+        return Element.ErrorCode.NONE;
     }
 
     /++
@@ -175,8 +154,18 @@ static assert(uint.sizeof == 4);
      Params:
      true if the Document is inorder
      +/
+    @trusted
     bool isInorder() const {
-        return valid() is Element.ErrorCode.NONE;
+        try {
+            return valid() is Element.ErrorCode.NONE;
+        }
+        catch (HiBONException exp) {
+            return false;
+        }
+        catch (RangeError exp) {
+            return false;
+        }
+        assert(0);
     }
 
     /++
@@ -1119,9 +1108,7 @@ static assert(uint.sizeof == 4);
                 ILLEGAL_TYPE,   // Use of internal types is illegal
                 INVALID_TYPE,   // Type is not defined
                 OVERFLOW,       // The specifed data does not fit into the data stream
-                ARRAY_SIZE_BAD, // The binary-array size in bytes is not a multipla of element size in the array
-                RANGE,          // Range Error
-                UNKNOWN         // HiBONException
+                ARRAY_SIZE_BAD  // The binary-array size in bytes is not a multipla of element size in the array
             }
 
             /++
