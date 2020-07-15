@@ -155,6 +155,7 @@ static assert(uint.sizeof == 4);
                 if ( error_callback && !previous.empty) {
                     error_callback(e, previous.front);
                 }
+                break;
 
             }
             catch (RangeError exp) {
@@ -162,6 +163,7 @@ static assert(uint.sizeof == 4);
                 if ( error_callback && !previous.empty) {
                     error_callback(e, previous.front);
                 }
+                break;
             }
         }
         return error_code;
