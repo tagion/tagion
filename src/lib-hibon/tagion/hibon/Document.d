@@ -150,19 +150,19 @@ static assert(uint.sizeof == 4);
                 not_first=true;
             }
 
-        catch (HiBONException exp) {
-            error_code = Element.ErrorCode.KEY_ORDER;
-            if ( error_callback && !previous.empty) {
-                error_callback(e, previous.front);
-            }
+            catch (HiBONException exp) {
+                error_code = Element.ErrorCode.KEY_ORDER;
+                if ( error_callback && !previous.empty) {
+                    error_callback(e, previous.front);
+                }
 
-        }
-        catch (RangeError exp) {
-            error_code = Element.ErrorCode.KEY_ORDER;
-            if ( error_callback && !previous.empty) {
-                error_callback(e, previous.front);
             }
-        }
+            catch (RangeError exp) {
+                error_code = Element.ErrorCode.KEY_ORDER;
+                if ( error_callback && !previous.empty) {
+                    error_callback(e, previous.front);
+                }
+            }
         }
         return error_code;
     }
