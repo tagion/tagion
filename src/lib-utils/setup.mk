@@ -1,12 +1,10 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
 
-ifndef NOUNITTEST
-DCFLAGS+=-I$(REPOROOT)/tests/
-DCFLAGS+=-unittest
-DCFLAGS+=-g
-DCFLAGS+=$(DEBUG)
-endif
+TESTDCFLAGS+=-I$(REPOROOT)/tests/
+TESTDCFLAGS+=-unittest
+TESTDCFLAGS+=-g
+TESTDCFLAGS+=$(DEBUG)
 
 DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
 DCFLAGS+=$(DIP25)
