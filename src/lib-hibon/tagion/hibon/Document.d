@@ -13,6 +13,7 @@ import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 import std.typecons : TypedefType;
+import core.exception : RangeError;
 
 //import std.stdio;
 
@@ -24,14 +25,6 @@ import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import LEB128=tagion.utils.LEB128;
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
-
-//alias u32=LEB128.decode!uint;
-
-// @safe uint u32(const(ubyte[]) data) pure {
-//     size_t result;
-//     LEB128.decode!uint(data, result);
-//     return cast(result;
-// }
 
 //import std.stdio;
 import std.exception;
@@ -130,45 +123,29 @@ static assert(uint.sizeof == 4);
     Element.ErrorCode valid(ErrorCallback error_callback =null) const {
         auto previous=this[];
         bool not_first;
-        Element.ErrorCode error_code;
-        try {
-            foreach(ref e; this[]) {
-
-                if (not_first && !less_than(previous.front.key, e.key)) {
-                    error_code = Element.ErrorCode.KEY_ORDER;
-                }
-                else if ( e.type is Type.DOCUMENT ) {
-                    error_code = e.get!(Document).valid(error_callback);
-                }
-                else {
-                    error_code = e.valid;
-                }
-                if ( error_code !is Element.ErrorCode.NONE ) {
-                    if ( error_callback ) {
-                        error_callback(e, previous.front);
-                    }
-                    return error_code;
-                }
-                if(not_first) {
-                    previous.popFront;
-                }
-                not_first=true;
+        foreach(ref e; this[]) {
+            Element.ErrorCode error_code;
+            if (not_first && !less_than(previous.front.key, e.key)) {
+                error_code = Element.ErrorCode.KEY_ORDER;
             }
-        }
-        catch (HiBONException e) {
-            error_code = Element.ErrorCode.KEY_ORDER;
-            if ( error_callback ) {
-                error_callback(e, previous.front);
+            else if ( e.type is Type.DOCUMENT ) {
+                error_code = e.get!(Document).valid(error_callback);
             }
-
-        }
-        catch (RangeError e) {
-            error_code = Element.ErrorCode.KEY_ORDER;
-            if ( error_callback ) {
-                error_callback(e, previous.front);
+            else {
+                error_code = e.valid;
             }
+            if ( error_code !is Element.ErrorCode.NONE ) {
+                if ( error_callback ) {
+                    error_callback(e, previous.front);
+                }
+                return error_code;
+            }
+            if(not_first) {
+                previous.popFront;
+            }
+            not_first=true;
         }
-        return error_code;
+        return Element.ErrorCode.NONE;
     }
 
     /++
@@ -177,8 +154,18 @@ static assert(uint.sizeof == 4);
      Params:
      true if the Document is inorder
      +/
+    @trusted
     bool isInorder() const {
-        return valid() is Element.ErrorCode.NONE;
+        try {
+            return valid() is Element.ErrorCode.NONE;
+        }
+        catch (HiBONException exp) {
+            return false;
+        }
+        catch (RangeError exp) {
+            return false;
+        }
+        assert(0);
     }
 
     /++
@@ -1121,9 +1108,7 @@ static assert(uint.sizeof == 4);
                 ILLEGAL_TYPE,   // Use of internal types is illegal
                 INVALID_TYPE,   // Type is not defined
                 OVERFLOW,       // The specifed data does not fit into the data stream
-                ARRAY_SIZE_BAD, // The binary-array size in bytes is not a multipla of element size in the array
-                RANGE,          // Range Error
-                UNKNOWN         // HiBONException
+                ARRAY_SIZE_BAD  // The binary-array size in bytes is not a multipla of element size in the array
             }
 
             /++
