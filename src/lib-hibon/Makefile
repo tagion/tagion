@@ -9,10 +9,10 @@ AR?=ar
 include $(REPOROOT)/command.mk
 
 include setup.mk
+WORKDIR?=$(REPOROOT)
+-include $(WORKDIR)/dfiles.mk
 
--include $(REPOROOT)/dfiles.mk
-
-BIN:=bin/
+BIN:=$(REPOROOT)/bin/
 LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
@@ -41,9 +41,11 @@ ifndef DFILES
 include $(REPOROOT)/source.mk
 endif
 
-HELPER:=help-main
+HELP+=help-main
+# DDOC help
+include $(DDOCBUILDER)
 
-help-master: help-main
+help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
 	@echo "make test      : Run the unittests"
@@ -55,8 +57,6 @@ help-main:
 	@echo "make info      : Prints the Link and Compile setting"
 	@echo
 	@echo "make proper    : Clean all"
-	@echo
-	@echo "make ddoc      : Creates source documentation"
 	@echo
 	@echo "make PRECMD=   : Verbose mode"
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
@@ -70,16 +70,11 @@ info:
 	@echo "DCFLAGS =$(DCFLAGS)"
 	@echo "INCFLAGS=$(INCFLAGS)"
 
-include revsion.mk
-
-include source.mk
+include $(REPOROOT)/revsion.mk
 
 ifndef DFILES
 lib: dfiles.mk
 	$(MAKE) lib
-
-test: lib
-	$(MAKE) test
 else
 lib: $(REVISION) $(LIBRARY)
 
@@ -116,21 +111,7 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 $(DDOCMODULES): $(DFILES)
 	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
 
-ddoc: $(DDOCMODULES)
-	@echo "########################################################################################"
-	@echo "## Creating DDOC"
-	${PRECMD}ln -fs ../candydoc ddoc
-	$(PRECMD)$(DC) ${INCFLAGS} $(DDOCFLAGS) $(DDOCFILES) $(DFILES) $(DD)$(DDOCROOT)
-
-%.o: %.c
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
-
-%.o: %.d
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $< -c $(OUTPUT)$@
+include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
