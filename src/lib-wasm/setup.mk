@@ -1,11 +1,10 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
 
-ifndef NOUNITTEST
-DCFLAGS+=-unittest
-DCFLAGS+=-g
-DCFLAGS+=$(DEBUG)
-endif
+TESTDCFLAGS+=-I$(REPOROOT)/tests/
+TESTDCFLAGS+=-unittest
+TESTDCFLAGS+=-g
+TESTDCFLAGS+=$(DEBUG)
 
 DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
 DCFLAGS+=$(DIP25)
@@ -23,27 +22,26 @@ WAVMa2p:=${SCRIPTROOT}/wasm_array2pointer.pl
 
 WAYS+=$(WAVM_DI_ROOT)
 
-LIBNAME:=libwasm.a
+LIBNAME:=libtagion_wasm.a
 
 # DDOC Configuration
 #
 -include ddoc.mk
 
 BIN:=$(REPOROOT)/bin/
-BUILD?=$(REPOROOT)/build
 
 WAYS+=${BIN}
-WAYS+=${BUILD}
+WAYS+=tests
 
-SOURCE:=tagion/vm
+SOURCE:=tagion/vm/wasm
 PACKAGE:=${subst /,.,$(SOURCE)}
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
+REVISION:=$(REPOROOT)/$(SOURCE)/revision.d
 
 -include dstep.mk
 
 TAGION_BASIC:=$(REPOROOT)/../tagion_basic/
 TAGION_UTILS:=$(REPOROOT)/../tagion_utils/
-TAGION_CORE:=$(REPOROOT)/../tagion_core/
+#TAGION_CORE:=$(REPOROOT)/../tagion_core/
 
 -include core_dfiles.mk
 include tagion_dfiles.mk
