@@ -8,6 +8,7 @@ TESTDCFLAGS+=$(DEBUG)
 
 DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
 DCFLAGS+=$(DIP25)
+DCFLAGS+=$(DEBUG)
 
 SCRIPTROOT:=${REPOROOT}/scripts/
 

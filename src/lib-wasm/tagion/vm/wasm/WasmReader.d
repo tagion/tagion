@@ -96,8 +96,6 @@ struct WasmReader {
     static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
         immutable len=u32(data, index);
         static if(T.sizeof is ubyte.sizeof) {
-            // writefln("data=%s", data[index..$]);
-            // writefln("%d..%d len=%d data.length=%d", index, index+len*T.sizeof, len, data.length);
             immutable vec_mem=data[index..index+len*T.sizeof];
             index+=len*T.sizeof;
             immutable result=cast(immutable(T*))(vec_mem.ptr);
@@ -173,9 +171,6 @@ struct WasmReader {
                 }
             do {
                 alias T=Sections[S];
-                static if(S is Section.CUSTOM) {
-                    writefln("sec(%s).data=%s", S, data);
-                }
                 return T(data);
             }
 
@@ -205,7 +200,7 @@ struct WasmReader {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
-                    size_t index; //=Section.sizeof;
+                    size_t index;
                     length=u32(data, index);
                     this.data=data[index..$];
                 }

@@ -503,13 +503,13 @@ static string indexName(const IndexType idx) pure {
     }
 }
 
-
 T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
     size_t byte_size;
+    const leb128_index=LEB128.decode!T(data[index..$]);
     scope(exit) {
-        index+=byte_size;
+        index+=leb128_index.size;
     }
-    return LEB128.decode!T(data[index..$]).value;
+    return leb128_index.value;
 }
 
 alias u32=decode!uint;
