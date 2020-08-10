@@ -705,10 +705,10 @@ struct ExprRange {
             with(Types) {
                 switch(type) {
                 case I32:
-                    warg=u32(data, index);
+                    warg=i32(data, index);
                     break;
                 case I64:
-                    warg=u64(data, index);
+                    warg=i64(data, index);
                     break;
                 case F32:
                     warg=data.binpeek!(float, Endian.littleEndian)(&index);
