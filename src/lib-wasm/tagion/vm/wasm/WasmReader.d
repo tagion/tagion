@@ -18,7 +18,7 @@ import std.exception : assumeUnique;
 
 @safe
 struct WasmReader {
-    protected immutable(ubyte[]) _data;
+    protected immutable(ubyte)[] _data;
 
     immutable(ubyte[]) data() const pure nothrow {
         return _data;
