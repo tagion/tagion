@@ -437,6 +437,7 @@ class WasmWriter {
                 protected IndexType _desc;
                 void serialize(ref OutBuffer bout) const {
                     with(IndexType)
+                        bout.write(cast(ubyte)_desc);
                         final switch(_desc) {
                             foreach(E; EnumMembers!IndexType) {
                             case E:
