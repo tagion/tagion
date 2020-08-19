@@ -212,7 +212,9 @@ class WastT(Output) : WasmReader.InterfaceModule {
             if (!c.locals.empty) {
                 output.writef("%s(local", local_indent);
                 foreach(l; c.locals) {
-                    output.writef(" %s", typesName(l.type));
+                    foreach(i; 0..l.count) {
+                        output.writef(" %s", typesName(l.type));
+                    }
                 }
                 output.writeln(")");
             }
