@@ -54,7 +54,6 @@ struct WasmReader {
                     foreach(E; EnumMembers!(Section)) {
                     case E:
                         const sec=a.sec!E;
-                        writefln("SEC %s", E);
                         mod[E]=&sec;
                         static if (is(T==ModuleIterator)) {
                             iter(a.section, mod);
@@ -219,12 +218,8 @@ struct WasmReader {
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) {
                     size_t index;
-                    writefln("Custom data=%s %s", data, cast(string)data);
-
                     name=Vector!char(data, index);
-                    writefln("name=%s", name);
                     bytes=data[index..$];
-                    //Vector!ubyte(data, index);
                     size=data.length;
                 }
             }
@@ -483,6 +478,7 @@ struct WasmReader {
                     uint count;
                     Types type;
                     this(immutable(ubyte[]) data, ref size_t index) pure {
+                        // debug writefln("index=%d data=%s", index, data[index..$]);
                         count=u32(data, index);
                         type=cast(Types)data[index];
                         index+=Types.sizeof;
@@ -506,10 +502,7 @@ struct WasmReader {
                     this(immutable(ubyte[]) data) {
                         length=u32(data, index);
                         this.data=data;
-                        if (length) {
-                            size_t dummy_index=index;
-                            set_front(dummy_index);
-                        }
+                        popFront;
                     }
 
                     protected void set_front(ref size_t local_index) {
@@ -522,14 +515,14 @@ struct WasmReader {
                         }
 
                         bool empty() const pure nothrow {
-                            return (j>=length);
+                            return (j > length);
                         }
 
                         void popFront() {
-                            if (!empty) {
+                            if (j < length) {
                                 set_front(index);
-                                j++;
                             }
+                            j++;
                         }
                     }
                 }

@@ -7,7 +7,7 @@ import std.typecons : Tuple;
 import std.uni : toLower;
 import std.conv : to;
 import std.range.primitives : isOutputRange;
-import std.range : StoppingPolicy, lockstep;
+import std.range : StoppingPolicy, lockstep, enumerate;
 
 import tagion.vm.wasm.WasmReader;
 import tagion.vm.wasm.WasmBase;
@@ -74,8 +74,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     do {
         string result;
-        const _offset=wargs[0].get!uint;
-        const _align=wargs[1].get!uint;
+        const _offset=wargs[1].get!uint;
+        const _align=wargs[0].get!uint;
 
         if (_offset > 0) {
             result~=format(" offset=%d", _offset);
@@ -96,8 +96,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
 
     void type_sec(ref scope const(Module) mod) {
         auto _type=*mod[Section.TYPE]; //type_sec;
-        foreach(t; _type[]) {
-            output.writef("%s(type (%s", indent, typesName(t.type));
+        foreach(i, t; _type[].enumerate) {
+            output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
             if (t.params.length) {
                 output.write(" (param");
                 foreach(p; t.params) {
@@ -118,29 +118,29 @@ class WastT(Output) : WasmReader.InterfaceModule {
 
     void import_sec(ref scope const(Module) mod) {
         auto _import=*mod[Section.IMPORT];//.import_sec;
-        static string importdesc(ref const ImportType imp) {
+        static string importdesc(ref const ImportType imp, const size_t index) {
             const desc=imp.importdesc.desc;
             with(IndexType) {
                 final switch(desc) {
                 case FUNC:
                     const _funcdesc=imp.importdesc.get!FUNC;
-                    return format("(%s (type %d))", indexName(desc), _funcdesc.typeidx);
+                    return format("(%s (;%d;) (type %d))", indexName(desc), index, _funcdesc.typeidx);
                 case TABLE:
                     const _tabledesc=imp.importdesc.get!TABLE;
-                    return format("(%s %s %s)", indexName(desc), limitToString(_tabledesc.limit), typesName(_tabledesc.type));
+                    return format("(%s (;%d;) %s %s)", indexName(desc), index, limitToString(_tabledesc.limit), typesName(_tabledesc.type));
                 case MEMORY:
                     const _memorydesc=imp.importdesc.get!MEMORY;
-                    return format("(%s %s %s)", indexName(desc), limitToString(_memorydesc.limit));
+                    return format("(%s(;%d;)  %s %s)", indexName(desc), index, limitToString(_memorydesc.limit));
                 case GLOBAL:
                     const _globaldesc=imp.importdesc.get!GLOBAL;
-                    return format("(%s %s)", indexName(desc), globalToString(_globaldesc));
+                    return format("(%s (;%d;) %s)", indexName(desc), index, globalToString(_globaldesc));
                 }
             }
         }
-        foreach(imp; _import[]) {
+        foreach(i, imp; _import[].enumerate) {
 //            output.writefln("imp=%s", imp);
             output.writefln(`%s(import "%s" "%s" %s)`,
-                indent, imp.mod, imp.name, importdesc(imp));
+                indent, imp.mod, imp.name, importdesc(imp, i));
         }
     }
 
@@ -150,22 +150,22 @@ class WastT(Output) : WasmReader.InterfaceModule {
 
     void table_sec(ref scope const(Module) mod) {
         auto _table=*mod[Section.TABLE];
-        foreach(t; _table[]) {
-            output.writefln("%s(table %s %s)", indent, limitToString(t.limit), typesName(t.type));
+        foreach(i, t; _table[].enumerate) {
+            output.writefln("%s(table (;%d;) %s %s)", indent, i, limitToString(t.limit), typesName(t.type));
         }
     }
 
     void memory_sec(ref scope const(Module) mod) {
         auto _memory=*mod[Section.MEMORY];
-         foreach(m; _memory[]) {
-            output.writefln("%s(memory %s)", indent, limitToString(m.limit));
+        foreach(i, m; _memory[].enumerate) {
+            output.writefln("%s(memory (;%d;) %s)", indent, i, limitToString(m.limit));
         }
     }
 
     void global_sec(ref scope const(Module) mod) {
         auto _global=*mod[Section.GLOBAL];
-        foreach(g; _global[]) {
-            output.writefln("%s(global %s (", indent, globalToString(g.global));
+        foreach(i, g; _global[].enumerate) {
+            output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
             auto expr=g[];
             block(expr, indent~spacer);
             output.writefln("%s))", indent);
@@ -186,8 +186,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
 
     void element_sec(ref scope const(Module) mod) {
         auto _element=*mod[Section.ELEMENT];
-        foreach(e; _element[]) {
-            output.writefln("%s(elem (", indent);
+        foreach(i, e; _element[].enumerate) {
+            output.writefln("%s(elem (;%d;) (", indent, i);
             auto expr=e[];
             const local_indent=indent~spacer;
             block(expr, local_indent~spacer);
@@ -266,7 +266,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
                     output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                     const end_elm=block(expr, indent~spacer, level+1);
                     const end_instr=instrTable[end_elm.code];
-                    output.writefln("%s%s %s count=%d", indent, end_instr.name, block_comment, count);
+                    output.writefln("%s%s", indent, end_instr.name);
                     //return end_elm;
 
                     // const end_elm=block_elm(elm);
@@ -317,10 +317,10 @@ class WastT(Output) : WasmReader.InterfaceModule {
                                 return a.get!long.to!string;
                             case F32:
                                 const x=a.get!float;
-                                return format("%a ;; %s", x, x);
+                                return format("%a (;=%s;)", x, x);
                             case F64:
                                 const x=a.get!double;
-                                return format("%a ;; %s", x, x);
+                                return format("%a (;=%s;)", x, x);
                             default:
                                 assert(0);
                             }

@@ -12,7 +12,7 @@ import std.meta : AliasSeq, staticMap, Filter;
 import std.exception : assumeUnique;
 import std.range : lockstep;
 
-import std.stdio;
+//import std.stdio;
 
 import tagion.utils.LEB128 : encode;
 import tagion.vm.wasm.WasmBase;
@@ -75,14 +75,12 @@ class WasmWriter {
             if (reader_mod[sec] !is null) {
                 auto _reader_sec=*reader_mod[sec];
                 if (!_reader_sec[].empty) {
-                    writefln("%s _reader_sec=%s", sec, _reader_sec.data);
                     alias ModT=Module.Types[sec];
                     alias ModuleType=SecType!sec;
                     alias SectionElement=TemplateArgsOf!(ModuleType);
                     auto _sec=new SecType!sec;
                     mod[sec]=_sec;
                     foreach(s; _reader_sec[]) {
-                        writefln("SecElement!(sec)=%s %s",SecElement!(sec).stringof, sec);
                         _sec.sectypes~=SecElement!(sec)(s);
                     }
                 }
@@ -90,8 +88,6 @@ class WasmWriter {
         }
 
         final void custom_sec(ref scope const(ReaderModule) reader_mod) {
-            pragma(msg, "Module.Types[Section.CUSTOM] ", Module.Types[Section.CUSTOM]);
-            pragma(msg, "Module.Types ", Module.Types);
             check((previous_sec in mod[Section.CUSTOM]) is null,
                 format("Custom section after %s has already been definded", previous_sec));
             mod[Section.CUSTOM][previous_sec]=WasmSection.CustomType(*reader_mod[Section.CUSTOM]);
@@ -224,19 +220,13 @@ class WasmWriter {
         mixin template Serialize() {
             void serialize(ref OutBuffer bout) const {
                 alias MainType=typeof(this);
-                writefln("MainType=%s", MainType.stringof);
                 static if (hasMember!(MainType,  "guess_size")) {
                     bout.reserve(guess_size);
                 }
 
-
-                void dummy(T)(T m) @trusted {
-                    writefln("T=%s %s", T.stringof, m);
-                }
                 foreach(i, m; this.tupleof) {
                     alias T=typeof(m);
                     static if (is(T==struct) || is(T==class)) {
-                        dummy(m);
                         m.serialize(bout);
                     }
                     else {
@@ -367,13 +357,11 @@ class WasmWriter {
                 this.type=type;
                 this.params=params;
                 this.results=results;
-                writefln("FuncType %s", this);
             }
             this(ref const(ReaderSecType!(Section.TYPE)) s) {
                 type=s.type;
                 params=s.params;
                 results=s.results;
-                writefln("ReaderSecType.FuncType %s", this);
             }
             mixin Serialize;
         }
@@ -475,7 +463,6 @@ class WasmWriter {
 
                 version(none)
                 this(T)(ref const(T) desc) {
-                    pragma(msg, ":: ", getUDAs!(this, IndexType));
                     static if (is(T:const(FuncDesc))) {
                         _desc=FUNC;
                         _funcdesc=desc;

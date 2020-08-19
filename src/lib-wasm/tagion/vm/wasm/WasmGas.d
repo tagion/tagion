@@ -14,6 +14,8 @@ import std.algorithm.iteration : map;
 import std.array : array;
 import std.format;
 
+// import std.stdio;
+
 struct WasmGas {
     enum set_gas_gauge="$set_gas_gauge";
     enum read_gas_gauge="$read_gas_gauge";
@@ -26,7 +28,7 @@ struct WasmGas {
     alias GlobalDesc=WasmWriter.WasmSection.ImportType.ImportDesc.GlobalDesc;
     alias Global=WasmWriter.WasmSection.Global;
     alias Type=WasmWriter.WasmSection.Type;
-    alias FUnction=WasmWriter.WasmSection.Function;
+    alias Function=WasmWriter.WasmSection.Function;
     alias Code=WasmWriter.WasmSection.Code;
     alias GlobalType=WasmWriter.WasmSection.GlobalType;
     alias FuncType=WasmWriter.WasmSection.FuncType;
@@ -34,6 +36,11 @@ struct WasmGas {
     alias CodeType=WasmWriter.WasmSection.CodeType;
     alias ExportType=WasmWriter.WasmSection.ExportType;
 
+    /++
+     Append and section type to the specified section
+     Returns:
+     the index of the inserted sectype
+     +/
     uint inject(SecType)(SecType sectype) {
         uint idx;
         enum SectionId=WasmWriter.fromSecType!SecType;
@@ -51,15 +58,8 @@ struct WasmGas {
 
 
     alias InjectGas=void delegate(scope OutBuffer bout, const uint gas);
-    package void inject_gas(InjectGas inject_gas) { //const uint gas_counter_funcidx) {
+    package void perform_gas_inject(InjectGas inject_gas) {
         auto code_sec=writer.mod[Section.CODE];
-        // void inject_gas(scope OutBuffer bout, const uint gas) {
-        //     if (gas>0) {
-        //         WasmExpr(bout)
-        //             (IR.I32_CONST, gas)
-        //             (IR.CALL, gas_counter_funcidx);
-        //     }
-        // }
 
         alias GasResult=Tuple!(uint, "gas", IR, "irtype");
 
@@ -141,33 +141,16 @@ struct WasmGas {
         }
 
         if (code_sec) {
-//            int count=1;
             foreach(ref c; code_sec.sectypes) {
-                // count--;
-                // if (count < 0) {
-                //     break;
-                // }
                 scope expr_bout=new OutBuffer;
                 auto expr_range=c[];
-//                 {
-//                     auto expr=expr_range;
-//                     // expr.test=true;
-//                     // expr.count=10;
-//                     foreach(e; expr) {
-//                         writefln("::%s", e);
-//                     }
-// //                    writefln("ex
-//                 }
-//                writefln("expr_range.data=%s", expr_range.data);
                 expr_bout.reserve(c.expr.length*5/4); // add 25%
                 const gas_result=inject_gas_funcs(expr_bout, expr_range);
                 scope code_bout=new OutBuffer;
                 code_bout.reserve(expr_bout.offset+2*uint.sizeof);
                 inject_gas(code_bout, gas_result.gas);
-//                writefln("expr_bout=%s expr_range.empty=%s %s", expr_bout.toBytes, expr_range.empty, expr_range.front);
                 code_bout.write(expr_bout);
                 c.expr=code_bout.toBytes.idup;
-//                writefln("code_bout=%s", code_bout.toBytes);
             }
         }
     }
@@ -185,8 +168,11 @@ struct WasmGas {
             global_type=GlobalType(global_desc, expr);
         }
         const global_idx=inject(global_type);
-        const func_sec=writer.mod[Section.FUNCTION];
-        const gas_count_func_idx=cast(uint)((func_sec is null)?0:func_sec.sectypes.length);
+        const type_sec=writer.mod[Section.TYPE];
+        const gas_count_func_idx=cast(uint)((type_sec is null)?0:type_sec.sectypes.length);
+        // writefln("func_sec.sectypes=%s", func_sec.sectypes);
+
+        // writefln("gas_count_func_idx=%d", gas_count_func_idx);
         void inject_gas_count(scope OutBuffer bout, const uint gas) {
             if (gas>0) {
                 WasmExpr(bout)
@@ -194,7 +180,7 @@ struct WasmGas {
                     (IR.CALL, gas_count_func_idx);
             }
         }
-        inject_gas(&inject_gas_count); //gas_count_func_idx);
+        perform_gas_inject(&inject_gas_count); //gas_count_func_idx);
 
         { // Gas down counter
             FuncType func_type=FuncType(Types.FUNC, null, null);
