@@ -8,6 +8,9 @@ TESTDCFLAGS+=$(DEBUG)
 
 DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
 DCFLAGS+=$(DIP25)
+DCFLAGS+=$(DEBUG)
+DCFLAGS+=-g
+
 DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
 ifdef LOGGER
 DCFLAGS+=$(DVERSION)=LOGGER # Enables task name to be added for TagionExceptions
@@ -33,7 +36,7 @@ WAYS+=tests
 
 SOURCE:=tagion/utils
 PACKAGE:=${subst /,.,$(SOURCE)}
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
+REVISION:=$(REPOROOT)/$(SOURCE)/revision.d
 
 -include dstep.mk
 

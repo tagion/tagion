@@ -68,11 +68,8 @@ info:
 include $(REPOROOT)/revsion.mk
 
 ifndef DFILES
-lib: dfiles.mk
+lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
-
-test: lib
-	$(MAKE) test
 else
 lib: $(REVISION) $(LIBRARY)
 
@@ -106,12 +103,10 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)mkdir -p $(@D)
 	$(PRECMD)touch $@
 
+$(DDOCMODULES): $(DFILES)
+	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
 
-%.o: %.c
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
-
+include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -124,6 +119,7 @@ CLEANER+=clean
 clean:
 	rm -f $(LIBRARY)
 	rm -f ${OBJS}
+	rm -f $(UNITTEST) $(UNITTEST).o
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
