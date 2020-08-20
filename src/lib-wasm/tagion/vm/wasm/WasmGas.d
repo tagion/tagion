@@ -183,7 +183,7 @@ struct WasmGas {
         perform_gas_inject(&inject_gas_count); //gas_count_func_idx);
 
         { // Gas down counter
-            FuncType func_type=FuncType(Types.FUNC, null, null);
+            FuncType func_type=FuncType(Types.FUNC, [Types.I32], null);
             const type_idx=inject(func_type);
 
             Index func_index=Index(type_idx);
@@ -207,7 +207,7 @@ struct WasmGas {
                     (IR.END)
                     (IR.END);
                 immutable expr=out_expr.toBytes.idup;
-                code_type=CodeType(null, expr);
+                code_type=CodeType([CodeType.Local(1, Types.I32)] , expr);
             }
             const code_idx=inject(code_type);
         }
@@ -243,7 +243,7 @@ struct WasmGas {
                     //}
                     (IR.END);
                 immutable expr=out_expr.toBytes.idup;
-                code_type=CodeType(null, expr);
+                code_type=CodeType([CodeType.Local(1, Types.I32)] , expr);
             }
             const code_idx=inject(code_type);
 
