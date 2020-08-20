@@ -73,7 +73,7 @@ info:
 include $(REPOROOT)/revsion.mk
 
 ifndef DFILES
-lib: dfiles.mk
+lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
 else
 lib: $(REVISION) $(LIBRARY)
