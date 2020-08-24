@@ -14,7 +14,7 @@ import tagion.Options;
 import tagion.basic.Basic : Buffer;
 import tagion.services.LoggerService;
 import tagion.hashgraph.ConsensusExceptions;
-
+import LEB128=tagion.utils.LEB128;
 
 
 /++
@@ -354,10 +354,15 @@ class SSLFiberService {
             ptrdiff_t size;
             for(;;) {
                 if (buffer is null) {
-                    auto len_data = new ubyte[uint.sizeof];
-                    current=len_data;
-                    do {
+                    // The length of the buffer is in leb128 format
+                    enum LEN_MAX=LEB128.calc_size(uint.max);
+                    auto leb128_len_data = new ubyte[LEN_MAX];
+                    current=leb128_len_data;
+                    uint leb128_index;
+                leb128_loop:
+                    for(;;) {
                         const rec_data_size = client.receive(current);
+                        log("curr: %s", leb128_len_data);
                         if (rec_data_size < 0) {
                             // Not ready yet
                             yield;
@@ -368,23 +373,38 @@ class SSLFiberService {
                         }
                         else {
                             size+=rec_data_size;
-                            current=current[size..$];
-                            if ( size < uint.sizeof ) {
-                                checkTimeout;
-                                yield;
+                            while(leb128_index < size) {
+                                .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
+                                if ((leb128_len_data[leb128_index++] & 0x80) is 0) {
+                                    // End of LEB128 size when bit 7 is 0
+                                    break leb128_loop;
+                                }
                             }
-                        }
-                    } while (size < uint.sizeof);
+                            current=current[size..$];
 
-                    const buffer_size=buffer_to_uint(len_data);
+                            checkTimeout;
+                            yield;
+                        }
+                    }
+                    const leb128_len=LEB128.decode!uint(leb128_len_data);
+                    const buffer_size=leb128_len.value;
+                    //const buffer_size=buffer_to_uint(len_data);
                     if (buffer_size > ssl_options.max_buffer_size) {
                         return null;
                     }
-                    buffer=new ubyte[buffer_size+uint.sizeof];
-                    buffer[0..uint.sizeof] = len_data;
-                    current = buffer[uint.sizeof..$];
+                    buffer=new ubyte[leb128_len.size+leb128_len.value];
+                    buffer[0..size] = leb128_len_data[0..size];
+                    current = buffer[size..$];
                 }
-                size = client.receive(current);
+                for(;;){
+                    size = client.receive(current);
+                    if(size<0){
+                        checkTimeout;
+                        yield;
+                    }else{
+                        break;
+                    }
+                }
                 current=current[size..$];
                 if (current.length == 0) {
                     return assumeUnique(buffer);
