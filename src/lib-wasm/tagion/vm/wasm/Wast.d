@@ -246,14 +246,6 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    alias Extra=Sections.Types[Section.EXTRA];
-    void extra_sec(ref const(Extra) _extra) {
-//        auto _extra=*mod[Section.EXTRA];
-        output.writefln("%s(;; %s ;)", indent, _extra); //.ldc_compiler_name);
-
-//        writefln(":: %s", _extra.ldc_compiler_name);
-    }
-
     private const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
 //        immutable indent=base_indent~spacer;
         string block_comment;

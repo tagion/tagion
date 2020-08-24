@@ -624,26 +624,8 @@ alias SectionsT(SectionType)=Tuple!(
     SectionType.Element,
     SectionType.Code,
     SectionType.Data,
-    SectionType.Extra,
     );
 
-
-version(none)
-alias SectionsT(SectionType)=AliasSeq!(
-    SectionType.Custom,
-    SectionType.Type,
-    SectionType.Import,
-    SectionType.Function,
-    SectionType.Table,
-    SectionType.Memory,
-    SectionType.Global,
-    SectionType.Export,
-    SectionType.Start,
-    SectionType.Element,
-    SectionType.Code,
-    SectionType.Data,
-    SectionType.Extra,
-    );
 
 protected string GenerateInterfaceModule(T)() {
     import std.array : join;

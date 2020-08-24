@@ -185,24 +185,6 @@ class WasmWriter {
 
         mixin loadSec!(Section.DATA);
 
-        // final void code_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.CODE;
-        //     section_secT!(Section.CODE)(reader_mod);
-        // }
-
-        // final void data_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.DATA;
-        //     section_secT!(Section.DATA)(reader_mod);
-        // }
-
-        final void extra_sec(ref ConstOf!(ReaderSections.Types[Section.EXTRA]) sec) {
-            previous_sec=Section.EXTRA;
-            mod[Section.EXTRA]=new WasmSection.Extra(sec);
-            //*reader_mod[Section.EXTRA]);
-
-            //section_secT!(Section.EXTRA)(reader_mod);
-        }
-
     }
 
 
@@ -393,22 +375,6 @@ class WasmWriter {
             }
             mixin Serialize;
         }
-
-        // version(none)
-        // alias Sections=AliasSeq!(
-        //     Custom[Section],
-        //     Type,
-        //     Import,
-        //     Function,
-        //     Table,
-        //     Memory,
-        //     Global,
-        //     Export,
-        //     Start,
-        //     Element,
-        //     Code,
-        //     Data,
-        //     Extra);
 
         static class Custom {
             string name;
@@ -758,35 +724,6 @@ class WasmWriter {
         }
 
         alias Data=SectionT!(DataType);
-
-        static class Extra {
-            string ldc_compile_name;
-
-            // Types type;
-            // immutable(Types)[] params;
-            // immutable(Types)[] results;
-            // size_t guess_size() const pure nothrow {
-            //     return params.length+results.length+uint.sizeof*2+Types.sizeof;
-            // }
-            // this(const Types type, immutable(Types)[] params, immutable(Types)[] results) {
-            //     this.type=type;
-            //     this.params=params;
-            //     this.results=results;
-            // }
-            alias ReaderExtra=ReaderSections.Types[Section.EXTRA];
-
-            this(ref const(ReaderExtra) s) {
-                this.ldc_compile_name=ldc_compile_name;
-            }
-
-            void serialize(ref OutBuffer bout) const {
-                bout.write(ldc_compile_name);
-            }
-
-//            mixin Serialize;
-        }
-
-//        alias Extra=SectionT!(ExtraType);
 
     }
 }

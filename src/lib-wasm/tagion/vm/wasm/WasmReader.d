@@ -602,23 +602,6 @@ struct WasmReader {
 
             alias Data=SectionT!(DataType);
 
-            static class Extra {
-                immutable size_t size;
-                // immutable(ubyte[]) data;
-                immutable(string) ldc_compile_name;
-                this(immutable(ubyte[]) data) {
-                    // This just a complete violation of the wasm format
-                    // The LDC compile just yanks in a string without the size field
-                    // Very dirty!!!
-                    //
-                    // size_t index;
-                    // size=u32(data, index);
-                    //this.data=data; //[index..index+size];
-                    size=ldc_compile_name.length;
-                    ldc_compile_name=cast(string)(data);
-                }
-            }
-
         }
     }
 
