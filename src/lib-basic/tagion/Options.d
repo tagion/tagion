@@ -168,6 +168,7 @@ struct Options {
         ulong delay_before_start;
         ulong update;
         string tag;
+        string token;
         string task_name;
 
         mixin JSONCommon;
@@ -491,6 +492,8 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
         "net-mode", format("Network mode: one of [%s]: default: %s", ValidNetwrokModes, options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
+        "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
+        "server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
 //        "help!h", "Display the help text",    &help_switch,
         );
 };
@@ -535,6 +538,7 @@ static setDefaultOption(ref Options options) {
         delay_before_start = 60_000;
         update = 20_000;
         tag = "tag-1";
+        token = "";
         task_name = "server_file_discovery";
     }
     // Transcript
