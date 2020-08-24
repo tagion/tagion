@@ -152,13 +152,19 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
                     },
                     (immutable(DARTFile.Recorder) recorder){ //TODO: change to HiRPC
                         log("DS: received recorder");
-                        send(subscribe_handler_tid, recorder);
+                        if(subscribe_handler_tid !=Tid.init){
+                            send(subscribe_handler_tid, recorder);
+                        }
                         auto params=new HiBON;
                         params[DARTFile.Params.recorder]=recorder.toHiBON;
                         auto request = empty_hirpc.dartModify(params, recorder_hrpc_id); //TODO: remove out of range archives
                         auto request_data = cast(Buffer) empty_hirpc.toHiBON(request).serialize;
                         auto dstid = locate(opts.dart.sync.task_name);
-                        send(dstid, task_name, request_data); //TODO: => handle for the bullseye from dart
+                        if(dstid != Tid.init){
+                            send(dstid, task_name, request_data); //TODO: => handle for the bullseye from dart
+                        }else{
+                            log("Cannot locate Dart synchronize service");
+                        }
                     },
                     (Buffer data, bool flag){
                         auto doc = Document(data);

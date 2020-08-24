@@ -143,7 +143,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
             // receiveOnly!Control;
             syncPool.stop;
         }
-
+        log("SYNC: %s", opts.dart.synchronize);
         if(opts.dart.synchronize) {
             state.setState(DartSynchronizeState.WAITING);
         }else{
@@ -268,7 +268,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                 },
                 (immutable(AddressBook!Pubkey) update){
                     node_addrses = cast(NodeAddress[Pubkey]) update.data;
-                    log("node addresses %s", node_addrses);
+                    // log("node addresses %s", node_addrses);
                 },
                 (immutable(Exception) e) {
                     log.fatal(e.msg);

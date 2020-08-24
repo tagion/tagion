@@ -219,7 +219,7 @@ do {
                 log("Dart synchronization service stoped");
             }
         }
-
+        log("DART TID: %s", dart_tid);
         if(dart_tid!=Tid.init){
             log("Send stop to %s", opts.dart.task_name);
             dart_tid.prioritySend(Control.STOP);
@@ -340,62 +340,73 @@ do {
     immutable(ubyte)[] data;
 
     void receive_buffer(immutable(ubyte[]) buf) {
-        log("receive buff %d", buf.length);
-        timeout_count=0;
-        net.time=net.time+100;
-        log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
-        auto own_node=hashgraph.getNode(net.pubkey);
+        try{
+            timeout_count=0;
+            net.time=net.time+100;
+            log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
+            auto own_node=hashgraph.getNode(net.pubkey);
 
-        Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
-            auto mother=own_node.event;
-            immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
-                father_fingerprint, net.time, mother.altitude+1);
-            const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-            // immutable signature=net.sign(ebody);
-            return hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+            Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
+                auto mother=own_node.event;
+                immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
+                    father_fingerprint, net.time, mother.altitude+1);
+                const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
+                // immutable signature=net.sign(ebody);
+                return hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+            }
+            event=net.receive(buf, &register_leading_event);
+        }catch(Exception e){
+            log("Exception: %s", e.msg);
         }
-        event=net.receive(buf, &register_leading_event);
+        catch(Throwable t){
+            log("THROWABLE: %s\n%s", t.msg, t.info);
+        }
     }
 
     void next_mother(Payload payload) {
-        log("next mother %d", gossip_count);
-        auto own_node=hashgraph.getNode(net.pubkey);
-        if ( (gossip_count >= max_gossip) || (payload.length) ) {
-            // fout.writeln("After build wave front");
-            if ( own_node.event is null ) {
-                log("event is null");
-                immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
-                const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-                // immutable signature=net.sign(ebody);
-                event=hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+        try{
+            log("next mother %d", gossip_count);
+            auto own_node=hashgraph.getNode(net.pubkey);
+            if ( (gossip_count >= max_gossip) || (payload.length) ) {
+                // fout.writeln("After build wave front");
+                if ( own_node.event is null ) {
+                    immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
+                    const ebody_hibon = ebody.toHiBON;
+                    const pack=net.buildEvent(ebody_hibon, ExchangeState.NONE);
+                    // immutable signature=net.sign(ebody);
+                    event=hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+                }
+                else {
+                    auto mother=own_node.event;
+                    immutable mother_hash=mother.fingerprint;
+                    immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
+                    const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
+                    //immutable signature=net.sign(ebody);
+                    event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
+                }
+                immutable send_channel=net.selectRandomNode;
+                auto send_node=hashgraph.getNode(send_channel);
+                log("selected %s STATE: %s", send_node.pubkey.cutHex ,send_node.state);
+                if ( send_node.state is ExchangeState.NONE ) {
+                    send_node.state = ExchangeState.INIT_TIDE;
+                    auto tidewave   = new HiBON;
+                    auto tides      = net.tideWave(tidewave, net.callbacks !is null);
+                    auto pack       = net.buildEvent(tidewave, ExchangeState.TIDAL_WAVE);
+                    net.send(send_channel, pack.toHiBON.serialize);
+                    if ( net.callbacks ) {
+                        net.callbacks.sent_tidewave(send_channel, tides);
+                    }
+                }
+                gossip_count=0;
             }
             else {
-                log("event is not null");
-                auto mother=own_node.event;
-                immutable mother_hash=mother.fingerprint;
-                immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-                //immutable signature=net.sign(ebody);
-                event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
+                gossip_count++;
             }
-            immutable send_channel=net.selectRandomNode;
-            auto send_node=hashgraph.getNode(send_channel);
-            log("selected %s STATE: %s", send_node.pubkey.cutHex ,send_node.state);
-            if ( send_node.state is ExchangeState.NONE ) {
-                send_node.state = ExchangeState.INIT_TIDE;
-                auto tidewave   = new HiBON;
-                auto tides      = net.tideWave(tidewave, net.callbacks !is null);
-                auto pack       = net.buildEvent(tidewave, ExchangeState.TIDAL_WAVE);
-                log("send tidal_wave");
-                net.send(send_channel, pack.toHiBON.serialize);
-                if ( net.callbacks ) {
-                    net.callbacks.sent_tidewave(send_channel, tides);
-                }
-            }
-            gossip_count=0;
+        }catch(Exception e){
+            log("Exception: %s", e.msg);
         }
-        else {
-            gossip_count++;
+        catch(Throwable t){
+            log("THROWABLE1: %s\n%s", t.msg, t.info);
         }
     }
 
@@ -462,10 +473,9 @@ do {
             },
             (Response!(ControlCode.Control_Disconnected) resp) {
                 log("Client Disconnected key: %d", resp.key);
-                connectionPool.close(cast(void*)resp.key);
+                // connectionPool.close(cast(void*)resp.key);
             },
             (Response!(ControlCode.Control_RequestHandled) resp){
-                log("received response");
                 import tagion.hibon.Document;
                 import tagion.hibon.HiBONJSON;
                 auto doc=Document(resp.data);

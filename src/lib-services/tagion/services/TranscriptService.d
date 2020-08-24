@@ -34,15 +34,12 @@ void transcriptServiceTask(immutable(Options) opts) {
     // assert(opts.transcript.pause_from < opts.transcript.pause_to);
 
     uint current_epoch;
-    log("A");
     Random!uint rand;
     rand.seed(opts.seed);
-    log("B");
 //    immutable name=[opts.node_name, options.transcript.name].join;
     log("Scripting-Api script test %s started", task_name);
     Tid node_tid=locate(opts.node_name);
     node_tid.send(Control.LIVE);
-    Tid dart_tid = locate(opts.dart.task_name);
 
     auto net=new StdSecureNet;
     auto empty_hirpc = HiRPC(null);
@@ -58,7 +55,12 @@ void transcriptServiceTask(immutable(Options) opts) {
 
     void modifyDART(DARTFile.Recorder recorder){
         // auto sender = DART.dartModify(recorder, empty_hirpc);
-        dart_tid.send(cast(immutable) recorder); //TODO: remove blackhole
+        Tid dart_tid = locate(opts.dart.task_name);
+        if(dart_tid != Tid.init){
+            dart_tid.send(cast(immutable) recorder); //TODO: remove blackhole
+        }else{
+            log("Cannot locate Dart service");
+        }
     }
     void receive_epoch(Buffer payloads_buff) {
         try{
@@ -132,7 +134,9 @@ void transcriptServiceTask(immutable(Options) opts) {
             auto smart_script=new SmartScript(signed_contract);
             smart_script.check(net);
             const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
+
             smart_script.run(current_epoch+1);
+
 
             smart_scripts[fingerprint]=smart_script;
         }

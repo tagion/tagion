@@ -84,14 +84,27 @@ void transactionServiceTask(immutable(Options) opts) {
 
     @safe class TransactionRelay : SSLFiberService.Relay {
         bool agent(SSLFiber ssl_relay) {
-        immutable buffer = ssl_relay.receive;
-        if (!buffer) {
-            return true;
-        }
-        const doc = Document(buffer);
+            import tagion.hibon.HiBONJSON;
+            Document doc;
+            @trusted void receivessl(){
+            try{
+                immutable buffer = ssl_relay.receive;
+                log(cast(string)buffer);
+                if (!buffer) {
+                    return ;
+                }
+                doc = Document(buffer);
+            }catch(Exception e){
+                log("ERROR: %s", e.msg);
+                throw e;
+            }catch(Throwable t){
+                log("T: %s %d", t.msg, t.line);
+            }
+            }
+            receivessl();
+        log("%s", doc.toJSON);
         const hirpc_received = hirpc.receive(doc);
         {
-            import tagion.hibon.HiBONJSON;
             import tagion.script.ScriptBuilder;
             import tagion.script.ScriptParser;
             import tagion.script.Script;
@@ -102,6 +115,7 @@ void transactionServiceTask(immutable(Options) opts) {
             void yield() @trusted {
                 Fiber.yield;
             }
+            log(method);
             switch (method) {
             case "transaction":
                 // Should be EXTERNAL

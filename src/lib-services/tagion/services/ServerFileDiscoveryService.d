@@ -54,16 +54,20 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
         NodeAddress[Pubkey] node_addresses;
 
         void recordOwnInfo(string addrs){
-            auto params = new HiBON;
-            params["pkey"] = pubkey;
-            params["address"] = addrs;
-            auto doc = Document(params.serialize);
-            auto json = doc.toJSON().toString();
-            log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
-            try{
-                post(opts.serverFileDiscovery.url ~ "/node/record", ["value": json, "tag": opts.serverFileDiscovery.tag]);
-            }catch(Exception e){
-                log("ERROR: %s", e.msg);
+            if(opts.serverFileDiscovery.token){
+                auto params = new HiBON;
+                params["pkey"] = pubkey;
+                params["address"] = addrs;
+                auto doc = Document(params.serialize);
+                auto json = doc.toJSON().toString();
+                log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
+                try{
+                    post(opts.serverFileDiscovery.url ~ "/node/record", ["value": json, "token": opts.serverFileDiscovery.token]);
+                }catch(Exception e){
+                    log("ERROR on sending: %s", e.msg);
+                }
+            }else{
+                log("Token missing.. Cannot record own info");
             }
         }
 
@@ -108,8 +112,12 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
         }
         spawn(&handleAddrChanedEvent, node);
         spawn(&handleRechabilityChanged, node);
-        node.SubscribeToAddressUpdated("addr_changed_handler");
-        node.SubscribeToRechabilityEvent("rechability_handler");
+        auto substoaddrupdate = node.SubscribeToAddressUpdated("addr_changed_handler");
+        auto substorechability = node.SubscribeToRechabilityEvent("rechability_handler");
+        scope(exit){
+            substoaddrupdate.close();
+            substorechability.close();
+        }
         updateTimestamp(start_timestamp);
         bool is_online = false;
         string last_seen_addr = "";
@@ -138,6 +146,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
                     switch(cmd){
                         case ServerRequestCommand.BecomeOnline: {
                             is_online = true;
+                            log("Becoming online..");
                             updateTimestamp(start_timestamp);
                             if(last_seen_addr!=""){
                                 recordOwnInfo(last_seen_addr);
