@@ -1035,6 +1035,8 @@ class BlockFile {
     private void readStatistic() {
         if ( masterblock.statistic_index !is INDEX_NULL ) {
             immutable buffer=load(masterblock.statistic_index);
+            import tagion.services.LoggerService;
+            import std.stdio;
             statistic=Statistic(Document(buffer));
         }
     }
@@ -1732,7 +1734,7 @@ class BlockFile {
 
             blockfile.close;
         }
-        // version(none)
+        version(none)
         { // Check the recycle list
             auto blockfile=new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             // blockfile.dump;
