@@ -357,7 +357,6 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-
             event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
 
 
@@ -484,7 +483,7 @@ class HashGraph {
                         auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
                         top_event.strongly_seeing(previous_witness_event, strong_vote_mask);
                         nodes[top_event.node_id].latest_witness_event=top_event;
-                        writefln("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
+                        log("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
                     }
                     top_event.strongly_seeing_checked;
                     if ( Event.callbacks ) {

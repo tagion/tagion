@@ -423,6 +423,7 @@ class Round {
 
     package void check_coin_round() {
         if ( coin_round_distance >= coin_round_limit ) {
+            log("coin round");
             // Force a coin round
             Round undecided=undecided_round;
             undecided.decide;
@@ -448,27 +449,54 @@ class Round {
     // }
 
     private void consensus_order() {
+        import std.stdio;
+            writeln("consensus order");
         import std.algorithm : sort, SwapStrategy;
         import std.functional;
+                import tagion.hibon.HiBONJSON;
         scope Event[] famous_events=new Event[_events.length];
         BitArray unique_famous_mask;
         bitarray_change(unique_famous_mask, node_size);
         @trusted
         ulong find_middel_time() {
-            uint famous_node_id;
-            foreach(e; _events) {
-                if (e._witness.famous) {
-                    famous_events[famous_node_id]=e;
-                    unique_famous_mask[famous_node_id]=true;
-                    famous_node_id++;
+            try{
+                writeln("finding middel time");
+                uint famous_node_id;
+                foreach(e; _events) {
+                    if(e is null){
+                        writeln("event is null");
+                        stdout.flush();
+                        // writeln(Document(e.toHiBON.serialize).toJSON);
+                    }
+                    if(e._witness is null){
+                        writeln("witness is null");
+                        stdout.flush();
+                        writeln(Document(e.toHiBON.serialize).toJSON);
+                    }else{
+                        writeln("ok");
+                        if (e._witness.famous) {
+                            famous_events[famous_node_id]=e;
+                            unique_famous_mask[famous_node_id]=true;
+                            famous_node_id++;
+                        }
+                    }
                 }
+                famous_events.length=famous_node_id;
+                // Sort the time stamps
+                famous_events.sort!((a,b) => (Event.timeCmp(a,b) <0));
+                writeln("famous sorted");
+                // Find middel time
+                immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
+                writefln("middle time index: %d, len: %d", middel_time_index, famous_events.length);
+                stdout.flush();
+                scope(exit){
+                    writeln("calc successfully");
+                }
+                return famous_events[middel_time_index].eventbody.time;
+            }catch(Exception e){
+                writeln("exc: ", e.msg);
+                throw e;
             }
-            famous_events.length=famous_node_id;
-            // Sort the time stamps
-            famous_events.sort!((a,b) => (Event.timeCmp(a,b) <0));
-            // Find middel time
-            immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
-            return famous_events[middel_time_index].eventbody.time;
         }
 
         immutable middel_time=find_middel_time;
