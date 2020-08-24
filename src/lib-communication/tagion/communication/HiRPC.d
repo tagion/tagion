@@ -329,4 +329,28 @@ unittest {
 
         // writefln("recever.verified=%s", recever.verified);
     }
+    {
+        writeln("my unit test");
+        HiRPC hirpc;
+        import tagion.hibon.HiBONJSON;
+        // hirpc.net=new HiRPCNet(passphrase);
+
+        // auto params=new HiBON;
+        // params["$test"]=5;
+        // const sender=hirpc.action("action", params);
+
+        // auto doc=Document(hirpc.toHiBON(sender).serialize);
+
+        // const json=doc.toJSON;
+        // writeln(json);
+        // assert(json.toString().length > 0);
+
+                        HiBON t = new HiBON();
+                t["$test"] = 5;
+                const t2=hirpc.action("action", t);
+                immutable data2=hirpc.toHiBON(t2).serialize;
+                auto test2 = Document(data2);
+                writeln(test2.toJSON);
+        // writefln("recever.verified=%s", recever.verified);
+    }
 }
