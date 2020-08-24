@@ -1,6 +1,7 @@
 module tagion.vm.wasm.WasmBase;
 
-import std.traits : EnumMembers, Unqual, isAssociativeArray;
+import std.traits : EnumMembers, Unqual, isAssociativeArray, ForeachType, ConstOf;
+import std.meta : AliasSeq;
 import std.typecons : Tuple;
 import std.format;
 import std.uni : toLower;
@@ -13,6 +14,78 @@ import tagion.vm.wasm.WasmException;
 
 import LEB128=tagion.utils.LEB128;
 
+enum VerboseMode {
+    NONE,
+    STANDARD
+}
+
+@safe
+struct Verbose {
+    VerboseMode mode;
+    string indent;
+    File fout;
+    enum INDENT="  ";
+    enum WIDTH=16;
+
+    void opCall(Args...)(string fmt, lazy Args args) {
+        if (mode !is VerboseMode.NONE) {
+            fout.write(indent);
+            fout.writefln(fmt, args);
+        }
+    }
+
+    void print(Args...)(string fmt, lazy Args args) {
+        if (mode !is VerboseMode.NONE) {
+            fout.writef(fmt, args);
+        }
+    }
+    void println(Args...)(string fmt, lazy Args args) {
+        if (mode !is VerboseMode.NONE) {
+            fout.writefln(fmt, args);
+        }
+    }
+
+    void down() nothrow {
+        if (mode !is VerboseMode.NONE) {
+            indent~=INDENT;
+        }
+    }
+    void up() nothrow {
+        if (mode !is VerboseMode.NONE) {
+            if (indent.length >= INDENT.length) {
+                indent.length-=INDENT.length;
+            }
+        }
+    }
+    void hex(const size_t index, const(ubyte[]) data) {
+        if (mode !is VerboseMode.NONE) {
+            size_t _index=index;
+            foreach(const i, d; data) {
+                if (i % WIDTH is 0) {
+                    if (i !is 0) {
+                        fout.writeln("");
+                    }
+                    fout.writef("%s%06X", indent, _index);
+                }
+                fout.writef(" %02X", d);
+                _index++;
+            }
+            fout.writeln("");
+        }
+    }
+    void ln() {
+        if (mode !is VerboseMode.NONE) {
+            fout.writeln("");
+        }
+    }
+
+}
+
+static Verbose verbose;
+
+static this() {
+    verbose.fout=stdout;
+}
 
 enum Section : ubyte {
     CUSTOM   = 0,
@@ -26,7 +99,7 @@ enum Section : ubyte {
         START    = 8,
         ELEMENT  = 9,
         CODE     = 10,
-        DATA     = 11
+        DATA     = 11,
         }
 
 enum IRType {
@@ -523,50 +596,77 @@ static string secname(immutable Section s) {
 }
 
 
-protected template SecType(T, bool READ_ONLY) {
-    static if (READ_ONLY) {
-        static assert(!isAssociativeArray!T);
-        alias SecType=const(T)*;
-    }
-    else {
-        static if (isAssociativeArray!T) {
-            alias SecType=T;
-        }
-        else {
-            alias SecType=T*;
-        }
-    }
-}
+// protected template SecType(T, bool READ_ONLY) {
+//     static if (READ_ONLY) {
+//         static assert(!isAssociativeArray!T);
+//         alias SecType=const(T)*;
+//     }
+//     else {
+//         static if (isAssociativeArray!T) {
+//             alias SecType=T;
+//         }
+//         else {
+//             alias SecType=T*;
+//         }
+//     }
+// }
 
-alias ModuleT(SectionType, bool READ_ONLY=true)=Tuple!(
-    SecType!(SectionType.Custom, READ_ONLY),  // secname(Section.CUSTOM),
-    SecType!(SectionType.Type, READ_ONLY),    // secname(Section.TYPE),
-    SecType!(SectionType.Import, READ_ONLY),  // secname(Section.IMPORT),
-    SecType!(SectionType.Function, READ_ONLY),// secname(Section.FUNCTION),
-    SecType!(SectionType.Table, READ_ONLY),   // secname(Section.TABLE),
-    SecType!(SectionType.Memory, READ_ONLY),  // secname(Section.MEMORY),
-    SecType!(SectionType.Global, READ_ONLY),  // secname(Section.GLOBAL),
-    SecType!(SectionType.Export, READ_ONLY),  // secname(Section.EXPORT),
-    SecType!(SectionType.Start, READ_ONLY),   // secname(Section.START),
-    SecType!(SectionType.Element, READ_ONLY), // secname(Section.ELEMENT),
-    SecType!(SectionType.Code, READ_ONLY),    // secname(Section.CODE),
-    SecType!(SectionType.Data, READ_ONLY),    // secname(Section.DATA),
+alias SectionsT(SectionType)=Tuple!(
+    SectionType.Custom[EnumMembers!Section.length],
+    SectionType.Type,
+    SectionType.Import,
+    SectionType.Function,
+    SectionType.Table,
+    SectionType.Memory,
+    SectionType.Global,
+    SectionType.Export,
+    SectionType.Start,
+    SectionType.Element,
+    SectionType.Code,
+    SectionType.Data,
+    SectionType.Extra,
     );
 
 
+version(none)
+alias SectionsT(SectionType)=AliasSeq!(
+    SectionType.Custom,
+    SectionType.Type,
+    SectionType.Import,
+    SectionType.Function,
+    SectionType.Table,
+    SectionType.Memory,
+    SectionType.Global,
+    SectionType.Export,
+    SectionType.Start,
+    SectionType.Element,
+    SectionType.Code,
+    SectionType.Data,
+    SectionType.Extra,
+    );
+
+protected string GenerateInterfaceModule(T)() {
+    import std.array : join;
+    string[] result;
+    foreach(i, E; EnumMembers!Section) {
+        result~=format(q{alias _SecType_%s=T.Types[Section.%s];}, i, E);
+        static if (E is Section.CUSTOM) {
+            result~=format(q{alias SecType_%s=ForeachType!(_SecType_%d);}, i, i);
+        }
+        else {
+            result~=format(q{alias SecType_%s=_SecType_%d;}, i, i);
+        }
+        result~=format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
+    }
+    return result.join("\n");
+}
+
 interface InterfaceModuleT(T) {
-    void custom_sec(ref scope const(T) mod);
-    void type_sec(ref scope const(T) mod);
-    void import_sec(ref scope const(T) mod);
-    void function_sec(ref scope const(T) mod);
-    void table_sec(ref scope const(T) mod);
-    void memory_sec(ref scope const(T) mod);
-    void global_sec(ref scope const(T) mod);
-    void export_sec(ref scope const(T) mod);
-    void start_sec(ref scope const(T) mod);
-    void element_sec(ref scope const(T) mod);
-    void code_sec(ref scope const(T) mod);
-    void data_sec(ref scope const(T) mod);
+    // alias SecType=T[Section.CUSTOM];
+    // pragma(msg, SecType);
+    enum code=GenerateInterfaceModule!(T)();
+    pragma(msg, code);
+    mixin(code);
 }
 
 @safe
@@ -732,82 +832,82 @@ struct ExprRange {
         // }
 
         if (index < data.length) {
-        elm.code=cast(IR)data[index];
-        elm._types=null;
-        const instr=instrTable[elm.code];
-        index+=IR.sizeof;
-        with(IRType) {
-            final switch(instr.irtype) {
-            case CODE:
-                break;
-            case BLOCK:
-                elm._types=[cast(Types)data[index]];
-                index+=Types.sizeof;
-                _level++;
-                break;
-            case BRANCH:
-                // branchidx
-                set(elm._warg, Types.I32);
-                _level++;
-                break;
-            case BRANCH_TABLE:
-                //size_t vec_size;
-                const len=u32(data, index)+1;
-                elm._wargs=new WasmArg[len];
-                foreach(ref a; elm._wargs) {
-                    a=u32(data, index);
-                }
-                break;
-            case CALL:
-                // callidx
-                set(elm._warg, Types.I32);
-                break;
-            case CALL_INDIRECT:
-                // typeidx
-                set(elm._warg, Types.I32);
-                check(data[index] == 0x00, "call_indirect should end with 0x00");
-                index+=ubyte.sizeof;
-                break;
-            case LOCAL, GLOBAL:
-                // localidx globalidx
-                set(elm._warg, Types.I32);
-                break;
-            case MEMORY:
-                // offset
-                elm._wargs=new WasmArg[2];
-                set(elm._wargs[0], Types.I32);
-                // align
-                set(elm._wargs[1], Types.I32);
-                break;
-            case MEMOP:
-                index++;
-                break;
-            case CONST:
-                with(IR) {
-                    switch (elm.code) {
-                    case I32_CONST:
-                        set(elm._warg, Types.I32);
-                        break;
-                    case I64_CONST:
-                        set(elm._warg, Types.I64);
-                        break;
-                    case F32_CONST:
-                        set(elm._warg, Types.F32);
-                        break;
-                    case F64_CONST:
-                        set(elm._warg, Types.F64);
-                        break;
-                    default:
-                        assert(0, format("Instruction %s is not a const", elm.code));
+            elm.code=cast(IR)data[index];
+            elm._types=null;
+            const instr=instrTable[elm.code];
+            index+=IR.sizeof;
+            with(IRType) {
+                final switch(instr.irtype) {
+                case CODE:
+                    break;
+                case BLOCK:
+                    elm._types=[cast(Types)data[index]];
+                    index+=Types.sizeof;
+                    _level++;
+                    break;
+                case BRANCH:
+                    // branchidx
+                    set(elm._warg, Types.I32);
+                    _level++;
+                    break;
+                case BRANCH_TABLE:
+                    //size_t vec_size;
+                    const len=u32(data, index)+1;
+                    elm._wargs=new WasmArg[len];
+                    foreach(ref a; elm._wargs) {
+                        a=u32(data, index);
                     }
+                    break;
+                case CALL:
+                    // callidx
+                    set(elm._warg, Types.I32);
+                    break;
+                case CALL_INDIRECT:
+                    // typeidx
+                    set(elm._warg, Types.I32);
+                    check(data[index] == 0x00, "call_indirect should end with 0x00");
+                    index+=ubyte.sizeof;
+                    break;
+                case LOCAL, GLOBAL:
+                    // localidx globalidx
+                    set(elm._warg, Types.I32);
+                    break;
+                case MEMORY:
+                    // offset
+                    elm._wargs=new WasmArg[2];
+                    set(elm._wargs[0], Types.I32);
+                    // align
+                    set(elm._wargs[1], Types.I32);
+                    break;
+                case MEMOP:
+                    index++;
+                    break;
+                case CONST:
+                    with(IR) {
+                        switch (elm.code) {
+                        case I32_CONST:
+                            set(elm._warg, Types.I32);
+                            break;
+                        case I64_CONST:
+                            set(elm._warg, Types.I64);
+                            break;
+                        case F32_CONST:
+                            set(elm._warg, Types.F32);
+                            break;
+                        case F64_CONST:
+                            set(elm._warg, Types.F64);
+                            break;
+                        default:
+                            assert(0, format("Instruction %s is not a const", elm.code));
+                        }
+                    }
+                    break;
+                case END:
+                    //writefln("END index=%d", index);
+                    _level--;
+                    break;
                 }
-                break;
-            case END:
-                //writefln("END index=%d", index);
-                _level--;
-                break;
             }
-        }
         }
         else {
             if (index == data.length) {

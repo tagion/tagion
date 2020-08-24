@@ -2,7 +2,7 @@ module tagion.vm.wasm.Wast;
 
 import std.format;
 import std.stdio;
-import std.traits : EnumMembers, PointerTarget;
+import std.traits : EnumMembers, PointerTarget, ConstOf, ForeachType;
 import std.typecons : Tuple;
 import std.uni : toLower;
 import std.conv : to;
@@ -31,7 +31,7 @@ WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) {
 
 @safe
 class WastT(Output) : WasmReader.InterfaceModule {
-    alias Module=WasmReader.Module;
+    alias Sections=WasmReader.Sections;
     //alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     //alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
     alias ImportType=WasmReader.WasmRange.WasmSection.ImportType;
@@ -86,16 +86,18 @@ class WastT(Output) : WasmReader.InterfaceModule {
         return result;
     }
 
-    void custom_sec(ref scope const(Module) mod) {
-        auto _custom=*mod[Section.CUSTOM];//.custom_sec;
+    alias Custom=ForeachType!(Sections.Types[Section.CUSTOM]);
+    void custom_sec(ref scope const(Custom) _custom) {
+//        auto _custom=mod[Section.CUSTOM];//.custom_sec;
         //foreach(c; _custom[]) {
         writefln("_custom=%s",  _custom);
                 //output.writef("%s(custom (%s %s))", indent, c.name, cast(string)(c.bytes));
             //}
     }
 
-    void type_sec(ref scope const(Module) mod) {
-        auto _type=*mod[Section.TYPE]; //type_sec;
+    alias Type=Sections.Types[Section.TYPE];
+    void type_sec(ref const(Type) _type) {
+//        auto _type=*mod[Section.TYPE]; //type_sec;
         foreach(i, t; _type[].enumerate) {
             output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
             if (t.params.length) {
@@ -116,8 +118,9 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    void import_sec(ref scope const(Module) mod) {
-        auto _import=*mod[Section.IMPORT];//.import_sec;
+    alias Import=Sections.Types[Section.IMPORT];
+    void import_sec(ref const(Import) _import) {
+//        auto _import=*mod[Section.IMPORT];//.import_sec;
         static string importdesc(ref const ImportType imp, const size_t index) {
             const desc=imp.importdesc.desc;
             with(IndexType) {
@@ -144,26 +147,34 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    void function_sec(ref scope const(Module) mod) {
+    alias Function=Sections.Types[Section.FUNCTION];
+    protected Function _function;
+    @trusted void function_sec(ref const(Function) _function) {
         // Empty
+        // The functions headers are printed in the code section
+        this._function=cast(Function)_function;
     }
 
-    void table_sec(ref scope const(Module) mod) {
-        auto _table=*mod[Section.TABLE];
+    alias Table=Sections.Types[Section.TABLE];
+    void table_sec(ref const(Table) _table) {
+//        auto _table=*mod[Section.TABLE];
         foreach(i, t; _table[].enumerate) {
             output.writefln("%s(table (;%d;) %s %s)", indent, i, limitToString(t.limit), typesName(t.type));
         }
     }
 
-    void memory_sec(ref scope const(Module) mod) {
-        auto _memory=*mod[Section.MEMORY];
+
+    alias Memory=Sections.Types[Section.MEMORY];
+    void memory_sec(ref const(Memory) _memory) {
+//        auto _memory=*mod[Section.MEMORY];
         foreach(i, m; _memory[].enumerate) {
             output.writefln("%s(memory (;%d;) %s)", indent, i, limitToString(m.limit));
         }
     }
 
-    void global_sec(ref scope const(Module) mod) {
-        auto _global=*mod[Section.GLOBAL];
+    alias Global=Sections.Types[Section.GLOBAL];
+    void global_sec(ref const(Global) _global) {
+//        auto _global=*mod[Section.GLOBAL];
         foreach(i, g; _global[].enumerate) {
             output.writefln("%s(global (;%d;) %s (", indent, i, globalToString(g.global));
             auto expr=g[];
@@ -172,20 +183,22 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    void export_sec(ref scope const(Module) mod) {
-        auto _export=*mod[Section.EXPORT];
+    alias Export=Sections.Types[Section.EXPORT];
+    void export_sec(ref const(Export) _export) {
+//        auto _export=*mod[Section.EXPORT];
         foreach(exp; _export[]) {
             output.writefln(`%s(export "%s" (%s %d))`, indent, exp.name, indexName(exp.desc), exp.idx);
         }
 
     }
-
-    void start_sec(ref scope const(Module) mod) {
-        output.writefln("%s(start %d),", indent, mod[Section.START].idx);
+    alias Start=Sections.Types[Section.START];
+    void start_sec(ref const(Start) _start) {
+        output.writefln("%s(start %d),", indent, _start.idx);
     }
 
-    void element_sec(ref scope const(Module) mod) {
-        auto _element=*mod[Section.ELEMENT];
+    alias Element=Sections.Types[Section.ELEMENT];
+    void element_sec(ref const(Element) _element) {
+//        auto _element=*mod[Section.ELEMENT];
         foreach(i, e; _element[].enumerate) {
             output.writefln("%s(elem (;%d;) (", indent, i);
             auto expr=e[];
@@ -199,13 +212,10 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
+    alias Code=Sections.Types[Section.CODE];
     @trusted
-    void code_sec(ref scope const(Module) mod) {
-        auto _code=*mod[Section.CODE];
-        auto _func=*mod[Section.FUNCTION];
-        //writefln("code.data=%s", _code.data);
-
-        foreach(f, c; lockstep(_func[], _code[], StoppingPolicy.requireSameLength)) {
+    void code_sec(ref const(Code) _code) {
+        foreach(f, c; lockstep(_function[], _code[], StoppingPolicy.requireSameLength)) {
             auto expr=c[];
             output.writefln("%s(func (type %d)", indent, f.idx);
             const local_indent=indent~spacer;
@@ -224,8 +234,9 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    void data_sec(ref scope const(Module) mod) {
-        auto _data=*mod[Section.DATA];
+    alias Data=Sections.Types[Section.DATA];
+    void data_sec(ref const(Data) _data) {
+//        auto _data=*mod[Section.DATA];
         foreach(d; _data[]) {
             output.writefln("%s(data (", indent);
             auto expr=d[];
@@ -233,6 +244,14 @@ class WastT(Output) : WasmReader.InterfaceModule {
             block(expr, local_indent~spacer);
             output.writefln(`%s) "%s")`, local_indent, d.base);
         }
+    }
+
+    alias Extra=Sections.Types[Section.EXTRA];
+    void extra_sec(ref const(Extra) _extra) {
+//        auto _extra=*mod[Section.EXTRA];
+        output.writefln("%s(;; %s ;)", indent, _extra); //.ldc_compiler_name);
+
+//        writefln(":: %s", _extra.ldc_compiler_name);
     }
 
     private const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level=0) {
@@ -265,7 +284,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
                 case BLOCK:
                     block_comment=format(";; block %d", block_count);
                     block_count++;
-                    output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
+                   output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
                     const end_elm=block(expr, indent~spacer, level+1);
                     const end_instr=instrTable[end_elm.code];
                     output.writefln("%s%s", indent, end_instr.name);

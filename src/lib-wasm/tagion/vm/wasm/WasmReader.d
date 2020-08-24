@@ -4,21 +4,26 @@ import std.format;
 import tagion.vm.wasm.WasmException;
 import tagion.vm.wasm.WasmBase;
 
-import std.stdio;
+//import std.stdio;
 import std.meta : AliasSeq;
-import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget;
+import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget, ForeachType;
 
-import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
+import std.bitmanip : binread = read, binwrite = write, peek, Endian;
 
 import std.range.primitives : isInputRange;
 
 import std.conv : to, emplace;
 import std.uni : toLower;
 import std.exception : assumeUnique;
+import std.array : join;
+import std.range : enumerate;
+import std.format;
 
 @safe
 struct WasmReader {
-    protected immutable(ubyte)[] _data;
+    protected {
+        immutable(ubyte)[] _data;
+    }
 
     immutable(ubyte[]) data() const pure nothrow {
         return _data;
@@ -30,42 +35,39 @@ struct WasmReader {
         _data=data;
     }
 
-    alias Module=ModuleT!(WasmRange.WasmSection);
+    alias Sections=SectionsT!(WasmRange.WasmSection);
 
-    alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
-
-    alias InterfaceModule=InterfaceModuleT!(const(Module));
-
-    shared static unittest {
-        import std.traits : Unqual;
-        import std.meta : staticMap;
-        alias NoPtrModule=staticMap!(PointerTarget, Module.Types);
-        alias unqualModule=staticMap!(Unqual, NoPtrModule);
-        static assert(is(unqualModule == WasmRange.WasmSection.Sections));
-    }
+    alias InterfaceModule=InterfaceModuleT!(Sections);
 
     @trusted
-    void opCall(T)(T iter) const if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
-        scope Module mod;
-        Section previous_sec;
-        foreach(a; opSlice) {
+    void opCall(InterfaceModule iter) const {
+        auto range=opSlice;
+        verbose("WASM '%s'", range.magic);
+        verbose("VERSION %d", range.vernum);
+        verbose("Index %d", range.index);
+
+        while(!range.empty) {
+            auto a=range.front;
             with(Section) {
                 final switch(a.section) {
                     foreach(E; EnumMembers!(Section)) {
                     case E:
+//                        verbose("E=%s a=%s", E, a);
                         const sec=a.sec!E;
-                        mod[E]=&sec;
-                        static if (is(T==ModuleIterator)) {
-                            iter(a.section, mod);
-                        }
-                        else {
-                            enum code=format(q{iter.%s(mod);}, secname(E));
-                            mixin(code);
-                        }
+                        verbose("Begin(%d)", range.index);
+                        verbose.down;
+                        verbose("Section(%s) size %d", a.section, a.data.length);
+                        verbose.hex(range.index, a.data);
+                        enum code=format(q{iter.%s(sec);}, secname(E));
+                        mixin(code);
+                        verbose.println("%s", sec);
+                        verbose.up;
+                        verbose("End");
                         break;
                     }
                 }
             }
+            range.popFront;
         }
     }
 
@@ -118,9 +120,14 @@ struct WasmReader {
     struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
-
+        immutable(string) magic;
+        immutable(uint)   vernum;
         this(immutable(ubyte[]) data) {
             this.data=data;
+            magic=cast(string)(data[0..uint.sizeof]);
+            _index=uint.sizeof;
+            vernum=data[_index..$].peek!uint(Endian.littleEndian);
+            _index+=uint.sizeof;
             _index=2*uint.sizeof;
         }
 
@@ -139,6 +146,11 @@ struct WasmReader {
             _index+=size;
         }
 
+        @property size_t index() const pure nothrow {
+            return _index;
+        }
+
+
         struct WasmSection {
             immutable(ubyte[]) data;
             immutable(Section) section;
@@ -148,33 +160,26 @@ struct WasmReader {
                 size_t index=Section.sizeof;
                 const size=u32(data, index);
                 this.data=data[index..index+size];
-            }
 
-            alias Sections=AliasSeq!(
-                Custom,
-                Type,
-                Import,
-                Function,
-                Table,
-                Memory,
-                Global,
-                Export,
-                Start,
-                Element,
-                Code,
-                Data);
+//                debug writefln("section=%s %s", section, data[0..index+size]);
+            }
 
             auto sec(Section S)()
                 in {
                     assert(S is section);
                 }
             do {
-                alias T=Sections[S];
-                return T(data);
+                alias T=Sections.Types[S];
+                static if (S is Section.CUSTOM) {
+                    return new ForeachType!(T)(data);
+                }
+                else {
+                    return new T(data);
+                }
             }
 
             struct VectorRange(ModuleSection, Element) {
-                ModuleSection owner;
+                const ModuleSection owner;
                 protected size_t pos;
                 protected uint index;
                 this(const ModuleSection owner)  {
@@ -195,7 +200,7 @@ struct WasmReader {
                 }
             }
 
-            struct SectionT(SecType) {
+            static class SectionT(SecType) {
                 immutable uint length;
                 immutable(ubyte[]) data;
                 this(immutable(ubyte[]) data) {
@@ -210,9 +215,18 @@ struct WasmReader {
                 SecRange opSlice() const {
                     return SecRange(this);
                 }
+
+                @trusted
+                override string toString() const {
+                    string[] result;
+                    foreach(i, sec; opSlice.enumerate) {
+                        result~=format("\t%3d %s", i, sec).idup;
+                    }
+                    return result.join("\n");
+                }
             }
 
-            struct Custom {
+            static class Custom {
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
                 immutable(size_t) size;
@@ -221,10 +235,17 @@ struct WasmReader {
                     name=Vector!char(data, index);
                     bytes=data[index..$];
                     size=data.length;
+                    // verbose("name %s", name);
+                    // verbose("bytes");
+                    // foreach(i, d; bytes) {
+                    //     if ((i !is 0) && (i % verbose.WIDTH) is 0) {
+                    //         verbose.ln;
+                    //     }
+                    //     verbose.fout.writef(" %02X", d);
+                    // }
+                    // verbose.ln;
                 }
             }
-
-            //alias Custom=SectionT!(CustomType);
 
             struct FuncType {
                 immutable(Types) type;
@@ -238,6 +259,9 @@ struct WasmReader {
                     results=Vector!Types(data, index);
                     size=index;
                 }
+                // string toString() {
+                //     return format("%s params=%s results=%s", type, params, results);
+                // }
             }
 
             alias Type=SectionT!(FuncType);
@@ -424,7 +448,7 @@ struct WasmReader {
 
             alias Export=SectionT!(ExportType);
 
-            struct Start {
+            static class Start {
                 immutable(uint) idx;
                 this(immutable(ubyte[]) data) {
                     size_t u32_size;
@@ -577,6 +601,24 @@ struct WasmReader {
             }
 
             alias Data=SectionT!(DataType);
+
+            static class Extra {
+                immutable size_t size;
+                // immutable(ubyte[]) data;
+                immutable(string) ldc_compile_name;
+                this(immutable(ubyte[]) data) {
+                    // This just a complete violation of the wasm format
+                    // The LDC compile just yanks in a string without the size field
+                    // Very dirty!!!
+                    //
+                    // size_t index;
+                    // size=u32(data, index);
+                    //this.data=data; //[index..index+size];
+                    size=ldc_compile_name.length;
+                    ldc_compile_name=cast(string)(data);
+                }
+            }
+
         }
     }
 
