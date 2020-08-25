@@ -611,8 +611,8 @@ static string secname(immutable Section s) {
 //     }
 // }
 
-alias SectionsT(SectionType)=Tuple!(
-    SectionType.Custom[EnumMembers!Section.length],
+alias SectionsT(SectionType)=AliasSeq!(
+    SectionType.Custom,
     SectionType.Type,
     SectionType.Import,
     SectionType.Function,
@@ -627,23 +627,23 @@ alias SectionsT(SectionType)=Tuple!(
     );
 
 
-protected string GenerateInterfaceModule(T)() {
+protected string GenerateInterfaceModule(T...)() {
     import std.array : join;
     string[] result;
     foreach(i, E; EnumMembers!Section) {
-        result~=format(q{alias _SecType_%s=T.Types[Section.%s];}, i, E);
-        static if (E is Section.CUSTOM) {
-            result~=format(q{alias SecType_%s=ForeachType!(_SecType_%d);}, i, i);
-        }
-        else {
-            result~=format(q{alias SecType_%s=_SecType_%d;}, i, i);
-        }
+        result~=format(q{alias SecType_%s=T[Section.%s];}, i, E);
+        // static if (E is Section.CUSTOM) {
+        //     result~=format(q{alias SecType_%s=ForeachType!(_SecType_%d);}, i, i);
+        // }
+        // else {
+        //     result~=format(q{alias SecType_%s=_SecType_%d;}, i, i);
+        // }
         result~=format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
     }
     return result.join("\n");
 }
 
-interface InterfaceModuleT(T) {
+interface InterfaceModuleT(T...) {
     // alias SecType=T[Section.CUSTOM];
     // pragma(msg, SecType);
     enum code=GenerateInterfaceModule!(T)();

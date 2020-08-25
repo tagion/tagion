@@ -169,13 +169,13 @@ struct WasmReader {
                     assert(S is section);
                 }
             do {
-                alias T=Sections.Types[S];
-                static if (S is Section.CUSTOM) {
-                    return new ForeachType!(T)(data);
-                }
-                else {
-                    return new T(data);
-                }
+                alias T=Sections[S];
+                // static if (S is Section.CUSTOM) {
+                //     return new ForeachType!(T)(data);
+                // }
+                // else {
+                return new T(data);
+                // }
             }
 
             struct VectorRange(ModuleSection, Element) {
@@ -235,15 +235,6 @@ struct WasmReader {
                     name=Vector!char(data, index);
                     bytes=data[index..$];
                     size=data.length;
-                    // verbose("name %s", name);
-                    // verbose("bytes");
-                    // foreach(i, d; bytes) {
-                    //     if ((i !is 0) && (i % verbose.WIDTH) is 0) {
-                    //         verbose.ln;
-                    //     }
-                    //     verbose.fout.writef(" %02X", d);
-                    // }
-                    // verbose.ln;
                 }
             }
 
@@ -259,9 +250,6 @@ struct WasmReader {
                     results=Vector!Types(data, index);
                     size=index;
                 }
-                // string toString() {
-                //     return format("%s params=%s results=%s", type, params, results);
-                // }
             }
 
             alias Type=SectionT!(FuncType);

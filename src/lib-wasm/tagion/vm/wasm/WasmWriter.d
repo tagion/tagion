@@ -8,11 +8,12 @@ import std.format;
 import std.algorithm.iteration : each, map, sum, fold, filter;
 import std.range.primitives : isInputRange;
 //import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
-import std.meta : AliasSeq, staticMap, Filter;
+import std.meta : staticMap, Replace;
 import std.exception : assumeUnique;
 import std.range : lockstep;
+import std.array : join;
 
-//import std.stdio;
+import std.stdio;
 
 import tagion.utils.LEB128 : encode;
 import tagion.vm.wasm.WasmBase;
@@ -25,18 +26,48 @@ class WasmWriter {
 
     alias ReaderSections=WasmReader.Sections;
 
-    alias ReaderCustom=ForeachType!(ReaderSections.Types[Section.CUSTOM]);
+    alias ReaderCustom=ReaderSections[Section.CUSTOM];
 
     // alias Module=ModuleT!(WasmSection);
     alias Sections=SectionsT!(WasmSection);
-//    alias Modules=Tuple!(Sections);
+
+    // The first element Custom is Sections sequency is replaced with CustomList
+    alias Modules = Tuple!(Replace!(WasmSection.Custom, WasmSection.CustomList, Sections));
+//    pragma(msg, Modules);
 //    alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
 
     alias InterfaceModule=InterfaceModuleT!(Sections);
 
-    alias ReaderSecType(Section sec)=TemplateArgsOf!(ReaderSections.Types[sec].SecRange)[1];
+    alias ReaderSecType(Section sec)=TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
 
-    Sections mod;
+    // alias X=Sections[
+    // protected static string GenerateModules(T...)() {
+    //     string[] results;
+    //     results~="alix1as Modules=Tuple!(";
+    //     foreach(i, E; EnumMembers!Section) {
+    //         static if (E is Section.CUSTOM) {
+    //             results~=q{WasmSection.CustomList,};
+    //         }
+    //         else {
+
+    //             results~=format(q{WasmSection.%s,}, T[i].stringof);
+    //         }
+    //     }
+    //     results~=");";
+    //     return results.join("\n");
+    // }
+
+//    enum code=GenerateModules!Sections;
+    // pragma(msg, code);
+    // mixin(code);
+    // Tuple!(
+    //     WasmSection.CustomList
+    //     // Sections[Section.TYPE],
+    //     // Sections[Section.IMPORT],
+    //     // Sections[Section.IMPORT],
+    //     );
+
+    Modules mod;
     this(ref const(WasmReader) reader) {
         auto loader=new WasmLoader;
         reader(loader);
@@ -66,16 +97,14 @@ class WasmWriter {
     }
 
 
-    enum fromSecType(T)=FromSecType!(T, Sections.Types);
+    enum fromSecType(T)=FromSecType!(T, Sections);
 
-    alias getType(Section sec)=WasmSection.Sections.Types[sec];
+    // alias getType(Section sec)=WasmSection.Sections.Types[sec];
 
-    alias SecTypeX=const(ReaderSections.Types[Section.FUNCTION]);
-    pragma(msg, "SecTypeX ", SecTypeX);
     mixin template loadSec(Section sec_type) {
         enum code=format(
             q{
-                final void %s(ref ConstOf!(ReaderSections.Types[Section.%s]) sec) {
+                final void %s(ref ConstOf!(ReaderSections[Section.%s]) sec) {
                     enum sec_type=Section.%s;
                     previous_sec=sec_type;
                     section_secT!(sec_type)(sec);
@@ -86,35 +115,24 @@ class WasmWriter {
     }
 
     class WasmLoader : WasmReader.InterfaceModule {
-        alias SecType(Section sec)=Sections.Types[sec];
-        alias SecElement(Section sec)=TemplateArgsOf!(SecType!sec)[0];
+//        alias SecType(Section sec)=Sections[sec];
+        alias SecElement(Section sec)=TemplateArgsOf!(Sections[sec])[0];
         private Section previous_sec;
-        void section_secT(Section sec)(ref ConstOf!(ReaderSections.Types[sec]) _reader_sec) {
+        void section_secT(Section sec)(ref ConstOf!(ReaderSections[sec]) _reader_sec) {
             if (_reader_sec !is null) {
-//                auto _reader_sec=*reader_mod[sec];
-//                if (!_reader_sec[].empty) {
-                    alias ModT=Sections.Types[sec];
-                    alias ModuleType=SecType!sec;
-                    alias SectionElement=TemplateArgsOf!(ModuleType);
-                    auto _sec=new SecType!sec;
-                    mod[sec]=_sec;
-                    foreach(s; _reader_sec[]) {
-                        _sec.sectypes~=SecElement!(sec)(s);
-                    }
-                    //              }
+                //alias ModT=Sections[sec];
+                alias ModuleType=Sections[sec];
+                alias SectionElement=TemplateArgsOf!(ModuleType);
+                auto _sec=new ModuleType; //ecType!sec;
+                mod[sec]=_sec;
+                foreach(s; _reader_sec[]) {
+                    _sec.sectypes~=SecElement!(sec)(s);
+                }
             }
         }
 
-//        alias ReaderCustom=ForeachType!(ReaderSections.Types[Section.CUSTOM]);
         final void custom_sec(ref ConstOf!(ReaderCustom) sec) {
-            // if (mod[Section.CUSTOM] is null) {
-            //     mod[Section.CUSTOM]=new WasmSection.Custom;
-            // }
-            pragma(msg, typeof(mod[Section.CUSTOM][previous_sec]));
-            check(mod[Section.CUSTOM][previous_sec] is null,
-                format("Custom section after %s has already been definded", previous_sec));
-            pragma(msg, "typeof(sec) ", typeof(sec));
-            mod[Section.CUSTOM][previous_sec]=new WasmSection.Custom(sec);
+            mod[Section.CUSTOM].add(previous_sec, sec);
         }
 
         mixin loadSec!(Section.TYPE);
@@ -131,55 +149,13 @@ class WasmWriter {
 
         mixin loadSec!(Section.EXPORT);
 
-//        mixin loadSec!(Section.);
-
-// final void type_sec(ref scope const(ReaderSections[Section.TYPE]) reader_mod) {
-        //     previous_sec=Section.TYPE;
-        //     section_secT!(Section.TYPE)(reader_mod);
-        // }
-
-        // final void import_sec(ref scope const(ReaderSections[Section.TYPE]) reader_mod) {
-        //     previous_sec=Section.IMPORT;
-        //     section_secT!(Section.IMPORT)(reader_mod);
-        // }
-
-        // final void function_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.FUNCTION;
-        //     section_secT!(Section.FUNCTION)(reader_mod);
-        // }
-
-        // final void table_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.TABLE;
-        //     section_secT!(Section.TABLE)(reader_mod);
-        // }
-
-        // final void memory_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.MEMORY;
-        //     section_secT!(Section.MEMORY)(reader_mod);
-        // }
-
-        // final void global_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.GLOBAL;
-        //     section_secT!(Section.GLOBAL)(reader_mod);
-        // }
-
-        // final void export_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.EXPORT;
-        //     section_secT!(Section.EXPORT)(reader_mod);
-        // }
-
-        final void start_sec(ref ConstOf!(ReaderSections.Types[Section.START]) sec) {
+        final void start_sec(ref ConstOf!(ReaderSections[Section.START]) sec) {
             previous_sec=Section.START;
             mod[Section.START]=new WasmSection.Start(sec);
         }
 
 
         mixin loadSec!(Section.ELEMENT);
-
-        // final void element_sec(ref scope const(ReaderSections) reader_mod) {
-        //     previous_sec=Section.ELEMENT;
-        //     section_secT!(Section.ELEMENT)(reader_mod);
-        // }
 
         mixin loadSec!(Section.CODE);
 
@@ -206,7 +182,15 @@ class WasmWriter {
         }
         foreach(E; EnumMembers!Section) {
             //static if (E is Section.CUSTOM) {
-            output_custom(mod[Section.CUSTOM][previous_sec]);
+//            if (mod[Section.CUSTOM][previous_sec]e.length) {
+            writefln("mod[Section.CUSTOM] %s ", mod[Section.CUSTOM]);
+            writefln("mod[Section.CUSTOM].list=%s", mod[Section.CUSTOM].list);
+            writefln("mod[Section.CUSTOM].list %s", typeof(mod[Section.CUSTOM].list).stringof);
+            writefln("mod[Section.CUSTOM].list[0] %s", typeof(mod[Section.CUSTOM].list[0]).stringof);
+            foreach(const sec; mod[Section.CUSTOM].list[previous_sec]) {
+                // }
+                output_custom(sec);
+            }
             // if (custom) {
             //     custom_buffers[previous_sec]=new OutBuffer;
             //     custom_buffers[previous_sec].reserve(custom.guess_size);
@@ -223,7 +207,11 @@ class WasmWriter {
             }
             previous_sec=E;
         }
-        output_custom(mod[Section.CUSTOM][previous_sec]);
+        foreach(const sec; mod[Section.CUSTOM].list[previous_sec]) {
+            // }
+            output_custom(sec);
+        }
+        //output_custom(mod[Section.CUSTOM][previous_sec]);
         //
         previous_sec=Section.CUSTOM;
         auto output=new OutBuffer;
@@ -383,7 +371,6 @@ class WasmWriter {
                 return name.length+bytes.length+uint.sizeof*2;
             }
 
-            pragma(msg, "ReaderCustom ", ReaderCustom);
             this(const(ReaderCustom) s) {
                 name=s.name;
                 bytes=s.bytes;
@@ -391,9 +378,13 @@ class WasmWriter {
             mixin Serialize;
         }
 
-        // static class Custom {
-        //     CustomType[EnumMembers!Section.length] customs;
-        // }
+        struct CustomList {
+            Custom[][EnumMembers!(Section).length+1] list;
+            void add(const size_t sec_index, const(ReaderCustom) s) {
+                list[sec_index]~=new Custom(s);
+            }
+
+        }
 //        alias Custom=CustomType[Section];
 
         struct FuncType {
@@ -650,7 +641,7 @@ class WasmWriter {
 
         static class Start {
             uint idx;
-            alias ReaderStartType=ReaderSections.Types[Section.START];
+            alias ReaderStartType=ReaderSections[Section.START];
             this(ref ConstOf!(ReaderStartType) s) {
                 idx=s.idx;
             }

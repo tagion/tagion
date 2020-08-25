@@ -86,16 +86,30 @@ class WastT(Output) : WasmReader.InterfaceModule {
         return result;
     }
 
-    alias Custom=ForeachType!(Sections.Types[Section.CUSTOM]);
+    alias Custom=Sections[Section.CUSTOM];
     void custom_sec(ref scope const(Custom) _custom) {
+        output.writef(`%s(custom "%s" "`, indent, _custom.name);
+        enum {
+            SPACE=32,
+            DEL=127
+        }
+        foreach(d; _custom.bytes) {
+            if ((d > SPACE) && (d < DEL)) {
+                output.writef(`%c`, char(d));
+            }
+            else {
+                output.writef(`\x%02X`, d);
+            }
+        }
+        output.writefln(`")`);
 //        auto _custom=mod[Section.CUSTOM];//.custom_sec;
         //foreach(c; _custom[]) {
-        writefln("_custom=%s",  _custom);
+//        writefln("_custom=%s",  _custom);
                 //output.writef("%s(custom (%s %s))", indent, c.name, cast(string)(c.bytes));
             //}
     }
 
-    alias Type=Sections.Types[Section.TYPE];
+    alias Type=Sections[Section.TYPE];
     void type_sec(ref const(Type) _type) {
 //        auto _type=*mod[Section.TYPE]; //type_sec;
         foreach(i, t; _type[].enumerate) {
@@ -118,7 +132,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    alias Import=Sections.Types[Section.IMPORT];
+    alias Import=Sections[Section.IMPORT];
     void import_sec(ref const(Import) _import) {
 //        auto _import=*mod[Section.IMPORT];//.import_sec;
         static string importdesc(ref const ImportType imp, const size_t index) {
@@ -147,7 +161,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    alias Function=Sections.Types[Section.FUNCTION];
+    alias Function=Sections[Section.FUNCTION];
     protected Function _function;
     @trusted void function_sec(ref const(Function) _function) {
         // Empty
@@ -155,7 +169,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
         this._function=cast(Function)_function;
     }
 
-    alias Table=Sections.Types[Section.TABLE];
+    alias Table=Sections[Section.TABLE];
     void table_sec(ref const(Table) _table) {
 //        auto _table=*mod[Section.TABLE];
         foreach(i, t; _table[].enumerate) {
@@ -164,7 +178,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
 
-    alias Memory=Sections.Types[Section.MEMORY];
+    alias Memory=Sections[Section.MEMORY];
     void memory_sec(ref const(Memory) _memory) {
 //        auto _memory=*mod[Section.MEMORY];
         foreach(i, m; _memory[].enumerate) {
@@ -172,7 +186,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    alias Global=Sections.Types[Section.GLOBAL];
+    alias Global=Sections[Section.GLOBAL];
     void global_sec(ref const(Global) _global) {
 //        auto _global=*mod[Section.GLOBAL];
         foreach(i, g; _global[].enumerate) {
@@ -183,7 +197,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    alias Export=Sections.Types[Section.EXPORT];
+    alias Export=Sections[Section.EXPORT];
     void export_sec(ref const(Export) _export) {
 //        auto _export=*mod[Section.EXPORT];
         foreach(exp; _export[]) {
@@ -191,12 +205,12 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
 
     }
-    alias Start=Sections.Types[Section.START];
+    alias Start=Sections[Section.START];
     void start_sec(ref const(Start) _start) {
         output.writefln("%s(start %d),", indent, _start.idx);
     }
 
-    alias Element=Sections.Types[Section.ELEMENT];
+    alias Element=Sections[Section.ELEMENT];
     void element_sec(ref const(Element) _element) {
 //        auto _element=*mod[Section.ELEMENT];
         foreach(i, e; _element[].enumerate) {
@@ -212,7 +226,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    alias Code=Sections.Types[Section.CODE];
+    alias Code=Sections[Section.CODE];
     @trusted
     void code_sec(ref const(Code) _code) {
         foreach(f, c; lockstep(_function[], _code[], StoppingPolicy.requireSameLength)) {
@@ -234,7 +248,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    alias Data=Sections.Types[Section.DATA];
+    alias Data=Sections[Section.DATA];
     void data_sec(ref const(Data) _data) {
 //        auto _data=*mod[Section.DATA];
         foreach(d; _data[]) {
