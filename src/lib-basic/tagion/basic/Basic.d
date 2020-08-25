@@ -315,3 +315,11 @@ static unittest {
     static assert(is(void==CastTo!(string, AliasSeq!(int, long, double))));
     static assert(is(double==CastTo!(float, AliasSeq!(int, long, double))));
 }
+
+enum DataFormat {
+    json    = "json",  // JSON File format
+    hibon   = "hibon", // HiBON file format
+    wasm    = "wasm",  // WebAssembler binary format
+    wast    = "wast",  // WebAssembler text format
+    dartdb  = "drt",   // DART data-base
+}
