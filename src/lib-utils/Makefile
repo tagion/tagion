@@ -123,7 +123,9 @@ proper: $(CLEANER)
 	rm -fR $(WAYS)
 
 %.a:
-	make -C $(@D) lib
+# Find the root of the %.a repo
+# and calls the lib tag
+	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
