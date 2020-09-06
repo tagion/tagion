@@ -15,7 +15,7 @@ BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
 
 .SECONDARY: $(TOUCHHOOK)
-.PHONY: ddoc makeway
+.PHONY: makeway
 
 
 INCFLAGS=${addprefix -I,${INC}}
@@ -108,13 +108,7 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)touch $@
 
 
--include $(DDOCBUILDER)
-
-%.o: %.c
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
-
+include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -127,6 +121,7 @@ CLEANER+=clean
 clean:
 	rm -f $(LIBRARY)
 	rm -f ${OBJS}
+	rm -f $(UNITTEST) $(UNITTEST).o
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
