@@ -77,7 +77,7 @@ test: lib
 else
 lib: $(REVISION) $(LIBRARY)
 
-test: $(UNITTEST)
+unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
 $(UNITTEST):
