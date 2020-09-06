@@ -35,10 +35,8 @@ endif
 
 
 HELP+=help-main
-# DDOC help
--include $(DDOCBUILDER)
 
-help-master: $(HELP)
+help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
 	@echo "make unittest  : Run the unittests"
@@ -73,7 +71,7 @@ ifndef DFILES
 lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
 
-uinttest: dfiles.mk
+unittest: dfiles.mk
 	$(MAKE) unittest
 else
 lib: $(REVISION) $(LIBRARY)
