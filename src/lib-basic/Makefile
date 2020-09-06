@@ -33,9 +33,6 @@ DCFLAGS+=-cov
 endif
 
 
-ifndef DFILES
-include $(REPOROOT)/source.mk
-endif
 
 HELP+=help-main
 # DDOC help
@@ -44,7 +41,7 @@ HELP+=help-main
 help-master: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
-	@echo "make test      : Run the unittests"
+	@echo "make unittest  : Run the unittests"
 	@echo
 
 help-main:
@@ -58,6 +55,10 @@ help-main:
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
 
+ifndef DFILES
+include $(REPOROOT)/source.mk
+endif
+
 info:
 	@echo "WAYS    =$(WAYS)"
 	@echo "DFILES  =$(DFILES)"
@@ -69,18 +70,18 @@ info:
 include $(REPOROOT)/revsion.mk
 
 ifndef DFILES
-lib: dfiles.mk
+lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
 
-test: lib
-	$(MAKE) test
+uinttest: dfiles.mk
+	$(MAKE) unittest
 else
 lib: $(REVISION) $(LIBRARY)
 
 unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST):
+$(UNITTEST): $(LIBS) $(WAYS)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
@@ -125,6 +126,11 @@ clean:
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
+
+%.a:
+# Find the root of the %.a repo
+# and calls the lib tag
+	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
