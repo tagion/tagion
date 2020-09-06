@@ -1,9 +1,5 @@
 include git.mk
 
-ifndef $(VERBOSE)
-PRECMD?=@
-endif
-
 DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
@@ -19,7 +15,7 @@ BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
 
 .SECONDARY: $(TOUCHHOOK)
-.PHONY: ddoc makeway
+.PHONY: makeway
 
 
 INCFLAGS=${addprefix -I,${INC}}
@@ -37,9 +33,6 @@ DCFLAGS+=-cov
 endif
 
 
-ifndef DFILES
-include $(REPOROOT)/source.mk
-endif
 
 HELPER:=help-main
 
@@ -56,11 +49,13 @@ help-main:
 	@echo
 	@echo "make proper    : Clean all"
 	@echo
-	@echo "make ddoc      : Creates source documentation"
-	@echo
 	@echo "make PRECMD=   : Verbose mode"
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
+
+ifndef DFILES
+include $(REPOROOT)/source.mk
+endif
 
 info:
 	@echo "WAYS    =$(WAYS)"
@@ -70,23 +65,18 @@ info:
 	@echo "DCFLAGS =$(DCFLAGS)"
 	@echo "INCFLAGS=$(INCFLAGS)"
 
-include revsion.mk
-
-include source.mk
+include $(REPOROOT)/revsion.mk
 
 ifndef DFILES
-lib: dfiles.mk
+lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
-
-test: lib
-	$(MAKE) test
 else
 lib: $(REVISION) $(LIBRARY)
 
-test: $(UNITTEST)
+unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST):
+$(UNITTEST): $(LIBS)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
@@ -113,24 +103,8 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)mkdir -p $(@D)
 	$(PRECMD)touch $@
 
-$(DDOCMODULES): $(DFILES)
-	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
 
-ddoc: $(DDOCMODULES)
-	@echo "########################################################################################"
-	@echo "## Creating DDOC"
-	${PRECMD}ln -fs ../candydoc ddoc
-	$(PRECMD)$(DC) ${INCFLAGS} $(DDOCFLAGS) $(DDOCFILES) $(DFILES) $(DD)$(DDOCROOT)
-
-%.o: %.c
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
-
-%.o: %.d
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $< -c $(OUTPUT)$@
+include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -147,6 +121,11 @@ clean:
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
+
+%.a:
+# Find the root of the %.a repo
+# and calls the lib tag
+	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
