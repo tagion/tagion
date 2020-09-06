@@ -34,9 +34,9 @@ endif
 
 
 
-HELPER:=help-main
+HELP+=help-main
 
-help-master: help-main
+help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
 	@echo "make test      : Run the unittests"
@@ -70,13 +70,16 @@ include $(REPOROOT)/revsion.mk
 ifndef DFILES
 lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
+
+uinttest: dfiles.mk
+	$(MAKE) unittest
 else
 lib: $(REVISION) $(LIBRARY)
 
 unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST): $(LIBS)
+$(UNITTEST): $(LIBS) $(WAYS)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
