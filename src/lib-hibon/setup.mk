@@ -13,8 +13,6 @@ DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
 SCRIPTROOT:=${REPOROOT}/scripts/
 
 
-# WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
-# LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
 
 # DDOC Configuration
 #
