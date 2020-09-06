@@ -73,7 +73,7 @@ lib: $(REVISION) dfiles.mk
 else
 lib: $(REVISION) $(LIBRARY)
 
-test: $(UNITTEST)
+unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
 $(UNITTEST):
@@ -103,8 +103,6 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)mkdir -p $(@D)
 	$(PRECMD)touch $@
 
-$(DDOCMODULES): $(DFILES)
-	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
 
 include $(DDOCBUILDER)
 
