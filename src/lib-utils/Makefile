@@ -39,7 +39,7 @@ HELP+=help-main
 help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
-	@echo "make test      : Run the unittests"
+	@echo "make unittest  : Run the unittests"
 	@echo
 
 help-main:
@@ -71,7 +71,7 @@ ifndef DFILES
 lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
 
-uinttest: dfiles.mk
+unittest: dfiles.mk
 	$(MAKE) unittest
 else
 lib: $(REVISION) $(LIBRARY)
