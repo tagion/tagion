@@ -76,7 +76,7 @@ lib: $(REVISION) $(LIBRARY)
 unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST):
+$(UNITTEST): $(LIBS)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
@@ -121,6 +121,9 @@ clean:
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
+
+%.a:
+	make -C $(@D) lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@

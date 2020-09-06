@@ -42,7 +42,8 @@ REVISION:=$(REPOROOT)/$(SOURCE)/revision.d
 
 TAGION_BASIC:=$(REPOROOT)/../tagion_basic/
 
-include tagion_dfiles.mk
+LIBS+=$(TAGION_BASIC)/bin/libtagion_basic.a
+
 
 INC+=$(TAGION_BASIC)
 INC+=$(TAGION_CORE)
