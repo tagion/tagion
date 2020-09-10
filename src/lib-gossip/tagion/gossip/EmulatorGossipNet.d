@@ -8,7 +8,7 @@ import std.conv : to;
 
 import tagion.revision;
 import tagion.Options;
-import tagion.Base : EnumText, Buffer, Pubkey, Payload, buf_idup,  basename, isBufferType;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, Payload, buf_idup,  basename, isBufferType;
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.Random;
@@ -89,7 +89,7 @@ class EmulatorGossipNet : StdGossipNet {
         foreach(e; events) {
             auto pack_doc=Document(e.serialize);
             auto pack=EventPackage(pack_doc);
-            immutable fingerprint=calcHash(pack.event_body.serialize);
+            immutable fingerprint=HashNet.calcHash(pack.event_body.serialize);
             log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
         }
     }

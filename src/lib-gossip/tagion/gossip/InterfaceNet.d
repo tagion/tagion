@@ -6,7 +6,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.utils.Queue;
 import tagion.hashgraph.ConsensusExceptions;
-import tagion.Base;
+import tagion.basic.Basic;
 
 enum ExchangeState : uint {
     NONE,
@@ -28,9 +28,29 @@ struct Package {
         this.block=block;
         this.type=type;
         this.pubkey=net.pubkey;
-        immutable data=block.serialize;
-        immutable message=net.calcHash(data);
-        signature=net.sign(message);
+        import tagion.services.LoggerService;
+        @trusted
+        immutable(ubyte[]) sig_calc(){
+            import std.stdio;
+            import tagion.hibon.HiBONJSON;
+            try {
+                immutable data=block.serialize;
+                immutable message=net.HashNet.calcHash(data);
+                auto signed = net.sign(message);
+                return signed;
+            }
+            catch(Exception e){
+                pragma(msg, "fixme():Why this this print here should it be removed");
+                writeln("EXCEPTION::%s", e.msg);
+            }
+            catch(Throwable e){
+                pragma(msg, "fixme():Why a print here if there is throw after (is this some tempoary debug info)");
+                writeln("THROWABLE::%s", e.msg);
+                throw e;
+            }
+            return null;
+        }
+        signature = sig_calc();
     }
 
     HiBON toHiBON() inout {
@@ -52,7 +72,6 @@ struct Package {
                     hibon[name]=m;
                 }
             }
-            //}
         }
         return hibon;
     }
@@ -80,8 +99,21 @@ interface NetCallbacks : EventMonitorCallbacks {
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
-    Buffer calcHash(scope const(ubyte[]) data) const;
-    Buffer HMAC(scope const(ubyte[]) data) const;
+    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
+    immutable(Buffer) HMAC(scope const(ubyte[]) data) const;
+}
+
+/++
+ Implements the hash function on a document which is used in DART DataBase
++/
+@safe
+interface DocumentHashNet : HashNet {
+    /++
+     Hash used for Merkle tree
+     +/
+    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
+
+    immutable(Buffer) calcHash(const(Document) doc) const;
 }
 
 @safe
@@ -90,12 +122,6 @@ interface RequestNet : HashNet {
      + Request a missing event from the network
      +/
     void request(HashGraph h, immutable(Buffer) event_hash);
-}
-
-version(none)
-@safe
-interface SecureDriveNet : HashNet {
-    void drive(Net : SecureNet, Args...)(string tweak_code, ref Net net);
 }
 
 @safe
@@ -122,6 +148,10 @@ interface SecureNet : HashNet {
 }
 
 @safe
+interface DocumentNet : SecureNet, HashNet, DocumentHashNet {
+}
+
+@safe
 interface PackageNet {
     enum int eva_altitude=-77;
     alias Tides=int[immutable(Pubkey)];
@@ -137,7 +167,7 @@ interface PackageNet {
 }
 
 @safe
-interface GossipNet : SecureNet, RequestNet, PackageNet {
+interface GossipNet : SecureNet, DocumentNet, RequestNet, PackageNet {
     Event receive(const(Buffer) received, Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event );
     void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
 //    void send(immutable(Pubkey) channel, ref const(Package) pack);
@@ -172,8 +202,12 @@ interface FactoryNet {
     //  SecureNet securenet(immutable(Buffer) drive);
 }
 
+// @safe
+// interface DocumentNet : GossipNet, DocumentHashNet {
+// }
+
 @safe
-interface ScriptNet : GossipNet {
+interface ScriptNet : GossipNet, DocumentHashNet {
     import std.concurrency;
     @property void transcript_tid(Tid tid);
     @property Tid transcript_tid() pure nothrow;

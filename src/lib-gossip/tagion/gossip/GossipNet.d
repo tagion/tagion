@@ -8,12 +8,13 @@ import std.string : representation;
 import core.time : MonoTime;
 
 import tagion.Options;
-import tagion.Base : EnumText, Pubkey, Buffer, buf_idup, basename;
-import tagion.TagionExceptions : convertEnum;
+import tagion.basic.Basic : EnumText, Pubkey, Buffer, buf_idup, basename;
+import tagion.hashgraph.ConsensusExceptions : convertEnum;
 //, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord : HiBONPrefix;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
 
@@ -40,24 +41,25 @@ void scramble(scope ref ubyte[] data, scope ubyte[] xor=null) @safe {
     }
 }
 
-@safe
-class StdHashNet : HashNet {
+mixin template StdHashNetT() {
     protected enum HASH_SIZE=32;
-    uint hashSize() const pure nothrow {
+    final uint hashSize() const pure nothrow {
         return HASH_SIZE;
     }
 
-    Buffer calcHash(scope const(ubyte[]) data) const {
+    private static immutable(Buffer) hash(scope const(ubyte[]) data) {
         import std.digest.sha : SHA256;
-        import std.digest.digest;
-        // static if (hasMember!(data, "serialize")) {
-
-        // }
+        import std.digest;
         return digest!SHA256(data).idup;
     }
 
+    final immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
+        return hash(data);
+    }
+
     @trusted
-    Buffer HMAC(scope const(ubyte[]) data) const {
+    final immutable(Buffer) HMAC(scope const(ubyte[]) data) const {
+        import std.exception : assumeUnique;
         import std.digest.sha : SHA256;
         import std.digest.hmac : digestHMAC=HMAC;
         scope hmac = digestHMAC!SHA256(data);
@@ -65,19 +67,34 @@ class StdHashNet : HashNet {
         pragma(msg, typeof(result));
         return assumeUnique(result);
     }
+}
 
+@safe
+class StdHashNet : HashNet {
+    mixin StdHashNetT;
+}
+
+mixin template StdDocumentHashNetT() {
+    final immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
+        return this.calcHash(h1~h2);
+    }
+
+    final immutable(Buffer) calcHash(const(Document) doc) const {
+        auto range=doc[];
+        if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
+            immutable value_data=range.front.data[range.front.valuePos..$];
+            return this.calcHash(value_data);
+        }
+        return this.calcHash(doc.serialize);
+    }
 }
 
 alias ReceiveQueue = Queue!(immutable(ubyte[]));
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
-@safe
-class StdSecureNet : StdHashNet, SecureNet  {
-    // The Eva value is set up a low negative number
-    // to check the two-complement round wrapping if the altitude.
+mixin template StdSecureNetT() {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import std.digest.hmac;
 
     private Pubkey _pubkey;
     /**
@@ -86,8 +103,6 @@ class StdSecureNet : StdHashNet, SecureNet  {
        If method is SIGN the signed message or
        If method is DRIVE it returns the drived privat key
      */
-    // protected immutable(ubyte[]) delegate(immutable(ubyte[]) message) @safe _sign;
-
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
@@ -98,47 +113,47 @@ class StdSecureNet : StdHashNet, SecureNet  {
 
     protected SecretMethods _secret;
 
-    Pubkey pubkey() pure const nothrow {
+    final Pubkey pubkey() pure const nothrow {
         return _pubkey;
     }
 
-    Buffer hmacPubkey() const {
+    final Buffer hmacPubkey() const {
         return HMAC(cast(Buffer)_pubkey);
     }
 
-    Pubkey drivePubkey(string tweak_word) const {
+    final Pubkey drivePubkey(string tweak_word) const {
         const tweak_code=HMAC(tweak_word.representation);
         return drivePubkey(tweak_code);
     }
 
-    Pubkey drivePubkey(const(ubyte[]) tweak_code) const {
+    final Pubkey drivePubkey(const(ubyte[]) tweak_code) const {
         Pubkey result;
         const pkey=cast(const(ubyte[]))_pubkey;
         result=_crypt.pubKeyTweakMul(pkey, tweak_code);
         return result;
     }
 
-    bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) ) {
+    final bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) ) {
         auto message=calcHash(pack.serialize);
         return verify(message, signature, pubkey);
     }
 
     protected NativeSecp256k1 _crypt;
-    bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) const {
+    final bool verify(immutable(ubyte[]) message, immutable(ubyte)[] signature, Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
             ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         return _crypt.verify(message, signature, cast(Buffer)pubkey);
     }
 
-    immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) ) {
+    final immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) ) {
         auto message=calcHash(pack.serialize);
         auto result=sign(message);
         return result;
     }
 
-    immutable(ubyte[]) sign(immutable(ubyte[]) message) const
+    final immutable(ubyte[]) sign(immutable(ubyte[]) message) const
     in {
-        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));    //FIXME: doesn't work with an abstract function
+        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
         assert(message.length == 32);
     }
     do {
@@ -148,12 +163,12 @@ class StdSecureNet : StdHashNet, SecureNet  {
         return _secret.sign(message);
     }
 
-    void drive(string tweak_word, ref ubyte[] tweak_privkey) {
+    final void drive(string tweak_word, ref ubyte[] tweak_privkey) {
         const data = HMAC(tweak_word.representation);
         drive(data, tweak_privkey);
     }
 
-    void drive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
+    final void drive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
         in {
             assert(tweak_privkey.length >= 32);
         }
@@ -161,18 +176,18 @@ class StdSecureNet : StdHashNet, SecureNet  {
         _secret.tweakMul(tweak_code, tweak_privkey);
     }
 
-    Buffer mask(const(ubyte[]) _mask) const {
+    final Buffer mask(const(ubyte[]) _mask) const {
         return _secret.mask(_mask);
     }
 
     @trusted
-    void drive(string tweak_word, shared(SecureNet) secure_net) {
+    final void drive(string tweak_word, shared(SecureNet) secure_net) {
         const tweak_code=HMAC(tweak_word.representation);
         drive(tweak_code, secure_net);
     }
 
     @trusted
-    void drive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
+    final void drive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
         in {
             assert(_secret);
         }
@@ -185,7 +200,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
         }
     }
 
-    void createKeyPair(ref ubyte[] privkey)
+    final void createKeyPair(ref ubyte[] privkey)
         in {
             assert(_crypt.secKeyVerify(privkey));
             assert(_secret is null);
@@ -202,7 +217,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
 
         scramble(seed);
         // CBR: Note AES need to be change to beable to handle const keys
-        auto aes_key=calcHash(seed).dup;
+        auto aes_key=HashNet.calcHash(seed).dup;
 
         scramble(seed);
 
@@ -210,7 +225,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
         auto encrypted_privkey=new ubyte[privkey.length];
         AES.encrypt(aes_key, privkey, encrypted_privkey);
 
-        AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+        AES.encrypt(HashNet.calcHash(seed), encrypted_privkey, privkey);
         scramble(seed);
 
         AES.encrypt(aes_key, encrypted_privkey, privkey);
@@ -230,7 +245,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
                 auto seed=new ubyte[32];
                 scramble(seed, aes_key);
                 AES.encrypt(aes_key, privkey, encrypted_privkey);
-                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+                AES.encrypt(HashNet.calcHash(seed), encrypted_privkey, privkey);
             }
             AES.decrypt(aes_key, encrypted_privkey, privkey);
             dg(privkey);
@@ -265,7 +280,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                         import tagion.utils.Miscellaneous : xor;
                         auto data = xor(privkey, _mask);
-                        result=calcHash(calcHash(data));
+                        result=HashNet.calcHash(HashNet.calcHash(data));
                     });
                 return result;
             }
@@ -273,7 +288,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
         _secret = new LocalSecret;
     }
 
-    void generateKeyPair(string passphrase)
+    final void generateKeyPair(string passphrase)
         in {
             assert(_secret is null);
         }
@@ -300,7 +315,17 @@ class StdSecureNet : StdHashNet, SecureNet  {
 }
 
 @safe
-abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
+class StdSecureNet : HashNet, SecureNet, DocumentNet {
+    mixin StdHashNetT;
+    mixin StdDocumentHashNetT;
+    mixin StdSecureNetT;
+}
+
+@safe
+abstract class StdGossipNet : SecureNet, HashNet, DocumentNet, ScriptNet {
+    mixin StdHashNetT;
+    mixin StdDocumentHashNetT;
+    mixin StdSecureNetT;
 //    static File fout;
     static private shared uint _next_global_id;
     static private shared uint[immutable(Pubkey)] _node_id_pair;
@@ -329,8 +354,12 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         _hashgraph=hashgraph;
         _queue=new ReceiveQueue;
         _event_package_cache=new EventPackageCache(&onEvict);
-//        import tagion.crypto.secp256k1.NativeSecp256k1;
-        super();
+        this();
+    }
+
+    private this() {
+        import tagion.crypto.secp256k1.NativeSecp256k1;
+        this._crypt = new NativeSecp256k1;
     }
 
     protected enum _params = [
@@ -375,6 +404,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
     bool online() const  {
         // Does my own node exist and do the node have an event
         auto own_node=_hashgraph.getNode(pubkey);
+        log("own node exists: %s, own node event exists: %s", own_node !is null, own_node.event !is null);
         return (own_node !is null) && (own_node.event !is null);
         // return _hashgraph.isNodeActive(0) && (_hashgraph.getNode(0).isOnline);
     }
@@ -476,16 +506,18 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         }
         else {
             auto wavefront=doc[Params.wavefront].get!Document;
+            import tagion.hibon.HiBONJSON;
+            // log("wavefront: \n%s\n", wavefront.toJSON);
             foreach(pack; wavefront) {
                 auto pack_doc=pack.get!Document;
 
                 // Create event package and cache it
                 auto event_package=EventPackage(pack_doc);
                 // The message is the hashpointer to the event body
-                immutable fingerprint=calcHash(event_package.event_body.serialize);
+                immutable fingerprint=HashNet.calcHash(event_package.event_body.serialize);
                 if ( !_hashgraph.isRegistered(fingerprint) && !_event_package_cache.contains(fingerprint)) {
                     check(verify(fingerprint, event_package.signature, event_package.pubkey), ConsensusFailCode.EVENT_SIGNATURE_BAD);
-
+                    log("add event_package %s", fingerprint.cutHex);
                     _event_package_cache[fingerprint]=event_package;
                 }
 
@@ -536,20 +568,12 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
     alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
 
     @trusted
-    void trace(string type, immutable(ubyte[]) data) {
-        debug {
-            if ( options.trace_gossip ) {
-                //import std.file;
-//                log.writefln("%s/_%d_%s.hibon", options.tmp, _type); //.to!string~"_receive.hibon";
-//                write(packfile, data);
-//                _send_count++;
-            }
-        }
-    }
+    void trace(string type, immutable(ubyte[]) data);
 
     override Event receive(immutable(ubyte[]) data,
         Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
         trace("receive", data);
+        log("RECEIVE #@#@#@#");
         if ( callbacks ) {
             callbacks.receive(data);
         }
@@ -557,12 +581,13 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         Event result;
         auto doc=Document(data);
         Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-        log("Receive %s data=%d", received_pubkey.cutHex, data.length);
-
         check(received_pubkey != pubkey, ConsensusFailCode.GOSSIPNET_REPLICATED_PUBKEY);
 
         immutable type=doc[Params.type].get!uint;
         immutable received_state=convertState(type);
+        log("Receive %s %s data=%d", received_state, received_pubkey.cutHex, data.length);
+        // import tagion.hibon.HiBONJSON;
+        // log("%s", doc.toJSON);
         // This indicates when a communication sequency ends
         bool end_of_sequence=false;
 
@@ -570,6 +595,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         auto received_node=_hashgraph.getNode(received_pubkey);
         //auto _node=_hashgraph.getNode(pubkey);
         if ( !online ) {
+            log("online: %s", online);
             // Queue the package if we still are busy
             // with the current package
             _queue.write(data);
@@ -577,7 +603,7 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         else {
             auto signature=doc[Event.Params.signature].get!(immutable(ubyte)[]);
             auto block=doc[Params.block].get!Document;
-            immutable message=calcHash(block.data);
+            immutable message=HashNet.calcHash(block.data);
             if ( verify(message, signature, received_pubkey) ) {
                 if ( callbacks ) {
                     callbacks.wavefront_state_receive(received_node);
@@ -605,9 +631,9 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                         // If the this node already have INIT and tide a braking wave is send
                         const exchange=(received_node.state is INIT_TIDE)?BREAKING_WAVE:FIRST_WAVE;
                         auto wavefront_pack=buildEvent(wavefront, exchange);
-
                         send(received_pubkey, wavefront_pack.serialize);
-                        received_node.state=received_state;
+
+                        received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
                         break;
                     case FIRST_WAVE:
                     case BREAKING_WAVE:
@@ -639,8 +665,11 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
                             ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                         Tides tides;
 
+                        log("calc father fp");
                         immutable father_fingerprint=waveFront(received_pubkey, block, tides);
+                        log("calculeted father fp");
                         result=register_leading_event(father_fingerprint);
+                        log("registered");
                         received_node.state=NONE;
                         end_of_sequence=true;
                     }
@@ -657,30 +686,6 @@ abstract class StdGossipNet : StdSecureNet, ScriptNet { //GossipNet {
         return result;
     }
 
-    version(none)
-    void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
-        if ( !_hashgraph.isRegistered(fingerprint) ) {
-            immutable has_new_event=(fingerprint !is null);
-            if ( has_new_event ) {
-                EventPackage epack=_event_package_cache[fingerprint];
-                _event_package_cache.remove(fingerprint);
-                auto event=_hashgraph.registerEvent(this, epack.pubkey, epack.signature,  epack.event_body);
-            }
-        }
-    }
-
-    // protected string _node_name;
-    // @property void node_name(string name)
-    //     in {
-    //         assert(_node_name is null, format("%s is already set", __FUNCTION__));
-    //     }
-    // do {
-    //     _node_name=name;
-    // }
-
-    // @property string node_name() pure const nothrow {
-    //     return _node_name;
-    // }
 
     @property
     void time(const(ulong) t) {
