@@ -65,7 +65,7 @@ info:
 	@echo "DCFLAGS =$(DCFLAGS)"
 	@echo "INCFLAGS=$(INCFLAGS)"
 
-include $(REPOROOT)/revsion.mk
+include $(REPOROOT)/revision.mk
 
 ifndef DFILES
 lib: $(REVISION) dfiles.mk

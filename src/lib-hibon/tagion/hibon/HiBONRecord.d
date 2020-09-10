@@ -9,6 +9,7 @@ import tagion.hibon.HiBONBase : ValueT;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONException;
+
 /++
  Label use to set the HiBON member name
 +/
@@ -25,11 +26,16 @@ struct Label {
 template GetLabel(alias member) {
     import std.traits : getUDAs, hasUDA;
     static if (hasUDA!(member, Label)) {
-        enum GetLabel=getUDAs!(member, Label); //[0].name;
+        enum GetLabel=getUDAs!(member, Label);
     }
     else {
         enum GetLabel=Label(basename!(member));
     }
+}
+
+enum HiBONPrefix {
+    HASH = '#',
+    PARAM = '$'
 }
 
 /++
@@ -55,7 +61,7 @@ mixin template HiBONRecord(string TYPE="") {
     import tagion.basic.Basic : basename;
     import std.format;
 
-    enum TYPENAME="$type";
+    enum TYPENAME=HiBONPrefix.PARAM~"type";
     static if (TYPE.length) {
         string type() const pure nothrow {
             return TYPE;

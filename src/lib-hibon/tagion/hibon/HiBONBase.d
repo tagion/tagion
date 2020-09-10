@@ -207,7 +207,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     @Type(Type.UINT64)     ulong      uint64;
     @Type(Type.BIGINT)     BigNumber bigint;
     @Type(Type.HASHDOC)    DataBlock    hashdoc;
- 
+
     static if ( !is(Document == void) ) {
         @Type(Type.NATIVE_DOCUMENT) Document    native_document;
     }
