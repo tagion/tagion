@@ -6,6 +6,6 @@ core
 dfiles.mk
 wavm.di
 embedder_example
-revision.di
+revision.d
 bin
 build
