@@ -114,7 +114,6 @@ unittest { // verify test
     assert(sc.pop.get!Number==1);
 }
 
-version(none)
 @safe
 class ScriptCryptoHash256: ScriptElement {
     /*
@@ -207,7 +206,7 @@ class ScriptSortHash256: ScriptElement {
             const seed=hashes.join();
 
             auto crypto_net=new CryptoNet();
-            auto h=crypto_net.HashNet.calcHash(seed);
+            auto h=crypto_net.calcHash(seed);
 
             sc.push(h);
 
