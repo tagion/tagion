@@ -133,6 +133,8 @@ endif
 ifndef MODEL
     ifeq ($(ARCH), x86_64)
         MODEL = 64
+    else ifeq ($(ARCH), aarch64)
+        MODEL = 64
     else
         MODEL = 32
     endif
