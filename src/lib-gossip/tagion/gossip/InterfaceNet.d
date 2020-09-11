@@ -35,7 +35,7 @@ struct Package {
             import tagion.hibon.HiBONJSON;
             try {
                 immutable data=block.serialize;
-                immutable message=net.HashNet.calcHash(data);
+                immutable message=net.calcHash(data);
                 auto signed = net.sign(message);
                 return signed;
             }
@@ -101,20 +101,14 @@ interface HashNet {
     uint hashSize() const pure nothrow;
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const;
-}
-
-/++
- Implements the hash function on a document which is used in DART DataBase
-+/
-@safe
-interface DocumentHashNet : HashNet {
     /++
      Hash used for Merkle tree
      +/
-    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
+    immutable(Buffer) hashOf(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
-    immutable(Buffer) calcHash(const(Document) doc) const;
+    immutable(Buffer) hashOf(const(Document) doc) const;
 }
+
 
 @safe
 interface RequestNet : HashNet {
@@ -148,10 +142,6 @@ interface SecureNet : HashNet {
 }
 
 @safe
-interface DocumentNet : SecureNet, HashNet, DocumentHashNet {
-}
-
-@safe
 interface PackageNet {
     enum int eva_altitude=-77;
     alias Tides=int[immutable(Pubkey)];
@@ -167,10 +157,9 @@ interface PackageNet {
 }
 
 @safe
-interface GossipNet : SecureNet, DocumentNet, RequestNet, PackageNet {
+interface GossipNet : SecureNet, RequestNet, PackageNet {
     Event receive(const(Buffer) received, Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event );
     void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
-//    void send(immutable(Pubkey) channel, ref const(Package) pack);
 
     immutable(Pubkey) selectRandomNode(const bool active=true);
     void set(immutable(Pubkey)[] pkeys);
@@ -207,7 +196,7 @@ interface FactoryNet {
 // }
 
 @safe
-interface ScriptNet : GossipNet, DocumentHashNet {
+interface ScriptNet : GossipNet {
     import std.concurrency;
     @property void transcript_tid(Tid tid);
     @property Tid transcript_tid() pure nothrow;

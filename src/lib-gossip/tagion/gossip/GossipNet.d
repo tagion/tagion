@@ -15,6 +15,8 @@ import tagion.utils.Miscellaneous: cutHex;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord : HiBONPrefix;
+
+
 import tagion.utils.LRU;
 import tagion.utils.Queue;
 
@@ -41,20 +43,17 @@ void scramble(scope ref ubyte[] data, scope ubyte[] xor=null) @safe {
     }
 }
 
-mixin template StdHashNetT() {
+@safe
+class StdHashNet : HashNet {
     protected enum HASH_SIZE=32;
     final uint hashSize() const pure nothrow {
         return HASH_SIZE;
     }
 
-    private static immutable(Buffer) hash(scope const(ubyte[]) data) {
+    final immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest;
         return digest!SHA256(data).idup;
-    }
-
-    final immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
-        return hash(data);
     }
 
     @trusted
@@ -67,34 +66,47 @@ mixin template StdHashNetT() {
         pragma(msg, typeof(result));
         return assumeUnique(result);
     }
-}
 
-@safe
-class StdHashNet : HashNet {
-    mixin StdHashNetT;
-}
-
-mixin template StdDocumentHashNetT() {
-    final immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
-        return this.calcHash(h1~h2);
+    immutable(Buffer) hashOf(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
+        return calcHash(h1~h2);
     }
 
-    final immutable(Buffer) calcHash(const(Document) doc) const {
+    immutable(Buffer) hashOf(const(Document) doc) const {
         auto range=doc[];
         if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
             immutable value_data=range.front.data[range.front.valuePos..$];
-            return this.calcHash(value_data);
+            return calcHash(value_data);
         }
-        return this.calcHash(doc.serialize);
+        return calcHash(doc.serialize);
     }
 }
 
-alias ReceiveQueue = Queue!(immutable(ubyte[]));
+// @safe
+// class StdHashNet : HashNet {
+//     mixin StdHashNetT;
+// }
+
+
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
-mixin template StdSecureNetT() {
+@safe
+class StdSecureNet : StdHashNet, SecureNet  {
+//    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
+
+//    mixin StdHashNetT;
     import tagion.crypto.secp256k1.NativeSecp256k1;
+    import tagion.basic.Basic : Pubkey;
+    import tagion.crypto.aes.AESCrypto;
+    import tagion.gossip.GossipNet : scramble;
+//    import tagion.gossip.InterfaceNet : HashNet;
+    import tagion.hashgraph.ConsensusExceptions;
+
+    alias check = consensusCheck!(GossipConsensusException);
+
+    import std.format;
+    import std.string : representation;
+
 
     private Pubkey _pubkey;
     /**
@@ -163,12 +175,12 @@ mixin template StdSecureNetT() {
         return _secret.sign(message);
     }
 
-    final void drive(string tweak_word, ref ubyte[] tweak_privkey) {
+    void drive(string tweak_word, ref ubyte[] tweak_privkey) {
         const data = HMAC(tweak_word.representation);
         drive(data, tweak_privkey);
     }
 
-    final void drive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
+    void drive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
         in {
             assert(tweak_privkey.length >= 32);
         }
@@ -181,13 +193,13 @@ mixin template StdSecureNetT() {
     }
 
     @trusted
-    final void drive(string tweak_word, shared(SecureNet) secure_net) {
+    void drive(string tweak_word, shared(SecureNet) secure_net) {
         const tweak_code=HMAC(tweak_word.representation);
         drive(tweak_code, secure_net);
     }
 
     @trusted
-    final void drive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
+    void drive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
         in {
             assert(_secret);
         }
@@ -217,7 +229,7 @@ mixin template StdSecureNetT() {
 
         scramble(seed);
         // CBR: Note AES need to be change to beable to handle const keys
-        auto aes_key=HashNet.calcHash(seed).dup;
+        auto aes_key=calcHash(seed).dup;
 
         scramble(seed);
 
@@ -225,7 +237,7 @@ mixin template StdSecureNetT() {
         auto encrypted_privkey=new ubyte[privkey.length];
         AES.encrypt(aes_key, privkey, encrypted_privkey);
 
-        AES.encrypt(HashNet.calcHash(seed), encrypted_privkey, privkey);
+        AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
         scramble(seed);
 
         AES.encrypt(aes_key, encrypted_privkey, privkey);
@@ -245,7 +257,7 @@ mixin template StdSecureNetT() {
                 auto seed=new ubyte[32];
                 scramble(seed, aes_key);
                 AES.encrypt(aes_key, privkey, encrypted_privkey);
-                AES.encrypt(HashNet.calcHash(seed), encrypted_privkey, privkey);
+                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
             }
             AES.decrypt(aes_key, encrypted_privkey, privkey);
             dg(privkey);
@@ -280,7 +292,7 @@ mixin template StdSecureNetT() {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                         import tagion.utils.Miscellaneous : xor;
                         auto data = xor(privkey, _mask);
-                        result=HashNet.calcHash(HashNet.calcHash(data));
+                        result=calcHash(calcHash(data));
                     });
                 return result;
             }
@@ -315,17 +327,7 @@ mixin template StdSecureNetT() {
 }
 
 @safe
-class StdSecureNet : HashNet, SecureNet, DocumentNet {
-    mixin StdHashNetT;
-    mixin StdDocumentHashNetT;
-    mixin StdSecureNetT;
-}
-
-@safe
-abstract class StdGossipNet : SecureNet, HashNet, DocumentNet, ScriptNet {
-    mixin StdHashNetT;
-    mixin StdDocumentHashNetT;
-    mixin StdSecureNetT;
+abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 //    static File fout;
     static private shared uint _next_global_id;
     static private shared uint[immutable(Pubkey)] _node_id_pair;
@@ -354,12 +356,8 @@ abstract class StdGossipNet : SecureNet, HashNet, DocumentNet, ScriptNet {
         _hashgraph=hashgraph;
         _queue=new ReceiveQueue;
         _event_package_cache=new EventPackageCache(&onEvict);
-        this();
-    }
-
-    private this() {
-        import tagion.crypto.secp256k1.NativeSecp256k1;
-        this._crypt = new NativeSecp256k1;
+//        import tagion.crypto.secp256k1.NativeSecp256k1;
+        super();
     }
 
     protected enum _params = [
@@ -514,7 +512,7 @@ abstract class StdGossipNet : SecureNet, HashNet, DocumentNet, ScriptNet {
                 // Create event package and cache it
                 auto event_package=EventPackage(pack_doc);
                 // The message is the hashpointer to the event body
-                immutable fingerprint=HashNet.calcHash(event_package.event_body.serialize);
+                immutable fingerprint=calcHash(event_package.event_body.serialize);
                 if ( !_hashgraph.isRegistered(fingerprint) && !_event_package_cache.contains(fingerprint)) {
                     check(verify(fingerprint, event_package.signature, event_package.pubkey), ConsensusFailCode.EVENT_SIGNATURE_BAD);
                     log("add event_package %s", fingerprint.cutHex);
@@ -603,7 +601,7 @@ abstract class StdGossipNet : SecureNet, HashNet, DocumentNet, ScriptNet {
         else {
             auto signature=doc[Event.Params.signature].get!(immutable(ubyte)[]);
             auto block=doc[Params.block].get!Document;
-            immutable message=HashNet.calcHash(block.data);
+            immutable message=calcHash(block.data);
             if ( verify(message, signature, received_pubkey) ) {
                 if ( callbacks ) {
                     callbacks.wavefront_state_receive(received_node);
