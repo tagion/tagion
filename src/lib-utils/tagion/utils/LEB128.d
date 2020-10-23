@@ -8,7 +8,7 @@ import std.algorithm.comparison : min;
 import std.algorithm.iteration : map, sum;
 //import std.stdio;
 
-@safe
+@safe @nogc
 class LEB128Exception : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
@@ -29,7 +29,7 @@ size_t calc_size(const(ubyte[]) data) pure {
     assert(0);
 }
 
-@safe
+@safe @nogc
 size_t calc_size(T)(const T v) pure if(isUnsigned!(T)) {
     size_t result;
     ulong value=v;
@@ -40,7 +40,7 @@ size_t calc_size(T)(const T v) pure if(isUnsigned!(T)) {
     return result;
 }
 
-@safe
+@safe @nogc
 size_t calc_size(T)(const T v) pure if(isSigned!(T)) {
     if (v == T.min) {
         return T.sizeof+(is(T==int)?1:2);
@@ -106,41 +106,63 @@ immutable(ubyte[]) encode(T)(const T v) pure if(isSigned!T && isIntegral!T) {
 }
 
 alias DecodeLEB128(T)=Tuple!(T, "value", size_t, "size");
-
-@safe
-DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) pure if (isUnsigned!T) {
+enum ErrorValue(T)=DecodeLEB128!T(T.init, 0);
+/++
+ Converts a ubyte string to LEB128 number
+ Returns:
+ The value and the size
+ In case of an error this size is set to zero
++/
+@safe @nogc
+DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) pure nothrow if (isUnsigned!T) {
     alias BaseT=TypedefType!T;
     ulong result;
     uint shift;
     enum MAX_LIMIT=T.sizeof*8;
     size_t len;
     foreach(i, d; data) {
-        check(shift < MAX_LIMIT,
-            format("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
+        if (shift >= MAX_LIMIT) {
+            return ErrorValue!T;
+        }
+        // check(shift < MAX_LIMIT,
+        //     format("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
 
         result |= (d & 0x7FUL) << shift;
         if ((d & 0x80) == 0) {
             len=i+1;
             static if (!is(BaseT==ulong)) {
-                check(result <= BaseT.max, format("LEB128 decoding overflow of %x for %s", result, T.stringof));
+                if (result > BaseT.max) {
+                    return ErrorValue!T;
+                }
+                // check(result <= BaseT.max, format("LEB128 decoding overflow of %x for %s", result, T.stringof));
             }
             return DecodeLEB128!T(cast(BaseT)result, len);
         }
         shift+=7;
     }
-    check(0, format("Bad LEB128 format for type %s data=%s", T.stringof, data[0..min(MAX_LIMIT,data.length)]));
-    assert(0);
+    return ErrorValue!T;
+    // check(0, format("Bad LEB128 format for type %s data=%s", T.stringof, data[0..min(MAX_LIMIT,data.length)]));
+//    assert(0);
 }
 
-@safe
-DecodeLEB128!T decode(T=long)(const(ubyte[]) data) pure if (isSigned!T) {
+/++
+ Converts a ubyte string to LEB128 number
+ Returns:
+ The value and the size
+ In case of an error this size is set to zero
++/
+@safe @nogc
+DecodeLEB128!T decode(T=long)(const(ubyte[]) data) pure nothrow if (isSigned!T) {
     alias BaseT=TypedefType!T;
     long result;
     uint shift;
     enum MAX_LIMIT=T.sizeof*8;
     size_t len;
     foreach(i, d; data) {
-        check(shift < MAX_LIMIT, "LEB128 decoding buffer over limit");
+        if (shift >= MAX_LIMIT) {
+            return ErrorValue!T;
+        }
+//        check(shift < MAX_LIMIT, "LEB128 decoding buffer over limit");
         result |= (d & 0x7FL) << shift;
         shift+=7;
         if ((d & 0x80) == 0 ) {
@@ -149,14 +171,19 @@ DecodeLEB128!T decode(T=long)(const(ubyte[]) data) pure if (isSigned!T) {
             }
             len=i+1;
             static if (!is(BaseT==long)) {
-                check((T.min <= result) && (result <= T.max),
-                    format("LEB128 out of range %d for %s", result, T.stringof));
+                if (T.min > result) {
+                    return ErrorValue!T;
+                }
+                // check((T.min <= result) && (result <= T.max),
+                //     format("LEB128 out of range %d for %s", result, T.stringof));
             }
             return DecodeLEB128!T(cast(BaseT)result, len);
         }
     }
-    check(0, format("Bad LEB128 format for type %s data=%s", T.stringof, data[0..min(MAX_LIMIT,data.length)]));
-    assert(0);
+    return ErrorValue!T;
+
+    // check(0, format("Bad LEB128 format for type %s data=%s", T.stringof, data[0..min(MAX_LIMIT,data.length)]));
+    // assert(0);
 }
 
 ///
