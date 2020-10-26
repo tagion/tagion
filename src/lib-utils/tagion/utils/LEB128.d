@@ -17,20 +17,29 @@ class LEB128Exception : TagionException {
 
 alias check=Check!LEB128Exception;
 
-@safe
-size_t calc_size(const(ubyte[]) data) pure {
+/++
+ Returns:
+ The size in bytes of the LEB128
+ No error size 0 is returned
++/
+@safe @nogc
+size_t calc_size(const(ubyte[]) data) pure nothrow {
     foreach(i, d;data) {
         if ((d & 0x80) == 0) {
-            check(i <= ulong.sizeof+1, "LEB128 overflow");
+            if (i > ulong.sizeof+1) {
+                return 0;
+            }
+//            check(i <= ulong.sizeof+1, "LEB128 overflow");
             return i+1;
         }
     }
-    check(0, "LEB128 bad format");
-    assert(0);
+    return 0;
+    // check(0, "LEB128 bad format");
+    // assert(0);
 }
 
 @safe @nogc
-size_t calc_size(T)(const T v) pure if(isUnsigned!(T)) {
+size_t calc_size(T)(const T v) pure nothrow if(isUnsigned!(T)) {
     size_t result;
     ulong value=v;
     do {
@@ -41,7 +50,7 @@ size_t calc_size(T)(const T v) pure if(isUnsigned!(T)) {
 }
 
 @safe @nogc
-size_t calc_size(T)(const T v) pure if(isSigned!(T)) {
+size_t calc_size(T)(const T v) pure nothrow if(isSigned!(T)) {
     if (v == T.min) {
         return T.sizeof+(is(T==int)?1:2);
     }
