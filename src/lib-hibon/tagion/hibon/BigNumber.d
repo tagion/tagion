@@ -39,7 +39,7 @@ struct BigNumber {
      Returns:
      the BigNumber as BigDigit array
      +/
-    @trusted
+    @trusted @nogc
         const(BigDigit[]) data() const pure nothrow {
         return _data;
     }
@@ -48,7 +48,7 @@ struct BigNumber {
      Returns:
      the sign of the BigNumber
      +/
-    @trusted
+    @trusted @nogc
         bool sign() const pure nothrow {
         return _sign;
     }
@@ -70,6 +70,7 @@ struct BigNumber {
     /++
      Construct an number for a BigInt
      +/
+    @nogc
     @trusted this(const(BigInt) x) pure nothrow {
         this.x=x;
     }
@@ -200,13 +201,13 @@ struct BigNumber {
      Returns:
      true if the values are equal
      +/
-    @trusted
+    @trusted @nogc
         bool opEquals()(auto ref const BigNumber y) const pure {
         return x == y.x;
     }
 
     /// ditto
-    @trusted
+    @trusted @nogc
         bool opEquals(T)(T y) const pure nothrow if (isIntegral!T) {
         return x == y;
     }
@@ -218,19 +219,19 @@ struct BigNumber {
      Returns:
      true if the values are equal
      +/
-    @trusted
+    @trusted @nogc
         int opCmp(ref const BigNumber y) pure nothrow const {
         return x.opCmp(y.x);
     }
 
     /// ditto
-    @trusted
+    @trusted @nogc
         int opCmp(T)(T y) pure nothrow const if (isIntegral!T) {
         return x.opCmp(x);
     }
 
     /// ditto
-    @trusted
+    @trusted @nogc
         int opCmp(T:BigNumber)(const T y) pure nothrow const {
         return x.opCmp(y.x);
     }
@@ -247,7 +248,7 @@ struct BigNumber {
         return cast(T)x;
     }
 
-    @trusted
+    @trusted @nogc
         @property size_t ulongLength() const pure nothrow {
         return x.ulongLength;
     }
@@ -295,23 +296,12 @@ struct BigNumber {
         return x.toDecimalString;
     }
 
-    // /++
-    //  Coverts to a base64 format
-    //  +/
-    // @trusted
-    //     immutable(ubyte[]) serialize() const pure nothrow {        immutable digits_size=BigDigit.sizeof*_data.length;
-    //     auto buffer=new ubyte[digits_size+_sign.sizeof];
-    //     buffer[0..digits_size]=cast(ubyte[])_data;
-    //     buffer[$-1]=cast(ubyte)_sign;
-    //     return assumeUnique(buffer);
-    // }
-
-
     /++
      Converts the BigNumber as a two complement representation
      Returns:
      Range of two complement
      +/
+    @nogc
     TwoComplementRange two_complement() pure const nothrow {
         static assert(BigDigit.sizeof is int.sizeof);
         return TwoComplementRange(this);
@@ -324,6 +314,7 @@ struct BigNumber {
     }
 
     struct TwoComplementRange {
+        @nogc:
         protected {
             bool overflow;
             const(BigDigit)[] data;
@@ -341,8 +332,8 @@ struct BigNumber {
             popFront;
         }
 
-        @property {
-            const pure nothrow {
+        @property pure nothrow {
+            const {
                 long front() {
                     return current;
                 }
@@ -350,7 +341,7 @@ struct BigNumber {
                     return _empty;
                 }
             }
-            void popFront() pure nothrow {
+            void popFront() {
                 if (data.length) {
                     //debug writefln("data[0]=%d sign=%s", data[0], sign);
                     if (sign) {
@@ -453,7 +444,8 @@ struct BigNumber {
         }
     }
 
-    static size_t calc_size(const(ubyte[]) data) pure {
+    @nogc
+    static size_t calc_size(const(ubyte[]) data) pure nothrow {
         size_t result;
         foreach(d; data) {
             result++;
@@ -461,8 +453,7 @@ struct BigNumber {
                 return result;
             }
         }
-        .check(0, format("Bad LEB128 format for %s", BigNumber.stringof));
-        assert(0);
+        return 0;
     }
 
     alias serialize=encodeLEB128;
@@ -495,6 +486,7 @@ struct BigNumber {
         assert(0);
     }
 
+    @nogc
     size_t calc_size() const pure {
         immutable DATA_SIZE=(BigDigit.sizeof*data.length*8)/7+1;
         enum DIGITS_BIT_SIZE=BigDigit.sizeof*8;

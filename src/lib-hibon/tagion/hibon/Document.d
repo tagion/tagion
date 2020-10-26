@@ -51,6 +51,7 @@ static assert(uint.sizeof == 4);
     /++
      Creates a HiBON Document from a buffer
      +/
+    @nogc
     this(immutable(ubyte[]) data) pure nothrow {
         this._data = data;
     }
@@ -61,6 +62,7 @@ static assert(uint.sizeof == 4);
      Params:
      doc is the Document which is replicated
      +/
+    @nogc
     this(const Document doc) pure nothrow {
         this._data = doc._data;
     }
@@ -89,8 +91,8 @@ static assert(uint.sizeof == 4);
         emplace(&this, doc);
     }
 
-    @property const pure {
-        @safe bool empty() nothrow {
+    @property @nogc const pure nothrow {
+        @safe bool empty() {
             return data.length < 1;
         }
 
@@ -203,7 +205,7 @@ static assert(uint.sizeof == 4);
             this(doc.data);
         }
 
-        @property pure nothrow const {
+        @property @nogc pure nothrow const {
             bool empty() {
                 return _index > data.length;
             }
@@ -350,7 +352,8 @@ static assert(uint.sizeof == 4);
      Retruns:
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
-    static size_t sizeKey(const(char[]) key) pure {
+    @nogc
+    static size_t sizeKey(const(char[]) key) pure nothrow {
         uint index;
         if (is_index(key, index)) {
             return sizeKey(index);
@@ -358,10 +361,12 @@ static assert(uint.sizeof == 4);
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
     }
 
-    static size_t sizeKey(uint key) pure {
+    @nogc
+    static size_t sizeKey(uint key) pure nothrow {
         return Type.sizeof +  ubyte.sizeof + LEB128.calc_size(key);
     }
 
+    @nogc
     unittest {
         // Key is an index
         assert(sizeKey("0") is 3);
@@ -379,6 +384,7 @@ static assert(uint.sizeof == 4);
      Returns:
      The number of bytes taken up by the element
      +/
+    @nogc
     static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure if (is(Key:const(char[])) || is(Key==uint)) {
         size_t size = sizeKey(key);
         static if ( is(T: U[], U) ) {
@@ -510,10 +516,10 @@ static assert(uint.sizeof == 4);
             }
 
             const pure {
-                bool empty() nothrow {
+                @nogc
+                    bool empty() nothrow {
                     return range.empty;
                 }
-
 
                 string key() {
                     return range.front.key;
@@ -820,38 +826,19 @@ static assert(uint.sizeof == 4);
          */
         immutable(ubyte[]) data;
     public:
-        this(immutable(ubyte[]) data) {
+        @nogc
+        this(immutable(ubyte[]) data) pure nothrow {
             // In this time, Element does not parse a binary data.
             // This is lazy initialization for some efficient.
             this.data = data;
         }
-
-        //enum KEY_POS = Type.sizeof + keyLen.sizeof;
-
-        @property uint keyPos() const pure {
-            if (isIndex) {
-                return Type.sizeof+ubyte.sizeof;
-            }
-            return cast(uint)(Type.sizeof+LEB128.calc_size(data[Type.sizeof..$]));
-        }
-
-        @property const {
-            /++
-             Retruns:
-             true if the elemnt is of T
-             +/
-            bool isType(T)() {
-                enum E = Value.asType!T;
-                return (E !is Type.NONE) && (type is E);
-            }
-
             /++
              Returns:
              The HiBON Value of the element
              throws:
              if  the type is invalid and HiBONException is thrown
              +/
-            @trusted const(Value*) value() {
+        @property @trusted const(Value*) value() const  {
                 immutable value_pos=valuePos;
                 with(Type)
                 TypeCase:
@@ -909,6 +896,8 @@ static assert(uint.sizeof == 4);
                 assert(0);
             }
 
+
+        @property const {
             /++
              Returns:
              the value as the HiBON type Type
@@ -928,7 +917,7 @@ static assert(uint.sizeof == 4);
              throws:
              if the element does not contain the type and HiBONException is thrown
              +/
-            T get(T)() const {
+            T get(T)() {
                 enum E = Value.asType!T;
                 import std.format;
                 static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));
@@ -940,7 +929,7 @@ static assert(uint.sizeof == 4);
              Returns:
              true if the function succeeds
              +/
-            bool as(T)(ref T result) {
+            bool as(T)(ref T result) pure nothrow {
                 switch(type) {
                     static foreach(E; EnumMembers!Type) {
                         static if (isHiBONType(E)) {
@@ -972,7 +961,23 @@ static assert(uint.sizeof == 4);
 
         }
 
-        @property const pure nothrow {
+        @property @nogc const pure nothrow {
+            /++
+             Retruns:
+             true if the elemnt is of T
+             +/
+            bool isType(T)() {
+                enum E = Value.asType!T;
+                return (E !is Type.NONE) && (type is E);
+            }
+
+            uint keyPos() {
+                if (isIndex) {
+                    return Type.sizeof+ubyte.sizeof;
+                }
+                return cast(uint)(Type.sizeof+LEB128.calc_size(data[Type.sizeof..$]));
+            }
+
             /++
              Returns:
              true if the buffer block ends
@@ -1001,7 +1006,7 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        @property const pure {
+        @property @nogc const pure nothrow {
             /++
              Returns:
              the key length
@@ -1011,18 +1016,6 @@ static assert(uint.sizeof == 4);
                     return cast(uint)LEB128.calc_size(data[keyPos..$]);
                 }
                 return LEB128.decode!uint(data[Type.sizeof..$]).value;
-            }
-
-            /++
-             Returns:
-             the key
-             +/
-            string key() {
-                if (isIndex) {
-                    const index=LEB128.decode!uint(data[keyPos..$]).value;
-                    return index.to!string;
-                }
-                return cast(string)data[keyPos..valuePos];
             }
 
             /++
@@ -1042,8 +1035,32 @@ static assert(uint.sizeof == 4);
             }
 
             /++
+             Check if the type match That template.
+             That template must have one parameter T as followes
+             Returns:
+             true if the element is the type That
+             +/
+
+            bool isThat(alias That)() {
+            TypeCase:
+                switch(type) {
+                    static foreach(E; EnumMembers!Type) {
+                    case E:
+                        static if (isHiBONType(E)) {
+                            alias T = Value.TypeT!E;
+                            return That!T;
+                        }
+                        break TypeCase;
+                    }
+                default:
+                    // empty
+                }
+                return false;
+            }
+            /++
              Returns:
              the size of the element in bytes
+             On error it returns size 0
              +/
             @trusted size_t size() {
                 with(Type) {
@@ -1091,14 +1108,22 @@ static assert(uint.sizeof == 4);
                             break TypeCase;
                         }
                     default:
-                        import std.format;
-                        throw new HiBONException(format("Bad HiBON type %s", type));
-                        // empty
+                        return 0;
                     }
                 }
                 assert(0);
             }
 
+            /++
+             Compare two elements
+             +/
+            bool opEquals(ref const Element other) {
+                immutable s = size;
+                if (s !is other.size) {
+                    return false;
+                }
+                return data[0..s] == other.data[0..s];
+            }
 
             enum ErrorCode {
                 NONE,           // No errors
@@ -1112,88 +1137,73 @@ static assert(uint.sizeof == 4);
                 ARRAY_SIZE_BAD  // The binary-array size in bytes is not a multipla of element size in the array
             }
 
-            /++
-             Check if the element is valid
-             Returns:
-             The error code the element.
-             ErrorCode.NONE means that the element is valid
+        /++
+         Check if the element is valid
+         Returns:
+         The error code the element.
+         ErrorCode.NONE means that the element is valid
 
-             +/
-            @trusted ErrorCode valid() {
-                enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
+         +/
+        @nogc
+        @trusted ErrorCode valid() const pure nothrow {
+            enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
-                with(ErrorCode) {
-                    if ( type is Type.DOCUMENT ) {
-                        return DOCUMENT_TYPE;
-                    }
-                    if ( data.length < MIN_ELEMENT_SIZE ) {
-                        if (data.length !is ubyte.sizeof) {
-                            return TOO_SMALL;
-                        }
-                        else if (data[0] !is 0) {
-                            return INVALID_NULL;
-                        }
-                    }
-                TypeCase:
-                    switch(type) {
-                        static foreach(E; EnumMembers!Type) {
-                        case E:
-                            static if ( (isNative(E) || (E is Type.DEFINED_ARRAY) ) ) {
-                                return ILLEGAL_TYPE;
-                            }
-                            break TypeCase;
-                        }
-                    default:
-                        return INVALID_TYPE;
-                    }
-                    if ( size > data.length ) {
-                        return OVERFLOW;
-                    }
-                    if (type is Type.BINARY) {
-                        const leb128_size=LEB128.decode!ulong(data[valuePos..$]);
-                        if (leb128_size.value > uint.max) {
-                            return OVERFLOW;
-                        }
-                    }
-                    return NONE;
+            with(ErrorCode) {
+                if ( type is Type.DOCUMENT ) {
+                    return DOCUMENT_TYPE;
                 }
-            }
-
-            /++
-             Check if the type match That template.
-             That template must have one parameter T as followes
-             Returns:
-             true if the element is the type That
-             +/
-            bool isThat(alias That)() {
+                if ( data.length < MIN_ELEMENT_SIZE ) {
+                    if (data.length !is ubyte.sizeof) {
+                        return TOO_SMALL;
+                    }
+                    else if (data[0] !is 0) {
+                        return INVALID_NULL;
+                    }
+                }
             TypeCase:
                 switch(type) {
                     static foreach(E; EnumMembers!Type) {
                     case E:
-                        static if (isHiBONType(E)) {
-                            alias T = Value.TypeT!E;
-                            return That!T;
+                        static if ( (isNative(E) || (E is Type.DEFINED_ARRAY) ) ) {
+                            return ILLEGAL_TYPE;
                         }
                         break TypeCase;
                     }
                 default:
-                    // empty
+                    return INVALID_TYPE;
                 }
-                return false;
+                if ( size > data.length ) {
+                    return OVERFLOW;
+                }
+                if (type is Type.BINARY) {
+                    const leb128_size=LEB128.decode!ulong(data[valuePos..$]);
+                    if (leb128_size.value > uint.max) {
+                        return OVERFLOW;
+                    }
+                }
+                return NONE;
             }
         }
 
-        /++
-         Compare two elements
-         +/
-        @safe
-        bool opEquals(ref const Element other) const {
-            immutable s = size;
-            if (s !is other.size) {
-                return false;
-            }
-            return data[0..s] == other.data[0..s];
+
+
         }
+
+        @property const pure nothrow {
+
+            /++
+             Returns:
+             the key
+             +/
+            string key() {
+                if (isIndex) {
+                    const index=LEB128.decode!uint(data[keyPos..$]).value;
+                    return index.to!string;
+                }
+                return cast(string)data[keyPos..valuePos];
+            }
+        }
+
     }
 
 }

@@ -83,30 +83,38 @@ struct DataBlock {
         uint _type;
         immutable(ubyte)[] _data;
     }
-    @property uint type() const pure nothrow {
-        return _type;
+    @nogc pure nothrow {
+        @property uint type() const {
+            return _type;
+        }
+
+        @property immutable(ubyte[]) data() const {
+            return _data;
+        }
+
+        this(const DataBlock x) {
+            _type=x._type;
+            _data=x._data;
+        }
+
+        this(const uint type, immutable(ubyte[]) data) {
+            _type=type;
+            _data=data;
+        }
+
+        this(immutable(ubyte[]) data) {
+            const leb128=LEB128.decode!uint(data);
+            _type=leb128.value;
+            this._data=data[leb128.size..$];
+        }
+
+        @property size_t size() const {
+            return LEB128.calc_size(_type)+_data.length;
+        }
     }
-    @property immutable(ubyte[]) data() const pure nothrow {
-        return _data;
-    }
-    this(const DataBlock x) {
-        _type=x._type;
-        _data=x._data;
-    }
-    this(const uint type, immutable(ubyte[]) data) {
-        _type=type;
-        _data=data;
-    }
-    this(immutable(ubyte[]) data) {
-        const leb128=LEB128.decode!uint(data);
-        _type=leb128.value;
-        this._data=data[leb128.size..$];
-    }
+
     immutable(ubyte[]) serialize() pure const nothrow {
         return LEB128.encode(_type)~_data;
-    }
-    @property size_t size() pure const {
-        return LEB128.calc_size(_type)+_data.length;
     }
 }
 
@@ -301,15 +309,15 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     }
 
     static if (!is(Document == void) && is(HiBON == void)) {
-        @trusted
-            this(Document doc) {
+        @trusted @nogc
+            this(Document doc) pure nothrow {
             document = doc;
         }
     }
 
     static if (!is(Document == void) && !is(HiBON == void) ) {
-        @trusted
-            this(Document doc) {
+        @trusted @nogc
+            this(Document doc) pure nothrow {
             native_document = doc;
         }
     }
@@ -330,20 +338,20 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         assert (0, format("%s is not supported", T.stringof ) );
     }
 
-    @trusted @nogc this(const DataBlock x) pure {
+    @trusted @nogc this(const DataBlock x) pure nothrow {
         hashdoc=x;
     }
 
     /++
      Constructs a Value of the type BigNumber
      +/
-    @trusted @nogc this(const BigNumber big) pure {
+    @trusted @nogc this(const BigNumber big) pure nothrow {
         bigint=big;
     }
 
 
 
-    @trusted @nogc this(const sdt_t x) pure {
+    @trusted @nogc this(const sdt_t x) pure nothrow {
         date=sdt_t(x);
     }
 
@@ -482,10 +490,10 @@ unittest {
  true if a is an index
 +/
 @safe @nogc
-bool is_index(const(char[]) a, out uint result) pure {
+bool is_index(const(char[]) a, out uint result) pure nothrow {
     import std.conv : to;
     enum MAX_UINT_SIZE=to!string(uint.max).length;
-    @nogc @safe static ulong to_ulong(const(char[]) a) pure { // nothrow {
+    @nogc @safe static ulong to_ulong(const(char[]) a) pure nothrow {
         ulong result;
         foreach(c; a) {
             result*=10;
