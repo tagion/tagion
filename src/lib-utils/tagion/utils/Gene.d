@@ -1,7 +1,7 @@
 module tagion.utils.Gene;
 
 import std.exception : assumeUnique;
-@safe
+@nogc @safe
 uint gene_count(const size_t bitstring) pure nothrow {
      static uint count_ones(size_t BITS=size_t.sizeof*8)(const size_t x) pure nothrow {
          static if ( BITS == 1 ) {
@@ -19,8 +19,8 @@ uint gene_count(const size_t bitstring) pure nothrow {
      return count_ones(bitstring);
 }
 
-@safe
-uint gene_count(const(ulong[]) bitstream) pure {
+@nogc @safe
+uint gene_count(const(ulong[]) bitstream) pure nothrow {
     uint result;
     foreach(x; cast(const(size_t[]))bitstream) {
         result+=gene_count(x);
@@ -29,7 +29,7 @@ uint gene_count(const(ulong[]) bitstream) pure {
 }
 
 @trusted
-immutable(ulong[]) gene_xor(const(ulong[]) a, const(ulong[]) b) pure
+immutable(ulong[]) gene_xor(const(ulong[]) a, const(ulong[]) b) pure nothrow
 in {
      assert(a.length == b.length);
 }
@@ -39,8 +39,9 @@ do {
     return assumeUnique(result);
 }
 
-@trusted
-void gene_xor(ref ulong[] result, const(ulong[]) a, const(ulong[]) b) pure
+
+@nogc @safe
+void gene_xor(ref ulong[] result, const(ulong[]) a, const(ulong[]) b) pure nothrow
 in {
      assert(a.length == b.length);
      assert(result.length == b.length);
