@@ -20,8 +20,6 @@ import LEB128=tagion.utils.LEB128;
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION=0;
 
-//import std.stdio;
-
 /++
  Helper function to serialize a HiBON
 +/
@@ -85,30 +83,38 @@ struct DataBlock {
         uint _type;
         immutable(ubyte)[] _data;
     }
-    @property uint type() const pure nothrow {
-        return _type;
+    @nogc pure nothrow {
+        @property uint type() const {
+            return _type;
+        }
+
+        @property immutable(ubyte[]) data() const {
+            return _data;
+        }
+
+        this(const DataBlock x) {
+            _type=x._type;
+            _data=x._data;
+        }
+
+        this(const uint type, immutable(ubyte[]) data) {
+            _type=type;
+            _data=data;
+        }
+
+        this(immutable(ubyte[]) data) {
+            const leb128=LEB128.decode!uint(data);
+            _type=leb128.value;
+            this._data=data[leb128.size..$];
+        }
+
+        @property size_t size() const {
+            return LEB128.calc_size(_type)+_data.length;
+        }
     }
-    @property immutable(ubyte[]) data() const pure nothrow {
-        return _data;
-    }
-    this(const DataBlock x) {
-        _type=x._type;
-        _data=x._data;
-    }
-    this(const uint type, immutable(ubyte[]) data) {
-        _type=type;
-        _data=data;
-    }
-    this(immutable(ubyte[]) data) {
-        const leb128=LEB128.decode!uint(data);
-        _type=leb128.value;
-        this._data=data[leb128.size..$];
-    }
+
     immutable(ubyte[]) serialize() pure const nothrow {
         return LEB128.encode(_type)~_data;
-    }
-    @property size_t size() pure const {
-        return LEB128.calc_size(_type)+_data.length;
     }
 }
 
@@ -120,7 +126,7 @@ enum isDataBlock(T)=is(T : const(DataBlock));
  Returns:
  true if the type is a internal native HiBON type
 +/
-@safe
+@safe @nogc
 bool isNative(Type type) pure nothrow {
     with(Type) {
         return ((type & DEFINED_NATIVE) !is 0) && (type !is DEFINED_NATIVE);
@@ -131,7 +137,7 @@ bool isNative(Type type) pure nothrow {
  Returns:
  true if the type is a internal native array HiBON type
 +/
-@safe
+@safe @nogc
 bool isNativeArray(Type type) pure nothrow {
     with(Type) {
         return ((type & DEFINED_ARRAY) !is 0) && (isNative(type));
@@ -158,20 +164,22 @@ bool isHiBONType(Type type) pure nothrow {
     return flags[type];
 }
 
-@safe
+@safe @nogc
 bool isDataBlock(Type type) pure nothrow {
     with(Type) {
         return (type is HASHDOC);
     }
 }
 
-@safe bool isLEB128Basic(Type type) pure nothrow {
+@safe @nogc
+bool isLEB128Basic(Type type) pure nothrow {
     with(Type) {
         return (type is INT32) || (type is INT64) || (type is UINT32) || (type is INT64);
     }
 }
 
 ///
+@nogc
 static unittest {
     with(Type) {
         static assert(!isHiBONType(NONE));
@@ -252,7 +260,8 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Returns:
      the value as HiBON type E
      +/
-    @trusted auto by(Type type)() pure const {
+
+    @trusted @nogc auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
         mixin(code);
         assert(0);
@@ -300,15 +309,15 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     }
 
     static if (!is(Document == void) && is(HiBON == void)) {
-        @trusted
-            this(Document doc) {
+        @trusted @nogc
+            this(Document doc) pure nothrow {
             document = doc;
         }
     }
 
     static if (!is(Document == void) && !is(HiBON == void) ) {
-        @trusted
-            this(Document doc) {
+        @trusted @nogc
+            this(Document doc) pure nothrow {
             native_document = doc;
         }
     }
@@ -329,21 +338,20 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         assert (0, format("%s is not supported", T.stringof ) );
     }
 
-    @trusted this(const DataBlock x) pure {
+    @trusted @nogc this(const DataBlock x) pure nothrow {
         hashdoc=x;
     }
 
     /++
      Constructs a Value of the type BigNumber
      +/
-    @trusted
-    this(const BigNumber big) pure {
+    @trusted @nogc this(const BigNumber big) pure nothrow {
         bigint=big;
     }
 
 
 
-    @trusted this(const sdt_t x) pure {
+    @trusted @nogc this(const sdt_t x) pure nothrow {
         date=sdt_t(x);
     }
 
@@ -352,7 +360,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Params:
      x = value to be assigned
      +/
-    @trusted
+    @trusted @nogc
     void opAssign(T)(T x) if (isOneOf!(T, typeof(this.tupleof))) {
         alias UnqualT = Unqual!T;
         static foreach(m; __traits(allMembers, ValueT) ) {
@@ -377,11 +385,13 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Params:
      x = sign value
      +/
+    @nogc
     void opAssign(T)(T x) if (is(T==const) && isBasicType!T) {
         alias UnqualT=Unqual!T;
         opAssign(cast(UnqualT)x);
     }
 
+    @nogc
     void opAssign(const sdt_t x) {
         date=cast(sdt_t)x;
     }
@@ -396,6 +406,7 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
      Returns:
      the size on bytes of the value as a HiBON type E
      +/
+    @nogc
     uint size(Type E)() const pure nothrow {
         static if (isHiBONType(E)) {
             alias T = TypeT!E;
@@ -442,6 +453,7 @@ unittest {
         static assert(!__traits(compiles, value='x'));
     }
 
+
     { // Simple data type
         auto test_tabel=tuple(
             float(-1.23), double(2.34), "Text", true, ulong(0x1234_5678_9ABC_DEF0),
@@ -477,9 +489,18 @@ unittest {
  Returns:
  true if a is an index
 +/
-@safe bool is_index(const(char[]) a, out uint result) pure {
+@safe @nogc
+bool is_index(const(char[]) a, out uint result) pure nothrow {
     import std.conv : to;
     enum MAX_UINT_SIZE=to!string(uint.max).length;
+    @nogc @safe static ulong to_ulong(const(char[]) a) pure nothrow {
+        ulong result;
+        foreach(c; a) {
+            result*=10;
+            result+=(c-'0');
+        }
+        return result;
+    }
     if ( a.length <= MAX_UINT_SIZE ) {
         if ( (a[0] is '0') && (a.length > 1) ) {
             return false;
@@ -489,7 +510,7 @@ unittest {
                 return false;
             }
         }
-        immutable number=a.to!ulong;
+        immutable number=to_ulong(a);
         if ( number <= uint.max ) {
             result = cast(uint)number;
             return true;
@@ -570,7 +591,7 @@ unittest { // check is_index
  Returns:
  true if the value of key a is less than the value of key b
 +/
-@safe bool less_than(string a, string b) pure
+@safe @nogc bool less_than(string a, string b) pure
     in {
         assert(a.length > 0);
         assert(b.length > 0);
