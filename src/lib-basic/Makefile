@@ -4,6 +4,9 @@ DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
 
+include $(MAINROOT)/dinclude_setup.mk
+DCFLAGS+=$(addprefix -I$(MAINROOT)/,$(DINC))
+
 include setup.mk
 
 -include $(REPOROOT)/dfiles.mk
@@ -53,6 +56,7 @@ help-main:
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
 
+
 ifndef DFILES
 include $(REPOROOT)/source.mk
 endif
@@ -61,9 +65,11 @@ info:
 	@echo "WAYS    =$(WAYS)"
 	@echo "DFILES  =$(DFILES)"
 #	@echo "OBJS    =$(OBJS)"
-	@echo "LDCFLAGS=$(LDCFLAGS)"
-	@echo "DCFLAGS =$(DCFLAGS)"
-	@echo "INCFLAGS=$(INCFLAGS)"
+	@echo "LDCFLAGS =$(LDCFLAGS)"
+	@echo "DCFLAGS  =$(DCFLAGS)"
+	@echo "INCFLAGS =$(INCFLAGS)"
+	@echo "GIT_REVNO=$(GIT_REVNO)"
+	@echo "GIT_HASH =$(GIT_HASH)"
 
 include $(REPOROOT)/revision.mk
 
@@ -121,9 +127,11 @@ clean:
 	rm -f $(LIBRARY)
 	rm -f ${OBJS}
 	rm -f $(UNITTEST) $(UNITTEST).o
+	rm -f $(REVISION)
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
+	rm -f dfiles.mk
 
 %.a:
 # Find the root of the %.a repo
