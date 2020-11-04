@@ -94,14 +94,17 @@ void transcriptServiceTask(immutable(Options) opts) {
                     }
                 }
                 if (!invalid) {
-                    const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
+                    const signed_contract_doc=Document(signed_contract.toHiBON.serialize);
+                    const fingerprint=net.calcHash(signed_contract_doc.serialize);
                     if(fingerprint in smart_scripts){
                         scope smart_script=smart_scripts[fingerprint];
                         foreach(bill; smart_script.signed_contract.input){
-                            recorder.remove(bill.toHiBON.serialize);
+                            const bill_doc=Document(bill.toHiBON.serialize);
+                            recorder.remove(bill_doc);
                         }
                         foreach(bill; smart_script.output_bills){
-                            recorder.add(bill.toHiBON.serialize);
+                            const bill_doc=Document(bill.toHiBON.serialize);
+                            recorder.add(bill_doc);
                         }
                     }else{
                         invalid = true;
@@ -133,7 +136,8 @@ void transcriptServiceTask(immutable(Options) opts) {
             auto signed_contract=SignedContract(doc);
             auto smart_script=new SmartScript(signed_contract);
             smart_script.check(net);
-            const fingerprint=net.calcHash(signed_contract.toHiBON.serialize);
+            const signed_contract_doc=Document(signed_contract.toHiBON.serialize);
+            const fingerprint=net.HashNet.calcHash(signed_contract_doc.serialize);
 
             smart_script.run(current_epoch+1);
 

@@ -161,8 +161,10 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
                         }
                         case ServerRequestCommand.BecomeOffline: {
                             eraseOwnInfo();
+                            break;
                         }
-                        default: break;
+                        default:
+                            pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
                     }
                 }
             );

@@ -24,10 +24,6 @@ void monitorServiceTask(immutable(Options) opts) {
 
     try{
         log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
-        // scope(failure) {
-        //     log.error("In failure of soc. port=%d th., flag %s:", opts.monitor.port, Control.FAIL);
-        //     ownerTid.prioritySend(Control.FAIL);
-        // }
 
         scope(success) {
             log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
@@ -41,12 +37,6 @@ void monitorServiceTask(immutable(Options) opts) {
             opts.monitor.task_name);
         auto listener_socket_thread=listener_socket.start;
 
-        // void delegate() listerner;
-        // listerner.funcptr = &ListenerSocket.run;
-        // listerner.ptr = &listener_socket;
-        // auto listener_socket_thread = new Thread( listerner ).start();
-
-//    version(none)
         scope(exit) {
             log("In exit of soc. port=%d th", opts.monitor.port);
             listener_socket.stop;
@@ -77,26 +67,15 @@ void monitorServiceTask(immutable(Options) opts) {
 
         // try{
         bool stop;
-//        bool runBackend = true;
         void handleState (Control ts) {
             with(Control) switch(ts) {
                 case STOP:
                     log("Kill socket thread. %d", opts.monitor.port);
-                    // if ( listener_socket_thread !is null ) {
-                    //     listener_socket.stop;
-                    //     writefln("Wait for %d to close", opts.monitor.port);
-                    //     listener_socket_thread.join();
-                    //     log("Thread joined %d", opts.monitor.port);
-                    // }
 
                     stop = true;
                     break;
-                    // case LIVE:
-                    //     stop = false;
-                    //     break;
                 default:
                     log.error("Bad Control command %s", ts);
-                    //    stop=true;
                 }
         }
 
@@ -105,6 +84,9 @@ void monitorServiceTask(immutable(Options) opts) {
             receiveTimeout(500.msecs,
                 //Control the thread
                 &handleState,
+                (string json) {
+                    listener_socket.broadcast(json);
+                },
                 (immutable(ubyte)[] hibon_bytes) {
                     listener_socket.broadcast(hibon_bytes);
                 },

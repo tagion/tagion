@@ -53,6 +53,25 @@ import tagion.services.DartService;
 import tagion.Keywords: NetworkMode;
 import std.stdio;
 
+shared class ConnectionPoolBridge{
+    ulong[Pubkey] lookup;
+
+    void removeConnection(ulong connectionId){
+        foreach(key, val; lookup){
+            if(val == connectionId){
+                log("CPB::REMOVING KEY: connection id: %s as pk: %s", val, key.cutHex);
+                lookup.remove(key);
+                // break;
+            }
+        }
+    }
+
+    bool contains(Pubkey pk){
+        return (pk in lookup) !is null;
+    }
+
+}
+
 void p2pTagionService(Options opts)
 in{
     import std.algorithm: canFind;
@@ -97,15 +116,17 @@ do {
     enum dir_token = "%dir%";
     if(opts.dart.path.indexOf(dir_token) != -1){
         const i = opts.port - opts.port_base;
-        auto path_to_dir = opts.dart.path[0..opts.dart.path.indexOf(dir_token)]~"node"~to!string(i);
+        immutable node_name="node"~i.to!string;
+        auto path_to_dir = opts.dart.path[0..opts.dart.path.indexOf(dir_token)]~node_name;
         if(!path_to_dir.exists) path_to_dir.mkdir;
-        opts.dart.path = opts.dart.path.replace(dir_token, "node"~to!string(i));
+        opts.dart.path = opts.dart.path.replace(dir_token, node_name);
     }
     auto master_net=new StdSecureNet;
     P2pGossipNet net;
     auto hashgraph=new HashGraph();
     auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
-    shared ulong[Pubkey] connectionPoolBridge;
+    auto connectionPoolBridge = new shared(ConnectionPoolBridge)();
+    // connectionPoolBridge[Pubkey([0])] = 0; 
     Tid discovery_tid;
     Tid dart_sync_tid;
     Tid dart_tid;
@@ -161,7 +182,8 @@ do {
                 log("Received ctrl: %s", ctrl);
                 if(ctrl is Control.LIVE){
                     ready_counter++;
-                }else if(ctrl is Control.STOP){
+                }
+                else if(ctrl is Control.STOP){
                     force_stop = true;
                 }
             },
@@ -291,7 +313,7 @@ do {
 
     try{
         monitor_socket_tid = spawn(&monitorServiceTask, opts);
-        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
+        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey), opts.monitor.dataformat);
         stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
         if ( receiveOnly!Control is Control.LIVE ) {
@@ -386,8 +408,8 @@ do {
                 }
                 immutable send_channel=net.selectRandomNode;
                 auto send_node=hashgraph.getNode(send_channel);
-                log("selected %s STATE: %s", send_node.pubkey.cutHex ,send_node.state);
-                if ( send_node.state is ExchangeState.NONE ) {
+                log("selected %s STATE: %s, is in pool: %s", send_node.pubkey.cutHex ,send_node.state, connectionPoolBridge.contains(send_node.pubkey));
+                if ( send_node.state is ExchangeState.NONE && !connectionPoolBridge.contains(send_node.pubkey)) {
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HiBON;
                     auto tides      = net.tideWave(tidewave, net.callbacks !is null);
@@ -473,15 +495,17 @@ do {
             },
             (Response!(ControlCode.Control_Disconnected) resp) {
                 log("Client Disconnected key: %d", resp.key);
-                // connectionPool.close(cast(void*)resp.key);
+                connectionPool.close(cast(void*)resp.key);
+                connectionPoolBridge.removeConnection(resp.key);
             },
             (Response!(ControlCode.Control_RequestHandled) resp){
                 import tagion.hibon.Document;
                 import tagion.hibon.HiBONJSON;
                 auto doc=Document(resp.data);
                 Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-                connectionPoolBridge[received_pubkey] = resp.stream.Identifier;
+                connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
                 // log("response: %s", doc.toJSON);
+                log("received in: %s", resp.stream.Identifier);
                 receive_buffer(resp.data);
             },
             (immutable(Pubkey) send_channel){ //On sending failed

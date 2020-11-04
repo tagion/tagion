@@ -161,7 +161,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     if ( ((opts.node_id < opts.monitor.max) || (opts.monitor.max == 0) ) &&
         (opts.monitor.port >= opts.min_port) ) {
         monitor_socket_tid = spawn(&monitorServiceTask, opts);
-        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey));
+        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey), opts.monitor.dataformat);
         stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
         if ( receiveOnly!Control is Control.LIVE ) {

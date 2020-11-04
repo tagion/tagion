@@ -17,6 +17,10 @@ string transaction_task_name(ref const Options opts) pure nothrow {
     return [opts.transaction.prefix, opts.node_id.to!string].join(opts.separator);
 }
 
+string transervice_task_name(ref const Options opts) pure nothrow {
+    return [opts.transaction.service.prefix, opts.node_id.to!string].join(opts.separator);
+}
+
 string transcript_task_name(ref const Options opts) pure nothrow {
     return [opts.transcript.prefix, opts.node_id.to!string].join(opts.separator);
 }

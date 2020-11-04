@@ -26,7 +26,7 @@ version(unittest) import tagion.dart.BlockFile: fileId;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.gossip.InterfaceNet: SecureNet;
+import tagion.gossip.InterfaceNet: SecureNet, HashNet;
 import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;
@@ -66,7 +66,7 @@ struct ServiceState(T) {
     }
 }
 
-void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range) {
+void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) {
     try{
         const task_name = opts.dart.sync.task_name;
         log.register(task_name);
@@ -100,10 +100,12 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         log("DART initialized with angle: %s", sector_range);
 
         if (opts.dart.generate) {
+            import tagion.dart.DARTFakeNet;
             auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings);
             log("DART generated: bullseye: %s", fp.cutHex);
             dart.dump;
-        }else{
+        }
+        else{
             if(!opts.dart.initialize){
                 dart.calculateFingerprint();
             }
@@ -154,7 +156,7 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         auto empty_hirpc = HiRPC(null);
         hrpc.net = net;
 
-        ActiveNodeSubscribtion subscription = ActiveNodeSubscribtion(opts);
+        auto subscription = ActiveNodeSubscribtion!Net(opts);
         NodeAddress[Pubkey] node_addrses;
         log("send live");
         ownerTid.send(Control.LIVE);
@@ -245,11 +247,11 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
                         StandardBill[] bills;
                         foreach(archive_doc;result_doc[]){
                             auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
-                            auto data_doc = Document(archive.data);
-                            log("%s", data_doc.toJSON);
-                            if(data_doc.hasElement("$type")){
-                                if(data_doc["$type"].get!string == "BIL"){
-                                    auto bill = StandardBill(data_doc);
+                            //auto data_doc = Document(archive.data);
+                            log("%s", archive.doc.toJSON);
+                            if(archive.doc.hasElement("$type")){
+                                if(archive.doc["$type"].get!string == "BIL"){
+                                    auto bill = StandardBill(archive.doc);
                                     import std.algorithm: canFind;
                                     // log("bill.owner: %s, owner: %s", bill.owner, owner);
                                     if( owners.canFind(bill.owner)){
@@ -358,10 +360,13 @@ void dartSynchronizeServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node
         ownerTid.send(cast(immutable)e);
     }
 }
-private struct ActiveNodeSubscribtion{
+
+private struct ActiveNodeSubscribtion(Net : HashNet) {
     protected Tid handlerTid;
     protected shared(p2plib.RequestStream) stream;
     protected bool subscribed;
+    @disable this();
+   // protected Net net;
     @property bool isSubscribed(){
         return subscribed;
     }
@@ -374,11 +379,12 @@ private struct ActiveNodeSubscribtion{
             try{
                 stream = node.connect(address.address, address.is_marshal, opts.dart.subs.protocol_id);
                 auto taskName = opts.dart.subs.slave_task_name;
-                handlerTid = spawn(&handleSubscription, thisTid, taskName);
+                handlerTid = spawn(&handleSubscription, taskName);
                 receiveOnly!Control;
                 stream.listen(&StdHandlerCallback, taskName, opts.dart.subs.host.timeout.msecs, opts.dart.subs.host.max_size);
                 return true;
-            }catch(Exception e){
+            }
+            catch(Exception e){
                 log("subscribe error: %s", e);
             }
             return false;
@@ -406,12 +412,14 @@ private struct ActiveNodeSubscribtion{
         }
     }
 
-    protected static void handleSubscription(Tid parentTid, string taskName){   //TODO: moveout
+    protected static void handleSubscription(string taskName){   //TODO: moveout
         scope(exit){
             log("exit handleSubscription");
             // ownerTid.prioritySend(Control.END);
         }
-        auto net = new MyFakeNet();
+        pragma(msg, "Why is fake net used here?");
+//        auto net = new MyFakeNet();
+        auto net = new Net;
         log.register(taskName);
         auto stop = false;
         ownerTid.send(Control.LIVE);
@@ -429,8 +437,8 @@ private struct ActiveNodeSubscribtion{
                 (Response!(ControlCode.Control_RequestHandled) response){
                     writeln("Subscribe recorder received");
                     auto doc = Document(response.data);
-                    auto recorder = DARTFile.Recorder(net, doc);
-                    send(parentTid, cast(immutable)recorder);
+                    immutable recorder = cast(immutable)DARTFile.Recorder(net, doc);
+                    send(ownerTid, recorder);
                 }
             );
         }

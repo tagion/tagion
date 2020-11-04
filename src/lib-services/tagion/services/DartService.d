@@ -40,7 +40,7 @@ import std.array;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, shared(SecureNet) master_net, immutable(DART.SectorRange) sector_range) {
+void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) {
     try{
         setOptions(opts);
         immutable task_name=opts.dart.task_name;
@@ -222,7 +222,7 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
                             //     requestPool.setResponse(ResponseHandler.Response!uint(hrpc_id, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize));
                             // }
                             requestPool.add(hrpc_id, rs);
-                            Buffer requestData(alias hirpc)(bufArr fps){
+                            Buffer requestData(HiRPC hirpc, bufArr fps) {
                                 auto params=new HiBON;
                                 auto params_fingerprints=new HiBON;
                                 foreach(i, b; fps) {
@@ -241,12 +241,12 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
                                     auto stream = node.connect(addr.address, addr.is_marshal, [opts.dart.sync.protocol_id]);
                                     // connectionPool.add(stream.Identifier, stream);
                                     stream.listen(&StdHandlerCallback, task_name, opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
-                                    immutable foreign_data = requestData!(hirpc)(fps);
+                                    immutable foreign_data = requestData(hirpc, fps);
                                     stream.writeBytes(foreign_data);
                                 }
                             }
                             if(local_fp.length>0){
-                                immutable foreign_data = requestData!(empty_hirpc)(local_fp);
+                                immutable foreign_data = requestData(empty_hirpc, local_fp);
                                 send(dart_sync_tid, opts.dart.task_name, foreign_data);
                             }
                         }
@@ -281,8 +281,10 @@ void dartServiceTask(Net)(immutable(Options) opts, shared(p2plib.Node) node, sha
                 );
             requestPool.tick();
         }
-    }catch(Exception e){
+    }
+    catch(Exception e){
         writefln("EXCEPTION: %s", e);
+        pragma(msg, "fixme(alex): Why doesn't this send the exception to the owner");
     }
 }
 

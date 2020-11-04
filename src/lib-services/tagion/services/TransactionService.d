@@ -25,6 +25,8 @@ import tagion.basic.TagionExceptions;
 
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
+
+@safe
 class HiRPCNet : StdSecureNet {
     this(string passphrase) {
         super();
@@ -94,10 +96,12 @@ void transactionServiceTask(immutable(Options) opts) {
                     return ;
                 }
                 doc = Document(buffer);
-            }catch(Exception e){
+            }
+            catch(Exception e){
                 log("ERROR: %s", e.msg);
                 throw e;
-            }catch(Throwable t){
+            }
+            catch(Throwable t){
                 log("T: %s %d", t.msg, t.line);
             }
             }
@@ -138,7 +142,7 @@ void transactionServiceTask(immutable(Options) opts) {
                         import tagion.script.StandardRecords: StandardBill;
                         // writefln("input loaded %d", foreign_recoder.archive);
                         foreach(archive; foreign_recorder.archives){
-                            auto std_bill = StandardBill(Document(archive.data));
+                            auto std_bill = StandardBill(archive.doc);
                             signed_contract.input ~= std_bill;
                         }
 
