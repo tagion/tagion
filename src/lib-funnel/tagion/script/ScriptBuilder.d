@@ -2,1534 +2,1351 @@ module tagion.script.ScriptBuilder;
 
 import std.conv;
 
-import tagion.script.ScriptInterpreter;
+import tagion.script.ScriptParser;
+import tagion.basic.TagionExceptions : Check;
+import tagion.script.ScriptBase : ScriptException, FunnelType;
+
 import tagion.script.Script;
-import tagion.utils.BSON : HBSON;
-import std.exception : assertThrown;
-
-import std.stdio;
-
+import tagion.script.ScriptBlocks;
+import tagion.basic.Message : message;
+//import std.format;
+import std.string : join;
+//import std.stdio;
+import std.traits : hasMember, EnumMembers;
+import std.uni : toUpper;
+import std.range.primitives : isInputRange;
+import std.regex;
 @safe
 class ScriptBuilderException : ScriptException {
-    this( immutable(char)[] msg ) {
-        super( msg );
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+        super( msg, file, line );
     }
 }
 
-// @safe
-// class ScriptBuilderExceptionIncompte : ScriptException {
-//     this( immutable(char)[] msg ) {
-//         super( msg );
-//     }
-// }
+alias check=Check!ScriptBuilderException;
 
-class ScriptBuilder {
-    alias ScriptInterpreter.ScriptType ScriptType;
-    alias ScriptInterpreter.Token Token;
-    /**
-       Build as script from bson data stream
-     */
-    @safe
-    class ScriptTokenError : ScriptElement {
-        immutable(Token) token;
-        private string msg;
-        this(immutable(Token) token, string msg) {
-            super(0);
-            this.token=token;
-            this.msg=msg;
-        }
-        ScriptElement opCall(const Script s, ScriptContext sc) const {
-            check(s, sc);
-            throw new ScriptBuilderException(msg~token.toText);
-            return null;
-        }
-        string toText() const {
-            return token.token~" "~msg;
-        }
+ScriptBuilderT!(Range) ScriptBuilder(Range)(Range range) if (isInputRange!Range) {
+    return ScriptBuilderT!(Range)(range);
+}
+
+immutable(Token) token(Range)(const Range range) {
+    static if (hasMember!(Range, "line")) {
+        immutable(Token) token={name : range.front, line : range.line, pos : range.pos};
+        return token;
+    }
+    else {
+        immutable(Token) token={name : range.front};
+        return token;
+    }
+}
+
+@safe class ScriptTokenError : ScriptError {
+    this(immutable(Token) token, string error, const(ScriptElement) next) {
+        super(token, error);
     }
 
-    static HBSON Token2BSON(const(Token) token) @safe {
-        auto bson=new HBSON();
-        bson["token"]=token.token;
-        bson["type"]=token.type;
-        bson["line"]=token.line;
-        bson["jump"]=token.jump;
-        return bson;
-    }
-    unittest {
-        immutable(Token) opcode={
-          token : "opcode",
-          type  : ScriptType.WORD
-        };
-        immutable(Token)[] tokens;
-        // ( Forth source code )
-        // : Test
-        //  opcode if
-        //    opcode opcode if
-        //       opcode opcode if
-        //          opcode opcode
-        //        else
-        //          opcode opcode
-        //        then
-        //           opcode opcode
-        //    then then
-        //  opcode opcode
-        //  begin
-        //    opcode opcode
-        //  while
-        //    opcode opcode
-        //    do
-        //      opcode opcode
-        //    loop
-        //    opcode opcode
-        //    do
-        //      opcode opcode
-        //    +loop
-        //  repeat
-        //
-        //  begin
-        //      opcode opcode
-        //      begin
-        //        opcode opcode
-        //      until
-        //  until
-
-
-        tokens~=token_func("Test");
-        tokens~=opcode;
-        tokens~=token_if;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_if;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_if;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_else;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_endif;
-        tokens~=token_endif;
-        tokens~=token_endif;
-        //
-        tokens~=opcode;
-        tokens~=opcode;
-
-        tokens~=token_begin;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_while;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_do;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_loop;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_do;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_incloop;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_repeat;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_begin;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_begin;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_until;
-        tokens~=opcode;
-        tokens~=opcode;
-        tokens~=token_until;
-
-        { //
-          // Function parse test missing end of function
-          //
-            HBSON[] codes;
-
-            // Build BSON array of the token list
-            foreach(t; tokens) {
-                codes~=Token2BSON(t);
-            }
-            // Build the BSON stream
-            auto bson_stream=new HBSON();
-            bson_stream["code"]=codes;
-            auto stream=bson_stream.serialize;
-
-
-            //
-            // Reconstruct the token array from the BSON stream
-            // and verify the reconstructed stream
-            auto retokens=ScriptInterpreter.BSON2Tokens(stream);
-            assert(retokens.length == tokens.length);
-            // Add token types to the token stream
-            retokens=ScriptInterpreter.Tokens2Tokens(retokens);
-            // writefln("tokens.length=%s", tokens.length);
-            // writefln("retokens.length=%s", retokens.length);
-            // Reconstructed tokens is one less because
-            // : test is converted into one token
-            // {
-            //   token : "Test",
-            //   type  : FUNC
-            // }
-            assert(retokens.length+1 == tokens.length);
-
-            // Forth tokens
-            // : Test
-            assert(tokens[0].token==":"); // Function declare symbol
-            assert(tokens[1].token=="Test"); // Function name
-            assert(tokens[0].type==ScriptType.WORD);
-            assert(tokens[1].type==ScriptType.WORD);
-
-            // Reconstructed
-            assert(retokens[0].token=="Test");
-            assert(retokens[0].type==ScriptType.FUNC); // Type change to FUNC
-
-            // Cut out the function declaration
-            immutable tokens_test=tokens[2..$];
-            immutable retokens_test=retokens[1..$];
-            // The reset of the token should be the same
-            foreach(i;0..tokens_test.length) {
-                // writefln("%s] retokens[i].type=%s  tokens[i].type=%s",
-                //     i,
-                //     retokens_test[i].type,
-                //     tokens_test[i].type);
-                assert(retokens_test[i].type == tokens_test[i].type);
-                assert(retokens_test[i].token == tokens_test[i].token);
-            }
-
-            //
-            // Parse function
-            //
-            auto builder=new ScriptBuilder;
-            immutable(Token)[] base_tokens;
-            Script script;
-            // parse_function should fail because end of function is missing
-            assert(builder.parse_functions(script, retokens, base_tokens));
-            assert(script !is null);
-            // base_tokens.length is non zero because it contains Error tokens
-            assert(base_tokens.length > 0);
-
-            assert(base_tokens[0].type == ScriptType.ERROR);
-            // No function has been declared
-            assert(script.functions.length == 0);
-        }
-
-        //     assert(builder.BSON2Token(stream, retokens));
-        // }
-//            writefln("3 tokens.length=%s", tokens.length);
-
-        tokens~=token_endfunc;
-//            writefln("4 tokens.length=%s", tokens.length);
-
-        {
-            //
-            // Function builder
-            //
-            HBSON[] codes;
-
-            // Build BSON array of the token list
-            foreach(t; tokens) {
-                codes~=Token2BSON(t);
-            }
-            // Build the BSON stream
-            auto bson_stream=new HBSON();
-            bson_stream["code"]=codes;
-            auto stream=bson_stream.serialize;
-
-
-            //
-            // Reconstruct the token array from the BSON stream
-            // and verify the reconstructed stream
-
-            auto retokens=ScriptInterpreter.BSON2Tokens(stream);
-            retokens=ScriptInterpreter.Tokens2Tokens(retokens);
-            //
-            // Parse function
-            //
-            auto builder=new ScriptBuilder;
-            immutable(Token)[] base_tokens;
-            Script script;
-            // parse_function should NOT fail because end of function is missing
-            assert(!builder.parse_functions(script, retokens, base_tokens));
-            // base_tokens.length is zero because it should not contain any Error tokens
-            assert(base_tokens.length == 0);
-
-            // No function has been declared
-            assert(script.functions.length == 1);
-            // Check if function named "Test" is declared
-            assert("Test" in script.functions);
-
-            auto func=script.functions["Test"];
-
-
-            // Check that the number of function tokens is correct
-            assert(func.tokens.length == 50);
-
-            //
-            // Expand all loop to conditinal and unconditional jumps
-            //
-            auto loop_expanded_tokens = builder.expand_loop(func);
-            // foreach(i,t; loop_expanded_tokens) {
-            //       writefln("%s]:%s", i, t.toText);
-            // }
-            // writefln("%s", loop_expanded_tokens.length);
-            assert(loop_expanded_tokens.length == 66);
-
-            auto conditional_jump_tokens=builder.add_jump_label(loop_expanded_tokens);
-            // writeln("conditional_jump_tokens");
-            // foreach(i,t; conditional_jump_tokens) {
-            //       writefln("%s]:%s", i, t.toText);
-            // }
-            // foreach(t; builder.error_tokens) {
-            //     writefln("token=%s", t.token);
-            // }
-            assert(builder.error_tokens.length == 0);
-        }
-    }
-    uint get_var(string var_name) const {
-        return var_indices[var_name];
+    override ScriptElement opCall(const Script s, ScriptContext sc) const {
+        super.opCall(s, sc);
+        throw new ScriptBuilderException(msg~token.toText);
+        return null;
     }
 
-    unittest { // Simple function test
-        string source=
-            ": test\n"~
-            "  * -\n"~
-            ";\n"
-            ;
-        auto src=new ScriptInterpreter(source);
-        // Convert to BSON object
-        auto bson=src.toBSON;
-        // Expand to BSON stream
-        auto data=bson.serialize;
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, data);
+    override string toText() const {
+        return message("%s: Token %s", msg, token.name);
+    }
+}
 
-        auto sc=new ScriptContext(10, 10, 10, 10);
-        sc.data_push(3);
-        sc.data_push(2);
-        sc.data_push(5);
 
-        // writefln("%s", sc.data_peek(0).value);
-        // writefln("%s", sc.data_peek(1).value);
-        // writefln("%s", sc.data_peek(2).value);
+@safe
+struct ScriptBuilderT(Range) {
+    static assert(isInputRange!Range, message("Range must be a InputRange not %s", Range.stringof));
+    protected GlobalBlock global;
+    protected Script script;
 
-        sc.trace=false;
-        script.run("test", sc);
-        assert( sc.data_pop.value == -7 );
+    protected Range range;
+    enum HasLineInfo=hasMember!(Range, "line");
 
+    this(Range range) {
+        this.range=range;
     }
 
-    unittest { // Simple if test
-        string source=
-            ": test\n"~
-            "  if  \n"~
-            "  111  \n"~
-            "  then  \n"~
-            ";\n"
-            ;
-        auto src=new ScriptInterpreter(source);
-        // Convert to BSON object
-        auto bson=src.toBSON;
-        // Expand to BSON stream
-        auto data=bson.serialize;
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, data);
+    alias BoundVariable=Script.BoundVariable;
 
-        auto sc=new ScriptContext(10, 10, 10, 10);
-        sc.data_push(10);
-        sc.data_push(0);
-
-        script.run("test", sc);
-        assert(sc.data_pop.value == 10);
-
-        sc.data_push(10);
-
-        script.run("test", sc);
-        assert(sc.data_pop.value == 111);
-
-    }
-    unittest { // Simple if else test
-        string source=
-            ": test\n"~
-            "  if  \n"~
-            "    -1  \n"~
-            "  else  \n"~
-            "    1  \n"~
-            "  then  \n"~
-            ";\n"
-            ;
-
-        auto src=new ScriptInterpreter(source);
-        // Convert to BSON object
-        auto bson=src.toBSON;
-        // Expand to BSON stream
-        auto data=bson.serialize;
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, data);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-        sc.trace=false;
-        // Test IF ELSE true (top != 0)
-        sc.data_push(10);
-        script.run("test", sc);
-        assert(sc.data_pop.value == -1);
-
-        // Test 'IF ELSE' false (top == 0)
-        sc.data_push(0);
-        script.run("test", sc);
-        assert(sc.data_pop.value == 1);
-
-    }
-
-    unittest { // Variable
-        string source=
-            ": test\n"~
-            " 10 \n"~
-            "  variable X\n"~
-            "  X !\n"~
-            ";\n"
-            ;
-
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-//        sc.trace=true;
-        // Set variable X to 10
-        sc.data_push(10);
-        script.run("test", sc);
-        auto var=sc[builder.get_var("X")];
-        assert(var.value == 10);
-    }
-
-    unittest { // Variable get and put
-        string source=
-           ": test\n"~
-            "  variable X\n"~
-            "  variable Y\n"~
-            "  17 X !\n"~
-            "  13 Y !\n"~
-            "  X @ Y @\n"~
-            ";\n"
-            ;
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-//        sc.trace=true;
-        // Put and Get variable X and Y
-
-        script.run("test", sc);
-        // Check Y value
-        assert(sc.data_pop.value == 13);
-        assert(sc[builder.get_var("Y")].value == 13);
-
-        // Check X value
-        assert(sc.data_pop.value == 17);
-        assert(sc[builder.get_var("X")].value == 17);
-    }
-
-    unittest { // None standard unitary operator in variables
-        string source=
-            ": test\n"~
-            " variable X\n"~
-            " 7 X !\n"~
-            " 3 X !-\n"~
-            " X @\n"~
-            ";"
-            ;
-
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-//        sc.trace=true;
-        // Put and Get variable X and Y
-
-        script.run("test", sc);
-        assert(sc.data_pop.value == -4);
-
-    }
-    unittest {
-        string source=
-            ": testA\n"~
-            "  local X\n"~
-            "  1 X !\n"~
-            "  testB \n"~
-            "  X @\n"~
-            ";\n"~
-
-            ": testB\n"~
-            "  local X\n"~
-            "  2 X !\n"~
-            "  X @\n"~
-            ";\n"~
-
-            "  \n"
-            ;
-
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-        // sc.trace=true;
-        // Put and Get variable X and Y
-
-        script.run("testA", sc);
-        assert(sc.data_pop.value == 1);
-        assert(sc.data_pop.value == 2);
-
-
-    }
-
-    unittest { // DO LOOP
-        string source=
-            ": test\n"~
-            "variable X\n"~
-            " do \n"~
-            "  X @ 1+ X ! \n"~
-            " loop \n"~
-            " X @\n"~
-            ";"
-            ;
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 20);
-
-//        sc.trace=true;
-        // Put and Get variable X and Y
-
-        sc.data_push(10);
-        sc.data_push(0);
-        script.run("test", sc);
-        assert(sc.data_pop.value == 10);
-//        writefln("pop=%s", sc.data_pop.value);
-    }
-
-    unittest { // DO +LOOP
-        string source=
-            ": test\n"~
-            "variable X\n"~
-            " do \n"~
-            "  X @ 1+ X ! \n"~
-            " 2 \n"~
-            " +loop \n"~
-            " X @\n"~
-            ";"
-            ;
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-//        sc.trace=true;
-        // Put and Get variable X and Y
-
-        sc.data_push(10);
-        sc.data_push(0);
-        script.run("test", sc);
-        assert(sc.data_pop.value == 5);
-
-//        writefln("pop=%s", sc.data_pop.value);
-    }
-
-    unittest { // begin until
-        string source=": test variable X begin X @ 1 + X !  X @ 10 == until X @ ;";
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-//        sc.trace=true;
-        // Put and Get variable X and Y
-
-        // sc.data_push(10);
-        // sc.data_push(0);
-//        writefln("#### %s, ", source);
-        script.run("test", sc);
-        assert(sc.data_pop.value == 10);
-
-//        writefln("pop=%s", sc.data_pop.value);
-    }
-
-    unittest { // begin while repeat
-        string source=": test begin dup 3 > while  1- repeat ;";
-        Script script;
-        auto builder=new ScriptBuilder;
-        auto tokens=builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 30);
-
-//        sc.trace=true;
-        sc.data_push(10);
-        script.run("test", sc);
-        assert(sc.data_pop.value == 3);
-
-//        writefln("pop=%s", sc.data_pop.value);
-    }
-
-    unittest {
-        assert("createbson" in Script.opcreators);
-        import std.stdio : writefln;
-        string source=
-            ": test\n"~
-            "variable bson_1 variable bson_2\n"~
-            "createbson bson_1 ! createbson bson_2 ! \n"~
-            "bson_2 @ bson_1 @ \n"~
-            ";\n"
-            ;
-        Script script;
-        auto builder=new ScriptBuilder();
-        builder.build(script, source);
-
-        auto sc_1=new ScriptContext(10, 10, 10, 10);
-
-        script.run("test", sc_1); //bsons range error, only one bson in the context
-
-        auto sc=new ScriptContext(10, 10, 10, 10, 2);
-
-        script.run("test", sc);
-
-        auto res_1=sc.data_pop.bson_index;
-        auto res_2=sc.data_pop.bson_index;
-        writefln("bson_1 index: %d,  bson_2 index: %d", res_1, res_2 );
-        assert(res_1==0 && res_2==1);
-    }
-
-    unittest {
-        assert("bson!" in Script.opcreators);
-        assert("bson@" in Script.opcreators);
-        import std.stdio : writefln;
-        string source=
-            ": test\n"~
-            "variable bson_1 \n"~
-            "createbson bson_1 ! \n"~
-            "bson_1 @ 'age' 32 bson! \n"~
-            "bson_1 @ 'age' bson@ \n"~
-            ";\n"
-            ;
-        Script script;
-        auto builder=new ScriptBuilder();
-        builder.build(script, source);
-
-        auto sc=new ScriptContext(10, 10, 10, 10);
-
-        script.run("test", sc);
-        import std.bigint;
-        // auto age=sc.data_pop.get!BigInt;
-        // assert(age==32, "Age is not correct, is: "~to!string(age));
-    }
-
-private:
-    uint var_count;
-    uint bson_count;
-    uint[string] var_indices;
-
-    uint allocate_var(string var_name) {
-        if ( var_name !in var_indices ) {
-            var_indices[var_name]=var_count;
-            var_count++;
-        }
-        return var_indices[var_name];
-    }
-
-    bool is_var(string var_name) pure const nothrow {
-        return (var_name in var_indices) !is null;
-    }
-
-    immutable(Token)[] error_tokens;
-    // Test aid function
-    static immutable(Token)[] token_func(string name) {
-        immutable(Token)[] result;
-        immutable(Token) func_declare={
-          token : ":",
-          type  : ScriptType.WORD
-        };
-        immutable(Token) func_name={
-          token : name,
-          type  : ScriptType.WORD
-        };
-        result~=func_declare;
-        result~=func_name;
-        return result;
-    }
-
-    static immutable(Token) token_endfunc={
-      token : ";",
-      type : ScriptType.WORD
-    };
-
-    //
-    static immutable(Token) token_put={
-      token : "!",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_get= {
-      token : "@",
-      type : ScriptType.WORD
-    };
-    @safe
-    static immutable(Token)[] token_loop_progress(immutable ScriptType type, immutable uint i)
-        in {
-            assert( (type == ScriptType.LOOP) || (type == ScriptType.ADDLOOP));
-        }
-    do {
-        // Loop increase
-        auto loc_index=loc_I~to!string(i);
-        immutable(Token)[] result= [
-            {
-              token : loc_index,
-              type  : ScriptType.INDEXGET
-            },
-            {
-                // Increas by one or add
-              token : (type == ScriptType.LOOP)?"1+":"+",
-              type : ScriptType.WORD
-            },
-            {
-              token : loc_index,
-              type  : ScriptType.INDEXPUT
-            }
-        ];
-        return result;
-    }
-    static immutable(Token) token_add= {
-        // Increase by one
-      token : "!+",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_dup= {
-        // duplicate
-      token : "dup",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_to_r= {
-        // duplicate
-      token : ">r",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_from_r= {
-        // duplicate
-      token : "<r",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_inc_r= {
-        // r> 1 + dup >r
-      token : "@r1+",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_get_r= {
-        // r@
-      token : "r@",
-      type : ScriptType.WORD
-    };
-
-    static immutable(Token) token_gte= {
-        // greater than
-      token : ">=",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_invert= {
-        // invert
-      token : "invert",
-      type : ScriptType.WORD
-    };
-    static immutable(Token) token_repeat= {
-        // repeat
-      token : "repeat",
-      type : ScriptType.REPEAT
-    };
-    static immutable(Token) token_not_if= {
-        // repeat
-      token : "not_if",
-      type : ScriptType.NOT_IF
-    };
-    static immutable(Token) token_until= {
-        // until
-      token : "until",
-      type : ScriptType.UNTIL
-    };
-    static immutable(Token) token_if= {
-        // if
-      token : "if",
-      type : ScriptType.IF
-    };
-    static immutable(Token) token_else= {
-        // else
-      token : "else",
-      type : ScriptType.ELSE
-    };
-    static immutable(Token) token_begin= {
-        // begin
-      token : "begin",
-      type : ScriptType.BEGIN
-    };
-    static immutable(Token) token_endif= {
-        // then
-      token : "then",
-      type : ScriptType.ENDIF
-    };
-    static immutable(Token) token_leave= {
-        // leave
-      token : "leave",
-      type : ScriptType.LEAVE
-    };
-    static immutable(Token) token_while= {
-        // while
-      token : "while",
-      type : ScriptType.WHILE
-    };
-    static immutable(Token) token_do= {
-        // do
-      token : "do",
-      type : ScriptType.DO
-    };
-    static immutable(Token) token_loop= {
-        // loop
-      token : "loop",
-      type : ScriptType.LOOP
-    };
-    static immutable(Token) token_incloop= {
-        // +loop
-      token : "+loop",
-      type : ScriptType.ADDLOOP
-    };
-
-    enum loc_I="I#";
-    enum loc_to_I="I_TO#";
-    @safe
-    static immutable(Token) local_I(ScriptType type, string loc_name)(ref Script.Function f, uint i) {
-        static assert( (type == ScriptType.INDEXGET) || (type == ScriptType.INDEXPUT));
-        string name=loc_name~to!string(i);
-        // static if (type == ScriptType.INDEXPUT) {
-        //     if ( !f.is_loc(name) ) {
-        //         f.allocate_loc(name);
-        //     }
-        // }
-        immutable(Token) result = {
-          token : name,
-          type : type
-        };
-        return result;
-    };
-    @safe
-    bool parse_functions(
-        ref Script script,
-        immutable(Token[]) tokens,
-        out immutable(Token)[] base_tokens) {
-        immutable(Token)[] function_tokens;
-        string function_name;
-        bool fail=false;
-        bool inside_function;
+    const(ScriptElement) build(ref Script script) {
         if ( script is null ) {
             script=new Script;
         }
-        foreach(t; tokens) {
-            // writefln("parse_function %s",t.toText);
-            if ( (t.token==":") || (t.type == ScriptType.FUNC) ) {
+        this.script=script;
+        global=new GlobalBlock(script);
+        auto global_parse=range;
 
-                if ( inside_function || (function_name !is null) ) {
-                    immutable(Token) error = {
-                      token : "Function declaration inside functions not allowed",
-                      line : t.line,
-                      type : ScriptType.FUNC
-                    };
-                    function_tokens~=t;
-                    function_tokens~=error;
-                    base_tokens~=error;
-                    fail=true;
-
-                }
-                if ( t.token !in script.functions ) {
-//                    writefln("%s",t.token);
-                    function_tokens = null;
-                    function_name = t.token;
-                }
-                else {
-                    immutable(Token) error = {
-                      token : "Function "~t.token~" redefined!",
-
-                      line : t.line,
-                      type : ScriptType.ERROR
-                    };
-                    function_tokens~=t;
-                    function_tokens~=error;
-                    base_tokens~=error;
-                    fail=true;
-                }
-                inside_function=true;
-            }
-            else if ( t.token==";" ) {
-//                writefln("%s",function_name);
-                if (inside_function) {
-                    immutable(Token) exit = {
-                      token : "$exit",
-                      line : t.line,
-                      type : ScriptType.EXIT
-                    };
-                    function_tokens~=exit;
-                    Script.Function func={
-                      name : function_name,
-                      tokens : function_tokens
-                    };
-                    script.functions[function_name]=func;
-                    inside_function=false;
-                }
-                else {
-                    immutable(Token) error = {
-                      token : "Function end with out a function begin declaration",
-                      line : t.line,
-                      type : ScriptType.ERROR
-                    };
-                    base_tokens~=t;
-                    base_tokens~=error;
-                    fail=true;
-                }
-                function_tokens = null;
-                function_name = null;
-
-
-            }
-            else if ( function_name.length > 0 ) { // Inside function scope
-                function_tokens~=t;
-            }
-            else { //
-                base_tokens~=t;
-            }
+        const error=collect(global_parse);
+        if ( error ) {
+            return error;
         }
-        if (inside_function) {
-//            writeln("Inside function");
-            immutable(Token) error = {
-              token : "No function end found",
-              type : ScriptType.ERROR
-            };
-            base_tokens~=error;
-            fail=true;
-        }
-        return fail;
-    }
-
-    immutable(Token)[] expand_loop(Script.Function f) @safe {
-        uint loop_index;
-        immutable(ScriptType)[] begin_loops;
-        //immutable
-        immutable(Token)[] scope_tokens;
-        foreach(t; f.tokens) {
-            with(ScriptType) switch (t.type) {
-                case DO:
-                    // Insert forth opcode
-                    // I#i !
-                    // I_TO#i !
-                    scope_tokens~=local_I!(INDEXPUT, loc_I)(f, loop_index);
-                    scope_tokens~=local_I!(INDEXPUT, loc_to_I)(f, loop_index);
-                    scope_tokens~=token_begin;
-                    begin_loops ~= t.type;
-                    loop_index++;
+        while (!range.empty) {
+            const keycode=Lexer.get(range.front.toUpper);
+            with(ScriptKeyword) {
+                switch(keycode) {
+                case FUNC:
+                    funcParser(range, global);
                     break;
-                case BEGIN:
-                    scope_tokens~=token_begin;
-                    begin_loops ~= t.type;
-                    loop_index++;
+                case VAR:
+                    range.popFront;
+                    const word_code=Lexer.get(range.front.toUpper);
+                    range.popFront;
+                    assert(word_code is WORD, "This should be a word token");
                     break;
-                case LOOP:
-                case ADDLOOP:
-                    // loop
-                    // I#i !1+
-                    // I_TO#i @ >= if goto-begin
-                    //
-                    // +loop
-                    // I#i !+
-                    // I_TO#i @ >= if goto-begin
-                    loop_index--;
-                    if ( begin_loops.length == 0 ) {
-                        immutable(Token) error = {
-                          token : "DO expect before "~to!string(t.type),
-                          line : t.line,
-                          type : ScriptType.ERROR
-                        };
-                        scope_tokens~=error;
-                        error_tokens~=error;
-                    }
-                    else {
-                        if ( begin_loops[$-1] == DO ) {
-                            scope_tokens~=token_loop_progress(t.type, loop_index);
-                            // if (t.type == LOOP) {
-                            //     scope_tokens~=token_inc;
-                            // }
-                            // else {
-                            //     scope_tokens~=token_add;
-                            // }
-                            scope_tokens~=local_I!(INDEXGET, loc_I)(f, loop_index);
-                            scope_tokens~=local_I!(INDEXGET, loc_to_I)(f, loop_index);
-
-                            scope_tokens~=token_gte;
-                            scope_tokens~=token_until;
-
-                        }
-                        else {
-                            immutable(Token) error = {
-                              token : "DO begin loop expect not "~to!string(t.type),
-                              line : t.line,
-                              type : ScriptType.ERROR
-                            };
-                            scope_tokens~=error;
-                            error_tokens~=error;
-                        }
-                        begin_loops.length--;
-                        loop_index--;
-                    }
-                    break;
-                case WHILE:
-                    if ( begin_loops.length == 0 ) {
-                        immutable(Token) error = {
-                          token : "BEGIN expect before "~to!string(t.type),
-                          line : t.line,
-                          type : ScriptType.ERROR
-                        };
-                        scope_tokens~=error;
-                        error_tokens~=error;
-
-                    }
-                    else {
-                        if ( begin_loops[$-1] == BEGIN ) {
-                            scope_tokens~=t;
-
-                            // scope_tokens~=token_if;
-                            // scope_tokens~=token_leave;
-                            // scope_tokens~=token_endif;
-                        }
-                        else {
-                            immutable(Token) error = {
-                              token : "BEGIN expect before "~to!string(t.type),
-                              line : t.line,
-                              type : ScriptType.ERROR
-                            };
-                            scope_tokens~=error;
-                            error_tokens~=error;
-                        }
-                    }
-                    break;
-                case UNTIL:
-                    if ( begin_loops.length == 0 ) {
-                        immutable(Token) error = {
-                          token : "BEGIN expect before "~to!string(t.type),
-                          line : t.line,
-                          type : ScriptType.ERROR
-                        };
-                        scope_tokens~=error;
-                        error_tokens~=error;
-
-                    }
-                    else {
-                        if ( begin_loops[$-1] == BEGIN ) {
-                            // scope_tokens~=token_invert;
-                            // scope_tokens~=token_if;
-                            // scope_tokens~=token_not_if;
-                            //  scope_tokens~=token_until;
-                            // scope_tokens~=token_endif;
-                            scope_tokens~=t;
-                            loop_index--;
-                        }
-                        else {
-                            immutable(Token) error = {
-                              token : "BEGIN expect before "~to!string(t.type),
-                              line : t.line,
-                              type : ScriptType.ERROR
-                            };
-                            scope_tokens~=error;
-                            error_tokens~=error;
-                        }
-                    }
-                    break;
-                case LEAVE:
-                    scope_tokens~=t;
+                case COMMENT:
+                    range.popFront;
                     break;
                 default:
-                    scope_tokens~=t;
-                }
-        }
-        return scope_tokens;
-    }
-    @safe
-    immutable(Token)[] add_jump_label(immutable(Token[]) tokens) {
-        uint jump_index;
-        immutable(uint)[] conditional_index_stack;
-        immutable(uint)[] loop_index_stack;
-        immutable(Token)[] scope_tokens;
-        foreach(t; tokens) {
-            with(ScriptType) switch (t.type) {
-                case IF:
-                    jump_index++;
-                    conditional_index_stack~=jump_index;
-                    immutable(Token) token={
-                      token : t.token,
-                      line : t.line,
-                      type : t.type,
-                      jump : conditional_index_stack[$-1]
-                    };
-                    scope_tokens~=token;
-                    break;
-                case ELSE:
-                    immutable(Token) token_else={
-                      token : t.token,
-                      line : t.line,
-                      type : LABEL,
-                      jump : conditional_index_stack[$-1]
-                    };
-                    conditional_index_stack.length--;
-                    jump_index++;
-                    conditional_index_stack~=jump_index;
-                    immutable(Token) token_goto={
-                      token : "$else_goto", // THEN is us a jump target of the IF
-                      line  : t.line,
-                      type  : GOTO,
-                      jump  : conditional_index_stack[$-1]
-                    };
-                    scope_tokens~=token_goto;
-                    scope_tokens~=token_else;
-                    break;
-                case ENDIF:
-                    immutable(Token) token_endif={
-                      token : t.token,
-                      line : t.line,
-                      type : LABEL,
-                      jump : conditional_index_stack[$-1]
-                    };
-                    conditional_index_stack.length--;
-                    scope_tokens~=token_endif;
-                    break;
-                case BEGIN:
-                    jump_index++;
-                    loop_index_stack~=jump_index;
-                    immutable(Token) token_begin={
-                      token : t.token,
-                      line : t.line,
-                      type : LABEL,
-                      jump : loop_index_stack[$-1]
-                    };
-                    jump_index++;
-                    loop_index_stack~=jump_index;
-                    scope_tokens~=token_begin;
-                    break;
-                case WHILE:
-                    immutable(Token) token_while = {
-                      token : t.token,
-                      line  : t.line,
-                      pos   : t.pos,
-                      type  : IF,
-                      jump  : loop_index_stack[$-1]
-                    };
-                    scope_tokens~=token_while;
-                    break;
-                case UNTIL:
-                case REPEAT:
-                case NOT_IF:
-
-                    if ( loop_index_stack.length > 0 ) {
-                        ScriptType goto_type;
-                        if ( t.type == REPEAT ) {
-                            goto_type = GOTO;
-                        }
-                        else if ( t.type == UNTIL ) {
-                            goto_type = IF;
-                        }
-                        else { // not_if
-                            goto_type = NOT_IF;
-                        }
-                        immutable(Token) token_repeat={
-                          token : t.token,
-                          line : t.line,
-                          type : goto_type,
-                          jump : loop_index_stack[$-2]
-                        };
-                        immutable(Token) token_end={
-                          token : t.token,
-                          line : t.line,
-                          type : LABEL,
-                          jump : loop_index_stack[$-1]
-                        };
-                        loop_index_stack.length-=2;
-                        scope_tokens~=token_repeat;
-                        scope_tokens~=token_end;
-                    }
-                    else {
-                        immutable(Token) error={
-                          token : t.token~" unexpected missing loop start",
-                          line : t.line,
-                          type : ERROR
-                        };
-                        error_tokens~=error;
-                        scope_tokens~=error;
-                    }
-                    break;
-                case LEAVE:
-                    if ( loop_index_stack.length > 1 ) {
-                        immutable(Token) token_leave={
-                          token : t.token,
-                          line : t.line,
-                          type : GOTO,
-                          jump : loop_index_stack[$-1]
-                        };
-                        scope_tokens~=token_leave;
-                    }
-                    else {
-                        immutable(Token) error={
-                          token : "Leave unexpected",
-                          line : t.line,
-                          type : ERROR
-                        };
-                        error_tokens~=error;
-                        scope_tokens~=error;
-                    }
-                    break;
-                case DO:
-//                case WHILE:
-                case LOOP:
-                case ADDLOOP:
-                    immutable(Token) error={
-                      token : "The opcode "~to!string(t.type)~
-                      " should be eliminated by loop_expand function",
-                      line : t.line,
-                      type : ERROR
-                    };
-                    scope_tokens~=error;
-                    error_tokens~=error;
-                    break;
-                default:
-                    scope_tokens~=t;
-                    break;
-                }
-        }
-        return scope_tokens;
-    }
-    static this() {
-        enum binaryOp=["+", "-", "*", "/", "%", "|", "&", "^", "<<" ];
-        enum compareOp=["<", "<=", "==", "!=", ">=", ">"];
-        enum stackOp=[
-            "dup", "swap", "drop", "over",
-            "rot", "-rot", "-rot", "-rot",
-            "tuck",
-            "2dup", "2drop", "2swap", "2over",
-            "2nip", "2tuck",
-            ">r", "r>", "r@"
-            ];
-        enum unitaryOp=["1-", "1+", "r@1+"];
-        void build_opcreators(string opname) {
-            void createBinaryOp(alias oplist)(string opname) {
-                static ScriptElement create(string op)() {
-                    return new ScriptBinaryOp!(op);
-                }
-                static if ( oplist.length !=0 ) {
-                    if ( opname == oplist[0] ) {
-                        enum op=oplist[0];
-                        Script.opcreators[op]=&(create!op);
-                    }
-                    else {
-                        createBinaryOp!(oplist[1..$])(opname);
-                    }
+                    import std.format;
+                    assert(0, format("This token %s should not end up here",
+                            range.front));
                 }
             }
-            void createCompareOp(alias oplist)(string opname) {
-                static ScriptElement create(string op)() {
-                    return new ScriptCompareOp!(op);
-                }
-                static if ( oplist.length !=0 ) {
-                    if ( opname == oplist[0] ) {
-                        enum op=oplist[0];
-                        Script.opcreators[op]=&(create!op);
-                    }
-                    else {
-                        createCompareOp!(oplist[1..$])(opname);
-                    }
-                }
-            }
-            void createStackOp(alias oplist)(string opname) {
-                static ScriptElement create(string op)() {
-                    return new ScriptStackOp!(op);
-                }
-                static if ( oplist.length !=0 ) {
-                    if ( opname == oplist[0] ) {
-                        enum op=oplist[0];
-                        Script.opcreators[op]=&(create!op);
-                    }
-                    else {
-                        createStackOp!(oplist[1..$])(opname);
-                    }
-                }
-            }
-            void createUnitaryOp(alias oplist)(string opname) {
-                static ScriptElement create(string op)() {
-                    return new ScriptUnitaryOp!(op);
-                }
-                static if ( oplist.length !=0 ) {
-                    if ( opname == oplist[0] ) {
-                        enum op=oplist[0];
-                        Script.opcreators[op]=&(create!op);
-                    }
-                    else {
-                        createUnitaryOp!(oplist[1..$])(opname);
-                    }
-                }
-            }
-
-            createBinaryOp!(binaryOp)(opname);
-            createCompareOp!(compareOp)(opname);
-            createStackOp!(stackOp)(opname);
-            createUnitaryOp!(unitaryOp)(opname);
         }
-        foreach(opname; binaryOp~compareOp~stackOp~unitaryOp) {
-            build_opcreators(opname);
-        }
-
-    }
-    immutable(Token)[] build(ref Script script, string source) {
-        auto src=new ScriptInterpreter(source);
-        // Convert to BSON object
-        auto bson=src.toBSON;
-        // Expand to BSON stream
-        auto data=bson.serialize;
-        return build(script, data);
-    }
-    immutable(Token)[] build(ref Script script, immutable(Token)[] tokens) {
-        immutable(Token)[] results;
-        if ( parse_functions(script, tokens, results) ) {
-            return results;
-        }
-        foreach(ref f; script.functions) {
-            auto loop_tokens=expand_loop(f);
-            writefln("FUNC %s", f.name);
-            writefln("%s", f.toText);
-            writeln("--- ---");
-            f.tokens=add_jump_label(loop_tokens);
-            writefln("%s", f.toText);
-        }
-        build_functions(script);
         return null;
     }
-    immutable(Token)[] build(ref Script script, immutable ubyte[] data) {
-        auto tokens=ScriptInterpreter.BSON2Tokens(data);
-        // Add token types
-        tokens=ScriptInterpreter.Tokens2Tokens(tokens);
-        return build(script, tokens);
-    }
-    void build_functions(ref Script script) {
-        struct ScriptLabel {
-            ScriptElement target; // Script element to jump to
-            ScriptJump[] jumps; // Script element to jump from
+
+    const(ScriptFunc) flatBuild(ref Script script, Range flat_range)
+        in {
+            assert(script !is null, "Flat script must have a script defined");
         }
-        scope ScriptElement[] function_scripts;
-        foreach(name, ref f; script.functions) {
-            scope ScriptLabel*[uint] script_labels;
-            ScriptElement forward(immutable uint i=0, immutable uint n=0)
-                in {
-                    // Empty
-                }
-            out(result) {
-                    if ( i < f.tokens.length ) {
-                        assert( result !is null );
+    do {
+        immutable flat_name="::flat";
+        auto flat_block=new FlatBlock(flat_name);
+        immutable(Token) flat_token={name : flat_name};
+        auto flat_func=new ScriptFunc(flat_token);
+        flat_func.define(funcParser(range, flat_block), flat_block);
+        return flat_func;
+    }
+
+    const(ScriptElement) getVariable(
+        ref Range range,
+        const(Token) var_type_token,
+        Block block, ref Variable var) {
+        range.popFront;
+        const var_token=range.token;
+        immutable var_name=var_token.name.toUpper;
+        if (!Lexer.is_name_valid(var_name)) {
+            range.popFront;
+            return new ScriptTokenError(var_token,
+                message("Invalid name '%s' for variable", var_name), collect(range));
+        }
+        immutable var_type=var_type_token.name.toUpper;
+        with(ScriptType) {
+            final switch(Lexer.getScriptType(var_type)) {
+            case NONE:
+                assert(0);
+            case NUM:
+                auto bound=var_type.match(Lexer.regex_bound);
+                if (!bound.empty && bound.front[2].length !is 0) {
+                    import tagion.script.ScriptBase : Number;
+                    const min=Number(bound.front[2]);
+                    const max=Number(bound.front[3]);
+                    if ( min < max ) {
+                        var=new BoundVariable!void(var_name, min, max);
+                    }
+                    else {
+                        range.popFront;
+                        return new ScriptTokenError(var_type_token,
+                            message("Boundary violation in declaration %s", var_type), funcParser(range, block));
                     }
                 }
-            do {
-                ScriptElement result;
-                if ( i < f.tokens.length ) {
-                    auto t=f.tokens[i];
-                    with(ScriptType) final switch (t.type) {
-                        case LABEL:
-                            auto label=forward(i+1, n);
-                            if ( t.jump !in script_labels) {
-                                script_labels[t.jump]=new ScriptLabel;
-                            }
-                            assert(script_labels[t.jump].target is null);
-                            script_labels[t.jump].target=label;
-                            return label;
-                        break;
-                        case GOTO:
-                            auto jump=new ScriptJump;
-                            if ( t.jump !in script_labels) {
-                                script_labels[t.jump]=new ScriptLabel;
-                            }
-                            script_labels[t.jump].jumps~=jump;
-                            result=jump;
-                            break;
-                        case IF:
-                        case NOT_IF:
-                            ScriptConditionalJump jump;
-                            if ( t.type == IF ) {
-                                jump=new ScriptConditionalJump;
-                            }
-                            else {
-                                jump=new ScriptNotConditionalJump;
-                            }
-                            if ( t.jump !in script_labels) {
-                                script_labels[t.jump]=new ScriptLabel;
-                            }
-                            script_labels[t.jump].jumps~=jump;
-                            result=jump;
-                            break;
-                        case NUMBER:
-                        case HEX:
-                            result=new ScriptNumber(t.token);
-                            break;
-                        case TEXT:
-                            result=new ScriptText(t.token);
-                            break;
-                        case EXIT:
-                            result=new ScriptExit();
-                            break;
-                        case ERROR:
-                            result=new ScriptTokenError(t, "Build error");
-                            break;
-                        case WORD:
-                            result=Script.createElement(t.token);
-                            if ( result is null ) {
-                                // Possible function call
-                                result=new ScriptCall(t.token);
-                            }
-                            break;
-                        case PUT:
-                            if ( f.is_loc(t.token) ) {
-                                result=new ScriptPutLoc(t.token, f.get_loc(t.token));
-                            }
-                            else if ( is_var(t.token) ) {
-                                result=new ScriptPutVar(t.token, get_var(t.token));
-                            }
-                            else {
-                                auto msg="Variable or object name '"~t.token~"' not found";
-                                result=new ScriptTokenError(t, msg);
-                            }
-                            break;
-                        case GET:
-                            if ( f.is_loc(t.token) ) {
-                                result=new ScriptGetLoc(t.token, f.get_loc(t.token));
-                            }
-                            else if ( is_var(t.token) ) {
-                                result=new ScriptGetVar(t.token, get_var(t.token));
-                            }
-                            else {
-                                auto msg="Variable or object name '"~t.token~"' not found";
-                                result=new ScriptTokenError(t, msg);
-                            }
-                            break;
-                        case INDEXPUT:
-                            result=new ScriptPutLoc(t.token, f.auto_get_loc(t.token));
-                            break;
-                        case INDEXGET:
-                            if ( f.is_loc(t.token) ) {
-                                result=new ScriptGetLoc(t.token, f.get_loc(t.token));
-                            }
-                            else {
-                                auto msg="Loop index '"~t.token~"' not found";
-                                result=new ScriptTokenError(t, msg);
-                            }
-                            break;
-                        case VAR:
-                            // Allocate variable
-                            if ( is_var(t.token) ) {
-                                result=new ScriptTokenError(t,
-                                    "Variable "~t.token~" is already defined");
-                            }
-                            else {
-                                allocate_var(t.token);
-                                return forward(i+1, n);
-                            }
-                            break;
-                        case LOCAL:
-                            if ( f.is_loc(t.token) ) {
-                                result=new ScriptTokenError(t,
-                                    "Local variable "~t.token~" is already defined");
-                            }
-                            else {
-                                f.allocate_loc(t.token);
-                                return forward(i+1, n);
-                            }
-                            break;
+                else {
+                    var=new Variable(var_name, FunnelType.NUMBER);
+                }
+                break;
+            case I32:
+                var=new BoundVariable!int(var_name);
+                break;
+            case I64:
+                var=new BoundVariable!long(var_name);
+                break;
+            case U32:
+                var=new BoundVariable!uint(var_name);
+                break;
+            case U64:
+                var=new BoundVariable!ulong(var_name);
+                break;
+            case STRING:
+                var=new Variable(var_name, FunnelType.TEXT);
+                break;
+            case DOC:
+                var=new Variable(var_name, FunnelType.DOCUMENT);
+                break;
+            case HIBON:
+                var=new Variable(var_name, FunnelType.HIBON);
+                break;
+            }
+        }
+        return null;
+    }
+
+    protected const(ScriptElement) funcParser(ref Range range, Block global_block) {
+        @safe const(ScriptElement) parse(Block block) {
+            if (!range.empty) {
+                    immutable word=range.front.toUpper;
+                    immutable word_token=range.token;
+                    with(ScriptKeyword) {
+                        immutable keycode=Lexer.get(word);
+                        if (!block.valid(keycode)) {
+                            range.popFront;
+                            return new ScriptTokenError(word_token,
+                                message("Unexpected %s in this scope", word), parse(block));
+                        }
+                        final switch(keycode) {
+                        case NONE:
+                            range.popFront;
+                            return new ScriptTokenError(word_token, message("Unknown word '%s'", word), parse(block));
                         case FUNC:
-                        case ELSE:
-                        case ENDIF:
-                        case DO:
-                        case LOOP:
-                        case ADDLOOP:
-                        case BEGIN:
-                        case UNTIL:
-                        case WHILE:
-                        case REPEAT:
-                        case LEAVE:
-                        case UNKNOWN:
+                            range.popFront;
+                            immutable func_token=range.token;
+                            range.popFront;
+                            immutable func_name=func_token.name.toUpper;
+                            if (!Lexer.is_name_valid(func_name)) {
+                                range.popFront;
+                                return new ScriptTokenError(func_token,
+                                    message("Invalid function name %s", func_name), parse(block));
+                            }
+                            FunctionBlock func_block=new FunctionBlock(block, func_name);
+                            //block=func_block;
+                            const func=parse(func_block); //=blockParser(range, sub_block);
+                            script.setFunc(func_name, func, func_block);
+//                            block=block.parent;
+                            return null;
+                        case ENDFUNC:
+                            range.popFront;
+                            if (block.end(ENDFUNC)) {
+                                return null;
+                            }
+                            return new ScriptTokenError(word_token,
+                                message("End of function ';' not expected %s", word), parse(block));
+                        case EXIT:
+                            return null;
                         case COMMENT:
-                            assert(0, "This "~to!string(t.type)~" pseudo script tokens '"~t.token~
-                                "' should have been replace by an executing instructions at this point");
-                        case EOF:
-                            assert(0, "EOF instructions should have been removed at this point");
-                        }
-                    result.next=forward(i+1, n+1);
-                    result.set_location(n, t.token, t.line, t.pos);
-                }
-                return result;
-            }
-            auto func_script=forward;
-            function_scripts~=func_script;
-            f.opcode=func_script;
-            // Connect all the jump labels
-            foreach(ref label; script_labels) {
-                foreach(ref jump; label.jumps) {
-                    jump.set_jump(label.target);
-                }
-            }
-            // Set the number of allocated local variables
-            // in the current function
-            // the local is used for loop parameters also
-        }
-        foreach(fs; function_scripts) {
-            for(auto s=fs; s !is null; s=s.next) {
-                auto call_script = cast(ScriptCall)s;
-                if ( call_script !is null ) {
-                    if ( call_script.name in script.functions) {
-                        // The function is defined in the function tabel
-                        auto func=script.functions[call_script.name];
-                        if ( func.opcode !is null ) {
-                            // Insert the script element to call Script Element
-                            // Sets then number of local variables in the function
-                           call_script.set_call( func.opcode, func.local_size );
+                            range.popFront;
+                            return parse(block);
+                        case IF:
+                            range.popFront;
+                            //auto parent=block;
+                            auto if_block=new IfBlock(block);
+                            const if_element=parse(if_block); //blockParser(range, sub_block);
+                            @safe const(ScriptElement) get_else() {
+                                if (Lexer.get(range.front.toUpper) is ELSE) {
+                                    range.popFront;
+                                    auto else_block=new ElseBlock(block);
+                                    return parse(else_block); //blockParser(range, else_sub_block);
+                                }
+                                return null;
+                            }
+                            const else_element=get_else();
+                            range.popFront;
+//                            const script_NOP=new ScriptNOP(blockParser(range, block));
+                            // block=parent;
+                            const next=parse(block);
+                            return new ScriptConditional(word_token, if_element, else_element, next);
+                        case ELSE:
+                            if (block.end(ELSE)) {
+                                return null;
+                            }
+                            range.popFront;
+                            return new ScriptTokenError(word_token, message("%s not extected", word), parse(block));
+                        case ENDIF, THEN:
+                            if (block.end(THEN)) {
+                                return null;
+                            }
+                            range.popFront;
+                            return new ScriptTokenError(word_token, message("%s not extected", word), parse(block));
+                        case DO:
+                            range.popFront;
+                            auto do_block=new DoLoopBlock(block);
+                            const loop_body=parse(do_block);
+//                            immutable end_loop=range.front.toUpper;
+                            immutable end_loop=range.token;
+                            range.popFront;
+                            const after_loop=parse(block);
+                            return new ScriptDo(word_token, loop_body, after_loop, end_loop, do_block);
+                        case LOOP, ADDLOOP:
+                            if (block.end(keycode)) {
+                                return null;
+                            }
+                            range.popFront;
+                            return new ScriptTokenError(
+                                word_token,
+                                message("%s not extected missing DO to match %s", word, keycode),
+                                parse(block));
+                        case I:
+                            if ( block.loopLevel > 0 ) {
+                                immutable(Token) Itoken={name : block.Iname};
+                                auto var=new Variable(block.Iname, FunnelType.NUMBER);
+                                return new ScriptGetVar(Itoken, parse(block), var, true);
+                            }
+                            return new ScriptTokenError(
+                                word_token,
+                                message("%s can only be used inside a loop", word),
+                                parse(block));
+                        case BEGIN:
+                            range.popFront;
+                            auto begin_block=new BeginLoopBlock(block);
+                            const loop_body=parse(begin_block);
+                            immutable until=range.token;
+                            range.popFront;
+                            const after_until=parse(block);
+                            return new ScriptBegin(word_token,
+                                loop_body, after_until, until, begin_block);
+                        case UNTIL, REPEAT:
+                            if (block.end(keycode)) {
+                                return null;
+                            }
+                            range.popFront;
+                            return new ScriptTokenError(
+                                word_token,
+                                message("%s not extected missing begin to match %s", word, UNTIL),
+                                parse(block));
+                        case WHILE:
+                            range.popFront;
+                            if ( Block category_block = block.getBlock(Block.BlockCategory.LOOP)) {
+                                return new ScriptWhile(word_token, parse(block), category_block);
+                            }
+                            return new ScriptTokenError(
+                                word_token,
+                                message("%s not extected, %s must be inside a loop", word, WHILE),
+                                parse(block));
+                        case AGAIN:
+                            range.popFront;
+                            if ( Block category_block = block.getBlock(Block.BlockCategory.LOOP)) {
+                                return new ScriptAgain(word_token, parse(block), category_block);
+                            }
+                            return new ScriptTokenError(
+                                word_token,
+                                message("%s not extected, %s must be inside a loop", word, keycode),
+                                parse(block));
+                        case LEAVE:
+                            range.popFront;
+                            if (block.category is Block.BlockCategory.LOOP) {
+                                return new ScriptLeave(word_token, parse(block), block);
+                            }
+                            return new ScriptTokenError(
+                                word_token,
+                                message("%s not extected, %s must be inside a loop", word, keycode),
+                                parse(block));
+                        case GET, PUT:
+                            range.popFront;
+                            return new ScriptTokenError(word_token,
+                                message("Unexpected variable operator '%s'", word), parse(block));
+                        case VAR:
+                            if ( block.category is Block.BlockCategory.FUNCTION ) {
+                                Variable var;
+                                const error=getVariable(range, word_token, block, var);
+                                if ( error ) {
+                                    return error;
+                                }
+                                if ( var.name.match(Lexer.regex_reserved_var) ) {
+                                    return new ScriptTokenError(range.token,
+                                        message("Variable name %s is reserved and can not be declared", var.name),
+                                        parse(block));
+                                }
+                                block.defineVar(var);
+                                range.popFront;
+                                return parse(block);
+                            }
+                            else {
+                                return new ScriptTokenError(word_token,
+                                    message("Variable declaration %s is only allowed in a global or function scope", word),
+                                    parse(block));
+                            }
+                            break;
+                        case NUMBER, HEX:
+                            range.popFront;
+                            return new ScriptNumber(word_token, parse(block));
+                        case TEXT:
+                            range.popFront;
+                            return new ScriptText(word_token, parse(block));
+                        case WORD:
+                            range.popFront;
+                            if ( const(ScriptElement) element=Script.createElement(word, word_token, parse(block)) ) {
+                                return element;
+                            }
+                            else if ( const(ScriptFunc) script_func=script.getFunc(word) ) {
+                                return new ScriptCall(word_token, script_func, parse(block));
+                            }
+                            else if ( word[0] is '.' ) { // Dot commands
+                                static foreach(dotCode; EnumMembers!Dot) {
+                                    if (word == dotCode) {
+                                        return new ScriptDebugPrint!dotCode(word_token,
+                                            parse(block), block);
+                                    }
+                                }
+                                return new ScriptTokenError(word_token,
+                                        message("Invalid . command %s", word),
+                                        parse(block));
+                            }
+                            else {
+                                const(ScriptElement) varOp(const Token var_op_token, const(Variable) var, const bool local) {
+                                    immutable var_op_code=Lexer.get(var_op_token.name);
+                                    switch (var_op_code) {
+                                    case GET:
+                                        return new ScriptGetVar(var_op_token, parse(block), var, local);
+                                    case PUT:
+                                        switch(var_op_token.name) {
+                                            static foreach(OP; ScriptPutVar.operators) {
+                                            case OP:
+                                                return new ScriptOpPutVar!OP(var_op_token, parse(block), var, local);
+                                            }
+                                        case "!":
+                                            return new ScriptPutVar(var_op_token, parse(block), var, local);
+                                        default:
+                                            return new ScriptTokenError(var_op_token,
+                                                message("Invalid put operator %s", var_op_token.name), parse(block));
+                                        }
+                                        break;
+                                    default:
+                                        return new ScriptTokenError(var_op_token,
+                                            message("Illegal operator %s for variable %s", var_op_token.name, word),
+                                            parse(block));
 
+                                    }
+                                }
+
+                                immutable var_op_token=range.token;
+                                range.popFront;
+                                if ( const Variable global_var=script.getVar(word) ) {
+                                    return varOp(var_op_token, global_var, false);
+                                }
+                                else if ( const Variable local_var=block.getVar(word) ) {
+                                    return varOp(var_op_token, local_var, true);
+                                }
+                                else {
+                                    return new ScriptTokenError(word_token,
+                                        message("Variable %s not defined", word), parse(block));
+                                }
+                            }
+                            assert(0);
                         }
-                        else {
-                            auto error=new ScriptError("The function "~call_script.name~
-                                " does not contain any opcodes", call_script);
-                            call_script.set_call(error);
-                        }
+                        assert(0, message("This line should never be executed: Bad token %s ",word));
                     }
-                    else if ( call_script.name !in var_indices) {
-                        // If name is not a variable
-                        auto error=new ScriptError("The function or variable named "~call_script.name~
-                            " is not defined ",call_script);
-                        call_script.set_call(error);
+
+            }
+            return null;
+        }
+
+//         while(!range.empty) {
+//             const
+//         }
+//         void subBlock(const ScriptElement current) {
+//             if (current) {
+//                 const next=parse;
+//                 subBlock(next);
+//                 current.__force_last(next);
+
+//                 //              return next;
+//             }
+// //            return null;
+//         }
+        return parse(global_block);
+    }
+
+    // Collect the global variables and function declarations
+    protected const(ScriptElement) collect(ref Range range) {
+        while(!range.empty) {
+            immutable word=range.front.toUpper;
+            immutable keycode=Lexer.get(word);
+            with(ScriptKeyword) {
+                switch(keycode) {
+                case FUNC:
+                    range.popFront;
+                    const func_token=range.token;
+                    immutable func_name=func_token.name.toUpper;
+                    if (!Lexer.is_name_valid(func_name)) {
+                        range.popFront;
+                        return new ScriptTokenError(func_token,
+                            message("Invalid name '%s' for function", func_name), collect(range));
                     }
+                    auto script_func=new ScriptFunc(func_token);
+                    script.defineFunc(func_name, script_func);
+                    while(!range.empty && (Lexer.get(range.front.toUpper) !is ENDFUNC)) {
+                        range.popFront;
+                        //writefln(">> %s", range.front);
+                    }
+                    if (range.empty) {
+                        return new ScriptTokenError(func_token,
+                            message("Function end missing for %s", func_name), null);
+                    }
+                    break;
+                case VAR:
+                    const var_type_token=range.token;
+                    Variable var;
+                    const error=getVariable(range, var_type_token, global, var);
+                    if ( error ) {
+                        return error;
+                    }
+                    global.defineVar(var);
+                    break;
+                case COMMENT:
+                    // Ignore
+                    break;
+                default:
+                    const illegal_token=range.token;
+                    range.popFront;
+                    return new ScriptTokenError(illegal_token,
+                        message("Unexpected %s in global scope", illegal_token.name), collect(range));
                 }
             }
+            range.popFront;
         }
+        return null;
+    }
+}
+
+version(unittest) {
+    import tagion.script.ScriptBase : Number;
+}
+
+//version(none) {
+unittest {
+    string source="";
+    {
+        auto src=ScriptParser(source);
+        Script script;
+        auto builder=ScriptBuilder(src[]);
+        builder.build(script);
+        auto sc=new ScriptContext(10, 10, 10, 100);
+        auto result=script.call("undefined", sc);
+        assert(result);
+    }
+}
+
+unittest { // Simple function test
+    string source=[
+        ": test",
+        "  * - ",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+
+    auto sc=new ScriptContext(10, 10, 10, 100);
+    sc.push(3);
+    sc.push(2);
+    sc.push(5);
+    // sc.trace=true;
+
+    script.call("test", sc);
+    assert( sc.pop.by!(FunnelType.NUMBER) == -7 );
+}
+
+unittest { // Simple function test
+    string source=[
+        ": test",
+        "  + -",
+        ";\n"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+        sc.push(3);
+        sc.push(2);
+        sc.push(5);
+        //sc.trace=true;
+
+        script.call("test", sc);
 
     }
+}
+
+unittest { // Simple compare operator test
+    import tagion.basic.Basic : Buffer;
+    string source=[
+        ": test",
+        "  == ",
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+        sc.push(4);
+        sc.push(4);
+
+        //sc.trace=false;
+        script.call("test", sc);
+        assert( sc.pop.get!bool );
+
+        sc.push(5);
+        sc.push(4);
+
+        // sc.trace=true;
+        script.call("test", sc);
+        assert( !sc.pop.get!bool );
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+        Buffer a=[1,2,3];
+        Buffer b=[1,2,3];
+
+        sc.push(a);
+        sc.push(b);
+        //sc.trace=false;
+
+        script.call("test", sc);
+
+        assert( sc.pop.get!bool);
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+        string a="hugo";
+        string b="borge";
+
+        sc.push(a);
+        sc.push(b);
+        // sc.trace=true;
+
+        script.call("test", sc);
+        assert( !sc.pop.get!bool );
+    }
+}
+
+unittest { // Number test
+    string source=[
+        ": test",
+        "  42  ",
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+    script.call("test", sc);
+    assert(sc.pop.get!Number == 42);
+}
+
+unittest { // Number test
+    string source=[
+        ": test",
+        "  0x42  ",
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+    script.call("test", sc);
+    assert(sc.pop.get!Number == 0x42);
+}
+
+unittest { // Text test
+    string source=[
+        ": test",
+        `  "Hugo"  `,
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+    script.call("test", sc);
+
+    assert(sc.pop.get!string == "Hugo");
+}
+//}
+
+//version(none)
+unittest { // Simple if test
+    string source=[
+        ": test",
+        "  if  ",
+        "  111  ",
+        "  then",
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+        sc.push(10);
+        sc.push(0); // 0 means false
+        //sc.trace=true;
+
+        script.call("test", sc);
+
+        assert(sc.pop.get!Number == 10);
+
+        sc.push(10);
+        script.call("test", sc);
+
+        assert(sc.pop.get!Number == 111);
+    }
+}
+//}
+
+//version(none)
+unittest { // Simple if else test
+    string source=[
+        ": test_if_else",
+        "  if  ",
+        "    -1  ",
+        "  else  ",
+        "    1  ",
+        "  then  ",
+        `  "END" `,
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (top != 0)
+        sc.push(10);
+        script.call("test_if_else", sc);
+        // writefln("sc.pop=%s", sc.pop);
+        assert(sc.pop.get!string == "END");
+        assert(sc.pop.get!Number == -1);
+
+        // Test 'IF ELSE' false (top == 0)
+        sc.push(0);
+        script.call("test_if_else", sc);
+        // writefln("sc.pop=%s", sc.pop);
+        assert(sc.pop.get!string == "END");
+        assert(sc.pop.get!Number == 1);
+    }
+}
+
+unittest { // Simple if else test inside if else
+    string source=[
+        ": test_if_if_else",
+        "  if  ",
+        "    if ",
+        `      "A"  `,
+        "    else ",
+        `      "B"  `,
+        "    then",
+        "  else  ",
+        "    if ",
+        `      "C"  `,
+        "    else ",
+        `      "D"  `,
+        "    then",
+        "  then  ",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+
+    builder.build(script);
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (1 1 -- "A" "END")
+        sc.push(1);
+        sc.push(1);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        // assert(sc.pop.get!string == "END");
+        // assert(sc.pop.get!string == "betweenAB");
+        assert(sc.pop.get!string == "A");
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (0 1 -- "B" "END")
+        sc.push(0);
+        sc.push(1);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        // assert(sc.pop.get!string == "END");
+        // assert(sc.pop.get!string == "betweenAB");
+        assert(sc.pop.get!string == "B");
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (1 0 -- "C" "END")
+        sc.push(1);
+        sc.push(0);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        // assert(sc.pop.get!string == "END");
+        // assert(sc.pop.get!string == "betweenCD");
+        assert(sc.pop.get!string == "C");
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (0 0 -- "D" "END")
+        sc.push(0);
+        sc.push(0);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        // assert(sc.pop.get!string == "END");
+        // assert(sc.pop.get!string == "betweenCD");
+        assert(sc.pop.get!string == "D");
+    }
+}
+
+unittest { // Simple if else test inside if else with in bewteens
+    string source=[
+        ": test_if_if_else",
+        "  if  ",
+        "    if ",
+        `      "A"  `,
+        "    else ",
+        `      "B"  `,
+        "    then",
+        `   "betweenAB" `,
+        "  else  ",
+        "    if ",
+        `      "C"  `,
+        "    else ",
+        `      "D"  `,
+        "    then",
+        `   "betweenCD" `,
+        "  then  ",
+        `  "END" `,
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+
+    builder.build(script);
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (1 1 -- "A" "END")
+        sc.push(1);
+        sc.push(1);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        assert(sc.pop.get!string == "END");
+        assert(sc.pop.get!string == "betweenAB");
+        assert(sc.pop.get!string == "A");
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (0 1 -- "B" "END")
+        sc.push(0);
+        sc.push(1);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        assert(sc.pop.get!string == "END");
+        assert(sc.pop.get!string == "betweenAB");
+        assert(sc.pop.get!string == "B");
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (1 0 -- "C" "END")
+        sc.push(1);
+        sc.push(0);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        assert(sc.pop.get!string == "END");
+        assert(sc.pop.get!string == "betweenCD");
+        assert(sc.pop.get!string == "C");
+    }
+
+    {
+        auto sc=new ScriptContext(10, 10, 10, 100);
+
+        // Test IF ELSE true (0 0 -- "D" "END")
+        sc.push(0);
+        sc.push(0);
+        //sc.trace=true;
+
+        script.call("test_if_if_else", sc);
+
+        assert(sc.pop.get!string == "END");
+        assert(sc.pop.get!string == "betweenCD");
+        assert(sc.pop.get!string == "D");
+    }
+}
+
+//}
+//version(none) {
+unittest { // Global Variable ! (put)
+    string source=[
+        "  num Y",
+        "  num X",
+        ": test_put",
+        "    X !",
+//        "    .v",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    //sc.trace=true;
+    sc.push(10);
+    auto error=script.execute("test_put", sc);
+    assert(!error);
+    // if ( error ) {
+    //     writeln(error.toInfo);
+    // }
+    auto var=sc[script("X")];
+
+    assert(var.get!Number == 10);
+}
+
+unittest { // Global Variable @ (get)
+    string source=[
+        "num X",
+        ": test",
+        "    X @",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    script.allocateGlobals(sc);
+    sc[script("X")]=42;
+
+    script.call("test", sc);
+    assert(sc.pop.get!Number == 42);
+}
+
+unittest { // Local Variable ! (PUT) and @ test
+    string source=[
+        ": test",
+        "    num X",
+        "    X !",
+        `    "dummy" `,
+        "    X @",
+        "    2 * ",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    sc.push(11);
+    // sc.trace=false;
+    script.call("test", sc);
+    assert(sc.pop.get!Number == 22);
+}
+
+unittest { // Get and put multiple global variables
+    string source=[
+        "  num X",
+        "  num Y",
+        ": test",
+        "  17 X !",
+        "  13 Y !",
+        `  "dummy" `,
+        "  X @ Y @",
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    script.execute("test", sc);
+    // Check Y value
+    assert(sc.pop.get!Number == 13);
+    assert(sc[script("Y")].get!Number == 13);
+
+    // Check X value
+    assert(sc.pop.get!Number == 17);
+    assert(sc[script("X")].get!Number == 17);
+}
+
+unittest { // Get and put multiple local variables
+    string source=[
+        ": test",
+        "  num X",
+        "  num Y",
+        "  13 Y !",
+        "  17 X !",
+        `  "dummy" `,
+        "  Y @ X @",
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    // sc.trace=false;
+    script.call("test", sc);
+
+    // Check X value
+    assert(sc.stack_pointer is 3);
+    assert(sc.pop.get!Number == 17);
+    // Check Y value
+    assert(sc.stack_pointer is 2);
+    assert(sc.pop.get!Number == 13);
+}
+
+unittest { // None standard put operator in variables
+    string source=[
+        ": test",
+        " num X",
+        " 7 X !",
+        " 3 X -!",
+        " X @",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    script.call("test", sc);
+
+    assert(sc.pop.get!Number == 4);
+
+}
+
+unittest { // None standard put operator where the result is pushed after
+    string source=[
+        ": test",
+        " num X",
+        " 7 X !",
+        " 3 X -!@",
+//        " X @",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    script.call("test", sc);
+
+    assert(sc.pop.get!Number == 4);
+
+}
+
+
+//version(none)
+unittest {
+    string source=[
+        ": test",
+        " num X",
+        " num Y",
+        " 7 ",
+        "X ! X @ Y ! Y @",
+        "X ! X @ Y ! Y @",
+//        " .l ",
+//        " 3 X -!@",
+//        " X @",
+        ";"].join("\n");
+        auto src=ScriptParser(source);
+        Script script;
+        auto builder=ScriptBuilder(src[]);
+        builder.build(script);
+        auto sc=new ScriptContext(10, 10, 10, 100);
+        script.call("test", sc);
+        assert(sc.pop.get!Number == 7);
+        //       assert(sc.pop.get!Number == 7);
+//        writefln("sc.pop=%s", sc.pop);
+
+//        writefln(""
+}
+
+
+unittest { // Call one function from another function including local variable
+    string source=[
+        "num G1",
+         "num G2",
+
+        ": testA",
+        "  num Z",
+        "  3 Z ! ",
+        // ".l",
+        "  3 ",
+        "  2 ",
+        "  Z @ ",
+        //  " .s ",
+        "  testB ",
+        "  Z @",
+        //   " .s .l ",
+        ";",
+
+        ": testG",
+        " G1 !",
+        " G2 !",
+        // " .v",
+        " testA ",
+        ";",
+
+        ": testB",
+        "  num X",
+        "  num Y",
+        " Y !",
+        " X !",
+        "  X +!@",
+        " Y @",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+
+    // Put and Get variable X and Y
+    // sc.trace=true;
+    sc.push(3);
+    sc.push(2); // X=2+3
+    sc.push(3); // Y=3
+
+    script.execute("testB", sc);
+    assert(sc.pop.get!Number == 3);
+    assert(sc.pop.get!Number == 5);
+
+    script.execute("testA", sc);
+    assert(sc.pop.get!Number == 3); // Z
+    assert(sc.pop.get!Number == 3); // Y
+    assert(sc.pop.get!Number == 5); // X
+
+    sc.push(42); // G2
+    sc.push(13); // G1
+    script.execute("testG", sc);
+    assert(sc[script("G1")].get!Number == 13);
+    assert(sc[script("G2")].get!Number == 42);
+}
+//}
+
+unittest { // DO LOOP
+    string source=[
+        //  "variable X",
+        ": test_do_loop",
+        "   num X",
+//        " .l .s",
+        "   do ",
+        "     X @ 1+ X ! ",
+//        " .l .s ",
+        " loop ",
+        " I1 @",
+        " X @",
+
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+    // sc.trace=true;
+        // Put and Get variable X and Y
+
+    sc.push(10);
+    sc.push(0);
+
+    script.execute("test_do_loop", sc);
+    assert(sc.pop.get!Number == 10); // X = 10
+    assert(sc.pop.get!Number == 10); // I1 = 10
+}
+
+
+unittest { // DO +LOOP
+    string source=[
+        //  "variable X",
+        ": test_do_+loop",
+        "   num X",
+//        " .l ",
+        "   do ",
+        "     X @ 1+ X ! ",
+//        " .l .s ",
+        " 2 ",
+        " +loop ",
+        " I1 @",
+        " X @",
+        ";"].join("\n");
+
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+    //sc.trace=true;
+        // Put and Get variable X and Y
+
+    sc.push(10);
+    sc.push(0);
+    script.execute("test_do_+loop", sc);
+
+    assert(sc.pop.get!Number == 5); // X = 5
+    assert(sc.pop.get!Number == 10); // I1 = 10
+}
+
+unittest { // begin until
+    string source=[
+//        " variable X ",
+        ": test_begin_until",
+        "  num X",
+        "  begin",
+        "    X @ 1 + X !",
+        "    X @ 10 ==",
+        "  until",
+        "  X @",
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    script.execute("test_begin_until", sc);
+    assert(sc.pop.get!Number == 10);
+}
+
+unittest { // begin while repeat
+    string source=[
+        ": test_begin_while_repeat",
+        "  begin",
+        "    dup 3 > ",
+        "  while",
+        "    1-",
+//        " .s",
+        " repeat",
+        ` "end" `,
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    sc.push(10);
+    script.call("test_begin_while_repeat", sc);
+
+    assert(sc.pop.get!string == "end");
+    assert(sc.pop.get!Number == 3);
+}
+
+
+unittest { // begin if again else leave repeat
+    string source=[
+        ": test_begin_again_leave_repeat",
+        "  10 ",
+        "  begin",
+        //    " .s",
+        "    1- dup 3 ",
+        //   " .s",
+        " > ",
+        // " .s",
+        "  if ",
+        //   "    .s",
+        "    again",
+        `    "Not seen" `,
+        "  then",
+        `  "OK" `,
+        //    " .s ",
+        "  leave ",
+        `  "NotOK" `,
+        " repeat",
+        `  "End" `,
+        ";"].join("\n");
+    auto src=ScriptParser(source);
+    Script script;
+    auto builder=ScriptBuilder(src[]);
+    builder.build(script);
+    auto sc=new ScriptContext(10, 10, 10, 100);
+
+    sc.push(10);
+    script.call("test_begin_again_leave_repeat", sc);
+
+    assert(sc.pop.get!string == "End");
+    assert(sc.pop.get!string == "OK");
+    assert(sc.pop.get!Number == 3);
+}
+
+unittest {
+    // Checks the super_script;
+    string super_source=[
+        "string super_global",
+        ": super_test",
+        `  "SUPER" `,
+        "  dup super_global ! ",
+        ";"].join("\n");
+
+    string source=[
+        "num global",
+        ": test",
+        "    42 global !",
+        "    super_test ",
+        ";"].join("\n");
+
+
+    Script super_script;
+    {
+        auto src=ScriptParser(super_source);
+        auto builder=ScriptBuilder(src[]);
+        builder.build(super_script);
+    }
+
+    Script script=new Script(super_script);
+    {
+        auto src=ScriptParser(source);
+        auto builder=ScriptBuilder(src[]);
+        builder.build(script);
+    }
+    auto sc=new ScriptContext(10, 10, 10, 100);
+    script.execute("test", sc);
+
+    import std.stdio;
+    assert(sc.pop.get!string == "SUPER");
+
+    assert(script.num_of_globals == 2);
+    assert(super_script.num_of_globals == 1);
+
+    auto global=sc[script("global")];
+    auto super_global=sc[script("super_global")];
+
+    assert(global.get!Number == 42);
+    assert(super_global.get!string == "SUPER");
 }

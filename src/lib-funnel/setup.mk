@@ -33,7 +33,7 @@ LIBRARY:=$(BIN)/$(LIBNAME)
 WAYS+=${BIN}
 #WAYS+=tests
 
-SOURCE:=tagion/funnel
+SOURCE:=tagion/script
 PACKAGE:=${subst /,.,$(SOURCE)}
 REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 

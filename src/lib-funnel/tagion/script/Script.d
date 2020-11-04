@@ -1,562 +1,611 @@
 module tagion.script.Script;
 
-import std.bigint;
-import std.internal.math.biguintnoasm : BigDigit;
 import std.stdio;
 import std.conv;
+import std.uni : toUpper;
 import std.typecons : Typedef, TypedefType;
-import tagion.utils.BSON : HBSON, Document, BSONException, BSON;
 
+import std.range : enumerate;
+import std.traits : EnumMembers, isIntegral;
+import std.regex;
 
-@safe
-class ScriptException : Exception {
-    this( immutable(char)[] msg ) {
-//        writefln("msg=%s", msg);
-        super( msg );
-    }
-}
+import core.exception : RangeError;
 
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONBase : HiBONType=Type, isHiBONType;
+import tagion.hibon.HiBONException : HiBONException;
+import tagion.basic.Basic : Buffer, BillType;
+import tagion.Keywords;
+import tagion.basic.TagionExceptions : TagionException;
+import tagion.script.ScriptParser : Token;
+import tagion.basic.Message;
 
-@trusted
-class Value {
-    alias BsonIndex=Typedef!(uint, uint.init, Value.Type.BSON_INDEX.stringof);
-    enum Type {
-        INTEGER,
-        FUNCTION,
-        TEXT,
-        BSON_INDEX,
-        DOCUMENT//,
-        //BYTEARRAY
-    }
-    union BInt {
-        private BigInt value;
-        private const(ScriptElement) opcode;
-        private string text;
-        private BsonIndex bson_index;
-        private Document  doc;
+import tagion.script.ScriptParser : ScriptKeyword, Lexer;
+import tagion.script.ScriptBase;
+import tagion.script.ScriptBlocks;
 
-        /* This struct is just read only for the BitInt value */
-        immutable struct {
-            immutable(BigDigit[]) data;
-            immutable bool sign;
-        }
-        struct {
-            private BigDigit[] jam_data;
-            private bool jam_sign;
-
-            package void scramble() nothrow {
-                BigDigit random() nothrow {
-                    scamble_value=(scamble_value * 1103515245) + 12345;
-                    return scamble_value;
-                }
-                foreach(ref jam; jam_data) {
-                    jam=random();
-                }
-                jam_sign= (random() & 0x1) == 0x1 ;
-            }
-            package void dump()  @trusted {
-
-                writeln("Scramble");
-                writeln(jam_data.length);
-                writeln(jam_data);
-                writeln(jam_sign);
-            }
-        }
-        static BigDigit scamble_value=~0;
-    }
-
-    private BInt data;
-    private Type _type;
-    this(BsonIndex bson_index) {
-        _type=Type.BSON_INDEX;
-        data.bson_index=bson_index;
-    }
-    this(long x) {
-        _type=Type.INTEGER;
-        data.value = BigInt(x);
-    }
-    this(const BigInt x) {
-        _type=Type.INTEGER;
-        data.value = x;
-    }
-    this(string x) {
-        _type=Type.TEXT;
-        data.text = x;
-    }
-    this(const(ScriptElement) s) {
-        _type=Type.FUNCTION;
-        data.opcode=s;
-    }
-    this(const Document doc) {
-        _type=Type.DOCUMENT;
-        data.doc=doc;
-    }
-    // this(const uint bson_index) {
-    //     _type=Type.BSON;
-    //     data.bson_index=bson_index;
-    // }
-    // this(const(Value) v) {
-    //     _type=v.type;
-    //     with(Type) final switch(v.type) {
-    //         case INTEGER:
-    //             data.value=BigInt(v.data.value);
-    //             break;
-    //         case FUNCTION:
-    //             data.opcode=v.data.opcode;
-    //             break;
-    //         case TEXT:
-    //             data.text=v.data.text;
-    //             break;
-    //         }
-    // }
-    // this(const(Value) v) {
-    //     _type=v.type;
-    //     with(Type) final switch(v.type) {
-    //         case INTEGER:
-    //             data.value=v.data.value;
-    //             break;
-    //         case FUNCTION:
-    //             data.opcode=v.data.opcode;
-    //             break;
-    //         case TEXT:
-    //             data.text=v.data.text;
-    //             break;
-    //         }
-    // }
-
-    static Value opCall(T)(T x) {
-        static if ( is(T:const(Value)) || is(T:const(Value)*) ) {
-            with(Type) final switch(x.type) {
-                case INTEGER:
-                    return new Value(x.value);
-                case FUNCTION:
-                    return new Value(x.text);
-                case TEXT:
-                    return new Value(x.opcode);
-                case BSON_INDEX:
-                    return new Value(x.bson_index);
-                case DOCUMENT:
-                    return new Value(x.doc);
-                }
-        }
-        else {
-            return new Value(x);
-        }
-    }
-    Type type() pure const nothrow {
-        return _type;
-    }
-    const(BigInt) value() const {
-        if ( type == Type.INTEGER) {
-            return data.value;
-        }
-        throw new ScriptException(to!string(Type.INTEGER)~" expected not "~to!string(type));
-    }
-    string text() const {
-        if ( type == Type.TEXT) {
-            return data.text;
-        }
-        throw new ScriptException(to!string(Type.TEXT)~" expected not "~to!string(type));
-    }
-    const(ScriptElement) opcode() const {
-        if ( type == Type.FUNCTION) {
-            return data.opcode;
-        }
-        throw new ScriptException(to!string(Type.FUNCTION)~" expected not "~to!string(type));
-    }
-    const(Document) doc() const {
-        if ( type == Type.DOCUMENT ) {
-            return data.doc;
-        }
-        throw new ScriptException(to!string(Type.DOCUMENT)~" expected not "~to!string(type));
-    }
-    BsonIndex bson_index() const {
-        if ( type == Type.BSON_INDEX ) {
-            return data.bson_index;
-        }
-        throw new ScriptException(to!string(Type.BSON_INDEX)~" expected not "~to!string(type));
-    }
-    immutable(ubyte[]) buffer() const {
-        if ( type == Type.INTEGER) {
-            return (cast(ubyte[])data.data).idup;
-        }
-        throw new ScriptException(to!string(Type.INTEGER)~" expected not "~to!string(type));
-    }
-    T get(T)() const {
-
-        static if ( is(T:const(BigInt)) ) {
-            return value;
-        }
-        else static if ( is(T==string) ) {
-            return text;
-        }
-        else static if ( is(T==const(ScriptElement)) ) {
-            return opcode;
-        }
-        else {
-            static assert(0, "Type "~T.stringof~" not supported");
-        }
-    }
-
-    ~this() {
-        // The value is scrambled to reduce the properbility of side channel attack
-        // writefln("Scramble before %s", data.value);
-        // data.scramble;
-        // writefln("Scramble after %s", data.value);
-    }
-}
-
-unittest {
-    // Numbers
-    auto a=const(Value)(10);
-    assert(a.type == Value.Type.INTEGER);
-    assert(a.value == 10);
-
-    enum num="1234567890_1234567890_1234567890_1234567890";
-    auto b=Value(BigInt(num));
-    assert(b.type == Value.Type.INTEGER);
-    assert(b.value == BigInt(num));
-
-    immutable Value.BsonIndex bson_index=2;
-    auto c=const(Value)(bson_index);
-    assert(c.type == Value.Type.BSON_INDEX);
-    assert(c.bson_index == 2);
-    static assert(is(typeof(bson_index) : Value.BsonIndex));
-    static assert(is(TypedefType!(typeof(bson_index)) == uint));
-}
 
 @safe
 class ScriptContext {
+    enum Mode {
+        NONE,
+        REWIND,
+        ABORT
+    }
+    package Mode _mode;
+    final @property Mode mode() pure const nothrow {
+        return _mode;
+    }
     public bool trace;
+
+    private ScriptError errorElement;
+
     private string indent;
-    private const(Value)[] data_stack;
-    private const(Value)[] return_stack;
-    package Value[] variables;
-    package Value[][] locals_stack;
-//    private uint data_stack_index;
-//    private uint return_stack_index;
-    private immutable uint data_stack_size;
-    private immutable uint return_stack_size;
-    private uint iteration_count;
-    private int data_stack_index;
-    private int return_stack_index;
-    private HBSON[] bsons;
-    private Value.BsonIndex bsons_count;
+
+
+    protected {
+        Value[] variables;
+        uint fuel;
+        size_t local_index_offset;
+        Value[] _globals;
+        Value[] _locals;
+        Value[] data_stack;
+        size_t _stack_index;
+        uint iteration_count;
+    }
+
+    bool proceed(const ScriptElement element) const pure nothrow {
+        return (element !is null);
+    }
+
+    private {
+
+        final void setGlobals(const size_t size) {
+            _globals=variables[0..size];
+            // Clear global variables
+            local_index_offset=size;
+//            return _globals;
+        }
+
+        final const(size_t) setLocals(const size_t size, const bool clean=true) {
+//            const old_index_offset=local_index_offset;
+            const old_size=_locals.length;
+            local_index_offset+=old_size; //_locals.length;
+
+            //          const old_size=_locals.length;
+            _locals=variables[local_index_offset..local_index_offset+size];
+            if ( clean ) {
+                foreach(ref v; _locals) {
+                    v=null;
+                }
+            }
+            return old_size;
+        }
+
+        final const(size_t) restoreLocals(const size_t old_size)
+            in {
+                assert(local_index_offset >= old_size+_globals.length);
+            }
+        do {
+            local_index_offset-=old_size;
+            _locals=variables[local_index_offset..local_index_offset+old_size];
+            return local_index_offset;
+        }
+
+    }
+
+    final const(Value[]) stack() const pure {
+        return data_stack[0.._stack_index];
+    }
+
+    final inout(Value[]) globals() inout pure {
+        return _globals;
+    }
+
+    final inout(Value[]) locals() inout pure {
+        return _locals;
+    }
+
+    final size_t varIndex(const(Variable) var) const pure nothrow {
+        return local_index_offset+var.index;
+    }
+
+    final size_t local_available() const pure
+        in {
+            import std.format;
+            assert(local_index_offset <= variables.length,
+                format("Local offset is out of range %d > %d",
+                    local_index_offset, variables.length));
+        }
+    do {
+        return variables.length-local_index_offset;
+    }
+
+    const(Value) opIndex(in uint index) const pure {
+        import std.stdio;
+        return variables[index];
+    }
+
+    void opIndexAssign(T)(const T x, in uint index) {
+        variables[index]=Value(x);
+    }
+
     this(const uint data_stack_size,
-        const uint return_stack_size,
         const uint var_size,
         const uint iteration_count,
-        const uint bsons_size=1) {
-        this.data_stack_size=data_stack_size;
-        this.return_stack_size=return_stack_size;
-        this.variables=new Value[var_size];
+        const uint fuel) {
+        data_stack.length=data_stack_size;
+        variables.length=var_size;
         this.iteration_count=iteration_count;
-        foreach(ref v; variables) {
-            v=Value(0);
-        }
-        if ( bsons_size != 0 ) {
-            this.bsons=new HBSON[bsons_size];
-        }
-    }
-    const(Value) opIndex(uint i) {
-        return variables[i];
+        this.fuel=fuel;
     }
 
-    ref HBSON bson(Value.BsonIndex index) {
-        immutable i=cast(uint)index;
-        if ( i < bsons.length ) {
-            if ( bsons[i] !is null ) {
-                return bsons[i];
-            }
-        }
-        throw new ScriptException("BSON index out of range");
+    const(ScriptError) error() pure const nothrow {
+        return errorElement;
     }
 
-    Value.BsonIndex createBson() {
+    string errorMessage() {
+        if ( this.error ) {
+            return errorElement.toText;
+        }
+        return null;
+    }
+
+    bool empty() const pure nothrow {
+        return (_stack_index == 0);
+    }
+
+    Value pop() {
+        .check(_stack_index > 0, "Data stack empty");
+        _stack_index--;
+        scope(failure) {
+            _stack_index++;
+        }
+        return data_stack[_stack_index];
+    }
+
+    void push(T)(T v) {
+        .check(_stack_index < data_stack.length, message("Stack overflow (Data stack size=%d)", data_stack.length));
         scope(exit) {
-            bsons_count++;
+            _stack_index++;
         }
-        immutable i=cast(uint)bsons_count;
-        if ( i >= bsons.length ) {
-            throw new ScriptException("Bsons out of range");
-        }
-        bsons[i]=new HBSON();
-        return bsons_count;
-    }
-
-    @trusted
-    const(Value) data_pop() {
-        scope(exit) {
-            if ( data_stack.length > 0 ) {
-                data_stack.length--;
-            }
-        }
-        if ( data_stack.length == 0 ) {
-            throw new ScriptException("Data stack empty");
-        }
-        return data_stack[$-1];
-    }
-    void data_push(T)(T v, immutable bool bson_type=false) {
-        if ( data_stack.length < data_stack_size ) {
-            static if ( is(T:const Value) ) {
-                data_stack~=v;
-            }
-            else {
-                static if ( is(v : const(long)) ) {
-                    data_stack~=const(Value)(v, bson_type);
-                }
-                else {
-                    data_stack~=const(Value)(v);
-                }
-            }
+        static if (is(T==Value)) {
+            data_stack[_stack_index]=v;
         }
         else {
-            throw new ScriptException("Data stack overflow");
+            data_stack[_stack_index]=Value(v);
         }
     }
-    const(Value) data_peek(immutable uint i=0) const {
-        if ( data_stack.length <= i ) {
-            throw new ScriptException("Data stack empty");
-        }
-        return data_stack[$-1-i];
+
+    size_t stack_pointer() const pure nothrow {
+        return _stack_index;
     }
-    @safe
-    void return_push(T)(T v) {
-        if ( return_stack.length < return_stack_size ) {
-            static if ( is(T:const Value) ) {
-                return_stack~=v;
-            }
-            else {
-                return_stack~=const(Value)(v);
-            }
-        }
-        else {
-            throw new ScriptException("Return stack overflow");
-        }
+
+    const(bool) stack_empty() const pure nothrow {
+        return _stack_index is 0;
+
     }
-    @trusted
-    const(Value) return_pop() {
-        scope(exit) {
-            if ( return_stack.length > 0 ) {
-                return_stack.length--;
-            }
-        }
-        if ( return_stack.length == 0 ) {
-            throw new ScriptException("Return stack empty");
-        }
-        return return_stack[$-1];
+
+    inout(Value) peek(const uint i=0) inout {
+        .check(_stack_index > i,
+            message("Stack peek overflow, stack pointer is %d and access pointer is %d",
+                _stack_index, i));
+        return data_stack[_stack_index-1-i];
     }
-    const(Value) return_peek(immutable uint i=0) const {
-        if ( return_stack.length <= i ) {
-            throw new ScriptException("Data stack empty");
-        }
-        return return_stack[$-1-i];
+
+    void poke(const uint i, Value value) {
+        .check(_stack_index > i,
+            message("Stack poke overflow, stack pointer is %d and access pointer is %d",
+                _stack_index, i));
+        data_stack[_stack_index-1-i]=value;
     }
-    void check_jump() {
-        if ( iteration_count == 0 ) {
-            throw new ScriptException("Iteration limit");
-        }
-        iteration_count--;
-    }
-    void push_locals(Value[] locals) {
-        locals_stack~=locals;
-    }
-    Value[] pop_locals() {
-        scope(exit) {
-            if ( locals_stack.length > 0 ) {
-                locals_stack.length--;
-            }
-        }
-        if ( locals_stack.length == 0 ) {
-            throw new ScriptException("Local stack empty");
-        }
-        return locals_stack[$-1];
-    }
-    Value[] locals() {
-        if ( locals_stack.length == 0 ) {
-            throw new ScriptException("Local stack empty");
-        }
-        return locals_stack[$-1];
-    }
-//    @trusted
+
     unittest {
-        auto sc=new ScriptContext(8, 8, 8, 8);
+        auto sc=new ScriptContext(8, 8, 8, 100);
         enum num="1234567890_1234567890_1234567890_1234567890";
         // Data stack test
-        sc.data_push(BigInt(num));
-        auto pop_a=sc.data_pop.value;
-        assert(pop_a == BigInt(num));
-    }
-    @trusted
-    immutable(ubyte)[] serialize(immutable Value.BsonIndex index) {
-        immutable i=cast(uint)index;
-        return bsons[i].serialize;
+        sc.push(Number(num));
+        auto pop_a=sc.pop.by!(FunnelType.NUMBER);
+        assert(pop_a == Number(num));
     }
 }
 
-
 @safe
-interface ScriptBasic {
+abstract class ScriptElement {
+    const(ScriptElement) next;
+    const(Token) token;
+    immutable uint runlevel;
+
+    this(const(Token) token, const(ScriptElement) next, immutable uint runlevel) {
+        this.runlevel=runlevel;
+        this.token=token;
+        this.next=next;
+    }
+
+
+    /**
+       Froce the last pointer in the ScriptElement chain to be set to the next
+    */
+    @trusted
+    static package void __force_bind(ref const ScriptElement root, const ScriptElement last) {
+        void set_last(ref const ScriptElement current) {
+            if (current.next !is null) {
+                set_last(current.next);
+            }
+            else {
+                emplace(&(current.next), last);
+            }
+        }
+        if ( root ) {
+            set_last(root);
+        }
+        else {
+            emplace(&root, last);
+        }
+    }
+
+    @safe static void dump(const ScriptElement current, const uint count=10) {
+//        uint count=10;
+        if (current) {
+            assert(count >0);
+            writefln("-> %s", current.toText);
+            dump(current.next, count-1);
+        }
+    }
+
     const(ScriptElement) opCall(const Script s, ScriptContext sc) const
     in {
         assert(s !is null);
         assert(sc !is null);
     }
-    const(ScriptElement) next(ScriptElement n)
-    in {
-        assert(next is null, "Next script element is should not be change");
-    }
-    inout(ScriptElement) next() inout pure nothrow;
-    string toText() const;
-}
 
-@safe
-abstract class ScriptElement : ScriptBasic {
-    private ScriptElement _next;
-    private uint line, pos;
-    private uint n; // Token index
-    private string token;
-    immutable uint runlevel;
-    this(immutable uint runlevel) {
-        this.runlevel=runlevel;
-    }
-    // const(ScriptElement) opCall(const Script s, ScriptContext sc) const
-    // in {
-    //     assert(sc !is null);
-    // }
-    // do {
-    //     return _next;
-    // }
-    const(ScriptElement) next(ScriptElement n)
-    in {
-        assert(_next is null, "Next script element is should not be change");
-    }
-    do {
-        _next = n;
-        return _next;
-    }
-    inout(ScriptElement) next() inout pure nothrow {
-        return _next;
+    @safe
+    static struct Range {
+        protected {
+            ScriptElement next;
+            bool about;
+            ScriptContext context;
+        }
+        const(ScriptElement) start;
+        const(Script) script;
+        @trusted
+        this(const ScriptElement start, const Script script, ref ScriptContext context) {
+            this.start=start;
+//            rewind;
+            this.next=cast(ScriptElement)start;
+            this.context=context;
+            this.script=script;
+        }
+
+        const pure nothrow {
+            bool empty() {
+                return (next is null) && !about;
+            }
+
+            const(ScriptElement) front() {
+                return next;
+            }
+        }
+
+        @trusted
+        void popFront() {
+            next=cast(ScriptElement)next(script, context);
+            with(ScriptContext.Mode) {
+                final switch (context.mode) {
+                case NONE:
+                    // empty
+                    break;
+                case REWIND:
+                    rewind;
+                    break;
+                case ABORT:
+                    about=true;
+                }
+            }
+        }
+
+        @trusted
+        void rewind() {
+            next=cast(ScriptElement)(start);
+            context._mode=ScriptContext.Mode.NONE;
+        }
     }
 
-    package void set_location(const uint n, string token, const uint line, const uint pos) {
-        assert(this.token.length == 0);
-        this.token = token;
-        this.line = line;
-        this.pos = pos;
-        this.n=n;
-    }
-    void check(const Script s, const ScriptContext sc) const
+    final void check(const Script s, ScriptContext sc) const
         in {
             assert( sc !is null);
             assert( s !is null);
         }
     do {
-
-        if ( runlevel > s.runlevel ) {
-            throw new ScriptException("Opcode not allowed in this runlevel");
-        }
+        .check(runlevel <= s.runlevel,
+            message("Opcode %s is only allowed in runlevel %d but the current runlevel is %d",
+                toText, runlevel, s.runlevel));
+        .check(sc.fuel >= cost,
+            message("At opcode %s the script runs out of fuel",
+            toText));
+        sc.fuel-=cost;
     }
 
     string toInfo() pure const nothrow {
         import std.conv;
         string result;
-        result=token~" "~to!string(line)~":"~to!string(pos);
-        return result;
+        with(token) {
+            return name~" "~line.to!string~":"~pos.to!string;
+        }
     }
 
-    uint index() const {
-        return n;
+    string toText() const {
+        return token.name;
     }
 
+    uint cost() const pure nothrow {
+        return 1;
+    }
 }
 
 @safe
 class ScriptError : ScriptElement {
-    private const(ScriptElement) problem_element;
-    private string error;
-    this(string error, const(ScriptElement) problem_element) {
-        this.error=error;
+    enum uint error_runlevel=0;
+    const(ScriptElement) problem_element;
+    const(TagionException) exception;
+    immutable(string) msg;
+    this(string msg, const(ScriptElement) problem_element, const(ScriptElement) next=null, const(TagionException) ex=null) {
+        this.msg=msg;
         this.problem_element=problem_element;
-        super(0);
-    }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
-        import std.stdio;
-        writefln("Aborted: %s", error);
-        writeln(problem_element.toInfo);
-        return null;
-    }
-    string toText() const {
-        return "error:"~error;
-    }
-}
-
-@safe
-class ScriptJump : ScriptElement {
-    private bool turing_complete;
-    private ScriptElement _jump;
-    this() {
-        super(0);
-    }
-    void set_jump(ScriptElement target)
-    in {
-        assert(target !is null);
-        assert(_jump is null, "Jump target should not be changed");
-    }
-    out {
-        assert(this._jump !is null);
-    }
-    do {
-        this._jump=target;
-    }
-    const(ScriptElement) jump() pure nothrow const {
-        return _jump;
-    }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        if ( turing_complete ) {
-            if ( !s.is_turing_complete) {
-                throw new ScriptException("Illegal command in Turing complete mode");
-            }
-        }
-        sc.check_jump();
-        return _jump; // Points to the jump position
-    }
-    string toText() const {
-        auto target=(_jump is null)?"null":to!string(_jump.n);
-        return "goto "~target;
-    }
-}
-
-@safe
-class ScriptConditionalJump : ScriptJump {
-    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
-        check(s, sc);
-        sc.check_jump();
-
-        if ( sc.data_pop.value != 0 ) {
-            return _next;
+        this.exception=ex;
+        if ( problem_element ) {
+            super(problem_element.token, next, 0);
         }
         else {
-            return _jump;
+            immutable(Token) token={name : "Unknown"};
+            super(token, next, 0);
         }
     }
-    override string toText() const {
-        auto target_false=(_jump is null)?"null":to!string(_jump.n);
-        auto target_true=(_next is null)?"null":to!string(_next.n);
-        return "if.false goto "~target_false;
+
+    this(string msg, const(Token) token, const(ScriptElement) next) {
+        this.problem_element=null;
+        this.exception=null;
+        this.msg=msg;
+        super(token, next, 0);
     }
 
+    this(string msg, const(ScriptElement) problem_element, const(TagionException) ex) {
+        this(msg, problem_element, null, ex);
+    }
+
+    this(const ScriptError e) {
+        this(e.msg, e.problem_element, e.exception);
+    }
+
+    package this(immutable(Token) token, string error) {
+        problem_element=null;
+        exception=null;
+        this.msg=msg;
+        super(token, null, error_runlevel);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        import std.stdio : writefln, writeln;
+        writefln("Aborted: %s", msg);
+        if (problem_element) {
+            writeln(problem_element.toInfo);
+        }
+        sc.errorElement=new ScriptError(this);
+        return next;
+    }
+
+    override string toText() const {
+        if ( problem_element ) {
+            return message("error: %s, element: %s", msg,  problem_element.toInfo);
+        }
+        else {
+            return message("error: %s", msg);
+        }
+    }
 }
 
 
+@safe
+class ScriptConditional : ScriptElement {
+    const(ScriptElement) brance_true;
+    const(ScriptElement) brance_false;
+    this(const(Token) token,
+        const(ScriptElement) brance_true,
+        const(ScriptElement) brance_false,
+        const(ScriptElement) next) {
+        this.brance_false=brance_false;
+        this.brance_true=brance_true;
+        ScriptElement.__force_bind(this.brance_true, next);
+        ScriptElement.__force_bind(this.brance_false, next);
+
+        super(token, next, RunLevel.CONDITIONAL);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        check(s, sc);
+        if ( sc.pop.get!bool ) {
+            return brance_true;
+            // if ( const ScriptElement result=s.run(brance_true, sc) ) {
+            //     return result;
+            // }
+        }
+        else {
+            return brance_false;
+            if ( const ScriptElement result=s.run(brance_false, sc) ) {
+                return result;
+            }
+        }
+        return next;
+    }
+}
+
+
+enum RunLevel : uint {
+    CONDITIONAL = 0,
+        LOOP = 0,
+        JUMP = 0,
+}
+
+@safe abstract class ScriptDoLoop : ScriptElement {
+    const(Variable) I;
+    const(Variable) TO;
+//    private Number to;
+
+    @trusted
+    this(const(Token) token, const(ScriptElement) next, const(Block) block) {
+        const do_block=cast(DoLoopBlock) block;
+        I=do_block.I;
+        TO=do_block.TO;
+        super(token, next, RunLevel.LOOP);
+    }
+}
+
+@safe class ScriptDo : ScriptDoLoop {
+//    const(ScriptElement) loop_body;
+    this(const(Token) token,
+        const(ScriptElement) loop_body,
+        const(ScriptElement) after_loop,
+        const(Token) end_loop,
+        DoLoopBlock block) {
+        ScriptElement script_end_loop;
+        with(ScriptKeyword) {
+            if ( Lexer.get(end_loop.name.toUpper) is LOOP ) {
+                script_end_loop=new ScriptLoop!LOOP(end_loop, loop_body, after_loop, block);
+            }
+            else {
+                script_end_loop=new ScriptLoop!ADDLOOP(end_loop, loop_body, after_loop, block);
+            }
+        }
+        ScriptElement.__force_bind(loop_body, script_end_loop);
+        super(token, loop_body, block);
+        foreach(jump; block.jumps) {
+            jump.brance(loop_body, after_loop);
+        }
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        check(s, sc);
+        auto _i=sc.pop();
+        if ( const(ScriptError) error=I.check(_i, this)) {
+            return error;
+        }
+        sc.locals[I.index]=new Value(_i);
+        auto _to=sc.pop;
+        if ( const(ScriptError) error=TO.check(_to, this)) {
+            return error;
+        }
+        sc.locals[TO.index]=new Value(_to);
+        return next;
+    }
+}
+
+
+@safe class ScriptLoop(ScriptKeyword keyword) : ScriptDoLoop {
+    static assert(keyword is ScriptKeyword.LOOP || keyword is ScriptKeyword.ADDLOOP,
+        format("The keyword should %s or %s", ScriptKeyword.LOOP, ScriptKeyword.ADDLOOP));
+    enum ADDLOOP=keyword is ScriptKeyword.ADDLOOP;
+    const(ScriptElement) loop_body;
+    this(const(Token) token,
+        const(ScriptElement) loop_body,
+        const(ScriptElement) next,
+        const(Block) block) {
+        this.loop_body=loop_body;
+        super(token, next, block);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        check(s, sc);
+        static if (ADDLOOP) {
+            const inc=sc.pop.get!Number;
+            auto i_add_1=sc.locals[I.index].get!Number+inc;
+        }
+        else {
+            auto i_add_1=sc.locals[I.index].get!Number+1;
+        }
+        const to=sc.locals[TO.index].get!Number;
+        sc.locals[I.index].set(i_add_1);
+        if ( i_add_1 < to ) {
+            // Jump to the start of the loop
+            return loop_body;
+        }
+        return next;
+    }
+}
+
+
+@safe class ScriptBegin : ScriptElement {
+//    const(ScriptElement) loop_body;
+    this(const(Token) token,
+        const(ScriptElement) loop_body,
+        const(ScriptElement) after_loop,
+        const(Token) end_loop,
+        BeginLoopBlock block) {
+        //this.loop_body=loop_body;
+        ScriptElement script_end_loop;
+        with(ScriptKeyword) {
+            if ( Lexer.get(end_loop.name.toUpper) is UNTIL ) {
+                script_end_loop=new ScriptUntil(end_loop, loop_body, after_loop);
+            }
+            else {
+                script_end_loop=new ScriptRepeat(end_loop, loop_body, after_loop);
+            }
+        }
+        ScriptElement.__force_bind(loop_body, script_end_loop);
+        super(token, loop_body, RunLevel.LOOP);
+        foreach(jump; block.jumps) {
+            jump.brance(loop_body, after_loop);
+        }
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        check(s, sc);
+//        s.run(this, sc);
+        return next;
+    }
+}
+
+@safe class ScriptRepeat : ScriptElement {
+    const(ScriptElement) loop_body;
+    this(const(Token) token,
+        const(ScriptElement) loop_body,
+        const(ScriptElement) next) {
+        this.loop_body=loop_body;
+        super(token, next, RunLevel.LOOP);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        check(s, sc);
+        return loop_body;
+    }
+}
+
+
+@safe class ScriptUntil : ScriptRepeat {
+    this(const(Token) token,
+        const(ScriptElement) loop_body,
+        const(ScriptElement) next) {
+        super(token, loop_body, next);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
+        check(s, sc);
+        if (!sc.pop.get!bool) {
+            // Jump to the start of the loop
+            return loop_body;
+        }
+        return next;
+    }
+}
+
+version(none)
 @safe
 class ScriptNotConditionalJump : ScriptConditionalJump {
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const  {
         check(s, sc);
         sc.check_jump();
 
-        if ( sc.data_pop.value == 0 ) {
+        if ( sc.pop.value == 0 ) {
             return _next;
         }
         else {
@@ -572,97 +621,178 @@ class ScriptNotConditionalJump : ScriptConditionalJump {
 
 @safe
 class ScriptExit : ScriptElement {
-    this() {
-        super(0);
+    this(const(Token) token, ScriptElement next, immutable uint runlevel) {
+        super(token, next, runlevel);
     }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        if (sc.trace) {
-            if ( sc.indent.length > 0) {
-                sc.indent.length--;
-            }
-        }
-        auto ret=sc.return_pop;
-        if ( ret.type == Value.Type.FUNCTION ) {
-            sc.pop_locals;
-            return ret.get!(const(ScriptElement));
-        }
-        else {
-            return new ScriptError("Return stack type fail, return address expected bot "~to!string(ret.type),this);
-        }
 
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        return null;
     }
-    string toText() const {
+
+    override string toText() const {
         return "exit";
     }
-
 }
 
 @safe
-class ScriptCall : ScriptJump {
-    private string func_name;
-    // Number of local variables
-    private uint loc_size;
-    this(string func_name) {
-        this.func_name=func_name;
+class ScriptFunc : ScriptElement {
+    enum uint call_runlevel=0;
+    protected uint local_size;
+    this(const(Token) token) {
+        super(token, null, call_runlevel);
     }
+
+    @trusted
+    package void define(const(ScriptElement) next, const(FunctionBlock) func_block) {
+        local_size=func_block.local_size;
+        emplace(&this.next, next);
+    }
+
+    @trusted
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s,sc);
-        sc.return_push(_next);
-        if (sc.trace) {
-            sc.indent~=" ";
+        size_t old_size;
+        try {
+            old_size=sc.setLocals(local_size);
         }
-        // writefln("Call %s loc_size=%s", func_name, loc_size);
-        auto locals=new Value[loc_size];
-        foreach(ref v; locals) {
-            v=Value(0);
+        catch (RangeError e) {
+            return new ScriptError(
+                message("Local %d variables can not be allocated only %d are available",
+                    local_size, sc.local_available),
+                this);
         }
-        sc.push_locals(locals);
-        return _jump;
-    }
-    override void set_jump(ScriptElement target) {
-        assert(0, "Use set_call instead of set_jump");
-    }
-    void set_call(ScriptElement target, immutable uint locals=0)
-        in {
-            assert(loc_size == 0);
+        scope(exit) {
+            sc.restoreLocals(old_size);
         }
-    do {
-        super.set_jump(target);
-        // writefln("set_call %s locals=%s", func_name, locals);
-        loc_size = locals;
+        return s.run(next, sc);
     }
-    override string toText() const {
-        return "call "~func_name;
+
+    override string toText() const pure {
+        import std.format;
+        return format("call %s", name);
     }
-    string name() const {
-        return func_name;
+
+    string name() const pure nothrow {
+        return token.name;
+    }
+}
+
+@safe class ScriptCall : ScriptElement {
+    const(ScriptFunc) func;
+    this(const(Token) token, const(ScriptFunc) func, const(ScriptElement) next) {
+        this.func=func;
+        super(token, next, 0);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        func(s, sc);
+        return next;
+    }
+
+    override string toText() const pure {
+        return "call";
     }
 }
 
 
+@safe abstract class ScriptJump : ScriptElement {
+    this(const(Token) token, const(ScriptElement) next, immutable uint runlevel) {
+        super(token, next, runlevel);
+    }
 
+    void brance(const(ScriptElement) bachward, const(ScriptElement) forward);
+}
+
+
+@safe class ScriptWhile : ScriptJump {
+    protected ScriptElement forward;
+    this(const(Token) token, const(ScriptElement) next, Block block) {
+        auto sub_block=cast(SubBlock)block;
+        sub_block.jumps~=this;
+        super(token, next, RunLevel.JUMP);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        if (!sc.pop.get!bool) {
+            return forward;
+        }
+        return next;
+    }
+
+    @trusted
+    override void brance(const(ScriptElement) bachward, const(ScriptElement) forward) {
+//        writefln
+        emplace(&this.forward, cast(ScriptElement)forward);
+    }
+}
+
+
+@safe class ScriptAgain : ScriptJump {
+    protected ScriptElement backward;
+    this(const(Token) token, const(ScriptElement) next, Block block) {
+        auto sub_block=cast(SubBlock)block;
+        sub_block.jumps~=this;
+        super(token, next, RunLevel.JUMP);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        return backward;
+    }
+
+    @trusted
+    override void brance(const(ScriptElement) backward, const(ScriptElement) forward) {
+        emplace(&this.backward, cast(ScriptElement)backward);
+    }
+}
+
+@safe class ScriptLeave : ScriptJump {
+    protected ScriptElement forward;
+    this(const(Token) token, const(ScriptElement) next, Block block) {
+        auto sub_block=cast(SubBlock)block;
+        sub_block.jumps~=this;
+        super(token, next, RunLevel.JUMP);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        return forward;
+    }
+
+    @trusted
+    override void brance(const(ScriptElement) backward, const(ScriptElement) forward) {
+        emplace(&this.forward, cast(ScriptElement)forward);
+    }
+}
+
+//
+// Constants
+//
 @safe
 class ScriptNumber : ScriptElement {
-    private BigInt x;
-    this(string number) {
-        this.x=BigInt(number);
-        super(0);
+    private Number x;
+    this(const(Token) token, const(ScriptElement) next) {
+        this.x=Number(token.name);
+        super(token, next, 0);
     }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        sc.data_push(x);
-        return _next;
+        sc.push(x);
+        return next;
     }
+
     @trusted
-    string toText() const {
+    override string toText() const {
         import std.format : format;
 
         if ( x.ulongLength == 1 ) {
-            return format("%d", x);
+            return x.toDecimalString;
         }
         else {
-            return format("0x%x", x);
+            return "0x"~x.toHex();
         }
     }
 
@@ -670,102 +800,162 @@ class ScriptNumber : ScriptElement {
 
 @safe
 class ScriptText : ScriptElement {
-    private string text;
-    this(string text) {
-        this.text=text;
-        super(0);
+    this(const(Token) token, const(ScriptElement) next) {
+        super(token, next, 0);
     }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        sc.data_push(text);
-        return _next;
+        sc.push(text);
+        return next;
     }
-    string toText() const {
+
+    @property string text() const pure nothrow {
+        return token.name[1..$-1];
+    }
+
+    override string toText() const {
         return '"'~text~'"';
     }
 }
 
+version(none)
 @safe
-class ScriptGetVar : ScriptElement {
-    private immutable uint var_index;
-    private immutable(char[]) var_name;
-    this(string var_name, uint var_index) {
-        this.var_name = var_name;
-        this.var_index = var_index;
-        super(0);
-    }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        sc.data_push(sc.variables[var_index]);
-        return _next;
-    }
-    string toText() const {
-        return var_name~" @";
+class ScriptPrintText : ScriptText {
+    this(const(Token) token, string text, const(ScriptElement) next) {
+        super(token, text, next, 0);
     }
 
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        import std.stdio;
+        writeln(text);
+        return next;
+    }
+
+    override string toText() const {
+        return token.name;
+    }
+}
+
+
+//
+@safe
+class ScriptGetVar : ScriptElement {
+    immutable bool local;
+    const(Variable) var;
+    this(const(Token) token, const(ScriptElement) next, const(Variable) var, const bool local=false) {
+        this.var=var;
+        this.local=local;
+        super(token, next, 0);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        if (local) {
+            auto value=sc.locals[var.index];
+
+            if ( value ) {
+                sc.push(value);
+            }
+            else {
+                sc.push(var.initial);
+            }
+
+        }
+        else {
+            auto value=sc.globals[var.index];
+            if ( value ) {
+
+                sc.push(value);
+            }
+            else {
+                sc.push(var.initial);
+            }
+        }
+        return next;
+    }
+
+    override string toText() const {
+        return var.name~" @";
+    }
 }
 
 
 @safe
 class ScriptPutVar : ScriptElement {
-    immutable uint var_index;
-    private string var_name;
-    this(string var_name, uint var_index) {
-        this.var_name = var_name;
-        this.var_index = var_index;
-        super(0);
+    immutable bool local;
+    const(Variable) var;
+    this(const(Token) token, const(ScriptElement) next, const(Variable) var, const bool local=false) {
+        this.var=var;
+        this.local=local;
+        super(token, next, 0);
     }
-    @trusted
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+
+    // PutVar operators which are valid for ScriptBinaryOpPutVar
+    enum operators=[
+        "-!", "+!", "/!", "*!", "%!", "<<!", ">>!", "&!", "|!", "^!",
+        "-!@", "+!@", "/!@", "*!@", "%!@", "<<!@", ">>!@", "&!@", "|!@", "^!@",
+        ];
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        auto var=sc.data_pop();
-        sc.variables[var_index]=Value(var);
-        return _next;
+        auto value=sc.pop();
+        if ( const(ScriptError) error=var.check(value, this)) {
+            return error;
+        }
+
+        if (local) {
+            sc.locals[var.index]=new Value(value);
+        }
+        else {
+            sc.globals[var.index]=new Value(value);
+        }
+
+        return next;
     }
-    string toText() const {
-        return var_name~" !";
+
+    override string toText() const {
+        return var.name~" !";
     }
 
 }
 
-@safe
-class ScriptGetLoc : ScriptElement {
-    private immutable uint loc_index;
-    private immutable(char[]) loc_name;
-    this(string loc_name, uint loc_index) {
-        this.loc_name = loc_name;
-        this.loc_index = loc_index;
-        super(0);
-    }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        sc.data_push(sc.locals[loc_index]);
-        return _next;
-    }
-    string toText() const {
-        return loc_name~" @";
+mixin template ScriptElementTemplate(string element_name, immutable uint level,
+    bool CTOR=true, uint COST=1,
+    uint LINE=__LINE__, string FILE=__FILE__) {
+    enum name=element_name;
+
+    alias ScriptType=typeof(this);
+
+    static if (CTOR) {
+        this(const(Token) token, const(ScriptElement) next) {
+            super(token, next, level);
+        }
+
+
+        static ScriptElement create(const(Token) token, const(ScriptElement) next) {
+            return new ScriptType(token, next);
+        }
     }
 
-}
+    static this() {
+        import std.format;
+        import std.stdio;
+        assert(name !in Script.opcreators,
+            format("Opcreator '%s' for %s has already been used (defined in %s:%d)",
+                ScriptType.stringof, name, FILE, LINE));
+        Script.opcreators[name]=&create;
+    }
 
-@safe
-class ScriptPutLoc : ScriptElement {
-    immutable uint loc_index;
-    private string loc_name;
-    this(string loc_name, uint loc_index) {
-        this.loc_name = loc_name;
-        this.loc_index = loc_index;
-        super(0);
+    override string toText() const {
+        return name;
     }
-    @trusted
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        auto var=sc.data_pop();
-        sc.locals[loc_index]=Value(var);
-        return _next;
-    }
-    string toText() const {
-        return loc_name~" !";
+
+    static assert(COST > 0, "Cost must be large than 0");
+    static if (COST !is 1) {
+        override uint cost() const pure nothrow {
+            return COST;
+        }
     }
 
 }
@@ -775,477 +965,1181 @@ class ScriptPutLoc : ScriptElement {
 
 @safe
 class ScriptUnitaryOp(string O) : ScriptElement {
+    mixin ScriptElementTemplate!(O, 0);
     enum op=O;
-    this() {
-        super(0);
-    }
-    @trusted
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
-        static if ( op == "1-" ) {
-            sc.data_push(sc.data_pop.value - 1);
+        with(FunnelType) {
+            static if ( op == "1-" ) {
+                sc.push(sc.pop.by!NUMBER - 1);
+            }
+            else static if ( op == "1+" ) {
+                sc.push(sc.pop.by!NUMBER + 1);
+            }
+            else {
+                static assert(0, "Unitary operator "~op.stringof~" not defined");
+            }
         }
-        else static if ( op == "1+" ) {
-            sc.data_push(sc.data_pop.value + 1);
+        return next;
+    }
+
+    override string toText() const {
+        return op;
+    }
+}
+
+static this() { // Create Unitary operators
+    import std.format;
+    static foreach(i, op; ["1-", "1+"]) {
+        {
+            enum code=format("alias ScriptType=ScriptUnitaryOp!\"%s\";", op);
+            mixin(code);
         }
-        else static if ( op == "r@1+" ) {
-            // r@ 1 + dup >r
-            auto r=sc.return_pop.value+1;
-            sc.data_push(r);
-            sc.return_push(r);
+    }
+
+}
+
+@safe
+class ScriptBinaryOp(string O) : ScriptElement {
+    mixin ScriptElementTemplate!(O, 0);
+    enum op=O;
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        Number b, a;
+        try {
+            with(FunnelType) {
+                b=sc.pop.by!NUMBER;
+                a=sc.pop.by!NUMBER;
+            }
+        }
+        catch ( TagionException ex ) {
+            return new ScriptError("Type or operator problem", this, ex);
+        }
+        static if ( (op == "/") || (op == "%" ) ) {
+            if ( b == 0 ) {
+                return new ScriptError("Division by zero", this);
+            }
+        }
+        static if ( op == "<<" ) {
+            if ( b < 0 ) {
+                return new ScriptError("Left shift divisor must be positive", this);
+            }
+            if ( b == 0 ) {
+                sc.push(a);
+            }
+            else {
+                auto _b=cast(int)b;
+                if ( b > s.MAX_SHIFT_LEFT ) {
+                    return new ScriptError("Left shift overflow", this);
+                }
+                auto y=a << _b;
+                sc.push(y);
+            }
+        }
+        else static if ( op == ">>" ) {
+            if ( b < 0 ) {
+                return new ScriptError("Left shift divisor must be positive", this);
+            }
+            if ( b == 0 ) {
+                sc.push(a);
+            }
+            else {
+                auto _b=cast(uint)b;
+                auto y=a >> _b;
+                sc.push(y);
+            }
         }
         else {
-            static assert(0, "Unitary operator "~op.stringof~" not defined");
+            mixin("sc.push(a" ~ op ~ "b);");
         }
-
-        return _next;
+        return next;
     }
-    string toText() const {
+
+    override string toText() const {
         return op;
     }
 }
 
 
-
-@safe
-class ScriptBinaryOp(string O) : ScriptElement {
-    enum op=O;
-    this() {
-        super(0);
-    }
-    @trusted
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        scope BigInt a, b;
-        try {
-            a=sc.data_pop.value;
-            b=sc.data_pop.value;
+static this() { // Create binary operators
+    import std.format;
+    static foreach(i, op; ["-", "+", "/", "*", "%", "<<", ">>", "&", "|", "^"]) {
+        {
+            enum code=format(`alias ScriptType=ScriptBinaryOp!"%s";`, op);
+            mixin(code);
         }
-        catch ( Exception e ) {
-            return new ScriptError("Type or operator problem", this);
-        }
-        static if ( (op == "/") || (op == "%" ) ) {
-            if ( a == 0 ) {
-                return new ScriptError("Division by zero", this);
-            }
-        }
-        static if ( op == "<<" ) {
-            if ( a < 0 ) {
-                return new ScriptError("Left shift divisor must be positive", this);
-            }
-            if ( a == 0 ) {
-                sc.data_push(b);
-            }
-            else {
-                auto _a=cast(int)a;
-                if ( a > s.max_shift_left ) {
-                    return new ScriptError("Left shift overflow", this);
-                }
-                auto y=b << _a;
-                sc.data_push(y);
-            }
-        }
-        else static if ( op == ">>" ) {
-            if ( a < 0 ) {
-                return new ScriptError("Left shift divisor must be positive", this);
-            }
-            if ( a == 0 ) {
-                sc.data_push(b);
-            }
-            else {
-                auto _a=cast(uint)a;
-                auto y=b >> _a;
-                sc.data_push(y);
-            }
-        }
-        else {
-
-            mixin("sc.data_push(b" ~ op ~ "a);");
-        }
-        return _next;
-    }
-    string toText() const {
-        return op;
     }
 }
 
 @safe
 class ScriptCompareOp(string O) : ScriptElement {
+    mixin ScriptElementTemplate!(O, 0);
     enum op=O;
-    this() {
-        super(0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        try {
+            check(s, sc);
+            auto b=sc.pop;
+            auto a=sc.pop;
+
+            bool result;
+            with(FunnelType) {
+                switch(b.type) {
+                case NUMBER:
+                    const a_val=a.by!NUMBER;
+                    const b_val=b.by!NUMBER;
+                    mixin("result = a_val" ~ op ~ "b_val;");
+                    break;
+                case TEXT:
+                    const a_val=a.by!TEXT;
+                    const b_val=b.by!TEXT;
+                    mixin("result = a_val" ~ op ~ "b_val;");
+                    break;
+                case BINARY:
+                    static if ((op == "==") || (op == "!=")) {
+                        const a_val=a.by!BINARY;
+                        const b_val=b.by!BINARY;
+                        mixin("result = a_val" ~ op ~ "b_val;");
+                    }
+                    else {
+                        goto default;
+//                            return new ScriptError(format("Compare operator %s can not be used on %s type", O, b.type));
+                    }
+                    break;
+                default:
+                    return new ScriptError(message("Compare operator %s can not be used on %s type", O, b.type), this);
+                }
+            }
+            sc.push(result);
+        }
+        catch (TagionException ex) {
+            return new ScriptError(message("Operator %s causes an fail", op), this, ex);
+        }
+        return next;
     }
-    @trusted
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        bool result;
-        auto b=sc.data_pop.value;
-        auto a=sc.data_pop.value;
-        mixin("result = a" ~ op ~ "b;");
-        auto x=BigInt((result)?-1:0);
-        sc.data_push(x);
-        return _next;
-    }
-    string toText() const {
+
+    override string toText() const {
         return op;
     }
 }
+
+static this() { // Create binary operators
+    import std.format;
+    static foreach(op; ["==", "!=", ">", "<", ">=", "<="]) {
+        {
+            enum code=format("alias ScriptType=ScriptCompareOp!\"%s\";", op);
+            mixin(code);
+        }
+    }
+}
+
 
 @safe
 class ScriptStackOp(string O) : ScriptElement {
+    mixin ScriptElementTemplate!(O, 0);
     enum op=O;
-    this() {
-        super(0);
+    static if (O == "2SWAP") {
+        pragma(msg, "FIX ME: Some of the stack operations can be optimized using array.opSlice operations");
     }
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        static if ( op ==  "dup" ) { // a -- a a
-            sc.data_push(sc.data_peek);
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        static if ( op ==  "DUP" ) { // a -- a a
+            sc.push(sc.peek);
         }
-        else static if ( op == "swap" ) { // ( a b -- b a )
-            auto a=sc.data_pop;
-            auto b=sc.data_pop;
-            sc.data_push(b);
-            sc.data_push(a);
+        else static if ( op == "SWAP" ) { // ( a b -- b a )
+            auto a=sc.pop;
+            auto b=sc.pop;
+            sc.push(b);
+            sc.push(a);
         }
-        else static if ( op == "drop" ) {  // ( a -- )
-            sc.data_pop;
+        else static if ( op == "DROP" ) {  // ( a -- )
+            sc.pop;
         }
-        else static if ( op == "over" ) { // ( a b -- a b a )
-            sc.data_push(sc.data_peek(1));
+        else static if ( op == "OVER" ) { // ( a b -- a b a )
+            sc.push(sc.peek(1));
         }
-        else static if ( op == "rot" ) { // ( a b c -- b c a )
-            auto a=sc.data_pop;
-            auto b=sc.data_pop;
-            auto c=sc.data_pop;
-            sc.data_push(a);
-            sc.data_push(c);
-            sc.data_push(b);
+        else static if ( op == "ROT" ) { // ( a b c -- b c a )
+            auto c=sc.pop;
+            auto b=sc.pop;
+            auto a=sc.pop;
+            sc.push(b);
+            sc.push(c);
+            sc.push(a);
         }
-        else static if ( op == "-rot" ) { // ( a b c -- c a b )
-            auto a=sc.data_pop;
-            auto b=sc.data_pop;
-            auto c=sc.data_pop;
-            sc.data_push(b);
-            sc.data_push(a);
-            sc.data_push(c);
+        else static if ( op == "-ROT" ) { // ( a b c -- c a b )
+            auto c=sc.pop;
+            auto b=sc.pop;
+            auto a=sc.pop;
+            sc.push(c);
+            sc.push(a);
+            sc.push(b);
         }
-        else static if ( op == "nip" ) { // ( a b -- b )
-            auto a=sc.data_pop;
-            auto b=sc.data_pop;
-            sc.data_push(b);
+        else static if ( op == "NIP" ) { // ( a b -- b )
+            auto b=sc.pop;
+            auto a=sc.pop;
+            sc.push(b);
         }
-        else static if ( op == "tuck" ) { // ( a b -- b a b )
-            auto v=sc.data_peek(1);
-            sc.data_push(v.value);
+        else static if ( op == "TUCK" ) { // ( a b -- b a b )
+            auto b=sc.pop;
+            auto a=sc.pop;
+            sc.push(b);
+            sc.push(a);
+            sc.push(b);
         }
-        else static if ( op == "2dup" ) { // ( a b -- a b a b )
-            auto va=sc.data_peek(0);
-            auto vb=sc.data_peek(1);
-            sc.data_push(vb.value);
-            sc.data_push(va.value);
+        else static if ( op == "2DUP" ) { // ( a b -- a b a b )
+            auto a=sc.peek(0);
+            auto b=sc.peek(1);
+            sc.push(a);
+            sc.push(b);
         }
-        else static if ( op == "2swap" ) { // ( a b c d -- c b a b )
-            auto a=sc.data_pop;
-            auto b=sc.data_pop;
-            auto c=sc.data_pop;
-            auto d=sc.data_pop;
-            sc.data_push(b);
-            sc.data_push(a);
-            sc.data_push(d);
-            sc.data_push(c);
+        else static if ( op == "2SWAP" ) { // ( a b c d -- c b a b )
+            auto d=sc.pop;
+            auto c=sc.pop;
+            auto b=sc.pop;
+            auto a=sc.pop;
+            sc.push(c);
+            sc.push(b);
+            sc.push(a);
+            sc.push(d);
         }
-        else static if ( op == "2drop" ) { // ( a b -- )
-            sc.data_pop;
-            sc.data_pop;
+        else static if ( op == "2DROP" ) { // ( a b -- )
+            sc.pop;
+            sc.pop;
         }
-        else static if ( op == "2over" ) { // ( a b c d -- a b c d a b )
-            auto va=sc.data_peek(2);
-            auto vb=sc.data_peek(3);
-            sc.data_push(va.value);
-            sc.data_push(vb.value);
+        else static if ( op == "2OVER" ) { // ( a b c d -- a b c d a b )
+            auto b=sc.peek(2);
+            auto a=sc.peek(3);
+            sc.push(a);
+            sc.push(b);
         }
-        else static if ( op == "2nip" ) { // ( a b c d -- a b )
-            auto a=sc.data_pop;
-            auto b=sc.data_pop;
-            auto c=sc.data_pop;
-            auto d=sc.data_pop;
-            sc.data_push(b);
-            sc.data_push(a);
+        else static if ( op == "2NIP" ) { // ( a b c d -- a b )
+            auto d=sc.pop;
+            auto c=sc.pop;
+            auto b=sc.pop;
+            auto a=sc.pop;
+            sc.push(b);
+            sc.push(a);
         }
-        else static if ( op == "2tuck" ) {  // ( a b c d -- a b c d a b )
-            auto a=sc.data_pop;
-            auto b=sc.data_pop;
-            auto c=sc.data_pop;
-            auto d=sc.data_pop;
-            sc.data_push(b);
-            sc.data_push(a);
-            sc.data_push(d);
-            sc.data_push(c);
-            sc.data_push(b);
-            sc.data_push(a);
-        }
-        else static if ( op == ">r" ) {
-            sc.return_push(sc.data_pop);
-        }
-        else static if ( op == "r>" ) {
-            sc.data_push(sc.return_pop);
-        }
-        else static if ( op == "r@" ) {
-            sc.data_push(sc.return_peek(0));
+        else static if ( op == "2TUCK" ) {  // ( a b c d -- a b c d a b )
+            auto d=sc.pop;
+            auto c=sc.pop;
+            auto b=sc.pop;
+            auto a=sc.pop;
+            sc.push(a);
+            sc.push(b);
+            sc.push(a);
+            sc.push(b);
+            sc.push(d);
+            sc.push(b);
         }
         else {
             static assert(0, "Stack operator "~op.stringof~" not defined");
-        }
-        return _next;
-    }
-    string toText() const {
-        return op;
-    }
-}
-
-mixin template ScriptElementTemplate(alias element_name, uint runlevel) {
-    enum name=element_name;
-    alias ScriptType=typeof(this);
-
-    this(){
-        super(runlevel);
-    }
-
-    static ScriptElement create() {
-        return new ScriptType;
-    }
-
-    static this() {
-        Script.opcreators[name]=&create;
-    }
-
-    string toText() const {
-        return name;
-    }
-
-}
-
-@safe
-class ScriptCreateBSON : ScriptElement {
-     /*
-        creates a new bson in the bsons array as an element
-        and returns the bsons_index on the stack.
-    */
-    mixin ScriptElementTemplate!("createbson", 0);
-
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        try {
-            sc.data_push(sc.createBson);
-            return next;
-        }
-        catch(ScriptException ex) {
-            return new ScriptError(name~" got an exception: "~ex.msg, this);
-        }
-    }
-}
-
-@safe
-class ScriptPutBSON : ScriptElement {
-    /*
-        Stores a value in a bson object at the specified field.
-        bsons_index key value bson!
-    */
-    mixin ScriptElementTemplate!("bson!", 0);
-
-    @trusted
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        try {
-            auto bsons_index=sc.data_pop().bson_index;
-            auto key=sc.data_pop.get!string;
-            auto value=sc.data_pop.get!(const(BigInt));
-
-            if ( key.length < 1) {
-                throw new ScriptException("The bson field name cannot be empty");
-            }
-
-            auto bson=sc.bson(bsons_index);
-
-            bson[key]=cast(int)value;
-
-            return next;
-        }
-        catch(ScriptException ex) {
-            return new ScriptError(name~" got an Script Exception: "~ex.msg, this);
-        }
-        catch(BSONException ex) {
-            return new ScriptError(name~" got an BSON Exception: "~ex.msg, this);
-        }
-    }
-}
-
-@safe
-class ScriptGetBSON : ScriptElement {
-    /*
-        Gets a value in a bson object at the specified field.
-        bsons_index key bson!
-    */
-    mixin ScriptElementTemplate!("bson@", 0);
-
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        try {
-            auto bsons_index=sc.data_pop().bson_index;
-            auto key=sc.data_pop.get!string;
-
-            if ( key.length < 1) {
-                throw new ScriptException("The bson field name cannot be empty");
-            }
-
-            auto bson=sc.bson(bsons_index);
-
-            if ( !bson.hasElement(key) ) {
-                throw new ScriptException("The key does not exists in the bson.");
-            }
-
-            auto value=bson[key].get!int;
-
-            sc.data_push(value);
-
-            return next;
-        }
-        catch(ScriptException ex) {
-            return new ScriptError(name~" got an exception: "~ex.msg, this);
-        }
-        catch(BSONException ex) {
-            return new ScriptError(name~" got an BSON Exception: "~ex.msg, this);
-        }
-    }
-}
-
-@safe
-class ScriptExpandBSON : ScriptElement {
-    mixin ScriptElementTemplate!("expandbson", 0);
-
-    const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        check(s, sc);
-        auto a=sc.data_pop;
-        if ( a.type == Value.Type.BSON_INDEX ) {
-            sc.data_push(Document(sc.serialize(a.bson_index)));
-        }
-        else {
-            return new ScriptError(name~" expect an "~to!string(Value.Type.BSON_INDEX)~
-                " put got a "~to!string(a.type), this);
         }
         return next;
     }
 }
 
 
-@safe
-class Script {
-    alias ScriptElement function() opcreate;
-    package static opcreate[string] opcreators;
-    private import tagion.script.ScriptInterpreter : ScriptInterpreter;
-    alias ScriptInterpreter.ScriptType ScriptType;
-    alias ScriptInterpreter.Token Token;
+static this() { // Stack operations
+    enum Operators = [
+        "DUP",  // a -- a a
+        "SWAP", // ( a b -- b a )
+        "DROP", // ( a -- )
+        "OVER", // ( a b -- a b a )
+        "ROT",  // ( a b c -- b c a )
+        "-ROT", // ( a b c -- c a b )
+        "NIP",  // ( a b -- b )
+        "TUCK", // ( a b -- b a b )
+        "2DUP", // ( a b -- a b a b )
+        "2SWAP", // ( a b c d -- c b a b )
+        "2DROP", // ( a b -- )
+        "2OVER", // ( a b c d -- a b c d a b )
+        "2NIP", // ( a b c d -- a b )
+        "2TUCK", // ( a b c d -- a b c d a b )
+        ];
 
-    private bool trace;
-    struct Function {
-        string name;
-        immutable(Token)[] tokens;
-        private uint local_count;
-        private uint[string] local_indices;
-       //  private uint[uint] label_jump_table;
-        ScriptElement opcode;
-        bool compiled;
-        string toInfo() pure const nothrow {
-            string result;
-            void foreach_loop(const ScriptElement s, const uint i) {
-                if ( s !is null) {
-                    result~=to!string(i)~"] ";
-                    result~=s.toInfo;
-                    result~="\n";
-                    foreach_loop(s, i+1);
-                }
-            }
-            return result;
-        }
-        uint allocate_loc(string loc_name) {
-            // writef("allocate_loc=%s", loc_name);
-            if ( loc_name !in local_indices ) {
-                local_indices[loc_name]=local_count;
-                local_count++;
-            }
-            // writefln(" loc_count=%s in function %s", local_count, name);
-            return local_indices[loc_name];
-        }
-        bool is_loc(string loc_name) pure const nothrow {
-            return (loc_name in local_indices) !is null;
-        }
-        // Number of local variables in the function
-        uint local_size() pure const nothrow {
-            return local_count;
-        }
-        uint get_loc(string loc_name) const {
-            return local_indices[loc_name];
-        }
-        uint auto_get_loc(string loc_name) {
-            if ( !is_loc(name) ) {
-                allocate_loc(loc_name);
-            }
-            return get_loc(loc_name);
-        }
-
-        string toText() {
-            string result;
-            foreach(i,t; tokens) {
-                result~=to!string(i)~")";
-                result~=t.toText;
-                result~="\n";
-            }
-            return result;
+    static foreach(i, op; Operators) { //
+        import std.format;
+        {
+            enum code=format("alias ScriptType=ScriptStackOp!\"%s\";", op);
+            mixin(code);
         }
     }
-    static ScriptElement createElement(string op) {
+
+
+}
+
+
+@safe
+class ScriptOpPutVar(string O) : ScriptPutVar {
+    static assert (O.length >= 2);
+    static if (O[$-1] == '!') {
+        enum op=O[0..$-1];
+        enum PUSH_RESULT=false;
+    }
+    else static if (O[$-2..$] == "!@") {
+        enum op=O[0..$-2];
+        enum PUSH_RESULT=true;
+    }
+    else {
+        static assert(0, format("Operator %s should be ! or !@ opertor", O));
+    }
+
+    this(const(Token) token, const(ScriptElement) next, const(Variable) var, const bool local=false) {
+        super(token, next, var, local);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        auto value=sc.pop();
+        if ( const(ScriptError) error=var.check(value, this)) {
+            return error;
+        }
+        Value var_a;
+        if ( local) {
+            var_a=sc.locals[var.index];
+        }
+        else {
+            var_a=sc.globals[var.index];
+        }
+        with(FunnelType) {
+            switch(var.type) {
+            case NUMBER:
+                const b=value.by!NUMBER;
+                auto a=var_a.by!NUMBER;
+                static if ( (op == "/") || (op == "%" ) ) {
+                    if ( b == 0 ) {
+                        return new ScriptError("Division by zero", this);
+                    }
+                }
+                static if ( op == "<<" ) {
+                    if ( b < 0 ) {
+                        return new ScriptError("Left shift divisor must be positive", this);
+                    }
+                    if ( b == 0 ) {
+                        // Do nothing
+                    }
+                    else if ( b > s.MAX_SHIFT_LEFT ) {
+                        return new ScriptError("Left shift overflow", this);
+                    }
+                    else {
+                        auto _b=cast(uint)b;
+                        a<<= _b;
+                    }
+                }
+                else static if ( op == ">>" ) {
+                    if ( b < 0 ) {
+                        return new ScriptError("Left shift divisor must be positive", this);
+                    }
+                    if ( b == 0 ) {
+                        // Do nothing
+                    }
+                    else {
+                        auto _b=cast(uint)b;
+                        a>>= _b;
+//                        sc.push(y);
+                    }
+                }
+                else {
+                    import std.format;
+                    enum code=format("a%s=b;", op);
+                    mixin(code);
+//                    writefln("OP %s a=%s b=%s code=%s c=%s", O, a, b, code, c);
+                }
+                if (local) {
+                    sc.locals[var.index]=new Value(a);
+                }
+                else {
+                    sc.globals[var.index]=new Value(a);
+                }
+                static if (PUSH_RESULT) {
+                    sc.push(a);
+                }
+                break;
+            case TEXT:
+                static if ( op == "+" ) {
+                    string a=var_a.by!TEXT;
+                    const b=sc.pop.by!TEXT;
+                    a~=b;
+                    if (local) {
+                        sc.locals[var.index]=new Value(a);
+                    }
+                    else {
+                        sc.globals[var.index]=new Value(a);
+                    }
+                    static if (PUSH_RESULT) {
+                        sc.push(a);
+                    }
+                }
+                else {
+                    goto default;
+                }
+                break;
+            default:
+                return new ScriptError(message("Invalid operator %s for type %s", O, var.type), this);
+            }
+        }
+        return next;
+    }
+
+    override string toText() const {
+        return message("%s %s", var.name, O);
+    }
+}
+
+static this() { // Create put assign operators
+    import std.format;
+    static foreach(i, op; ScriptPutVar.operators) {
+        {
+            enum code=format("alias ScriptType=ScriptOpPutVar!\"%s\";", op);
+            mixin(code);
+        }
+    }
+}
+
+enum TraceType= [
+    "TRACE_ON",
+    "TRACE_OFF",
+    ];
+
+@safe
+class ScriptTrace(string O=TraceType[0]) : ScriptElement {
+    enum op=O;
+    pragma(msg, O);
+    mixin ScriptElementTemplate!(O, 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        static if ( O == "TRACE_ON" ) {
+            sc.trace=true;
+        }
+        else static if ( O == "TRACE_OFF" ) {
+            sc.trace=false;
+        }
+        else {
+            static assert(0, format("Invalid operator name %s for %s", O, T.stringof));
+        }
+        return next;
+    }
+
+    override string toText() const {
+        return O;
+    }
+}
+
+static this() {
+    static foreach(op; TraceType) {
+        {
+            alias ScriptType=ScriptTrace!op;
+            pragma(msg, ScriptType);
+        }
+    }
+}
+
+version(none)
+@safe
+class ScriptPrintStack : ScriptElement {
+    mixin ScriptElementTemplate!(".S", 0);
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        writeln("Stack:");
+        size_t stack_index;
+        foreach_reverse(v; sc.stack) {
+            writefln("%02d] %s", stack_index, v);
+            stack_index++;
+        }
+        return next;
+    }
+}
+
+// Dot commands
+enum Dot {
+    L = ".L",
+    V = ".V",
+    S = ".S"
+};
+
+@safe
+class ScriptDebugPrint(Dot O) : ScriptElement {
+    enum name=O.stringof;
+    const Block block;
+
+    this(const(Token) token, const(ScriptElement) next, const(Block) block) {
+        this.block=block;
+        super(token, next, 0);
+    }
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        import std.stdio;
+        check(s, sc);
+        static if (O is Dot.S) {
+            writefln("Stack: %s", block.funcName);
+            size_t stack_index;
+            foreach_reverse(v; sc.stack) {
+                writefln("%s %03d] %s", sc.indent, stack_index, v);
+                stack_index++;
+            }
+        }
+        else static if (O is Dot.L) {
+            writefln("Locals: %s", block.funcName);
+            foreach(v; block.localVariables) {
+                writefln("%s %03d:%s %s", sc.indent, sc.varIndex(v), v.name, sc.locals[v.index]);
+            }
+        }
+        else static if (O is Dot.V) {
+            writefln("Globals: %s", block.funcName);
+            foreach(v; s.variables) {
+                writefln("%s .%03d:%s %s", sc.indent, v.index, v.name, sc.globals[v.index]);
+            }
+        }
+        else {
+            static assert(0, format("Dot code %s not defined yet", O));
+        }
+        return next;
+    }
+}
+
+// Should be create automaticaly when a hibon variable is used
+version(none)
+@safe
+class ScriptCreateHiBON : ScriptElement {
+     /*
+        creates a new bson in the bsons array as an element
+        and returns the bsons_index on the stack.
+    */
+    mixin ScriptElementTemplate!("createbson", 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        try {
+            auto hibon=new HiBON;
+            sc.push(hibon);
+            return next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an exception: "~ex.msg, this);
+        }
+    }
+}
+
+@safe
+class ScriptPutHiBON : ScriptElement {
+    /*
+        Stores a bson_value in a bson object at the specified field.
+        bsons_index bson_key bson_value bson!
+    */
+    mixin ScriptElementTemplate!("bson!", 0);
+
+//    @trusted
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        try {
+            auto hibon_value=sc.pop;
+            auto hibon_key=sc.pop.by!(FunnelType.TEXT);
+            auto hibon=sc.pop.by!(FunnelType.HIBON);
+
+            .check(hibon_key.length !is 0, "The hibon field name cannot be empty");
+
+//            auto hibon=sc.hibon(hibons_index);
+
+            with(FunnelType) final switch (hibon_value.type) {
+                case NONE:
+                    return new ScriptError(
+                        message("Not possible to store a %s in a hibon value", hibon_value.type), this);
+                    break;
+                case NUMBER:
+                    hibon[hibon_key]=hibon_value.by!NUMBER;
+                    break;
+                case TEXT:
+                    hibon[hibon_key]=hibon_value.by!TEXT;
+                    break;
+                case HIBON:
+                    hibon[hibon_key]=hibon_value.by!HIBON; //sc.hibon(hibon_index);
+                    break;
+                case DOCUMENT:
+                    hibon[hibon_key]=hibon_value.by!DOCUMENT;
+                    break;
+                case BINARY:
+                    hibon[hibon_key]=hibon_value.by!BINARY;
+                    break;
+            }
+
+            return next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an Script Exception: "~ex.msg, this);
+        }
+        catch(HiBONException ex) {
+            return new ScriptError(name~" got an HiBON Exception: "~ex.msg, this);
+        }
+        catch(ConvOverflowException ex) {
+            return new ScriptError(name~" got an Conversion Overflow Exception: "~ex.msg, this);
+        }
+    }
+}
+
+//ulong
+
+@safe
+class ScriptGetBSON : ScriptElement {
+    /*
+        Gets a bson_value in a bson object at the specified field.
+        bsons_index bson_key bson!
+    */
+    mixin ScriptElementTemplate!("bson@", 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        try {
+            with(FunnelType) {
+                auto hibon_key=sc.pop.by!TEXT;
+                auto hibon=sc.pop().by!(FunnelType.HIBON);
+//                pragma(msg, "typepf hibon=", typeof(hibon));
+
+//                 if ( hibon_key.length !is 0) {
+//                     return new ScriptError("The bson field name cannot be empty", this);
+//                 }
+
+// //            auto hibon=sc.hibon(hibons_index);
+
+//                 if ( !hibon.hasMember(hibon_key) ) {
+//                     return new ScriptError("The bson_key does not exists in the bson.", this);
+//                 }
+
+                Value value;
+                auto hibon_elm=hibon[hibon_key];
+            TypeCase:
+                switch(hibon_elm.type) {
+                    static foreach(E; EnumMembers!HiBONType) {
+                        static if(isHiBONType(E)) {
+                        case E:
+                            static if (__traits(compiles,Value(hibon_elm.by!E))) {
+                                value=Value(hibon_elm.by!E);
+                                break TypeCase;
+                            }
+                            goto default;
+                        }
+                    }
+                default:
+                    throw new ScriptException(message("HiBON type %s is not supported by Funnel", hibon_elm.type));
+                }
+                sc.push(value);
+                return next;
+            }
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an exception: "~ex.msg, this, ex);
+        }
+        catch(HiBONException ex) {
+            return new ScriptError(name~" got an BSON Exception: "~ex.msg, this, ex);
+        }
+    }
+}
+
+@safe
+class ScriptExpandHiBON : ScriptElement {
+    mixin ScriptElementTemplate!("expandhibon", 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        check(s, sc);
+        auto hibon=sc.pop.by!(FunnelType.HIBON);
+        sc.push(Document(hibon.serialize));
+        return next;
+    }
+}
+
+@safe
+class ScriptGetDocument : ScriptElement {
+     /*
+        Gets a doc value in a document object at the specified field.
+        document doc_key doc@
+    */
+    mixin ScriptElementTemplate!("doc@", 0);
+
+    @trusted
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        try {
+            check(s, sc);
+            Document.Element getDoc(const Value doc_key, out ScriptError error) {
+                with(FunnelType) {
+                    switch(doc_key.type) {
+                    case TEXT:
+                        immutable key=doc_key.by!TEXT;
+                        const doc=sc.pop.by!DOCUMENT;
+                        return doc[key];
+                        break;
+                    case NUMBER:
+                        const num=doc_key.by!NUMBER;
+                        const index=num.to!uint;
+                        const doc=sc.pop.by!DOCUMENT;
+                        return doc[index];
+                        break;
+                    default:
+                        error=new ScriptError(
+                            message("Document key must be either a %s or %s but is %s",
+                                TEXT, NUMBER, doc_key.type), this);
+                        return Document.Element(null);
+                    }
+                }
+            }
+            auto doc_key=sc.pop;
+
+            ScriptError error;
+            auto doc_elm=getDoc(doc_key, error);
+
+            if (error) {
+                return error;
+            }
+
+            Value value;
+            with(HiBONType) {
+            TypeCase:
+                switch(doc_elm.type) {
+                    static foreach(E; EnumMembers!HiBONType) {
+                    case E:
+                        static if(isHiBONType(E)) {
+                            alias T=HiBON.Value.TypeT!E;
+                            static if(__traits(compiles, Value(doc_ele.get!T))) {
+                                value=Value(doc_elm.get!T);
+                                break TypeCase;
+                            }
+                            goto default;
+                        }
+                    }
+                default:
+                    return new ScriptError(message("Bson_Type: %s not implemented", doc_elm.type), this);
+                }
+            }
+            sc.push(value);
+
+            return next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(message("%s got an exception: %s", name, ex.msg), this, ex);
+        }
+        catch(HiBONException ex) {
+            return new ScriptError(message("%s got an BSON Exception: %s", name, ex.msg), this, ex);
+        }
+    }
+}
+
+@safe
+class ScriptGetLength : ScriptElement {
+    /*
+        Gets the length of a document or hibon array
+        object length@
+    */
+    mixin ScriptElementTemplate!("length@", 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        try {
+            check(s, sc);
+            auto obj=sc.pop;
+
+            with(FunnelType) {
+                switch(obj.type) {
+                case HIBON:
+                    auto hibon=obj.by!HIBON;
+                    sc.push(hibon.length);
+                    break;
+                case DOCUMENT:
+                    auto doc=obj.by!DOCUMENT;
+                    sc.push(doc.length);
+                    break;
+                default:
+                    return new ScriptError(
+                        message("Can only get length of HiBON and Doc types, not: %s", obj.type),
+                        this
+                        );
+                }
+            }
+
+            //          sc.push(value);
+            return next;
+        }
+        catch(HiBONException ex) {
+            return new ScriptError(message("%s got an BSON Exception: %s", name, ex.msg), this);
+        }
+    }
+}
+
+@safe
+class ScriptAssert : ScriptElement {
+    /*
+        Asserts if the value on the stack is true
+        otherwise throws a scriptexception
+    */
+    mixin ScriptElementTemplate!("assert", 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        try {
+            check(s, sc);
+            with(FunnelType) {
+                const msg=sc.pop.by!TEXT;
+                const flag=sc.pop.by!NUMBER;
+
+                if ( !flag ) {
+                    return new ScriptError(
+                        message("Assert error: %s", msg),
+                        this);
+                }
+            }
+            return next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(
+                message("%s got an exception: %s", name, ex.msg),
+                this, ex);
+        }
+    }
+}
+
+@safe
+class ScriptConcat : ScriptElement {
+    /*
+        Cancatenates to arrays, immutable(ubyte)[]=Buffer, returns a ~ b
+        buffer_a buffer_b concat
+    */
+    mixin ScriptElementTemplate!("concat", 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        try {
+            check(s, sc);
+            Buffer buffer_b=sc.pop.get!Buffer;
+            Buffer buffer_a=sc.pop.get!Buffer;
+
+            sc.push(buffer_a~buffer_b);
+
+            return next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an exception: "~ex.msg, this);
+        }
+    }
+}
+
+// Should be implement as a range
+version(none)
+ @safe
+ class ScriptGetKeys : ScriptElement {
+    /*
+        Return all keys from a Document/HBSON as a document, HBSON or Document, returns Document
+        document keys@
+    */
+    mixin ScriptElementTemplate!("keys@", 0);
+
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        try {
+            check(s, sc);
+            auto obj=sc.pop;
+
+//            string[] keys;
+            auto result=new HiBON();
+
+            with(FunnelType) {
+                switch(obj.type) {
+                case HIBON:
+                    auto hibon=sc.hibon(obj.get!(HiBONIndex));
+                    foreach(i, key; hibon.keys.enumerate(uint(0))) {
+                        result[i]=key;
+                    }
+                    break;
+                case DOCUMENT:
+                    const doc=obj.get!Document;
+                    foreach(i, key; doc.keys.enumerate(uint(0))) {
+                        result[i]=key;
+                    }
+//                    keys=doc.keys.array;
+                    break;
+
+                default:
+                    return new ScriptError(message("Can only use Hibon and Doc types, not: %s", obj.type), this);
+                }
+            }
+
+
+            // foreach ( index, key; keys) {
+            //     result[index]=key;
+            // }
+
+            auto value=Value(Document(result.serialize));
+
+            sc.push(value);
+            return next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(message("%s got an exception: %s", name, ex.msg), this, ex);
+        }
+        catch(HiBONException ex) {
+            return new ScriptError(message("%s got an BSON Exception: %s", name, ex.msg), this, ex);
+        }
+    }
+}
+
+@safe
+ class ScriptHasKey : ScriptElement {
+    /*
+        Assess if a key exists in a Document/HBSON, Returns -1(true) or 0(false)
+        document key hasKey@
+    */
+    mixin ScriptElementTemplate!("hasKey@", 0);
+
+    @trusted
+    override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
+        try {
+            check(s, sc);
+            auto key_obj=sc.pop;
+            auto obj=sc.pop;
+
+            string key;
+            with(FunnelType) {
+                switch(key_obj.type) {
+                case TEXT:
+                    key=key_obj.by!TEXT;
+                    break;
+                case NUMBER:
+                    key=(key_obj.by!NUMBER).to!string;
+                    break;
+                default:
+                    return new ScriptError(message("Can only use text and integers as key types, not: %s", obj.type), this);
+                }
+            }
+
+
+            bool result;
+            with(FunnelType) {
+                switch(obj.type) {
+                case HIBON:
+                    const hibon=obj.by!HIBON;
+//                    sc.hibon(obj.get!(HiBONIndex));
+                    result=hibon.hasMember(key);
+                    break;
+                case DOCUMENT:
+                    auto doc=obj.by!DOCUMENT;
+                    result=doc.hasElement(key);
+                    break;
+                default:
+                    return new ScriptError(message("Can only use HiBON and Doc as document types, not: %s", obj.type), this);
+                }
+            }
+
+            sc.push(Value(result));
+            return next;
+        }
+        catch(ScriptException ex) {
+            return new ScriptError(name~" got an exception: "~ex.msg, this);
+        }
+        catch(HiBONException ex) {
+            return new ScriptError(name~" got an BSON Exception: "~ex.msg, this);
+        }
+    }
+}
+
+@safe
+class Script {
+    const Script super_script;
+    this(const Script super_script=null) {
+        if (super_script) {
+            this.variable_count=super_script.variable_count;
+        }
+        this.super_script=super_script;
+    }
+    @safe static class Variable {
+        immutable FunnelType type;
+        immutable(string) name;
+        uint index;
+        this(string name, const FunnelType type) {
+            this.name=name;
+            this.type=type;
+//            this.index=index;
+        }
+        const(ScriptError) check(ref const(Value) value, const(ScriptElement) element) const {
+            if ( value.type !is type ) {
+                return new ScriptError(message("Variable %s type mismatch expected %s but got %s",
+                        name, type, value.type), element);
+            }
+            return null;
+        }
+        Value initial() const {
+            with(FunnelType) {
+                final switch(type) {
+                case NONE:
+                    assert(0, "Invalid value type");
+                case TEXT:
+                    return new Value("");
+                case HIBON:
+                    return new Value(new HiBON);
+                case DOCUMENT:
+                    return new Value(Document(null));
+                case BINARY:
+                    immutable(ubyte)[] binary;
+                    return new Value(binary);
+                case NUMBER:
+                    return new Value(0);
+                }
+            }
+            assert(0);
+        }
+    }
+
+    @safe static class BoundVariable(T=void) : Variable {
+        enum BIG=is(T==void);
+        alias BoundVariableT=BoundVariable!T;
+        static if (BIG) {
+            const Number min;
+            const Number max;
+            this(string name, const Number min, const Number max) {
+                super(name, FunnelType.NUMBER);
+                this.min=min;
+                this.max=max;
+            }
+        }
+        else {
+            static assert(isIntegral!T);
+            this(string name) {
+                super(name, FunnelType.NUMBER);
+            }
+            enum min=T.min;
+            enum max=T.min;
+        }
+
+        override const(ScriptError) check(ref const(Value) value, const(ScriptElement) element) const {
+            const check_type=super.check(value, element);
+            if ( check_type ) {
+                return check_type;
+            }
+            const num=value.by!(FunnelType.NUMBER);
+            if ((num>=min) && (num<=max)) {
+                return null;
+            }
+            return new ScriptError(message("Value %s outside the range [%d..%d] defined for variable %s",
+                    num, min, max, name), element);
+        }
+        override Value initial() const {
+            return new Value(min);
+        }
+    }
+
+    alias Opcreate=ScriptElement function(const(Token) token, const(ScriptElement) next);
+
+    package static Opcreate[string] opcreators;
+
+    static ScriptElement createElement(string op, const(Token)token, lazy const(ScriptElement) element) {
         if ( op in opcreators ) {
-            return Script.opcreators[op]();
+            return Script.opcreators[op](token, element);
         }
         return null;
     }
-    package Function[string] functions;
 
-    // private ScriptElement root, last;
+    package ScriptFunc[string] functions;
+
+    void defineFunc(string func_name, ScriptFunc call) {
+        .check((func_name in functions) is null, message("Function %s already defined", func_name));
+        functions[func_name]=call;
+    }
+
+    const(ScriptFunc) getFunc(string name) const pure {
+        const result=functions.get(name, null);
+        if ( (super_script !is null) && (result is null) ) {
+            return super_script.getFunc(name);
+        }
+        return result;
+    }
+
+    package void setFunc(string name, const(ScriptElement) next, const(FunctionBlock) block) {
+        auto def=functions.get(name, null);
+        .check(def !is null, message("Function %s has not been defined", name));
+        def.define(next, block);
+    }
+
+    private Variable[string] variables;
+    private uint variable_count;
+
+    uint num_of_globals() const pure nothrow {
+        return variable_count;
+    }
+
+    void defineVar(ref Variable var) {
+        .check(!existVar(var.name), message("Multiple declaration of variable '%s'", var.name));
+        var.index=variable_count;
+        variables[var.name]=var;
+        variable_count++;
+    }
+
+    bool existVar(string var_name) const pure nothrow {
+        const result=var_name in variables;
+        if ( (super_script !is null) && (result is null) ) {
+            return super_script.existVar(var_name);
+        }
+        return result !is null;
+    }
+
+    const(Variable) getVar(string var_name) const {
+        const result=variables.get(var_name, null);
+        if ( (super_script !is null) && (result is null) ) {
+            return super_script.getVar(var_name);
+        }
+        return result;
+    }
+
+    uint opCall(string var_name) const {
+        const var_toUpper=var_name.toUpper;
+        .check(existVar(var_toUpper), message("Variable '%s' is not defined", var_name));
+        return getVar(var_toUpper).index;
+    }
+
+
     private uint runlevel;
-    // private ScriptContext sc;
-    enum max_shift_left=(1<<12)+(1<<7);
+    enum MAX_SHIFT_LEFT=(1<<12)+(1<<7);
 
-    void run(string func, ScriptContext sc) {
-        void doit(const(ScriptElement) current) {
-            if ( current !is null ) {
-                try {
-                    if ( sc.trace ) {
-                        writefln("%s%s] %s", sc.indent, current.n, current.toText);
-                    }
-                    doit(current(this, sc));
-                }
-                catch (ScriptException e) {
-                    auto error=new ScriptError(e.msg, current);
-                }
+    /**
+       Allocate global variables for the script in sc
+       Note: This is done automatically by execute
+     */
+    void allocateGlobals(ref ScriptContext sc) const {
+        sc.setGlobals(variable_count);
+    }
+
+    /**
+       This function calls function @func_name and allocate global variables
+     */
+    const(ScriptElement) execute(string func_name, ScriptContext sc) {
+        sc.setGlobals(variable_count);
+        return call(func_name, sc);
+    }
+
+    /**
+       This function calls the function and allocate global variables
+       This is primally used for flat-functions
+     */
+    const(ScriptElement) execute(const(ScriptFunc) caller, ScriptContext sc) {
+        sc.setGlobals(variable_count);
+        return caller(this, sc);
+    }
+
+
+    /**
+       Call a function @func_name with out allocation global variables
+     */
+    const(ScriptElement) call(string func_name, ScriptContext sc) const {
+        const caller=functions.get(func_name.toUpper, null);
+        if ( caller ) {
+            return caller(this, sc);
+        }
+        return new ScriptError(message("Function %s does not exist", func_name), null);
+    }
+
+    @trusted package const(ScriptElement) run(const ScriptElement start, ScriptContext sc) const {
+        ScriptElement current=cast(ScriptElement)start;
+        while (sc.proceed(current)) {
+            if ( sc.trace ) {
+                writefln("%s%s", sc.indent, current.toText);
             }
+            current=cast(ScriptElement)current(this, sc);
         }
-        this.trace=trace;
-        // foreach(n, f; functions) {
-        //     writefln("### FUNC %s %s", n, f.local_size);
-        // }
-        if ( func in functions) {
-            auto f=functions[func]; //.opcode;
-            // writefln("call %s local_size=%s %s", func, f.local_size, f.opcode !is null);
-            auto start=new ScriptCall("$"~func);
-            start.set_call(f.opcode, f.local_size);
-            doit(start);
-        }
+        return current;
     }
     bool is_turing_complete() pure nothrow const {
         return (runlevel > 1);
-    }
-    const(Function)* opIndex(string name) const {
-        return name in functions;
     }
 }
