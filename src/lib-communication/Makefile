@@ -1,70 +1,45 @@
-REPOROOT?=$(shell git root)
-REVNO?=$(shell git revno)
-HASH?=$(shell git hash)
-ifndef $(VERBOSE)
-PRECMD?=@
-endif
+include git.mk
 
-DC?=ldc2
+DC?=dmd
 AR?=ar
-LIBNAME:=libtagion.a
 include $(REPOROOT)/command.mk
 
 include setup.mk
-WORKDIR?=$(REPOROOT)
--include $(WORKDIR)/dfiles.mk
 
-BIN:=$(REPOROOT)/bin/
+-include $(REPOROOT)/dfiles.mk
+
+BIN:=bin/
 LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
-SRC?=$(REPOROOT)
-OBJS:=$(addprefix $(BUILD)/,$(DFILES:.d=.o))
-DFILES:=$(addprefix $(REPOROOT)/,$(DFILES))
+#SRC?=$(REPOROOT)
 
-.SECONDARY: $(OBJS)
-BUILDROOT:=$(sort $(dir $(OBJS)))
-TOUCHHOOK:=$(addsuffix /.touch,$(BUILDROOT))
-#MAKEDIRS:=$(foreach dir,$(BUILDROOT), mkdir -p $(dir)\;)
-
-#objs:
-#	echo $(OBJS)
-#	echo $(BUILDROOT)
-#	echo $(MAKEDIRS)
-
-DCFLAGS+=-I$(REPOROOT)/
-#tango
-TANGOROOT:=$(REPOROOT)/../tango-D2/
-
-#secp256k1 (elliptic curve signature library)
-SECP256K1ROOT:=$(REPOROOT)/../secp256k1
-SECP256K1LIB:=$(SECP256K1ROOT)/.libs/libsecp256k1.a
-
-#DCFLAGS+=-I.
-DCFLAGS+=-I$(TANGOROOT)
+.SECONDARY: $(TOUCHHOOK)
+.PHONY: makeway
 
 
-
-#LDCFLAGS+=$(LINKERFLAG)-L.
-LDCFLAGS+=$(LINKERFLAG)-L$(TANGOROOT)
-LDCFLAGS+=$(LINKERFLAG)-ltango-$(COMPILER)
-SECP256K1_LDCFLAGS+=$(LINKERFLAG)-L$(SECP256K1ROOT)/.libs/
-SECP256K1_LDCFLAGS+=$(LINKERFLAG)-Lsecp256k1
+INCFLAGS=${addprefix -I,${INC}}
 
 LIBRARY:=$(BIN)/$(LIBNAME)
+LIBOBJ:=${LIBRARY:.a=.o};
 
-REVISION:=$(SRC)/tagion/revision.di
+REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 .PHONY: $(REVISION)
 .SECONDARY: .touch
 
-ifndef DFILES
-include $(REPOROOT)/source.mk
+ifdef COV
+RUNFLAGS+=--DRT-covopt="merge:1 dstpath:reports"
+DCFLAGS+=-cov
 endif
 
-HELPER:=help-main
 
-help-master: help-main
+
+HELP+=help-main
+
+help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
+	@echo
+	@echo "make unittest  : Run the unittests"
 	@echo
 
 help-main:
@@ -74,27 +49,40 @@ help-main:
 	@echo
 	@echo "make proper    : Clean all"
 	@echo
-	@echo "make VERBOSE=1 : Verbose mode"
+	@echo "make PRECMD=   : Verbose mode"
+	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
 
+ifndef DFILES
+include $(REPOROOT)/source.mk
+endif
+
 info:
+	@echo "WAYS    =$(WAYS)"
 	@echo "DFILES  =$(DFILES)"
-	@echo "OBJS    =$(OBJS)"
+#	@echo "OBJS    =$(OBJS)"
 	@echo "LDCFLAGS=$(LDCFLAGS)"
 	@echo "DCFLAGS =$(DCFLAGS)"
+	@echo "INCFLAGS=$(INCFLAGS)"
 
-$(REVISION):
-	@echo "########################################################################################"
-	@echo "## Linking $(1)"
-	$(PRECMD)echo "module tagion.revision;" > $@
-	$(PRECMD)echo 'enum REVNO=$(REVNO);' >> $@
-	$(PRECMD)echo 'enum HASH="$(HASH)";' >> $@
+include $(REPOROOT)/revision.mk
 
 ifndef DFILES
-lib: dfiles.mk
+lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
+
+unittest: dfiles.mk
+	$(MAKE) unittest
 else
 lib: $(REVISION) $(LIBRARY)
+
+unittest: $(UNITTEST)
+	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
+
+$(UNITTEST): $(LIBS) $(WAYS)
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
+#$(LDCFLAGS)
+
 endif
 
 define LINK
@@ -102,23 +90,15 @@ $(1): $(1).d $(LIBRARY)
 	@echo "########################################################################################"
 	@echo "## Linking $(1)"
 #	@echo "########################################################################################"
-	$(PRECMD)$(DC) $(DCFLAGS) $(1).d $(OUTPUT)$(BIN)/$(1) $(LDCFLAGS)
-
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(1).d $(OUTPUT)$(BIN)/$(1) $(LDCFLAGS)
 endef
 
 $(eval $(foreach main,$(MAIN),$(call LINK,$(main))))
 
-%.a: $(TOUCHHOOK) $(OBJS)
-	@echo "########################################################################################"
-	@echo "## Library $@"
-	@echo "########################################################################################"
-	$(PRECMD)$(AR) $(ARFLAGS) $@ $(OBJS)
+makeway: ${WAYS}
 
-$(BUILD)/%.o:$(SRC)/%.d
-	@echo "########################################################################################"
-	@echo "## Compile $<"
-#	@echo "########################################################################################"
-	$(PRECMD)$(DC) $(DCFLAGS) -c $< $(OUTPUT)$@
+include $(REPOROOT)/makeway.mk
+$(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 
 %.touch:
 	@echo "########################################################################################"
@@ -126,16 +106,29 @@ $(BUILD)/%.o:$(SRC)/%.d
 	$(PRECMD)mkdir -p $(@D)
 	$(PRECMD)touch $@
 
-CLEANER?=proper
 
-clean: $(CLEANER)
+include $(DDOCBUILDER)
+
+$(LIBRARY): ${DFILES}
+	@echo "########################################################################################"
+	@echo "## Library $@"
+	@echo "########################################################################################"
+	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $(DFILES) -c $(OUTPUT)$(LIBRARY)
+
+CLEANER+=clean
+
+clean:
+	rm -f $(LIBRARY)
+	rm -f ${OBJS}
+	rm -f $(UNITTEST) $(UNITTEST).o
 
 proper: $(CLEANER)
-	rm -fR build
-	rm -f $(LIBRARY)
-ifndef FIX_DFILES
-	rm -f dfiles.mk
-endif
+	rm -fR $(WAYS)
+
+%.a:
+# Find the root of the %.a repo
+# and calls the lib tag
+	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
-	$(DC) $(DCFLGAS) $(LDCFLAGS) $(OUTPUT) $@
+	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
