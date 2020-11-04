@@ -1,67 +1,143 @@
-REPOROOT?=$(shell git root)
-PROGRAMS+=test
+include git.mk
 
-DC?=ldc2
+DC?=dmd
 AR?=ar
-LIBNAME:=libbakery.a
 include $(REPOROOT)/command.mk
 
--include dfiles.mk
+include $(MAINROOT)/dinclude_setup.mk
+DCFLAGS+=$(addprefix -I$(MAINROOT)/,$(DINC))
 
+include setup.mk
 
+-include $(REPOROOT)/dfiles.mk
+
+BIN:=bin/
+LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
 ARFLAGS:=rcs
-BUILD:=build
-OBJS:=$(addprefix $(BUILD)/,$(DFILES:.d=.o))
+BUILD?=$(REPOROOT)/build
+#SRC?=$(REPOROOT)
 
-BUILDROOT:=$(sort $(dir $(OBJS)))
-TOUCHHOOK:=$(addsuffix /.touch,$(BUILDROOT))
-#MAKEDIRS:=$(foreach dir,$(BUILDROOT), mkdir -p $(dir)\;)
+.SECONDARY: $(TOUCHHOOK)
+.PHONY: makeway
 
-#objs:
-#	echo $(OBJS)
-#	echo $(BUILDROOT)
-#	echo $(MAKEDIRS)
 
-DCFLAGS+=-unittest
-DCFLAGS+=-g
-TANGOROOT:=$(REPOROOT)/../Tango-D2/
-#DCFLAGS+=-I.
-DCFLAGS+=-I$(TANGOROOT)
-#LDCFLAGS+=$(LINKERFLAG)-L.
-LDCFLAGS+=$(LINKERFLAG)-L$(TANGOROOT)
-LDCFLAGS+=$(LINKERFLAG)-ltango-$(COMPILER)
-#LDCFLAGS+=$(LINKERFLAG)-lbarkey
+INCFLAGS=${addprefix -I,${INC}}
 
-LIBS+=
-LIBS+=$(LIBNAME)
-MAIN:=baker
+LIBRARY:=$(BIN)/$(LIBNAME)
+LIBOBJ:=${LIBRARY:.a=.o};
 
-ifndef DFILES
-include source.mk
+REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
+.PHONY: $(REVISION)
+.SECONDARY: .touch
+
+ifdef COV
+RUNFLAGS+=--DRT-covopt="merge:1 dstpath:reports"
+DCFLAGS+=-cov
 endif
 
-all: compile
 
-run: compile
-	./bin/$(MAIN)
 
-compile: $(OBJS)
-	$(DC) $(LDCFLAGS) $(DCFLAGS) $(DFILES) $(MAIN).d $(OBJS) $(OUTPUT)bin/$(MAIN)
+HELP+=help-main
 
-$(LIBNAME): $(TOUCHHOOK) $(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
+help: $(HELP)
+	@echo "make lib       : Builds $(LIBNAME) library"
+	@echo
+	@echo "make unittest  : Run the unittests"
+	@echo
 
-$(BUILD)/%.o:%.d
-	$(DC) $(DCFLAGS) -c $< $(OUTPUT) $@
+help-main:
+	@echo "Usage "
+	@echo
+	@echo "make info      : Prints the Link and Compile setting"
+	@echo
+	@echo "make proper    : Clean all"
+	@echo
+	@echo "make PRECMD=   : Verbose mode"
+	@echo "                 make PRECMD= <tag> # Prints the command while executing"
+	@echo
+
+ifndef DFILES
+include $(REPOROOT)/source.mk
+endif
+
+info:
+	@echo "WAYS    =$(WAYS)"
+	@echo "DFILES  =$(DFILES)"
+#	@echo "OBJS    =$(OBJS)"
+	@echo "LDCFLAGS=$(LDCFLAGS)"
+	@echo "DCFLAGS =$(DCFLAGS)"
+	@echo "INCFLAGS=$(INCFLAGS)"
+
+include $(REPOROOT)/revision.mk
+
+ifndef DFILES
+lib: $(REVISION) dfiles.mk
+	$(MAKE) lib
+
+unittest: dfiles.mk
+	$(MAKE) unittest
+else
+lib: $(REVISION) $(LIBRARY)
+
+unittest: $(UNITTEST)
+	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
+
+$(UNITTEST): $(LIBS) $(WAYS)
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
+#$(LDCFLAGS)
+
+endif
+
+define LINK
+$(1): $(1).d $(LIBRARY)
+	@echo "########################################################################################"
+	@echo "## Linking $(1)"
+#	@echo "########################################################################################"
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(1).d $(OUTPUT)$(BIN)/$(1) $(LDCFLAGS)
+endef
+
+$(eval $(foreach main,$(MAIN),$(call LINK,$(main))))
+
+makeway: ${WAYS}
+
+include $(REPOROOT)/makeway.mk
+$(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 
 %.touch:
-	mkdir -p $(@D)
-	touch $@
+	@echo "########################################################################################"
+	@echo "## Create dir $(@D)"
+	$(PRECMD)mkdir -p $(@D)
+	$(PRECMD)touch $@
+
+
+include $(DDOCBUILDER)
+
+$(LIBRARY): ${DFILES}
+	@echo "########################################################################################"
+	@echo "## Library $@"
+	@echo "########################################################################################"
+	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $(DFILES) -c $(OUTPUT)$(LIBRARY)
+
+CLEANER+=clean
 
 clean:
-	rm -fR $(BUILD)
-	rm -f $(LIBNAME)
-	rm -f dfiles.mk
+	rm -f $(LIBRARY)
+	rm -f ${OBJS}
+	rm -f $(UNITTEST) $(UNITTEST).o
+
+proper: $(CLEANER)
+	rm -fR $(WAYS)
+
+%.a:
+# Find the root of the %.a repo
+# and calls the lib tag
+	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
-	$(DC) $(DCFLGAS) $(LDCFLAGS) $(OUTPUT) $@
+	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
+
+
+test34:
+	@echo $(DINC)
+	@echo $(MAINROOT)
+	@echo $(DFLAGS)
