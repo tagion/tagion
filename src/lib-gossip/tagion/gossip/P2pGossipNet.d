@@ -33,6 +33,7 @@ import tagion.services.MdnsDiscoveryService;
 import p2plib = p2p.node;
 import p2p.connection;
 import std.array;
+import tagion.services.P2pTagionService;
 
 import std.datetime;
 
@@ -44,15 +45,13 @@ class P2pGossipNet : StdGossipNet {
     shared p2plib.Node node;
     protected immutable(Options) opts;
     protected shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool;
-    shared ulong[Pubkey] connectionPoolBridge;
     Random!uint random;
     Tid sender_tid;
     static uint counter;
 
-    this(HashGraph hashgraph, immutable(Options) opts, shared p2plib.Node node, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, shared ulong[Pubkey] connectionPoolBridge) {
+    this(HashGraph hashgraph, immutable(Options) opts, shared p2plib.Node node, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, ref shared ConnectionPoolBridge connectionPoolBridge) {
         super(hashgraph);
         this.connectionPool = connectionPool;
-        this.connectionPoolBridge = connectionPoolBridge;
         shared_storage = opts.path_to_shared_info;
         this.node = node;
         this.opts = opts;
@@ -148,11 +147,11 @@ class P2pGossipNet : StdGossipNet {
         auto result = super.receive(data, register_leading_event);
         import std.algorithm: canFind;
 
-        // log("3.receive");
-        // if([/*ExchangeState.FIRST_WAVE,*/ ExchangeState.SECOND_WAVE, ExchangeState.BREAKING_WAVE].canFind(received_state)){
-        //     log("send remove with state: %s", received_state);
-        //     send_remove(received_pubkey);
-        // }
+        log("3.receive");
+        if([/*ExchangeState.FIRST_WAVE,*/ ExchangeState.SECOND_WAVE, ExchangeState.BREAKING_WAVE].canFind(received_state)){
+            log("send remove with state: %s", received_state);
+            send_remove(received_pubkey);
+        }
         return result;
     }
 
@@ -171,7 +170,7 @@ class P2pGossipNet : StdGossipNet {
 }
 
 
-static void async_send(shared p2plib.Node node, immutable Options opts, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, shared ulong[Pubkey] connectionPoolBridge){
+static void async_send(shared p2plib.Node node, immutable Options opts, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, shared ConnectionPoolBridge connectionPoolBridge){
     scope(exit){
         // log("SENDER CLOSED!!");
         ownerTid.send(Control.END);
@@ -180,7 +179,7 @@ static void async_send(shared p2plib.Node node, immutable Options opts, shared(C
     void send_to_channel(immutable(Pubkey) channel, Buffer data){
 
         log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
-        auto streamIdPtr = channel in connectionPoolBridge;
+        auto streamIdPtr = channel in connectionPoolBridge.lookup;
         auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
         // log("stream id: %d", streamId);
         if(streamId == 0 || !connectionPool.contains(streamId)){
@@ -193,9 +192,11 @@ static void async_send(shared p2plib.Node node, immutable Options opts, shared(C
                     (NodeAddress node_address){
                         auto stream = node.connect(node_address.address, node_address.is_marshal, [opts.transaction.protocol_id]);
                         streamId = stream.Identifier;
+                        import p2p.callback;
+                        stream.listen(&StdHandlerCallback, "p2ptagion");
                         // log("add stream to connection pool %d", streamId);
                         connectionPool.add(streamId, stream, true);
-                        connectionPoolBridge[channel] = streamId;
+                        connectionPoolBridge.lookup[channel] = streamId;
                     }
                 );
             }else{
@@ -229,13 +230,14 @@ static void async_send(shared p2plib.Node node, immutable Options opts, shared(C
                 }
             },
             (Pubkey channel, uint id){
-                log("Closing connection: %d %s", id, channel.cutHex);
+                log("Closing connection: %s", channel.cutHex);
                 try{
-                    auto streamIdPtr = channel in connectionPoolBridge;
+                    auto streamIdPtr = channel in connectionPoolBridge.lookup;
                     if(streamIdPtr !is null){
                         const streamId = *streamIdPtr;
+                        log("connection to close: %d", streamId);
                         connectionPool.close(streamId);
-                        connectionPoolBridge.remove(channel);
+                        connectionPoolBridge.lookup.remove(channel);
                     }
                 }catch(Exception e){
                     log("SDERROR: %s", e.msg);
