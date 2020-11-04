@@ -127,6 +127,7 @@ clean:
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
+	rm -f dfiles.mk
 
 %.a:
 # Find the root of the %.a repo
@@ -135,9 +136,3 @@ proper: $(CLEANER)
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
-
-
-test34:
-	@echo $(DINC)
-	@echo $(MAINROOT)
-	@echo $(DFLAGS)
