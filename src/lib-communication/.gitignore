@@ -7,4 +7,4 @@ bin/
 *.bak
 build
 dfiles.mk
-.gitignore
+revision.di
