@@ -2,9 +2,9 @@
 *.o
 *#
 .#*
-*~
+*.parked
+bin/
+*.bak
+build
 dfiles.mk
 revision.di
-bin
-modules.ddoc
-ddoc
