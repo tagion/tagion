@@ -6,3 +6,5 @@
 bin/
 *.bak
 build
+dfiles.mk
+.gitignore

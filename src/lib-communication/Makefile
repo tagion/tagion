@@ -4,6 +4,9 @@ DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
 
+include $(MAINROOT)/dinclude_setup.mk
+DCFLAGS+=$(addprefix -I$(MAINROOT)/,$(DINC))
+
 include setup.mk
 
 -include $(REPOROOT)/dfiles.mk
@@ -132,3 +135,9 @@ proper: $(CLEANER)
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
+
+
+test34:
+	@echo $(DINC)
+	@echo $(MAINROOT)
+	@echo $(DFLAGS)
