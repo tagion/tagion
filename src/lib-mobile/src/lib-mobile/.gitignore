@@ -6,11 +6,5 @@
 bin/
 *.bak
 build
-.touch
-modules.ddoc
 dfiles.mk
-*.log
-core
-*.hibon
-*.json
-ddoc
+revision.di
