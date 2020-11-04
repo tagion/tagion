@@ -14,6 +14,7 @@ import tagion.basic.TagionExceptions : TagionException, Check;
 import tagion.Options : Options, setOptions, options;
 import tagion.hibon.Document;
 import tagion.services.LoggerService;
+import std.bitmanip : binwrite=write;
 
 @safe
 class SocketMaxDataSize : TagionException {
@@ -110,32 +111,31 @@ struct ListenerSocket {
          + This function send a Document directly, because the buffer length is included in the HIBON from
          + the length is not instead in front of the package
          +/
-        protected void send(T)(ref Socket client, T arg) if (is(T:const(Buffer)) || is(T:const(Document))) {
-            static if (is(T:const(Buffer)) ) {
+        protected void send(T)(ref Socket client, T arg) if (is(T:const(Buffer)) || is(T:const(Document)) || is(T:string)) {
+            static if (is(T:const(Buffer)) || is(T:string)) {
                 enum include_size=true;
-                immutable data=arg;
+                immutable data=cast(Buffer)arg;
             }
             else {
                 enum include_size=false;
                 immutable data=arg.data;
             }
-
             static if ( include_size ) {
                 scope buffer_length = new ubyte[uint.sizeof];
                 immutable data_length = cast(uint)data.length;
-                // writeln("Bytes to send: ", data_length);
-                buffer_length.write(data_length, 0);
+                buffer_length.binwrite(data_length, 0);
                 client.send(buffer_length);
             }
+
             for (size_t start_pos = 0; start_pos < data.length; start_pos += socket_buffer_size) {
                 immutable end_pos = (start_pos+socket_buffer_size < data.length) ? start_pos+socket_buffer_size : data.length;
                 client.send(data[start_pos..end_pos]);
             }
         }
 
-        void broadcast(T)(T arg) if (is(T:const(Buffer)) || is(T:const(Document))) {
+        void broadcast(T)(T arg) if (is(T:const(Buffer)) || is(T:const(Document)) || is(T:string)) {
             auto clients=cast(Socket[uint]) *locate_clients;
-            static if (is(T:const(Buffer)) ) {
+            static if (is(T:const(Buffer)) || is(T:string) ) {
                 immutable size=arg.length;
             }
             else {
@@ -186,7 +186,7 @@ struct ListenerSocket {
         }
     }
 
-    void broadcast(T)(T arg) if (is(T:const(Buffer)) || is(T:const(Document))) {
+    void broadcast(T)(T arg) if (is(T:const(Buffer)) || is(T:const(Document)) || is(T:string)) {
         if ( active ) {
             shared_clients.broadcast(arg);
         }
