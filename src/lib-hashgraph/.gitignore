@@ -3,3 +3,8 @@
 *#
 .#*
 *.parked
+bin/
+*.bak
+build
+dfiles.mk
+revision.di
