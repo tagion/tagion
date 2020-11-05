@@ -20,7 +20,7 @@ uint gene_count(const size_t bitstring) pure nothrow {
 }
 
 @nogc @safe
-uint gene_count(const(ulong[]) bitstream) pure nothrow {
+uint gene_count(scope const(ulong[]) bitstream) pure nothrow {
     uint result;
     foreach(x; cast(const(size_t[]))bitstream) {
         result+=gene_count(x);
@@ -29,7 +29,7 @@ uint gene_count(const(ulong[]) bitstream) pure nothrow {
 }
 
 @trusted
-immutable(ulong[]) gene_xor(const(ulong[]) a, const(ulong[]) b) pure nothrow
+immutable(ulong[]) gene_xor(scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
 in {
      assert(a.length == b.length);
 }
@@ -41,7 +41,7 @@ do {
 
 
 @nogc @safe
-void gene_xor(ref ulong[] result, const(ulong[]) a, const(ulong[]) b) pure nothrow
+void gene_xor(ref scope ulong[] result, scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
 in {
      assert(a.length == b.length);
      assert(result.length == b.length);

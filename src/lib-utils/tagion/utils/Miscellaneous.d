@@ -3,7 +3,7 @@ module tagion.utils.Miscellaneous;
 import tagion.basic.Basic : Buffer, isBufferType;
 
 @safe
-string toHexString(bool UCASE=false, BUF)(BUF buffer) pure if ( isBufferType!BUF ) {
+string toHexString(bool UCASE=false, BUF)(BUF buffer) pure nothrow if ( isBufferType!BUF ) {
     static if ( UCASE ) {
         enum hexdigits = "0123456789ABCDEF";
     }
@@ -101,7 +101,7 @@ string cutHex(bool UCASE=false, BUF)(BUF buf) pure if ( isBufferType!BUF ) {
 }
 
 @safe
-Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure
+Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
     in {
         assert(a.length == b.length);
         assert(a.length % ulong.sizeof == 0);
@@ -113,8 +113,8 @@ do {
     return cast(Buffer)gene_xor(_a, _b);
 }
 
-@safe
-void xor(ref ubyte[] result, const(ubyte[]) a, const(ubyte[]) b) pure
+@nogc @safe
+void xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
     in {
         assert(a.length == b.length);
         assert(a.length % ulong.sizeof == 0);
@@ -127,8 +127,8 @@ do {
     gene_xor(_result, _a, _b);
 }
 
-@safe
-Buffer xor(Range)(Range range) pure {
+@nogc @safe
+Buffer xor(Range)(Range range) pure nothrow {
     import std.algorithm.iteration: fold;
     return range.fold!((a,b) => xor(a,b));
 }
