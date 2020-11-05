@@ -1,5 +1,3 @@
-// Written in the D programming language.
-
 /**
  * Implements HiBON
  * Hash-invariant Binary Object Notation
@@ -11,121 +9,177 @@
  */
 module tagion.hibon.HiBON;
 
-            import std.stdio;
-
-//import std.datetime;   // Date, DateTime
 import std.container : RedBlackTree;
 import std.format;
 import std.meta : staticIndexOf;
-import std.algorithm.iteration : map, fold, each;
+import std.algorithm.iteration : map, fold, each, sum;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
-import std.bitmanip : write;
-import std.conv : to;
+import std.meta : AliasSeq;
 import std.typecons : TypedefType;
 
+import std.conv : to;
+
+import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
+import tagion.hibon.HiBONException;
+import tagion.basic.Message : message;
+import tagion.basic.Basic : CastTo, Buffer;
+import LEB128=tagion.utils.LEB128;
 
+//import std.stdio;
 
-version(none)
-@trusted
-string toHex(in ubyte[] nums) pure nothrow {
-    immutable static lowerHexDigits = "0123456789abcdef";
-
-    char[] result = new char[](nums.length * 2);
-    foreach (i, num; nums) {
-        immutable index = i * 2;
-        result[index]     = lowerHexDigits[(num & 0xf0) >> 4];
-        result[index + 1] = lowerHexDigits[num & 0x0f];
+static size_t size(U)(const(U[]) array) pure {
+    if (array.length is 0) {
+        return ubyte.sizeof;
     }
-
-    return assumeUnique(result);
+    size_t _size;
+    foreach(i, h; array) {
+        immutable index_key=i.to!string;
+        _size += Document.sizeKey(index_key);
+        static if (__traits(compiles, h.size)) {
+            const h_size=h.size;
+        }
+        else {
+            const h_size=h.length;
+        }
+        _size += LEB128.calc_size(h_size) + h_size;
+    }
+    return _size;
 }
 
-
-version(none)
-@safe
-ubyte[] fromHex(in string hex) pure nothrow {
-    static ubyte toNum(in char c) pure nothrow
-    {
-        if ('0' <= c && c <= '9')
-            return cast(ubyte)(c - '0');
-        if ('a' <= c && c <= 'f')
-            return cast(ubyte)(c - 'a' + 10);
-        assert(false, "Out of hex: " ~ c);
-    }
-
-    ubyte[] result = new ubyte[](hex.length / 2);
-
-    foreach (i, ref num; result) {
-        immutable index = i * 2;
-        num = cast(ubyte)((toNum(hex[index]) << 4) | toNum(hex[index + 1]));
-    }
-
-    return result;
-}
-
-
+/++
+ HiBON is a generate object of the HiBON format
++/
 @safe class HiBON {
+    /++
+     Gets the internal buffer
+     Returns:
+     The buffer of the HiBON document
+    +/
+
     alias Value=ValueT!(true, HiBON,  Document);
 
     this() {
         _members = new Members;
     }
 
+    /++
+     Calculated the size in bytes of HiBON payload
+     Returns:
+     the size in bytes
+     +/
     size_t size() const pure {
-        size_t result = uint.sizeof+Type.sizeof;
-        if (_members.length) {
+        size_t result;
+        //= uint.sizeof+Type.sizeof;
+        if (!_members[].empty) {
             result += _members[].map!(a => a.size).fold!( (a, b) => a + b);
         }
-        return result;
+        if (result>0) {
+            return result; //+calc_size(result);
+        }
+        else {
+            return ubyte.sizeof;
+        }
     }
 
-    immutable(ubyte[]) serialize() const pure {
-        scope buffer = new ubyte[size];
+    /++
+     Calculated the size in bytes of serialized HiBON
+     Returns:
+     the size in bytes
+     +/
+    size_t serialize_size() const pure {
+        auto _size=size;
+        if (_size !is ubyte.sizeof ) {
+            _size += LEB128.calc_size(_size);
+        }
+        return _size;
+    }
+    /++
+     Generated the serialized HiBON
+     Returns:
+     The byte stream
+     +/
+    immutable(ubyte[]) serialize() const {
+        scope buffer = new ubyte[serialize_size];
         size_t index;
         append(buffer, index);
         return buffer.idup;
     }
 
+    // /++
+    //  Helper function to append
+    //  +/
+    @trusted
     private void append(ref ubyte[] buffer, ref size_t index) const pure {
-        immutable size_index = index;
-        buffer.binwrite(uint.init, &index);
-        if (_members.length) {
+        if (_members[].empty) {
+           buffer.binwrite(ubyte(0), &index);
+        }
+        else {
+            uint size=cast(uint)_members[].map!(a => a.size).sum;
+            buffer.array_write(LEB128.encode(size), index);
             _members[].each!(a => a.append(buffer, index));
         }
-        buffer.binwrite(Type.NONE, &index);
-        immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-        buffer.binwrite(doc_size, size_index);
     }
 
+    /++
+     Internal Member in the HiBON class
+     +/
     @safe static class Member {
         string key;
         Type type;
         Value value;
 
-        protected this() pure nothrow {
+        protected this() pure {
             value = uint.init;
         }
 
-        // this(T)(T x, string key) pure if ( is(T==Unqual!T) ) {
-        //     this.value = x;
-        //     this.type  = Value.asType!T;
-        //     this.key  = key;
-        // }
+        alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
 
+        /++
+         Params:
+         x = the parameter value
+         key = the name of the member
+         +/
         @trusted
         this(T)(T x, string key) { //const pure if ( is(T == const) ) {
-            alias BaseT=TypedefType!T;
-            alias MutableT = Unqual!BaseT;
-            this.value = cast(MutableT)x;
-            enum E=Value.asType!MutableT;
-            static assert(E !is Type.NONE, format("Type %s is not valid", T.stringof));
-            this.type  = E;
+            alias UnqualT = Unqual!T;
+            enum E=Value.asType!UnqualT;
             this.key  = key;
+            with(Type) {
+            static if (E is NONE) {
+                alias BaseT=TypedefType!UnqualT;
+                pragma(msg, "UnqualT=", BaseT, " ", is(BaseT==Buffer), " : ", Buffer);
+                static if (is(BaseT==Buffer)) {
+                    alias CastT=Buffer;
+                }
+                else {
+                    alias CastT=CastTo!(BaseT, CastTypes);
+                    static assert(!is(CastT==void), format("Type %s is not valid", T.stringof));
 
+                }
+                alias CastE=Value.asType!CastT;
+                this.type = CastE;
+                this.value=cast(CastT)x;
+
+            }
+            else {
+                this.type = E;
+                static if (E is BIGINT || E is BINARY || E is HASHDOC) {
+                    this.value=x;
+                }
+                else {
+                    this.value= cast(UnqualT)x;
+                }
+            }
+            }
         }
 
+        /++
+         If the value of the Member contains a Document it returns it or else an error is asserted
+         Returns:
+         the value as a Document
+         +/
         @trusted
         inout(HiBON) document() inout pure
         in {
@@ -135,18 +189,35 @@ ubyte[] fromHex(in string hex) pure nothrow {
             return value.document;
         }
 
+        /++
+         Sets the key of the Member
+         Returns:
+         The a member with a name of key
+         +/
         static Member search(string key) pure {
             auto result=new Member();
             result.key = key;
             return result;
         }
 
-        T get(T)() inout {
+        /++
+         Returns:
+         The value as type T
+         Throws:
+         If the member does not match the type T and HiBONException is thrown
+         +/
+        const(T) get(T)() const {
             enum E = Value.asType!T;
-            .check(E is type, format("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
+            .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
             return value.by!E;
         }
 
+        /++
+         Returns:
+         The value as HiBON Type E
+         Throws:
+         If the member does not match the type T and HiBONException is thrown
+         +/
         auto by(Type type)() inout {
             return value.by!type;
         }
@@ -155,6 +226,11 @@ ubyte[] fromHex(in string hex) pure nothrow {
             return Member.search(key);
         }
 
+        /++
+         Calculates the size in bytes of the Member
+         Returns:
+         the size in bytes
+         +/
         @trusted
         size_t size() const pure {
             with(Type) {
@@ -164,27 +240,33 @@ ubyte[] fromHex(in string hex) pure nothrow {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
                             static if ( E is Type.DOCUMENT ) {
-                                return Document.sizeKey(key)+value.by!(E).size;
+                                const _size = value.by!(E).size;
+                                if (_size is 1) {
+                                    return Document.sizeKey(key) + ubyte.sizeof;
+                                }
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else static if ( E is NATIVE_DOCUMENT ) {
-                                return Document.sizeKey(key)+value.by!(E).size+uint.sizeof;
+                                const _size = value.by!(E).size;
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
                             else static if ( isNativeArray(E) ) {
-                                size_t result = Document.sizeKey(key)+uint.sizeof+Type.sizeof;
+                                size_t _size;
                                 foreach(i, e; value.by!(E)[]) {
-                                    immutable key=i.to!string;
-                                    result += Document.sizeKey(key);
-                                    static if(E is NATIVE_HIBON_ARRAY) {
-                                        result += e.size;
-                                    }
-                                    else static if (E is NATIVE_DOCUMENT_ARRAY) {
-                                        result += uint.sizeof+e.size;
+                                    immutable index_key=i.to!string;
+                                    _size += Document.sizeKey(index_key);
+                                    static if(E is NATIVE_HIBON_ARRAY || E is NATIVE_DOCUMENT_ARRAY) {
+                                        const _doc_size=e.size;
+                                        _size += LEB128.calc_size(_doc_size) + _doc_size;
                                     }
                                     else static if (E is NATIVE_STRING_ARRAY) {
-                                        result += uint.sizeof+e.length;
+                                        _size += LEB128.calc_size(e.length) + e.length;
                                     }
                                 }
-                                return result;
+                                return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
+                            }
+                            else static if (E is VER) {
+                                return LEB128.calc_size(HIBON_VERSION);
                             }
                             else {
                                 const v = value.by!(E);
@@ -200,15 +282,11 @@ ubyte[] fromHex(in string hex) pure nothrow {
             }
         }
 
+        @trusted
         protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index)  const pure if (isNativeArray(E)) {
-            immutable size_index = index;
-            buffer.binwrite(uint.init, &index);
-            scope(exit) {
-                buffer.binwrite(Type.NONE, &index);
-                immutable doc_size=cast(uint)(index - size_index - uint.sizeof);
-                buffer.binwrite(doc_size, size_index);
-            }
             with(Type) {
+                immutable list_size = value.by!(E).size;
+                buffer.array_write(LEB128.encode(list_size), index);
                 foreach(i, h; value.by!E) {
                     immutable key=i.to!string;
                     static if (E is NATIVE_STRING_ARRAY) {
@@ -222,14 +300,12 @@ ubyte[] fromHex(in string hex) pure nothrow {
                         else static if (E is NATIVE_DOCUMENT_ARRAY) {
                             buffer.array_write(h.data, index);
                         }
-
                         else {
                             assert(0, format("%s is not implemented yet", E));
                         }
                     }
                 }
             }
-
         }
 
         void append(ref ubyte[] buffer, ref size_t index) const pure {
@@ -239,6 +315,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
                     static foreach(E; EnumMembers!Type) {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
+
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
                                 Document.buildKey(buffer, E, key, index);
@@ -275,48 +352,96 @@ ubyte[] fromHex(in string hex) pure nothrow {
 
     protected Members _members;
 
+    /++
+     Returns:
+     A range of members
+     +/
     auto opSlice() const {
         return _members[];
     }
 
+    /++
+     Assign and member x with the key
+     Params:
+     x = parameter value
+     key = member key
+     +/
     void opIndexAssign(T)(T x, in string key) {
-        .check(is_key_valid(key), format("Key is not a valid format '%s'", key));
+        .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
         _members.insert(new_member);
     }
 
+    /++
+     Assign and member x with the index
+     Params:
+     x = parameter value
+     index = member index
+     +/
     void opIndexAssign(T)(T x, const size_t index) {
         const key=index.to!string;
         static if(!is(size_t == uint) ) {
-            .check(index <= uint.max, format("Index out of range (index=%d)", index));
+            .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         opIndexAssign(x, key);
     }
 
+    /++
+     Access an member at key
+     Params:
+     key = member key
+     Returns:
+     the Member at the key
+     Throws:
+     if the an member with the key does not exist an HiBONException is thrown
+     +/
     const(Member) opIndex(in string key) const {
         auto range=_members.equalRange(Member.search(key));
-        .check(!range.empty, format("Member '%s' does not exist", key) );
+        .check(!range.empty, message("Member '%s' does not exist", key) );
         return range.front;
     }
 
+
+    /++
+     Access an member at index
+     Params:
+     index = member index
+     Returns:
+     the Member at the index
+     Throws:
+     if the an member with the index does not exist an HiBONException is thrown
+     Or an std.conv.ConvException is thrown if the key is not an index
+     +/
     const(Member) opIndex(const size_t index) const {
         const key=index.to!string;
         static if(!is(size_t == uint) ) {
-            .check(index <= uint.max, format("Index out of range (index=%d)", index));
+            .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         return opIndex(key);
     }
 
+    /++
+     Params:
+     key = member key
+     Returns:
+     true if the member with the key exists
+     +/
     bool hasMember(in string key) const {
         auto range=_members.equalRange(Member.search(key));
         return !range.empty;
     }
 
+    /++
+     Removes a member with name of key
+     Params:
+     key = name of the member to be removed
+     +/
     @trusted
     void remove(string key) {
         _members.removeKey(Member.search(key));
     }
 
+    ///
     unittest { // remove
         auto hibon=new HiBON;
         hibon["a"] =1;
@@ -329,17 +454,81 @@ ubyte[] fromHex(in string hex) pure nothrow {
         assert(!hibon.hasMember("b"));
     }
 
+    /++
+     Returns:
+     the number of members in the HiBON
+     +/
     size_t length() const {
         return _members.length;
     }
 
+    /++
+     Returns:
+     A range of the member keys
+     +/
+    auto keys() const {
+        return map!"a.key"(this[]);
+    }
+
+    /++
+     Returns:
+     A range of indices
+     Throws:
+     The range will throw an std.conv.ConvException if the key is not an index
+    +/
+    auto indices() const {
+        return map!"a.key.to!uint"(this[]);
+    }
+
+    /++
+     Check if the HiBON is an Array
+     Returns:
+     true if all keys is indices and are consecutive
+     +/
+    bool isArray() const {
+        return .isArray(keys);
+    }
+
+    ///
     unittest {
-        import std.stdio;
+        {
+            auto hibon=new HiBON;
+            assert(hibon.isArray);
+
+            hibon["0"]=1;
+            assert(hibon.isArray);
+            hibon["1"]=2;
+            assert(hibon.isArray);
+            hibon["2"]=3;
+            assert(hibon.isArray);
+            hibon["x"]=3;
+            assert(!hibon.isArray);
+        }
+        {
+            auto hibon=new HiBON;
+            hibon["1"]=1;
+            assert(!hibon.isArray);
+            hibon["0"]=2;
+            assert(hibon.isArray);
+            hibon["4"]=3;
+            assert(!hibon.isArray);
+            hibon["3"]=4;
+            assert(!hibon.isArray);
+            hibon["2"]=7;
+            assert(hibon.isArray);
+            hibon["05"]=2;
+            assert(!hibon.isArray);
+        }
+    }
+
+    unittest {
+        // import std.stdio;
         import std.conv : to;
         import std.typecons : Tuple, isTuple;
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias Tabel = Tuple!(
+            BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             float,  Type.FLOAT32.stringof,
             double, Type.FLOAT64.stringof,
@@ -347,6 +536,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
             long,   Type.INT64.stringof,
             uint,   Type.UINT32.stringof,
             ulong,  Type.UINT64.stringof,
+
 //                utc_t,  Type.UTC.stringof
             );
 
@@ -358,36 +548,31 @@ ubyte[] fromHex(in string hex) pure nothrow {
         test_tabel.UINT32   = 42;
         test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
         test_tabel.BOOLEAN  = true;
+        test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias TabelArray = Tuple!(
             immutable(ubyte)[],  Type.BINARY.stringof,
-            immutable(bool)[],   Type.BOOLEAN_ARRAY.stringof,
-            immutable(float)[],  Type.FLOAT32_ARRAY.stringof,
-            immutable(double)[], Type.FLOAT64_ARRAY.stringof,
-            immutable(int)[],    Type.INT32_ARRAY.stringof,
-            immutable(long)[],   Type.INT64_ARRAY.stringof,
+            // Credential,          Type.CREDENTIAL.stringof,
+            // CryptDoc,            Type.CRYPTDOC.stringof,
+            DataBlock,             Type.HASHDOC.stringof,
             string,              Type.STRING.stringof,
-            immutable(uint)[],   Type.UINT32_ARRAY.stringof,
-            immutable(ulong)[],  Type.UINT64_ARRAY.stringof,
             );
+
         TabelArray test_tabel_array;
         test_tabel_array.BINARY        = [1, 2, 3];
-        test_tabel_array.FLOAT32_ARRAY = [-1.23, 3, 20e30];
-        test_tabel_array.FLOAT64_ARRAY = [10.3e200, -1e-201];
-        test_tabel_array.INT32_ARRAY   = [-11, -22, 33, 44];
-        test_tabel_array.INT64_ARRAY   = [0x17, 0xffff_aaaa, -1, 42];
-        test_tabel_array.UINT32_ARRAY  = [11, 22, 33, 44];
-        test_tabel_array.UINT64_ARRAY  = [0x17, 0xffff_aaaa, 1, 42];
-        test_tabel_array.BOOLEAN_ARRAY = [true, false];
         test_tabel_array.STRING        = "Text";
+        test_tabel_array.HASHDOC       = DataBlock(27, [3,4,5]);
+        // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
+        // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
+
 
         { // empty
             auto hibon = new HiBON;
             assert(hibon.length is 0);
 
-            assert(hibon.size is uint.sizeof+Type.sizeof);
+            assert(hibon.size is ubyte.sizeof);
             immutable data = hibon.serialize;
 
             const doc = Document(data);
@@ -397,7 +582,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
 
         { // Single element
             auto hibon = new HiBON;
-            enum pos=1;
+            enum pos=2;
             static assert(is(test_tabel.Types[pos] == float));
             hibon[test_tabel.fieldNames[pos]] = test_tabel[pos];
 
@@ -410,22 +595,23 @@ ubyte[] fromHex(in string hex) pure nothrow {
             assert(m.get!(test_tabel.Types[pos]) == test_tabel[pos]);
             assert(m.by!(Type.FLOAT32) == test_tabel[pos]);
 
-            immutable size = hibon.size;
+            immutable size = hibon.serialize_size;
 
 
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size
-                = uint.sizeof                    // Size of the object in ubytes (uint(14))
+                = LEB128.calc_size(14)           // Size of the object in ubytes (uint(14))
                 + Type.sizeof                    // The HiBON Type  (Type.FLOAT32)  1
                 + ubyte.sizeof                   // Length of the key (ubyte(7))    2
                 + Type.FLOAT32.stringof.length   // The key text string ("FLOAT32") 9
                 + float.sizeof                   // The data            (float(1.23)) 13
-                + Type.sizeof                    // The HiBON object ends with a (Type.NONE) 14
+                //    + Type.sizeof                    // The HiBON object ends with a (Type.NONE) 14
                 ;
 
             const doc_size = Document.sizeT(Type.FLOAT32, Type.FLOAT32.stringof, test_tabel[pos]);
 
             assert(size is hibon_size);
+            assert(size is LEB128.calc_size(14)+doc_size);
 
             immutable data = hibon.serialize;
 
@@ -442,7 +628,6 @@ ubyte[] fromHex(in string hex) pure nothrow {
 
         { // HiBON Test for basic types
             auto hibon = new HiBON;
-
             string[] keys;
             foreach(i, t; test_tabel) {
                 hibon[test_tabel.fieldNames[i]] = t;
@@ -456,20 +641,23 @@ ubyte[] fromHex(in string hex) pure nothrow {
             }
 
             foreach(i, t; test_tabel) {
+
                 enum key=test_tabel.fieldNames[i];
+
                 const m = hibon[key];
                 assert(m.key == key);
                 assert(m.type.to!string == key);
                 assert(m.get!(test_tabel.Types[i]) == t);
             }
 
+
             immutable data = hibon.serialize;
             const doc = Document(data);
-
             assert(doc.length is test_tabel.length);
 
             foreach(i, t; test_tabel) {
                 enum key=test_tabel.fieldNames[i];
+
                 const e = doc[key];
                 assert(e.key == key);
                 assert(e.type.to!string == key);
@@ -477,7 +665,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
             }
         }
 
-        { // HiBON Test for basic-array types
+        { // HiBON Test for none basic types
             auto hibon = new HiBON;
 
             string[] keys;
@@ -502,7 +690,6 @@ ubyte[] fromHex(in string hex) pure nothrow {
 
             immutable data = hibon.serialize;
             const doc = Document(data);
-
             assert(doc.length is test_tabel_array.length);
 
             foreach(i, t; test_tabel_array) {
@@ -523,19 +710,20 @@ ubyte[] fromHex(in string hex) pure nothrow {
             hibon["string"] = "Text";
             hibon["float"]  = float(1.24);
 
-            immutable hibon_size_no_child = hibon.size;
+            immutable hibon_size_no_child = hibon.serialize_size;
             hibon[chile_name]      = hibon_child;
             hibon_child["int32"]= 42;
 
-            immutable hibon_child_size    = hibon_child.size;
+            immutable hibon_child_size    = hibon_child.serialize_size;
             immutable child_key_size = Document.sizeKey(chile_name);
-            immutable hibon_size = hibon.size;
+            immutable hibon_size = hibon.serialize_size;
+
             assert(hibon_size is hibon_size_no_child+child_key_size+hibon_child_size);
 
             immutable data = hibon.serialize;
             const doc = Document(data);
-
         }
+
 
         { // Use of native Documet in HiBON
             auto native_hibon = new HiBON;
@@ -588,15 +776,30 @@ ubyte[] fromHex(in string hex) pure nothrow {
                 local_hibon[name]=t;
                 hibon_array~=local_hibon;
             }
+
+            // foreach(k, h; hibon_array) {
+            //     writefln("hibon_array[%s].size=%d", k, h.size);
+            //     writefln("hibon_array[%s].serialize=%s", k, h.serialize);
+            // }
+            // writefln("\thibon_array.size=%d", hibon_array.size);
+
             auto hibon = new HiBON;
             hibon["int"]  = int(42);
             hibon["array"]= hibon_array;
 
+            // immutable data_array = hibon_array.serialize;
+            // writefln("data=%s", data_array);
+            // writefln("data_array.length=%d size=%d", data_array.length, hibon_array.size);
+            // writefln("hibon.serialize=%s", hibon.serialize);
             immutable data = hibon.serialize;
 
             const doc = Document(data);
 
             {
+// //                writefln(`doc["int"].type=%d`, doc["int"].type);
+//                 writeln("-------------- --------------");
+//                 auto test=doc["int"];
+//                 writeln("-------------- get  --------------");
                 assert(doc["int"].get!int is 42);
             }
 
@@ -622,8 +825,9 @@ ubyte[] fromHex(in string hex) pure nothrow {
 
                 auto hibon_doc_array= new HiBON;
                 hibon_doc_array["doc_array"]=docs;
+                hibon_doc_array["x"]=42;
 
-                assert(hibon_doc_array.length is 1);
+                assert(hibon_doc_array.length is 2);
 
                 immutable data_array=hibon_doc_array.serialize;
 
@@ -634,7 +838,7 @@ ubyte[] fromHex(in string hex) pure nothrow {
                     enum name=tabel_doc_array.fieldNames[i];
                     alias U=tabel_doc_array.Types[i];
                     alias E=Value.asType!U;
-                    const e=doc_array[i]; //.get!U;
+                    const e=doc_array[i];
                     const doc_e=e.by!(Type.DOCUMENT);
                     const sub_e=doc_e[name];
                     assert(sub_e.type is E);
@@ -653,7 +857,6 @@ ubyte[] fromHex(in string hex) pure nothrow {
             immutable data=hibon.serialize;
             const doc=Document(data);
             const doc_texts=doc["texts"].by!(Type.DOCUMENT);
-
             assert(doc_texts.length is texts.length);
             foreach(i, s; texts) {
                 const e=doc_texts[i];
@@ -663,11 +866,24 @@ ubyte[] fromHex(in string hex) pure nothrow {
         }
     }
 
-    unittest {
-        auto hibon=new HiBON;
-        immutable int x=42;
-        hibon["int"]=x;
-        const m=hibon["int"];
-        writefln("m.type=%s", m.type);
+    unittest { // Check empty/null object
+        {
+            HiBON hibon=new HiBON;
+            auto sub=new HiBON;
+            assert(sub.size == ubyte.sizeof);
+            const sub_doc=Document(sub.serialize);
+            hibon["a"]=sub_doc;
+            assert(hibon.size == Type.sizeof+ubyte.sizeof+"a".length+sub.size);
+
+        }
+
+        {
+            HiBON hibon=new HiBON;
+            auto sub=new HiBON;
+            assert(sub.size == ubyte.sizeof);
+            hibon["a"]=sub;
+            assert(hibon.size == Type.sizeof+ubyte.sizeof+"a".length+sub.size);
+        }
     }
+
 }

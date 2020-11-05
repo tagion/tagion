@@ -1,11 +1,9 @@
-*~
+core
 *.o
 *#
 .#*
-*.parked
-bin/
-*.bak
-build
-.touch
-modules.ddoc
+*~
 dfiles.mk
+revision.di
+bin
+*.parked
