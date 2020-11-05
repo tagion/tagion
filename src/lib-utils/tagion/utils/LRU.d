@@ -478,22 +478,20 @@ unittest {
     assert( !l.contains(1), "should not have updated recent-ness of 1");
 }
 
-unittest { // immutable struct
+unittest { // Test undefined
     @safe
     struct E {
         immutable(char[]) x;
         static E undefined() {
             return E("Not found");
         }
-        // this(int x) inout {
-        //     this.x=x;
-        // }
     }
     alias TestLRU=LRU!(int,E);
+    uint count;
+    import std.stdio;
     void onEvicted(const(int) i, TestLRU.Element* e) @safe {
-        assert(0, "Not used");
+        count++;
     }
-
 
     auto l=new TestLRU(&onEvicted);
 
@@ -504,11 +502,10 @@ unittest { // immutable struct
     }
 
     assert(l[N] == E.undefined);
+    assert(l[N-1] != E.undefined);
     assert(l.length == N);
     assert(l.remove(2));
+    assert(count == 1);
     assert(l.length == N-1);
-    auto l1=l[1];
-    import std.stdio;
-    writefln("l.length=%d", l.length);
-    assert(0, "Stop");
+    assert(l[2] == E.undefined);
 }

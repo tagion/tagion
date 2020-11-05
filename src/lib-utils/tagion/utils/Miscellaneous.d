@@ -1,9 +1,9 @@
 module tagion.utils.Miscellaneous;
 
-import tagion.Base : Buffer, isBufferType;
+import tagion.basic.Basic : Buffer, isBufferType;
 
 @safe
-string toHexString(bool UCASE=false, BUF)(BUF buffer) pure if ( isBufferType!BUF ) {
+string toHexString(bool UCASE=false, BUF)(BUF buffer) pure nothrow if ( isBufferType!BUF ) {
     static if ( UCASE ) {
         enum hexdigits = "0123456789ABCDEF";
     }
@@ -40,7 +40,7 @@ unittest {
 }
 
 @safe
-immutable(ubyte[]) decode(string hex)
+immutable(ubyte[]) decode(const(char[]) hex) pure nothrow
 in {
     assert(hex.length % 2 == 0);
 }
@@ -98,4 +98,37 @@ string cutHex(bool UCASE=false, BUF)(BUF buf) pure if ( isBufferType!BUF ) {
     else {
         return buf[0..LEN].toHexString!UCASE;
     }
+}
+
+@safe
+Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
+    in {
+        assert(a.length == b.length);
+        assert(a.length % ulong.sizeof == 0);
+    }
+do {
+    import tagion.utils.Gene : gene_xor;
+    const _a=cast(const(ulong[]))a;
+    const _b=cast(const(ulong[]))b;
+    return cast(Buffer)gene_xor(_a, _b);
+}
+
+@nogc @safe
+void xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
+    in {
+        assert(a.length == b.length);
+        assert(a.length % ulong.sizeof == 0);
+    }
+do {
+    import tagion.utils.Gene : gene_xor;
+    const _a=cast(const(ulong[]))a;
+    const _b=cast(const(ulong[]))b;
+    auto _result=cast(ulong[])result;
+    gene_xor(_result, _a, _b);
+}
+
+@nogc @safe
+Buffer xor(Range)(Range range) pure nothrow {
+    import std.algorithm.iteration: fold;
+    return range.fold!((a,b) => xor(a,b));
 }
