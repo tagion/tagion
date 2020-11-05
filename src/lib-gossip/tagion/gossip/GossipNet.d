@@ -71,7 +71,7 @@ class StdHashNet : HashNet {
         return calcHash(h1~h2);
     }
 
-    immutable(Buffer) hashOf(const(Document) doc) const {
+    immutable(Buffer) hashOf(scope const(Document) doc) const {
         auto range=doc[];
         if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
             immutable value_data=range.front.data[range.front.valuePos..$];
