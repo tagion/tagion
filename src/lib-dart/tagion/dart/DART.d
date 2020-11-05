@@ -15,7 +15,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 
 import tagion.dart.DARTFile;
-import tagion.gossip.InterfaceNet : SecureNet;
+import tagion.gossip.InterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC;
 import tagion.basic.Basic : EnumText;
 
@@ -328,8 +328,9 @@ class DART : DARTFile, HiRPC.Supports {
                 if ( index !is INDEX_NULL ) {
                     // The archive is added to a recorder
                     immutable data=blockfile.load(index);
+                    const doc=Document(data);
                     auto super_recorder=recorder;
-                    super_recorder.add(data);
+                    super_recorder.add(doc);
                     hibon_params[Params.recorder]=super_recorder.toHiBON;
                 }
             }
@@ -384,7 +385,7 @@ class DART : DARTFile, HiRPC.Supports {
         HiRPC.check(!read_only, "The DART is read only");
         HiRPC.check_element!Document(received.params, Params.recorder);
         scope recorder_doc=received.params[Params.recorder].get!Document;
-        scope recorder=Recorder(net, recorder_doc);
+        scope recorder=recorder(recorder_doc);
         immutable bullseye=modify(recorder);
         auto hibon_params=new HiBON;
         hibon_params[Params.bullseye]=bullseye;
@@ -498,8 +499,9 @@ class DART : DARTFile, HiRPC.Supports {
             scope recorder_worker=owner.recorder;
 //            writefln("Recursive remove %s", rims.cutHex);
             foreach(archive_data; rim_walker) {
-                recorder_worker.remove(archive_data);
+
                 auto archive_doc=Document(archive_data);
+                recorder_worker.remove(archive_doc);
 //                writefln("\tremove archive %s", archive_doc.toText);
 //                scope archive=new Recorder.Archive(owner.net, archive_doc);
                 // immutable print=owner.net.calcHash(archive_data);
@@ -590,7 +592,7 @@ class DART : DARTFile, HiRPC.Supports {
 //                scope Recorder foreign_recoder;
                 if ( !result_branches.params.hasElement(Params.branches) ) {
                     if ( result_branches.params.hasElement(Params.recorder) ) {
-                        scope foreign_recoder=Recorder(net, result_branches.params);
+                        scope foreign_recoder=recorder(result_branches.params);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -606,7 +608,7 @@ class DART : DARTFile, HiRPC.Supports {
                     //
                     scope request_archives=dartRead(foreign_branches.fingerprints, hirpc, id);
                     scope result_archives=sync.query(request_archives);
-                    scope foreign_recoder=Recorder(net, result_archives.params);
+                    scope foreign_recoder=recorder(result_archives.params);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
@@ -692,7 +694,7 @@ class DART : DARTFile, HiRPC.Supports {
                 scope replay_recorder_doc=doc[Params.recorder].get!Document;
 //                writefln("%s", replay_recorder_doc.toText);
 
-                scope replay_recorder=Recorder(net, replay_recorder_doc);
+                scope replay_recorder=recorder(replay_recorder_doc);
                 scope action_recorder=recorder;
                 foreach(a; replay_recorder.archives[]) {
                     static if (remove) {
@@ -761,6 +763,7 @@ class DART : DARTFile, HiRPC.Supports {
 
 
     }
+    pragma(msg, "fixme(alex): Why is the unittest switch off");
     version(none)
     unittest {
         import tagion.utils.Random;

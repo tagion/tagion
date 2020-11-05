@@ -6,4 +6,5 @@
 bin/
 *.bak
 build
-.touch
+dfiles.mk
+revision.di

@@ -1278,7 +1278,7 @@ class BlockFile {
                             uint previous = previous_index;
                             uint current = current_index;
                             bool h = head;
-                            ulong from = 0;
+                            size_t from = 0;
                             while(from + DATA_SIZE < data.length){
                                 auto to = from+DATA_SIZE;
                                 auto slice_data = data[from .. to];

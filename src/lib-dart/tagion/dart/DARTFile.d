@@ -44,9 +44,6 @@ private {
  +/
 ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
     import std.stdio;
-    if ( rim >= rim_keys.length ) {
-        debug writefln("rim=%d rim_keys.length=%d", rim, rim_keys.length);
-    }
     return rim_keys[rim];
 }
 
@@ -58,8 +55,9 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
 ushort root_sector(const(ubyte[]) fingerprint) pure {
     return fingerprint[1] | (fingerprint[0] << 8);
 }
-import std.stdio;
+
 void printfp(string msg, const Buffer[] fingerprints){
+    import std.stdio;
     foreach(fp; fingerprints){
         if(fp){
             writeln(msg, fp.toHexString);
@@ -172,12 +170,19 @@ class DARTFile {
     }
 
     /++
+     Creates an empty Recorder
+     +/
+    Recorder recorder(const(Document) doc) {
+        return Recorder(net, doc);
+    }
+
+    /++
      + Creates a Recorder base on an existing archive list
 
      + Params:
      +     archives = Archive list
      +/
-    Recorder recorder(Recorder.Archives archives) {
+    Recorder recorder(Recorder.Archives archives) nothrow {
         return Recorder(net, archives);
     }
 
@@ -190,6 +195,7 @@ class DARTFile {
         alias Archives=RedBlackTree!(Archive, (a,b) => a.fingerprint < b.fingerprint);
         private HashNet net;
         private Archives _archives;
+//        @disable this();
 //        alias BranchRange=Archives.Range;
 
         /++
@@ -197,7 +203,7 @@ class DARTFile {
          + Params:
          +     net = Secure net should be the same as define in the DARTFile class
          +/
-        this(HashNet net) nothrow
+        private this(HashNet net) pure nothrow
             in {
                 assert(net);
             }
@@ -213,7 +219,7 @@ class DARTFile {
          +     net      = Secure net should be the same as define in the DARTFile class
          +     archives = Archive list
          +/
-        this(HashNet net, Archives archives)
+        private this(HashNet net, Archives archives) pure nothrow
             in {
                 assert(net);
             }
@@ -224,30 +230,10 @@ class DARTFile {
 
         this(HashNet net, Document doc) {
             this(net);
-//            auto recorder_doc=doc[Params.archives].get!Document;
             foreach(e; doc[]) {
                 auto doc_archive=e.get!Document;
                 auto archive=new Archive(net, doc_archive);
-                // writefln("archive=%x", (&archive));
-                // import tagion.utils.Miscellaneous : cutHex;
-
-                // writefln("%s:%d:%s", archive.type, archive.data.length, archive.fingerprint.cutHex);
-                // writefln("archives=%s", (&_archives));
-
-                // foreach(a; _archives) {
-                //     writefln("\ta=%s:%d:%s", a.type, a.data.length, a.fingerprint.cutHex);
-                // }
-                // writefln("archives.length=%d", _archives.length);
                 _archives.insert(archive);
-                // import std.bitmanip : swapEndian;
-//                 foreach(a; _archives) {
-// //                    auto bu=nativeToLittleEndian(a.fingerprint)
-//                     auto bu=*cast(const(ulong*))(a.fingerprint.ptr[0..ulong.sizeof]);
-//                     auto u=bu.swapEndian;
-// //                    auto u=nativeToLittleEndian(bu);
-//                     writefln("\ta=%s:%d:%s %x %d len=%d", a.type, a.data.length, a.fingerprint.cutHex, u,  u, a.fingerprint.length);
-
-//                 }
             }
         }
 
@@ -327,50 +313,52 @@ class DARTFile {
                 STUB
             }
             immutable(Buffer) fingerprint;
-            immutable(Buffer) data;
+            const Document doc;
+            //immutable(Buffer) data;
             private Type _type;
             immutable uint index;
             bool done;
-            this(HashNet net, immutable(Buffer) data, const Type type)
+            version(none)
+            this(HashNet net, const(Document) doc, const Type type)
             in {
                 assert(net);
             }
             do {
                 if (type is Type.STUB) {
                     // The type is stub the data contains the fingerprint not data
-                    fingerprint=data;
+                    fingerprint=doc.serialize;
                 }
                 else {
-                    fingerprint=net.calcHash(data);
+                    fingerprint=net.hashOf(doc);
                     this.data=data;
                 }
                 _type=type;
                 index=INDEX_NULL;
             }
 
-            this(HashNet net, immutable(Buffer) data, const uint index)
+            this(HashNet net, Document _doc, const uint _index)
             in {
                 assert(net);
             }
             do {
-                fingerprint=net.calcHash(data);
-                this.data=data;
-                this.index=index;
+                fingerprint=net.hashOf(doc);
+                doc=_doc;
+                index=_index;
                 _type=Type.NONE;
             }
 
-            this(HashNet net, Document doc) {
-                uint type=doc[Params.type].get!uint;
-                Buffer _data;
+            this(HashNet net, Document _doc) {
+                uint type=_doc[Params.type].get!uint;
+//                Buffer _data;
                 Buffer _fingerprint;
                 scope(success) {
                     _type=cast(Type)type;
-                    data=_data;
+                    doc=_doc;
                     if ( _fingerprint ) {
                         fingerprint=_fingerprint;
                     }
                     else {
-                        fingerprint=net.calcHash(data);
+                        fingerprint=net.hashOf(doc);
                     }
                 }
                 scope(exit) {
@@ -378,12 +366,13 @@ class DARTFile {
                 }
                 with(Type) switch(type) {
                     case ADD, NONE:
-                        const archive_doc=doc[Params.archive].get!Document;
-                        _data=archive_doc.data.idup;
+                        const archive_doc=_doc[Params.archive].get!Document;
+                        //doc=_doc;
+                        //_data=archive_doc.data.idup;
 
                         break;
                     case REMOVE:
-                        if ( doc.hasElement(Params.fingerprint) ) {
+                        if ( _doc.hasElement(Params.fingerprint) ) {
                             goto case STUB;
                         }
                         else {
@@ -391,7 +380,7 @@ class DARTFile {
                         }
                         break;
                     case STUB:
-                        _fingerprint=doc[Params.fingerprint].get!Buffer;
+                        _fingerprint=_doc[Params.fingerprint].get!Buffer;
                         break;
                     default:
                          .check(0, format("Unsupported archive type number=%d", type));
@@ -401,8 +390,8 @@ class DARTFile {
             HiBON toHiBON() const {
                 auto hibon=new HiBON;
                 hibon[Params.type]=cast(uint)(_type);
-                if ( data ) {
-                    hibon[Params.archive]=Document(data);
+                if ( doc.length ) {
+                    hibon[Params.archive]=doc;
                 }
                 else {
                     hibon[Params.fingerprint]=fingerprint;
@@ -414,7 +403,8 @@ class DARTFile {
             private this(Buffer fingerprint, const Type type=Type.REMOVE) {
                 _type=type;
                 index=INDEX_NULL;
-                data=null;
+                doc=Document(null);
+                //data=null;
                 this.fingerprint=fingerprint;
             }
 
@@ -444,8 +434,8 @@ class DARTFile {
                     hibon[Keywords.stub]=fingerprint;
                     return hibon.serialize;
                 }
-                .check(data !is null, format("Archive is %s type and it must contain data", _type));
-                return data;
+                .check(doc.serialize.length !is 0, format("Archive is %s type and it must contain data", _type));
+                return doc.serialize;
             }
 
         }
@@ -454,22 +444,22 @@ class DARTFile {
             _archives.insert(archive);
         }
 
-        const(Archive) add(immutable(Buffer) data)
+        const(Archive) add(const(Document) doc)
             in {
-                assert(data);
+                assert(doc.data);
             }
         do {
-            auto archive=new Archive(net, data, Archive.Type.ADD);
+            auto archive=new Archive(net, doc, Archive.Type.ADD);
             _archives.insert(archive);
             return archive;
         }
 
-        const(Archive) remove(immutable(Buffer) data)
+        const(Archive) remove(const(Document) doc)
             in {
-                assert(data);
+                assert(doc.data);
             }
         do {
-            auto archive=new Archive(net, data, Archive.Type.REMOVE);
+            auto archive=new Archive(net, doc, Archive.Type.REMOVE);
             _archives.insert(archive);
             return archive;
         }
@@ -542,7 +532,7 @@ class DARTFile {
                 return _left_fingerprint.idup;
             }
             else {
-                return net.calcHash(_left_fingerprint~_right_fingerprint);
+                return net.hashOf(_left_fingerprint, _right_fingerprint);
             }
         }
         immutable mid=tabel.length >> 1;
@@ -750,7 +740,7 @@ class DARTFile {
                             _fingerprints[key]=doc[Keywords.stub].get!Buffer;
                         }
                         else {
-                            _fingerprints[key]=dartfile.net.calcHash(data);
+                            _fingerprints[key]=dartfile.net.hashOf(doc);
                         }
                     }
                 }
@@ -879,7 +869,7 @@ class DARTFile {
 
                 }
                 else {
-                    auto archive=new Recorder.Archive(net, data, type);
+                    auto archive=new Recorder.Archive(net, doc, type);
                     archives~=archive;
                     // result.insert(archive);
                         // writeln(result.length);
@@ -934,7 +924,7 @@ class DARTFile {
                     // Loads the Archives into the archives
                     .check(ordered_fingerprints.length == 1, format("Data base is broken at rim=%d fingerprint=%s", rim, ordered_fingerprints[0].hex));
                     // The archive is set in erase mode so it can be easily be erased later
-                    auto archive=new Recorder.Archive(net, data, type);
+                    auto archive=new Recorder.Archive(net, doc, type);
                     if ( ordered_fingerprints[0] == archive.fingerprint ) {
                         result.insert(archive);
                     }
@@ -1129,7 +1119,7 @@ class DARTFile {
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The A new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart=new Recorder.Archive(net, data, branch_index);
+                            scope archive_in_dart=new Recorder.Archive(net, doc, branch_index);
                             scope(success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -1300,7 +1290,7 @@ class DARTFile {
                         rec.stub(doc[Keywords.stub].get!Buffer);
                     }else{
                         writeln("ADD SINGLE EL FP");
-                        rec.stub(net.calcHash(data));
+                        rec.stub(net.hashOf(doc));
                     }
                 }
             }
@@ -1441,7 +1431,7 @@ class DARTFile {
                     writefln("%s>%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
                 }
                 else {
-                    immutable fingerprint=net.calcHash(data);
+                    immutable fingerprint=net.hashOf(doc);
                     auto lastRing = full ? fingerprint.length : rim+1;
                     writefln("%s:%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
                 }
@@ -1451,6 +1441,7 @@ class DARTFile {
     }
 
     version(unittest) {
+        pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
     //   package:
         static {
             enum TEST_BLOCK_SIZE=0x80;
@@ -1524,11 +1515,11 @@ class DARTFile {
             enum fake="fake";
             import core.exception : SwitchError;
             @trusted
-                override Buffer calcHash(scope const(ubyte[]) data) const {
-                immutable size=*cast(uint*)(data.ptr);
+                override Buffer hashOf(scope const(Document) doc) const {
+                immutable size=*cast(uint*)(doc.data.ptr);
                 if ( size+uint.sizeof == data.length ) {
-                    import std.exception : assumeUnique;
-                    scope doc = Document(assumeUnique(data));
+                    //import std.exception : assumeUnique;
+                    //scope doc = Document(assumeUnique(data));
                     if ( doc.hasElement(fake) ) {
                         import tagion.hibon.HiBONBase : Type;
                         assert(doc[fake].type == Type.UINT64);
@@ -1538,7 +1529,7 @@ class DARTFile {
                     }
                 }
                 import std.digest.sha : SHA256;
-                import std.digest.digest;
+                import std.digest;
                 return digest!SHA256(data).idup;
             }
         }
@@ -1546,6 +1537,8 @@ class DARTFile {
     }
 
     unittest {
+        pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
+
         import std.algorithm.sorting : sort;
         import tagion.basic.Basic;
         import std.typecons;
@@ -1627,20 +1620,34 @@ class DARTFile {
             assert(recorder_archive.fingerprint == a_in.fingerprint);
 
         }
-
+        version(none)
         { // Test RimKeyRange
             auto recorder=Recorder(net);
             auto test_tabel=table[0..8].dup;
             foreach(t; test_tabel) {
                 recorder.add(serialize(t));
+                writefln("%s = %d",serialize(t), t);
             }
+            writeln();
 
             test_tabel.sort;
+
+            foreach(t; test_tabel) {
+                writefln("%s = %d",serialize(t), t);
+            }
+
+            writeln();
+
+            foreach(t; recorder.archives) {
+                writeln(t.data);
+            }
+            writeln();
 // 0f000000220466616b65908050403420212000
 // 0f000000220466616b65908050403010212000
 
             uint i;
             foreach(a; recorder.archives) {
+                writefln("%s == %s", a.data, serialize(test_tabel[i]));
                 assert(a.data == serialize(test_tabel[i]));
                 i++;
             }
@@ -1652,7 +1659,7 @@ class DARTFile {
                 i=0;
                 immutable key=rim_range.front.fingerprint.rim_key(rim);
                 foreach(a; rim_range) {
-                    while ( net.calcHash(serialize(test_tabel[i])).rim_key(rim) !is key ) {
+                    while ( net.hashOf(serialize(test_tabel[i])).rim_key(rim) !is key ) {
                         i++;
                     }
                     i++;
@@ -1926,7 +1933,7 @@ class DARTFile {
             immutable nonexisting_print_2=serialize(0xABB7_1112_1111_0000UL);
             recorder.remove_by_print(nonexisting_print_2);
 
-            //writefln("calcHash(nonexisting_print)=%s", net.calcHash(nonexisting_print).cutHex!true);
+            //writefln("hashOf(nonexisting_print)=%s", net.hashOf(nonexisting_print).cutHex!true);
 
             dart_B.modify(recorder);
             // dart_B.dump;

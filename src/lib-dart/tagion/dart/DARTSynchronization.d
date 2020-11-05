@@ -8,9 +8,12 @@ import p2p.callback;
 import p2p.cgo.helper;
 import std.random;
 import std.concurrency;
+
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
+import tagion.dart.DARTBasic;
+
 import core.time;
 import std.datetime;
 import tagion.Options;
@@ -31,132 +34,12 @@ import tagion.services.MdnsDiscoveryService;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-static T convertFromBuffer(T)(const ubyte[] data) {
-    if(data == []) return 0;
-    import std.bitmanip: bigEndianToNative;
-
-    assert(data.length == T.sizeof);
-    return bigEndianToNative!T(data[0 .. T.sizeof]);
-}
-
 mixin template StateT(T){
     protected T _state;
     protected bool checkState(T[] expected...) nothrow{
         import std.algorithm: canFind;
         return expected.canFind(_state);
     }
-}
-
-Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
-    import std.math: floor, ceil;
-    static __gshared bool stop = false;
-    static __gshared ulong all_iterations = 0;
-    static __gshared ulong iteration = 0;
-    static ulong local_iteration = 0;
-
-    alias Sector = DART.SectorRange;
-    import std.math: pow;
-    import std.algorithm : count;
-    auto dart_range = dart.sectors;
-    all_iterations = count(dart_range) * pow(ringWidth, (rings-2));
-    float angDiff = cast(float)count(dart_range) / cores;
-    static void setRings(int ring, int rings, ubyte[] buffer, ubyte ringWidth,
-            DARTFile.Recorder rec) {
-        if(stop) return;
-        auto rnd = Random(unpredictableSeed);
-        bool randomChance(int proc) {
-            const c = uniform(0, 100, rnd);
-            if (c <= proc)
-                return true;
-            return false;
-        }
-
-        void fillRandomHash(ubyte[] buf) {
-            for (int x = rings; x < ulong.sizeof; x++) {
-                buf[x] = rnd.uniform!ubyte;
-            }
-        }
-        immutable(ubyte[]) serialize(const ulong x) {
-            auto hibon=new HiBON;
-            hibon[MyFakeNet.fake]=x;
-            import tagion.hibon.HiBONBase : Type;
-            assert(hibon[MyFakeNet.fake].type == Type.UINT64);
-            immutable data=hibon.serialize;
-            auto doc=Document(data);
-            assert(doc[MyFakeNet.fake].type == Type.UINT64);
-            return hibon.serialize;
-        }
-        ubyte lowerByte = ring == 2 ? ubyte.min : ubyte.min + 1;
-        for (ubyte j = lowerByte; j < ringWidth; j++) {
-            fillRandomHash(buffer);
-            buffer[ring] = j;
-            ulong bufLong = convertFromBuffer!ulong(buffer);
-            auto fakeDoc = MyFakeNet.serialize(bufLong);
-            try {
-                iteration++;
-                local_iteration++;
-                if (iteration % (all_iterations < 100 ? 1 : all_iterations / 100) == 0) {
-                    writef("\r%d%%  ", ((iteration * 100) / all_iterations));
-                }
-                enum max_archive_in_recorder = 50;
-                if(local_iteration%max_archive_in_recorder == 0){
-                    ownerTid.send(cast(shared)rec, thisTid);
-                    receiveOnly!bool;
-                }
-                rec.add(fakeDoc);
-            } catch (Exception e) {
-                writeln(e);
-            }
-            if (ring < rings - 1) {
-                // if(randomChance(93))continue;
-                setRings(ring + 1, rings, buffer.dup, ringWidth, rec);
-            }
-        }
-    }
-
-    static void setSectors(immutable Sector sector, ubyte rw, int rings, shared DARTFile.Recorder rec) {
-        ubyte[ulong.sizeof] buf;
-        foreach(j; cast(Sector)sector) {
-            buf[0 .. ushort.sizeof] = convert_sector_to_rims(j);
-            setRings(2, rings, buf.dup, rw, cast(DARTFile.Recorder) rec);
-        }
-        if(!stop) ownerTid.send(true, rec);
-    }
-    for(int i=0; i< cores; i++){
-        auto recorder = dart.recorder();
-        immutable sector = Sector(
-            cast(ushort)(dart_range.from_sector + floor(angDiff*i)),
-            cast(ushort)(dart_range.from_sector + floor(angDiff*(i+1)))
-        );
-        spawn(&setSectors, sector, ringWidth, rings, cast(shared) recorder);
-    }
-
-    Buffer last_result;
-    auto active_threads = cores;
-    do{
-        receive(
-            (Control control){
-                if(control == Control.STOP){
-                    stop = true;
-                    send(ownerTid, Control.END);
-                }
-            },
-            (bool flag, shared DARTFile.Recorder recorder){
-                active_threads--;
-                auto non_shared_recorder = cast(DARTFile.Recorder) recorder;
-                last_result = dart.modify(non_shared_recorder);
-            },
-            (shared DARTFile.Recorder recorder, Tid sender){
-                auto non_shared_recorder = cast(DARTFile.Recorder) recorder;
-                dart.modify(non_shared_recorder);
-                non_shared_recorder.clear();
-                send(sender, true);
-            }
-        );
-    }while(active_threads>0 && !stop);
-    import core.stdc.stdlib: exit;
-    if(stop) exit(0);   //TODO: bad solution
-    return last_result;
 }
 
 class ModifyRequestHandler : ResponseHandler{
@@ -201,9 +84,9 @@ class ReadRequestHandler : ResponseHandler{
         Buffer[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
-        const string task_name;
         HiRPCReceiver receiver;
     }
+    immutable(string) task_name;
     this(const Buffer[] fp, HiRPC hirpc, const string task_name, const HiRPCReceiver receiver){
         this.requested_fp = fp.dup;
         this.hirpc = hirpc;
@@ -213,6 +96,7 @@ class ReadRequestHandler : ResponseHandler{
 
     void setResponse(Buffer response){
         const doc = Document(response); //TODO: check response
+        pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
         scope foreign_recoder=DARTFile.Recorder(hirpc.net, received.params);
         foreach(archive; foreign_recoder.archives){
@@ -230,7 +114,8 @@ class ReadRequestHandler : ResponseHandler{
         if(alive){
             log("ReadRequestHandler: Close alive");
             // onFailed()?
-        }else{
+        }
+        else{
             auto empty_hirpc = HiRPC(null);
             auto recorder = DARTFile.Recorder(hirpc.net);
             foreach(fp, doc; fp_result){
@@ -248,9 +133,11 @@ class ReadRequestHandler : ResponseHandler{
 }
 
 unittest{
+    pargma(msg, "Fixme(Alex); Why doesn't this unittest not compile anymore!!!");
     import std.bitmanip: nativeToBigEndian;
+    import tagion.dart.DARTFakeNet;
     {//ReadSynchronizer  match requested fp
-        auto net = new MyFakeNet();
+        auto net = new DARTFakeNet();
         net.generateKeyPair("testpassphrase");
         HiRPC hirpc = HiRPC(net);
         enum testfp = cast(Buffer)(nativeToBigEndian(0x20_21_22_36_40_50_80_90));
@@ -273,45 +160,6 @@ unittest{
 }
 
 import tagion.gossip.GossipNet;
-
-@safe
-class MyFakeNet: StdSecureNet{
-    enum fake="fake";
-    protected immutable(ubyte)[] fakeKey;
-    this(){
-        super();
-    }
-    import core.exception : SwitchError;
-
-    @trusted
-    override Buffer calcHash(scope const(ubyte[]) data) const {
-        immutable size=*cast(uint*)(data.ptr);
-        if ( size+uint.sizeof == data.length && size!=12 ) { //TODO: fix: size == 12 - two fp
-            auto doc=Document(cast(immutable)data);
-            import tagion.hibon.HiBONJSON: toJSON;
-            if ( doc.hasElement(fake) ) {
-                import tagion.hibon.HiBONBase : Type;
-                assert(doc[fake].type == Type.UINT64);
-                auto x=doc[fake].get!ulong;
-                import std.bitmanip: nativeToBigEndian;
-                return nativeToBigEndian(x).idup;
-            }
-        }
-        import std.digest.sha : SHA256;
-        import std.digest.digest: digest;
-        return digest!SHA256(data).idup;
-    }
-    static immutable(ubyte[]) serialize(const ulong x) {
-        auto hibon=new HiBON;
-        hibon[fake]=x;
-        import tagion.hibon.HiBONBase : Type;
-        assert(hibon[fake].type == Type.UINT64);
-        immutable data=hibon.serialize;
-        auto doc=Document(data);
-        assert(doc[fake].type == Type.UINT64);
-        return hibon.serialize;
-    }
-}
 
 import core.thread;
 class ReplayPool(T){
@@ -376,7 +224,7 @@ class P2pSynchronizationFactory: SynchronizationFactory{
     protected string task_name;
     protected immutable(Pubkey) pkey;
 
-    this(DART dart, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, const Options opts, immutable(Pubkey) pkey){
+    this(DART dart, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, immutable(Options) opts, immutable(Pubkey) pkey){
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
@@ -410,6 +258,7 @@ class P2pSynchronizationFactory: SynchronizationFactory{
             try{
                 auto stream_id = connect();
                 auto filename = tempfile~(std.conv.to!string(sector));
+		pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE=0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
@@ -444,7 +293,8 @@ class P2pSynchronizationFactory: SynchronizationFactory{
                 if(response[1] is null) continue;
                 return response;
             }
-        }while(iteration < 20);
+	pragma(msg, "fixme(alex): Why 20?");
+        } while(iteration < 20);
         return Tuple!(uint, ResponseHandler)(0, null);
     }
 
@@ -484,9 +334,10 @@ class P2pSynchronizationFactory: SynchronizationFactory{
             }
             immutable foreign_data = hirpc.toHiBON(request).serialize;
             import p2p.go_helper;
-            try{
+            try {
                 send_request_to_forien_dart(foreign_data);
-            }catch(GoException e){
+            }
+            catch(GoException e){
                 log("P2pSynchronizer: Exception on sending request: %s", e);
                 close();
             }
@@ -506,7 +357,6 @@ class P2pSynchronizationFactory: SynchronizationFactory{
                 onfailure(fiber.root_rims);
                 fiber.reset();
             }else{
-                // pool.close(key);
                 log("P2pSynchronizer: Synchronization Completed! Sector: %d", convertFromBuffer!ushort(fiber.root_rims));
                 oncomplete(filename);
             }
@@ -514,6 +364,7 @@ class P2pSynchronizationFactory: SynchronizationFactory{
         }
     }
 }
+
 version(none)
 unittest{
     @trusted
