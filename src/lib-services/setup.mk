@@ -3,7 +3,7 @@ include git.mk
 
 ifndef NOUNITTEST
 DCFLAGS+=-I$(REPOROOT)/tests/
-DCFLAGS+=-unittest
+#DCFLAGS+=-unittest
 DCFLAGS+=-g
 DCFLAGS+=$(DEBUG)
 endif
