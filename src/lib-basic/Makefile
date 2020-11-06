@@ -1,67 +1,27 @@
 include git.mk
-REVNO?=$(GIT_REVNO)
-HASH?=$(GIT_HASH)
-
-
-ifndef $(VERBOSE)
-PRECMD?=@
-endif
 
 DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
 
-include setup.mk
-WORKDIR?=$(REPOROOT)
--include $(WORKDIR)/dfiles.mk
+include $(MAINROOT)/dinclude_setup.mk
+DCFLAGS+=$(addprefix -I$(MAINROOT)/,$(DINC))
 
-BIN:=$(REPOROOT)/bin/
+include setup.mk
+
+-include $(REPOROOT)/dfiles.mk
+
+BIN:=bin/
 LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
-#OBJS=${DFILES:.d=.o}
 
 .SECONDARY: $(TOUCHHOOK)
-.PHONY: ddoc makeway
+.PHONY: makeway
 
-INC+=$(REPOROOT)
-INC+=$(P2PLIB)
-INC+=$(SECP256K1ROOT)/src/
-INC+=$(SECP256K1ROOT)/
 
 INCFLAGS=${addprefix -I,${INC}}
-
-
-
-#External libaries
-#openssl
-#secp256k1 (elliptic curve signature library)
-SECP256K1ROOT:=$(REPOROOT)/../secp256k1
-SECP256K1LIB:=$(SECP256K1ROOT)/.libs/libsecp256k1.a
-
-P2PLIB:=$(REPOROOT)/../libp2pDWrapper/
-#DCFLAGS+=-I$(P2PLIB)
-
-LDCFLAGS+=$(LINKERFLAG)-lssl
-LDCFLAGS+=$(LINKERFLAG)-lgmp
-LDCFLAGS+=$(LINKERFLAG)-lcrypto
-
-LDCFLAGS+=-L$(P2PLIB)bin/libp2p.a
-LDCFLAGS+=-L$(P2PLIB)bin/libp2p_go.a
-SECP256K1_LDCFLAGS+=$(LINKERFLAG)-L$(SECP256K1ROOT)/.libs/
-SECP256K1_LDCFLAGS+=$(LINKERFLAG)-Lsecp256k1
-
-
-# CFLAGS
-CFLAGS+=-I$(SECP256K1ROOT)/src/
-CFLAGS+=-I$(SECP256K1ROOT)/
-CFLAGS+=-DUSE_NUM_GMP=1
-LDFLAGS+=-L$(SECP256K1ROOT)/.libs/
-LDFLAGS+=${SECP256K1LIB}
-LDFLAGS+=-lgmp
-#${SECP256K1LIB}
-#CFLAGS+=-DUSE_FIELD_10X2=1
 
 LIBRARY:=$(BIN)/$(LIBNAME)
 LIBOBJ:=${LIBRARY:.a=.o};
@@ -76,16 +36,13 @@ DCFLAGS+=-cov
 endif
 
 
-ifndef DFILES
-include $(REPOROOT)/source.mk
-endif
 
 HELP+=help-main
-# DDOC help
-include $(DDOCBUILDER)
 
 help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
+	@echo
+	@echo "make unittest  : Run the unittests"
 	@echo
 
 help-main:
@@ -100,21 +57,38 @@ help-main:
 	@echo
 
 
+ifndef DFILES
+include $(REPOROOT)/source.mk
+endif
 
 info:
+	@echo "WAYS    =$(WAYS)"
 	@echo "DFILES  =$(DFILES)"
 #	@echo "OBJS    =$(OBJS)"
-	@echo "LDCFLAGS=$(LDCFLAGS)"
-	@echo "DCFLAGS =$(DCFLAGS)"
-	@echo "INCFLAGS=$(INCFLAGS)"
+	@echo "LDCFLAGS =$(LDCFLAGS)"
+	@echo "DCFLAGS  =$(DCFLAGS)"
+	@echo "INCFLAGS =$(INCFLAGS)"
+	@echo "GIT_REVNO=$(GIT_REVNO)"
+	@echo "GIT_HASH =$(GIT_HASH)"
 
-include $(REPOROOT)/revsion.mk
+include $(REPOROOT)/revision.mk
 
 ifndef DFILES
-lib: dfiles.mk
+lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
+
+unittest: dfiles.mk
+	$(MAKE) unittest
 else
 lib: $(REVISION) $(LIBRARY)
+
+unittest: $(UNITTEST)
+	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
+
+$(UNITTEST): $(LIBS) $(WAYS)
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
+#$(LDCFLAGS)
+
 endif
 
 define LINK
@@ -122,11 +96,7 @@ $(1): $(1).d $(LIBRARY)
 	@echo "########################################################################################"
 	@echo "## Linking $(1)"
 #	@echo "########################################################################################"
-	echo prog=$(1)
-	echo LDCFLAGS=$(LDCFLAGS)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(1).d $(OUTPUT)$(BIN)/$(1) $(LDCFLAGS)
-
-
 endef
 
 $(eval $(foreach main,$(MAIN),$(call LINK,$(main))))
@@ -143,25 +113,7 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)touch $@
 
 
-include $(DDOCBUILDER)
-
-# $(DDOCMODULES): $(DFILES)
-# 	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
-
-# ddoc: $(DDOCMODULES)
-# 	@echo "########################################################################################"
-# 	@echo "## Creating DDOC"
-# 	${PRECMD}ln -fs ../candydoc ddoc
-# 	$(PRECMD)$(DC) ${INCFLAGS} $(DDOCFLAGS) $(DDOCFILES) $(DFILES) $(DD)$(DDOCROOT)
-
-%.o: %.c
-	@echo "########################################################################################"
-	@echo "## compile "$(notdir $<)
-	$(PRECMD)gcc  -m64 $(CFLAGS) -c $< -o $@
-
-secp256k1_test: secp256k1_test.c
-	echo $@
-	gcc $(CFLAGS) -o $@ $< ${LDFLAGS}
+#include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -174,12 +126,17 @@ CLEANER+=clean
 clean:
 	rm -f $(LIBRARY)
 	rm -f ${OBJS}
+	rm -f $(UNITTEST) $(UNITTEST).o
+	rm -f $(REVISION)
 
 proper: $(CLEANER)
-	rm -fR ${WAYS}
+	rm -fR $(WAYS)
+	rm -f dfiles.mk
+
+%.a:
+# Find the root of the %.a repo
+# and calls the lib tag
+	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
-
-root:
-	@echo ${REPOROOT}
