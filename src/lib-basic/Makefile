@@ -124,7 +124,7 @@ $(LIBRARY): ${DFILES}
 CLEANER+=clean
 
 clean:
-	rm -f $(LIBRARY)
+#	rm -f $(LIBRARY)
 	rm -f ${OBJS}
 	rm -f $(UNITTEST) $(UNITTEST).o
 	rm -f $(REVISION)

@@ -1,43 +1,15 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
+PACKAGE:=basic
+include $(MAINROOT)/submodule_default_setup.mk
 
-ifndef NOUNITTEST
-DCFLAGS+=-I$(REPOROOT)/tests/
-DCFLAGS+=-unittest
-DCFLAGS+=-g
-DCFLAGS+=$(DEBUG)
-endif
+# LIBNAME:=libtagion_basic.a
+# LIBRARY:=$(BIN)/$(LIBNAME)
 
-DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
-DCFLAGS+=$(DIP25)
-DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
+# SOURCE:=tagion/basic
+# PACKAGE:=${subst /,.,$(SOURCE)}
+# REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 
-ifdef LOGGER
-DCFLAGS+=$(DVERSION)=LOGGER # Enables task name to be added for TagionExceptions
-endif
+# INC+=$(REPOROOT)
 
-SCRIPTROOT:=${REPOROOT}/scripts/
-
-
-
-# DDOC Configuration
-#
--include ddoc.mk
-
-BIN:=bin
-
-LIBNAME:=libtagion_basic.a
-LIBRARY:=$(BIN)/$(LIBNAME)
-
-WAYS+=${BIN}
-
-SOURCE:=tagion/basic
-PACKAGE:=${subst /,.,$(SOURCE)}
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
-
--include dstep.mk
-
-
-INC+=$(REPOROOT)
-
-include unittest_setup.mk
+# include unittest_setup.mk
