@@ -113,7 +113,7 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)touch $@
 
 
-include $(DDOCBUILDER)
+#include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
