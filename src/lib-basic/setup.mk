@@ -38,8 +38,6 @@ REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
 -include dstep.mk
 
 
-LIBS+=$(TAGION_BASIC)/bin/libtagion_basic.a
-
 INC+=$(REPOROOT)
 
 include unittest_setup.mk
