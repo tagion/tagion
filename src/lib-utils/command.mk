@@ -95,9 +95,9 @@ ifeq ($(COMPILER),ldc)
 else ifeq ($(COMPILER),gdc)
     DVERSION    = -fversion
     SONAME_FLAG = $(LINKERFLAG)-soname
-    DEBUG       ?= -fdebug
-    DIP1000     = -ftransition=dip1000
-    DIP25       = -ftransition=dip25
+    DEBUG       ?= unknown-d-debug
+    DIP1000     = unknown-dip1000
+    DIP25       = unknown-dip125
 else
     DVERSION    = -version
     SONAME_FLAG = $(LINKERFLAG)-soname
@@ -132,8 +132,6 @@ ifndef ARCH
 endif
 ifndef MODEL
     ifeq ($(ARCH), x86_64)
-        MODEL = 64
-    else ifeq ($(ARCH), aarch64)
         MODEL = 64
     else
         MODEL = 32
