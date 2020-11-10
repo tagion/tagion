@@ -22,9 +22,9 @@ import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.ConsensusExceptions;
 
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import tagion.services.ServiceNames : get_node_name;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 

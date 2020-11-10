@@ -9,7 +9,7 @@ import core.time : MonoTime;
 
 import tagion.Options;
 import tagion.basic.Basic : EnumText, Pubkey, Buffer, buf_idup, basename;
-import tagion.hashgraph.ConsensusExceptions : convertEnum;
+import tagion.basic.ConsensusExceptions : convertEnum;
 //, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hibon.HiBON : HiBON;
@@ -23,13 +23,13 @@ import tagion.utils.Queue;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.ConsensusExceptions;
 
 
 import tagion.crypto.aes.AESCrypto;
 //import tagion.crypto.secp256k1.NativeSecp256k1;
 
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 
 void scramble(scope ref ubyte[] data, scope ubyte[] xor=null) @safe {
     import std.random;
@@ -71,7 +71,7 @@ class StdHashNet : HashNet {
         return calcHash(h1~h2);
     }
 
-    immutable(Buffer) hashOf(scope const(Document) doc) const {
+    immutable(Buffer) hashOf(const(Document) doc) const {
         auto range=doc[];
         if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
             immutable value_data=range.front.data[range.front.valuePos..$];
@@ -100,7 +100,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
     import tagion.crypto.aes.AESCrypto;
     import tagion.gossip.GossipNet : scramble;
 //    import tagion.gossip.InterfaceNet : HashNet;
-    import tagion.hashgraph.ConsensusExceptions;
+    import tagion.basic.ConsensusExceptions;
 
     alias check = consensusCheck!(GossipConsensusException);
 

@@ -5,7 +5,7 @@ import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.utils.Queue;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.ConsensusExceptions;
 import tagion.basic.Basic;
 
 enum ExchangeState : uint {
