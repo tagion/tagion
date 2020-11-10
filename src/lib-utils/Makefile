@@ -13,14 +13,14 @@ include setup.mk
 -include $(REPOROOT)/dfiles.mk
 
 #BIN:=bin/
-LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
+LDCFLAGS+=$(LINKERFLAG)-L$(BINDIR)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
 
 .SECONDARY: $(TOUCHHOOK)
 .PHONY: makeway
-
+.SECONDARY: $(LIBS)
 
 INCFLAGS=${addprefix -I,${INC}}
 
@@ -88,7 +88,7 @@ unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
 $(UNITTEST): $(LIBS) $(WAYS)
-	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
 endif

@@ -127,8 +127,8 @@ do {
     gene_xor(_result, _a, _b);
 }
 
-@nogc @safe
-Buffer xor(Range)(Range range) pure nothrow {
+@safe
+Buffer xor(Range)(Range range) pure {
     import std.algorithm.iteration: fold;
-    return range.fold!((a,b) => xor(a,b));
+    return range.fold!((a,b)  => xor(a,b));
 }
