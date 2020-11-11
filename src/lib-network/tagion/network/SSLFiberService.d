@@ -12,8 +12,8 @@ import tagion.network.SSLSocket;
 import tagion.basic.Message;
 import tagion.Options;
 import tagion.basic.Basic : Buffer;
-import tagion.services.LoggerService;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.Logger;
+import tagion.basic.ConsensusExceptions;
 import LEB128=tagion.utils.LEB128;
 
 

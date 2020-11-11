@@ -9,7 +9,7 @@ import std.concurrency;
 import tagion.Options;
 import tagion.network.SSLSocket;
 import tagion.network.SSLFiberService;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import tagion.basic.Basic : Control;
 
 
