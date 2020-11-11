@@ -1,48 +1,14 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
+PACKAGE:=wallet
+include $(MAINROOT)/submodule_default_setup.mk
 
-ifndef NOUNITTEST
-DCFLAGS+=-I$(REPOROOT)/tests/
-DCFLAGS+=-unittest
-DCFLAGS+=-g
-DCFLAGS+=$(DEBUG)
-endif
-
-DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
-DCFLAGS+=$(DIP25)
-DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
-ifdef LOGGER
-DCFLAGS+=$(DVERSION)=LOGGER # Enables task name to be added for TagionExceptions
-endif
-
-SCRIPTROOT:=${REPOROOT}/scripts/
-
-
-# WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
-# LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
-
-# DDOC Configuration
-#
--include ddoc.mk
-
-BIN:=bin
-
-LIBNAME:=libtagion_wallet.a
-LIBRARY:=$(BIN)/$(LIBNAME)
-
-WAYS+=${BIN}
-#WAYS+=tests
-
-SOURCE:=tagion/wallet
-PACKAGE:=${subst /,.,$(SOURCE)}
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
-
--include dstep.mk
-
-
-#-include core_dfiles.mk
-TAGION_DFILES:=${addprefix $(TAGION_CORE), $(TAGION_DFILES)}
-#INC+=$(TAGION_CORE)
-INC+=$(REPOROOT)
-
-include unittest_setup.mk
+LIBS+=${call GETLIB,tagion_basic}
+LIBS+=${call GETLIB,tagion_utils}
+LIBS+=${call GETLIB,tagion_hibon}
+#LIBS+=${call GETLIB,tagion_gossip}
+LIBS+=${call GETLIB,tagion_crypto}
+#LIBS+=${call GETLIB,tagion_funnel}
+LIBS+=${call GETLIB,tagion_services}
+LIBS+=${call GETLIB,tagion_hashgraph}
+LIBS+=${call GETLIB,tagion_communication}
