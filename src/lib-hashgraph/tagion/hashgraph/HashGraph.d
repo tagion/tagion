@@ -7,12 +7,13 @@ import tagion.gossip.InterfaceNet;
 import tagion.utils.LRU;
 import tagion.hibon.Document;
 import tagion.utils.Miscellaneous;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.ConsensusExceptions;
 import std.bitmanip : BitArray;
 import tagion.basic.Basic : Pubkey, Buffer, bitarray_clear, countVotes;
 import Basic=tagion.hashgraph.HashGraphBasic;
 
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
+
 @safe
 class HashGraph {
     //alias Pubkey=immutable(ubyte)[];

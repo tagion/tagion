@@ -7,7 +7,7 @@ import tagion.hibon.Document : Document;
 import tagion.utils.Miscellaneous;
 
 import tagion.gossip.InterfaceNet;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.ConsensusExceptions;
 import std.conv;
 import std.bitmanip;
 
@@ -19,7 +19,7 @@ import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, Payload, bitarra
 import tagion.hashgraph.HashGraphBasic : isMajority;
 import tagion.Keywords;
 
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 
 @safe
 package void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
