@@ -13,7 +13,7 @@ import tagion.basic.Basic : Buffer;
 import tagion.basic.TagionExceptions : TagionException, Check;
 import tagion.Options : Options, setOptions, options;
 import tagion.hibon.Document;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import std.bitmanip : binwrite=write;
 
 @safe

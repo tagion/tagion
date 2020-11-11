@@ -8,7 +8,7 @@ import tagion.hashgraph.Event : Event, Round;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.gossip.InterfaceNet : NetCallbacks;
 import tagion.gossip.GossipNet : StdGossipNet;
-import tagion.hashgraph.ConsensusExceptions : ConsensusException;
+import tagion.basic.ConsensusExceptions : ConsensusException;
 
 import tagion.basic.Basic : Control, basename, Pubkey, DataFormat;
 import tagion.basic.Message;
