@@ -25,7 +25,7 @@ import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
-import tagion.services.ServiceNames : get_node_name;
+import tagion.ServiceNames : get_node_name;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 @trusted

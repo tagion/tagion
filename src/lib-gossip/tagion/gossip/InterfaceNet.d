@@ -28,7 +28,7 @@ struct Package {
         this.block=block;
         this.type=type;
         this.pubkey=net.pubkey;
-        import tagion.services.LoggerService;
+//        import tagion.services.LoggerService;
         @trusted
         immutable(ubyte[]) sig_calc(){
             import std.stdio;
