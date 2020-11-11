@@ -12,12 +12,12 @@ import tagion.hashgraph.Event : EventBody;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import tagion.utils.Random;
 import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract;
-import tagion.hashgraph.ConsensusExceptions : ConsensusException;
+import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.gossip.GossipNet : StdSecureNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;

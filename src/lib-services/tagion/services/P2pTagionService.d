@@ -14,7 +14,7 @@ import tagion.utils.Random;
 import tagion.GlobalSignals : abort;
 
 import tagion.basic.Basic : Pubkey, Payload, Control, nameOf;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.gossip.InterfaceNet : SecureNet;
@@ -40,7 +40,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.basic.TagionExceptions : TagionException;
@@ -126,7 +126,7 @@ do {
     auto hashgraph=new HashGraph();
     auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
     auto connectionPoolBridge = new shared(ConnectionPoolBridge)();
-    // connectionPoolBridge[Pubkey([0])] = 0; 
+    // connectionPoolBridge[Pubkey([0])] = 0;
     Tid discovery_tid;
     Tid dart_sync_tid;
     Tid dart_tid;

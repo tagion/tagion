@@ -7,13 +7,15 @@ import core.thread;
 import core.sys.posix.pthread;
 import std.string;
 
-extern(C) int pthread_setname_np(pthread_t, const char*);
+//extern(C) int pthread_setname_np(pthread_t, const char*);
 
 import tagion.basic.Basic : Control;
+import tagion.basic.Logger;
 
 import tagion.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
 
+version(none) {
 enum LoggerType {
     INFO    = 1,
     TRACE   = INFO<<1,
@@ -64,7 +66,7 @@ static struct Logger {
         log("Register: %s logger", _task_name);
     }
 
-    @property
+    @property @nogc
     string task_name() pure const nothrow {
         return _task_name;
     }
@@ -94,20 +96,6 @@ static struct Logger {
         }
     }
 
-/*
-    @trusted
-    void report(Args...)(LoggerType type, string fmt, Args args) {
-        if ( type | masks[$-1] ) {
-            if (logger_tid == logger_tid.init) {
-                stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
-                stderr.writefln("\t%s:%s: %s", _task_name, type, format(fmt, args));
-            }
-            else {
-                report(type, _task_name, format(fmt, args));
-            }
-        }
-    }
-*/
     void opCall(lazy string text) {
         report(LoggerType.INFO, text);
     }
@@ -158,6 +146,7 @@ static struct Logger {
 
 
 static Logger log;
+}
 
 void loggerTask(immutable(Options) opts) {
     setOptions(opts);
@@ -172,6 +161,7 @@ void loggerTask(immutable(Options) opts) {
         assert(register(opts.logger.task_name, thisTid));
     }
     task_register;
+    log.set_logger_task(opts.logger.task_name);
 
     File file;
     file.open(opts.logger.file_name, "w");

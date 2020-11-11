@@ -10,7 +10,7 @@ import core.thread;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.ConsensusExceptions;
+import tagion.basic.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.basic.TagionExceptions : TagionException;
