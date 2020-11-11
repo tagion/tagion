@@ -1,4 +1,7 @@
-PACKAGE_MODULE?=tagion.$(PACKAGE)
+PACKAGE_MODULE?=tagion.$(PACKAGE)Y
+REVISION?=$(SOURCE)/revision.di
+.PHONY: $(REVISION)
+
 $(REVISION):
 	@echo "########################################################################################"
 	@echo "## Linking $(1)"
