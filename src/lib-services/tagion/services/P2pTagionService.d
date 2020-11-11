@@ -19,7 +19,7 @@ import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.gossip.InterfaceNet : SecureNet;
 import tagion.gossip.GossipNet : StdSecureNet;
-import tagion.services.ServiceNames : get_node_name;
+import tagion.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
 import p2p.connection;
@@ -48,29 +48,10 @@ import tagion.basic.TagionExceptions : TagionException;
 import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
 import tagion.services.ServerFileDiscoveryService;
-import tagion.services.MdnsDiscoveryService: AddressBook;
+import tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DartService;
 import tagion.Keywords: NetworkMode;
 import std.stdio;
-
-shared class ConnectionPoolBridge{
-    ulong[Pubkey] lookup;
-
-    void removeConnection(ulong connectionId){
-        foreach(key, val; lookup){
-            if(val == connectionId){
-                log("CPB::REMOVING KEY: connection id: %s as pk: %s", val, key.cutHex);
-                lookup.remove(key);
-                // break;
-            }
-        }
-    }
-
-    bool contains(Pubkey pk){
-        return (pk in lookup) !is null;
-    }
-
-}
 
 void p2pTagionService(Options opts)
 in{

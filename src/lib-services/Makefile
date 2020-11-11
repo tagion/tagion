@@ -27,8 +27,6 @@ INCFLAGS=${addprefix -I,${INC}}
 #LIBRARY:=$(BIN)/$(LIBNAME)
 #LIBOBJ:=${LIBRARY:.a=.o};
 
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
-.PHONY: $(REVISION)
 .SECONDARY: .touch
 
 ifdef COV
@@ -135,10 +133,10 @@ proper: $(CLEANER)
 	rm -fR $(WAYS)
 	rm -f dfiles.mk
 
-%.a:
+#%.a:
 # Find the root of the %.a repo
 # and calls the lib tag
-	make -C${call GITROOT,${dir $(@D)}} lib
+#	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@

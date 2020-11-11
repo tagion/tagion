@@ -20,7 +20,7 @@ import tagion.services.ScriptCallbacks;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.communication.Monitor;
-import tagion.services.ServiceNames;
+import tagion.ServiceNames;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
