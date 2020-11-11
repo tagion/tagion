@@ -9,6 +9,7 @@ import p2p.cgo.helper;
 import std.random;
 import std.concurrency;
 
+import tagion.gossip.P2pGossipNet : NodeAddress;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
@@ -24,12 +25,12 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 
 import tagion.communication.HiRPC;
 import tagion.communication.HandlerPool;
 
-import tagion.services.MdnsDiscoveryService;
+//import tagion.services.MdnsDiscoveryService;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
@@ -133,7 +134,7 @@ class ReadRequestHandler : ResponseHandler{
 }
 
 unittest{
-    pargma(msg, "Fixme(Alex); Why doesn't this unittest not compile anymore!!!");
+    pragma(msg, "Fixme(Alex); Why doesn't this unittest not compile anymore!!!");
     import std.bitmanip: nativeToBigEndian;
     import tagion.dart.DARTFakeNet;
     {//ReadSynchronizer  match requested fp
@@ -232,6 +233,7 @@ class P2pSynchronizationFactory: SynchronizationFactory{
         this.opts = opts;
         this.pkey = pkey;
     }
+
 
     protected NodeAddress[Pubkey] node_addrses;
     void setNodeTable(NodeAddress[Pubkey] node_addrses){

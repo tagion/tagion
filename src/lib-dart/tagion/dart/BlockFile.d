@@ -1035,8 +1035,8 @@ class BlockFile {
     private void readStatistic() {
         if ( masterblock.statistic_index !is INDEX_NULL ) {
             immutable buffer=load(masterblock.statistic_index);
-            import tagion.services.LoggerService;
-            import std.stdio;
+            // import tagion.services.LoggerService;
+            // import std.stdio;
             statistic=Statistic(Document(buffer));
         }
     }
