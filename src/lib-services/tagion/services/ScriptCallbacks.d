@@ -10,7 +10,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.Keywords;
 
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 
 @safe class ScriptCallbacks : EventScriptCallbacks {
     private Tid _event_script_tid;

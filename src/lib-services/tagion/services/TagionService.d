@@ -25,7 +25,7 @@ import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 //import tagion.services.ScriptingEngineService;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import tagion.basic.TagionExceptions;
 
 import tagion.Options : Options, setOptions, options;

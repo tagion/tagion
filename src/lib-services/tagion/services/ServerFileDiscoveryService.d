@@ -5,11 +5,12 @@ import std.datetime;
 import tagion.Options;
 import std.typecons;
 import std.conv;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import std.stdio;
-import tagion.services.MdnsDiscoveryService;
+//import tagion.services.MdnsDiscoveryService;
+import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;

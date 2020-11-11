@@ -8,7 +8,7 @@ import p2p.connection;
 import p2p.callback;
 import p2p.cgo.helper;
 
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import tagion.basic.Basic : Buffer, Control;
 
 import std.getopt;
@@ -33,7 +33,8 @@ import tagion.communication.HandlerPool;
 import tagion.communication.HiRPC;
 import tagion.services.DartSynchronizeService;
 import tagion.gossip.InterfaceNet: SecureNet;
-import tagion.services.MdnsDiscoveryService;
+//import tagion.services.MdnsDiscoveryService;
+import tagion.gossip.P2pGossipNet : NodeAddress;
 
 import std.array;
 

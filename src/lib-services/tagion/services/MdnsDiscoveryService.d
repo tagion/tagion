@@ -10,10 +10,11 @@ import std.datetime;
 import tagion.Options;
 //import std.typecons;
 import std.conv;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import std.stdio;
+import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
 
 void mdnsDiscoveryService(shared p2plib.Node node, immutable(Options) opts){  //TODO: for test
     scope(exit){

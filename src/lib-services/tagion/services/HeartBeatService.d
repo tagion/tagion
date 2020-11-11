@@ -12,12 +12,12 @@ import tagion.utils.Random;
 
 import tagion.GlobalSignals : abort;
 import tagion.basic.Basic : Pubkey, Control;
-import tagion.services.LoggerService;
+import tagion.basic.Logger;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.gossip.InterfaceNet : SecureNet;
 import tagion.gossip.GossipNet : StdSecureNet;
-import tagion.services.ServiceNames : get_node_name;
+import tagion.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
 import tagion.services.DartService;
@@ -25,6 +25,8 @@ import tagion.services.DartSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import std.conv;
+
+import tagion.gossip.P2pGossipNet : AddressBook;
 import tagion.services.MdnsDiscoveryService;
 
 import tagion.Keywords: NetworkMode;
