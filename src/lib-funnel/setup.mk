@@ -1,48 +1,26 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
-
-ifndef NOUNITTEST
-DCFLAGS+=-I$(REPOROOT)/tests/
-DCFLAGS+=-unittest
-DCFLAGS+=-g
-DCFLAGS+=$(DEBUG)
-endif
-
-DCFLAGS+=$(DIP1000) # Should support scope c= new C; // is(C == class)
-DCFLAGS+=$(DIP25)
-DCFLAGS+=$(DVERSION)=NO_MEMBER_LIST
-ifdef LOGGER
-DCFLAGS+=$(DVERSION)=LOGGER # Enables task name to be added for TagionExceptions
-endif
-
-SCRIPTROOT:=${REPOROOT}/scripts/
-
-
-# WAMR_ROOT:=$(REPOROOT)/../wasm-micro-runtime/
-# LIBS+=$(WAMR_ROOT)/wamr-compiler/build/libvmlib.a
-
-# DDOC Configuration
-#
--include ddoc.mk
-
-BIN:=bin
-
-LIBNAME:=libtagion_funnel.a
-LIBRARY:=$(BIN)/$(LIBNAME)
-
-WAYS+=${BIN}
-#WAYS+=tests
-
 SOURCE:=tagion/script
-PACKAGE:=${subst /,.,$(SOURCE)}
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
+PACKAGE:=funnel
+PACKAGE_MODULE:=tagion.script
+REVISION:=tagion/script/revision.di
 
--include dstep.mk
+include $(MAINROOT)/submodule_default_setup.mk
 
+LIBS+=${call GETLIB,tagion_basic}
+LIBS+=${call GETLIB,tagion_utils}
+LIBS+=${call GETLIB,tagion_hibon}
+LIBS+=${call GETLIB,tagion_gossip}
+LIBS+=${call GETLIB,tagion_hashgraph}
+LIBS+=${call GETLIB,tagion_crypto}
+LIBS+=${call GETLIB,tagion_dart}
+LIBS+=${call GETLIB,tagion_wallet}
+LIBS+=${call GETLIB,tagion_communication}
+#LIBS+=${call GETLIB,tagion_services}
+LIBS+=$(LIBSECP256K1)
+LIBS+=$(LIBP2P)
+LIBS+=$(LIBP2P_GO)
 
--include core_dfiles.mk
-TAGION_DFILES:=${addprefix $(TAGION_CORE), $(TAGION_DFILES)}
-INC+=$(TAGION_CORE)
-INC+=$(REPOROOT)
-
-include unittest_setup.mk
+LDCFLAGS+=$(LDCFLAGS_GMP)
+LDCFLAGS+=$(LDCFLAGS_CRYPT)
+LDCFLAGS+=$(LDCFLAGS_SSL)

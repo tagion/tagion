@@ -4,6 +4,7 @@ DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
 
+
 include $(MAINROOT)/dinclude_setup.mk
 DCFLAGS+=$(addprefix -I$(MAINROOT)/,$(DINC))
 
@@ -11,23 +12,21 @@ include setup.mk
 
 -include $(REPOROOT)/dfiles.mk
 
-BIN:=bin/
-LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
+#BIN:=bin/
+LDCFLAGS+=$(LINKERFLAG)-L$(BINDIR)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
 
 .SECONDARY: $(TOUCHHOOK)
 .PHONY: makeway
-
+.SECONDARY: $(LIBS)
 
 INCFLAGS=${addprefix -I,${INC}}
 
-LIBRARY:=$(BIN)/$(LIBNAME)
-LIBOBJ:=${LIBRARY:.a=.o};
+#LIBRARY:=$(BIN)/$(LIBNAME)
+#LIBOBJ:=${LIBRARY:.a=.o};
 
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
-.PHONY: $(REVISION)
 .SECONDARY: .touch
 
 ifdef COV
@@ -56,6 +55,7 @@ help-main:
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
 
+include $(MAINROOT)/libraries.mk
 
 ifndef DFILES
 include $(REPOROOT)/source.mk
@@ -86,7 +86,7 @@ unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
 $(UNITTEST): $(LIBS) $(WAYS)
-	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
 endif
@@ -113,7 +113,7 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)touch $@
 
 
-include $(DDOCBUILDER)
+#include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -124,7 +124,7 @@ $(LIBRARY): ${DFILES}
 CLEANER+=clean
 
 clean:
-	rm -f $(LIBRARY)
+#	rm -f $(LIBRARY)
 	rm -f ${OBJS}
 	rm -f $(UNITTEST) $(UNITTEST).o
 	rm -f $(REVISION)
@@ -133,10 +133,10 @@ proper: $(CLEANER)
 	rm -fR $(WAYS)
 	rm -f dfiles.mk
 
-%.a:
+#%.a:
 # Find the root of the %.a repo
 # and calls the lib tag
-	make -C${call GITROOT,${dir $(@D)}} lib
+#	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@
