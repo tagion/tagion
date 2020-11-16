@@ -9,3 +9,5 @@ embedder_example
 revision.d
 bin
 build
+*.parked
+*.di
