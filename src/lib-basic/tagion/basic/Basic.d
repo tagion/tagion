@@ -282,8 +282,6 @@ template isOneOf(T, TList...) {
     }
 }
 
-void func(T)(T x) if (isOneOf!(int, long)) {
-}
 ///
 static unittest {
     import std.meta;
