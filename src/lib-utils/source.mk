@@ -1,5 +1,4 @@
-ifndef FIX_DFILES
-SOURCE:=tagion
+SOURCE?=tagion
 dfiles.mk: ${WAYS}
 	@echo "########################################################################################"
 	@echo "## DFILES"
@@ -9,4 +8,3 @@ CLEANER+=clean-dfiles
 
 clean-dfiles:
 	rm -f dfiles.mk
-endif
