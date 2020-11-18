@@ -9,7 +9,7 @@ import std.file;
 import std.file: fwrite = write;
 import std.typecons;
 
-import tagion.revision;
+import tagion.gossip.revision;
 import tagion.Options;
 import tagion.basic.Basic : EnumText, Buffer, Pubkey, Payload, buf_idup,  basename, isBufferType, Control;
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
