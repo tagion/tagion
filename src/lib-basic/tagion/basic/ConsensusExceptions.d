@@ -4,8 +4,8 @@ import std.format : format;
 import tagion.basic.TagionExceptions : TagionException;
 
 @safe
-void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
-    static assert(is(E:ConsensusException));
+void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure if (is(E:ConsensusException)) {
+//    static assert(is(E:ConsensusException));
     if (!flag) {
         throw new E(code, file, line);
     }
@@ -71,12 +71,12 @@ enum ConsensusFailCode {
 @safe
 class ConsensusException : TagionException {
     immutable ConsensusFailCode code;
-    this(string msg, ConsensusFailCode code=ConsensusFailCode.NON, string file = __FILE__, size_t line = __LINE__ ) {
+    this(string msg, ConsensusFailCode code=ConsensusFailCode.NON, string file = __FILE__, size_t line = __LINE__ ) pure {
         this.code=code;
         super( msg, file, line );
     }
 
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( consensus_error_messages[code], file, line );
         this.code=code;
     }
@@ -84,31 +84,31 @@ class ConsensusException : TagionException {
 
 @safe
 class EventConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
 }
 
 @safe
 class SecurityConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
 }
 
 @safe
 class GossipConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
-    this( string msg, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( string msg, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, code, file, line );
     }
 }
 
 @safe
 class HashGraphConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
 }
@@ -116,7 +116,7 @@ class HashGraphConsensusException : ConsensusException {
 
 @safe
 class DARTConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
 }
@@ -124,21 +124,21 @@ class DARTConsensusException : ConsensusException {
 
 @safe
 class ScriptingEngineConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
 }
 
 @safe
 class SSLSocketFiberConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure{
         super( code, file, line );
     }
 }
 
 @safe
 class SocketFiberConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
 }
@@ -146,7 +146,7 @@ class SocketFiberConsensusException : ConsensusException {
 
 @safe
 class SmartScriptException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) {
+    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
 }
