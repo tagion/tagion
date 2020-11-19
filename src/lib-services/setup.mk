@@ -1,6 +1,7 @@
 include git.mk
 -include $(REPOROOT)/localsetup.mk
 PACKAGE:=services
+SOURCE:=tagion
 include $(MAINROOT)/submodule_default_setup.mk
 
 LIBS+=${call GETLIB,tagion_basic}
@@ -14,6 +15,7 @@ LIBS+=${call GETLIB,tagion_network}
 LIBS+=${call GETLIB,tagion_funnel}
 LIBS+=${call GETLIB,tagion_gossip}
 LIBS+=${call GETLIB,tagion_communication}
+LIBS+=${call GETLIB,tagion_wallet}
 
 LIBS+=$(LIBSECP256K1)
 LIBS+=$(LIBP2P)
