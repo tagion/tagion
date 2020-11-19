@@ -6,9 +6,6 @@ import std.concurrency;
 import std.datetime: Clock;
 import tagion.Options;
 
-//import tagion.services.ServiceNames;
-
-//import tagion.services.LoggerService;
 import tagion.utils.Random;
 
 import tagion.GlobalSignals : abort;
