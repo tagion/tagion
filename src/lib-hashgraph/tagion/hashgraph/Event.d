@@ -442,7 +442,7 @@ class Round {
         }
     }
 
-    @trusted
+    @trusted @nogc
     private bool ground(const uint node_id, ref const(BitArray) rhs) nothrow {
         _ground_mask[node_id]=true;
         return rhs == _ground_mask;
