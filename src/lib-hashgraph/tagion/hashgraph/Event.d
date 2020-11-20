@@ -857,6 +857,7 @@ class Event {
 //    static File* fout;
     immutable(ubyte[]) signature;
     immutable(Buffer) pubkey;
+    @nogc
     immutable(Pubkey) channel() pure const nothrow {
         return Pubkey(pubkey);
     }
@@ -892,6 +893,7 @@ class Event {
     private uint _witness_votes;
     private BitArray _witness_mask;
 
+    @nogc
     private uint node_size() pure const nothrow {
         return cast(uint)witness_mask.length;
     }
@@ -903,6 +905,7 @@ class Event {
     private bool _forked;
     immutable uint id;
     private static uint id_count;
+
     @nogc
     private static immutable(uint) next_id() nothrow {
         if ( id_count == id_count.max ) {
@@ -936,7 +939,8 @@ class Event {
         return hibon;
     }
 
-    static int timeCmp(const(Event) a, const(Event) b) pure {
+    @nogc
+    static int timeCmp(const(Event) a, const(Event) b) pure nothrow {
         immutable diff=cast(long)(b.eventbody.time) - cast(long)(a.eventbody.time);
         if ( diff < 0 ) {
             return -1;
@@ -954,7 +958,8 @@ class Event {
         assert(0, "This should be improbable to have two equal signatures");
     }
 
-    int opCmp(const(Event) rhs) {
+    @nogc
+    int opCmp(const(Event) rhs) const pure nothrow {
         immutable diff=rhs._received_order - _received_order;
         if ( diff < 0 ) {
             return -1;
@@ -975,7 +980,7 @@ class Event {
     private bool check_if_round_was_received(const uint number_of_famous, Round received) {
         if ( !_round_received ) {
             _round_received_count++;
-            if ( _round_received_count==number_of_famous ) {
+            if ( _round_received_count == number_of_famous ) {
                 _round_received=received;
                 if ( callbacks ) {
                     callbacks.round_received(this);
@@ -986,21 +991,24 @@ class Event {
         return false;
     }
 
-
-    private void clear_round_received_count() {
+    @nogc
+    private void clear_round_received_count() pure nothrow {
         if ( !_round_received ) {
             _round_received_count=0;
         }
     }
 
+    @nogc
     const(Round) round_received() pure const nothrow {
         return _round_received;
     }
 
+    @nogc
     bool isFront() pure const nothrow {
         return _daughter is null;
     }
 
+    @nogc
     inout(Round) round() inout pure nothrow
     out(result) {
         assert(result, "Round should be defined before it is used");
@@ -1009,6 +1017,7 @@ class Event {
         return _round;
     }
 
+    @nogc
     bool hasRound() const pure nothrow {
         return (_round !is null);
     }
@@ -1045,6 +1054,7 @@ class Event {
         return _round;
     }
 
+    @nogc
     Round round() nothrow
         in {
             if ( motherExists ) {
@@ -1082,7 +1092,7 @@ class Event {
 
 
     package ref const(BitArray) witness_mask(immutable uint node_size) {
-        ref BitArray check_witness_mask(Event event, immutable uint level=0) nothrow @trusted
+        ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted
             in {
                 assert(event);
             }
@@ -1129,6 +1139,7 @@ class Event {
     }
 
 
+    @nogc
     ref const(BitArray) witness_mask() pure const nothrow
         in {
             assert(is_witness_mask_checked);
