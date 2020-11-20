@@ -130,6 +130,7 @@ clean:
 	rm -f ${OBJS}
 	rm -f $(UNITTEST) $(UNITTEST).o
 	rm -f $(REVISION)
+	rm -f dfiles.mk
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)

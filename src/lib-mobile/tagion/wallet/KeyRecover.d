@@ -48,7 +48,8 @@ struct KeyRecover {
     const HashNet net;
     protected RecoverSeed seed;
 
-    this(HashNet net) {
+    @nogc
+    this(HashNet net) pure nothrow {
         this.net=net;
     }
 
@@ -80,7 +81,8 @@ struct KeyRecover {
         return results;
     }
 
-    static uint numberOfSeeds(const uint M, const uint N)
+    @nogc
+    static uint numberOfSeeds(const uint M, const uint N) pure nothrow
         in {
             assert(M >= N);
             assert(M <= 10);
@@ -89,6 +91,7 @@ struct KeyRecover {
         return (M-N)*N+1;
     }
 
+    @nogc
     static unittest {
         assert(numberOfSeeds(10, 5) is 26);
     }
@@ -199,7 +202,7 @@ struct KeyRecover {
     }
 }
 
-string strip_down(string text)
+string strip_down(string text) pure
     out(result) {
         assert(result.length > 0);
         }
