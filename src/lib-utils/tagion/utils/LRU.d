@@ -32,24 +32,17 @@ class LRU(K,V)  {
     }
 
     // pragma(msg, format("%s does not have immutable members %s", V.stringof, does_not_have_immutable_members));
-    @safe
+    @safe @nogc
     struct Entry {
         K key;
         V value;
-        // static if ( value_is_immutable ) {
-        //     @trusted
-        //     this(K key, ref V value) {
-        //         this.key=key;
-        //         this.value=&value;
-        //     }
-        // }
-        // else {
-        this(K key, ref V value) {
+        this(K key, ref V value) pure nothrow {
             this.key=key;
             this.value=value;
         }
     }
-    alias DList!(Entry*)  EvictList;
+
+    alias DList!(Entry*) EvictList;
     alias EvictList.Element Element;
     private EvictList evictList;
     private Element*[K] items;
@@ -61,10 +54,9 @@ class LRU(K,V)  {
 
 // NewLRU constructs an LRU of the given size
     // size zero means unlimited
-    this( EvictCallback onEvict=null, immutable uint size=0) {
+    this (EvictCallback onEvict=null, immutable uint size=0) pure {
         this.size=      size;
         evictList = new EvictList;
-            //	items:     make(map[interface{}]*list.Element),
         this.onEvict=onEvict;
     }
 
@@ -139,14 +131,14 @@ class LRU(K,V)  {
         }
     }
 
-
     void opIndexAssign(ref V value, const(K) key) {
         add(key, value);
     }
 
 // Check if a key is in the cache, without updating the recent-ness
 // or deleting it for being stale.
-    bool contains(const(K) key) const {
+    @nogc
+    bool contains(const(K) key) const pure nothrow {
         return (key in items) !is null;
     }
 
@@ -205,12 +197,12 @@ class LRU(K,V)  {
         return false;
     }
 
-    void setEvict(EvictCallback evict) {
+    @nogc
+    void setEvict(EvictCallback evict) nothrow {
         onEvict=evict;
     }
 // RemoveOldest removes the oldest item from the cache.
     const(Entry)* removeOldest() {
-
         auto ent = evictList.pop;
         if (ent !is null) {
             auto element=items[ent.key];
@@ -249,8 +241,8 @@ class LRU(K,V)  {
         return evictList.length;
     }
 
-    EvictList.Iterator iterator() {
-        return evictList.iterator;
+    EvictList.Range opSlice() {
+        return evictList.range;
     }
 
     invariant {

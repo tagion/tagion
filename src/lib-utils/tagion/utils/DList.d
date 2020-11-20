@@ -149,9 +149,6 @@ class DList(E) {
             _head=e;
             _head.prev=null;
         }
-        // remove(e);
-        // unshift(e.entry);
-
     }
 
     uint length() pure const
@@ -171,20 +168,27 @@ class DList(E) {
         return count;
     }
 
-    Element* first() {
+    @nogc
+    inout(Element*) first() inout pure nothrow {
         return _head;
     }
-    Element* last() {
+
+    @nogc
+    inout(Element*) last() inout pure nothrow {
         return _tail;
     }
 
-    Iterator iterator(bool revert=false) {
-        auto result=Iterator(this, revert);
+    // Range opSlice() {
+    //     return Range(this, false);
+    // }
+
+    Range range(bool revert=false) {
+        auto result=Range(this, revert);
         return result;
     }
 
     int opApply(scope int delegate(E e) @safe dg) {
-        auto I=iterator;
+        auto I=range;
         int result;
         for(; (!I.empty) && (result == 0); I.popFront) {
             result=dg(I.front);
@@ -193,7 +197,7 @@ class DList(E) {
     }
 
     int opApplyReverse(scope int delegate(E e) @safe  dg) {
-        auto I=iterator(true);
+        auto I=range(true);
         int result;
         for(; (!I.empty) && (result == 0); I.popBack) {
             result=dg(I.front);
@@ -202,7 +206,7 @@ class DList(E) {
     }
 
 
-    struct Iterator {
+    struct Range {
         private Element* cursor;
         this(DList l, bool revert) {
             if (revert) {
@@ -217,14 +221,14 @@ class DList(E) {
             return cursor is null;
         }
 
-        Iterator* popFront() {
+        Range* popFront() {
             if ( cursor !is null) {
                 cursor = cursor.next;
             }
             return &this;
         }
 
-        Iterator* popBack() {
+        Range* popBack() {
             if ( cursor !is null) {
                 cursor = cursor.prev;
             }
@@ -337,7 +341,7 @@ unittest {
             l.push(i);
             test~=i;
         }
-        auto I=l.iterator;
+        auto I=l.range;
         // This statement does not work anymore
         // assert(equal(I, test));
         assert(array(I) == test);
@@ -357,14 +361,14 @@ unittest {
         assert(l.length == amount);
 
         { // Forward iteration test
-            auto I=l.iterator(false);
+            auto I=l.range(false);
             uint i;
             for(i=0; !I.empty; I.popFront, i++) {
                 assert(I.front == i);
             }
             assert(i == amount);
             i=0;
-            I=l.iterator(false);
+            I=l.range(false);
             foreach(entry; I) {
                 assert(entry == i);
                 i++;
@@ -375,7 +379,7 @@ unittest {
         assert(l.length == amount);
 
         {  // Backward iteration test
-            auto I=l.iterator(true);
+            auto I=l.range(true);
             uint i;
             for(i=amount; !I.empty; I.popBack) {
                 i--;
@@ -395,14 +399,14 @@ unittest {
 
         {
             import std.array;
-            auto I=l.iterator;
+            auto I=l.range;
             I.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l.iterator;
+            I=l.range;
             // This statem does not work anymore
             // assert(equal(I, [1, 0, 2, 3]));
             assert(array(I)== [1, 0, 2, 3]);
@@ -410,14 +414,14 @@ unittest {
 
         {
             import std.array;
-            auto I=l.iterator;
+            auto I=l.range;
             I.popFront.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l.iterator;
+            I=l.range;
             // This statem does not work anymore
             // assert(equal(I, [2, 1, 0, 3]));
             assert(array(I) == [2, 1, 0, 3]);
