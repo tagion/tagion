@@ -1,8 +1,8 @@
 include git.mk
 #REPOROOT?=${shell git rev-parse --show-toplevel}
 TOOLS_DIR?=$(REPOROOT)/../tools/
-DC:=$(TOOLS_DIR)/ldc/bin/ldc2
-LD:=$(TOOLS_DIR)/wasi-sdk/bin/wasm-ld
+DC:=ldc2
+LD:=/opt/wasi-sdk/bin/wasm-ld
 
 WAMR_DIR:=$(REPOROOT)/../wasm-micro-runtime/
 SRC:=.
