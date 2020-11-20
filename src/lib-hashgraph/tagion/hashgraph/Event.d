@@ -376,7 +376,8 @@ class Round {
         return result;
     }
 
-    package void add(Event event)
+    @nogc
+    package void add(Event event) nothrow
         in {
             assert(_events[event.node_id] is null, "Evnet should only be added once");
         }
@@ -387,7 +388,8 @@ class Round {
         }
     }
 
-    package void remove(const(Event) e)
+    @nogc
+    package void remove(const(Event) e) nothrow
         in {
             assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
             assert(_events_count > 0, "No events exists in this round");
@@ -399,23 +401,26 @@ class Round {
         }
     }
 
+    @nogc
     bool empty() pure const nothrow {
         return _events_count == 0;
     }
 
     // Return true if all witness in this round has been created
+    @nogc
     bool completed() pure const nothrow {
         return _events_count == node_size;
     }
 
+    @nogc
     inout(Event) event(const uint node_id) pure inout {
         return _events[node_id];
     }
 
     // Whole round decided
+    @nogc
     bool decided() pure const nothrow {
         return _decided;
-//        import std.stdio;
     }
 
     int coin_round_distance() const nothrow {
@@ -443,6 +448,7 @@ class Round {
         return rhs == _ground_mask;
     }
 
+    @nogc
     ref const(BitArray) ground_mask() pure const nothrow {
         return _ground_mask;
     }
@@ -497,7 +503,8 @@ class Round {
                     writeln("calc successfully");
                 }
                 return famous_events[middel_time_index].eventbody.time;
-            }catch(Exception e){
+            }
+            catch(Exception e){
                 writeln("exc: ", e.msg);
                 throw e;
             }
