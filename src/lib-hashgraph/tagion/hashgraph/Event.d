@@ -837,6 +837,7 @@ class Event {
             return _famous_decided;
         }
 
+        @nogc
         uint famous_votes() pure const nothrow {
             return _famous_votes;
         }
