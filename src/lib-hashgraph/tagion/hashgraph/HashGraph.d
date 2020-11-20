@@ -14,6 +14,9 @@ import Basic=tagion.hashgraph.HashGraphBasic;
 
 import tagion.basic.Logger;
 
+/// check function used in the Event package
+private alias check=Check!HashGraphConsensusException;
+
 @safe
 class HashGraph {
     //alias Pubkey=immutable(ubyte)[];

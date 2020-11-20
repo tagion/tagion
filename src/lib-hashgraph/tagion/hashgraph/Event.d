@@ -21,12 +21,16 @@ import tagion.Keywords;
 
 import tagion.basic.Logger;
 
-@safe
-package void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
-    if (!flag) {
-        throw new EventConsensusException(code, file, line);
-    }
-}
+
+// @safe
+// package void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+//     if (!flag) {
+//         throw new EventConsensusException(code, file, line);
+//     }
+// }
+
+/// check function used in the Event package
+private alias check=Check!EventConsensusException;
 
 // Returns the highest altitude
 @safe
