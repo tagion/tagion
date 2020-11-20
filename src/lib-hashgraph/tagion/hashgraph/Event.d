@@ -1036,15 +1036,6 @@ class Event {
         }
     }
 
-    // package void received_round(Round r)
-    // in {
-    //     assert(r !is null, "Received round can not be null");
-    //     assert(_round_received is null, "Received round has already been set");
-    // }
-    // do {
-    //     _round_received=r;
-    // }
-
     @nogc
     const(Round) round() pure const nothrow
     out(result) {
@@ -1091,7 +1082,7 @@ class Event {
 
 
     package ref const(BitArray) witness_mask(immutable uint node_size) {
-        ref BitArray check_witness_mask(Event event, immutable uint level=0) @trusted
+        ref BitArray check_witness_mask(Event event, immutable uint level=0) nothrow @trusted
             in {
                 assert(event);
             }
