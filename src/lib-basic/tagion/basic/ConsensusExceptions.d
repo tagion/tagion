@@ -208,11 +208,6 @@ shared static this() {
             SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account"
 
             ];
-        version(none) {
-            import std.stdio;
-            writefln("ConsensusFailCode.max=%d consensus_error_messages.length=%d" ,
-                ConsensusFailCode.max, _consensus_error_messages.length );
-        }
         import std.exception : assumeUnique;
         consensus_error_messages = assumeUnique(_consensus_error_messages);
         assert(
@@ -227,7 +222,7 @@ static public immutable(string[ConsensusFailCode]) consensus_error_messages;
 @safe
 template consensusCheck(Consensus) {
     static if ( is(Consensus:ConsensusException) ) {
-        void consensusCheck(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+        void consensusCheck(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
             if (!flag) {
                 throw new Consensus(code, file, line);
             }
@@ -241,7 +236,7 @@ template consensusCheck(Consensus) {
 @safe
 template consensusCheckArguments(Consensus) {
     static if ( is(Consensus:ConsensusException) ) {
-        ref auto consensusCheckArguments(A...)(A args) {
+        ref auto consensusCheckArguments(A...)(A args) pure {
             struct Arguments {
                 A args;
                 void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) const {
