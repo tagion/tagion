@@ -1154,7 +1154,7 @@ class Event {
     }
 
     @nogc
-    package Witness witness() {
+    package Witness witness() pure {
         return _witness;
     }
 
@@ -1188,11 +1188,13 @@ class Event {
 
     }
 
+    @nogc
     bool strongly_seeing() const pure nothrow {
         return _witness !is null;
     }
 
-    void strongly_seeing_checked()
+    @nogc
+    void strongly_seeing_checked() nothrow
         in {
             assert(!_strongly_seeing_checked);
         }
@@ -1332,6 +1334,7 @@ class Event {
         return result;
     }
 
+    @nogc
     int received_order_max(const(Event) e, const bool increase=false) pure const nothrow {
         int result=_received_order;
         if ( e && ( ( _received_order - e._received_order ) < 0 ) ) {
@@ -1369,6 +1372,7 @@ class Event {
         return _mother;
     }
 
+    @nogc
     inout(Event) mother() inout pure nothrow
     in {
         assert(!_grounded, "This event is grounded");
