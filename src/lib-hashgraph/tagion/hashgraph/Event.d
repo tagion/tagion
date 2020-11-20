@@ -842,6 +842,7 @@ class Event {
             return _famous_votes;
         }
 
+        @nogc
         bool famous() pure const nothrow {
             return isMajority(_famous_votes, node_size);
         }
@@ -863,7 +864,8 @@ class Event {
     // Recursive markes
     private uint _visit;
     package static uint visit_marker;
-    private bool visit() {
+    @nogc
+    private bool visit() nothrow {
         scope(exit) {
             _visit = visit_marker;
         }
@@ -901,7 +903,8 @@ class Event {
     private bool _forked;
     immutable uint id;
     private static uint id_count;
-    private static immutable(uint) next_id() {
+    @nogc
+    private static immutable(uint) next_id() nothrow {
         if ( id_count == id_count.max ) {
             id_count = 1;
         }
@@ -933,7 +936,7 @@ class Event {
         return hibon;
     }
 
-    static int timeCmp(const(Event) a, const(Event) b) {
+    static int timeCmp(const(Event) a, const(Event) b) pure {
         immutable diff=cast(long)(b.eventbody.time) - cast(long)(a.eventbody.time);
         if ( diff < 0 ) {
             return -1;
