@@ -640,18 +640,19 @@ class Round {
         return _undecided;
     }
 
-    Round previous() pure nothrow {
+    @nogc
+    inout(Round) previous() inout pure nothrow {
         return _previous;
     }
 
     // Find the lowest decide round
     static Round lowest() {
-        Round local_lowest(Round r=_rounds, string indent="  ") {
+        Round local_lowest(Round r=_rounds) {
             if ( r ) {
                 if ( r._decided && r._previous && (r._previous._previous is null ) ) {
                     return r;
                 }
-                return local_lowest(r._previous, indent~"  ");
+                return local_lowest(r._previous);
             }
             return null;
         }
@@ -757,6 +758,7 @@ class Event {
             return _previous_witness_event;
         }
 
+        @nogc
         ref const(BitArray) strong_seeing_mask() pure const nothrow {
             return _strong_seeing_mask;
         }
@@ -799,6 +801,7 @@ class Event {
         }
 
 
+        @nogc
         ref const(BitArray) round_seen_mask() pure const nothrow {
             return _round_seen_mask;
         }
