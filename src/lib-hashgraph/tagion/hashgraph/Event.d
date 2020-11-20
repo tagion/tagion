@@ -22,18 +22,11 @@ import tagion.Keywords;
 import tagion.basic.Logger;
 
 
-// @safe
-// package void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
-//     if (!flag) {
-//         throw new EventConsensusException(code, file, line);
-//     }
-// }
-
 /// check function used in the Event package
 private alias check=Check!EventConsensusException;
 
 // Returns the highest altitude
-@safe
+@safe @nogc
 int highest(int a, int b) pure nothrow {
     if ( higher(a,b) ) {
         return a;
@@ -44,17 +37,17 @@ int highest(int a, int b) pure nothrow {
 }
 
 // Is a higher or equal to b
-@safe
+@safe @nogc
 bool higher(int a, int b) pure nothrow {
     return a-b > 0;
 }
 
-@safe
+@safe @nogc
 bool lower(int a, int b) pure nothrow {
     return a-b < 0;
 }
 
-@safe
+@safe @nogc
 unittest { // Test of the altitude measure function
     int x=int.max-10;
     int y=x+20;
@@ -100,6 +93,7 @@ struct EventBody {
         this(doc);
     }
 
+    @nogc
     bool isEva() pure const nothrow {
         return (mother.length == 0);
     }
@@ -253,10 +247,12 @@ class Round {
         }
     }
 
-    bool lessOrEqual(const Round rhs) pure const {
+    @nogc
+    bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
+    @nogc
     uint node_size() pure const nothrow {
         return cast(uint)_events.length;
     }
@@ -273,6 +269,7 @@ class Round {
         bitarray_clear(_ground_mask, node_size);
     }
 
+    @nogc
     static bool check_decided_round_limit() nothrow {
          return _decided_count > total_limit;
     }
@@ -297,7 +294,7 @@ class Round {
     }
 
     // Used to make than an witness in the next round at the node_id has looked at this round
-    @trusted
+    @trusted @nogc
     package void looked_at(const uint node_id) {
         if ( !_looked_at_mask[node_id] ) {
             _looked_at_mask[node_id]=true;
@@ -306,14 +303,17 @@ class Round {
     }
 
     // Checked if all active nodes/events in this round has beend looked at
+    @nogc
     bool seeing_completed() const pure nothrow {
         return _looked_at_count == node_size;
     }
 
+    @nogc
     ref const(BitArray) looked_at_mask() pure const nothrow {
         return _looked_at_mask;
     }
 
+    @nogc
     uint looked_at_count() pure const nothrow {
         return _looked_at_count;
     }
@@ -331,7 +331,7 @@ class Round {
             assert(_rounds, "Seed round has to exists before the operation is used");
         }
     do {
-        Round find_round(Round r) {
+        Round find_round(Round r) pure nothrow {
             if ( r ) {
                 if ( r.number == round_number ) {
                     return r;
@@ -679,12 +679,13 @@ class Round {
         }
     }
 
+    @nogc
     static uint decided_count() nothrow {
         return _decided_count;
     }
 
     invariant {
-        void check_round_order(const Round r, const Round p) {
+        void check_round_order(const Round r, const Round p) pure {
             if ( ( r !is null) && ( p !is null ) ) {
                 assert( (r.number-p.number) == 1, "Consecutive round-numbers has to increase by one");
                 if ( r._decided ) {
@@ -739,11 +740,13 @@ class Event {
             _round_seen_mask.length=node_size;
         }
 
+        @nogc
         uint node_size() pure const nothrow {
             return cast(uint)_strong_seeing_mask.length;
         }
 
-        Event previous_witness_event() pure nothrow {
+        @nogc
+        inout(Event) previous_witness_event() inout pure nothrow {
             return _previous_witness_event;
         }
 
