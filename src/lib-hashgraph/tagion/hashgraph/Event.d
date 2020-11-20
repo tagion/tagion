@@ -443,7 +443,7 @@ class Round {
     }
 
     @trusted
-    private bool ground(const uint node_id, ref const(BitArray) rhs) {
+    private bool ground(const uint node_id, ref const(BitArray) rhs) nothrow {
         _ground_mask[node_id]=true;
         return rhs == _ground_mask;
     }
@@ -585,14 +585,15 @@ class Round {
         assert(_undecided._previous._decided, "Previous round should be decided");
     }
     do {
-        Round one_over(Round r=_rounds) {
+        @nogc
+        Round one_over(Round r=_rounds) nothrow pure {
             if ( r._previous is this ) {
                 return r;
             }
             return one_over(r._previous);
         }
-        _undecided=one_over;
-        _decided=true;
+        _undecided = one_over;
+        _decided = true;
         _decided_count++;
         if ( Event.callbacks ) {
             foreach(seen_node_id, e; this) {
@@ -626,7 +627,8 @@ class Round {
     }
 
     // Find collecting round from which the famous votes is collected from the previous round
-    package static Round undecided_round() {
+    @nogc
+    package static Round undecided_round() nothrow {
         if ( !_undecided ) {
             Round search(Round r=_rounds) @safe {
                 if ( r && r._previous && r._previous._decided ) {
@@ -635,7 +637,7 @@ class Round {
                 }
                 return search(r._previous);
             }
-            _undecided=search();
+            _undecided = search();
         }
         return _undecided;
     }
@@ -646,7 +648,8 @@ class Round {
     }
 
     // Find the lowest decide round
-    static Round lowest() {
+    @nogc
+    static Round lowest() pure nothrow {
         Round local_lowest(Round r=_rounds) {
             if ( r ) {
                 if ( r._decided && r._previous && (r._previous._previous is null ) ) {
@@ -736,7 +739,7 @@ class Event {
         private uint     _round_seen_count;
         private uint     _famous_votes;
         @trusted
-        this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
+        this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask) pure nothrow
         in {
             assert(strong_seeing_mask.length > 0);
             assert(owner_event);
