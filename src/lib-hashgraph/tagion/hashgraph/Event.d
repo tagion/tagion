@@ -1045,6 +1045,7 @@ class Event {
     //     _round_received=r;
     // }
 
+    @nogc
     const(Round) round() pure const nothrow
     out(result) {
         assert(result, "Round must be set before this function is called");
@@ -1074,6 +1075,7 @@ class Event {
         return _witness_votes;
     }
 
+    @nogc
     uint witness_votes() pure const nothrow
         in {
             assert(is_witness_mask_checked);
@@ -1082,6 +1084,7 @@ class Event {
         return _witness_votes;
     }
 
+    @nogc
     bool is_witness_mask_checked() pure const nothrow {
         return _witness_mask.length != 0;
     }
@@ -1134,6 +1137,7 @@ class Event {
         return check_witness_mask(this);
     }
 
+
     ref const(BitArray) witness_mask() pure const nothrow
         in {
             assert(is_witness_mask_checked);
@@ -1142,10 +1146,12 @@ class Event {
         return _witness_mask;
     }
 
+    @nogc
     const(Witness) witness() pure const nothrow {
         return _witness;
     }
 
+    @nogc
     package Witness witness() {
         return _witness;
     }
@@ -1192,6 +1198,7 @@ class Event {
         _strongly_seeing_checked=true;
     }
 
+    @nogc
     bool is_strongly_seeing_checked() const pure nothrow {
         return _strongly_seeing_checked;
     }
@@ -1236,11 +1243,12 @@ class Event {
     }
 
 
+    @nogc
     bool forked() const pure nothrow {
         return _forked;
     }
 
-
+    @nogc
     immutable(int) altitude() const pure nothrow {
         return event_body.altitude;
     }
@@ -1306,6 +1314,7 @@ class Event {
         }
     }
 
+    @nogc
     bool grounded() pure const nothrow {
         return _grounded || (_mother is null);
     }
@@ -1335,6 +1344,7 @@ class Event {
         return result;
     }
 
+    @nogc
     int received_order() pure const nothrow {
         return _received_order;
     }
@@ -1398,6 +1408,7 @@ class Event {
         return result;
     }
 
+    @nogc
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
@@ -1408,6 +1419,7 @@ class Event {
         return _father;
     }
 
+    @nogc
     inout(Event) daughter() inout pure nothrow {
         return _daughter;
     }
@@ -1420,7 +1432,7 @@ class Event {
         }
     do {
         if ( _daughter && (_daughter !is c) ) {
-            forked=true;
+            forked = true;
         }
         else {
             _daughter=c;
@@ -1431,6 +1443,7 @@ class Event {
         }
     }
 
+    @nogc
     inout(Event) son() inout pure nothrow {
         return _son;
     }
@@ -1453,7 +1466,8 @@ class Event {
         }
     }
 
-    void loaded()
+    @nogc
+    void loaded() nothrow
         in {
             assert(!_loaded, "Event can only be loaded once");
         }
@@ -1461,31 +1475,38 @@ class Event {
         _loaded=true;
     }
 
+    @nogc
     bool is_loaded() const pure nothrow {
         return _loaded;
     }
 
+    @nogc
     immutable(ubyte[]) father_hash() const pure nothrow {
         return event_body.father;
     }
 
+    @nogc
     immutable(ubyte[]) mother_hash() const pure nothrow {
         return event_body.mother;
     }
 
+    @nogc
     immutable(ubyte[]) payload() const pure nothrow {
         return event_body.payload;
     }
 
-    ref immutable(EventBody) eventbody() const pure {
+    @nogc
+    ref immutable(EventBody) eventbody() const pure nothrow {
         return event_body;
     }
 
 //True if Event contains a payload or is the initial Event of its creator
+    @nogc
     bool containPayload() const pure nothrow {
         return payload.length != 0;
     }
 
+    @nogc
     bool motherExists() const pure nothrow
         in {
             assert(!_grounded, "This function should not be used on a grounded event");
@@ -1494,11 +1515,13 @@ class Event {
         return event_body.mother !is null;
     }
 
+    @nogc
     bool fatherExists() const pure nothrow {
         return event_body.father !is null;
     }
 
 // is true if the event does not have a mother or a father
+    @nogc
     bool isEva() pure const nothrow
         in {
             assert(!_grounded, "This event is gounded");
@@ -1507,6 +1530,7 @@ class Event {
         return !motherExists;
     }
 
+    @nogc
     immutable(Buffer) fingerprint() const pure nothrow
     in {
         assert(_fingerprint, "Hash has not been calculated");
