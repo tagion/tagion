@@ -83,7 +83,7 @@ class ConsensusException : TagionException {
 }
 
 @safe
-class EventConsensusException : ConsensusException {
+class EventConsensusException : GossipConsensusException {
     this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
@@ -107,7 +107,7 @@ class GossipConsensusException : ConsensusException {
 }
 
 @safe
-class HashGraphConsensusException : ConsensusException {
+class HashGraphConsensusException : EventConsensusException {
     this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( code, file, line );
     }
@@ -261,7 +261,7 @@ template consensusCheckArguments(Consensus) {
 
 @safe
 template convertEnum(Enum, Consensus) {
-    const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) {
+    const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) pure {
         if ( enum_number <= Enum.max) {
             return cast(Enum)enum_number;
         }
