@@ -13,13 +13,6 @@ import std.algorithm : map;
 // LRU implements a non-thread safe fixed size LRU cache
 @safe
 class LRU(K,V)  {
-//    enum value_is_immutable=is(V == struct);
-    // static if ( value_is_immutable ) {
-    //     alias Value=V*;
-    // }
-    // else {
-    //     alias Value=V;
-    // }
     enum does_not_have_immutable_members=__traits(compiles, {
             V v;
             void f(ref V _v) {
@@ -31,7 +24,6 @@ class LRU(K,V)  {
         static assert(hasMember!(V, "undefined"), format("%s must have a static member named 'undefined'", V.stringof));
     }
 
-    // pragma(msg, format("%s does not have immutable members %s", V.stringof, does_not_have_immutable_members));
     @safe @nogc
     struct Entry {
         K key;
@@ -175,24 +167,17 @@ class LRU(K,V)  {
 
 // Remove removes the provided key from the cache, returning if the
 // key was contained.
-//    import std.stdio;
-    // static bool display;
-    // static File fout;
 
 
     bool remove(const(K) key) {
         auto ent=key in items;
-        // if ( display ) fout.writefln("Aften remove %s", ent !is null);
         if ( ent !is null ) {
             auto element=*ent;
             if (onEvict !is null) {
                 onEvict(key, element);
             }
-            // if ( display ) fout.writefln("Aften onEvict(element)");
             evictList.remove(element);
-            // if ( display ) fout.writefln("Aften evictList.remove(element)");
             items.remove(key);
-            // if ( display ) fout.writefln("Aften item.remove(element)");
             return true;
         }
         return false;
@@ -216,7 +201,8 @@ class LRU(K,V)  {
     }
 
 // GetOldest returns the oldest entry
-    const(Entry)* getOldest() {
+    @nogc
+    const(Entry)* getOldest() const pure nothrow  {
         auto last=evictList.last;
         if ( last ) {
             return evictList.last.entry;
@@ -225,29 +211,12 @@ class LRU(K,V)  {
             return null;
         }
     }
-//}
 
-// keys returns a slice of the keys in the cache, from oldest to newest.
-    // const(K[]) _keys() {
-    //     const(K)[] result;
-    //     uint i;
-    //     foreach_reverse(entry; evictList) {
-    //         result~=entry.key;
-    //     }
-    //     return result;
-    // }
-//version(none)
-    auto keys() {
-        // const(K)[] result;
-	// uint i;
-//        const result1=
-            return evictList.revert.map!(a => a.key);
-        // foreach_reverse(entry; evictList) {
-        //     result~=entry.key;
-	// }
-	// return result;
+/// keys returns a slice of the keys in the cache, from oldest to newest.
+    @nogc
+    auto keys() pure nothrow {
+        return evictList.revert.map!(a => a.key);
     }
-
 
 
 // length returns the number of items in the cache.
@@ -266,12 +235,6 @@ class LRU(K,V)  {
     }
 }
 
-// package common
-
-// import "testing"
-
-// func TestLRU(t *testing.T) {
-// 	evictCounter := 0
 unittest {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
@@ -351,7 +314,6 @@ unittest {
     assert(!ok, "should contain nothing");
 }
 
-//func TestLRU_GetOldest_RemoveOldest(t *testing.T) {
 unittest { // getOldest removeOldest
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
@@ -367,39 +329,17 @@ unittest { // getOldest removeOldest
     }
     auto e = l.getOldest();
     assert(e !is null, "missing");
-    // if !ok {
-    // 	t.Fatalf("missing")
-    // }
     assert(e.value == amount, "bad value "~to!string(e.key));
-	// if k.(int) != 128 {
-	// 	t.Fatalf("bad: %v", k)
-	// }
-
     e = l.removeOldest();
     assert(e !is null, "missing");
     assert(e.value == amount, "bad value "~to!string(e.key));
-	// if !ok {
-	// 	t.Fatalf("missing")
-	// }
-	// if k.(int) != 128 {
-	// 	t.Fatalf("bad: %v", k)
-	// }
     e = l.removeOldest();
     assert(e !is null, "missing");
     assert(e.value == amount+1, "bad value "~to!string(e.value));
-
-	// k, _, ok = l.RemoveOldest()
-	// if !ok {
-	// 	t.Fatalf("missing")
-	// }
-	// if k.(int) != 129 {
-	// 	t.Fatalf("bad: %v", k)
-	// }
 }
 
 // Test that Add returns true/false if an eviction occurred
 unittest { // add
-//func TestLRU_Add(t *testing.T) {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
     void onEvicted(const(int) i, TestLRU.Element* e) @safe {

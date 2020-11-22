@@ -1,13 +1,14 @@
 module tagion.utils.DList;
 
+import tagion.utils.Result;
 //import std.stdio;
 
-@safe
-class UtilException : Exception {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
-        super( msg, file, line);
-    }
-}
+// @safe
+// class UtilException : Exception {
+//     this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
+//         super( msg, file, line);
+//     }
+// }
 
 @safe
 class DList(E) {
@@ -24,7 +25,7 @@ class DList(E) {
     private Element* _tail;
     // Number of element in the DList
     private uint count;
-    Element* unshift(E e) {
+    Element* unshift(E e) nothrow {
         auto element=new Element(e);
         if ( _head is null ) {
             element.prev=null;
@@ -41,19 +42,19 @@ class DList(E) {
         return element;
     }
 
-    E shift() {
+    Result!E shift() {
+        if ( _head is null ) {
+            return Result!E(E.init, this.stringof~" is empty");
+        }
         scope(success) {
             _head=_head.next;
             _head.prev = null;
             count--;
         }
-        if ( _head is null ) {
-            throw new UtilException(this.stringof~" is empty");
-        }
-        return _head.entry;
+        return Result!E(_head.entry);
     }
 
-    Element* push(E e) nothrow {
+    const(Element*) push(E e) nothrow {
         auto element=new Element(e);
         if ( _head is null ) {
             _head = _tail = element;
@@ -86,7 +87,11 @@ class DList(E) {
         return result.entry;
     }
 
-    void remove(Element* e)
+    /**
+       Returns; true if the element was not found
+     */
+    @nogc
+    bool remove(Element* e) nothrow
         in {
             assert(e !is null);
             if ( _head is null ) {
@@ -101,7 +106,8 @@ class DList(E) {
         }
     do {
         if ( _head is null ) {
-            throw new UtilException("Remove from an empty list");
+            return true;
+//            throw new UtilException("Remove from an empty list");
         }
         if ( _head is e ) {
             if ( _head.next is null ) {
@@ -129,6 +135,7 @@ class DList(E) {
             e.prev.next = e.next;
         }
         count--;
+        return false;
     }
 
     @nogc
@@ -186,34 +193,10 @@ class DList(E) {
         return Range!false(this);
     }
 
-    // @nogc
-    // Range!true range() pure nothrow {
-    //     return Range!true(this);
-    // }
-
     @nogc
     Range!true revert() pure nothrow {
         return Range!true(this);
     }
-
-    // int opApply(scope int delegate(E e) @safe dg) {
-    //     auto I=range;
-    //     int result;
-    //     for(; (!I.empty) && (result == 0); I.popFront) {
-    //         result=dg(I.front);
-    //     }
-    //     return result;
-    // }
-
-    // int opApplyReverse(scope int delegate(E e) @safe  dg) {
-    //     auto I=Range!true(this);
-    //     int result;
-    //     for(; (!I.empty) && (result == 0); I.popBack) {
-    //         result=dg(I.front);
-    //     }
-    //     return result;
-    // }
-
 
     @nogc
     struct Range(bool revert) {
@@ -310,14 +293,14 @@ unittest {
         assert(flag);
         assert(l.length == 0);
 
-        try {
-            flag=false;
-            l.shift;
+        {
+            import std.stdio;
+            pragma(msg, typeof(l.shift));
+            pragma(msg, typeof(l.shift.error));
+            const r=l.shift;
+            assert(r.error);
         }
-        catch ( UtilException e ) {
-            flag=true;
-        }
-        assert(flag);
+//        assert(flag);
         assert(l.length == 0);
     }
     { // One element test
