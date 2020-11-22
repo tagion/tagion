@@ -8,7 +8,7 @@ import tagion.utils.DList;
 import std.conv;
 import std.format;
 import std.traits;
-
+import std.algorithm : map;
 
 // LRU implements a non-thread safe fixed size LRU cache
 @safe
@@ -42,8 +42,8 @@ class LRU(K,V)  {
         }
     }
 
-    alias DList!(Entry*) EvictList;
-    alias EvictList.Element Element;
+    alias EvictList=DList!(Entry*);
+    alias Element=EvictList.Element;
     private EvictList evictList;
     private Element*[K] items;
     alias void delegate(const(K), Element*) @safe EvictCallback;
@@ -54,7 +54,7 @@ class LRU(K,V)  {
 
 // NewLRU constructs an LRU of the given size
     // size zero means unlimited
-    this (EvictCallback onEvict=null, immutable uint size=0) pure {
+    this (EvictCallback onEvict=null, immutable uint size=0) pure nothrow {
         this.size=      size;
         evictList = new EvictList;
         this.onEvict=onEvict;
@@ -99,8 +99,9 @@ class LRU(K,V)  {
 
 
 // Get looks up a key's value from the cache.
-    bool get(const(K) key, ref V value) {
-        static if (does_not_have_immutable_members) {
+    static if (does_not_have_immutable_members) {
+        bool get(const(K) key, ref V value) nothrow {
+
             auto ent = key in items;
             if ( ent !is null ) {
                 auto element=*ent;
@@ -109,9 +110,10 @@ class LRU(K,V)  {
                 return true;
             }
             return false;
+            // }
+        // assert(0,
+        //     format("%s has immutable members, use %s instead", V.stringof, opIndex(key).stringof));
         }
-        assert(0,
-            format("%s has immutable members, use %s instead", V.stringof, opIndex(key).stringof));
     }
 
     V opIndex(const(K) key) {
@@ -144,8 +146,9 @@ class LRU(K,V)  {
 
 // Returns the key value (or undefined if not found) without updating
 // the "recently used"-ness of the key.
-    bool peek(const(K) key, ref V value) {
-        static if (does_not_have_immutable_members) {
+    static if (does_not_have_immutable_members) {
+        @nogc
+        bool peek(const(K) key, ref V value) const pure nothrow {
             auto ent = key in items;
             if ( ent !is null ) {
                 value=(*ent).entry.value;
@@ -153,8 +156,6 @@ class LRU(K,V)  {
             }
             return false;
         }
-        assert(0,
-            format("%s has immutable members, use %s instead", V.stringof, peek(key).stringof));
     }
 
     V peek(const(K) key) {
@@ -174,7 +175,7 @@ class LRU(K,V)  {
 
 // Remove removes the provided key from the cache, returning if the
 // key was contained.
-    import std.stdio;
+//    import std.stdio;
     // static bool display;
     // static File fout;
 
@@ -227,44 +228,42 @@ class LRU(K,V)  {
 //}
 
 // keys returns a slice of the keys in the cache, from oldest to newest.
-    const(K[]) keys() {
-        const(K)[] result;
-	uint i;
-        foreach_reverse(entry; evictList) {
-            result~=entry.key;
-	}
-	return result;
+    // const(K[]) _keys() {
+    //     const(K)[] result;
+    //     uint i;
+    //     foreach_reverse(entry; evictList) {
+    //         result~=entry.key;
+    //     }
+    //     return result;
+    // }
+//version(none)
+    auto keys() {
+        // const(K)[] result;
+	// uint i;
+//        const result1=
+            return evictList.revert.map!(a => a.key);
+        // foreach_reverse(entry; evictList) {
+        //     result~=entry.key;
+	// }
+	// return result;
     }
 
+
+
 // length returns the number of items in the cache.
-    uint length() pure const {
+    @nogc
+    uint length() pure const nothrow {
         return evictList.length;
     }
 
-    EvictList.Range opSlice() {
-        return evictList.range;
+    @nogc
+    EvictList.Range!false opSlice() nothrow {
+        return evictList[];
     }
 
     invariant {
         assert(items.length == evictList.length);
     }
-// // removeOldest removes the oldest item from the cache.
-//     void removeOldest() {
-//         auto ent = evictList.Back();
-//         if ( ent !is null) {
-//             removeElement(ent);
-// 	}
-//     }
-
-// // removeElement is used to remove a given list element from the cache
-//     func (c *LRU) removeElement(e *list.Element) {
-// 	c.evictList.Remove(e)
-// 	auto kv = e.Value.(*entry)
-// 	delete(c.items, kv.key)
-// 	if c.onEvict != nil {
-// 		c.onEvict(kv.key, kv.value)
-// 	}
-//     }
 }
 
 // package common
@@ -311,7 +310,8 @@ unittest {
     assert(evictCounter == amount);
     int v;
     bool ok;
-    foreach(i, k; l.keys ) {
+    import std.range : enumerate;
+    foreach(i, k; l.keys.enumerate ) {
         ok=l.get(k, v);
         assert(ok);
         assert(k == v);
@@ -338,7 +338,7 @@ unittest {
 
     l.get(amount2, v); // expect amount2 to be last key in l.Keys()
 
-    foreach(i, k; l.keys) {
+    foreach(i, k; l.keys.enumerate) {
         enum amount_i = amount/2-1;
         bool not_good=((i < amount_i) && (k != i+amount2+1)) || ((i == amount_i) && (k != amount2));
         assert(!not_good, "out of order key: "~to!string(k));

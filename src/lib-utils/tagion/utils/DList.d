@@ -11,11 +11,12 @@ class UtilException : Exception {
 
 @safe
 class DList(E) {
+    @nogc
     struct Element {
         E entry;
         protected Element* next;
         protected Element* prev;
-        this(E e) {
+        this(E e) pure nothrow {
             entry=e;
         }
     }
@@ -52,7 +53,7 @@ class DList(E) {
         return _head.entry;
     }
 
-    Element* push(E e) {
+    Element* push(E e) nothrow {
         auto element=new Element(e);
         if ( _head is null ) {
             _head = _tail = element;
@@ -130,7 +131,8 @@ class DList(E) {
         count--;
     }
 
-    void moveToFront(Element* e)
+    @nogc
+    void moveToFront(Element* e) nothrow
         in {
             assert(e !is null);
         }
@@ -151,7 +153,8 @@ class DList(E) {
         }
     }
 
-    uint length() pure const
+    @nogc
+    uint length() pure const nothrow
         out(result) {
             uint internal_count(const(Element)* e, uint i=0) pure {
                 if ( e is null ) {
@@ -178,38 +181,45 @@ class DList(E) {
         return _tail;
     }
 
-    // Range opSlice() {
-    //     return Range(this, false);
+    @nogc
+    Range!false opSlice() pure nothrow {
+        return Range!false(this);
+    }
+
+    // @nogc
+    // Range!true range() pure nothrow {
+    //     return Range!true(this);
     // }
 
-    Range range(bool revert=false) {
-        auto result=Range(this, revert);
-        return result;
+    @nogc
+    Range!true revert() pure nothrow {
+        return Range!true(this);
     }
 
-    int opApply(scope int delegate(E e) @safe dg) {
-        auto I=range;
-        int result;
-        for(; (!I.empty) && (result == 0); I.popFront) {
-            result=dg(I.front);
-        }
-        return result;
-    }
+    // int opApply(scope int delegate(E e) @safe dg) {
+    //     auto I=range;
+    //     int result;
+    //     for(; (!I.empty) && (result == 0); I.popFront) {
+    //         result=dg(I.front);
+    //     }
+    //     return result;
+    // }
 
-    int opApplyReverse(scope int delegate(E e) @safe  dg) {
-        auto I=range(true);
-        int result;
-        for(; (!I.empty) && (result == 0); I.popBack) {
-            result=dg(I.front);
-        }
-        return result;
-    }
+    // int opApplyReverse(scope int delegate(E e) @safe  dg) {
+    //     auto I=Range!true(this);
+    //     int result;
+    //     for(; (!I.empty) && (result == 0); I.popBack) {
+    //         result=dg(I.front);
+    //     }
+    //     return result;
+    // }
 
 
-    struct Range {
+    @nogc
+    struct Range(bool revert) {
         private Element* cursor;
-        this(DList l, bool revert) {
-            if (revert) {
+        this(DList l) pure nothrow {
+            static if (revert) {
                 cursor = l._tail;
             }
             else {
@@ -221,25 +231,35 @@ class DList(E) {
             return cursor is null;
         }
 
-        Range* popFront() {
+        void popFront() nothrow {
             if ( cursor !is null) {
-                cursor = cursor.next;
+                static if (revert) {
+                    cursor = cursor.prev;
+                }
+                else {
+                    cursor = cursor.next;
+                }
             }
-            return &this;
         }
 
-        Range* popBack() {
-            if ( cursor !is null) {
-                cursor = cursor.prev;
-            }
-            return &this;
-        }
+        // void popBack() nothrow {
+        //     if ( cursor !is null) {
+        //         static if (revert) {
+        //             cursor = cursor.next;
+        //         }
+        //         else {
+        //             cursor = cursor.prev;
+        //         }
+        //     }
+        // }
 
-        E front() {
+        E front() pure nothrow {
             return cursor.entry;
         }
 
-        Element* current() pure nothrow {
+        // alias back=front;
+
+        inout(Element*) current() inout pure nothrow {
             return cursor;
         }
     }
@@ -341,7 +361,7 @@ unittest {
             l.push(i);
             test~=i;
         }
-        auto I=l.range;
+        auto I=l[];
         // This statement does not work anymore
         // assert(equal(I, test));
         assert(array(I) == test);
@@ -361,14 +381,14 @@ unittest {
         assert(l.length == amount);
 
         { // Forward iteration test
-            auto I=l.range(false);
+            auto I=l[];
             uint i;
             for(i=0; !I.empty; I.popFront, i++) {
                 assert(I.front == i);
             }
             assert(i == amount);
             i=0;
-            I=l.range(false);
+            I=l[];
             foreach(entry; I) {
                 assert(entry == i);
                 i++;
@@ -378,17 +398,20 @@ unittest {
 
         assert(l.length == amount);
 
+        import std.stdio;
+        import std.algorithm : map;
+
         {  // Backward iteration test
-            auto I=l.range(true);
+            auto I=l.revert;
             uint i;
-            for(i=amount; !I.empty; I.popBack) {
+            for(i=amount; !I.empty; I.popFront) {
                 i--;
                 assert(I.front == i);
             }
             assert(i == 0);
             i=amount;
-//            I=l.iterator(true);
-            foreach_reverse(entry; l) {
+
+            foreach(entry; l.revert) {
                 i--;
                 assert(entry == i);
             }
@@ -399,14 +422,14 @@ unittest {
 
         {
             import std.array;
-            auto I=l.range;
+            auto I=l[];
             I.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l.range;
+            I=l[];
             // This statem does not work anymore
             // assert(equal(I, [1, 0, 2, 3]));
             assert(array(I)== [1, 0, 2, 3]);
@@ -414,26 +437,18 @@ unittest {
 
         {
             import std.array;
-            auto I=l.range;
-            I.popFront.popFront;
+            auto I=l[];
+            I.popFront; I.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l.range;
+            I=l[];
             // This statem does not work anymore
             // assert(equal(I, [2, 1, 0, 3]));
             assert(array(I) == [2, 1, 0, 3]);
         }
-
-        // foreach(i;0..amount) {
-        //     assert(current.entry == i);
-        //     current=current.next;
-        // }
-
-        // moveToFront second element( enumber 1 )
-
 
     }
 }
