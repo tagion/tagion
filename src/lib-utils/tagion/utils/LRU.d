@@ -39,7 +39,7 @@ class LRU(K,V)  {
     alias Element=EvictList.Element;
     private EvictList evictList;
     private Element*[K] items;
-    alias void delegate(const(K), Element*) @safe nothrow EvictCallback;
+    alias void delegate(scope const(K), Element*) @safe nothrow EvictCallback;
     immutable uint      size;
     private EvictCallback onEvict;
 
@@ -66,7 +66,7 @@ class LRU(K,V)  {
 
 // add adds a value to the cache.  Returns true if an eviction occurred.
 //    @trusted // <--- only in debug
-    bool add(const(K) key, ref V value ) {
+    bool add(scope const(K) key, ref V value ) {
         // Check for existing item
         auto ent = key in items;
         if ( ent !is null ) {
@@ -93,7 +93,7 @@ class LRU(K,V)  {
 
 // Get looks up a key's value from the cache.
     static if (does_not_have_immutable_members) {
-        bool get(const(K) key, ref V value) nothrow {
+        bool get(scope const(K) key, ref V value) nothrow {
 
             auto ent = key in items;
             if ( ent !is null ) {
@@ -109,7 +109,7 @@ class LRU(K,V)  {
         }
     }
 
-    V opIndex(const(K) key) {
+    V opIndex(scope const(K) key) {
         static if (does_not_have_immutable_members) {
             V value;
             get(key, value);
@@ -126,14 +126,14 @@ class LRU(K,V)  {
         }
     }
 
-    void opIndexAssign(ref V value, const(K) key) {
+    void opIndexAssign(ref V value, scope const(K) key) {
         add(key, value);
     }
 
 // Check if a key is in the cache, without updating the recent-ness
 // or deleting it for being stale.
     @nogc
-    bool contains(const(K) key) const pure nothrow {
+    bool contains(scope const(K) key) const pure nothrow {
         return (key in items) !is null;
     }
 
@@ -141,9 +141,10 @@ class LRU(K,V)  {
 // the "recently used"-ness of the key.
     static if (does_not_have_immutable_members) {
         @nogc
-        bool peek(const(K) key, ref V value) const pure nothrow {
+        bool peek(const(K) key, ref V value) pure nothrow {
             auto ent = key in items;
             if ( ent !is null ) {
+                pragma(msg, "(*ent).entry.value ", typeof((*ent).entry.value));
                 value=(*ent).entry.value;
                 return true;
             }
@@ -170,7 +171,7 @@ class LRU(K,V)  {
 // key was contained.
 
 
-    bool remove(const(K) key) {
+    bool remove(scope const(K) key) {
         auto ent=key in items;
         if ( ent !is null ) {
             auto element=*ent;
@@ -241,7 +242,7 @@ unittest {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
 
-    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
         evictCounter++;
     }
