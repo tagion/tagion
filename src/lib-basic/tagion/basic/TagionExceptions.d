@@ -13,7 +13,7 @@ interface TagionExceptionInterface {
 @safe
 class TagionException : Exception, TagionExceptionInterface {
     string task_name; /// Contains the name of the task when the execption has throw
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
         super( msg, file, line );
     }
 
