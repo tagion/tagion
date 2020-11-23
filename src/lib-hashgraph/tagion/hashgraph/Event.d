@@ -1157,7 +1157,7 @@ class Event {
     }
 
     @nogc
-    package Witness witness() pure {
+    package Witness witness() pure nothrow {
         return _witness;
     }
 
@@ -1376,7 +1376,20 @@ class Event {
     }
 
     @nogc
-    inout(Event) mother() inout pure nothrow
+    final inout(Event) mother() inout pure nothrow
+    in {
+        assert(!_grounded, "This event is grounded");
+        if ( mother_hash ) {
+            assert(_mother);
+            assert( (altitude-_mother.altitude) == 1 );
+        }
+    }
+    do {
+        return _mother;
+    }
+
+    @nogc
+    final const(Event) mother() const pure nothrow
     in {
         assert(!_grounded, "This event is grounded");
         if ( mother_hash ) {

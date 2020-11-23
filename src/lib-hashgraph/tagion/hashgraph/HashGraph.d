@@ -33,18 +33,19 @@ class HashGraph {
     private Round _rounds;
 
 
-    this() {
+    this() pure nothrow {
         _event_cache=new EventCache(null);
     }
 
 
     @safe
-    class Node {
+    static class Node {
         ExchangeState state;
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
-        this(Pubkey pubkey, uint node_id) {
+        @nogc
+        this(Pubkey pubkey, uint node_id) pure nothrow {
             this.pubkey=pubkey;
             this.node_id=node_id;
 //            this.discovery_time=time;
@@ -53,20 +54,22 @@ class HashGraph {
         private Event _event; // Latest event
         package Event latest_witness_event; // Latest witness event
 
-        package Event previous_witness()
-        in {
-            assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
-        }
+        @nogc
+        final package Event previous_witness() nothrow pure
+            in {
+                assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
+            }
         do {
             return latest_witness_event.witness.previous_witness_event;
         }
 
-        package void event(Event e)
-        in {
-            assert(e);
-            assert(e.son is null);
-            assert(e.daughter is null);
-        }
+        @nogc
+        final package void event(Event e) nothrow
+            in {
+                assert(e);
+                assert(e.son is null);
+                assert(e.daughter is null);
+            }
         do {
             if ( _event is null ) {
                 _cache_altitude=e.altitude;
@@ -81,25 +84,27 @@ class HashGraph {
             }
         }
 
-        const(Event) event() pure const nothrow
-        in {
-            if ( _event && _event.witness ) {
-                assert(_event is latest_witness_event);
+        @nogc
+        final const(Event) event() pure const nothrow
+            in {
+                if ( _event && _event.witness ) {
+                    assert(_event is latest_witness_event);
+                }
             }
-        }
         do {
             return _event;
         }
 
-
-        bool isOnline() pure const nothrow {
+        @nogc
+        final bool isOnline() pure const nothrow {
             return (_event !is null);
         }
 
         // This is the altiude of the cache Event
         private int _cache_altitude;
 
-        void altitude(int a)
+        @nogc
+        final void altitude(int a) nothrow
             in {
                 if ( _event ) {
                     assert(_event.daughter is null);
@@ -113,7 +118,8 @@ class HashGraph {
             _cache_altitude=highest(a, _cache_altitude);
         }
 
-        int altitude() pure const nothrow
+        @nogc
+        final int altitude() pure const nothrow
             in {
                 assert(_event !is null, "This node has no events so the altitude is not set yet");
             }
@@ -121,15 +127,47 @@ class HashGraph {
             return _cache_altitude;
         }
 
+        @nogc
+        struct Range(bool also_ground) {
+            private Event current;
+            this(Event event) pure nothrow {
+                current=event;
+            }
 
-        int opApply(scope int delegate(const(Event) e) @safe dg) const
-            in {
-                if ( _event ) {
-                    assert(_event.daughter is null);
+            @property pure nothrow {
+                bool empty() const {
+                    static if (also_ground) {
+                        return (current is null) || current.grounded;
+                    }
+                    else {
+                        return current is null;
+                    }
+                }
+
+                const(Event) front() const {
+                    return current;
+                }
+
+                void popFront() {
+                    current = current.mother;
                 }
             }
+        }
+
+        @nogc
+        Range!false opSlice() pure nothrow {
+            return Range!false(_event);
+        }
+
+        version(none)
+        int _opApply(scope int delegate(const(Event) e) nothrow @safe dg) const nothrow
+        in {
+            if ( _event ) {
+                assert(_event.daughter is null);
+            }
+        }
         do {
-            int iterate(const(Event) e) @safe {
+            int iterate(const(Event) e) nothrow @safe {
                 int result;
                 if ( e  ) {
                     result=dg(e);
@@ -153,9 +191,9 @@ class HashGraph {
 
     }
 
+    @nogc
     uint node_size() const pure nothrow {
-        const result = cast(uint)(nodes.length);
-        return result;
+        return cast(uint)(nodes.length);
     }
 
     private Node[uint] nodes; // List of participating nodes T
@@ -163,20 +201,17 @@ class HashGraph {
     private uint[] unused_node_ids; // Stack of unused node ids
 
 
-
-    NodeIterator!(const(Node)) nodeiterator() {
-        return NodeIterator!(const(Node))(this);
+    @nogc
+    Range opSlice() nothrow {
+        return Range(this);
     }
 
-    NodeIterator!Node opSlice() {
-        return NodeIterator!Node(this);
-    }
-
-    bool isOnline(Pubkey pubkey) {
+    @nogc
+    bool isOnline(Pubkey pubkey) pure nothrow const {
         return (pubkey in node_ids) !is null;
     }
 
-    bool createNode(Pubkey pubkey) {
+    bool createNode(Pubkey pubkey) nothrow {
         if ( pubkey in node_ids ) {
             return false;
         }
@@ -187,7 +222,7 @@ class HashGraph {
         return true;
     }
 
-    const(uint) nodeId(Pubkey pubkey) inout {
+    const(uint) nodeId(Pubkey pubkey) const {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
@@ -200,7 +235,7 @@ class HashGraph {
         n.altitude=altitude;
     }
 
-
+    @nogc
     bool isNodeIdKnown(Pubkey pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
     }
@@ -219,37 +254,37 @@ class HashGraph {
         log("");
     }
 
-    @safe
-    private struct NodeIterator(N) {
-        static assert(is(N : const(Node)), "N must be a Node type");
-        private HashGraph _owner;
-        this(HashGraph owner) {
-            _owner = owner;
+    struct Range {
+//        private HashGraph _owner;
+        alias NodeRange=typeof(HashGraph.nodes.byValue);
+        private NodeRange r;
+//        Result r;
+        @nogc
+        this(HashGraph owner) nothrow pure {
+            r = owner.nodes.byValue;
         }
 
-        int opApply(scope int delegate(ref N node) @safe dg) {
-            int result;
-            foreach(ref N n; _owner.nodes) {
-                result=dg(n);
-                if ( result ) {
-                    break;
-                }
+        @property pure nothrow {
+            bool empty() {
+                return r.empty;
             }
-            return result;
-        }
 
-        int opApply(scope int delegate(size_t i, ref N node) @safe dg) {
-            int result;
-            foreach(i, ref N n; _owner.nodes) {
-                result=dg(i, n);
-                if ( result ) {
-                    break;
-                }
+            package Node front() {
+                return r.front;
             }
-            return result;
+
+            public const(Node) front() {
+                return r.front;
+            }
+
+            void popFront() {
+                r.popFront;
+            }
+
         }
     }
 
+    @nogc
     Pubkey nodePubkey(const uint node_id) pure const nothrow {
         auto node=node_id in nodes;
         if ( node ) {
@@ -261,6 +296,7 @@ class HashGraph {
         }
     }
 
+    @nogc
     bool isNodeActive(const uint node_id) pure const nothrow {
         return (node_id in nodes) !is null;
     }
@@ -274,26 +310,25 @@ class HashGraph {
         }
     }
 
-    Event lookup(immutable(ubyte[]) fingerprint) {
-        // scope(exit) {
-        //     _event_cache.remove(fingerprint);
-        // }
+    Event lookup(scope immutable(ubyte[]) fingerprint) {
         return _event_cache[fingerprint];
     }
 
-    void eliminate(immutable(ubyte[]) fingerprint) {
+    void eliminate(scope immutable(ubyte[]) fingerprint) {
         _event_cache.remove(fingerprint);
     }
 
-    bool isRegistered(immutable(ubyte[]) fingerprint) {
+    bool isRegistered(scope immutable(ubyte[]) fingerprint) {
         return _event_cache.contains(fingerprint);
     }
 
     // Returns the number of active nodes in the network
+    @nogc
     uint active_nodes() const pure nothrow {
         return cast(uint)(node_ids.length);
     }
 
+    @nogc
     uint total_nodes() const pure nothrow {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
@@ -306,6 +341,7 @@ class HashGraph {
         return getNode(nodeId(pubkey));
     }
 
+    @nogc
     bool isMajority(const uint voting) const pure nothrow {
         return Basic.isMajority(voting, active_nodes);
     }
@@ -424,78 +460,78 @@ class HashGraph {
     }
 
 
-        @trusted
-            package void strongSee(Event top_event) {
-            if ( top_event && !top_event.is_strongly_seeing_checked ) {
+    @trusted
+    package void strongSee(Event top_event) {
+        if ( top_event && !top_event.is_strongly_seeing_checked ) {
 
-                strongSee(top_event.mother);
-                strongSee(top_event.father);
-                if ( isMajority(top_event.witness_votes(total_nodes)) ) {
-                    scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
-                    scope BitArray strong_vote_mask;
-                    uint seeing;
-                    bool strong;
-                    const round=top_event.round;
-                    @trusted
-                        void checkStrongSeeing(Event check_event, const BitArray path_mask) {
-                        iterative_strong_count++;
-                        if ( check_event && round.lessOrEqual(check_event.round) ) {
-                            const BitArray checked_mask=strong_vote_mask & check_event.witness_mask(total_nodes);
-                            const check=(checked_mask != check_event.witness_mask);
-                            if ( check ) {
+            strongSee(top_event.mother);
+            strongSee(top_event.father);
+            if ( isMajority(top_event.witness_votes(total_nodes)) ) {
+                scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
+                scope BitArray strong_vote_mask;
+                uint seeing;
+                bool strong;
+                const round=top_event.round;
+                @trusted
+                    void checkStrongSeeing(Event check_event, const BitArray path_mask) {
+                    iterative_strong_count++;
+                    if ( check_event && round.lessOrEqual(check_event.round) ) {
+                        const BitArray checked_mask=strong_vote_mask & check_event.witness_mask(total_nodes);
+                        const check=(checked_mask != check_event.witness_mask);
+                        if ( check ) {
 
-                                if ( !strong_vote_mask[check_event.node_id] ) {
-                                    scope BitArray common=witness_vote_matrix[check_event.node_id] | path_mask;
-                                    if ( common != witness_vote_matrix[check_event.node_id] ) {
-                                        witness_vote_matrix[check_event.node_id]=common;
+                            if ( !strong_vote_mask[check_event.node_id] ) {
+                                scope BitArray common=witness_vote_matrix[check_event.node_id] | path_mask;
+                                if ( common != witness_vote_matrix[check_event.node_id] ) {
+                                    witness_vote_matrix[check_event.node_id]=common;
 
-                                        immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
-                                        if ( isMajority(votes) ) {
-                                            strong_vote_mask[check_event.node_id]=true;
-                                            seeing++;
-                                        }
+                                    immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
+                                    if ( isMajority(votes) ) {
+                                        strong_vote_mask[check_event.node_id]=true;
+                                        seeing++;
                                     }
                                 }
-                                /+
-                                 The father event is searched first to cross as many nodes as fast as possible
-                                 +/
-                                if ( path_mask[check_event.node_id] ) {
-                                    checkStrongSeeing(check_event.father, path_mask);
-                                    checkStrongSeeing(check_event.mother, path_mask);
-                                }
-                                else {
-                                    scope BitArray sub_path_mask=path_mask.dup;
-                                    sub_path_mask[check_event.node_id]=true;
+                            }
+                            /+
+                             The father event is searched first to cross as many nodes as fast as possible
+                             +/
+                            if ( path_mask[check_event.node_id] ) {
+                                checkStrongSeeing(check_event.father, path_mask);
+                                checkStrongSeeing(check_event.mother, path_mask);
+                            }
+                            else {
+                                scope BitArray sub_path_mask=path_mask.dup;
+                                sub_path_mask[check_event.node_id]=true;
 
-                                    checkStrongSeeing(check_event.father, sub_path_mask);
-                                    checkStrongSeeing(check_event.mother, sub_path_mask);
-                                }
+                                checkStrongSeeing(check_event.father, sub_path_mask);
+                                checkStrongSeeing(check_event.mother, sub_path_mask);
                             }
                         }
                     }
+                }
 
-                    BitArray path_mask;
-                    bitarray_clear(path_mask, total_nodes);
-                    bitarray_clear(strong_vote_mask, total_nodes);
-                    foreach(node_id, ref mask; witness_vote_matrix) {
-                        bitarray_clear(mask, total_nodes);
-                        mask[node_id]=true;
-                    }
-                    checkStrongSeeing(top_event, path_mask);
-                    strong=isMajority(seeing);
-                    if ( strong ) {
-                        auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
-                        top_event.strongly_seeing(previous_witness_event, strong_vote_mask);
-                        nodes[top_event.node_id].latest_witness_event=top_event;
-                        log("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
-                    }
-                    top_event.strongly_seeing_checked;
-                    if ( Event.callbacks ) {
-                        Event.callbacks.strong_vote(top_event, seeing);
-                    }
+                BitArray path_mask;
+                bitarray_clear(path_mask, total_nodes);
+                bitarray_clear(strong_vote_mask, total_nodes);
+                foreach(node_id, ref mask; witness_vote_matrix) {
+                    bitarray_clear(mask, total_nodes);
+                    mask[node_id]=true;
+                }
+                checkStrongSeeing(top_event, path_mask);
+                strong=isMajority(seeing);
+                if ( strong ) {
+                    auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
+                    top_event.strongly_seeing(previous_witness_event, strong_vote_mask);
+                    nodes[top_event.node_id].latest_witness_event=top_event;
+                    log("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
+                }
+                top_event.strongly_seeing_checked;
+                if ( Event.callbacks ) {
+                    Event.callbacks.strong_vote(top_event, seeing);
                 }
             }
         }
+    }
 
     version(none)
     unittest { // strongSee
