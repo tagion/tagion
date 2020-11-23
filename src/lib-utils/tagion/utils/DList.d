@@ -1,14 +1,6 @@
 module tagion.utils.DList;
 
 import tagion.utils.Result;
-//import std.stdio;
-
-// @safe
-// class UtilException : Exception {
-//     this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
-//         super( msg, file, line);
-//     }
-// }
 
 @safe
 class DList(E) {
@@ -42,7 +34,7 @@ class DList(E) {
         return element;
     }
 
-    Result!E shift() {
+    Result!E shift() nothrow {
         if ( _head is null ) {
             return Result!E(E.init, this.stringof~" is empty");
         }
@@ -68,7 +60,7 @@ class DList(E) {
         return element;
     }
 
-    ref E pop() {
+    Result!E pop() nothrow {
         Element* result;
         if ( _tail !is null ) {
             result = _tail;
@@ -80,11 +72,10 @@ class DList(E) {
                 _tail.next=null;
             }
             count--;
+            return Result!E(result.entry);
+
         }
-        else {
-            throw new UtilException("Pop from an empty list");
-        }
-        return result.entry;
+        return Result!E(E.init, "Pop from an empty list");
     }
 
     /**
@@ -281,28 +272,20 @@ unittest {
         auto l=new DList!int;
 //        auto e = l.shift;
 //        assert(e is null);
-        bool flag;
+        // bool flag;
         assert(l.length == 0);
-        try {
-            flag=false;
-            l.pop;
-        }
-        catch ( UtilException e ) {
-            flag=true;
-        }
-        assert(flag);
-        assert(l.length == 0);
-
         {
-            import std.stdio;
-            pragma(msg, typeof(l.shift));
-            pragma(msg, typeof(l.shift.error));
+            const r=l.pop;
+            assert(r.error);
+        }
+        assert(l.length == 0);
+        {
             const r=l.shift;
             assert(r.error);
         }
-//        assert(flag);
         assert(l.length == 0);
     }
+
     { // One element test
         auto l=new DList!int;
         l.unshift(7);
@@ -350,7 +333,7 @@ unittest {
         assert(array(I) == test);
 
         foreach_reverse(i;0..amount) {
-            assert(l.pop == i);
+            assert(l.pop.value == i);
             assert(l.length == i);
         }
     }

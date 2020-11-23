@@ -10,7 +10,7 @@ import std.algorithm.iteration : map, sum;
 
 @safe @nogc
 class LEB128Exception : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
         super( msg, file, line );
     }
 }

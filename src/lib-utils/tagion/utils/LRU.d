@@ -5,6 +5,7 @@ module tagion.utils.LRU;
 
 //import std.stdio;
 import tagion.utils.DList;
+import tagion.utils.Result;
 import std.conv;
 import std.format;
 import std.traits;
@@ -38,7 +39,7 @@ class LRU(K,V)  {
     alias Element=EvictList.Element;
     private EvictList evictList;
     private Element*[K] items;
-    alias void delegate(const(K), Element*) @safe EvictCallback;
+    alias void delegate(const(K), Element*) @safe nothrow EvictCallback;
     immutable uint      size;
     private EvictCallback onEvict;
 
@@ -187,17 +188,18 @@ class LRU(K,V)  {
     void setEvict(EvictCallback evict) nothrow {
         onEvict=evict;
     }
+
 // RemoveOldest removes the oldest item from the cache.
-    const(Entry)* removeOldest() {
-        auto ent = evictList.pop;
-        if (ent !is null) {
-            auto element=items[ent.key];
-            items.remove(ent.key);
+    const(Result!(Entry*)) removeOldest() nothrow {
+        const e = evictList.pop;
+        if (!e.error) {
+            auto element=items[e.value.key];
+            items.remove(e.value.key);
             if (onEvict !is null) {
-                onEvict(ent.key, element);
+                onEvict(e.value.key, element);
             }
         }
-        return ent;
+        return e;
     }
 
 // GetOldest returns the oldest entry
@@ -243,6 +245,7 @@ unittest {
         assert( e.entry.key == e.entry.value );
         evictCounter++;
     }
+
     enum amount = 8;
     auto l = new TestLRU(&onEvicted, amount);
     foreach(i;0..amount) {
@@ -330,10 +333,10 @@ unittest { // getOldest removeOldest
     auto e = l.getOldest();
     assert(e !is null, "missing");
     assert(e.value == amount, "bad value "~to!string(e.key));
-    e = l.removeOldest();
+    e = l.removeOldest.value;
     assert(e !is null, "missing");
     assert(e.value == amount, "bad value "~to!string(e.key));
-    e = l.removeOldest();
+    e = l.removeOldest.value;
     assert(e !is null, "missing");
     assert(e.value == amount+1, "bad value "~to!string(e.value));
 }

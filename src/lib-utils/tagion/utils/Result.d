@@ -1,30 +1,41 @@
 module tagion.utils.Result;
 
+import tagion.basic.TagionExceptions;
+
 @safe
-class UtilException : Exception {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
-        super( msg, file, line);
+class UtilException : TagionException {
+    this( string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
+        super(msg, file, line);
     }
 }
 
-@safe @nogc
-struct Result(E) {
-    E entry;
+@safe
+struct Result(V) {
+    V value;
     immutable(UtilException) e;
     @disable this();
-    this(E entry) pure nothrow {
-        this.entry=entry;
+    @nogc
+    this(V value) pure nothrow {
+        this.value=value;
         e=null;
     }
-    this(E entry, string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
-        this.entry=entry;
+    this(V value, string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
+        this.value=value;
         e=new UtilException(msg, file, line);
     }
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
-        this.entry=E.init;
-        e=new UtilException(msg, file, line);
+        this(V.init, msg, file, line);
     }
+
+    @nogc
     bool error() pure const nothrow {
         return e !is null;
+    }
+
+    V get() {
+        if (error) {
+            throw e;
+        }
+        return value;
     }
 }
