@@ -28,7 +28,10 @@ static struct Logger {
         uint id;
         uint[] masks;
         bool no_task;
+        __gshared string logger_task_name;
     }
+
+    
 
     @trusted
     static setThreadName(string name) {
@@ -42,6 +45,7 @@ static struct Logger {
         }
     do {
         push(LoggerType.ALL);
+        logger_tid = locate(logger_task_name);
         .register(task_name, thisTid);
         //logger_tid=locate(options.logger.task_name);
         _task_name=task_name;
@@ -66,10 +70,10 @@ static struct Logger {
     @trusted
     void set_logger_task(string logger_task_name)
         in {
-            assert(logger_tid != logger_tid.init);
+            assert(this.logger_task_name.length == 0);
         }
     do {
-        logger_tid=locate(logger_task_name);
+        this.logger_task_name = logger_task_name;
     }
 
     @property @nogc
