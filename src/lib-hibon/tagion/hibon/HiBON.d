@@ -60,7 +60,7 @@ static size_t size(U)(const(U[]) array) pure {
 
     alias Value=ValueT!(true, HiBON,  Document);
 
-    this() {
+    this() nothrow pure {
         _members = new Members;
     }
 
