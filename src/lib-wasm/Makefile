@@ -85,7 +85,7 @@ lib: $(REVISION) $(LIBRARY)
 unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST): $(LIBS) $(WAYS)
+$(UNITTEST): $(LIBS) $(WAYS) $(DFILES)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
@@ -130,6 +130,7 @@ clean:
 	rm -f ${OBJS}
 	rm -f $(UNITTEST) $(UNITTEST).o
 	rm -f $(REVISION)
+	rm -f dfiles.mk
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
