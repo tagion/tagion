@@ -121,8 +121,9 @@ do {
 
         service_options.node_id=cast(uint)i;
         auto local_port = opts.port_base + i;
+        service_options.dart.initialize = true;
         if(is_master_node){
-            service_options.dart.initialize = false;
+            service_options.dart.initialize = opts.dart.initialize;
             service_options.dart.synchronize = false;
             local_port = opts.dart.sync.maxSlavePort;
             service_options.discovery.notify_enabled = true;
