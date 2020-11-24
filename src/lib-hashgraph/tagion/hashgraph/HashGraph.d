@@ -312,7 +312,6 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    @nogc
     inout(Node) getNode(const uint node_id) inout pure nothrow {
         return nodes[node_id];
     }
