@@ -2,6 +2,8 @@ module tagion.hashgraph.HashGraph;
 
 import std.stdio;
 import std.conv;
+//import std.range.primitives : isInputRange;
+
 import tagion.hashgraph.Event;
 import tagion.gossip.InterfaceNet;
 import tagion.utils.LRU;
@@ -130,8 +132,9 @@ class HashGraph {
         @nogc
         struct Range(bool also_ground) {
             private Event current;
-            this(Event event) pure nothrow {
-                current=event;
+            @trusted
+            this(const Event event) pure nothrow {
+                current=cast(Event)event;
             }
 
             @property pure nothrow {
@@ -155,30 +158,8 @@ class HashGraph {
         }
 
         @nogc
-        Range!false opSlice() pure nothrow {
+        Range!false opSlice() const pure nothrow {
             return Range!false(_event);
-        }
-
-        version(none)
-        int _opApply(scope int delegate(const(Event) e) nothrow @safe dg) const nothrow
-        in {
-            if ( _event ) {
-                assert(_event.daughter is null);
-            }
-        }
-        do {
-            int iterate(const(Event) e) nothrow @safe {
-                int result;
-                if ( e  ) {
-                    result=dg(e);
-                    if ( (result == 0) && (!e.grounded)) {
-                        iterate(e.mother);
-                    }
-                }
-                return result;
-
-            }
-            return iterate(_event);
         }
 
         invariant {
@@ -186,9 +167,6 @@ class HashGraph {
                 assert(latest_witness_event.witness);
             }
         }
-
-
-
     }
 
     @nogc
@@ -201,8 +179,13 @@ class HashGraph {
     private uint[] unused_node_ids; // Stack of unused node ids
 
 
+    // @nogc
+    // package Range!false opSlice() nothrow {
+    //     return Range!false(this);
+    // }
+
     @nogc
-    Range opSlice() nothrow {
+    Range opSlice() const pure nothrow {
         return Range(this);
     }
 
@@ -211,7 +194,7 @@ class HashGraph {
         return (pubkey in node_ids) !is null;
     }
 
-    bool createNode(Pubkey pubkey) nothrow {
+    bool createNode(Pubkey pubkey) pure nothrow {
         if ( pubkey in node_ids ) {
             return false;
         }
@@ -222,13 +205,13 @@ class HashGraph {
         return true;
     }
 
-    const(uint) nodeId(Pubkey pubkey) const {
+    const(uint) nodeId(scope Pubkey pubkey) const pure {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
     }
 
-    void setAltitude(Pubkey pubkey, const(int) altitude) {
+    void setAltitude(scope Pubkey pubkey, const(int) altitude) {
         auto nid=pubkey in node_ids;
         check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         auto n=nodes[*nid];
@@ -236,7 +219,7 @@ class HashGraph {
     }
 
     @nogc
-    bool isNodeIdKnown(Pubkey pubkey) const pure nothrow {
+    bool isNodeIdKnown(scope Pubkey pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
     }
 
@@ -256,24 +239,20 @@ class HashGraph {
 
     struct Range {
 //        private HashGraph _owner;
-        alias NodeRange=typeof(HashGraph.nodes.byValue);
+        alias NodeRange=typeof(const(HashGraph).nodes.byValue);
         private NodeRange r;
 //        Result r;
         @nogc
-        this(HashGraph owner) nothrow pure {
+        this(const HashGraph owner) nothrow pure {
             r = owner.nodes.byValue;
         }
 
-        @property pure nothrow {
+        @nogc @property pure nothrow {
             bool empty() {
                 return r.empty;
             }
 
-            package Node front() {
-                return r.front;
-            }
-
-            public const(Node) front() {
+            const(Node) front() {
                 return r.front;
             }
 
@@ -333,11 +312,12 @@ class HashGraph {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    inout(Node) getNode(const uint node_id) inout {
+    @nogc
+    inout(Node) getNode(const uint node_id) inout pure nothrow {
         return nodes[node_id];
     }
 
-    inout(Node) getNode(Pubkey pubkey) inout {
+    inout(Node) getNode(Pubkey pubkey) inout pure {
         return getNode(nodeId(pubkey));
     }
 
@@ -532,150 +512,4 @@ class HashGraph {
             }
         }
     }
-
-    version(none)
-    unittest { // strongSee
-        // This is the example taken from
-        // HASHGRAPH CONSENSUS
-        // SWIRLDS TECH REPORT TR-2016-01
-        import tagion.crypto.SHA256;
-        import std.traits;
-        import std.conv;
-        enum NodeLable {
-            Alice,
-            Bob,
-            Carol,
-            Dave,
-            Elisa
-        }
-        struct Emitter {
-            Pubkey pubkey;
-        }
-        auto h=new HashGraph;
-        Emitter[NodeLable.max+1] emitters;
-//        writefln("@@@ Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
-        foreach (immutable l; [EnumMembers!NodeLable]) {
-//            writefln("label=%s", l);
-            emitters[l].pubkey=cast(Pubkey)to!string(l);
-        }
-        ulong current_time;
-        uint dummy_index;
-        ulong dummy_time() {
-            current_time+=1;
-            return current_time;
-        }
-        Hash hash(immutable(ubyte)[] data) {
-            return new SHA256(data);
-        }
-        immutable(EventBody) newbody(immutable(EventBody)* mother, immutable(EventBody)* father) {
-            dummy_index++;
-            if ( father is null ) {
-                auto hm=hash(mother.serialize).digits;
-                return EventBody(null, hm, null, dummy_time);
-            }
-            else {
-                auto hm=hash(mother.serialize).digits;
-                auto hf=hash(father.serialize).digits;
-                return EventBody(null, hm, hf, dummy_time);
-            }
-        }
-        // Row number zero
-        writeln("Row 0");
-        // EventBody* a,b,c,d,e;
-        with(NodeLable) {
-            immutable a0=EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0);
-            immutable b0=EventBody(hash(emitters[Bob].pubkey).digits, null, null, 0);
-            immutable c0=EventBody(hash(emitters[Carol].pubkey).digits, null, null, 0);
-            immutable d0=EventBody(hash(emitters[Dave].pubkey).digits, null, null, 0);
-            immutable e0=EventBody(hash(emitters[Elisa].pubkey).digits, null, null, 0);
-            h.registerEvent(emitters[Bob].pubkey,   b0, &hash);
-            h.registerEvent(emitters[Carol].pubkey, c0, &hash);
-            h.registerEvent(emitters[Alice].pubkey, a0, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e0, &hash);
-            h.registerEvent(emitters[Dave].pubkey,  d0, &hash);
-
-            // Row number one
-            writeln("Row 1");
-            alias a0 a1;
-            alias b0 b1;
-            immutable c1=newbody(&c0, &d0);
-            immutable e1=newbody(&e0, &b0);
-            alias d0 d1;
-            //with(NodeLable) {
-            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
-
-            // Row number two
-            writeln("Row 2");
-            alias a1 a2;
-            immutable b2=newbody(&b1, &c1);
-            immutable c2=newbody(&c1, &e1);
-            alias d1 d2;
-            immutable e2=newbody(&e1, null);
-            h.registerEvent(emitters[Bob].pubkey,   b1, &hash);
-            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
-            // Row number 2 1/2
-            writeln("Row 2 1/2");
-
-            alias a2 a2a;
-            alias b2 b2a;
-            alias c2 c2a;
-            immutable d2a=newbody(&d2, &c2);
-            alias e2 e2a;
-            h.registerEvent(emitters[Dave].pubkey,  d2a, &hash);
-            // Row number 3
-            writeln("Row 3");
-
-            immutable a3=newbody(&a2, &b2);
-            immutable b3=newbody(&b2, &c2);
-            immutable c3=newbody(&c2, &d2);
-            alias d2a d3;
-            immutable e3=newbody(&e2, null);
-            //
-            h.registerEvent(emitters[Alice].pubkey, a3, &hash);
-            h.registerEvent(emitters[Bob].pubkey,   b3, &hash);
-            h.registerEvent(emitters[Carol].pubkey, c3, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e3, &hash);
-            // Row number 4
-            writeln("Row 4");
-
-
-            immutable a4=newbody(&a3, null);
-            alias b3 b4;
-            alias c3 c4;
-            alias d3 d4;
-            immutable e4=newbody(&e3, null);
-            //
-            h.registerEvent(emitters[Alice].pubkey, a4, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e4, &hash);
-            // Row number 5
-            writeln("Row 5");
-            alias a4 a5;
-            alias b4 b5;
-            immutable c5=newbody(&c4, &e4);
-            alias d4 d5;
-            alias e4 e5;
-
-
-
-            //
-
-            h.registerEvent(emitters[Carol].pubkey, c5, &hash);
-            // Row number 6
-            writeln("Row 6");
-
-            alias a5 a6;
-            alias b5 b6;
-            immutable c6=newbody(&c5, &a5);
-            alias d5 d6;
-            alias e5 e6;
-
-            //
-            h.registerEvent(emitters[Alice].pubkey, a6, &hash);
-        }
-        writeln("Row end");
-
-    }
-
 }

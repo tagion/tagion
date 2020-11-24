@@ -920,7 +920,7 @@ class Event {
         return id_count;
     }
 
-    HiBON toHiBON() const {
+    HiBON toHiBON() const{
         auto hibon=new HiBON;
         foreach(i, m; this.tupleof) {
             enum member_name=basename!(this.tupleof[i]);
