@@ -395,7 +395,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         return Package(this, block, type);
     }
 
-    void onEvict(const(ubyte[]) key, EventPackageCache.Element* e) @safe {
+    void onEvict(scope const(ubyte[]) key, EventPackageCache.Element* e) nothrow @safe {
         //fout.writefln("Evict %s", typeid(e.entry));
     }
 
@@ -463,7 +463,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     Tides tideWave(HiBON hibon, bool build_tides) {
         HiBON[] fronts;
         Tides tides;
-        foreach(n; _hashgraph.nodeiterator) {
+        pragma(msg, typeof(_hashgraph[].front));
+        foreach(n; _hashgraph[]) {
+            pragma(msg, typeof(n));
             if ( n.isOnline ) {
                 auto node=new HiBON;
                 node[Event.Params.pubkey]=n.pubkey;
@@ -540,13 +542,13 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         return result;
     }
 
-    HiBON[] buildWavefront(Tides tides, bool is_tidewave) {
+    HiBON[] buildWavefront(Tides tides, bool is_tidewave) const {
         HiBON[] events;
-        foreach(i_n, n; _hashgraph.nodeiterator) {
+        foreach(n; _hashgraph[]) {
             auto other_altitude_p=n.pubkey in tides;
             if ( other_altitude_p ) {
                 immutable other_altitude=*other_altitude_p;
-                foreach(e; n) {
+                foreach(e; n[]) {
                     if ( higher( other_altitude, e.altitude) ) {
                         break;
                     }
