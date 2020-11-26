@@ -4,10 +4,10 @@ module tagion.basic.Logger;
 import std.concurrency;
 import core.sys.posix.pthread;
 import std.string;
-import std.stdio : stderr;
+//import std.stdio : stderr;
 import tagion.basic.Basic : Control;
 
-extern(C) int pthread_setname_np(pthread_t, const char*);
+extern(C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
 enum LoggerType {
     INFO    = 1,
@@ -20,38 +20,42 @@ enum LoggerType {
 }
 
 
+private static Tid logger_tid;
+
 @safe
 static struct Logger {
     protected {
         string _task_name;
-        Tid logger_tid;
         uint id;
         uint[] masks;
-        bool no_task;
         __gshared string logger_task_name;
     }
 
-    
-
     @trusted
-    static setThreadName(string name) {
+    static setThreadName(string name) nothrow {
         pthread_setname_np(pthread_self(), toStringz(name));
     }
 
     @trusted
-    void register(string task_name)
+    void register(string task_name) nothrow
         in {
             assert(logger_tid == logger_tid.init);
         }
     do {
         push(LoggerType.ALL);
-        logger_tid = locate(logger_task_name);
-        .register(task_name, thisTid);
-        //logger_tid=locate(options.logger.task_name);
-        _task_name=task_name;
-        setThreadName(task_name);
-        stderr.writefln("Register: %s logger", _task_name);
-        log("Register: %s logger", _task_name);
+        try {
+            logger_tid = locate(logger_task_name);
+            .register(task_name, thisTid);
+            _task_name=task_name;
+            setThreadName(task_name);
+            import std.stdio : stderr;
+
+            stderr.writefln("Register: %s logger", _task_name);
+            log("Register: %s logger", _task_name);
+        }
+        catch (Exception e) {
+            log.error("%s logger not register", _task_name);
+        }
     }
 
     @property @trusted
@@ -60,15 +64,13 @@ static struct Logger {
             assert(logger_tid == logger_tid.init);
         }
     do {
-        no_task=true;
-//        logger_tid=locate(options.logger.task_name);
         _task_name=task_name;
         setThreadName(task_name);
         log("Register: %s logger", _task_name);
     }
 
-    @trusted
-    void set_logger_task(string logger_task_name)
+    @trusted @nogc
+    void set_logger_task(string logger_task_name) nothrow
         in {
             assert(this.logger_task_name.length == 0);
         }
@@ -81,11 +83,18 @@ static struct Logger {
         return _task_name;
     }
 
-    void push(const uint mask) {
+    @property @trusted
+    bool isTask() const nothrow {
+        import std.exception : assumeWontThrow;
+        return assumeWontThrow(logger_tid != logger_tid.init);
+    }
+
+    void push(const uint mask) nothrow {
         masks~=mask;
     }
 
-    uint pop() {
+    @nogc
+    uint pop() nothrow {
         uint result=masks[$-1];
         if ( masks.length > 1 ) {
             masks=masks[0..$-1];
@@ -94,63 +103,85 @@ static struct Logger {
     }
 
     @trusted
-    void report(LoggerType type, lazy string text) {
+    void report(LoggerType type, lazy string text) const nothrow {
         if ( type | masks[$-1] ) {
-            if ((logger_tid == logger_tid.init) && (!no_task)) {
-                stderr.writefln("ERROR: Logger not register for '%s'", _task_name);
-                stderr.writefln("\t%s:%s: %s", _task_name, type, text);
+            import std.exception : assumeWontThrow;
+            import std.conv : to;
+
+            if (!isTask) {
+                import core.stdc.stdio;
+                scope const _type=assumeWontThrow(toStringz(type.to!string));
+                scope const _text=assumeWontThrow(toStringz(text));
+                printf("ERROR: Logger not register for '%s'", toStringz(_task_name));
+                printf("\t%s:%s: %s", _task_name.toStringz, _type, _text);
             }
             else {
-                logger_tid.send(type, _task_name, text);
+                try {
+                    logger_tid.send(type, _task_name, text);
+                }
+                catch (Exception e) {
+                    import core.stdc.stdio;
+                    scope const _type=assumeWontThrow(toStringz(type.to!string));
+                    scope const _text=assumeWontThrow(toStringz(text));
+                    fprintf(stderr, "\t%s:%s: %s", _task_name.toStringz, _type, _text);
+                    scope const _msg=assumeWontThrow(toStringz(e.toString));
+                    fprintf(stderr, "%s", _msg);
+                }
             }
         }
     }
 
-    void opCall(lazy string text) {
+    @trusted
+    void report(Args...)(LoggerType type, string fmt, lazy Args args) const nothrow {
+        report(type, format(fmt, args));
+    }
+
+    void opCall(lazy string text) const nothrow {
         report(LoggerType.INFO, text);
     }
 
-    @trusted
-    void opCall(Args...)(string fmt, lazy Args args) {
-        opCall(format(fmt, args));
+    void opCall(Args...)(string fmt, lazy Args args) const nothrow {
+        report(LoggerType.INFO, fmt, args);
     }
 
-    void trace(lazy string text) {
+    void trace(lazy string text) const nothrow {
         report(LoggerType.TRACE, text);
     }
 
-    void trace(Args...)(string fmt, lazy Args args) {
-        trace(format(fmt, args));
+    void trace(Args...)(string fmt, lazy Args args) const nothrow {
+        report(LoggerType.TRACE, fmt, args);
     }
 
-
-    void warning(lazy string text) {
+    void warning(lazy string text) const nothrow {
         report(LoggerType.WARNING, text);
     }
 
-    void warning(Args...)(string fmt, Args args) {
-        warning(format(fmt, args));
+    void warning(Args...)(string fmt, Args args) const nothrow {
+        report(LoggerType.WARNING, fmt, args);
     }
 
-    void error(Args...)(string fmt, lazy Args args) {
-        error(format(fmt, args));
-    }
-
-    void error(lazy string text) {
+    void error(lazy string text) const nothrow {
         report(LoggerType.ERROR, text);
     }
 
-    void fatal(Args...)(string fmt, lazy Args args) {
-        fatal(format(fmt, args));
+    void error(Args...)(string fmt, lazy Args args) const nothrow {
+        report(LoggerType.ERROR, fmt, args);
     }
 
-    void fatal(lazy string text) {
+    void fatal(lazy string text) const nothrow {
         report(LoggerType.FATAL, text);
     }
 
+    void fatal(Args...)(string fmt, lazy Args args) const nothrow {
+        report(LoggerType.FATAL, fmt, args);
+    }
+
     @trusted
-    void close() {
-        logger_tid.send(Control.STOP);
+    void close() const nothrow {
+        if (isTask) {
+            import std.exception : assumeWontThrow;
+            assumeWontThrow(logger_tid.send(Control.STOP));
+        }
     }
 }
 
