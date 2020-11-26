@@ -135,7 +135,8 @@ do {
             auto path_to_dir = service_options.dart.path[0..opts.dart.path.indexOf(dir_token)]~"node"~to!string(i);
             if(!path_to_dir.exists) path_to_dir.mkdir;
             service_options.dart.path = opts.dart.path.replace(dir_token, "node"~to!string(i));
-        }else{
+        }
+        else{
             import std.path;
             if(!is_master_node){
                 service_options.dart.path = stripExtension(opts.dart.path) ~ to!string(i) ~ extension(opts.dart.path);

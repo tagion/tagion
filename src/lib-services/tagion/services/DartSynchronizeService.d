@@ -81,7 +81,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
             ownerTid.prioritySend(Control.END);
         }
         scope(failure){
-            log("------Error Stop Dart Sync service-----");
+            log.fatal("------Error Stop Dart Sync service-----");
             ownerTid.prioritySend(Control.END);
         }
         version(unittest) {

@@ -55,7 +55,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         }
 
         scope(failure){
-            log("------Error Stop Dart service-----");
+            log.fatal("------Error Stop Dart service-----");
             ownerTid.prioritySend(Control.END);
         }
 

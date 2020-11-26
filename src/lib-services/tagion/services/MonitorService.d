@@ -21,6 +21,9 @@ void monitorServiceTask(immutable(Options) opts) {
     setOptions(opts);
     immutable task_name=opts.monitor.task_name;
     log.register(task_name);
+    scope(failure) {
+        log.fatal("Unexpected Termination");
+    }
 
     try{
         log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
@@ -105,18 +108,21 @@ void monitorServiceTask(immutable(Options) opts) {
                     ownerTid.send(e);
                     //throw e;
                 },
-                (immutable(Throwable) t) {
-                    log.fatal(t.msg);
-                    stop=true;
-                    ownerTid.send(t);
-                    // throw t;
-                }
+                // version(none)
+                // (immutable(Error) t) {
+                //     import core.stdc.stdio;
+                //     printf("Error %p", &t);
+                //     log.fatal(t.msg);
+                //     stop=true;
+                //     ownerTid.send(t);
+                //     // throw t;
+                // }
                 );
-//        log("Running");
+            log("Running");
         }
     }
     catch(Exception e){
         log.fatal(e.msg);
-        throw e;
+//        throw e;
     }
 }
