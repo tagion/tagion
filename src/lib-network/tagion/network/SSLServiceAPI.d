@@ -79,23 +79,30 @@ struct SSLServiceAPI {
         }
 
         while (!stop_service) {
-            if ( !_listener.isAlive ){
-                stop_service = true;
-                break;
-            }
-
-            socket_set.add(_listener);
-
-            service.addSocketSet(socket_set);
-
-            const sel_res = Socket.select( socket_set, null, null, ssl_options.select_timeout.msecs);
-            if (sel_res > 0) {
-                if (socket_set.isSet(_listener)) {
-                    service.allocateFiber;
+            try {
+                if ( !_listener.isAlive ){
+                    stop_service = true;
+                    break;
                 }
+
+                socket_set.add(_listener);
+
+                service.addSocketSet(socket_set);
+
+                const sel_res = Socket.select( socket_set, null, null, ssl_options.select_timeout.msecs);
+                if (sel_res > 0) {
+                    if (socket_set.isSet(_listener)) {
+                        service.allocateFiber;
+                    }
+                }
+                service.execute(socket_set);
+                socket_set.reset;
             }
-            service.execute(socket_set);
-            socket_set.reset;
+            catch (Throwable e) {
+                import tagion.basic.TagionExceptions;
+                ownerTid.send(e.taskException);
+                stop_service=true;
+            }
         }
     }
 
