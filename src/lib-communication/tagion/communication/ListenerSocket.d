@@ -301,25 +301,29 @@ struct ListenerSocket {
             }
         }
         catch(Exception e) {
-            stderr.writeln(e.msg);
+            log.error(e.toString);
+//            stderr.writeln(e.msg);
             stop_listener=true;
             if (masterTid != masterTid.init) {
                 masterTid.send(cast(immutable)e);
             }
-            else {
-                throw e;
-            }
+            // else {
+            //     throw e;
+            // }
         }
-        catch(Throwable t) {
-            stderr.writeln(t.toString);
+        catch(Error t) {
+            log.fatal(t.toString);
+
+            // log.fatal(t.toString)
+            // stderr.writeln(t.toString);
             stop_listener=true;
-            t.msg ~= " - From listener thread";
+//            t.msg ~= " - From listener thread";
             if (masterTid != masterTid.init) {
                 masterTid.send(cast(immutable)t);
             }
-            else {
-                throw t;
-            }
+            // else {
+            //     throw t;
+            // }
         }
     }
 }
