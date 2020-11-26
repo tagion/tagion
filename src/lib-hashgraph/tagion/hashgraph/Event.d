@@ -728,7 +728,7 @@ class Event {
 
 
     @safe
-    class Witness {
+    static class Witness {
         private Event _previous_witness_event;
         private BitArray _famous_decided_mask;
         private bool     _famous_decided;

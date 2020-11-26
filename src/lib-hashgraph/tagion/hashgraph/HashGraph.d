@@ -347,6 +347,16 @@ class HashGraph {
         ref immutable(EventBody) eventbody) {
         immutable ebody=eventbody.serialize;
         immutable fingerprint=request_net.calcHash(ebody);
+
+
+        import core.time : MonoTime;
+        import tagion.utils.Miscellaneous : cutHex;
+        scope const before = MonoTime.currTime;
+        log("TIME Register %s", fingerprint.cutHex);
+        scope(exit) {
+            log("TIME End %s time time=%ssec", fingerprint.cutHex, 1e-6*(MonoTime.currTime - before).total!"usecs");
+        }
+
         if ( Event.scriptcallbacks ) {
             // Sends the eventbody to the scripting engine
             Event.scriptcallbacks.send(eventbody);
@@ -415,18 +425,27 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
+    protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false, string indent=null) {
         iterative_tree_count++;
         if ( event && ( !event.is_loaded ) ) {
+            import core.time : MonoTime;
+            import tagion.utils.Miscellaneous : cutHex;
+            scope const before = MonoTime.currTime;
+            log("TIME ->%s %s %d", indent, event.fingerprint.cutHex, iterative_tree_count);
+//            log("\tr %s", fingerprint.cutHex);
+            scope(exit) {
+                log("TIME <-%s time=%ssec", indent, 1e-6*(MonoTime.currTime - before).total!"usecs");
+            }
+
             event.loaded;
 
             auto mother=event.mother(this, request_net);
-            requestEventTree(request_net, mother, event, false);
+            requestEventTree(request_net, mother, event, false, indent~`M*`);
             if ( mother ) {
                 mother.daughter=event;
             }
             auto father=event.father(this, request_net);
-            requestEventTree(request_net, father, event, true);
+            requestEventTree(request_net, father, event, true, indent~`F*`);
             if ( father ) {
                 father.son=event;
             }
