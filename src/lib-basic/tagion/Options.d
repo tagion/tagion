@@ -609,7 +609,8 @@ static setDefaultOption(ref Options options) {
     }
     // Monitor
     with(options.monitor) {
-        port=10900;
+//        port=10900;
+        port=0;
         max=0;
         prefix="monitor";
         task_name=prefix;

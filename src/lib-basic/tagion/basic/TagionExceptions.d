@@ -26,12 +26,12 @@ class TagionException : Exception, TagionExceptionInterface {
      +/
     @trusted
     final immutable(TagionException) taskException() {
-        version(LOGGER) {
-            import tagion.services.LoggerService;
+        // version(LOGGER) {
+            import tagion.basic.Logger;
             if (task_name.length > 0) {
                 task_name=log.task_name;
             }
-        }
+        // }
         return cast(immutable)this;
     }
 }
@@ -45,4 +45,15 @@ void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = 
     if (!flag) {
         throw new E(msg, file, line);
     }
+}
+
+struct TaskException {
+    Throwable throwable;
+    string task_name;
+}
+
+
+immutable(TaskException) taskException(T)(T e) nothrow if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+    import tagion.basic.Logger;
+    return immutable(TaskException)(cast(immutable)e, log.task_name);
 }
