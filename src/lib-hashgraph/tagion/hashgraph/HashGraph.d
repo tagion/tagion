@@ -41,7 +41,7 @@ class HashGraph {
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
-
+        @nogc
         this(Pubkey pubkey, uint node_id) pure nothrow {
             this.pubkey=pubkey;
             this.node_id=node_id;
@@ -51,20 +51,22 @@ class HashGraph {
         private Event _event; // Latest event
         package Event latest_witness_event; // Latest witness event
 
-        package Event previous_witness()
-        in {
-            assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
-        }
+        @nogc
+        final package Event previous_witness() nothrow pure
+            in {
+                assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
+            }
         do {
             return latest_witness_event.witness.previous_witness_event;
         }
 
-        package void event(Event e)
-        in {
-            assert(e);
-            assert(e.son is null);
-            assert(e.daughter is null);
-        }
+        @nogc
+        final package void event(Event e) nothrow
+            in {
+                assert(e);
+                assert(e.son is null);
+                assert(e.daughter is null);
+            }
         do {
             if ( _event is null ) {
                 _cache_altitude=e.altitude;
@@ -79,24 +81,26 @@ class HashGraph {
             }
         }
 
-        const(Event) event() pure const nothrow
-        in {
-            if ( _event && _event.witness ) {
-                assert(_event is latest_witness_event);
+        @nogc
+        final const(Event) event() pure const nothrow
+            in {
+                if ( _event && _event.witness ) {
+                    assert(_event is latest_witness_event);
+                }
             }
-        }
         do {
             return _event;
         }
 
-
-        bool isOnline() pure const nothrow {
+        @nogc
+        final bool isOnline() pure const nothrow {
             return (_event !is null);
         }
 
         // This is the altiude of the cache Event
         private int _cache_altitude;
 
+        @nogc
         final void altitude(int a) nothrow
             in {
                 if ( _event ) {
@@ -111,6 +115,7 @@ class HashGraph {
             _cache_altitude=highest(a, _cache_altitude);
         }
 
+        @nogc
         final int altitude() pure const nothrow
             in {
                 assert(_event !is null, "This node has no events so the altitude is not set yet");
@@ -119,6 +124,7 @@ class HashGraph {
             return _cache_altitude;
         }
 
+        @nogc
         struct Range(bool also_ground) {
             private Event current;
             @trusted
@@ -146,6 +152,7 @@ class HashGraph {
             }
         }
 
+        @nogc
         Range!false opSlice() const pure nothrow {
             return Range!false(_event);
         }

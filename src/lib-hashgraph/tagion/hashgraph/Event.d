@@ -29,7 +29,7 @@ package void check(bool flag, ConsensusFailCode code, string file = __FILE__, si
 }
 
 // Returns the highest altitude
-@safe
+@safe @nogc
 int highest(int a, int b) pure nothrow {
     if ( higher(a,b) ) {
         return a;
@@ -40,12 +40,12 @@ int highest(int a, int b) pure nothrow {
 }
 
 // Is a higher or equal to b
-@safe
+@safe @nogc
 bool higher(int a, int b) pure nothrow {
     return a-b > 0;
 }
 
-@safe
+@safe @nogc
 bool lower(int a, int b) pure nothrow {
     return a-b < 0;
 }
@@ -96,6 +96,7 @@ struct EventBody {
         this(doc);
     }
 
+    @nogc
     bool isEva() pure const nothrow {
         return (mother.length == 0);
     }
@@ -249,10 +250,12 @@ class Round {
         }
     }
 
-    bool lessOrEqual(const Round rhs) pure const {
+    @nogc
+    bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
+    @nogc
     uint node_size() pure const nothrow {
         return cast(uint)_events.length;
     }
@@ -712,7 +715,7 @@ class Event {
 
 
     @safe
-    class Witness {
+    static class Witness {
         private Event _previous_witness_event;
         private BitArray _famous_decided_mask;
         private bool     _famous_decided;
@@ -739,7 +742,8 @@ class Event {
             return cast(uint)_strong_seeing_mask.length;
         }
 
-        Event previous_witness_event() pure nothrow {
+        @nogc
+        inout(Event) previous_witness_event() inout pure nothrow {
             return _previous_witness_event;
         }
 
@@ -1121,11 +1125,13 @@ class Event {
         return _witness_mask;
     }
 
+    @nogc
     const(Witness) witness() pure const nothrow {
         return _witness;
     }
 
-    package Witness witness() {
+    @nogc
+    package Witness witness() pure nothrow {
         return _witness;
     }
 
@@ -1219,7 +1225,7 @@ class Event {
         return _forked;
     }
 
-
+    @nogc
     immutable(int) altitude() const pure nothrow {
         return event_body.altitude;
     }
@@ -1387,6 +1393,7 @@ class Event {
         return _father;
     }
 
+    @nogc
     inout(Event) daughter() inout pure nothrow {
         return _daughter;
     }
@@ -1410,6 +1417,7 @@ class Event {
         }
     }
 
+    @nogc
     inout(Event) son() inout pure nothrow {
         return _son;
     }
@@ -1465,6 +1473,7 @@ class Event {
         return payload.length != 0;
     }
 
+    @nogc
     bool motherExists() const pure nothrow
         in {
             assert(!_grounded, "This function should not be used on a grounded event");
@@ -1478,6 +1487,7 @@ class Event {
     }
 
 // is true if the event does not have a mother or a father
+    @nogc
     bool isEva() pure const nothrow
         in {
             assert(!_grounded, "This event is gounded");
