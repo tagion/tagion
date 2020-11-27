@@ -14,6 +14,8 @@ import Basic=tagion.hashgraph.HashGraphBasic;
 
 import tagion.basic.Logger;
 
+private alias check=Check!HashGraphConsensusException;
+
 @safe
 class HashGraph {
     //alias Pubkey=immutable(ubyte)[];
@@ -164,9 +166,9 @@ class HashGraph {
         }
     }
 
+    @nogc
     uint node_size() const pure nothrow {
-        const result = cast(uint)(nodes.length);
-        return result;
+        return cast(uint)(nodes.length);
     }
 
     private Node[uint] nodes; // List of participating nodes T
@@ -175,15 +177,17 @@ class HashGraph {
 
 
 
+    @nogc
     Range opSlice() const pure nothrow {
         return Range(this);
     }
 
-    bool isOnline(Pubkey pubkey) {
+    @nogc
+    bool isOnline(Pubkey pubkey) pure nothrow const {
         return (pubkey in node_ids) !is null;
     }
 
-    bool createNode(Pubkey pubkey) {
+    bool createNode(Pubkey pubkey) pure nothrow {
         if ( pubkey in node_ids ) {
             return false;
         }
@@ -194,21 +198,21 @@ class HashGraph {
         return true;
     }
 
-    const(uint) nodeId(Pubkey pubkey) inout {
+    const(uint) nodeId(scope Pubkey pubkey) const pure {
         auto result=pubkey in node_ids;
         check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         return *result;
     }
 
-    void setAltitude(Pubkey pubkey, const(int) altitude) {
+    void setAltitude(scope Pubkey pubkey, const(int) altitude) {
         auto nid=pubkey in node_ids;
         check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         auto n=nodes[*nid];
         n.altitude=altitude;
     }
 
-
-    bool isNodeIdKnown(Pubkey pubkey) const pure nothrow {
+    @nogc
+    bool isNodeIdKnown(scope Pubkey pubkey) const pure nothrow {
         return (pubkey in node_ids) !is null;
     }
 
@@ -252,6 +256,7 @@ class HashGraph {
         }
     }
 
+    @nogc
     Pubkey nodePubkey(const uint node_id) pure const nothrow {
         auto node=node_id in nodes;
         if ( node ) {
@@ -263,6 +268,7 @@ class HashGraph {
         }
     }
 
+    @nogc
     bool isNodeActive(const uint node_id) pure const nothrow {
         return (node_id in nodes) !is null;
     }
@@ -276,38 +282,38 @@ class HashGraph {
         }
     }
 
-    Event lookup(immutable(ubyte[]) fingerprint) {
-        // scope(exit) {
-        //     _event_cache.remove(fingerprint);
-        // }
+    Event lookup(scope immutable(ubyte[]) fingerprint) {
         return _event_cache[fingerprint];
     }
 
-    void eliminate(immutable(ubyte[]) fingerprint) {
+    void eliminate(scope immutable(ubyte[]) fingerprint) {
         _event_cache.remove(fingerprint);
     }
 
-    bool isRegistered(immutable(ubyte[]) fingerprint) {
+    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
         return _event_cache.contains(fingerprint);
     }
 
     // Returns the number of active nodes in the network
+    @nogc
     uint active_nodes() const pure nothrow {
         return cast(uint)(node_ids.length);
     }
 
+    @nogc
     uint total_nodes() const pure nothrow {
         return cast(uint)(node_ids.length+unused_node_ids.length);
     }
 
-    inout(Node) getNode(const uint node_id) inout {
+    inout(Node) getNode(const uint node_id) inout pure nothrow {
         return nodes[node_id];
     }
 
-    inout(Node) getNode(Pubkey pubkey) inout {
+    inout(Node) getNode(Pubkey pubkey) inout pure {
         return getNode(nodeId(pubkey));
     }
 
+    @nogc
     bool isMajority(const uint voting) const pure nothrow {
         return Basic.isMajority(voting, active_nodes);
     }
@@ -426,78 +432,78 @@ class HashGraph {
     }
 
 
-        @trusted
-            package void strongSee(Event top_event) {
-            if ( top_event && !top_event.is_strongly_seeing_checked ) {
+    @trusted
+    package void strongSee(Event top_event) {
+        if ( top_event && !top_event.is_strongly_seeing_checked ) {
 
-                strongSee(top_event.mother);
-                strongSee(top_event.father);
-                if ( isMajority(top_event.witness_votes(total_nodes)) ) {
-                    scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
-                    scope BitArray strong_vote_mask;
-                    uint seeing;
-                    bool strong;
-                    const round=top_event.round;
-                    @trusted
-                        void checkStrongSeeing(Event check_event, const BitArray path_mask) {
-                        iterative_strong_count++;
-                        if ( check_event && round.lessOrEqual(check_event.round) ) {
-                            const BitArray checked_mask=strong_vote_mask & check_event.witness_mask(total_nodes);
-                            const check=(checked_mask != check_event.witness_mask);
-                            if ( check ) {
+            strongSee(top_event.mother);
+            strongSee(top_event.father);
+            if ( isMajority(top_event.witness_votes(total_nodes)) ) {
+                scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
+                scope BitArray strong_vote_mask;
+                uint seeing;
+                bool strong;
+                const round=top_event.round;
+                @trusted
+                    void checkStrongSeeing(Event check_event, const BitArray path_mask) {
+                    iterative_strong_count++;
+                    if ( check_event && round.lessOrEqual(check_event.round) ) {
+                        const BitArray checked_mask=strong_vote_mask & check_event.witness_mask(total_nodes);
+                        const check=(checked_mask != check_event.witness_mask);
+                        if ( check ) {
 
-                                if ( !strong_vote_mask[check_event.node_id] ) {
-                                    scope BitArray common=witness_vote_matrix[check_event.node_id] | path_mask;
-                                    if ( common != witness_vote_matrix[check_event.node_id] ) {
-                                        witness_vote_matrix[check_event.node_id]=common;
+                            if ( !strong_vote_mask[check_event.node_id] ) {
+                                scope BitArray common=witness_vote_matrix[check_event.node_id] | path_mask;
+                                if ( common != witness_vote_matrix[check_event.node_id] ) {
+                                    witness_vote_matrix[check_event.node_id]=common;
 
-                                        immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
-                                        if ( isMajority(votes) ) {
-                                            strong_vote_mask[check_event.node_id]=true;
-                                            seeing++;
-                                        }
+                                    immutable votes=countVotes(witness_vote_matrix[check_event.node_id]);
+                                    if ( isMajority(votes) ) {
+                                        strong_vote_mask[check_event.node_id]=true;
+                                        seeing++;
                                     }
                                 }
-                                /+
-                                 The father event is searched first to cross as many nodes as fast as possible
-                                 +/
-                                if ( path_mask[check_event.node_id] ) {
-                                    checkStrongSeeing(check_event.father, path_mask);
-                                    checkStrongSeeing(check_event.mother, path_mask);
-                                }
-                                else {
-                                    scope BitArray sub_path_mask=path_mask.dup;
-                                    sub_path_mask[check_event.node_id]=true;
+                            }
+                            /+
+                             The father event is searched first to cross as many nodes as fast as possible
+                             +/
+                            if ( path_mask[check_event.node_id] ) {
+                                checkStrongSeeing(check_event.father, path_mask);
+                                checkStrongSeeing(check_event.mother, path_mask);
+                            }
+                            else {
+                                scope BitArray sub_path_mask=path_mask.dup;
+                                sub_path_mask[check_event.node_id]=true;
 
-                                    checkStrongSeeing(check_event.father, sub_path_mask);
-                                    checkStrongSeeing(check_event.mother, sub_path_mask);
-                                }
+                                checkStrongSeeing(check_event.father, sub_path_mask);
+                                checkStrongSeeing(check_event.mother, sub_path_mask);
                             }
                         }
                     }
+                }
 
-                    BitArray path_mask;
-                    bitarray_clear(path_mask, total_nodes);
-                    bitarray_clear(strong_vote_mask, total_nodes);
-                    foreach(node_id, ref mask; witness_vote_matrix) {
-                        bitarray_clear(mask, total_nodes);
-                        mask[node_id]=true;
-                    }
-                    checkStrongSeeing(top_event, path_mask);
-                    strong=isMajority(seeing);
-                    if ( strong ) {
-                        auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
-                        top_event.strongly_seeing(previous_witness_event, strong_vote_mask);
-                        nodes[top_event.node_id].latest_witness_event=top_event;
-                        log("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
-                    }
-                    top_event.strongly_seeing_checked;
-                    if ( Event.callbacks ) {
-                        Event.callbacks.strong_vote(top_event, seeing);
-                    }
+                BitArray path_mask;
+                bitarray_clear(path_mask, total_nodes);
+                bitarray_clear(strong_vote_mask, total_nodes);
+                foreach(node_id, ref mask; witness_vote_matrix) {
+                    bitarray_clear(mask, total_nodes);
+                    mask[node_id]=true;
+                }
+                checkStrongSeeing(top_event, path_mask);
+                strong=isMajority(seeing);
+                if ( strong ) {
+                    auto previous_witness_event=nodes[top_event.node_id].latest_witness_event;
+                    top_event.strongly_seeing(previous_witness_event, strong_vote_mask);
+                    nodes[top_event.node_id].latest_witness_event=top_event;
+                    log("Strong votes=%d id=%d %s", seeing, top_event.id, cast(string)(top_event.payload));
+                }
+                top_event.strongly_seeing_checked;
+                if ( Event.callbacks ) {
+                    Event.callbacks.strong_vote(top_event, seeing);
                 }
             }
         }
+    }
 
     version(none)
     unittest { // strongSee

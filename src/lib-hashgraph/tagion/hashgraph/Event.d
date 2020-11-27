@@ -21,12 +21,9 @@ import tagion.Keywords;
 
 import tagion.basic.Logger;
 
-@safe
-package void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
-    if (!flag) {
-        throw new EventConsensusException(code, file, line);
-    }
-}
+
+/// check function used in the Event package
+private alias check=Check!EventConsensusException;
 
 // Returns the highest altitude
 @safe @nogc
@@ -274,7 +271,7 @@ class Round {
 
     @nogc
     static bool check_decided_round_limit() nothrow {
-         return _decided_count > total_limit;
+        return _decided_count > total_limit;
     }
 
     private void disconnect()
@@ -381,9 +378,9 @@ class Round {
 
     @nogc
     package void add(Event event) nothrow
-        in {
-            assert(_events[event.node_id] is null, "Evnet should only be added once");
-        }
+    in {
+        assert(_events[event.node_id] is null, "Evnet should only be added once");
+    }
     do {
         if ( _events[event.node_id] is null ) {
             _events_count++;
@@ -393,10 +390,10 @@ class Round {
 
     @nogc
     package void remove(const(Event) e) nothrow
-        in {
-            assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
-            assert(_events_count > 0, "No events exists in this round");
-        }
+    in {
+        assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
+        assert(_events_count > 0, "No events exists in this round");
+    }
     do {
         if ( _events[e.node_id] ) {
             _events_count--;
@@ -463,15 +460,15 @@ class Round {
 
     private void consensus_order() {
         import std.stdio;
-            writeln("consensus order");
+        writeln("consensus order");
         import std.algorithm : sort, SwapStrategy;
         import std.functional;
-                import tagion.hibon.HiBONJSON;
+        import tagion.hibon.HiBONJSON;
         scope Event[] famous_events=new Event[_events.length];
         BitArray unique_famous_mask;
         bitarray_change(unique_famous_mask, node_size);
         @trusted
-        ulong find_middel_time() {
+            ulong find_middel_time() {
             try{
                 writeln("finding middel time");
                 uint famous_node_id;
@@ -577,7 +574,7 @@ class Round {
         if ( Event.callbacks ) {
             Event.callbacks.epoch(round_received_events);
         }
-   }
+    }
 
     private void decide()
         in {
@@ -589,7 +586,7 @@ class Round {
     }
     do {
         @nogc
-        Round one_over(Round r=_rounds) nothrow pure {
+            Round one_over(Round r=_rounds) nothrow pure {
             if ( r._previous is this ) {
                 return r;
             }
@@ -1015,9 +1012,9 @@ class Event {
 
     @nogc
     inout(Round) round() inout pure nothrow
-    out(result) {
-        assert(result, "Round should be defined before it is used");
-    }
+        out(result) {
+            assert(result, "Round should be defined before it is used");
+        }
     do {
         return _round;
     }
@@ -1165,11 +1162,11 @@ class Event {
 
     @trusted
     package void strongly_seeing(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
-        in {
-            assert(!_strongly_seeing_checked);
-            assert(_witness_mask.length != 0);
-            assert(previous_witness_event);
-        }
+    in {
+        assert(!_strongly_seeing_checked);
+        assert(_witness_mask.length != 0);
+        assert(previous_witness_event);
+    }
     do {
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
@@ -1377,13 +1374,13 @@ class Event {
     }
 
     inout(Event) mother() inout pure nothrow
-    in {
-        assert(!_grounded, "This event is grounded");
-        if ( mother_hash ) {
-            assert(_mother);
-            assert( (altitude-_mother.altitude) == 1 );
+        in {
+            assert(!_grounded, "This event is grounded");
+            if ( mother_hash ) {
+                assert(_mother);
+                assert( (altitude-_mother.altitude) == 1 );
+            }
         }
-    }
     do {
         return _mother;
     }
@@ -1419,11 +1416,11 @@ class Event {
 
     @nogc
     inout(Event) father() inout pure nothrow
-    in {
-        if ( father_hash ) {
-            assert(_father);
+        in {
+            if ( father_hash ) {
+                assert(_father);
+            }
         }
-    }
     do {
         return _father;
     }
