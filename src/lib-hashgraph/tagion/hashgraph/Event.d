@@ -515,6 +515,7 @@ class Round {
         //
         // Clear round received counters
         //
+//        version(none)
         foreach(event; famous_events) {
             Event event_to_be_grounded;
             bool trigger;
@@ -533,6 +534,7 @@ class Round {
                 }
             }
             clear_round_counters(event._mother);
+            version(none)
             if ( event_to_be_grounded ) {
                 event_to_be_grounded._grounded=true;
                 if ( event_to_be_grounded._round._previous ) {
@@ -652,7 +654,7 @@ class Round {
     static Round lowest() pure nothrow {
         Round local_lowest(Round r=_rounds) {
             if ( r ) {
-                if ( r._decided && r._previous && (r._previous._previous is null ) ) {
+                if ( r._decided && r._previous && (r._previous._previous is null ) && (r._previous._previous._previous is null )) {
                     return r;
                 }
                 return local_lowest(r._previous);
@@ -663,7 +665,7 @@ class Round {
     }
 
     // Scrap the lowest Round
-    static void scrap(H)(H hashgraph) {
+    static void _scrap(H)(H hashgraph) {
         // Scrap the rounds and events below this
         void local_scrap(Round r) @trusted {
             foreach(node_id, ref e; r) {
@@ -675,6 +677,36 @@ class Round {
                         }
                         hashgraph.eliminate(e.fingerprint);
                         e.disconnect;
+                        e.destroy;
+                    }
+                }
+                scrap_event(e._mother);
+                if ( e ) {
+                    assert(e._mother is null);
+                }
+            }
+        }
+        Round _lowest=lowest;
+        if ( _lowest ) {
+            foreach(node_id, e; _lowest) {
+                e.disconnect(hashgraph);
+            }
+//            local_scrap(_lowest);
+        }
+    }
+
+    static void scrap(H)(H hashgraph) {
+        // Scrap the rounds and events below this
+        void local_scrap(Round r) @trusted {
+            foreach(node_id, ref e; r) {
+                void scrap_event(Event e) {
+                    if ( e ) {
+                        scrap_event(e._mother);
+                        if ( Event.callbacks ) {
+                            Event.callbacks.remove(e);
+                        }
+                        hashgraph.eliminate(e.fingerprint);
+                        e.disconnect(hashgraph);
                         e.destroy;
                     }
                 }
@@ -1292,7 +1324,7 @@ class Event {
 
 // Disconnect the Event from the graph
     @trusted
-    void disconnect() {
+    void _disconnect() {
         if ( _son ) {
             _son._father=null;
         }
@@ -1319,6 +1351,52 @@ class Event {
                 _round=null;
             }
         }
+    }
+
+/**
+   Disconnect the mother from this Event
+ */
+    @trusted
+    package void disconnect(H)(H hashgraph) {
+        version(none) {
+            if (_mother) {
+                if ( Event.callbacks ) {
+                    Event.callbacks.remove(_mother);
+                }
+                hashgraph.eliminate(_mother.fingerprint);
+                _mother.disconnect(hashgraph);
+            _mother.destroy;
+
+            }
+            _grounded=true;
+            _mother=null;
+        }
+    }
+
+    version(none)
+    @trusted
+    ~this() {
+        if ( _witness ) {
+            assert(_round.event(node_id) is this);
+            _round.remove(this);
+            _witness.destroy;
+            _witness=null;
+            if ( _round.empty ) {
+                if ( Event.callbacks ) {
+                    Event.callbacks.remove(_round);
+                }
+                _round.disconnect;
+                _round.destroy;
+                _round=null;
+            }
+        }
+        if (_son) {
+            _son._father=null;
+        }
+        if (_daughter) {
+            _daughter._mother=null;
+        }
+        _son=_daughter=null;
     }
 
     @nogc
