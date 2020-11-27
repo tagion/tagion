@@ -30,18 +30,19 @@ class HashGraph {
     private Round _rounds;
 
 
-    this() {
+    this() pure nothrow {
         _event_cache=new EventCache(null);
     }
 
 
     @safe
-    class Node {
+    static class Node {
         ExchangeState state;
         immutable uint node_id;
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
-        this(Pubkey pubkey, uint node_id) {
+
+        this(Pubkey pubkey, uint node_id) pure nothrow {
             this.pubkey=pubkey;
             this.node_id=node_id;
 //            this.discovery_time=time;
@@ -96,7 +97,7 @@ class HashGraph {
         // This is the altiude of the cache Event
         private int _cache_altitude;
 
-        void altitude(int a)
+        final void altitude(int a) nothrow
             in {
                 if ( _event ) {
                     assert(_event.daughter is null);
@@ -110,7 +111,7 @@ class HashGraph {
             _cache_altitude=highest(a, _cache_altitude);
         }
 
-        int altitude() pure const nothrow
+        final int altitude() pure const nothrow
             in {
                 assert(_event !is null, "This node has no events so the altitude is not set yet");
             }
@@ -118,26 +119,35 @@ class HashGraph {
             return _cache_altitude;
         }
 
-
-        int opApply(scope int delegate(const(Event) e) @safe dg) const
-            in {
-                if ( _event ) {
-                    assert(_event.daughter is null);
-                }
+        struct Range(bool also_ground) {
+            private Event current;
+            @trusted
+            this(const Event event) pure nothrow {
+                current=cast(Event)event;
             }
-        do {
-            int iterate(const(Event) e) @safe {
-                int result;
-                if ( e  ) {
-                    result=dg(e);
-                    if ( (result == 0) && (!e.grounded)) {
-                        iterate(e.mother);
+
+            @property pure nothrow {
+                bool empty() const {
+                    static if (also_ground) {
+                        return (current is null) || current.grounded;
+                    }
+                    else {
+                        return current is null;
                     }
                 }
-                return result;
 
+                const(Event) front() const {
+                    return current;
+                }
+
+                void popFront() {
+                    current = current.mother;
+                }
             }
-            return iterate(_event);
+        }
+
+        Range!false opSlice() const pure nothrow {
+            return Range!false(_event);
         }
 
         invariant {
@@ -145,9 +155,6 @@ class HashGraph {
                 assert(latest_witness_event.witness);
             }
         }
-
-
-
     }
 
     uint node_size() const pure nothrow {
@@ -161,12 +168,8 @@ class HashGraph {
 
 
 
-    NodeIterator!(const(Node)) nodeiterator() {
-        return NodeIterator!(const(Node))(this);
-    }
-
-    NodeIterator!Node opSlice() {
-        return NodeIterator!Node(this);
+    Range opSlice() const pure nothrow {
+        return Range(this);
     }
 
     bool isOnline(Pubkey pubkey) {
@@ -216,34 +219,29 @@ class HashGraph {
         log("");
     }
 
-    @safe
-    private struct NodeIterator(N) {
-        static assert(is(N : const(Node)), "N must be a Node type");
-        private HashGraph _owner;
-        this(HashGraph owner) {
-            _owner = owner;
+    struct Range {
+//        private HashGraph _owner;
+        alias NodeRange=typeof(const(HashGraph).nodes.byValue);
+        private NodeRange r;
+//        Result r;
+        @nogc
+        this(const HashGraph owner) nothrow pure {
+            r = owner.nodes.byValue;
         }
 
-        int opApply(scope int delegate(ref N node) @safe dg) {
-            int result;
-            foreach(ref N n; _owner.nodes) {
-                result=dg(n);
-                if ( result ) {
-                    break;
-                }
+        @nogc @property pure nothrow {
+            bool empty() {
+                return r.empty;
             }
-            return result;
-        }
 
-        int opApply(scope int delegate(size_t i, ref N node) @safe dg) {
-            int result;
-            foreach(i, ref N n; _owner.nodes) {
-                result=dg(i, n);
-                if ( result ) {
-                    break;
-                }
+            const(Node) front() {
+                return r.front;
             }
-            return result;
+
+            void popFront() {
+                r.popFront;
+            }
+
         }
     }
 
