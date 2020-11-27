@@ -272,6 +272,7 @@ class Round {
         bitarray_clear(_ground_mask, node_size);
     }
 
+    @nogc
     static bool check_decided_round_limit() nothrow {
          return _decided_count > total_limit;
     }
@@ -296,8 +297,8 @@ class Round {
     }
 
     // Used to make than an witness in the next round at the node_id has looked at this round
-    @trusted
-    package void looked_at(const uint node_id) {
+    @trusted @nogc
+    package void looked_at(const uint node_id) nothrow {
         if ( !_looked_at_mask[node_id] ) {
             _looked_at_mask[node_id]=true;
             _looked_at_count++;
@@ -305,14 +306,17 @@ class Round {
     }
 
     // Checked if all active nodes/events in this round has beend looked at
+    @nogc
     bool seeing_completed() const pure nothrow {
         return _looked_at_count == node_size;
     }
 
+    @nogc
     ref const(BitArray) looked_at_mask() pure const nothrow {
         return _looked_at_mask;
     }
 
+    @nogc
     uint looked_at_count() pure const nothrow {
         return _looked_at_count;
     }
@@ -330,7 +334,7 @@ class Round {
             assert(_rounds, "Seed round has to exists before the operation is used");
         }
     do {
-        Round find_round(Round r) {
+        Round find_round(Round r) pure nothrow {
             if ( r ) {
                 if ( r.number == round_number ) {
                     return r;
@@ -375,7 +379,8 @@ class Round {
         return result;
     }
 
-    package void add(Event event)
+    @nogc
+    package void add(Event event) nothrow
         in {
             assert(_events[event.node_id] is null, "Evnet should only be added once");
         }
@@ -386,7 +391,8 @@ class Round {
         }
     }
 
-    package void remove(const(Event) e)
+    @nogc
+    package void remove(const(Event) e) nothrow
         in {
             assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
             assert(_events_count > 0, "No events exists in this round");
@@ -398,23 +404,26 @@ class Round {
         }
     }
 
+    @nogc
     bool empty() pure const nothrow {
         return _events_count == 0;
     }
 
     // Return true if all witness in this round has been created
+    @nogc
     bool completed() pure const nothrow {
         return _events_count == node_size;
     }
 
+    @nogc
     inout(Event) event(const uint node_id) pure inout {
         return _events[node_id];
     }
 
     // Whole round decided
+    @nogc
     bool decided() pure const nothrow {
         return _decided;
-//        import std.stdio;
     }
 
     int coin_round_distance() const nothrow {
@@ -436,12 +445,13 @@ class Round {
         }
     }
 
-    @trusted
-    private bool ground(const uint node_id, ref const(BitArray) rhs) {
+    @trusted @nogc
+    private bool ground(const uint node_id, ref const(BitArray) rhs) nothrow {
         _ground_mask[node_id]=true;
         return rhs == _ground_mask;
     }
 
+    @nogc
     ref const(BitArray) ground_mask() pure const nothrow {
         return _ground_mask;
     }
@@ -496,7 +506,8 @@ class Round {
                     writeln("calc successfully");
                 }
                 return famous_events[middel_time_index].eventbody.time;
-            }catch(Exception e){
+            }
+            catch(Exception e){
                 writeln("exc: ", e.msg);
                 throw e;
             }
@@ -577,14 +588,15 @@ class Round {
         assert(_undecided._previous._decided, "Previous round should be decided");
     }
     do {
-        Round one_over(Round r=_rounds) {
+        @nogc
+        Round one_over(Round r=_rounds) nothrow pure {
             if ( r._previous is this ) {
                 return r;
             }
             return one_over(r._previous);
         }
-        _undecided=one_over;
-        _decided=true;
+        _undecided = one_over;
+        _decided = true;
         _decided_count++;
         if ( Event.callbacks ) {
             foreach(seen_node_id, e; this) {
@@ -618,7 +630,8 @@ class Round {
     }
 
     // Find collecting round from which the famous votes is collected from the previous round
-    package static Round undecided_round() {
+    @nogc
+    package static Round undecided_round() nothrow {
         if ( !_undecided ) {
             Round search(Round r=_rounds) @safe {
                 if ( r && r._previous && r._previous._decided ) {
@@ -627,23 +640,25 @@ class Round {
                 }
                 return search(r._previous);
             }
-            _undecided=search();
+            _undecided = search();
         }
         return _undecided;
     }
 
-    Round previous() pure nothrow {
+    @nogc
+    inout(Round) previous() inout pure nothrow {
         return _previous;
     }
 
     // Find the lowest decide round
-    static Round lowest() {
-        Round local_lowest(Round r=_rounds, string indent="  ") {
+    @nogc
+    static Round lowest() pure nothrow {
+        Round local_lowest(Round r=_rounds) {
             if ( r ) {
                 if ( r._decided && r._previous && (r._previous._previous is null ) ) {
                     return r;
                 }
-                return local_lowest(r._previous, indent~"  ");
+                return local_lowest(r._previous);
             }
             return null;
         }
@@ -683,7 +698,7 @@ class Round {
     }
 
     invariant {
-        void check_round_order(const Round r, const Round p) {
+        void check_round_order(const Round r, const Round p) pure {
             if ( ( r !is null) && ( p !is null ) ) {
                 assert( (r.number-p.number) == 1, "Consecutive round-numbers has to increase by one");
                 if ( r._decided ) {
@@ -726,7 +741,7 @@ class Event {
         private uint     _round_seen_count;
         private uint     _famous_votes;
         @trusted
-        this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
+        this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask) pure nothrow
         in {
             assert(strong_seeing_mask.length > 0);
             assert(owner_event);
@@ -738,6 +753,7 @@ class Event {
             _round_seen_mask.length=node_size;
         }
 
+        @nogc
         uint node_size() pure const nothrow {
             return cast(uint)_strong_seeing_mask.length;
         }
@@ -747,6 +763,7 @@ class Event {
             return _previous_witness_event;
         }
 
+        @nogc
         ref const(BitArray) strong_seeing_mask() pure const nothrow {
             return _strong_seeing_mask;
         }
@@ -789,6 +806,7 @@ class Event {
         }
 
 
+        @nogc
         ref const(BitArray) round_seen_mask() pure const nothrow {
             return _round_seen_mask;
         }
@@ -824,10 +842,12 @@ class Event {
             return _famous_decided;
         }
 
+        @nogc
         uint famous_votes() pure const nothrow {
             return _famous_votes;
         }
 
+        @nogc
         bool famous() pure const nothrow {
             return isMajority(_famous_votes, node_size);
         }
@@ -842,6 +862,7 @@ class Event {
 //    static File* fout;
     immutable(ubyte[]) signature;
     immutable(Buffer) pubkey;
+    @nogc
     immutable(Pubkey) channel() pure const nothrow {
         return Pubkey(pubkey);
     }
@@ -849,7 +870,8 @@ class Event {
     // Recursive markes
     private uint _visit;
     package static uint visit_marker;
-    private bool visit() {
+    @nogc
+    private bool visit() nothrow {
         scope(exit) {
             _visit = visit_marker;
         }
@@ -876,6 +898,7 @@ class Event {
     private uint _witness_votes;
     private BitArray _witness_mask;
 
+    @nogc
     private uint node_size() pure const nothrow {
         return cast(uint)witness_mask.length;
     }
@@ -887,7 +910,9 @@ class Event {
     private bool _forked;
     immutable uint id;
     private static uint id_count;
-    private static immutable(uint) next_id() {
+
+    @nogc
+    private static immutable(uint) next_id() nothrow {
         if ( id_count == id_count.max ) {
             id_count = 1;
         }
@@ -897,7 +922,7 @@ class Event {
         return id_count;
     }
 
-    HiBON toHiBON() const {
+    HiBON toHiBON() const{
         auto hibon=new HiBON;
         foreach(i, m; this.tupleof) {
             enum member_name=basename!(this.tupleof[i]);
@@ -919,7 +944,8 @@ class Event {
         return hibon;
     }
 
-    static int timeCmp(const(Event) a, const(Event) b) {
+    @nogc
+    static int timeCmp(const(Event) a, const(Event) b) pure nothrow {
         immutable diff=cast(long)(b.eventbody.time) - cast(long)(a.eventbody.time);
         if ( diff < 0 ) {
             return -1;
@@ -937,7 +963,8 @@ class Event {
         assert(0, "This should be improbable to have two equal signatures");
     }
 
-    int opCmp(const(Event) rhs) {
+    @nogc
+    int opCmp(const(Event) rhs) const pure nothrow {
         immutable diff=rhs._received_order - _received_order;
         if ( diff < 0 ) {
             return -1;
@@ -958,7 +985,7 @@ class Event {
     private bool check_if_round_was_received(const uint number_of_famous, Round received) {
         if ( !_round_received ) {
             _round_received_count++;
-            if ( _round_received_count==number_of_famous ) {
+            if ( _round_received_count == number_of_famous ) {
                 _round_received=received;
                 if ( callbacks ) {
                     callbacks.round_received(this);
@@ -969,21 +996,24 @@ class Event {
         return false;
     }
 
-
-    private void clear_round_received_count() {
+    @nogc
+    private void clear_round_received_count() pure nothrow {
         if ( !_round_received ) {
             _round_received_count=0;
         }
     }
 
+    @nogc
     const(Round) round_received() pure const nothrow {
         return _round_received;
     }
 
+    @nogc
     bool isFront() pure const nothrow {
         return _daughter is null;
     }
 
+    @nogc
     inout(Round) round() inout pure nothrow
     out(result) {
         assert(result, "Round should be defined before it is used");
@@ -992,6 +1022,7 @@ class Event {
         return _round;
     }
 
+    @nogc
     bool hasRound() const pure nothrow {
         return (_round !is null);
     }
@@ -1019,15 +1050,7 @@ class Event {
         }
     }
 
-    // package void received_round(Round r)
-    // in {
-    //     assert(r !is null, "Received round can not be null");
-    //     assert(_round_received is null, "Received round has already been set");
-    // }
-    // do {
-    //     _round_received=r;
-    // }
-
+    @nogc
     const(Round) round() pure const nothrow
     out(result) {
         assert(result, "Round must be set before this function is called");
@@ -1036,6 +1059,7 @@ class Event {
         return _round;
     }
 
+    @nogc
     Round round() nothrow
         in {
             if ( motherExists ) {
@@ -1057,6 +1081,7 @@ class Event {
         return _witness_votes;
     }
 
+    @nogc
     uint witness_votes() pure const nothrow
         in {
             assert(is_witness_mask_checked);
@@ -1065,6 +1090,7 @@ class Event {
         return _witness_votes;
     }
 
+    @nogc
     bool is_witness_mask_checked() pure const nothrow {
         return _witness_mask.length != 0;
     }
@@ -1117,6 +1143,8 @@ class Event {
         return check_witness_mask(this);
     }
 
+
+    @nogc
     ref const(BitArray) witness_mask() pure const nothrow
         in {
             assert(is_witness_mask_checked);
@@ -1165,11 +1193,13 @@ class Event {
 
     }
 
+    @nogc
     bool strongly_seeing() const pure nothrow {
         return _witness !is null;
     }
 
-    void strongly_seeing_checked()
+    @nogc
+    void strongly_seeing_checked() nothrow
         in {
             assert(!_strongly_seeing_checked);
         }
@@ -1177,6 +1207,7 @@ class Event {
         _strongly_seeing_checked=true;
     }
 
+    @nogc
     bool is_strongly_seeing_checked() const pure nothrow {
         return _strongly_seeing_checked;
     }
@@ -1221,6 +1252,7 @@ class Event {
     }
 
 
+    @nogc
     bool forked() const pure nothrow {
         return _forked;
     }
@@ -1306,6 +1338,7 @@ class Event {
         return result;
     }
 
+    @nogc
     int received_order_max(const(Event) e, const bool increase=false) pure const nothrow {
         int result=_received_order;
         if ( e && ( ( _received_order - e._received_order ) < 0 ) ) {
@@ -1320,6 +1353,7 @@ class Event {
         return result;
     }
 
+    @nogc
     int received_order() pure const nothrow {
         return _received_order;
     }
@@ -1383,6 +1417,7 @@ class Event {
         return result;
     }
 
+    @nogc
     inout(Event) father() inout pure nothrow
     in {
         if ( father_hash ) {
@@ -1406,7 +1441,7 @@ class Event {
         }
     do {
         if ( _daughter && (_daughter !is c) ) {
-            forked=true;
+            forked = true;
         }
         else {
             _daughter=c;
@@ -1440,7 +1475,8 @@ class Event {
         }
     }
 
-    void loaded()
+    @nogc
+    void loaded() nothrow
         in {
             assert(!_loaded, "Event can only be loaded once");
         }
@@ -1448,27 +1484,33 @@ class Event {
         _loaded=true;
     }
 
+    @nogc
     bool is_loaded() const pure nothrow {
         return _loaded;
     }
 
+    @nogc
     immutable(ubyte[]) father_hash() const pure nothrow {
         return event_body.father;
     }
 
+    @nogc
     immutable(ubyte[]) mother_hash() const pure nothrow {
         return event_body.mother;
     }
 
+    @nogc
     immutable(ubyte[]) payload() const pure nothrow {
         return event_body.payload;
     }
 
-    ref immutable(EventBody) eventbody() const pure {
+    @nogc
+    ref immutable(EventBody) eventbody() const pure nothrow {
         return event_body;
     }
 
 //True if Event contains a payload or is the initial Event of its creator
+    @nogc
     bool containPayload() const pure nothrow {
         return payload.length != 0;
     }
@@ -1482,6 +1524,7 @@ class Event {
         return event_body.mother !is null;
     }
 
+    @nogc
     bool fatherExists() const pure nothrow {
         return event_body.father !is null;
     }
@@ -1496,6 +1539,7 @@ class Event {
         return !motherExists;
     }
 
+    @nogc
     immutable(Buffer) fingerprint() const pure nothrow
     in {
         assert(_fingerprint, "Hash has not been calculated");

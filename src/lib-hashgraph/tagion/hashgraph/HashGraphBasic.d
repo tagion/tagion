@@ -9,7 +9,7 @@ enum minimum_nodes = 3;
  + Returns:
  +     Returns `true` if the votes are more thna 2/3
  +/
-@safe
+@safe @nogc
 bool isMajority(const uint voting, const uint node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3*voting > 2*node_size);
 }
