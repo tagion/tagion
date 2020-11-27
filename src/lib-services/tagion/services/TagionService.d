@@ -13,7 +13,7 @@ import tagion.hashgraph.HashGraph;
 import tagion.basic.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.basic.TagionExceptions : TagionException;
+import tagion.basic.TagionExceptions : TagionException, taskException;
 
 
 import tagion.services.ScriptCallbacks;
@@ -70,6 +70,10 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     Tid transaction_socket_tid;
     Tid transcript_tid;
 
+    // scope(failure) {
+    //     log.fatal("Unexpected Termination");
+    // }
+
     scope(exit) {
         log("!!!==========!!!!!! Existing %s", opts.node_name);
 
@@ -92,6 +96,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         if ( net.callbacks ) {
             net.callbacks.exiting(hashgraph.getNode(net.pubkey));
         }
+
 
         // version(none)
         if ( transaction_socket_tid != transaction_socket_tid.init ) {
@@ -299,7 +304,6 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         with(Control) switch(ctrl) {
             case STOP:
                 stop=true;
-                writefln("##### Stop %s", opts.node_name);
                 log("##### Stop %s", opts.node_name);
                 break;
             default:
@@ -315,8 +319,10 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         ownerTid.send(e);
     }
 
-    void throwable(immutable(Throwable) t) {
+    void error(immutable(Error) t) {
+        log.fatal("%s", t);
         ownerTid.send(t);
+        stop=true;
     }
 
     static if (has_random_seed) {
@@ -335,48 +341,55 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
     log("SEQUENTIAL=%s", opts.sequential);
     ownerTid.send(Control.LIVE);
-    while(!stop) {
-        if ( opts.sequential ) {
-            immutable message_received=receiveTimeout(
-                opts.timeout.msecs,
-                &receive_payload,
-                &controller,
-                &sequential,
-                &receive_buffer,
-                &tagionexception,
-                &exception,
-                &throwable,
+    try {
+        while(!stop) {
+            if ( opts.sequential ) {
+                immutable message_received=receiveTimeout(
+                    opts.timeout.msecs,
+                    &receive_payload,
+                    &controller,
+                    &sequential,
+                    &receive_buffer,
+                    &tagionexception,
+                    &exception,
+                    &error,
 
-                );
-            if ( !message_received ) {
-                log("TIME OUT");
-                timeout_count++;
-                if ( !net.queue.empty ) {
-                    receive_buffer(net.queue.read);
+                    );
+                if ( !message_received ) {
+                    log("TIME OUT");
+                    timeout_count++;
+                    if ( !net.queue.empty ) {
+                        receive_buffer(net.queue.read);
+                    }
+                }
+            }
+            else {
+                immutable message_received=receiveTimeout(
+                    opts.timeout.msecs,
+                    &receive_payload,
+                    &controller,
+                    // &sequential,
+                    &receive_buffer,
+                    &tagionexception,
+                    &exception,
+                    &error,
+                    );
+                if ( !message_received ) {
+                    log("TIME OUT");
+                    timeout_count++;
+                    net.time=Clock.currTime.toUnixTime!long;
+                    if ( !net.queue.empty ) {
+                        receive_buffer(net.queue.read);
+                    }
+                    next_mother(empty_payload);
                 }
             }
         }
-        else {
-            immutable message_received=receiveTimeout(
-                opts.timeout.msecs,
-                &receive_payload,
-                &controller,
-                // &sequential,
-                &receive_buffer,
-                &tagionexception,
-                &exception,
-                &throwable,
-                );
-            if ( !message_received ) {
-                log("TIME OUT");
-                writefln("TIME OUT %d", opts.node_id);
-                timeout_count++;
-                net.time=Clock.currTime.toUnixTime!long;
-                if ( !net.queue.empty ) {
-                    receive_buffer(net.queue.read);
-                }
-                next_mother(empty_payload);
-            }
-        }
+    }
+    catch (Error e) {
+        // log.error(e.toString);
+        log.fatal("Unexpected Termination");
+        ownerTid.send(e.taskException);
+//        error(cast(immutable)e.taskException);
     }
 }
