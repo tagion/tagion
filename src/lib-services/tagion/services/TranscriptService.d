@@ -58,7 +58,8 @@ void transcriptServiceTask(immutable(Options) opts) {
         Tid dart_tid = locate(opts.dart.task_name);
         if(dart_tid != Tid.init){
             dart_tid.send(cast(immutable) recorder); //TODO: remove blackhole
-        }else{
+        }
+        else{
             log("Cannot locate Dart service");
         }
     }
@@ -106,7 +107,8 @@ void transcriptServiceTask(immutable(Options) opts) {
                             const bill_doc=Document(bill.toHiBON.serialize);
                             recorder.add(bill_doc);
                         }
-                    }else{
+                    }
+                    else{
                         invalid = true;
                     }
                 }
@@ -117,14 +119,16 @@ void transcriptServiceTask(immutable(Options) opts) {
                 modifyDART(recorder);
                 // import tagion.utils.Miscellaneous: cutHex;
                 // log("Bullseye %s", bullseye.cutHex);
-            }else{
+            }
+            else{
                 log("Empty epoch");
             }
-        }catch(Exception e){
-            log("Epoch exception:%s ", e);
+        }
+        catch(Exception e){
+            log.warning("Epoch exception:%s ", e);
         }
         catch(Throwable e){
-            log("Epoch throwable:%s ", e);
+            log.warning("Epoch throwable:%s ", e);
         }
 
     }
@@ -170,8 +174,6 @@ void transcriptServiceTask(immutable(Options) opts) {
         ownerTid.send(t);
     }
 
-
-
     uint counter;
 
     scope(exit) {
@@ -187,33 +189,10 @@ void transcriptServiceTask(immutable(Options) opts) {
         receive(
             &receive_epoch,
             &receive_ebody,
-            //&receive_payload,
-            // &epoch,
             &controller,
             &tagionexception,
             &exception,
             &throwable,
-            // (Buffer response, bool flag){
-            //     auto receiver = empty_hirpc.receive(Document(response));
-            //     auto bullseye = receiver.params[DARTFile.Params.bullseye].get!Buffer;
-
-            //     import tagion.utils.Miscellaneous: cutHex;
-            //     log("Bullseye %s", bullseye.cutHex);
-            // }
             );
-        // immutable message_received=receiveTimeout(delay.msecs, &controller);
-        // log("message_received=%s", message_received);
-        // if (!message_received) {
-        //     // Send pseudo payload
-        //     counter++;
-        //     auto hibon=new HiBON;
-        //     hibon["transaction"]=task_name;
-        //     hibon["count"]=counter;
-
-        //     // Sends the transaction script to the node
-        //     log("Scripting-Api %s send counter=%s", task_name, counter);
-        //     Payload payload=hibon.serialize;
-        //     node_tid.send(payload);
-        // }
     }
 }

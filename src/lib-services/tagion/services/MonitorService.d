@@ -94,19 +94,25 @@ void monitorServiceTask(immutable(Options) opts) {
                     listener_socket.broadcast(doc);
                 },
                 (immutable(TagionException) e) {
-                    log.error(e.msg);
+                    // log.error(e.msg);
                     stop=true;
                     ownerTid.send(e);
                     //throw e;
                 },
+                (immutable(TaskException) t) {
+                    // log.fatal(e.msg);
+                    stop=true;
+                    ownerTid.send(t);
+                    //throw e;
+                },
                 (immutable(Exception) e) {
-                    log.fatal(e.msg);
+                    // log.fatal(e.msg);
                     stop=true;
                     ownerTid.send(e);
                     //throw e;
                 },
                 (immutable(Throwable) t) {
-                    log.fatal(t.msg);
+                    // log.fatal(t.msg);
                     stop=true;
                     ownerTid.send(t);
                     // throw t;

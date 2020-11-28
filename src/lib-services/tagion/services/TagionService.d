@@ -320,7 +320,8 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     }
 
     void error(immutable(Error) t) {
-        log.fatal("%s", t);
+//        log(t);
+        log.fatal("-->%s", t);
         ownerTid.send(t);
         stop=true;
     }

@@ -50,8 +50,9 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
             params["address"] = node_address;
             shared_storage.append(params.serialize);
             shared_storage.append("/n");
-        }catch(Exception e){
-            log("Exception: %s", e.msg);
+        }
+        catch(Exception e){
+            log.error("Exception: %s", e.msg);
             stop = true;
         }
     }
@@ -74,8 +75,9 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
                     }
                 }
             }
-        }catch(Exception e){
-            log("Exception: %s", e.msg);
+        }
+        catch(Exception e){
+            log.error("Exception: %s", e.msg);
             stop = true;
         }
     }
@@ -107,9 +109,9 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
                 }
             }
             log("initialized %d", node_addresses.length);
-        }catch(Exception e){
-            writeln("Er:", e.msg);
-            log.fatal(e.msg);
+        }
+        catch(Exception e){
+            log.error("Exception %s", e.msg);
         }
     }
 
@@ -138,7 +140,10 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
                 ownerTid.send(address_book);
             }
         }
-    }catch(Exception e){
+    }
+    catch(Exception e){
         log("Exception: %s", e.msg);
+        import tagion.basic.TagionExceptions : taskException;
+        ownerTid.send(taskException(e));
     }
 }

@@ -333,15 +333,17 @@ do {
                 },
                 (immutable(TagionException) e) {
                     stop=true;
-                    const print_e=e;
-                    print_e.toString((buf) {log.fatal(buf.idup);});
-                    stderr.writeln(e);
+                    log(e);
+                    // const print_e=e;
+                    // print_e.toString((buf) {log.fatal(buf.idup);});
+                    // stderr.writeln(e);
                 },
                 (immutable(TaskException) t) {
                     stop=true;
-                    log.fatal("From tasj %s", t.task_name);
-                    const print_e=t.throwable;
-                    print_e.toString((buf) {log.fatal(buf.idup);});
+                    log(t);
+                    // log.fatal("From tasj %s", t.task_name);
+                    // const print_e=t.throwable;
+                    // print_e.toString((buf) {log.fatal(buf.idup);});
                 },
                 (immutable(Exception) e) {
                     stop=true;

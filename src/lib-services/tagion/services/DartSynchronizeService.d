@@ -337,15 +337,15 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                 stop=true;
                 ownerTid.send(e.taskException);
             }
-            catch(Exception e){
-                log.fatal(e.msg);
-                stop=true;
-                ownerTid.send(cast(immutable)e);
-            }
+            // catch(Exception e){
+            //     log.fatal(e.msg);
+            //     stop=true;
+            //     ownerTid.send(cast(immutable)e);
+            // }
             catch(Throwable t) {
                 log.fatal(t.msg);
                 stop=true;
-                ownerTid.send(cast(immutable)t);
+                ownerTid.send(t.taskException);
             }
         }
     }
@@ -353,10 +353,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
         log.fatal(e.msg);
         ownerTid.send(e.taskException);
     }
-    catch(Exception e){
-        log.fatal(e.msg);
-        ownerTid.send(cast(immutable)e);
-    }
+    // catch(Exception e){
+    //     log.fatal(e.msg);
+    //     ownerTid.send(cast(immutable)e.taskException);
+    // }
     catch(Throwable e){
         log.fatal(e.msg);
         ownerTid.send(cast(immutable)e);

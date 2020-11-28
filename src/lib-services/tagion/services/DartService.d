@@ -284,6 +284,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         }
     }
     catch(Exception e){
+
         writefln("EXCEPTION: %s", e);
         pragma(msg, "fixme(alex): Why doesn't this send the exception to the owner");
     }
