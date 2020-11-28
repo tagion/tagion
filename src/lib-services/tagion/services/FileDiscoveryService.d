@@ -2,33 +2,37 @@ module tagion.services.FileDiscoveryService;
 
 import core.time;
 import std.datetime;
-import tagion.Options;
-import std.typecons;
-import std.conv;
-import tagion.basic.Logger;
-import std.concurrency;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
-import std.stdio;
-//import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
-
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
 import std.file;
 import std.file: fwrite = write;
 import std.array;
+import std.typecons;
+import std.conv;
+import std.concurrency;
+//import std.stdio;
 
-void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options) opts){  //TODO: for test
+
+import tagion.Options;
+import tagion.basic.Logger;
+import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.basic.TagionExceptions;
+
+void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options) opts) {  //TODO: for test
+    bool stop = false;
     scope(exit){
         log("exit");
-        ownerTid.prioritySend(Control.END);
+        if (stop) {
+            ownerTid.prioritySend(Control.END);
+        }
     }
     string shared_storage = opts.path_to_shared_info;
 
-    bool checkTimestamp(SysTime time, Duration duration){
+    bool checkTimestamp(SysTime time, Duration duration) nothrow {
         return (Clock.currTime - time) > duration;
     }
-    void updateTimestamp(ref SysTime time){
+    void updateTimestamp(ref SysTime time) nothrow {
         time = Clock.currTime;
     }
 
@@ -39,10 +43,10 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
     SysTime mdns_start_timestamp;
     updateTimestamp(mdns_start_timestamp);
 
-    auto stop = false;
+
     NodeAddress[Pubkey] node_addresses;
 
-    void recordOwnInfo(){
+    void recordOwnInfo() nothrow {
         try{
             log("record own info");
             auto params = new HiBON;
@@ -57,10 +61,12 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
         }
     }
 
-    void eraseOwnInfo(){
+    void eraseOwnInfo() nothrow {
         try{
             log("erase");
             auto read_buff = cast(ubyte[]) shared_storage.read;
+            pragma(msg, "fixme(alex): This part could break, because you use /n to split");
+            pragma(msg, "fixme(alex): Use the The Document length to find the boundries instead");
             auto splited_read_buff = read_buff.split("/n");
             log("%d", splited_read_buff.length);
             foreach(node_info_buff; splited_read_buff){
@@ -86,7 +92,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
         eraseOwnInfo();
     }
 
-    void initialize(){
+    void initialize() nothrow {
         log("initializing");
         try{
             auto read_buff = cast(ubyte[]) shared_storage.read;
@@ -141,9 +147,14 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
             }
         }
     }
-    catch(Exception e){
-        log("Exception: %s", e.msg);
-        import tagion.basic.TagionExceptions : taskException;
-        ownerTid.send(taskException(e));
+    catch(TagionException e){
+        immutable task_e=e.taskException;
+        log(task_e);
+        ownerTid.send(task_e);
+    }
+    catch(Throwable t){
+        immutable task_e=t.taskException;
+        log(task_e);
+        ownerTid.send(task_e);
     }
 }

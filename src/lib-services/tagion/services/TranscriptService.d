@@ -53,7 +53,7 @@ void transcriptServiceTask(immutable(Options) opts) {
         }
     }
 
-    void modifyDART(DARTFile.Recorder recorder){
+    void modifyDART(DARTFile.Recorder recorder) {
         // auto sender = DART.dartModify(recorder, empty_hirpc);
         Tid dart_tid = locate(opts.dart.task_name);
         if(dart_tid != Tid.init){
@@ -63,7 +63,8 @@ void transcriptServiceTask(immutable(Options) opts) {
             log("Cannot locate Dart service");
         }
     }
-    void receive_epoch(Buffer payloads_buff) {
+
+    void receive_epoch(Buffer payloads_buff)  nothrow {
         try{
             // pragma(msg, "transcript: ", typeof(payloads));
             log("Received epoch: len:%d", payloads_buff.length);
@@ -133,7 +134,7 @@ void transcriptServiceTask(immutable(Options) opts) {
 
     }
 
-    void receive_ebody(immutable(EventBody) ebody) {
+    void receive_ebody(immutable(EventBody) ebody) nothrow  {
         try {
             log("Received Ebody %d", ebody.payload.length);
             const doc=Document(ebody.payload);
@@ -154,7 +155,8 @@ void transcriptServiceTask(immutable(Options) opts) {
         }
         catch(TagionException e){
             log("TagionException: %s", e.msg);
-        }catch(Exception e){
+        }
+        catch(Exception e){
             log("Exception: %s", e.msg);
         }
         catch(Throwable e){

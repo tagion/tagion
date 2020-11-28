@@ -55,6 +55,7 @@ void mdnsDiscoveryService(shared p2plib.Node node, immutable(Options) opts){  //
     ownerTid.send(Control.LIVE);
     try{
         do{
+            pragma(msg, "fixme(alex); 500.msecs shoud be an option parameter");
             receiveTimeout(
                 500.msecs,
                 (Response!(ControlCode.Control_PeerDiscovered) response) {

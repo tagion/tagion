@@ -210,9 +210,11 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     }
                     if(message_doc.hasElement(Keywords.method) && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
                         serverHandler();
-                    }else if(!message_doc.hasElement(Keywords.method)&& state.checkState(DartSynchronizeState.SYNCHRONIZING)){
+                    }
+                    else if(!message_doc.hasElement(Keywords.method)&& state.checkState(DartSynchronizeState.SYNCHRONIZING)){
                         syncPool.setResponse(resp);
-                    }else{
+                    }
+                    else{
                         closeConnection();
                     }
                 },
@@ -226,7 +228,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         if(tid != Tid.init){
                             log("sending response back, %s", taskName);
                             send(tid, result);
-                        }else{
+                        }
+                        else{
                             log("couldn't locate task: %s", taskName);
                         }
                     }
@@ -237,7 +240,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         auto request = dart(receiver, false);
                         auto tosend = empty_hirpc.toHiBON(request).serialize;
                         sendResult(tosend);
-                    }else{
+                    }
+                    else{
                         // auto epoch = receiver.params["epoch"].get!int;
                         auto owners_doc = receiver.params["owners"].get!Document;
                         Buffer[] owners;
@@ -275,12 +279,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     // log("node addresses %s", node_addrses);
                 },
                 (immutable(Exception) e) {
-                    log.fatal(e.msg);
+                    //log.fatal(e.msg);
                     stop=true;
                     ownerTid.send(e);
                 },
                 (immutable(Throwable) t) {
-                    log.fatal(t.msg);
+                    //log.fatal(t.msg);
                     stop=true;
                     ownerTid.send(t);
                 }
@@ -309,7 +313,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                 if(state.checkState(DartSynchronizeState.REPLAYING_JOURNALS)){
                     if(!journalReplayFiber.isOver){
                         journalReplayFiber.execute;
-                    }else{
+                    }
+                    else{
                         journalReplayFiber.clear();
                         // log("Start replay recorders with: %d recorders", recorders.length);
                         connectionPool.closeAll();
@@ -319,7 +324,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                 if(state.checkState(DartSynchronizeState.REPLAYING_RECORDERS)){
                     if(!recorderReplayFiber.isOver){
                         recorderReplayFiber.execute;
-                    }else{
+                    }
+                    else{
                         subscription.stop();
                         recorderReplayFiber.clear();
                         dart.dump(true);
@@ -333,9 +339,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                 }
             }
             catch(TagionException e){
-                log.fatal(e.msg);
+                immutable task_e = e.taskException;
+                log(task_e);
                 stop=true;
-                ownerTid.send(e.taskException);
+                ownerTid.send(task_e);
             }
             // catch(Exception e){
             //     log.fatal(e.msg);
@@ -343,23 +350,26 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
             //     ownerTid.send(cast(immutable)e);
             // }
             catch(Throwable t) {
-                log.fatal(t.msg);
+                immutable task_e = t.taskException;
+                log(task_e);
                 stop=true;
-                ownerTid.send(t.taskException);
+                ownerTid.send(task_e);
             }
         }
     }
     catch(TagionException e){
-        log.fatal(e.msg);
-        ownerTid.send(e.taskException);
+        immutable task_e=e.taskException;
+        log(task_e);
+        ownerTid.send(task_e);
     }
     // catch(Exception e){
     //     log.fatal(e.msg);
     //     ownerTid.send(cast(immutable)e.taskException);
     // }
     catch(Throwable e){
-        log.fatal(e.msg);
-        ownerTid.send(cast(immutable)e);
+        immutable task_e=e.taskException;
+        log(task_e);
+        ownerTid.send(task_e);
     }
 }
 
