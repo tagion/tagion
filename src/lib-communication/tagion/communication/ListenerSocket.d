@@ -1,6 +1,6 @@
 module tagion.communication.ListenerSocket;
 
-import std.stdio;
+//import std.stdio;
 import std.socket;
 import std.concurrency;
 import std.format;
@@ -10,7 +10,7 @@ import std.conv : to;
 
 
 import tagion.basic.Basic : Buffer;
-import tagion.basic.TagionExceptions : TagionException, Check;
+import tagion.basic.TagionExceptions : TagionException, Check, taskException;
 import tagion.Options : Options, setOptions, options;
 import tagion.hibon.Document;
 import tagion.basic.Logger;
@@ -48,6 +48,7 @@ struct ListenerSocket {
         }
         listen_task_name=[task_name, port.to!string].join(opts.separator);
 
+
 //        log.label(task_name);
 //        log.register(task_name);
 //        this.ownerTid=locate(task_name);
@@ -55,7 +56,7 @@ struct ListenerSocket {
 
     void stop() {
         if (!stop_listener) {
-            writefln("STOP %d !!!!!!!", port);
+            log("STOP %d !!!!!!!", port);
             stop_listener=true;
             if ( listerner_thread!is null ) {
                 log("STOP listener socket. %d", port);
@@ -249,23 +250,23 @@ struct ListenerSocket {
         log.task_name=listen_task_name; //format("%s_%d", task_name, port);
         log("Listerner opened");
 
-        writefln("!!!!!!!!!!!!!! Start %s for %s", clients is null, options.node_name);
+//        writefln("!!!!!!!!!!!!!! Start %s for %s", clients is null, options.node_name);
         try {
             auto listener = new TcpSocket;
-            writefln("Open Net %s:%s", address, port);
+            log("Open Net %s:%s", address, port);
             auto add = new InternetAddress(address, port);
             listener.bind(add);
             pragma(msg, "FixMe(cbr): why is this value 10");
             listener.listen(10);
 
-            writefln("Listening for backend connection on %s:%s", address, port);
+            //writefln("Listening for backend connection on %s:%s", address, port);
 
             auto socketSet = new SocketSet(1);
 
             scope(exit) {
-                writeln("In scope exit listener socket.");
+                log("In scope exit listener socket.");
                 if ( listener !is null ) {
-                    writefln("Close listener socket %d", port);
+                    log("Close listener socket %d", port);
                     socketSet.reset;
                     close;
                     listener.close;
@@ -280,13 +281,14 @@ struct ListenerSocket {
                 if ( socketSet.isSet(listener) ) {
                     try {
                         auto client = listener.accept;
-                        writefln("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
+                        log("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client.blocking);
                         assert(client.isAlive);
                         assert(listener.isAlive);
                         this.add(client);
                     }
                     catch (SocketAcceptException ex) {
-                        writeln(ex);
+                        log.error("%s", ex);
+                        //writeln(ex);
                     }
                 }
                 socketSet.reset;
@@ -294,36 +296,36 @@ struct ListenerSocket {
 
         }
         catch(TagionException e) {
-            stderr.writeln(e.msg);
+            ///stderr.writeln(e.msg);
             stop_listener=true;
             if (masterTid != masterTid.init) {
                 masterTid.send(e.taskException);
             }
+            else {
+                log(e.taskException);
+            }
         }
-        catch(Exception e) {
-            log.error(e.toString);
-//            stderr.writeln(e.msg);
+        catch(Throwable t) {
+            //stderr.writeln(e.msg);
             stop_listener=true;
             if (masterTid != masterTid.init) {
-                masterTid.send(cast(immutable)e);
+                masterTid.send(t.taskException);
             }
-            // else {
-            //     throw e;
-            // }
-        }
-        catch(Error t) {
-            log.fatal(t.toString);
-
-            // log.fatal(t.toString)
-            // stderr.writeln(t.toString);
-            stop_listener=true;
-//            t.msg ~= " - From listener thread";
-            if (masterTid != masterTid.init) {
-                masterTid.send(cast(immutable)t);
+            else {
+                log(t.taskException);
+                    //throw e;
             }
-            // else {
-            //     throw t;
-            // }
         }
+        // catch(Throwable t) {
+        //     stderr.writeln(t.toString);
+        //     stop_listener=true;
+        //     t.msg ~= " - From listener thread";
+        //     if (masterTid != masterTid.init) {
+        //         masterTid.send(cast(immutable)t);
+        //     }
+        //     else {
+        //         throw t;
+        //     }
+        // }
     }
 }
