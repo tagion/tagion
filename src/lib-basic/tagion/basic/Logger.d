@@ -6,6 +6,7 @@ import core.sys.posix.pthread;
 import std.string;
 //import std.stdio : stderr;
 import tagion.basic.Basic : Control;
+import tagion.basic.TagionExceptions;
 
 extern(C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
@@ -103,7 +104,7 @@ static struct Logger {
     }
 
     @trusted
-    void report(LoggerType type, lazy string text) const nothrow {
+    void report(LoggerType type, lazy scope string text) const nothrow {
         if ( type | masks[$-1] ) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
@@ -142,6 +143,26 @@ static struct Logger {
 
     void opCall(Args...)(string fmt, lazy Args args) const nothrow {
         report(LoggerType.INFO, fmt, args);
+    }
+
+    void opCall(lazy immutable(TagionException) e) const nothrow {
+        fatal("From task %s '%s'", e.task_name, e.msg);
+        scope char[] text;
+        const(char[]) error_text() @trusted {
+            e.toString((buf) {text~=buf;});
+            return text;
+        }
+        fatal("%s",  error_text());
+    }
+
+    void opCall(lazy immutable(TaskException) t) const nothrow {
+        fatal("From task %s '%s;", t.task_name, t.throwable.msg);
+        scope char[] text;
+        const(char[]) error_text() @trusted {
+            t.throwable.toString((buf) {text~=buf;});
+            return text;
+        }
+        fatal("%s",  error_text());
     }
 
     void trace(lazy string text) const nothrow {
