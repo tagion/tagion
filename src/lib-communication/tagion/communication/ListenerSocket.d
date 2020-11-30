@@ -246,8 +246,11 @@ struct ListenerSocket {
 
     void run() {
         setOptions(opts);
-        log.push(LoggerType.ALL);
-        log.task_name=listen_task_name; //format("%s_%d", task_name, port);
+        // log.push(LoggerType.ALL);
+        // scope(exit) {
+        //     log.pop;
+        // }
+        log.register(listen_task_name); //format("%s_%d", task_name, port);
         log("Listerner opened");
 
 //        writefln("!!!!!!!!!!!!!! Start %s for %s", clients is null, options.node_name);
