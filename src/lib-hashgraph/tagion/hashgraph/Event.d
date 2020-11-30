@@ -228,7 +228,7 @@ class Round {
 
     private BitArray _looked_at_mask;
     private uint _looked_at_count;
-    static int increase_number(const(Round) r) {
+    static int increase_number(const(Round) r) nothrow pure {
         return r.number+1;
     }
 
@@ -459,8 +459,8 @@ class Round {
     // }
 
     private void consensus_order() {
-        import std.stdio;
-        writeln("consensus order");
+        // import std.stdio;
+        // writeln("consensus order");
         import std.algorithm : sort, SwapStrategy;
         import std.functional;
         import tagion.hibon.HiBONJSON;
@@ -470,20 +470,21 @@ class Round {
         @trusted
             ulong find_middel_time() {
             try{
-                writeln("finding middel time");
+                log("finding middel time");
                 uint famous_node_id;
                 foreach(e; _events) {
                     if(e is null){
-                        writeln("event is null");
-                        stdout.flush();
+                        log("event is null");
+                        //stdout.flush();
                         // writeln(Document(e.toHiBON.serialize).toJSON);
                     }
                     if(e._witness is null){
-                        writeln("witness is null");
-                        stdout.flush();
-                        writeln(Document(e.toHiBON.serialize).toJSON);
-                    }else{
-                        writeln("ok");
+                        log("witness is null");
+                        //stdout.flush();
+                        log("%s", Document(e.toHiBON.serialize).toJSON);
+                    }
+                    else{
+                        log("ok");
                         if (e._witness.famous) {
                             famous_events[famous_node_id]=e;
                             unique_famous_mask[famous_node_id]=true;
@@ -494,19 +495,21 @@ class Round {
                 famous_events.length=famous_node_id;
                 // Sort the time stamps
                 famous_events.sort!((a,b) => (Event.timeCmp(a,b) <0));
-                writeln("famous sorted");
+                log("famous sorted");
                 // Find middel time
                 immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
-                writefln("middle time index: %d, len: %d", middel_time_index, famous_events.length);
-                stdout.flush();
+                log("middle time index: %d, len: %d", middel_time_index, famous_events.length);
+                //stdout.flush();
                 scope(exit){
-                    writeln("calc successfully");
+                    log("calc successfully");
                 }
                 return famous_events[middel_time_index].eventbody.time;
             }
             catch(Exception e){
-                writeln("exc: ", e.msg);
-                throw e;
+                import tagion.basic.TagionExceptions : fatal;
+                fatal(e);
+                // writeln("exc: ", e.msg);
+                // throw e;
             }
         }
 
@@ -518,21 +521,23 @@ class Round {
         foreach(event; famous_events) {
             Event event_to_be_grounded;
             bool trigger;
-            void clear_round_counters(Event e) {
+            void clear_round_counters(Event e) nothrow {
                 if ( e && !e.grounded ) {
                     if ( !trigger && e.round_received ) {
                         trigger=true;
-                        event_to_be_grounded=e;
+                        //event_to_be_grounded=e;
                     }
                     else if ( !e.round_received ) {
                         trigger=false;
-                        event_to_be_grounded=null;
+                        //event_to_be_grounded=null;
                     }
                     e.clear_round_received_count;
                     clear_round_counters(e._mother);
                 }
             }
             clear_round_counters(event._mother);
+
+            version(none)
             if ( event_to_be_grounded ) {
                 event_to_be_grounded._grounded=true;
                 if ( event_to_be_grounded._round._previous ) {
@@ -685,6 +690,7 @@ class Round {
             }
         }
         Round _lowest=lowest;
+        version(none)
         if ( _lowest ) {
             local_scrap(_lowest);
         }
