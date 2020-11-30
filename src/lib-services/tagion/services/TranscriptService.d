@@ -13,7 +13,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
 import tagion.basic.Logger;
-import tagion.utils.Random;
+//import tagion.utils.Random;
 import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract;
@@ -26,22 +26,28 @@ import tagion.hibon.HiBONJSON;
 //import tagion.gossip.EmulatorGossipNet;
 
 // This function is just to perform a test on the scripting-api input
-void transcriptServiceTask(immutable(Options) opts) nothrow {
+void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
+    scope(exit) {
+        import std.exception : assumeWontThrow;
+        log("Scripting-Api script test stopped");
+        assumeWontThrow(ownerTid.send(Control.END));
+    }
+
     try {
-        setOptions(opts);
-        immutable task_name=opts.transcript.task_name;
+//        setOptions(opts);
+//        immutable task_name=opts.transcript.task_name;
         log.register(task_name);
         // assert(opts.transcript.enable, "Scripting-Api test is not enabled");
         // assert(opts.transcript.pause_from < opts.transcript.pause_to);
 
         uint current_epoch;
-        Random!uint rand;
-        rand.seed(opts.seed);
+        // Random!uint rand;
+        // rand.seed(seed);
 //    immutable name=[opts.node_name, options.transcript.name].join;
         // log("Scripting-Api script test %s started", task_name);
         // Tid node_tid=locate(opts.node_name);
 
-        ownerTid.send(Control.LIVE);
+
 
         auto net=new StdSecureNet;
         auto empty_hirpc = HiRPC(null);
@@ -55,14 +61,17 @@ void transcriptServiceTask(immutable(Options) opts) nothrow {
             }
         }
 
+        //Tid dart_tid = locate(dart_task_name);
+
         void modifyDART(DARTFile.Recorder recorder) {
+            Tid dart_tid = locate(dart_task_name);
             // auto sender = DART.dartModify(recorder, empty_hirpc);
-            Tid dart_tid = locate(opts.dart.task_name);
-            if(dart_tid != Tid.init){
+            if (dart_tid != Tid.init){
                 dart_tid.send(cast(immutable) recorder); //TODO: remove blackhole
             }
             else{
-                log("Cannot locate Dart service");
+                log.error("Cannot locate Dart service");
+                stop=true;
             }
         }
 
@@ -153,23 +162,24 @@ void transcriptServiceTask(immutable(Options) opts) nothrow {
                 smart_scripts[fingerprint]=smart_script;
             }
             catch (ConsensusException e) {
-                log("ConsensusException: %s", e.msg);
+                log.warning("ConsensusException: %s", e.msg);
                 // Not approved
             }
             catch(TagionException e){
-                log("TagionException: %s", e.msg);
+                log.warning("TagionException: %s", e.msg);
             }
             catch(Exception e){
-                log("Exception: %s", e.msg);
+                log.warning("Exception: %s", e.msg);
             }
             catch(Error e){
-                log("Throwable: %s", e.msg);
+                fatal(e);
+                //log("Throwable: %s", e.msg);
             }
         }
 
-        void taskfailure(immutable(TaskFailure) t) {
-            ownerTid.send(t);
-        }
+        // void taskfailure(immutable(TaskFailure) t) {
+        //     ownerTid.send(t);
+        // }
 
         // void tagionexception(immutable(TagionException) e) {
         //     ownerTid.send(e);
@@ -184,14 +194,7 @@ void transcriptServiceTask(immutable(Options) opts) nothrow {
         // }
 
         uint counter;
-
-        scope(exit) {
-            log("Scripting-Api script test stopped %s", task_name);
-            ownerTid.send(Control.END);
-        }
-
-
-
+        ownerTid.send(Control.LIVE);
         while(!stop) {
             //    immutable delay=rand.value(opts.transcript.pause_from, opts.transcript.pause_to);
             //  log("delay=%s", delay);

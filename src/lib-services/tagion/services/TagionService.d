@@ -2,7 +2,7 @@ module tagion.services.TagionService;
 
 import std.concurrency;
 import std.exception : assumeUnique;
-import std.stdio;
+//import std.stdio;
 import std.conv : to;
 import std.traits : hasMember;
 import core.thread;
@@ -68,7 +68,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
     Tid monitor_socket_tid;
     Tid transaction_socket_tid;
-    Tid transcript_tid;
+//    Tid transcript_tid;
 
     // scope(failure) {
     //     log.fatal("Unexpected Termination");
@@ -79,10 +79,22 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
         if ( net.transcript_tid != net.transcript_tid.init ) {
             log("Send stop to %s", opts.transcript.task_name);
-            net.transcript_tid.prioritySend(Control.STOP);
-            if ( receiveOnly!Control is Control.END ) {
-                log("Scripting api end!!");
-            }
+            net.transcript_tid.send(Control.STOP);
+            receive(
+                (Control ctrl) {
+                    if ( ctrl is Control.END ) {
+                        log("Closed monitor");
+                    }
+                    else if ( ctrl is Control.FAIL ) {
+                        log.error("Closed monitor with failure");
+                    }
+                },
+                (immutable(TaskFailure) t) {
+                    ownerTid.send(t);
+                });
+            // if ( receiveOnly!Control is Control.END ) {
+            //     log("Scripting api end!!");
+            // }
         }
 
         // log("Send stop to the engine");
@@ -101,22 +113,34 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         // version(none)
         if ( transaction_socket_tid != transaction_socket_tid.init ) {
             log("send stop to %s", opts.transaction.task_name);
-            transaction_socket_tid.prioritySend(Control.STOP);
-            writefln("Send stop %s", opts.transaction.task_name);
-            auto control=receiveOnly!Control;
-            log("Control %s", control);
-            if ( control is Control.END ) {
-                log("Closed transaction");
-            }
-            else if ( control is Control.FAIL ) {
-                log.error("Closed transaction with failure");
-            }
+            transaction_socket_tid.send(Control.STOP);
+            //writefln("Send stop %s", opts.transaction.task_name);
+            // auto control=receiveOnly!Control;
+            // log("Control %s", control);
+            receive(
+                (Control ctrl) {
+                    if ( ctrl is Control.END ) {
+                        log("Closed monitor");
+                    }
+                    else if ( ctrl is Control.FAIL ) {
+                        log.error("Closed monitor with failure");
+                    }
+                },
+                (immutable(TaskFailure) t) {
+                    ownerTid.send(t);
+                });
+            // if ( control is Control.END ) {
+            //     log("Closed transaction");
+            // }
+            // else if ( control is Control.FAIL ) {
+            //     log.error("Closed transaction with failure");
+            // }
         }
 
         if ( monitor_socket_tid != monitor_socket_tid.init ) {
             log("send stop to %s", opts.monitor.task_name);
 //            try {
-            monitor_socket_tid.prioritySend(Control.STOP);
+            monitor_socket_tid.send(Control.STOP);
 
             receive(
                 (Control ctrl) {
@@ -127,14 +151,14 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                         log.error("Closed monitor with failure");
                     }
                 },
-                (immutable Exception e) {
-                    ownerTid.prioritySend(e);
+                (immutable(TaskFailure) t) {
+                    ownerTid.send(t);
                 });
         }
 
 
         log("End");
-        ownerTid.prioritySend(Control.END);
+        ownerTid.send(Control.END);
     }
 
 
@@ -147,13 +171,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     Pubkey[] received_pkeys;
     foreach(i;0..opts.nodes) {
         received_pkeys~=receiveOnly!(Pubkey);
-        stderr.writefln("@@@@ Receive %s %s", opts.node_name, received_pkeys[i].cutHex);
+        log("@@@@ Receive %s %s", opts.node_name, received_pkeys[i].cutHex);
     }
     immutable pkeys=assumeUnique(received_pkeys);
 
     hashgraph.createNode(net.pubkey);
     log("Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
-    stderr.writefln("@@@@ Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
+//    stderr.writefln("@@@@ Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
     foreach(i, p; pkeys) {
         if ( hashgraph.createNode(p) ) {
             log("%d] %s", i, p.cutHex);
@@ -167,19 +191,19 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         (opts.monitor.port >= opts.min_port) ) {
         monitor_socket_tid = spawn(&monitorServiceTask, opts);
         Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id, net.globalNodeId(net.pubkey), opts.monitor.dataformat);
-        stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
+        log("@@@@ Wait for monitor %s", opts.node_name,);
 
         if ( receiveOnly!Control is Control.LIVE ) {
             log("Monitor started");
         }
     }
 
-    stderr.writefln("@@@@ opts.transaction.port=%d", opts.transaction.service.port);
+    log("@@@@ opts.transaction.port=%d", opts.transaction.service.port);
     // version(none)
     if ( ( (opts.node_id < opts.transaction.max) || (opts.transaction.max == 0) ) &&
         (opts.transaction.service.port >= opts.min_port) ) {
         transaction_socket_tid = spawn(&transactionServiceTask, opts);
-        stderr.writefln("@@@@ Wait for transaction %s", opts.node_name);
+        //stderr.writefln("@@@@ Wait for transaction %s", opts.node_name);
         log("@@@@ Wait for transaction %s", opts.node_name);
         if ( receiveOnly!Control is Control.LIVE ) {
             log("Transaction started port %d", opts.transaction.service.port);
@@ -188,7 +212,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     }
 
     // All tasks is in sync
-    stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
+    //stderr.writefln("@@@@ All tasks are in sync %s", opts.node_name);
     log("All tasks are in sync %s", opts.node_name);
 
     //Event.scriptcallbacks=new ScriptCallbacks(thisTid);
@@ -196,14 +220,17 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 //    version(none)
     //  if ( opts.transcript.enable ) {
     //version(none) {
-    transcript_tid=spawn(&transcriptServiceTask, opts);
-
-
-    Event.scriptcallbacks=new ScriptCallbacks(transcript_tid);
-    if ( receiveOnly!Control is Control.LIVE ) {
-        log("Transcript started");
+//    Tid transcript_tid=spawn(&transcriptServiceTask, opts);
+    Event.scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
+    scope(exit) {
+        Event.scriptcallbacks.stop;
     }
-    //}
+
+
+    // if ( receiveOnly!Control is Control.LIVE ) {
+    //     log("Transcript started");
+    // }
+
 
     enum max_gossip=2;
     uint gossip_count=max_gossip;

@@ -13,10 +13,34 @@ import tagion.Keywords;
 import tagion.basic.Logger;
 
 @safe class ScriptCallbacks : EventScriptCallbacks {
-    private Tid _event_script_tid;
+
+    private {
+        Tid _event_script_tid;
+        string transcript_task_name;
+        //   string dart_task_name;
+    }
+    // @trusted
+    // this(ref Tid event_script_tid) nothrow pure {
+    //     _event_script_tid=event_script_tid;
+    // }
+    // this(ref Tid event_script_tid) nothrow pure {
+    //     _event_script_tid=event_script_tid;
+    // }
+
     @trusted
-    this(ref Tid event_script_tid) nothrow pure {
-        _event_script_tid=event_script_tid;
+    this(void function(string task_name, string dart_task_name) nothrow transcript_task, string transcript_task_name, string dart_task_name) nothrow {
+        try {
+            import std.concurrency;
+            _event_script_tid=spawn(transcript_task, transcript_task_name, dart_task_name);
+            this.transcript_task_name = transcript_task_name;
+            if ( receiveOnly!Control is Control.LIVE ) {
+                log("Transcript started");
+            }
+        }
+        catch (Throwable t) {
+            import tagion.basic.TagionExceptions : fatal;
+            fatal(t);
+        }
     }
 
     void epoch(const(Event[]) received_event, immutable long epoch_time) {
@@ -62,13 +86,23 @@ import tagion.basic.Logger;
     }
 
     @trusted
-    bool stop() {
-        log("stop here");
-        immutable result= _event_script_tid != _event_script_tid.init;
-        if ( result ) {
-            _event_script_tid.prioritySend(Control.STOP);
+    bool stop() nothrow {
+        try {
+            log("stop here");
+            scope tid = locate(transcript_task_name);
+//        result= _event_script_tid != _event_script_tid.init;
+            if ( tid != tid.init ) {
+                tid.send(Control.STOP);
+                if (receiveOnly!Control is Control.END) {
+                    return true;
+                }
+            }
         }
-        return result;
+        catch (Throwable t) {
+            import tagion.basic.TagionExceptions : fatal;
+            fatal(t);
+        }
+        return false;
     }
 
 }

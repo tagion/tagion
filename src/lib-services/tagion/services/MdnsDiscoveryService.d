@@ -15,8 +15,10 @@ import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import std.stdio;
 import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
+import tagion.basic.TagionExceptions : fatal;
 
-void mdnsDiscoveryService(shared p2plib.Node node, immutable(Options) opts){  //TODO: for test
+void mdnsDiscoveryService(shared p2plib.Node node, immutable(Options) opts) nothrow {  //TODO: for test
+    try {
     scope(exit){
         log("exit mdns discovery service");
         ownerTid.prioritySend(Control.END);
@@ -53,7 +55,7 @@ void mdnsDiscoveryService(shared p2plib.Node node, immutable(Options) opts){  //
     auto stop = false;
     NodeAddress[Pubkey] node_addrses;
     ownerTid.send(Control.LIVE);
-    try{
+//    try{
         do{
             pragma(msg, "fixme(alex); 500.msecs shoud be an option parameter");
             receiveTimeout(
@@ -107,7 +109,8 @@ void mdnsDiscoveryService(shared p2plib.Node node, immutable(Options) opts){  //
                 }
             }
         }while(!stop);
-    }catch(Exception e){
-        log("Exception: %s", e.msg);
+    }
+    catch(Throwable t){
+        fatal(t);
     }
 }

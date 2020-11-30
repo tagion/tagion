@@ -278,16 +278,15 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     node_addrses = cast(NodeAddress[Pubkey]) update.data;
                     // log("node addresses %s", node_addrses);
                 },
-                (immutable(Exception) e) {
-                    //log.fatal(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                },
-                (immutable(Throwable) t) {
-                    //log.fatal(t.msg);
+                (immutable(TaskFailure) t) {
                     stop=true;
                     ownerTid.send(t);
-                }
+                },
+                // (immutable(Throwable) t) {
+                //     //log.fatal(t.msg);
+                //     stop=true;
+                //     ownerTid.send(t);
+                // }
             );
             try{
                 connectionPool.tick();
@@ -338,38 +337,41 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     request_handling = true;
                 }
             }
-            catch(TagionException e){
-                immutable task_e = e.taskException;
-                log(task_e);
-                stop=true;
-                ownerTid.send(task_e);
-            }
+            // catch(TagionException e){
+            //     immutable task_e = e.taskException;
+            //     log(task_e);
+            //     stop=true;
+            //     ownerTid.send(task_e);
+            // }
             // catch(Exception e){
             //     log.fatal(e.msg);
             //     stop=true;
             //     ownerTid.send(cast(immutable)e);
             // }
             catch(Throwable t) {
-                immutable task_e = t.taskException;
-                log(task_e);
                 stop=true;
-                ownerTid.send(task_e);
+                fatal(t);
+                // immutable task_e = t.taskException;
+                // log(task_e);
+                // stop=true;
+                // ownerTid.send(task_e);
             }
         }
     }
-    catch(TagionException e){
-        immutable task_e=e.taskException;
-        log(task_e);
-        ownerTid.send(task_e);
-    }
+    // catch(TagionException e){
+    //     immutable task_e=e.taskException;
+    //     log(task_e);
+    //     ownerTid.send(task_e);
+    // }
     // catch(Exception e){
     //     log.fatal(e.msg);
     //     ownerTid.send(cast(immutable)e.taskException);
     // }
-    catch(Throwable e){
-        immutable task_e=e.taskException;
-        log(task_e);
-        ownerTid.send(task_e);
+    catch(Throwable t){
+        fatal(t);
+        // immutable task_e=e.taskException;
+        // log(task_e);
+        // ownerTid.send(task_e);
     }
 }
 

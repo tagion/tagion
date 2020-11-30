@@ -17,6 +17,11 @@ import tagion.basic.TagionExceptions;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceTask(immutable(Options) opts) nothrow {
+    scope(exit) {
+        import std.exception : assumeWontThrow;
+        log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
+        assumeWontThrow(ownerTid.send(Control.END));
+    }
     try{
     // Set thread global options
     setOptions(opts);
@@ -26,10 +31,6 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
 
         log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
 
-        scope(success) {
-            log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
-            ownerTid.send(Control.END);
-        }
         auto listener_socket = ListenerSocket(
             opts,
             opts.url,
