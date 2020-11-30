@@ -34,6 +34,7 @@ in{
     assert(opts.net_mode == NetworkMode.internal);
 }
 do {
+    try {
     setOptions(opts);
 
     immutable tast_name=opts.heartbeat.task_name;
@@ -265,6 +266,10 @@ do {
             tid.send(pkey);
         }
     }
+    void taskfailure(immutable(TaskFailure) t) {
+        ownerTid.send(t);
+    }
+
 
     uint count = opts.loops;
 
@@ -282,22 +287,37 @@ do {
             if ( !opts.infinity ) {
                 log("count=%d", count);
             }
-            Thread.sleep(opts.delay.msecs);
+//            Thread.sleep(opts.delay.msecs);
+            immutable message_received=receiveTimeout(
+                opts.delay.msecs,
+                (Control ctrl) {
+                    with(Control) {
+                        switch(ctrl) {
+                        case STOP, FAIL:
+                            stop=true;
+                            break;
+                        default:
+                        }
+                    }
+                },
+                &taskfailure
+                );
+            if (!message_received) {
+                tids[node_id].send(time, rand.value);
+                if ( !opts.infinity ) {
+                    log("send time=%d to  %d", time, node_id);
+                }
 
-            tids[node_id].send(time, rand.value);
-            if ( !opts.infinity ) {
-                log("send time=%d to  %d", time, node_id);
-            }
+                time+=opts.delay;
+                node_id++;
+                if ( node_id >= tids.length ) {
+                    node_id=0;
+                }
 
-            time+=opts.delay;
-            node_id++;
-            if ( node_id >= tids.length ) {
-                node_id=0;
-            }
-
-            if ( !opts.infinity ) {
-                stop=(count==0);
-                count--;
+                if ( !opts.infinity ) {
+                    stop=(count==0);
+                    count--;
+                }
             }
         }
     }
@@ -324,6 +344,7 @@ do {
                         // stop=true;
                         // break;
                         // case FAIL:
+
                         // stop=true;
                         // break;
                         default:
@@ -331,32 +352,33 @@ do {
                         }
                     }
                 },
-                (immutable(TagionException) e) {
-                    stop=true;
-                    log(e);
-                    // const print_e=e;
-                    // print_e.toString((buf) {log.fatal(buf.idup);});
-                    // stderr.writeln(e);
-                },
-                (immutable(TaskException) t) {
-                    stop=true;
-                    log(t);
-                    // log.fatal("From tasj %s", t.task_name);
-                    // const print_e=t.throwable;
-                    // print_e.toString((buf) {log.fatal(buf.idup);});
-                },
-                (immutable(Exception) e) {
-                    stop=true;
-                    const print_e=e;
-                    print_e.toString((buf) {log.fatal(buf.idup);});
-                    stderr.writeln(e);
-                },
-                (immutable(Throwable) t) {
-                    stop=true;
-                    const print_t=t;
-                    print_t.toString((buf) {log.fatal(buf.idup);});
-                    stderr.writeln(t);
-                }
+                &taskfailure
+                // (immutable() e) {
+                //     stop=true;
+                //     log(e);
+                //     // const print_e=e;
+                //     // print_e.toString((buf) {log.fatal(buf.idup);});
+                //     // stderr.writeln(e);
+                // },
+                // (immutable(TaskException) t) {
+                //     stop=true;
+                //     log(t);
+                //     // log.fatal("From tasj %s", t.task_name);
+                //     // const print_e=t.throwable;
+                //     // print_e.toString((buf) {log.fatal(buf.idup);});
+                // },
+                // (immutable(Exception) e) {
+                //     stop=true;
+                //     const print_e=e;
+                //     print_e.toString((buf) {log.fatal(buf.idup);});
+                //     stderr.writeln(e);
+                // },
+                // (immutable(Throwable) t) {
+                //     stop=true;
+                //     const print_t=t;
+                //     print_t.toString((buf) {log.fatal(buf.idup);});
+                //     stderr.writeln(t);
+                // }
                 );
             if (message_received) {
                 log("count down=%s", count_down);
@@ -371,5 +393,9 @@ do {
             }
 
         }
+    }
+    }
+    catch (Throwable t) {
+        fatal(t);
     }
 }

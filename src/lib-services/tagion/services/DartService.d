@@ -42,7 +42,7 @@ import std.array;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) {
+void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
     try{
         setOptions(opts);
         immutable task_name=opts.dart.task_name;
@@ -274,11 +274,11 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     (NodeAddress[string] update){
                         node_addrses = update;
                     },
-                    (immutable(TagionException) e) {
-                        stop=true;
-                        ownerTid.send(e);
-                    },
-                    (immutable(TaskException) t) {
+                    // (immutable(TagionException) e) {
+                    //     stop=true;
+                    //     ownerTid.send(e);
+                    // },
+                    (immutable(TaskFailure) t) {
                         stop=true;
                         ownerTid.send(t);
                     },
@@ -296,10 +296,11 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
             requestPool.tick();
         }
     }
-    catch(Exception e){
-        immutable task_e = e.taskException;
-        log(task_e);
-        ownerTid.send(task_e);
+    catch(Throwable e){
+        fatal(e);
+        // immutable task_e = e.taskException;
+        // log(task_e);
+        // ownerTid.send(task_e);
         // writefln("EXCEPTION: %s", e);
         // pragma(msg, "fixme(alex): Why doesn't this send the exception to the owner");
     }

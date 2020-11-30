@@ -15,7 +15,7 @@ import tagion.basic.Logger;
 @safe class ScriptCallbacks : EventScriptCallbacks {
     private Tid _event_script_tid;
     @trusted
-    this(ref Tid event_script_tid) {
+    this(ref Tid event_script_tid) nothrow pure {
         _event_script_tid=event_script_tid;
     }
 
@@ -28,8 +28,8 @@ import tagion.basic.Logger;
         foreach(i, e; received_event) {
             if (e.eventbody.payload.length) {
                 log("\tepoch=%d %d", i, e.eventbody.payload.length);
-            }
-            if ( e.eventbody.payload ) {
+            // }
+            // if ( e.eventbody.payload ) {
                 payloads~=Payload(e.eventbody.payload);
             }
         }
@@ -46,10 +46,10 @@ import tagion.basic.Logger;
        immutable unique_payloads=assumeUnique(payloads);
        log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
        pragma(msg, "Scripts: " ,typeof(unique_payloads));
-        HiBON params = new HiBON;
-        foreach(i, payload; unique_payloads){
-            params[i] = payload;
-        }
+       HiBON params = new HiBON;
+       foreach(i, payload; unique_payloads){
+           params[i] = payload;
+       }
        _event_script_tid.send(params.serialize);
    }
 
