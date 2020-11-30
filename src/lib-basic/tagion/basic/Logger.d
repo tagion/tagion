@@ -111,10 +111,13 @@ static struct Logger {
 
             if (!isTask) {
                 import core.stdc.stdio;
-                scope const _type=assumeWontThrow(toStringz(type.to!string));
+                scope const _type=assumeWontThrow(type.to!string);
                 scope const _text=assumeWontThrow(toStringz(text));
-                printf("ERROR: Logger not register for '%s'", toStringz(_task_name));
-                printf("\t%s:%s: %s", _task_name.toStringz, _type, _text);
+                printf("ERROR: Logger not register for '%.*s'", cast(int)_task_name.length, _task_name.ptr);
+                printf("\t%.*s:%.*s: %s",
+                    cast(int)_task_name.length, _task_name.ptr,
+                    cast(int)_type.length, _type.ptr,
+                    _text);
             }
             else {
                 try {
@@ -145,25 +148,43 @@ static struct Logger {
         report(LoggerType.INFO, fmt, args);
     }
 
-    void opCall(lazy immutable(TagionException) e) const nothrow {
-        fatal("From task %s '%s'", e.task_name, e.msg);
+    void opCall(lazy immutable(TaskFailure) task_e) const nothrow {
+        fatal("From task %s '%s'", task_e.task_name, task_e.throwable.msg);
         scope char[] text;
         const(char[]) error_text() @trusted {
-            e.toString((buf) {text~=buf;});
+            task_e.throwable.toString((buf) {text~=buf;});
             return text;
         }
         fatal("%s",  error_text());
     }
 
-    void opCall(lazy immutable(TaskException) t) const nothrow {
-        fatal("From task %s '%s;", t.task_name, t.throwable.msg);
-        scope char[] text;
-        const(char[]) error_text() @trusted {
-            t.throwable.toString((buf) {text~=buf;});
-            return text;
-        }
-        fatal("%s",  error_text());
-    }
+    // void opCall(lazy const(TagionException) e) const nothrow {
+    //     immutable task_e = t.taskException;
+    //     if (ownerTid !=
+    //     fatal("From task %s '%s'", tasg_e.task_name, e.msg);
+    //     scope char[] text;
+    //     const(char[]) error_text() @trusted {
+    //         e.toString((buf) {text~=buf;});
+    //         return text;
+    //     }
+    //     fatal("%s",  error_text());
+    // }
+
+    // void opCall(lazy const(Throwable) t) const nothrow if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+    //     immutable task_e = t.taskException;
+    //     fatal("From task %s '%s;", tasl_e.task_name, task_e.throwable.msg);
+    //     scope char[] text;
+    //     const(char[]) error_text() @trusted {
+    //         task_e.throwable.toString((buf) {text~=buf;});
+    //         return text;
+    //     }
+    //     fatal("%s",  error_text());
+    // }
+
+    // void fatal(lazy const(TagionException) e) const nothrow {
+    //     opCall(e);
+
+    // }
 
     void trace(lazy string text) const nothrow {
         report(LoggerType.TRACE, text);
