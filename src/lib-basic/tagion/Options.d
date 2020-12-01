@@ -261,6 +261,7 @@ struct Options {
         uint pause_to;
         string prefix;
 
+        bool epoch_debug;
         mixin JSONCommon;
     }
 
@@ -507,7 +508,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "transcript-from", format("Transcript test from delay: default: %d", options.transcript.pause_from), &(options.transcript.pause_from),
         "transcript-to", format("Transcript test to delay: default: %d", options.transcript.pause_to), &(options.transcript.pause_to),
         "transcript-log",  format("Transcript log filename: default: %s", options.transcript.task_name), &(options.transcript.task_name),
-
+        "transcript-debug|e", format("Transcript epoch debug: default: %s", options.transcript.epoch_debug), &(options.transcript.epoch_debug),
         "dart-filename", format("Dart file name. Default: %s", options.dart.path), &(options.dart.path),
         "dart-synchronize", "Need synchronization", &(options.dart.synchronize),
         "dart-angle-from-port", "Set dart from/to angle based on port", &(options.dart.angle_from_port),
