@@ -86,9 +86,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     if ( ctrl is Control.END ) {
                         log("Closed monitor");
                     }
-                    else if ( ctrl is Control.FAIL ) {
-                        log.error("Closed monitor with failure");
+                    else {
+                        log.warning("Unexpected control code %s", ctrl);
                     }
+
+                    // else if ( ctrl is Control.FAIL ) {
+                    //     log.error("Closed monitor with failure");
+                    // }
                 },
                 (immutable(TaskFailure) t) {
                     ownerTid.send(t);
@@ -114,6 +118,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         // version(none)
         if ( transaction_socket_tid != transaction_socket_tid.init ) {
             log("send stop to %s", opts.transaction.task_name);
+
             transaction_socket_tid.send(Control.STOP);
             //writefln("Send stop %s", opts.transaction.task_name);
             // auto control=receiveOnly!Control;
@@ -123,9 +128,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     if ( ctrl is Control.END ) {
                         log("Closed monitor");
                     }
-                    else if ( ctrl is Control.FAIL ) {
-                        log.error("Closed monitor with failure");
+                    else {
+                        log.warning("Unexpected control code %s", ctrl);
                     }
+
+                    // else if ( ctrl is Control.FAIL ) {
+                    //     log.error("Closed monitor with failure");
+                    // }
                 },
                 (immutable(TaskFailure) t) {
                     ownerTid.send(t);
@@ -148,9 +157,12 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     if ( ctrl is Control.END ) {
                         log("Closed monitor");
                     }
-                    else if ( ctrl is Control.FAIL ) {
-                        log.error("Closed monitor with failure");
+                    else {
+                        log.warning("Unexpected control code %s", ctrl);
                     }
+                    // else if ( ctrl is Control.FAIL ) {
+                    //     log.error("Closed monitor with failure");
+                    // }
                 },
                 (immutable(TaskFailure) t) {
                     ownerTid.send(t);

@@ -248,9 +248,9 @@ do {
             if ( control is Control.END ) {
                 log("Closed transaction");
             }
-            else if ( control is Control.FAIL ) {
-                log.error("Closed transaction with failure");
-            }
+            // else if ( control is Control.FAIL ) {
+            //     log.error("Closed transaction with failure");
+            // }
         }
 
         if ( monitor_socket_tid != monitor_socket_tid.init ) {
@@ -263,9 +263,9 @@ do {
                     if ( ctrl is Control.END ) {
                         log("Closed monitor");
                     }
-                    else if ( ctrl is Control.FAIL ) {
-                        log.error("Closed monitor with failure");
-                    }
+                    // else if ( ctrl is Control.FAIL ) {
+                    //     log.error("Closed monitor with failure");
+                    // }
                 },
                 (immutable Exception e) {
                     ownerTid.prioritySend(e);

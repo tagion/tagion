@@ -66,8 +66,12 @@ do {
                     log("Thread %s stopped %s", get_node_name(opts, i), control);
                 }
                 else {
-                    log("Thread %s unexpected control %s", get_node_name(opts, i), control);
+                    log.warning("Unexpected control code %s", control);
                 }
+
+                // else {
+                //     log("Thread %s unexpected control %s", get_node_name(opts, i), control);
+                // }
             }
             log("----- Stop send to all -----");
             log.close;
@@ -310,7 +314,7 @@ do {
                     (Control ctrl) {
                         with(Control) {
                             switch(ctrl) {
-                            case STOP, FAIL:
+                            case STOP:
                                 stop=true;
                                 break;
                             default:
@@ -348,7 +352,7 @@ do {
                     (Control ctrl) {
                         with(Control) {
                             switch(ctrl) {
-                            case STOP, FAIL:
+                            case STOP:
                                 stop=true;
                                 break;
                             case LIVE:
