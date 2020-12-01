@@ -61,7 +61,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
             }
         }
 
-        //Tid dart_tid = locate(dart_task_name);
 
         void modifyDART(DARTFile.Recorder recorder) {
             Tid dart_tid = locate(dart_task_name);

@@ -13,10 +13,11 @@ import tagion.hashgraph.HashGraph;
 import tagion.basic.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.basic.TagionExceptions : TagionException, taskException;
+import tagion.basic.TagionExceptions : fatal, TaskFailure;
 
 
 import tagion.services.ScriptCallbacks;
+import tagion.services.EpochDebugService;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.communication.Monitor;
@@ -26,7 +27,7 @@ import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 //import tagion.services.ScriptingEngineService;
 import tagion.basic.Logger;
-import tagion.basic.TagionExceptions;
+//import tagion.basic.TagionExceptions;
 
 import tagion.Options : Options, setOptions, options;
 import tagion.basic.Basic : Pubkey, Payload, Control;
@@ -218,9 +219,26 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     //Event.scriptcallbacks=new ScriptCallbacks(thisTid);
 
 //    version(none)
-    //  if ( opts.transcript.enable ) {
+    //  if ( opts.transcript.enable ) {6dZDv7NC
+
     //version(none) {
 //    Tid transcript_tid=spawn(&transcriptServiceTask, opts);
+    string epoch_debug_task_name;
+    if (opts.transcript.epoch_debug) {
+        import std.array : join;
+        epoch_debug_task_name=["epoch", opts.transcript.task_name].join("_");
+        spawn(&epochDebugServiceTask, epoch_debug_task_name);
+    }
+    scope(exit) {
+        auto tid = locate(epoch_debug_task_name);
+        if (tid != tid.init) {
+            tid.send(Control.STOP);
+            if (receiveOnly!Control != Control.END) {
+                log("Epoch Debug ended");
+            }
+        }
+    }
+
     Event.scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
     scope(exit) {
         Event.scriptcallbacks.stop;
@@ -338,19 +356,26 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
     }
 
-    void tagionexception(immutable(TagionException) e) {
-        ownerTid.send(e);
-    }
+//     void tagionexception(immutable(TagionException) e) {
+//         ownerTid.send(e);
+//     }
 
-    void exception(immutable(Exception) e) {
-        ownerTid.send(e);
-    }
+//     void exception(immutable(Exception) e) {
+//         ownerTid.send(e);
+//     }
 
-    void error(immutable(Error) t) {
-//        log(t);
-        log.fatal("-->%s", t);
+//     void error(immutable(Error) t) {
+// //        log(t);
+//         log.fatal("-->%s", t);
+//         ownerTid.send(t);
+//         stop=true;
+//     }
+
+    void _taskfailure(immutable(TaskFailure) t) {
         ownerTid.send(t);
-        stop=true;
+        if (cast(Error)(t.throwable) is null) {
+            stop=true;
+        }
     }
 
     static if (has_random_seed) {
@@ -378,9 +403,10 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     &controller,
                     &sequential,
                     &receive_buffer,
-                    &tagionexception,
-                    &exception,
-                    &error,
+                    // &tagionexception,
+                    // &exception,
+                    // &error,
+                    &_taskfailure,
 
                     );
                 if ( !message_received ) {
@@ -398,9 +424,9 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     &controller,
                     // &sequential,
                     &receive_buffer,
-                    &tagionexception,
-                    &exception,
-                    &error,
+                    // &tagionexception,
+                    // &exception,
+                    &_taskfailure,
                     );
                 if ( !message_received ) {
                     log("TIME OUT");
@@ -414,10 +440,11 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
         }
     }
-    catch (Error e) {
+    catch (Throwable t) {
+        fatal(t);
         // log.error(e.toString);
-        log.fatal("Unexpected Termination");
-        ownerTid.send(e.taskException);
+        // log.fatal("Unexpected Termination");
+        // ownerTid.send(e.taskException);
 //        error(cast(immutable)e.taskException);
     }
 }

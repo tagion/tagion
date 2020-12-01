@@ -9,7 +9,7 @@ import tagion.basic.Basic : Buffer, Payload, Control;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.Keywords;
-
+import tagion.basic.TagionExceptions : fatal;
 import tagion.basic.Logger;
 
 @safe class ScriptCallbacks : EventScriptCallbacks {
@@ -17,6 +17,7 @@ import tagion.basic.Logger;
     private {
         Tid _event_script_tid;
         string transcript_task_name;
+        string epoch_debug_task_name;
         //   string dart_task_name;
     }
     // @trusted
@@ -28,60 +29,88 @@ import tagion.basic.Logger;
     // }
 
     @trusted
-    this(void function(string task_name, string dart_task_name) nothrow transcript_task, string transcript_task_name, string dart_task_name) nothrow {
+    this(void function(string task_name, string dart_task_name) nothrow transcript_task, string transcript_task_name, string dart_task_name, string epoch_debug_task_name=null) nothrow {
         try {
             import std.concurrency;
             _event_script_tid=spawn(transcript_task, transcript_task_name, dart_task_name);
             this.transcript_task_name = transcript_task_name;
+            this.epoch_debug_task_name = epoch_debug_task_name;
             if ( receiveOnly!Control is Control.LIVE ) {
                 log("Transcript started");
             }
         }
         catch (Throwable t) {
-            import tagion.basic.TagionExceptions : fatal;
+
             fatal(t);
         }
     }
 
-    void epoch(const(Event[]) received_event, immutable long epoch_time) {
-        log("Epoch with %d events", received_event.length);
-        // auto hibon=new HiBON;
-        // hibon[Keywords.time]=time;
-        Payload[] payloads;
+    @trusted
+    void epoch(const(Event[]) received_event, immutable long epoch_time) nothrow {
+        try {
+            log("Epoch with %d events", received_event.length);
+            // auto hibon=new HiBON;
+            // hibon[Keywords.time]=time;
+            Payload[] payloads;
 
-        foreach(i, e; received_event) {
-            if (e.eventbody.payload.length) {
-                log("\tepoch=%d %d", i, e.eventbody.payload.length);
-            // }
-            // if ( e.eventbody.payload ) {
-                payloads~=Payload(e.eventbody.payload);
+            foreach(i, e; received_event) {
+                if (e.eventbody.payload.length) {
+                    log("\tepoch=%d %d", i, e.eventbody.payload.length);
+                    // }
+                    // if ( e.eventbody.payload ) {
+                    payloads~=Payload(e.eventbody.payload);
+                }
+            }
+            if ( payloads ) {
+                // hibon[Keywords.epoch]=payloads;
+                // immutable data=hibon.serialize;
+                log("SEND Epoch with %d transactions", payloads.length);
+                send(payloads, epoch_time);
             }
         }
-        if ( payloads ) {
-            // hibon[Keywords.epoch]=payloads;
-            // immutable data=hibon.serialize;
-            log("SEND Epoch with %d transactions", payloads.length);
-            send(payloads, epoch_time);
+        catch (Throwable t) {
+            fatal(t);
         }
     }
 
    @trusted
-   void send(ref Payload[] payloads, immutable long epoch_time) {
-       immutable unique_payloads=assumeUnique(payloads);
-       log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
-       pragma(msg, "Scripts: " ,typeof(unique_payloads));
-       HiBON params = new HiBON;
-       foreach(i, payload; unique_payloads){
-           params[i] = payload;
+   void send(ref Payload[] payloads, immutable long epoch_time) nothrow {
+       try {
+           immutable unique_payloads=assumeUnique(payloads);
+           log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
+           pragma(msg, "Scripts: " ,typeof(unique_payloads));
+           HiBON params = new HiBON;
+           pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
+           foreach(i, payload; unique_payloads){
+               params[i] = payload;
+           }
+           immutable data=params.serialize;
+           _event_script_tid.send(data);
+           if (epoch_debug_task_name !is null) {
+               HiBON epoch = new HiBON;
+               epoch["$time"] = epoch_time;
+               epoch["$params"] = Document(data);
+               scope epoch_debug_tid = locate(epoch_debug_task_name);
+               if (epoch_debug_tid !is epoch_debug_tid.init) {
+                   epoch_debug_tid.send(transcript_task_name, Document(epoch.serialize));
+               }
+           }
        }
-       _event_script_tid.send(params.serialize);
+       catch (Throwable t) {
+           fatal(t);
+       }
    }
 
     @trusted
-    void send(immutable(EventBody) ebody) {
-        if (ebody.payload.length) {
-            log("ebody.payload=%d", ebody.payload.length);
-            _event_script_tid.send(ebody);
+    void send(immutable(EventBody) ebody) nothrow {
+        try {
+            if (ebody.payload.length) {
+                log("ebody.payload=%d", ebody.payload.length);
+                _event_script_tid.send(ebody);
+            }
+        }
+        catch (Throwable t) {
+            fatal(t);
         }
     }
 
@@ -99,7 +128,6 @@ import tagion.basic.Logger;
             }
         }
         catch (Throwable t) {
-            import tagion.basic.TagionExceptions : fatal;
             fatal(t);
         }
         return false;
