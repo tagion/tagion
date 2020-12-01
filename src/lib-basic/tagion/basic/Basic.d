@@ -227,7 +227,7 @@ unittest {
 enum Control{
     LIVE=1, /// Send to the ownerTid when the task has been started
     STOP,   /// Send when the child task to stop task
-    FAIL,   /// This if a something failed other than an exception
+//    FAIL,   /// This if a something failed other than an exception
     END     /// Send for the child to the ownerTid when the task ends
 };
 
