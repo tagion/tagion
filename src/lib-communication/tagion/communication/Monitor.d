@@ -81,9 +81,9 @@ class MonitorCallBacks : NetCallbacks {
     }
 
     void create(const(Event) e) {
-        if(e.mother !is null) {
-            // writeln("Mother id", e.mother.id);
-        }
+        // if(e.mother !is null) {
+        //     // writeln("Mother id", e.mother.id);
+        // }
 
         immutable _witness=e.witness !is null;
 
