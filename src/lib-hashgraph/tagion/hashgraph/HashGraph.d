@@ -148,10 +148,13 @@ class HashGraph {
                     return current;
                 }
 
-                void popFront() {
-                    current = current.mother;
-                }
+                // void popFront() {
+                //     current = current.mother_raw;
+                // }
             }
+                void popFront() {
+                    current = current.mother_raw;
+                }
         }
 
         @nogc
@@ -371,7 +374,6 @@ class HashGraph {
 
             event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
 
-
             // Add the event to the event cache
             assign(event);
 
@@ -387,10 +389,10 @@ class HashGraph {
 
             event.round.check_coin_round;
 
-            if ( Round.check_decided_round_limit) {
-                // Scrap the lowest round which is not need anymore
-                event.round.scrap(this);
-            }
+            // if ( Round.check_decided_round_limit) {
+            //     // Scrap the lowest round which is not need anymore
+            //     event.round.scrap(this);
+            // }
 
             if ( Event.callbacks ) {
                 Event.callbacks.round(event);
@@ -401,7 +403,6 @@ class HashGraph {
             }
 
         }
-
         return event;
     }
 
@@ -436,8 +437,8 @@ class HashGraph {
     package void strongSee(Event top_event) {
         if ( top_event && !top_event.is_strongly_seeing_checked ) {
 
-            strongSee(top_event.mother);
-            strongSee(top_event.father);
+            strongSee(top_event.mother_raw);
+            strongSee(top_event.father_raw);
             if ( isMajority(top_event.witness_votes(total_nodes)) ) {
                 scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
                 scope BitArray strong_vote_mask;
@@ -468,15 +469,15 @@ class HashGraph {
                              The father event is searched first to cross as many nodes as fast as possible
                              +/
                             if ( path_mask[check_event.node_id] ) {
-                                checkStrongSeeing(check_event.father, path_mask);
-                                checkStrongSeeing(check_event.mother, path_mask);
+                                checkStrongSeeing(check_event.father_raw, path_mask);
+                                checkStrongSeeing(check_event.mother_raw, path_mask);
                             }
                             else {
                                 scope BitArray sub_path_mask=path_mask.dup;
                                 sub_path_mask[check_event.node_id]=true;
 
-                                checkStrongSeeing(check_event.father, sub_path_mask);
-                                checkStrongSeeing(check_event.mother, sub_path_mask);
+                                checkStrongSeeing(check_event.father_raw, sub_path_mask);
+                                checkStrongSeeing(check_event.mother_raw, sub_path_mask);
                             }
                         }
                     }
