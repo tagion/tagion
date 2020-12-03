@@ -147,7 +147,7 @@ interface PackageNet {
     alias Tides=int[immutable(Pubkey)];
     alias ReceiveQueue = Queue!(immutable(ubyte[]));
 
-    Payload evaPackage();
+//    Payload evaPackage();
     const(Package) buildEvent(const(HiBON) block, ExchangeState type);
 
     Tides tideWave(HiBON hibon, bool build_tides);

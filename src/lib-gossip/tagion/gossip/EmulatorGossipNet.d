@@ -125,15 +125,6 @@ class EmulatorGossipNet : StdGossipNet {
         _tids[channel].send(data);
     }
 
-    private uint eva_count;
-
-    Payload evaPackage() {
-        eva_count++;
-        auto hibon=new HiBON;
-        hibon["pubkey"]=pubkey;
-        hibon["git"]=HASH;
-        hibon["nonce"]="Should be implemented:"~to!string(eva_count);
-        return Payload(hibon.serialize);
-    }
+//    private uint eva_count;
 
 }
