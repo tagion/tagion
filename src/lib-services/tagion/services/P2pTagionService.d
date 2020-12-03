@@ -379,7 +379,7 @@ do {
             if ( (gossip_count >= max_gossip) || (payload.length) ) {
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
-                    immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
+                    immutable ebody=EventBody.eva(net);
                     const ebody_hibon = ebody.toHiBON;
                     const pack=net.buildEvent(ebody_hibon, ExchangeState.NONE);
                     // immutable signature=net.sign(ebody);

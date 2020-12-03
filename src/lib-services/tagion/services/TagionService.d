@@ -319,7 +319,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         if ( (gossip_count >= max_gossip) || (payload.length) ) {
             // fout.writeln("After build wave front");
             if ( own_node.event is null ) {
-                immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
+                immutable ebody=EventBody.eva(net);
                 const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
                 // immutable signature=net.sign(ebody);
                 event=hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
