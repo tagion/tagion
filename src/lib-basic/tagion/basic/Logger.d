@@ -148,6 +148,7 @@ static struct Logger {
         report(LoggerType.INFO, fmt, args);
     }
 
+
     void opCall(lazy immutable(TaskFailure) task_e) const nothrow {
         fatal("From task %s '%s'", task_e.task_name, task_e.throwable.msg);
         scope char[] text;
@@ -156,6 +157,16 @@ static struct Logger {
             return text;
         }
         fatal("%s",  error_text());
+        opCall(task_e.throwable);
+    }
+
+    @trusted
+    void opCall(lazy const(Throwable) t) const nothrow {
+        import std.exception;
+        auto mt=assumeWontThrow(cast(Throwable)t);
+
+        fatal(assumeWontThrow(mt.toString));
+        fatal(mt.info.toString);
     }
 
     // void opCall(lazy const(TagionException) e) const nothrow {

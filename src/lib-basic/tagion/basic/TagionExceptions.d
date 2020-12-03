@@ -61,28 +61,36 @@ struct TaskFailure {
  Returns:
  The immutable version of the Exception
  +/
+@trusted
 static immutable(TaskFailure) taskException(const(Throwable) e) nothrow  { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
     import tagion.basic.Logger;
     return immutable(TaskFailure)(cast(immutable)e, log.task_name);
 }
 
+// @trusted
+// static void send(immutable(TaskFailure) task_e) {
+//     import std.concurrency;
+//     ownerTid.send(task_e);
+// }
+
+@safe
 static void fatal(const(Throwable) e) nothrow {
     import tagion.basic.Logger;
-    import std.concurrency;
+
     immutable task_e = taskException(e);
     log(task_e);
     try {
-        if (ownerTid != Tid.init) {
-            ownerTid.send(task_e);
-        }
+        task_e.taskfailure;
     }
     catch (Exception e) {
         log.fatal(e.msg);
     }
 }
 
-
+@trusted
 static void taskfailure(immutable(TaskFailure) t) {
     import std.concurrency;
-    ownerTid.send(t);
+    if (ownerTid != Tid.init) {
+        ownerTid.send(t);
+    }
 }
