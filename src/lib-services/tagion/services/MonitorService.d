@@ -16,22 +16,21 @@ import tagion.communication.ListenerSocket;
 import tagion.basic.TagionExceptions;
 
 //Create flat webserver start class function - create Backend class.
-void monitorServiceTask(immutable(Options) opts) {
+void monitorServiceTask(immutable(Options) opts) nothrow {
+    scope(exit) {
+        import std.exception : assumeWontThrow;
+        log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
+        assumeWontThrow(ownerTid.send(Control.END));
+    }
+    try{
     // Set thread global options
     setOptions(opts);
     immutable task_name=opts.monitor.task_name;
     log.register(task_name);
-    scope(failure) {
-        log.fatal("Unexpected Termination");
-    }
 
-    try{
+
         log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
 
-        scope(success) {
-            log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
-            ownerTid.prioritySend(Control.END);
-        }
         auto listener_socket = ListenerSocket(
             opts,
             opts.url,
@@ -82,6 +81,10 @@ void monitorServiceTask(immutable(Options) opts) {
                 }
         }
 
+        void taskfailure(immutable(TaskFailure) t) {
+            ownerTid.send(t);
+        }
+
         ownerTid.send(Control.LIVE);
         while(!stop) {
             receiveTimeout(500.msecs,
@@ -96,33 +99,30 @@ void monitorServiceTask(immutable(Options) opts) {
                 (Document doc) {
                     listener_socket.broadcast(doc);
                 },
-                (immutable(TagionException) e) {
-                    log.error(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                    //throw e;
-                },
-                (immutable(Exception) e) {
-                    log.fatal(e.msg);
-                    stop=true;
-                    ownerTid.send(e);
-                    //throw e;
-                },
-                // version(none)
-                // (immutable(Error) t) {
-                //     import core.stdc.stdio;
-                //     printf("Error %p", &t);
-                //     log.fatal(t.msg);
+                &taskfailure
+                // (immutable(TagionException) e) {
+                //     // log.error(e.msg);
+                //     stop=true;
+                //     ownerTid.send(e);
+                //     //throw e;
+                // },
+                // (immutable(Exception) e) {
+                //     // log.fatal(e.msg);
+                //     stop=true;
+                //     ownerTid.send(e);
+                //     //throw e;
+                // },
+                // (immutable(Throwable) t) {
+                //     // log.fatal(t.msg);
                 //     stop=true;
                 //     ownerTid.send(t);
                 //     // throw t;
                 // }
                 );
-            log("Running");
+//        log("Running");
         }
     }
-    catch(Exception e){
-        log.fatal(e.msg);
-//        throw e;
+    catch(Throwable t){
+        fatal(t);
     }
 }

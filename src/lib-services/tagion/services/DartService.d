@@ -10,6 +10,7 @@ import p2p.cgo.helper;
 
 import tagion.basic.Logger;
 import tagion.basic.Basic : Buffer, Control;
+import tagion.basic.TagionExceptions;
 
 import std.getopt;
 import std.stdio;
@@ -41,7 +42,7 @@ import std.array;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) {
+void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
     try{
         setOptions(opts);
         immutable task_name=opts.dart.task_name;
@@ -121,6 +122,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         log("sending live");
         ownerTid.send(Control.LIVE);
         while(!stop) {
+            pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
             receiveTimeout(
                     1000.msecs,
                     &handleControl,
@@ -163,7 +165,8 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                         auto dstid = locate(opts.dart.sync.task_name);
                         if(dstid != Tid.init){
                             send(dstid, task_name, request_data); //TODO: => handle for the bullseye from dart
-                        }else{
+                        }
+                        else{
                             log("Cannot locate Dart synchronize service");
                         }
                     },
@@ -174,7 +177,8 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                         if(hirpc_id != recorder_hrpc_id){
                             auto response = ResponseHandler.Response!uint(hirpc_id, data);
                             requestPool.setResponse(response);
-                        }else{
+                        }
+                        else{
                             auto result_doc = message_doc[Keywords.result].get!Document;
                             auto bullseye = result_doc[DARTFile.Params.bullseye].get!Buffer;
                             log(bullseye.cutHex);
@@ -200,7 +204,8 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                                 if(sector_range.inRange(sector)){
                                     local_fp~=fp;
                                     continue fpIterator;
-                                }else{
+                                }
+                                else{
                                     foreach(address, fps; remote_fp_requests){
                                         if(address.sector.inRange(sector)){
                                             fps~=fp;
@@ -215,7 +220,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                                         }
                                     }
                                 }
-                                throw new Exception("No address for fp");
+                                throw new TagionException("No address for fp");
                             }
                             // auto recorder=dart.loads(local_fp, DARTFile.Recorder.Archive.Type.ADD);
                             auto rs = cast(ResponseHandler)(new ReadRequestHandler(array(fingerprints), hirpc, taskName, receiver));
@@ -269,23 +274,35 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     (NodeAddress[string] update){
                         node_addrses = update;
                     },
-                    (immutable(Exception) e) {
-                        log.fatal(e.msg);
-                        stop=true;
-                        ownerTid.send(e);
-                    },
-                    (immutable(Throwable) t) {
-                        log.fatal(t.msg);
+                    // (immutable(TagionException) e) {
+                    //     stop=true;
+                    //     ownerTid.send(e);
+                    // },
+                    (immutable(TaskFailure) t) {
                         stop=true;
                         ownerTid.send(t);
-                    }
+                    },
+                    // (immutable(Exception) e) {
+                    //     //log.fatal(e.msg);
+                    //     stop=true;
+                    //     ownerTid.send(e);
+                    // },
+                    // (immutable(Throwable) t) {
+                    //     //log.fatal(t.msg);
+                    //     stop=true;
+                    //     ownerTid.send(t);
+                    // }
                 );
             requestPool.tick();
         }
     }
-    catch(Exception e){
-        writefln("EXCEPTION: %s", e);
-        pragma(msg, "fixme(alex): Why doesn't this send the exception to the owner");
+    catch(Throwable e){
+        fatal(e);
+        // immutable task_e = e.taskException;
+        // log(task_e);
+        // ownerTid.send(task_e);
+        // writefln("EXCEPTION: %s", e);
+        // pragma(msg, "fixme(alex): Why doesn't this send the exception to the owner");
     }
 }
 
@@ -305,6 +322,7 @@ private void subscibeHandler(immutable(Options) opts){
             }
     }
     do{
+        pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
         receiveTimeout(
                     1000.msecs,
                     &handleControl,
@@ -326,5 +344,5 @@ private void subscibeHandler(immutable(Options) opts){
                     },
         );
         connectionPool.tick();
-    }while(!stop);
+    } while(!stop);
 }

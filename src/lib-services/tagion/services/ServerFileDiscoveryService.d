@@ -20,6 +20,7 @@ import std.array;
 import p2plib = p2p.node;
 import std.net.curl;
 import tagion.hibon.HiBONJSON;
+import tagion.basic.TagionExceptions : fatal;
 
 enum ServerRequestCommand{
     BecomeOnline = 1,
@@ -27,7 +28,7 @@ enum ServerRequestCommand{
     BecomeOffline =3,
 }
 
-void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutable(Options) opts){  //TODO: for test
+void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutable(Options) opts) nothrow {  //TODO: for test
     try{
         scope(exit){
             log("exit");
@@ -36,7 +37,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
 
         log.register(opts.discovery.task_name);
 
-        if(opts.serverFileDiscovery.url.length == 0){
+        if (opts.serverFileDiscovery.url.length == 0){
             log.error("Server url is missing");
             ownerTid.send(Control.STOP);
             return;
@@ -67,7 +68,8 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
                 }catch(Exception e){
                     log("ERROR on sending: %s", e.msg);
                 }
-            }else{
+            }
+            else{
                 log("Token missing.. Cannot record own info");
             }
         }
@@ -84,7 +86,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
             eraseOwnInfo();
         }
 
-        void initialize(){
+        void initialize() nothrow {
             try{
                 auto read_buff = get(opts.serverFileDiscovery.url ~ "/node/storage?tag=" ~ opts.serverFileDiscovery.tag);
                 // log("%s", cast(char[])read_buff);
@@ -106,9 +108,9 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
                     }
                 }
                 log("initialized %d", node_addresses.length);
-            }catch(Exception e){
-                writeln("Er:", e.msg);
-                log.fatal(e.msg);
+            }
+            catch(Exception e){
+                log.error(e.msg);
             }
         }
         spawn(&handleAddrChanedEvent, node);
@@ -145,31 +147,31 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
                 },
                 (ServerRequestCommand cmd){
                     switch(cmd){
-                        case ServerRequestCommand.BecomeOnline: {
-                            is_online = true;
-                            log("Becoming online..");
-                            updateTimestamp(start_timestamp);
-                            if(last_seen_addr!=""){
-                                recordOwnInfo(last_seen_addr);
-                            }
-                            break;
+                    case ServerRequestCommand.BecomeOnline: {
+                        is_online = true;
+                        log("Becoming online..");
+                        updateTimestamp(start_timestamp);
+                        if(last_seen_addr!=""){
+                            recordOwnInfo(last_seen_addr);
                         }
-                        case ServerRequestCommand.RequestTable: {
-                            initialize();
-                            auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                            ownerTid.send(address_book);
-                            break;
-                        }
-                        case ServerRequestCommand.BecomeOffline: {
-                            eraseOwnInfo();
-                            break;
-                        }
-                        default:
-                            pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                        break;
+                    }
+                    case ServerRequestCommand.RequestTable: {
+                        initialize();
+                        auto address_book = new immutable AddressBook!Pubkey(node_addresses);
+                        ownerTid.send(address_book);
+                        break;
+                    }
+                    case ServerRequestCommand.BecomeOffline: {
+                        eraseOwnInfo();
+                        break;
+                    }
+                    default:
+                        pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
                     }
                 }
-            );
-            if(!is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.delay_before_start.msecs) && is_online){
+                );
+            if (!is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.delay_before_start.msecs) && is_online){
                 log("initializing");
                 updateTimestamp(start_timestamp);
                 is_ready = true;
@@ -177,44 +179,54 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
                 auto address_book = new immutable AddressBook!Pubkey(node_addresses);
                 ownerTid.send(address_book);
             }
-            if(is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.update.msecs)){
+            if (is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.update.msecs)){
                 log("updating");
                 updateTimestamp(start_timestamp);
                 initialize();
                 auto address_book = new immutable AddressBook!Pubkey(node_addresses);
                 ownerTid.send(address_book);
             }
-        }while(!stop);
-    }catch(Exception e){
-        log("Exception: %s", e.msg);
-        ownerTid.send(cast(immutable) e);
+        } while(!stop);
+    }
+    catch(Throwable t){
+        fatal(t);
     }
 }
 
-void handleAddrChanedEvent(shared p2plib.Node node){
-    register("addr_changed_handler", thisTid);
+void handleAddrChanedEvent(shared p2plib.Node node) nothrow {
+    try {
+        register("addr_changed_handler", thisTid);
 
-    do{
-        receive(
-            (immutable(ubyte)[] data){
-                auto pub_addr = node.PublicAddress;
-                writeln("Addr changed %s", pub_addr);
-                if(pub_addr.length > 0){
-                    auto addrinfo = node.AddrInfo();
-                    ownerTid.send(addrinfo);
+        do{
+            receive(
+                (immutable(ubyte)[] data){
+                    auto pub_addr = node.PublicAddress;
+                    log("Addr changed %s", pub_addr);
+                    if(pub_addr.length > 0){
+                        auto addrinfo = node.AddrInfo();
+                        ownerTid.send(addrinfo);
+                    }
                 }
-            }
-        );
-    }while(true);
+                );
+        } while(true);
+    }
+    catch (Throwable t) {
+        fatal(t);
+    }
 }
 
-void handleRechabilityChanged(shared p2plib.Node node){
-    register("rechability_handler", thisTid);
-    do{
-        receive(
-            (immutable(ubyte)[] data){
-                writeln("RECHABILITY CHANGED: %s", cast(string) data);
-            }
-        );
-    }while(true);
+void handleRechabilityChanged(shared p2plib.Node node) nothrow {
+    try {
+        register("rechability_handler", thisTid);
+        do{
+            receive(
+                (immutable(ubyte)[] data){
+                    log("RECHABILITY CHANGED: %s", cast(string) data);
+                }
+                );
+        } while(true);
+    }
+    catch (Throwable t) {
+        fatal(t);
+    }
 }

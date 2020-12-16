@@ -51,10 +51,10 @@ import tagion.Keywords: NetworkMode;
 import std.stdio;
 
 void p2pTagionService(Options opts)
-in{
-    import std.algorithm: canFind;
-    assert([NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
-}
+    in{
+        import std.algorithm: canFind;
+        assert([NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
+    }
 do {
     setOptions(opts);
 
@@ -144,7 +144,7 @@ do {
                     force_stop = true;
                 }
             }
-        );
+            );
     }
     scope(exit){
         log("Closing net");
@@ -169,7 +169,7 @@ do {
                 if(state == DartSynchronizeState.READY){
                     ready = true;
                 }
-        });
+            });
         if(force_stop) return;
     }while(!ready||ready_counter!=2);
     log("Ready: %s", ready);
@@ -182,7 +182,7 @@ do {
                 auto pkeys = cast(immutable) address_book.data.keys;
                 net.set(pkeys);
             }
-        );
+            );
     }
 
 
@@ -248,9 +248,9 @@ do {
             if ( control is Control.END ) {
                 log("Closed transaction");
             }
-            else if ( control is Control.FAIL ) {
-                log.error("Closed transaction with failure");
-            }
+            // else if ( control is Control.FAIL ) {
+            //     log.error("Closed transaction with failure");
+            // }
         }
 
         if ( monitor_socket_tid != monitor_socket_tid.init ) {
@@ -263,9 +263,9 @@ do {
                     if ( ctrl is Control.END ) {
                         log("Closed monitor");
                     }
-                    else if ( ctrl is Control.FAIL ) {
-                        log.error("Closed monitor with failure");
-                    }
+                    // else if ( ctrl is Control.FAIL ) {
+                    //     log.error("Closed monitor with failure");
+                    // }
                 },
                 (immutable Exception e) {
                     ownerTid.prioritySend(e);
@@ -279,7 +279,7 @@ do {
 
 
     hashgraph.createNode(net.pubkey);
-  foreach(i, p; net.pkeys) {
+    foreach(i, p; net.pkeys) {
         if ( hashgraph.createNode(p) ) {
             log("%d] %s", i, p.cutHex);
         }
@@ -299,42 +299,51 @@ do {
         }
         transaction_socket_tid = spawn(&transactionServiceTask, opts);
         if ( receiveOnly!Control is Control.LIVE ) {
-                log("Transaction started port %d", opts.transaction.service.port);
-            }else{
-                log("bad command");
-            }
-    }catch(Exception e){
+            log("Transaction started port %d", opts.transaction.service.port);
+        }else{
+            log("bad command");
+        }
+    }
+    catch(Exception e){
         log("ERROR: %s", e.msg);
         force_stop = true;
     }
     if(force_stop) return;
-    transcript_tid=spawn(&transcriptServiceTask, opts);
-    Event.scriptcallbacks=new ScriptCallbacks(transcript_tid);
-        if ( receiveOnly!Control is Control.LIVE ) {
-            log("Transcript started");
-        }
-        enum max_gossip=2;
-        uint gossip_count=max_gossip;
-        bool stop=false;
-        // // True of the network has been initialized;
-        // bool initialised=false;
-        enum timeout_end=10;
-        uint timeout_count;
+    Event.scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
+    scope(exit) {
+        Event.scriptcallbacks.stop;
+    }
+
+    // transcript_tid=spawn(&transcriptServiceTask, opts);
+    // Event.scriptcallbacks=new ScriptCallbacks(transcript_tid);
+    // scope(exit) {
+    //     Event.scriptcallbacks.stop;
+    // }
+    //     if ( receiveOnly!Control is Control.LIVE ) {
+    //         log("Transcript started");
+    //     }
+    enum max_gossip=2;
+    uint gossip_count=max_gossip;
+    bool stop=false;
+    // // True of the network has been initialized;
+    // bool initialised=false;
+    enum timeout_end=10;
+    uint timeout_count;
     //    Event mother;
-        Event event;
-        auto own_node=hashgraph.getNode(net.pubkey);
-        log("Wait for some delay %s", opts.node_name);
+    Event event;
+    auto own_node=hashgraph.getNode(net.pubkey);
+    log("Wait for some delay %s", opts.node_name);
     //    Thread.sleep(2.seconds);
 
-        auto net_random=cast(P2pGossipNet)net;
-        enum bool has_random_seed=__traits(compiles, net_random.random.seed(0));
+    auto net_random=cast(P2pGossipNet)net;
+    enum bool has_random_seed=__traits(compiles, net_random.random.seed(0));
     //    pragma(msg, has_random_seed);
-        static if ( has_random_seed ) {
-    //        pragma(msg, "Random seed works");
-            if ( !opts.sequential ) {
-                net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
-            }
+    static if ( has_random_seed ) {
+        //        pragma(msg, "Random seed works");
+        if ( !opts.sequential ) {
+            net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
         }
+    }
     Payload empty_payload;
 
     immutable(ubyte)[] data;
@@ -370,7 +379,7 @@ do {
             if ( (gossip_count >= max_gossip) || (payload.length) ) {
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
-                    immutable ebody=immutable(EventBody)(net.evaPackage, null, null, net.time, net.eva_altitude);
+                    immutable ebody=EventBody.eva(net);
                     const ebody_hibon = ebody.toHiBON;
                     const pack=net.buildEvent(ebody_hibon, ExchangeState.NONE);
                     // immutable signature=net.sign(ebody);
@@ -458,68 +467,69 @@ do {
     // ownerTid.send(Control.LIVE);
     while(!stop && !abort)  {
         try{
-        immutable message_received=receiveTimeout(
-            opts.timeout.msecs,
-            &receive_payload,
-            &controller,
-            // &sequential,
-            &receive_buffer,
-            &tagionexception,
-            &exception,
-            &throwable,
-            (Response!(ControlCode.Control_Connected) resp) {
-                log("Client Connected key: %d", resp.key);
-                connectionPool.add(resp.key, resp.stream, true);
-            },
-            (Response!(ControlCode.Control_Disconnected) resp) {
-                log("Client Disconnected key: %d", resp.key);
-                connectionPool.close(cast(void*)resp.key);
-                connectionPoolBridge.removeConnection(resp.key);
-            },
-            (Response!(ControlCode.Control_RequestHandled) resp){
-                import tagion.hibon.Document;
-                import tagion.hibon.HiBONJSON;
-                auto doc=Document(resp.data);
-                Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-                connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
-                // log("response: %s", doc.toJSON);
-                log("received in: %s", resp.stream.Identifier);
-                receive_buffer(resp.data);
-            },
-            (immutable(Pubkey) send_channel){ //On sending failed
-                log("Removing channel from net");
-                auto send_node=hashgraph.getNode(send_channel);
-                send_node.state = ExchangeState.NONE;
-                // auto pkeys = net.pkeys;  //Remove channel from net.pkeys
-                // import std.algorithm: remove, SwapStrategy, countUntil;
-                // auto i = pkeys.countUntil(send_channel);
-                // net.set(pkeys[0..i]~pkeys[i+1..$]);
-            },
-            (immutable(AddressBook!Pubkey) address_book){
-                auto pkeys = cast(immutable) address_book.data.keys;
-                net.set(pkeys);
-                foreach(i, p; net.pkeys) {
-                    if ( hashgraph.createNode(p) ) {
-                        log("%d] %s", i, p.cutHex);
+            immutable message_received=receiveTimeout(
+                opts.timeout.msecs,
+                &receive_payload,
+                &controller,
+                // &sequential,
+                &receive_buffer,
+                &tagionexception,
+                &exception,
+                &throwable,
+                (Response!(ControlCode.Control_Connected) resp) {
+                    log("Client Connected key: %d", resp.key);
+                    connectionPool.add(resp.key, resp.stream, true);
+                },
+                (Response!(ControlCode.Control_Disconnected) resp) {
+                    log("Client Disconnected key: %d", resp.key);
+                    connectionPool.close(cast(void*)resp.key);
+                    connectionPoolBridge.removeConnection(resp.key);
+                },
+                (Response!(ControlCode.Control_RequestHandled) resp){
+                    import tagion.hibon.Document;
+                    import tagion.hibon.HiBONJSON;
+                    auto doc=Document(resp.data);
+                    Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
+                    connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
+                    // log("response: %s", doc.toJSON);
+                    log("received in: %s", resp.stream.Identifier);
+                    receive_buffer(resp.data);
+                },
+                (immutable(Pubkey) send_channel){ //On sending failed
+                    log("Removing channel from net");
+                    auto send_node=hashgraph.getNode(send_channel);
+                    send_node.state = ExchangeState.NONE;
+                    // auto pkeys = net.pkeys;  //Remove channel from net.pkeys
+                    // import std.algorithm: remove, SwapStrategy, countUntil;
+                    // auto i = pkeys.countUntil(send_channel);
+                    // net.set(pkeys[0..i]~pkeys[i+1..$]);
+                },
+                (immutable(AddressBook!Pubkey) address_book){
+                    auto pkeys = cast(immutable) address_book.data.keys;
+                    net.set(pkeys);
+                    foreach(i, p; net.pkeys) {
+                        if ( hashgraph.createNode(p) ) {
+                            log("%d] %s", i, p.cutHex);
+                        }
                     }
                 }
-            }
-            );
-        log("received: %s", message_received);
-        log("MY PK: %s", net.pubkey.cutHex);
+                );
+            log("received: %s", message_received);
+            log("MY PK: %s", net.pubkey.cutHex);
 
-        if ( !message_received && net.pkeys.length > 1) {
-            log("TIME OUT");
-            writefln("TIME OUT %d", opts.node_id);
-            timeout_count++;
-            net.time=Clock.currTime.toUnixTime!long;
-            if ( !net.queue.empty ) {
-                log("FROM QUEUE");
-                receive_buffer(net.queue.read);
+            if ( !message_received && net.pkeys.length > 1) {
+                log("TIME OUT");
+                writefln("TIME OUT %d", opts.node_id);
+                timeout_count++;
+                net.time=Clock.currTime.toUnixTime!long;
+                if ( !net.queue.empty ) {
+                    log("FROM QUEUE");
+                    receive_buffer(net.queue.read);
+                }
+                next_mother(empty_payload);
             }
-            next_mother(empty_payload);
         }
-        }catch(Exception e){
+        catch(Exception e){
             log.fatal(e.msg);
         }
     }
