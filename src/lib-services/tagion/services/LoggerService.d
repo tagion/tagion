@@ -35,17 +35,25 @@ void loggerTask(immutable(Options) opts) {
     log.set_logger_task(opts.logger.task_name);
 
     File file;
-    file.open(opts.logger.file_name, "w");
-    file.writefln("Logger task: %s", opts.logger.task_name);
-    file.flush;
+    const logging=opts.logger.file_name.length != 0;
+    if (logging) {
+        file.open(opts.logger.file_name, "w");
+        file.writefln("Logger task: %s", opts.logger.task_name);
+        file.flush;
+    }
     scope(exit) {
-        file.close;
-        ownerTid.send(Control.END);
+        if (logging) {
+            file.close;
+            ownerTid.send(Control.END);
+        }
     }
 
     scope(success) {
-        file.writeln("Logger closed");
+        if (logging) {
+            file.writeln("Logger closed");
+        }
     }
+
     bool stop;
 
     void controller(Control ctrl) @safe {
@@ -67,12 +75,16 @@ void loggerTask(immutable(Options) opts) {
         }
         if ( type is LoggerType.INFO ) {
             const output = format("%s: %s", label, text);
-            file.writeln(output);
+            if (logging) {
+                file.writeln(output);
+            }
             printToConsole(output);
         }
         else {
             const output = format("%s:%s: %s", label, type, text);
-            file.writeln(output);
+            if (logging) {
+                file.writeln(output);
+            }
             printToConsole(output);
         }
         if ( type & LoggerType.STDERR) {
@@ -87,7 +99,7 @@ void loggerTask(immutable(Options) opts) {
                 &controller,
                 &receiver
             );
-            if(opts.logger.flush){
+            if(opts.logger.flush && logging){
                 file.flush();
             }
         }
@@ -108,4 +120,5 @@ void loggerTask(immutable(Options) opts) {
             stop=true;
         }
     }
+
 }
