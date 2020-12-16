@@ -2,8 +2,6 @@ module tagion.hashgraph.HashGraph;
 
 import std.stdio;
 import std.conv;
-//import std.range.primitives : isInputRange;
-
 import tagion.hashgraph.Event;
 import tagion.gossip.InterfaceNet;
 import tagion.utils.LRU;
@@ -16,7 +14,6 @@ import Basic=tagion.hashgraph.HashGraphBasic;
 
 import tagion.basic.Logger;
 
-/// check function used in the Event package
 private alias check=Check!HashGraphConsensusException;
 
 @safe
@@ -151,9 +148,12 @@ class HashGraph {
                     return current;
                 }
 
-                void popFront() {
-                    current = current.mother;
-                }
+                // void popFront() {
+                //     current = current.mother_raw;
+                // }
+            }
+            void popFront() {
+                current = current.mother_raw;
             }
         }
 
@@ -179,10 +179,6 @@ class HashGraph {
     private uint[] unused_node_ids; // Stack of unused node ids
 
 
-    // @nogc
-    // package Range!false opSlice() nothrow {
-    //     return Range!false(this);
-    // }
 
     @nogc
     Range opSlice() const pure nothrow {
@@ -297,7 +293,7 @@ class HashGraph {
         _event_cache.remove(fingerprint);
     }
 
-    bool isRegistered(scope immutable(ubyte[]) fingerprint) {
+    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
         return _event_cache.contains(fingerprint);
     }
 
@@ -347,16 +343,6 @@ class HashGraph {
         ref immutable(EventBody) eventbody) {
         immutable ebody=eventbody.serialize;
         immutable fingerprint=request_net.calcHash(ebody);
-
-
-        import core.time : MonoTime;
-        import tagion.utils.Miscellaneous : cutHex;
-        scope const before = MonoTime.currTime;
-        log("TIME Register %s", fingerprint.cutHex);
-        scope(exit) {
-            log("TIME End %s time time=%ssec", fingerprint.cutHex, 1e-6*(MonoTime.currTime - before).total!"usecs");
-        }
-
         if ( Event.scriptcallbacks ) {
             // Sends the eventbody to the scripting engine
             Event.scriptcallbacks.send(eventbody);
@@ -388,7 +374,6 @@ class HashGraph {
 
             event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
 
-
             // Add the event to the event cache
             assign(event);
 
@@ -404,10 +389,10 @@ class HashGraph {
 
             event.round.check_coin_round;
 
-            if ( Round.check_decided_round_limit) {
-                // Scrap the lowest round which is not need anymore
-                event.round.scrap(this);
-            }
+            // if ( Round.check_decided_round_limit) {
+            //     // Scrap the lowest round which is not need anymore
+            //     event.round.scrap(this);
+            // }
 
             if ( Event.callbacks ) {
                 Event.callbacks.round(event);
@@ -418,34 +403,24 @@ class HashGraph {
             }
 
         }
-
         return event;
     }
 
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false, string indent=null) {
+    protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
         iterative_tree_count++;
         if ( event && ( !event.is_loaded ) ) {
-            import core.time : MonoTime;
-            import tagion.utils.Miscellaneous : cutHex;
-            scope const before = MonoTime.currTime;
-            log("TIME ->%s %s %d", indent, event.fingerprint.cutHex, iterative_tree_count);
-//            log("\tr %s", fingerprint.cutHex);
-            scope(exit) {
-                log("TIME <-%s time=%ssec", indent, 1e-6*(MonoTime.currTime - before).total!"usecs");
-            }
-
             event.loaded;
 
             auto mother=event.mother(this, request_net);
-            requestEventTree(request_net, mother, event, false, indent~`M*`);
+            requestEventTree(request_net, mother, event, false);
             if ( mother ) {
                 mother.daughter=event;
             }
             auto father=event.father(this, request_net);
-            requestEventTree(request_net, father, event, true, indent~`F*`);
+            requestEventTree(request_net, father, event, true);
             if ( father ) {
                 father.son=event;
             }
@@ -462,8 +437,8 @@ class HashGraph {
     package void strongSee(Event top_event) {
         if ( top_event && !top_event.is_strongly_seeing_checked ) {
 
-            strongSee(top_event.mother);
-            strongSee(top_event.father);
+            strongSee(top_event.mother_raw);
+            strongSee(top_event.father_raw);
             if ( isMajority(top_event.witness_votes(total_nodes)) ) {
                 scope BitArray[] witness_vote_matrix=new BitArray[total_nodes];
                 scope BitArray strong_vote_mask;
@@ -494,15 +469,15 @@ class HashGraph {
                              The father event is searched first to cross as many nodes as fast as possible
                              +/
                             if ( path_mask[check_event.node_id] ) {
-                                checkStrongSeeing(check_event.father, path_mask);
-                                checkStrongSeeing(check_event.mother, path_mask);
+                                checkStrongSeeing(check_event.father_raw, path_mask);
+                                checkStrongSeeing(check_event.mother_raw, path_mask);
                             }
                             else {
                                 scope BitArray sub_path_mask=path_mask.dup;
                                 sub_path_mask[check_event.node_id]=true;
 
-                                checkStrongSeeing(check_event.father, sub_path_mask);
-                                checkStrongSeeing(check_event.mother, sub_path_mask);
+                                checkStrongSeeing(check_event.father_raw, sub_path_mask);
+                                checkStrongSeeing(check_event.mother_raw, sub_path_mask);
                             }
                         }
                     }
@@ -530,4 +505,150 @@ class HashGraph {
             }
         }
     }
+
+    version(none)
+    unittest { // strongSee
+        // This is the example taken from
+        // HASHGRAPH CONSENSUS
+        // SWIRLDS TECH REPORT TR-2016-01
+        import tagion.crypto.SHA256;
+        import std.traits;
+        import std.conv;
+        enum NodeLable {
+            Alice,
+            Bob,
+            Carol,
+            Dave,
+            Elisa
+        }
+        struct Emitter {
+            Pubkey pubkey;
+        }
+        auto h=new HashGraph;
+        Emitter[NodeLable.max+1] emitters;
+//        writefln("@@@ Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
+        foreach (immutable l; [EnumMembers!NodeLable]) {
+//            writefln("label=%s", l);
+            emitters[l].pubkey=cast(Pubkey)to!string(l);
+        }
+        ulong current_time;
+        uint dummy_index;
+        ulong dummy_time() {
+            current_time+=1;
+            return current_time;
+        }
+        Hash hash(immutable(ubyte)[] data) {
+            return new SHA256(data);
+        }
+        immutable(EventBody) newbody(immutable(EventBody)* mother, immutable(EventBody)* father) {
+            dummy_index++;
+            if ( father is null ) {
+                auto hm=hash(mother.serialize).digits;
+                return EventBody(null, hm, null, dummy_time);
+            }
+            else {
+                auto hm=hash(mother.serialize).digits;
+                auto hf=hash(father.serialize).digits;
+                return EventBody(null, hm, hf, dummy_time);
+            }
+        }
+        // Row number zero
+        writeln("Row 0");
+        // EventBody* a,b,c,d,e;
+        with(NodeLable) {
+            immutable a0=EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0);
+            immutable b0=EventBody(hash(emitters[Bob].pubkey).digits, null, null, 0);
+            immutable c0=EventBody(hash(emitters[Carol].pubkey).digits, null, null, 0);
+            immutable d0=EventBody(hash(emitters[Dave].pubkey).digits, null, null, 0);
+            immutable e0=EventBody(hash(emitters[Elisa].pubkey).digits, null, null, 0);
+            h.registerEvent(emitters[Bob].pubkey,   b0, &hash);
+            h.registerEvent(emitters[Carol].pubkey, c0, &hash);
+            h.registerEvent(emitters[Alice].pubkey, a0, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e0, &hash);
+            h.registerEvent(emitters[Dave].pubkey,  d0, &hash);
+
+            // Row number one
+            writeln("Row 1");
+            alias a0 a1;
+            alias b0 b1;
+            immutable c1=newbody(&c0, &d0);
+            immutable e1=newbody(&e0, &b0);
+            alias d0 d1;
+            //with(NodeLable) {
+            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
+
+            // Row number two
+            writeln("Row 2");
+            alias a1 a2;
+            immutable b2=newbody(&b1, &c1);
+            immutable c2=newbody(&c1, &e1);
+            alias d1 d2;
+            immutable e2=newbody(&e1, null);
+            h.registerEvent(emitters[Bob].pubkey,   b1, &hash);
+            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
+            // Row number 2 1/2
+            writeln("Row 2 1/2");
+
+            alias a2 a2a;
+            alias b2 b2a;
+            alias c2 c2a;
+            immutable d2a=newbody(&d2, &c2);
+            alias e2 e2a;
+            h.registerEvent(emitters[Dave].pubkey,  d2a, &hash);
+            // Row number 3
+            writeln("Row 3");
+
+            immutable a3=newbody(&a2, &b2);
+            immutable b3=newbody(&b2, &c2);
+            immutable c3=newbody(&c2, &d2);
+            alias d2a d3;
+            immutable e3=newbody(&e2, null);
+            //
+            h.registerEvent(emitters[Alice].pubkey, a3, &hash);
+            h.registerEvent(emitters[Bob].pubkey,   b3, &hash);
+            h.registerEvent(emitters[Carol].pubkey, c3, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e3, &hash);
+            // Row number 4
+            writeln("Row 4");
+
+
+            immutable a4=newbody(&a3, null);
+            alias b3 b4;
+            alias c3 c4;
+            alias d3 d4;
+            immutable e4=newbody(&e3, null);
+            //
+            h.registerEvent(emitters[Alice].pubkey, a4, &hash);
+            h.registerEvent(emitters[Elisa].pubkey, e4, &hash);
+            // Row number 5
+            writeln("Row 5");
+            alias a4 a5;
+            alias b4 b5;
+            immutable c5=newbody(&c4, &e4);
+            alias d4 d5;
+            alias e4 e5;
+
+
+
+            //
+
+            h.registerEvent(emitters[Carol].pubkey, c5, &hash);
+            // Row number 6
+            writeln("Row 6");
+
+            alias a5 a6;
+            alias b5 b6;
+            immutable c6=newbody(&c5, &a5);
+            alias d5 d6;
+            alias e5 e6;
+
+            //
+            h.registerEvent(emitters[Alice].pubkey, a6, &hash);
+        }
+        writeln("Row end");
+
+    }
+
 }

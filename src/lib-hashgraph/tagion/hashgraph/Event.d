@@ -14,6 +14,9 @@ import std.bitmanip;
 import std.format;
 import std.typecons;
 import std.traits : Unqual;
+import std.range : enumerate;
+import std.algorithm.searching : all;
+import std.algorithm.iteration : map, each;
 
 import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, EnumText;
 import tagion.hashgraph.HashGraphBasic : isMajority;
@@ -47,7 +50,7 @@ bool lower(int a, int b) pure nothrow {
     return a-b < 0;
 }
 
-@safe @nogc
+@safe
 unittest { // Test of the altitude measure function
     int x=int.max-10;
     int y=x+20;
@@ -96,6 +99,16 @@ struct EventBody {
     @nogc
     bool isEva() pure const nothrow {
         return (mother.length == 0);
+    }
+
+    static immutable(EventBody) eva(GossipNet net) {
+        auto hibon=new HiBON;
+        hibon["pubkey"]=net.pubkey;
+//        hibon["git"]=HASH;
+        hibon["nonce"]="Should be implemented:"; //~to!string(eva_count);
+//        immutable payload=immutable(Payload)(hibon.serialize);
+        immutable result=immutable(EventBody)(Payload(hibon.serialize), null, null, net.time, net.eva_altitude);
+        return result;
     }
 
     this(Document doc, RequestNet request_net=null) inout {
@@ -218,6 +231,7 @@ interface EventScriptCallbacks {
 
 @safe
 class Round {
+    bool __grounded;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     private Round _previous;
@@ -228,7 +242,7 @@ class Round {
 
     private BitArray _looked_at_mask;
     private uint _looked_at_count;
-    static int increase_number(const(Round) r) {
+    static int increase_number(const(Round) r) nothrow pure {
         return r.number+1;
     }
 
@@ -271,12 +285,12 @@ class Round {
 
     @nogc
     static bool check_decided_round_limit() nothrow {
-         return _decided_count > total_limit;
+        return _decided_count > total_limit;
     }
 
     private void disconnect()
         in {
-            assert(_previous is null, "Only the last round can be disconnected");
+            assert((_previous is null) || (_previous is _seed_round), "Only the last round can be disconnected");
             assert(_events_count == 0, "All witness must be removed before the round can be disconnected");
         }
     do {
@@ -295,7 +309,7 @@ class Round {
 
     // Used to make than an witness in the next round at the node_id has looked at this round
     @trusted @nogc
-    package void looked_at(const uint node_id) {
+    package void looked_at(const uint node_id) nothrow {
         if ( !_looked_at_mask[node_id] ) {
             _looked_at_mask[node_id]=true;
             _looked_at_count++;
@@ -318,9 +332,10 @@ class Round {
         return _looked_at_count;
     }
 
+    private static Round _seed_round;
     package static Round seed_round(const uint node_size) {
         if ( _rounds is null ) {
-            _rounds = new Round(null, node_size, -1);
+            _rounds = _seed_round = new Round(null, node_size, -1);
         }
         // Use the latest round as seed round
         return _rounds;
@@ -377,10 +392,48 @@ class Round {
     }
 
     @nogc
-    package void add(Event event) nothrow
-        in {
-            assert(_events[event.node_id] is null, "Evnet should only be added once");
+    package Range!false range() pure nothrow {
+        return Range!false(this);
+    }
+
+    @nogc
+    Range!true opSlice() pure nothrow {
+        return Range!true(this);
+    }
+
+    @nogc
+    struct Range(bool CONST=false) {
+        private Event[] _events;
+        this(Round r) nothrow pure {
+            _events=r._events;
         }
+        @property pure {
+            bool empty() const {
+                return _events.length is 0;
+            }
+
+            static if (CONST) {
+                const(Event) front() const {
+                    return _events[0];
+                }
+            }
+            else {
+                Event front() {
+                    return _events[0];
+                }
+            }
+
+            void popFront() {
+                _events=_events[1..$];
+            }
+        }
+    }
+
+    @nogc
+    package void add(Event event) nothrow
+    in {
+        assert(_events[event.node_id] is null, "Evnet should only be added once");
+    }
     do {
         if ( _events[event.node_id] is null ) {
             _events_count++;
@@ -389,11 +442,11 @@ class Round {
     }
 
     @nogc
-    package void remove(const(Event) e) nothrow
-        in {
-            assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
-            assert(_events_count > 0, "No events exists in this round");
-        }
+    private void remove(const(Event) e) nothrow
+    in {
+        assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
+        assert(_events_count > 0, "No events exists in this round");
+    }
     do {
         if ( _events[e.node_id] ) {
             _events_count--;
@@ -459,31 +512,32 @@ class Round {
     // }
 
     private void consensus_order() {
-        import std.stdio;
-            writeln("consensus order");
+        // import std.stdio;
+        // writeln("consensus order");
         import std.algorithm : sort, SwapStrategy;
         import std.functional;
-                import tagion.hibon.HiBONJSON;
+        import tagion.hibon.HiBONJSON;
         scope Event[] famous_events=new Event[_events.length];
         BitArray unique_famous_mask;
         bitarray_change(unique_famous_mask, node_size);
         @trusted
-        ulong find_middel_time() {
+            ulong find_middel_time() {
             try{
-                writeln("finding middel time");
+                log("finding middel time");
                 uint famous_node_id;
                 foreach(e; _events) {
                     if(e is null){
-                        writeln("event is null");
-                        stdout.flush();
+                        log("event is null");
+                        //stdout.flush();
                         // writeln(Document(e.toHiBON.serialize).toJSON);
                     }
                     if(e._witness is null){
-                        writeln("witness is null");
-                        stdout.flush();
-                        writeln(Document(e.toHiBON.serialize).toJSON);
-                    }else{
-                        writeln("ok");
+                        log("witness is null");
+                        //stdout.flush();
+                        log("%s", Document(e.toHiBON.serialize).toJSON);
+                    }
+                    else{
+                        log("ok");
                         if (e._witness.famous) {
                             famous_events[famous_node_id]=e;
                             unique_famous_mask[famous_node_id]=true;
@@ -494,19 +548,21 @@ class Round {
                 famous_events.length=famous_node_id;
                 // Sort the time stamps
                 famous_events.sort!((a,b) => (Event.timeCmp(a,b) <0));
-                writeln("famous sorted");
+                log("famous sorted");
                 // Find middel time
                 immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
-                writefln("middle time index: %d, len: %d", middel_time_index, famous_events.length);
-                stdout.flush();
+                log("middle time index: %d, len: %d", middel_time_index, famous_events.length);
+                //stdout.flush();
                 scope(exit){
-                    writeln("calc successfully");
+                    log("calc successfully");
                 }
                 return famous_events[middel_time_index].eventbody.time;
             }
             catch(Exception e){
-                writeln("exc: ", e.msg);
-                throw e;
+                import tagion.basic.TagionExceptions : fatal;
+                fatal(e);
+                // writeln("exc: ", e.msg);
+                // throw e;
             }
         }
 
@@ -515,11 +571,10 @@ class Round {
         //
         // Clear round received counters
         //
-//        version(none)
         foreach(event; famous_events) {
             Event event_to_be_grounded;
             bool trigger;
-            void clear_round_counters(Event e) {
+            void clear_round_counters(Event e) nothrow {
                 if ( e && !e.grounded ) {
                     if ( !trigger && e.round_received ) {
                         trigger=true;
@@ -534,7 +589,8 @@ class Round {
                 }
             }
             clear_round_counters(event._mother);
-            version(none)
+
+//            version(none)
             if ( event_to_be_grounded ) {
                 event_to_be_grounded._grounded=true;
                 if ( event_to_be_grounded._round._previous ) {
@@ -569,14 +625,14 @@ class Round {
 
         if ( Event.scriptcallbacks ) {
             import std.stdio;
-            writefln("EPOCH received %d time=%d", round_received_events.length, middel_time);
+            log.fatal("EPOCH received %d time=%d", round_received_events.length, middel_time);
             Event.scriptcallbacks.epoch(round_received_events, middel_time);
         }
 
         if ( Event.callbacks ) {
             Event.callbacks.epoch(round_received_events);
         }
-   }
+    }
 
     private void decide()
         in {
@@ -588,7 +644,7 @@ class Round {
     }
     do {
         @nogc
-        Round one_over(Round r=_rounds) nothrow pure {
+            Round one_over(Round r=_rounds) nothrow pure {
             if ( r._previous is this ) {
                 return r;
             }
@@ -604,6 +660,9 @@ class Round {
             Event.callbacks.round_decided(this);
         }
         consensus_order;
+        if (check_decided_round_limit) {
+            scrap;
+        }
     }
 
     // Returns true of the round can be decided
@@ -645,16 +704,17 @@ class Round {
     }
 
     @nogc
-    inout(Round) previous() inout pure nothrow {
+    package inout(Round) previous() inout pure nothrow {
         return _previous;
     }
 
-    // Find the lowest decide round
+    /// Find the lowest decided round
     @nogc
     static Round lowest() pure nothrow {
         Round local_lowest(Round r=_rounds) {
             if ( r ) {
-                if ( r._decided && r._previous && (r._previous._previous is null ) && (r._previous._previous._previous is null )) {
+//                if ( r._decided && r._previous && (r._previous._previous is null ) ) { //&& (!r._previous._previous.__grounded) ) {
+                if ( r._decided && r._previous && ((!r._previous.__grounded) || (r._previous._previous is null )) ) {
                     return r;
                 }
                 return local_lowest(r._previous);
@@ -668,7 +728,7 @@ class Round {
     static void _scrap(H)(H hashgraph) {
         // Scrap the rounds and events below this
         void local_scrap(Round r) @trusted {
-            foreach(node_id, ref e; r) {
+            foreach(node_id, ref e; r[].enumarate) {
                 void scrap_event(Event e) {
                     if ( e ) {
                         scrap_event(e._mother);
@@ -687,42 +747,77 @@ class Round {
             }
         }
         Round _lowest=lowest;
-        if ( _lowest ) {
-            foreach(node_id, e; _lowest) {
-                e.disconnect(hashgraph);
-            }
-//            local_scrap(_lowest);
-        }
-    }
-
-    static void scrap(H)(H hashgraph) {
-        // Scrap the rounds and events below this
-        void local_scrap(Round r) @trusted {
-            foreach(node_id, ref e; r) {
-                void scrap_event(Event e) {
-                    if ( e ) {
-                        scrap_event(e._mother);
-                        if ( Event.callbacks ) {
-                            Event.callbacks.remove(e);
-                        }
-                        hashgraph.eliminate(e.fingerprint);
-                        e.disconnect(hashgraph);
-                        e.destroy;
-                    }
-                }
-                scrap_event(e._mother);
-                if ( e ) {
-                    assert(e._mother is null);
-                }
-            }
-        }
-        Round _lowest=lowest;
+//        version(none)
         if ( _lowest ) {
             local_scrap(_lowest);
         }
     }
 
-    @nogc
+    // Scrap the lowest Round
+    private static void scrap() {
+        // Scrap the rounds and events below this
+        void local_scrap(Round r) @trusted {
+            if (r[].all!(a => a._mother.round_received !is null)) {
+                import core.memory : GC;
+                log.fatal("round.decided=%s round=%d usedSize=%d", r._decided, r.number, GC.stats.usedSize);
+//                r.range.each!(a => a._grounded = true);
+                r.range.each!(a => a.disconnect);
+
+            }
+            version(none) {
+                scope round_numbers = new int[r.node_size];
+                scope round_received_numbers = new int[r.node_size];
+                bool sealed_round=true;
+                scope(exit) {
+                    log.fatal("round.decided=%s", r._decided);
+                    log.fatal("   round:%s", round_numbers);
+                    log.fatal("received:%s", round_received_numbers);
+                    if (sealed_round) {
+                        //   log.fatal("ROUND Sealed!!");
+                        log.fatal("ROUND Sealed!! %s", r[].all!(a => a._mother.round_received !is null));
+                    }
+                }
+
+                foreach(node_id, e; r[].enumerate) {
+//                e._mother._grounded=true;
+                    round_numbers[node_id]=r.number;
+                    if (e._mother.round_received) {
+//                    sealed_round &= (e._mother.round_received.number == r.number+1);
+
+                        round_received_numbers[node_id]=e._mother.round_received.number;
+                    }
+                    else {
+//                    sealed_round=false;
+                        round_received_numbers[node_id]=-1;
+//                    log.fatal("node_id=%d round=%d NO ROUND_RECEIVED !!!", node_id, r.number);
+                    }
+                    // void scrap_event(Event e) {
+                    //     if ( e ) {
+                    //         scrap_event(e._mother);
+                    //         if ( Event.callbacks ) {
+                    //             Event.callbacks.remove(e);
+                    //         }
+                    //         hashgraph.eliminate(e.fingerprint);
+                    //         e.disconnect;
+                    //         e.destroy;
+                    //     }
+                    // }
+                    // scrap_event(e._mother);
+                    // if ( e ) {
+                    //     assert(e._mother is null);
+                    // }
+                }
+            }
+        }
+        Round _lowest=lowest;
+//        version(none)
+        if ( _lowest ) {
+            local_scrap(_lowest);
+            _lowest.__grounded=true;
+            log.fatal("Round scrapped");
+        }
+    }
+
     static uint decided_count() nothrow {
         return _decided_count;
     }
@@ -761,15 +856,17 @@ class Event {
 
     @safe
     static class Witness {
-        private Event _previous_witness_event;
-        private BitArray _famous_decided_mask;
-        private bool     _famous_decided;
-        private BitArray _strong_seeing_mask;
-        // This vector shows what we can see in the previous witness round
-        // Round seeing masks from next round
-        private BitArray _round_seen_mask;
-        private uint     _round_seen_count;
-        private uint     _famous_votes;
+        protected {
+            Event _previous_witness_event;
+            BitArray _famous_decided_mask;
+            BitArray _strong_seeing_mask;
+            // This vector shows what we can see in the previous witness round
+            // Round seeing masks from next round
+            BitArray _round_seen_mask;
+            uint     _round_seen_count;
+            uint     _famous_votes;
+            bool     _famous_decided;
+        }
         @trusted
         this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask) pure nothrow
         in {
@@ -800,8 +897,7 @@ class Event {
 
         @trusted
         package void seeing_previous_round(Event owner_event) {
-            import std.stdio;
-            void update_round_seeing(Event event, string indent="") @trusted {
+            void update_round_seeing(Event event) @trusted {
                 if ( event ) {
                     if ( !event.visit ) {
                         immutable round_distance = owner_event._round.number - event._round.number;
@@ -815,14 +911,14 @@ class Event {
                                         Event.callbacks.looked_at(event);
                                     }
                                 }
-                                update_round_seeing(event._mother, indent~"  ");
-                                update_round_seeing(event._father, indent~"  ");
+                                update_round_seeing(event._mother);
+                                update_round_seeing(event._father);
                             }
                         }
                         else if ( round_distance  <= 1 ) {
                             foreach(seeing_node_id, e; event._round) {
                                 if ( event.witness_mask[seeing_node_id] ) {
-                                    update_round_seeing(e, indent~"  ");
+                                    update_round_seeing(e);
                                 }
                             }
                         }
@@ -831,8 +927,8 @@ class Event {
             }
             // Update the visit marker to prevent infinity recusive loop
             Event.visit_marker++;
-            update_round_seeing(owner_event.mother, "::");
-            update_round_seeing(owner_event.father,  "::");
+            update_round_seeing(owner_event._mother);
+            update_round_seeing(owner_event._father);
         }
 
 
@@ -916,11 +1012,12 @@ class Event {
     private Event _father;
     private Event _daughter;
     private Event _son;
-    private bool _grounded;
+
     private int _received_order;
     private Round  _round;
     private Round  _round_received;
     private uint _round_received_count;
+    private bool _grounded;
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
 
@@ -928,20 +1025,20 @@ class Event {
     private uint _witness_votes;
     private BitArray _witness_mask;
 
-    @nogc
+    @nogc @property
     private uint node_size() pure const nothrow {
         return cast(uint)witness_mask.length;
     }
+    immutable uint id;
+    private static uint id_count;
 
     private bool _strongly_seeing_checked;
 
     private bool _loaded;
     // This indicates that the hashgraph aften this event
     private bool _forked;
-    immutable uint id;
-    private static uint id_count;
 
-    @nogc
+    @nogc @property
     private static immutable(uint) next_id() nothrow {
         if ( id_count == id_count.max ) {
             id_count = 1;
@@ -1034,7 +1131,7 @@ class Event {
     }
 
     @nogc
-    const(Round) round_received() pure const nothrow {
+    final const(Round) round_received() pure const nothrow {
         return _round_received;
     }
 
@@ -1045,9 +1142,9 @@ class Event {
 
     @nogc
     inout(Round) round() inout pure nothrow
-    out(result) {
-        assert(result, "Round should be defined before it is used");
-    }
+        out(result) {
+            assert(result, "Round should be defined before it is used");
+        }
     do {
         return _round;
     }
@@ -1079,7 +1176,6 @@ class Event {
             collect_votes(_round._previous);
         }
     }
-
     @nogc
     const(Round) round() pure const nothrow
     out(result) {
@@ -1092,7 +1188,7 @@ class Event {
     @nogc
     Round round() nothrow
         in {
-            if ( motherExists ) {
+            if ( !_grounded && motherExists ) {
                 assert(_mother, "Graph has not been resolved");
             }
         }
@@ -1106,7 +1202,7 @@ class Event {
         return _round;
     }
 
-    uint witness_votes(immutable uint node_size) {
+    private uint witness_votes(immutable uint node_size) {
         witness_mask(node_size);
         return _witness_votes;
     }
@@ -1142,7 +1238,7 @@ class Event {
                 }
                 else {
                     if ( event.mother ) {
-                        auto mask=check_witness_mask(event.mother, level+1);
+                        auto mask=check_witness_mask(event._mother, level+1);
                         if ( mask.length < event._witness_mask.length ) {
                             mask.length = event._witness_mask.length;
                         }
@@ -1154,7 +1250,7 @@ class Event {
 
                     }
                     if ( event.father ) {
-                        auto mask=check_witness_mask(event.father, level+1);
+                        auto mask=check_witness_mask(event._father, level+1);
                         if ( mask.length < event._witness_mask.length ) {
                             mask.length = event._witness_mask.length;
                         }
@@ -1195,11 +1291,11 @@ class Event {
 
     @trusted
     package void strongly_seeing(Event previous_witness_event, ref const(BitArray) strong_seeing_mask)
-        in {
-            assert(!_strongly_seeing_checked);
-            assert(_witness_mask.length != 0);
-            assert(previous_witness_event);
-        }
+    in {
+        assert(!_strongly_seeing_checked);
+        assert(_witness_mask.length != 0);
+        assert(previous_witness_event);
+    }
     do {
         bitarray_clear(_witness_mask, node_size);
         _witness_mask[node_id]=true;
@@ -1217,7 +1313,7 @@ class Event {
 
     private void next_round() {
         // The round number is increased by one
-        _round=Round(_mother._round.number+1);
+        _round=Round(mother._round.number+1);
         // Event added to round
         _round.add(this);
 
@@ -1229,10 +1325,10 @@ class Event {
     }
 
     @nogc
-    void strongly_seeing_checked() nothrow
-        in {
-            assert(!_strongly_seeing_checked);
-        }
+    package void strongly_seeing_checked() nothrow
+    in {
+        assert(!_strongly_seeing_checked);
+    }
     do {
         _strongly_seeing_checked=true;
     }
@@ -1250,25 +1346,25 @@ class Event {
     do {
         bool result;
         if ( mother ) {
-            if ( mother.witness_mask[node_id] ) {
+            if ( _mother.witness_mask[node_id] ) {
                 result=true;
             }
-            else if ( _round.lessOrEqual(mother._round) ) {
-                result=mother._round.event(mother.node_id).seeing_witness(node_id);
+            else if ( _round.lessOrEqual(_mother._round) ) {
+                result=_mother._round.event(_mother.node_id).seeing_witness(node_id);
             }
         }
         else if ( father ) {
-            if ( father.witness_mask[node_id] ) {
+            if ( _father.witness_mask[node_id] ) {
                 result=true;
             }
-            else if ( _round.lessOrEqual(father._round) ) {
-                result=father._round.event(father.node_id).seeing_witness(node_id);
+            else if ( _round.lessOrEqual(_father._round) ) {
+                result=_father._round.event(_father.node_id).seeing_witness(node_id);
             }
         }
         return result;
     }
 
-    void forked(bool s)
+    private void forked(bool s)
         in {
             if ( s ) {
                 assert(!_forked, "An event can not unforked");
@@ -1318,92 +1414,70 @@ class Event {
             _round = Round.seed_round(node_size);
             _round.add(this);
             _received_order=-1;
+//            _grounded = true;
         }
 
     }
 
 // Disconnect the Event from the graph
     @trusted
-    void _disconnect() {
-        if ( _son ) {
-            _son._father=null;
-        }
-        if ( _daughter ) {
-            _daughter._grounded=true;
-            _daughter._mother=null;
-        }
-        if ( _father ) {
-            _father._son=null;
-        }
-        _mother=_father=null;
-        _daughter=_son=null;
+    package void disconnect(string indent=null) {
+//        version(none) {
+        // scope(exit) {
+
+        // }
+        if (_mother) {
+            import tagion.utils.Miscellaneous;
+//            log.fatal("%s %s", indent, mother_hash.cutHex);
+            _mother.disconnect(indent~"> ");
+//            log.fatal("%s %s", indent, _mother !is null);
+            _mother._daughter=null;
+
+            if (_father) {
+                _father._son=null;
+            }
+//            _mother.destroy;
+            _mother=_father=null;
+            //   }
+//        }
+        _grounded =true;
+        // if ( _son ) {
+        //     _son._father=null;
+        // }
+        // if ( _daughter ) {
+        //     //_daughter._grounded=true;
+        //     _daughter._mother=null;
+        // }
+        // if ( _father ) {
+        //     _father._son=null;
+        // }
+        //_daughter=_son=null;
+    //      version(none)
         if ( _witness ) {
-            assert(_round.event(node_id) is this);
+            //assert(_round.event(node_id) is this);
+            log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
             _round.remove(this);
-            _witness.destroy;
-            _witness=null;
             if ( _round.empty ) {
                 if ( Event.callbacks ) {
                     Event.callbacks.remove(_round);
                 }
+                if (_round._previous !is null) {
+                    log.fatal("_round._previous = %d", _round._previous.number);
+                }
+                log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
                 _round.disconnect;
                 _round.destroy;
-                _round=null;
+                //_round=null;
             }
-        }
-    }
-
-/**
-   Disconnect the mother from this Event
- */
-    @trusted
-    package void disconnect(H)(H hashgraph) {
-        version(none) {
-            if (_mother) {
-                if ( Event.callbacks ) {
-                    Event.callbacks.remove(_mother);
-                }
-                hashgraph.eliminate(_mother.fingerprint);
-                _mother.disconnect(hashgraph);
-            _mother.destroy;
-
-            }
-            _grounded=true;
-            _mother=null;
-        }
-    }
-
-    version(none)
-    @trusted
-    ~this() {
-        if ( _witness ) {
-            assert(_round.event(node_id) is this);
-            _round.remove(this);
             _witness.destroy;
-            _witness=null;
-            if ( _round.empty ) {
-                if ( Event.callbacks ) {
-                    Event.callbacks.remove(_round);
-                }
-                _round.disconnect;
-                _round.destroy;
-                _round=null;
-            }
+            //_witness=null;
         }
-        if (_son) {
-            _son._father=null;
-        }
-        if (_daughter) {
-            _daughter._mother=null;
-        }
-        _son=_daughter=null;
+    }
     }
 
-    @nogc
     bool grounded() pure const nothrow {
         return _grounded || (_mother is null);
     }
-
 
     Event mother(H)(H h, RequestNet request_net) {
         Event result;
@@ -1435,7 +1509,7 @@ class Event {
         return _received_order;
     }
 
-    private Event mother(bool ignore_null_check=false, H)(H h)
+    protected Event mother(bool ignore_null_check=false, H)(H h)
         out(result) {
             static if ( !ignore_null_check) {
                 if ( mother_hash ) {
@@ -1453,10 +1527,9 @@ class Event {
         return _mother;
     }
 
-    @nogc
-    final inout(Event) mother() inout pure nothrow
+    const(Event) mother() const pure nothrow
     in {
-        assert(!_grounded, "This event is grounded");
+        assert(!_grounded, "Mother can't be accessed becuase this event is grounded");
         if ( mother_hash ) {
             assert(_mother);
             assert( (altitude-_mother.altitude) == 1 );
@@ -1466,210 +1539,250 @@ class Event {
         return _mother;
     }
 
-    @nogc
-    final const(Event) mother() const pure nothrow
+    package Event mother_raw() nothrow pure
     in {
-        assert(!_grounded, "This event is grounded");
+        // if (_grounded) {
+        //     import std.stdio;
+        //     import std.exception;
+        //     debug assumeWontThrow(writefln("This event is grounded"));
+        // }
+        // assert(!_grounded, "This event is grounded");
         if ( mother_hash ) {
-            assert(_mother);
-            assert( (altitude-_mother.altitude) == 1 );
+            assert(_grounded || _mother);
+            if (_mother) {
+                assert( (altitude-_mother.altitude) == 1 );
+            }
         }
     }
+
     do {
+        // if (_mother is null && !isEva) {
+        //     import tagion.basic.TagionExceptions;
+        //     import tagion.utils.Miscellaneous : cutHex;
+        //     try {
+        //         throw new TagionException(format("Unexpected null mother (is_strongly_seeing_checked=%s) (grounded=%s) (mother_hash='%s')",
+        //                 is_strongly_seeing_checked, _grounded, mother_hash.cutHex));
+        //     }
+        //     catch (Exception e) {
+        //         fatal(e);
+        //         assert(0);
+        //     }
+        // }
         return _mother;
     }
 
-    Event father(bool ignore_null_check=false, H)(H h)
-        out(result) {
-            static if ( !ignore_null_check) {
-                if ( father_hash ) {
-                    assert(result, "the father is not found");
+        protected Event father(bool ignore_null_check=false, H)(H h)
+            out(result) {
+                    static if ( !ignore_null_check) {
+                        if ( father_hash ) {
+                            assert(result, "the father is not found");
+                        }
+                    }
+                    assert(!_grounded, "Father can't be accessed becuase this event is grounded");
+                }
+        do {
+            if ( _father is null ) {
+                _father = h.lookup(father_hash);
+                if ( _father ) {
+                    _received_order=_father.received_order_max(_mother, true);
                 }
             }
-            assert(!_grounded, "This event is grounded");
+            return _father;
         }
-    do {
-        if ( _father is null ) {
-            _father = h.lookup(father_hash);
-            if ( _father ) {
-                _received_order=_father.received_order_max(_mother, true);
-            }
-        }
-        return _father;
-    }
 
-    Event father(H)(H h, RequestNet request_net) {
-        Event result;
-        result=father!true(h);
-        if ( !result && fatherExists ) {
-            request_net.request(h, father_hash);
-            result=father(h);
-        }
-        return result;
-    }
-
-    @nogc
-    inout(Event) father() inout pure nothrow
-    in {
-        if ( father_hash ) {
-            assert(_father);
-        }
-    }
-    do {
-        return _father;
-    }
-
-    @nogc
-    inout(Event) daughter() inout pure nothrow {
-        return _daughter;
-    }
-
-    void daughter(Event c)
-        in {
-            if ( _daughter !is null ) {
-                assert( c !is null, "Daughter can not be set to null");
-            }
-        }
-    do {
-        if ( _daughter && (_daughter !is c) ) {
-            forked = true;
-        }
-        else {
-            _daughter=c;
-            if ( callbacks ) {
-                callbacks.daughter(this);
-            }
-
-        }
-    }
-
-    @nogc
-    inout(Event) son() inout pure nothrow {
-        return _son;
-    }
-
-    void son(Event c)
-        in {
-            if ( _son !is null ) {
-                assert( c !is null, "Son can not be set to null");
-            }
-        }
-    do {
-        if ( _son && (_son !is c) ) {
-            forked=true;
-        }
-        else {
-            _son=c;
-            if ( callbacks ) {
-                callbacks.son(this);
-            }
-        }
-    }
-
-    @nogc
-    void loaded() nothrow
-        in {
-            assert(!_loaded, "Event can only be loaded once");
-        }
-    do {
-        _loaded=true;
-    }
-
-    @nogc
-    bool is_loaded() const pure nothrow {
-        return _loaded;
-    }
-
-    @nogc
-    immutable(ubyte[]) father_hash() const pure nothrow {
-        return event_body.father;
-    }
-
-    @nogc
-    immutable(ubyte[]) mother_hash() const pure nothrow {
-        return event_body.mother;
-    }
-
-    @nogc
-    immutable(ubyte[]) payload() const pure nothrow {
-        return event_body.payload;
-    }
-
-    @nogc
-    ref immutable(EventBody) eventbody() const pure nothrow {
-        return event_body;
-    }
-
-//True if Event contains a payload or is the initial Event of its creator
-    @nogc
-    bool containPayload() const pure nothrow {
-        return payload.length != 0;
-    }
-
-    @nogc
-    bool motherExists() const pure nothrow
-        in {
-            assert(!_grounded, "This function should not be used on a grounded event");
-        }
-    do {
-        return event_body.mother !is null;
-    }
-
-    @nogc
-    bool fatherExists() const pure nothrow {
-        return event_body.father !is null;
-    }
-
-// is true if the event does not have a mother or a father
-    @nogc
-    bool isEva() pure const nothrow
-        in {
-            assert(!_grounded, "This event is gounded");
-        }
-    do {
-        return !motherExists;
-    }
-
-    @nogc
-    immutable(Buffer) fingerprint() const pure nothrow
-    in {
-        assert(_fingerprint, "Hash has not been calculated");
-    }
-    do {
-        return _fingerprint;
-    }
-
-    int opApply(scope int delegate(immutable uint level,
-            immutable bool mother ,const(Event) e) @safe dg) const {
-        int iterator(const(Event) e, immutable bool mother=true, immutable uint level=0) @safe {
-            int result;
-            if ( e ) {
-                result = dg(level, mother, e);
-                if ( result == 0 ) {
-                    iterator(e.mother, true, level+1);
-                    iterator(e.father, false, level+1);
-                }
+        Event father(H)(H h, RequestNet request_net) {
+            Event result;
+            result=father!true(h);
+            if ( !result && fatherExists ) {
+                request_net.request(h, father_hash);
+                result=father(h);
             }
             return result;
         }
-        return iterator(this);
+
+        @nogc
+            const(Event) father() const pure nothrow
+            in {
+                if ( father_hash ) {
+                    assert(_father);
+                }
+            }
+        do {
+            return _father;
+        }
+
+        @nogc
+            package Event father_raw() pure nothrow
+            in {
+                if ( father_hash ) {
+                    assert(_father);
+                }
+            }
+        do {
+            return _father;
+        }
+
+        // @nogc
+        // package inout(Event) daughter() inout pure nothrow {
+        //     return _daughter;
+        // }
+
+        @nogc
+            const(Event) daughter() const pure nothrow {
+            return _daughter;
+        }
+
+        package void daughter(Event c)
+            in {
+                if ( _daughter !is null ) {
+                    assert( c !is null, "Daughter can not be set to null");
+                }
+            }
+        do {
+            if ( _daughter && (_daughter !is c) ) {
+                forked = true;
+            }
+            else {
+                _daughter=c;
+                if ( callbacks ) {
+                    callbacks.daughter(this);
+                }
+
+            }
+        }
+
+        @nogc
+            package Event son() pure nothrow {
+            return _son;
+        }
+
+        @nogc
+            const(Event) son() const pure nothrow {
+            return _son;
+        }
+
+        package void son(Event c)
+            in {
+                if ( _son !is null ) {
+                    assert( c !is null, "Son can not be set to null");
+                }
+            }
+        do {
+            if ( _son && (_son !is c) ) {
+                forked=true;
+            }
+            else {
+                _son=c;
+                if ( callbacks ) {
+                    callbacks.son(this);
+                }
+            }
+        }
+
+        @nogc
+            package void loaded() nothrow
+            in {
+                assert(!_loaded, "Event can only be loaded once");
+            }
+        do {
+            _loaded=true;
+        }
+
+        @nogc
+            bool is_loaded() const pure nothrow {
+            return _loaded;
+        }
+
+        @nogc
+            immutable(ubyte[]) father_hash() const pure nothrow {
+            return event_body.father;
+        }
+
+        @nogc
+            immutable(ubyte[]) mother_hash() const pure nothrow {
+            return event_body.mother;
+        }
+
+        @nogc
+            immutable(ubyte[]) payload() const pure nothrow {
+            return event_body.payload;
+        }
+
+        @nogc
+            ref immutable(EventBody) eventbody() const pure nothrow {
+            return event_body;
+        }
+
+//True if Event contains a payload or is the initial Event of its creator
+        @nogc
+            bool containPayload() const pure nothrow {
+            return payload.length != 0;
+        }
+
+        @nogc
+            bool motherExists() const pure nothrow
+            in {
+                assert(!_grounded, "This function should not be used on a grounded event");
+            }
+        do {
+            return event_body.mother !is null;
+        }
+
+        @nogc
+            bool fatherExists() const pure nothrow {
+            return event_body.father !is null;
+        }
+
+// is true if the event does not have a mother or a father
+        @nogc
+            bool isEva() pure const nothrow
+            in {
+                assert(!_grounded, "This function should not be used on a grounded event");
+            }
+        do {
+            return !motherExists;
+        }
+
+        @nogc
+            immutable(Buffer) fingerprint() const pure nothrow
+            in {
+                assert(_fingerprint, "Hash has not been calculated");
+            }
+        do {
+            return _fingerprint;
+        }
+
+        int opApply(scope int delegate(immutable uint level,
+                immutable bool mother ,const(Event) e) @safe dg) const {
+            int iterator(const(Event) e, immutable bool mother=true, immutable uint level=0) @safe {
+                int result;
+                if ( e ) {
+                    result = dg(level, mother, e);
+                    if ( result == 0 ) {
+                        iterator(e.mother, true, level+1);
+                        iterator(e.father, false, level+1);
+                    }
+                }
+                return result;
+            }
+            return iterator(this);
+        }
+
     }
 
-}
-
-unittest { // Serialize and unserialize EventBody
-    import std.digest.sha;
-    Payload payload=cast(immutable(ubyte)[])"Some payload";
+    unittest { // Serialize and unserialize EventBody
+        import std.digest.sha;
+        Payload payload=cast(immutable(ubyte)[])"Some payload";
 //    auto mother=SHA256(cast(uint[])"self").digits;
-    immutable mother=sha256Of("self");
-    immutable father=sha256Of("other");
-    auto seed_body=EventBody(payload, mother, father, 0, 0);
+        immutable mother=sha256Of("self");
+        immutable father=sha256Of("other");
+        auto seed_body=EventBody(payload, mother, father, 0, 0);
 
-    auto raw=seed_body.serialize;
+        auto raw=seed_body.serialize;
 
-    auto replicate_body=EventBody(raw);
+        auto replicate_body=EventBody(raw);
 
-    // Raw and repicate should be the same
-    assert(seed_body == replicate_body);
+        // Raw and repicate should be the same
+        assert(seed_body == replicate_body);
 //    auto seed_event=new Event(seed_body);
-}
+    }
