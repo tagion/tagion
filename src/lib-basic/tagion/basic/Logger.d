@@ -30,7 +30,10 @@ static struct Logger {
         uint id;
         uint[] masks;
         __gshared string logger_task_name;
+
     }
+
+    shared bool silent;
 
     @trusted
     static setThreadName(string name) nothrow {
@@ -105,7 +108,7 @@ static struct Logger {
 
     @trusted
     void report(LoggerType type, lazy scope string text) const nothrow {
-        if ( type | masks[$-1] ) {
+        if ( (type | masks[$-1]) && !silent ) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
