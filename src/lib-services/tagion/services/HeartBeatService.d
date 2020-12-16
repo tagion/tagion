@@ -289,6 +289,8 @@ do {
         }
         void taskfailure(immutable(TaskFailure) t) {
             ownerTid.send(t);
+            abort=true;
+            log.silent=true;
         }
 
 
@@ -304,7 +306,7 @@ do {
             uint time=opts.delay;
             Random!uint rand;
             rand.seed(opts.seed);
-            while(!stop) {
+            while(!stop && !abort) {
                 if ( !opts.infinity ) {
                     log("count=%d", count);
                 }
@@ -418,5 +420,6 @@ do {
     }
     catch (Throwable t) {
         fatal(t);
+        abort=true;
     }
 }

@@ -14,12 +14,16 @@ import tagion.basic.Logger;
 
 import tagion.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
+import tagion.GlobalSignals : abort;
 
 void loggerTask(immutable(Options) opts) {
     setOptions(opts);
 
     scope(success) {
         ownerTid.prioritySend(Control.END);
+        if (abort) {
+            log.silent=true;
+        }
     }
 
     @trusted
@@ -77,7 +81,7 @@ void loggerTask(immutable(Options) opts) {
     }
 
     ownerTid.send(Control.LIVE);
-    while(!stop) {
+    while(!stop && !abort) {
         try {
             receive(
                 &controller,
