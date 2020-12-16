@@ -12,7 +12,7 @@ import std.string : strip;
 import tagion.basic.Basic : basename, DataFormat;
 import tagion.basic.TagionExceptions;
 import tagion.Keywords: NetworkMode, ValidNetwrokModes;
-
+import tagion.basic.Logger : LoggerType;
 /++
 +/
 @safe
@@ -367,6 +367,7 @@ struct Options {
         string file_name;  /// File used for the logger
         bool flush;        /// Will automatic flush the logger file when a message has been received
         bool to_console;   /// Will duplicate logger information to the console
+        uint mask;         /// Logger mask
         mixin JSONCommon;
     }
 
@@ -492,7 +493,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
         "monitor|P",    format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
         // "transaction|p",    format("Sets first transaction port of the port sequency (port>=%d): default %d", options.min_port, options.transaction.port),  &(options.transaction.port),
-        "s|seq",     format("The event is produced sequential this is only used in test mode: default %s", options.sequential), &(options.sequential),
+        "seq|s",     format("The event is produced sequential this is only used in test mode: default %s", options.sequential), &(options.sequential),
         "stdout",    format("Set the stdout: default %s", options.stdout), &(options.stdout),
 
         "transaction-ip",  format("Sets the listener ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
@@ -500,6 +501,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "transaction-queue", format("Sets the listener max queue lenght: default %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
         "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", options.transaction.service.max_connections), &(options.transaction.service.max_connections),
         "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
+
 //        "transaction-maxfibres",  format("Sets the maximum number of fibres: default: %d", options.transaction.service.max_number_of_accept_fibers), &(options.transaction.service.max_number_of_accept_fibers),
 //        "transaction-maxreuse",  format("Sets the maximum number of fibre reuse: default: %d", options.transaction.service.max_number_of_fiber_reuse), &(options.transaction.service.max_number_of_fiber_reuse),
         //   "transaction-log",  format("Scripting engine log filename: default: %s", options.transaction.service.name), &(options.transaction.service.name),
@@ -521,6 +523,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "dart-request", "Request dart data", &(options.dart.request),
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
+        "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
         "net-mode", format("Network mode: one of [%s]: default: %s", ValidNetwrokModes, options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
@@ -531,6 +534,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
 
 static setDefaultOption(ref Options options) {
     // Main
+
     with(options) {
         nodeprefix="Node";
         ip="0.0.0.0";
@@ -623,6 +627,7 @@ static setDefaultOption(ref Options options) {
         file_name="/tmp/tagion.log";
         flush=true;
         to_console=true;
+        mask = LoggerType.ALL;
     }
     // Discovery
     with(options.discovery){

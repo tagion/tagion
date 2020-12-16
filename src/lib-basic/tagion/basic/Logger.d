@@ -47,6 +47,9 @@ static struct Logger {
         }
     do {
         push(LoggerType.ALL);
+        scope(exit) {
+            pop;
+        }
         try {
             logger_tid = locate(logger_task_name);
             .register(task_name, thisTid);
@@ -54,7 +57,7 @@ static struct Logger {
             setThreadName(task_name);
             import std.stdio : stderr;
 
-            stderr.writefln("Register: %s logger", _task_name);
+            stderr.writefln("Register: %s logger\n", _task_name);
             log("Register: %s logger", _task_name);
         }
         catch (Exception e) {
