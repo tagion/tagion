@@ -1539,7 +1539,7 @@ class Event {
         return _mother;
     }
 
-    package Event mother_raw() nothrow // pure
+    package Event mother_raw() nothrow pure
     in {
         // if (_grounded) {
         //     import std.stdio;
