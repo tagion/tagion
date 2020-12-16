@@ -517,7 +517,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                 immutable fingerprint=calcHash(event_package.event_body.serialize);
                 if ( !_hashgraph.isRegistered(fingerprint) && !_event_package_cache.contains(fingerprint)) {
                     check(verify(fingerprint, event_package.signature, event_package.pubkey), ConsensusFailCode.EVENT_SIGNATURE_BAD);
-                    log("add event_package %s", fingerprint.cutHex);
+//                    log("add event_package %s", fingerprint.cutHex);
                     _event_package_cache[fingerprint]=event_package;
                 }
 
@@ -572,8 +572,8 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 
     override Event receive(immutable(ubyte[]) data,
         Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
-        trace("receive", data);
-        log("RECEIVE #@#@#@#");
+        // trace("receive", data);
+        // log("RECEIVE #@#@#@#");
         if ( callbacks ) {
             callbacks.receive(data);
         }
@@ -585,7 +585,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 
         immutable type=doc[Params.type].get!uint;
         immutable received_state=convertState(type);
-        log("Receive %s %s data=%d", received_state, received_pubkey.cutHex, data.length);
+        // log("Receive %s %s data=%d", received_state, received_pubkey.cutHex, data.length);
         // import tagion.hibon.HiBONJSON;
         // log("%s", doc.toJSON);
         // This indicates when a communication sequency ends
@@ -665,11 +665,11 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                             ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                         Tides tides;
 
-                        log("calc father fp");
+                        // log("calc father fp");
                         immutable father_fingerprint=waveFront(received_pubkey, block, tides);
-                        log("calculeted father fp");
+                        // log("calculeted father fp");
                         result=register_leading_event(father_fingerprint);
-                        log("registered");
+                        // log("registered");
                         received_node.state=NONE;
                         end_of_sequence=true;
                     }
