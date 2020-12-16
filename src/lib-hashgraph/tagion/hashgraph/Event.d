@@ -625,7 +625,7 @@ class Round {
 
         if ( Event.scriptcallbacks ) {
             import std.stdio;
-            log.fatal("EPOCH received %d time=%d", round_received_events.length, middel_time);
+            log("EPOCH received %d time=%d", round_received_events.length, middel_time);
             Event.scriptcallbacks.epoch(round_received_events, middel_time);
         }
 
@@ -759,7 +759,7 @@ class Round {
         void local_scrap(Round r) @trusted {
             if (r[].all!(a => a._mother.round_received !is null)) {
                 import core.memory : GC;
-                log.fatal("round.decided=%s round=%d usedSize=%d", r._decided, r.number, GC.stats.usedSize);
+//                log.fatal("round.decided=%s round=%d usedSize=%d", r._decided, r.number, GC.stats.usedSize);
 //                r.range.each!(a => a._grounded = true);
                 r.range.each!(a => a.disconnect);
 
@@ -768,15 +768,15 @@ class Round {
                 scope round_numbers = new int[r.node_size];
                 scope round_received_numbers = new int[r.node_size];
                 bool sealed_round=true;
-                scope(exit) {
-                    log.fatal("round.decided=%s", r._decided);
-                    log.fatal("   round:%s", round_numbers);
-                    log.fatal("received:%s", round_received_numbers);
-                    if (sealed_round) {
-                        //   log.fatal("ROUND Sealed!!");
-                        log.fatal("ROUND Sealed!! %s", r[].all!(a => a._mother.round_received !is null));
-                    }
-                }
+                // scope(exit) {
+                //     log.fatal("round.decided=%s", r._decided);
+                //     log.fatal("   round:%s", round_numbers);
+                //     log.fatal("received:%s", round_received_numbers);
+                //     if (sealed_round) {
+                //         //   log.fatal("ROUND Sealed!!");
+                //         log.fatal("ROUND Sealed!! %s", r[].all!(a => a._mother.round_received !is null));
+                //     }
+                // }
 
                 foreach(node_id, e; r[].enumerate) {
 //                e._mother._grounded=true;
@@ -814,7 +814,7 @@ class Round {
         if ( _lowest ) {
             local_scrap(_lowest);
             _lowest.__grounded=true;
-            log.fatal("Round scrapped");
+            log("Round scrapped");
         }
     }
 
@@ -1455,16 +1455,16 @@ class Event {
     //      version(none)
         if ( _witness ) {
             //assert(_round.event(node_id) is this);
-            log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
+            //log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
             _round.remove(this);
             if ( _round.empty ) {
                 if ( Event.callbacks ) {
                     Event.callbacks.remove(_round);
                 }
-                if (_round._previous !is null) {
-                    log.fatal("_round._previous = %d", _round._previous.number);
-                }
-                log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
+                // if (_round._previous !is null) {
+                //     log.fatal("_round._previous = %d", _round._previous.number);
+                // }
+                // log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
                 _round.disconnect;
                 _round.destroy;
                 //_round=null;
