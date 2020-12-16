@@ -22,35 +22,26 @@ import std.net.curl;
 import tagion.hibon.HiBONJSON;
 import tagion.basic.TagionExceptions : fatal;
 
-enum ServerRequestCommand{
+enum DiscoveryRequestCommand{
     BecomeOnline = 1,
     RequestTable = 2,
-    BecomeOffline =3,
+    BecomeOffline = 3,
 }
 
-void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutable(Options) opts) nothrow {  //TODO: for test
+void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string taskName, immutable(Options) opts) nothrow {  //TODO: for test
     try{
         scope(exit){
             log("exit");
             ownerTid.prioritySend(Control.END);
         }
 
-        log.register(opts.discovery.task_name);
+        log.register(taskName);
 
         if (opts.serverFileDiscovery.url.length == 0){
             log.error("Server url is missing");
             ownerTid.send(Control.STOP);
             return;
         }
-
-        bool checkTimestamp(SysTime time, Duration duration){
-            return (Clock.currTime - time) > duration;
-        }
-        void updateTimestamp(ref SysTime time){
-            time = Clock.currTime;
-        }
-
-        SysTime start_timestamp;
 
         auto stop = false;
         NodeAddress[Pubkey] node_addresses;
@@ -75,10 +66,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
         }
 
         void eraseOwnInfo(){
-            // auto params = new HiBON;
-            // params["pkey"] = pubkey;
             log("posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
-            // post(opts.serverFileDiscovery.url ~ "/node/erase", ["value":(cast(string)params.serialize)]);
             post(opts.serverFileDiscovery.url ~ "/node/erase", ["value":(cast(string)pubkey), "tag": opts.serverFileDiscovery.tag]);
         }
 
@@ -89,9 +77,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
         void initialize() nothrow {
             try{
                 auto read_buff = get(opts.serverFileDiscovery.url ~ "/node/storage?tag=" ~ opts.serverFileDiscovery.tag);
-                // log("%s", cast(char[])read_buff);
                 auto splited_read_buff = read_buff.split("\n");
-                // log("%d", splited_read_buff.length);
                 foreach(node_info_buff; splited_read_buff){
                     if(node_info_buff.length>0){
                         import std.json;
@@ -121,11 +107,33 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
             substoaddrupdate.close();
             substorechability.close();
         }
-        updateTimestamp(start_timestamp);
-        bool is_online = false;
+       
         string last_seen_addr = "";
-
+        bool is_online = false;
         bool is_ready = false;
+
+        bool checkTimestamp(SysTime time, Duration duration){
+            return (Clock.currTime - time) > duration;
+        }
+        void updateTimestamp(ref SysTime time){
+            time = Clock.currTime;
+        }
+
+        SysTime mdns_start_timestamp;
+        updateTimestamp(mdns_start_timestamp);
+
+        auto owner_notified = false;
+
+        void notifyReadyAfterDelay(){
+            if(!owner_notified){
+                const after_delay = checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs);
+                if(after_delay && is_online && is_ready){
+                    ownerTid.send(Control.LIVE);
+                    owner_notified = true;
+                }
+            }
+        }
+        
         do{
             receiveTimeout(
                 500.msecs,
@@ -143,50 +151,36 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutabl
                     last_seen_addr = updated_address;
                     if(is_online){
                         recordOwnInfo(updated_address);
+                        is_ready = true;
                     }
                 },
-                (ServerRequestCommand cmd){
+                (DiscoveryRequestCommand cmd){
                     switch(cmd){
-                    case ServerRequestCommand.BecomeOnline: {
-                        is_online = true;
-                        log("Becoming online..");
-                        updateTimestamp(start_timestamp);
-                        if(last_seen_addr!=""){
-                            recordOwnInfo(last_seen_addr);
+                        case DiscoveryRequestCommand.BecomeOnline: {
+                            log("Becoming online..");
+                            is_online = true;
+                            if(last_seen_addr!=""){
+                                recordOwnInfo(last_seen_addr);
+                                is_ready = true;
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    case ServerRequestCommand.RequestTable: {
-                        initialize();
-                        auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                        ownerTid.send(address_book);
-                        break;
-                    }
-                    case ServerRequestCommand.BecomeOffline: {
-                        eraseOwnInfo();
-                        break;
-                    }
-                    default:
-                        pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                        case DiscoveryRequestCommand.RequestTable: {
+                            initialize();
+                            auto address_book = new immutable AddressBook!Pubkey(node_addresses);
+                            ownerTid.send(address_book);
+                            break;
+                        }
+                        case DiscoveryRequestCommand.BecomeOffline: {
+                            eraseOwnInfo();
+                            break;
+                        }
+                        default:
+                            pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
                     }
                 }
-                );
-            if (!is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.delay_before_start.msecs) && is_online){
-                log("initializing");
-                updateTimestamp(start_timestamp);
-                is_ready = true;
-                initialize();
-                auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                ownerTid.send(address_book);
-            }
-            if (is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.update.msecs)){
-                log("updating");
-                updateTimestamp(start_timestamp);
-                initialize();
-                auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                ownerTid.send(address_book);
-            }
-        } while(!stop);
+            );
+        }while(!stop);
     }
     catch(Throwable t){
         fatal(t);

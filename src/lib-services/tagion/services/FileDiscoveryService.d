@@ -18,8 +18,9 @@ import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.TagionExceptions;
+import tagion.services.ServerFileDiscoveryService: DiscoveryRequestCommand;
 
-void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options) opts) {  //TODO: for test
+void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, immutable(Options) opts) {  //TODO: for test
     bool stop = false;
     scope(exit){
         log("exit");
@@ -29,20 +30,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
     }
     string shared_storage = opts.path_to_shared_info;
 
-    bool checkTimestamp(SysTime time, Duration duration) nothrow {
-        return (Clock.currTime - time) > duration;
-    }
-    void updateTimestamp(ref SysTime time) nothrow {
-        time = Clock.currTime;
-    }
-
-    bool is_ready = false;
-
-    log.register(opts.discovery.task_name);
-
-    SysTime mdns_start_timestamp;
-    updateTimestamp(mdns_start_timestamp);
-
+    log.register(task_name);
 
     NodeAddress[Pubkey] node_addresses;
 
@@ -92,16 +80,37 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
         eraseOwnInfo();
     }
 
+
+    bool checkTimestamp(SysTime time, Duration duration){
+        return (Clock.currTime - time) > duration;
+    }
+    void updateTimestamp(ref SysTime time){
+        time = Clock.currTime;
+    }
+
+    auto is_ready = false;
+    SysTime mdns_start_timestamp;
+    updateTimestamp(mdns_start_timestamp);
+    auto owner_notified = false;
+
+    void notifyReadyAfterDelay(){
+        if(!owner_notified){
+            const after_delay = checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs);
+            if(after_delay && is_ready){
+                ownerTid.send(Control.LIVE);
+                owner_notified = true;
+            }
+        }
+    }
+    
+
     void initialize() nothrow {
         log("initializing");
         try{
             auto read_buff = cast(ubyte[]) shared_storage.read;
-            // log("%s", cast(char[])read_buff);
             auto splited_read_buff = read_buff.split("/n");
-            // log("%d", splited_read_buff.length);
             foreach(node_info_buff; splited_read_buff){
                 if(node_info_buff.length>0){
-                    // log("%s", cast(char[])node_info_buff);
                     auto doc = Document(cast(immutable)node_info_buff);
                     import tagion.hibon.HiBONJSON;
                     log("%s", doc.toJSON);
@@ -121,7 +130,6 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
         }
     }
 
-    recordOwnInfo();
     try{
         while(!stop){
             receiveTimeout(
@@ -135,16 +143,31 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, immutable(Options)
                         log("stop");
                         stop = true;
                     }
+                },
+                (DiscoveryRequestCommand request){
+                    switch(request){
+                        case DiscoveryRequestCommand.BecomeOnline: {
+                            log("Becoming online..");
+                            recordOwnInfo();
+                            is_ready = true;
+                            break;
+                        }
+                        case DiscoveryRequestCommand.RequestTable: {
+                            initialize();
+                            auto address_book = new immutable AddressBook!Pubkey(node_addresses);
+                            ownerTid.send(address_book);
+                            break;
+                        }
+                        case DiscoveryRequestCommand.BecomeOffline: {
+                            eraseOwnInfo();
+                            break;
+                        }
+                        default:
+                            pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                    }
                 }
             );
-            if(!is_ready && checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs)){
-                log("AFTER DELAY");
-                is_ready = true;
-                initialize();
-                pragma(msg, typeof(node_addresses.keys));
-                auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                ownerTid.send(address_book);
-            }
+            notifyReadyAfterDelay();
         }
     }
     catch(TagionException e){

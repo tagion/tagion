@@ -45,6 +45,7 @@ import tagion.basic.TagionExceptions : TagionException;
 import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
 import tagion.services.ServerFileDiscoveryService;
+import tagion.services.NetworkRecordDiscoveryService;
 import tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DartService;
 import tagion.Keywords: NetworkMode;
@@ -118,13 +119,10 @@ do {
         net.drive("tagion_service", shared_net);
 
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
-
-        if(opts.net_mode == NetworkMode.local){
-            discovery_tid = spawn(&fileDiscoveryService, net.pubkey, p2pnode.LlistenAddress, opts);
-        }else if(opts.net_mode == NetworkMode.pub){
-            discovery_tid = spawn(&serverFileDiscoveryService, net.pubkey, p2pnode, opts);
-            discovery_tid.send(ServerRequestCommand.RequestTable);
-        }
+        
+        discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, cast(immutable HashNet) net, opts.discovery.task_name, opts);
+        discovery_tid.send(DiscoveryRequestCommand.RequestTable);
+        
         receive(
             (immutable(AddressBook!Pubkey) address_book){
                 auto pkeys = cast(immutable) address_book.data.keys;
@@ -175,16 +173,19 @@ do {
     log("Ready: %s", ready);
 
 
-    if(opts.net_mode == NetworkMode.pub){
-        discovery_tid.send(ServerRequestCommand.BecomeOnline);
-        receive(
-            (immutable(AddressBook!Pubkey) address_book){
-                auto pkeys = cast(immutable) address_book.data.keys;
-                net.set(pkeys);
-            }
-            );
-    }
+    discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
+    scope(exit){
+        discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
+    }    
+    receive((Control ctr){
+        assert(ctr == Control.LIVE);
+    });
 
+    discovery_tid.send(DiscoveryRequestCommand.RequestTable);
+    receive((immutable(AddressBook!Pubkey) address_book) {
+        auto pkeys = cast(immutable) address_book.data.keys;
+        net.set(pkeys);
+    });
 
     Tid monitor_socket_tid;
     Tid transaction_socket_tid;
