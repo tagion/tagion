@@ -1556,18 +1556,18 @@ class Event {
     }
 
     do {
-        if (_mother is null && !isEva) {
-            import tagion.basic.TagionExceptions;
-            import tagion.utils.Miscellaneous : cutHex;
-            try {
-                throw new TagionException(format("Unexpected null mother (is_strongly_seeing_checked=%s) (grounded=%s) (mother_hash='%s')",
-                        is_strongly_seeing_checked, _grounded, mother_hash.cutHex));
-            }
-            catch (Exception e) {
-                fatal(e);
-                assert(0);
-            }
-        }
+        // if (_mother is null && !isEva) {
+        //     import tagion.basic.TagionExceptions;
+        //     import tagion.utils.Miscellaneous : cutHex;
+        //     try {
+        //         throw new TagionException(format("Unexpected null mother (is_strongly_seeing_checked=%s) (grounded=%s) (mother_hash='%s')",
+        //                 is_strongly_seeing_checked, _grounded, mother_hash.cutHex));
+        //     }
+        //     catch (Exception e) {
+        //         fatal(e);
+        //         assert(0);
+        //     }
+        // }
         return _mother;
     }
 
