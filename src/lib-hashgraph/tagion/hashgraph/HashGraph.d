@@ -152,9 +152,9 @@ class HashGraph {
                 //     current = current.mother_raw;
                 // }
             }
-                void popFront() {
-                    current = current.mother_raw;
-                }
+            void popFront() {
+                current = current.mother_raw;
+            }
         }
 
         @nogc

@@ -290,7 +290,7 @@ class Round {
 
     private void disconnect()
         in {
-            assert(_previous is null, "Only the last round can be disconnected");
+            assert((_previous is null) || (_previous is _seed_round), "Only the last round can be disconnected");
             assert(_events_count == 0, "All witness must be removed before the round can be disconnected");
         }
     do {
@@ -332,9 +332,10 @@ class Round {
         return _looked_at_count;
     }
 
+    private static Round _seed_round;
     package static Round seed_round(const uint node_size) {
         if ( _rounds is null ) {
-            _rounds = new Round(null, node_size, -1);
+            _rounds = _seed_round = new Round(null, node_size, -1);
         }
         // Use the latest round as seed round
         return _rounds;
@@ -441,7 +442,7 @@ class Round {
     }
 
     @nogc
-    package void remove(const(Event) e) nothrow
+    private void remove(const(Event) e) nothrow
     in {
         assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
         assert(_events_count > 0, "No events exists in this round");
@@ -813,6 +814,7 @@ class Round {
         if ( _lowest ) {
             local_scrap(_lowest);
             _lowest.__grounded=true;
+            log.fatal("Round scrapped");
         }
     }
 
@@ -857,13 +859,13 @@ class Event {
         protected {
             Event _previous_witness_event;
             BitArray _famous_decided_mask;
-            bool     _famous_decided;
             BitArray _strong_seeing_mask;
             // This vector shows what we can see in the previous witness round
             // Round seeing masks from next round
             BitArray _round_seen_mask;
             uint     _round_seen_count;
             uint     _famous_votes;
+            bool     _famous_decided;
         }
         @trusted
         this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask) pure nothrow
@@ -1174,7 +1176,6 @@ class Event {
             collect_votes(_round._previous);
         }
     }
-
     @nogc
     const(Round) round() pure const nothrow
     out(result) {
@@ -1187,7 +1188,7 @@ class Event {
     @nogc
     Round round() nothrow
         in {
-            if ( motherExists ) {
+            if ( !_grounded && motherExists ) {
                 assert(_mother, "Graph has not been resolved");
             }
         }
@@ -1420,18 +1421,25 @@ class Event {
 
 // Disconnect the Event from the graph
     @trusted
-    package void disconnect() {
-        version(none) {
+    package void disconnect(string indent=null) {
+//        version(none) {
+        // scope(exit) {
+
+        // }
         if (_mother) {
+            import tagion.utils.Miscellaneous;
+//            log.fatal("%s %s", indent, mother_hash.cutHex);
+            _mother.disconnect(indent~"> ");
+//            log.fatal("%s %s", indent, _mother !is null);
             _mother._daughter=null;
-            _mother.disconnect;
-            _mother.destroy;
-        }
-        if (_father) {
-            _father._son=null;
-        }
-        _mother=_father=null;
-        }
+
+            if (_father) {
+                _father._son=null;
+            }
+//            _mother.destroy;
+            _mother=_father=null;
+            //   }
+//        }
         _grounded =true;
         // if ( _son ) {
         //     _son._father=null;
@@ -1444,21 +1452,27 @@ class Event {
         //     _father._son=null;
         // }
         //_daughter=_son=null;
-        version(none)
+    //      version(none)
         if ( _witness ) {
-            assert(_round.event(node_id) is this);
+            //assert(_round.event(node_id) is this);
+            log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
             _round.remove(this);
-            _witness.destroy;
-            _witness=null;
             if ( _round.empty ) {
                 if ( Event.callbacks ) {
                     Event.callbacks.remove(_round);
                 }
+                if (_round._previous !is null) {
+                    log.fatal("_round._previous = %d", _round._previous.number);
+                }
+                log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
                 _round.disconnect;
                 _round.destroy;
-                _round=null;
+                //_round=null;
             }
+            _witness.destroy;
+            //_witness=null;
         }
+    }
     }
 
     bool grounded() pure const nothrow {
@@ -1535,7 +1549,9 @@ class Event {
         // assert(!_grounded, "This event is grounded");
         if ( mother_hash ) {
             assert(_grounded || _mother);
-            assert( (altitude-_mother.altitude) == 1 );
+            if (_mother) {
+                assert( (altitude-_mother.altitude) == 1 );
+            }
         }
     }
 
