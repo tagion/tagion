@@ -318,7 +318,7 @@ class DARTFile {
             private Type _type;
             immutable uint index;
             bool done;
-            version(none)
+            
             this(HashNet net, const(Document) doc, const Type type)
             in {
                 assert(net);
@@ -330,7 +330,7 @@ class DARTFile {
                 }
                 else {
                     fingerprint=net.hashOf(doc);
-                    this.data=data;
+                    this.doc = doc;
                 }
                 _type=type;
                 index=INDEX_NULL;
@@ -351,9 +351,10 @@ class DARTFile {
                 uint type=_doc[Params.type].get!uint;
 //                Buffer _data;
                 Buffer _fingerprint;
+                Document inner_doc;
                 scope(success) {
                     _type=cast(Type)type;
-                    doc=_doc;
+                    doc=inner_doc;
                     if ( _fingerprint ) {
                         fingerprint=_fingerprint;
                     }
@@ -367,8 +368,8 @@ class DARTFile {
                 with(Type) switch(type) {
                     case ADD, NONE:
                         const archive_doc=_doc[Params.archive].get!Document;
-                        //doc=_doc;
-                        //_data=archive_doc.data.idup;
+                        inner_doc=archive_doc;
+                        // _data=archive_doc.data.idup;
 
                         break;
                     case REMOVE:
