@@ -261,8 +261,7 @@ class Round {
         }
     }
 
-    @nogc
-    bool lessOrEqual(const Round rhs) pure const nothrow {
+    @nogc    bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
@@ -298,9 +297,9 @@ class Round {
         }
     do {
         if (_previous !is null) {
-            log.warning("Not the last to be disconnected (round %d)", number);
+            log.warning("Not the last to be disconnected (round %d) events_count=%d", number, _events_count);
             if (_previous._events_count !is 0) {
-                log.warning("Round is not disconnected because the previuos rounds still contains events (round %d)", number);
+                log.warning("Round is not disconnected because the previuos rounds still contains events (round %d) events_count=%d", number, _previous._events_count);
                 return;
             }
             _previous.disconnect;
@@ -320,8 +319,8 @@ class Round {
     }
 
     private Round next_consecutive() {
-        _rounds=new Round(_rounds, node_size, _rounds.number+1);
-        return _rounds;
+        return _rounds=new Round(_rounds, node_size, _rounds.number+1);
+//        return _rounds;
     }
 
     // Used to make than an witness in the next round at the node_id has looked at this round
@@ -349,10 +348,11 @@ class Round {
         return _looked_at_count;
     }
 
-    private static Round _seed_round;
+    // private static Round _seed_round;
     package static Round seed_round(const uint node_size) {
         if ( _rounds is null ) {
-            _rounds = _seed_round = new Round(null, node_size, -1);
+            _rounds = new Round(null, node_size, -1);
+            //_seed_round._decided=true;
         }
         // Use the latest round as seed round
         return _rounds;
@@ -842,7 +842,8 @@ class Round {
     invariant {
         void check_round_order(const Round r, const Round p) pure {
             if ( ( r !is null) && ( p !is null ) ) {
-                assert( (r.number-p.number) == 1, "Consecutive round-numbers has to increase by one");
+                assert( (r.number-p.number) == 1,
+                    format("Consecutive round-numbers has to increase by one (rounds %d and %d)", r.number, p.number));
                 if ( r._decided ) {
                     assert( p._decided, "If a higher round is decided all rounds below must be decided");
                 }
@@ -1438,7 +1439,7 @@ class Event {
 
 // Disconnect the Event from the graph
     @trusted
-    package void disconnect(string indent=null) {
+    package void disconnect() {
 //        version(none) {
         // scope(exit) {
 
@@ -1446,7 +1447,7 @@ class Event {
         if (_mother) {
             import tagion.utils.Miscellaneous;
 //            log.fatal("%s %s", indent, mother_hash.cutHex);
-            _mother.disconnect(indent~"> ");
+            _mother.disconnect;
 //            log.fatal("%s %s", indent, _mother !is null);
             _mother._daughter=null;
 
@@ -1483,7 +1484,7 @@ class Event {
                 // }
                 // log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
                 _round.disconnect;
-                _round.destroy;
+                //_round.destroy;
                 //_round=null;
             }
             _witness.destroy;
