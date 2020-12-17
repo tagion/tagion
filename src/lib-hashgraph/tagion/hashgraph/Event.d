@@ -267,7 +267,7 @@ class Round {
 
     @nogc
     uint node_size() pure const nothrow {
-         return cast(uint)_events.length;
+        return cast(uint)_events.length;
     }
 
     private this(Round r, const uint node_size, immutable int round_number) {
@@ -348,10 +348,10 @@ class Round {
         return _looked_at_count;
     }
 
-    // private static Round _seed_round;
+    private static Round _seed_round;
     package static Round seed_round(const uint node_size) {
         if ( _rounds is null ) {
-            _rounds = new Round(null, node_size, -1);
+            _rounds = _seed_round = new Round(null, node_size, -1);
             //_seed_round._decided=true;
         }
         // Use the latest round as seed round
@@ -446,7 +446,7 @@ class Round {
         }
     }
 
-    @nogc
+    // @nogc
     package void add(Event event) nothrow
     in {
         assert(_events[event.node_id] is null, "Evnet should only be added once");
@@ -456,18 +456,24 @@ class Round {
             _events_count++;
             _events[event.node_id]=event;
         }
+        if (this is _seed_round) {
+            log.error("Node %d add to seed_round (event_count=%d)", event.node_id, _events_count);
+        }
     }
 
-    @nogc
-    private void remove(const(Event) e) nothrow
-    in {
-        assert(_events[e.node_id] is e, "This event does not exist in round at the current node so it can not be remove from this round");
-        assert(_events_count > 0, "No events exists in this round");
-    }
+    // @nogc
+    private void remove(const(Event) event) nothrow
+        in {
+            assert(_events[event.node_id] is event, "This event does not exist in round at the current node so it can not be remove from this round");
+            assert(_events_count > 0, "No events exists in this round");
+        }
     do {
-        if ( _events[e.node_id] ) {
+        if ( _events[event.node_id] ) {
             _events_count--;
-            _events[e.node_id]=null;
+            _events[event.node_id]=null;
+        }
+        if (this is _seed_round) {
+            log.error("Node %d removed to seed_round (event_count=%d)", event.node_id, _events_count);
         }
     }
 
@@ -742,33 +748,33 @@ class Round {
     }
 
     // Scrap the lowest Round
-    static void _scrap(H)(H hashgraph) {
-        // Scrap the rounds and events below this
-        void local_scrap(Round r) @trusted {
-            foreach(node_id, ref e; r[].enumarate) {
-                void scrap_event(Event e) {
-                    if ( e ) {
-                        scrap_event(e._mother);
-                        if ( Event.callbacks ) {
-                            Event.callbacks.remove(e);
-                        }
-                        hashgraph.eliminate(e.fingerprint);
-                        e.disconnect;
-                        e.destroy;
-                    }
-                }
-                scrap_event(e._mother);
-                if ( e ) {
-                    assert(e._mother is null);
-                }
-            }
-        }
-        Round _lowest=lowest;
-//        version(none)
-        if ( _lowest ) {
-            local_scrap(_lowest);
-        }
-    }
+//     static void _scrap(H)(H hashgraph) {
+//         // Scrap the rounds and events below this
+//         void local_scrap(Round r) @trusted {
+//             foreach(node_id, ref e; r[].enumarate) {
+//                 void scrap_event(Event e) {
+//                     if ( e ) {
+//                         scrap_event(e._mother);
+//                         if ( Event.callbacks ) {
+//                             Event.callbacks.remove(e);
+//                         }
+//                         hashgraph.eliminate(e.fingerprint);
+//                         e.disconnect;
+//                         e.destroy;
+//                     }
+//                 }
+//                 scrap_event(e._mother);
+//                 if ( e ) {
+//                     assert(e._mother is null);
+//                 }
+//             }
+//         }
+//         Round _lowest=lowest;
+// //        version(none)
+//         if ( _lowest ) {
+//             local_scrap(_lowest);
+//         }
+//     }
 
     // Scrap the lowest Round
     private static void scrap() {
@@ -781,50 +787,50 @@ class Round {
                 r.range.each!(a => a.disconnect);
 
             }
-            version(none) {
-                scope round_numbers = new int[r.node_size];
-                scope round_received_numbers = new int[r.node_size];
-                bool sealed_round=true;
-                // scope(exit) {
-                //     log.fatal("round.decided=%s", r._decided);
-                //     log.fatal("   round:%s", round_numbers);
-                //     log.fatal("received:%s", round_received_numbers);
-                //     if (sealed_round) {
-                //         //   log.fatal("ROUND Sealed!!");
-                //         log.fatal("ROUND Sealed!! %s", r[].all!(a => a._mother.round_received !is null));
-                //     }
-                // }
+//             version(none) {
+//                 scope round_numbers = new int[r.node_size];
+//                 scope round_received_numbers = new int[r.node_size];
+//                 bool sealed_round=true;
+//                 // scope(exit) {
+//                 //     log.fatal("round.decided=%s", r._decided);
+//                 //     log.fatal("   round:%s", round_numbers);
+//                 //     log.fatal("received:%s", round_received_numbers);
+//                 //     if (sealed_round) {
+//                 //         //   log.fatal("ROUND Sealed!!");
+//                 //         log.fatal("ROUND Sealed!! %s", r[].all!(a => a._mother.round_received !is null));
+//                 //     }
+//                 // }
 
-                foreach(node_id, e; r[].enumerate) {
-//                e._mother._grounded=true;
-                    round_numbers[node_id]=r.number;
-                    if (e._mother.round_received) {
-//                    sealed_round &= (e._mother.round_received.number == r.number+1);
+//                 foreach(node_id, e; r[].enumerate) {
+// //                e._mother._grounded=true;
+//                     round_numbers[node_id]=r.number;
+//                     if (e._mother.round_received) {
+// //                    sealed_round &= (e._mother.round_received.number == r.number+1);
 
-                        round_received_numbers[node_id]=e._mother.round_received.number;
-                    }
-                    else {
-//                    sealed_round=false;
-                        round_received_numbers[node_id]=-1;
-//                    log.fatal("node_id=%d round=%d NO ROUND_RECEIVED !!!", node_id, r.number);
-                    }
-                    // void scrap_event(Event e) {
-                    //     if ( e ) {
-                    //         scrap_event(e._mother);
-                    //         if ( Event.callbacks ) {
-                    //             Event.callbacks.remove(e);
-                    //         }
-                    //         hashgraph.eliminate(e.fingerprint);
-                    //         e.disconnect;
-                    //         e.destroy;
-                    //     }
-                    // }
-                    // scrap_event(e._mother);
-                    // if ( e ) {
-                    //     assert(e._mother is null);
-                    // }
-                }
-            }
+//                         round_received_numbers[node_id]=e._mother.round_received.number;
+//                     }
+//                     else {
+// //                    sealed_round=false;
+//                         round_received_numbers[node_id]=-1;
+// //                    log.fatal("node_id=%d round=%d NO ROUND_RECEIVED !!!", node_id, r.number);
+//                     }
+//                     // void scrap_event(Event e) {
+//                     //     if ( e ) {
+//                     //         scrap_event(e._mother);
+//                     //         if ( Event.callbacks ) {
+//                     //             Event.callbacks.remove(e);
+//                     //         }
+//                     //         hashgraph.eliminate(e.fingerprint);
+//                     //         e.disconnect;
+//                     //         e.destroy;
+//                     //     }
+//                     // }
+//                     // scrap_event(e._mother);
+//                     // if ( e ) {
+//                     //     assert(e._mother is null);
+//                     // }
+//                 }
+//             }
         }
         Round _lowest=lowest;
 //        version(none)
@@ -1445,7 +1451,7 @@ class Event {
 
         // }
         if (_mother) {
-            import tagion.utils.Miscellaneous;
+//            import tagion.Utils.Miscellaneous;
 //            log.fatal("%s %s", indent, mother_hash.cutHex);
             _mother.disconnect;
 //            log.fatal("%s %s", indent, _mother !is null);
@@ -1458,22 +1464,42 @@ class Event {
             _mother=_father=null;
             //   }
 //        }
-        _grounded =true;
-        // if ( _son ) {
-        //     _son._father=null;
-        // }
-        // if ( _daughter ) {
-        //     //_daughter._grounded=true;
-        //     _daughter._mother=null;
-        // }
-        // if ( _father ) {
-        //     _father._son=null;
-        // }
-        //_daughter=_son=null;
-    //      version(none)
-        if ( _witness ) {
-            //assert(_round.event(node_id) is this);
-            //log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
+            scope(exit) {
+                _grounded =true;
+            }
+            // if ( _son ) {
+            //     _son._father=null;
+            // }
+            // if ( _daughter ) {
+            //     //_daughter._grounded=true;
+            //     _daughter._mother=null;
+            // }
+            // if ( _father ) {
+            //     _father._son=null;
+            // }
+            //_daughter=_son=null;
+            //      version(none)
+            if ( _witness ) {
+                //assert(_round.event(node_id) is this);
+                //log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
+                _round.remove(this);
+                if ( _round.empty ) {
+                    if ( Event.callbacks ) {
+                        Event.callbacks.remove(_round);
+                    }
+                    // if (_round._previous !is null) {
+                    //     log.fatal("_round._previous = %d", _round._previous.number);
+                    // }
+                    // log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
+                    _round.disconnect;
+                    //_round.destroy;
+                    //_round=null;
+                }
+                _witness.destroy;
+                //_witness=null;
+            }
+        }
+        else if (!_grounded && isEva) {
             _round.remove(this);
             if ( _round.empty ) {
                 if ( Event.callbacks ) {
@@ -1487,10 +1513,7 @@ class Event {
                 //_round.destroy;
                 //_round=null;
             }
-            _witness.destroy;
-            //_witness=null;
         }
-    }
     }
 
     bool grounded() pure const nothrow {
@@ -1589,218 +1612,218 @@ class Event {
         return _mother;
     }
 
-        protected Event father(bool ignore_null_check=false, H)(H h)
-            out(result) {
-                    static if ( !ignore_null_check) {
-                        if ( father_hash ) {
-                            assert(result, "the father is not found");
-                        }
-                    }
-                    assert(!_grounded, "Father can't be accessed becuase this event is grounded");
-                }
-        do {
-            if ( _father is null ) {
-                _father = h.lookup(father_hash);
-                if ( _father ) {
-                    _received_order=_father.received_order_max(_mother, true);
+    protected Event father(bool ignore_null_check=false, H)(H h)
+        out(result) {
+            static if ( !ignore_null_check) {
+                if ( father_hash ) {
+                    assert(result, "the father is not found");
                 }
             }
-            return _father;
+            assert(!_grounded, "Father can't be accessed becuase this event is grounded");
         }
+    do {
+        if ( _father is null ) {
+            _father = h.lookup(father_hash);
+            if ( _father ) {
+                _received_order=_father.received_order_max(_mother, true);
+            }
+        }
+        return _father;
+    }
 
-        Event father(H)(H h, RequestNet request_net) {
-            Event result;
-            result=father!true(h);
-            if ( !result && fatherExists ) {
-                request_net.request(h, father_hash);
-                result=father(h);
+    Event father(H)(H h, RequestNet request_net) {
+        Event result;
+        result=father!true(h);
+        if ( !result && fatherExists ) {
+            request_net.request(h, father_hash);
+            result=father(h);
+        }
+        return result;
+    }
+
+    @nogc
+    const(Event) father() const pure nothrow
+    in {
+        if ( father_hash ) {
+            assert(_father);
+        }
+    }
+    do {
+        return _father;
+    }
+
+    @nogc
+    package Event father_raw() pure nothrow
+    in {
+        if ( father_hash ) {
+            assert(_father);
+        }
+    }
+    do {
+        return _father;
+    }
+
+    // @nogc
+    // package inout(Event) daughter() inout pure nothrow {
+    //     return _daughter;
+    // }
+
+    @nogc
+    const(Event) daughter() const pure nothrow {
+        return _daughter;
+    }
+
+    package void daughter(Event c)
+    in {
+        if ( _daughter !is null ) {
+            assert( c !is null, "Daughter can not be set to null");
+        }
+    }
+    do {
+        if ( _daughter && (_daughter !is c) ) {
+            forked = true;
+        }
+        else {
+            _daughter=c;
+            if ( callbacks ) {
+                callbacks.daughter(this);
+            }
+
+        }
+    }
+
+    @nogc
+    package Event son() pure nothrow {
+        return _son;
+    }
+
+    @nogc
+    const(Event) son() const pure nothrow {
+        return _son;
+    }
+
+    package void son(Event c)
+    in {
+        if ( _son !is null ) {
+            assert( c !is null, "Son can not be set to null");
+        }
+    }
+    do {
+        if ( _son && (_son !is c) ) {
+            forked=true;
+        }
+        else {
+            _son=c;
+            if ( callbacks ) {
+                callbacks.son(this);
+            }
+        }
+    }
+
+    @nogc
+    package void loaded() nothrow
+    in {
+        assert(!_loaded, "Event can only be loaded once");
+    }
+    do {
+        _loaded=true;
+    }
+
+    @nogc
+    bool is_loaded() const pure nothrow {
+        return _loaded;
+    }
+
+    @nogc
+    immutable(ubyte[]) father_hash() const pure nothrow {
+        return event_body.father;
+    }
+
+    @nogc
+    immutable(ubyte[]) mother_hash() const pure nothrow {
+        return event_body.mother;
+    }
+
+    @nogc
+    immutable(ubyte[]) payload() const pure nothrow {
+        return event_body.payload;
+    }
+
+    @nogc
+    ref immutable(EventBody) eventbody() const pure nothrow {
+        return event_body;
+    }
+
+//True if Event contains a payload or is the initial Event of its creator
+    @nogc
+    bool containPayload() const pure nothrow {
+        return payload.length != 0;
+    }
+
+    @nogc
+    bool motherExists() const pure nothrow
+            in {
+                assert(!_grounded, "This function should not be used on a grounded event");
+            }
+        do {
+        return event_body.mother !is null;
+    }
+
+    @nogc
+    bool fatherExists() const pure nothrow {
+        return event_body.father !is null;
+    }
+
+// is true if the event does not have a mother or a father
+    @nogc
+    bool isEva() pure const nothrow {
+        //     in {
+        //         assert(!_grounded, "This function should not be used on a grounded event");
+        //     }
+        // do {
+        return !motherExists;
+    }
+
+    @nogc
+    immutable(Buffer) fingerprint() const pure nothrow
+    in {
+        assert(_fingerprint, "Hash has not been calculated");
+    }
+    do {
+        return _fingerprint;
+    }
+
+    int opApply(scope int delegate(immutable uint level,
+            immutable bool mother ,const(Event) e) @safe dg) const {
+        int iterator(const(Event) e, immutable bool mother=true, immutable uint level=0) @safe {
+            int result;
+            if ( e ) {
+                result = dg(level, mother, e);
+                if ( result == 0 ) {
+                    iterator(e.mother, true, level+1);
+                    iterator(e.father, false, level+1);
+                }
             }
             return result;
         }
-
-        @nogc
-            const(Event) father() const pure nothrow
-            in {
-                if ( father_hash ) {
-                    assert(_father);
-                }
-            }
-        do {
-            return _father;
-        }
-
-        @nogc
-            package Event father_raw() pure nothrow
-            in {
-                if ( father_hash ) {
-                    assert(_father);
-                }
-            }
-        do {
-            return _father;
-        }
-
-        // @nogc
-        // package inout(Event) daughter() inout pure nothrow {
-        //     return _daughter;
-        // }
-
-        @nogc
-            const(Event) daughter() const pure nothrow {
-            return _daughter;
-        }
-
-        package void daughter(Event c)
-            in {
-                if ( _daughter !is null ) {
-                    assert( c !is null, "Daughter can not be set to null");
-                }
-            }
-        do {
-            if ( _daughter && (_daughter !is c) ) {
-                forked = true;
-            }
-            else {
-                _daughter=c;
-                if ( callbacks ) {
-                    callbacks.daughter(this);
-                }
-
-            }
-        }
-
-        @nogc
-            package Event son() pure nothrow {
-            return _son;
-        }
-
-        @nogc
-            const(Event) son() const pure nothrow {
-            return _son;
-        }
-
-        package void son(Event c)
-            in {
-                if ( _son !is null ) {
-                    assert( c !is null, "Son can not be set to null");
-                }
-            }
-        do {
-            if ( _son && (_son !is c) ) {
-                forked=true;
-            }
-            else {
-                _son=c;
-                if ( callbacks ) {
-                    callbacks.son(this);
-                }
-            }
-        }
-
-        @nogc
-            package void loaded() nothrow
-            in {
-                assert(!_loaded, "Event can only be loaded once");
-            }
-        do {
-            _loaded=true;
-        }
-
-        @nogc
-            bool is_loaded() const pure nothrow {
-            return _loaded;
-        }
-
-        @nogc
-            immutable(ubyte[]) father_hash() const pure nothrow {
-            return event_body.father;
-        }
-
-        @nogc
-            immutable(ubyte[]) mother_hash() const pure nothrow {
-            return event_body.mother;
-        }
-
-        @nogc
-            immutable(ubyte[]) payload() const pure nothrow {
-            return event_body.payload;
-        }
-
-        @nogc
-            ref immutable(EventBody) eventbody() const pure nothrow {
-            return event_body;
-        }
-
-//True if Event contains a payload or is the initial Event of its creator
-        @nogc
-            bool containPayload() const pure nothrow {
-            return payload.length != 0;
-        }
-
-        @nogc
-            bool motherExists() const pure nothrow
-            in {
-                assert(!_grounded, "This function should not be used on a grounded event");
-            }
-        do {
-            return event_body.mother !is null;
-        }
-
-        @nogc
-            bool fatherExists() const pure nothrow {
-            return event_body.father !is null;
-        }
-
-// is true if the event does not have a mother or a father
-        @nogc
-            bool isEva() pure const nothrow
-            in {
-                assert(!_grounded, "This function should not be used on a grounded event");
-            }
-        do {
-            return !motherExists;
-        }
-
-        @nogc
-            immutable(Buffer) fingerprint() const pure nothrow
-            in {
-                assert(_fingerprint, "Hash has not been calculated");
-            }
-        do {
-            return _fingerprint;
-        }
-
-        int opApply(scope int delegate(immutable uint level,
-                immutable bool mother ,const(Event) e) @safe dg) const {
-            int iterator(const(Event) e, immutable bool mother=true, immutable uint level=0) @safe {
-                int result;
-                if ( e ) {
-                    result = dg(level, mother, e);
-                    if ( result == 0 ) {
-                        iterator(e.mother, true, level+1);
-                        iterator(e.father, false, level+1);
-                    }
-                }
-                return result;
-            }
-            return iterator(this);
-        }
-
+        return iterator(this);
     }
 
-    unittest { // Serialize and unserialize EventBody
-        import std.digest.sha;
-        Payload payload=cast(immutable(ubyte)[])"Some payload";
+}
+
+unittest { // Serialize and unserialize EventBody
+    import std.digest.sha;
+    Payload payload=cast(immutable(ubyte)[])"Some payload";
 //    auto mother=SHA256(cast(uint[])"self").digits;
-        immutable mother=sha256Of("self");
-        immutable father=sha256Of("other");
-        auto seed_body=EventBody(payload, mother, father, 0, 0);
+    immutable mother=sha256Of("self");
+    immutable father=sha256Of("other");
+    auto seed_body=EventBody(payload, mother, father, 0, 0);
 
-        auto raw=seed_body.serialize;
+    auto raw=seed_body.serialize;
 
-        auto replicate_body=EventBody(raw);
+    auto replicate_body=EventBody(raw);
 
-        // Raw and repicate should be the same
-        assert(seed_body == replicate_body);
+    // Raw and repicate should be the same
+    assert(seed_body == replicate_body);
 //    auto seed_event=new Event(seed_body);
-    }
+}
