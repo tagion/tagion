@@ -180,6 +180,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
                     }
                 }
             );
+            notifyReadyAfterDelay();
         }while(!stop);
     }
     catch(Throwable t){
@@ -189,8 +190,8 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
 
 void handleAddrChanedEvent(shared p2plib.Node node) nothrow {
     try {
-        register("addr_changed_handler", thisTid);
-
+        log.register("addr_changed_handler");
+        
         do{
             receive(
                 (immutable(ubyte)[] data){
@@ -205,13 +206,14 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow {
         } while(true);
     }
     catch (Throwable t) {
+        log("ERROR: %s", t.msg);
         fatal(t);
     }
 }
 
 void handleRechabilityChanged(shared p2plib.Node node) nothrow {
     try {
-        register("rechability_handler", thisTid);
+        log.register("rechability_handler");
         do{
             receive(
                 (immutable(ubyte)[] data){
@@ -221,6 +223,7 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow {
         } while(true);
     }
     catch (Throwable t) {
+        log("ERROR: %s", t.msg);
         fatal(t);
     }
 }
