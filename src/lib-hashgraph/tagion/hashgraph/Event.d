@@ -268,7 +268,7 @@ class Round {
 
     @nogc
     uint node_size() pure const nothrow {
-        return cast(uint)_events.length;
+         return cast(uint)_events.length;
     }
 
     private this(Round r, const uint node_size, immutable int round_number) {
@@ -290,16 +290,33 @@ class Round {
 
     private void disconnect()
         in {
-            assert((_previous is null) || (_previous is _seed_round), "Only the last round can be disconnected");
-            assert(_events_count == 0, "All witness must be removed before the round can be disconnected");
+            // if (_previous !is null) {
+            //     log.warning("Only the last round can be disconnected (round %d)", number);
+            // }
+            //   assert((_previous is null) || (_previous is _seed_round), "Only the last round can be disconnected");
+            assert(_events_count is 0, "All witness must be removed before the round can be disconnected");
         }
     do {
-        Round before;
-        for(before=_rounds; (before !is null) && (before._previous !is this); before=before._previous) {
-            // Empty
+        if (_previous !is null) {
+            log.warning("Not the last to be disconnected (round %d)", number);
+            if (_previous._events_count !is 0) {
+                log.warning("Round is not disconnected because the previuos rounds still contains events (round %d)", number);
+                return;
+            }
+            _previous.disconnect;
+            // && (_previous._events_count is 0)) {
+            // _previous.disconnect;
         }
-        before._previous=null;
-        _decided_count--;
+        else {
+            Round before;
+
+            for(before=_rounds; (before !is null) && (before._previous !is this); before=before._previous) {
+                // Empty
+            }
+
+            before._previous=null;
+            _decided_count--;
+        }
     }
 
     private Round next_consecutive() {
@@ -527,17 +544,17 @@ class Round {
                 uint famous_node_id;
                 foreach(e; _events) {
                     if(e is null){
-                        log("event is null");
+                        log("(event is null)");
                         //stdout.flush();
                         // writeln(Document(e.toHiBON.serialize).toJSON);
                     }
                     if(e._witness is null){
-                        log("witness is null");
+                        //log("witness is null");
                         //stdout.flush();
-                        log("%s", Document(e.toHiBON.serialize).toJSON);
+                        log("(witness is null) %s", Document(e.toHiBON.serialize).toJSON);
                     }
                     else{
-                        log("ok");
+                        //log("ok");
                         if (e._witness.famous) {
                             famous_events[famous_node_id]=e;
                             unique_famous_mask[famous_node_id]=true;
