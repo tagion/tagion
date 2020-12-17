@@ -50,6 +50,9 @@ struct NetworkNodeRecord {
     @Label("$sign")  uint   sign;
     @Label("$state") State  state;
     @Label("$gene")  Buffer gene;
+    @Label("$addr") string address;
+    // @Label("$dart_from") ushort dart_from;
+    // @Label("$dart_to") ushort dart_to;
     mixin HiBONRecord!("NNR");
 }
 
