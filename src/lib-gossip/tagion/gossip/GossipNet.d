@@ -74,7 +74,8 @@ class StdHashNet : HashNet {
     immutable(Buffer) hashOf(const(Document) doc) const {
         auto range=doc[];
         if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
-            immutable value_data=range.front.data[range.front.valuePos..$];
+            pragma(msg, "FIXME(cbr): not working with integers");
+            immutable value_data=range.front.data[range.front.dataPos..range.front.dataPos + range.front.dataSize];
             return calcHash(value_data);
         }
         return calcHash(doc.serialize);
