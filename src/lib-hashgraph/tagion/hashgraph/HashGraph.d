@@ -297,6 +297,10 @@ class HashGraph {
         return _event_cache.contains(fingerprint);
     }
 
+    const(EventCache) event_cache() pure nothrow const {
+        return _event_cache;
+    }
+
     // Returns the number of active nodes in the network
     @nogc
     uint active_nodes() const pure nothrow {
@@ -323,9 +327,10 @@ class HashGraph {
 
     private void remove_node(Node n)
         in {
+            import std.format;
             assert(n !is null);
             assert(n.node_id < total_nodes);
-            assert(n.node_id in nodes, "Node id "~to!string(n.node_id)~" is not removable because it does not exist");
+            assert(n.node_id in nodes, format("Node id %d is not removable because it does not exist", n.node_id));
         }
     do {
         nodes.remove(n.node_id);
@@ -385,8 +390,10 @@ class HashGraph {
             iterative_strong_count=0;
             strongSee(event);
 
-            event.collect_famous_votes;
-
+            const round_has_been_decided=event.collect_famous_votes;
+            if ( round_has_been_decided ) {
+                log.trace("After round decision the event cache contains %d", _event_cache.length);
+            }
             event.round.check_coin_round;
 
             // if ( Round.check_decided_round_limit) {
@@ -396,10 +403,14 @@ class HashGraph {
 
             if ( Event.callbacks ) {
                 Event.callbacks.round(event);
-                if ( iterative_strong_count != 0 ) {
+                if ( iterative_strong_count > 0 ) {
                     Event.callbacks.iterations(event, iterative_strong_count);
                 }
                 Event.callbacks.witness_mask(event);
+            }
+
+            if (iterative_strong_count > 0) {
+                log.trace("Register event iterations=%d", iterative_strong_count);
             }
 
         }

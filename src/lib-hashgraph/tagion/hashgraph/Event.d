@@ -250,6 +250,13 @@ class Round {
     // Counts the witness in the round
     private uint _events_count;
     private static Round _rounds;
+    @nogc static uint count() nothrow {
+        uint result;
+        for(Round r=_rounds; r !is null; r=r._previous) {
+            result++;
+        }
+        return result;
+    }
     // Last undecided round
     private static Round _undecided;
     //
@@ -261,12 +268,11 @@ class Round {
         }
     }
 
-    @nogc    bool lessOrEqual(const Round rhs) pure const nothrow {
+    @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
-    @nogc
-    uint node_size() pure const nothrow {
+    @nogc uint node_size() pure const nothrow {
         return cast(uint)_events.length;
     }
 
@@ -508,10 +514,10 @@ class Round {
 
     package void check_coin_round() {
         if ( coin_round_distance >= coin_round_limit ) {
-            log("coin round");
             // Force a coin round
             Round undecided=undecided_round;
             undecided.decide;
+            log.trace("Coin round %d", undecided.number);
             if ( Event.callbacks ) {
                 Event.callbacks.coin_round(undecided);
             }
@@ -574,7 +580,7 @@ class Round {
                 log("famous sorted");
                 // Find middel time
                 immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
-                log("middle time index: %d, len: %d", middel_time_index, famous_events.length);
+                log.trace("middle time index: %d, len: %d", middel_time_index, famous_events.length);
                 //stdout.flush();
                 scope(exit){
                     log("calc successfully");
@@ -653,6 +659,7 @@ class Round {
         }
 
         if ( Event.callbacks ) {
+            log.trace("Total (Events=%d Witness=%d Rounds=%d)", Event.count, Event.Witness.count, Round.count);
             Event.callbacks.epoch(round_received_events);
         }
     }
@@ -863,6 +870,11 @@ class Round {
 
 @safe
 class Event {
+    protected static uint _count;
+    static uint count() nothrow {
+        return _count;
+    }
+
     protected enum _params = [
         "altitude",   // altitude
         Keywords.pubkey,
@@ -880,6 +892,10 @@ class Event {
 
     @safe
     static class Witness {
+        protected static uint _count;
+        @nogc static uint count() nothrow {
+            return _count;
+        }
         protected {
             Event _previous_witness_event;
             BitArray _famous_decided_mask;
@@ -892,7 +908,7 @@ class Event {
             bool     _famous_decided;
         }
         @trusted
-        this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask) pure nothrow
+        this(Event owner_event, Event previous_witness_event, ref const(BitArray) strong_seeing_mask) nothrow
         in {
             assert(strong_seeing_mask.length > 0);
             assert(owner_event);
@@ -902,6 +918,11 @@ class Event {
             _famous_decided_mask.length=node_size;
             _previous_witness_event=previous_witness_event;
             _round_seen_mask.length=node_size;
+            _count++;
+        }
+
+        ~this() {
+             _count--;
         }
 
         @nogc
@@ -1180,9 +1201,9 @@ class Event {
 
     // This function markes the witness in the previous round which
     // See this the witness
-    @trusted // FIXME: trusted should be removed after debugging
-    package void collect_famous_votes() {
-        import std.stdio;
+//    @trusted // FIXME: trusted should be removed after debugging
+    package bool collect_famous_votes() {
+        bool result;
         void collect_votes(Round previous_round) @safe {
             if ( previous_round && !previous_round._decided ) {
                 collect_votes( previous_round._previous );
@@ -1192,6 +1213,7 @@ class Event {
                 if ( previous_round._previous ) {
                     if ( ( previous_round is Round.undecided_round ) && previous_round.can_be_decided ) {
                         previous_round.decide;
+                        result = true;
                     }
                 }
             }
@@ -1199,6 +1221,7 @@ class Event {
         if ( _witness && !isEva  ) {
             collect_votes(_round._previous);
         }
+        return result;
     }
     @nogc
     const(Round) round() pure const nothrow
@@ -1429,7 +1452,7 @@ class Event {
         _fingerprint=request_net.calcHash(event_body.serialize);
         this.signature=signature;
         this.pubkey=cast(Buffer)pubkey;
-
+        _count++;
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             BitArray strong_mask;
@@ -1441,8 +1464,12 @@ class Event {
 //            _grounded = true;
         }
 
+
     }
 
+    ~this() {
+        _count--;
+    }
 // Disconnect the Event from the graph
     @trusted
     package void disconnect() {
@@ -1465,8 +1492,11 @@ class Event {
             //   }
 //        }
             scope(exit) {
+                _mother.destroy;
                 _grounded =true;
+
             }
+
             // if ( _son ) {
             //     _son._father=null;
             // }
@@ -1761,11 +1791,11 @@ class Event {
     }
 
     @nogc
-    bool motherExists() const pure nothrow
-            in {
-                assert(!_grounded, "This function should not be used on a grounded event");
-            }
-        do {
+    bool motherExists() const pure nothrow {
+    //     in {
+    //         assert(!_grounded, "This function should not be used on a grounded event");
+    //     }
+    // do {
         return event_body.mother !is null;
     }
 
@@ -1777,10 +1807,10 @@ class Event {
 // is true if the event does not have a mother or a father
     @nogc
     bool isEva() pure const nothrow {
-        //     in {
-        //         assert(!_grounded, "This function should not be used on a grounded event");
-        //     }
-        // do {
+    //     in {
+    //         assert(!_grounded, "This function should not be used on a grounded event");
+    //     }
+    // do {
         return !motherExists;
     }
 
