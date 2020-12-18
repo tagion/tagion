@@ -1554,7 +1554,7 @@ class Event {
         Event result;
         result=mother!true(h);
         if ( !result && motherExists ) {
-            request_net.request(h, mother_hash);
+            request_net.request(mother_hash);
             result=mother(h);
         }
         return result;
@@ -1665,7 +1665,7 @@ class Event {
         Event result;
         result=father!true(h);
         if ( !result && fatherExists ) {
-            request_net.request(h, father_hash);
+            request_net.request(father_hash);
             result=father(h);
         }
         return result;
