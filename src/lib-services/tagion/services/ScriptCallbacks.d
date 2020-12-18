@@ -13,11 +13,13 @@ import tagion.basic.TagionExceptions : fatal;
 import tagion.basic.Logger;
 
 @safe class ScriptCallbacks : EventScriptCallbacks {
-
+    import std.datetime;
+    alias Time=MonoTimeImpl!(ClockType.normal);
     private {
         Tid _event_script_tid;
         string transcript_task_name;
         string epoch_debug_task_name;
+        Time last_time;
         //   string dart_task_name;
     }
     // @trusted
@@ -38,17 +40,23 @@ import tagion.basic.Logger;
             if ( receiveOnly!Control is Control.LIVE ) {
                 log("Transcript started");
             }
+
         }
         catch (Throwable t) {
 
             fatal(t);
         }
+        last_time=MonoTime.currTime;
     }
 
     @trusted
     void epoch(const(Event[]) received_event, immutable long epoch_time) nothrow {
+        const current_time=MonoTime.currTime;
+        scope(exit) {
+            last_time=current_time;
+        }
         try {
-            log("Epoch with %d events", received_event.length);
+            log.trace("Epoch with %d events (Period %ssecs)", received_event.length, 1e-3*double((current_time-last_time).total!"msecs"));
             // auto hibon=new HiBON;
             // hibon[Keywords.time]=time;
             Payload[] payloads;
