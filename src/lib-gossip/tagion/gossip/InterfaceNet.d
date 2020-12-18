@@ -115,8 +115,11 @@ interface RequestNet : HashNet {
     /++
      + Request a missing event from the network
      +/
-    void request(HashGraph h, immutable(Buffer) event_hash);
+    void request(immutable(Buffer) fingerprint);
+
+    Event lookup(immutable(Buffer) fingerprint);
 }
+
 
 @safe
 interface SecureNet : HashNet {
