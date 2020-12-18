@@ -292,7 +292,7 @@ struct Options {
         string prefix;
         uint timeout;        /// Socket listerne timeout in msecs
         SSLService service;  /// SSL Service used by the transaction service
-
+        Host host;
         ushort max; // max == 0 means all
         mixin JSONCommon;
     }
@@ -610,6 +610,10 @@ static setDefaultOption(ref Options options) {
             certificate = "pem_files/domain.pem";
             private_key = "pem_files/domain.key.pem";
             task_name = "transaction.service";
+        }
+        with(host){
+            timeout = 3000;
+            max_size = 1024 * 100;
         }
     }
     // Monitor
