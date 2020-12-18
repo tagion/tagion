@@ -79,19 +79,7 @@ do {
     if(opts.p2plogs){
         p2plib.EnableLogger();
     }
-    if(opts.hostbootrap.enabled){
-        if(opts.hostbootrap.bootstrapNodes.length){
-            auto bootsraps = opts.hostbootrap.bootstrapNodes.split("\n");
-            foreach(bootsrap; bootsraps){
-                log("Connection to %s", bootsrap);
-                p2pnode.connect(bootsrap);
-            }
-        }else{
-            log.error("List of bootstrap nodes missing");
-            force_stop = true;
-        }
-    }
-    if(force_stop) return;
+    
     enum dir_token = "%dir%";
     if(opts.dart.path.indexOf(dir_token) != -1){
         const i = opts.port - opts.port_base;
@@ -121,12 +109,13 @@ do {
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
         
         discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, cast(immutable HashNet) net, opts.discovery.task_name, opts);
+        receiveOnly!Control;
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         
         receive(
             (immutable(AddressBook!Pubkey) address_book){
                 auto pkeys = cast(immutable) address_book.data.keys;
-                net.set(pkeys);
+                // net.set(pkeys);
                 dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet, opts, p2pnode, shared_net, sector_range);
                 // receiveOnly!Control;
                 dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode, shared_net, sector_range);
@@ -150,6 +139,19 @@ do {
     }
     if(force_stop) return;
 
+    if(opts.hostbootrap.enabled){
+        if(opts.hostbootrap.bootstrapNodes.length){
+            auto bootsraps = opts.hostbootrap.bootstrapNodes.split("\n");
+            foreach(bootsrap; bootsraps){
+                log("Connection to %s", bootsrap);
+                p2pnode.connect(bootsrap);
+            }
+        }else{
+            log.error("List of bootstrap nodes missing");
+            force_stop = true;
+        }
+    }
+    if(force_stop) return;
     bool ready =false;
     int ready_counter = 0;
     do{
@@ -177,8 +179,8 @@ do {
     scope(exit){
         discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
     }    
-    receive((Control ctr){
-        assert(ctr == Control.LIVE);
+    receive((DicvoryControl ctr){
+        assert(ctr == DicvoryControl.READY);
     });
 
     discovery_tid.send(DiscoveryRequestCommand.RequestTable);
@@ -285,6 +287,7 @@ do {
             log("%d] %s", i, p.cutHex);
         }
     }
+    hashgraph.dumpNodes();
 //     log("BEFORE DELAY");
 // import core.time;
 //     Thread.sleep(10.seconds);

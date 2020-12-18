@@ -161,6 +161,8 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         throw new NotImplementedError("Network mode is not correct");
     }
 
+    receiveOnly!Control;
+    ownerTid.send(Control.LIVE);
     auto stop = false;
     do{            
         receive(
@@ -185,10 +187,13 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
                 }
                 discovery_tid.send(request);
             },
-            (Control control){
-                if(control == Control.LIVE){
-                    ownerTid.send(Control.LIVE);
+            (DicvoryControl control){
+                log("Discovery received: %s", control);
+                if(control == DicvoryControl.READY){
+                    ownerTid.send(DicvoryControl.READY);
                 }
+            },
+            (Control control){
                 if(control == Control.STOP){
                     log("stop");
                     stop = true;

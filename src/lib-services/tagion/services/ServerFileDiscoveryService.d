@@ -28,6 +28,10 @@ enum DiscoveryRequestCommand{
     BecomeOffline = 3,
 }
 
+enum DicvoryControl{
+    READY = 1,
+}
+
 void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string taskName, immutable(Options) opts) nothrow {  //TODO: for test
     try{
         scope(exit){
@@ -100,7 +104,9 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
             }
         }
         spawn(&handleAddrChanedEvent, node);
+        receiveOnly!Control;
         spawn(&handleRechabilityChanged, node);
+        receiveOnly!Control;
         auto substoaddrupdate = node.SubscribeToAddressUpdated("addr_changed_handler");
         auto substorechability = node.SubscribeToRechabilityEvent("rechability_handler");
         scope(exit){
@@ -128,11 +134,13 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
             if(!owner_notified){
                 const after_delay = checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs);
                 if(after_delay && is_online && is_ready){
-                    ownerTid.send(Control.LIVE);
+                    ownerTid.send(DicvoryControl.READY);
                     owner_notified = true;
                 }
             }
         }
+
+        ownerTid.send(Control.LIVE);
         
         do{
             receiveTimeout(
@@ -191,7 +199,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
 void handleAddrChanedEvent(shared p2plib.Node node) nothrow {
     try {
         log.register("addr_changed_handler");
-        
+        ownerTid.send(Control.LIVE);        
         do{
             receive(
                 (immutable(ubyte)[] data){
@@ -214,6 +222,7 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow {
 void handleRechabilityChanged(shared p2plib.Node node) nothrow {
     try {
         log.register("rechability_handler");
+        ownerTid.send(Control.LIVE);
         do{
             receive(
                 (immutable(ubyte)[] data){

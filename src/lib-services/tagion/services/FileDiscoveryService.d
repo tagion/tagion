@@ -18,7 +18,7 @@ import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.TagionExceptions;
-import tagion.services.ServerFileDiscoveryService: DiscoveryRequestCommand;
+import tagion.services.ServerFileDiscoveryService: DiscoveryRequestCommand, DicvoryControl;
 
 void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, immutable(Options) opts) {  //TODO: for test
     bool stop = false;
@@ -97,7 +97,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
         if(!owner_notified){
             const after_delay = checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs);
             if(after_delay && is_ready){
-                ownerTid.send(Control.LIVE);
+                ownerTid.send(DicvoryControl.READY);
                 owner_notified = true;
             }
         }
@@ -130,6 +130,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
         }
     }
 
+    ownerTid.send(Control.LIVE);
     try{
         while(!stop){
             receiveTimeout(
