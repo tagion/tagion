@@ -593,6 +593,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         bool end_of_sequence=false;
 
         // This repesents the current state of the local node
+        // log("Get node: %s", received_pubkey.cutHex);
         auto received_node=_hashgraph.getNode(received_pubkey);
         //auto _node=_hashgraph.getNode(pubkey);
         if ( !online ) {

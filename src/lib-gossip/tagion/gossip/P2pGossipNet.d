@@ -292,7 +292,7 @@ static void async_send(shared p2plib.Node node, immutable Options opts, shared(C
                         auto stream = node.connect(node_address.address, node_address.is_marshal, [opts.transaction.protocol_id]);
                         streamId = stream.Identifier;
                         import p2p.callback;
-                        stream.listen(&StdHandlerCallback, "p2ptagion");
+                        stream.listen(&StdHandlerCallback, "p2ptagion", opts.transaction.host.timeout.msecs, opts.transaction.host.max_size);
                         // log("add stream to connection pool %d", streamId);
                         connectionPool.add(streamId, stream, true);
                         connectionPoolBridge.lookup[channel] = streamId;
