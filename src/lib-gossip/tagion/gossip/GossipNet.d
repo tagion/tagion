@@ -420,7 +420,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     protected ulong _current_time;
     protected HashGraph _hashgraph;
 
-    override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
+    override void request(immutable(ubyte[]) fingerprint) {
         if ( !_hashgraph.isRegistered(fingerprint) ) {
             immutable has_new_event=(fingerprint !is null);
             if ( has_new_event ) {
@@ -429,6 +429,10 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                 auto event=_hashgraph.registerEvent(this, epack.pubkey, epack.signature,  epack.event_body);
             }
         }
+    }
+
+    override Event lookup(immutable(ubyte[]) fingerprint) {
+        return _hashgraph.lookup(fingerprint);
     }
 
     static struct EventPackage {
@@ -593,7 +597,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         bool end_of_sequence=false;
 
         // This repesents the current state of the local node
-        // log("Get node: %s", received_pubkey.cutHex);
         auto received_node=_hashgraph.getNode(received_pubkey);
         //auto _node=_hashgraph.getNode(pubkey);
         if ( !online ) {
