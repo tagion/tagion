@@ -353,19 +353,18 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 
     import tagion.hashgraph.Event : Event;
     protected HashGraph _hashgraph;
-    this( HashGraph hashgraph) {
+    this () pure {
 //        _transceiver=transceiver;
-        _hashgraph=hashgraph;
+//        _hashgraph=hashgraph;
         _queue=new ReceiveQueue;
         _event_package_cache=new EventPackageCache(&onEvict);
         _event_cache=new EventCache(null);
-//        _hashgraph=new HashGraph(this);
+        _hashgraph=new HashGraph(this);
 
 //        import tagion.crypto.secp256k1.NativeSecp256k1;
         super();
     }
 
-    version(none)
     HashGraph hashgraph() pure nothrow {
         return _hashgraph;
     }
@@ -435,7 +434,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
             if ( has_new_event ) {
                 EventPackage epack=_event_package_cache[fingerprint];
                 _event_package_cache.remove(fingerprint);
-                auto event=_hashgraph.registerEvent(epack.pubkey, epack.signature,  epack.event_body);
+                auto event=_hashgraph.registerEvent(this, epack.pubkey, epack.signature,  epack.event_body);
             }
         }
     }
@@ -680,7 +679,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         auto wavefront_pack=buildEvent(wavefront, exchange);
                         send(received_pubkey, wavefront_pack.serialize);
 
-                        received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
+                        received_node.state=received_state;
                         break;
                     case FIRST_WAVE:
                     case BREAKING_WAVE:
