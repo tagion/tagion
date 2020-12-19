@@ -118,6 +118,14 @@ interface RequestNet : HashNet {
     void request(immutable(Buffer) fingerprint);
 
     Event lookup(immutable(Buffer) fingerprint);
+
+    void eliminate(scope immutable(ubyte[]) fingerprint);
+
+    void register(scope immutable(ubyte[]) fingerprint, Event event);
+
+    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure;
+
+    size_t number_of_registered_event() const pure nothrow;
 }
 
 
