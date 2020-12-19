@@ -326,7 +326,7 @@ do {
     //     if ( receiveOnly!Control is Control.LIVE ) {
     //         log("Transcript started");
     //     }
-    enum max_gossip=2;
+    enum max_gossip=1;
     uint gossip_count=max_gossip;
     bool stop=false;
     // // True of the network has been initialized;

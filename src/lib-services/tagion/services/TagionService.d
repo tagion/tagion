@@ -263,7 +263,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     // }
 
 
-    enum max_gossip=2;
+    enum max_gossip=1;
     uint gossip_count=max_gossip;
     bool stop=false;
     // // True of the network has been initialized;
