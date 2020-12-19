@@ -71,7 +71,12 @@ void loggerTask(immutable(Options) opts) {
     void receiver(LoggerType type, string label, string text) {
         void printToConsole(string s)
         {
-            if(opts.logger.to_console) writeln(s);
+            if(opts.logger.to_console){
+                 writeln(s);
+                 if(opts.logger.flush){
+                     stdout.flush();
+                 }
+            }
         }
         if ( type is LoggerType.INFO ) {
             const output = format("%s: %s", label, text);
