@@ -1550,12 +1550,12 @@ class Event {
         return _grounded || (_mother is null);
     }
 
-    Event mother(H)(H h, RequestNet request_net) {
+    Event mother(RequestNet request_net) {
         Event result;
-        result=mother!true(h);
+        result=mother!true(request_net);
         if ( !result && motherExists ) {
             request_net.request(mother_hash);
-            result=mother(h);
+            result=mother(request_net);
         }
         return result;
     }
@@ -1580,7 +1580,7 @@ class Event {
         return _received_order;
     }
 
-    protected Event mother(bool ignore_null_check=false, H)(H h)
+    protected Event mother(bool ignore_null_check)(RequestNet request_net)
         out(result) {
             static if ( !ignore_null_check) {
                 if ( mother_hash ) {
@@ -1590,7 +1590,7 @@ class Event {
         }
     do {
         if ( _mother is null ) {
-            _mother = h.lookup(mother_hash);
+            _mother = request_net.lookup(mother_hash);
             if ( _mother ) {
                 _received_order=_mother.received_order_max(_father, true);
             }
@@ -1642,7 +1642,7 @@ class Event {
         return _mother;
     }
 
-    protected Event father(bool ignore_null_check=false, H)(H h)
+    protected Event father_y(bool ignore_null_check)(RequestNet request_net)
         out(result) {
             static if ( !ignore_null_check) {
                 if ( father_hash ) {
@@ -1653,7 +1653,7 @@ class Event {
         }
     do {
         if ( _father is null ) {
-            _father = h.lookup(father_hash);
+            _father = request_net.lookup(father_hash);
             if ( _father ) {
                 _received_order=_father.received_order_max(_mother, true);
             }
@@ -1661,12 +1661,12 @@ class Event {
         return _father;
     }
 
-    Event father(H)(H h, RequestNet request_net) {
+    Event father_x(RequestNet request_net) {
         Event result;
-        result=father!true(h);
+        result=father_y!true(request_net);
         if ( !result && fatherExists ) {
             request_net.request(father_hash);
-            result=father(h);
+            result=father_x(request_net);
         }
         return result;
     }

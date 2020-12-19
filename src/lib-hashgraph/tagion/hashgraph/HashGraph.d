@@ -22,19 +22,30 @@ class HashGraph {
     alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
     alias LRU!(Buffer, Event) EventCache;
-
+    private RequestNet _request_net;
     private uint iterative_tree_count;
     private uint iterative_strong_count;
     //alias LRU!(Round, uint*) RoundCounter;
     alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
-    private EventCache _event_cache;
+//    private EventCache _event_cache;
     // List of rounds
     private Round _rounds;
 
 
-    this() pure nothrow {
-        _event_cache=new EventCache(null);
+    // this(RequestNet request_net) pure nothrow {
+    //     this._request_net=request_net;
+    // }
+
+    void request_net(RequestNet net) nothrow
+        in {
+            assert(_request_net is null, "RequestNet has already been set");
+        }
+    do {
+        _request_net=net;
     }
+    // this() pure nothrow {
+    //     _event_cache=new EventCache(null);
+    // }
 
 
     @safe
@@ -276,30 +287,35 @@ class HashGraph {
         return (node_id in nodes) !is null;
     }
 
-    void assign(Event event) {
+    void assign(Event event)
+        in {
+            assert(_request_net !is null, "RequestNet must be set");
+        }
+    do {
         auto node=getNode(event.channel);
         node.event=event;
-        _event_cache[event.fingerprint]=event;
+        _request_net.register(event.fingerprint, event);
+//        _event_cache[event.fingerprint]=event;
         if ( event.isEva ) {
             node.latest_witness_event=event;
         }
     }
 
-    Event lookup(scope immutable(ubyte[]) fingerprint) {
-        return _event_cache[fingerprint];
-    }
+    // Event lookup(scope immutable(ubyte[]) fingerprint) {
+    //     return _event_cache[fingerprint];
+    // }
 
-    void eliminate(scope immutable(ubyte[]) fingerprint) {
-        _event_cache.remove(fingerprint);
-    }
+    // void eliminate(scope immutable(ubyte[]) fingerprint) {
+    //     _event_cache.remove(fingerprint);
+    // }
 
-    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
-        return _event_cache.contains(fingerprint);
-    }
+    // bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
+    //     return _event_cache.contains(fingerprint);
+    // }
 
-    const(EventCache) event_cache() pure nothrow const {
-        return _event_cache;
-    }
+    // const(EventCache) event_cache() pure nothrow const {
+    //     return _event_cache;
+    // }
 
     // Returns the number of active nodes in the network
     @nogc
@@ -342,17 +358,22 @@ class HashGraph {
 //    alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
     enum round_clean_limit=10;
     Event registerEvent(
-        RequestNet request_net,
+//        RequestNet request_net,
         Pubkey pubkey,
         immutable(ubyte[]) signature,
-        ref immutable(EventBody) eventbody) {
+        ref immutable(EventBody) eventbody)
+        in {
+            assert(_request_net !is null, "RequestNet must be set");
+        }
+    do {
+
         immutable ebody=eventbody.serialize;
-        immutable fingerprint=request_net.calcHash(ebody);
+        immutable fingerprint=_request_net.calcHash(ebody);
         if ( Event.scriptcallbacks ) {
             // Sends the eventbody to the scripting engine
             Event.scriptcallbacks.send(eventbody);
         }
-        Event event=lookup(fingerprint);
+        Event event=_request_net.lookup(fingerprint);
         if ( !event ) {
             auto get_node_id=pubkey in node_ids;
             uint node_id;
@@ -377,14 +398,14 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-            event=new Event(eventbody, request_net, signature, pubkey, node_id, node_size);
+            event=new Event(eventbody, _request_net, signature, pubkey, node_id, node_size);
 
             // Add the event to the event cache
             assign(event);
 
             // Makes sure that we have the event tree before the graph is checked
             iterative_tree_count=0;
-            requestEventTree(request_net, event);
+            requestEventTree(event);
 
             // See if the node is strong seeing the hashgraph
             iterative_strong_count=0;
@@ -392,7 +413,7 @@ class HashGraph {
 
             const round_has_been_decided=event.collect_famous_votes;
             if ( round_has_been_decided ) {
-                log.trace("After round decision the event cache contains %d", _event_cache.length);
+                log.trace("After round decision the event cache contains %d", _request_net.number_of_registered_event);
             }
             event.round.check_coin_round;
 
@@ -420,18 +441,22 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(RequestNet request_net, Event event, Event child=null, immutable bool is_father=false) {
+    protected void requestEventTree(Event event, Event child=null, immutable bool is_father=false)
+        in {
+            assert(_request_net !is null, "RequestNet must be set");
+        }
+    do {
         iterative_tree_count++;
         if ( event && ( !event.is_loaded ) ) {
             event.loaded;
 
-            auto mother=event.mother(this, request_net);
-            requestEventTree(request_net, mother, event, false);
+            auto mother=event.mother(_request_net);
+            requestEventTree(mother, event, false);
             if ( mother ) {
                 mother.daughter=event;
             }
-            auto father=event.father(this, request_net);
-            requestEventTree(request_net, father, event, true);
+            auto father=event.father_x(_request_net);
+            requestEventTree(father, event, true);
             if ( father ) {
                 father.son=event;
             }
