@@ -59,6 +59,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     Net net;
     net=new Net(hashgraph);
     net.drive("tagion_service", master_net);
+    hashgraph.request_net=net;
     // synchronized(master_net) {
     //     auto unshared_net = cast(SecureDriveNet)master_net;
     //     unshared_net.drive("tagion_service", net1);
@@ -309,7 +310,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 father_fingerprint, net.time, mother.altitude+1);
             const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
             // immutable signature=net.sign(ebody);
-            return hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+            return hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
         }
         event=net.receive(buf, &register_leading_event);
     }
@@ -322,7 +323,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 immutable ebody=EventBody.eva(net);
                 const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
                 // immutable signature=net.sign(ebody);
-                event=hashgraph.registerEvent(net, net.pubkey, pack.signature, ebody);
+                event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
             }
             else {
                 auto mother=own_node.event;
@@ -330,7 +331,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
                 const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
                 //immutable signature=net.sign(ebody);
-                event=hashgraph.registerEvent(net,  net.pubkey, pack.signature, ebody);
+                event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
             }
             immutable send_channel=net.selectRandomNode;
             auto send_node=hashgraph.getNode(send_channel);
