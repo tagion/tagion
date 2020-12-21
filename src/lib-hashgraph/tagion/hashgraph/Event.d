@@ -556,7 +556,7 @@ class Round {
                 uint famous_node_id;
                 foreach(e; _events) {
                     if(e is null){
-                        log("(event is null)");
+                        log.trace("(event is null)");
                         //stdout.flush();
                         // writeln(Document(e.toHiBON.serialize).toJSON);
                     }
@@ -1051,37 +1051,43 @@ class Event {
     // The altitude increases by one from mother to daughter
     immutable(EventBody) event_body;
 
-    private Buffer _fingerprint;
+    protected {
+        Buffer _fingerprint;
     // This is the internal pointer to the
-    private Event _mother;
-    private Event _father;
-    private Event _daughter;
-    private Event _son;
+        Event _mother;
+        Event _father;
+        Event _daughter;
+        Event _son;
 
-    private int _received_order;
-    private Round  _round;
-    private Round  _round_received;
-    private uint _round_received_count;
-    private bool _grounded;
+        int _received_order;
+        Round  _round;
+        Round  _round_received;
+        uint _round_received_count;
+
     // The withness mask contains the mask of the nodes
     // Which can be seen by the next rounds witness
 
-    private Witness _witness;
-    private uint _witness_votes;
-    private BitArray _witness_mask;
+        Witness _witness;
+        uint _witness_votes;
+        BitArray _witness_mask;
+    }
 
     @nogc @property
     private uint node_size() pure const nothrow {
         return cast(uint)witness_mask.length;
     }
+
     immutable uint id;
-    private static uint id_count;
+    protected {
+        static uint id_count;
 
-    private bool _strongly_seeing_checked;
 
-    private bool _loaded;
+        bool _strongly_seeing_checked;
+        bool _loaded;
     // This indicates that the hashgraph aften this event
-    private bool _forked;
+        bool _forked;
+        bool _grounded;
+    }
 
     @nogc @property
     private static immutable(uint) next_id() nothrow {
@@ -1477,7 +1483,8 @@ class Event {
         // scope(exit) {
 
         // }
-        if (_mother) {
+//        if (_round_received &&
+        if ((_mother) && (_round_received) && (_mother._round_received) && ((_round_received.number-_mother._round_received.number) <= 0)) {
 //            import tagion.Utils.Miscellaneous;
 //            log.fatal("%s %s", indent, mother_hash.cutHex);
             _mother.disconnect;
@@ -1492,6 +1499,7 @@ class Event {
             //   }
 //        }
             scope(exit) {
+
                 _mother.destroy;
                 _grounded =true;
 
@@ -1529,7 +1537,7 @@ class Event {
                 //_witness=null;
             }
         }
-        else if (!_grounded && isEva) {
+        else if (isEva) {
             _round.remove(this);
             if ( _round.empty ) {
                 if ( Event.callbacks ) {

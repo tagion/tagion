@@ -2,6 +2,7 @@ module tagion.hashgraph.HashGraph;
 
 import std.stdio;
 import std.conv;
+import std.format;
 import tagion.hashgraph.Event;
 import tagion.gossip.InterfaceNet;
 import tagion.utils.LRU;
@@ -26,14 +27,11 @@ class HashGraph {
     private uint iterative_strong_count;
     //alias LRU!(Round, uint*) RoundCounter;
     alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
-//    private EventCache _event_cache;
+    alias EventCache=LRU!(Buffer, Event);
+    protected EventCache _event_cache;
     // List of rounds
     private Round _rounds;
 
-
-    // this(RequestNet request_net) pure nothrow {
-    //     this._request_net=request_net;
-    // }
 
     void request_net(RequestNet net) nothrow
         in {
@@ -42,10 +40,10 @@ class HashGraph {
     do {
         _request_net=net;
     }
-    // this() pure nothrow {
-    //     _event_cache=new EventCache(null);
-    // }
 
+    this() pure nothrow {
+        _event_cache=new EventCache(null);
+    }
 
     @safe
     static class Node {
@@ -102,6 +100,12 @@ class HashGraph {
             }
         do {
             return _event;
+        }
+
+        @nogc void remove() nothrow {
+            state = ExchangeState.NONE;
+            _event = null;
+            latest_witness_event = null;
         }
 
         @nogc
@@ -299,6 +303,43 @@ class HashGraph {
             node.latest_witness_event=event;
         }
     }
+
+    Event lookup(scope immutable(ubyte[]) fingerprint)
+        in {
+            assert(_event_cache.contains(fingerprint), format("Event %s has not been registerd", fingerprint.hex));
+        }
+    do {
+        return _event_cache[fingerprint];
+    }
+
+    void eliminate(scope immutable(ubyte[]) fingerprint)
+        in {
+            assert(fingerprint.length, "Event has no fingerprint");
+            assert(_event_cache.contains(fingerprint), format("Event %s has not been registerd", fingerprint.hex));
+        }
+    do{
+        _event_cache.remove(fingerprint);
+    }
+
+    void register(scope immutable(ubyte[]) fingerprint, Event event)
+        in {
+            assert(!_event_cache.contains(fingerprint), format("Event %s has already been registerd", fingerprint.hex));
+        }
+    do {
+        _event_cache[fingerprint] = event;
+    }
+
+    size_t number_of_registered_event() const pure nothrow {
+        return _event_cache.length;
+    }
+
+    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
+        return _event_cache.contains(fingerprint);
+    }
+
+
+
+
 
     // Event lookup(scope immutable(ubyte[]) fingerprint) {
     //     return _event_cache[fingerprint];
