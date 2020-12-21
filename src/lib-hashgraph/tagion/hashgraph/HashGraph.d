@@ -457,10 +457,10 @@ class HashGraph {
             }
             event.round.check_coin_round;
 
-            // if ( Round.check_decided_round_limit) {
-            //     // Scrap the lowest round which is not need anymore
-            //     event.round.scrap(this);
-            // }
+            if ( Round.check_decided_round_limit) {
+                 // Scrap the lowest round which is not need anymore
+                scrap;
+            }
 
             if ( Event.callbacks ) {
                 Event.callbacks.round(event);
@@ -476,6 +476,78 @@ class HashGraph {
 
         }
         return event;
+    }
+
+    protected void scrap() {
+        // Scrap the rounds and events below this
+        import std.algorithm.searching : all;
+        import std.algorithm.iteration : each;
+
+        void local_scrap(Round r) @trusted {
+            if (r[].all!(a => (a is null) && (a.round_received !is null))) {
+                import core.memory : GC;
+//                log.fatal("round.decided=%s round=%d usedSize=%d", r._decided, r.number, GC.stats.usedSize);
+//                r.range.each!(a => a._grounded = true);
+                r.range.each!((a) => {if (a) {a.disconnect(this);}});
+                // foreach(e; r.range) {
+                //     if (e) {
+                //         e.disconnect(this);
+                //     }
+                // }
+
+            }
+//             version(none) {
+//                 scope round_numbers = new int[r.node_size];
+//                 scope round_received_numbers = new int[r.node_size];
+//                 bool sealed_round=true;
+//                 // scope(exit) {
+//                 //     log.fatal("round.decided=%s", r._decided);
+//                 //     log.fatal("   round:%s", round_numbers);
+//                 //     log.fatal("received:%s", round_received_numbers);
+//                 //     if (sealed_round) {
+//                 //         //   log.fatal("ROUND Sealed!!");
+//                 //         log.fatal("ROUND Sealed!! %s", r[].all!(a => a._mother.round_received !is null));
+//                 //     }
+//                 // }
+
+//                 foreach(node_id, e; r[].enumerate) {
+// //                e._mother._grounded=true;
+//                     round_numbers[node_id]=r.number;
+//                     if (e._mother.round_received) {
+// //                    sealed_round &= (e._mother.round_received.number == r.number+1);
+
+//                         round_received_numbers[node_id]=e._mother.round_received.number;
+//                     }
+//                     else {
+// //                    sealed_round=false;
+//                         round_received_numbers[node_id]=-1;
+// //                    log.fatal("node_id=%d round=%d NO ROUND_RECEIVED !!!", node_id, r.number);
+//                     }
+//                     // void scrap_event(Event e) {
+//                     //     if ( e ) {
+//                     //         scrap_event(e._mother);
+//                     //         if ( Event.callbacks ) {
+//                     //             Event.callbacks.remove(e);
+//                     //         }
+//                     //         hashgraph.eliminate(e.fingerprint);
+//                     //         e.disconnect;
+//                     //         e.destroy;
+//                     //     }
+//                     // }
+//                     // scrap_event(e._mother);
+//                     // if ( e ) {
+//                     //     assert(e._mother is null);
+//                     // }
+//                 }
+//             }
+        }
+        Round _lowest=Round.lowest;
+//        version(none)
+        if ( _lowest ) {
+            local_scrap(_lowest);
+            _lowest.__grounded=true;
+            log("Round scrapped");
+        }
     }
 
     /**

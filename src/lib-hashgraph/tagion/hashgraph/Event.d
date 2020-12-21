@@ -15,7 +15,7 @@ import std.format;
 import std.typecons;
 import std.traits : Unqual;
 import std.range : enumerate;
-import std.algorithm.searching : all;
+//import std.algorithm.searching : all;
 import std.algorithm.iteration : map, each;
 
 import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, EnumText;
@@ -23,7 +23,7 @@ import tagion.hashgraph.HashGraphBasic : isMajority;
 import tagion.Keywords;
 
 import tagion.basic.Logger;
-
+import tagion.hashgraph.HashGraph : HashGraph;
 
 /// check function used in the Event package
 private alias check=Check!EventConsensusException;
@@ -231,7 +231,7 @@ interface EventScriptCallbacks {
 
 @safe
 class Round {
-    bool __grounded;
+    package bool __grounded;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     private Round _previous;
@@ -690,9 +690,10 @@ class Round {
             Event.callbacks.round_decided(this);
         }
         consensus_order;
-        if (check_decided_round_limit) {
-            scrap;
-        }
+        //return check_decided_round_limit;
+        // if (check_decided_round_limit) {
+        //     scrap(h);
+        // }
     }
 
     // Returns true of the round can be decided
@@ -784,14 +785,15 @@ class Round {
 //     }
 
     // Scrap the lowest Round
-    private static void scrap() {
+    version(none)
+    package static void scrap(HashGraph h) {
         // Scrap the rounds and events below this
         void local_scrap(Round r) @trusted {
-            if (r[].all!(a => a._mother.round_received !is null)) {
+            if (r[].all!(a => (a) && (a._round_received !is null))) {
                 import core.memory : GC;
 //                log.fatal("round.decided=%s round=%d usedSize=%d", r._decided, r.number, GC.stats.usedSize);
 //                r.range.each!(a => a._grounded = true);
-                r.range.each!(a => a.disconnect);
+                r.range.each!((a) => {if (a) {a.disconnect(h);}});
 
             }
 //             version(none) {
@@ -1478,66 +1480,13 @@ class Event {
     }
 // Disconnect the Event from the graph
     @trusted
-    package void disconnect() {
+    package void disconnect(HashGraph h) {
 //        version(none) {
         // scope(exit) {
 
         // }
 //        if (_round_received &&
-        if ((_mother) && (_round_received) && (_mother._round_received) && ((_round_received.number-_mother._round_received.number) <= 0)) {
-//            import tagion.Utils.Miscellaneous;
-//            log.fatal("%s %s", indent, mother_hash.cutHex);
-            _mother.disconnect;
-//            log.fatal("%s %s", indent, _mother !is null);
-            _mother._daughter=null;
-
-            if (_father) {
-                _father._son=null;
-            }
-//            _mother.destroy;
-            _mother=_father=null;
-            //   }
-//        }
-            scope(exit) {
-
-                _mother.destroy;
-                _grounded =true;
-
-            }
-
-            // if ( _son ) {
-            //     _son._father=null;
-            // }
-            // if ( _daughter ) {
-            //     //_daughter._grounded=true;
-            //     _daughter._mother=null;
-            // }
-            // if ( _father ) {
-            //     _father._son=null;
-            // }
-            //_daughter=_son=null;
-            //      version(none)
-            if ( _witness ) {
-                //assert(_round.event(node_id) is this);
-                //log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
-                _round.remove(this);
-                if ( _round.empty ) {
-                    if ( Event.callbacks ) {
-                        Event.callbacks.remove(_round);
-                    }
-                    // if (_round._previous !is null) {
-                    //     log.fatal("_round._previous = %d", _round._previous.number);
-                    // }
-                    // log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
-                    _round.disconnect;
-                    //_round.destroy;
-                    //_round=null;
-                }
-                _witness.destroy;
-                //_witness=null;
-            }
-        }
-        else if (isEva) {
+        if (isEva) {
             _round.remove(this);
             if ( _round.empty ) {
                 if ( Event.callbacks ) {
@@ -1550,6 +1499,60 @@ class Event {
                 _round.disconnect;
                 //_round.destroy;
                 //_round=null;
+            }
+            h.eliminate(fingerprint);
+            this.destroy;
+        }
+        else {
+            bool remove_it=(_daughter._round_received) && (((_daughter._round_received.number-_round_received.number) <= 0));
+            if ((_son) && remove_it) {
+                remove_it=(_son._round_received) && (((_son._round_received.number-_round_received.number) <= 0));
+            }
+            if (remove_it) {
+                _mother.disconnect(h);
+                // if (_fater) {
+                //     _father.disconnect;
+                // }
+                scope(exit) {
+                    _daughter._mother=null;
+                    if (_son) {
+                        _son._father=null;
+                    }
+                    _father=_mother=null;
+                    h.eliminate(fingerprint);
+                    this.destroy;
+                }
+            // if ( _son ) {
+            //     _son._father=null;
+            // }
+            // if ( _daughter ) {
+            //     //_daughter._grounded=true;
+            //     _daughter._mother=null;
+            // }
+            // if ( _father ) {
+            //     _father._son=null;
+            // }
+            //_daughter=_son=null;
+            //      version(none)
+                if ( _witness ) {
+                    //assert(_round.event(node_id) is this);
+                    //log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
+                    _round.remove(this);
+                    if ( _round.empty ) {
+                        if ( Event.callbacks ) {
+                            Event.callbacks.remove(_round);
+                        }
+                        // if (_round._previous !is null) {
+                        //     log.fatal("_round._previous = %d", _round._previous.number);
+                        // }
+                        // log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
+                        _round.disconnect;
+                        //_round.destroy;
+                        //_round=null;
+                    }
+                    _witness.destroy;
+                //_witness=null;
+                }
             }
         }
     }
