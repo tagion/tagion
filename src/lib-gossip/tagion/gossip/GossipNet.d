@@ -352,11 +352,16 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     }
 
     import tagion.hashgraph.Event : Event;
+    alias EventCache=LRU!(Buffer, Event);
+    private EventCache _event_cache;
+
     this( HashGraph hashgraph) {
 //        _transceiver=transceiver;
         _hashgraph=hashgraph;
         _queue=new ReceiveQueue;
         _event_package_cache=new EventPackageCache(&onEvict);
+        _event_cache=new EventCache(null);
+
 //        import tagion.crypto.secp256k1.NativeSecp256k1;
         super();
     }
@@ -420,16 +425,46 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     protected ulong _current_time;
     protected HashGraph _hashgraph;
 
-    override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
-        if ( !_hashgraph.isRegistered(fingerprint) ) {
+    override void request(immutable(ubyte[]) fingerprint) {
+        if ( !isRegistered(fingerprint) ) {
             immutable has_new_event=(fingerprint !is null);
             if ( has_new_event ) {
                 EventPackage epack=_event_package_cache[fingerprint];
                 _event_package_cache.remove(fingerprint);
-                auto event=_hashgraph.registerEvent(this, epack.pubkey, epack.signature,  epack.event_body);
+                auto event=_hashgraph.registerEvent(epack.pubkey, epack.signature,  epack.event_body);
             }
         }
     }
+
+    Event lookup(scope immutable(ubyte[]) fingerprint) {
+        return _event_cache[fingerprint];
+    }
+
+    void eliminate(scope immutable(ubyte[]) fingerprint) {
+        _event_cache.remove(fingerprint);
+    }
+
+    void register(scope immutable(ubyte[]) fingerprint, Event event)
+        in {
+            assert(fingerprint !in _event_cache, format("Event %s has already been registerd", fingerprint.hex));
+        }
+    do {
+        _event_cache[fingerprint] = event;
+    }
+
+    size_t number_of_registered_event() const pure nothrow {
+        return _event_cache.length;
+    }
+
+    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
+        return _event_cache.contains(fingerprint);
+    }
+
+
+
+    // override Event lookup(immutable(ubyte[]) fingerprint) {
+    //     return _hashgraph.lookup(fingerprint);
+    // }
 
     static struct EventPackage {
         immutable(ubyte[]) signature;
@@ -516,7 +551,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                 auto event_package=EventPackage(pack_doc);
                 // The message is the hashpointer to the event body
                 immutable fingerprint=calcHash(event_package.event_body.serialize);
-                if ( !_hashgraph.isRegistered(fingerprint) && !_event_package_cache.contains(fingerprint)) {
+                if ( !isRegistered(fingerprint) && !_event_package_cache.contains(fingerprint)) {
                     check(verify(fingerprint, event_package.signature, event_package.pubkey), ConsensusFailCode.EVENT_SIGNATURE_BAD);
 //                    log("add event_package %s", fingerprint.cutHex);
                     _event_package_cache[fingerprint]=event_package;
