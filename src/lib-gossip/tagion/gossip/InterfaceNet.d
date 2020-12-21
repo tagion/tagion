@@ -173,6 +173,7 @@ interface GossipNet : SecureNet, RequestNet, PackageNet {
     void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
 
     immutable(Pubkey) selectRandomNode(const bool active=true);
+
     void set(immutable(Pubkey)[] pkeys);
 
     NetCallbacks callbacks();

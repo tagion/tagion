@@ -592,7 +592,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                 }
             }
             else if ( is_tidewave ) {
-                foreach(e; n) {
+                foreach(e; n[]) {
                     events~=e.toHiBON;
                 }
             }
@@ -671,8 +671,10 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 
                         received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
                         break;
-                    case FIRST_WAVE:
                     case BREAKING_WAVE:
+                        log.trace("BREAKING_WAVE");
+                        goto case;
+                    case FIRST_WAVE:
                         // consensus(INIT_TIDE, received_node.state).check(received_node.state == INIT_TIDE,  ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                         consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
                             check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);

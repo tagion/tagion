@@ -66,7 +66,7 @@ class EmulatorGossipNet : StdGossipNet {
             assert(_tids is null);
         }
     do {
-        log("_pkeys.length=%d", pkeys.length);
+//        log("_pkeys.length=%d", pkeys.length);
         _pkeys=pkeys;
         auto tids=new Tid[pkeys.length];
         getTids(tids);
@@ -75,13 +75,24 @@ class EmulatorGossipNet : StdGossipNet {
         }
     }
 
-    immutable(Pubkey) selectRandomNode(const bool active=true) {
+    immutable(Pubkey) selectRandomNode(const bool active=true)
+    out(result)  {
+        assert(result != pubkey);
+    }
+    do {
         immutable N=cast(uint)_tids.length;
-        uint node_index;
-        do {
-            node_index=random.value(1, N);
-        } while (_pkeys[node_index] == pubkey);
-        return _pkeys[node_index];
+        //uint node_index;
+//        Pubkey result;
+//        do {
+        for(;;) {
+            const node_index=random.value(0, N);
+            auto result=_pkeys[node_index];
+            if (result != pubkey) {
+                return result;
+            }
+        }
+        assert(0);
+//        return result;
     }
 
 
