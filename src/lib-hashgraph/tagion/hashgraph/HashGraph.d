@@ -21,7 +21,6 @@ class HashGraph {
     //alias Pubkey=immutable(ubyte)[];
     alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
-    alias LRU!(Buffer, Event) EventCache;
     private RequestNet _request_net;
     private uint iterative_tree_count;
     private uint iterative_strong_count;
