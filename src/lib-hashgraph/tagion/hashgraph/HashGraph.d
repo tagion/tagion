@@ -3,13 +3,14 @@ module tagion.hashgraph.HashGraph;
 import std.stdio;
 import std.conv;
 import std.format;
+import std.bitmanip : BitArray;
 import tagion.hashgraph.Event;
 import tagion.gossip.InterfaceNet;
 import tagion.utils.LRU;
 import tagion.hibon.Document;
 import tagion.utils.Miscellaneous;
 import tagion.basic.ConsensusExceptions;
-import std.bitmanip : BitArray;
+
 import tagion.basic.Basic : Pubkey, Buffer, bitarray_clear, countVotes;
 import Basic=tagion.hashgraph.HashGraphBasic;
 
@@ -27,8 +28,6 @@ class HashGraph {
     private uint iterative_strong_count;
     //alias LRU!(Round, uint*) RoundCounter;
     alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
-    alias EventCache=LRU!(Buffer, Event);
-    protected EventCache _event_cache;
     // List of rounds
     private Round _rounds;
 
@@ -41,9 +40,6 @@ class HashGraph {
         _request_net=net;
     }
 
-    this() pure nothrow {
-        _event_cache=new EventCache(null);
-    }
 
     @safe
     static class Node {
@@ -304,59 +300,6 @@ class HashGraph {
         }
     }
 
-    Event lookup(scope immutable(ubyte[]) fingerprint)
-        in {
-            assert(_event_cache.contains(fingerprint), format("Event %s has not been registerd", fingerprint.hex));
-        }
-    do {
-        return _event_cache[fingerprint];
-    }
-
-    void eliminate(scope immutable(ubyte[]) fingerprint)
-        in {
-            assert(fingerprint.length, "Event has no fingerprint");
-            assert(_event_cache.contains(fingerprint), format("Event %s has not been registerd", fingerprint.hex));
-        }
-    do{
-        _event_cache.remove(fingerprint);
-    }
-
-    void register(scope immutable(ubyte[]) fingerprint, Event event)
-        in {
-            assert(!_event_cache.contains(fingerprint), format("Event %s has already been registerd", fingerprint.hex));
-        }
-    do {
-        _event_cache[fingerprint] = event;
-    }
-
-    size_t number_of_registered_event() const pure nothrow {
-        return _event_cache.length;
-    }
-
-    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
-        return _event_cache.contains(fingerprint);
-    }
-
-
-
-
-
-    // Event lookup(scope immutable(ubyte[]) fingerprint) {
-    //     return _event_cache[fingerprint];
-    // }
-
-    // void eliminate(scope immutable(ubyte[]) fingerprint) {
-    //     _event_cache.remove(fingerprint);
-    // }
-
-    // bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
-    //     return _event_cache.contains(fingerprint);
-    // }
-
-    // const(EventCache) event_cache() pure nothrow const {
-    //     return _event_cache;
-    // }
-
     // Returns the number of active nodes in the network
     @nogc
     uint active_nodes() const pure nothrow {
@@ -484,11 +427,13 @@ class HashGraph {
         import std.algorithm.iteration : each;
 
         void local_scrap(Round r) @trusted {
-            if (r[].all!(a => (a is null) && (a.round_received !is null))) {
-                import core.memory : GC;
+            log.trace("Try to remove round %d", r.number);
+            if (r[].all!(a => (a is null) || (a.round_received !is null))) {
+                log.trace("Remove and disconnection round in %d", r.number);
+                //import core.memory : GC;
 //                log.fatal("round.decided=%s round=%d usedSize=%d", r._decided, r.number, GC.stats.usedSize);
 //                r.range.each!(a => a._grounded = true);
-                r.range.each!((a) => {if (a) {a.disconnect(this);}});
+                r.range.each!((a) => {if (a !is null) {a.disconnect; pragma(msg, typeof(a));}});
                 // foreach(e; r.range) {
                 //     if (e) {
                 //         e.disconnect(this);
@@ -553,7 +498,7 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
-    protected void requestEventTree(Event event, Event child=null, immutable bool is_father=false)
+    protected void requestEventTree(Event event)
         in {
             assert(_request_net !is null, "RequestNet must be set");
         }
@@ -563,12 +508,12 @@ class HashGraph {
             event.loaded;
 
             auto mother=event.mother(_request_net);
-            requestEventTree(mother, event, false);
+            requestEventTree(mother);
             if ( mother ) {
                 mother.daughter=event;
             }
             auto father=event.father_x(_request_net);
-            requestEventTree(father, event, true);
+            requestEventTree(father);
             if ( father ) {
                 father.son=event;
             }

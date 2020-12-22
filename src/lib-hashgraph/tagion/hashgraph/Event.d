@@ -1480,13 +1480,14 @@ class Event {
     }
 // Disconnect the Event from the graph
     @trusted
-    package void disconnect(HashGraph h) {
+    package void disconnect() {
 //        version(none) {
         // scope(exit) {
 
         // }
 //        if (_round_received &&
         if (isEva) {
+            log.trace("Remove Eva Event id=%d", id);
             _round.remove(this);
             if ( _round.empty ) {
                 if ( Event.callbacks ) {
@@ -1500,75 +1501,45 @@ class Event {
                 //_round.destroy;
                 //_round=null;
             }
-            h.eliminate(fingerprint);
+            //h.eliminate(fingerprint);
             this.destroy;
         }
         else {
-            bool remove_it=(_daughter._round_received) && (((_daughter._round_received.number-_round_received.number) <= 0));
+            bool remove_it=(_daughter._round_received) && (((_daughter._round_received.number-_round_received.number) >= 0));
+            log.trace("Remove Event id=%d %s", id, remove_it);
             if ((_son) && remove_it) {
-                remove_it=(_son._round_received) && (((_son._round_received.number-_round_received.number) <= 0));
+                remove_it=(_son._round_received) && (((_son._round_received.number-_round_received.number) >= 0));
             }
             if (remove_it) {
-                _mother.disconnect(h);
-                // if (_fater) {
-                //     _father.disconnect;
-                // }
+                if (_mother) {
+                    _mother.disconnect;
+                }
                 scope(exit) {
                     _daughter._mother=null;
                     if (_son) {
                         _son._father=null;
                     }
                     _father=_mother=null;
-                    h.eliminate(fingerprint);
+                    //h.eliminate(fingerprint);
                     this.destroy;
                 }
-            // if ( _son ) {
-            //     _son._father=null;
-            // }
-            // if ( _daughter ) {
-            //     //_daughter._grounded=true;
-            //     _daughter._mother=null;
-            // }
-            // if ( _father ) {
-            //     _father._son=null;
-            // }
-            //_daughter=_son=null;
-            //      version(none)
                 if ( _witness ) {
-                    //assert(_round.event(node_id) is this);
-                    //log.fatal("Remove event node %d from round %d total %d", node_id, _round.number, round._events_count);
                     _round.remove(this);
                     if ( _round.empty ) {
                         if ( Event.callbacks ) {
                             Event.callbacks.remove(_round);
                         }
-                        // if (_round._previous !is null) {
-                        //     log.fatal("_round._previous = %d", _round._previous.number);
-                        // }
-                        // log.fatal("Disconnect round %d %s", _round.number, _round._previous is null);
                         _round.disconnect;
-                        //_round.destroy;
-                        //_round=null;
                     }
                     _witness.destroy;
-                //_witness=null;
                 }
             }
         }
     }
 
+    @nogc
     bool grounded() pure const nothrow {
         return _grounded || (_mother is null);
-    }
-
-    Event mother(RequestNet request_net) {
-        Event result;
-        result=mother!true(request_net);
-        if ( !result && motherExists ) {
-            request_net.request(mother_hash);
-            result=mother(request_net);
-        }
-        return result;
     }
 
     @nogc
@@ -1582,6 +1553,17 @@ class Event {
             if ( result < 0 ) {
                 result=0;
             }
+        }
+        return result;
+    }
+
+
+    Event mother(RequestNet request_net) {
+        Event result;
+        result=mother!true(request_net);
+        if ( !result && motherExists ) {
+            request_net.request(mother_hash);
+            result=mother(request_net);
         }
         return result;
     }
@@ -1623,12 +1605,6 @@ class Event {
 
     package Event mother_raw() nothrow pure
     in {
-        // if (_grounded) {
-        //     import std.stdio;
-        //     import std.exception;
-        //     debug assumeWontThrow(writefln("This event is grounded"));
-        // }
-        // assert(!_grounded, "This event is grounded");
         if ( mother_hash ) {
             assert(_grounded || _mother);
             if (_mother) {
@@ -1638,18 +1614,6 @@ class Event {
     }
 
     do {
-        // if (_mother is null && !isEva) {
-        //     import tagion.basic.TagionExceptions;
-        //     import tagion.utils.Miscellaneous : cutHex;
-        //     try {
-        //         throw new TagionException(format("Unexpected null mother (is_strongly_seeing_checked=%s) (grounded=%s) (mother_hash='%s')",
-        //                 is_strongly_seeing_checked, _grounded, mother_hash.cutHex));
-        //     }
-        //     catch (Exception e) {
-        //         fatal(e);
-        //         assert(0);
-        //     }
-        // }
         return _mother;
     }
 
@@ -1703,11 +1667,6 @@ class Event {
     do {
         return _father;
     }
-
-    // @nogc
-    // package inout(Event) daughter() inout pure nothrow {
-    //     return _daughter;
-    // }
 
     @nogc
     const(Event) daughter() const pure nothrow {
