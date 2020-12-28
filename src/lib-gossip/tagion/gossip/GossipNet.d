@@ -359,7 +359,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 //        _transceiver=transceiver;
         _hashgraph=hashgraph;
         _queue=new ReceiveQueue;
-        _event_package_cache=new EventPackageCache(&onEvict);
+//        _event_package_cache=new EventPackageCache(&onEvict);
         _event_cache=new EventCache(null);
 
 //        import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -397,13 +397,18 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         string node_name;
     }
 
-    const(Package) buildEvent(const(HiBON) block, ExchangeState type) {
-        return Package(this, block, type);
+    Document buildPackage(const(HiBON) block, const ExchangeState state) {
+        const pack=Package(this, block, state);
+        return Document(pack.toHiBON.serialize);
     }
 
-    void onEvict(scope const(ubyte[]) key, EventPackageCache.Element* e) nothrow @safe {
-        //fout.writefln("Evict %s", typeid(e.entry));
-    }
+    // immutable(EventPackage*) buildEvent_(const Document ebody) const {
+    //     return new immutable(EventPackage)(this, doc_epack);
+    // }
+
+    // void onEvict(scope const(ubyte[]) key, EventPackageCache.Element* e) nothrow @safe {
+    //     //fout.writefln("Evict %s", typeid(e.entry));
+    // }
 
     bool online() const  {
         // Does my own node exist and do the node have an event
@@ -419,8 +424,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         return _queue;
     }
 
-    alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
-    protected EventPackageCache _event_package_cache;
+//    alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
+    immutable(EventPackage)*[const(ubyte[])] _event_package_cache;
+//    protected EventPackageCache _event_package_cache;
 
     protected ulong _current_time;
     protected HashGraph _hashgraph;
@@ -429,9 +435,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         if ( !isRegistered(fingerprint) ) {
             immutable has_new_event=(fingerprint !is null);
             if ( has_new_event ) {
-                EventPackage epack=_event_package_cache[fingerprint];
+                immutable epack=_event_package_cache[fingerprint];
                 _event_package_cache.remove(fingerprint);
-                auto event=_hashgraph.registerEvent(epack.pubkey, epack.signature,  epack.event_body);
+                auto event=_hashgraph.registerEvent(epack); //epack.pubkey, epack.signature,  epack.event_body);
             }
         }
     }
@@ -466,21 +472,21 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     //     return _hashgraph.lookup(fingerprint);
     // }
 
-    static struct EventPackage {
-        immutable(ubyte[]) signature;
-        immutable(Pubkey) pubkey;
-        immutable(EventBody) event_body;
-        this(Document doc) {
-            signature=(doc[Event.Params.signature].get!(Buffer)).idup;
-            pubkey=buf_idup!Pubkey(doc[Event.Params.pubkey].get!Buffer);
-            auto doc_ebody=doc[Event.Params.ebody].get!Document;
-            event_body=immutable(EventBody)(doc_ebody);
-        }
-        static EventPackage undefined() {
-            check(false, ConsensusFailCode.GOSSIPNET_EVENTPACKAGE_NOT_FOUND);
-            assert(0);
-        }
-    }
+    // static struct EventPackage {
+    //     immutable(ubyte[]) signature;
+    //     immutable(Pubkey) pubkey;
+    //     immutable(EventBody) event_body;
+    //     this(Document doc) {
+    //         signature=(doc[Event.Params.signature].get!(Buffer)).idup;
+    //         pubkey=buf_idup!Pubkey(doc[Event.Params.pubkey].get!Buffer);
+    //         auto doc_ebody=doc[Event.Params.ebody].get!Document;
+    //         event_body=immutable(EventBody)(doc_ebody);
+    //     }
+    //     static EventPackage undefined() {
+    //         check(false, ConsensusFailCode.GOSSIPNET_EVENTPACKAGE_NOT_FOUND);
+    //         assert(0);
+    //     }
+    // }
 
     /++ to synchronize two nodes A and B
      +  1)
@@ -545,13 +551,15 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
             import tagion.hibon.HiBONJSON;
             // log("wavefront: \n%s\n", wavefront.toJSON);
             foreach(pack; wavefront) {
-                auto pack_doc=pack.get!Document;
+                auto doc_epack=pack.get!Document;
 
                 // Create event package and cache it
-                auto event_package=EventPackage(pack_doc);
+                immutable event_package=new immutable(EventPackage)(this, doc_epack);
+                //immutable event_package=buildEvent_(doc_epack);
                 // The message is the hashpointer to the event body
                 immutable fingerprint=calcHash(event_package.event_body.serialize);
-                if ( !isRegistered(fingerprint) && !_event_package_cache.contains(fingerprint)) {
+                assert(event_package.fingerprint == fingerprint);
+                if ( !isRegistered(fingerprint) && (fingerprint !in _event_package_cache)) {
                     check(verify(fingerprint, event_package.signature, event_package.pubkey), ConsensusFailCode.EVENT_SIGNATURE_BAD);
 //                    log("add event_package %s", fingerprint.cutHex);
                     _event_package_cache[fingerprint]=event_package;
@@ -666,7 +674,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         wavefront[Params.wavefront]=events;
                         // If the this node already have INIT and tide a braking wave is send
                         const exchange=(received_node.state is INIT_TIDE)?BREAKING_WAVE:FIRST_WAVE;
-                        auto wavefront_pack=buildEvent(wavefront, exchange);
+                        auto wavefront_pack=buildPackage(wavefront, exchange);
                         send(received_pubkey, wavefront_pack.serialize);
 
                         received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
@@ -692,7 +700,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                             wavefront[Params.wavefront]=events;
 
                             // Receive the tide wave and return the wave front
-                            auto wavefront_pack=buildEvent(wavefront, SECOND_WAVE);
+                            auto wavefront_pack=buildPackage(wavefront, SECOND_WAVE);
                             send(received_pubkey, wavefront_pack.serialize);
                         }
                         end_of_sequence=true;

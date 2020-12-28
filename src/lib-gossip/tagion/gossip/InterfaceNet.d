@@ -24,7 +24,7 @@ struct Package {
     immutable ExchangeState type;
     immutable(ubyte[]) signature;
 
-    this(GossipNet net, const(HiBON) block, ExchangeState type) {
+    this(GossipNet net, const(HiBON) block, const ExchangeState type) {
         this.block=block;
         this.type=type;
         this.pubkey=net.pubkey;
@@ -76,9 +76,9 @@ struct Package {
         return hibon;
     }
 
-    immutable(ubyte[]) serialize() const {
-        return toHiBON.serialize;
-    }
+    // immutable(ubyte[]) serialize() const {
+    //     return toHiBON.serialize;
+    // }
 }
 
 
@@ -159,7 +159,7 @@ interface PackageNet {
     alias ReceiveQueue = Queue!(immutable(ubyte[]));
 
 //    Payload evaPackage();
-    const(Package) buildEvent(const(HiBON) block, ExchangeState type);
+    Document buildPackage(const(HiBON) pack, const ExchangeState type);
 
     Tides tideWave(HiBON hibon, bool build_tides);
 

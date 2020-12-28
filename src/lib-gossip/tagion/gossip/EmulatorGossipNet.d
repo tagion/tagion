@@ -99,7 +99,7 @@ class EmulatorGossipNet : StdGossipNet {
     void dump(const(HiBON[]) events) const {
         foreach(e; events) {
             auto pack_doc=Document(e.serialize);
-            auto pack=EventPackage(pack_doc);
+            immutable pack=new immutable(EventPackage)(this, pack_doc);
             immutable fingerprint=calcHash(pack.event_body.serialize);
             log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
         }
