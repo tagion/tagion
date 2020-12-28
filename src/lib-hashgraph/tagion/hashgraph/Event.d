@@ -3,6 +3,7 @@ module tagion.hashgraph.Event;
 import std.datetime;   // Date, DateTime
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord;
 
 import tagion.utils.Miscellaneous;
 
@@ -18,7 +19,7 @@ import std.range : enumerate;
 //import std.algorithm.searching : all;
 import std.algorithm.iteration : map, each;
 
-import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, EnumText;
+import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, EnumText, buf_idup;
 import tagion.hashgraph.HashGraphBasic : isMajority;
 import tagion.Keywords;
 
@@ -61,6 +62,103 @@ unittest { // Test of the altitude measure function
     assert(lower(x,y));
     assert(!lower(x,x));
     assert(!higher(x,x));
+}
+
+@safe
+struct EventPackage {
+    immutable(ubyte)[] fingerprint;
+    immutable(ubyte)[] signature;
+    Pubkey pubkey;
+    EventBody event_body;
+//    mixin HiBONRecord!("EVENT");
+
+    this(const HashNet net, const Document doc_epack) immutable
+    in {
+        assert(doc_epack.hasElement(Event.Params.fingerprint), "FIngerprint should not be a part of the event body");
+    }
+    do {
+        signature=(doc_epack[Event.Params.signature].get!(Buffer)).idup;
+        pubkey=Pubkey((doc_epack[Event.Params.pubkey].get!Buffer).idup);
+        const doc_ebody=doc_epack[Event.Params.ebody].get!Document;
+        fingerprint=net.calcHash(doc_ebody.serialize);
+        event_body=immutable(EventBody)(doc_ebody);
+    }
+
+    this(GossipNet net, const(HiBON) hibon_ebody) immutable
+    in {
+            assert(!hibon_ebody.hasMember(Event.Params.fingerprint), "FIngerprint should not be a part of the event body");
+    }
+    do {
+        pubkey=net.pubkey;
+        const doc_ebody=Document(hibon_ebody.serialize);
+        fingerprint=net.calcHash(doc_ebody.serialize);
+        signature=net.sign(fingerprint);
+//         // }
+//         // fingerprint=_fingerprint;
+//         // signature=_signature;
+//         // pubkey=_pubkey;
+//         event_body=immutable(EventBody)(doc_ebody);
+
+//         this.block=block;
+// //        this.type=type;
+//         this.pubkey=net.pubkey;
+// //        import tagion.services.LoggerService;
+//         @trusted
+//         immutable(ubyte[]) sig_calc(){
+//             import std.stdio;
+//             import tagion.hibon.HiBONJSON;
+//             // try {
+//             immutable data=block.serialize;
+//             immutable message=net.calcHash(data);
+//             return net.sign(message);
+//             return signed;
+//             // }
+//             // catch(Exception e){
+//             //     pragma(msg, "fixme():Why this this print here should it be removed");
+//             //     writeln("EXCEPTION::%s", e.msg);
+//             // }
+//             // catch(Throwable e){
+//             //     pragma(msg, "fixme():Why a print here if there is throw after (is this some tempoary debug info)");
+//             //     writeln("THROWABLE::%s", e.msg);
+//             //     throw e;
+//             // }
+//             return null;
+//         }
+//         signature = sig_calc();
+    }
+
+
+    HiBON toHiBON() const {
+        auto hibon=new HiBON;
+        foreach(i, m; this.tupleof) {
+            enum name=basename!(this.tupleof[i]);
+            alias Type=typeof(this.tupleof[i]);
+            // static if ( member_name == basename!(event_body) ) {
+            //     enum name=Params.ebody;
+            // }
+            // else {
+            //     enum name=member_name;
+            // }
+//            static if ( name[0] != '_' ) {
+            static if (name != Event.Params.fingerprint) {
+                static if ( __traits(compiles, m.toHiBON) ) {
+                    hibon[name]=m.toHiBON;
+                }
+                else {
+                    hibon[name]=cast(TypedefType!Type)m;
+                }
+            }
+        }
+        return hibon;
+    }
+
+
+    static EventPackage undefined() {
+        import tagion.basic.ConsensusExceptions;
+        alias check = consensusCheck!(GossipConsensusException);
+        check(false, ConsensusFailCode.GOSSIPNET_EVENTPACKAGE_NOT_FOUND);
+        assert(0);
+    }
 }
 
 @safe
@@ -111,6 +209,8 @@ struct EventBody {
         return result;
     }
 
+//    mixin HiBONRecord!("BODY", consensus);
+
     this(Document doc, RequestNet request_net=null) inout {
         foreach(i, ref m; this.tupleof) {
             alias Type=typeof(m);
@@ -152,6 +252,7 @@ struct EventBody {
             check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
         }
     }
+
 
     HiBON toHiBON(const(Event) use_event=null) const {
         auto hibon=new HiBON;
@@ -886,6 +987,8 @@ class Event {
         "type",
         "event",
         "ebody",
+        "epack",
+        "fingerprint"
 
         ];
 
@@ -1033,12 +1136,15 @@ class Event {
     static EventScriptCallbacks scriptcallbacks;
 //    import std.stdio;
 //    static File* fout;
-    immutable(ubyte[]) signature;
-    immutable(Buffer) pubkey;
+//    immutable(ubyte[]) signature;
+//    immutable(Buffer) pubkey;
     @nogc
     immutable(Pubkey) channel() pure const nothrow {
-        return Pubkey(pubkey);
+        return event_package.pubkey;
     }
+//    alias event_body=event_package.event_body ;
+    // alias pubkey=event_package.pubkey;
+    // alias signature=event_package.signature;
 
     // Recursive markes
     private uint _visit;
@@ -1051,7 +1157,11 @@ class Event {
         return (_visit == visit_marker);
     }
     // The altitude increases by one from mother to daughter
-    immutable(EventBody) event_body;
+    protected immutable(EventPackage)* event_package;
+
+    ref immutable(EventBody) event_body() const nothrow {
+        return event_package.event_body;
+    }
 
     protected {
         Buffer _fingerprint;
@@ -1106,8 +1216,9 @@ class Event {
         auto hibon=new HiBON;
         foreach(i, m; this.tupleof) {
             enum member_name=basename!(this.tupleof[i]);
-            static if ( member_name == basename!(event_body) ) {
-                enum name=Params.ebody;
+            alias Type=typeof(this.tupleof[i]);
+            static if ( member_name == basename!(event_package) ) {
+                enum name=Params.epack;
             }
             else {
                 enum name=member_name;
@@ -1117,11 +1228,28 @@ class Event {
                     hibon[name]=m.toHiBON;
                 }
                 else {
-                    hibon[name]=m;
+                    hibon[name]=cast(TypedefType!Type)m;
                 }
             }
         }
         return hibon;
+    }
+
+    @nogc
+    static bool cmp(scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
+        in {
+            assert(a.length == b.length);
+        }
+    do {
+        import tagion.utils.Gene : gene_count;
+        uint result;
+        foreach(i, r; a) {
+            result+=gene_count(r^~b[i]);
+            if (result < a.length*ulong.sizeof*4) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @nogc
@@ -1133,14 +1261,10 @@ class Event {
         else if ( diff > 0 ) {
             return 1;
         }
-
-        if ( a.signature < b.signature ) {
+        if ( cmp(cast(immutable(ulong[]))(a.fingerprint), cast(immutable(ulong[]))(b.fingerprint)) ) {
             return -1;
         }
-        else {
-            return 1;
-        }
-        assert(0, "This should be improbable to have two equal signatures");
+        return 1;
     }
 
     @nogc
@@ -1152,14 +1276,10 @@ class Event {
         else if ( diff > 0 ) {
             return 1;
         }
-//            immutable result=signature < rhs.signature;
-        if ( signature < rhs.signature ) {
+        if ( cmp(cast(immutable(ulong[]))(fingerprint), cast(immutable(ulong[]))(rhs.fingerprint)) ) {
             return -1;
         }
-        else {
-            return 1;
-        }
-        assert(0, "This should be improbable to have two equal signatures");
+        return 1;
     }
 
     private bool check_if_round_was_received(const uint number_of_famous, Round received) {
@@ -1440,7 +1560,7 @@ class Event {
 
     @nogc
     immutable(int) altitude() const pure nothrow {
-        return event_body.altitude;
+        return event_package.event_body.altitude;
     }
 
     immutable uint node_id;
@@ -1448,18 +1568,18 @@ class Event {
 // Note pubkey is redundent information
 // The node_id should be enought this will be changed later
     this(
-        ref immutable(EventBody) ebody,
+        immutable(EventPackage*) epack,
         RequestNet request_net,
-        immutable(ubyte[]) signature,
-        Pubkey pubkey,
+//        immutable(ubyte[]) signature,
+//        Pubkey pubkey,
         const uint node_id,
         const uint node_size) {
-        event_body=ebody;
+        event_package=epack;
         this.node_id=node_id;
         this.id=next_id;
-        _fingerprint=request_net.calcHash(event_body.serialize);
-        this.signature=signature;
-        this.pubkey=cast(Buffer)pubkey;
+        _fingerprint=request_net.calcHash(event_package.event_body.serialize);
+//        this.signature=signature;
+//        this.pubkey=cast(Buffer)pubkey;
         _count++;
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
@@ -1736,22 +1856,22 @@ class Event {
 
     @nogc
     immutable(ubyte[]) father_hash() const pure nothrow {
-        return event_body.father;
+        return event_package.event_body.father;
     }
 
     @nogc
     immutable(ubyte[]) mother_hash() const pure nothrow {
-        return event_body.mother;
+        return event_package.event_body.mother;
     }
 
     @nogc
     immutable(ubyte[]) payload() const pure nothrow {
-        return event_body.payload;
+        return event_package.event_body.payload;
     }
 
     @nogc
     ref immutable(EventBody) eventbody() const pure nothrow {
-        return event_body;
+        return event_package.event_body;
     }
 
 //True if Event contains a payload or is the initial Event of its creator
@@ -1766,12 +1886,12 @@ class Event {
     //         assert(!_grounded, "This function should not be used on a grounded event");
     //     }
     // do {
-        return event_body.mother !is null;
+        return event_package.event_body.mother !is null;
     }
 
     @nogc
     bool fatherExists() const pure nothrow {
-        return event_body.father !is null;
+        return event_package.event_body.father !is null;
     }
 
 // is true if the event does not have a mother or a father

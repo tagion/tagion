@@ -342,19 +342,20 @@ class HashGraph {
     enum round_clean_limit=10;
     Event registerEvent(
 //        RequestNet request_net,
-        Pubkey pubkey,
-        immutable(ubyte[]) signature,
-        ref immutable(EventBody) eventbody)
+        // Pubkey pubkey,
+        // immutable(ubyte[]) signature,
+        immutable(EventPackage*) event_pack)
         in {
             assert(_request_net !is null, "RequestNet must be set");
         }
     do {
 
-        immutable ebody=eventbody.serialize;
+        immutable pubkey=event_pack.pubkey;
+        immutable ebody=event_pack.event_body.serialize;
         immutable fingerprint=_request_net.calcHash(ebody);
         if ( Event.scriptcallbacks ) {
             // Sends the eventbody to the scripting engine
-            Event.scriptcallbacks.send(eventbody);
+            Event.scriptcallbacks.send(event_pack.event_body);
         }
         Event event=_request_net.lookup(fingerprint);
         if ( !event ) {
@@ -381,7 +382,7 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-            event=new Event(eventbody, _request_net, signature, pubkey, node_id, node_size);
+            event=new Event(event_pack, _request_net, node_id, node_size);
 
             // Add the event to the event cache
             assign(event);
