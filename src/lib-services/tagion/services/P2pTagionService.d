@@ -79,7 +79,7 @@ do {
     if(opts.p2plogs){
         p2plib.EnableLogger();
     }
-    
+
     enum dir_token = "%dir%";
     if(opts.dart.path.indexOf(dir_token) != -1){
         const i = opts.port - opts.port_base;
@@ -107,11 +107,11 @@ do {
         net.drive("tagion_service", shared_net);
         hashgraph.request_net=net;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
-        
+
         discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, cast(immutable HashNet) net, opts.discovery.task_name, opts);
         receiveOnly!Control;
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-        
+
         receive(
             (immutable(AddressBook!Pubkey) address_book){
                 auto pkeys = cast(immutable) address_book.data.keys;
@@ -178,7 +178,7 @@ do {
     discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
     scope(exit){
         discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
-    }    
+    }
     receive((DicvoryControl ctr){
         assert(ctr == DicvoryControl.READY);
     });
@@ -363,7 +363,7 @@ do {
                 auto mother=own_node.event;
                 immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
                     father_fingerprint, net.time, mother.altitude+1);
-                const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
+                const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
                 // immutable signature=net.sign(ebody);
                 return hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
             }
@@ -385,7 +385,7 @@ do {
                 if ( own_node.event is null ) {
                     immutable ebody=EventBody.eva(net);
                     const ebody_hibon = ebody.toHiBON;
-                    const pack=net.buildEvent(ebody_hibon, ExchangeState.NONE);
+                    const pack=net.buildPackage(ebody_hibon, ExchangeState.NONE);
                     // immutable signature=net.sign(ebody);
                     event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
                 }
@@ -393,7 +393,7 @@ do {
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
+                    const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
                     //immutable signature=net.sign(ebody);
                     event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
                 }
@@ -404,7 +404,7 @@ do {
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HiBON;
                     auto tides      = net.tideWave(tidewave, net.callbacks !is null);
-                    auto pack       = net.buildEvent(tidewave, ExchangeState.TIDAL_WAVE);
+                    auto pack       = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
                     net.send(send_channel, pack.toHiBON.serialize);
                     if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
