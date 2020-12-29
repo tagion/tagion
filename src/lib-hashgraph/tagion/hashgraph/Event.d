@@ -1182,6 +1182,20 @@ class Event {
         Witness _witness;
         uint _witness_votes;
         BitArray _witness_mask;
+        uint     _mark;
+        static uint _marker;
+    }
+    @nogc
+    package bool is_marked() const nothrow {
+        return _marker is _mark;
+    }
+    @nogc
+    package void mark() nothrow {
+        _mark=_marker;
+    }
+    @nogc
+    package static void set_marker() nothrow {
+        _marker++;
     }
 
     @nogc @property
@@ -1663,17 +1677,17 @@ class Event {
     }
 
     @nogc
-    int received_order_max(const(Event) e, const bool increase=false) pure const nothrow {
+    private int received_order_max(const(Event) e) pure const nothrow {
         int result=_received_order;
         if ( e && ( ( _received_order - e._received_order ) < 0 ) ) {
             result=e._received_order;
         }
-        if ( increase ) {
-            result++;
-            if ( result < 0 ) {
-                result=0;
-            }
+//        if ( increase ) {
+        result++;
+        if ( result < 0 ) {
+            result=0;
         }
+//        }
         return result;
     }
 
@@ -1705,7 +1719,7 @@ class Event {
         if ( _mother is null ) {
             _mother = request_net.lookup(mother_hash);
             if ( _mother ) {
-                _received_order=_mother.received_order_max(_father, true);
+                _received_order=_mother.received_order_max(_father);
             }
         }
         return _mother;
@@ -1750,7 +1764,7 @@ class Event {
         if ( _father is null ) {
             _father = request_net.lookup(father_hash);
             if ( _father ) {
-                _received_order=_father.received_order_max(_mother, true);
+                _received_order=_father.received_order_max(_mother);
             }
         }
         return _father;
