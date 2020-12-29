@@ -20,12 +20,15 @@ private alias check=Check!HashGraphConsensusException;
 
 @safe
 class HashGraph {
+    import tagion.utils.Statistic;
     //alias Pubkey=immutable(ubyte)[];
     alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
     private RequestNet _request_net;
     private uint iterative_tree_count;
     private uint iterative_strong_count;
+    private Statistic!uint iterative_tree;
+    private Statistic!uint iterative_strong;
     //alias LRU!(Round, uint*) RoundCounter;
     alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
     // List of rounds
@@ -392,6 +395,7 @@ class HashGraph {
 
             // See if the node is strong seeing the hashgraph
             iterative_strong_count=0;
+            Event.set_marker;
             strongSee(event);
 
             const round_has_been_decided=event.collect_famous_votes;
@@ -413,10 +417,19 @@ class HashGraph {
                 Event.callbacks.witness_mask(event);
             }
 
-            if (iterative_strong_count > 0) {
-                log.trace("Register event iterations=%d", iterative_strong_count);
-            }
 
+        }
+        if (iterative_strong_count > 0) {
+            const result=iterative_strong(iterative_strong_count).result;
+
+            log.trace("Strong iterations=%d [%d:%d] mean=%s std=%s", iterative_strong_count,
+                result.min, result.max, result.mean, result.sigma);
+        }
+        if (iterative_tree_count > 0) {
+            const result=iterative_tree(iterative_tree_count).result;
+
+            log.trace("Register iterations=%d [%d:%d] mean=%s std=%s", iterative_tree_count,
+                result.min, result.max, result.mean, result.sigma);
         }
         return event;
     }
@@ -528,8 +541,8 @@ class HashGraph {
 
     @trusted
     package void strongSee(Event top_event) {
-        if ( top_event && !top_event.is_strongly_seeing_checked ) {
-
+        if ( top_event && !top_event.is_strongly_seeing_checked && !top_event.is_marked) {
+            top_event.mark;
             strongSee(top_event.mother_raw);
             strongSee(top_event.father_raw);
             if ( isMajority(top_event.witness_votes(total_nodes)) ) {
@@ -542,6 +555,7 @@ class HashGraph {
                     void checkStrongSeeing(Event check_event, const BitArray path_mask) {
                     iterative_strong_count++;
                     if ( check_event && round.lessOrEqual(check_event.round) ) {
+                        // && !check_event.is_strongly_seeing_checked ) {
                         const BitArray checked_mask=strong_vote_mask & check_event.witness_mask(total_nodes);
                         const check=(checked_mask != check_event.witness_mask);
                         if ( check ) {
