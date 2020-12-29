@@ -397,7 +397,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         string node_name;
     }
 
-    const(Package) buildEvent(const(HiBON) block, ExchangeState type) {
+    const(Package) buildPackage(const(HiBON) block, const ExchangeState type) {
         return Package(this, block, type);
     }
 
@@ -666,8 +666,8 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         wavefront[Params.wavefront]=events;
                         // If the this node already have INIT and tide a braking wave is send
                         const exchange=(received_node.state is INIT_TIDE)?BREAKING_WAVE:FIRST_WAVE;
-                        auto wavefront_pack=buildEvent(wavefront, exchange);
-                        send(received_pubkey, wavefront_pack.serialize);
+                        auto wavefront_pack=buildPackage(wavefront, exchange);
+                        send(received_pubkey, wavefront_pack.toHiBON.serialize);
 
                         received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
                         break;
@@ -692,8 +692,8 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                             wavefront[Params.wavefront]=events;
 
                             // Receive the tide wave and return the wave front
-                            auto wavefront_pack=buildEvent(wavefront, SECOND_WAVE);
-                            send(received_pubkey, wavefront_pack.serialize);
+                            auto wavefront_pack=buildPackage(wavefront, SECOND_WAVE);
+                            send(received_pubkey, wavefront_pack.toHiBON.serialize);
                         }
                         end_of_sequence=true;
                         received_node.state=NONE;
