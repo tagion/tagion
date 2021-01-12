@@ -23,6 +23,7 @@ enum ConsensusFailCode {
     EVENT_NODE_ID_UNKNOWN,
     EVENT_SIGNATURE_BAD,
     EVENT_NOT_FOUND,
+    EVENT_FORK,
 
     GOSSIPNET_EVNET_HAS_BEEN_CACHED,
     GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
@@ -163,6 +164,7 @@ shared static this() {
             EVENT_NODE_ID_UNKNOWN                       : "Public key is not mapped to a Node ID",
             EVENT_SIGNATURE_BAD                         : "Bad signature for event",
             EVENT_NOT_FOUND                             : "Event not found",
+            EVENT_FORK                                  : "Event fork",
 
 //            EVENT_MISSING_BODY                        : "Event is missing eventbody",
 

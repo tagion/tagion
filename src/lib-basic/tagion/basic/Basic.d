@@ -87,7 +87,7 @@ template find_dot(string str, size_t index=0) {
 /++
  Creates a new clean bitarray
 +/
-void  bitarray_clear(out BitArray bits, uint length) @trusted nothrow {
+void  bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length=length;
 }
 
