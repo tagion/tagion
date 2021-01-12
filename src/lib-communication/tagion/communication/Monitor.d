@@ -132,12 +132,13 @@ class MonitorCallBacks : NetCallbacks {
         socket_send(hibon);
     }
 
-    void round_decided(const(Round) r) {
+    void round_decided(const(Round.Rounder) rounder) {
         auto hibon=new HiBON;
         auto round=new HiBON;
+        const r=rounder.last_decided_round;
         round[Keywords.number]=r.number;
-        round[Keywords.decided]=r.decided;
-        round[Keywords.decided_count]=r.decided_count;
+        round[Keywords.decided]=true;
+        round[Keywords.decided_count]=rounder.cached_decided_count;// decided_count;
         hibon[Keywords.round]=round;
         socket_send(hibon);
     }
@@ -264,11 +265,11 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
-    void receive(immutable(ubyte[]) data) {
+    void receive(const(Document) doc) {
         // writefln("Impl. needed. %s  ",  __FUNCTION__);
     }
 
-    void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
+    void send(immutable(Pubkey) channel, const(Document) doc) {
         //import tagion.Base : cutHex;
         // writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
     }
