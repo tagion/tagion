@@ -19,12 +19,12 @@ import tagion.basic.Logger;
 private alias check=Check!HashGraphConsensusException;
 
 @safe
-class HashGraph {
+class HashGraph : Basic.HashGraphI {
     import tagion.utils.Statistic;
     //alias Pubkey=immutable(ubyte)[];
     alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
-    private RequestNet _request_net;
+    private GossipNet _gossip_net;
     private uint iterative_tree_count;
     private uint iterative_strong_count;
     private Statistic!uint iterative_tree;
@@ -32,17 +32,104 @@ class HashGraph {
     //alias LRU!(Round, uint*) RoundCounter;
     alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
     // List of rounds
-    private Round _rounds;
+    package Round.Rounder _rounds;
 
-
-    void request_net(RequestNet net) nothrow
-        in {
-            assert(_request_net is null, "RequestNet has already been set");
-        }
-    do {
-        _request_net=net;
+    this() {
+        _rounds=Round.Rounder(this);
     }
 
+    @nogc
+    Round.Rounder rounds() pure nothrow {
+        return _rounds;
+    }
+
+    void request_net(GossipNet net) nothrow
+        in {
+            assert(_gossip_net is null, "RequestNet has already been set");
+        }
+    do {
+        _gossip_net=net;
+    }
+
+    alias EventPackageCache=immutable(EventPackage)*[const(ubyte[])];
+    alias EventCache=Event[const(ubyte[])];
+
+    protected {
+        EventPackageCache _event_package_cache;
+        EventCache _event_cache;
+    }
+
+    // final bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
+    //     return _request_net.isRegistered(fingerprint);
+    // }
+
+    // final Event register(immutable(Buffer) fingerprint) {
+    //     return _request_net.register(fingerprint);
+    // }
+
+    final Event lookup(scope const(ubyte[]) fingerprint) {
+        if (fingerprint in _event_cache) {
+            return _event_cache[fingerprint];
+        }
+        else if (fingerprint in _event_package_cache) {
+            auto event_pack=_event_package_cache[fingerprint];
+            _event_package_cache.remove(fingerprint);
+            auto event=new Event(event_pack, this);
+            _event_cache[fingerprint]=event;
+            //event.register(this);
+            return event;
+        }
+        return null;
+    }
+
+    void eliminate(scope const(ubyte[]) fingerprint) {
+        _event_cache.remove(fingerprint);
+    }
+
+    size_t number_of_registered_event() const pure nothrow {
+        return _event_cache.length;
+    }
+
+    bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
+        return (fingerprint in _event_cache) !is null;
+    }
+
+    bool isCached(scope const(ubyte[]) fingerprint) const pure nothrow {
+        return (fingerprint in _event_package_cache) !is null;
+    }
+
+    void cache(scope const(ubyte[]) fingerprint, immutable(EventPackage*) event_package) nothrow
+        in {
+            assert(fingerprint !in _event_package_cache, "Event has already been registered");
+        }
+    do {
+        _event_package_cache[fingerprint] = event_package;
+    }
+
+    Event registerEvent(
+        immutable(EventPackage*) event_pack)
+        in {
+            assert(event_pack.fingerprint !in _event_cache, format("Event %s has already been registerd", event_pack.fingerprint.toHexString));
+        }
+    do {
+        auto event=new Event(event_pack, this);
+        _event_cache[event.fingerprint]=event;
+        //event.register(this);
+        return event;
+    }
+
+
+    void register_wavefront() {
+        foreach(fingerprint, event_package; _event_package_cache) {
+            auto current_event = Event.register(this, fingerprint);
+            auto current_node = getNode(current_event.pubkey);
+            if (highest(current_event.altitude, current_node.event.altitude)) {
+                // If the current event is in front of the wave the wave front is set to the current event
+                current_node.event = current_event;
+            }
+            //register(current_event);
+        }
+    }
 
     @safe
     static class Node {
@@ -54,19 +141,21 @@ class HashGraph {
         this(Pubkey pubkey, uint node_id) pure nothrow {
             this.pubkey=pubkey;
             this.node_id=node_id;
+
 //            this.discovery_time=time;
         }
 
         private Event _event; // Latest event
         package Event latest_witness_event; // Latest witness event
 
+        version(none)
         @nogc
         final package Event previous_witness() nothrow pure
             in {
                 assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
             }
         do {
-            return latest_witness_event.witness.previous_witness_event;
+            return latest_witness_event._round._events[latest_witness_event];
         }
 
         @nogc
@@ -161,12 +250,14 @@ class HashGraph {
                     return current;
                 }
 
+                void popFront() {
+                    current = current.mother_raw;
+                }
+
+
                 // void popFront() {
                 //     current = current.mother_raw;
                 // }
-            }
-            void popFront() {
-                current = current.mother_raw;
             }
         }
 
@@ -183,7 +274,7 @@ class HashGraph {
     }
 
     @nogc
-    uint node_size() const pure nothrow {
+    const(uint) node_size() const pure nothrow {
         return cast(uint)(nodes.length);
     }
 
@@ -289,14 +380,15 @@ class HashGraph {
         return (node_id in nodes) !is null;
     }
 
+    version(none)
     void assign(Event event)
         in {
-            assert(_request_net !is null, "RequestNet must be set");
+            assert(_gossip_net !is null, "RequestNet must be set");
         }
     do {
         auto node=getNode(event.channel);
         node.event=event;
-        _request_net.register(event.fingerprint, event);
+        _hashgraph.register(event.fingerprint, event);
 //        _event_cache[event.fingerprint]=event;
         if ( event.isEva ) {
             node.latest_witness_event=event;
@@ -343,6 +435,25 @@ class HashGraph {
     enum max_package_size=0x1000;
 //    alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
     enum round_clean_limit=10;
+
+    version(none)
+    Event registerEvent(
+//        RequestNet request_net,
+        // Pubkey pubkey,
+        // immutable(ubyte[]) signature,
+        immutable(EventPackage*) event_pack)
+        in {
+            assert(_request_net !is null, "RequestNet must be set");
+        }
+    do {
+        return _request_net.lookup(event_pack);
+        // auto event=new Event(event_pack, this);
+        // event.register(this);
+
+        // return event;
+    }
+
+    version(none)
     Event registerEvent(
 //        RequestNet request_net,
         // Pubkey pubkey,
@@ -385,7 +496,7 @@ class HashGraph {
                 node=nodes[node_id];
             }
 
-            event=new Event(event_pack, _request_net, node_id, node_size);
+            event=new Event(event_pack, this, node_id, node_size);
 
             // Add the event to the event cache
             assign(event);
@@ -435,6 +546,7 @@ class HashGraph {
         return event;
     }
 
+    version(none)
     protected void scrap() {
         // Scrap the rounds and events below this
         import std.algorithm.searching : all;
@@ -512,6 +624,7 @@ class HashGraph {
     /**
        This function makes sure that the HashGraph has all the events connected to this event
     */
+    version(none)
     protected void requestEventTree(Event event)
         in {
             assert(_request_net !is null, "RequestNet must be set");
@@ -540,6 +653,7 @@ class HashGraph {
     }
 
 
+    version(none)
     @trusted
     package void strongSee(Event top_event) {
         if ( top_event && !top_event.is_strongly_seeing_checked && !top_event.is_marked) {
