@@ -33,6 +33,7 @@ import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 import tagion.Options : Options, setOptions, options;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hashgraph.Event;
@@ -352,23 +353,25 @@ do {
 
     immutable(ubyte)[] data;
 
-    void receive_buffer(immutable(ubyte[]) buf) {
+    void receive_buffer(const(Document) doc) {
         try{
             timeout_count=0;
             net.time=net.time+100;
-            log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
-            auto own_node=hashgraph.getNode(net.pubkey);
+            log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, doc.data.length);
+//            auto own_node=hashgraph.getNode(net.pubkey);
 
-            Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
-                auto mother=own_node.event;
-                immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
-                    father_fingerprint, net.time, mother.altitude+1);
-                const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
-                // immutable signature=net.sign(ebody);
-                return hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
-            }
-            event=net.receive(buf, &register_leading_event);
-        }catch(Exception e){
+            // version(none)
+            // Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
+            //     auto mother=own_node.event;
+            //     immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
+            //         father_fingerprint, net.time, mother.altitude+1);
+            //     const epack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
+            //     // immutable signature=net.sign(ebody);
+            //     return hashgraph.registerEvent(epack);
+            // }
+            net.receive(doc);
+        }
+        catch(Exception e){
             log("Exception: %s", e.msg);
         }
         catch(Throwable t){
@@ -384,18 +387,22 @@ do {
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
                     immutable ebody=EventBody.eva(net);
-                    const ebody_hibon = ebody.toHiBON;
-                    const pack=net.buildPackage(ebody_hibon, ExchangeState.NONE);
+                    immutable epack=new immutable(EventPackage)(net, ebody);
+                    // const ebody_hibon = ebody.toHiBON;
+                    // const pack=net.buildPackage(ebody_hibon, ExchangeState.NONE);
                     // immutable signature=net.sign(ebody);
-                    event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                    //event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                    event=hashgraph.registerEvent(epack);
                 }
                 else {
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
+                    immutable epack=new immutable(EventPackage)(net, ebody);
+                    // const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
                     //immutable signature=net.sign(ebody);
-                    event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                    // event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                    event=hashgraph.registerEvent(epack);
                 }
                 immutable send_channel=net.selectRandomNode;
                 auto send_node=hashgraph.getNode(send_channel);
@@ -404,8 +411,8 @@ do {
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HiBON;
                     auto tides      = net.tideWave(tidewave, net.callbacks !is null);
-                    auto pack       = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
-                    net.send(send_channel, pack.toHiBON.serialize);
+                    auto pack_doc   = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
+                    net.send(send_channel, pack_doc);
                     if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
                     }
@@ -497,7 +504,7 @@ do {
                     connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
                     // log("response: %s", doc.toJSON);
                     log("received in: %s", resp.stream.Identifier);
-                    receive_buffer(resp.data);
+                    receive_buffer(doc);
                 },
                 (immutable(Pubkey) send_channel){ //On sending failed
                     log("Removing channel from net");

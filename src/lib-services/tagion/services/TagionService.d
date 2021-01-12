@@ -30,8 +30,9 @@ import tagion.basic.Logger;
 //import tagion.basic.TagionExceptions;
 
 import tagion.Options : Options, setOptions, options;
-import tagion.basic.Basic : Pubkey, Payload, Control;
+import tagion.basic.Basic : Pubkey, Buffer, Payload, Control;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 
 
 // If no monitor should be enable set the address to empty or the port below min_port.
@@ -298,21 +299,22 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 //    log("opts.sequential=%s", opts.sequential);
 //        stdout.flush;
     immutable(ubyte)[] data;
-    void receive_buffer(immutable(ubyte)[] buf) {
+    void receive_buffer(const(Document) doc) {
         timeout_count=0;
         net.time=net.time+100;
-        log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
-        auto own_node=hashgraph.getNode(net.pubkey);
+        log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, doc.data.length);
+//        auto own_node=hashgraph.getNode(net.pubkey);
 
-        Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
-            auto mother=own_node.event;
-            immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
-                father_fingerprint, net.time, mother.altitude+1);
-            const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
-            // immutable signature=net.sign(ebody);
-            return hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
-        }
-        event=net.receive(buf, &register_leading_event);
+        // version(none)
+        // Event register_leading_event(Buffer father_fingerprint) @safe {
+        //     auto mother=own_node.event;
+        //     immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
+        //         father_fingerprint, net.time, mother.altitude+1);
+        //     //const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
+        //     // immutable signature=net.sign(ebody);
+        //     return hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+        // }
+        net.receive(doc); //, &register_leading_event);
     }
 
     void next_mother(Payload payload) {
@@ -321,17 +323,15 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             // fout.writeln("After build wave front");
             if ( own_node.event is null ) {
                 immutable ebody=EventBody.eva(net);
-                const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
-                // immutable signature=net.sign(ebody);
-                event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                immutable epack=new immutable(EventPackage)(net, ebody);
+                event=hashgraph.registerEvent(epack);
             }
             else {
                 auto mother=own_node.event;
                 immutable mother_hash=mother.fingerprint;
                 immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
-                //immutable signature=net.sign(ebody);
-                event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                immutable epack=new immutable(EventPackage)(net, ebody);
+                event=hashgraph.registerEvent(epack);
             }
             immutable send_channel=net.selectRandomNode;
             auto send_node=hashgraph.getNode(send_channel);
@@ -339,9 +339,9 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 send_node.state = ExchangeState.INIT_TIDE;
                 auto tidewave   = new HiBON;
                 auto tides      = net.tideWave(tidewave, net.callbacks !is null);
-                auto pack       = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
+                const pack_doc  = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
 
-                net.send(send_channel, pack.toHiBON.serialize);
+                net.send(send_channel, pack_doc);
                 if ( net.callbacks ) {
                     net.callbacks.sent_tidewave(send_channel, tides);
                 }
