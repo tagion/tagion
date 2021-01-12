@@ -87,8 +87,8 @@ interface NetCallbacks : EventMonitorCallbacks {
     void wavefront_state_receive(const(HashGraph.Node) n);
     void sent_tidewave(immutable(Pubkey) receiving_channel, const(PackageNet.Tides) tides);
     void received_tidewave(immutable(Pubkey) sending_channel, const(PackageNet.Tides) tides);
-    void receive(Buffer data);
-    void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
+    void receive(const(Document) doc);
+    void send(immutable(Pubkey) channel, const(Document) data);
 
 
     void consensus_failure(const(ConsensusException) e);
@@ -110,20 +110,22 @@ interface HashNet {
 }
 
 
+
+version(none)
 @safe
 interface RequestNet : HashNet {
     /++
      + Request a missing event from the network
      +/
-    void request(immutable(Buffer) fingerprint);
+    void request(scope immutable(Buffer) fingerprint);
 
-    Event lookup(immutable(Buffer) fingerprint);
+    Event lookup(scope immutable(Buffer) fingerprint);
 
-    void eliminate(scope immutable(ubyte[]) fingerprint);
+    void eliminate(scope immutable(Buffer) fingerprint);
 
-    void register(scope immutable(ubyte[]) fingerprint, Event event);
+    void register(scope immutable(Buffer) fingerprint, Event event);
 
-    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure;
+    bool isRegistered(scope immutable(Buffer) fingerprint) pure;
 
     size_t number_of_registered_event() const pure nothrow;
 }
@@ -156,10 +158,10 @@ interface SecureNet : HashNet {
 interface PackageNet {
     enum int eva_altitude=-77;
     alias Tides=int[immutable(Pubkey)];
-    alias ReceiveQueue = Queue!(immutable(ubyte[]));
+    alias ReceiveQueue = Queue!(const(Document));
 
 //    Payload evaPackage();
-    Document buildPackage(const(HiBON) pack, const ExchangeState type);
+    const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
 
     Tides tideWave(HiBON hibon, bool build_tides);
 
@@ -168,9 +170,11 @@ interface PackageNet {
 }
 
 @safe
-interface GossipNet : SecureNet, RequestNet, PackageNet {
-    Event receive(const(Buffer) received, Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event );
-    void send(immutable(Pubkey) channel, immutable(ubyte[]) data);
+interface GossipNet : SecureNet, PackageNet {
+//    Event receive(const(Document) received, Event delegate(Buffer father_fingerprint) @safe register_leading_event );
+    void receive(const(Document) received); //, Event delegate(Buffer father_fingerprint) @safe register_leading_event );
+
+    void send(immutable(Pubkey) channel, const(Document) doc);
 
     immutable(Pubkey) selectRandomNode(const bool active=true);
 
@@ -179,21 +183,26 @@ interface GossipNet : SecureNet, RequestNet, PackageNet {
     NetCallbacks callbacks();
 
 //    void send(immutable(Pubkey) channel, ref immutable(ubyte[]) data);
-    alias Request=bool delegate(immutable(ubyte[]));
+//    alias Request=bool delegate(Buffer);
     // This function is call by the HashGraph.whatIsNotKnowBy
     // and is use to collect node to be send to anotehr node
     uint globalNodeId(immutable(Pubkey) channel);
 
     @property
     const(ulong) time() pure const;
+
     @property
     void time(const(ulong) t);
 
-    // @property
-    // string node_name() pure const;
+    Tides tideWave(HiBON hibon, bool build_tides);
 
-    // @property
-    // void node_name(string name);
+    void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
+
+//    void register_wavefront();
+
+    HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
+
+
 }
 
 @safe
@@ -203,14 +212,11 @@ interface FactoryNet {
     //  SecureNet securenet(immutable(Buffer) drive);
 }
 
-// @safe
-// interface DocumentNet : GossipNet, DocumentHashNet {
-// }
-
 @safe
 interface ScriptNet : GossipNet {
     import std.concurrency;
     @property void transcript_tid(Tid tid);
+
     @property Tid transcript_tid() pure nothrow;
 
     @property void scripting_engine_tid(Tid tid);

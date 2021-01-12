@@ -193,6 +193,7 @@ class P2pGossipNet : StdGossipNet {
     //     }
     // }
 
+    version(none)
     @trusted
     override void trace(string type, immutable(ubyte[]) data) {
         debug {
@@ -208,13 +209,13 @@ class P2pGossipNet : StdGossipNet {
 
     protected uint _send_count;
     @trusted
-    void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
+    void send(immutable(Pubkey) channel, const(Document) doc) {
         import std.concurrency: tsend=send, prioritySend, Tid, locate;
         auto sender = locate(opts.transaction.net_task_name);
         if(sender!=Tid.init){
             counter++;
             // log("sending to sender %d", counter);
-            tsend(sender, channel, data, counter);
+            tsend(sender, channel, doc.data, counter);
         }else{
             log("sender not found");
         }
@@ -233,17 +234,17 @@ class P2pGossipNet : StdGossipNet {
         }
     }
 
-    override Event receive(immutable(ubyte[]) data,
-    Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
+    override void receive(const(Document) doc) {
+//    Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
         log("received time: %s", Clock.currTime().toUTC());
         // log("1.receive");
-        auto doc=Document(data);
+//        auto doc=Document(data);
         immutable type=doc[Params.type].get!uint;
         immutable received_state=convertState(type);
         Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
 
         // log("2.receive");
-        auto result = super.receive(data, register_leading_event);
+        super.receive(doc);//, register_leading_event);
         import std.algorithm: canFind;
 
         log("3.receive");
@@ -251,7 +252,7 @@ class P2pGossipNet : StdGossipNet {
             log("send remove with state: %s", received_state);
             send_remove(received_pubkey);
         }
-        return result;
+        //return result;
     }
 
 

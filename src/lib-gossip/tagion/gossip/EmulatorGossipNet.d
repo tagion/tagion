@@ -105,6 +105,7 @@ class EmulatorGossipNet : StdGossipNet {
         }
     }
 
+    version(none)
     @trusted
     override void trace(string type, immutable(ubyte[]) data) {
         debug {
@@ -120,20 +121,20 @@ class EmulatorGossipNet : StdGossipNet {
 
     protected uint _send_count;
     @trusted
-    void send(immutable(Pubkey) channel, immutable(ubyte[]) data) {
-        auto doc=Document(data);
+    void send(immutable(Pubkey) channel, const(Document) doc) {
+//        auto doc=Document(data);
         auto doc_body=doc[Params.block].get!Document;
         if ( doc_body.hasElement(Event.Params.ebody) ) {
             auto doc_ebody=doc_body[Event.Params.ebody].get!Document;
             auto event_body=immutable(EventBody)(doc_ebody);
         }
 //        trace("send", data);
-        log.trace("send %s bytes", data.length);
+        log.trace("send %s bytes", doc.serialize.length);
         if ( callbacks ) {
-            callbacks.send(channel, data);
+            callbacks.send(channel, doc);
         }
-        log("Send %s data=%d", channel.cutHex, data.length);
-        _tids[channel].send(data);
+        log("Send %s data=%d", channel.cutHex, doc.serialize.length);
+        _tids[channel].send(doc.serialize);
     }
 
 //    private uint eva_count;

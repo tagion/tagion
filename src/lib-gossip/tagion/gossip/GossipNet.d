@@ -351,16 +351,14 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         return result;
     }
 
-    import tagion.hashgraph.Event : Event;
-    alias EventCache=LRU!(Buffer, Event);
-    private EventCache _event_cache;
+//    private EventCache _event_cache;
 
     this( HashGraph hashgraph) {
 //        _transceiver=transceiver;
         _hashgraph=hashgraph;
         _queue=new ReceiveQueue;
 //        _event_package_cache=new EventPackageCache(&onEvict);
-        _event_cache=new EventCache(null);
+//        _event_cache=new EventCache(null);
 
 //        import tagion.crypto.secp256k1.NativeSecp256k1;
         super();
@@ -375,12 +373,12 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 
     mixin(EnumText!("Params", _params));
 
-    protected enum _gossip = [
-        "waveFront",
-        "tideWave",
-        ];
+    // protected enum _gossip = [
+    //     "waveFront",
+    //     "tideWave",
+    //     ];
 
-    mixin(EnumText!("Gossips", _gossip));
+    // mixin(EnumText!("Gossips", _gossip));
 
     override NetCallbacks callbacks() {
         return (cast(NetCallbacks)Event.callbacks);
@@ -397,7 +395,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         string node_name;
     }
 
-    Document buildPackage(const(HiBON) block, const ExchangeState state) {
+    const(Document) buildPackage(const(HiBON) block, const ExchangeState state) {
         const pack=Package(this, block, state);
         return Document(pack.toHiBON.serialize);
     }
@@ -425,47 +423,23 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     }
 
 //    alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
-    immutable(EventPackage)*[const(ubyte[])] _event_package_cache;
-//    protected EventPackageCache _event_package_cache;
-
-    protected ulong _current_time;
-    protected HashGraph _hashgraph;
-
-    override void request(immutable(ubyte[]) fingerprint) {
-        if ( !isRegistered(fingerprint) ) {
-            immutable has_new_event=(fingerprint !is null);
-            if ( has_new_event ) {
-                immutable epack=_event_package_cache[fingerprint];
-                _event_package_cache.remove(fingerprint);
-                auto event=_hashgraph.registerEvent(epack); //epack.pubkey, epack.signature,  epack.event_body);
-            }
-        }
+    protected {
+        // EventPackageCache _event_package_cache;
+        // EventCache _event_cache;
+        ulong _current_time;
+        HashGraph _hashgraph;
     }
 
-    Event lookup(scope immutable(ubyte[]) fingerprint) {
-        return _event_cache[fingerprint];
-    }
-
-    void eliminate(scope immutable(ubyte[]) fingerprint) {
-        _event_cache.remove(fingerprint);
-    }
-
-    void register(scope immutable(ubyte[]) fingerprint, Event event)
-        in {
-            assert(fingerprint !in _event_cache, format("Event %s has already been registerd", fingerprint.hex));
-        }
-    do {
-        _event_cache[fingerprint] = event;
-    }
-
-    size_t number_of_registered_event() const pure nothrow {
-        return _event_cache.length;
-    }
-
-    bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
-        return _event_cache.contains(fingerprint);
-    }
-
+    // override void request(scope Buffer fingerprint) {
+    //     if ( !isRegistered(fingerprint) ) {
+    //         immutable has_new_event=(fingerprint !is null);
+    //         if ( has_new_event ) {
+    //             immutable epack=_event_package_cache[fingerprint];
+    //             _event_package_cache.remove(fingerprint);
+    //             auto event=_hashgraph.registerEvent(epack); //epack.pubkey, epack.signature,  epack.event_body);
+    //         }
+    //     }
+    // }
 
 
     // override Event lookup(immutable(ubyte[]) fingerprint) {
@@ -505,9 +479,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     Tides tideWave(HiBON hibon, bool build_tides) {
         HiBON[] fronts;
         Tides tides;
-        pragma(msg, typeof(_hashgraph[].front));
+//        pragma(msg, typeof(_hashgraph[].front));
         foreach(n; _hashgraph[]) {
-            pragma(msg, typeof(n));
+//            pragma(msg, typeof(n));
             if ( n.isOnline ) {
                 auto node=new HiBON;
                 node[Event.Params.pubkey]=n.pubkey;
@@ -528,9 +502,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
      Between the current Hashgraph and the wave-front
      Returns the top most event on node received_pubkey
      +/
-    immutable(ubyte[]) waveFront(Pubkey received_pubkey, Document doc, ref Tides tides) {
-        immutable(ubyte)[] result;
-        int result_altitude;
+    void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides) {
         immutable is_tidewave=doc.hasElement(Params.tidewave);
         scope(success) {
             if ( callbacks ) {
@@ -547,22 +519,18 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
             }
         }
         else {
-            auto wavefront=doc[Params.wavefront].get!Document;
+            const wavefront_doc=doc[Params.wavefront].get!Document;
             import tagion.hibon.HiBONJSON;
             // log("wavefront: \n%s\n", wavefront.toJSON);
-            foreach(pack; wavefront) {
+            foreach(pack; wavefront_doc) {
                 auto doc_epack=pack.get!Document;
 
                 // Create event package and cache it
-                immutable event_package=new immutable(EventPackage)(this, doc_epack);
-                //immutable event_package=buildEvent_(doc_epack);
-                // The message is the hashpointer to the event body
-                immutable fingerprint=calcHash(event_package.event_body.serialize);
-                assert(event_package.fingerprint == fingerprint);
-                if ( !isRegistered(fingerprint) && (fingerprint !in _event_package_cache)) {
-                    check(verify(fingerprint, event_package.signature, event_package.pubkey), ConsensusFailCode.EVENT_SIGNATURE_BAD);
-//                    log("add event_package %s", fingerprint.cutHex);
-                    _event_package_cache[fingerprint]=event_package;
+                auto event_package=new immutable(EventPackage)(this, doc_epack);
+                if ( !_hashgraph.isRegistered(event_package.fingerprint) && (!_hashgraph.isCached(event_package.fingerprint))) {
+                    check(event_package.signed_correctly, ConsensusFailCode.EVENT_SIGNATURE_BAD);
+                    _hashgraph.cache(event_package.fingerprint, event_package);
+//                    _event_package_cache[event_package.fingerprint]=event_package;
                 }
 
                 // Altitude
@@ -574,16 +542,10 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                 else {
                     tides[event_package.pubkey]=event_package.event_body.altitude;
                 }
-                if ( received_pubkey == event_package.pubkey  ) {
-                    if ( (result is null) ||  lower(result_altitude, event_package.event_body.altitude) ) {
-                        result_altitude = event_package.event_body.altitude;
-                        result=fingerprint;
-                    }
-                }
                 _hashgraph.setAltitude(event_package.pubkey, event_package.event_body.altitude);
             }
         }
-        return result;
+//        return result;
     }
 
     HiBON[] buildWavefront(Tides tides, bool is_tidewave) const {
@@ -611,19 +573,19 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 
     alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
 
-    @trusted
-    void trace(string type, immutable(ubyte[]) data);
+    // @trusted
+    // void trace(string type, immutable(ubyte[]) data);
 
-    override Event receive(immutable(ubyte[]) data,
-        Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
+    override void receive(const(Document) doc) {
+//        pragma(msg, "fixme(cbr): should be change to a HiRPC");
         // trace("receive", data);
         // log("RECEIVE #@#@#@#");
         if ( callbacks ) {
-            callbacks.receive(data);
+            callbacks.receive(doc);
         }
 
-        Event result;
-        auto doc=Document(data);
+        //Event result;
+//        auto doc=Document(data);
         Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
         check(received_pubkey != pubkey, ConsensusFailCode.GOSSIPNET_REPLICATED_PUBKEY);
 
@@ -642,7 +604,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
             log("online: %s", online);
             // Queue the package if we still are busy
             // with the current package
-            _queue.write(data);
+            _queue.write(doc);
         }
         else {
             auto signature=doc[Event.Params.signature].get!(immutable(ubyte)[]);
@@ -662,20 +624,20 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         consensus(received_node.state, INIT_TIDE, NONE).
                             check((received_node.state == INIT_TIDE) || (received_node.state == NONE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                         Tides tides;
-                        immutable father_fingerprint=waveFront(received_pubkey, block, tides);
+                        wavefront(received_pubkey, block, tides);
                         // dump(tides);
-                        assert(father_fingerprint is null); // This should be an exception
-                        result=register_leading_event(null);
+                        // assert(father_fingerprint is null); // This should be an exception
+                        // result=register_leading_event(null);
                         HiBON[] events=buildWavefront(tides, true);
                         check(events.length > 0, ConsensusFailCode.GOSSIPNET_MISSING_EVENTS);
 
                         // Add the new leading event
-                        auto wavefront=new HiBON;
-                        wavefront[Params.wavefront]=events;
+                        auto wavefront_hibon=new HiBON;
+                        wavefront_hibon[Params.wavefront]=events;
                         // If the this node already have INIT and tide a braking wave is send
                         const exchange=(received_node.state is INIT_TIDE)?BREAKING_WAVE:FIRST_WAVE;
-                        auto wavefront_pack=buildPackage(wavefront, exchange);
-                        send(received_pubkey, wavefront_pack.serialize);
+                        auto wavefront_pack=buildPackage(wavefront_hibon, exchange);
+                        send(received_pubkey, wavefront_pack);
 
                         received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
                         break;
@@ -683,25 +645,26 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         log.trace("BREAKING_WAVE");
                         goto case;
                     case FIRST_WAVE:
-                        // consensus(INIT_TIDE, received_node.state).check(received_node.state == INIT_TIDE,  ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                         consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
                             check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
 
                         Tides tides;
-                        immutable father_fingerprint=waveFront(received_pubkey, block, tides);
+                        wavefront(received_pubkey, block, tides);
+                        _hashgraph.register_wavefront;
                         // dump(tides);
-                        result=register_leading_event(father_fingerprint);
+                        // Buffer father_fingerprint;
+                        // result=register_leading_event(father_fingerprint);
                         immutable send_second_wave=(received_state == FIRST_WAVE);
                         if ( send_second_wave ) {
-                            assert(result !is null);
-                            assert(result is _hashgraph.getNode(pubkey).event);
+                            //assert(result !is null);
+                            //assert(result is _hashgraph.getNode(pubkey).event);
                             HiBON[] events=buildWavefront(tides, true);
-                            auto wavefront=new HiBON;
-                            wavefront[Params.wavefront]=events;
+                            auto wavefront_doc=new HiBON;
+                            wavefront_doc[Params.wavefront]=events;
 
                             // Receive the tide wave and return the wave front
-                            auto wavefront_pack=buildPackage(wavefront, SECOND_WAVE);
-                            send(received_pubkey, wavefront_pack.serialize);
+                            const wavefront_pack=buildPackage(wavefront_doc, SECOND_WAVE);
+                            send(received_pubkey, wavefront_pack);
                         }
                         end_of_sequence=true;
                         received_node.state=NONE;
@@ -712,9 +675,11 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         Tides tides;
 
                         // log("calc father fp");
-                        immutable father_fingerprint=waveFront(received_pubkey, block, tides);
+                        wavefront(received_pubkey, block, tides);
+                        _hashgraph.register_wavefront;
+
                         // log("calculeted father fp");
-                        result=register_leading_event(father_fingerprint);
+                        //result=register_leading_event(father_fingerprint);
                         // log("registered");
                         received_node.state=NONE;
                         end_of_sequence=true;
@@ -726,10 +691,11 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
 
             if ( end_of_sequence ) {
                 auto d=_queue.read;
-                receive(d, register_leading_event);
+                assert(0);
+//                receive(d, register_leading_event);
             }
         }
-        return result;
+//        return result;
     }
 
 
