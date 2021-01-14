@@ -24,7 +24,7 @@ import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
-
+import tagion.hashgraph.HashGraphBasic : Params, Tides;
 
 import tagion.crypto.aes.AESCrypto;
 //import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -364,15 +364,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         super();
     }
 
-    protected enum _params = [
-        "type",
-        "tidewave",
-        "wavefront",
-        "block"
-        ];
-
-    mixin(EnumText!("Params", _params));
-
     // protected enum _gossip = [
     //     "waveFront",
     //     "tideWave",
@@ -462,114 +453,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     //     }
     // }
 
-    /++ to synchronize two nodes A and B
-     +  1)
-     +  Node A send it's wave front to B
-     +  This is done via the waveFront function
-     +  2)
-     +  B collects all the events it has which is are in front of the
-     +  wave front of A.
-     +  This is done via the waveFront function
-     +  B send the all the collected event to B including B's wave font of all
-     +  the node which B know it leads in,
-     +  The wave from is collect via the waveFront function by adding the remaining tides
-     +  3)
-     +  A send the rest of the event which is in front of B's wave-front
-     +/
-    Tides tideWave(HiBON hibon, bool build_tides) {
-        HiBON[] fronts;
-        Tides tides;
-//        pragma(msg, typeof(_hashgraph[].front));
-        foreach(n; _hashgraph[]) {
-//            pragma(msg, typeof(n));
-            if ( n.isOnline ) {
-                auto node=new HiBON;
-                node[Event.Params.pubkey]=n.pubkey;
-                node[Event.Params.altitude]=n.altitude;
-                fronts~=node;
-                if ( build_tides ) {
-                    tides[n.pubkey] = n.altitude;
-                }
-            }
-        }
-        hibon[Params.tidewave] = fronts;
-        return tides;
-    }
-
-
-    /++
-     This function collects the tide wave
-     Between the current Hashgraph and the wave-front
-     Returns the top most event on node received_pubkey
-     +/
-    void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides) {
-        immutable is_tidewave=doc.hasElement(Params.tidewave);
-        scope(success) {
-            if ( callbacks ) {
-                callbacks.received_tidewave(received_pubkey, tides);
-            }
-        }
-        if ( is_tidewave ) {
-            auto tidewave=doc[Params.tidewave].get!Document;
-            foreach(pack; tidewave) {
-                auto pack_doc=pack.get!Document;
-                immutable _pkey=cast(Pubkey)(pack_doc[Event.Params.pubkey].get!(Buffer));
-                immutable altitude=pack_doc[Event.Params.altitude].get!int;
-                tides[_pkey]=altitude;
-            }
-        }
-        else {
-            const wavefront_doc=doc[Params.wavefront].get!Document;
-            import tagion.hibon.HiBONJSON;
-            // log("wavefront: \n%s\n", wavefront.toJSON);
-            foreach(pack; wavefront_doc) {
-                auto doc_epack=pack.get!Document;
-
-                // Create event package and cache it
-                auto event_package=new immutable(EventPackage)(this, doc_epack);
-                if ( !_hashgraph.isRegistered(event_package.fingerprint) && (!_hashgraph.isCached(event_package.fingerprint))) {
-                    check(event_package.signed_correctly, ConsensusFailCode.EVENT_SIGNATURE_BAD);
-                    _hashgraph.cache(event_package.fingerprint, event_package);
-//                    _event_package_cache[event_package.fingerprint]=event_package;
-                }
-
-                // Altitude
-                auto altitude_p=event_package.pubkey in tides;
-                if ( altitude_p ) {
-                    immutable altitude=*altitude_p;
-                    tides[event_package.pubkey]=highest(altitude, event_package.event_body.altitude);
-                }
-                else {
-                    tides[event_package.pubkey]=event_package.event_body.altitude;
-                }
-                _hashgraph.setAltitude(event_package.pubkey, event_package.event_body.altitude);
-            }
-        }
-//        return result;
-    }
-
-    HiBON[] buildWavefront(Tides tides, bool is_tidewave) const {
-        HiBON[] events;
-        foreach(n; _hashgraph[]) {
-            auto other_altitude_p=n.pubkey in tides;
-            if ( other_altitude_p ) {
-                immutable other_altitude=*other_altitude_p;
-                foreach(e; n[]) {
-                    if ( higher( other_altitude, e.altitude) ) {
-                        break;
-                    }
-                    events~=e.toHiBON;
-                }
-            }
-            else if ( is_tidewave ) {
-                foreach(e; n[]) {
-                    events~=e.toHiBON;
-                }
-            }
-        }
-        return events;
-    }
-
 
     alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
 
@@ -622,13 +505,14 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                     case TIDAL_WAVE:
                         // Receive the tide wave
                         consensus(received_node.state, INIT_TIDE, NONE).
-                            check((received_node.state == INIT_TIDE) || (received_node.state == NONE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                            check((received_node.state == INIT_TIDE) || (received_node.state == NONE),
+                                ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                         Tides tides;
-                        wavefront(received_pubkey, block, tides);
+                        _hashgraph.wavefront(received_pubkey, block, tides);
                         // dump(tides);
                         // assert(father_fingerprint is null); // This should be an exception
                         // result=register_leading_event(null);
-                        HiBON[] events=buildWavefront(tides, true);
+                        HiBON[] events=_hashgraph.buildWavefront(tides, true);
                         check(events.length > 0, ConsensusFailCode.GOSSIPNET_MISSING_EVENTS);
 
                         // Add the new leading event
@@ -649,7 +533,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                             check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
 
                         Tides tides;
-                        wavefront(received_pubkey, block, tides);
+                        _hashgraph.wavefront(received_pubkey, block, tides);
                         _hashgraph.register_wavefront;
                         // dump(tides);
                         // Buffer father_fingerprint;
@@ -658,7 +542,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         if ( send_second_wave ) {
                             //assert(result !is null);
                             //assert(result is _hashgraph.getNode(pubkey).event);
-                            HiBON[] events=buildWavefront(tides, true);
+                            HiBON[] events=_hashgraph.buildWavefront(tides, true);
                             auto wavefront_doc=new HiBON;
                             wavefront_doc[Params.wavefront]=events;
 
@@ -675,7 +559,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
                         Tides tides;
 
                         // log("calc father fp");
-                        wavefront(received_pubkey, block, tides);
+                        _hashgraph.wavefront(received_pubkey, block, tides);
                         _hashgraph.register_wavefront;
 
                         // log("calculeted father fp");

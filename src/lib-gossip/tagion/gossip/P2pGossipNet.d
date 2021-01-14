@@ -25,6 +25,7 @@ import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.HashGraphBasic : Params;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;

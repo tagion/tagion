@@ -82,11 +82,14 @@ struct Package {
 }
 
 
+import tagion.hashgraph.HashGraphBasic : Tides;
+
 @safe
 interface NetCallbacks : EventMonitorCallbacks {
+
     void wavefront_state_receive(const(HashGraph.Node) n);
-    void sent_tidewave(immutable(Pubkey) receiving_channel, const(PackageNet.Tides) tides);
-    void received_tidewave(immutable(Pubkey) sending_channel, const(PackageNet.Tides) tides);
+    void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides);
+
     void receive(const(Document) doc);
     void send(immutable(Pubkey) channel, const(Document) data);
 
@@ -156,14 +159,10 @@ interface SecureNet : HashNet {
 
 @safe
 interface PackageNet {
-    enum int eva_altitude=-77;
-    alias Tides=int[immutable(Pubkey)];
     alias ReceiveQueue = Queue!(const(Document));
 
 //    Payload evaPackage();
     const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
-
-    Tides tideWave(HiBON hibon, bool build_tides);
 
     @property
     ReceiveQueue queue();
@@ -194,14 +193,11 @@ interface GossipNet : SecureNet, PackageNet {
     @property
     void time(const(ulong) t);
 
-    Tides tideWave(HiBON hibon, bool build_tides);
+    // Tides tideWave(HiBON hibon, bool build_tides);
 
-    void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
+    ///void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
 
 //    void register_wavefront();
-
-    HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
-
 
 }
 
