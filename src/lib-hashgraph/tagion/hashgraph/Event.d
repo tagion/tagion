@@ -28,7 +28,7 @@ import tagion.hashgraph.HashGraphBasic : isMajority;
 import tagion.Keywords : Keywords;
 
 import tagion.basic.Logger;
-import tagion.hashgraph.HashGraphBasic : HashGraphI;
+import tagion.hashgraph.HashGraphBasic;
 
 /// check function used in the Event package
 private alias check=Check!EventConsensusException;
@@ -189,7 +189,7 @@ struct EventBody {
 //        hibon["git"]=HASH;
         hibon["nonce"]="Should be implemented:"; //~to!string(eva_count);
 //        immutable payload=immutable(Payload)(hibon.serialize);
-        immutable result=immutable(EventBody)(Payload(hibon.serialize), null, null, net.time, net.eva_altitude);
+        immutable result=immutable(EventBody)(Payload(hibon.serialize), null, null, net.time, HashGraphI.eva_altitude);
         return result;
     }
 
@@ -302,6 +302,7 @@ interface EventMonitorCallbacks {
     void remove(const(Round) r);
     void epoch(const(Event[]) received_event);
     void iterations(const(Event) e, const uint count);
+    void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
 }
 
 @safe
@@ -352,7 +353,7 @@ class Round {
         return (number - rhs.number) <= 0;
     }
 
-    @nogc uint node_size() pure const nothrow {
+    @nogc const(uint) node_size() pure const nothrow {
         return cast(uint)_events.length;
     }
 
@@ -364,13 +365,15 @@ class Round {
         return famousVote == _event_counts;
     }
 
-    private this(Round previous, const uint node_size, immutable int round_number) {
+    private this(Round previous, const uint node_size, immutable int round_number) pure nothrow {
         // if ( r is null ) {
         //     // First round created
         //     _decided=true;
         // }
         _previous=previous;
-        previous._next = this;
+        if (previous) {
+            previous._next = this;
+        }
         number=round_number;
         _events=new Event[node_size];
         bitarray_clear(_looked_at_mask, node_size);
@@ -549,16 +552,17 @@ class Round {
         }
     }
 
-    @nogc
+    //  @nogc
     package void add(Event event) nothrow
     in {
-        assert(_events[event.node_id] is null, "Evnet should only be added once");
+        assert(_events[event.node_id] is null, "Event at node_id "~event.node_id.to!string~" should only be added once");
     }
     do {
-        if ( _events[event.node_id] is null ) {
-            _event_counts++;
-            _events[event.node_id]=event;
-        }
+//        if ( _events[event.node_id] is null ) {
+        log.error("Add node_id %d", event.node_id);
+        _event_counts++;
+        _events[event.node_id]=event;
+//        }
         // if (this is _seed_round) {
         //     log.error("Node %d add to seed_round (event_count=%d)", event.node_id, _event_counts);
         // }
@@ -974,9 +978,9 @@ class Round {
 
         @disable this();
 
-        @nogc
         this(HashGraphI hashgraph) pure nothrow {
             this.hashgraph=hashgraph;
+            last_decided_round = last_round = new Round(null, hashgraph.node_size, -1);
         }
 
         @nogc
@@ -1001,36 +1005,49 @@ class Round {
 
         void next_round(Event e)
             in {
+                assert(last_round, "Base round must be created");
+                assert(last_decided_round, "Last decided round must exist");
                 assert(e, "Event must create before a round can be added");
             }
         do {
+            log.error("isEva %s (last_round is null) = %s", e.isEva, (last_round is null));
             scope (exit) {
-                e._round._events[e.node_id]=e;
+                log.error("--- (e._round is null) = %s", e._round is null);
+                e._round.add(e);
             }
-            if (last_round is null) {
-                e._round = last_decided_round = last_round = new Round(null, e.node_size, -1);
-                last_decided_round._events[e.node_id] = e;
-                if (Event.callbacks) {
-                    Event.callbacks.round_seen(e);
-                }
-            }
-            else if (e.isEva) {
+            // if (last_round is null) {
+            //     log.error("last_round is null e.node_size=%d", e.node_size);
+            //     e._round = last_decided_round = last_round = new Round(null, e.node_size, -1);
+            //     last_decided_round._events[e.node_id] = e;
+            //     if (Event.callbacks) {
+            //         Event.callbacks.round_seen(e);
+            //     }
+            // }
+            // else
+            if (e.isEva) {
+                log.error("e.isEva");
                 for(Round r=last_decided_round; r !is null; r = r._next) {
+                    log.error("e.isEva e.node_id = %d r._events.length=%d", e.node_id, r._events.length);
                     if (r._events[e.node_id] is null) {
+                        log.error("e.isEva (r is null) = %s", r is null);
+
                         e._round = r;
                         break;
                     }
                 }
+                log.error("EVA (e._round is null) = %s", e._round is null);
             }
             else {
-                if (e._round is last_round) {
-                    e._round = last_round = new Round(last_round, e.node_size, last_round.number+1);
+                if (e._round && e._round._next) {
+                    log.error("EVA Defined");
+                    e._round = e._round._next;
+                }
+                else {
+                    log.error("EVA create round");
+                    e._round = last_round = new Round(last_round, hashgraph.node_size, last_round.number+1);
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
                     }
-                }
-                else {
-                    e._round = e._round._next;
                 }
             }
         }
@@ -1217,8 +1234,9 @@ class Event {
             bitarray_clear(round_mask, hashgraph.node_size);
             _witness = new Witness(this, round_mask);
             hashgraph.rounds.next_round(this);
+            log.error("#### lastround is null %s", hashgraph.rounds.last_round is null);
             //Round.seed_round(node_size);
-            _round.add(this);
+            //_round.add(this);
             _received_order=-1;
         }
 
@@ -1491,7 +1509,7 @@ class Event {
     }
 
     @nogc
-    static bool cmp(scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
+    static bool cmp(scope const(size_t[]) a, scope const(size_t[]) b) pure nothrow
         in {
             assert(a.length == b.length);
         }
@@ -1516,7 +1534,7 @@ class Event {
         else if ( diff > 0 ) {
             return 1;
         }
-        if ( cmp(cast(immutable(ulong[]))(a.fingerprint), cast(immutable(ulong[]))(b.fingerprint)) ) {
+        if ( cmp(cast(immutable(size_t[]))(a.fingerprint), cast(immutable(size_t[]))(b.fingerprint)) ) {
             return -1;
         }
         return 1;
@@ -1531,7 +1549,7 @@ class Event {
         else if ( diff > 0 ) {
             return 1;
         }
-        if ( cmp(cast(immutable(ulong[]))(fingerprint), cast(immutable(ulong[]))(rhs.fingerprint)) ) {
+        if ( cmp(cast(immutable(size_t[]))(fingerprint), cast(immutable(size_t[]))(rhs.fingerprint)) ) {
             return -1;
         }
         return 1;
@@ -2253,6 +2271,7 @@ class Event {
         return event_package.event_body.mother !is null;
     }
 
+    version(none)
     @nogc
     bool fatherExists() const pure nothrow {
         return event_package.event_body.father !is null;
@@ -2265,7 +2284,7 @@ class Event {
         //         assert(!_grounded, "This function should not be used on a grounded event");
         //     }
         // do {
-        return !motherExists;
+        return event_package.event_body.isEva; //!motherExists;
     }
 
     @nogc

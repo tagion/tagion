@@ -2,8 +2,10 @@ module tagion.hashgraph.HashGraphBasic;
 
 import std.bitmanip;
 
-import tagion.basic.Basic : Buffer, Pubkey;
+import tagion.basic.Basic : Buffer, Pubkey, EnumText;
 import tagion.hashgraph.Event;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 
 enum minimum_nodes = 3;
 /++
@@ -24,9 +26,22 @@ bool isMajority(scope const(BitArray) mask) pure nothrow {
     return isMajority(mask.count, mask.length);
 }
 
+alias Tides=int[immutable(Pubkey)];
+
+
+protected enum _params = [
+    "type",
+    "tidewave",
+    "wavefront",
+    "block"
+    ];
+
+mixin(EnumText!("Params", _params));
 
 @safe
 interface HashGraphI {
+    enum int eva_altitude=-77;
+
     //  void request(scope immutable(Buffer) fingerprint);
 
     Event lookup(scope const(ubyte[]) fingerprint);
@@ -41,7 +56,14 @@ interface HashGraphI {
 
     size_t number_of_registered_event() const pure nothrow;
 
+    Tides tideWave(HiBON hibon, bool build_tides);
+
+    void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
+
     void register_wavefront();
+
+    HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
+
 
     Round.Rounder rounds() pure nothrow;
     const(uint) nodeId(scope Pubkey pubkey) const pure;

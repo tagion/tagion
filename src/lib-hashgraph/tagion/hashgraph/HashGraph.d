@@ -4,22 +4,26 @@ import std.stdio;
 import std.conv;
 import std.format;
 import std.bitmanip : BitArray;
+import std.exception : assumeWontThrow;
+
 import tagion.hashgraph.Event;
 import tagion.gossip.InterfaceNet;
 import tagion.utils.LRU;
-import tagion.hibon.Document;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
 import tagion.utils.Miscellaneous;
 import tagion.basic.ConsensusExceptions;
+import std.algorithm.searching : count;
 
 import tagion.basic.Basic : Pubkey, Buffer, bitarray_clear, countVotes;
-import Basic=tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.HashGraphBasic;
 
 import tagion.basic.Logger;
 
 private alias check=Check!HashGraphConsensusException;
 
 @safe
-class HashGraph : Basic.HashGraphI {
+class HashGraph : HashGraphI {
     import tagion.utils.Statistic;
     //alias Pubkey=immutable(ubyte)[];
     alias Privkey=immutable(ubyte)[];
@@ -34,7 +38,8 @@ class HashGraph : Basic.HashGraphI {
     // List of rounds
     package Round.Rounder _rounds;
 
-    this() {
+    this(const size_t size) {
+        nodes=new Node[size];
         _rounds=Round.Rounder(this);
     }
 
@@ -117,6 +122,114 @@ class HashGraph : Basic.HashGraphI {
         //event.register(this);
         return event;
     }
+
+    /++ to synchronize two nodes A and B
+     +  1)
+     +  Node A send it's wave front to B
+     +  This is done via the waveFront function
+     +  2)
+     +  B collects all the events it has which is are in front of the
+     +  wave front of A.
+     +  This is done via the waveFront function
+     +  B send the all the collected event to B including B's wave font of all
+     +  the node which B know it leads in,
+     +  The wave from is collect via the waveFront function by adding the remaining tides
+     +  3)
+     +  A send the rest of the event which is in front of B's wave-front
+     +/
+    Tides tideWave(HiBON hibon, bool build_tides) {
+        HiBON[] fronts;
+        Tides tides;
+//        pragma(msg, typeof(_hashgraph[].front));
+        foreach(n; nodes) {
+//            pragma(msg, typeof(n));
+            if ( n.isOnline ) {
+                auto node=new HiBON;
+                node[Event.Params.pubkey]=n.pubkey;
+                node[Event.Params.altitude]=n.altitude;
+                fronts~=node;
+                if ( build_tides ) {
+                    tides[n.pubkey] = n.altitude;
+                }
+            }
+        }
+        hibon[Params.tidewave] = fronts;
+        return tides;
+    }
+
+    /++
+     This function collects the tide wave
+     Between the current Hashgraph and the wave-front
+     Returns the top most event on node received_pubkey
+     +/
+    void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides) {
+        immutable is_tidewave=doc.hasElement(Params.tidewave);
+        scope(success) {
+            if ( Event.callbacks ) {
+                Event.callbacks.received_tidewave(received_pubkey, tides);
+            }
+        }
+        if ( is_tidewave ) {
+            auto tidewave=doc[Params.tidewave].get!Document;
+            foreach(pack; tidewave) {
+                auto pack_doc=pack.get!Document;
+                immutable _pkey=cast(Pubkey)(pack_doc[Event.Params.pubkey].get!(Buffer));
+                immutable altitude=pack_doc[Event.Params.altitude].get!int;
+                tides[_pkey]=altitude;
+            }
+        }
+        else {
+            const wavefront_doc=doc[Params.wavefront].get!Document;
+            import tagion.hibon.HiBONJSON;
+            // log("wavefront: \n%s\n", wavefront.toJSON);
+            foreach(pack; wavefront_doc) {
+                auto doc_epack=pack.get!Document;
+
+                // Create event package and cache it
+                auto event_package=new immutable(EventPackage)(_gossip_net, doc_epack);
+                if ( !isRegistered(event_package.fingerprint) && (!isCached(event_package.fingerprint))) {
+                    check(event_package.signed_correctly, ConsensusFailCode.EVENT_SIGNATURE_BAD);
+                    cache(event_package.fingerprint, event_package);
+//                    _event_package_cache[event_package.fingerprint]=event_package;
+                }
+
+                // Altitude
+                auto altitude_p=event_package.pubkey in tides;
+                if ( altitude_p ) {
+                    immutable altitude=*altitude_p;
+                    tides[event_package.pubkey]=highest(altitude, event_package.event_body.altitude);
+                }
+                else {
+                    tides[event_package.pubkey]=event_package.event_body.altitude;
+                }
+                setAltitude(event_package.pubkey, event_package.event_body.altitude);
+            }
+        }
+//        return result;
+    }
+
+    HiBON[] buildWavefront(Tides tides, bool is_tidewave) const {
+        HiBON[] events;
+        foreach(n; nodes) {
+            auto other_altitude_p=n.pubkey in tides;
+            if ( other_altitude_p ) {
+                immutable other_altitude=*other_altitude_p;
+                foreach(e; n[]) {
+                    if ( higher( other_altitude, e.altitude) ) {
+                        break;
+                    }
+                    events~=e.toHiBON;
+                }
+            }
+            else if ( is_tidewave ) {
+                foreach(e; n[]) {
+                    events~=e.toHiBON;
+                }
+            }
+        }
+        return events;
+    }
+
 
 
     void register_wavefront() {
@@ -278,7 +391,7 @@ class HashGraph : Basic.HashGraphI {
         return cast(uint)(nodes.length);
     }
 
-    private Node[uint] nodes; // List of participating nodes T
+    private Node[] nodes; // List of participating nodes T
     private uint[Pubkey] node_ids; // Translation table from pubkey to node_indices;
     private uint[] unused_node_ids; // Stack of unused node ids
 
@@ -294,15 +407,33 @@ class HashGraph : Basic.HashGraphI {
         return (pubkey in node_ids) !is null;
     }
 
-    bool createNode(Pubkey pubkey) pure nothrow {
+    bool createNode(Pubkey pubkey) nothrow
+        in {
+            assert(pubkey !in node_ids,
+                assumeWontThrow(format("Node %d has already created for pubkey %s", node_ids[pubkey], pubkey.hex)));
+        }
+    do {
+        scope(exit) {
+            log.error("createNode %d", node_ids[pubkey]);
+        }
         if ( pubkey in node_ids ) {
             return false;
         }
-        auto node_id=cast(uint)node_ids.length;
-        node_ids[pubkey]=node_id;
-        auto node=new Node(pubkey, node_id);
-        nodes[node_id]=node;
-        return true;
+        foreach(id, ref n; nodes) {
+            if (n is null) {
+                const node_id=cast(uint)id;
+                n=new Node(pubkey, node_id);
+                node_ids[pubkey]=node_id;
+                return true;
+            }
+        }
+        assert(0, "Node creating overflow");
+        //     const node_id=
+        // auto node_id=cast(uint)node_ids.length;
+        // node_ids[pubkey]=node_id;
+
+        // nodes[node_id]=node;
+        // return true;
     }
 
     const(uint) nodeId(scope Pubkey pubkey) const pure {
@@ -338,34 +469,39 @@ class HashGraph : Basic.HashGraphI {
     }
 
     struct Range {
-//        private HashGraph _owner;
-        alias NodeRange=typeof(const(HashGraph).nodes.byValue);
-        private NodeRange r;
-//        Result r;
-        @nogc
+        private {
+            Node[] r;
+        }
+        @nogc @trusted
         this(const HashGraph owner) nothrow pure {
-            r = owner.nodes.byValue;
+            r = cast(Node[])owner.nodes;
         }
 
         @nogc @property pure nothrow {
             bool empty() {
-                return r.empty;
+                return r.length is 0;
             }
 
             const(Node) front() {
-                return r.front;
+                return r[0];
             }
 
             void popFront() {
-                r.popFront;
+                while (!empty && (r[0] !is null)) {
+                    r=r[1..$];
+                }
             }
 
         }
     }
 
     @nogc
-    Pubkey nodePubkey(const uint node_id) pure const nothrow {
-        auto node=node_id in nodes;
+    Pubkey nodePubkey(const uint node_id) pure const nothrow
+        in {
+            assert(node_id < nodes.length, "node_id out of range");
+        }
+    do {
+        auto node=nodes[node_id];
         if ( node ) {
             return node.pubkey;
         }
@@ -377,7 +513,7 @@ class HashGraph : Basic.HashGraphI {
 
     @nogc
     bool isNodeActive(const uint node_id) pure const nothrow {
-        return (node_id in nodes) !is null;
+        return (node_id < nodes.length) && (nodes[node_id] !is null);
     }
 
     version(none)
@@ -398,12 +534,13 @@ class HashGraph : Basic.HashGraphI {
     // Returns the number of active nodes in the network
     @nogc
     uint active_nodes() const pure nothrow {
-        return cast(uint)(node_ids.length);
+        return cast(uint)nodes.count!(q{a is null})(false);
+//        return cast(uint)(node_ids.length);
     }
 
     @nogc
     uint total_nodes() const pure nothrow {
-        return cast(uint)(node_ids.length+unused_node_ids.length);
+        return cast(uint)(nodes.length);
     }
 
     inout(Node) getNode(const uint node_id) inout pure nothrow {
@@ -416,18 +553,21 @@ class HashGraph : Basic.HashGraphI {
 
     @nogc
     bool isMajority(const uint voting) const pure nothrow {
-        return Basic.isMajority(voting, active_nodes);
+        return .isMajority(voting, active_nodes);
     }
 
     private void remove_node(Node n)
         in {
             import std.format;
             assert(n !is null);
-            assert(n.node_id < total_nodes);
-            assert(n.node_id in nodes, format("Node id %d is not removable because it does not exist", n.node_id));
+            assert(n.node_id < nodes.length);
+            assert(nodes[n.node_id] !is null, format("Node id %d is not removable because it does not exist", n.node_id));
         }
     do {
-        nodes.remove(n.node_id);
+        scope(success) {
+            nodes[n.node_id] = null;
+        }
+//        nodes.remove(n.node_id);
         node_ids.remove(n.pubkey);
         unused_node_ids~=n.node_id;
     }
