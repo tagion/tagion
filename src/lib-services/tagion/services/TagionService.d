@@ -55,7 +55,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 //    HRPC hrpc;
     import std.datetime.systime;
 
-    auto hashgraph=new HashGraph();
+    auto hashgraph=new HashGraph(opts.nodes);
     // Create hash-graph
     Net net;
     net=new Net(hashgraph);
@@ -338,7 +338,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             if ( send_node.state is ExchangeState.NONE ) {
                 send_node.state = ExchangeState.INIT_TIDE;
                 auto tidewave   = new HiBON;
-                auto tides      = net.tideWave(tidewave, net.callbacks !is null);
+                auto tides      = hashgraph.tideWave(tidewave, net.callbacks !is null);
                 const pack_doc  = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
 
                 net.send(send_channel, pack_doc);

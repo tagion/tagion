@@ -91,7 +91,7 @@ do {
     }
     auto master_net=new StdSecureNet;
     P2pGossipNet net;
-    auto hashgraph=new HashGraph();
+    auto hashgraph=new HashGraph(opts.nodes);
     auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
     auto connectionPoolBridge = new shared(ConnectionPoolBridge)();
     // connectionPoolBridge[Pubkey([0])] = 0;
@@ -410,7 +410,7 @@ do {
                 if ( send_node.state is ExchangeState.NONE && !connectionPoolBridge.contains(send_node.pubkey)) {
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HiBON;
-                    auto tides      = net.tideWave(tidewave, net.callbacks !is null);
+                    auto tides      = hashgraph.tideWave(tidewave, net.callbacks !is null);
                     auto pack_doc   = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
                     net.send(send_channel, pack_doc);
                     if ( net.callbacks ) {
