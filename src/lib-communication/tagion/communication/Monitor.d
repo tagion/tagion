@@ -6,8 +6,9 @@ import tagion.communication.ListenerSocket;
 
 import tagion.hashgraph.Event : Event, Round;
 import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraph.HashGraphBasic : Tides;
 import tagion.gossip.InterfaceNet : NetCallbacks;
-import tagion.gossip.GossipNet : StdGossipNet;
+//import tagion.gossip.GossipNet : StdGossipNet;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
 import tagion.basic.Basic : Control, basename, Pubkey, DataFormat;
@@ -257,11 +258,11 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     }
 
-    void sent_tidewave(immutable(Pubkey) receiving_channel, const(StdGossipNet.Tides) tides) {
+    void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides) {
         // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
-    void received_tidewave(immutable(Pubkey) sending_channel, const(StdGossipNet.Tides) tides) {
+    void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides) {
         // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
     }
 
