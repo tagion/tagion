@@ -1,8 +1,9 @@
 module tagion.utils.Miscellaneous;
 
 import tagion.basic.Basic : Buffer, isBufferType;
+import std.exception;
 
-@safe
+@trusted
 string toHexString(bool UCASE=false, BUF)(BUF buffer) pure nothrow if ( isBufferType!BUF ) {
     static if ( UCASE ) {
         enum hexdigits = "0123456789ABCDEF";
@@ -18,10 +19,10 @@ string toHexString(bool UCASE=false, BUF)(BUF buffer) pure nothrow if ( isBuffer
         text[i++] = hexdigits[b & 0xf];
     }
 
-    return text.idup;
+    return assumeUnique(text);
 }
 
-alias hex=toHexString!(true, immutable(ubyte)[]);
+alias hex=toHexString;
 
 unittest {
     {
