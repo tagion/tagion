@@ -5,8 +5,8 @@ import std.bitmanip : BitArray;
 import tagion.communication.ListenerSocket;
 
 import tagion.hashgraph.Event : Event, Round;
-import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : Tides;
+//import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraph.HashGraphBasic : Tides, HashGraphI;
 import tagion.gossip.InterfaceNet : NetCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;
 import tagion.basic.ConsensusExceptions : ConsensusException;
@@ -253,7 +253,7 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
     }
 
-    void wavefront_state_receive(const(HashGraph.Node) n) {
+    void wavefront_state_receive(const(Document) doc) {
         //import tagion.Base : cutHex;
         // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     }
@@ -275,7 +275,7 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
     }
 
-    void exiting(const(HashGraph.Node) n) {
+    void exiting(const(Pubkey) owner_key, const(HashGraphI)) {
         //import tagion.Base : cutHex;
         // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
     }
