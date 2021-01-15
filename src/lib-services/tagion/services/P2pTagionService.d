@@ -38,6 +38,7 @@ import tagion.hibon.Document : Document;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.basic.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
@@ -106,7 +107,7 @@ do {
         shared shared_net=cast(shared)master_net;
         net=new P2pGossipNet(hashgraph, opts, p2pnode, connectionPool, connectionPoolBridge);
         net.drive("tagion_service", shared_net);
-        hashgraph.request_net=net;
+        hashgraph.gossip_net=net;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
         discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, cast(immutable HashNet) net, opts.discovery.task_name, opts);
@@ -240,7 +241,7 @@ do {
         // }
 
         if ( net.callbacks ) {
-            net.callbacks.exiting(hashgraph.getNode(net.pubkey));
+            net.callbacks.exiting(net.pubkey, hashgraph);
         }
 
         // version(none)
@@ -411,7 +412,7 @@ do {
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HiBON;
                     auto tides      = hashgraph.tideWave(tidewave, net.callbacks !is null);
-                    auto pack_doc   = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
+                    auto pack_doc   = hashgraph.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
                     net.send(send_channel, pack_doc);
                     if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
@@ -533,10 +534,10 @@ do {
                 writefln("TIME OUT %d", opts.node_id);
                 timeout_count++;
                 net.time=Clock.currTime.toUnixTime!long;
-                if ( !net.queue.empty ) {
-                    log("FROM QUEUE");
-                    receive_buffer(net.queue.read);
-                }
+                // if ( !net.queue.empty ) {
+                //     log("FROM QUEUE");
+                //     receive_buffer(net.queue.read);
+                // }
                 next_mother(empty_payload);
             }
         }

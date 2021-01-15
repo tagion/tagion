@@ -10,6 +10,7 @@ import core.thread;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.basic.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
@@ -60,7 +61,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     Net net;
     net=new Net(hashgraph);
     net.drive("tagion_service", master_net);
-    hashgraph.request_net=net;
+    hashgraph.gossip_net=net;
     // synchronized(master_net) {
     //     auto unshared_net = cast(SecureDriveNet)master_net;
     //     unshared_net.drive("tagion_service", net1);
@@ -113,7 +114,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         // }
 
         if ( net.callbacks ) {
-            net.callbacks.exiting(hashgraph.getNode(net.pubkey));
+            net.callbacks.exiting(net.pubkey, hashgraph);
         }
 
 
@@ -339,7 +340,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 send_node.state = ExchangeState.INIT_TIDE;
                 auto tidewave   = new HiBON;
                 auto tides      = hashgraph.tideWave(tidewave, net.callbacks !is null);
-                const pack_doc  = net.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
+                const pack_doc  = hashgraph.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
 
                 net.send(send_channel, pack_doc);
                 if ( net.callbacks ) {
@@ -425,9 +426,9 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 if ( !message_received ) {
                     log("TIME OUT");
                     timeout_count++;
-                    if ( !net.queue.empty ) {
-                        receive_buffer(net.queue.read);
-                    }
+                    // if ( !net.queue.empty ) {
+                    //     receive_buffer(net.queue.read);
+                    // }
                 }
             }
             else {
@@ -445,9 +446,9 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     log("TIME OUT");
                     timeout_count++;
                     net.time=Clock.currTime.toUnixTime!long;
-                    if ( !net.queue.empty ) {
-                        receive_buffer(net.queue.read);
-                    }
+                    // if ( !net.queue.empty ) {
+                    //     receive_buffer(net.queue.read);
+                    // }
                     next_mother(empty_payload);
                 }
             }
