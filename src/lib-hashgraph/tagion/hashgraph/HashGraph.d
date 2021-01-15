@@ -28,7 +28,7 @@ class HashGraph : HashGraphI {
     //alias Pubkey=immutable(ubyte)[];
     alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
-    private GossipNet _gossip_net;
+    private GossipNet net;
     private uint iterative_tree_count;
     private uint iterative_strong_count;
     private Statistic!uint iterative_tree;
@@ -48,12 +48,12 @@ class HashGraph : HashGraphI {
         return _rounds;
     }
 
-    void request_net(GossipNet net) nothrow
+    void gossip_net(GossipNet net) nothrow
         in {
-            assert(_gossip_net is null, "RequestNet has already been set");
+            assert(this.net is null, "RequestNet has already been set");
         }
     do {
-        _gossip_net=net;
+        this.net=net;
     }
 
     alias EventPackageCache=immutable(EventPackage)*[const(ubyte[])];
@@ -123,6 +123,12 @@ class HashGraph : HashGraphI {
         return event;
     }
 
+    const(Document) buildPackage(const(HiBON) block, const ExchangeState state) {
+        const pack=Package(net, block, state);
+        return Document(pack.toHiBON.serialize);
+    }
+
+
     /++ to synchronize two nodes A and B
      +  1)
      +  Node A send it's wave front to B
@@ -186,7 +192,7 @@ class HashGraph : HashGraphI {
                 auto doc_epack=pack.get!Document;
 
                 // Create event package and cache it
-                auto event_package=new immutable(EventPackage)(_gossip_net, doc_epack);
+                auto event_package=new immutable(EventPackage)(net, doc_epack);
                 if ( !isRegistered(event_package.fingerprint) && (!isCached(event_package.fingerprint))) {
                     check(event_package.signed_correctly, ConsensusFailCode.EVENT_SIGNATURE_BAD);
                     cache(event_package.fingerprint, event_package);
@@ -244,6 +250,100 @@ class HashGraph : HashGraphI {
         }
     }
 
+    void wavefront_machine(const(Document) doc) {
+        if ( net.callbacks ) {
+            net.callbacks.receive(doc);
+        }
+
+        Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
+        check(received_pubkey != net.pubkey, ConsensusFailCode.GOSSIPNET_REPLICATED_PUBKEY);
+
+        immutable type=doc[Params.type].get!uint;
+        immutable received_state=convertState(type);
+        // This indicates when a communication sequency ends
+        bool end_of_sequence=false;
+
+        // This repesents the current state of the local node
+        auto received_node=getNode(received_pubkey);
+
+        // if ( !online ) {
+        //     log("online: %s", online);
+        //     _queue.write(doc);
+        // }
+        // else {
+        auto signature=doc[Event.Params.signature].get!(immutable(ubyte)[]);
+        auto block=doc[Params.block].get!Document;
+        immutable message=net.calcHash(block.data);
+        if ( net.verify(message, signature, received_pubkey) ) {
+            if ( net.callbacks ) {
+                net.callbacks.wavefront_state_receive(doc);
+            }
+            with(ExchangeState) final switch (received_state) {
+                case NONE:
+                case INIT_TIDE:
+                    consensus(received_state).check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
+                    break;
+                case TIDAL_WAVE:
+                    // Receive the tide wave
+                    consensus(received_node.state, INIT_TIDE, NONE).
+                        check((received_node.state == INIT_TIDE) || (received_node.state == NONE),
+                            ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                    Tides tides;
+                    wavefront(received_pubkey, block, tides);
+                    HiBON[] events=buildWavefront(tides, true);
+                    check(events.length > 0, ConsensusFailCode.GOSSIPNET_MISSING_EVENTS);
+
+                    // Add the new leading event
+                    auto wavefront_hibon=new HiBON;
+                    wavefront_hibon[Params.wavefront]=events;
+                    // If the this node already have INIT and tide a braking wave is send
+                    const exchange=(received_node.state is INIT_TIDE)?BREAKING_WAVE:FIRST_WAVE;
+                    auto wavefront_pack=buildPackage(wavefront_hibon, exchange);
+                    net.send(received_pubkey, wavefront_pack);
+
+                    received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
+                    break;
+                case BREAKING_WAVE:
+                    log.trace("BREAKING_WAVE");
+                    goto case;
+                case FIRST_WAVE:
+                    consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
+                        check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
+                            ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                    Tides tides;
+                    wavefront(received_pubkey, block, tides);
+                    register_wavefront;
+                    // dump(tides);
+                    // Buffer father_fingerprint;
+                    // result=register_leading_event(father_fingerprint);
+                    immutable send_second_wave=(received_state == FIRST_WAVE);
+                    if ( send_second_wave ) {
+                        //assert(result !is null);
+                        //assert(result is _hashgraph.getNode(pubkey).event);
+                        HiBON[] events=buildWavefront(tides, true);
+                        auto wavefront_doc=new HiBON;
+                        wavefront_doc[Params.wavefront]=events;
+
+                        // Receive the tide wave and return the wave front
+                        const wavefront_pack=buildPackage(wavefront_doc, SECOND_WAVE);
+                        net.send(received_pubkey, wavefront_pack);
+                    }
+                    end_of_sequence=true;
+                    received_node.state=NONE;
+                    break;
+                case SECOND_WAVE:
+                    consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
+                        ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
+                    Tides tides;
+                    wavefront(received_pubkey, block, tides);
+                    register_wavefront;
+                    received_node.state=NONE;
+                    end_of_sequence=true;
+                }
+        }
+    }
+
+
     @safe
     static class Node {
         ExchangeState state;
@@ -264,9 +364,9 @@ class HashGraph : HashGraphI {
         version(none)
         @nogc
         final package Event previous_witness() nothrow pure
-            in {
-                assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
-            }
+        in {
+            assert(!latest_witness_event.isEva, "No previous witness exist for an Eva event");
+        }
         do {
             return latest_witness_event._round._events[latest_witness_event];
         }
@@ -518,9 +618,9 @@ class HashGraph : HashGraphI {
 
     version(none)
     void assign(Event event)
-        in {
-            assert(_gossip_net !is null, "RequestNet must be set");
-        }
+    in {
+        assert(net !is null, "RequestNet must be set");
+    }
     do {
         auto node=getNode(event.channel);
         node.event=event;
@@ -582,9 +682,9 @@ class HashGraph : HashGraphI {
         // Pubkey pubkey,
         // immutable(ubyte[]) signature,
         immutable(EventPackage*) event_pack)
-        in {
-            assert(_request_net !is null, "RequestNet must be set");
-        }
+    in {
+        assert(_request_net !is null, "RequestNet must be set");
+    }
     do {
         return _request_net.lookup(event_pack);
         // auto event=new Event(event_pack, this);
@@ -599,9 +699,9 @@ class HashGraph : HashGraphI {
         // Pubkey pubkey,
         // immutable(ubyte[]) signature,
         immutable(EventPackage*) event_pack)
-        in {
-            assert(_request_net !is null, "RequestNet must be set");
-        }
+    in {
+        assert(_request_net !is null, "RequestNet must be set");
+    }
     do {
 
         immutable pubkey=event_pack.pubkey;
@@ -657,7 +757,7 @@ class HashGraph : HashGraphI {
             event.round.check_coin_round;
 
             if ( Round.check_decided_round_limit) {
-                 // Scrap the lowest round which is not need anymore
+                // Scrap the lowest round which is not need anymore
                 scrap;
             }
 
@@ -766,9 +866,9 @@ class HashGraph : HashGraphI {
     */
     version(none)
     protected void requestEventTree(Event event)
-        in {
-            assert(_request_net !is null, "RequestNet must be set");
-        }
+    in {
+        assert(_request_net !is null, "RequestNet must be set");
+    }
     do {
         iterative_tree_count++;
         if ( event && ( !event.is_loaded ) ) {

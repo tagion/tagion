@@ -6,6 +6,7 @@ import tagion.basic.Basic : Buffer, Pubkey, EnumText;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.basic.ConsensusExceptions;
 
 enum minimum_nodes = 3;
 /++
@@ -38,6 +39,18 @@ protected enum _params = [
 
 mixin(EnumText!("Params", _params));
 
+enum ExchangeState : uint {
+    NONE,
+        INIT_TIDE,
+        TIDAL_WAVE,
+        FIRST_WAVE,
+        SECOND_WAVE,
+        BREAKING_WAVE
+        }
+
+
+alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
+
 @safe
 interface HashGraphI {
     enum int eva_altitude=-77;
@@ -56,6 +69,8 @@ interface HashGraphI {
 
     size_t number_of_registered_event() const pure nothrow;
 
+    const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
+
     Tides tideWave(HiBON hibon, bool build_tides);
 
     void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
@@ -64,6 +79,7 @@ interface HashGraphI {
 
     HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
 
+    void wavefront_machine(const(Document) doc);
 
     Round.Rounder rounds() pure nothrow;
     const(uint) nodeId(scope Pubkey pubkey) const pure;

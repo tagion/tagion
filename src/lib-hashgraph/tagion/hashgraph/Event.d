@@ -298,11 +298,13 @@ interface EventMonitorCallbacks {
     void son(const(Event) e);
     void daughter(const(Event) e);
     void forked(const(Event) e);
-    void remove(const(Event) e);
     void remove(const(Round) r);
     void epoch(const(Event[]) received_event);
     void iterations(const(Event) e, const uint count);
     void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
+    void wavefront_state_receive(const(Document) wavefron_doc);
+    void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
+
 }
 
 @safe
