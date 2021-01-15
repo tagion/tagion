@@ -1,21 +1,16 @@
 module tagion.gossip.InterfaceNet;
 
-import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.utils.Queue;
+//import tagion.utils.Queue;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Basic;
 
-enum ExchangeState : uint {
-    NONE,
-        INIT_TIDE,
-        TIDAL_WAVE,
-        FIRST_WAVE,
-        SECOND_WAVE,
-        BREAKING_WAVE
-        }
+alias check = consensusCheck!(GossipConsensusException);
+alias consensus = consensusCheckArguments!(GossipConsensusException);
+
 
 @safe
 struct Package {
@@ -87,7 +82,6 @@ import tagion.hashgraph.HashGraphBasic : Tides;
 @safe
 interface NetCallbacks : EventMonitorCallbacks {
 
-    void wavefront_state_receive(const(HashGraph.Node) n);
     void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides);
 
     void receive(const(Document) doc);
@@ -95,7 +89,6 @@ interface NetCallbacks : EventMonitorCallbacks {
 
 
     void consensus_failure(const(ConsensusException) e);
-    void exiting(const(HashGraph.Node) n);
 }
 
 
@@ -159,13 +152,13 @@ interface SecureNet : HashNet {
 
 @safe
 interface PackageNet {
-    alias ReceiveQueue = Queue!(const(Document));
+//    alias ReceiveQueue = Queue!(const(Document));
 
 //    Payload evaPackage();
-    const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
+    //   const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
 
-    @property
-    ReceiveQueue queue();
+    // @property
+    // ReceiveQueue queue();
 }
 
 @safe

@@ -24,7 +24,7 @@ import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
-import tagion.hashgraph.HashGraphBasic : Params, Tides;
+import tagion.hashgraph.HashGraphBasic;
 
 import tagion.crypto.aes.AESCrypto;
 //import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -88,9 +88,6 @@ class StdHashNet : HashNet {
 // }
 
 
-alias check = consensusCheck!(GossipConsensusException);
-alias consensus = consensusCheckArguments!(GossipConsensusException);
-
 @safe
 class StdSecureNet : StdHashNet, SecureNet  {
 //    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
@@ -103,7 +100,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
 //    import tagion.gossip.InterfaceNet : HashNet;
     import tagion.basic.ConsensusExceptions;
 
-    alias check = consensusCheck!(GossipConsensusException);
+//    alias check = consensusCheck!(GossipConsensusException);
 
     import std.format;
     import std.string : representation;
@@ -356,7 +353,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     this( HashGraph hashgraph) {
 //        _transceiver=transceiver;
         _hashgraph=hashgraph;
-        _queue=new ReceiveQueue;
+//        _queue=new ReceiveQueue;
 //        _event_package_cache=new EventPackageCache(&onEvict);
 //        _event_cache=new EventCache(null);
 
@@ -386,11 +383,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         string node_name;
     }
 
-    const(Document) buildPackage(const(HiBON) block, const ExchangeState state) {
-        const pack=Package(this, block, state);
-        return Document(pack.toHiBON.serialize);
-    }
-
     // immutable(EventPackage*) buildEvent_(const Document ebody) const {
     //     return new immutable(EventPackage)(this, doc_epack);
     // }
@@ -402,16 +394,16 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     bool online() const  {
         // Does my own node exist and do the node have an event
         auto own_node=_hashgraph.getNode(pubkey);
-        log("own node exists: %s, own node event exists: %s", own_node !is null, own_node.event !is null);
+        //   log("own node exists: %s, own node event exists: %s", own_node !is null, own_node.event !is null);
         return (own_node !is null) && (own_node.event !is null);
         // return _hashgraph.isNodeActive(0) && (_hashgraph.getNode(0).isOnline);
     }
 
-    private ReceiveQueue _queue;
-    @property
-    ReceiveQueue queue() {
-        return _queue;
-    }
+    // private ReceiveQueue _queue;
+    // @property
+    // ReceiveQueue queue() {
+    //     return _queue;
+    // }
 
 //    alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
     protected {
@@ -454,132 +446,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
     // }
 
 
-    alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
-
-    // @trusted
-    // void trace(string type, immutable(ubyte[]) data);
 
     override void receive(const(Document) doc) {
-//        pragma(msg, "fixme(cbr): should be change to a HiRPC");
-        // trace("receive", data);
-        // log("RECEIVE #@#@#@#");
-        if ( callbacks ) {
-            callbacks.receive(doc);
-        }
-
-        //Event result;
-//        auto doc=Document(data);
-        Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-        check(received_pubkey != pubkey, ConsensusFailCode.GOSSIPNET_REPLICATED_PUBKEY);
-
-        immutable type=doc[Params.type].get!uint;
-        immutable received_state=convertState(type);
-        // log("Receive %s %s data=%d", received_state, received_pubkey.cutHex, data.length);
-        // import tagion.hibon.HiBONJSON;
-        // log("%s", doc.toJSON);
-        // This indicates when a communication sequency ends
-        bool end_of_sequence=false;
-
-        // This repesents the current state of the local node
-        auto received_node=_hashgraph.getNode(received_pubkey);
-        //auto _node=_hashgraph.getNode(pubkey);
-        if ( !online ) {
-            log("online: %s", online);
-            // Queue the package if we still are busy
-            // with the current package
-            _queue.write(doc);
-        }
-        else {
-            auto signature=doc[Event.Params.signature].get!(immutable(ubyte)[]);
-            auto block=doc[Params.block].get!Document;
-            immutable message=calcHash(block.data);
-            if ( verify(message, signature, received_pubkey) ) {
-                if ( callbacks ) {
-                    callbacks.wavefront_state_receive(received_node);
-                }
-                with(ExchangeState) final switch (received_state) {
-                    case NONE:
-                    case INIT_TIDE:
-                        consensus(received_state).check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
-                        break;
-                    case TIDAL_WAVE:
-                        // Receive the tide wave
-                        consensus(received_node.state, INIT_TIDE, NONE).
-                            check((received_node.state == INIT_TIDE) || (received_node.state == NONE),
-                                ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
-                        Tides tides;
-                        _hashgraph.wavefront(received_pubkey, block, tides);
-                        // dump(tides);
-                        // assert(father_fingerprint is null); // This should be an exception
-                        // result=register_leading_event(null);
-                        HiBON[] events=_hashgraph.buildWavefront(tides, true);
-                        check(events.length > 0, ConsensusFailCode.GOSSIPNET_MISSING_EVENTS);
-
-                        // Add the new leading event
-                        auto wavefront_hibon=new HiBON;
-                        wavefront_hibon[Params.wavefront]=events;
-                        // If the this node already have INIT and tide a braking wave is send
-                        const exchange=(received_node.state is INIT_TIDE)?BREAKING_WAVE:FIRST_WAVE;
-                        auto wavefront_pack=buildPackage(wavefront_hibon, exchange);
-                        send(received_pubkey, wavefront_pack);
-
-                        received_node.state=/*exchange == BREAKING_WAVE? INIT_TIDE :*/ received_state;
-                        break;
-                    case BREAKING_WAVE:
-                        log.trace("BREAKING_WAVE");
-                        goto case;
-                    case FIRST_WAVE:
-                        consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
-                            check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),  ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
-
-                        Tides tides;
-                        _hashgraph.wavefront(received_pubkey, block, tides);
-                        _hashgraph.register_wavefront;
-                        // dump(tides);
-                        // Buffer father_fingerprint;
-                        // result=register_leading_event(father_fingerprint);
-                        immutable send_second_wave=(received_state == FIRST_WAVE);
-                        if ( send_second_wave ) {
-                            //assert(result !is null);
-                            //assert(result is _hashgraph.getNode(pubkey).event);
-                            HiBON[] events=_hashgraph.buildWavefront(tides, true);
-                            auto wavefront_doc=new HiBON;
-                            wavefront_doc[Params.wavefront]=events;
-
-                            // Receive the tide wave and return the wave front
-                            const wavefront_pack=buildPackage(wavefront_doc, SECOND_WAVE);
-                            send(received_pubkey, wavefront_pack);
-                        }
-                        end_of_sequence=true;
-                        received_node.state=NONE;
-                        break;
-                    case SECOND_WAVE:
-                        consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
-                            ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
-                        Tides tides;
-
-                        // log("calc father fp");
-                        _hashgraph.wavefront(received_pubkey, block, tides);
-                        _hashgraph.register_wavefront;
-
-                        // log("calculeted father fp");
-                        //result=register_leading_event(father_fingerprint);
-                        // log("registered");
-                        received_node.state=NONE;
-                        end_of_sequence=true;
-                    }
-
-            }
-        }
-        if ( !_queue.empty && online ) {
-
-            if ( end_of_sequence ) {
-                auto d=_queue.read;
-                assert(0);
-//                receive(d, register_leading_event);
-            }
-        }
-//        return result;
+        _hashgraph.wavefront_machine(doc);
     }
 
 
