@@ -148,6 +148,7 @@ do {
             else{
                 import std.path;
                 if(!is_master_node){
+                    pragma(msg, "fixme(): Use buildpath/path functions instead of string concat");
                     service_options.dart.path = stripExtension(opts.dart.path) ~ to!string(i) ~ extension(opts.dart.path);
                 }
             }
@@ -248,7 +249,7 @@ do {
                 //     // force_stop = true;
                 // }
                 );
-            if((force_stop || abort) && live_counter <=0) break;
+            if ((force_stop || abort) && live_counter <=0) break;
         } while(ready_counter>0);
 
         if(force_stop || abort) return;
@@ -287,6 +288,7 @@ do {
                 tid.send(pkey);
             }
         }
+
         void taskfailure(immutable(TaskFailure) t) {
             ownerTid.send(t);
             abort=true;
@@ -348,7 +350,7 @@ do {
             // Thread.sleep(1.seconds);
             log("Start the heatbeat in none sequential mode");
             while(!stop && !abort) {
-                stderr.writef("* %s ", abort);
+                stderr.write("> ");
                 immutable message_received=receiveTimeout(
                     opts.delay.msecs,
                     (Control ctrl) {
@@ -363,9 +365,11 @@ do {
                                     log("HEARTBEAT STARTED");
                                 }
                                 break;
-                                // case END:
-                                // stop=true;
-                                // break;
+                            case END:
+                                count_down++;
+                                stop=true;
+                                log.error("Unexpected %s count_down=%d", ctrl, count_down);
+                                break;
                                 // case FAIL:
 
                                 // stop=true;
@@ -376,7 +380,7 @@ do {
                         }
                     },
                     &taskfailure
-                    // (immutable() e) {
+                    // (immutable(
                     //     stop=true;
                     //     log(e);
                     //     // const print_e=e;
