@@ -1014,7 +1014,7 @@ class Round {
         do {
             log.error("isEva %s (last_round is null) = %s", e.isEva, (last_round is null));
             scope (exit) {
-                log.error("--- (e._round is null) = %s", e._round is null);
+                assert(e._round !is null);
                 e._round.add(e);
             }
             // if (last_round is null) {

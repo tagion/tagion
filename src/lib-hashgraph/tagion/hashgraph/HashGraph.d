@@ -119,6 +119,11 @@ class HashGraph : HashGraphI {
     do {
         auto event=new Event(event_pack, this);
         _event_cache[event.fingerprint]=event;
+        auto current_node = getNode(event.pubkey);
+        // If the event is in front put it in the front seat
+        if ((current_node.event is null) || highest(event.altitude, current_node.event.altitude)) {
+            current_node.event = event;
+        }
         //event.register(this);
         return event;
     }
