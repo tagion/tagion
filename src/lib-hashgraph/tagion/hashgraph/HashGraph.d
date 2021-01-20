@@ -119,12 +119,8 @@ class HashGraph : HashGraphI {
     do {
         auto event=new Event(event_pack, this);
         _event_cache[event.fingerprint]=event;
-        auto current_node = getNode(event.pubkey);
-        // If the event is in front put it in the front seat
-        if ((current_node.event is null) || highest(event.altitude, current_node.event.altitude)) {
-            current_node.event = event;
-        }
-        //event.register(this);
+//        event.connect(this);
+        front_seat(event);
         return event;
     }
 
@@ -241,17 +237,22 @@ class HashGraph : HashGraphI {
         return events;
     }
 
-
+    /++
+     Puts the event in the front seat of the wavefront if the event altitude is highest
+     +/
+    bool front_seat(Event event) {
+        auto current_node = getNode(event.pubkey);
+        if ((current_node.event is null) || highest(event.altitude, current_node.event.altitude)) {
+            // If the current event is in front of the wave front is set to the current event
+            current_node.event = event;
+            return true;
+        }
+        return false;
+    }
 
     void register_wavefront() {
         foreach(fingerprint, event_package; _event_package_cache) {
             auto current_event = Event.register(this, fingerprint);
-            auto current_node = getNode(current_event.pubkey);
-            if (highest(current_event.altitude, current_node.event.altitude)) {
-                // If the current event is in front of the wave the wave front is set to the current event
-                current_node.event = current_event;
-            }
-            //register(current_event);
         }
     }
 

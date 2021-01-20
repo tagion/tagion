@@ -1010,6 +1010,7 @@ class Round {
                 assert(last_round, "Base round must be created");
                 assert(last_decided_round, "Last decided round must exist");
                 assert(e, "Event must create before a round can be added");
+                assert(e._round is null, "Round has already been added");
             }
         do {
             log.error("isEva %s (last_round is null) = %s", e.isEva, (last_round is null));
@@ -1028,8 +1029,9 @@ class Round {
             // else
             if (e.isEva) {
                 log.error("e.isEva");
+                assert(last_decided_round);
                 for(Round r=last_decided_round; r !is null; r = r._next) {
-                    log.error("e.isEva e.node_id = %d r._events.length=%d", e.node_id, r._events.length);
+                    log.error("e.isEva e.node_id = %d r._events.length=%d e.fingerprint=%s", e.node_id, r._events.length, e.fingerprint.cutHex);
                     if (r._events[e.node_id] is null) {
                         log.error("e.isEva (r is null) = %s", r is null);
 
@@ -1037,12 +1039,14 @@ class Round {
                         break;
                     }
                 }
+                assert(e._round !is null);
                 log.error("EVA (e._round is null) = %s", e._round is null);
             }
             else {
                 if (e._round && e._round._next) {
                     log.error("EVA Defined");
                     e._round = e._round._next;
+                    assert(e._round !is null);
                 }
                 else {
                     log.error("EVA create round");
@@ -1050,6 +1054,7 @@ class Round {
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
                     }
+                    assert(e._round !is null);
                 }
             }
         }
@@ -1235,6 +1240,7 @@ class Event {
             BitArray round_mask;
             bitarray_clear(round_mask, hashgraph.node_size);
             _witness = new Witness(this, round_mask);
+            assert(_round is null);
             hashgraph.rounds.next_round(this);
             log.error("#### lastround is null %s", hashgraph.rounds.last_round is null);
             //Round.seed_round(node_size);
@@ -1991,6 +1997,9 @@ class Event {
     @trusted
     protected void connect(HashGraphI hashgraph) {
         if (!connected) {
+            scope(exit) {
+                hashgraph.front_seat(this);
+            }
             _mother = register(hashgraph, event_package.event_body.mother);
             if (_mother) {
                 check(!_daughter, ConsensusFailCode.EVENT_FORK);

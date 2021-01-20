@@ -75,6 +75,8 @@ interface HashGraphI {
 
     void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
 
+    bool front_seat(Event event);
+
     void register_wavefront();
 
     HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
