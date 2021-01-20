@@ -43,7 +43,6 @@ import tagion.basic.Logger;
 
         }
         catch (Throwable t) {
-
             fatal(t);
         }
         last_time=MonoTime.currTime;

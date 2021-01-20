@@ -387,7 +387,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
         void _taskfailure(immutable(TaskFailure) t) {
             ownerTid.send(t);
-            if (cast(Error)(t.throwable) is null) {
+            if (t.throwable is null) {
                 stop=true;
             }
         }
@@ -453,7 +453,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
         }
     }
-    catch (Error t) {
+    catch (Throwable t) {
         fatal(t);
     }
 }
