@@ -19,7 +19,7 @@ enum BufferType {
     SIGNATURE,   /// Signature buffer type
     HASHPOINTER, /// Hash pointre buffer type
     MESSAGE,     /// Message buffer type
-    PAYLOAD      /// Payload buffer type
+//    PAYLOAD      /// Payload buffer type
 }
 
 enum BillType {
@@ -30,7 +30,7 @@ enum BillType {
 
 alias Buffer=immutable(ubyte)[]; /// General buffer
 alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer used for public keys
-alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
+//alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
 version(none) {
 alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
