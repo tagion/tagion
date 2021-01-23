@@ -97,7 +97,7 @@ class MonitorCallBacks : NetCallbacks {
         if ( e.father !is null ) {
             hibon[Keywords.father]=e.father.id;
         }
-        if ( e.payload !is null ) {
+        if ( e.payload.empty ) {
             hibon[Keywords.payload]=e.payload;
         }
 
