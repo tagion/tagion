@@ -8,7 +8,7 @@ import std.conv : to;
 
 import tagion.revision;
 import tagion.Options;
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, Payload, buf_idup,  basename, isBufferType;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup,  basename, isBufferType;
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.Random;
@@ -124,17 +124,17 @@ class EmulatorGossipNet : StdGossipNet {
     @trusted
     void send(immutable(Pubkey) channel, const(Document) doc) {
 //        auto doc=Document(data);
-        auto doc_body=doc[Params.block].get!Document;
-        if ( doc_body.hasElement(Event.Params.ebody) ) {
-            auto doc_ebody=doc_body[Event.Params.ebody].get!Document;
-            auto event_body=immutable(EventBody)(doc_ebody);
-        }
+        // auto doc_body=doc[Params.block].get!Document;
+        // if ( doc_body.hasElement(Event.Params.ebody) ) {
+        //     auto doc_ebody=doc_body[Event.Params.ebody].get!Document;
+        //     auto event_body=immutable(EventBody)(doc_ebody);
+        // }
 //        trace("send", data);
-        log.trace("send %s bytes", doc.serialize.length);
+        log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
         if ( callbacks ) {
             callbacks.send(channel, doc);
         }
-        log("Send %s data=%d", channel.cutHex, doc.serialize.length);
+//        log("Send %s data=%d", channel.cutHex, doc.serialize.length);
         _tids[channel].send(doc.serialize);
     }
 

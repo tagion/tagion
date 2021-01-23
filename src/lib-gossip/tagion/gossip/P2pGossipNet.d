@@ -11,7 +11,7 @@ import std.typecons;
 
 import tagion.gossip.revision;
 import tagion.Options;
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, Payload, buf_idup,  basename, isBufferType, Control;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup,  basename, isBufferType, Control;
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.utils.Random;
@@ -259,13 +259,13 @@ class P2pGossipNet : StdGossipNet {
 
     private uint eva_count;
 
-    Payload evaPackage() {
+    Document evaPackage() {
         eva_count++;
         auto hibon=new HiBON;
         hibon["pubkey"]=pubkey;
         hibon["git"]=HASH;
         hibon["nonce"]="Should be implemented:"~to!string(eva_count);
-        return Payload(hibon.serialize);
+        return Document(hibon.serialize);
     }
 
 }
