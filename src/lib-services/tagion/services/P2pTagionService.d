@@ -10,7 +10,7 @@ import tagion.utils.Random;
 
 import tagion.GlobalSignals : abort;
 
-import tagion.basic.Basic : Pubkey, Payload, Control, nameOf;
+import tagion.basic.Basic : Pubkey, Control, nameOf;
 import tagion.basic.Logger;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
@@ -350,7 +350,7 @@ do {
             net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
         }
     }
-    Payload empty_payload;
+    Document empty_payload;
 
     immutable(ubyte)[] data;
 
@@ -380,7 +380,7 @@ do {
         }
     }
 
-    void next_mother(Payload payload) {
+    void next_mother(Document payload) {
         try{
             log("next mother %d", gossip_count);
             auto own_node=hashgraph.getNode(net.pubkey);
@@ -431,7 +431,7 @@ do {
         }
     }
 
-    void receive_payload(Payload pload) {
+    void receive_payload(Document pload) {
         log("payload.length=%d", pload.length);
         next_mother(pload);
     }

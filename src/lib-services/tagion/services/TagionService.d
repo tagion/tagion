@@ -31,7 +31,7 @@ import tagion.basic.Logger;
 //import tagion.basic.TagionExceptions;
 
 import tagion.Options : Options, setOptions, options;
-import tagion.basic.Basic : Pubkey, Buffer, Payload, Control;
+import tagion.basic.Basic : Pubkey, Buffer, Control;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 
@@ -292,7 +292,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         // Start Script API task
         //
 
-        Payload empty_payload;
+        Document empty_payload;
 
         // Set thread global options
 
@@ -318,16 +318,19 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             net.receive(doc); //, &register_leading_event);
         }
 
-        void next_mother(Payload payload) {
+        void next_mother(Document payload) {
             auto own_node=hashgraph.getNode(net.pubkey);
             if ( (gossip_count >= max_gossip) || (payload.length) ) {
+
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
+                    log.trace("next_mother %d eva", timeout_count);
                     immutable ebody=EventBody.eva(net);
                     immutable epack=new immutable(EventPackage)(net, ebody);
                     event=hashgraph.registerEvent(epack);
                 }
                 else {
+                    log.trace("next_mother %d single", timeout_count);
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
@@ -337,12 +340,14 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 immutable send_channel=net.selectRandomNode;
                 auto send_node=hashgraph.getNode(send_channel);
                 if ( send_node.state is ExchangeState.NONE ) {
+                    log.trace("next_mother %d wavefront", timeout_count);
                     send_node.state = ExchangeState.INIT_TIDE;
                     auto tidewave   = new HiBON;
                     auto tides      = hashgraph.tideWave(tidewave, net.callbacks !is null);
                     const pack_doc  = hashgraph.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
 
                     net.send(send_channel, pack_doc);
+                    //log.trace("Send to %s", send_node.pubkey.cutHex);
                     if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
                     }
@@ -354,7 +359,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
         }
 
-        void receive_payload(Payload pload) {
+        void receive_payload(Document pload) {
             log("payload.length=%d", pload.length);
             next_mother(pload);
         }

@@ -11,7 +11,7 @@ import tagion.network.SSLServiceAPI;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 import tagion.basic.Logger;
 import tagion.Options : Options, setOptions, options;
-import tagion.basic.Basic : Control, Payload, Buffer;
+import tagion.basic.Basic : Control, Buffer;
 
 //import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document;
@@ -58,7 +58,7 @@ void transactionServiceTask(immutable(Options) opts) {
         hirpc.net=new HiRPCNet(passphrase);
         Tid node_tid=locate(opts.node_name);
 
-        @trusted void sendPayload(Payload payload) {
+        @trusted void sendPayload(Document payload) {
             node_tid.send(payload);
         }
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
@@ -149,7 +149,7 @@ void transactionServiceTask(immutable(Options) opts) {
                                 // Send the contract as payload to the HashGraph
                                 // The data inside HashGraph is pure payload not an HiRPC
                                 SmartScript.check(hirpc.net, signed_contract);
-                                Payload payload=signed_contract.toHiBON.serialize;
+                                const payload=Document(signed_contract.toHiBON.serialize);
                                 {
                                     immutable data=signed_contract.toHiBON.serialize;
                                     const json_doc=Document(data);

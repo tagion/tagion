@@ -5,7 +5,7 @@ import std.datetime;   // Date, DateTime
 import std.exception : assumeUnique;
 
 import tagion.hashgraph.Event : Event, EventScriptCallbacks, EventBody;
-import tagion.basic.Basic : Buffer, Payload, Control;
+import tagion.basic.Basic : Buffer, Control;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.Keywords;
@@ -58,14 +58,14 @@ import tagion.basic.Logger;
             log.trace("Epoch with %d events (Period %ssecs)", received_event.length, 1e-3*double((current_time-last_time).total!"msecs"));
             // auto hibon=new HiBON;
             // hibon[Keywords.time]=time;
-            Payload[] payloads;
+            Document[] payloads;
 
             foreach(i, e; received_event) {
                 if (e.eventbody.payload.length) {
                     log("\tepoch=%d %d", i, e.eventbody.payload.length);
                     // }
                     // if ( e.eventbody.payload ) {
-                    payloads~=Payload(e.eventbody.payload);
+                    payloads~=e.eventbody.payload;
                 }
             }
             if ( payloads ) {
@@ -81,7 +81,7 @@ import tagion.basic.Logger;
     }
 
    @trusted
-   void send(ref Payload[] payloads, immutable long epoch_time) nothrow {
+   void send(ref Document[] payloads, immutable long epoch_time) nothrow {
        try {
            immutable unique_payloads=assumeUnique(payloads);
            log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
