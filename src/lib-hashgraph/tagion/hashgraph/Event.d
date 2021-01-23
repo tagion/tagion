@@ -23,7 +23,7 @@ import std.algorithm.iteration : map, each, filter;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 
-import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, Payload, bitarray_clear, bitarray_change, countVotes, EnumText, buf_idup;
+import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, EnumText, buf_idup;
 import tagion.hashgraph.HashGraphBasic : isMajority;
 import tagion.Keywords : Keywords;
 
@@ -147,7 +147,7 @@ struct EventPackage {
 
 @safe
 struct EventBody {
-    immutable(ubyte)[] payload; // Transaction
+    Document payload; // Transaction
     immutable(ubyte)[] mother; // Hash of the self-parent
     immutable(ubyte)[] father; // Hash of the other-parent
     int altitude;
@@ -160,7 +160,7 @@ struct EventBody {
     }
 
     this(
-        Payload payload,
+        Document payload,
         Buffer mother,
         Buffer father,
         immutable ulong time,
@@ -169,7 +169,7 @@ struct EventBody {
         this.altitude  =    altitude;
         this.father    =    father;
         this.mother    =    mother;
-        this.payload   =    cast(Buffer)payload;
+        this.payload   =    payload;
         consensus();
     }
 
@@ -189,7 +189,7 @@ struct EventBody {
 //        hibon["git"]=HASH;
         hibon["nonce"]="Should be implemented:"; //~to!string(eva_count);
 //        immutable payload=immutable(Payload)(hibon.serialize);
-        immutable result=immutable(EventBody)(Payload(hibon.serialize), null, null, net.time, HashGraphI.eva_altitude);
+        immutable result=immutable(EventBody)(Document(hibon.serialize), null, null, net.time, HashGraphI.eva_altitude);
         return result;
     }
 
@@ -310,7 +310,7 @@ interface EventMonitorCallbacks {
 @safe
 interface EventScriptCallbacks {
     void epoch(const(Event[]) received_event, immutable long epoch_time);
-    void send(ref Payload[] payloads, immutable long epoch_time); // Should be execute when and epoch is finished
+    void send(ref Document[] payloads, immutable long epoch_time); // Should be execute when and epoch is finished
 
     void send(immutable(EventBody) ebody);
     bool stop(); // Stops the task
@@ -2258,7 +2258,7 @@ class Event {
     }
 
     @nogc
-    immutable(ubyte[]) payload() const pure nothrow {
+    const(Document) payload() const pure nothrow {
         return event_package.event_body.payload;
     }
 
@@ -2270,7 +2270,7 @@ class Event {
 //True if Event contains a payload or is the initial Event of its creator
     @nogc
     bool containPayload() const pure nothrow {
-        return payload.length != 0;
+        return !payload.empty;
     }
 
     @nogc
