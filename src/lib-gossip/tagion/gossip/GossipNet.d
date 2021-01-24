@@ -82,25 +82,15 @@ class StdHashNet : HashNet {
     }
 }
 
-// @safe
-// class StdHashNet : HashNet {
-//     mixin StdHashNetT;
-// }
-
-
 @safe
 class StdSecureNet : StdHashNet, SecureNet  {
 //    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
 
-//    mixin StdHashNetT;
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import tagion.basic.Basic : Pubkey;
     import tagion.crypto.aes.AESCrypto;
     import tagion.gossip.GossipNet : scramble;
-//    import tagion.gossip.InterfaceNet : HashNet;
     import tagion.basic.ConsensusExceptions;
-
-//    alias check = consensusCheck!(GossipConsensusException);
 
     import std.format;
     import std.string : representation;
@@ -325,8 +315,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
 }
 
 @safe
-abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
-//    static File fout;
+abstract class StdGossipNet : StdSecureNet, GossipNet {
     static private shared uint _next_global_id;
     static private shared uint[immutable(Pubkey)] _node_id_pair;
 
@@ -348,29 +337,13 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         return result;
     }
 
-//    private EventCache _event_cache;
-
     this( HashGraph hashgraph) {
-//        _transceiver=transceiver;
         _hashgraph=hashgraph;
-//        _queue=new ReceiveQueue;
-//        _event_package_cache=new EventPackageCache(&onEvict);
-//        _event_cache=new EventCache(null);
-
-//        import tagion.crypto.secp256k1.NativeSecp256k1;
         super();
     }
 
-    // protected enum _gossip = [
-    //     "waveFront",
-    //     "tideWave",
-    //     ];
-
-    // mixin(EnumText!("Gossips", _gossip));
-
     override NetCallbacks callbacks() {
         return (cast(NetCallbacks)Event.callbacks);
-        // return Event.callbacks;
     }
 
     static struct Init {
@@ -383,69 +356,16 @@ abstract class StdGossipNet : StdSecureNet, GossipNet { //GossipNet {
         string node_name;
     }
 
-    // immutable(EventPackage*) buildEvent_(const Document ebody) const {
-    //     return new immutable(EventPackage)(this, doc_epack);
-    // }
-
-    // void onEvict(scope const(ubyte[]) key, EventPackageCache.Element* e) nothrow @safe {
-    //     //fout.writefln("Evict %s", typeid(e.entry));
-    // }
-
     bool online() const  {
         // Does my own node exist and do the node have an event
         auto own_node=_hashgraph.getNode(pubkey);
-        //   log("own node exists: %s, own node event exists: %s", own_node !is null, own_node.event !is null);
         return (own_node !is null) && (own_node.event !is null);
-        // return _hashgraph.isNodeActive(0) && (_hashgraph.getNode(0).isOnline);
     }
 
-    // private ReceiveQueue _queue;
-    // @property
-    // ReceiveQueue queue() {
-    //     return _queue;
-    // }
-
-//    alias EventPackageCache=LRU!(const(ubyte[]), EventPackage);
     protected {
-        // EventPackageCache _event_package_cache;
-        // EventCache _event_cache;
         ulong _current_time;
         HashGraph _hashgraph;
     }
-
-    // override void request(scope Buffer fingerprint) {
-    //     if ( !isRegistered(fingerprint) ) {
-    //         immutable has_new_event=(fingerprint !is null);
-    //         if ( has_new_event ) {
-    //             immutable epack=_event_package_cache[fingerprint];
-    //             _event_package_cache.remove(fingerprint);
-    //             auto event=_hashgraph.registerEvent(epack); //epack.pubkey, epack.signature,  epack.event_body);
-    //         }
-    //     }
-    // }
-
-
-    // override Event lookup(immutable(ubyte[]) fingerprint) {
-    //     return _hashgraph.lookup(fingerprint);
-    // }
-
-    // static struct EventPackage {
-    //     immutable(ubyte[]) signature;
-    //     immutable(Pubkey) pubkey;
-    //     immutable(EventBody) event_body;
-    //     this(Document doc) {
-    //         signature=(doc[Event.Params.signature].get!(Buffer)).idup;
-    //         pubkey=buf_idup!Pubkey(doc[Event.Params.pubkey].get!Buffer);
-    //         auto doc_ebody=doc[Event.Params.ebody].get!Document;
-    //         event_body=immutable(EventBody)(doc_ebody);
-    //     }
-    //     static EventPackage undefined() {
-    //         check(false, ConsensusFailCode.GOSSIPNET_EVENTPACKAGE_NOT_FOUND);
-    //         assert(0);
-    //     }
-    // }
-
-
 
     override void receive(const(Document) doc) {
         _hashgraph.wavefront_machine(doc);
