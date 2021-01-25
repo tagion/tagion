@@ -84,8 +84,7 @@ class StdHashNet : HashNet {
 
 @safe
 class StdSecureNet : StdHashNet, SecureNet  {
-//    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
-
+x
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import tagion.basic.Basic : Pubkey;
     import tagion.crypto.aes.AESCrypto;

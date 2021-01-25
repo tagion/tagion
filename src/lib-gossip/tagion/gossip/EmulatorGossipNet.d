@@ -102,6 +102,6 @@ class EmulatorGossipNet : StdGossipNet {
         if ( callbacks ) {
             callbacks.send(channel, doc);
         }
-        _tids[channel].send(doc.serialize);
+        _tids[channel].send(doc);
     }
 }
