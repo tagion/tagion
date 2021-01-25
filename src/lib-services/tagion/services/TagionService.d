@@ -319,6 +319,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
         log("SEQUENTIAL=%s", opts.sequential);
         ownerTid.send(Control.LIVE);
+        Thread.sleep( 1000.msecs );
         while(!stop) {
             if ( opts.sequential ) {
                 immutable message_received=receiveTimeout(
