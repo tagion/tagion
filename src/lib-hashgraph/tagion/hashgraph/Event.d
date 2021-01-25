@@ -79,25 +79,25 @@ struct EventPackage {
 
     this(const GossipNet net, const(Document) doc_epack) immutable
     in {
-        assert(doc_epack.hasElement(Event.Params.fingerprint), "FIngerprint should not be a part of the event body");
+        assert(!doc_epack.hasElement(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
     }
     do {
-        signature=(doc_epack[Event.Params.signature].get!(Buffer)).idup;
-        pubkey=Pubkey((doc_epack[Event.Params.pubkey].get!Buffer).idup);
+        signature=(doc_epack[Event.Params.signature].get!(Buffer));
+        pubkey=Pubkey((doc_epack[Event.Params.pubkey].get!Buffer));
         const doc_ebody=doc_epack[Event.Params.ebody].get!Document;
         fingerprint=net.calcHash(doc_ebody.serialize);
-        event_body=immutable(EventBody)(doc_ebody);
+        event_body=EventBody(doc_ebody);
         signed_correctly=net.verify(fingerprint, signature, pubkey);
     }
 
     this(GossipNet net, const(HiBON) hibon_ebody) immutable
     in {
-        assert(!hibon_ebody.hasMember(Event.Params.fingerprint), "FIngerprint should not be a part of the event body");
+        assert(!hibon_ebody.hasMember(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
     }
     do {
         pubkey=net.pubkey;
         const doc_ebody=Document(hibon_ebody.serialize);
-        event_body=immutable(EventBody)(doc_ebody);
+        event_body=EventBody(doc_ebody);
         fingerprint=net.calcHash(doc_ebody.serialize);
         signature=net.sign(fingerprint);
         signed_correctly=true;
@@ -147,18 +147,21 @@ struct EventPackage {
 
 @safe
 struct EventBody {
-    Document payload; // Transaction
-    immutable(ubyte)[] mother; // Hash of the self-parent
-    immutable(ubyte)[] father; // Hash of the other-parent
-    int altitude;
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
-    ulong time;
+    @Label("$doc", true)  Document payload; // Transaction
+    @Label("$m") Buffer mother; // Hash of the self-parent
+    @Label("$f", true) Buffer father; // Hash of the other-parent
+    @Label("$a") int altitude;
+
+    @Label("$t") ulong time;
     invariant {
         if ( (mother.length != 0) && (father.length != 0 ) ) {
             assert( mother.length == father.length );
         }
     }
 
+//    version(none)
     this(
         Document payload,
         Buffer mother,
@@ -173,6 +176,7 @@ struct EventBody {
         consensus();
     }
 
+    version(none)
     this(immutable(ubyte[]) data) inout {
         auto doc=Document(data);
         this(doc);
@@ -195,7 +199,111 @@ struct EventBody {
 
 //    mixin HiBONRecord!("BODY", consensus);
 
-    this(Document doc) inout {
+    //mixin HiBONRecord!("BDY");
+
+    enum TYPE="";
+    enum TYPENAME="$T";
+    this(inout Document doc) inout {
+        static if (TYPE.length) {
+            string _type=doc[TYPENAME].get!string;
+            .check(_type == TYPE, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
+        }
+    ForeachTuple:
+        foreach(i, ref m; this.tupleof) {
+            static if (__traits(compiles, typeof(m))) {
+                static if (hasUDA!(this.tupleof[i], Label)) {
+                    alias label=GetLabel!(this.tupleof[i])[0];
+                    enum name=label.name;
+                    enum optional=label.optional;
+                    static if (label.optional) {
+                        if (!doc.hasElement(name)) {
+                            break;
+                        }
+                    }
+                    static if (TYPE.length) {
+                        static assert(TYPENAME != label.name,
+                            format("Default %s is already definded to %s but is redefined for %s.%s",
+                                TYPENAME, TYPE, typeof(this).stringof, basename!(this.tupleof[i])));
+                    }
+                }
+                else {
+                    enum name=basename!(this.tupleof[i]);
+                    enum optional=false;
+                }
+                static if (name.length) {
+                    enum member_name=this.tupleof[i].stringof;
+                    enum code=format("%s=doc[name].get!BaseT;", member_name);
+                    alias MemberT=typeof(m);
+                    alias BaseT=TypedefType!MemberT;
+                    alias UnqualT=Unqual!BaseT;
+                    static if (is(BaseT : const(Document))) {
+                        auto dub_doc = doc[name].get!Document;
+                        m = dub_doc;
+                    }
+                    else static if (is(BaseT == struct)) {
+                        auto dub_doc = doc[name].get!Document;
+                        enum doc_code=format("%s=UnqualT(dub_doc);", member_name);
+                        pragma(msg, doc_code, ": ", BaseT, ": ", UnqualT);
+                        mixin(doc_code);
+                    }
+                    else static if (is(BaseT == class)) {
+                        const dub_doc = Document(doc[name].get!Document);
+                        m=new BaseT(dub_doc);
+                    }
+                    else static if (is(BaseT == enum)) {
+                        alias EnumBaseT=OriginalType!BaseT;
+                        m=cast(BaseT)doc[name].get!EnumBaseT;
+                    }
+                    else {
+                        static if (is(BaseT:U[], U)) {
+                            static if (hasMember!(U, "toHiBON")) {
+                                MemberT array;
+                                auto doc_array=doc[name].get!Document;
+                                static if (optional) {
+                                    if (doc_array.length == 0) {
+                                        continue ForeachTuple;
+                                    }
+                                }
+                                check(doc_array.isArray, message("Document array expected for %s member",  name));
+                                foreach(e; doc_array[]) {
+                                    const sub_doc=e.get!Document;
+                                    array~=U(sub_doc);
+                                }
+                                enum doc_array_code=format("%s=array;", member_name);
+                                mixin(doc_array_code);
+                            }
+                            else static if (Document.Value.hasType!U) {
+                                MemberT array;
+                                auto doc_array=doc[name].get!Document;
+                                static if (optional) {
+                                    if (doc_array.length == 0) {
+                                        continue ForeachTuple;
+                                    }
+                                }
+                                check(doc_array.isArray, message("Document array expected for %s member",  name));
+                                foreach(e; doc_array[]) {
+                                    array~=e.get!U;
+                                }
+                                m=array;
+//                                static assert(0, format("Special handling of array %s", MemberT.stringof));
+                            }
+                            else {
+                                static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
+                                        BaseT.stringof, cast(immutable(U)[]).stringof));
+                                mixin(code);
+                            }
+                        }
+                        else {
+                            mixin(code);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    version(none)
+    this(inout Document doc) inout {
         foreach(i, ref m; this.tupleof) {
             alias Type=typeof(m);
             alias UnqualT=Unqual!Type;
@@ -238,6 +346,7 @@ struct EventBody {
     }
 
 
+//    version(none)
     HiBON toHiBON(const(Event) use_event=null) const {
         auto hibon=new HiBON;
         foreach(i, m; this.tupleof) {
@@ -266,6 +375,7 @@ struct EventBody {
         return hibon;
     }
 
+    version(none)
     @trusted
     immutable(ubyte[]) serialize(const(Event) use_event=null) const {
         return toHiBON(use_event).serialize;

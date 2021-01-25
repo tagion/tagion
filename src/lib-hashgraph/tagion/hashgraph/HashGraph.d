@@ -225,11 +225,13 @@ class HashGraph : HashGraphI {
                     if ( higher( other_altitude, e.altitude) ) {
                         break;
                     }
+                    log.trace("buildWavefront %d -> %d", other_altitude, e.altitude);
                     events~=e.toHiBON;
                 }
             }
             else if ( is_tidewave ) {
                 foreach(e; n[]) {
+                    log.trace("buildWavefront %d ", e.altitude);
                     events~=e.toHiBON;
                 }
             }
@@ -277,6 +279,10 @@ class HashGraph : HashGraphI {
         //     _queue.write(doc);
         // }
         // else {
+        import tagion.hibon.HiBONJSON;
+        import std.json;
+
+        log("%s", doc.toJSON(true).toPrettyString);
         auto signature=doc[Event.Params.signature].get!(immutable(ubyte)[]);
         auto block=doc[Params.block].get!Document;
         immutable message=net.calcHash(block.data);
