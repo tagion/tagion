@@ -404,7 +404,7 @@ unittest {
     test_tabel.UINT64   = 0x0123_3456_789A_BCDF;
     test_tabel.BOOLEAN  = true;
     test_tabel.BIGINT   = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
-     test_tabel.TIME     = sdt_t(1001);
+    test_tabel.TIME     = sdt_t(1001);
 
     alias TabelArray = Tuple!(
         immutable(ubyte)[],  Type.BINARY.stringof,

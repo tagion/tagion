@@ -38,6 +38,7 @@ enum HiBONPrefix {
     PARAM = '$'
 }
 
+enum TYPENAME=HiBONPrefix.PARAM~"type";
 /++
  HiBON Helper template to implement constructor and toHiBON member functions
  Params:
@@ -53,23 +54,26 @@ enum HiBONPrefix {
  }
  --------------------
 +/
-mixin template HiBONRecord(string TYPE="") {
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
     import std.typecons : TypedefType;
     import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
     import tagion.basic.Basic : basename;
     import std.format;
+mixin template HiBONRecord(string TYPE="") {
 
-    enum TYPENAME=HiBONPrefix.PARAM~"type";
+    version(none)
     static if (TYPE.length) {
         string type() const pure nothrow {
             return TYPE;
         }
     }
 
+    // version(none)
+
     HiBON toHiBON() const {
         auto hibon= new HiBON;
+        pragma(msg, typeof(this.tupleof), " ", this.tupleof.length);
         foreach(i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 static if (hasUDA!(this.tupleof[i], Label)) {
@@ -117,6 +121,7 @@ mixin template HiBONRecord(string TYPE="") {
                             }
                         }
                         else {
+                            pragma(msg, "->", BaseT, ": ", MemberT, ": ", i, "m=", m.stringof, " ", typeof(this.tupleof[i]), " ", this.tupleof[i].stringof);
                             hibon[name]=cast(BaseT)m;
                         }
                     }
@@ -129,13 +134,15 @@ mixin template HiBONRecord(string TYPE="") {
         return hibon;
     }
 
-    this(const Document doc) {
+    //  version(none)
+    this(Document doc) inout {
         static if (TYPE.length) {
             string _type=doc[TYPENAME].get!string;
             .check(_type == TYPE, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
         }
     ForeachTuple:
         foreach(i, ref m; this.tupleof) {
+//            pragma(msg, m);
             static if (__traits(compiles, typeof(m))) {
                 static if (hasUDA!(this.tupleof[i], Label)) {
                     alias label=GetLabel!(this.tupleof[i])[0];
@@ -158,10 +165,11 @@ mixin template HiBONRecord(string TYPE="") {
                 }
                 static if (name.length) {
                     enum member_name=this.tupleof[i].stringof;
-                    enum code=format("%s=doc[name].get!BaseT;", member_name);
+                    enum code=format("%s=doc[name].get!UnqualT;", member_name);
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
+                    pragma(msg, MemberT, ": ", BaseT, ": ", UnqualT);
                     static if (is(BaseT == struct)) {
                         auto dub_doc = doc[name].get!Document;
                         enum doc_code=format("%s=BaseT(dub_doc);", member_name);
@@ -175,16 +183,12 @@ mixin template HiBONRecord(string TYPE="") {
                         alias EnumBaseT=OriginalType!BaseT;
                         m=cast(BaseT)doc[name].get!EnumBaseT;
                     }
-                    else {
-                        static if (is(BaseT:U[], U)) {
-                            static if (hasMember!(U, "toHiBON")) {
-                                MemberT array;
-                                auto doc_array=doc[name].get!Document;
-                                static if (optional) {
-                                    if (doc_array.length == 0) {
-                                        continue ForeachTuple;
-                                    }
-                                }
+                    else static if (is(BaseT:U[], U)) {
+                        static if (hasMember!(U, "toHiBON")) {
+                            MemberT array;
+                            auto doc_array=doc[name].get!Document;
+                            const enable=!optional || doc_array.length > 0;
+                            if (enable) {
                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
                                 foreach(e; doc_array[]) {
                                     const sub_doc=e.get!Document;
@@ -193,34 +197,40 @@ mixin template HiBONRecord(string TYPE="") {
                                 enum doc_array_code=format("%s=array;", member_name);
                                 mixin(doc_array_code);
                             }
-                            else static if (Document.Value.hasType!U) {
-                                MemberT array;
-                                auto doc_array=doc[name].get!Document;
-                                static if (optional) {
-                                    if (doc_array.length == 0) {
-                                        continue ForeachTuple;
-                                    }
+                        }
+                        else static if (Document.Value.hasType!U) {
+                            MemberT array;
+                            auto doc_array=doc[name].get!Document;
+                            static if (optional) {
+                                if (doc_array.length == 0) {
+                                    continue ForeachTuple;
                                 }
-                                check(doc_array.isArray, message("Document array expected for %s member",  name));
-                                foreach(e; doc_array[]) {
-                                    array~=e.get!U;
-                                }
-                                m=array;
+                            }
+                            check(doc_array.isArray, message("Document array expected for %s member",  name));
+                            foreach(e; doc_array[]) {
+                                array~=e.get!U;
+                            }
+                            m=array;
 //                                static assert(0, format("Special handling of array %s", MemberT.stringof));
-                            }
-                            else {
-                                static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
-                                        BaseT.stringof, cast(immutable(U)[]).stringof));
-                                mixin(code);
-                            }
                         }
                         else {
-                            mixin(code);
+                            static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
+                                    BaseT.stringof, cast(immutable(U)[]).stringof));
+                            // mixin(code);
                         }
+                    }
+                    else {
+                        pragma(msg, "code=", code, " ", typeof(m));
+                        //this.tupleof[i]=doc[name].get!UnqualT;
+                        //mixin(code);
                     }
                 }
             }
         }
+    }
+
+    const(Document) toDoc() const {
+        return Document(toHiBON.serialize);
     }
 }
 
@@ -247,4 +257,37 @@ const(Document) fread(string filename) {
     const doc=Document(data);
     .check(doc.isInorder, "HiBON Document format failed");
     return doc;
+}
+
+version(unittest) {
+private:
+    struct Simpel {
+//        immutable(ubyte[]) buf;
+        int s;
+//        @Label("S") int s;
+        string text;
+        this(int s, string text) {
+            this.s=s; this.text=text;
+        }
+        this(Simpel s) {
+            this=s;
+        }
+        mixin HiBONRecord!("");
+    }
+}
+
+unittest {
+
+
+    pragma(msg, "Simple.tupleof.length=",  typeof(Simpel.tupleof), " ", Simpel.sizeof);
+    {
+        const s=Simpel(-42, "some text");
+        const docS=s.toDoc;
+        assert(docS["s"].get!int == -42);
+        assert(docS["text"].get!string == "some text");
+        assert(docS[TYPENAME].get!string == "SIMPEL");
+
+        const s_check=Simpel(s);
+        assert(s == s_check);
+    }
 }

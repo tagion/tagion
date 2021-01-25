@@ -149,7 +149,7 @@ static size_t size(U)(const(U[]) array) pure {
             with(Type) {
             static if (E is NONE) {
                 alias BaseT=TypedefType!UnqualT;
-                pragma(msg, "UnqualT=", BaseT, " ", is(BaseT==Buffer), " : ", Buffer);
+                pragma(msg, "UnqualT=", UnqualT, ": ", BaseT, " ", is(BaseT==Buffer), " : ", Buffer, ": ", T);
                 static if (is(BaseT==Buffer)) {
                     alias CastT=Buffer;
                 }
