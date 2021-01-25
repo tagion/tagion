@@ -1200,7 +1200,9 @@ class BlockFile {
         }
 
         uint size() pure const nothrow {
-            return cast(uint)(chain.data.length);
+            import LEB128=tagion.utils.LEB128;
+            const leb128_size=LEB128.decode!ulong(chain.data);
+            return cast(uint)(leb128_size.size);
         }
 
     }

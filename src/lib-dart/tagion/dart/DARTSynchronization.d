@@ -148,7 +148,7 @@ unittest{
         auto readSync = new ReadRequestHandler(fps, hirpc, "", receiver);
         assert(readSync.alive);
 
-        auto archive = new DARTFile.Recorder.Archive(net ,testfp, DARTFile.Recorder.Archive.Type.STUB);
+        auto archive = new DARTFile.Recorder.Archive(net ,Document(testfp), DARTFile.Recorder.Archive.Type.STUB);
         auto recorder = DARTFile.Recorder(net);
         recorder.insert(archive);
         auto nsender = hirpc.result(receiver, recorder.toHiBON);
