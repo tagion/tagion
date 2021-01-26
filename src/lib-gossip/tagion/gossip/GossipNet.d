@@ -50,10 +50,18 @@ class StdHashNet : HashNet {
         return HASH_SIZE;
     }
 
-    final immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
+    protected final immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest;
         return digest!SHA256(data).idup;
+    }
+
+    immutable(Buffer) calcHash(scope const(ubyte[]) data) const
+        in {
+            assert(!Document(data).isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
+        }
+    do {
+        return rawCalcHash(data);
     }
 
     @trusted
@@ -63,11 +71,10 @@ class StdHashNet : HashNet {
         import std.digest.hmac : digestHMAC=HMAC;
         scope hmac = digestHMAC!SHA256(data);
         auto result = hmac.finish.dup;
-        pragma(msg, typeof(result));
         return assumeUnique(result);
     }
 
-    immutable(Buffer) hashOf(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
+    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
         return calcHash(h1~h2);
     }
 

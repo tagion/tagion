@@ -104,7 +104,7 @@ interface HashNet {
     /++
      Hash used for Merkle tree
      +/
-    immutable(Buffer) hashOf(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
+    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
     immutable(Buffer) hashOf(const(Document) doc) const;
 }
