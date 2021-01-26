@@ -234,18 +234,7 @@ class BlockFile {
             recycle_segments=update_segments;
         }
 
-        protected Segments update_segments(bool segments_needs_saving=false)()
-            out {
-                auto s=recycle_segments[];
-                import std.stdio;
-                if ( !s.empty ) {
-                    if ( !(s.back.end_index < owner.last_block_index) ) {
-                        writefln("s.back.end_index=%d owner.last_block_index=%d", s.back.end_index, owner.last_block_index);
-                    }
-//                    assert(s.back.end_index < owner.last_block_index);
-                }
-            }
-        do {
+        protected Segments update_segments(bool segments_needs_saving=false)() {
             //
             // Find continues segments of blocks
             //
@@ -1373,14 +1362,7 @@ class BlockFile {
         }
         write_blocks_in_sorted_order;
         writeMasterBlock;
-//         foreach(r; recycle_indices[]) {
-// //        recycle_indices[].each(console.writef(
-//                 console.writef("%s", r.end_index);
-//         }
-//        recycle_indices.dump;
         recycle_indices.build_segments;
-//        recycle_indices.dump;
-
     }
 
     /++

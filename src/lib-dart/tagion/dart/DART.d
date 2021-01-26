@@ -385,7 +385,7 @@ class DART : DARTFile, HiRPC.Supports {
         HiRPC.check(!read_only, "The DART is read only");
         HiRPC.check_element!Document(received.params, Params.recorder);
         scope recorder_doc=received.params[Params.recorder].get!Document;
-        scope recorder=recorder(recorder_doc);
+        scope recorder=Recorder(net, recorder_doc);
         immutable bullseye=modify(recorder);
         auto hibon_params=new HiBON;
         hibon_params[Params.bullseye]=bullseye;
@@ -499,8 +499,8 @@ class DART : DARTFile, HiRPC.Supports {
             scope recorder_worker=owner.recorder;
 //            writefln("Recursive remove %s", rims.cutHex);
             foreach(archive_data; rim_walker) {
+                const archive_doc=Document(archive_data);
 
-                auto archive_doc=Document(archive_data);
                 recorder_worker.remove(archive_doc);
 //                writefln("\tremove archive %s", archive_doc.toText);
 //                scope archive=new Recorder.Archive(owner.net, archive_doc);
@@ -592,7 +592,7 @@ class DART : DARTFile, HiRPC.Supports {
 //                scope Recorder foreign_recoder;
                 if ( !result_branches.params.hasElement(Params.branches) ) {
                     if ( result_branches.params.hasElement(Params.recorder) ) {
-                        scope foreign_recoder=recorder(result_branches.params);
+                        scope foreign_recoder=Recorder(net, result_branches.params);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -608,7 +608,7 @@ class DART : DARTFile, HiRPC.Supports {
                     //
                     scope request_archives=dartRead(foreign_branches.fingerprints, hirpc, id);
                     scope result_archives=sync.query(request_archives);
-                    scope foreign_recoder=recorder(result_archives.params);
+                    scope foreign_recoder=Recorder(net, result_archives.params);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
@@ -694,7 +694,7 @@ class DART : DARTFile, HiRPC.Supports {
                 scope replay_recorder_doc=doc[Params.recorder].get!Document;
 //                writefln("%s", replay_recorder_doc.toText);
 
-                scope replay_recorder=recorder(replay_recorder_doc);
+                scope replay_recorder=Recorder(net, replay_recorder_doc);
                 scope action_recorder=recorder;
                 foreach(a; replay_recorder.archives[]) {
                     static if (remove) {
@@ -763,14 +763,13 @@ class DART : DARTFile, HiRPC.Supports {
 
 
     }
-    pragma(msg, "fixme(alex): Why is the unittest switch off");
-    version(none)
+
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
-        import tagion.Base : tempfile;
-
-        auto net=new TestNet;
+        import tagion.basic.Basic : tempfile;
+        import tagion.dart.DARTFakeNet : DARTFakeNet;
+        auto net=new DARTFakeNet("very_secret");
 
         immutable filename=fileId!DART.fullpath;
         immutable filename_A=fileId!DART("A_").fullpath;
@@ -987,7 +986,6 @@ class DART : DARTFile, HiRPC.Supports {
 
             }
 
-            // version(none)
             { // Synchronization of a Dart A which is a subset of Dart B
                 // writefln("Test 2");
                 create_dart(filename_A);
@@ -1041,7 +1039,6 @@ class DART : DARTFile, HiRPC.Supports {
 
             }
 
-            // version(none)
             { // Synchronization of a DART A where DART A is a superset of DART B
                 // writefln("Test 3");
                 create_dart(filename_A);
@@ -1084,7 +1081,6 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     dart_A.replay(journal_filename);
                 }
@@ -1141,7 +1137,6 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     // writefln("JOURNAL_FILENAME=%s", journal_filename);
                     dart_A.replay(journal_filename);
@@ -1199,7 +1194,6 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     dart_A.replay(journal_filename);
                 }
@@ -1254,14 +1248,13 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     dart_A.replay(journal_filename);
                 }
                 // writefln("dart_A.dump");
                 // dart_A.dump;
                 // writefln("dart_B.dump");
-                // dart_B.dump;
+                //dart_B.dump;
                 assert(dart_A.fingerprint !is null);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
