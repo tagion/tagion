@@ -1,4 +1,5 @@
 module tagion.dart.DARTFile;
+        import tagion.hibon.HiBONJSON;
 
 import std.stdio;
 private {
@@ -257,17 +258,6 @@ class DARTFile {
             }
         }
 
-        version(none)
-        HiBON toHiBON() const {
-            HiBON[] hibons;
-            foreach(archive; archives) {
-                hibons~=archive.toHiBON;
-            }
-            auto hibon=new HiBON;
-            hibon[Params.recorder]=hibons;
-            return hibon;
-        }
-
         size_t length() pure const nothrow {
             return _archives.length;
         }
@@ -318,7 +308,7 @@ class DARTFile {
             private Type _type;
             immutable uint index;
             bool done;
-            
+
             this(HashNet net, const(Document) doc, const Type type)
             in {
                 assert(net);
@@ -429,7 +419,7 @@ class DARTFile {
              + Returns:
              +     Generates Buffer to be store in the BlockFile
              +/
-            immutable(Buffer) store() const {
+            final immutable(Buffer) store() const {
                 if ( _type is Type.STUB ) {
                     auto hibon=new HiBON;
                     hibon[Keywords.stub]=fingerprint;
@@ -476,18 +466,7 @@ class DARTFile {
 
         void stub(immutable(Buffer) fingerprint) {
             auto archive=new Archive(fingerprint, Archive.Type.STUB);
-            // writeln("insert");
-            // writeln(_archives.length);
-            // writeln(archive.fingerprint);
-            // if(_archives.length !=0){
-            //     writeln(_archives.front.fingerprint);
-            //     writeln(_archives.back.fingerprint);
-            // }
-            // writeln("inserted");
             insert(archive);
-            // writeln(archive.fingerprint);
-            // writeln(_archives.front.fingerprint);
-            // writeln(_archives.back.fingerprint);
         }
 
         void dump() const {
@@ -1451,9 +1430,8 @@ class DARTFile {
                 BlockFile.create(filename, DARTFile.stringof, TEST_BLOCK_SIZE);
             }
 
-            bool check(const(Recorder) A, const(Recorder) B) {
-                return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]) &&
-                    equal!(q{a.data == b.data})(A.archives[], B.archives[]);
+            bool check_recorder(const(Recorder) A, const(Recorder) B) {
+                return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
             }
 
             Buffer write(DARTFile dart, const(ulong[]) table, out Recorder recorder, bool isStubs = false) {
@@ -1476,7 +1454,7 @@ class DARTFile {
                 auto _fingerprints=fingerprints(recorder);
 
                 auto find_recorder=dart.loads(_fingerprints);
-                return check(recorder, find_recorder);
+                return check_recorder(recorder, find_recorder);
             }
 
             immutable(ubyte[]) serialize(const ulong x) {
@@ -1493,8 +1471,8 @@ class DARTFile {
             Recorder records(HashNet net, const(ulong[]) table) {
                 auto recorder=Recorder(net);
                 foreach(t; table) {
-                    auto data=serialize(t);
-                    recorder.add(data);
+                    const doc=Document(serialize(t));
+                    recorder.add(doc);
                 }
                 return recorder;
             }
@@ -1509,35 +1487,38 @@ class DARTFile {
                 }
                 return rec;
             }
-
         }
 
-        static class TestNet : BlackHole!HashNet {
+        import tagion.gossip.GossipNet : StdHashNet;
+
+        static class TestNet : StdHashNet {
             enum fake="fake";
             import core.exception : SwitchError;
-            @trusted
-                override Buffer hashOf(scope const(Document) doc) const {
-                immutable size=*cast(uint*)(doc.data.ptr);
-                if ( size+uint.sizeof == data.length ) {
+            override Buffer hashOf(scope const(Document) doc) const @trusted
+                out(result) {
+                        assert(result.length);
+                    }
+            do {
+                //immutable size=*cast(uint*)(doc.data.ptr);
+                //if ( size+uint.sizeof == doc.data.length ) {
                     //import std.exception : assumeUnique;
                     //scope doc = Document(assumeUnique(data));
-                    if ( doc.hasElement(fake) ) {
-                        import tagion.hibon.HiBONBase : Type;
-                        assert(doc[fake].type == Type.UINT64);
-                        auto x=doc[fake].get!ulong;
-                        import std.bitmanip;
-                        return nativeToBigEndian(x).idup;
-                    }
+                if ( doc.hasElement(fake) ) {
+                    import tagion.hibon.HiBONBase : Type;
+                    assert(doc[fake].type == Type.UINT64);
+                    auto x=doc[fake].get!ulong;
+                    import std.bitmanip;
+                    return nativeToBigEndian(x).idup;
                 }
-                import std.digest.sha : SHA256;
-                import std.digest;
-                return digest!SHA256(data).idup;
+                return calcHash(doc.data);
             }
         }
 
     }
 
+//    version(none)
     unittest {
+        import tagion.hibon.HiBONJSON;
         pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
 
         import std.algorithm.sorting : sort;
@@ -1599,8 +1580,8 @@ class DARTFile {
         { // Test the fake hash on Archive
             import std.bitmanip;
 
-            auto data_in=serialize(table[0]);
-            auto a_in=new Recorder.Archive(net, data_in, Recorder.Archive.Type.ADD);
+            const doc_in=Document(serialize(table[0]));
+            auto a_in=new Recorder.Archive(net, doc_in, Recorder.Archive.Type.ADD);
 //            auto data_out=
             auto a_table=*cast(ulong*)(a_in.fingerprint.ptr[0..ulong.sizeof]);
 
@@ -1621,26 +1602,28 @@ class DARTFile {
             assert(recorder_archive.fingerprint == a_in.fingerprint);
 
         }
-        version(none)
+//        version(none)
         { // Test RimKeyRange
             auto recorder=Recorder(net);
             auto test_tabel=table[0..8].dup;
             foreach(t; test_tabel) {
-                recorder.add(serialize(t));
-                writefln("%s = %d",serialize(t), t);
+                const doc=Document(serialize(t));
+                recorder.add(doc);
             }
             writeln();
 
             test_tabel.sort;
 
             foreach(t; test_tabel) {
-                writefln("%s = %d",serialize(t), t);
+                const doc=Document(serialize(t));
+                writefln("%016x = %016x",doc[TestNet.fake].get!ulong, t);
             }
 
             writeln();
 
             foreach(t; recorder.archives) {
-                writeln(t.data);
+                pragma(msg, typeof(t));
+                writeln(t.doc.toJSON(true).toPrettyString);
             }
             writeln();
 // 0f000000220466616b65908050403420212000
@@ -1648,8 +1631,8 @@ class DARTFile {
 
             uint i;
             foreach(a; recorder.archives) {
-                writefln("%s == %s", a.data, serialize(test_tabel[i]));
-                assert(a.data == serialize(test_tabel[i]));
+                //writefln("%s == %s", a.doc.data, serialize(test_tabel[i]));
+                assert(a.doc.data == serialize(test_tabel[i]));
                 i++;
             }
 
@@ -1660,7 +1643,8 @@ class DARTFile {
                 i=0;
                 immutable key=rim_range.front.fingerprint.rim_key(rim);
                 foreach(a; rim_range) {
-                    while ( net.hashOf(serialize(test_tabel[i])).rim_key(rim) !is key ) {
+                    const doc=Document(serialize(test_tabel[i]));
+                    while ( net.hashOf(doc).rim_key(rim) !is key ) {
                         i++;
                     }
                     i++;
@@ -1763,14 +1747,14 @@ class DARTFile {
             // table 8 and 9 is left out
             auto bulleye_B=write(dart_B, table[0..8]~table[10..$], recorder_B);
 
-            // dart_A.dump;
-            // dart_B.dump;
+            dart_A.dump;
+            dart_B.dump;
             auto remove_recorder=records(net, table[8..10]);
             foreach(ref a; remove_recorder._archives) {
                 a._type=Recorder.Archive.Type.REMOVE;
             }
             auto bulleye_A=dart_A.modify(remove_recorder);
-            // dart_A.dump;
+            dart_A.dump;
             assert(bulleye_A == bulleye_B);
         }
 
@@ -1976,13 +1960,13 @@ class DARTFile {
                 foreach(j;0..SELECT_ITER) {
                     immutable index=rand_index.value(N);
                     if ( !check_archives [index] ) {
-                        immutable data=serialize(random_table[index]).idup;
+                        const doc=Document(serialize(random_table[index]).idup);
                         if ( saved_archives[index] ) {
-                            recorder.remove(data);
+                            recorder.remove(doc);
                             removed_archives[index]=true;
                         }
                         else {
-                            recorder.add(data);
+                            recorder.add(doc);
                             added_archives[index]=true;
                         }
                         check_archives[index]=true;
@@ -1997,7 +1981,7 @@ class DARTFile {
             auto recorder_B=dart_B.recorder;
             auto save_range=saved_archives.bitsSet;
             // writefln("%s ", saved_archives);
-            saved_archives.bitsSet.each!(n => recorder_B.add(serialize(random_table[n])));
+            saved_archives.bitsSet.each!(n => recorder_B.add(Document(serialize(random_table[n]).idup)));
             dart_B.modify(recorder_B);
             // dart_B.dump;
             // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);

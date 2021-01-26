@@ -1371,14 +1371,7 @@ class BlockFile {
         }
         write_blocks_in_sorted_order;
         writeMasterBlock;
-//         foreach(r; recycle_indices[]) {
-// //        recycle_indices[].each(console.writef(
-//                 console.writef("%s", r.end_index);
-//         }
-//        recycle_indices.dump;
         recycle_indices.build_segments;
-//        recycle_indices.dump;
-
     }
 
     /++

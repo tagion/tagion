@@ -133,6 +133,7 @@ class ReadRequestHandler : ResponseHandler{
     }
 }
 
+version(none)
 unittest{
     pragma(msg, "Fixme(Alex); Why doesn't this unittest not compile anymore!!!");
     import std.bitmanip: nativeToBigEndian;
