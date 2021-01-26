@@ -764,13 +764,13 @@ class DART : DARTFile, HiRPC.Supports {
 
     }
     pragma(msg, "fixme(alex): Why is the unittest switch off");
-    version(none)
+//    version(none)
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
-        import tagion.Base : tempfile;
-
-        auto net=new TestNet;
+        import tagion.basic.Basic : tempfile;
+        import tagion.dart.DARTFakeNet : DARTFakeNet;
+        auto net=new DARTFakeNet("very_secret");
 
         immutable filename=fileId!DART.fullpath;
         immutable filename_A=fileId!DART("A_").fullpath;
@@ -1261,7 +1261,7 @@ class DART : DARTFile, HiRPC.Supports {
                 // writefln("dart_A.dump");
                 // dart_A.dump;
                 // writefln("dart_B.dump");
-                // dart_B.dump;
+                dart_B.dump;
                 assert(dart_A.fingerprint !is null);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
