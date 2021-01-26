@@ -432,22 +432,22 @@ class DARTFile {
             _archives.insert(archive);
         }
 
-        const(Archive) add(immutable(Buffer) data)
+        const(Archive) add(const(Document) doc)
             in {
-                assert(data);
+                assert(doc.data);
             }
         do {
-            auto archive=new Archive(net, data, Archive.Type.ADD);
+            auto archive=new Archive(net, doc.data, Archive.Type.ADD);
             _archives.insert(archive);
             return archive;
         }
 
-        const(Archive) remove(immutable(Buffer) data)
+        const(Archive) remove(const(Document) doc)
             in {
-                assert(data);
+                assert(doc.data);
             }
         do {
-            auto archive=new Archive(net, data, Archive.Type.REMOVE);
+            auto archive=new Archive(net, doc.data, Archive.Type.REMOVE);
             _archives.insert(archive);
             return archive;
         }
@@ -1468,8 +1468,8 @@ class DARTFile {
             Recorder records(HashNet net, const(ulong[]) table) {
                 auto recorder=Recorder(net);
                 foreach(t; table) {
-                    auto data=serialize(t);
-                    recorder.add(data);
+                    const doc=Document(serialize(t));
+                    recorder.add(doc);
                 }
                 return recorder;
             }
@@ -1601,7 +1601,8 @@ class DARTFile {
             auto recorder=Recorder(net);
             auto test_tabel=table[0..8].dup;
             foreach(t; test_tabel) {
-                recorder.add(serialize(t));
+                const doc=Document(serialize(t));
+                recorder.add(doc);
             }
             writeln();
 
@@ -1972,12 +1973,13 @@ class DARTFile {
                     immutable index=rand_index.value(N);
                     if ( !check_archives [index] ) {
                         immutable data=serialize(random_table[index]).idup;
+                        const doc=Document(data);
                         if ( saved_archives[index] ) {
-                            recorder.remove(data);
+                            recorder.remove(doc);
                             removed_archives[index]=true;
                         }
                         else {
-                            recorder.add(data);
+                            recorder.add(doc);
                             added_archives[index]=true;
                         }
                         check_archives[index]=true;
@@ -1992,7 +1994,7 @@ class DARTFile {
             auto recorder_B=dart_B.recorder;
             auto save_range=saved_archives.bitsSet;
             // writefln("%s ", saved_archives);
-            saved_archives.bitsSet.each!(n => recorder_B.add(serialize(random_table[n])));
+            saved_archives.bitsSet.each!(n => recorder_B.add(Document(serialize(random_table[n]))));
             dart_B.modify(recorder_B);
             // dart_B.dump;
             // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);

@@ -328,8 +328,9 @@ class DART : DARTFile, HiRPC.Supports {
                 if ( index !is INDEX_NULL ) {
                     // The archive is added to a recorder
                     immutable data=blockfile.load(index);
+                    const doc=Document(data);
                     auto super_recorder=recorder;
-                    super_recorder.add(data);
+                    super_recorder.add(doc);
                     hibon_params[Params.recorder]=super_recorder.toHiBON;
                 }
             }
@@ -498,8 +499,9 @@ class DART : DARTFile, HiRPC.Supports {
             scope recorder_worker=owner.recorder;
 //            writefln("Recursive remove %s", rims.cutHex);
             foreach(archive_data; rim_walker) {
-                recorder_worker.remove(archive_data);
-                auto archive_doc=Document(archive_data);
+                const archive_doc=Document(archive_data);
+
+                recorder_worker.remove(archive_doc);
 //                writefln("\tremove archive %s", archive_doc.toText);
 //                scope archive=new Recorder.Archive(owner.net, archive_doc);
                 // immutable print=owner.net.calcHash(archive_data);
