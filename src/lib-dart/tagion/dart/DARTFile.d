@@ -338,9 +338,9 @@ class DARTFile {
                 _type=Type.NONE;
             }
 
-            this(HashNet net, Document doc) {
-                uint type=doc[Params.type].get!uint;
-                Buffer _data;
+            this(HashNet net, Document _doc) {
+                uint type=_doc[Params.type].get!uint;
+//                Buffer _data;
                 Buffer _fingerprint;
                 Document inner_doc;
                 scope(success) {
@@ -358,13 +358,13 @@ class DARTFile {
                 }
                 with(Type) switch(type) {
                     case ADD, NONE:
-                        const archive_doc=doc[Params.archive].get!Document;
+                        const archive_doc=_doc[Params.archive].get!Document;
                         inner_doc=archive_doc;
                         // _data=archive_doc.data.idup;
 
                         break;
                     case REMOVE:
-                        if (doc.hasElement(Params.fingerprint) ) {
+                        if ( _doc.hasElement(Params.fingerprint) ) {
                             goto case STUB;
                         }
                         else {
@@ -372,7 +372,7 @@ class DARTFile {
                         }
                         break;
                     case STUB:
-                        _fingerprint=doc[Params.fingerprint].get!Buffer;
+                        _fingerprint=_doc[Params.fingerprint].get!Buffer;
                         break;
                     default:
                          .check(0, format("Unsupported archive type number=%d", type));
