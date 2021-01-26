@@ -326,13 +326,13 @@ class DARTFile {
                 index=INDEX_NULL;
             }
 
-            this(HashNet net, immutable(Buffer) data, const uint index)
+            this(HashNet net, Document _doc, const uint _index)
             in {
                 assert(net);
             }
             do {
-                fingerprint=net.calcHash(data);
-                this.data=data;
+                fingerprint=net.calcHash(_doc.data);
+                this.data=_doc.data;
                 this.index=index;
                 _type=Type.NONE;
             }
@@ -1097,7 +1097,7 @@ class DARTFile {
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The A new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart=new Recorder.Archive(net, data, branch_index);
+                            scope archive_in_dart=new Recorder.Archive(net, Document(data), branch_index);
                             scope(success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
