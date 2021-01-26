@@ -19,17 +19,10 @@ import std.concurrency;
 
 @safe
 class DARTFakeNet : StdSecureNet {
-    // mixin StdHashNetT;
-//    mixin StdSecureNetT;
-    //mixin StdGossipNetT;
     enum FAKE=HiBONPrefix.HASH~"#fake";
     this(string passphrase) {
         this();
-        // super();
         generateKeyPair(passphrase);
-        // import tagion.utils.Miscellaneous;
-        // import tagion.Base;
-        // writefln("public=%s", (cast(Buffer)pubkey).toHexString);
     }
 
     this() {
@@ -37,22 +30,11 @@ class DARTFakeNet : StdSecureNet {
         this._crypt = new NativeSecp256k1;
     }
 
-    ///protected immutable(ubyte)[] fakeKey;
-    // this(){
-    //     super();
-    // }
-    //import core.exception : SwitchError;
-
-    override immutable(Buffer) hashOf(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
-        return calcHash(h1~h2);
-    }
-
-
     @trusted
     override immutable(Buffer) hashOf(scope const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
         if ( (doc.length is 1) && doc.hasElement(FAKE) && (doc[FAKE].type is Type.UINT64)) {
-            auto x=doc[FAKE].get!ulong;
+            const x=doc[FAKE].get!ulong;
             import std.bitmanip: nativeToBigEndian;
             return nativeToBigEndian(x).idup;
         }
@@ -65,7 +47,7 @@ class DARTFakeNet : StdSecureNet {
                 return calcHash(value_data);
             }
         }
-        return calcHash(doc.data);
+        return rawCalcHash(doc.data);
     }
 
     static const(Document) fake_doc(const ulong x) {
