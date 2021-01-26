@@ -304,12 +304,13 @@ class DARTFile {
                 STUB
             }
             immutable(Buffer) fingerprint;
-            immutable(Buffer) data;
+            const Document doc;
+            //immutable(Buffer) data;
             private Type _type;
             immutable uint index;
             bool done;
 
-            this(HashNet net, const(Document) doc, const Type type)
+            this(HashNet net, const(Document) _doc, const Type type)
             in {
                 assert(net);
             }
@@ -317,11 +318,11 @@ class DARTFile {
                 if (type is Type.STUB) {
                     // The type is stub the data contains the fingerprint not data
                     writefln("!!!!!!!!!! STUB!!!!");
-                    fingerprint=data;
+                    fingerprint=doc.data;
                 }
                 else {
-                    fingerprint=net.calcHash(doc.data);
-                    this.data=doc.data;
+                    fingerprint=net.calcHash(_doc.data);
+                    doc=_doc;
                 }
                 _type=type;
                 index=INDEX_NULL;
@@ -333,7 +334,7 @@ class DARTFile {
             }
             do {
                 fingerprint=net.calcHash(_doc.data);
-                this.data=_doc.data;
+                this.doc=_doc;
                 this.index=index;
                 _type=Type.NONE;
             }
@@ -345,12 +346,12 @@ class DARTFile {
                 Document inner_doc;
                 scope(success) {
                     _type=cast(Type)type;
-                    data=inner_doc.data;
+                    doc=inner_doc;
                     if ( _fingerprint ) {
                         fingerprint=_fingerprint;
                     }
                     else {
-                        fingerprint=net.calcHash(data);
+                        fingerprint=net.calcHash(doc.data);
                     }
                 }
                 scope(exit) {
@@ -382,8 +383,8 @@ class DARTFile {
             HiBON toHiBON() const {
                 auto hibon=new HiBON;
                 hibon[Params.type]=cast(uint)(_type);
-                if ( data ) {
-                    hibon[Params.archive]=Document(data);
+                if ( doc.length ) {
+                    hibon[Params.archive]=doc;
                 }
                 else {
                     hibon[Params.fingerprint]=fingerprint;
@@ -395,7 +396,8 @@ class DARTFile {
             private this(Buffer fingerprint, const Type type=Type.REMOVE) {
                 _type=type;
                 index=INDEX_NULL;
-                data=null;
+                doc=Document(null);
+                //data=null;
                 this.fingerprint=fingerprint;
             }
 
@@ -425,8 +427,8 @@ class DARTFile {
                     hibon[Keywords.stub]=fingerprint;
                     return hibon.serialize;
                 }
-                .check(data !is null, format("Archive is %s type and it must contain data", _type));
-                return data;
+                .check(doc.serialize.length !is 0, format("Archive is %s type and it must contain data", _type));
+                return doc.serialize;
             }
 
         }
@@ -720,7 +722,7 @@ class DARTFile {
                             _fingerprints[key]=doc[Keywords.stub].get!Buffer;
                         }
                         else {
-                            _fingerprints[key]=dartfile.net.calcHash(data);
+                            _fingerprints[key]=dartfile.net.calcHash(doc.data);
                         }
                     }
                 }
@@ -1098,7 +1100,7 @@ class DARTFile {
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The A new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart=new Recorder.Archive(net, Document(data), branch_index);
+                            scope archive_in_dart=new Recorder.Archive(net, doc, branch_index);
                             scope(success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -1410,7 +1412,7 @@ class DARTFile {
                     writefln("%s>%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
                 }
                 else {
-                    immutable fingerprint=net.calcHash(data);
+                    immutable fingerprint=net.calcHash(doc.data);
                     auto lastRing = full ? fingerprint.length : rim+1;
                     writefln("%s:%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
                 }
@@ -1430,8 +1432,9 @@ class DARTFile {
             }
 
             bool check(const(Recorder) A, const(Recorder) B) {
-                return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]) &&
-                    equal!(q{a.data == b.data})(A.archives[], B.archives[]);
+                return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
+                // &&
+                //     equal!(q{a.data == b.data})(A.archives[], B.archives[]);
             }
 
             Buffer write(DARTFile dart, const(ulong[]) table, out Recorder recorder, bool isStubs = false) {
@@ -1620,7 +1623,7 @@ class DARTFile {
 
             foreach(t; recorder.archives) {
                 pragma(msg, typeof(t));
-                writeln(Document(t.data).toJSON(true).toPrettyString);
+                writeln(t.doc.toJSON(true).toPrettyString);
             }
             writeln();
 
@@ -1630,10 +1633,10 @@ class DARTFile {
             uint i;
             foreach(a; recorder.archives) {
                 writefln("%d]", i);
-                writefln("%s", Document(a.data).toJSON(true).toPrettyString);
+                writefln("%s", a.doc.toJSON(true).toPrettyString);
                 writefln("%s", Document(serialize(test_tabel[i])).toJSON(true).toPrettyString);
 
-                writefln("a.data                  =%s", a.data);
+                writefln("a.doc.data              =%s", a.doc.data);
                 writefln("serialize(test_tabel[i])=%s", serialize(test_tabel[i]));
                 //assert(a.data == serialize(test_tabel[i]));
                 i++;
@@ -1647,7 +1650,7 @@ class DARTFile {
 
                 writefln("a.fingerprint=%s %d", a.fingerprint.hex, a.fingerprint.length);
                 writefln("calcHash     =%s", net.calcHash(serialize(test_tabel[i])).hex);
-                assert(a.data == serialize(test_tabel[i]));
+                assert(a.doc.data == serialize(test_tabel[i]));
                 i++;
             }
             //assert(0);
