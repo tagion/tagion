@@ -341,9 +341,10 @@ class DARTFile {
                 uint type=doc[Params.type].get!uint;
                 Buffer _data;
                 Buffer _fingerprint;
+                Document inner_doc;
                 scope(success) {
                     _type=cast(Type)type;
-                    data=_data;
+                    data=inner_doc.data;
                     if ( _fingerprint ) {
                         fingerprint=_fingerprint;
                     }
@@ -357,11 +358,12 @@ class DARTFile {
                 with(Type) switch(type) {
                     case ADD, NONE:
                         const archive_doc=doc[Params.archive].get!Document;
-                        _data=archive_doc.data.idup;
+                        inner_doc=archive_doc;
+                        // _data=archive_doc.data.idup;
 
                         break;
                     case REMOVE:
-                        if ( doc.hasElement(Params.fingerprint) ) {
+                        if (doc.hasElement(Params.fingerprint) ) {
                             goto case STUB;
                         }
                         else {
