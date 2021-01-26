@@ -164,6 +164,27 @@ bool isHiBONType(Type type) pure nothrow {
     return flags[type];
 }
 
+/++
+ Returns:
+ true if the type is a valid HiBONType excluding narive types
++/
+@safe
+bool isValidType(Type type) pure nothrow {
+    bool[] make_flags() {
+        bool[] str;
+        str.length = ubyte.max+1;
+        with(Type) {
+            static foreach(E; EnumMembers!Type) {
+                str[E]=(E !is NONE);
+            }
+        }
+        return str;
+    }
+    enum flags = make_flags;
+    return flags[type];
+}
+
+
 @safe @nogc
 bool isDataBlock(Type type) pure nothrow {
     with(Type) {
