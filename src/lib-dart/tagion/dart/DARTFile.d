@@ -308,7 +308,8 @@ class DARTFile {
             private Type _type;
             immutable uint index;
             bool done;
-            this(HashNet net, immutable(Buffer) data, const Type type)
+
+            this(HashNet net, const(Document) doc, const Type type)
             in {
                 assert(net);
             }
@@ -319,8 +320,8 @@ class DARTFile {
                     fingerprint=data;
                 }
                 else {
-                    fingerprint=net.calcHash(data);
-                    this.data=data;
+                    fingerprint=net.calcHash(doc.data);
+                    this.data=doc.data;
                 }
                 _type=type;
                 index=INDEX_NULL;
@@ -439,7 +440,7 @@ class DARTFile {
                 assert(doc.data);
             }
         do {
-            auto archive=new Archive(net, doc.data, Archive.Type.ADD);
+            auto archive=new Archive(net, doc, Archive.Type.ADD);
             _archives.insert(archive);
             return archive;
         }
@@ -449,7 +450,7 @@ class DARTFile {
                 assert(doc.data);
             }
         do {
-            auto archive=new Archive(net, doc.data, Archive.Type.REMOVE);
+            auto archive=new Archive(net, doc, Archive.Type.REMOVE);
             _archives.insert(archive);
             return archive;
         }
@@ -848,7 +849,7 @@ class DARTFile {
 
                 }
                 else {
-                    auto archive=new Recorder.Archive(net, data, type);
+                    auto archive=new Recorder.Archive(net, doc, type);
                     archives~=archive;
                     // result.insert(archive);
                         // writeln(result.length);
@@ -903,7 +904,7 @@ class DARTFile {
                     // Loads the Archives into the archives
                     .check(ordered_fingerprints.length == 1, format("Data base is broken at rim=%d fingerprint=%s", rim, ordered_fingerprints[0].hex));
                     // The archive is set in erase mode so it can be easily be erased later
-                    auto archive=new Recorder.Archive(net, data, type);
+                    auto archive=new Recorder.Archive(net, doc, type);
                     if ( ordered_fingerprints[0] == archive.fingerprint ) {
                         result.insert(archive);
                     }
@@ -1576,8 +1577,8 @@ class DARTFile {
         { // Test the fake hash on Archive
             import std.bitmanip;
 
-            auto data_in=serialize(table[0]);
-            auto a_in=new Recorder.Archive(net, data_in, Recorder.Archive.Type.ADD);
+            auto doc_in=Document(serialize(table[0]));
+            auto a_in=new Recorder.Archive(net, doc_in, Recorder.Archive.Type.ADD);
 //            auto data_out=
             auto a_table=*cast(ulong*)(a_in.fingerprint.ptr[0..ulong.sizeof]);
 
