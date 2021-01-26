@@ -1,7 +1,5 @@
 module tagion.dart.DARTFile;
-        import tagion.hibon.HiBONJSON;
 
-import std.stdio;
 private {
     import tagion.basic.Basic : Buffer;
     import tagion.Keywords;
@@ -154,16 +152,6 @@ class DARTFile {
         return _fingerprint;
     }
 
-    version(none)
-    void calculateFingerprint(){
-        writeln("calculateFingerprint");
-        scope data=blockfile.load(blockfile.masterBlock.root_index);
-        scope doc=Document(data);
-        auto branches=Branches(doc);
-        _fingerprint = branches.fingerprint(this);
-        writeln("calculateFingerprint finished");
-    }
-
     /++
      Creates an empty Recorder
      +/
@@ -252,7 +240,6 @@ class DARTFile {
                     // writeln("CHECK STUBS: arcive fp:%s sector: %d", archive.fingerprint, archiveSector);
                     ushort sector_origin=(archiveSector-from) & ushort.max;
                     if( sector_origin >= to_origin ){
-                        writefln("CHECK STUBS: sector origin:%d to_origin: %d", sector_origin, to_origin);
                         archives.removeKey(archive);
                     }
                 }
@@ -317,7 +304,6 @@ class DARTFile {
             do {
                 if (type is Type.STUB) {
                     // The type is stub the data contains the fingerprint not data
-                    writefln("!!!!!!!!!! STUB!!!!");
                     fingerprint=doc.data;
                 }
                 else {
@@ -847,7 +833,7 @@ class DARTFile {
                     }
                 }
                 else if ( doc.hasElement(Keywords.stub) ) {
-                        writeln("stub");
+//                        writeln("stub");
 
                 }
                 else {
@@ -867,7 +853,7 @@ class DARTFile {
         // auto  result = DARTFile.Recorder(net, archives_tree);
         auto result=new HiBON;
             uint i;
-                writeln(archives.length);
+            // writeln(archives.length);
             foreach(a; archives) {
                 result[i]=Document(a.toHiBON.serialize);
                 i++;
@@ -1258,7 +1244,7 @@ class DARTFile {
                 if ( doc.hasElement(Keywords.indices) ) {
                     scope branches=Branches(doc);
                     if(rim == RIMS_IN_SECTOR){
-                        writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
+                        // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
                         rec.stub(branches.fingerprint(this));
                     }else{
                         foreach(rim_key, index; branches._indices) {
@@ -1267,10 +1253,11 @@ class DARTFile {
                     }
                 }else{
                     if(doc.hasElement(Keywords.stub)){
-                        writeln("ADD STUB FP");
+                        // writeln("ADD STUB FP");
                         rec.stub(doc[Keywords.stub].get!Buffer);
-                    }else{
-                        writeln("ADD SINGLE EL FP");
+                    }
+                    else{
+                        // writeln("ADD SINGLE EL FP");
                         rec.stub(net.calcHash(doc.data));
                     }
                 }
@@ -1461,20 +1448,6 @@ class DARTFile {
                 return check(recorder, find_recorder);
             }
 
-
-            version(none)
-            immutable(ubyte[]) serialize(const ulong x) {
-                import tagion.dart.DARTFakeNet;
-                auto hibon=new HiBON;
-                hibon[DARTFakeNet.FAKE]=x;
-                import tagion.hibon.HiBONBase : Type;
-                assert(hibon[DARTFakeNet.FAKE].type == Type.UINT64);
-                immutable data=hibon.serialize;
-                auto doc=Document(data);
-                assert(doc[DARTFakeNet.FAKE].type == Type.UINT64);
-                return hibon.serialize;
-            }
-
             Recorder records(HashNet net, const(ulong[]) table) {
                 auto recorder=Recorder(net);
                 foreach(t; table) {
@@ -1497,9 +1470,7 @@ class DARTFile {
 
     }
 
-//    version(none)
     unittest {
-        import tagion.hibon.HiBONJSON;
         pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
 
         import std.algorithm.sorting : sort;
@@ -1592,47 +1563,16 @@ class DARTFile {
                 const doc=DARTFakeNet.fake_doc(t);
                 recorder.add(doc);
             }
-            writeln();
+            // writeln();
 
             test_tabel.sort;
 
             foreach(t; test_tabel) {
                 const doc=DARTFakeNet.fake_doc(t);
-                writefln("%016x = %016x",doc[net.FAKE].get!ulong, t);
             }
-
-            writeln();
-
-            foreach(t; recorder.archives) {
-                pragma(msg, typeof(t));
-                writeln(t.doc.toJSON(true).toPrettyString);
-            }
-            writeln();
-
-// 0f000000220466616b65908050403420212000
-// 0f000000220466616b65908050403010212000
 
             uint i;
             foreach(a; recorder.archives) {
-                writefln("%d]", i);
-                writefln("%s", a.doc.toJSON(true).toPrettyString);
-                writefln("%s", DARTFakeNet.fake_doc(test_tabel[i]).toJSON(true).toPrettyString);
-
-                writefln("a.doc.data              =%s", a.doc.data);
-                writefln("serialize(test_tabel[i])=%s", DARTFakeNet.fake_doc(test_tabel[i]).data);
-                //assert(a.data == serialize(test_tabel[i]));
-                i++;
-            }
-
-            i=0;
-            foreach(a; recorder.archives) {
-                writefln("%d]", i);
-                // writefln("%s", Document(a.data).toJSON(true).toPrettyString);
-                // writefln("%s", Document(serialize(test_tabel[i])).toJSON(true).toPrettyString);
-
-                writefln("a.fingerprint=%s %d", a.fingerprint.hex, a.fingerprint.length);
-                writefln("a.fingerprint=%x", a.doc[net.FAKE].get!ulong);
-                writefln("calcHash     =%s", net.hashOf(DARTFakeNet.fake_doc(test_tabel[i])).hex);
                 assert(a.doc.data == net.fake_doc(test_tabel[i]).data);
                 i++;
             }
@@ -1748,14 +1688,14 @@ class DARTFile {
             // table 8 and 9 is left out
             auto bulleye_B=write(dart_B, table[0..8]~table[10..$], recorder_B);
 
-            dart_A.dump;
-            dart_B.dump;
+            //dart_A.dump;
+            //dart_B.dump;
             auto remove_recorder=records(net, table[8..10]);
             foreach(ref a; remove_recorder._archives) {
                 a._type=Recorder.Archive.Type.REMOVE;
             }
             auto bulleye_A=dart_A.modify(remove_recorder);
-            dart_A.dump;
+            //dart_A.dump;
             assert(bulleye_A == bulleye_B);
         }
 

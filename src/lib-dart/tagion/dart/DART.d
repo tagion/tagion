@@ -763,8 +763,7 @@ class DART : DARTFile, HiRPC.Supports {
 
 
     }
-    pragma(msg, "fixme(alex): Why is the unittest switch off");
-//    version(none)
+
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
@@ -987,7 +986,6 @@ class DART : DARTFile, HiRPC.Supports {
 
             }
 
-            // version(none)
             { // Synchronization of a Dart A which is a subset of Dart B
                 // writefln("Test 2");
                 create_dart(filename_A);
@@ -1041,7 +1039,6 @@ class DART : DARTFile, HiRPC.Supports {
 
             }
 
-            // version(none)
             { // Synchronization of a DART A where DART A is a superset of DART B
                 // writefln("Test 3");
                 create_dart(filename_A);
@@ -1084,7 +1081,6 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     dart_A.replay(journal_filename);
                 }
@@ -1141,7 +1137,6 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     // writefln("JOURNAL_FILENAME=%s", journal_filename);
                     dart_A.replay(journal_filename);
@@ -1199,7 +1194,6 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     dart_A.replay(journal_filename);
                 }
@@ -1254,14 +1248,13 @@ class DART : DARTFile, HiRPC.Supports {
                     }
                 }
 
-//                version(none)
                 foreach(journal_filename; journal_filenames) {
                     dart_A.replay(journal_filename);
                 }
                 // writefln("dart_A.dump");
                 // dart_A.dump;
                 // writefln("dart_B.dump");
-                dart_B.dump;
+                //dart_B.dump;
                 assert(dart_A.fingerprint !is null);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
