@@ -126,7 +126,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
                     ownerTid.send(cast(shared)rec, thisTid);
                     receiveOnly!bool;
                 }
-                rec.add(fakeDoc);
+                //rec.add(fakeDoc);
             }
             catch (Exception e) {
                 writeln(e);
