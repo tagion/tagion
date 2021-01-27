@@ -128,7 +128,10 @@ static assert(uint.sizeof == 4);
         bool not_first;
         foreach(ref e; this[]) {
             Element.ErrorCode error_code;
-            if (not_first && !less_than(previous.front.key, e.key)) {
+            if (!isValidType(e.type)) {
+                error_code = Element.ErrorCode.INVALID_TYPE;
+            }
+            else if (not_first && !less_than(previous.front.key, e.key)) {
                 error_code = Element.ErrorCode.KEY_ORDER;
             }
             else if ( e.type is Type.DOCUMENT ) {
@@ -1111,7 +1114,8 @@ static assert(uint.sizeof == 4);
                         return 0;
                     }
                 }
-                assert(0);
+                return 0;
+//                assert(0);
             }
 
             /++
@@ -1160,17 +1164,8 @@ static assert(uint.sizeof == 4);
                         return INVALID_NULL;
                     }
                 }
-            TypeCase:
-                switch(type) {
-                    static foreach(E; EnumMembers!Type) {
-                    case E:
-                        static if ( (isNative(E) || (E is Type.DEFINED_ARRAY) ) ) {
-                            return ILLEGAL_TYPE;
-                        }
-                        break TypeCase;
-                    }
-                default:
-                    return INVALID_TYPE;
+                if ( (isNative(type) || (type is Type.DEFINED_ARRAY) ) ) {
+                    return ILLEGAL_TYPE;
                 }
                 if ( size > data.length ) {
                     return OVERFLOW;
