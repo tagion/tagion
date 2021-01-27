@@ -559,18 +559,19 @@ class Round {
                         log.trace("(event is null)");
                         //stdout.flush();
                         // writeln(Document(e.toHiBON.serialize).toJSON);
-                    }
-                    if(e._witness is null){
-                        //log("witness is null");
-                        //stdout.flush();
-                        log("(witness is null) %s", Document(e.toHiBON.serialize).toJSON);
-                    }
-                    else{
-                        //log("ok");
-                        if (e._witness.famous) {
-                            famous_events[famous_node_id]=e;
-                            unique_famous_mask[famous_node_id]=true;
-                            famous_node_id++;
+                    }else{
+                        if(e._witness is null){
+                            //log("witness is null");
+                            //stdout.flush();
+                            log("(witness is null) %s", Document(e.toHiBON.serialize).toJSON);
+                        }
+                        else{
+                            //log("ok");
+                            if (e._witness.famous) {
+                                famous_events[famous_node_id]=e;
+                                unique_famous_mask[famous_node_id]=true;
+                                famous_node_id++;
+                            }
                         }
                     }
                 }
