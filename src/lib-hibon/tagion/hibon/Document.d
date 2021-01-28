@@ -179,6 +179,7 @@ static assert(uint.sizeof == 4);
      +/
     @safe
     struct Range {
+        @nogc:
         immutable(ubyte[]) data;
         immutable uint     ver;
     protected:
@@ -186,7 +187,8 @@ static assert(uint.sizeof == 4);
         Element           _element;
 
     public:
-        this(immutable(ubyte[]) data) {
+
+        this(immutable(ubyte[]) data) nothrow {
             this.data = data;
             if (data.length == 0) {
                 _index = ubyte.sizeof;
@@ -204,11 +206,11 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        this(const Document doc) {
+        this(const Document doc) nothrow {
             this(doc.data);
         }
 
-        @property @nogc pure nothrow const {
+        @property pure nothrow const {
             bool empty() {
                 return _index > data.length;
             }
@@ -227,7 +229,7 @@ static assert(uint.sizeof == 4);
          * InputRange primitive operation that advances the range to its next element.
          */
         @trusted
-            void popFront() {
+            void popFront() nothrow {
             if (_index >= data.length) {
                 _index = data.length+1;
             }
@@ -242,7 +244,8 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of Element's
      +/
-    Range opSlice() const {
+    @nogc
+    Range opSlice() const nothrow {
         return Range(data);
     }
 
@@ -250,7 +253,8 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of the member keys in the document
      +/
-    auto keys() const {
+    @nogc
+    auto keys() const nothrow {
         return map!"a.key"(this[]);
     }
 
@@ -1138,7 +1142,8 @@ static assert(uint.sizeof == 4);
                 ILLEGAL_TYPE,   // Use of internal types is illegal
                 INVALID_TYPE,   // Type is not defined
                 OVERFLOW,       // The specifed data does not fit into the data stream
-                ARRAY_SIZE_BAD  // The binary-array size in bytes is not a multipla of element size in the array
+                ARRAY_SIZE_BAD, // The binary-array size in bytes is not a multipla of element size in the array
+                KEY_NOT_DEFINED // Key in the target was not defined
             }
 
         /++
