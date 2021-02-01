@@ -18,10 +18,23 @@ struct Label {
     bool optional; /// This flag is set to true if this paramer is optional
 
 }
+
+/++
+ Filter attribute for toHiBON
++/
+struct Filter {
+    string code; /// Filter function
+    enum Initialized=Filter(q{a !is a.init});
+}
+
+
 struct Inspect {
     string verify; ///
 }
 
+struct RecordType {
+    string name;
+}
 /++
  Gets the Label for HiBON member
  Params:
@@ -44,6 +57,11 @@ enum HiBONPrefix {
 
 enum TYPENAME=HiBONPrefix.PARAM~"@";
 enum VOID="*";
+
+enum Choice {
+    NONE,
+    CONFINED
+}
 /++
  HiBON Helper template to implement constructor and toHiBON member functions
  Params:
@@ -74,9 +92,9 @@ enum VOID="*";
  --------------------
 
  +/
-mixin template HiBONRecord(string TYPE="", string CTOR="") {
+mixin template HiBONRecord(string CTOR="") {
 
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable;
     import std.typecons : TypedefType, Tuple;
     import std.format;
     import std.functional : unaryFun;
@@ -87,15 +105,22 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
     import tagion.basic.Message : message;
     import tagion.basic.Basic : basename;
 
-    static if (TYPE.length) {
-        static string type() pure nothrow {
-            return TYPE;
+    alias ThisType=typeof(this);
+
+    static if (hasUDA!(ThisType, RecordType)) {
+        alias record_types=getUDAs!(ThisType, RecordType);
+        static assert(record_types.length is 1, "Only one RecordType UDA allowed");
+        static if (record_types[0].name.length) {
+            enum type=record_types[0].name;
         }
     }
+
+    enum HAS_TYPE=hasMember!(ThisType, "type");
 
     inout(HiBON) toHiBON() inout {
         auto hibon= new HiBON;
         pragma(msg, typeof(this.tupleof), " ", this.tupleof.length);
+    MemberLoop:
         foreach(i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 enum default_name=basename!(this.tupleof[i]);
@@ -106,9 +131,23 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
                 else {
                     enum name=basename!(this.tupleof[i]);
                 }
+                static if (hasUDA!(this.tupleof[i], Filter)) {
+                    alias filters=getUDAs!(this.tupleof[i], Filter);
+                    pragma(msg, "FILTERS=", filters);
+                    static foreach(F; filters) {
+                        {
+                            alias filterFun=unaryFun!(F.code);
+                            pragma(msg, filterFun.stringof);
+                            if (!filterFun(m)) {
+                                continue MemberLoop;
+                            }
+                        }
+                    }
+                }
                 static if (name.length) {
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
+                    alias UnqualT=Unqual!BaseT;
                     static if (__traits(compiles, m.toHiBON)) {
                         hibon[name]=m.toHiBON;
                     }
@@ -122,6 +161,10 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
                     }
                     else {
                         static if (is(BaseT:U[], U)) {
+                            // scope(exit) {
+                            //     writefln("set %s %s", name, m);
+                            // }
+
                             static if (HiBON.Value.hasType!U) {
                                 // static assert(0, format("Special handeling of array %s", MemberT.stringof));
                                 auto array=new HiBON;
@@ -145,14 +188,18 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
                         }
                         else {
                             pragma(msg, "->", BaseT, ": ", MemberT, ": ", i, "m=", m.stringof, " ", typeof(this.tupleof[i]), " ", this.tupleof[i].stringof);
+                            scope(exit) {
+                                writefln("set %s %s", name, cast(UnqualT)(this.tupleof[i]));
+                            }
+
                             hibon[name]=cast(BaseT)m;
                         }
                     }
                 }
             }
         }
-        static if (TYPE.length) {
-            hibon[TYPENAME]=TYPE;
+        static if (HAS_TYPE) {
+            hibon[TYPENAME]=type;
         }
         return cast(inout)hibon;
     }
@@ -164,7 +211,7 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
         mixin(CTOR);
     }
 
-    alias ThisType=typeof(this);
+
     import std.traits : FieldNameTuple, Fields;
 
     // protected static void check_key(string key) {
@@ -214,20 +261,20 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
             switch (e.key) {
                 static foreach(i, key; keys) {
                     {
-                    alias Type=Fields!ThisType[i];
-                case key:
-                    static assert(Document.Value.hasType!Type,
-                        format("Type %s for member %s with key %s is not supported",
-                            Type.stringof, FieldsNameTuple!ThisType[i], key));
-                    enum TypeE=Document.Value.asType!Type;
-                    if (TypeE !is e.type) {
-                        return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key);
-                    }
-                    static if (key == TYPENAME) {
-                        if (this.type != e.get!string) {
-                            return DocResult(Document.Element.ErrorCode.DOCUMENT_TYPE, key);
-                        }
-                    }
+                        alias Type=Fields!ThisType[i];
+                        case key:
+                            static assert(Document.Value.hasType!Type,
+                                format("Type %s for member %s with key %s is not supported",
+                                    Type.stringof, FieldsNameTuple!ThisType[i], key));
+                            enum TypeE=Document.Value.asType!Type;
+                            if (TypeE !is e.type) {
+                                return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key);
+                            }
+                            static if (key == TYPENAME) {
+                                if (this.type != e.get!string) {
+                                    return DocResult(Document.Element.ErrorCode.DOCUMENT_TYPE, key);
+                                }
+                            }
                     }
                 }
             default:
@@ -243,7 +290,6 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
      Returns:
      true if the Document members is confined to what is defined in object
      +/
-//    @nogc
     static bool confined(const Document doc) nothrow {
         try {
             return fitting(doc).error is Document.Element.ErrorCode.NONE;
@@ -255,14 +301,14 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
     }
 
     this(const Document doc) {
-        static if (TYPE.length) {
+        static if (HAS_TYPE) {
             string _type=doc[TYPENAME].get!string;
             .check(_type == type, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
         }
-        enum do_verify=hasMember!(typeof(this), "verify") && isCallable(verify);
+        enum do_verify=hasMember!(typeof(this), "verify") && isCallable!(verify);
         static if (do_verify) {
             scope(exit) {
-                this.verify;
+                .check(this.verify(doc), format("Document verification faild"));
             }
         }
     ForeachTuple:
@@ -270,18 +316,20 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
 //            pragma(msg, m);
             static if (__traits(compiles, typeof(m))) {
                 enum default_name=basename!(this.tupleof[i]);
+                writefln("default_name=%s", default_name);
                 static if (hasUDA!(this.tupleof[i], Label)) {
                     alias label=GetLabel!(this.tupleof[i])[0];
                     pragma(msg, "label.name=", label.name, " VOID=", VOID, " default_name=", default_name);
                     enum name=(label.name == VOID)?default_name:label.name;
                     pragma(msg, "* name=", name);
                     enum optional=label.optional;
+                    writefln("\toptional=%s", optional, doc.hasMember(name));
                     static if (label.optional) {
-                        if (!doc.hasElement(name)) {
-                            break ForeachTuple;
+                        if (!doc.hasMember(name)) {
+                            continue ForeachTuple;
                         }
                     }
-                    static if (TYPE.length) {
+                    static if (HAS_TYPE) {
                         static assert(TYPENAME != label.name,
                             format("Default %s is already definded to %s but is redefined for %s.%s",
                                 TYPENAME, TYPE, typeof(this).stringof, basename!(this.tupleof[i])));
@@ -296,13 +344,20 @@ mixin template HiBONRecord(string TYPE="", string CTOR="") {
 
                     pragma(msg, Inspects);
                 }
+                writefln("\tname=%s", name);
                 static if (name.length) {
+                    writefln("\tget name %s optional %s", name, optional);
                     enum member_name=this.tupleof[i].stringof;
                     //  enum code=format("%s=doc[name].get!UnqualT;", member_name);
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
                     pragma(msg, MemberT, ": ", BaseT, ": ", UnqualT);
+                    static if (optional) {
+                        if (!doc.hasMember(name)) {
+                            continue ForeachTuple;
+                        }
+                    }
                     static if (is(BaseT == struct)) {
                         auto sub_doc = doc[name].get!Document;
                         m=BaseT(sub_doc);
@@ -425,104 +480,84 @@ unittest {
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
     import tagion.hibon.HiBONJSON;
-        static struct Simpel {
-            int s;
-            string text;
-            mixin HiBONRecord!("SIMPEL",
-                q{
-                    this(int s, string text) {
-                        this.s=s; this.text=text;
-                    }
+
+    @RecordType("SIMPEL") static struct Simpel {
+        int s;
+        string text;
+        mixin HiBONRecord!(
+            q{
+                this(int s, string text) {
+                    this.s=s; this.text=text;
                 }
-                );
+            }
+            );
 
-        }
+    }
 
-        static struct SimpelLabel {
-            @Label("$S") int s;
-            @Label("TEXT") string text;
-            mixin HiBONRecord!("SIMPELLABEL",
-                q{
-                    this(int s, string text) {
-                        this.s=s; this.text=text;
-                    }
-                });
-        }
+    @RecordType("SIMPELLABEL") static struct SimpelLabel {
+        @Label("$S") int s;
+        @Label("TEXT") string text;
+        mixin HiBONRecord!(
+            q{
+                this(int s, string text) {
+                    this.s=s; this.text=text;
+                }
+            });
+    }
 
-        static struct BasicData {
-            int i32;
-            uint u32;
-            long i64;
-            ulong u64;
-            float f32;
-            double f64;
-            string text;
-            bool flag;
-            mixin HiBONRecord!("BASIC",
-                q{this(int i32,
-                        uint u32,
-                        long i64,
-                        ulong u64,
-                        float f32,
-                        double f64,
-                        string text,
-                        bool flag) {
-                        this.i32=i32;
-                        this.u32=u32;
-                        this.i64=i64;
-                        this.u64=u64;
-                        this.f32=f32;
-                        this.f64=f64;
-                        this.text=text;
-                        this.flag=flag;
-                    }
-                });
-        }
+    @RecordType("BASIC") static struct BasicData {
+        int i32;
+        uint u32;
+        long i64;
+        ulong u64;
+        float f32;
+        double f64;
+        string text;
+        bool flag;
+        mixin HiBONRecord!(
+            q{this(int i32,
+                    uint u32,
+                    long i64,
+                    ulong u64,
+                    float f32,
+                    double f64,
+                    string text,
+                    bool flag) {
+                    this.i32=i32;
+                    this.u32=u32;
+                    this.i64=i64;
+                    this.u64=u64;
+                    this.f32=f32;
+                    this.f64=f64;
+                    this.text=text;
+                    this.flag=flag;
+                }
+            });
+    }
 
-        static struct SimpelOption(string LABEL="") {
+    template SimpelOption(string LABEL="") {
+        @RecordType(LABEL)
+        static struct SimpelOption {
             int not_an_option;
             @Label("s", true) int s;
             @Label(VOID, true) string text;
-            mixin HiBONRecord!(LABEL);
+            mixin HiBONRecord!();
         }
-
-
-    // string Assert(string code)() {
-    //     import std.stdio;
-    //     return format(
-    //         q{
-    //             try {
-    //                 %s;
-    //                 writeln("Expected to fail");
-    //             }
-    //             catch (HiBONException e) {
-    //                 return true;
-    //                 // Ok
-    //             }
-    //             catch (Throwable e) {
-    //                 writefln("Expected to throw an HiBONException not %%s", e);
-    //             }
-    //             return false;
-    //         },
-    //         code
-    //         );
-    //     assert(0);
-    // }
-
+    }
 
 
     { // Simpel basic type check
         {
             const s=Simpel(-42, "some text");
             const docS=s.toDoc;
-            writefln("keys=%s", docS.keys);
+            // writefln("keys=%s", docS.keys);
             assert(docS["s"].get!int == -42);
             assert(docS["text"].get!string == "some text");
-            assert(docS[TYPENAME].get!string == "SIMPEL");
-            writefln("docS=\n%s", docS.toJSON(true).toPrettyString);
-            pragma(msg, "type docS=", typeof(docS));
+            assert(docS[TYPENAME].get!string == Simpel.type);
+            // writefln("docS=\n%s", docS.toJSON(true).toPrettyString);
+            // pragma(msg, "type docS=", typeof(docS));
             const s_check=Simpel(docS);
-            writefln("docS=\n%s", s_check.toDoc.toJSON(true).toPrettyString);
+            // writefln("docS=\n%s", s_check.toDoc.toJSON(true).toPrettyString);
             // const s_check=Simpel(s);
             assert(s == s_check);
         }
@@ -533,7 +568,7 @@ unittest {
             writefln("keys=%s", docS.keys);
             assert(docS["$S"].get!int == 42);
             assert(docS["TEXT"].get!string == "other text");
-            assert(docS[TYPENAME].get!string == "SIMPELLABEL");
+            assert(docS[TYPENAME].get!string == SimpelLabel.type);
             const s_check=SimpelLabel(docS);
             writefln("docS=\n%s", s_check.toDoc.toJSON(true).toPrettyString);
 
@@ -564,7 +599,7 @@ unittest {
         { // Empty document
             auto h=new HiBON;
             const doc=Document(h.serialize);
-            writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
+//            writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assertThrown!HiBONException(NoLabel(doc));
             assertThrown!HiBONException(WithLabel(doc));
         }
@@ -573,7 +608,7 @@ unittest {
             auto h=new HiBON;
             h["not_an_option"]=42;
             const doc=Document(h.serialize);
-            writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
+            //          writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assertNotThrown!HiBONException(NoLabel(doc));
             assertThrown!HiBONException(WithLabel(doc));
         }
@@ -583,7 +618,7 @@ unittest {
             h["not_an_option"]=42;
             h[TYPENAME]="LBL";
             const doc=Document(h.serialize);
-            writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
+            //  writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assertNotThrown!HiBONException(NoLabel(doc));
             assertNotThrown!HiBONException(WithLabel(doc));
         }
@@ -594,25 +629,103 @@ unittest {
             s.s =17;
             s.text="text!";
             const doc=s.toDoc;
-            writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
+            // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assertNotThrown!HiBONException(NoLabel(doc));
             assertThrown!HiBONException(WithLabel(doc));
 
             auto h=s.toHiBON;
             h[TYPENAME]=WithLabel.type;
             const doc_label=Document(h.serialize);
-            writefln("docS=\n%s", doc_label.toJSON(true).toPrettyString);
+            // writefln("docS=\n%s", doc_label.toJSON(true).toPrettyString);
 
             const s_label=WithLabel(doc_label);
-            writefln("docS=\n%s", s_label.toDoc.toJSON(true).toPrettyString);
+            // writefln("docS=\n%s", s_label.toDoc.toJSON(true).toPrettyString);
 
             const s_new=NoLabel(s_label.toDoc);
-
-            // WithLabel s_label;
-            // s_label.not_an_option=s.not_an_option;
-            // s_label.s=s.s;
 
         }
     }
 
+    { // Check verify member
+        template NotBoth(bool FILTER) {
+            @RecordType("NotBoth") static struct NotBoth {
+                static if (FILTER) {
+                    @Label("*", true) @(Filter.Initialized) int x;
+                    @Label("*", true) @(Filter.Initialized) @Filter(q{a < 42}) int y;
+                }
+                else {
+                    @Label("*", true) int x;
+                    @Label("*", true) int y;
+                }
+                bool verify(const Document doc) {
+                    return doc.hasMember("x") ^ doc.hasMember("y");
+                }
+                mixin HiBONRecord!(
+                    q{
+                        this(int x, int y) {
+                            this.x=x; this.y=y;
+                        }
+                    });
+            }
+        }
+
+        alias NotBothFilter=NotBoth!true;
+        alias NotBothNoFilter=NotBoth!false;
+
+        const s_filter_x=NotBothFilter(11, int.init);
+        const s_filter_y=NotBothFilter(int.init, 13);
+        const s_dont_filter=NotBothFilter();
+        const s_dont_filter_xy=NotBothFilter(11, 13);
+
+        const s_filter_x_doc=s_filter_x.toDoc;
+        const s_filter_y_doc=s_filter_y.toDoc;
+        const s_dont_filter_doc=s_dont_filter.toDoc;
+        const s_dont_filter_xy_doc=s_dont_filter_xy.toDoc;
+
+        // writefln("docS=\n%s", s_filter_x.toDoc.toJSON(true).toPrettyString);
+        // writefln("docS=\n%s", s_filter_y.toDoc.toJSON(true).toPrettyString);
+        {
+            const check_s_filter_x=NotBothFilter(s_filter_x_doc);
+            assert(check_s_filter_x == s_filter_x);
+            const check_s_filter_y=NotBothFilter(s_filter_y_doc);
+//            const check_s_no_filter_y=NotBothNoFilter(s_filter_y_doc);
+//             writefln("s_filter_x=%s", s_filter_x);
+// //            writefln("check_s_no_filter_y=%s", check_s_no_filter_y);
+//             writefln("s_filter_y=%s", s_filter_y);
+//             writefln("check_s_filter_y=%s", check_s_filter_y);
+            assert(check_s_filter_y == s_filter_y);
+        }
+
+        { // Test that  the .verify throws an HiBONException
+
+            assertThrown!HiBONException(NotBothNoFilter(s_dont_filter_doc));
+            assertThrown!HiBONException(NotBothNoFilter(s_dont_filter_xy_doc));
+            assertThrown!HiBONException(NotBothFilter(s_dont_filter_doc));
+            assertThrown!HiBONException(NotBothFilter(s_dont_filter_xy_doc));
+//            const x=NotBothFilter(s_dont_filter_xy_doc);
+//            const x=NotBothNoFilter(s_dont_filter_xy_doc)
+        }
+
+        {
+            const s_filter_42 = NotBothFilter(12, 42);
+            const s_filter_42_doc = s_filter_42.toDoc;
+            const s_filter_not_42 = NotBothFilter(s_filter_42.toDoc);
+            writefln("docS=\n%s", s_filter_42_doc.toJSON(true).toPrettyString);
+//            writefln("docS=\n%s", s_dont_filter_xy_doc.toJSON(true).toPrettyString);
+            assert(s_filter_not_42 == NotBothFilter(12, int.init));
+        }
+        // const s_no_filter_x=NotBothNoFilter(11, int.init);
+        // const s_no_filter_y=NotBothNoFilter(int.init, 13);
+        // const s_dont_no_filter=NotBothNoFilter();
+        // const s_dont_no_filter_xy=NotBothNoFilter(11, 13);
+
+
+        // writefln("docS=\n%s", s_no_filter_x.toDoc.toJSON(true).toPrettyString);
+        // writefln("docS=\n%s", s_no_filter_y.toDoc.toJSON(true).toPrettyString);
+        // writefln("docS=\n%s", s_dont_no_filter.toDoc.toJSON(true).toPrettyString);
+        // writefln("docS=\n%s", s_dont_no_filter_xy.toDoc.toJSON(true).toPrettyString);
+
+
+
+    }
 }

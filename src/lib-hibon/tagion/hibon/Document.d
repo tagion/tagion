@@ -282,7 +282,7 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the key exist in the Document
      +/
-    bool hasElement(in string key) const {
+    bool hasMember(in string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
 
@@ -290,8 +290,8 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the index exist in the Document
      +/
-    bool hasElement(Index)(in Index index) const if (isIntegral!Index) {
-        return hasElement(index.to!string);
+    bool hasMember(Index)(in Index index) const if (isIntegral!Index) {
+        return hasMember(index.to!string);
     }
 
     /++
@@ -663,7 +663,7 @@ static assert(uint.sizeof == 4);
                     enum name = test_tabel.fieldNames[i];
                     alias U = test_tabel.Types[i];
                     enum  E = Value.asType!U;
-                    assert(doc.hasElement(name));
+                    assert(doc.hasMember(name));
                     const e = doc[name];
                     assert(e.get!U == test_tabel[i]);
                     assert(keys.front == name);
@@ -759,7 +759,7 @@ static assert(uint.sizeof == 4);
                         enum name = test_tabel.fieldNames[i];
                         alias U = test_tabel.Types[i];
                         enum  E = Value.asType!U;
-                        assert(under_doc.hasElement(name));
+                        assert(under_doc.hasMember(name));
                         const e = under_doc[name];
                         assert(e.get!U == test_tabel[i]);
                         assert(keys.front == name);
