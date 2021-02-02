@@ -232,9 +232,9 @@ static size_t size(U)(const(U[]) array) pure {
             return value.by!type;
         }
 
-        // static const(Member) opCast(string key) pure {
-        //     return new Member(key);
-        // }
+        static const(Member) opCast(string key) pure {
+            return new Member(key);
+        }
 
         /++
          Calculates the size in bytes of the Member
@@ -514,7 +514,6 @@ static size_t size(U)(const(U[]) array) pure {
         hibon.remove(1);
         assert(!hibon.hasMember(1));
     }
-
 
     /++
      Returns:

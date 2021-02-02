@@ -23,17 +23,22 @@ struct Label {
 
 /++
  Filter attribute for toHiBON
-+/
+ +/
 struct Filter {
     string code; /// Filter function
     enum Initialized=Filter(q{a !is a.init});
 }
 
-
+/++
+ Validates the Document type on construction
+ +/
 struct Inspect {
-    string verify; ///
+    string code; ///
 }
 
+/++
+ Sets the HiBONRecord type
+ +/
 struct RecordType {
     string name;
 }
@@ -270,22 +275,37 @@ mixin template HiBONRecord(string CTOR="") {
                     {
                         alias FieldType=Fields!ThisType[i];
                         case key:
-                            static if (is(FieldType == enum)) {
-                                alias DocType=OriginalType!FieldType;
+                            static if (is(FieldType == struct) || is(FieldType == class)) {
+                                static assert(
+                                    __traits(compiles, FieldType.fitting(Document(doc))),
+                                    format("Member %s is missing %s", key, fitting(Document(doc)).stringof));
+                                try {
+                                    const sub_doc=doc[key].get!Document;
+                                    return FieldType.fitting(sub_doc);
+                                }
+                                catch (Exception e) {
+                                    return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key);
+                                }
                             }
                             else {
-                                alias DocType=FieldType;
-                            }
-                            static assert(Document.Value.hasType!DocType,
-                                format("Type %s for member %s with key %s is not supported",
-                                    Type.stringof, DocType, key));
-                            enum TypeE=Document.Value.asType!DocType;
-                            if (TypeE !is e.type) {
-                                return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key);
-                            }
-                            static if (key == TYPENAME) {
-                                if (this.type != e.get!string) {
-                                    return DocResult(Document.Element.ErrorCode.DOCUMENT_TYPE, key);
+                                static if (is(FieldType == enum)) {
+                                    alias DocType=OriginalType!FieldType;
+                                }
+                                else {
+                                    alias DocType=FieldType;
+                                }
+                                pragma(msg, "FieldType=", FieldType, "DocType=%s", DocType);
+                                static assert(Document.Value.hasType!DocType,
+                                    format("Type %s for member %s with key %s is not supported",
+                                        FieldType.stringof, DocType, key));
+                                enum TypeE=Document.Value.asType!DocType;
+                                if (TypeE !is e.type) {
+                                    return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key);
+                                }
+                                static if (key == TYPENAME) {
+                                    if (this.type != e.get!string) {
+                                        return DocResult(Document.Element.ErrorCode.DOCUMENT_TYPE, key);
+                                    }
                                 }
                             }
                     }
@@ -352,11 +372,6 @@ mixin template HiBONRecord(string CTOR="") {
                     enum name=default_name;
                     enum optional=false;
                 }
-                static if (hasUDA!(this.tupleof[i], Inspect)) {
-                    alias Inspects=getUDAs!(m, Inspect);
-
-                    pragma(msg, Inspects);
-                }
                 writefln("\tname=%s", name);
                 static if (name.length) {
                     writefln("\tget name %s optional %s", name, optional);
@@ -370,6 +385,20 @@ mixin template HiBONRecord(string CTOR="") {
                         if (!doc.hasMember(name)) {
                             continue ForeachTuple;
                         }
+                    }
+                    static if (hasUDA!(this.tupleof[i], Inspect)) {
+                        alias Inspects=getUDAs!(this.tupleof[i], Inspect);
+                        pragma(msg, "Inspects=", Inspects);
+                        scope(exit) {
+                            static foreach(F; Inspects) {
+                                {
+                                    alias inspectFun=unaryFun!(F.code);
+                                    pragma(msg, "Inspect ", F.code);
+                                    check(inspectFun(m), message("Member %s faild on inspection %s with %s", name, F.code, m));
+                                }
+                            }
+                        }
+
                     }
                     static if (is(BaseT == struct)) {
                         auto sub_doc = doc[name].get!Document;
@@ -766,7 +795,7 @@ unittest {
     void EnumTest(T)() {  // Check enum
         enum Count : T {
             zero, one, two, three
-        }
+                }
         alias OriginalCount = OriginalType!Count;
 
         static struct SimpleCount {
@@ -849,6 +878,65 @@ unittest {
                 assertNotThrown!Exception(SimpleNoCount(doc));
             }
         }
+    }
+
+    {
+        static struct SuperStruct {
+            Simpel sub;
+            string some_text;
+            mixin HiBONRecord!(
+                q{
+                    this(string some_text, int s, string text) {
+                        this.some_text=some_text;
+                        sub=Simpel(s, text);
+                    }
+                });
+        }
+        const s=SuperStruct("some_text", 42, "text");
+        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
+        const s_converted=SuperStruct(s.toDoc);
+        assert(s == s_converted);
+    }
+
+    {
+        static class SuperClass {
+            Simpel sub;
+            string class_some_text;
+            mixin HiBONRecord!(
+                q{
+                    this(string some_text, int s, string text) {
+                        this.class_some_text=some_text;
+                        sub=Simpel(s, text);
+                    }
+                });
+            bool opEqual(const SuperClass lhs) const pure nothrow {
+                return true;
+            }
+        }
+        const s=new SuperClass("some_text", 42, "text");
+        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
+        const s_converted=new SuperClass(s.toDoc);
+        assert(s.toDoc == s_converted.toDoc);
+    }
+
+    {
+        static struct Test {
+            @Inspect(q{a < 42}) @Inspect(q{a > 3}) int x;
+            mixin HiBONRecord;
+        }
+
+        Test s;
+        s.x=17;
+        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
+        assertNotThrown!Exception(Test(s.toDoc));
+        s.x=42;
+        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
+        assertThrown!HiBONRecordException(Test(s.toDoc));
+        s.x=1;
+        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
+//        Test(s.toDoc);
+        assertThrown!HiBONRecordException(Test(s.toDoc));
+
     }
 
     // {

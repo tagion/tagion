@@ -1143,7 +1143,8 @@ static assert(uint.sizeof == 4);
                 INVALID_TYPE,   // Type is not defined
                 OVERFLOW,       // The specifed data does not fit into the data stream
                 ARRAY_SIZE_BAD, // The binary-array size in bytes is not a multipla of element size in the array
-                KEY_NOT_DEFINED // Key in the target was not defined
+                KEY_NOT_DEFINED, // Key in the target was not defined
+                BAD_SUB_DOCUMENT // Error convering sub document
             }
 
         /++

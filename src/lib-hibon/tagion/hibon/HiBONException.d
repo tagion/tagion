@@ -16,7 +16,7 @@ class HiBONException : TagionException {
 alias check=Check!(HiBONException);
 
 @safe
-class HiBONRecordException : TagionException {
+class HiBONRecordException : HiBONException {
     this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
         super( msg, file, line );
     }
