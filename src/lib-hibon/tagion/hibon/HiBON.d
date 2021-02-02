@@ -379,13 +379,7 @@ static size_t size(U)(const(U[]) array) pure {
     void opIndexAssign(T)(T x, const string key) {
         .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
-        static if (is(T==int)) {
-            import std.stdio;
-            writefln("key=%s x=%s", key, x);
-            writefln("new_member.get!int=%s", new_member.get!T);
-
-        }
-        _members.insert(new_member);
+        .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));
     }
 
     /++
@@ -952,6 +946,23 @@ static size_t size(U)(const(U[]) array) pure {
             hibon["a"]=sub;
             assert(hibon.size == Type.sizeof+ubyte.sizeof+"a".length+sub.size);
         }
+    }
+
+    unittest
+    { // Override of a key is not allowed
+        import std.exception : assertThrown, assertNotThrown;
+
+        enum override_key="okey";
+        auto h=new HiBON;
+        h[override_key]=42;
+
+        assert(h[override_key].get!int is 42);
+        assertThrown!HiBONException(h[override_key]=17);
+
+        h.remove(override_key);
+        assertNotThrown!Exception(h[override_key]=17);
+        assert(h[override_key].get!int is 17);
+
     }
 
 }

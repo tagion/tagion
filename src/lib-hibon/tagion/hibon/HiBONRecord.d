@@ -844,13 +844,13 @@ unittest {
 
             {
                 h.remove(nocount);
-//                auto h=new HiBON;
                 h["nocount"]=NoCount.four;
                 const doc=Document(h.serialize);
                 assertNotThrown!Exception(SimpleNoCount(doc));
             }
         }
     }
+
     // {
     // enum Count {
     //     zero, one, two, three
