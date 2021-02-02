@@ -157,14 +157,11 @@ mixin template HiBONRecord(string CTOR="") {
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
-                    writefln("IS ENUM %s", is(MemberT == enum));
                     static if (__traits(compiles, m.toHiBON)) {
                         hibon[name]=m.toHiBON;
                     }
                     else static if (is(MemberT == enum)) {
                         hibon[name]=cast(OriginalType!MemberT)m;
-                        writefln("ENUM name %s type=%s MemberT=%s OriginalType!MemberT=%s",
-                            name, hibon[name].type, MemberT.stringof, OriginalType!MemberT.stringof);
                     }
                     else static if (is(BaseT == class) || is(BaseT == struct)) {
                         static assert(is(BaseT == HiBON) || is(BaseT : const(Document)),
@@ -200,10 +197,6 @@ mixin template HiBONRecord(string CTOR="") {
                         }
                         else {
                             pragma(msg, "->", BaseT, ": ", MemberT, ": ", i, "m=", m.stringof, " ", typeof(this.tupleof[i]), " ", this.tupleof[i].stringof);
-                            scope(exit) {
-                                writefln("set %s %s", name, cast(UnqualT)(this.tupleof[i]));
-                            }
-
                             hibon[name]=cast(BaseT)m;
                         }
                     }
@@ -349,14 +342,12 @@ mixin template HiBONRecord(string CTOR="") {
 //            pragma(msg, m);
             static if (__traits(compiles, typeof(m))) {
                 enum default_name=basename!(this.tupleof[i]);
-                writefln("default_name=%s", default_name);
                 static if (hasUDA!(this.tupleof[i], Label)) {
                     alias label=GetLabel!(this.tupleof[i])[0];
                     pragma(msg, "label.name=", label.name, " VOID=", VOID, " default_name=", default_name);
                     enum name=(label.name == VOID)?default_name:label.name;
                     pragma(msg, "* name=", name);
                     enum optional=label.optional;
-                    writefln("\toptional=%s", optional, doc.hasMember(name));
                     static if (label.optional) {
                         if (!doc.hasMember(name)) {
                             continue ForeachTuple;
@@ -372,9 +363,7 @@ mixin template HiBONRecord(string CTOR="") {
                     enum name=default_name;
                     enum optional=false;
                 }
-                writefln("\tname=%s", name);
                 static if (name.length) {
-                    writefln("\tget name %s optional %s", name, optional);
                     enum member_name=this.tupleof[i].stringof;
                     //  enum code=format("%s=doc[name].get!UnqualT;", member_name);
                     alias MemberT=typeof(m);
@@ -428,7 +417,6 @@ mixin template HiBONRecord(string CTOR="") {
                                 check(0, format("The value %s does not fit into the %s enum type", x, BaseT.stringof));
                             }
                         }
-                        writefln("EnumBaseT=%s BaseT=%s", EnumBaseT.stringof, BaseT.stringof);
                         m=cast(BaseT)doc[name].get!EnumBaseT;
                     }
                     else static if (is(BaseT:U[], U)) {
@@ -536,7 +524,7 @@ const(Document) fread(string filename) {
 }
 
 unittest {
-    import std.stdio;
+//    import std.stdio;
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
     import std.traits : OriginalType, staticMap;
@@ -628,13 +616,10 @@ unittest {
         {
             const s=SimpelLabel(42, "other text");
             const docS=s.toDoc;
-            writefln("keys=%s", docS.keys);
             assert(docS["$S"].get!int == 42);
             assert(docS["TEXT"].get!string == "other text");
             assert(docS[TYPENAME].get!string == SimpelLabel.type);
             const s_check=SimpelLabel(docS);
-            writefln("docS=\n%s", s_check.toDoc.toJSON(true).toPrettyString);
-
 
             assert(s == s_check);
 
@@ -647,7 +632,6 @@ unittest {
             const docS=s.toDoc;
 
             const s_check=BasicData(docS);
-            writefln("docS=\n%s", s_check.toDoc.toJSON(true).toPrettyString);
 
             assert(s == s_check);
             immutable s_imut = BasicData(docS);
@@ -773,8 +757,6 @@ unittest {
             const s_filter_42 = NotBothFilter(12, 42);
             const s_filter_42_doc = s_filter_42.toDoc;
             const s_filter_not_42 = NotBothFilter(s_filter_42.toDoc);
-            writefln("docS=\n%s", s_filter_42_doc.toJSON(true).toPrettyString);
-//            writefln("docS=\n%s", s_dont_filter_xy_doc.toJSON(true).toPrettyString);
             assert(s_filter_not_42 == NotBothFilter(12, int.init));
         }
         // const s_no_filter_x=NotBothNoFilter(11, int.init);
@@ -807,23 +789,12 @@ unittest {
         s.count=Count.one;
 
         const s_doc=s.toDoc;
-        writefln("s_doc=%s", s_doc.toJSON(true).toPrettyString);
-
-        {
-            const s_result = SimpleCount(s_doc);
-            writefln("s_result=%s", s_result);
-        }
 
         {
             auto h=new HiBON;
             h["count"]=OriginalCount(Count.max);
-//            import std.traits : OriginalType;
-            writefln("count %s %s", OriginalType!(typeof(Count.max)).stringof, OriginalType!(Count).stringof);
-//            h["count"]=Count.max;
-
 
             const s_result = SimpleCount(Document(h.serialize));
-            writefln("s_result=%s", s_result);
         }
     }
 
@@ -841,7 +812,7 @@ unittest {
         }
 
         auto h=new HiBON;
-        writeln("----- ----- -----");
+
         {
             enum nocount="nocount";
             {
@@ -852,13 +823,8 @@ unittest {
             }
             {
                 h.remove(nocount);
-                // auto h=new HiBON;
-                writeln("SET ONE");
                 h[nocount]=NoCount.one;
                 const doc=Document(h.serialize);
-                writefln("h[nocount].type=%s", h[nocount].type);
-                writefln("h[nocount].get!int=%s", h[nocount].get!int);
-                writefln("doc=%s", doc.toJSON(true).toPrettyString);
                 const x=SimpleNoCount(doc);
                 assertNotThrown!Exception(SimpleNoCount(doc));
             }
@@ -893,7 +859,6 @@ unittest {
                 });
         }
         const s=SuperStruct("some_text", 42, "text");
-        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
         const s_converted=SuperStruct(s.toDoc);
         assert(s == s_converted);
     }
@@ -914,7 +879,6 @@ unittest {
             }
         }
         const s=new SuperClass("some_text", 42, "text");
-        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
         const s_converted=new SuperClass(s.toDoc);
         assert(s.toDoc == s_converted.toDoc);
     }
@@ -927,35 +891,12 @@ unittest {
 
         Test s;
         s.x=17;
-        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
         assertNotThrown!Exception(Test(s.toDoc));
         s.x=42;
-        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
         assertThrown!HiBONRecordException(Test(s.toDoc));
         s.x=1;
-        writefln("doc=%s", s.toDoc.toJSON(true).toPrettyString);
-//        Test(s.toDoc);
         assertThrown!HiBONRecordException(Test(s.toDoc));
 
     }
 
-    // {
-    // enum Count {
-    //     zero, one, two, three
-    // }
-
-    // pragma(msg, "EnumContinuousSequency!Count=", EnumContinuousSequency!Count);
-
-    // enum NoCount {
-    //     zero, one, three=3
-    // }
-    // pragma(msg, "EnumContinuousSequency!NoCount=", EnumContinuousSequency!NoCount);
-
-    // enum OffsetCount {
-    //     one=1, two, three
-    // }
-    // pragma(msg, "EnumContinuousSequency!OffsetCount=", EnumContinuousSequency!OffsetCount);
-
-    // pragma(msg, "OffsetCount.min=", OffsetCount.min, " OffsetCount.max=%", OffsetCount.max);
-    // }
 }
