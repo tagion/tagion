@@ -3,12 +3,14 @@ module tagion.hibon.HiBONRecord;
 import file=std.file;
 import std.exception : assumeUnique;
 
-import tagion.basic.Basic : basename;
+import tagion.basic.Basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONException;
+import tagion.hibon.HiBONException : HiBONRecordException;
+
+
 
 /++
  Label use to set the HiBON member name
@@ -94,16 +96,18 @@ enum Choice {
  +/
 mixin template HiBONRecord(string CTOR="") {
 
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable;
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable, EnumMembers;
     import std.typecons : TypedefType, Tuple;
     import std.format;
     import std.functional : unaryFun;
     import std.range : iota;
     import std.meta : staticMap;
 
-    import tagion.hibon.HiBONException : check;
+//    import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
     import tagion.basic.Basic : basename;
+    import tagion.basic.TagionExceptions : Check;
+    alias check=Check!(HiBONRecordException);
 
     alias ThisType=typeof(this);
 
@@ -148,11 +152,14 @@ mixin template HiBONRecord(string CTOR="") {
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
+                    writefln("IS ENUM %s", is(MemberT == enum));
                     static if (__traits(compiles, m.toHiBON)) {
                         hibon[name]=m.toHiBON;
                     }
                     else static if (is(MemberT == enum)) {
                         hibon[name]=cast(OriginalType!MemberT)m;
+                        writefln("ENUM name %s type=%s MemberT=%s OriginalType!MemberT=%s",
+                            name, hibon[name].type, MemberT.stringof, OriginalType!MemberT.stringof);
                     }
                     else static if (is(BaseT == class) || is(BaseT == struct)) {
                         static assert(is(BaseT == HiBON) || is(BaseT : const(Document)),
@@ -261,12 +268,18 @@ mixin template HiBONRecord(string CTOR="") {
             switch (e.key) {
                 static foreach(i, key; keys) {
                     {
-                        alias Type=Fields!ThisType[i];
+                        alias FieldType=Fields!ThisType[i];
                         case key:
-                            static assert(Document.Value.hasType!Type,
+                            static if (is(FieldType == enum)) {
+                                alias DocType=OriginalType!FieldType;
+                            }
+                            else {
+                                alias DocType=FieldType;
+                            }
+                            static assert(Document.Value.hasType!DocType,
                                 format("Type %s for member %s with key %s is not supported",
-                                    Type.stringof, FieldsNameTuple!ThisType[i], key));
-                            enum TypeE=Document.Value.asType!Type;
+                                    Type.stringof, DocType, key));
+                            enum TypeE=Document.Value.asType!DocType;
                             if (TypeE !is e.type) {
                                 return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key);
                             }
@@ -303,12 +316,12 @@ mixin template HiBONRecord(string CTOR="") {
     this(const Document doc) {
         static if (HAS_TYPE) {
             string _type=doc[TYPENAME].get!string;
-            .check(_type == type, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
+            check(_type == type, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
         }
         enum do_verify=hasMember!(typeof(this), "verify") && isCallable!(verify);
         static if (do_verify) {
             scope(exit) {
-                .check(this.verify(doc), format("Document verification faild"));
+                check(this.verify(doc), format("Document verification faild"));
             }
         }
     ForeachTuple:
@@ -370,6 +383,23 @@ mixin template HiBONRecord(string CTOR="") {
                     }
                     else static if (is(BaseT == enum)) {
                         alias EnumBaseT=OriginalType!BaseT;
+                        const x=doc[name].get!EnumBaseT;
+                        static if (EnumContinuousSequency!BaseT) {
+                            check((x >= BaseT.min) && (x <= BaseT.max),
+                                message("The value %s is out side the range for %s enum type", x, BaseT.stringof));
+                        }
+                        else {
+                        EnumCase:
+                            switch (x) {
+                                static foreach(E; EnumMembers!BaseT) {
+                                case E:
+                                    break EnumCase;
+                                }
+                            default:
+                                check(0, format("The value %s does not fit into the %s enum type", x, BaseT.stringof));
+                            }
+                        }
+                        writefln("EnumBaseT=%s BaseT=%s", EnumBaseT.stringof, BaseT.stringof);
                         m=cast(BaseT)doc[name].get!EnumBaseT;
                     }
                     else static if (is(BaseT:U[], U)) {
@@ -469,9 +499,10 @@ void fwrite(string filename, const HiBON hibon) {
  The Document read from the file
  +/
 const(Document) fread(string filename) {
+    import tagion.hibon.HiBONException : check;
     immutable data=assumeUnique(cast(ubyte[])file.read(filename));
     const doc=Document(data);
-    .check(doc.isInorder, "HiBON Document format failed");
+    check(doc.isInorder, "HiBON Document format failed");
     return doc;
 }
 
@@ -479,7 +510,10 @@ unittest {
     import std.stdio;
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
+    import std.traits : OriginalType, staticMap;
+    import std.meta : AliasSeq;
     import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
 
     @RecordType("SIMPEL") static struct Simpel {
         int s;
@@ -609,7 +643,7 @@ unittest {
             h["not_an_option"]=42;
             const doc=Document(h.serialize);
             //          writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
-            assertNotThrown!HiBONException(NoLabel(doc));
+            assertNotThrown!Exception(NoLabel(doc));
             assertThrown!HiBONException(WithLabel(doc));
         }
 
@@ -619,8 +653,8 @@ unittest {
             h[TYPENAME]="LBL";
             const doc=Document(h.serialize);
             //  writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
-            assertNotThrown!HiBONException(NoLabel(doc));
-            assertNotThrown!HiBONException(WithLabel(doc));
+            assertNotThrown!Exception(NoLabel(doc));
+            assertNotThrown!Exception(WithLabel(doc));
         }
 
         {
@@ -630,7 +664,7 @@ unittest {
             s.text="text!";
             const doc=s.toDoc;
             // writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
-            assertNotThrown!HiBONException(NoLabel(doc));
+            assertNotThrown!Exception(NoLabel(doc));
             assertThrown!HiBONException(WithLabel(doc));
 
             auto h=s.toHiBON;
@@ -696,12 +730,12 @@ unittest {
             assert(check_s_filter_y == s_filter_y);
         }
 
-        { // Test that  the .verify throws an HiBONException
+        { // Test that  the .verify throws an HiBONRecordException
 
-            assertThrown!HiBONException(NotBothNoFilter(s_dont_filter_doc));
-            assertThrown!HiBONException(NotBothNoFilter(s_dont_filter_xy_doc));
-            assertThrown!HiBONException(NotBothFilter(s_dont_filter_doc));
-            assertThrown!HiBONException(NotBothFilter(s_dont_filter_xy_doc));
+            assertThrown!HiBONRecordException(NotBothNoFilter(s_dont_filter_doc));
+            assertThrown!HiBONRecordException(NotBothNoFilter(s_dont_filter_xy_doc));
+            assertThrown!HiBONRecordException(NotBothFilter(s_dont_filter_doc));
+            assertThrown!HiBONRecordException(NotBothFilter(s_dont_filter_xy_doc));
 //            const x=NotBothFilter(s_dont_filter_xy_doc);
 //            const x=NotBothNoFilter(s_dont_filter_xy_doc)
         }
@@ -728,4 +762,112 @@ unittest {
 
 
     }
+
+    void EnumTest(T)() {  // Check enum
+        enum Count : T {
+            zero, one, two, three
+        }
+        alias OriginalCount = OriginalType!Count;
+
+        static struct SimpleCount {
+            Count count;
+            mixin HiBONRecord;
+        }
+
+        SimpleCount s;
+        s.count=Count.one;
+
+        const s_doc=s.toDoc;
+        writefln("s_doc=%s", s_doc.toJSON(true).toPrettyString);
+
+        {
+            const s_result = SimpleCount(s_doc);
+            writefln("s_result=%s", s_result);
+        }
+
+        {
+            auto h=new HiBON;
+            h["count"]=OriginalCount(Count.max);
+//            import std.traits : OriginalType;
+            writefln("count %s %s", OriginalType!(typeof(Count.max)).stringof, OriginalType!(Count).stringof);
+//            h["count"]=Count.max;
+
+
+            const s_result = SimpleCount(Document(h.serialize));
+            writefln("s_result=%s", s_result);
+        }
+    }
+
+    static foreach(T; AliasSeq!(int, long, uint, ulong)) {
+        EnumTest!T;
+    }
+
+    { // Invalid Enum
+        enum NoCount {
+            one=1, two, four=4
+        }
+        static struct SimpleNoCount {
+            NoCount nocount;
+            mixin HiBONRecord;
+        }
+
+        auto h=new HiBON;
+        writeln("----- ----- -----");
+        {
+            enum nocount="nocount";
+            {
+//                auto h=new HiBON;
+                h[nocount]=0;
+                const doc=Document(h.serialize);
+                assertThrown!HiBONRecordException(SimpleNoCount(doc));
+            }
+            {
+                h.remove(nocount);
+                // auto h=new HiBON;
+                writeln("SET ONE");
+                h[nocount]=NoCount.one;
+                const doc=Document(h.serialize);
+                writefln("h[nocount].type=%s", h[nocount].type);
+                writefln("h[nocount].get!int=%s", h[nocount].get!int);
+                writefln("doc=%s", doc.toJSON(true).toPrettyString);
+                const x=SimpleNoCount(doc);
+                assertNotThrown!Exception(SimpleNoCount(doc));
+            }
+
+            {
+                h.remove(nocount);
+//                auto h=new HiBON;
+                h["nocount"]=3;
+                const doc=Document(h.serialize);
+                assertThrown!HiBONRecordException(SimpleNoCount(doc));
+            }
+
+            {
+                h.remove(nocount);
+//                auto h=new HiBON;
+                h["nocount"]=NoCount.four;
+                const doc=Document(h.serialize);
+                assertNotThrown!Exception(SimpleNoCount(doc));
+            }
+        }
+    }
+    // {
+    // enum Count {
+    //     zero, one, two, three
+    // }
+
+    // pragma(msg, "EnumContinuousSequency!Count=", EnumContinuousSequency!Count);
+
+    // enum NoCount {
+    //     zero, one, three=3
+    // }
+    // pragma(msg, "EnumContinuousSequency!NoCount=", EnumContinuousSequency!NoCount);
+
+    // enum OffsetCount {
+    //     one=1, two, three
+    // }
+    // pragma(msg, "EnumContinuousSequency!OffsetCount=", EnumContinuousSequency!OffsetCount);
+
+    // pragma(msg, "OffsetCount.min=", OffsetCount.min, " OffsetCount.max=%", OffsetCount.max);
+    // }
 }

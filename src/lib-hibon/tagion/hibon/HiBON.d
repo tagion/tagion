@@ -13,11 +13,11 @@ import std.container : RedBlackTree;
 import std.format;
 import std.meta : staticIndexOf;
 import std.algorithm.iteration : map, fold, each, sum;
-import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType;
+import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, isIntegral, OriginalType;
 import std.meta : AliasSeq;
-import std.typecons : TypedefType;
 
 import std.conv : to;
+import std.exception : assumeUnique;
 
 import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
@@ -76,7 +76,7 @@ static size_t size(U)(const(U[]) array) pure {
             result += _members[].map!(a => a.size).fold!( (a, b) => a + b);
         }
         if (result>0) {
-            return result; //+calc_size(result);
+            return result;
         }
         else {
             return ubyte.sizeof;
@@ -100,11 +100,12 @@ static size_t size(U)(const(U[]) array) pure {
      Returns:
      The byte stream
      +/
+    @trusted
     immutable(ubyte[]) serialize() const {
-        scope buffer = new ubyte[serialize_size];
+        auto buffer = new ubyte[serialize_size];
         size_t index;
         append(buffer, index);
-        return buffer.idup;
+        return assumeUnique(buffer);
     }
 
     // /++
@@ -126,12 +127,14 @@ static size_t size(U)(const(U[]) array) pure {
      Internal Member in the HiBON class
      +/
     @safe static class Member {
-        string key;
-        Type type;
+        const string key;
+        immutable Type type;
         Value value;
 
-        protected this() pure {
-            value = uint.init;
+        @nogc
+        protected this(const string key) pure {
+            this.key=key;
+            type = Type.NONE;
         }
 
         alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
@@ -142,8 +145,14 @@ static size_t size(U)(const(U[]) array) pure {
          key = the name of the member
          +/
         @trusted
-        this(T)(T x, string key) { //const pure if ( is(T == const) ) {
-            alias UnqualT = Unqual!T;
+        this(T)(T x, string key) pure {
+            static if (is(T == enum)) {
+                alias UnqualT = Unqual!(OriginalType!T);
+                pragma(msg, "UnqualT=", UnqualT);
+            }
+            else {
+                alias UnqualT = Unqual!T;
+            }
             enum E=Value.asType!UnqualT;
             this.key  = key;
             with(Type) {
@@ -169,6 +178,8 @@ static size_t size(U)(const(U[]) array) pure {
                     this.value=x;
                 }
                 else {
+                    import std.stdio;
+                    debug writefln("x=%s", cast(UnqualT)x);
                     this.value= cast(UnqualT)x;
                 }
             }
@@ -194,11 +205,10 @@ static size_t size(U)(const(U[]) array) pure {
          Returns:
          The a member with a name of key
          +/
-        static Member search(string key) pure {
-            auto result=new Member();
-            result.key = key;
-            return result;
-        }
+        // static Member search(const string key) pure {
+        //      auto result=new Member(key);
+        //      return result;
+        // }
 
         /++
          Returns:
@@ -222,9 +232,9 @@ static size_t size(U)(const(U[]) array) pure {
             return value.by!type;
         }
 
-        static const(Member) opCast(string key) pure {
-            return Member.search(key);
-        }
+        // static const(Member) opCast(string key) pure {
+        //     return new Member(key);
+        // }
 
         /++
          Calculates the size in bytes of the Member
@@ -354,7 +364,7 @@ static size_t size(U)(const(U[]) array) pure {
 
     /++
      Returns:
-     A range of members
+     A range of members with sorted keys
      +/
     auto opSlice() const {
         return _members[];
@@ -366,9 +376,15 @@ static size_t size(U)(const(U[]) array) pure {
      x = parameter value
      key = member key
      +/
-    void opIndexAssign(T)(T x, in string key) {
+    void opIndexAssign(T)(T x, const string key) {
         .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
+        static if (is(T==int)) {
+            import std.stdio;
+            writefln("key=%s x=%s", key, x);
+            writefln("new_member.get!int=%s", new_member.get!T);
+
+        }
         _members.insert(new_member);
     }
 
@@ -378,11 +394,14 @@ static size_t size(U)(const(U[]) array) pure {
      x = parameter value
      index = member index
      +/
-    void opIndexAssign(T)(T x, const size_t index) {
-        const key=index.to!string;
-        static if(!is(size_t == uint) ) {
+    void opIndexAssign(T, INDEX)(T x, const INDEX index) if (isIntegral!INDEX) {
+        static if(INDEX.max > uint.max) {
             .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
+        static if(INDEX.min < uint.min) {
+            .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
+        }
+        const key=index.to!string;
         opIndexAssign(x, key);
     }
 
@@ -395,8 +414,9 @@ static size_t size(U)(const(U[]) array) pure {
      Throws:
      if the an member with the key does not exist an HiBONException is thrown
      +/
-    const(Member) opIndex(in string key) const {
-        auto range=_members.equalRange(Member.search(key));
+    const(Member) opIndex(const string key) const {
+        scope search=new Member(key);
+        auto range=_members.equalRange(search);
         .check(!range.empty, message("Member '%s' does not exist", key) );
         return range.front;
     }
@@ -412,11 +432,14 @@ static size_t size(U)(const(U[]) array) pure {
      if the an member with the index does not exist an HiBONException is thrown
      Or an std.conv.ConvException is thrown if the key is not an index
      +/
-    const(Member) opIndex(const size_t index) const {
-        const key=index.to!string;
-        static if(!is(size_t == uint) ) {
+    const(Member) opIndex(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
+        static if(INDEX.max > uint.max) {
             .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
+        static if(INDEX.min < uint.min) {
+            .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
+        }
+        const key=index.to!string;
         return opIndex(key);
     }
 
@@ -426,8 +449,21 @@ static size_t size(U)(const(U[]) array) pure {
      Returns:
      true if the member with the key exists
      +/
-    bool hasMember(in string key) const {
-        auto range=_members.equalRange(Member.search(key));
+    bool hasMember(const string key) const {
+        auto range=_members.equalRange(new Member(key));
+        return !range.empty;
+    }
+    /++
+     Params:
+     index = member index
+     Returns:
+     true if the member with the key exists
+     +/
+
+    bool hasMember(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
+        const key=index.to!string;
+        scope search=new Member(key);
+        auto range=_members.equalRange(search);
         return !range.empty;
     }
 
@@ -436,9 +472,9 @@ static size_t size(U)(const(U[]) array) pure {
      Params:
      key = name of the member to be removed
      +/
-    @trusted
-    void remove(string key) {
-        _members.removeKey(Member.search(key));
+    @trusted void remove(const string key) {
+        scope search=new Member(key);
+        _members.removeKey(search);
     }
 
     ///
@@ -453,6 +489,38 @@ static size_t size(U)(const(U[]) array) pure {
         hibon.remove("b");
         assert(!hibon.hasMember("b"));
     }
+
+    /++
+     Removes a member with name of key
+     Params:
+     key = name of the member to be removed
+     +/
+    @trusted void remove(INDEX)(const INDEX index) if (isIntegral!INDEX) {
+        static if(INDEX.max > uint.max) {
+            .check(index <= uint.max, message("Index out of range (index=%d)", index));
+        }
+        static if(INDEX.min < uint.min) {
+            .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
+        }
+        const key=index.to!string;
+        scope search=new Member(key);
+        _members.removeKey(search);
+    }
+
+    unittest {
+        auto hibon=new HiBON;
+        hibon[0]=0;
+        hibon[1]=1;
+        hibon[2]=2;
+        assert(hibon.hasMember(0));
+        assert(hibon.hasMember(1));
+        assert(hibon.hasMember(2));
+        assert(!hibon.hasMember(3));
+
+        hibon.remove(1);
+        assert(!hibon.hasMember(1));
+    }
+
 
     /++
      Returns:

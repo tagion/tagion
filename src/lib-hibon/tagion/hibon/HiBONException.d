@@ -14,3 +14,10 @@ class HiBONException : TagionException {
 
 /// check function used in the HiBON package
 alias check=Check!(HiBONException);
+
+@safe
+class HiBONRecordException : TagionException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+        super( msg, file, line );
+    }
+}
