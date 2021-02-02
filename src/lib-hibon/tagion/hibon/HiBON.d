@@ -148,7 +148,6 @@ static size_t size(U)(const(U[]) array) pure {
         this(T)(T x, string key) pure {
             static if (is(T == enum)) {
                 alias UnqualT = Unqual!(OriginalType!T);
-                pragma(msg, "UnqualT=", UnqualT);
             }
             else {
                 alias UnqualT = Unqual!T;
@@ -158,7 +157,6 @@ static size_t size(U)(const(U[]) array) pure {
             with(Type) {
             static if (E is NONE) {
                 alias BaseT=TypedefType!UnqualT;
-                pragma(msg, "UnqualT=", UnqualT, ": ", BaseT, " ", is(BaseT==Buffer), " : ", Buffer, ": ", T);
                 static if (is(BaseT==Buffer)) {
                     alias CastT=Buffer;
                 }
@@ -178,8 +176,6 @@ static size_t size(U)(const(U[]) array) pure {
                     this.value=x;
                 }
                 else {
-                    import std.stdio;
-                    debug writefln("x=%s", cast(UnqualT)x);
                     this.value= cast(UnqualT)x;
                 }
             }

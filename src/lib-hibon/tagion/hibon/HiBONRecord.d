@@ -128,7 +128,6 @@ mixin template HiBONRecord(string CTOR="") {
 
     inout(HiBON) toHiBON() inout {
         auto hibon= new HiBON;
-        pragma(msg, typeof(this.tupleof), " ", this.tupleof.length);
     MemberLoop:
         foreach(i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
@@ -142,11 +141,9 @@ mixin template HiBONRecord(string CTOR="") {
                 }
                 static if (hasUDA!(this.tupleof[i], Filter)) {
                     alias filters=getUDAs!(this.tupleof[i], Filter);
-                    pragma(msg, "FILTERS=", filters);
                     static foreach(F; filters) {
                         {
                             alias filterFun=unaryFun!(F.code);
-                            pragma(msg, filterFun.stringof);
                             if (!filterFun(m)) {
                                 continue MemberLoop;
                             }
@@ -196,7 +193,6 @@ mixin template HiBONRecord(string CTOR="") {
                             }
                         }
                         else {
-                            pragma(msg, "->", BaseT, ": ", MemberT, ": ", i, "m=", m.stringof, " ", typeof(this.tupleof[i]), " ", this.tupleof[i].stringof);
                             hibon[name]=cast(BaseT)m;
                         }
                     }
@@ -287,7 +283,6 @@ mixin template HiBONRecord(string CTOR="") {
                                 else {
                                     alias DocType=FieldType;
                                 }
-                                pragma(msg, "FieldType=", FieldType, "DocType=%s", DocType);
                                 static assert(Document.Value.hasType!DocType,
                                     format("Type %s for member %s with key %s is not supported",
                                         FieldType.stringof, DocType, key));
@@ -339,14 +334,11 @@ mixin template HiBONRecord(string CTOR="") {
         }
     ForeachTuple:
         foreach(i, ref m; this.tupleof) {
-//            pragma(msg, m);
             static if (__traits(compiles, typeof(m))) {
                 enum default_name=basename!(this.tupleof[i]);
                 static if (hasUDA!(this.tupleof[i], Label)) {
                     alias label=GetLabel!(this.tupleof[i])[0];
-                    pragma(msg, "label.name=", label.name, " VOID=", VOID, " default_name=", default_name);
                     enum name=(label.name == VOID)?default_name:label.name;
-                    pragma(msg, "* name=", name);
                     enum optional=label.optional;
                     static if (label.optional) {
                         if (!doc.hasMember(name)) {
@@ -369,7 +361,6 @@ mixin template HiBONRecord(string CTOR="") {
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
-                    pragma(msg, MemberT, ": ", BaseT, ": ", UnqualT);
                     static if (optional) {
                         if (!doc.hasMember(name)) {
                             continue ForeachTuple;
@@ -377,12 +368,10 @@ mixin template HiBONRecord(string CTOR="") {
                     }
                     static if (hasUDA!(this.tupleof[i], Inspect)) {
                         alias Inspects=getUDAs!(this.tupleof[i], Inspect);
-                        pragma(msg, "Inspects=", Inspects);
                         scope(exit) {
                             static foreach(F; Inspects) {
                                 {
                                     alias inspectFun=unaryFun!(F.code);
-                                    pragma(msg, "Inspect ", F.code);
                                     check(inspectFun(m), message("Member %s faild on inspection %s with %s", name, F.code, m));
                                 }
                             }
@@ -449,15 +438,10 @@ mixin template HiBONRecord(string CTOR="") {
                                 array~=e.get!U;
                             }
                             m=array;
-//                                static assert(0, format("Special handling of array %s", MemberT.stringof));
                         }
                         else static if (is(U == immutable)) {
-                            // static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
-                            //         BaseT.stringof, cast(immutable(U)[]).stringof));
                             enum code=q{m=doc[name].get!BaseT;};
-                            pragma(msg, "code=", code, " ", typeof(m), " ", m.stringof);
                             m=doc[name].get!BaseT;
-//                            mixin(code);
                         }
                         else {
                             alias InvalidType=immutable(U)[];
@@ -470,12 +454,6 @@ mixin template HiBONRecord(string CTOR="") {
                         enum code=q{this.tupleof[i]=doc[name].get!UnqualT;};
                         m=doc[name].get!UnqualT;
                     }
-//                    }
-                    // else {
-                    //     pragma(msg, "code=", code, " ", typeof(m));
-                    //     //this.tupleof[i]=doc[name].get!UnqualT;
-                    //     //mixin(code);
-                    // }
                 }
             }
             else {
@@ -605,8 +583,6 @@ unittest {
             assert(docS["s"].get!int == -42);
             assert(docS["text"].get!string == "some text");
             assert(docS[TYPENAME].get!string == Simpel.type);
-            // writefln("docS=\n%s", docS.toJSON(true).toPrettyString);
-            // pragma(msg, "type docS=", typeof(docS));
             const s_check=Simpel(docS);
             // writefln("docS=\n%s", s_check.toDoc.toJSON(true).toPrettyString);
             // const s_check=Simpel(s);
