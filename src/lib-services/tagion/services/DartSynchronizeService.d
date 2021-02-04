@@ -108,11 +108,13 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
             dart.dump;
         }
         else{
+            version(none) {
             if(!opts.dart.initialize){
                 dart.calculateFingerprint();
             }
             dart.dump;
             log("DART bullseye: %s", dart.fingerprint.cutHex);
+            }
         }
 
         scope(exit){
@@ -208,10 +210,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         connectionPool.send(resp.key, tosend);
                         // log("DSS: Sended response to connection: %s", resp.key);
                     }
-                    if(message_doc.hasElement(Keywords.method) && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
+                    if(message_doc.hasMember(Keywords.method) && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
                         serverHandler();
                     }
-                    else if(!message_doc.hasElement(Keywords.method)&& state.checkState(DartSynchronizeState.SYNCHRONIZING)){
+                    else if(!message_doc.hasMember(Keywords.method)&& state.checkState(DartSynchronizeState.SYNCHRONIZING)){
                         syncPool.setResponse(resp);
                     }
                     else{
@@ -255,7 +257,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                             auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
                             //auto data_doc = Document(archive.data);
                             log("%s", archive.doc.toJSON);
-                            if(archive.doc.hasElement("$type")){
+                            if(archive.doc.hasMember("$type")){
                                 if(archive.doc["$type"].get!string == "BIL"){
                                     auto bill = StandardBill(archive.doc);
                                     import std.algorithm: canFind;
