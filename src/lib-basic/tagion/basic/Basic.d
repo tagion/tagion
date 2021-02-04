@@ -323,3 +323,36 @@ enum DataFormat {
     wast    = "wast",  // WebAssembler text format
     dartdb  = "drt",   // DART data-base
 }
+
+
+template EnumContinuousSequency(Enum) if (is(Enum == enum)) {
+    template Sequency(EList...) {
+        static if (EList.length is 1) {
+            enum Sequency=true;
+        }
+        else static if (EList[0]+1 is EList[1]) {
+            enum Sequency=Sequency!(EList[1..$]);
+        }
+        else {
+            enum Sequency=false;
+        }
+    }
+    enum EnumContinuousSequency=Sequency!(EnumMembers!Enum);
+}
+
+static unittest {
+    enum Count {
+        zero, one, two, three
+    }
+    static assert(EnumContinuousSequency!Count);
+
+    enum NoCount {
+        zero, one, three=3
+    }
+    static assert(!EnumContinuousSequency!NoCount);
+
+    enum OffsetCount {
+        one=1, two, three
+    }
+    static assert(EnumContinuousSequency!OffsetCount);
+}
