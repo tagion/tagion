@@ -90,8 +90,8 @@ class EmulatorGossipNet : StdGossipNet {
         foreach(e; events) {
             auto pack_doc=Document(e.serialize);
             immutable pack=new immutable(EventPackage)(this, pack_doc);
-            immutable fingerprint=calcHash(pack.event_body.serialize);
-            log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
+//            immutable fingerprint=pack.event_body.fingerprint;
+            log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack.event_body.altitude);
         }
     }
 
