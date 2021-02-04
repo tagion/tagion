@@ -468,7 +468,7 @@ mixin template HiBONRecord(string CTOR="") {
                         m=cast(BaseT)doc[name].get!EnumBaseT;
                     }
                     else static if (isDocumentArray!BaseT) {
-                        writefln("doc_array=%s BaseT=%s", doc.toJSON(true).toPrettyString, BaseT.stringof);
+                        writefln("doc_array=%s BaseT=%s", doc.toJSON.toPrettyString, BaseT.stringof);
 
                         const doc_array=doc[name].get!Document;
                         check(doc_array.isArray, message("Document array expected for %s member",  name));
@@ -480,7 +480,7 @@ mixin template HiBONRecord(string CTOR="") {
                             array.length=doc_array.length;
                             foreach(ref a, e; lockstep(array, doc_array[])) {
                                 a=e.get!ElementT;
-                                writefln("%s]e=%s ", e.key, a.toJSON(true).toPrettyString);
+                                writefln("%s]e=%s ", e.key, a.toJSON.toPrettyString);
                             }
                             // int i=5;
                             // foreach(e; doc_array[]) {
@@ -492,7 +492,7 @@ mixin template HiBONRecord(string CTOR="") {
                             // }
                             return array;
                         }
-                        writefln("Before doc_array=%s", doc_array.toJSON(true).toPrettyString);
+                        writefln("Before doc_array=%s", doc_array.toJSON.toPrettyString);
 
                         m=result;
 //                        assert(0);
@@ -1057,7 +1057,7 @@ unittest {
             const(int)[] array = [-42, 3, 17];
             const s=StructWithRangeTest(array);
             //writefln("s=%s",s);
-            writefln("doc=%s", s.toJSON(true).toPrettyString);
+            writefln("doc=%s", s.toJSON.toPrettyString);
             const doc=s.toDoc;
             alias ResultT=typeof(s);
             assert(ResultT.fitting(doc).error is Document.Element.ErrorCode.NONE);
@@ -1091,7 +1091,7 @@ unittest {
                     const s_get=h["s"].get!StructWithRange;
 //            auto s_get=s_get_m.get!int;
 //            auto s_get=s_get_m.get!StructWithRange;
-                    writefln(`h["s"].get!StructWithRange=%s`, s_get.toJSON(true).toPrettyString);
+                    writefln(`h["s"].get!StructWithRange=%s`, s_get.toJSON.toPrettyString);
                     assert(s == s_get);
                 }
             }
@@ -1109,12 +1109,12 @@ unittest {
                 const s_get=h["s"].get!SimpelArray;
 
                 writeln("\n\n\n");
-                writefln("s=%s", s_get.toJSON(true).toPrettyString);
+                writefln("s=%s", s_get.toJSON.toPrettyString);
                 assert(s_get == s);
 
                 const s_doc=s_get.toDoc;
 
-                writefln("s_doc=%s", s_doc.toJSON(true).toPrettyString);
+                writefln("s_doc=%s", s_doc.toJSON.toPrettyString);
                 // foreach(e; s_doc[]) {
                 //     writefln("e.key=%s e.type=%s", e.key, e.type);
                 // }
@@ -1131,7 +1131,7 @@ unittest {
 
                 const s_result=SimpelArray(s_doc);
 
-                writefln("s_result=%s", s_result.toJSON(true).toPrettyString);
+                writefln("s_result=%s", s_result.toJSON.toPrettyString);
 
                 assert(s_result == s);
 //                const s_doc_get=s_doc["array"].new_get!(SimpelArray[]);

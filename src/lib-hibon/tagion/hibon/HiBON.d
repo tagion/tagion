@@ -23,7 +23,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONRecord : isHiBON, isDocument;
+import tagion.hibon.HiBONRecord : isHiBON, isDocument, isDocumentArray;
 
 import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo, Buffer;
@@ -396,21 +396,23 @@ static size_t size(U)(const(U[]) array) pure {
      x = parameter value
      key = member key
      +/
-    @trusted
     void opIndexAssign(T)(T x, const string key) if (isHiBON!T) {
-        opIndexAssign(cast(HiBON)x.toHiBON, key);
+        opIndexAssign(x.toHiBON, key);
     }
 
-    // void opIndexAssign(T)(T x, const string key) if (isDocument!T) {
-    //     opIndexAssign(cast(Document)x.toDoc, key);
-    // }
+    void opIndexAssign(T)(T x, const string key) if (isDocumentArray!T) {
+        auto h=new HiBON;
+        foreach(v_key, v; x) {
+            h[v_key]=x;
+        }
+        h[key]=h;
+    }
 
-    void opIndexAssign(T)(T x, const string key) if (!isHiBON!T && !isDocument!T) {
+    void opIndexAssign(T)(T x, const string key) if (!isHiBON!T && !isDocument!T && !isDocumentArray!T) {
         .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
         .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));
     }
-
 
     /++
      Assign and member x with the index

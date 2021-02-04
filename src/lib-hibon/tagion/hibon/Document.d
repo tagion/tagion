@@ -13,6 +13,7 @@ import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 import std.range : lockstep;
+import std.array : join;
 import std.typecons : TypedefType;
 import core.exception : RangeError;
 
@@ -182,39 +183,34 @@ static assert(uint.sizeof == 4);
     @safe
     struct Range {
         @nogc:
-        immutable(ubyte[]) data;
+        private immutable(ubyte)[] _data;
         immutable uint     ver;
-    protected:
-        size_t            _index;
-        Element           _element;
-
     public:
-
-        this(immutable(ubyte[]) data) nothrow {
-            this.data = data;
-            if (data.length == 0) {
-                _index = ubyte.sizeof;
-            }
-            else {
-                _index = LEB128.calc_size(data);
-                popFront();
+        this(immutable(ubyte[]) data) pure nothrow {
+            if (data.length) {
+                const _index = LEB128.calc_size(data);
+                _data = data[_index..$];
                 uint _ver;
                 if (!empty && (front.type is Type.VER)) {
-                    const leb128_ver=LEB128.decode!uint(data[_index..$]);
+                    const leb128_ver=LEB128.decode!uint(data);
                     _ver=leb128_ver.value;
-                    _index+=leb128_ver.size;
+                    _data=_data[leb128_ver.size..$];
                 }
                 ver=_ver;
             }
         }
 
-        this(const Document doc) nothrow {
+        this(const Document doc) pure nothrow {
             this(doc.data);
         }
 
-        @property pure nothrow const {
+        immutable(ubyte[]) data() const pure nothrow {
+            return _data;
+        }
+
+        pure nothrow const {
             bool empty() {
-                return _index > data.length;
+                return _data.length is 0;
             }
 
 
@@ -222,7 +218,7 @@ static assert(uint.sizeof == 4);
              * InputRange primitive operation that returns the currently iterated element.
              */
             const(Element) front() {
-                return _element;
+                return Element(_data);
             }
         }
 
@@ -230,14 +226,9 @@ static assert(uint.sizeof == 4);
         /**
          * InputRange primitive operation that advances the range to its next element.
          */
-        @trusted
-            void popFront() nothrow {
-            if (_index >= data.length) {
-                _index = data.length+1;
-            }
-            else {
-                emplace!Element(&_element, data[_index..$]);
-                _index += _element.size;
+        void popFront() nothrow {
+            if (_data.length) {
+                _data=_data[Element(_data).size..$];
             }
         }
     }
@@ -247,7 +238,7 @@ static assert(uint.sizeof == 4);
      A range of Element's
      +/
     @nogc
-    Range opSlice() const nothrow {
+    Range opSlice() const pure nothrow {
         return Range(data);
     }
 
@@ -841,69 +832,69 @@ static assert(uint.sizeof == 4);
             // This is lazy initialization for some efficient.
             this.data = data;
         }
-            /++
-             Returns:
-             The HiBON Value of the element
-             throws:
-             if  the type is invalid and HiBONException is thrown
-             +/
+        /++
+         Returns:
+         The HiBON Value of the element
+         throws:
+         if  the type is invalid and HiBONException is thrown
+         +/
         @property @trusted const(Value*) value() pure const  {
-                immutable value_pos=valuePos;
-                with(Type)
-                TypeCase:
-                    switch(type) {
-                        static foreach(E; EnumMembers!Type) {
-                            static if (isHiBONType(E)) {
-                            case E:
-                                static if (E is DOCUMENT) {
-                                    immutable len=LEB128.decode!uint(data[value_pos..$]);
-                                    return new Value(Document(data[value_pos..value_pos+len.size+len.value]));
-                                }
-                                else static if ((E is STRING) || (E is BINARY)) {
-                                    alias T = Value.TypeT!E;
-                                    alias U = ForeachType!T;
-                                    immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
-                                    immutable buffer_pos=value_pos+binary_len.size;
-                                    immutable buffer=(cast(immutable(U)*)(data[buffer_pos..$].ptr))[0..binary_len.value];
-                                    return new Value(buffer);
-                                }
-                                else static if (E is BIGINT) {
-                                    auto big_leb128=BigNumber.decodeLEB128(data[value_pos..$]);
-                                    return new Value(big_leb128.value);
-                                }
-                                else static if (isDataBlock(E)) {
-                                    immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
-                                    immutable buffer_pos=value_pos+binary_len.size;
-                                    immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
-                                    return new Value(DataBlock(buffer));
-                                }
-                                else {
-                                    if (isHiBONType(type)) {
-                                        static if (E is TIME) {
-                                            alias T=long;
-                                        }
-                                        else {
-                                            alias T = Value.TypeT!E;
-                                        }
-                                        static if (isIntegral!T) {
-                                            auto result=new Value(LEB128.decode!T(data[value_pos..$]).value);
-                                            return result;
-                                        }
-                                        else {
-                                            return cast(Value*)(data[value_pos..$].ptr);
-                                        }
+            immutable value_pos=valuePos;
+            with(Type)
+            TypeCase:
+                switch(type) {
+                    static foreach(E; EnumMembers!Type) {
+                        static if (isHiBONType(E)) {
+                        case E:
+                            static if (E is DOCUMENT) {
+                                immutable len=LEB128.decode!uint(data[value_pos..$]);
+                                return new Value(Document(data[value_pos..value_pos+len.size+len.value]));
+                            }
+                            else static if ((E is STRING) || (E is BINARY)) {
+                                alias T = Value.TypeT!E;
+                                alias U = ForeachType!T;
+                                immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
+                                immutable buffer_pos=value_pos+binary_len.size;
+                                immutable buffer=(cast(immutable(U)*)(data[buffer_pos..$].ptr))[0..binary_len.value];
+                                return new Value(buffer);
+                            }
+                            else static if (E is BIGINT) {
+                                auto big_leb128=BigNumber.decodeLEB128(data[value_pos..$]);
+                                return new Value(big_leb128.value);
+                            }
+                            else static if (isDataBlock(E)) {
+                                immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
+                                immutable buffer_pos=value_pos+binary_len.size;
+                                immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
+                                return new Value(DataBlock(buffer));
+                            }
+                            else {
+                                if (isHiBONType(type)) {
+                                    static if (E is TIME) {
+                                        alias T=long;
+                                    }
+                                    else {
+                                        alias T = Value.TypeT!E;
+                                    }
+                                    static if (isIntegral!T) {
+                                        auto result=new Value(LEB128.decode!T(data[value_pos..$]).value);
+                                        return result;
+                                    }
+                                    else {
+                                        return cast(Value*)(data[value_pos..$].ptr);
                                     }
                                 }
-                                break TypeCase;
                             }
+                            break TypeCase;
                         }
-                    default:
-                        //empty
                     }
-                .check(0, "Invalid type "~ type.to!string);
+                default:
+                    //empty
+                }
+            .check(0, "Invalid type "~ type.to!string);
 
-                assert(0);
-            }
+            assert(0);
+        }
 
 
         @property const {
@@ -941,7 +932,7 @@ static assert(uint.sizeof == 4);
             }
 
             @trusted
-            T get(T)() if (isDocumentArray!T) {
+                T get(T)() if (isDocumentArray!T) {
                 alias ElementT=ForeachType!T;
                 const doc=get!Document;
                 alias UnqualT=Unqual!T;
@@ -998,8 +989,8 @@ static assert(uint.sizeof == 4);
              throws:
              if the key is not an index an HiBONException is thrown
              +/
-            uint index() {
-                .check(isIndex, message("Key '%s' is not an index", key));
+            uint index() pure {
+                .check(isIndex, ["Key '",key.to!string, "' is not an index", key].join);
                 return LEB128.decode!uint(data[keyPos..$]).value;
             }
 
@@ -1185,44 +1176,44 @@ static assert(uint.sizeof == 4);
                 NOT_AN_ARRAY      /// Not an Document array
             }
 
-        /++
-         Check if the element is valid
-         Returns:
-         The error code the element.
-         ErrorCode.NONE means that the element is valid
+            /++
+             Check if the element is valid
+             Returns:
+             The error code the element.
+             ErrorCode.NONE means that the element is valid
 
-         +/
-        @nogc
-        @trusted ErrorCode valid() const pure nothrow {
-            enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
+             +/
+            @nogc
+                @trusted ErrorCode valid() const pure nothrow {
+                enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
-            with(ErrorCode) {
-                if ( type is Type.DOCUMENT ) {
-                    return DOCUMENT_TYPE;
-                }
-                if ( data.length < MIN_ELEMENT_SIZE ) {
-                    if (data.length !is ubyte.sizeof) {
-                        return TOO_SMALL;
+                with(ErrorCode) {
+                    if ( type is Type.DOCUMENT ) {
+                        return DOCUMENT_TYPE;
                     }
-                    else if (data[0] !is 0) {
-                        return INVALID_NULL;
+                    if ( data.length < MIN_ELEMENT_SIZE ) {
+                        if (data.length !is ubyte.sizeof) {
+                            return TOO_SMALL;
+                        }
+                        else if (data[0] !is 0) {
+                            return INVALID_NULL;
+                        }
                     }
-                }
-                if ( (isNative(type) || (type is Type.DEFINED_ARRAY) ) ) {
-                    return ILLEGAL_TYPE;
-                }
-                if ( size > data.length ) {
-                    return OVERFLOW;
-                }
-                if (type is Type.BINARY) {
-                    const leb128_size=LEB128.decode!ulong(data[valuePos..$]);
-                    if (leb128_size.value > uint.max) {
+                    if ( (isNative(type) || (type is Type.DEFINED_ARRAY) ) ) {
+                        return ILLEGAL_TYPE;
+                    }
+                    if ( size > data.length ) {
                         return OVERFLOW;
                     }
+                    if (type is Type.BINARY) {
+                        const leb128_size=LEB128.decode!ulong(data[valuePos..$]);
+                        if (leb128_size.value > uint.max) {
+                            return OVERFLOW;
+                        }
+                    }
+                    return NONE;
                 }
-                return NONE;
             }
-        }
 
 
 
@@ -1244,5 +1235,4 @@ static assert(uint.sizeof == 4);
         }
 
     }
-
 }

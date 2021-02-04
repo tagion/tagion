@@ -92,23 +92,13 @@ enum {
 }
 
 @safe
-JSONValue toJSON(Document doc, bool hashsafe=true) {
-    if (hashsafe) {
-        return toJSONT!true(doc);
-    }
-    else {
-        return toJSONT!false(doc);
-    }
+JSONValue toJSON(Document doc) {
+    return toJSONT!true(doc);
 }
 
 @safe
-JSONValue toJSON(T)(T value, bool hashsafe=true) if(isDocument!T) {
-    if (hashsafe) {
-        return toJSONT!true(value.toDoc);
-    }
-    else {
-        return toJSONT!false(value.toDoc);
-    }
+JSONValue toJSON(T)(T value) if(isDocument!T) {
+    return toJSONT!true(value.toDoc);
 }
 
 @safe
@@ -453,7 +443,7 @@ unittest {
         //
         const doc=Document(hibon.serialize);
 
-        auto json=doc.toJSON(true);
+        auto json=doc.toJSON;
         import std.stdio;
         // writefln("Before\n%s", json.toPrettyString);
         // writefln("%s", doc.data);
@@ -465,7 +455,7 @@ unittest {
         // writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
 
         assert(doc == parse_doc);
-        assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
+        assert(doc.toJSON.toString == parse_doc.toJSON.toString);
     }
 
     { // Test sample 2 HiBON Array and Object
@@ -489,7 +479,7 @@ unittest {
         //
         const doc=Document(hibon.serialize);
 
-        auto json=doc.toJSON(true);
+        auto json=doc.toJSON;
         import std.stdio;
         // writefln("Before\n%s", json.toPrettyString);
         // writefln("%s", doc.data);
@@ -501,7 +491,7 @@ unittest {
         //      writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
 
         assert(doc == parse_doc);
-        assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
+        assert(doc.toJSON.toString == parse_doc.toJSON.toString);
     }
 
     { // Test sample 3 HiBON Array and Object
@@ -527,7 +517,7 @@ unittest {
         //
         const doc=Document(hibon.serialize);
 
-        auto json=doc.toJSON(true);
+        auto json=doc.toJSON;
         import std.stdio;
         // writefln("Before\n%s", json.toPrettyString);
         // writefln("%s", doc.data);
@@ -540,6 +530,6 @@ unittest {
         //writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
 
         assert(doc == parse_doc);
-        assert(doc.toJSON(true).toString == parse_doc.toJSON(true).toString);
+        assert(doc.toJSON.toString == parse_doc.toJSON.toString);
     }
 }
