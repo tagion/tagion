@@ -150,7 +150,7 @@ struct HiRPC {
     }
 
     static void check_element(T)(Document doc, string key) {
-        check(doc.hasElement(key), format("Member '%s' missing", key));
+        check(doc.hasMember(key), format("Member '%s' missing", key));
         check_type!T(doc, key);
     }
 
@@ -226,7 +226,7 @@ struct HiRPC {
             this(const(SecureNet) net, const(Document) doc) {
                 check_element!Document(doc, Keywords.message);
                 auto message_doc=doc[Keywords.message].get!Document;
-                if ( doc.hasElement(Keywords.signature) ) {
+                if ( doc.hasMember(Keywords.signature) ) {
                     signature=doc[Keywords.signature].get!Buffer;
                     check_element!Buffer(doc, Keywords.pubkey);
                     immutable pubkey_data=doc[Keywords.pubkey].get!Buffer.idup;
@@ -236,7 +236,7 @@ struct HiRPC {
                         verified=net.verify(fingerprint, signature, pubkey);
                     }
                 }
-                if ( message_doc.hasElement(Keywords.id) ) {
+                if ( message_doc.hasMember(Keywords.id) ) {
                     check_type!uint(message_doc, Keywords.id);
                     message.id=message_doc[Keywords.id].get!uint;
                 }
@@ -244,12 +244,12 @@ struct HiRPC {
                 check_element!string(doc, Keywords.hirpc);
                 hirpc=doc[Keywords.hirpc].get!string;
                 check(hirpc == HiRPC_version, format("HiRPC version %s not support use %s", hirpc, HiRPC_version));
-                if ( message_doc.hasElement(Keywords.method) ) {
+                if ( message_doc.hasMember(Keywords.method) ) {
                     check(message.id > 0, "Message id must be defined and the value must be greather than 0");
                     type=HiRPCType.ACTION;
                     check_type!string(message_doc, Keywords.method);
                     message.method=message_doc[Keywords.method].get!string;
-                    if ( message_doc.hasElement(Keywords.params) ) {
+                    if ( message_doc.hasMember(Keywords.params) ) {
                         immutable doc_data_params=message_doc[Keywords.params].get!Document;
 //                        auto test=Document(data_params);
                         params=Document(doc_data_params.data.idup);
@@ -261,7 +261,7 @@ struct HiRPC {
                     // None initailized value
                     data=null;
                 }
-                else if ( message_doc.hasElement(Keywords.result) ) {
+                else if ( message_doc.hasMember(Keywords.result) ) {
                     check(message.id > 0, "Message id must be defined and the value must be greather than 0");
                     type=HiRPCType.RESULT;
                     check_type!Document(message_doc, Keywords.result);
@@ -270,11 +270,11 @@ struct HiRPC {
                     //params=Document(null);
                     data=null;
                 }
-                else if ( message_doc.hasElement(Keywords.error) ) {
+                else if ( message_doc.hasMember(Keywords.error) ) {
                     type=HiRPCType.ERROR;
                     check_type!Document(message_doc, Keywords.error);
                     error=message_doc[Keywords.error].get!Document;
-                    if ( message_doc.hasElement(Keywords.data) ) {
+                    if ( message_doc.hasMember(Keywords.data) ) {
                         check_type!Document(message_doc, Keywords.data);
                         data=message_doc[Keywords.data].get!Document;
                     }
@@ -283,7 +283,7 @@ struct HiRPC {
                         data=null;
                         //params=Document(null);
                     }
-                    if ( message_doc.hasElement(Keywords.code) ) {
+                    if ( message_doc.hasMember(Keywords.code) ) {
                         message.code=message_doc[Keywords.code].get!int;
                     }
                 }
