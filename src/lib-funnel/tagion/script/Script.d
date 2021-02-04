@@ -1916,7 +1916,7 @@ version(none)
                     break;
                 case DOCUMENT:
                     auto doc=obj.by!DOCUMENT;
-                    result=doc.hasElement(key);
+                    result=doc.hasMember(key);
                     break;
                 default:
                     return new ScriptError(message("Can only use HiBON and Doc as document types, not: %s", obj.type), this);
