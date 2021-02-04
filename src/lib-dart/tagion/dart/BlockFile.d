@@ -575,7 +575,7 @@ class BlockFile {
             foreach(i, ref m; this.tupleof) {
                 alias typeof(m) type;
                 enum name=basename!(this.tupleof[i]);
-                if ( doc.hasElement(name) ) {
+                if ( doc.hasMember(name) ) {
                     static if (is(type == uint[uint] ) ) {
                         auto stats_doc=doc[name].get!Document;
                         foreach(elm; stats_doc[]) {
@@ -1131,17 +1131,18 @@ class BlockFile {
      + If possible it recycling old deleted blocks
      +/
     class AllocatedChain {
+        @RecordType("ACHAIN")
         struct Chain {
             Buffer data;
-            uint begin_index;
-            mixin HiBONRecord!("achain");
+            @Label("begin") uint begin_index;
+            mixin HiBONRecord;
         }
         protected Chain chain;
         this(const Document doc) {
             chain=Chain(doc);
         }
 
-        HiBON toHiBON() const {
+        inout(HiBON) toHiBON() inout {
             return chain.toHiBON;
         }
 

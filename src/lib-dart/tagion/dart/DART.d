@@ -590,8 +590,8 @@ class DART : DARTFile, HiRPC.Supports {
                 scope request_branches=dartRim(rims, hirpc, id);
                 scope result_branches =sync.query(request_branches);
 //                scope Recorder foreign_recoder;
-                if ( !result_branches.params.hasElement(Params.branches) ) {
-                    if ( result_branches.params.hasElement(Params.recorder) ) {
+                if ( !result_branches.params.hasMember(Params.branches) ) {
+                    if ( result_branches.params.hasMember(Params.recorder) ) {
                         scope foreign_recoder=Recorder(net, result_branches.params);
                         sync.record(foreign_recoder);
                     }
