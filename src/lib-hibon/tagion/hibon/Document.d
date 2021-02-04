@@ -832,13 +832,14 @@ static assert(uint.sizeof == 4);
             // This is lazy initialization for some efficient.
             this.data = data;
         }
+
         /++
          Returns:
          The HiBON Value of the element
          throws:
          if  the type is invalid and HiBONException is thrown
          +/
-        @property @trusted const(Value*) value() pure const  {
+        @property @trusted const(Value*) value() const  {
             immutable value_pos=valuePos;
             with(Type)
             TypeCase:
@@ -884,15 +885,15 @@ static assert(uint.sizeof == 4);
                                         return cast(Value*)(data[value_pos..$].ptr);
                                     }
                                 }
+                                break TypeCase;
+
                             }
-                            break TypeCase;
                         }
                     }
                 default:
                     //empty
                 }
-            .check(0, "Invalid type "~ type.to!string);
-
+            .check(0, message("Invalid type %s", type));
             assert(0);
         }
 
@@ -904,20 +905,10 @@ static assert(uint.sizeof == 4);
              throws:
              if the element does not contain the type E and HiBONException is thrown
              +/
-            auto by(Type E)() pure {
-                version(WHEN_MESSAGE_IS_PURE) {
-                    .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
-                    .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
-                }
-                else {
-                    import std.array : join;
-                    enum Etext=E.to!string;
-                    const TypeText=type.to!string;
-                    .check(type is E, ["Type expected is ",Etext," but the actual type is ",TypeText].join());
-                    .check(E !is Type.NONE, ["Type is not supported ",Etext," the actual type is ", TypeText].join);
-                }
+            auto by(Type E)() {
+                .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+                .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
-
             }
 
             /++
@@ -952,10 +943,10 @@ static assert(uint.sizeof == 4);
                 return cast(T)result;
             }
 
-            T get(T)() pure if(!isDocument!T && !isDocumentArray!T) {
+            T get(T)() if(!isDocument!T && !isDocumentArray!T) {
                 enum E = Value.asType!T;
                 import std.format;
-                static assert(E !is Type.NONE, format("Unsupported type ", T.stringof));
+                static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));
                 return by!E;
             }
 
