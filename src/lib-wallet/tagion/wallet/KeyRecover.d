@@ -58,10 +58,13 @@ struct KeyRecover {
         seed=RecoverSeed(doc);
     }
 
-    HiBON toHiBON() const {
+    inout(HiBON) toHiBON() inout {
         return seed.toHiBON;
     }
 
+    static DocResult fitting(const Document doc) {
+        return RecoverSeed.fitting(doc);
+    }
     /++
      Generates the quiz hash of the from a list of questions and answers
      +/
