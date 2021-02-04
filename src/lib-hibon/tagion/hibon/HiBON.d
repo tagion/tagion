@@ -18,6 +18,7 @@ import std.meta : AliasSeq;
 
 import std.conv : to;
 import std.exception : assumeUnique;
+import std.typecons : TypedefType;
 
 import tagion.hibon.BigNumber;
 import tagion.hibon.Document;

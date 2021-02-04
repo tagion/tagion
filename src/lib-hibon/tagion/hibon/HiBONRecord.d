@@ -113,11 +113,11 @@ enum Choice {
  +/
 mixin template HiBONRecord(string CTOR="") {
 
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable, EnumMembers, ForeachType;
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable, EnumMembers, ForeachType, isArray;
     import std.typecons : TypedefType, Tuple;
     import std.format;
     import std.functional : unaryFun;
-    import std.range : iota, enumerate;
+    import std.range : iota, enumerate, lockstep;
     import std.range.primitives : isInputRange;
     import std.meta : staticMap;
     import std.array : join;
@@ -150,7 +150,15 @@ mixin template HiBONRecord(string CTOR="") {
         static HiBON toList(L)(L list) {
             auto array=new HiBON;
             alias ElementT=ForeachType!L;
-            foreach(index, e; list.enumerate) {
+            pragma(msg, ElementT);
+            static if (isArray!ElementT) {
+                auto range=list;
+            }
+            else {
+                pragma(msg, isArray!ElementT);
+                auto range=list.enumerate;
+            }
+            foreach(index, e; range) {
                 array[index]=e;
             }
             return array;
@@ -205,7 +213,7 @@ mixin template HiBONRecord(string CTOR="") {
                         static if (is(BaseT:U[], U)) {
 
                             static if (HiBON.Value.hasType!U) {
-                                hibon[name]=cast(BaseT)m.toList;
+                                hibon[name]=toList(cast(BaseT)m);
                             }
                             else static if (hasMember!(U, "toHiBON")) {
                                 auto array=new HiBON;
@@ -314,6 +322,18 @@ mixin template HiBONRecord(string CTOR="") {
                                         }
                                     }
                                 }
+                                else static if (isInputRange!DocType && Document.Value.hasType!(ForeachType!DocType)) {
+                                    alias TypeE=Document.Value.asType!(ForeachType!DocType);
+                                    if (!doc.isArray) {
+                                        return DocResult(Document.Element.ErrorCode.NOT_AN_ARRAY, key);
+                                    }
+                                    foreach(sub_e; doc[]) {
+                                        if (sub_e.type is TypeE) {
+                                            return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, [key, sub_e.key].join("."));
+                                        }
+                                    }
+
+                                }
                                 else {
                                     enum field_type=FieldType.stringof;
                                     static assert(Document.Value.hasType!DocType,
@@ -367,7 +387,7 @@ mixin template HiBONRecord(string CTOR="") {
             string _type=doc[TYPENAME].get!string;
             check(_type == type, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
         }
-        enum do_verify=hasMember!(typeof(this), "verify") && isCallable!(verify);
+        enum do_verify=hasMember!(typeof(this), "verify") && isCallable!(verify) && __traits(compiles, verify(doc));
         static if (do_verify) {
             scope(exit) {
                 check(this.verify(doc), format("Document verification faild"));
