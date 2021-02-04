@@ -4,14 +4,15 @@
  */
 module tagion.hibon.Document;
 
-
 //import std.format;
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType, isIntegral;
+import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType, isIntegral, hasMember,
+isArrayT=isArray, isAssociativeArray;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
+import std.range : lockstep;
 import std.typecons : TypedefType;
 import core.exception : RangeError;
 
@@ -22,7 +23,8 @@ import tagion.basic.Basic : isOneOf;
 import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
-import tagion.hibon.HiBONException;
+import tagion.hibon.HiBONException : check, HiBONException;
+import tagion.hibon.HiBONRecord : isDocument, isDocumentArray;
 import LEB128=tagion.utils.LEB128;
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
 
@@ -274,7 +276,7 @@ static assert(uint.sizeof == 4);
      Returns:
      Is true if all the keys in ordred numbers
      +/
-    bool isArray() const {
+    bool isArray() const nothrow {
         return .isArray(keys);
     }
 
@@ -845,7 +847,7 @@ static assert(uint.sizeof == 4);
              throws:
              if  the type is invalid and HiBONException is thrown
              +/
-        @property @trusted const(Value*) value() const  {
+        @property @trusted const(Value*) value() pure const  {
                 immutable value_pos=valuePos;
                 with(Type)
                 TypeCase:
@@ -898,7 +900,7 @@ static assert(uint.sizeof == 4);
                     default:
                         //empty
                     }
-                .check(0, message("Invalid type %s", type));
+                .check(0, "Invalid type "~ type.to!string);
 
                 assert(0);
             }
@@ -911,9 +913,18 @@ static assert(uint.sizeof == 4);
              throws:
              if the element does not contain the type E and HiBONException is thrown
              +/
-            auto by(Type E)() {
-                .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
-                .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
+            auto by(Type E)() pure {
+                version(WHEN_MESSAGE_IS_PURE) {
+                    .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+                    .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
+                }
+                else {
+                    import std.array : join;
+                    enum Etext=E.to!string;
+                    const TypeText=type.to!string;
+                    .check(type is E, ["Type expected is ",Etext," but the actual type is ",TypeText].join());
+                    .check(E !is Type.NONE, ["Type is not supported ",Etext," the actual type is ", TypeText].join);
+                }
                 return value.by!E;
 
             }
@@ -924,10 +935,36 @@ static assert(uint.sizeof == 4);
              throws:
              if the element does not contain the type and HiBONException is thrown
              +/
-            T get(T)() {
+            T get(T)() if(isDocument!T) {
+                const doc=get!Document;
+                return T(doc);
+            }
+
+            @trusted
+            T get(T)() if (isDocumentArray!T) {
+                alias ElementT=ForeachType!T;
+                const doc=get!Document;
+                alias UnqualT=Unqual!T;
+                UnqualT result;
+                static if (isAssociativeArray!T) {
+                    foreach(e; doc[]) {
+                        result[e.key]=e.get!ElementT;
+                    }
+                }
+                else {
+                    .check(doc.isArray, "Document must be an array");
+                    result.length=doc.length;
+                    foreach(ref a, e; lockstep(result, doc[])) {
+                        a=e.get!ElementT;
+                    }
+                }
+                return cast(T)result;
+            }
+
+            T get(T)() pure if(!isDocument!T && !isDocumentArray!T) {
                 enum E = Value.asType!T;
                 import std.format;
-                static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));
+                static assert(E !is Type.NONE, format("Unsupported type ", T.stringof));
                 return by!E;
             }
 
@@ -1134,17 +1171,18 @@ static assert(uint.sizeof == 4);
             }
 
             enum ErrorCode {
-                NONE,           // No errors
-                INVALID_NULL,   // Invalid null object
-                KEY_ORDER,      // Error in the key order
-                DOCUMENT_TYPE,  // Warning document type
-                TOO_SMALL,      // Data stream is too small to contain valid data
-                ILLEGAL_TYPE,   // Use of internal types is illegal
-                INVALID_TYPE,   // Type is not defined
-                OVERFLOW,       // The specifed data does not fit into the data stream
-                ARRAY_SIZE_BAD, // The binary-array size in bytes is not a multipla of element size in the array
-                KEY_NOT_DEFINED, // Key in the target was not defined
-                BAD_SUB_DOCUMENT // Error convering sub document
+                NONE,           /// No errors
+                INVALID_NULL,   /// Invalid null object
+                KEY_ORDER,      /// Error in the key order
+                DOCUMENT_TYPE,  /// Warning document type
+                TOO_SMALL,      /// Data stream is too small to contain valid data
+                ILLEGAL_TYPE,   /// Use of internal types is illegal
+                INVALID_TYPE,   /// Type is not defined
+                OVERFLOW,       /// The specifed data does not fit into the data stream
+                ARRAY_SIZE_BAD, /// The binary-array size in bytes is not a multipla of element size in the array
+                KEY_NOT_DEFINED, /// Key in the target was not defined
+                BAD_SUB_DOCUMENT, /// Error convering sub document
+                NOT_AN_ARRAY      /// Not an Document array
             }
 
         /++

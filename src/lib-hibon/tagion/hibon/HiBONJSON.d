@@ -16,6 +16,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONtoText;
+import tagion.hibon.HiBONRecord : isDocument;
 
 import tagion.basic.Message : message;
 // import tagion.utils.JSONOutStream;
@@ -34,7 +35,7 @@ class HiBON2JSONException : HiBONException {
     }
 }
 
-alias check=Check!HiBON2JSONException;
+private alias check=Check!HiBON2JSONException;
 
 enum NotSupported = "none";
 
@@ -97,6 +98,16 @@ JSONValue toJSON(Document doc, bool hashsafe=true) {
     }
     else {
         return toJSONT!false(doc);
+    }
+}
+
+@safe
+JSONValue toJSON(T)(T value, bool hashsafe=true) if(isDocument!T) {
+    if (hashsafe) {
+        return toJSONT!true(value.toDoc);
+    }
+    else {
+        return toJSONT!false(value.toDoc);
     }
 }
 

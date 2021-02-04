@@ -13,7 +13,7 @@ import std.container : RedBlackTree;
 import std.format;
 import std.meta : staticIndexOf;
 import std.algorithm.iteration : map, fold, each, sum;
-import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, isIntegral, OriginalType;
+import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, isIntegral, OriginalType, ReturnType, hasMember;
 import std.meta : AliasSeq;
 
 import std.conv : to;
@@ -23,6 +23,8 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
+import tagion.hibon.HiBONRecord : isHiBON, isDocument;
+
 import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo, Buffer;
 import LEB128=tagion.utils.LEB128;
@@ -188,7 +190,7 @@ static size_t size(U)(const(U[]) array) pure {
          the value as a Document
          +/
         @trusted
-        inout(HiBON) document() inout pure
+        inout(HiBON) document() inout pure nothrow
         in {
             assert(type is Type.DOCUMENT);
         }
@@ -206,13 +208,35 @@ static size_t size(U)(const(U[]) array) pure {
         //      return result;
         // }
 
+        T new_get(T)() const if (isDocument!T || isHiBON!T) {
+            return T.init;
+        }
         /++
          Returns:
          The value as type T
          Throws:
          If the member does not match the type T and HiBONException is thrown
          +/
-        const(T) get(T)() const {
+        T get(T)() const if (isDocument!T || isHiBON!T) {
+            with(Type) {
+                switch(type) {
+                case DOCUMENT:
+                    const h=value.by!DOCUMENT;
+                    const doc=Document(h.serialize);
+                    return T(doc);
+                    break;
+                case NATIVE_DOCUMENT:
+                    const doc=value.by!NATIVE_DOCUMENT;
+                    return T(doc);
+                    break;
+                default:
+                    .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported", type, T.stringof));
+                }
+            }
+            assert(0);
+        }
+
+        const(T) get(T)() const if (!isDocument!T && !isHiBON!T) {
             enum E = Value.asType!T;
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
             return value.by!E;
@@ -372,11 +396,21 @@ static size_t size(U)(const(U[]) array) pure {
      x = parameter value
      key = member key
      +/
-    void opIndexAssign(T)(T x, const string key) {
+    @trusted
+    void opIndexAssign(T)(T x, const string key) if (isHiBON!T) {
+        opIndexAssign(cast(HiBON)x.toHiBON, key);
+    }
+
+    // void opIndexAssign(T)(T x, const string key) if (isDocument!T) {
+    //     opIndexAssign(cast(Document)x.toDoc, key);
+    // }
+
+    void opIndexAssign(T)(T x, const string key) if (!isHiBON!T && !isDocument!T) {
         .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
         .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));
     }
+
 
     /++
      Assign and member x with the index
