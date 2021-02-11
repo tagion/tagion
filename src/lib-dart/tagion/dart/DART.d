@@ -24,6 +24,7 @@ import tagion.Keywords : isValid;
 //import tagion.Base : Check;
 import tagion.basic.TagionExceptions : Check;
 import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.Recorder : Factory, Archive;
 
 alias hex=toHexString;
 
@@ -175,8 +176,8 @@ class DART : DARTFile, HiRPC.Supports {
 
     mixin HiRPC.Support!Quries;
 
-    alias HiRPCSender=HiRPC.HiRPCSender;
-    alias HiRPCReceiver=HiRPC.HiRPCReceiver;
+    alias HiRPCSender=HiRPC.Sender;
+    alias HiRPCReceiver=HiRPC.Receiver;
 
     static {
         const(HiRPCSender) dartRead(Range)(scope Range fingerprints, HiRPC hirpc = HiRPC(null), uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
@@ -197,21 +198,22 @@ class DART : DARTFile, HiRPC.Supports {
             return hirpc.dartRim(params, id);
         }
 
-        const(HiRPCSender) dartModify(scope const Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        const(HiRPCSender) dartModify(scope const Factory.Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
             auto params=new HiBON;
             params[Params.recorder]=recorder.toHiBON;
             return hirpc.dartModify(params, id);
         }
     }
 
- private const(HiRPCSender) dartFullRead(ref const(HiRPCReceiver) received, const bool read_only)
+    pragma(msg, "fixme(alex): Remove dartFullRead");
+    private const(HiRPCSender) dartFullRead(ref const(HiRPCReceiver) received, const bool read_only)
         in {
             mixin FUNCTION_NAME;
-            assert(received.message.method == __FUNCTION_NAME__);
+            assert(received.method.name == __FUNCTION_NAME__);
         }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope result=loadAll(Recorder.Archive.Type.ADD);
+        scope result=loadAll(Archive.Type.ADD);
         return hirpc.result(received, result);
     }
     /++
@@ -259,13 +261,13 @@ class DART : DARTFile, HiRPC.Supports {
     private const(HiRPCSender) dartRead(ref const(HiRPCReceiver) received, const bool read_only)
         in {
             mixin FUNCTION_NAME;
-            assert(received.message.method == __FUNCTION_NAME__);
+            assert(received.method.name == __FUNCTION_NAME__);
         }
     do {
-        HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope doc_fingerprints=received.params[Params.fingerprints].get!(Document);
+        // HiRPC.check_element!Document(received.params, Params.fingerprints);
+        scope doc_fingerprints=received.method.params[Params.fingerprints].get!(Document);
         scope fingerprints=doc_fingerprints.range!(Buffer[]);
-        scope recorder=loads(fingerprints, Recorder.Archive.Type.ADD);
+        scope recorder=loads(fingerprints, Archive.Type.ADD);
         return hirpc.result(received, recorder.toHiBON);
     }
     /++
@@ -309,11 +311,11 @@ class DART : DARTFile, HiRPC.Supports {
     private const(HiRPCSender) dartRim(ref const(HiRPCReceiver) received, const bool read_only)
         in {
             mixin FUNCTION_NAME;
-            assert(received.message.method == __FUNCTION_NAME__);
+            assert(received.method.name == __FUNCTION_NAME__);
         }
     do {
-        HiRPC.check_element!Buffer(received.params, Params.rims);
-        immutable rims=received.params[Params.rims].get!Buffer;
+        //HiRPC.check_element!Buffer(received.params, Params.rims);
+        immutable rims=received.method.params[Params.rims].get!Buffer;
         auto hibon_params=new HiBON;
         scope rim_branches=branches(rims);
         if ( !rim_branches.empty ) {
@@ -375,17 +377,16 @@ class DART : DARTFile, HiRPC.Supports {
      +
      ---
      +/
-
     private const(HiRPCSender) dartModify(ref const(HiRPCReceiver) received, const bool read_only)
         in {
             mixin FUNCTION_NAME;
-            assert(received.message.method == __FUNCTION_NAME__);
+            assert(received.method.name == __FUNCTION_NAME__);
         }
     do {
         HiRPC.check(!read_only, "The DART is read only");
-        HiRPC.check_element!Document(received.params, Params.recorder);
-        scope recorder_doc=received.params[Params.recorder].get!Document;
-        scope recorder=Recorder(net, recorder_doc);
+        //HiRPC.check_element!Document(received.params, Params.recorder);
+        scope recorder_doc=received.method.params[Params.recorder].get!Document;
+        scope recorder=manufactor.recorder(recorder_doc);
         immutable bullseye=modify(recorder);
         auto hibon_params=new HiBON;
         hibon_params[Params.bullseye]=bullseye;
@@ -405,12 +406,16 @@ class DART : DARTFile, HiRPC.Supports {
      +     else the response return is marked empty
      +/
     const(HiRPCSender) opCall(ref scope const(HiRPCReceiver) received, const bool read_only=true) {
-        switch (received.message.method) {
-            static foreach(method; EnumMembers!Quries) {
-                mixin(format("case Quries.%s: return %s(received, read_only);", method, method));
+        const scope method=received.method;
+        switch (method.name) {
+            static foreach(E; EnumMembers!Quries) {
+                case E.stringof:
+                    enum code=format(q{return %s(received, read_only);}, E);
+                   // pragma(msg, code);
+                    mixin(code);
             }
         default:
-            immutable message=format("Method '%s' not supported", received.message.method);
+            immutable message=format("Method '%s' not supported", method.name);
             return hirpc.error(received, message, 22);
         }
         assert(0);
@@ -424,7 +429,7 @@ class DART : DARTFile, HiRPC.Supports {
         /++
          + Stores the add and remove actions in the journal replay log file
          +/
-        void record(Recorder recorder);
+        void record(Factory.Recorder recorder);
         /++
          + This function is call when hole branches doesn't exist in the foreign DART
          + and need to be removed in the local DART
@@ -474,7 +479,7 @@ class DART : DARTFile, HiRPC.Supports {
             this.chunck_size=chunck_size;
         }
 
-        void record(Recorder recorder) {
+        void record(Factory.Recorder recorder) {
 //            writefln("RECORD %s", recorder.empty);
             if ( !recorder.empty ) {
                 auto hibon=new HiBON;
@@ -590,9 +595,9 @@ class DART : DARTFile, HiRPC.Supports {
                 scope request_branches=dartRim(rims, hirpc, id);
                 scope result_branches =sync.query(request_branches);
 //                scope Recorder foreign_recoder;
-                if ( !result_branches.params.hasMember(Params.branches) ) {
-                    if ( result_branches.params.hasMember(Params.recorder) ) {
-                        scope foreign_recoder=Recorder(net, result_branches.params);
+                if ( !result_branches.method.params.hasMember(Params.branches) ) {
+                    if ( result_branches.method.params.hasMember(Params.recorder) ) {
+                        scope foreign_recoder=manufactor.recorder(result_branches.method.params);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -601,18 +606,18 @@ class DART : DARTFile, HiRPC.Supports {
                     sync.remove_recursive(rims);
                 }
                 else {
-                    scope foreign_branches_doc=result_branches.params[Params.branches].get!Document;
+                    scope foreign_branches_doc=result_branches.method.params[Params.branches].get!Document;
                     scope foreign_branches=Branches(foreign_branches_doc);
                     //
                     // Read all the archives from the foreign DART
                     //
                     scope request_archives=dartRead(foreign_branches.fingerprints, hirpc, id);
                     scope result_archives=sync.query(request_archives);
-                    scope foreign_recoder=Recorder(net, result_archives.params);
+                    scope foreign_recoder=manufactor.recorder(result_archives.method.params);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
-                    Recorder.Archive[Buffer] set_of_archives;
+                    Archive[Buffer] set_of_archives;
                     foreach(a; foreign_recoder.archives[]) {
                         set_of_archives[a.fingerprint]=a;
                     }
@@ -641,7 +646,7 @@ class DART : DARTFile, HiRPC.Supports {
                                 if ( !Branches.isBranches(Document(possible_branches_data)) ) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
-                                    local_recorder.remove_by_print(local_print);
+                                    local_recorder.remove(local_print);
                                 }
                             }
                             iterate(sub_rims, indent~"**");
@@ -694,16 +699,16 @@ class DART : DARTFile, HiRPC.Supports {
                 scope replay_recorder_doc=doc[Params.recorder].get!Document;
 //                writefln("%s", replay_recorder_doc.toText);
 
-                scope replay_recorder=Recorder(net, replay_recorder_doc);
+                scope replay_recorder=manufactor.recorder(replay_recorder_doc);
                 scope action_recorder=recorder;
                 foreach(a; replay_recorder.archives[]) {
                     static if (remove) {
-                        if ( a.type is Recorder.Archive.Type.REMOVE ) {
+                        if ( a.type is Archive.Type.REMOVE ) {
                             action_recorder.insert(a);
                         }
                     }
                     else {
-                        if ( a.type !is Recorder.Archive.Type.REMOVE ) {
+                        if ( a.type !is Archive.Type.REMOVE ) {
                             action_recorder.insert(a);
                         }
                     }
