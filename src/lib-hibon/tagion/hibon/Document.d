@@ -7,7 +7,7 @@ module tagion.hibon.Document;
 //import std.format;
 import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType, isIntegral, hasMember,
-isArrayT=isArray, isAssociativeArray;
+isArrayT=isArray, isAssociativeArray, OriginalType;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
@@ -20,7 +20,7 @@ import core.exception : RangeError;
 //import std.stdio;
 
 import tagion.utils.StdTime;
-import tagion.basic.Basic : isOneOf;
+import tagion.basic.Basic : isOneOf, EnumContinuousSequency;
 import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
@@ -70,6 +70,14 @@ static assert(uint.sizeof == 4);
         this._data = doc._data;
     }
 
+    import tagion.hibon.HiBON : HiBON;
+
+    this(const HiBON hibon) {
+        this._data = hibon.serialize;
+    }
+
+    import tagion.hibon.HiBONJSON : JSONString;
+    mixin JSONString;
     /++
      This function returns the HiBON version
      Returns:
@@ -568,7 +576,7 @@ static assert(uint.sizeof == 4);
 
         //import std.stdio;
         { // Test of null document
-            const doc = Document(null);
+            const doc = Document();
             assert(doc.length is 0);
             assert(doc[].empty);
         }
@@ -922,8 +930,7 @@ static assert(uint.sizeof == 4);
                 return T(doc);
             }
 
-            @trusted
-                T get(T)() if (isDocumentArray!T) {
+            @trusted T get(T)() if (isDocumentArray!T) {
                 alias ElementT=ForeachType!T;
                 const doc=get!Document;
                 alias UnqualT=Unqual!T;
@@ -943,7 +950,28 @@ static assert(uint.sizeof == 4);
                 return cast(T)result;
             }
 
-            T get(T)() if(!isDocument!T && !isDocumentArray!T) {
+            T get(T)() const if(is(T==enum)) {
+                alias EnumBaseT=OriginalType!T;
+                const x=get!EnumBaseT;
+                static if (EnumContinuousSequency!T) {
+                    check((x >= T.min) && (x <= T.max),
+                        message("The value %s is out side the range for %s enum type", x, T.stringof));
+                }
+                else {
+                EnumCase:
+                    switch (x) {
+                        static foreach(E; EnumMembers!T) {
+                        case E:
+                            break EnumCase;
+                        }
+                    default:
+                        check(0, message("The value %s does not fit into the %s enum type", x, T.stringof));
+                    }
+                }
+                return cast(T)x;
+            }
+
+            const(T) get(T)() const if(!isDocument!T && !isDocumentArray!T && !is(T==enum)) {
                 enum E = Value.asType!T;
                 import std.format;
                 static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));

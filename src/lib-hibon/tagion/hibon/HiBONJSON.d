@@ -101,6 +101,55 @@ JSONValue toJSON(T)(T value) if(isDocument!T) {
     return toJSONT!true(value.toDoc);
 }
 
+string toPretty(T)(T value) {
+    static if (is(T:const(HiBON))) {
+        const doc=Document(value.serialize);
+        return doc.toJSON.toPrettyString;
+    }
+    else {
+        return value.toJSON.toPrettyString;
+    }
+}
+
+mixin template JSONString() {
+    import std.format;
+    import std.conv : to;
+    import tagion.hibon.HiBONJSON;
+
+    @trusted
+    void toString(scope void delegate(const(char)[]) sink,
+                  FormatSpec!char fmt) const {
+        alias ThisT=typeof(this);
+        static if (isDocument!ThisT) {
+            const doc=this.toDoc;
+        }
+        else static if (is(ThisT:const(Document))) {
+            alias doc=this;
+        }
+        else static if (is(ThisT:const(HiBON))) {
+            const doc=Document(serialize);
+        }
+        else {
+            static assert(0, format("type %s is not supported for JSONString", T.stringof));
+        }
+        switch (fmt.spec) {
+        case 'j':
+            // Normal stringefied JSON
+            sink(doc.toJSON.toString);
+            break;
+        case 'J':
+            // Normal stringefied JSON
+            sink(doc.toJSON.toPrettyString);
+            break;
+        case 's':
+            sink(doc.serialize.to!string);
+            break;
+        default:
+            check(0, "Unknown format specifier: %" ~ fmt.spec);
+        }
+    }
+}
+
 @safe
 struct toJSONT(bool HASHSAFE) {
     @trusted
@@ -456,6 +505,10 @@ unittest {
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
+        assert(doc.toJSON.toString == format("%j", doc));
+        assert(doc.toJSON.toPrettyString == format("%J", doc));
+        assert(doc.serialize.to!string == format("%s", doc));
+        assert(Document(hibon).toJSON.toString == format("%j", hibon));
     }
 
     { // Test sample 2 HiBON Array and Object
@@ -477,7 +530,7 @@ unittest {
         // Checks
         // HiBON -> Document -> JSON -> HiBON -> Document
         //
-        const doc=Document(hibon.serialize);
+        const doc=Document(hibon);
 
         auto json=doc.toJSON;
         import std.stdio;
@@ -492,6 +545,10 @@ unittest {
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
+        assert(doc.toJSON.toString == format("%j", doc));
+        assert(doc.toJSON.toPrettyString == format("%J", doc));
+        assert(doc.serialize.to!string == format("%s", doc));
+        assert(Document(hibon).toJSON.toString == format("%j", hibon));
     }
 
     { // Test sample 3 HiBON Array and Object
@@ -515,7 +572,7 @@ unittest {
         // Checks
         // HiBON -> Document -> JSON -> HiBON -> Document
         //
-        const doc=Document(hibon.serialize);
+        const doc=Document(hibon);
 
         auto json=doc.toJSON;
         import std.stdio;
@@ -531,5 +588,9 @@ unittest {
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
+        assert(doc.toJSON.toString == format("%j", doc));
+        assert(doc.toJSON.toPrettyString == format("%J", doc));
+        assert(doc.serialize.to!string == format("%s", doc));
+        assert(Document(hibon).toJSON.toString == format("%j", hibon));
     }
 }
