@@ -177,20 +177,10 @@ mixin template HiBONRecord(string CTOR="") {
             auto array=new HiBON;
             alias UnqualL=Unqual!L;
             alias ElementT=Unqual!(ForeachType!L);
-            pragma(msg, "L=", L);
-            pragma(msg, "UnqualL=", UnqualL);
-            pragma(msg, "isArray!L=", isArray!L);
-            pragma(msg, "ElementT=", ElementT);
-            pragma(msg, "isHiBON!ElementT=", isHiBON!ElementT);
-            pragma(msg, "isInputRange!ElementT=", isInputRange!ElementT);
-            pragma(msg, "isArray!ElementT=", isArray!ElementT);
-            pragma(msg, "isAssociativeArray!L=", isAssociativeArray!L);
-            pragma(msg, `hasMember!(ElementT, "toHiBON")=`, hasMember!(ElementT, "toHiBON"));
             static if (isArray!L || isAssociativeArray!L) {
                 auto range=list;
             }
             else {
-                pragma(msg, "typeof(list)=", typeof(list));
                 auto range=list.enumerate;
             }
             foreach(index, e; range) {
@@ -220,7 +210,6 @@ mixin template HiBONRecord(string CTOR="") {
                 else {
                     enum name=basename!(this.tupleof[i]);
                 }
-                pragma(msg, "name=", name);
                 static if (hasUDA!(this.tupleof[i], Filter)) {
                     alias filters=getUDAs!(this.tupleof[i], Filter);
                     static foreach(F; filters) {
@@ -265,43 +254,6 @@ mixin template HiBONRecord(string CTOR="") {
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU=TypedefType!(ForeachType!(UnqualT));
                         hibon[name]=toList(m);
-                        //}
-                    // else static if (isInputRange!UnqualT) {
-                    //     alias BaseU=TypedefType!(ForeachType!(UnqualT));
-                    //     hibon[name]=toList(cast(BaseU[])m);
-
-
-                        // static if (is(BaseT:U[], U)) {
-                        //     alias BaseU=TypedefType!U;
-                        // static if (HiBON.Value.hasType!BaseU) {
-                        //     pragma(msg, "BaseU=", BaseU, " BaseT=", BaseT);
-
-                        // }
-                        // else static if (isHiBON!BaseU) {
-                        //     auto array=new HiBON;
-                        //     foreach(index, e; cast(BaseT)m) {
-                        //         array[index]=e.toHiBON;
-                        //     }
-                        //     hibon[name]=array;
-                        // }
-                        // else static if (isInputRange!BaseU) {
-
-                        //     HiBON to
-                        //         auto array=new HiBON;
-                        //         foreach(index, e; cast(BaseT)m) {
-                        //             array[index]=toHiBON;
-                        //         }
-                        //         hibon[name]=array;
-                        //     }
-                        //     else {
-                        //         static assert(is(BaseU == immutable), format("The array must be immutable not %s but is %s",
-                        //                 BaseT.stringof, (immutable(BaseU)[]).stringof));
-                        //         hibon[name]=cast(BaseT)m;
-                        //     }
-                        // }
-                        // else {
-                        //     hibon[name]=cast(BaseT)m;
-                        // }
                     }
                     else {
                         static assert(0, format("Convering for member '%s' of type %s is not supported by default", name, MemberT.stringof));
@@ -366,7 +318,6 @@ mixin template HiBONRecord(string CTOR="") {
                 return (super_keys~[key, sub_key]).join(".");
             }
             switch (e.key) {
-                pragma(msg, "keys=", keys);
                 static foreach(i, key; keys) {
                     {
 
@@ -475,10 +426,6 @@ mixin template HiBONRecord(string CTOR="") {
                                     }
                                 }
                                 else {
-                                    pragma(msg, "isArray!DocType=", isArray!DocType);
-                                    pragma(msg, "isInputRange!DocType=", isInputRange!DocType);
-                                    pragma(msg, "DocType=", DocType);
-                                    //enum field_type=FieldType.stringof;
                                     static assert(Document.Value.hasType!DocType,
                                         format("Type %s for member '%s' is not supported",
                                             FieldType.stringof, key));
@@ -1258,7 +1205,6 @@ unittest {
             }
         }
         { // Jagged Array
-            pragma(msg, "---- Jagged");
             @safe
             static struct Jagged {
                 Simpel[][] y;
