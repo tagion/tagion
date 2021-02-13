@@ -1,6 +1,6 @@
 module tagion.hibon.HiBONRecord;
 
-import std.stdio;
+//import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file=std.file;
@@ -28,10 +28,7 @@ enum isHiBONRecordArray(T)=isArray!T && isHiBONRecord!(ForeachType!T);
 enum STUB=HiBONPrefix.HASH~"";
 @safe
 bool isStub(const Document doc) {
-    import std.stdio;
-    writefln("isStub.keys=%s", doc.keys);
     auto range=doc[];
-
     return !range.empty && range.front.key == STUB;
 }
 
@@ -265,15 +262,13 @@ mixin template HiBONRecord(string CTOR="") {
                             hibon[name]=cast(BaseT)m;
                         }
                     }
-                    else static if (isAssociativeArray!UnqualT) {
-                        writefln( "isInputRange!UnqualT=%s", isInputRange!UnqualT);
+                    else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
                         alias BaseU=TypedefType!(ForeachType!(UnqualT));
                         hibon[name]=toList(m);
-                    }
-                    else static if (isInputRange!UnqualT) {
-                        writefln( "isInputRange!UnqualT=%s", isInputRange!UnqualT);
-                        alias BaseU=TypedefType!(ForeachType!(UnqualT));
-                        hibon[name]=toList(cast(BaseU[])m);
+                        //}
+                    // else static if (isInputRange!UnqualT) {
+                    //     alias BaseU=TypedefType!(ForeachType!(UnqualT));
+                    //     hibon[name]=toList(cast(BaseU[])m);
 
 
                         // static if (is(BaseT:U[], U)) {
@@ -816,7 +811,7 @@ const(Document) fread(string filename) {
 
 @safe
 unittest {
-    import std.stdio;
+//    import std.stdio;
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
     import std.traits : OriginalType, staticMap, Unqual;
@@ -1247,10 +1242,10 @@ unittest {
 
                     const s_get=h["s"].get!SimpelArray;
 
-                    @trusted void dump() {
-                        writefln("h=%J", h);
-                    }
-                    dump();
+                    // @trusted void dump() {
+                    //     writefln("h=%J", h);
+                    // }
+                    // dump();
                     assert(s_get == s);
                     const s_doc=s_get.toDoc;
 
@@ -1276,19 +1271,19 @@ unittest {
                 [ Simpel(1, "three")]
                 ];
 
-            writefln("%s", ragged);
+            //writefln("%s", ragged);
             Jagged jagged;
             jagged.y=ragged;
 
             const jagged_doc=jagged.toDoc;
-            (() @trusted {
-                writefln("%J", jagged);
-            })();
+// //            (() @trusted {
+//                 writefln("%J", jagged);
+//             })();
 
             const result=Jagged(jagged_doc);
-            (() @trusted {
-                writefln("%J", result);
-            })();
+            // (() @trusted {
+            //     writefln("%J", result);
+            // })();
 
             assert(jagged == result);
         }
@@ -1305,7 +1300,7 @@ unittest {
             associative.a["$two"]=Simpel(1, "two");
             associative.a["$three"]=Simpel(1, "three");
 
-            writefln("%J", associative);
+            // writefln("%J", associative);
 
             const associative_doc=associative.toDoc;
 
@@ -1336,7 +1331,7 @@ unittest {
                 assert(equal(result.a.byValue, associative.a.byValue));
             })();
 
-            writefln("%j", result);
+            // writefln("%j", result);
         }
 
     }
