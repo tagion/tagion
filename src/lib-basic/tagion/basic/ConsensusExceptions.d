@@ -21,9 +21,11 @@ enum ConsensusFailCode {
     // EVENT_PACKAGE_MISSING_EVENT,
     // EVENT_PACKAGE_BAD_SIGNATURE,
     EVENT_NODE_ID_UNKNOWN,
-    EVENT_SIGNATURE_BAD,
+    EVENT_BAD_SIGNATURE,
     EVENT_NOT_FOUND,
     EVENT_FORK,
+    EVENT_MISSING_PUBKEY,
+    EVENT_MISSING_SIGNATURE,
 
     GOSSIPNET_EVNET_HAS_BEEN_CACHED,
     GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
@@ -162,9 +164,11 @@ shared static this() {
             MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME       : "The mother and father can not be the same event",
 
             EVENT_NODE_ID_UNKNOWN                       : "Public key is not mapped to a Node ID",
-            EVENT_SIGNATURE_BAD                         : "Bad signature for event",
+            EVENT_BAD_SIGNATURE                         : "Bad signature for event",
             EVENT_NOT_FOUND                             : "Event not found",
             EVENT_FORK                                  : "Event fork",
+            EVENT_MISSING_PUBKEY                        : "Pubkey missing in Event",
+            EVENT_MISSING_SIGNATURE                     : "Signature missing in Event",
 
 //            EVENT_MISSING_BODY                        : "Event is missing eventbody",
 

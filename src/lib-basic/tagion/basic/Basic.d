@@ -30,10 +30,11 @@ enum BillType {
 
 alias Buffer=immutable(ubyte)[]; /// General buffer
 alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer used for public keys
+alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
+
 //alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
 version(none) {
 alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
-alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
 alias Message    =Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 }
@@ -314,6 +315,10 @@ template CastTo(T, TList...) {
 static unittest {
     static assert(is(void==CastTo!(string, AliasSeq!(int, long, double))));
     static assert(is(double==CastTo!(float, AliasSeq!(int, long, double))));
+    static assert(is(string==CastTo!(string, AliasSeq!(uint, string))));
+    static assert(is(uint==CastTo!(ushort, AliasSeq!(uint, string))));
+    static assert(is(uint==CastTo!(int, AliasSeq!(string, uint))));
+    static assert(is(const(uint)==CastTo!(inout(uint), AliasSeq!(const(uint), const(string)))));
 }
 
 enum DataFormat {
