@@ -305,169 +305,7 @@ mixin template HiBONRecord(string CTOR="") {
         return result;
     }
 
-    /++
-     Check if the Documet is fitting the object
-     Returns:
-     If the Document fits compleatly it returns NONE
-     +/
-    version(none)
-    @safe static DocResult fitting(const Document doc, string[] super_keys=null) nothrow {
-        foreach(e; doc[]) {
-            string key_chain(string key, string sub_key=null) {
-
-                return (super_keys~[key, sub_key]).join(".");
-            }
-            switch (e.key) {
-                static foreach(i, key; keys) {
-                    {
-
-                        static if (key.length) {
-                            alias FieldType=Fields!ThisType[i];
-                        case key:
-
-                            alias BaseT=TypedefType!FieldType;
-                            static if (!Document.Value.hasType!BaseT && (is(BaseT == struct) || is(BaseT == class))) {
-                                static assert(
-                                    __traits(compiles, FieldType.fitting(doc, null)),
-                                    format("Member %s is missing %s of %s", key, fitting(doc).stringof, FieldType.stringof));
-                                try {
-                                    const sub_doc=doc[key].get!Document;
-                                    return FieldType.fitting(sub_doc, super_keys~key);
-                                }
-                                catch (Exception e) {
-                                    return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key_chain(key));
-                                }
-                            }
-                            else {
-                                static if (is(FieldType == enum)) {
-                                    alias DocType=TypedefType!(OriginalType!FieldType);
-                                }
-                                else {
-                                    alias DocType=TypedefType!(FieldType);
-                                }
-                                static if (Document.Value.hasType!DocType) {
-                                    enum TypeE=Document.Value.asType!DocType;
-                                    if (TypeE !is e.type) {
-                                        return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key));
-                                    }
-                                }
-                                else static if (isInputRange!DocType) {
-                                    alias ElementT=TypedefType!(ForeachType!DocType);
-                                    if (!doc.isArray) {
-                                        return DocResult(Document.Element.ErrorCode.NOT_AN_ARRAY, key_chain(key));
-                                    }
-                                    foreach(sub_e; doc[]) {
-                                        try {
-                                            static if (isHiBONRecord!ElementT) {
-                                                const sub_doc=sub_e.get!Document;
-                                                const result=ElementT.fitting(sub_doc);
-                                                if (result.error !is Document.Element.ErrorCode.NONE) {
-                                                    return DocResult(result.error, key_chain(key, sub_e.key));
-                                                }
-                                            }
-                                            else static if (Document.Value.hasType!ElementT) {
-                                                enum TypeE=Document.Value.asType!ElementT;
-                                                if (TypeE !is sub_e.type) {
-                                                    return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key, sub_e.key));
-                                                }
-                                            }
-                                            else static if (isInputRange!ElementT) {
-                                                const sub_doc=sub_e.get!Document;
-                                                const result=fitting(sub_doc);
-                                                if (result.error !is Document.Element.ErrorCode.NONE) {
-                                                    return DocResult(result.error, key_chain(key, sub_e.key));
-                                                }
-                                            }
-                                            else {
-                                                static assert(0, format("Type %s not supported", DocType.stringof));
-                                            }
-                                        }
-                                        catch (Exception e) {
-                                            return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key_chain(key));
-                                        }
-                                    }
-                                }
-                                else static if (isAssociativeArray!DocType) {
-                                    alias KeyTypeT=KeyType!DocType;
-                                    alias ValueT=ValueType!DocType;
-                                    static if (is(ValueT == enum)) {
-                                        alias ElementT=TypedefType!(OriginalType!ValueT);
-                                    }
-                                    else {
-                                        alias ElementT=TypedefType!(ValueT);
-                                    }
-                                    alias Key=CastTo!(KeyTypeT, AliasSeq!(const(string), const(uint)));
-                                    static assert(!is(void==Key),
-                                        format("Associated array with Key type for %s coan not be converted to HiBON", KeyTypeT.stringof));
-                                    foreach(sub_e; doc[]) {
-                                        static if (Document.Value.hasType!ElementT) {
-                                            enum TypeE=Document.Value.asType!ElementT;
-                                            if (TypeE !is sub_e.type) {
-                                                return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key, sub_e.key));
-                                            }
-                                        }
-                                        else {
-                                            enum TypeE=Document.Value.asType!Document;
-                                            if (TypeE !is sub_e.type) {
-                                                return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key, sub_e.key));
-                                            }
-                                            try {
-                                                const sub_doc=doc[key].get!Document;
-                                                static if (isHiBON!FiledType) {
-                                                    return FieldType.fitting(sub_doc, super_keys~key~sub_e.key);
-                                                }
-                                                else {
-                                                }
-                                            }
-                                            catch (Exception e) {
-                                                return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key_chain(key));
-                                            }
-                                        }
-                                    }
-                                }
-                                else {
-                                    static assert(Document.Value.hasType!DocType,
-                                        format("Type %s for member '%s' is not supported",
-                                            FieldType.stringof, key));
-                                    enum TypeE=Document.Value.asType!DocType;
-                                    if (TypeE !is e.type) {
-                                        return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key));
-                                    }
-                                }
-                                static if (key == TYPENAME) {
-                                    if (this.type != e.get!string) {
-                                        return DocResult(Document.Element.ErrorCode.DOCUMENT_TYPE, key_chain(key));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            default:
-                return DocResult(Document.Element.ErrorCode.KEY_NOT_DEFINED, key_chain(null));
-            }
-        }
-        return DocResult(Document.Element.ErrorCode.NONE,null);
-    }
-
     enum keys=_keys;
-
-    /++
-     Returns:
-     true if the Document members is confined to what is defined in object
-     +/
-    version(none)
-    @safe
-        static bool confined(const Document doc) nothrow {
-        try {
-            return fitting(doc).error is Document.Element.ErrorCode.NONE;
-        }
-        catch (Exception e) {
-            return false;
-        }
-        assert(0);
-    }
-
 
 
     static if (!NO_DEFAULT_CTOR) {
@@ -620,13 +458,6 @@ mixin template HiBONRecord(string CTOR="") {
                             const sub_doc = Document(doc[name].get!Document);
                             m=new BaseT(sub_doc);
                         }
-                        // else static if (isAssociativeArray!BaseT) {
-                        //     Document sub_doc;
-                        //     if (doc.hasMember(name)) {
-                        //         sub_doc = Document(doc[name].get!Document);
-                        //     }
-                        //     m=toList!BaseT(sub_doc);
-                        // }
                         else static if (isInputRange!BaseT || isAssociativeArray!BaseT) {
                             Document sub_doc;
                             if (doc.hasMember(name)) {
@@ -634,78 +465,10 @@ mixin template HiBONRecord(string CTOR="") {
                             }
                             m=toList!BaseT(sub_doc);
                         }
-                        // else static if (isHiBONRecor!BaseT) {
-
-                        // }
-                        else static if (isHiBONRecordArray!BaseT) {
-                            const doc_array=doc[name].get!Document;
-                            check(doc_array.isArray, message("Document array expected for %s member",  name));
-                            UnqualT result() @trusted {
-                                UnqualT array;
-                                alias ElementT=ForeachType!UnqualT;
-
-                                array.length=doc_array.length;
-                                foreach(ref a, e; lockstep(array, doc_array[])) {
-                                    a=e.get!ElementT;
-                                }
-                                return array;
-                            }
-                            m=result;
-                        }
                         else {
                             static assert(0, format("Convering for member '%s' of type %s is not supported by default", name, MemberT.stringof));
 
                         }
-//                         else static if (isInputRange!BaseT) {
-
-//                         }
-//                         else static if (is(BaseT:U[], U)) {
-//                             static if (hasMember!(U, "toHiBON")) {
-//                                 MemberT array;
-//                                 const doc_array=doc[name].get!Document;
-//                                 static if (optional) {
-//                                     if (doc_array.length == 0) {
-//                                         continue ForeachTuple;
-//                                     }
-//                                 }
-//                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
-//                                 foreach(e; doc_array[]) {
-//                                     const sub_doc=e.get!Document;
-//                                     array~=U(sub_doc);
-//                                 }
-//                                 enum doc_array_code=format("%s=array;", member_name);
-//                                 mixin(doc_array_code);
-//                             }
-//                             else static if (Document.Value.hasType!U) {
-//                                 MemberT array;
-//                                 auto doc_array=doc[name].get!Document;
-//                                 static if (optional) {
-//                                     if (doc_array.length == 0) {
-//                                         continue ForeachTuple;
-//                                     }
-//                                 }
-//                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
-//                                 foreach(e; doc_array[]) {
-//                                     array~=e.get!U;
-//                                 }
-//                                 m=array;
-//                             }
-//                             else static if (is(U == immutable)) {
-//                                 enum code=q{m=doc[name].get!BaseT;};
-//                                 m=doc[name].get!BaseT;
-//                             }
-//                             else {
-//                                 alias InvalidType=immutable(U)[];
-//                                 static assert(0, format("The array must be immutable not %s but is %s %s %s",
-//                                         BaseT.stringof, InvalidType.stringof, U.stringof, is(U == immutable)));
-//                                 enum code="";
-//                             }
-//                         }
-//                         else static if (Document.Value.hasType!BaseT) {
-// //                          enum code=q{this.tupleof[i]=doc[name].get!UnqualT;};
-//                             m=doc[name].get!UnqualT;
-//                         }
-
                     }
                 }
                 else {
@@ -713,12 +476,6 @@ mixin template HiBONRecord(string CTOR="") {
                         format("Type %s for member %s is not supported", BaseT.stringof, name));
                     enum code="";
                 }
-                // else {
-                //     enum code="";
-                // }
-                // static if (code.length) {
-                //     mixin(code);
-                // }
             }
         }
     }
