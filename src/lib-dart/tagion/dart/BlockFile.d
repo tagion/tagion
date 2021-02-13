@@ -26,27 +26,28 @@ import tagion.hibon.HiBONRecord;
 import tagion.dart.DARTException : BlockFileException;
 
 // version(unittest) {
-    import std.math : rint;
-    alias FileNames=Tuple!(string, "tempdir", string, "filename", string, "fullpath");
+import std.math : rint;
+alias FileNames=Tuple!(string, "tempdir", string, "filename", string, "fullpath");
 
-    const(FileNames) fileId(T=BlockFile)(string prefix=null) {
-        import std.process : environment, thisProcessID;
-        import std.file;
-        import std.path;
-        //import std.traits;
-        FileNames names;
-        names.tempdir=tempDir.buildPath(environment.get("USER"));
-        names.filename=setExtension(prefix~thisProcessID.to!string~T.stringof, "dbdart");
-        names.fullpath=buildPath(names.tempdir, names.filename);
-        names.tempdir.exists || names.tempdir.mkdir;
-        return names;
-    }
+@safe
+const(FileNames) fileId(T=BlockFile)(string prefix=null) {
+    import std.process : environment, thisProcessID;
+    import std.file;
+    import std.path;
+    //import std.traits;
+    FileNames names;
+    names.tempdir=tempDir.buildPath(environment.get("USER"));
+    names.filename=setExtension(prefix~thisProcessID.to!string~T.stringof, "dbdart");
+    names.fullpath=buildPath(names.tempdir, names.filename);
+    names.tempdir.exists || names.tempdir.mkdir;
+    return names;
+}
 
-    static this() {
-        // Activate unittest
-        immutable filename=fileId("dummy");
-        //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
-    }
+static this() {
+    // Activate unittest
+    immutable filename=fileId("dummy");
+    //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
+}
 // }
 extern(C) {
     int ftruncate(int fd, long length);

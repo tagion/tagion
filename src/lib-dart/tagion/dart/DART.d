@@ -740,28 +740,26 @@ class DART : DARTFile, HiRPC.Supports {
             // in a single thread
             //
             const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
-                Buffer send_request_to_forien_dart(Buffer data){
+                Document send_request_to_forien_dart(const Document foreigen_doc){
                     //
                     // Remote excution
                     // Receive on the foreign end
-                    auto foreigen_doc=Document(data);
                     const foreigen_receiver=foreign_dart.hirpc.receive(foreigen_doc);
                     // Make query in to the foreign DART
                     const foreign_respones=foreign_dart(foreigen_receiver);
-                    immutable foreign_data=foreign_dart.hirpc.toHiBON(foreign_respones).serialize;
-                    return foreign_data;
+                    return foreigen_receiver.toDoc;
                 }
 
-                immutable foreign_data=owner.hirpc.toHiBON(request).serialize;
+                immutable foreign_doc=request.toDoc;
                 fiber.yield;
                 // Here a yield loop should be implement to poll for response from the foriegn DART
                 // A timeout should also be implemented in this poll loop
-                immutable response_data=send_request_to_forien_dart(foreign_data);
+                const response_doc=send_request_to_forien_dart(foreign_doc);
                 //
                 // Process the response returned for the foreign DART
                 //
-                auto doc=Document(response_data);
-                auto received=owner.hirpc.receive(doc);
+                //auto doc=Document(response_data);
+                const received=owner.hirpc.receive(response_doc);
                 return received;
             }
         }
@@ -810,8 +808,8 @@ class DART : DARTFile, HiRPC.Supports {
                foreach(test_no; 0..3) {
                    DARTFile.create_dart(filename_A);
                    DARTFile.create_dart(filename_B);
-                   Recorder recorder_B;
-                   Recorder recorder_A;
+                   Factory.Recorder recorder_B;
+                   Factory.Recorder recorder_A;
                    // Recorder recorder_B;
                    auto dart_A=new DART(net, filename_A, from, to);
                    auto dart_B=new DART(net, filename_B, from, to);
@@ -888,8 +886,8 @@ class DART : DARTFile, HiRPC.Supports {
                // writefln("Test 0.1");
                DARTFile.create_dart(filename_A);
                create_dart(filename_B);
-               Recorder recorder_B;
-               Recorder recorder_A;
+               Factory.Recorder recorder_B;
+               Factory.Recorder recorder_A;
                // Recorder recorder_B;
                auto dart_A=new DART(net, filename_A, from, to);
                auto dart_B=new DART(net, filename_B, from, to);
@@ -940,7 +938,7 @@ class DART : DARTFile, HiRPC.Supports {
 
                 DARTFile.create_dart(filename_A);
                 create_dart(filename_B);
-                Recorder recorder_B;
+                Factory.Recorder recorder_B;
                 // Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
@@ -995,8 +993,8 @@ class DART : DARTFile, HiRPC.Supports {
                 // writefln("Test 2");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Recorder recorder_A;
-                Recorder recorder_B;
+                Factory.Recorder recorder_A;
+                Factory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1048,8 +1046,8 @@ class DART : DARTFile, HiRPC.Supports {
                 // writefln("Test 3");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Recorder recorder_A;
-                Recorder recorder_B;
+                Factory.Recorder recorder_A;
+                Factory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1104,8 +1102,8 @@ class DART : DARTFile, HiRPC.Supports {
                 // writefln("Test 4");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Recorder recorder_A;
-                Recorder recorder_B;
+                Factory.Recorder recorder_A;
+                Factory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1161,8 +1159,8 @@ class DART : DARTFile, HiRPC.Supports {
                 // writefln("Test 5");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Recorder recorder_A;
-                Recorder recorder_B;
+                Factory.Recorder recorder_A;
+                Factory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1215,8 +1213,8 @@ class DART : DARTFile, HiRPC.Supports {
                 // writefln("Test 6");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Recorder recorder_A;
-                Recorder recorder_B;
+                Factory.Recorder recorder_A;
+                Factory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //

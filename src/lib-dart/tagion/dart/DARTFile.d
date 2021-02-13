@@ -20,7 +20,8 @@ private {
     import tagion.Keywords;
 
     import tagion.hibon.HiBON : HiBON;
-    import tagion.hibon.HiBONRecord : isDocument, GetLabel, Label, HiBONPrefix, isStub, STUB;
+//    import tagion.hibon.HiBONRecord : GetLabel, Label, HiBONPrefix, isStub, STUB;
+    import tagion.hibon.HiBONRecord : isStub;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -41,6 +42,7 @@ private {
  + Returns;
  +     fingerprint[rim]
  +/
+@safe
 ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
     import std.stdio;
     return rim_keys[rim];
@@ -51,10 +53,12 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
  + Returns:
  +     Sector number of a fingerpint
  +/
+@safe
 ushort root_sector(const(ubyte[]) fingerprint) pure {
     return fingerprint[1] | (fingerprint[0] << 8);
 }
 
+@safe
 void printfp(string msg, const Buffer[] fingerprints){
     import std.stdio;
     foreach(fp; fingerprints){
@@ -77,13 +81,15 @@ alias check=Check!DARTException;
  + Doens't branche out it contais a Leave which contains a Archive
  +
  +/
-class DARTFile {
+
+
+@safe class DARTFile {
     enum KEY_SPAN        = ubyte.max+1;
     enum uint request_limit=KEY_SPAN;
     enum INDEX_NULL=BlockFile.INDEX_NULL;
     immutable(string) filename;
 
-    Factory manufactor;
+    protected Factory manufactor;
 
 
     protected {
@@ -134,7 +140,7 @@ class DARTFile {
         this.filename=filename;
     }
 
-    void close() {
+    void close() @trusted {
         blockfile.close;
         blockfile.destroy;
         blockfile=null;
@@ -206,7 +212,7 @@ class DARTFile {
     //     return (leave.index is DARTFile.INDEX_NULL) && ( leave.fingerprint is null);
     // }
 
-    struct Leave {
+    @safe struct Leave {
         uint index;
         Buffer fingerprint;
         bool empty() pure const nothrow {
@@ -217,7 +223,7 @@ class DARTFile {
     /++
 
 +/
-    struct Branches {
+    @safe struct Branches {
         protected Buffer _fingerprint;    /// The sparsed Merkle root hash of the branches
         protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
         protected uint[] _indices;         /// Array of index pointer to BlockFile
@@ -385,7 +391,7 @@ class DARTFile {
             return true;
         }
 
-        private immutable(Buffer) fingerprint(DARTFile dartfile, scope bool[uint] index_used=null) {
+        private immutable(Buffer) fingerprint(DARTFile dartfile, scope bool[uint] index_used=null) @trusted {
             if ( _fingerprint is null ) {
                 foreach(key, index; _indices) {
                     if ( (index !is INDEX_NULL) && (_fingerprints[key] is null) ) {
@@ -428,11 +434,12 @@ class DARTFile {
         return null;
     }
 
-    static class RimWalkerFiber : Fiber {
+    @safe static class RimWalkerFiber : Fiber {
         immutable(Buffer) rims;
         protected Buffer data;
         protected bool _finished;
         protected DARTFile owner;
+        @trusted
         this(DARTFile owner, const(Buffer) rims) {
             this.rims=rims;
             this.owner=owner;
@@ -441,7 +448,7 @@ class DARTFile {
         }
 
         final private void run() {
-            void treverse(immutable uint index, immutable uint rim=0) {
+            void treverse(immutable uint index, immutable uint rim=0) @trusted {
                 if ( index !is INDEX_NULL ) {
                     data=owner.blockfile.load(index);
                     scope doc=Document(data);
@@ -471,6 +478,7 @@ class DARTFile {
             _finished=true;
         }
 
+        @trusted
         final void popFront() {
             call;
         }
@@ -513,8 +521,7 @@ class DARTFile {
         // auto result=Recorder(net);
         //Factory.Recorder.Archive[] archives;
         auto recorder=manufactor.recorder;
-        void local_load(const uint branch_index,  const ubyte rim_key=0, const uint rim=0) {
-            //    writefln("index=%d rim=%d rim_key=%d", branch_index, rim, rim_key);
+        void local_load(const uint branch_index,  const ubyte rim_key=0, const uint rim=0) @trusted {
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
@@ -529,12 +536,7 @@ class DARTFile {
 
                 }
                 else {
-//                    auto archive=new Recorder.Archive(net, doc, type);
-                    // auto archive=new Recorder.Archive(net, doc, type);
-                    // archives~=archive;
                     recorder.insert(doc, type);
-                    // result.insert(archive);
-                    // writeln(result.length);
                 }
             }
         }
@@ -570,7 +572,7 @@ class DARTFile {
             const uint branch_index,
             Buffer[]  ordered_fingerprints,
 //            const(Buffer[]) selected_fingerprints=null,
-            immutable uint rim=0) {
+            immutable uint rim=0) @trusted {
             if ( (ordered_fingerprints) && (branch_index !is INDEX_NULL) ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
@@ -617,10 +619,10 @@ class DARTFile {
 
     // Range over a Range with the same key in the a specific rim
 //    alias FilterRange=FilterResult!(unaryFun, RimKeyRange);
-    struct RimKeyRange {
+    @safe struct RimKeyRange {
         protected Archive[] current;
         @disable this();
-        this(Range)(scope ref Range range, const uint rim) {
+        this(Range)(scope ref Range range, const uint rim) @trusted {
             if ( !range.empty ) {
                 Archive[] list;
                 immutable key=range.front.fingerprint.rim_key(rim);
@@ -730,7 +732,7 @@ class DARTFile {
         Leave traverse_dart(R)(
             scope ref R range,
             const uint branch_index,
-            immutable uint rim=0) {
+            immutable uint rim=0) @trusted {
             if ( !range.empty ) {
                 auto archive=range.front;
                 uint erase_block_index;
@@ -912,7 +914,7 @@ class DARTFile {
             return _fingerprint;
         }
         else {
-            auto range=modify_records.archives[];
+            scope range=modify_records.archives[];
             immutable new_root=traverse_dart(range, blockfile.masterBlock.root_index);
 
             scope(success) {
@@ -939,7 +941,7 @@ class DARTFile {
 
     Factory.Recorder readStubs(){   //RIMS_IN_SECTOR
         Factory.Recorder rec = manufactor.recorder();
-        void iterate(const uint branch_index, immutable uint rim=0){
+        void iterate(const uint branch_index, immutable uint rim=0) @trusted {
             if(branch_index !is INDEX_NULL){
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
@@ -948,12 +950,14 @@ class DARTFile {
                     if(rim == RIMS_IN_SECTOR){
                         // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
                         rec.stub(branches.fingerprint(this));
-                    }else{
+                    }
+                    else{
                         foreach(rim_key, index; branches._indices) {
                             iterate(index, rim+1);
                         }
                     }
-                }else{
+                }
+                else{
                     rec.stub(manufactor.net.hashOf(doc));
                     // if(doc.hasMember(Keywords.stub)){
                     //     // writeln("ADD STUB FP");
@@ -975,7 +979,7 @@ class DARTFile {
 
     // Reads out a branch for rims path
     Branches branches(const(ubyte[]) rims) {
-        Branches search(const(ubyte[]) rims, const uint index,  const uint rim=0) {
+        Branches search(const(ubyte[]) rims, const uint index,  const uint rim=0) @trusted {
             scope data=blockfile.load(index);
             scope branches_doc=Document(data);
 //            writefln("data.length=%d keys=%s", data.length, branches_doc.keys);
@@ -1002,13 +1006,15 @@ class DARTFile {
         return search(rims, blockfile.masterBlock.root_index);
     }
 
-    RimRange iterator(const(ubyte[]) rim_path) {
+    @trusted
+        RimRange iterator(const(ubyte[]) rim_path) {
         auto range=new RimRange(this, rim_path);
         range.call;
         return range;
     }
 
-    class RimRange : Fiber {
+
+    @safe class RimRange : Fiber {
         protected {
             DARTFile owner;
             const(ubyte[]) rim_path;
@@ -1016,6 +1022,7 @@ class DARTFile {
             bool _finished;
         }
 
+        @trusted
         this(DARTFile dart, const(ubyte[]) rim_path) {
             owner=dart;
             this.rim_path=rim_path;
@@ -1023,7 +1030,7 @@ class DARTFile {
         }
 
         protected final void run() {
-            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim=0) {
+            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim=0) @trusted {
                 if ( index !is INDEX_NULL ) {
                     data=blockfile.load(index);
                     scope branches_doc=Document(data);
@@ -1036,7 +1043,7 @@ class DARTFile {
                     yield;
                 }
             }
-            uint search(const(ubyte[]) rims, const uint index, const uint rim=0) {
+            uint search(const(ubyte[]) rims, const uint index, const uint rim=0)  @trusted {
                 if ( index !is INDEX_NULL ) {
                     scope local_data=owner.blockfile.load(index);
                     scope branches_doc=Document(local_data);
@@ -1062,6 +1069,7 @@ class DARTFile {
             _finished=true;
         }
 
+        @trusted
         final void popFront() {
             call;
         }
@@ -1080,7 +1088,7 @@ class DARTFile {
     void dump(bool full=false) {
         import std.stdio;
         writeln("!!!EYE!!!: ", _fingerprint.hex);
-        void local_dump(const uint branch_index,  const ubyte rim_key=0, const uint rim=0, string indent=null) {
+        void local_dump(const uint branch_index,  const ubyte rim_key=0, const uint rim=0, string indent=null) @trusted {
 //            writefln("index=%d rim=%d rim_key=%d", branch_index, rim, rim_key);
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
@@ -1122,18 +1130,18 @@ class DARTFile {
                 BlockFile.create(filename, DARTFile.stringof, TEST_BLOCK_SIZE);
             }
 
-            bool check(const(Recorder) A, const(Recorder) B) {
+            bool check(const(Factory.Recorder) A, const(Factory.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
                 // &&
                 //     equal!(q{a.data == b.data})(A.archives[], B.archives[]);
             }
 
-            Buffer write(DARTFile dart, const(ulong[]) table, out Recorder rec, bool isStubs = false) {
-                rec = isStubs ? stubs(dart.net, table) : records(dart.net, table);
+            Buffer write(DARTFile dart, const(ulong[]) table, out Factory.Recorder rec, bool isStubs = false) {
+                rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart.modify(rec);
             }
 
-            Buffer[] fingerprints(Recorder recorder) {
+            Buffer[] fingerprints(Factory.Recorder recorder) {
                 Buffer[] results;
                 foreach(a; recorder.archives) {
                     assert(a.done);
@@ -1143,7 +1151,7 @@ class DARTFile {
 
             }
 
-            bool validate(DARTFile dart, const(ulong[]) table, out Recorder recorder) {
+            bool validate(DARTFile dart, const(ulong[]) table, out Factory.Recorder recorder) {
                 write(dart, table, recorder);
                 auto _fingerprints=fingerprints(recorder);
 
@@ -1151,530 +1159,540 @@ class DARTFile {
                 return check(recorder, find_recorder);
             }
 
-            Recorder records(const(ulong[]) table) {
-                auto recorder=Recorder(net);
+            Factory.Recorder records(Factory factory, const(ulong[]) table) {
+                auto rec = factory.recorder;
                 foreach(t; table) {
                     const doc=DARTFakeNet.fake_doc(t);
-                    recorder.add(doc);
+                    rec.add(doc);
                 }
-                return recorder;
+                return rec;
             }
 
-            Recorder stubs(const(ulong[]) table){
-                auto rec = Recorder(net);
+            Factory.Recorder stubs(Factory factory, const(ulong[]) table){
+                auto rec = factory.recorder;
                 foreach(t; table) {
                     import std.bitmanip;
-                    auto fp = nativeToBigEndian(t);
-                    rec.stub(cast(immutable(ubyte[]))fp);
+                    immutable fp = nativeToBigEndian(t).idup;
+                    pragma(msg, "typeof(fp)=", typeof(fp));
+                    rec.stub(fp);
                 }
                 return rec;
             }
         }
 
     }
-}
 
-unittest {
-    pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
+    unittest {
+        pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
 
-    import std.algorithm.sorting : sort;
-    import tagion.basic.Basic;
-    import std.typecons;
-    import tagion.utils.Random;
-    import std.bitmanip : BitArray;
-    import tagion.utils.Miscellaneous : cutHex;
-//        import tagion.dart.DARTFakeNet : DARTFakeNet;
+        import std.stdio;
+        import std.algorithm.sorting : sort;
+        import tagion.basic.Basic;
+        import std.typecons;
+        import tagion.utils.Random;
+        import std.bitmanip : BitArray;
+        import tagion.utils.Miscellaneous : cutHex;
+        import tagion.dart.DARTFakeNet : DARTFakeNet;
+        import tagion.dart.Recorder : Factory, Archive;
 
 //        @safe
-    auto net=new DARTFakeNet;
+        auto net=new DARTFakeNet;
+        auto manufactor=Factory(net);
 
-    immutable(ulong[]) table=[
-        //  RIM 2 test (rim=2)
-        0x20_21_10_30_40_50_80_90,
-        0x20_21_11_30_40_50_80_90,
-        0x20_21_12_30_40_50_80_90,
-        0x20_21_0a_30_40_50_80_90, // Insert before in rim 2
+        immutable(ulong[]) table=[
+            //  RIM 2 test (rim=2)
+            0x20_21_10_30_40_50_80_90,
+            0x20_21_11_30_40_50_80_90,
+            0x20_21_12_30_40_50_80_90,
+            0x20_21_0a_30_40_50_80_90, // Insert before in rim 2
 
-        // Rim 3 test (rim=3)
-        0x20_21_20_30_40_50_80_90,
-        0x20_21_20_31_40_50_80_90,
-        0x20_21_20_34_40_50_80_90,
-        0x20_21_20_20_40_50_80_90, // Insert before the first in rim 3
+            // Rim 3 test (rim=3)
+            0x20_21_20_30_40_50_80_90,
+            0x20_21_20_31_40_50_80_90,
+            0x20_21_20_34_40_50_80_90,
+            0x20_21_20_20_40_50_80_90, // Insert before the first in rim 3
 
-        0x20_21_20_32_40_50_80_90, // Insert just the last archive in the bucket  in rim 3
+            0x20_21_20_32_40_50_80_90, // Insert just the last archive in the bucket  in rim 3
 
-        // Rim 3 test (rim=3)
-        0x20_21_22_30_40_50_80_90,
-        0x20_21_22_31_40_50_80_90,
-        0x20_21_22_34_40_50_80_90,
-        0x20_21_22_20_40_50_80_90, // Insert before the first in rim 3
-        0x20_21_22_36_40_50_80_90, // Insert after the first in rim 3
-
-
-
-
-        0x20_21_22_32_40_50_80_90, // Insert between in rim 3
-
-        // Add in first rim again
-        0x20_21_11_33_40_50_80_90,
-
-        // Rim 4 test
-        0x20_21_20_32_30_40_50_80,
-        0x20_21_20_32_31_40_50_80,
-        0x20_21_20_32_34_40_50_80,
-        0x20_21_20_32_20_40_50_80, // Insert before the first in rim 4
-
-        0x20_21_20_32_32_40_50_80, // Insert just the last archive in the bucket in rim 4
-
-        ];
+            // Rim 3 test (rim=3)
+            0x20_21_22_30_40_50_80_90,
+            0x20_21_22_31_40_50_80_90,
+            0x20_21_22_34_40_50_80_90,
+            0x20_21_22_20_40_50_80_90, // Insert before the first in rim 3
+            0x20_21_22_36_40_50_80_90, // Insert after the first in rim 3
 
 
-    immutable filename=fileId!DARTFile.fullpath;
-    immutable filename_A=fileId!DARTFile("A_").fullpath;
-    immutable filename_B=fileId!DARTFile("B_").fullpath;
-    immutable filename_C=fileId!DARTFile("C_").fullpath;
 
-    { // Test the fake hash on Archive
-        import std.bitmanip;
 
-        auto doc_in=DARTFakeNet.fake_doc(table[0]);
-        auto a_in=new Recorder.Archive(net, doc_in, Recorder.Archive.Type.ADD);
+            0x20_21_22_32_40_50_80_90, // Insert between in rim 3
+
+            // Add in first rim again
+            0x20_21_11_33_40_50_80_90,
+
+            // Rim 4 test
+            0x20_21_20_32_30_40_50_80,
+            0x20_21_20_32_31_40_50_80,
+            0x20_21_20_32_34_40_50_80,
+            0x20_21_20_32_20_40_50_80, // Insert before the first in rim 4
+
+            0x20_21_20_32_32_40_50_80, // Insert just the last archive in the bucket in rim 4
+
+            ];
+
+
+        immutable filename=fileId!DARTFile.fullpath;
+        immutable filename_A=fileId!DARTFile("A_").fullpath;
+        immutable filename_B=fileId!DARTFile("B_").fullpath;
+        immutable filename_C=fileId!DARTFile("C_").fullpath;
+
+        { // Test the fake hash on Archive
+            import std.bitmanip;
+
+            auto doc_in=DARTFakeNet.fake_doc(table[0]);
+            auto a_in=new Archive(net, doc_in, Archive.Type.ADD);
 //            auto data_out=
-        auto a_table=*cast(ulong*)(a_in.fingerprint.ptr[0..ulong.sizeof]);
-
+            auto a_table=
+                (() @trusted {
+                    return *cast(ulong*)(a_in.fingerprint.ptr);
+                })();
 //                assert(a_table == table[0]);
-        auto data_out=a_in.toHiBON.serialize;
-        auto doc_out=Document(data_out);
-        auto a_out=new Recorder.Archive(net, doc_out);
+            const doc_out=a_in.toDoc;
+//            writefln("doc_out=%j", doc_out);
+            auto a_out=new Archive(net, doc_out);
 
-        // Test recorder
-        auto recorder=Recorder(net);
-        recorder.insert(a_in);
-        auto recorder_data_out=recorder.toHiBON.serialize;
-        //
-        auto recorder_doc_out=Document(recorder_data_out);
-        auto recorder_out=Recorder(net, recorder_doc_out);
+            // Test recorder
+            auto recorder=manufactor.recorder;
+            recorder.insert(a_in);
+            auto recorder_data_out=recorder.toHiBON.serialize;
+            //
+            auto recorder_doc_out=Document(recorder_data_out);
+            auto recorder_out=manufactor.recorder(recorder_doc_out);
 //                auto recorder_archives=recorder_out.archives;
-        auto recorder_archive=recorder_out.archives[].front;
-        assert(recorder_archive.fingerprint == a_in.fingerprint);
+            auto recorder_archive=recorder_out.archives[].front;
+            assert(recorder_archive.fingerprint == a_in.fingerprint);
 
-    }
-
-    { // Test RimKeyRange
-        auto recorder=Recorder(net);
-        auto test_tabel=table[0..8].dup;
-        foreach(t; test_tabel) {
-            const doc=DARTFakeNet.fake_doc(t);
-            recorder.add(doc);
-        }
-        // writeln();
-
-        test_tabel.sort;
-
-        foreach(t; test_tabel) {
-            const doc=DARTFakeNet.fake_doc(t);
         }
 
-        uint i;
-        foreach(a; recorder.archives) {
-            assert(a.doc.data == net.fake_doc(test_tabel[i]).data);
-            i++;
-        }
-        //assert(0);
+        { // Test RimKeyRange
+            auto recorder=manufactor.recorder;
+            auto test_tabel=table[0..8].dup;
+            foreach(t; test_tabel) {
+                const doc=DARTFakeNet.fake_doc(t);
+                recorder.add(doc);
+            }
+            // writeln();
 
-        immutable rim=3;
-        {
-            auto range=recorder._archives[];
-            auto rim_range=DARTFile.RimKeyRange(range, rim);
-            i=0;
-            immutable key=rim_range.front.fingerprint.rim_key(rim);
-            foreach(a; rim_range) {
-                while ( net.hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key ) {
+            test_tabel.sort;
+
+            foreach(t; test_tabel) {
+                const doc=DARTFakeNet.fake_doc(t);
+            }
+
+            uint i;
+            foreach(a; recorder.archives) {
+                assert(a.doc.data == net.fake_doc(test_tabel[i]).data);
+                i++;
+            }
+            //assert(0);
+
+            immutable rim=3;
+            {
+                auto range=recorder[];
+                auto rim_range=DARTFile.RimKeyRange(range, rim);
+                i=0;
+                immutable key=rim_range.front.fingerprint.rim_key(rim);
+                foreach(a; rim_range) {
+                    while ( net.hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key ) {
+                        i++;
+                    }
                     i++;
                 }
-                i++;
+            }
+
+            {
+                auto range=recorder[];
+                auto rim_range=DARTFile.RimKeyRange(range, rim);
+                assert(!rim_range.empty);
+                assert(!rim_range.single);
+                rim_range.popFront;
+                assert(!rim_range.empty);
+                assert(!rim_range.single);
+                rim_range.popFront;
+                assert(!rim_range.empty);
+                assert(!rim_range.single);
+                rim_range.popFront;
+                assert(!rim_range.empty);
+                rim_range.popFront;
+                assert(rim_range.empty);
+                assert(!rim_range.single);
             }
         }
 
-        {
-            auto range=recorder._archives[];
-            auto rim_range=DARTFile.RimKeyRange(range, rim);
-            assert(!rim_range.empty);
-            assert(!rim_range.single);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            assert(!rim_range.single);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            assert(!rim_range.single);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            rim_range.popFront;
-            assert(rim_range.empty);
-            assert(!rim_range.single);
+        {  // Rim 2 test
+            create_dart(filename);
+            auto dart=new DARTFile(net, filename);
+            Factory.Recorder recorder;
+            assert(validate(dart, table[0..4], recorder));
         }
-    }
 
-    {  // Rim 2 test
-        create_dart(filename);
-        auto dart=new DARTFile(net, filename);
-        Recorder recorder;
-        assert(validate(dart, table[0..4], recorder));
-    }
+        {  // Rim 3 test
+            create_dart(filename);
+            auto dart=new DARTFile(net, filename);
+            Factory.Recorder recorder;
+            //=Recorder(net);
 
-    {  // Rim 3 test
-        create_dart(filename);
-        auto dart=new DARTFile(net, filename);
-        Recorder recorder;
-        //=Recorder(net);
-
-        assert(validate(dart, table[4..9], recorder));
-        // dart.dump;
-    }
-
-    {  // Rim 3 test
-        create_dart(filename);
-        auto dart=new DARTFile(net, filename);
-        Recorder recorder;
-        //=Recorder(net);
-
-        assert(validate(dart, table[4..9], recorder));
-        // dart.dump;
-    }
-
-    {  // Rim 4 test
-        create_dart(filename);
-        auto dart=new DARTFile(net, filename);
-        Recorder recorder;
-
-        assert(validate(dart, table[17..$], recorder));
-        // dart.dump;
-    }
-
-
-    {  // Rim 2 & 3
-        create_dart(filename);
-        auto dart=new DARTFile(net, filename);
-        Recorder recorder;
-
-        assert(validate(dart, table[0..9], recorder));
-        // dart.dump;
-    }
-
-
-    {  // Rim 2 & 3 & 4
-        create_dart(filename);
-        auto dart=new DARTFile(net, filename);
-        Recorder recorder;
-
-        assert(validate(dart, table[0..9]~table[17..$], recorder));
-        // dart.dump;
-    }
-
-    {  // Rim all
-        create_dart(filename);
-        auto dart=new DARTFile(net, filename);
-        Recorder recorder;
-
-        assert(validate(dart, table, recorder));
-        // dart.dump;
-    }
-
-    { // Remove two archives and check the bulleye
-        create_dart(filename_A);
-        create_dart(filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
-        //
-        write(dart_A, table, recorder_A);
-        // table 8 and 9 is left out
-        auto bulleye_B=write(dart_B, table[0..8]~table[10..$], recorder_B);
-
-        //dart_A.dump;
-        //dart_B.dump;
-        auto remove_recorder=records(net, table[8..10]);
-        foreach(ref a; remove_recorder._archives) {
-            a._type=Recorder.Archive.Type.REMOVE;
+            assert(validate(dart, table[4..9], recorder));
+            // dart.dump;
         }
-        auto bulleye_A=dart_A.modify(remove_recorder);
-        //dart_A.dump;
-        assert(bulleye_A == bulleye_B);
-    }
 
-    { // Random remove and the bulleye is check
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        enum N=1000;
-        auto random_table=new ulong[N];
-        foreach(ref r; random_table) {
-            r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+        {  // Rim 3 test
+            create_dart(filename);
+            auto dart=new DARTFile(net, filename);
+            Factory.Recorder recorder;
+            //=Recorder(net);
+
+            assert(validate(dart, table[4..9], recorder));
+            // dart.dump;
         }
-        create_dart(filename_A);
-        create_dart(filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
-        //
 
-        auto bulleye_A=write(dart_A, random_table, recorder_A);
-        auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
-        auto remove_recorder=records(net, random_table[N-100..N]);
-        foreach(ref a; remove_recorder._archives) {
-            a._type=Recorder.Archive.Type.REMOVE;
+        {  // Rim 4 test
+            create_dart(filename);
+            auto dart=new DARTFile(net, filename);
+            Factory.Recorder recorder;
+
+            assert(validate(dart, table[17..$], recorder));
+            // dart.dump;
         }
-        bulleye_A=dart_A.modify(remove_recorder);
-        // dart_A.dump;
 
-        // The bull eye of the two DART must be the same
-        assert(bulleye_A == bulleye_B);
-    }
 
-    { // Random write on to an existing DART and the bulleye is check
-        // writeln("##### DART 1 #####");
+        {  // Rim 2 & 3
+            create_dart(filename);
+            auto dart=new DARTFile(net, filename);
+            Factory.Recorder recorder;
 
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        enum N=1000;
-        auto random_table=new ulong[N];
-        foreach(ref r; random_table) {
-            r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            assert(validate(dart, table[0..9], recorder));
+            // dart.dump;
         }
-        create_dart(filename_A);
-        create_dart(filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
-        //
 
-        write(dart_A, random_table[27..29], recorder_A);
-        // dart_A.dump;
-        auto bulleye_A=write(dart_A, random_table[34..35], recorder_A);
-        // dart_A.dump;
-        //assert(0);
-        auto bulleye_B=write(dart_B, random_table[27..29]~random_table[34..35], recorder_B);
 
-        // dart_B.dump;
+        {  // Rim 2 & 3 & 4
+            create_dart(filename);
+            auto dart=new DARTFile(net, filename);
+            Factory.Recorder recorder;
 
-        // writefln("bulleye_A=%s bulleye_B=%s", bulleye_A.cutHex,  bulleye_B.cutHex);
-
-        // The bull eye of the two DART must be the same
-        assert(bulleye_A == bulleye_B);
-    }
-
-    { // Random remove and the bulleye is check
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        enum N=1000;
-        auto random_table=new ulong[N];
-        foreach(ref r; random_table) {
-            r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            assert(validate(dart, table[0..9]~table[17..$], recorder));
+            // dart.dump;
         }
-        create_dart(filename_A);
-        create_dart(filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
-        //
 
-        auto bulleye_A=write(dart_A, random_table, recorder_A);
-        auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
-        auto remove_recorder=records(net, random_table[N-100..N]);
-        foreach(ref a; remove_recorder._archives) {
-            a._type=Recorder.Archive.Type.REMOVE;
+        {  // Rim all
+            create_dart(filename);
+            auto dart=new DARTFile(net, filename);
+            Factory.Recorder recorder;
+
+            assert(validate(dart, table, recorder));
+            // dart.dump;
         }
-        bulleye_A=dart_A.modify(remove_recorder);
-        // dart_A.dump;
 
-        // writefln("bulleye_A=%s bulleye_B=%s", bulleye_A.cutHex,  bulleye_B.cutHex);
+        { // Remove two archives and check the bulleye
+            create_dart(filename_A);
+            create_dart(filename_B);
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+            //
+            write(dart_A, table, recorder_A);
+            // table 8 and 9 is left out
+            auto bulleye_B=write(dart_B, table[0..8]~table[10..$], recorder_B);
 
-        // The bull eye of the two DART must be the same
-        assert(bulleye_A == bulleye_B);
-    }
-
-    { // Random write on to an existing DART and the bulleye is check
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        immutable(ulong[]) selected_table=[
-            0xABBA_1234_DF92_7BA7,
-            0xABBA_1234_62BD_7814,
-            0xABBA_1234_DFA5_2B29
-            ];
-        create_dart(filename_A);
-        create_dart(filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
-        //
-
-        write(dart_A, selected_table[0..2], recorder_A);
-        auto bulleye_A=write(dart_A, selected_table[2..$], recorder_A);
-        auto bulleye_B=write(dart_B, selected_table, recorder_B);
-        // The bull eye of the two DART must be the same
-        assert(bulleye_A == bulleye_B);
-    }
-
-    { // Random write and the bulleye is check
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        enum N=1000;
-        auto random_table=new ulong[N];
-        foreach(ref r; random_table) {
-            r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            //dart_A.dump;
+            //dart_B.dump;
+            auto remove_recorder=records(manufactor, table[8..10]);
+            foreach(ref a; remove_recorder.archives[]) {
+                a.type=Archive.Type.REMOVE;
+            }
+            auto bulleye_A=dart_A.modify(remove_recorder);
+            //dart_A.dump;
+            assert(bulleye_A == bulleye_B);
         }
-        create_dart(filename_A);
-        create_dart(filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
 
-        write(dart_A, random_table[0..333], recorder_A);
-        write(dart_B, random_table[0..777], recorder_B);
-        auto bulleye_A=write(dart_A, random_table[333..$], recorder_A);
-        auto bulleye_B=write(dart_B, random_table[777..$], recorder_B);
+        { // Random remove and the bulleye is check
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=1000;
+            auto random_table=new ulong[N];
+            foreach(ref r; random_table) {
+                r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            }
+            create_dart(filename_A);
+            create_dart(filename_B);
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+            //
 
-        // The bull eye of the two DART must be the same
-        assert(bulleye_A == bulleye_B);
-    }
+            auto bulleye_A=write(dart_A, random_table, recorder_A);
+            auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
+            auto remove_recorder=records(manufactor, random_table[N-100..N]);
+            foreach(ref a; remove_recorder[]) {
+                a.type=Archive.Type.REMOVE;
+            }
+            bulleye_A=dart_A.modify(remove_recorder);
+            // dart_A.dump;
 
-    { // Try to remove a nonexisting archive
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        enum N=50;
-        auto random_table=new ulong[N];
-        foreach(ref r; random_table) {
-            r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            // The bull eye of the two DART must be the same
+            assert(bulleye_A == bulleye_B);
         }
-        create_dart(filename_A);
-        create_dart(filename_B);
 
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
+        { // Random write on to an existing DART and the bulleye is check
+            // writeln("##### DART 1 #####");
 
-        write(dart_A, random_table, recorder_A);
-        write(dart_B, random_table, recorder_B);
-        assert(dart_A.fingerprint == dart_B.fingerprint);
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=1000;
+            auto random_table=new ulong[N];
+            foreach(ref r; random_table) {
+                r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            }
+            create_dart(filename_A);
+            create_dart(filename_B);
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+            //
 
-        auto recorder=dart_A.recorder;
-        const archive_1=new Recorder.Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Recorder.Archive.Type.NONE);
-//            immutable nonexisting_print_1=net.fake_doc(0xABB7_1111_1111_0000UL);
-        recorder.remove_by_print(archive_1.fingerprint);
-        const archive_2=new Recorder.Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Recorder.Archive.Type.NONE);
-//            immutable nonexisting_print_2=net.fake_doc(0xABB7_1112_1111_0000UL);
-        recorder.remove_by_print(archive_2.fingerprint);
+            write(dart_A, random_table[27..29], recorder_A);
+            // dart_A.dump;
+            auto bulleye_A=write(dart_A, random_table[34..35], recorder_A);
+            // dart_A.dump;
+            //assert(0);
+            auto bulleye_B=write(dart_B, random_table[27..29]~random_table[34..35], recorder_B);
 
-        //writefln("calcHash(nonexisting_print)=%s", net.calcHash(nonexisting_print).cutHex!true);
+            // dart_B.dump;
 
-        dart_B.modify(recorder);
-        // dart_B.dump;
-        // dart_A.dump;
+            // writefln("bulleye_A=%s bulleye_B=%s", bulleye_A.cutHex,  bulleye_B.cutHex);
 
-        // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-        assert(dart_A.fingerprint == dart_B.fingerprint);
-
-    }
-
-    { // Large random test
-        // writefln("RANDOM test");
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        enum N=500;
-        auto random_table=new ulong[N];
-        foreach(ref r; random_table) {
-            r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            // The bull eye of the two DART must be the same
+            assert(bulleye_A == bulleye_B);
         }
-        create_dart(filename_A);
-        create_dart(filename_B);
-        Recorder recorder_A;
-        // Recorder recorder_B;
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
 
-        BitArray saved_archives;
-        saved_archives.length=N;
-        auto rand_index=Random!uint(1234);
-        enum ITERATIONS=7;
-        enum SELECT_ITER=35;
-        foreach(i;0..ITERATIONS) {
+        { // Random remove and the bulleye is check
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=1000;
+            auto random_table=new ulong[N];
+            foreach(ref r; random_table) {
+                r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            }
+            create_dart(filename_A);
+            create_dart(filename_B);
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+            //
+
+            auto bulleye_A=write(dart_A, random_table, recorder_A);
+            auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
+            auto remove_recorder=records(manufactor, random_table[N-100..N]);
+            foreach(ref a; remove_recorder[]) {
+                a.type=Archive.Type.REMOVE;
+            }
+            bulleye_A=dart_A.modify(remove_recorder);
+            // dart_A.dump;
+
+            // writefln("bulleye_A=%s bulleye_B=%s", bulleye_A.cutHex,  bulleye_B.cutHex);
+
+            // The bull eye of the two DART must be the same
+            assert(bulleye_A == bulleye_B);
+        }
+
+        { // Random write on to an existing DART and the bulleye is check
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            immutable(ulong[]) selected_table=[
+                0xABBA_1234_DF92_7BA7,
+                0xABBA_1234_62BD_7814,
+                0xABBA_1234_DFA5_2B29
+                ];
+            create_dart(filename_A);
+            create_dart(filename_B);
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+            //
+
+            write(dart_A, selected_table[0..2], recorder_A);
+            auto bulleye_A=write(dart_A, selected_table[2..$], recorder_A);
+            auto bulleye_B=write(dart_B, selected_table, recorder_B);
+            // The bull eye of the two DART must be the same
+            assert(bulleye_A == bulleye_B);
+        }
+
+        { // Random write and the bulleye is check
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=1000;
+            auto random_table=new ulong[N];
+            foreach(ref r; random_table) {
+                r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            }
+            create_dart(filename_A);
+            create_dart(filename_B);
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+
+            write(dart_A, random_table[0..333], recorder_A);
+            write(dart_B, random_table[0..777], recorder_B);
+            auto bulleye_A=write(dart_A, random_table[333..$], recorder_A);
+            auto bulleye_B=write(dart_B, random_table[777..$], recorder_B);
+
+            // The bull eye of the two DART must be the same
+            assert(bulleye_A == bulleye_B);
+        }
+
+        { // Try to remove a nonexisting archive
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=50;
+            auto random_table=new ulong[N];
+            foreach(ref r; random_table) {
+                r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            }
+            create_dart(filename_A);
+            create_dart(filename_B);
+
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
+
+            write(dart_A, random_table, recorder_A);
+            write(dart_B, random_table, recorder_B);
+            assert(dart_A.fingerprint == dart_B.fingerprint);
+
             auto recorder=dart_A.recorder;
+            const archive_1=new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive.Type.NONE);
+//            immutable nonexisting_print_1=net.fake_doc(0xABB7_1111_1111_0000UL);
+            recorder.remove(archive_1.fingerprint);
+            const archive_2=new Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Archive.Type.NONE);
+//            immutable nonexisting_print_2=net.fake_doc(0xABB7_1112_1111_0000UL);
+            recorder.remove(archive_2.fingerprint);
+
+            //writefln("calcHash(nonexisting_print)=%s", net.calcHash(nonexisting_print).cutHex!true);
+
+            dart_B.modify(recorder);
+            // dart_B.dump;
+            // dart_A.dump;
+
+            // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+            assert(dart_A.fingerprint == dart_B.fingerprint);
+
+        }
+
+        { // Large random test
+            // writefln("RANDOM test");
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=500;
+            auto random_table=new ulong[N];
+            foreach(ref r; random_table) {
+                r=rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+            }
+            create_dart(filename_A);
+            create_dart(filename_B);
+            Factory.Recorder recorder_A;
+            // Recorder recorder_B;
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+
+            BitArray saved_archives;
+            (() @trusted {
+                saved_archives.length=N;
+            })();
+            auto rand_index=Random!uint(1234);
+            enum ITERATIONS=7;
+            enum SELECT_ITER=35;
             BitArray check_archives;
             BitArray added_archives;
             BitArray removed_archives;
-            check_archives.length=N;
-            added_archives.length=N;
-            removed_archives.length=N;
-            foreach(j;0..SELECT_ITER) {
-                immutable index=rand_index.value(N);
-                if ( !check_archives [index] ) {
+            auto recorder=dart_A.recorder;
+
+            (() @trusted {
+                foreach(i;0..ITERATIONS) {
+
+                    check_archives.length=N;
+                    added_archives.length=N;
+                    removed_archives.length=N;
+                    foreach(j;0..SELECT_ITER) {
+                        immutable index=rand_index.value(N);
+                        if ( !check_archives [index] ) {
 //                        immutable data=net.fake_serialize(random_table[index]).idup;
-                    const doc=net.fake_doc(random_table[index]);
-                    if ( saved_archives[index] ) {
-                        recorder.remove(doc);
-                        removed_archives[index]=true;
+                            const doc=net.fake_doc(random_table[index]);
+                            if ( saved_archives[index] ) {
+                                recorder.remove(doc);
+                                removed_archives[index]=true;
+                            }
+                            else {
+                                recorder.add(doc);
+                                added_archives[index]=true;
+                            }
+                            check_archives[index]=true;
+                        }
                     }
-                    else {
-                        recorder.add(doc);
-                        added_archives[index]=true;
-                    }
-                    check_archives[index]=true;
+                    // dart_A.blockfile.dump;
+                    dart_A.modify(recorder);
+                    saved_archives|=added_archives;
+                    saved_archives&=~removed_archives;
+                    // dart_A.dump;
                 }
+                auto recorder_B=dart_B.recorder;
+                auto save_range=saved_archives.bitsSet;
+                // writefln("%s ", saved_archives);
+                saved_archives.bitsSet.each!(n => recorder_B.add(net.fake_doc(random_table[n])));
+                dart_B.modify(recorder_B);
+                // dart_B.dump;
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+            })();
+
+        }
+
+        version(none)
+        {//Read stubs test
+            writeln("FROM THIS");
+            auto rand=Random!ulong(1234_5678_9012_345UL);
+            enum N=50;
+            auto random_table=new ulong[N];
+            auto random_stubs=new ulong[N];
+            foreach(ref r; random_table) {
+                r=rand.value(0x20_21_22_36_40_50_80_90, 0x20_26_22_36_40_50_80_90);
             }
-            // dart_A.blockfile.dump;
-            dart_A.modify(recorder);
-            saved_archives|=added_archives;
-            saved_archives&=~removed_archives;
+
+            foreach(ref r; random_stubs) {
+                r=rand.value(0x20_27_22_36_40_50_80_90, 0x20_29_22_36_40_50_80_90);
+            }
+            create_dart(filename_A);
+            create_dart(filename_B);
+
+            auto dart_A=new DARTFile(net, filename_A);
+            auto dart_B=new DARTFile(net, filename_B);
+            Recorder recorder_A;
+            Recorder recorder_B;
+
+            write(dart_A, random_table, recorder_A);
+            write(dart_A, random_stubs, recorder_B, true);
+            // recorder_B.dump;
             // dart_A.dump;
-        }
-        auto recorder_B=dart_B.recorder;
-        auto save_range=saved_archives.bitsSet;
-        // writefln("%s ", saved_archives);
-        saved_archives.bitsSet.each!(n => recorder_B.add(net.fake_doc(random_table[n])));
-        dart_B.modify(recorder_B);
-        // dart_B.dump;
-        // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-        assert(dart_A.fingerprint == dart_B.fingerprint);
 
+            auto rec = dart_A.readStubs();
+            // writeln("rec length ", rec.length);
+            // rec.dump;
+
+            dart_B.modify(rec);
+            // dart_B.dump;
+            // dart_A.dump;
+
+            // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+            // assert(dart_A.fingerprint == dart_B.fingerprint);
+        }
     }
-
-    version(none)
-    {//Read stubs test
-        writeln("FROM THIS");
-        auto rand=Random!ulong(1234_5678_9012_345UL);
-        enum N=50;
-        auto random_table=new ulong[N];
-        auto random_stubs=new ulong[N];
-        foreach(ref r; random_table) {
-            r=rand.value(0x20_21_22_36_40_50_80_90, 0x20_26_22_36_40_50_80_90);
-        }
-
-        foreach(ref r; random_stubs) {
-            r=rand.value(0x20_27_22_36_40_50_80_90, 0x20_29_22_36_40_50_80_90);
-        }
-        create_dart(filename_A);
-        create_dart(filename_B);
-
-        auto dart_A=new DARTFile(net, filename_A);
-        auto dart_B=new DARTFile(net, filename_B);
-        Recorder recorder_A;
-        Recorder recorder_B;
-
-        write(dart_A, random_table, recorder_A);
-        write(dart_A, random_stubs, recorder_B, true);
-        // recorder_B.dump;
-        // dart_A.dump;
-
-        auto rec = dart_A.readStubs();
-        // writeln("rec length ", rec.length);
-        // rec.dump;
-
-        dart_B.modify(rec);
-        // dart_B.dump;
-        // dart_A.dump;
-
-        // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-        // assert(dart_A.fingerprint == dart_B.fingerprint);
-    }
-
-
 }

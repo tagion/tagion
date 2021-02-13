@@ -6,7 +6,7 @@ import  std.range.primitives : isInputRange;
 import tagion.gossip.InterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : Label, STUB, isDocument, GetLabel, isStub;
+import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub;
 import tagion.basic.Basic : Buffer;
 import tagion.basic.Message;;
 import tagion.dart.DARTException : DARTRecorderException;
@@ -21,6 +21,7 @@ alias hex=toHexString;
 private alias check=Check!DARTRecorderException;
 
 //    alias recorder=factory.recorder;
+@safe
 class Factory {
 
 
@@ -67,7 +68,7 @@ class Factory {
      +/
     @safe
     class Recorder {
-        alias Archives=RedBlackTree!(Archive, (a,b) => a.fingerprint < b.fingerprint);
+        alias Archives=RedBlackTree!(Archive, (a,b) @safe => a.fingerprint < b.fingerprint);
 //        protected HashNet net;
         private Archives _archives;
 //        @disable this();
@@ -175,7 +176,7 @@ class Factory {
             insert(a);
         }
 
-        void insert(T)(T pack, const Archive.Type type=Archive.Type.NONE) if(isDocument!T) {
+        void insert(T)(T pack, const Archive.Type type=Archive.Type.NONE) if(isHiBONRecord!T) {
             insert(pack.toDoc, type);
         }
 
@@ -239,8 +240,7 @@ class Factory {
 
 /++
  +/
-@safe
-class Archive {
+@safe class Archive {
     enum Type : int {
         NONE = 0,
             REMOVE = -1,
@@ -266,7 +266,7 @@ class Archive {
         Buffer _fingerprint;
         if (.isStub(_doc)) {
             enum fingerprintLabel=GetLabel!(this.fingerprint).name;
-            _fingerprint=doc[fingerprintLabel].get!Buffer;
+            _fingerprint=_doc[fingerprintLabel].get!Buffer;
         }
         else {
             enum archiveLabel=GetLabel!(this.doc).name;
@@ -363,6 +363,9 @@ class Archive {
         }
         return doc;
     }
+
+    // import tagion.hibon.HiBONJSON;
+    // mixin JSONString;
     // HiBON toHiBON() const {
     //     auto hibon=new HiBON;
     //     hibon[Params.type]=cast(uint)(_type);
@@ -378,7 +381,7 @@ class Archive {
     // Define a remove archive by it fingerprint
     private this(Buffer fingerprint, const Type type) {
         this.type=type;
-        doc=Document(null);
+        doc=Document();
         this.fingerprint=fingerprint;
     }
 
