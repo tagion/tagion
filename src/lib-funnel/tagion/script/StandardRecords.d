@@ -2,7 +2,7 @@ module tagion.script.StandardRecords;
 
 import std.meta : AliasSeq;
 
-import tagion.basic.Basic : Buffer, Pubkey;
+import tagion.basic.Basic : Buffer, Pubkey, Signature;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
@@ -97,7 +97,7 @@ import tagion.script.ScriptBase : Number;
     }
 
     @RecordType("SSC") struct SignedContract {
-        @Label("$signs") Buffer[] signs;       /// Signature of all inputs
+        @Label("$signs") Signature[] signs;       /// Signature of all inputs
         @Label("$contract") Contract contract; /// The contract must signed by all inputs
         @Label("$in", true) StandardBill[] input;   /// The actual inputs
         mixin HiBONRecord;

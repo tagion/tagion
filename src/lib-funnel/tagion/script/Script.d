@@ -1970,7 +1970,7 @@ class Script {
                 case HIBON:
                     return new Value(new HiBON);
                 case DOCUMENT:
-                    return new Value(Document(null));
+                    return new Value(Document());
                 case BINARY:
                     immutable(ubyte)[] binary;
                     return new Value(binary);
