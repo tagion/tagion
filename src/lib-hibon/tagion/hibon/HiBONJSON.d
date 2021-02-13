@@ -115,12 +115,14 @@ string toPretty(T)(T value) {
 mixin template JSONString() {
     import std.format;
     import std.conv : to;
-    import tagion.hibon.HiBONJSON;
-    import tagion.hibon.HiBONRecord : isHiBONRecord;
     @safe
     void toString(scope void delegate(const(char)[]) @safe sink,
                   FormatSpec!char fmt) const {
         alias ThisT=typeof(this);
+        import tagion.hibon.Document;
+        import tagion.hibon.HiBON;
+        import tagion.hibon.HiBONJSON;
+        import tagion.hibon.HiBONRecord;
         import std.traits : hasMember, ReturnType, isArray, ForeachType, isCallable;
         static if (isHiBONRecord!ThisT) {
             const doc=this.toDoc;
