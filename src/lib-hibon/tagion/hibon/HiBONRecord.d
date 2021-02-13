@@ -1,5 +1,6 @@
 module tagion.hibon.HiBONRecord;
 
+import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file=std.file;
@@ -20,9 +21,9 @@ alias DocResult=Tuple!(Document.Element.ErrorCode, "error", string , "key");
 enum isHiBON(T)=(is(T == struct) || is(T == class)) && hasMember!(T, "toHiBON") && (is(ReturnType!(T.toHiBON) : const(HiBON)));
 
 ///  Returns: true if struct or class supports toDoc
-enum isDocument(T)=(is(T == struct) || is(T == class)) && hasMember!(T, "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
+enum isHiBONRecord(T)=(is(T == struct) || is(T == class)) && hasMember!(T, "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
 
-enum isDocumentArray(T)=isArray!T && isDocument!(ForeachType!T);
+enum isHiBONRecordArray(T)=isArray!T && isHiBONRecord!(ForeachType!T);
 
 enum STUB=HiBONPrefix.HASH~"";
 @safe
@@ -60,7 +61,7 @@ struct Inspect {
 
 /++
  Used to set a member value from the information in t
-+/
+ +/
 struct Assign {
     string code;
 }
@@ -95,7 +96,7 @@ bool hasHashKey(T)(T doc) if (is(T:const(HiBON)) || is(T:const(Document))) {
     return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH;
 }
 
-// bool hasHashKey(T)(T value) if (isDocument!T) {
+// bool hasHashKey(T)(T value) if (isHiBONRecord!T) {
 //     return value.keys[0] is HiBONPrefix.HASH;
 // }
 
@@ -138,20 +139,21 @@ enum Choice {
  +/
 mixin template HiBONRecord(string CTOR="") {
 
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable, EnumMembers, ForeachType, isArray;
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember,
+        isCallable, EnumMembers, ForeachType, isArray, isAssociativeArray, KeyType, ValueType;
     import std.typecons : TypedefType, Tuple;
     import std.format;
     import std.functional : unaryFun;
     import std.range : iota, enumerate, lockstep;
     import std.range.primitives : isInputRange;
-    import std.meta : staticMap;
+    import std.meta : staticMap, AliasSeq;
     import std.array : join;
 
     import tagion.basic.Basic : basename, EnumContinuousSequency;
 
 //    import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
-    import tagion.basic.Basic : basename;
+    import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON;
@@ -176,15 +178,37 @@ mixin template HiBONRecord(string CTOR="") {
         auto hibon= new HiBON;
         static HiBON toList(L)(L list) {
             auto array=new HiBON;
-            alias ElementT=ForeachType!L;
-            static if (isArray!ElementT) {
+            alias UnqualL=Unqual!L;
+            alias ElementT=Unqual!(ForeachType!L);
+            pragma(msg, "L=", L);
+            pragma(msg, "UnqualL=", UnqualL);
+            pragma(msg, "isArray!L=", isArray!L);
+            pragma(msg, "ElementT=", ElementT);
+            pragma(msg, "isHiBON!ElementT=", isHiBON!ElementT);
+            pragma(msg, "isInputRange!ElementT=", isInputRange!ElementT);
+            pragma(msg, "isArray!ElementT=", isArray!ElementT);
+            pragma(msg, "isAssociativeArray!L=", isAssociativeArray!L);
+            pragma(msg, `hasMember!(ElementT, "toHiBON")=`, hasMember!(ElementT, "toHiBON"));
+            static if (isArray!L || isAssociativeArray!L) {
                 auto range=list;
             }
             else {
+                pragma(msg, "typeof(list)=", typeof(list));
                 auto range=list.enumerate;
             }
             foreach(index, e; range) {
-                array[index]=e;
+                static if (isHiBON!ElementT) {
+                    array[index]=e.toHiBON;
+                }
+                else static if (HiBON.Value.hasType!ElementT) {
+                    array[index]=e;
+                }
+                else static if (isInputRange!ElementT) {
+                    array[index]=toList(e);
+                }
+                else {
+                    static assert(0, format("Can not convert %s to HiBON", L.stringof));
+                }
             }
             return array;
         }
@@ -216,7 +240,12 @@ mixin template HiBONRecord(string CTOR="") {
                     alias MemberT=typeof(m);
                     alias BaseT=TypedefType!MemberT;
                     alias UnqualT=Unqual!BaseT;
-                    static if (__traits(compiles, m.toHiBON)) {
+                    // writefln("name=%s BaseT=%s isInputRange!BaseT=%s isInputRange!UnqualT=%s",
+                    //     name, BaseT.stringof, isInputRange!BaseT, isInputRange!UnqualT);
+                    static if (HiBON.Value.hasType!UnqualT) {
+                        hibon[name]=cast(BaseT)m;
+                    }
+                    else static if (isHiBON!BaseT) {
                         hibon[name]=m.toHiBON;
                     }
                     else static if (is(MemberT == enum)) {
@@ -226,7 +255,7 @@ mixin template HiBONRecord(string CTOR="") {
                         static if (isInputRange!UnqualT) {
                             alias ElementT=ForeachType!UnqualT;
                             static assert((HiBON.Value.hasType!ElementT) || isHiBON!ElementT ,
-                                    format("The sub element '%s' of type %s is not supported", name, BaseT.stringof));
+                                format("The sub element '%s' of type %s is not supported", name, BaseT.stringof));
 
                             hibon[name]=toList(cast(UnqualT)m);
                         }
@@ -236,28 +265,51 @@ mixin template HiBONRecord(string CTOR="") {
                             hibon[name]=cast(BaseT)m;
                         }
                     }
-                    else {
-                        static if (is(BaseT:U[], U)) {
+                    else static if (isAssociativeArray!UnqualT) {
+                        writefln( "isInputRange!UnqualT=%s", isInputRange!UnqualT);
+                        alias BaseU=TypedefType!(ForeachType!(UnqualT));
+                        hibon[name]=toList(m);
+                    }
+                    else static if (isInputRange!UnqualT) {
+                        writefln( "isInputRange!UnqualT=%s", isInputRange!UnqualT);
+                        alias BaseU=TypedefType!(ForeachType!(UnqualT));
+                        hibon[name]=toList(cast(BaseU[])m);
 
-                            static if (HiBON.Value.hasType!U) {
-                                hibon[name]=toList(cast(BaseT)m);
-                            }
-                            else static if (hasMember!(U, "toHiBON")) {
-                                auto array=new HiBON;
-                                foreach(index, e; cast(BaseT)m) {
-                                    array[index]=e.toHiBON;
-                                }
-                                hibon[name]=array;
-                            }
-                            else {
-                                static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
-                                        BaseT.stringof, (immutable(U)[]).stringof));
-                                hibon[name]=cast(BaseT)m;
-                            }
-                        }
-                        else {
-                            hibon[name]=cast(BaseT)m;
-                        }
+
+                        // static if (is(BaseT:U[], U)) {
+                        //     alias BaseU=TypedefType!U;
+                        // static if (HiBON.Value.hasType!BaseU) {
+                        //     pragma(msg, "BaseU=", BaseU, " BaseT=", BaseT);
+
+                        // }
+                        // else static if (isHiBON!BaseU) {
+                        //     auto array=new HiBON;
+                        //     foreach(index, e; cast(BaseT)m) {
+                        //         array[index]=e.toHiBON;
+                        //     }
+                        //     hibon[name]=array;
+                        // }
+                        // else static if (isInputRange!BaseU) {
+
+                        //     HiBON to
+                        //         auto array=new HiBON;
+                        //         foreach(index, e; cast(BaseT)m) {
+                        //             array[index]=toHiBON;
+                        //         }
+                        //         hibon[name]=array;
+                        //     }
+                        //     else {
+                        //         static assert(is(BaseU == immutable), format("The array must be immutable not %s but is %s",
+                        //                 BaseT.stringof, (immutable(BaseU)[]).stringof));
+                        //         hibon[name]=cast(BaseT)m;
+                        //     }
+                        // }
+                        // else {
+                        //     hibon[name]=cast(BaseT)m;
+                        // }
+                    }
+                    else {
+                        static assert(0, format("Convering for member '%s' of type %s is not supported by default", name, MemberT.stringof));
                     }
                 }
             }
@@ -311,26 +363,33 @@ mixin template HiBONRecord(string CTOR="") {
      Returns:
      If the Document fits compleatly it returns NONE
      +/
-    @safe
-    static DocResult fitting(const Document doc) nothrow {
+    version(none)
+    @safe static DocResult fitting(const Document doc, string[] super_keys=null) nothrow {
         foreach(e; doc[]) {
+            string key_chain(string key, string sub_key=null) {
+
+                return (super_keys~[key, sub_key]).join(".");
+            }
             switch (e.key) {
+                pragma(msg, "keys=", keys);
                 static foreach(i, key; keys) {
                     {
+
                         static if (key.length) {
-                        alias FieldType=Fields!ThisType[i];
+                            alias FieldType=Fields!ThisType[i];
                         case key:
+
                             alias BaseT=TypedefType!FieldType;
-                            static if (!Document.Value.hasType!BaseT && (is(FieldType == struct) || is(FieldType == class))) {
+                            static if (!Document.Value.hasType!BaseT && (is(BaseT == struct) || is(BaseT == class))) {
                                 static assert(
-                                    __traits(compiles, FieldType.fitting(doc)),
+                                    __traits(compiles, FieldType.fitting(doc, null)),
                                     format("Member %s is missing %s of %s", key, fitting(doc).stringof, FieldType.stringof));
                                 try {
                                     const sub_doc=doc[key].get!Document;
-                                    return FieldType.fitting(sub_doc);
+                                    return FieldType.fitting(sub_doc, super_keys~key);
                                 }
                                 catch (Exception e) {
-                                    return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key);
+                                    return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key_chain(key));
                                 }
                             }
                             else {
@@ -340,43 +399,102 @@ mixin template HiBONRecord(string CTOR="") {
                                 else {
                                     alias DocType=TypedefType!(FieldType);
                                 }
-                                static if (isInputRange!DocType && isHiBON!(ForeachType!DocType)) {
-                                    alias ElementT=ForeachType!DocType;
+                                static if (Document.Value.hasType!DocType) {
+                                    enum TypeE=Document.Value.asType!DocType;
+                                    if (TypeE !is e.type) {
+                                        return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key));
+                                    }
+                                }
+                                else static if (isInputRange!DocType) {
+                                    alias ElementT=TypedefType!(ForeachType!DocType);
                                     if (!doc.isArray) {
-                                        return DocResult(Document.Element.ErrorCode.NOT_AN_ARRAY, key);
+                                        return DocResult(Document.Element.ErrorCode.NOT_AN_ARRAY, key_chain(key));
                                     }
                                     foreach(sub_e; doc[]) {
-                                        auto result=ElementT.fitting(doc);
-                                        if (result.error !is Document.Element.ErrorCode.NONE) {
-                                            return DocResult(result.error, [result.key, sub_e.key].join("."));
+                                        try {
+                                            static if (isHiBONRecord!ElementT) {
+                                                const sub_doc=sub_e.get!Document;
+                                                const result=ElementT.fitting(sub_doc);
+                                                if (result.error !is Document.Element.ErrorCode.NONE) {
+                                                    return DocResult(result.error, key_chain(key, sub_e.key));
+                                                }
+                                            }
+                                            else static if (Document.Value.hasType!ElementT) {
+                                                enum TypeE=Document.Value.asType!ElementT;
+                                                if (TypeE !is sub_e.type) {
+                                                    return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key, sub_e.key));
+                                                }
+                                            }
+                                            else static if (isInputRange!ElementT) {
+                                                const sub_doc=sub_e.get!Document;
+                                                const result=fitting(sub_doc);
+                                                if (result.error !is Document.Element.ErrorCode.NONE) {
+                                                    return DocResult(result.error, key_chain(key, sub_e.key));
+                                                }
+                                            }
+                                            else {
+                                                static assert(0, format("Type %s not supported", DocType.stringof));
+                                            }
+                                        }
+                                        catch (Exception e) {
+                                            return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key_chain(key));
                                         }
                                     }
                                 }
-                                else static if (isInputRange!DocType && Document.Value.hasType!(ForeachType!DocType)) {
-                                    alias TypeE=Document.Value.asType!(ForeachType!DocType);
-                                    if (!doc.isArray) {
-                                        return DocResult(Document.Element.ErrorCode.NOT_AN_ARRAY, key);
+                                else static if (isAssociativeArray!DocType) {
+                                    alias KeyTypeT=KeyType!DocType;
+                                    alias ValueT=ValueType!DocType;
+                                    static if (is(ValueT == enum)) {
+                                        alias ElementT=TypedefType!(OriginalType!ValueT);
                                     }
+                                    else {
+                                        alias ElementT=TypedefType!(ValueT);
+                                    }
+                                    alias Key=CastTo!(KeyTypeT, AliasSeq!(const(string), const(uint)));
+                                    static assert(!is(void==Key),
+                                        format("Associated array with Key type for %s coan not be converted to HiBON", KeyTypeT.stringof));
                                     foreach(sub_e; doc[]) {
-                                        if (sub_e.type is TypeE) {
-                                            return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, [key, sub_e.key].join("."));
+                                        static if (Document.Value.hasType!ElementT) {
+                                            enum TypeE=Document.Value.asType!ElementT;
+                                            if (TypeE !is sub_e.type) {
+                                                return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key, sub_e.key));
+                                            }
+                                        }
+                                        else {
+                                            enum TypeE=Document.Value.asType!Document;
+                                            if (TypeE !is sub_e.type) {
+                                                return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key, sub_e.key));
+                                            }
+                                            try {
+                                                const sub_doc=doc[key].get!Document;
+                                                static if (isHiBON!FiledType) {
+                                                    return FieldType.fitting(sub_doc, super_keys~key~sub_e.key);
+                                                }
+                                                else {
+                                                }
+                                            }
+                                            catch (Exception e) {
+                                                return DocResult(Document.Element.ErrorCode.BAD_SUB_DOCUMENT, key_chain(key));
+                                            }
                                         }
                                     }
-
                                 }
                                 else {
-                                    enum field_type=FieldType.stringof;
+                                    pragma(msg, "isArray!DocType=", isArray!DocType);
+                                    pragma(msg, "isInputRange!DocType=", isInputRange!DocType);
+                                    pragma(msg, "DocType=", DocType);
+                                    //enum field_type=FieldType.stringof;
                                     static assert(Document.Value.hasType!DocType,
                                         format("Type %s for member '%s' is not supported",
                                             FieldType.stringof, key));
                                     enum TypeE=Document.Value.asType!DocType;
                                     if (TypeE !is e.type) {
-                                        return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key);
+                                        return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE, key_chain(key));
                                     }
                                 }
                                 static if (key == TYPENAME) {
                                     if (this.type != e.get!string) {
-                                        return DocResult(Document.Element.ErrorCode.DOCUMENT_TYPE, key);
+                                        return DocResult(Document.Element.ErrorCode.DOCUMENT_TYPE, key_chain(key));
                                     }
                                 }
                             }
@@ -384,7 +502,7 @@ mixin template HiBONRecord(string CTOR="") {
                     }
                 }
             default:
-                return DocResult(Document.Element.ErrorCode.KEY_NOT_DEFINED, e.key);
+                return DocResult(Document.Element.ErrorCode.KEY_NOT_DEFINED, key_chain(null));
             }
         }
         return DocResult(Document.Element.ErrorCode.NONE,null);
@@ -396,8 +514,9 @@ mixin template HiBONRecord(string CTOR="") {
      Returns:
      true if the Document members is confined to what is defined in object
      +/
+    version(none)
     @safe
-    static bool confined(const Document doc) nothrow {
+        static bool confined(const Document doc) nothrow {
         try {
             return fitting(doc).error is Document.Element.ErrorCode.NONE;
         }
@@ -410,200 +529,256 @@ mixin template HiBONRecord(string CTOR="") {
 
 
     static if (!NO_DEFAULT_CTOR) {
-
-
-    @safe
-    this(const HiBON hibon) {
-        this(Document(hibon.serialize));
-    }
-
-    @safe
-    this(const Document doc)  {
-        static if (HAS_TYPE) {
-            string _type=doc[TYPENAME].get!string;
-            check(_type == type, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
+        @safe this(const HiBON hibon) {
+            this(Document(hibon.serialize));
         }
-        static if (hasUDA!(ThisType, RecordType)) {
-            enum record=getUDAs!(ThisType, RecordType)[0];
-            static if (record.code) {
-                scope(exit) {
-                    mixin(record.code);
+
+        @safe this(const Document doc)  {
+            static if (HAS_TYPE) {
+                string _type=doc[TYPENAME].get!string;
+                check(_type == type, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
+            }
+            static if (hasUDA!(ThisType, RecordType)) {
+                enum record=getUDAs!(ThisType, RecordType)[0];
+                static if (record.code) {
+                    scope(exit) {
+                        mixin(record.code);
+                    }
                 }
             }
-        }
-
-        enum do_verify=hasMember!(typeof(this), "verify") && isCallable!(verify) && __traits(compiles, verify(doc));
-
-        static if (do_verify) {
-            scope(exit) {
-                check(this.verify(doc), format("Document verification faild"));
-            }
-        }
-
-        alias ThisTuple=typeof(ThisType.tupleof);
-    ForeachTuple:
-        foreach(i, ref m; this.tupleof) {
-            static if (__traits(compiles, typeof(m))) {
-                enum default_name=basename!(this.tupleof[i]);
-                static if (hasUDA!(this.tupleof[i], Label)) {
-                    alias label=GetLabel!(this.tupleof[i]);
-                    enum name=(label.name == VOID)?default_name:label.name;
-                    enum optional=label.optional;
-                    static if (label.optional) {
-                        if (!doc.hasMember(name)) {
-                            continue ForeachTuple;
+            static R toList(R)(const Document doc) {
+                alias MemberU=ForeachType!(R);
+                static if (is(MemberU == enum)) {
+                    alias BaseU=TypedefType!(OriginaType!MemberU);
+                }
+                else {
+                    alias BaseU=TypedefType!MemberU;
+                }
+                static if (isArray!R) {
+                    alias UnqualU=Unqual!BaseU;
+                    check(doc.isArray, format("Document is expected to be an array"));
+                    UnqualU[] result;
+                    result.length=doc.length;
+                    enum do_foreach=true;
+                }
+                else static if (isAssociativeArray!R) {
+                    R result;
+                    enum do_foreach=true;
+                }
+                else {
+                    return R(doc);
+                    enum do_foreach=false;
+                }
+                static if (do_foreach) {
+                    foreach(e; doc[]) {
+                        static if (Document.Value.hasType!BaseU) {
+                            auto value=e.get!BaseU;
+                        }
+                        else {
+                            const sub_doc=e.get!Document;
+                            static if (is(BaseU == struct)) {
+                                auto value=BaseU(sub_doc);
+                            }
+                            else static if (is(BaseU == class)) {
+                                auto value=new BaseU(sub_doc);
+                            }
+                            else static if (isInputRange!BaseU) {
+                                auto value=toList!BaseU(sub_doc);
+                            }
+                            else {
+                                static assert(0, format("Can not convert %s to Document", R.stringof));
+                            }
+                        }
+                        static if (isAssociativeArray!R) {
+                            result[e.key]=value;
+                        }
+                        else {
+                            result[e.index]=value;
                         }
                     }
-                    static if (HAS_TYPE) {
-                        static assert(TYPENAME != label.name,
-                            format("Default %s is already definded to %s but is redefined for %s.%s",
-                                TYPENAME, TYPE, typeof(this).stringof, basename!(this.tupleof[i])));
+                }
+                return result;
+            }
+
+            enum do_verify=hasMember!(typeof(this), "verify") && isCallable!(verify) && __traits(compiles, verify(doc));
+
+            static if (do_verify) {
+                scope(exit) {
+                    check(this.verify(doc), format("Document verification faild"));
+                }
+            }
+
+            alias ThisTuple=typeof(ThisType.tupleof);
+        ForeachTuple:
+            foreach(i, ref m; this.tupleof) {
+                static if (__traits(compiles, typeof(m))) {
+                    enum default_name=basename!(this.tupleof[i]);
+                    static if (hasUDA!(this.tupleof[i], Label)) {
+                        alias label=GetLabel!(this.tupleof[i]);
+                        enum name=(label.name == VOID)?default_name:label.name;
+                        enum optional=label.optional;
+                        static if (label.optional) {
+                            if (!doc.hasMember(name)) {
+                                continue ForeachTuple;
+                            }
+                        }
+                        static if (HAS_TYPE) {
+                            static assert(TYPENAME != label.name,
+                                format("Default %s is already definded to %s but is redefined for %s.%s",
+                                    TYPENAME, TYPE, typeof(this).stringof, basename!(this.tupleof[i])));
+                        }
+                    }
+                    else {
+                        enum name=default_name;
+                        enum optional=false;
+                    }
+                    static if(hasUDA!(this.tupleof[i], Assign)) {
+                        alias assigns=getUDAs!(this.tupleof[i], Assign);
+                        static assert(assigns.length is 1, "Only one Assignn UDA allowed per member");
+                        alias assignFun=unaryFun!(assigns[0].code);
+                        auto x=assignFun(doc);
+                        this.tupleof[i]=assignFun(doc);
+                    }
+                    else static if (name.length) {
+                        enum member_name=this.tupleof[i].stringof;
+                        //  enum code=format("%s=doc[name].get!UnqualT;", member_name);
+                        alias MemberT=typeof(m);
+                        static if (is(MemnerT == enum)) {
+                            alias BaseT=TypedefType!(OriginaType!MemberT);
+                        }
+                        else {
+                            alias BaseT=TypedefType!MemberT;
+                        }
+                        alias UnqualT=Unqual!BaseT;
+                        static if (optional) {
+                            if (!doc.hasMember(name)) {
+                                continue ForeachTuple;
+                            }
+                        }
+                        static if (hasUDA!(this.tupleof[i], Inspect)) {
+                            alias Inspects=getUDAs!(this.tupleof[i], Inspect);
+                            scope(exit) {
+                                static foreach(F; Inspects) {
+                                    {
+                                        alias inspectFun=unaryFun!(F.code);
+                                        check(inspectFun(m), message("Member %s faild on inspection %s with %s", name, F.code, m));
+                                    }
+                                }
+                            }
+
+                        }
+                        static if (Document.Value.hasType!BaseT) {
+                            m=doc[name].get!BaseT;
+                        }
+                        else static if (is(BaseT == struct)) {
+                            auto sub_doc = doc[name].get!Document;
+                            m=BaseT(sub_doc);
+                        }
+                        else static if (is(BaseT == class)) {
+                            const sub_doc = Document(doc[name].get!Document);
+                            m=new BaseT(sub_doc);
+                        }
+                        // else static if (isAssociativeArray!BaseT) {
+                        //     Document sub_doc;
+                        //     if (doc.hasMember(name)) {
+                        //         sub_doc = Document(doc[name].get!Document);
+                        //     }
+                        //     m=toList!BaseT(sub_doc);
+                        // }
+                        else static if (isInputRange!BaseT || isAssociativeArray!BaseT) {
+                            Document sub_doc;
+                            if (doc.hasMember(name)) {
+                                sub_doc = Document(doc[name].get!Document);
+                            }
+                            m=toList!BaseT(sub_doc);
+                        }
+                        // else static if (isHiBONRecor!BaseT) {
+
+                        // }
+                        else static if (isHiBONRecordArray!BaseT) {
+                            const doc_array=doc[name].get!Document;
+                            check(doc_array.isArray, message("Document array expected for %s member",  name));
+                            UnqualT result() @trusted {
+                                UnqualT array;
+                                alias ElementT=ForeachType!UnqualT;
+
+                                array.length=doc_array.length;
+                                foreach(ref a, e; lockstep(array, doc_array[])) {
+                                    a=e.get!ElementT;
+                                }
+                                return array;
+                            }
+                            m=result;
+                        }
+                        else {
+                            static assert(0, format("Convering for member '%s' of type %s is not supported by default", name, MemberT.stringof));
+
+                        }
+//                         else static if (isInputRange!BaseT) {
+
+//                         }
+//                         else static if (is(BaseT:U[], U)) {
+//                             static if (hasMember!(U, "toHiBON")) {
+//                                 MemberT array;
+//                                 const doc_array=doc[name].get!Document;
+//                                 static if (optional) {
+//                                     if (doc_array.length == 0) {
+//                                         continue ForeachTuple;
+//                                     }
+//                                 }
+//                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
+//                                 foreach(e; doc_array[]) {
+//                                     const sub_doc=e.get!Document;
+//                                     array~=U(sub_doc);
+//                                 }
+//                                 enum doc_array_code=format("%s=array;", member_name);
+//                                 mixin(doc_array_code);
+//                             }
+//                             else static if (Document.Value.hasType!U) {
+//                                 MemberT array;
+//                                 auto doc_array=doc[name].get!Document;
+//                                 static if (optional) {
+//                                     if (doc_array.length == 0) {
+//                                         continue ForeachTuple;
+//                                     }
+//                                 }
+//                                 check(doc_array.isArray, message("Document array expected for %s member",  name));
+//                                 foreach(e; doc_array[]) {
+//                                     array~=e.get!U;
+//                                 }
+//                                 m=array;
+//                             }
+//                             else static if (is(U == immutable)) {
+//                                 enum code=q{m=doc[name].get!BaseT;};
+//                                 m=doc[name].get!BaseT;
+//                             }
+//                             else {
+//                                 alias InvalidType=immutable(U)[];
+//                                 static assert(0, format("The array must be immutable not %s but is %s %s %s",
+//                                         BaseT.stringof, InvalidType.stringof, U.stringof, is(U == immutable)));
+//                                 enum code="";
+//                             }
+//                         }
+//                         else static if (Document.Value.hasType!BaseT) {
+// //                          enum code=q{this.tupleof[i]=doc[name].get!UnqualT;};
+//                             m=doc[name].get!UnqualT;
+//                         }
+
                     }
                 }
                 else {
-                    enum name=default_name;
-                    enum optional=false;
+                    static assert(0,
+                        format("Type %s for member %s is not supported", BaseT.stringof, name));
+                    enum code="";
                 }
-                static if(hasUDA!(this.tupleof[i], Assign)) {
-                    alias assigns=getUDAs!(this.tupleof[i], Assign);
-                    pragma(msg, "Assign=", assigns);
-                    static assert(assigns.length is 1, "Only one Assignn UDA allowed per member");
-                    pragma(msg, assigns[0].code);
-                    alias assignFun=unaryFun!(assigns[0].code);
-                    auto x=assignFun(doc);
-                    pragma(msg, "typeof(x)=", typeof(x));
-                    pragma(msg, "typeof(this.typeof[i])=", typeof(this.tupleof[i]));
-                    this.tupleof[i]=assignFun(doc);
-                }
-                else static if (name.length) {
-                    enum member_name=this.tupleof[i].stringof;
-                    //  enum code=format("%s=doc[name].get!UnqualT;", member_name);
-                    alias MemberT=typeof(m);
-                    alias BaseT=TypedefType!MemberT;
-                    alias UnqualT=Unqual!BaseT;
-                    static if (optional) {
-                        if (!doc.hasMember(name)) {
-                            continue ForeachTuple;
-                        }
-                    }
-                    static if (hasUDA!(this.tupleof[i], Inspect)) {
-                        alias Inspects=getUDAs!(this.tupleof[i], Inspect);
-                        scope(exit) {
-                            static foreach(F; Inspects) {
-                                {
-                                    alias inspectFun=unaryFun!(F.code);
-                                    check(inspectFun(m), message("Member %s faild on inspection %s with %s", name, F.code, m));
-                                }
-                            }
-                        }
-
-                    }
-                    static if (is(BaseT == struct)) {
-                        auto sub_doc = doc[name].get!Document;
-                        m=BaseT(sub_doc);
-                        // enum doc_code=format("%s=BaseT(dub_doc);", member_name);
-                        // mixin(doc_code);
-                    }
-                    else static if (is(BaseT == class)) {
-                        const dub_doc = Document(doc[name].get!Document);
-                        m=new BaseT(dub_doc);
-                    }
-                    else static if (is(BaseT == enum)) {
-                        // alias EnumBaseT=OriginalType!BaseT;
-                        // const x=doc[name].get!EnumBaseT;
-                        // static if (EnumContinuousSequency!BaseT) {
-                        //     check((x >= BaseT.min) && (x <= BaseT.max),
-                        //         message("The value %s is out side the range for %s enum type", x, BaseT.stringof));
-                        // }
-                        // else {
-                        // EnumCase:
-                        //     switch (x) {
-                        //         static foreach(E; EnumMembers!BaseT) {
-                        //         case E:
-                        //             break EnumCase;
-                        //         }
-                        //     default:
-                        //         check(0, format("The value %s does not fit into the %s enum type", x, BaseT.stringof));
-                        //     }
-                        // }
-                        m=doc[name].get!BaseT;
-                    }
-                    else static if (isDocumentArray!BaseT) {
-                        const doc_array=doc[name].get!Document;
-                        check(doc_array.isArray, message("Document array expected for %s member",  name));
-                        UnqualT result() @trusted {
-                            UnqualT array;
-                            alias ElementT=ForeachType!UnqualT;
-
-                            array.length=doc_array.length;
-                            foreach(ref a, e; lockstep(array, doc_array[])) {
-                                a=e.get!ElementT;
-                            }
-                            return array;
-                        }
-                        m=result;
-                    }
-                    else static if (is(BaseT:U[], U)) {
-                        static if (hasMember!(U, "toHiBON")) {
-                            MemberT array;
-                            const doc_array=doc[name].get!Document;
-                            static if (optional) {
-                                if (doc_array.length == 0) {
-                                    continue ForeachTuple;
-                                }
-                            }
-                            check(doc_array.isArray, message("Document array expected for %s member",  name));
-                            foreach(e; doc_array[]) {
-                                const sub_doc=e.get!Document;
-                                array~=U(sub_doc);
-                            }
-                            enum doc_array_code=format("%s=array;", member_name);
-                            mixin(doc_array_code);
-                        }
-                        else static if (Document.Value.hasType!U) {
-                            MemberT array;
-                            auto doc_array=doc[name].get!Document;
-                            static if (optional) {
-                                if (doc_array.length == 0) {
-                                    continue ForeachTuple;
-                                }
-                            }
-                            check(doc_array.isArray, message("Document array expected for %s member",  name));
-                            foreach(e; doc_array[]) {
-                                array~=e.get!U;
-                            }
-                            m=array;
-                        }
-                        else static if (is(U == immutable)) {
-                            enum code=q{m=doc[name].get!BaseT;};
-                            m=doc[name].get!BaseT;
-                        }
-                        else {
-                            alias InvalidType=immutable(U)[];
-                            static assert(0, format("The array must be immutable not %s but is %s %s %s",
-                                    BaseT.stringof, InvalidType.stringof, U.stringof, is(U == immutable)));
-                            enum code="";
-                        }
-                    }
-                    else static if (Document.Value.hasType!BaseT) {
-                        enum code=q{this.tupleof[i]=doc[name].get!UnqualT;};
-                        m=doc[name].get!UnqualT;
-                    }
-                }
+                // else {
+                //     enum code="";
+                // }
+                // static if (code.length) {
+                //     mixin(code);
+                // }
             }
-            else {
-                static assert(0,
-                    format("Type %s for member %s is not supported", BaseT.stringof, name));
-                enum code="";
-            }
-            // else {
-            //     enum code="";
-            // }
-            // static if (code.length) {
-            //     mixin(code);
-            // }
         }
-    }
     }
 
     final const(Document) toDoc() const {
@@ -641,7 +816,7 @@ const(Document) fread(string filename) {
 
 @safe
 unittest {
-//    import std.stdio;
+    import std.stdio;
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
     import std.traits : OriginalType, staticMap, Unqual;
@@ -885,83 +1060,9 @@ unittest {
 
     }
 
-    @safe
-    void EnumTest(T)() {  // Check enum
-        enum Count : T {
-            zero, one, two, three
-                }
-        alias OriginalCount = OriginalType!Count;
-
-        static struct SimpleCount {
-            Count count;
-            mixin HiBONRecord;
-        }
-
-        SimpleCount s;
-        s.count=Count.one;
-
-        const s_doc=s.toDoc;
-
-        {
-            auto h=new HiBON;
-            h["count"]=OriginalCount(Count.max);
-
-            const s_result = SimpleCount(Document(h.serialize));
-        }
-    }
-
-    static foreach(T; AliasSeq!(int, long, uint, ulong)) {
-        EnumTest!T;
-    }
-
-    version(none)
-    { // Invalid Enum
-        enum NoCount {
-            one=1, two, four=4
-        }
-        static struct SimpleNoCount {
-            NoCount nocount;
-            mixin HiBONRecord;
-        }
-
-        auto h=new HiBON;
-
-        {
-            enum nocount="nocount";
-            {
-//                auto h=new HiBON;
-                h[nocount]=0;
-                const doc=Document(h.serialize);
-                assertThrown!HiBONRecordException(SimpleNoCount(doc));
-            }
-            {
-                h.remove(nocount);
-                h[nocount]=NoCount.one;
-                const doc=Document(h.serialize);
-                const x=SimpleNoCount(doc);
-                assertNotThrown!Exception(SimpleNoCount(doc));
-            }
-
-            {
-                h.remove(nocount);
-//                auto h=new HiBON;
-                h["nocount"]=3;
-                const doc=Document(h.serialize);
-                assertThrown!HiBONRecordException(SimpleNoCount(doc));
-            }
-
-            {
-                h.remove(nocount);
-                h["nocount"]=NoCount.four;
-                const doc=Document(h.serialize);
-                assertNotThrown!Exception(SimpleNoCount(doc));
-            }
-        }
-    }
-
     {
         @safe
-        static struct SuperStruct {
+            static struct SuperStruct {
             Simpel sub;
             string some_text;
             mixin HiBONRecord!(
@@ -979,7 +1080,7 @@ unittest {
 
     {
         @safe
-        static class SuperClass {
+            static class SuperClass {
             Simpel sub;
             string class_some_text;
             mixin HiBONRecord!(
@@ -1016,7 +1117,7 @@ unittest {
 
     { // Element as range
         @safe
-        static struct Range(T) {
+            static struct Range(T) {
             alias UnqualT=Unqual!T;
             protected T[] array;
             @nogc this(T[] array) {
@@ -1039,8 +1140,9 @@ unittest {
                 }
             }
 
+            version(none)
             static if (isHiBON!T) {
-                static DocResult fitting(const Document doc) nothrow {
+                static DocResult fitting(const Document doc, const(string[]) key_chain) nothrow {
                     if (!doc.isArray) {
                         return DocResult(Document.Element.ErrorCode.NOT_AN_ARRAY,null);
                     }
@@ -1054,7 +1156,7 @@ unittest {
                 }
             }
             else {
-                static DocResult fitting(const Document doc) nothrow {
+                static DocResult fitting(const Document doc, const(string[]) key_chain) nothrow {
                     static assert(Document.Value.hasType!UnqualT);
                     enum TypeE=Document.Value.asType!UnqualT;
                     foreach(e; doc[]) {
@@ -1077,10 +1179,10 @@ unittest {
         }
 
         @safe
-        auto StructWithRangeTest(T)(T[] array) {
+            auto StructWithRangeTest(T)(T[] array) {
             alias R=Range!T;
             @safe
-            static struct StructWithRange {
+                static struct StructWithRange {
                 R range;
                 static assert(isInputRange!R);
                 mixin HiBONRecord!(
@@ -1100,7 +1202,7 @@ unittest {
             //writefln("doc=%s", s.toJSON.toPrettyString);
             const doc=s.toDoc;
             alias ResultT=typeof(s);
-            assert(ResultT.fitting(doc).error is Document.Element.ErrorCode.NONE);
+            //assert(ResultT.fitting(doc).error is Document.Element.ErrorCode.NONE);
             const s_doc=ResultT(doc);
 
             //writefln("s_doc=%s", s_doc);
@@ -1129,22 +1231,114 @@ unittest {
                     Simpel[] array;
                     mixin HiBONRecord;
                 }
-                SimpelArray s;
-                s.array=simpels;
-                auto h=new HiBON;
-                h["s"]=s;
 
-                const s_get=h["s"].get!SimpelArray;
+                { // SimpelArray with empty array
+                    SimpelArray s;
+                    auto h=new HiBON;
+                    h["s"]=s;
+                    const s_get=h["s"].get!SimpelArray;
+                    assert(s_get == s);
+                }
+                {
+                    SimpelArray s;
+                    s.array=simpels;
+                    auto h=new HiBON;
+                    h["s"]=s;
 
-                assert(s_get == s);
-                const s_doc=s_get.toDoc;
+                    const s_get=h["s"].get!SimpelArray;
 
-                const s_array=s_doc["array"].get!(Simpel[]);
-                assert(equal(s_array, s.array));
+                    @trusted void dump() {
+                        writefln("h=%J", h);
+                    }
+                    dump();
+                    assert(s_get == s);
+                    const s_doc=s_get.toDoc;
 
-                const s_result=SimpelArray(s_doc);
-                assert(s_result == s);
+                    const s_array=s_doc["array"].get!(Simpel[]);
+                    assert(equal(s_array, s.array));
+
+                    const s_result=SimpelArray(s_doc);
+                    assert(s_result == s);
+                }
             }
         }
+        { // Jagged Array
+            pragma(msg, "---- Jagged");
+            @safe
+            static struct Jagged {
+                Simpel[][] y;
+                mixin HiBONRecord;
+            }
+
+            Simpel[][] ragged = [
+                [ Simpel(1, "one"), Simpel(2, "one")],
+                [ Simpel(1, "two"), Simpel(2, "two"), Simpel(3, "two")],
+                [ Simpel(1, "three")]
+                ];
+
+            writefln("%s", ragged);
+            Jagged jagged;
+            jagged.y=ragged;
+
+            const jagged_doc=jagged.toDoc;
+            (() @trusted {
+                writefln("%J", jagged);
+            })();
+
+            const result=Jagged(jagged_doc);
+            (() @trusted {
+                writefln("%J", result);
+            })();
+
+            assert(jagged == result);
+        }
+
+        {
+            @safe
+            static struct Associative {
+                Simpel[string] a;
+                mixin HiBONRecord;
+            }
+
+            Associative associative;
+            associative.a["$one"]=Simpel(1, "one");
+            associative.a["$two"]=Simpel(1, "two");
+            associative.a["$three"]=Simpel(1, "three");
+
+            writefln("%J", associative);
+
+            const associative_doc=associative.toDoc;
+
+            const result=Associative(associative_doc);
+            // (() @trusted {
+            //     writefln("%J", result);
+            //     foreach(key, e; result.a) {
+            //         writefln("key=%s %j", key, e);
+            //     }
+            //     foreach(key, e; associative.a) {
+            //         writefln("key=%s %j", key, e);
+            //     }
+            //     writefln("%s", result.a.keys);
+            //     writefln("%s", associative.a.keys);
+            //     writefln("%s", result.a.byValue);
+            //     writefln("%s", associative.a.byValue);
+            //     assert(equal(result.a.keys, associative.a.keys));
+            // })();
+
+
+            // result.a.each!(writeln);
+            // writefln("%s", result.a[]);
+            // writefln("%s", associative.a[]);
+//            assert(equal(result.a, associative.a));
+            (() @trusted {
+
+                assert(equal(result.a.keys, associative.a.keys));
+                assert(equal(result.a.byValue, associative.a.byValue));
+            })();
+
+            writefln("%j", result);
+        }
+
     }
+
 }

@@ -25,7 +25,7 @@ import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
-import tagion.hibon.HiBONRecord : isDocument, isDocumentArray;
+import tagion.hibon.HiBONRecord : isHiBONRecord, isHiBONRecordArray;
 import LEB128=tagion.utils.LEB128;
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
 
@@ -925,12 +925,12 @@ static assert(uint.sizeof == 4);
              throws:
              if the element does not contain the type and HiBONException is thrown
              +/
-            T get(T)() if(isDocument!T) {
+            T get(T)() if(isHiBONRecord!T) {
                 const doc=get!Document;
                 return T(doc);
             }
 
-            @trusted T get(T)() if (isDocumentArray!T) {
+            @trusted T get(T)() if (isHiBONRecordArray!T) {
                 alias ElementT=ForeachType!T;
                 const doc=get!Document;
                 alias UnqualT=Unqual!T;
@@ -971,7 +971,7 @@ static assert(uint.sizeof == 4);
                 return cast(T)x;
             }
 
-            const(T) get(T)() const if(!isDocument!T && !isDocumentArray!T && !is(T==enum)) {
+            const(T) get(T)() const if(!isHiBONRecord!T && !isHiBONRecordArray!T && !is(T==enum)) {
                 enum E = Value.asType!T;
                 import std.format;
                 static assert(E !is Type.NONE, format("Unsupported type %s", T.stringof));

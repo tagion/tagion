@@ -24,7 +24,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONRecord : isHiBON, isDocument, isDocumentArray;
+import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONRecordArray;
 
 import tagion.basic.Message : message;
 import tagion.basic.Basic : CastTo, Buffer;
@@ -212,7 +212,7 @@ static size_t size(U)(const(U[]) array) pure {
         //      return result;
         // }
 
-        T new_get(T)() const if (isDocument!T || isHiBON!T) {
+        T new_get(T)() const if (isHiBONRecord!T || isHiBON!T) {
             return T.init;
         }
         /++
@@ -221,7 +221,7 @@ static size_t size(U)(const(U[]) array) pure {
          Throws:
          If the member does not match the type T and HiBONException is thrown
          +/
-        T get(T)() const if (isDocument!T || isHiBON!T) {
+        T get(T)() const if (isHiBONRecord!T || isHiBON!T) {
             with(Type) {
                 switch(type) {
                 case DOCUMENT:
@@ -240,7 +240,7 @@ static size_t size(U)(const(U[]) array) pure {
             assert(0);
         }
 
-        const(T) get(T)() const if (!isDocument!T && !isHiBON!T) {
+        const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T) {
             enum E = Value.asType!T;
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
             return value.by!E;
@@ -404,7 +404,7 @@ static size_t size(U)(const(U[]) array) pure {
         opIndexAssign(x.toHiBON, key);
     }
 
-    void opIndexAssign(T)(T x, const string key) if (isDocumentArray!T) {
+    void opIndexAssign(T)(T x, const string key) if (isHiBONRecordArray!T) {
         auto h=new HiBON;
         foreach(v_key, v; x) {
             h[v_key]=x;
@@ -412,7 +412,7 @@ static size_t size(U)(const(U[]) array) pure {
         h[key]=h;
     }
 
-    void opIndexAssign(T)(T x, const string key) if (!isHiBON!T && !isDocument!T && !isDocumentArray!T) {
+    void opIndexAssign(T)(T x, const string key) if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T) {
         .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member=new Member(x, key);
         .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));

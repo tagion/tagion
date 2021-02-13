@@ -16,7 +16,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONtoText;
-import tagion.hibon.HiBONRecord : isDocument;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 
 import tagion.basic.Message : message;
 // import tagion.utils.JSONOutStream;
@@ -97,10 +97,11 @@ JSONValue toJSON(Document doc) {
 }
 
 @safe
-JSONValue toJSON(T)(T value) if(isDocument!T) {
+JSONValue toJSON(T)(T value) if(isHiBONRecord!T) {
     return toJSONT!true(value.toDoc);
 }
 
+@safe
 string toPretty(T)(T value) {
     static if (is(T:const(HiBON))) {
         const doc=Document(value.serialize);
@@ -115,12 +116,13 @@ mixin template JSONString() {
     import std.format;
     import std.conv : to;
     import tagion.hibon.HiBONJSON;
-
-    @trusted
-    void toString(scope void delegate(const(char)[]) sink,
+    import tagion.hibon.HiBONRecord : isHiBONRecord;
+    @safe
+    void toString(scope void delegate(const(char)[]) @safe sink,
                   FormatSpec!char fmt) const {
         alias ThisT=typeof(this);
-        static if (isDocument!ThisT) {
+        import std.traits : hasMember, ReturnType, isArray, ForeachType, isCallable;
+        static if (isHiBONRecord!ThisT) {
             const doc=this.toDoc;
         }
         else static if (is(ThisT:const(Document))) {
@@ -130,7 +132,7 @@ mixin template JSONString() {
             const doc=Document(serialize);
         }
         else {
-            static assert(0, format("type %s is not supported for JSONString", T.stringof));
+            static assert(0, format("type %s is not supported for JSONString", ThisT.stringof));
         }
         switch (fmt.spec) {
         case 'j':
@@ -254,6 +256,7 @@ struct toJSONT(bool HASHSAFE) {
     }
 }
 
+@safe
 HiBON toHiBON(scope const JSONValue json) {
     static const(T) get(T)(scope JSONValue jvalue) {
         alias UnqualT=Unqual!T;
@@ -413,6 +416,7 @@ HiBON toHiBON(scope const JSONValue json) {
         return result;
     }
 
+    @trusted
     static HiBON Obj(scope JSONValue json) {
         if ( json.type is JSONType.ARRAY ) {
             return JSON!size_t(json);
@@ -428,7 +432,7 @@ HiBON toHiBON(scope const JSONValue json) {
     return Obj(json);
 }
 
-///
+@safe
 unittest {
     import tagion.hibon.HiBON : HiBON;
     import std.typecons : Tuple;
@@ -505,10 +509,13 @@ unittest {
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
-        assert(doc.toJSON.toString == format("%j", doc));
-        assert(doc.toJSON.toPrettyString == format("%J", doc));
-        assert(doc.serialize.to!string == format("%s", doc));
-        assert(Document(hibon).toJSON.toString == format("%j", hibon));
+
+        (() @trusted {
+                assert(doc.toJSON.toString == format("%j", doc));
+                assert(doc.toJSON.toPrettyString == format("%J", doc));
+                assert(doc.serialize.to!string == format("%s", doc));
+                assert(Document(hibon).toJSON.toString == format("%j", hibon));
+        })();
     }
 
     { // Test sample 2 HiBON Array and Object
@@ -545,10 +552,12 @@ unittest {
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
-        assert(doc.toJSON.toString == format("%j", doc));
-        assert(doc.toJSON.toPrettyString == format("%J", doc));
-        assert(doc.serialize.to!string == format("%s", doc));
-        assert(Document(hibon).toJSON.toString == format("%j", hibon));
+        (() @trusted {
+            assert(doc.toJSON.toString == format("%j", doc));
+            assert(doc.toJSON.toPrettyString == format("%J", doc));
+            assert(doc.serialize.to!string == format("%s", doc));
+            assert(Document(hibon).toJSON.toString == format("%j", hibon));
+        })();
     }
 
     { // Test sample 3 HiBON Array and Object
@@ -588,9 +597,12 @@ unittest {
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
-        assert(doc.toJSON.toString == format("%j", doc));
-        assert(doc.toJSON.toPrettyString == format("%J", doc));
-        assert(doc.serialize.to!string == format("%s", doc));
-        assert(Document(hibon).toJSON.toString == format("%j", hibon));
+        (() @trusted {
+            assert(doc.toJSON.toString == format("%j", doc));
+            assert(doc.toJSON.toPrettyString == format("%J", doc));
+            assert(doc.serialize.to!string == format("%s", doc));
+            assert(Document(hibon).toJSON.toString == format("%j", hibon));
+        })();
+
     }
 }
