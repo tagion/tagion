@@ -527,7 +527,7 @@ class SSLFiberService {
             const doc=Document(data);
             const hirpc_received = hirpc.receive(doc);
             shared shared_data=cast(shared)data;
-            handler.set(hirpc_received.message.id, shared_data);
+            handler.set(hirpc_received.method.id, shared_data);
         }
 
         while (!stop) {
