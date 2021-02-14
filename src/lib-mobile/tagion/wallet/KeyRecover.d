@@ -1,14 +1,14 @@
 module tagion.wallet.KeyRecover;
 
-import tagion.gossip.InterfaceNet : HashNet;
+import tagion.crypto.SecureInterface : HashNet;
+import tagion.crypto.SecureNet : scramble, StdSecureNet;
 import tagion.utils.Miscellaneous : xor;
 import tagion.basic.Basic : Buffer;
 import tagion.basic.Message;
-import tagion.gossip.GossipNet : scramble;
+
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
-import tagion.basic.Basic : basename;
 
 import std.exception : assumeUnique;
 import std.string : representation;
@@ -18,9 +18,6 @@ import std.algorithm.iteration : map, filter;
 import std.array : array;
 
 import tagion.basic.TagionExceptions : Check, TagionException;
-
-//import std.stdio;
-import tagion.utils.Miscellaneous : toHexString;
 
 /++
  + Exception type used by for key-recovery module
@@ -233,7 +230,7 @@ shared static this() {
 }
 
 unittest {
-    import tagion.gossip.GossipNet : StdHashNet;
+    import tagion.crypto.SecureNet : StdHashNet;
     import std.array : join;
     auto selected_questions=indexed(standard_questions, [0,2,3,7,8]).array.idup;
     //pragma(msg, typeof(selected_questions));
