@@ -8,7 +8,7 @@ import std.format;
 import std.traits : EnumMembers, Unqual, ReturnType, ForeachType;
 import std.range.primitives : isInputRange;
 import std.base64;
-import std.stdio;
+//import std.stdio;
 
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
@@ -498,7 +498,7 @@ unittest {
         const doc=Document(hibon);
 
         auto json=doc.toJSON;
-        import std.stdio;
+//        import std.stdio;
         // writefln("Before\n%s", json.toPrettyString);
         // writefln("%s", doc.data);
         string str=json.toString;

@@ -516,7 +516,7 @@ const(Document) fread(string filename) {
 
 @safe
 unittest {
-   import std.stdio;
+//   import std.stdio;
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
     import std.traits : OriginalType, staticMap, Unqual;
@@ -797,9 +797,6 @@ unittest {
         const s_converted=new SuperClass(doc);
         assert(doc == s_converted.toDoc);
 
-        (() @trusted {
-            writefln("%J", s_converted);
-        })();
         // For some reason SuperClass because is a class format is not @safe
         (() @trusted {
             assert(doc.toJSON.toString == format("%j", s_converted));
@@ -1031,8 +1028,6 @@ unittest {
 
                 CountStruct s;
                 s.count = Count.two;
-
-                writefln("%J", s);
 
                 const s_doc=s.toDoc;
                 const result=CountStruct(s_doc);

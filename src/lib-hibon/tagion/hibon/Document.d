@@ -810,33 +810,6 @@ static assert(uint.sizeof == 4);
                     typed_range.popFront;
                 }
             }
-
-            {
-                import std.stdio;
-                import std.format;
-                import tagion.hibon.HiBONJSON;
-//                make(buffer, test_tabel);
-                index = make(buffer, test_tabel);
-                immutable data_doc = buffer[0..index].idup;
-
-                const doc=Document(data_doc); //buffer.idup);
-
-
-                FormatSpec!char fmt;
-                void sink(const(char)[] str) {
-                    writeln(str);
-                }
-
-                string str=doc.toJSON.toString;
-                writeln(str);
-
-                doc.toString(&sink, fmt);
-                (() @trusted {
-                    writefln("%j", doc);
-                })();
-
-
-            }
         }
     }
 
