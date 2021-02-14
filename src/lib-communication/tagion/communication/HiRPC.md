@@ -1,31 +1,31 @@
-# Hash-BSON Remote Procedure Call (HPRC)
+# HiBON Remote Procedure Call (HiPRC)
 
-HRPC is a RPC which can including digital signatures and it is base on HBSON data format.
+HiRPC is a RPC which can including digital signatures and it is base on HiBON data format.
 
-## Structure of HRPC
+## Structure of HiRPC
 ```javascipt
 {
-    $type : 'HPRC',
+    $@ : 'HiPRC',
     $sign : <bin>, // Optional
     $pkey  : <bin>, // Optional
     $msg : {
         id : <uint>,
-        method : <string>,
-        params : <any HBSON type>,
+        method : <string>, // Name of the method
+        params : <Document>, // Optional
     }
 }
 ```
-The member **sign** is the $sign **hrpc** object and **$pkey** is the public-key which also include a $sign schema code in the genetic package.
+The member **sign** is the $sign **hirpc** object and **$pkey** is the public-key which also include a $sign schema code in the genetic package.
 
-### Succes full result
+### Success full result
 ```javascipt
 {
-    $type : 'HRPC',
-    $sign : <bin>,
-    $pkey : <bin>,
+    $@ : 'HiRPC',
+    $sign : <bin>, // Optional
+    $pkey : <bin>, // Optional
     $msg : {
         id : <uint>,
-        result : <any HBSON type>
+        result : <Document>
     }
 }
 
@@ -34,31 +34,14 @@ The member **sign** is the $sign **hrpc** object and **$pkey** is the public-key
 ### Failure result
 ```javascipt
 {
-    $type : HRPC,
-    $sign : <bin>,
-    $pkey : <bin>,
-    $msg : {
+    $@ : 'HiRPC',
+    $sign : <bin>, // Optional
+    $pkey : <bin>, // Optional
+    $msg : { // This part is signed
         id : <uint>,
-        error : {
-            code : <uint>,
-            message : <string>
-        }
-    }
-}
-```
-### Failure result with data object
-```javascipt
-{
-    $type : HRPC,
-    $sign : <bin>,
-    $pkey : <bin>,
-    $msg : {
-        id : <uint>,
-        error : {
-            code : <uint>,
-            message : <string>
-            data : <DOCUMENT or ARRAY> // Optional
-        }
+        code : <uint>, // Optional
+        message : <string> // Optional
+	    data : <DOCUMENT> // Optional
     }
 }
 ```
