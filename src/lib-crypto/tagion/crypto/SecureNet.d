@@ -1,0 +1,301 @@
+module tagion.crypto.SecureNet;
+
+import tagion.crypto.SecureInterface;
+import tagion.crypto.aes.AESCrypto;
+import tagion.basic.Basic : Buffer, Signature;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
+import tagion.basic.ConsensusExceptions;
+
+void scramble(scope ref ubyte[] data, scope ubyte[] xor=null) @safe {
+    import std.random;
+    auto gen = Mt19937(unpredictableSeed);
+    foreach(ref s; data) { //, gen1, StoppingPolicy.shortest)) {
+        s=gen.front & ubyte.max;
+        gen.popFront;
+    }
+    foreach(i, x; xor) {
+        data[i]^=x;
+    }
+}
+
+private alias check=Check!SecurityConsensusException;
+
+
+@safe
+class StdHashNet : HashNet {
+    protected enum HASH_SIZE=32;
+    final uint hashSize() const pure nothrow {
+        return HASH_SIZE;
+    }
+
+    protected final immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
+        import std.digest.sha : SHA256;
+        import std.digest;
+        return digest!SHA256(data).idup;
+    }
+
+    immutable(Buffer) calcHash(scope const(ubyte[]) data) const
+        in {
+            assert(!Document(data).isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
+        }
+    do {
+        return rawCalcHash(data);
+    }
+
+    @trusted
+    final immutable(Buffer) HMAC(scope const(ubyte[]) data) const {
+        import std.exception : assumeUnique;
+        import std.digest.sha : SHA256;
+        import std.digest.hmac : digestHMAC=HMAC;
+        scope hmac = digestHMAC!SHA256(data);
+        auto result = hmac.finish.dup;
+        return assumeUnique(result);
+    }
+
+    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
+        return calcHash(h1~h2);
+    }
+
+    immutable(Buffer) hashOf(const(Document) doc) const {
+        auto range=doc[];
+        if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
+            if (range.front.key == STUB) {
+                return doc[STUB].get!Buffer;
+            }
+            immutable value_data=range.front.data[range.front.dataPos..range.front.dataPos + range.front.dataSize];
+            return calcHash(value_data);
+        }
+        return calcHash(doc.serialize);
+    }
+}
+
+@safe
+class StdSecureNet : StdHashNet, SecureNet  {
+    import tagion.crypto.secp256k1.NativeSecp256k1;
+    import tagion.basic.Basic : Pubkey;
+    import tagion.crypto.aes.AESCrypto;
+//    import tagion.gossip.GossipNet : scramble;
+    import tagion.basic.ConsensusExceptions;
+
+    import std.format;
+    import std.string : representation;
+
+
+    private Pubkey _pubkey;
+    /**
+       This function
+       returns
+       If method is SIGN the signed message or
+       If method is DERIVE it returns the derived privat key
+     */
+    @safe
+    interface SecretMethods {
+        immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
+        void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
+        void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
+        Buffer mask(const(ubyte[]) _mask) const;
+    }
+
+    protected SecretMethods _secret;
+
+    final Pubkey pubkey() pure const nothrow {
+        return _pubkey;
+    }
+
+    final Buffer hmacPubkey() const {
+        return HMAC(cast(Buffer)_pubkey);
+    }
+
+    final Pubkey derivePubkey(string tweak_word) const {
+        const tweak_code=HMAC(tweak_word.representation);
+        return derivePubkey(tweak_code);
+    }
+
+    final Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
+        Pubkey result;
+        const pkey=cast(const(ubyte[]))_pubkey;
+        result=_crypt.pubKeyTweakMul(pkey, tweak_code);
+        return result;
+    }
+
+    // final bool verify(T)(T pack,  signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) ) {
+    //     auto message=calcHash(pack.serialize);
+    //     return verify(message, signature, pubkey);
+    // }
+
+    protected NativeSecp256k1 _crypt;
+    final bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
+        consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
+            ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+        return _crypt.verify(message, cast(Buffer)signature, cast(Buffer)pubkey);
+    }
+
+    // final immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) ) {
+    //     auto message=calcHash(pack.serialize);
+    //     auto result=sign(message);
+    //     return result;
+    // }
+
+    final Signature sign(immutable(ubyte[]) message) const
+    in {
+        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
+        assert(message.length == 32);
+    }
+    do {
+        import std.traits;
+        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
+
+        return Signature(_secret.sign(message));
+    }
+
+    void derive(string tweak_word, ref ubyte[] tweak_privkey) {
+        const data = HMAC(tweak_word.representation);
+        derive(data, tweak_privkey);
+    }
+
+    void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
+        in {
+            assert(tweak_privkey.length >= 32);
+        }
+    do {
+        _secret.tweakMul(tweak_code, tweak_privkey);
+    }
+
+    final Buffer mask(const(ubyte[]) _mask) const {
+        return _secret.mask(_mask);
+    }
+
+    @trusted
+    void derive(string tweak_word, shared(SecureNet) secure_net) {
+        const tweak_code=HMAC(tweak_word.representation);
+        derive(tweak_code, secure_net);
+    }
+
+    @trusted
+    void derive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
+        in {
+            assert(_secret);
+        }
+    do {
+        synchronized(secure_net) {
+            ubyte[] tweak_privkey = tweak_code.dup;
+            auto unshared_secure_net = cast(SecureNet)secure_net;
+            unshared_secure_net.derive(tweak_code, tweak_privkey);
+            createKeyPair(tweak_privkey);
+        }
+    }
+
+    final void createKeyPair(ref ubyte[] privkey)
+        in {
+            assert(_crypt.secKeyVerify(privkey));
+            assert(_secret is null);
+        }
+    do {
+        import std.digest.sha : SHA256;
+        import std.string : representation;
+        alias AES=AESCrypto!256;
+        _pubkey = _crypt.computePubkey(privkey);
+        // Generate scramble key for the private key
+        import std.random;
+
+        auto seed=new ubyte[32];
+
+        scramble(seed);
+        // CBR: Note AES need to be change to beable to handle const keys
+        auto aes_key=calcHash(seed).dup;
+
+        scramble(seed);
+
+        // Encrypt private key
+        auto encrypted_privkey=new ubyte[privkey.length];
+        AES.encrypt(aes_key, privkey, encrypted_privkey);
+
+        AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+        scramble(seed);
+
+        AES.encrypt(aes_key, encrypted_privkey, privkey);
+
+        AES.encrypt(aes_key, privkey, seed);
+
+        AES.encrypt(aes_key, encrypted_privkey, privkey);
+
+        @safe
+        void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
+            // CBR:
+            // Yes I know it is security by obscurity
+            // But just don't want to have the private in clear text in memory
+            // for long period of time
+            auto privkey=new ubyte[encrypted_privkey.length];
+            scope(exit) {
+                auto seed=new ubyte[32];
+                scramble(seed, aes_key);
+                AES.encrypt(aes_key, privkey, encrypted_privkey);
+                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+            }
+            AES.decrypt(aes_key, encrypted_privkey, privkey);
+            dg(privkey);
+        }
+
+        @safe class LocalSecret : SecretMethods {
+            immutable(ubyte[]) sign(immutable(ubyte[]) message) const {
+                immutable(ubyte)[] result;
+                do_secret_stuff((const(ubyte[]) privkey) {
+                        result = _crypt.sign(message, privkey);
+                    });
+                return result;
+            }
+            void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                        // scope hmac = HMAC!SHA256(tweek_code.representation);
+                        // auto data = hmac.finish.dup;
+                        _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
+                    });
+            }
+            void tweakAdd(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                        // scope hmac = HMAC!SHA256(tweek_code.representation);
+                        // auto data = hmac.finish.dup;
+                        _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
+                    });
+            }
+            Buffer mask(const(ubyte[]) _mask) const {
+                import std.algorithm.iteration : sum;
+                check(sum(_mask) != 0, ConsensusFailCode.SECURITY_MASK_VECTOR_IS_ZERO);
+                Buffer result;
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                        import tagion.utils.Miscellaneous : xor;
+                        auto data = xor(privkey, _mask);
+                        result=calcHash(calcHash(data));
+                    });
+                return result;
+            }
+        }
+        _secret = new LocalSecret;
+    }
+
+    final void generateKeyPair(string passphrase)
+        in {
+            assert(_secret is null);
+        }
+    do {
+        import std.digest.sha : SHA256;
+        import std.digest.hmac : digestHMAC=HMAC;
+        import std.string : representation;
+        alias AES=AESCrypto!256;
+
+        scope hmac = digestHMAC!SHA256(passphrase.representation);
+        auto data = hmac.finish.dup;
+
+        // Generate Key pair
+        do {
+            data = hmac.put(data).finish.dup;
+        } while (!_crypt.secKeyVerify(data));
+
+        createKeyPair(data);
+    }
+
+    this() {
+        this._crypt = new NativeSecp256k1;
+    }
+}
