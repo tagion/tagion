@@ -78,6 +78,7 @@ static assert(uint.sizeof == 4);
 
     import tagion.hibon.HiBONJSON : JSONString;
     mixin JSONString;
+
     /++
      This function returns the HiBON version
      Returns:
@@ -92,15 +93,15 @@ static assert(uint.sizeof == 4);
         }
         return 0;
     }
-    /++
-     Makes a copy of $(PARAM doc)
-     Returns:
-     Document copy
-     +/
-    @trusted
-    void copy(ref const Document doc) {
-        emplace(&this, doc);
-    }
+    // /++
+    //  Makes a copy of $(PARAM doc)
+    //  Returns:
+    //  Document copy
+    //  +/
+    // @trusted
+    // void copy(ref const Document doc) {
+    //     emplace(&this, doc);
+    // }
 
     @property @nogc const pure nothrow {
         @safe bool empty() {
@@ -283,7 +284,7 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the key exist in the Document
      +/
-    bool hasMember(in string key) const {
+    bool hasMember(scope string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
 
@@ -291,7 +292,7 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the index exist in the Document
      +/
-    bool hasMember(Index)(in Index index) const if (isIntegral!Index) {
+    bool hasMember(Index)(scope Index index) const if (isIntegral!Index) {
         return hasMember(index.to!string);
     }
 
@@ -628,8 +629,6 @@ static assert(uint.sizeof == 4);
         test_tabel_array.BINARY        = [1, 2, 3];
         test_tabel_array.STRING        = "Text";
         test_tabel_array.HASHDOC       = DataBlock(27, [3,4,5]);
-        // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
-        // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
         { // Document with simple types
             //test_tabel.UTC      = 1234;
@@ -810,6 +809,33 @@ static assert(uint.sizeof == 4);
                     assert(typed_range.front == text);
                     typed_range.popFront;
                 }
+            }
+
+            {
+                import std.stdio;
+                import std.format;
+                import tagion.hibon.HiBONJSON;
+//                make(buffer, test_tabel);
+                index = make(buffer, test_tabel);
+                immutable data_doc = buffer[0..index].idup;
+
+                const doc=Document(data_doc); //buffer.idup);
+
+
+                FormatSpec!char fmt;
+                void sink(const(char)[] str) {
+                    writeln(str);
+                }
+
+                string str=doc.toJSON.toString;
+                writeln(str);
+
+                doc.toString(&sink, fmt);
+                (() @trusted {
+                    writefln("%j", doc);
+                })();
+
+
             }
         }
     }

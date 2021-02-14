@@ -176,7 +176,7 @@ mixin template HiBONRecord(string CTOR="") {
         static HiBON toList(L)(L list) {
             auto array=new HiBON;
             alias UnqualL=Unqual!L;
-            alias ElementT=Unqual!(ForeachType!L);
+            alias ElementT=Unqual!(TypedefType!(ForeachType!L));
             static if (isArray!L || isAssociativeArray!L) {
                 auto range=list;
             }
@@ -184,14 +184,17 @@ mixin template HiBONRecord(string CTOR="") {
                 auto range=list.enumerate;
             }
             foreach(index, e; range) {
-                static if (isHiBON!ElementT) {
-                    array[index]=e.toHiBON;
-                }
-                else static if (HiBON.Value.hasType!ElementT) {
+                static if (HiBON.Value.hasType!ElementT) {
                     array[index]=e;
+                }
+                else static if (isHiBON!ElementT) {
+                    array[index]=e.toHiBON;
                 }
                 else static if (isInputRange!ElementT) {
                     array[index]=toList(e);
+                }
+                else static if (is(ElementT == enum)) {
+                    array[index]=e;
                 }
                 else {
                     static assert(0, format("Can not convert %s to HiBON", L.stringof));
@@ -328,14 +331,9 @@ mixin template HiBONRecord(string CTOR="") {
             }
             static R toList(R)(const Document doc) {
                 alias MemberU=ForeachType!(R);
-                static if (is(MemberU == enum)) {
-                    alias BaseU=TypedefType!(OriginaType!MemberU);
-                }
-                else {
-                    alias BaseU=TypedefType!MemberU;
-                }
+                alias BaseU=TypedefType!MemberU;
                 static if (isArray!R) {
-                    alias UnqualU=Unqual!BaseU;
+                    alias UnqualU=Unqual!MemberU;
                     check(doc.isArray, format("Document is expected to be an array"));
                     UnqualU[] result;
                     result.length=doc.length;
@@ -351,8 +349,12 @@ mixin template HiBONRecord(string CTOR="") {
                 }
                 static if (do_foreach) {
                     foreach(e; doc[]) {
-                        static if (Document.Value.hasType!BaseU) {
+                        static if (Document.Value.hasType!MemberU || is(BaseU == enum)) {
                             auto value=e.get!BaseU;
+                        }
+                        else static if (Document.Value.hasType!BaseU) {
+                            // Special case for Typedef
+                            auto value=MemberU(e.get!BaseU);
                         }
                         else {
                             const sub_doc=e.get!Document;
@@ -421,14 +423,8 @@ mixin template HiBONRecord(string CTOR="") {
                     }
                     else static if (name.length) {
                         enum member_name=this.tupleof[i].stringof;
-                        //  enum code=format("%s=doc[name].get!UnqualT;", member_name);
                         alias MemberT=typeof(m);
-                        static if (is(MemnerT == enum)) {
-                            alias BaseT=TypedefType!(OriginaType!MemberT);
-                        }
-                        else {
-                            alias BaseT=TypedefType!MemberT;
-                        }
+                        alias BaseT=TypedefType!MemberT;
                         alias UnqualT=Unqual!BaseT;
                         static if (optional) {
                             if (!doc.hasMember(name)) {
@@ -447,7 +443,11 @@ mixin template HiBONRecord(string CTOR="") {
                             }
 
                         }
-                        static if (Document.Value.hasType!BaseT) {
+                        static if (is(BaseT == enum)) {
+                            m=doc[name].get!BaseT;
+//                            static if (isIntegral!(OriginalType
+                        }
+                        else static if (Document.Value.hasType!BaseT) {
                             m=doc[name].get!BaseT;
                         }
                         else static if (is(BaseT == struct)) {
@@ -466,6 +466,7 @@ mixin template HiBONRecord(string CTOR="") {
                             m=toList!BaseT(sub_doc);
                         }
                         else {
+                            pragma(msg, "is(BaseT == enum)=", is(BaseT == enum), " is(MemberT == enum)=", is(MemberT == enum));
                             static assert(0, format("Convering for member '%s' of type %s is not supported by default", name, MemberT.stringof));
 
                         }
@@ -480,7 +481,7 @@ mixin template HiBONRecord(string CTOR="") {
         }
     }
 
-    final const(Document) toDoc() const {
+    @safe final const(Document) toDoc() const {
         return Document(toHiBON.serialize);
     }
 }
@@ -515,7 +516,7 @@ const(Document) fread(string filename) {
 
 @safe
 unittest {
-//    import std.stdio;
+   import std.stdio;
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
     import std.traits : OriginalType, staticMap, Unqual;
@@ -760,8 +761,7 @@ unittest {
     }
 
     {
-        @safe
-            static struct SuperStruct {
+        @safe static struct SuperStruct {
             Simpel sub;
             string some_text;
             mixin HiBONRecord!(
@@ -773,29 +773,38 @@ unittest {
                 });
         }
         const s=SuperStruct("some_text", 42, "text");
-        const s_converted=SuperStruct(s.toDoc);
+        const doc=s.toDoc;
+        const s_converted=SuperStruct(doc);
         assert(s == s_converted);
+        assert(doc.toJSON.toString == format("%j", s_converted));
+        assert(doc.toJSON.toPrettyString == format("%J", s_converted));
     }
 
     {
-        @safe
-            static class SuperClass {
+        @safe static class SuperClass {
             Simpel sub;
             string class_some_text;
             mixin HiBONRecord!(
                 q{
-                    this(string some_text, int s, string text) {
+                    this(string some_text, int s, string text) @safe {
                         this.class_some_text=some_text;
                         sub=Simpel(s, text);
                     }
                 });
-            bool opEqual(const SuperClass lhs) const pure nothrow {
-                return true;
-            }
         }
         const s=new SuperClass("some_text", 42, "text");
-        const s_converted=new SuperClass(s.toDoc);
-        assert(s.toDoc == s_converted.toDoc);
+        const doc=s.toDoc;
+        const s_converted=new SuperClass(doc);
+        assert(doc == s_converted.toDoc);
+
+        (() @trusted {
+            writefln("%J", s_converted);
+        })();
+        // For some reason SuperClass because is a class format is not @safe
+        (() @trusted {
+            assert(doc.toJSON.toString == format("%j", s_converted));
+            assert(doc.toJSON.toPrettyString == format("%J", s_converted));
+        })();
     }
 
     {
@@ -814,9 +823,39 @@ unittest {
 
     }
 
+    { // Base type array
+        static struct Array {
+            int[] a;
+            mixin HiBONRecord;
+        }
+
+        Array s;
+        s.a=[17, 42, 17];
+
+        const doc=s.toDoc;
+        const result=Array(doc);
+        assert(s == result);
+        assert(doc.toJSON.toString == format("%j", result));
+
+    }
+
+    {  // String array
+        static struct StringArray {
+            string[] texts;
+            mixin HiBONRecord;
+        }
+
+        StringArray s;
+        s.texts = ["one", "two", "three"];
+
+        const doc=s.toDoc;
+        const result=StringArray(doc);
+        assert(s == result);
+        assert(doc.toJSON.toString == format("%j", result));
+    }
+
     { // Element as range
-        @safe
-            static struct Range(T) {
+        @safe static struct Range(T) {
             alias UnqualT=Unqual!T;
             protected T[] array;
             @nogc this(T[] array) {
@@ -839,34 +878,6 @@ unittest {
                 }
             }
 
-            version(none)
-            static if (isHiBON!T) {
-                static DocResult fitting(const Document doc, const(string[]) key_chain) nothrow {
-                    if (!doc.isArray) {
-                        return DocResult(Document.Element.ErrorCode.NOT_AN_ARRAY,null);
-                    }
-                    foreach(e; doc[]) {
-                        const result=T.fitting(doc);
-                        if (result.error !is Document.Element.ErrorCode.NONE) {
-                            return result;
-                        }
-                    }
-                    return DocResult(Document.Element.ErrorCode.NONE,null);
-                }
-            }
-            else {
-                static DocResult fitting(const Document doc, const(string[]) key_chain) nothrow {
-                    static assert(Document.Value.hasType!UnqualT);
-                    enum TypeE=Document.Value.asType!UnqualT;
-                    foreach(e; doc[]) {
-                        if (e.type !is TypeE) {
-                            return DocResult(Document.Element.ErrorCode.ILLEGAL_TYPE,e.key);
-                        }
-                    }
-                    return DocResult(Document.Element.ErrorCode.NONE,null);
-                }
-            }
-
             @trusted
             this(const Document doc) {
                 auto result=new UnqualT[doc.length];
@@ -877,8 +888,7 @@ unittest {
             }
         }
 
-        @safe
-            auto StructWithRangeTest(T)(T[] array) {
+        @safe auto StructWithRangeTest(T)(T[] array) {
             alias R=Range!T;
             @safe
                 static struct StructWithRange {
@@ -897,15 +907,14 @@ unittest {
         { // Simple Range
             const(int)[] array = [-42, 3, 17];
             const s=StructWithRangeTest(array);
-            //writefln("s=%s",s);
-            //writefln("doc=%s", s.toJSON.toPrettyString);
+
             const doc=s.toDoc;
             alias ResultT=typeof(s);
-            //assert(ResultT.fitting(doc).error is Document.Element.ErrorCode.NONE);
+
             const s_doc=ResultT(doc);
 
-            //writefln("s_doc=%s", s_doc);
             assert(s_doc == s);
+            assert(doc.toJSON.toString == format("%j", s));
         }
 
         {  // Range of structs
@@ -946,10 +955,6 @@ unittest {
 
                     const s_get=h["s"].get!SimpelArray;
 
-                    // @trusted void dump() {
-                    //     writefln("h=%J", h);
-                    // }
-                    // dump();
                     assert(s_get == s);
                     const s_doc=s_get.toDoc;
 
@@ -974,21 +979,17 @@ unittest {
                 [ Simpel(1, "three")]
                 ];
 
-            //writefln("%s", ragged);
             Jagged jagged;
             jagged.y=ragged;
 
             const jagged_doc=jagged.toDoc;
-// //            (() @trusted {
-//                 writefln("%J", jagged);
-//             })();
 
             const result=Jagged(jagged_doc);
-            // (() @trusted {
-            //     writefln("%J", result);
-            // })();
 
             assert(jagged == result);
+
+            assert(jagged_doc.toJSON.toString == format("%j", jagged));
+
         }
 
         {
@@ -1008,33 +1009,77 @@ unittest {
             const associative_doc=associative.toDoc;
 
             const result=Associative(associative_doc);
-            // (() @trusted {
-            //     writefln("%J", result);
-            //     foreach(key, e; result.a) {
-            //         writefln("key=%s %j", key, e);
-            //     }
-            //     foreach(key, e; associative.a) {
-            //         writefln("key=%s %j", key, e);
-            //     }
-            //     writefln("%s", result.a.keys);
-            //     writefln("%s", associative.a.keys);
-            //     writefln("%s", result.a.byValue);
-            //     writefln("%s", associative.a.byValue);
-            //     assert(equal(result.a.keys, associative.a.keys));
-            // })();
-
-
-            // result.a.each!(writeln);
-            // writefln("%s", result.a[]);
-            // writefln("%s", associative.a[]);
-//            assert(equal(result.a, associative.a));
             (() @trusted {
-
                 assert(equal(result.a.keys, associative.a.keys));
                 assert(equal(result.a.byValue, associative.a.byValue));
             })();
 
-            // writefln("%j", result);
+            assert(associative_doc.toJSON.toString == format("%j", associative));
+
+        }
+
+        { // Test of enum
+            enum Count : uint {
+                one=1, two, three
+            }
+
+            { // Single enum
+                static struct CountStruct {
+                    Count count;
+                    mixin HiBONRecord;
+                }
+
+                CountStruct s;
+                s.count = Count.two;
+
+                writefln("%J", s);
+
+                const s_doc=s.toDoc;
+                const result=CountStruct(s_doc);
+
+                assert(s == result);
+                assert(s_doc.toJSON.toString == format("%j", result));
+            }
+
+            { // Array of enum
+                static struct CountArray {
+                    Count[] count;
+                    mixin HiBONRecord;
+                }
+
+                CountArray s;
+                s.count=[Count.one, Count.two, Count.three];
+
+                const s_doc=s.toDoc;
+                const result=CountArray(s_doc);
+
+                assert(s == result);
+                assert(s_doc.toJSON.toString == format("%j", result));
+            }
+        }
+
+        {  // Test of Typedef array
+            import std.typecons : Typedef;
+
+            alias Text=Typedef!(string, null, "Text");
+            // Pubkey is a Typedef
+            import tagion.basic.Basic : Pubkey;
+
+
+            static struct TextArray {
+                Text[] texts;
+                mixin HiBONRecord;
+            }
+
+            TextArray s;
+            s.texts=[Text("one"), Text("two"), Text("three")];
+
+            const s_doc=s.toDoc;
+            const result=TextArray(s_doc);
+
+            assert(s == result);
+            assert(s_doc.toJSON.toString == format("%j", result));
+
         }
 
     }
