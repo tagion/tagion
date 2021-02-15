@@ -5,6 +5,8 @@ import std.conv;
 import std.format;
 import std.bitmanip : BitArray;
 import std.exception : assumeWontThrow;
+import std.algorithm.searching : count;
+import std.typecons : TypedefType;
 
 import tagion.hashgraph.Event;
 import tagion.gossip.InterfaceNet;
@@ -12,21 +14,20 @@ import tagion.utils.LRU;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.utils.Miscellaneous;
-import tagion.basic.ConsensusExceptions;
-import std.algorithm.searching : count;
 
-import tagion.basic.Basic : Pubkey, Buffer, bitarray_clear, countVotes;
+import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, bitarray_clear, countVotes;
 import tagion.hashgraph.HashGraphBasic;
 
 import tagion.basic.Logger;
 
-private alias check=Check!HashGraphConsensusException;
 
 @safe
 class HashGraph : HashGraphI {
+    import tagion.basic.ConsensusExceptions;
+    protected alias check=Check!HashGraphConsensusException;
     import tagion.utils.Statistic;
     //alias Pubkey=immutable(ubyte)[];
-    alias Privkey=immutable(ubyte)[];
+    //alias Privkey=immutable(ubyte)[];
     //alias HashPointer=RequestNet.HashPointer;
     private GossipNet net;
     private uint iterative_tree_count;
@@ -103,7 +104,7 @@ class HashGraph : HashGraphI {
         return (fingerprint in _event_package_cache) !is null;
     }
 
-    void cache(scope const(ubyte[]) fingerprint, immutable(EventPackage*) event_package) nothrow
+    void cache(scope const(ubyte[]) fingerprint, immutable(EventPackage)* event_package) nothrow
         in {
             assert(fingerprint !in _event_package_cache, "Event has already been registered");
         }
@@ -112,7 +113,7 @@ class HashGraph : HashGraphI {
     }
 
     Event registerEvent(
-        immutable(EventPackage*) event_pack)
+        immutable(EventPackage)* event_pack)
         in {
             assert(event_pack.fingerprint !in _event_cache, format("Event %s has already been registerd", event_pack.fingerprint.toHexString));
         }
@@ -170,7 +171,7 @@ class HashGraph : HashGraphI {
      Returns the top most event on node received_pubkey
      +/
     void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides) {
-        immutable is_tidewave=doc.hasElement(Params.tidewave);
+        immutable is_tidewave=doc.hasMember(Params.tidewave);
         scope(success) {
             if ( Event.callbacks ) {
                 Event.callbacks.received_tidewave(received_pubkey, tides);
@@ -193,11 +194,9 @@ class HashGraph : HashGraphI {
                 auto doc_epack=pack.get!Document;
 
                 // Create event package and cache it
-                auto event_package=new immutable(EventPackage)(net, doc_epack);
+                immutable event_package=buildEventPackage(net, doc_epack);
                 if ( !isRegistered(event_package.fingerprint) && (!isCached(event_package.fingerprint))) {
-                    check(event_package.signed_correctly, ConsensusFailCode.EVENT_SIGNATURE_BAD);
                     cache(event_package.fingerprint, event_package);
-//                    _event_package_cache[event_package.fingerprint]=event_package;
                 }
 
                 // Altitude
@@ -282,8 +281,8 @@ class HashGraph : HashGraphI {
         import tagion.hibon.HiBONJSON;
         import std.json;
 
-        log("%s", doc.toJSON(true).toPrettyString);
-        auto signature=doc[Event.Params.signature].get!(immutable(ubyte)[]);
+        log("%s", doc.toJSON.toPrettyString);
+        Signature signature=doc[Event.Params.signature].get!(TypedefType!Signature);
         auto block=doc[Params.block].get!Document;
         immutable message=net.calcHash(block.data);
         if ( net.verify(message, signature, received_pubkey) ) {

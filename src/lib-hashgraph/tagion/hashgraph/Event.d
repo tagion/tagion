@@ -2,15 +2,6 @@ module tagion.hashgraph.Event;
 
 import std.datetime;   // Date, DateTime
 import  std.exception : assumeWontThrow;
-
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
-
-import tagion.utils.Miscellaneous;
-
-import tagion.gossip.InterfaceNet;
-import tagion.basic.ConsensusExceptions;
 import std.conv;
 import std.bitmanip;
 
@@ -23,15 +14,22 @@ import std.algorithm.iteration : map, each, filter;
 import std.algorithm.searching : count;
 import std.range.primitives : walkLength;
 
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord ;
+
+import tagion.utils.Miscellaneous;
+
+import tagion.gossip.InterfaceNet;
+
 import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, EnumText, buf_idup;
-import tagion.hashgraph.HashGraphBasic : isMajority;
+//import tagion.hashgraph.HashGraphBasic : isMajority, check;
 import tagion.Keywords : Keywords;
 
 import tagion.basic.Logger;
-import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.HashGraphBasic : isMajority, HashGraphI, EventBody, EventPackage, Tides;
 
 /// check function used in the Event package
-private alias check=Check!EventConsensusException;
 
 // Returns the highest altitude
 @safe @nogc
@@ -68,328 +66,6 @@ unittest { // Test of the altitude measure function
     assert(!higher(x,x));
 }
 
-@safe
-struct EventPackage {
-    immutable(ubyte)[] fingerprint;
-    immutable(ubyte)[] signature;
-    immutable(Pubkey) pubkey;
-    immutable(EventBody) event_body;
-    immutable(bool) signed_correctly;
-//    mixin HiBONRecord!("EVENT");
-
-    this(const GossipNet net, const(Document) doc_epack) immutable
-    in {
-        assert(!doc_epack.hasElement(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
-    }
-    do {
-        signature=(doc_epack[Event.Params.signature].get!(Buffer));
-        pubkey=Pubkey((doc_epack[Event.Params.pubkey].get!Buffer));
-        const doc_ebody=doc_epack[Event.Params.ebody].get!Document;
-        fingerprint=net.calcHash(doc_ebody.serialize);
-        event_body=EventBody(doc_ebody);
-        signed_correctly=net.verify(fingerprint, signature, pubkey);
-    }
-
-    this(GossipNet net, const(HiBON) hibon_ebody) immutable
-    in {
-        assert(!hibon_ebody.hasMember(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
-    }
-    do {
-        pubkey=net.pubkey;
-        const doc_ebody=Document(hibon_ebody.serialize);
-        event_body=EventBody(doc_ebody);
-        fingerprint=net.calcHash(doc_ebody.serialize);
-        signature=net.sign(fingerprint);
-        signed_correctly=true;
-    }
-
-    this(GossipNet net, immutable(EventBody) ebody) immutable {
-        pubkey=net.pubkey;
-        event_body=ebody;
-        fingerprint=net.calcHash(event_body.toHiBON.serialize);
-        signature=net.sign(fingerprint);
-        signed_correctly=true;
-    }
-
-
-    HiBON toHiBON() const {
-        auto hibon=new HiBON;
-        foreach(i, m; this.tupleof) {
-            enum name=basename!(this.tupleof[i]);
-            alias Type=typeof(this.tupleof[i]);
-            // static if ( member_name == basename!(event_body) ) {
-            //     enum name=Params.ebody;
-            // }
-            // else {
-            //     enum name=member_name;
-            // }
-//            static if ( name[0] != '_' ) {
-            static if (name != Event.Params.fingerprint) {
-                static if ( __traits(compiles, m.toHiBON) ) {
-                    hibon[name]=m.toHiBON;
-                }
-                else {
-                    hibon[name]=cast(TypedefType!Type)m;
-                }
-            }
-        }
-        return hibon;
-    }
-
-
-    static EventPackage undefined() {
-        import tagion.basic.ConsensusExceptions;
-        alias check = consensusCheck!(GossipConsensusException);
-        check(false, ConsensusFailCode.GOSSIPNET_EVENTPACKAGE_NOT_FOUND);
-        assert(0);
-    }
-}
-
-@safe
-struct EventBody {
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
-
-    @Label("$doc", true)  Document payload; // Transaction
-    @Label("$m") Buffer mother; // Hash of the self-parent
-    @Label("$f", true) Buffer father; // Hash of the other-parent
-    @Label("$a") int altitude;
-
-    @Label("$t") ulong time;
-    invariant {
-        if ( (mother.length != 0) && (father.length != 0 ) ) {
-            assert( mother.length == father.length );
-        }
-    }
-
-//    version(none)
-    this(
-        Document payload,
-        Buffer mother,
-        Buffer father,
-        immutable ulong time,
-        immutable int altitude) inout {
-        this.time      =    time;
-        this.altitude  =    altitude;
-        this.father    =    father;
-        this.mother    =    mother;
-        this.payload   =    payload;
-        consensus();
-    }
-
-    version(none)
-    this(immutable(ubyte[]) data) inout {
-        auto doc=Document(data);
-        this(doc);
-    }
-
-    @nogc
-    bool isEva() pure const nothrow {
-        return (mother.length == 0);
-    }
-
-    static immutable(EventBody) eva(GossipNet net) {
-        auto hibon=new HiBON;
-        hibon["pubkey"]=net.pubkey;
-//        hibon["git"]=HASH;
-        hibon["nonce"]="Should be implemented:"; //~to!string(eva_count);
-//        immutable payload=immutable(Payload)(hibon.serialize);
-        immutable result=immutable(EventBody)(Document(hibon.serialize), null, null, net.time, HashGraphI.eva_altitude);
-        return result;
-    }
-
-//    mixin HiBONRecord!("BODY", consensus);
-
-    //mixin HiBONRecord!("BDY");
-
-    enum TYPE="";
-    enum TYPENAME="$T";
-    this(inout Document doc) inout {
-        static if (TYPE.length) {
-            string _type=doc[TYPENAME].get!string;
-            .check(_type == TYPE, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
-        }
-    ForeachTuple:
-        foreach(i, ref m; this.tupleof) {
-            static if (__traits(compiles, typeof(m))) {
-                static if (hasUDA!(this.tupleof[i], Label)) {
-                    alias label=GetLabel!(this.tupleof[i])[0];
-                    enum name=label.name;
-                    enum optional=label.optional;
-                    static if (label.optional) {
-                        if (!doc.hasElement(name)) {
-                            break;
-                        }
-                    }
-                    static if (TYPE.length) {
-                        static assert(TYPENAME != label.name,
-                            format("Default %s is already definded to %s but is redefined for %s.%s",
-                                TYPENAME, TYPE, typeof(this).stringof, basename!(this.tupleof[i])));
-                    }
-                }
-                else {
-                    enum name=basename!(this.tupleof[i]);
-                    enum optional=false;
-                }
-                static if (name.length) {
-                    enum member_name=this.tupleof[i].stringof;
-                    enum code=format("%s=doc[name].get!BaseT;", member_name);
-                    alias MemberT=typeof(m);
-                    alias BaseT=TypedefType!MemberT;
-                    alias UnqualT=Unqual!BaseT;
-                    static if (is(BaseT : const(Document))) {
-                        auto dub_doc = doc[name].get!Document;
-                        m = dub_doc;
-                    }
-                    else static if (is(BaseT == struct)) {
-                        auto dub_doc = doc[name].get!Document;
-                        enum doc_code=format("%s=UnqualT(dub_doc);", member_name);
-                        pragma(msg, doc_code, ": ", BaseT, ": ", UnqualT);
-                        mixin(doc_code);
-                    }
-                    else static if (is(BaseT == class)) {
-                        const dub_doc = Document(doc[name].get!Document);
-                        m=new BaseT(dub_doc);
-                    }
-                    else static if (is(BaseT == enum)) {
-                        alias EnumBaseT=OriginalType!BaseT;
-                        m=cast(BaseT)doc[name].get!EnumBaseT;
-                    }
-                    else {
-                        static if (is(BaseT:U[], U)) {
-                            static if (hasMember!(U, "toHiBON")) {
-                                MemberT array;
-                                auto doc_array=doc[name].get!Document;
-                                static if (optional) {
-                                    if (doc_array.length == 0) {
-                                        continue ForeachTuple;
-                                    }
-                                }
-                                check(doc_array.isArray, message("Document array expected for %s member",  name));
-                                foreach(e; doc_array[]) {
-                                    const sub_doc=e.get!Document;
-                                    array~=U(sub_doc);
-                                }
-                                enum doc_array_code=format("%s=array;", member_name);
-                                mixin(doc_array_code);
-                            }
-                            else static if (Document.Value.hasType!U) {
-                                MemberT array;
-                                auto doc_array=doc[name].get!Document;
-                                static if (optional) {
-                                    if (doc_array.length == 0) {
-                                        continue ForeachTuple;
-                                    }
-                                }
-                                check(doc_array.isArray, message("Document array expected for %s member",  name));
-                                foreach(e; doc_array[]) {
-                                    array~=e.get!U;
-                                }
-                                m=array;
-//                                static assert(0, format("Special handling of array %s", MemberT.stringof));
-                            }
-                            else {
-                                static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
-                                        BaseT.stringof, cast(immutable(U)[]).stringof));
-                                mixin(code);
-                            }
-                        }
-                        else {
-                            mixin(code);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    version(none)
-    this(inout Document doc) inout {
-        foreach(i, ref m; this.tupleof) {
-            alias Type=typeof(m);
-            alias UnqualT=Unqual!Type;
-            enum name=basename!(this.tupleof[i]);
-            if ( doc.hasElement(name) ) {
-                // static if ( name == mother.stringof || name == father.stringof ) {
-                //     if ( request_net ) {
-                //         immutable event_id=doc[name].get!uint;
-                //         this.tupleof[i]=request_net.eventHashFromId(event_id);
-                //     }
-                //     else {
-                //         this.tupleof[i]=(doc[name].get!type).idup;
-                //     }
-                // }
-                // else {
-                    static if ( is(Type : immutable(ubyte[])) ) {
-                        this.tupleof[i]=(doc[name].get!UnqualT).idup;
-                    }
-                    else {
-                        this.tupleof[i]=doc[name].get!UnqualT;
-                    }
-                // }
-            }
-        }
-        consensus();
-    }
-
-    void consensus() inout {
-        if ( mother.length == 0 ) {
-            // Seed event first event in the chain
-            check(father.length == 0, ConsensusFailCode.NO_MOTHER);
-        }
-        else {
-            if ( father.length != 0 ) {
-                // If the Event has a father
-                check(mother.length == father.length, ConsensusFailCode.MOTHER_AND_FATHER_SAME_SIZE);
-            }
-            check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
-        }
-    }
-
-
-//    version(none)
-    HiBON toHiBON(const(Event) use_event=null) const {
-        auto hibon=new HiBON;
-        foreach(i, m; this.tupleof) {
-            enum name=basename!(this.tupleof[i]);
-            static if ( __traits(compiles, m.toHiBON) ) {
-                hibon[name]=m.toHiBON;
-            }
-            else {
-                bool include_member=true;
-                static if ( __traits(compiles, m.length) ) {
-                    include_member=m.length != 0;
-                }
-                if ( include_member ) {
-                    if ( use_event && name == basename!mother &&  use_event._mother ) {
-                        hibon[name]=use_event._mother.id;
-                    }
-                    else if ( use_event && name == basename!father && use_event._father ) {
-                        hibon[name]=use_event._father.id;
-                    }
-                    else {
-                        hibon[name]=m;
-                    }
-                }
-            }
-        }
-        return hibon;
-    }
-
-    version(none)
-    @trusted
-    immutable(ubyte[]) serialize(const(Event) use_event=null) const {
-        return toHiBON(use_event).serialize;
-    }
-
-}
-
-
-@safe
-class HashGraphException : Exception {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
-        super( msg, file, line );
-    }
-}
 
 @safe
 interface EventMonitorCallbacks {
@@ -1310,6 +986,8 @@ class Round {
 
 @safe
 class Event {
+    import tagion.basic.ConsensusExceptions;
+    protected alias check=Check!EventConsensusException;
     protected static uint _count;
     static uint count() nothrow {
         return _count;
@@ -1334,7 +1012,7 @@ class Event {
 // Note pubkey is redundent information
 // The node_id should be enought this will be changed later
     this(
-        immutable(EventPackage*) epack,
+        immutable(EventPackage)* epack,
         HashGraphI hashgraph,
 //        immutable(ubyte[]) signature,
 //        Pubkey pubkey,
@@ -1528,7 +1206,7 @@ class Event {
         return (_visit == visit_marker);
     }
     // The altitude increases by one from mother to daughter
-    immutable(EventPackage*) event_package;
+    const(immutable(EventPackage)*) event_package;
 
     ref immutable(EventBody) event_body() const nothrow {
         return event_package.event_body;
@@ -2435,9 +2113,14 @@ class Event {
 
 }
 
+version(none)
 unittest { // Serialize and unserialize EventBody
     import std.digest.sha;
-    Payload payload=cast(immutable(ubyte)[])"Some payload";
+
+    HiBON hibon;
+    hibon=new HiBON;
+    hibon["payload"]="Some payload";
+    const payload=Document(hibon);
 //    auto mother=SHA256(cast(uint[])"self").digits;
     immutable mother=sha256Of("self");
     immutable father=sha256Of("other");
