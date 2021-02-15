@@ -31,10 +31,10 @@ enum BillType {
 alias Buffer=immutable(ubyte)[]; /// General buffer
 alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer used for public keys
 alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
+alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 
 //alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
 version(none) {
-alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 alias Message    =Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 }
