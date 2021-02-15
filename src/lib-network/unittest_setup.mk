@@ -1,5 +1,4 @@
-UNITTEST:=$(BINDIR)/uinttest_$(PACKAGE)
+UNITTEST:=$(BINDIR)/unittest_$(PACKAGE)
 
 TESTDCFLAGS+=$(LIBS)
 TESTDCFLAGS+=-main
-
