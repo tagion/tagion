@@ -1,6 +1,6 @@
 module tagion.communication.HiRPC;
 
-import std.stdio;
+//import std.stdio;
 import std.format;
 import std.traits : EnumMembers;
 
@@ -23,7 +23,6 @@ class HiRPCException : HiBONException {
 }
 
 
-enum HiRPC_version="2.0";
 @safe
 struct HiRPC {
     import tagion.hibon.HiBONRecord;
@@ -35,7 +34,7 @@ struct HiRPC {
         mixin HiBONRecord;
     }
 
-    struct Result {
+    struct Response {
         @Label("*", true) @(Filter.Initialized) uint id;
         Document result;
         mixin HiBONRecord;
@@ -45,16 +44,19 @@ struct HiRPC {
         @Label("*", true) @(Filter.Initialized) uint id;
         @Label("*", true) @Filter(q{!a.empty}) Document data;
         @Label("*", true) @(Filter.Initialized) string message;
-        @Label("*", true) @(Filter.Initialized) uint code;
+        @Label("*", true) @(Filter.Initialized) int code;
 
 
         bool verify(const Document doc) {
-            return doc.hasMember(code.stringof) || doc.hasMember(message.stringof) || doc.hasMember(data.stringof);
+            enum codeName=GetLabel!(code).name;
+            enum messageName=GetLabel!(message).name;
+            enum dataName=GetLabel!(data).name;
+            return doc.hasMember(codeName) || doc.hasMember(messageName) || doc.hasMember(dataName);
         }
         mixin HiBONRecord;
     }
 
-    enum isMessage(T)=is(T:const(Method)) || is(T:const(Result)) || is(T:const(Error));
+    enum isMessage(T)=is(T:const(Method)) || is(T:const(Response)) || is(T:const(Error));
 
     enum SignedState {
         INVALID = -1,
@@ -65,7 +67,7 @@ struct HiRPC {
     enum Type : uint {
         none,
         method,
-        result,
+        response,
         error
     }
 
@@ -78,8 +80,8 @@ struct HiRPC {
         static if (is(T:const(Method))) {
             return Type.method;
         }
-        else static if (is(T:const(Result))) {
-            return Type.result;
+        else static if (is(T:const(Response))) {
+            return Type.response;
         }
         else static if (is(T:const(Error))) {
             return Type.error;
@@ -91,24 +93,10 @@ struct HiRPC {
 
     static Type getType(const Document doc) {
         import std.conv : to;
-        writefln("getType.doc=", doc.toJSON.toPrettyString);
         enum messageName=GetLabel!(Sender.message).name;
-        writefln("messageName=%s", messageName);
-        writefln("doc.hasMember(messageName)=%s", doc.hasMember(messageName));
-        writefln("doc[messageName].type=%s", doc[messageName].type);
-        writefln("doc[messageName].data=%s", doc[messageName].data);
-        writefln("doc[messageName].key=%s", doc[messageName].key);
-
         const message_doc=doc[messageName].get!Document;
-        writefln("message_doc.data=%s", message_doc.data);
-        writefln("message_doc.data.length=%s", message_doc.data.length);
-        writefln("message_doc.length=%s", message_doc.length);
-
-        writefln("message_doc.keys=%s", message_doc.keys);
-        writefln("message_doc=%s", message_doc.toJSON.toPrettyString);
         foreach(E; EnumMembers!(Type)[1..$]) {
             enum name=E.to!string;
-            writeln(name);
             if (message_doc.hasMember(name)) {
                 return E;
             }
@@ -120,7 +108,7 @@ struct HiRPC {
     struct Post(Direction DIRECTION) {
         union Message {
             Method method;
-            Result result;
+            Response response;
             Error error;
         }
 
@@ -149,17 +137,12 @@ struct HiRPC {
                 }
             do {
                 check(!doc.hasHashKey, "Document containing hashkey can not be used as a message in HiPRC");
-                writefln("receiver.doc=%s", doc.toJSON.toPrettyString);
 
                 type=getType(doc);
-                writefln("type=%s", type);
-                writefln("After receiver=%s", doc.toJSON.toPrettyString);
 
                 enum signName=GetLabel!(signature).name;
                 enum pubkeyName=GetLabel!(pubkey).name;
                 enum messageName=GetLabel!(message).name;
-                writefln("signName=%s", signName);
-                writefln("pubkeyName=%s", pubkeyName);
                 message=doc[messageName].get!Document;
                 signature=doc.hasMember(signName)?doc[signName].get!(TypedefType!Signature):null;
                 pubkey=doc.hasMember(pubkeyName)?doc[pubkeyName].get!(TypedefType!Pubkey):null;
@@ -184,18 +167,16 @@ struct HiRPC {
                     return SignedState.NOSIGN;
                 }
                 void set_message() @trusted {
-                    writefln("set_message type=%s", type);
                     with (Type) {
                         final switch(type) {
                         case none:
                             check(0, "Invalid HiPRC message");
                             break;
                         case method:
-                            writefln("Method=%s", message.toJSON.toPrettyString);
                             _message.method=Method(message);
                             break;
-                        case result:
-                            _message.result=Result(message);
+                        case response:
+                            _message.response=Response(message);
                             break;
                         case error:
                             _message.error=Error(message);
@@ -213,9 +194,9 @@ struct HiRPC {
                 return _message.error;
             }
 
-            @trusted const(Result) result() const {
-                check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
-                return _message.result;
+            @trusted const(Response) response() const {
+                check(type is Type.response, format("Message type %s expected not %s", Type.response, type));
+                return _message.response;
             }
 
             @trusted const(Method) method() const {
@@ -232,7 +213,6 @@ struct HiRPC {
                     message=post;
                 }
                 type=getType(post);
-                writefln("Post.type=%s", type);
                 if (net !is null) {
                     immutable fingerprint=net.hashOf(message);
                     signature=net.sign(fingerprint);
@@ -247,12 +227,12 @@ struct HiRPC {
                 return Error(message);
             }
 
-            Result result() const
+            Response response() const
                 in {
-                    assert(type is Type.result, format("Message type %s expected not %s", Type.result, type));
+                    assert(type is Type.response, format("Message type %s expected not %s", Type.response, type));
                 }
             do {
-                return Result(message);
+                return Response(message);
             }
 
             Method method() const
@@ -322,17 +302,13 @@ struct HiRPC {
 
     const(Sender) action(string method, const Document params, const uint id=0) {
         Method message;
-        writefln("action doc method %s %s", method, params.keys);
-        if (id is 0) {
-            message.id=generateId;
-        }
+        message.id=(id is 0)?generateId:id;
         if (!params.empty) {
             message.params=params;
         }
         message.name=method;
         message.params=params;
         auto sender= Sender(net, message);
-        writefln("sender=%s", sender.toJSON.toPrettyString);
         return sender;
     }
 
@@ -341,13 +317,12 @@ struct HiRPC {
     }
 
     const(Sender) action(string method, const(HiBON) params=null, const uint id = 0)  {
-        const doc=Document(params.serialize);
-        writefln("action method %s %s", method, doc.keys);
+        const doc=Document(params);
         return action(method, doc, id);
     }
 
     const(Sender) result(ref const(Receiver) receiver, const Document params) const {
-        Result message;
+        Response message;
         message.id=receiver.method.id;
         message.result=params;
         const method = receiver.method;
@@ -360,7 +335,7 @@ struct HiRPC {
     }
 
     const(Sender) result(ref const(Receiver) receiver, const(HiBON) params) const {
-        return result(receiver, Document(params.serialize));
+        return result(receiver, Document(params));
     }
 
     const(Sender) error(ref const(Receiver) receiver, string msg, const int code=0, Document data=Document()) const {
@@ -379,47 +354,6 @@ struct HiRPC {
     }
 
 
-    version(none)
-    const(Sender) error(ref const(Receiver) receiver, HiBON params) const {
-        Sender sender;
-        with(sender) {
-            message.id=receiver.message.id;
-            hirpc=receiver.hirpc;
-            type=HiRPCType.ERROR;
-        }
-        sender.error=params;
-        return sender;
-    }
-
-    version(none)
-    const(Sender) error(string message, const int code, HiBON hibon_data=null) const {
-        Sender sender;
-        auto hibon_error=new HiBON;
-        hibon_error[Keywords.code]=code;
-        hibon_error[Keywords.message]=message;
-        if ( hibon_data ) {
-            hibon_error[Keywords.data]=hibon_data;
-        }
-        with (sender) {
-            hirpc=HiRPC_version;
-            type=HiRPCType.ERROR;
-        }
-        sender.error=hibon_error;
-        return sender;
-    }
-
-    // const(Receiver) receive(Document doc) const {
-    //     auto receiver=
-    //     return Receiver(net, doc);
-    // }
-
-    // const(HiBON) toHiBON(ref const(Sender) sender ) const {
-    //     return sender.toHiBON(net);
-    // }
-
-    // alias Sender=HiRPCPost!HiBON;
-    // alias Receiver=HiRPCPost!(const Document);
-
     static void check_type(T)(Document doc, string key) {
         immutable msg=format("Wrong type of member '%s', expected type but the type was",
             key);
@@ -433,162 +367,14 @@ struct HiRPC {
         check(doc.hasMember(key), format("Member '%s' missing", key));
         check_type!T(doc, key);
     }
-
-    version(none)
-    struct HiRPCPost(DOCType) if (is(DOCType:const(Document)) || is(DOCType:HiBON))  {
-        @Label("$sign", true) Buffer signature;
-        @Label("$pkey", true) Pubkey pubkey;
-        @Label("*", true) DOCType params;
-        @Label("*", true) DOCType data; // Optional field for the error reporting
-        HiRPCMessage message;
-        string hirpc;
-        struct HiRPCMessage {
-            @Label("*", true) @(Filter.Initialized) uint id;
-            string method;
-            @Label("*", true) int code; // used for error codes
-            mixin HiBONRecord;
-        }
-        static HiRPCPost undefined() {
-            check(false, "Undefined HPRC package");
-            assert(0);
-        }
-        static if (is(DOCType==HiBON)) {
-            @Label("") HiRPCType type;
-            HiBON toHiBON(const(SecureNet) net) const {
-                auto message_hibon=new HiBON;
-                // if ( message.id > 0 ) {
-                //     message_hibon[Keywords.id]=message.id;
-                // }
-
-                with(HiRPCType) final switch(type) {
-                    case ACTION:
-                        message_hibon[Keywords.method]=message.method;
-                        if ( params ) {
-                            message_hibon[Keywords.params]=params;
-                        }
-                        break;
-                    case RESULT:
-                        message_hibon[Keywords.result]=result;
-                        break;
-                    case ERROR:
-                        message_hibon[Keywords.error]=error;
-                        if ( data ) {
-                            message_hibon[Keywords.data]=data;
-                        }
-                        if ( message.code ) {
-                            message_hibon[Keywords.code]=message.code;
-                        }
-                        break;
-                    case NONE:
-                        check(false, "The HiRPC does not contain a messaeg type");
-                    }
-                auto hibon=new HiBON;
-                immutable message_data=message_hibon.serialize;
-                auto message_doc=Document(message_data);
-                hibon[Keywords.message]=message_doc;
-                hibon[Keywords.hirpc]=HiRPC_version;
-                if ( net ) {
-                    immutable fingerprint=net.calcHash(message_data);
-                    immutable signature=net.sign(fingerprint);
-                    hibon[Keywords.signature]=signature;
-                    hibon[Keywords.pubkey]=net.pubkey;
-                }
-                return hibon;
-            }
-            // Buffer serialize() const {
-            //     return toHIBON.serialize;
-            // }
-        }
-        else {
-            alias result=params;
-            alias error=params;
-            @Label("") immutable HiRPCType type;
-            @Label("") immutable bool verified;
-            @Label("") immutable(Buffer) fingerprint;
-            this(const(SecureNet) net, const(Document) doc) {
-                check_element!Document(doc, Keywords.message);
-                auto message_doc=doc[Keywords.message].get!Document;
-                if ( doc.hasMember(Keywords.signature) ) {
-                    signature=doc[Keywords.signature].get!Buffer;
-                    check_element!Buffer(doc, Keywords.pubkey);
-                    immutable pubkey_data=doc[Keywords.pubkey].get!Buffer.idup;
-                    pubkey=pubkey_data;
-                    if ( net ) {
-                        fingerprint=net.calcHash(message_doc.data);
-                        verified=net.verify(fingerprint, signature, pubkey);
-                    }
-                }
-                if ( message_doc.hasMember(Keywords.id) ) {
-                    check_type!uint(message_doc, Keywords.id);
-                    message.id=message_doc[Keywords.id].get!uint;
-                }
-
-                check_element!string(doc, Keywords.hirpc);
-                hirpc=doc[Keywords.hirpc].get!string;
-                check(hirpc == HiRPC_version, format("HiRPC version %s not support use %s", hirpc, HiRPC_version));
-                if ( message_doc.hasMember(Keywords.method) ) {
-                    check(message.id > 0, "Message id must be defined and the value must be greather than 0");
-                    type=HiRPCType.ACTION;
-                    check_type!string(message_doc, Keywords.method);
-                    message.method=message_doc[Keywords.method].get!string;
-                    if ( message_doc.hasMember(Keywords.params) ) {
-                        immutable doc_data_params=message_doc[Keywords.params].get!Document;
-//                        auto test=Document(data_params);
-                        params=Document(doc_data_params.data.idup);
-                    }
-                    else {
-                        // None initailized value
-                        params=Document(null);
-                    }
-                    // None initailized value
-                    data=null;
-                }
-                else if ( message_doc.hasMember(Keywords.result) ) {
-                    check(message.id > 0, "Message id must be defined and the value must be greather than 0");
-                    type=HiRPCType.RESULT;
-                    check_type!Document(message_doc, Keywords.result);
-                    result=message_doc[Keywords.result].get!Document;
-                    // None initailized value
-                    //params=Document(null);
-                    data=null;
-                }
-                else if ( message_doc.hasMember(Keywords.error) ) {
-                    type=HiRPCType.ERROR;
-                    check_type!Document(message_doc, Keywords.error);
-                    error=message_doc[Keywords.error].get!Document;
-                    if ( message_doc.hasMember(Keywords.data) ) {
-                        check_type!Document(message_doc, Keywords.data);
-                        data=message_doc[Keywords.data].get!Document;
-                    }
-                    else {
-                        // None initailized value
-                        data=null;
-                        //params=Document(null);
-                    }
-                    if ( message_doc.hasMember(Keywords.code) ) {
-                        message.code=message_doc[Keywords.code].get!int;
-                    }
-                }
-                else {
-                    // None initailized value
-                    data=null;
-                    params=Document(null);
-                    check(false, format("The action member HPRC %s is missing for HiRPC", [Keywords.method, Keywords.result, Keywords.error]));
-                }
-            }
-        }
-        bool empty() pure const nothrow {
-            return type is HiRPCType.NONE;
-        }
-    }
 }
 
 unittest {
+    import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
     class HiRPCNet : StdSecureNet {
-        import tagion.hashgraph.HashGraph;
         this(string passphrase) {
             super();
             generateKeyPair(passphrase);
@@ -596,62 +382,91 @@ unittest {
         }
     }
 
+    class BadHiRPCNet : HiRPCNet {
+        this(string passphrase) {
+            super(passphrase);
+//            generateKeyPair(passphrase);
+//        writefln("Pubkey %s:%d", (cast(Buffer)pubkey).toHexString!true, pubkey.length);
+        }
+
+        override immutable(Buffer) hashOf(const(Document) doc) const {
+            return calcHash(doc.serialize~doc.serialize);
+        }
+
+    }
+
     immutable passphrase="Very secret password for the server";
     enum func_name="func_name";
 
-    version(none)
     {
-        writefln("Start");
         HiRPC hirpc;
+        HiRPC bad_hirpc;
         hirpc.net=new HiRPCNet(passphrase);
-
+        bad_hirpc.net=new BadHiRPCNet(passphrase);
         auto params=new HiBON;
         params["test"]=42;
-        writeln("Before action");
         const sender=hirpc.action(func_name, params);
+        const invalid_sender=bad_hirpc.action(func_name, params, sender.method.id);
 
-        writeln("sender.toDoc");
-        auto doc=sender.toDoc;
+        const doc=sender.toDoc;
+        const invalid_doc=invalid_sender.toDoc;
 
-        writeln("after sender.toDoc");
+        const receiver=hirpc.receive(doc);
+        const invalid_receiver=hirpc.receive(invalid_doc);
 
-        const recever=hirpc.receive(doc);
 
-        writefln("recever.verified=%s", recever.method.id);
+        assert(receiver.method.id is sender.method.id);
+        assert(receiver.method.name == sender.method.name);
+        assert(receiver.signed is HiRPC.SignedState.VALID);
+
+        assert(invalid_receiver.method.id is sender.method.id);
+        assert(invalid_receiver.method.name == sender.method.name);
+        assert(invalid_receiver.signed is HiRPC.SignedState.INVALID);
+
+        static struct ResultStruct {
+            int x;
+            mixin HiBONRecord;
+        }
+
+        { // Response
+            auto hibon=new HiBON;
+            hibon["x"]=42;
+            const send_back=hirpc.result(receiver, hibon);
+            const result=ResultStruct(send_back.response.result);
+
+            assert(result.x is 42);
+        }
+
+        { // Error
+            const send_error=hirpc.error(receiver, "Some error", -1);
+            assert(send_error.error.message == "Some error");
+            assert(send_error.error.code == -1);
+            assert(send_error.isSigned);
+        }
     }
 
-    version(none)
     {
-        writeln("my unit test");
         HiRPC hirpc;
-        import tagion.hibon.HiBONJSON;
-        // hirpc.net=new HiRPCNet(passphrase);
-
-        // auto params=new HiBON;
-        // params["$test"]=5;
-        // const sender=hirpc.action("action", params);
-
-        // auto doc=Document(hirpc.toHiBON(sender).serialize);
-
-        // const json=doc.toJSON;
-        // writeln(json);
-        // assert(json.toString().length > 0);
-        {
+        { /// Unsigend message (no permission)
             HiBON t = new HiBON();
             t["$test"] = 5;
+
             const sender=hirpc.action("action", t);
 
             auto test2 = sender.toDoc;
-            writeln(test2.toJSON);
-            writefln("sender.isSigned=%s", sender.isSigned);
+            // writeln(test2.toJSON);
+            // writefln("sender.isSigned=%s", sender.isSigned);
             assert(!sender.isSigned, "This message is un-sigend, which is fine because the HiRPC does not contain a SecureNet");
             {
                 const receiver=hirpc.receive(sender.toDoc);
-                writefln("receiver=%s", receiver.toPretty);
+                // writefln("receiver=%s", receiver);
                 assert(receiver.method.id is sender.method.id);
-                writefln("receiver.method.name is sender.method.name", receiver.method.name, sender.method.name);
-                assert(receiver.method.name is sender.method.name);
-                writefln("receiver.signed=%s", receiver.signed);
+                // writefln("receiver.method.name is sender.method.name", receiver.method.name, sender.method.name);
+                assert(receiver.method.name == sender.method.name);
+                assert(receiver.signed is HiRPC.SignedState.NOSIGN);
+
+                const params=receiver.method.params;
+                assert(params["$test"].get!int is 5);
             }
         }
         // writefln("recever.verified=%s", recever.verified);

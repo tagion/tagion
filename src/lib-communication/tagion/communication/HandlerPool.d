@@ -129,7 +129,7 @@ class StdHandlerPool(TValue: ResponseHandler, TKey): HandlerPool!(TValue, TKey){
         }
     }
 }
-// version(none)
+
 unittest{
     import core.thread;
     class FakeResponseHandler: ResponseHandler{
@@ -185,6 +185,7 @@ unittest{
         handler_pool.tick;
         assert(handler_pool.empty);
     }
+
     {//HandlerPool: remove handler if not alive after set response
         auto handler_pool = new StdHandlerPool!(FakeResponseHandler, uint)(10.msecs);
         auto fakeResponseHandler = new FakeResponseHandler();
