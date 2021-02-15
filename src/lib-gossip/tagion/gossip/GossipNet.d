@@ -1,7 +1,6 @@
 module tagion.gossip.GossipNet;
 
 import std.concurrency;
-import std.stdio : File;
 import std.format;
 import std.exception : assumeUnique;
 import std.string : representation;
