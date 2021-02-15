@@ -9,7 +9,7 @@ private {
 
     import tagion.dart.BlockFile;
 
-    import tagion.gossip.InterfaceNet : HashNet;
+    import tagion.crypto.SecureInterface : HashNet;
 
 
     import tagion.utils.Miscellaneous : toHex=toHexString;

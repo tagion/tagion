@@ -3,7 +3,7 @@ module tagion.dart.DARTFakeNet;
 import std.random;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
-import tagion.gossip.GossipNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.basic.Basic : Buffer, Control;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;

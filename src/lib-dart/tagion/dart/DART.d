@@ -15,7 +15,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 
 import tagion.dart.DARTFile;
-import tagion.gossip.InterfaceNet : HashNet, SecureNet;
+import tagion.crypto.SecureInterface : HashNet, SecureNet;
 import tagion.communication.HiRPC;
 import tagion.basic.Basic : EnumText;
 
