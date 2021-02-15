@@ -25,6 +25,7 @@ private static Tid logger_tid;
 
 @safe
 static struct Logger {
+    import std.format;
     protected {
         string _task_name;
         uint id;
