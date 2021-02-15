@@ -77,7 +77,13 @@ struct RecordType {
 template GetLabel(alias member) {
     import std.traits : getUDAs, hasUDA;
     static if (hasUDA!(member, Label)) {
-        enum GetLabel=getUDAs!(member, Label)[0];
+        enum label=getUDAs!(member, Label)[0];
+        static if (label.name == VOID) {
+            enum GetLabel=Label(basename!(member), label.optional);
+        }
+        else {
+            enum GetLabel=label;
+        }
     }
     else {
         enum GetLabel=Label(basename!(member));
@@ -206,13 +212,13 @@ mixin template HiBONRecord(string CTOR="") {
         foreach(i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 enum default_name=basename!(this.tupleof[i]);
-                static if (hasUDA!(this.tupleof[i], Label)) {
-                    alias label=GetLabel!(this.tupleof[i]);
-                    enum name=(label.name == VOID)?default_name:label.name;
-                }
-                else {
-                    enum name=basename!(this.tupleof[i]);
-                }
+//                static if (hasUDA!(this.tupleof[i], Label)) {
+                alias label=GetLabel!(this.tupleof[i]);
+                enum name=label.name;
+                // }
+                // else {
+                //     enum name=basename!(this.tupleof[i]);
+                // }
                 static if (hasUDA!(this.tupleof[i], Filter)) {
                     alias filters=getUDAs!(this.tupleof[i], Filter);
                     static foreach(F; filters) {
@@ -382,11 +388,11 @@ mixin template HiBONRecord(string CTOR="") {
                 return result;
             }
 
-            enum do_verify=hasMember!(typeof(this), "verify") && isCallable!(verify) && __traits(compiles, verify(doc));
+            enum do_verify=hasMember!(ThisType, "verify") && isCallable!(verify) && __traits(compiles, verify(doc));
 
             static if (do_verify) {
                 scope(exit) {
-                    check(this.verify(doc), format("Document verification faild"));
+                    check(this.verify(doc), format("Document verification faild for HiBONRecord %s", ThisType.stringof));
                 }
             }
 
@@ -407,7 +413,7 @@ mixin template HiBONRecord(string CTOR="") {
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
                                 format("Default %s is already definded to %s but is redefined for %s.%s",
-                                    TYPENAME, TYPE, typeof(this).stringof, basename!(this.tupleof[i])));
+                                    TYPENAME, TYPE, ThisType.stringof, basename!(this.tupleof[i])));
                         }
                     }
                     else {
