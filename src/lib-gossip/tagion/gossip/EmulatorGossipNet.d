@@ -21,7 +21,7 @@ import tagion.hibon.Document : Document;
 import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.HashGraphBasic : Params;
+import tagion.hashgraph.HashGraphBasic : buildEventPackage;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
@@ -89,7 +89,7 @@ class EmulatorGossipNet : StdGossipNet {
     void dump(const(HiBON[]) events) const {
         foreach(e; events) {
             auto pack_doc=Document(e.serialize);
-            immutable pack=new immutable(EventPackage)(this, pack_doc);
+            immutable pack=buildEventPackage(this, pack_doc);
 //            immutable fingerprint=pack.event_body.fingerprint;
             log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack.event_body.altitude);
         }

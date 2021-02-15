@@ -3,10 +3,13 @@ module tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.Document : Document;
 //import tagion.utils.Queue;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Basic;
+
+import tagion.crypto.SecureInterface : HashNet, SecureNet;
 
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
@@ -17,7 +20,7 @@ struct Package {
     private const(HiBON) block;
     private Pubkey pubkey;
     immutable ExchangeState type;
-    immutable(ubyte[]) signature;
+    immutable(Signature) signature;
 
     this(GossipNet net, const(HiBON) block, const ExchangeState type) {
         this.block=block;
@@ -25,7 +28,7 @@ struct Package {
         this.pubkey=net.pubkey;
 //        import tagion.services.LoggerService;
         @trusted
-        immutable(ubyte[]) sig_calc(){
+        Signature sig_calc(){
             import std.stdio;
             import tagion.hibon.HiBONJSON;
             try {
@@ -43,7 +46,7 @@ struct Package {
                 writeln("THROWABLE::%s", e.msg);
                 throw e;
             }
-            return null;
+            return Signature(null);
         }
         signature = sig_calc();
     }
@@ -92,20 +95,6 @@ interface NetCallbacks : EventMonitorCallbacks {
 }
 
 
-@safe
-interface HashNet {
-    uint hashSize() const pure nothrow;
-    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
-    immutable(Buffer) HMAC(scope const(ubyte[]) data) const;
-    /++
-     Hash used for Merkle tree
-     +/
-    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
-
-    immutable(Buffer) hashOf(const(Document) doc) const;
-}
-
-
 
 version(none)
 @safe
@@ -126,29 +115,6 @@ interface RequestNet : HashNet {
     size_t number_of_registered_event() const pure nothrow;
 }
 
-
-@safe
-interface SecureNet : HashNet {
-    Pubkey pubkey() pure const nothrow;
-    bool verify(immutable(ubyte[]) message, immutable(ubyte[]) signature, Pubkey pubkey) const;
-    bool verify(T)(T pack, immutable(ubyte)[] signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) );
-
-    // The private should be added implicite by the GossipNet
-    // The message is a hash of the 'real' message
-    immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
-    immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) );
-    void createKeyPair(ref ubyte[] privkey);
-    void generateKeyPair(string passphrase);
-    void drive(string tweak_word, shared(SecureNet) secure_net);
-    void drive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net);
-    void drive(string tweak_word, ref ubyte[] tweak_privkey);
-    void drive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey);
-    Pubkey drivePubkey(const(ubyte[]) tweak_code);
-    Pubkey drivePubkey(string tweak_word);
-
-    Buffer mask(const(ubyte[]) _mask) const;
-
-}
 
 @safe
 interface PackageNet {
@@ -198,7 +164,7 @@ interface GossipNet : SecureNet, PackageNet {
 interface FactoryNet {
     HashNet hashnet() const;
 
-    //  SecureNet securenet(immutable(Buffer) drive);
+    //  SecureNet securenet(immutable(Buffer) derive);
 }
 
 @safe

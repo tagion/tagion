@@ -87,9 +87,10 @@ struct NodeAddress{
                 this.port = to!uint(address[tcpIndex .. tcpIndex + 4]);
 
                 const node_number = this.port - opts.port_base;
-                if(this.port>=opts.dart.sync.maxSlavePort){
+                if (this.port>=opts.dart.sync.maxSlavePort){
                     sector = DART.SectorRange(opts.dart.sync.netFromAng, opts.dart.sync.netToAng);
-                }else{
+                }
+                else{
                     const max_sync_node_count = opts.dart.sync.master_angle_from_port
                     ? opts.dart.sync.maxSlaves
                     : opts.dart.sync.maxMasters;
@@ -97,7 +98,8 @@ struct NodeAddress{
 
                     sector = DART.SectorRange(ang_range[0], ang_range[1]);
                 }
-            }else{
+            }
+            else {
                 import std.json;
                 auto json = parseJSON(address);
                 this.id = json["ID"].str;
@@ -105,7 +107,8 @@ struct NodeAddress{
                 auto tcpIndex = addr.indexOf(tcp_token)+tcp_token.length;
                 this.port = to!uint(addr[tcpIndex .. tcpIndex + 4]);
             }
-        }catch(Exception e){
+        }
+        catch(Exception e){
             writeln(e.msg);
                 log.fatal(e.msg);
         }
