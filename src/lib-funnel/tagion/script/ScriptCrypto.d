@@ -9,8 +9,8 @@ import tagion.script.ScriptParser;
 //import tagion.utils.BSON : BSON, HBSON, BSONException;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBON : HiBON;
-import tagion.gossip.GossipNet : StdSecureNet;
-import tagion.basic.Basic : Buffer, Pubkey;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.basic.Basic : Buffer, Pubkey, Signature;
 import tagion.basic.ConsensusExceptions;
 import tagion.script.ScriptBuilder : ScriptBuilder;
 import tagion.script.ScriptParser;
@@ -50,8 +50,8 @@ class ScriptCryptoVerify : ScriptElement {
         check(s, sc);
         try {
             auto message=sc.pop.get!Buffer;
-            auto signature=sc.pop.get!Buffer;
-            auto pubkey=sc.pop.get!Buffer;
+            Signature signature=sc.pop.get!Buffer;
+            Pubkey pubkey=sc.pop.get!Buffer;
 
             auto crypto_net=new CryptoNet();
             immutable res=crypto_net.verify(message, signature, cast(Pubkey)pubkey);

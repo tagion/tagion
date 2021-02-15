@@ -4,7 +4,7 @@ import std.exception : assumeUnique;
 import std.range : lockstep;
 import std.format;
 
-import tagion.gossip.InterfaceNet : SecureNet;
+import tagion.crypto.SecureInterface : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.script.StandardRecords : SignedContract, StandardBill;
 import tagion.basic.Basic : Pubkey;
