@@ -584,7 +584,7 @@ struct HiRPC {
 }
 
 unittest {
-    import tagion.gossip.GossipNet;
+    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
     class HiRPCNet : StdSecureNet {
