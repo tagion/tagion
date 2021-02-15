@@ -3,7 +3,7 @@ module tagion.dart.Recorder;
 import std.container.rbtree : RedBlackTree;
 import  std.range.primitives : isInputRange;
 
-import tagion.gossip.InterfaceNet : HashNet;
+import tagion.crypto.SecureInterface : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub;
@@ -100,7 +100,7 @@ class Factory {
         }
 
         private this(Document doc) {
-            const x=net;
+            this._archives = new Archives;
             foreach(e; doc[]) {
                 auto doc_archive=e.get!Document;
                 auto archive=new Archive(net, doc_archive);
@@ -247,7 +247,7 @@ class Factory {
             ADD = 1,
             //    STUB
             }
-    @Label(STUB, true) immutable(Buffer) fingerprint;
+    @Label("") immutable(Buffer) fingerprint;
     @Label("$a", true) const Document doc;
     @Label("$t", true) Type type;
 
@@ -263,22 +263,14 @@ class Factory {
         assert(net);
     }
     do {
-        Buffer _fingerprint;
-        if (.isStub(_doc)) {
-            enum fingerprintLabel=GetLabel!(this.fingerprint).name;
-            _fingerprint=_doc[fingerprintLabel].get!Buffer;
+        enum archiveLabel=GetLabel!(this.doc).name;
+        if (_doc.hasMember(archiveLabel)) {
+            doc=_doc[archiveLabel].get!Document;
         }
         else {
-            enum archiveLabel=GetLabel!(this.doc).name;
-            if (_doc.hasMember(archiveLabel)) {
-                doc=_doc[archiveLabel].get!Document;
-            }
-            else {
-                doc=_doc;
-            }
-            _fingerprint=net.hashOf(_doc);
+            doc=_doc;
         }
-        fingerprint=_fingerprint;
+        fingerprint=net.hashOf(doc);
         enum typeLabel=GetLabel!(this.type).name;
         if (type !is Type.NONE) {
             this.type=type;

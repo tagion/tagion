@@ -28,7 +28,7 @@ private {
     import tagion.dart.Recorder;
     import tagion.dart.DARTException : DARTException;
 
-    import tagion.gossip.InterfaceNet : HashNet;
+    import tagion.crypto.SecureInterface : HashNet;
 
     import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;
@@ -789,8 +789,8 @@ alias check=Check!DARTException;
                         else {
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
-                            // The A new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart=new Archive(manufactor.net, doc, branch_index);
+                            // The new Archives is constructed to include the archive which is already in the DART
+                            scope archive_in_dart=new Archive(manufactor.net, doc);
                             scope(success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -1182,19 +1182,21 @@ alias check=Check!DARTException;
 
     }
 
-    unittest {
+
+    @safe unittest {
         pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
 
         import std.stdio;
         import std.algorithm.sorting : sort;
-        import tagion.basic.Basic;
-        import std.typecons;
-        import tagion.utils.Random;
         import std.bitmanip : BitArray;
+        import std.typecons;
+        import tagion.basic.Basic;
+        import tagion.utils.Random;
         import tagion.utils.Miscellaneous : cutHex;
+        import tagion.hibon.Document;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
         import tagion.dart.Recorder : Factory, Archive;
-
+        import tagion.utils.Miscellaneous : cutHex;
 //        @safe
         auto net=new DARTFakeNet;
         auto manufactor=Factory(net);
@@ -1247,17 +1249,15 @@ alias check=Check!DARTException;
 
         { // Test the fake hash on Archive
             import std.bitmanip;
-
+            import tagion.hibon.HiBONJSON;
             auto doc_in=DARTFakeNet.fake_doc(table[0]);
             auto a_in=new Archive(net, doc_in, Archive.Type.ADD);
 //            auto data_out=
-            auto a_table=
-                (() @trusted {
-                    return *cast(ulong*)(a_in.fingerprint.ptr);
-                })();
-//                assert(a_table == table[0]);
+            auto a_table=a_in.fingerprint.peek!ulong;
+//            *cast(ulong*)(a_in.fingerprint.ptr[0..ulong.sizeof]);
+
+            assert(a_table == table[0]);
             const doc_out=a_in.toDoc;
-//            writefln("doc_out=%j", doc_out);
             auto a_out=new Archive(net, doc_out);
 
             // Test recorder
@@ -1642,15 +1642,15 @@ alias check=Check!DARTException;
                     dart_A.modify(recorder);
                     saved_archives|=added_archives;
                     saved_archives&=~removed_archives;
-                    // dart_A.dump;
+                     dart_A.dump;
                 }
                 auto recorder_B=dart_B.recorder;
                 auto save_range=saved_archives.bitsSet;
                 // writefln("%s ", saved_archives);
                 saved_archives.bitsSet.each!(n => recorder_B.add(net.fake_doc(random_table[n])));
                 dart_B.modify(recorder_B);
-                // dart_B.dump;
-                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                dart_B.dump;
+                writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             })();
 
