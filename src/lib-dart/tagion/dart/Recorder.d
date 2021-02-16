@@ -252,12 +252,11 @@ struct Factory {
             ADD = 1,
             STUB
             }
-    immutable(Buffer) fingerprint;
-    const Document doc;
-    //immutable(Buffer) data;
-    //private Type _type;
-    Type type;
- //   immutable uint index;
+    @Label("") immutable(Buffer) fingerprint;
+    @Label("$a", true) const Document doc;
+    @Label("$t", true) Type type;
+
+//            immutable uint index;
     bool done;
 
     this(HashNet net, const(Document) _doc, const Type t)
