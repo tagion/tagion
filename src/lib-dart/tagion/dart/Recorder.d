@@ -260,12 +260,12 @@ struct Factory {
  //   immutable uint index;
     bool done;
 
-    this(HashNet net, const(Document) _doc, const Type type)
+    this(HashNet net, const(Document) _doc, const Type t)
     in {
         assert(net);
     }
     do {
-        if (type is Type.STUB) {
+        if (t is Type.STUB) {
             // The type is stub the data contains the fingerprint not data
             fingerprint=doc.data;
         }
@@ -273,7 +273,7 @@ struct Factory {
             fingerprint=net.hashOf(_doc);
             doc=_doc;
         }
-        _type=type;
+        _type=t;
         //index=INDEX_NULL;
     }
 
@@ -290,12 +290,12 @@ struct Factory {
     }
 
     this(HashNet net, Document _doc) {
-        uint type=_doc[Params.type].get!uint;
+        uint doc_type=_doc[Params.type].get!uint;
 //                Buffer _data;
         Buffer _fingerprint;
         Document inner_doc;
         scope(success) {
-            _type=cast(Type)type;
+            _type=cast(Type)doc_type;
             doc=inner_doc;
             if ( _fingerprint ) {
                 fingerprint=_fingerprint;
@@ -307,7 +307,7 @@ struct Factory {
         // scope(exit) {
         //     this.index=INDEX_NULL;
         // }
-        with(Type) switch(type) {
+        with(Type) switch(doc_type) {
             case ADD, NONE:
                 const archive_doc=_doc[Params.archive].get!Document;
                 inner_doc=archive_doc;
