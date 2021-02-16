@@ -257,7 +257,7 @@ struct Factory {
     //immutable(Buffer) data;
     //private Type _type;
     Type _type;
-    immutable uint index;
+ //   immutable uint index;
     bool done;
 
     this(HashNet net, const(Document) _doc, const Type type)
@@ -274,9 +274,10 @@ struct Factory {
             doc=_doc;
         }
         _type=type;
-        index=INDEX_NULL;
+        //index=INDEX_NULL;
     }
 
+//    version(none)
     this(HashNet net, Document _doc, const uint _index)
     in {
         assert(net);
@@ -284,7 +285,7 @@ struct Factory {
     do {
         fingerprint=net.hashOf(_doc);
         this.doc=_doc;
-        this.index=index;
+        //      this.index=index;
         _type=Type.NONE;
     }
 
@@ -303,9 +304,9 @@ struct Factory {
                 fingerprint=net.hashOf(doc);
             }
         }
-        scope(exit) {
-            this.index=INDEX_NULL;
-        }
+        // scope(exit) {
+        //     this.index=INDEX_NULL;
+        // }
         with(Type) switch(type) {
             case ADD, NONE:
                 const archive_doc=_doc[Params.archive].get!Document;
@@ -344,7 +345,7 @@ struct Factory {
     // Define a remove archive by it fingerprint
     private this(Buffer fingerprint, const Type type=Type.REMOVE) {
         _type=type;
-        index=INDEX_NULL;
+        //index=INDEX_NULL;
         doc=Document();
         //data=null;
         this.fingerprint=fingerprint;
