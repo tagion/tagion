@@ -256,7 +256,7 @@ struct Factory {
     const Document doc;
     //immutable(Buffer) data;
     //private Type _type;
-    Type _type;
+    Type type;
  //   immutable uint index;
     bool done;
 
@@ -273,7 +273,7 @@ struct Factory {
             fingerprint=net.hashOf(_doc);
             doc=_doc;
         }
-        _type=t;
+        type=t;
         //index=INDEX_NULL;
     }
 
@@ -286,7 +286,7 @@ struct Factory {
         fingerprint=net.hashOf(_doc);
         this.doc=_doc;
         //      this.index=index;
-        _type=Type.NONE;
+        type=Type.NONE;
     }
 
     this(HashNet net, Document _doc) {
@@ -295,7 +295,7 @@ struct Factory {
         Buffer _fingerprint;
         Document inner_doc;
         scope(success) {
-            _type=cast(Type)doc_type;
+            type=cast(Type)doc_type;
             doc=inner_doc;
             if ( _fingerprint ) {
                 fingerprint=_fingerprint;
@@ -332,7 +332,7 @@ struct Factory {
 
     HiBON toHiBON() const {
         auto hibon=new HiBON;
-        hibon[Params.type]=cast(uint)(_type);
+        hibon[Params.type]=cast(uint)(type);
         if ( doc.length ) {
             hibon[Params.archive]=doc;
         }
@@ -343,8 +343,8 @@ struct Factory {
     }
 
     // Define a remove archive by it fingerprint
-    private this(Buffer fingerprint, const Type type=Type.REMOVE) {
-        _type=type;
+    private this(Buffer fingerprint, const Type t=Type.REMOVE) {
+        type=t;
         //index=INDEX_NULL;
         doc=Document();
         //data=null;
@@ -352,32 +352,32 @@ struct Factory {
     }
 
     final bool isRemove() pure const nothrow {
-        return _type is Type.REMOVE;
+        return type is Type.REMOVE;
     }
 
     final bool isAdd() pure const nothrow {
-        return _type is Type.ADD;
+        return type is Type.ADD;
     }
 
     final bool isStub() pure const nothrow {
-        return _type is Type.STUB;
+        return type is Type.STUB;
     }
 
-    final Type type() pure const nothrow {
-        return _type;
-    }
+    // final Type type() pure const nothrow {
+    //     return _type;
+    // }
 
     /++
      + Returns:
      +     Generates Buffer to be store in the BlockFile
      +/
     immutable(Buffer) store() const {
-        if ( _type is Type.STUB ) {
+        if ( type is Type.STUB ) {
             auto hibon=new HiBON;
             hibon[Keywords.stub]=fingerprint;
             return hibon.serialize;
         }
-        .check(doc.serialize.length !is 0, format("Archive is %s type and it must contain data", _type));
+        .check(doc.serialize.length !is 0, format("Archive is %s type and it must contain data", type));
         return doc.serialize;
     }
 

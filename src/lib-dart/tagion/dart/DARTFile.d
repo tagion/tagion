@@ -1701,7 +1701,7 @@ alias Recorder=Factory.Recorder;
             //dart_B.dump;
             auto remove_recorder=records(net, table[8..10]);
             foreach(ref a; remove_recorder._archives) {
-                a._type=Archive.Type.REMOVE;
+                a.type=Archive.Type.REMOVE;
             }
             auto bulleye_A=dart_A.modify(remove_recorder);
             //dart_A.dump;
@@ -1727,7 +1727,7 @@ alias Recorder=Factory.Recorder;
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
             auto remove_recorder=records(net, random_table[N-100..N]);
             foreach(ref a; remove_recorder._archives) {
-                a._type=Archive.Type.REMOVE;
+                a.type=Archive.Type.REMOVE;
             }
             bulleye_A=dart_A.modify(remove_recorder);
             // dart_A.dump;
@@ -1787,7 +1787,7 @@ alias Recorder=Factory.Recorder;
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
             auto remove_recorder=records(net, random_table[N-100..N]);
             foreach(ref a; remove_recorder._archives) {
-                a._type=Archive.Type.REMOVE;
+                a.type=Archive.Type.REMOVE;
             }
             bulleye_A=dart_A.modify(remove_recorder);
             // dart_A.dump;
