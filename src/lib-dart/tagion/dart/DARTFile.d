@@ -1,8 +1,6 @@
 module tagion.dart.DARTFile;
 
 private {
-    import std.stdio;
-    import tagion.hibon.HiBONJSON;
     import tagion.basic.Basic : Buffer;
     import tagion.Keywords;
 
@@ -1277,7 +1275,6 @@ class DARTFile {
         Branches search(const(ubyte[]) rims, const uint index,  const uint rim=0) {
             scope data=blockfile.load(index);
             scope branches_doc=Document(data);
-//            writefln("branches_doc=%s", branches_doc.toJSON.toPrettyString);
 //            writefln("data.length=%d keys=%s", data.length, branches_doc.keys);
 //            Branches branches;
             if ( branches_doc.hasMember(Keywords.indices) ) {

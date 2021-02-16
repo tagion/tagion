@@ -13,7 +13,7 @@ import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONJSON;
+//import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
 import tagion.crypto.SecureInterface : HashNet, SecureNet;
@@ -313,17 +313,12 @@ class DART : DARTFile, HiRPC.Supports {
             mixin FUNCTION_NAME;
             assert(received.method.name == __FUNCTION_NAME__);
         }
-    out(result) {
-        writefln("Return %J", result);
-        }
     do {
         //HiRPC.check_element!Buffer(received.params, Params.rims);
         immutable rims=received.method.params[Params.rims].get!Buffer;
 
         scope rim_branches=branches(rims);
         auto hibon_params=new HiBON;
-        writefln("rim_branches.empty=%s", rim_branches.empty);
-        writefln("rims.length=%d", rims.length);
         if ( !rim_branches.empty ) {
             hibon_params[Params.branches]=rim_branches.toHiBON(true);
         }
@@ -343,7 +338,6 @@ class DART : DARTFile, HiRPC.Supports {
                 }
             }
         }
-        writefln("hibon_params=%s", Document(hibon_params.serialize).toJSON.toPrettyString);
         return hirpc.result(received, hibon_params);
     }
 
@@ -393,8 +387,6 @@ class DART : DARTFile, HiRPC.Supports {
         HiRPC.check(!read_only, "The DART is read only");
         //HiRPC.check_element!Document(received.params, Params.recorder);
         scope recorder_doc=received.method.params[Params.recorder].get!Document;
-	writefln("recorder_doc=%s", recorder_doc.toJSON.toPrettyString);
-
         scope recorder=Recorder(net, recorder_doc);
         immutable bullseye=modify(recorder);
         auto hibon_params=new HiBON;
@@ -417,16 +409,10 @@ class DART : DARTFile, HiRPC.Supports {
     const(HiRPCSender) opCall(ref scope const(HiRPCReceiver) received, const bool read_only=true) {
         import std.conv : to;
         const scope method=received.method;
-        writefln("HiPRC method %s", method.name);
-        pragma(msg, EnumMembers!Quries);
-        static foreach(E; EnumMembers!Quries) {
-            pragma(msg,  E.to!string);
-        }
         switch (method.name) {
             static foreach(E; EnumMembers!Quries) {
                 case E.to!string:
                     enum code=format(q{return %s(received, read_only);}, E);
-                    writefln("call %s", code);
                     pragma(msg, code);
                     mixin(code);
             }
@@ -610,11 +596,6 @@ class DART : DARTFile, HiRPC.Supports {
                 scope local_branches=branches(rims);
                 scope request_branches=dartRim(rims, hirpc, id);
                 scope result_branches =sync.query(request_branches);
-//                scope Recorder foreign_recoder;
-                writefln("result_branches.method.params.hasMember(Params.branches)=%s",
-                    result_branches.response.result.hasMember(Params.branches));
-                writefln("result_branches.params=%s", result_branches.response.result.toJSON.toPrettyString);
-
                 if ( !result_branches.response.result.hasMember(Params.branches) ) {
                     if ( result_branches.response.result.hasMember(Params.recorder) ) {
 
@@ -680,8 +661,6 @@ class DART : DARTFile, HiRPC.Supports {
             }
 //            scope local_branches=branches(root_rims);
             iterate(root_rims, "");
-            import std.stdio;
-//            sync.store_remove_recursive;
             sync.finish;
         }
 
@@ -710,15 +689,12 @@ class DART : DARTFile, HiRPC.Supports {
         }
         // Adding and Removing archives
         void local_replay(bool remove)() {
-            writefln("journalfile.masterBlock.root_index=%d", journalfile.masterBlock.root_index);
             for(uint index=journalfile.masterBlock.root_index; index !is INDEX_NULL;) {
-                writefln("INDEX=%d", index);
                 immutable data=journalfile.load(index);
                 scope doc=Document(data);
                 index=doc[Params.index].get!uint;
 
                 scope replay_recorder_doc=doc[Params.recorder].get!Document;
-                writefln("%s", replay_recorder_doc.toJSON.toPrettyString);
 
                 scope replay_recorder=Recorder(net, replay_recorder_doc);
                 scope action_recorder=recorder;
@@ -768,8 +744,6 @@ class DART : DARTFile, HiRPC.Supports {
                     const foreign_receiver=foreign_dart.hirpc.receive(foreign_doc);
                     // Make query in to the foreign DART
                     const foreign_response=foreign_dart(foreign_receiver);
-                    writefln("foreign_receiver=%s", foreign_response.toJSON.toPrettyString);
-                    //immutable foreign_data=foreign_dart.hirpc.toHiBON(foreign_respones).serialize;
 
                     return foreign_response.toDoc;
                 }
@@ -782,10 +756,7 @@ class DART : DARTFile, HiRPC.Supports {
                 //
                 // Process the response returned for the foreign DART
                 //
-                //auto doc=Document(response_data);
                 const received=owner.hirpc.receive(response_doc);
-                writefln("query.doc=%s", foreign_doc.toJSON.toPrettyString);
-                //writefln("received=%J", received);
                 return received;
             }
         }
@@ -822,7 +793,7 @@ class DART : DARTFile, HiRPC.Supports {
             enum from=0xABB9;
             enum to=0xABBD;
 
-            import std.stdio;
+//            import std.stdio;
             { // Single element same sector sectors
                const ulong[] same_sector_tabel=[
                    0xABB9_13ab_cdef_1234,
@@ -831,7 +802,7 @@ class DART : DARTFile, HiRPC.Supports {
 
                    ];
                // writefln("Test 0.0");
-               foreach(test_no; 1..3) {
+               foreach(test_no; 0..3) {
                    DARTFile.create_dart(filename_A);
                    DARTFile.create_dart(filename_B);
                    Recorder recorder_B;
@@ -867,13 +838,13 @@ class DART : DARTFile, HiRPC.Supports {
                    default:
                        assert(0);
                    }
-                   writefln("\n------ %d ------", test_no);
-                   writefln("dart_A.dump");
-                   dart_A.dump;
-                   writefln("dart_B.dump");
-                   dart_B.dump;
-                   writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                   writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+                   // writefln("\n------ %d ------", test_no);
+                   // writefln("dart_A.dump");
+                   // dart_A.dump;
+                   // writefln("dart_B.dump");
+                   // dart_B.dump;
+                   // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                   // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
 
                    foreach(sector; dart_A.sectors) {
                        immutable journal_filename=format("%s.%04x.dart_journal", tempfile ,sector);
@@ -889,12 +860,12 @@ class DART : DARTFile, HiRPC.Supports {
                    foreach(journal_filename; journal_filenames) {
                        dart_A.replay(journal_filename);
                    }
-                   writefln("dart_A.dump");
-                   dart_A.dump;
-                   writefln("dart_B.dump");
-                   dart_B.dump;
-                   writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                   writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+                   // writefln("dart_A.dump");
+                   // dart_A.dump;
+                   // writefln("dart_B.dump");
+                   // dart_B.dump;
+                   // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                   // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
 
                    assert(dart_A.fingerprint == dart_B.fingerprint);
                    if (test_no == 0) {
