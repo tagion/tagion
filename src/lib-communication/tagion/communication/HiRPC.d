@@ -1,6 +1,6 @@
 module tagion.communication.HiRPC;
 
-import std.stdio;
+//import std.stdio;
 import std.format;
 import std.traits : EnumMembers;
 
@@ -139,7 +139,6 @@ struct HiRPC {
                 check(!doc.hasHashKey, "Document containing hashkey can not be used as a message in HiPRC");
 
                 type=getType(doc);
-                writefln("Receiver %s", doc.toJSON.toPrettyString);
                 enum signName=GetLabel!(signature).name;
                 enum pubkeyName=GetLabel!(pubkey).name;
                 enum messageName=GetLabel!(message).name;
