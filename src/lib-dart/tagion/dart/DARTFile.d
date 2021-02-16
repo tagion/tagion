@@ -41,6 +41,7 @@ private {
  + Returns;
  +     fingerprint[rim]
  +/
+@safe
 ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
     import std.stdio;
     return rim_keys[rim];
@@ -51,11 +52,13 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
  + Returns:
  +     Sector number of a fingerpint
  +/
+@safe
 ushort root_sector(const(ubyte[]) fingerprint) pure {
     return fingerprint[1] | (fingerprint[0] << 8);
 }
 
-void printfp(string msg, const Buffer[] fingerprints){
+@safe
+void printfp(string msg, const Buffer[] fingerprints) {
     import std.stdio;
     foreach(fp; fingerprints){
         if(fp){
@@ -513,7 +516,7 @@ class DARTFile {
     //     return (leave.index is DARTFile.INDEX_NULL) && ( leave.fingerprint is null);
     // }
 
-    struct Leave {
+    @safe struct Leave {
         uint index;
         Buffer fingerprint;
         bool empty() pure const nothrow {
@@ -692,7 +695,7 @@ class DARTFile {
             return true;
         }
 
-        private immutable(Buffer) fingerprint(DARTFile dartfile, scope bool[uint] index_used=null) {
+        private immutable(Buffer) fingerprint(DARTFile dartfile, scope bool[uint] index_used=null) @trusted {
             if ( _fingerprint is null ) {
                 foreach(key, index; _indices) {
                     if ( (index !is INDEX_NULL) && (_fingerprints[key] is null) ) {
@@ -738,11 +741,12 @@ class DARTFile {
         return null;
     }
 
-    static class RimWalkerFiber : Fiber {
+    @safe static class RimWalkerFiber : Fiber {
         immutable(Buffer) rims;
         protected Buffer data;
         protected bool _finished;
         protected DARTFile owner;
+        @trusted
         this(DARTFile owner, const(Buffer) rims) {
             this.rims=rims;
             this.owner=owner;
@@ -751,7 +755,7 @@ class DARTFile {
         }
 
         final private void run() {
-            void treverse(immutable uint index, immutable uint rim=0) {
+            void treverse(immutable uint index, immutable uint rim=0) @trusted {
                 if ( index !is INDEX_NULL ) {
                     data=owner.blockfile.load(index);
                     scope doc=Document(data);
@@ -781,6 +785,7 @@ class DARTFile {
             _finished=true;
         }
 
+        @trusted
         final void popFront() {
             call;
         }
@@ -821,8 +826,8 @@ class DARTFile {
     HiBON loadAll(Recorder.Archive.Type type=Recorder.Archive.Type.ADD){
         // auto result=Recorder(net);
         DARTFile.Recorder.Archive[] archives;
-        void local_load(const uint branch_index,  const ubyte rim_key=0, const uint rim=0) {
-        //    writefln("index=%d rim=%d rim_key=%d", branch_index, rim, rim_key);
+
+        void local_load(const uint branch_index,  const ubyte rim_key=0, const uint rim=0) @trusted {
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
@@ -869,7 +874,7 @@ class DARTFile {
             const uint branch_index,
             Buffer[]  ordered_fingerprints,
 //            const(Buffer[]) selected_fingerprints=null,
-            immutable uint rim=0) {
+            immutable uint rim=0) @trusted {
             if ( (ordered_fingerprints) && (branch_index !is INDEX_NULL) ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
@@ -918,7 +923,7 @@ class DARTFile {
     struct RimKeyRange {
         protected Recorder.Archive[] current;
         @disable this();
-        this(Range)(scope ref Range range, const uint rim) {
+        this(Range)(scope ref Range range, const uint rim) @trusted {
             if ( !range.empty ) {
                 Recorder.Archive[] list;
                 immutable key=range.front.fingerprint.rim_key(rim);
@@ -1028,7 +1033,7 @@ class DARTFile {
         Leave traverse_dart(R)(
             scope ref R range,
             const uint branch_index,
-            immutable uint rim=0) {
+            immutable uint rim=0) @trusted {
             if ( !range.empty ) {
                 auto archive=range.front;
                 uint erase_block_index;
@@ -1237,7 +1242,8 @@ class DARTFile {
 
     Recorder readStubs(){   //RIMS_IN_SECTOR
         Recorder rec = recorder();
-        void iterate(const uint branch_index, immutable uint rim=0){
+
+        void iterate(const uint branch_index, immutable uint rim=0) @trusted {
             if(branch_index !is INDEX_NULL){
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
@@ -1246,12 +1252,14 @@ class DARTFile {
                     if(rim == RIMS_IN_SECTOR){
                         // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
                         rec.stub(branches.fingerprint(this));
-                    }else{
+                    }
+                    else{
                         foreach(rim_key, index; branches._indices) {
                             iterate(index, rim+1);
                         }
                     }
-                }else{
+                }
+	        else{
                     if(doc.hasMember(Keywords.stub)){
                         // writeln("ADD STUB FP");
                         rec.stub(doc[Keywords.stub].get!Buffer);
@@ -1272,7 +1280,7 @@ class DARTFile {
 
     // Reads out a branch for rims path
     Branches branches(const(ubyte[]) rims) {
-        Branches search(const(ubyte[]) rims, const uint index,  const uint rim=0) {
+        Branches search(const(ubyte[]) rims, const uint index,  const uint rim=0) @trusted {
             scope data=blockfile.load(index);
             scope branches_doc=Document(data);
 //            writefln("data.length=%d keys=%s", data.length, branches_doc.keys);
@@ -1299,7 +1307,7 @@ class DARTFile {
         return search(rims, blockfile.masterBlock.root_index);
     }
 
-    RimRange iterator(const(ubyte[]) rim_path) {
+    RimRange iterator(const(ubyte[]) rim_path) @trusted {
         auto range=new RimRange(this, rim_path);
         range.call;
         return range;
@@ -1320,7 +1328,7 @@ class DARTFile {
         }
 
         protected final void run() {
-            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim=0) {
+            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim=0) @trusted {
                 if ( index !is INDEX_NULL ) {
                     data=blockfile.load(index);
                     scope branches_doc=Document(data);
@@ -1333,7 +1341,7 @@ class DARTFile {
                     yield;
                 }
             }
-            uint search(const(ubyte[]) rims, const uint index, const uint rim=0) {
+            uint search(const(ubyte[]) rims, const uint index, const uint rim=0)  @trusted {
                 if ( index !is INDEX_NULL ) {
                     scope local_data=owner.blockfile.load(index);
                     scope branches_doc=Document(local_data);
@@ -1359,7 +1367,7 @@ class DARTFile {
             _finished=true;
         }
 
-        final void popFront() {
+        final void popFront() @trusted {
             call;
         }
 
@@ -1377,7 +1385,7 @@ class DARTFile {
     void dump(bool full=false) {
         import std.stdio;
         writeln("!!!EYE!!!: ", _fingerprint.hex);
-        void local_dump(const uint branch_index,  const ubyte rim_key=0, const uint rim=0, string indent=null) {
+        void local_dump(const uint branch_index,  const ubyte rim_key=0, const uint rim=0, string indent=null) @trusted {
 //            writefln("index=%d rim=%d rim_key=%d", branch_index, rim, rim_key);
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
