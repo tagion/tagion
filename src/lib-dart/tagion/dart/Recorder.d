@@ -246,12 +246,12 @@ struct Factory {
 
 
 @safe class Archive {
-    enum Type {
-        NONE,
-        REMOVE,
-        ADD,
-        STUB
-    }
+    enum Type : int {
+        NONE = 0,
+            REMOVE = -1,
+            ADD = 1,
+            STUB
+            }
     immutable(Buffer) fingerprint;
     const Document doc;
     //immutable(Buffer) data;
