@@ -1,6 +1,6 @@
 module tagion.communication.HiRPC;
 
-//import std.stdio;
+import std.stdio;
 import std.format;
 import std.traits : EnumMembers;
 
@@ -65,9 +65,9 @@ struct HiRPC {
     }
 
     enum Type : uint {
-        none,
-        method,
-        response,
+        none, /// No valid Type
+            method,  /// Action method
+            result, /// Respose
         error
     }
 
@@ -81,7 +81,7 @@ struct HiRPC {
             return Type.method;
         }
         else static if (is(T:const(Response))) {
-            return Type.response;
+            return Type.result;
         }
         else static if (is(T:const(Error))) {
             return Type.error;
@@ -139,7 +139,7 @@ struct HiRPC {
                 check(!doc.hasHashKey, "Document containing hashkey can not be used as a message in HiPRC");
 
                 type=getType(doc);
-
+                writefln("Receiver %s", doc.toJSON.toPrettyString);
                 enum signName=GetLabel!(signature).name;
                 enum pubkeyName=GetLabel!(pubkey).name;
                 enum messageName=GetLabel!(message).name;
@@ -175,7 +175,7 @@ struct HiRPC {
                         case method:
                             _message.method=Method(message);
                             break;
-                        case response:
+                        case result:
                             _message.response=Response(message);
                             break;
                         case error:
@@ -189,19 +189,27 @@ struct HiRPC {
             this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
                 this(net, pack.toDoc);
             }
-            @trusted const(Error) error() const {
+            @trusted const(Error) error() const pure {
                 check(type is Type.error, format("Message type %s expected not %s", Type.error, type));
                 return _message.error;
             }
 
-            @trusted const(Response) response() const {
-                check(type is Type.response, format("Message type %s expected not %s", Type.response, type));
+            @trusted const(Response) response() const pure {
+                check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
                 return _message.response;
             }
 
-            @trusted const(Method) method() const {
+            @trusted const(Method) method() const pure {
                 check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
                 return _message.method;
+            }
+
+            const(T) params(T)() const pure if (isHiBONRecord!T) {
+                return T(method.params);
+            }
+
+            const(T) result(T)() const pure if (isHiBONRecord!T) {
+                return T(response.result);
             }
         }
         else {
@@ -229,7 +237,7 @@ struct HiRPC {
 
             Response response() const
                 in {
-                    assert(type is Type.response, format("Message type %s expected not %s", Type.response, type));
+                    assert(type is Type.result, format("Message type %s expected not %s", Type.result, type));
                 }
             do {
                 return Response(message);
