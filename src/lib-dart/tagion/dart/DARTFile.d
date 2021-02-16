@@ -1,6 +1,8 @@
 module tagion.dart.DARTFile;
 
 private {
+    import std.stdio;
+    import tagion.hibon.HiBONJSON;
     import tagion.basic.Basic : Buffer;
     import tagion.Keywords;
 
@@ -351,7 +353,7 @@ class DARTFile {
 
                         break;
                     case REMOVE:
-                        if ( _doc.hasElement(Params.fingerprint) ) {
+                        if ( _doc.hasMember(Params.fingerprint) ) {
                             goto case STUB;
                         }
                         else {
@@ -382,7 +384,7 @@ class DARTFile {
             private this(Buffer fingerprint, const Type type=Type.REMOVE) {
                 _type=type;
                 index=INDEX_NULL;
-                doc=Document(null);
+                doc=Document();
                 //data=null;
                 this.fingerprint=fingerprint;
             }
@@ -530,13 +532,13 @@ class DARTFile {
         protected uint[] _indices;         /// Array of index pointer to BlockFile
         private bool done;
         this(Document doc) {
-            if ( doc.hasElement(Keywords.indices) ) {
+            if ( doc.hasMember(Keywords.indices) ) {
                 _indices=new uint[KEY_SPAN];
                 foreach(e; doc[Keywords.indices].get!Document[]) {
                     _indices[e.index]=e.get!uint;
                 }
             }
-            if ( doc.hasElement(Keywords.fingerprints) ) {
+            if ( doc.hasMember(Keywords.fingerprints) ) {
                 _fingerprints=new Buffer[KEY_SPAN];
                 foreach(e; doc[Keywords.fingerprints].get!Document) {
                     _fingerprints[e.index]=e.get!(immutable(ubyte)[]).idup;
@@ -545,7 +547,7 @@ class DARTFile {
         }
 
         static bool isBranches(Document doc) {
-            return !doc.empty && doc.hasElement(Keywords.fingerprints);
+            return !doc.empty && doc.hasMember(Keywords.fingerprints);
         }
 
         /++
@@ -700,11 +702,11 @@ class DARTFile {
                         index_used[index]=true;
                         scope data=dartfile.blockfile.load(index);
                         scope doc=Document(data);
-                        if ( doc.hasElement(Keywords.indices) ) {
+                        if ( doc.hasMember(Keywords.indices) ) {
                             scope subbranch=Branches(doc);
                             _fingerprints[key]=subbranch.fingerprint(dartfile, index_used);
                         }
-                        else if ( doc.hasElement(Keywords.stub) ) {
+                        else if ( doc.hasMember(Keywords.stub) ) {
                             _fingerprints[key]=doc[Keywords.stub].get!Buffer;
                         }
                         else {
@@ -756,7 +758,7 @@ class DARTFile {
                     data=owner.blockfile.load(index);
                     scope doc=Document(data);
                     if ( rim < rims.length ) {
-                        if ( doc.hasElement(Keywords.indices) ) {
+                        if ( doc.hasMember(Keywords.indices) ) {
                             scope branches=Branches(doc);
                             // This branches
                             immutable key=rim_key(rims, rim);
@@ -765,7 +767,7 @@ class DARTFile {
                         }
                     }
                     else  {
-                        if ( doc.hasElement(Keywords.indices) ) {
+                        if ( doc.hasMember(Keywords.indices) ) {
                             scope branches=Branches(doc);
                             foreach(next_index; branches.indices) {
                                 treverse(next_index, rim+1);
@@ -826,13 +828,13 @@ class DARTFile {
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasElement(Keywords.indices) ) {
+                if ( doc.hasMember(Keywords.indices) ) {
                     auto branches=Branches(doc);
                     foreach(key, index; branches._indices) {
                         local_load(index, cast(ubyte)key, rim+1);
                     }
                 }
-                else if ( doc.hasElement(Keywords.stub) ) {
+                else if ( doc.hasMember(Keywords.stub) ) {
 //                        writeln("stub");
 
                 }
@@ -873,7 +875,7 @@ class DARTFile {
             if ( (ordered_fingerprints) && (branch_index !is INDEX_NULL) ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasElement(Keywords.indices) ) {
+                if ( doc.hasMember(Keywords.indices) ) {
                     scope branches=Branches(doc);
                     scope selected_fingerprints=ordered_fingerprints;
                     foreach(rim_key, index; branches._indices) {
@@ -1041,7 +1043,7 @@ class DARTFile {
                     if ( branch_index !is INDEX_NULL ) {
                         scope data=blockfile.load(branch_index);
                         scope doc=Document(data);
-                        .check(doc.hasElement(Keywords.indices), "DART failure within the sector rims the DART should contain a branch");
+                        .check(doc.hasMember(Keywords.indices), "DART failure within the sector rims the DART should contain a branch");
                         branches=Branches(doc);
                     }
 
@@ -1070,8 +1072,8 @@ class DARTFile {
                         scope data=blockfile.load(branch_index);
                         scope doc=Document(data);
 
-                        .check(!doc.hasElement(Keywords.stub), "DART failure a stub is not allowed within the sector angle");
-                        if ( doc.hasElement(Keywords.indices) ) {
+                        .check(!doc.hasMember(Keywords.stub), "DART failure a stub is not allowed within the sector angle");
+                        if ( doc.hasMember(Keywords.indices) ) {
                             branches=Branches(doc);
                             do {
                                 scope sub_range=RimKeyRange(range, rim);
@@ -1241,7 +1243,7 @@ class DARTFile {
             if(branch_index !is INDEX_NULL){
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasElement(Keywords.indices) ) {
+                if ( doc.hasMember(Keywords.indices) ) {
                     scope branches=Branches(doc);
                     if(rim == RIMS_IN_SECTOR){
                         // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
@@ -1252,7 +1254,7 @@ class DARTFile {
                         }
                     }
                 }else{
-                    if(doc.hasElement(Keywords.stub)){
+                    if(doc.hasMember(Keywords.stub)){
                         // writeln("ADD STUB FP");
                         rec.stub(doc[Keywords.stub].get!Buffer);
                     }
@@ -1275,9 +1277,10 @@ class DARTFile {
         Branches search(const(ubyte[]) rims, const uint index,  const uint rim=0) {
             scope data=blockfile.load(index);
             scope branches_doc=Document(data);
+//            writefln("branches_doc=%s", branches_doc.toJSON.toPrettyString);
 //            writefln("data.length=%d keys=%s", data.length, branches_doc.keys);
 //            Branches branches;
-            if ( branches_doc.hasElement(Keywords.indices) ) {
+            if ( branches_doc.hasMember(Keywords.indices) ) {
                 Branches branches=Branches(branches_doc);
                 if ( rim < rims.length ) {
                     immutable rim_key=rims.rim_key(rim);
@@ -1324,7 +1327,7 @@ class DARTFile {
                 if ( index !is INDEX_NULL ) {
                     data=blockfile.load(index);
                     scope branches_doc=Document(data);
-                    if ( branches_doc.hasElement(Keywords.indices) ) {
+                    if ( branches_doc.hasMember(Keywords.indices) ) {
                         Branches branches=Branches(branches_doc);
                         foreach(key, sub_index; branches._indices) {
                             local_iterator(rims~cast(ubyte)key, sub_index, rim+1);
@@ -1337,7 +1340,7 @@ class DARTFile {
                 if ( index !is INDEX_NULL ) {
                     scope local_data=owner.blockfile.load(index);
                     scope branches_doc=Document(local_data);
-                    if ( branches_doc.hasElement(Keywords.indices) ) {
+                    if ( branches_doc.hasMember(Keywords.indices) ) {
                         Branches branches=Branches(branches_doc);
                         if ( rim < rims.length ) {
                             immutable rim_key=rims.rim_key(rim);
@@ -1382,7 +1385,7 @@ class DARTFile {
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasElement(Keywords.indices) ) {
+                if ( doc.hasMember(Keywords.indices) ) {
                     auto branches=Branches(doc);
                     string _indent;
                     if ( rim > 0 ) {
@@ -1393,7 +1396,7 @@ class DARTFile {
                         local_dump(index, cast(ubyte)key, rim+1, _indent);
                     }
                 }
-                else if ( doc.hasElement(Keywords.stub) ) {
+                else if ( doc.hasMember(Keywords.stub) ) {
                     immutable fingerprint=doc[Keywords.stub].get!(Buffer);
                     auto lastRing = full ? fingerprint.length : rim+1;
                     writefln("%s>%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);

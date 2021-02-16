@@ -575,7 +575,7 @@ class BlockFile {
             foreach(i, ref m; this.tupleof) {
                 alias typeof(m) type;
                 enum name=basename!(this.tupleof[i]);
-                if ( doc.hasElement(name) ) {
+                if ( doc.hasMember(name) ) {
                     static if (is(type == uint[uint] ) ) {
                         auto stats_doc=doc[name].get!Document;
                         foreach(elm; stats_doc[]) {
@@ -1141,7 +1141,7 @@ class BlockFile {
             chain=Chain(doc);
         }
 
-        HiBON toHiBON() const {
+        inout(HiBON) toHiBON() inout {
             return chain.toHiBON;
         }
 

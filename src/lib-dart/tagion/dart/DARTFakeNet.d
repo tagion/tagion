@@ -33,7 +33,7 @@ class DARTFakeNet : StdSecureNet {
     @trusted
     override immutable(Buffer) hashOf(scope const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
-        if ( (doc.length is 1) && doc.hasElement(FAKE) && (doc[FAKE].type is Type.UINT64)) {
+        if ( (doc.length is 1) && doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x=doc[FAKE].get!ulong;
             import std.bitmanip: nativeToBigEndian;
             return nativeToBigEndian(x).idup;

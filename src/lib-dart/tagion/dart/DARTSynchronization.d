@@ -32,8 +32,8 @@ import tagion.communication.HandlerPool;
 
 //import tagion.services.MdnsDiscoveryService;
 
-alias HiRPCSender = HiRPC.HiRPCSender;
-alias HiRPCReceiver = HiRPC.HiRPCReceiver;
+alias HiRPCSender = HiRPC.Sender;
+alias HiRPCReceiver = HiRPC.Receiver;
 
 mixin template StateT(T){
     protected T _state;
@@ -99,7 +99,7 @@ class ReadRequestHandler : ResponseHandler{
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        scope foreign_recoder=DARTFile.Recorder(hirpc.net, received.params);
+        scope foreign_recoder=DARTFile.Recorder(hirpc.net, received.method.params);
         foreach(archive; foreign_recoder.archives){
             fp_result[archive.fingerprint] = archive.toHiBON.serialize;
             import std.algorithm: arrRemove = remove, countUntil;
@@ -125,8 +125,9 @@ class ReadRequestHandler : ResponseHandler{
             auto tid = locate(task_name);   //TODO: moveout outside
             if(tid != Tid.init){
                 const result =  empty_hirpc.result(receiver, recorder.toHiBON);
-                send(tid, empty_hirpc.toHiBON(result).serialize);
-            }else{
+                send(tid, result.toDoc.serialize);
+            }
+            else{
                 log("ReadRequestHandler: couldn't locate task: %s", task_name);
             }
         }
@@ -328,19 +329,20 @@ class P2pSynchronizationFactory: SynchronizationFactory{
             scope(failure){
                 close();
             }
-            void send_request_to_forien_dart(Buffer data) {
-                const sended = connection_pool.send(key, data);
+            void send_request_to_forien_dart(const Document doc) {
+                const sended = connection_pool.send(key, doc.serialize);
                 if(!sended){
                     log("P2pSynchronizer: connection closed");
                     close();
                 }
             }
-            immutable foreign_data = hirpc.toHiBON(request).serialize;
+            //immutable foreign_data = hirpc.toHiBON(request).serialize;
+            const foreign_doc=request.toDoc;
             import p2p.go_helper;
             try {
-                send_request_to_forien_dart(foreign_data);
+                send_request_to_forien_dart(foreign_doc);
             }
-            catch(GoException e){
+            catch (GoException e){
                 log("P2pSynchronizer: Exception on sending request: %s", e);
                 close();
             }
