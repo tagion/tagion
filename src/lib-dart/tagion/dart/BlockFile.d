@@ -26,27 +26,27 @@ import tagion.hibon.HiBONRecord;
 import tagion.dart.DARTException : BlockFileException;
 
 // version(unittest) {
-    import std.math : rint;
-    alias FileNames=Tuple!(string, "tempdir", string, "filename", string, "fullpath");
+import std.math : rint;
+alias FileNames=Tuple!(string, "tempdir", string, "filename", string, "fullpath");
 
-    const(FileNames) fileId(T=BlockFile)(string prefix=null) {
-        import std.process : environment, thisProcessID;
-        import std.file;
-        import std.path;
-        //import std.traits;
-        FileNames names;
-        names.tempdir=tempDir.buildPath(environment.get("USER"));
-        names.filename=setExtension(prefix~thisProcessID.to!string~T.stringof, "dbdart");
-        names.fullpath=buildPath(names.tempdir, names.filename);
-        names.tempdir.exists || names.tempdir.mkdir;
-        return names;
-    }
+const(FileNames) fileId(T=BlockFile)(string prefix=null) @safe {
+    import std.process : environment, thisProcessID;
+    import std.file;
+    import std.path;
+    //import std.traits;
+    FileNames names;
+    names.tempdir=tempDir.buildPath(environment.get("USER"));
+    names.filename=setExtension(prefix~thisProcessID.to!string~T.stringof, "dbdart");
+    names.fullpath=buildPath(names.tempdir, names.filename);
+    names.tempdir.exists || names.tempdir.mkdir;
+    return names;
+}
 
-    static this() {
-        // Activate unittest
-        immutable filename=fileId("dummy");
-        //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
-    }
+static this() {
+    // Activate unittest
+    immutable filename=fileId("dummy");
+    //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
+}
 // }
 extern(C) {
     int ftruncate(int fd, long length);
@@ -682,8 +682,7 @@ class BlockFile {
         long create_time;       /// Time of creation
         char[ID_SIZE] id;       /// Short description string
 
-        @trusted
-        void write(ref File file) const
+        void write(ref File file) const @trusted 
             in {
                 assert(block_size >= HeaderBlock.sizeof);
             }
@@ -703,8 +702,8 @@ class BlockFile {
             file.rawWrite(buffer);
         }
 
-        @trusted
-        void read(ref File file, immutable uint BLOCK_SIZE)
+        
+        void read(ref File file, immutable uint BLOCK_SIZE) @trusted
             in {
                 assert(BLOCK_SIZE >= HeaderBlock.sizeof);
             }
@@ -739,8 +738,7 @@ class BlockFile {
         uint first_index;          /// Points to the first block of data
         uint root_index;           /// Point the root of the database
         uint statistic_index;      /// Points to the statistic data
-        @trusted
-        final void write(ref File file, immutable uint BLOCK_SIZE) const {
+        final void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
             scope buffer=new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach(i, m; this.tupleof) {
@@ -815,8 +813,7 @@ class BlockFile {
         enum uint HEAD_MASK=1<<(uint.sizeof*8-1);
         enum HEADER_SIZE=cast(uint)(previous.sizeof+next.sizeof+size.sizeof);
         immutable(Buffer) data;
-        @trusted
-        void write(ref File file, immutable uint BLOCK_SIZE) const {
+        void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
             scope buffer=new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach(i, m; this.tupleof) {
@@ -1035,7 +1032,7 @@ class BlockFile {
      + Throws:
      +     BlockFileException if this not first block in a chain or
      +     some because of some other failures in the blockfile system
-    +/
+     +/
     immutable(Buffer) load(const uint index) {
         scope const first_block=read(index);
         // Check if this is the first block is the start of a block sequency
@@ -1153,9 +1150,9 @@ class BlockFile {
         }
 
         this(immutable(Buffer) buffer, immutable bool random_block=false)
-        in {
-            assert(buffer.length > 0, "Buffer size can not be zero");
-        }
+            in {
+                assert(buffer.length > 0, "Buffer size can not be zero");
+            }
         do {
             chain.data=buffer;
             if ( random_block ) {
@@ -1715,11 +1712,11 @@ class BlockFile {
             // blockfile.dump;
             import std.algorithm.comparison : equal;
             assert(equal(blockfile.recycle_indices[], [
-                    1, 2, 3, 4, 5, 6,
-                    10, 11,
-                    21, 22, 23,
-                    60, 61, 62,
-                    69, 70, 71, 72, 73, 74, 75, 76, 77]));
+                        1, 2, 3, 4, 5, 6,
+                        10, 11,
+                        21, 22, 23,
+                        60, 61, 62,
+                        69, 70, 71, 72, 73, 74, 75, 76, 77]));
             blockfile.close;
         }
 
