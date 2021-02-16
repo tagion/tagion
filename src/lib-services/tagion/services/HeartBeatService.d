@@ -24,7 +24,7 @@ import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import std.conv;
 
-import tagion.gossip.P2pGossipNet : AddressBook;
+import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.services.MdnsDiscoveryService;
 
 import tagion.Keywords: NetworkMode;
@@ -219,7 +219,7 @@ do {
                         }
                     }
                 },
-                (immutable(AddressBook!Pubkey) address_book){
+                (ActiveNodeAddressBook address_book){
                     log("received address book");
                     foreach (ref discovery_tid; discovery_tids){
                         discovery_tid.send(Control.STOP);

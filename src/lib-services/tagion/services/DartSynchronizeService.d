@@ -31,7 +31,7 @@ import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;
 //import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
+import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress, ActiveNodeAddressBook, ConnectionPool;
 
 import tagion.basic.TagionExceptions;
 
@@ -108,9 +108,9 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
             dart.dump;
         }
         else{
-            if(!opts.dart.initialize){
-                dart.calculateFingerprint();
-            }
+            // if(!opts.dart.initialize){
+            //     dart.calculateFingerprint();
+            // }
             dart.dump;
             log("DART bullseye: %s", dart.fingerprint.cutHex);
         }
@@ -254,7 +254,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         foreach(archive_doc;result_doc[]){
                             auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
                             //auto data_doc = Document(archive.data);
-                            log("%s", archive.doc.toJSON);
+                            // log("%s", archive.doc.toJSON);
                             if(archive.doc.hasElement("$type")){
                                 if(archive.doc["$type"].get!string == "BIL"){
                                     auto bill = StandardBill(archive.doc);
@@ -274,7 +274,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         sendResult(empty_hirpc.toHiBON(response).serialize);
                     }
                 },
-                (immutable(AddressBook!Pubkey) update){
+                (ActiveNodeAddressBook update){
                     node_addrses = cast(NodeAddress[Pubkey]) update.data;
                     // log("node addresses %s", node_addrses);
                 },
