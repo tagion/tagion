@@ -33,21 +33,12 @@ class DARTFakeNet : StdSecureNet {
     @trusted
     override immutable(Buffer) hashOf(scope const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
-        if ( (doc.length is 1) && doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
+        if ( doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x=doc[FAKE].get!ulong;
             import std.bitmanip: nativeToBigEndian;
             return nativeToBigEndian(x).idup;
         }
-        else {
-            auto range=doc[];
-            if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
-                immutable value_data=range.front.data[range.front.valuePos..$];
-                //auto hmac=HMAC(value_data);
-                //pragma(msg, "value_data ", typeof(value_data), " ", typeof(calcHash(value_data)));
-                return calcHash(value_data);
-            }
-        }
-        return rawCalcHash(doc.data);
+        return super.hashOf(doc);
     }
 
     static const(Document) fake_doc(const ulong x) {
