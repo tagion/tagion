@@ -90,7 +90,7 @@ protected enum _keywords = [
     "read",
     "rims",
     "keys",
-//    "stub",
+    "stub",
 
     // HiRPC (Similar to JSON-RPC 2.0)
 //    "rev",
