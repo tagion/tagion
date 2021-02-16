@@ -14,6 +14,7 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
 import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
 
 import core.time;
 import std.datetime;
@@ -99,7 +100,7 @@ class ReadRequestHandler : ResponseHandler{
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        scope foreign_recoder=DARTFile.Recorder(hirpc.net, received.method.params);
+        scope foreign_recoder=Factory.Recorder(hirpc.net, received.method.params);
         foreach(archive; foreign_recoder.archives){
             fp_result[archive.fingerprint] = archive.toHiBON.serialize;
             import std.algorithm: arrRemove = remove, countUntil;
@@ -118,9 +119,9 @@ class ReadRequestHandler : ResponseHandler{
         }
         else{
             auto empty_hirpc = HiRPC(null);
-            auto recorder = DARTFile.Recorder(hirpc.net);
+            auto recorder = Factory.Recorder(hirpc.net);
             foreach(fp, doc; fp_result){
-                recorder.insert(new DARTFile.Recorder.Archive(hirpc.net, Document(doc)));
+                recorder.insert(new Archive(hirpc.net, Document(doc)));
             }
             auto tid = locate(task_name);   //TODO: moveout outside
             if(tid != Tid.init){

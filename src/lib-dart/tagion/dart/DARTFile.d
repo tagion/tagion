@@ -1,6 +1,19 @@
 module tagion.dart.DARTFile;
 
 private {
+    import tagion.basic.Basic : Buffer;
+    import tagion.Keywords;
+
+    import tagion.hibon.HiBON : HiBON;
+    import tagion.hibon.Document : Document;
+
+    import tagion.dart.BlockFile;
+
+    import tagion.crypto.SecureInterface : HashNet;
+
+
+    import tagion.utils.Miscellaneous : toHex=toHexString;
+
     import std.format;
     import std.stdio : File;
     import std.container.rbtree : RedBlackTree;
@@ -16,24 +29,12 @@ private {
     import std.conv : to;
     import core.thread : Fiber;
 
-    import tagion.basic.Basic : Buffer;
-    import tagion.Keywords;
-
-    import tagion.hibon.HiBON : HiBON;
-//    import tagion.hibon.HiBONRecord : GetLabel, Label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONRecord : isStub;
-    import tagion.hibon.Document : Document;
-
-    import tagion.dart.BlockFile;
-    import tagion.dart.Recorder;
+    import tagion.utils.Miscellaneous : toHexString;
+    alias hex=toHexString;
     import tagion.dart.DARTException : DARTException;
-
-    import tagion.crypto.SecureInterface : HashNet;
 
     import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;
-    import tagion.utils.Miscellaneous : toHex=toHexString;
-
 }
 
 /++
@@ -69,6 +70,8 @@ void printfp(string msg, const Buffer[] fingerprints) {
 }
 
 alias check=Check!DARTException;
+import tagion.dart.Recorder;
+alias Recorder=Factory.Recorder;
 
 /++
  + DART File system
@@ -84,6 +87,7 @@ alias check=Check!DARTException;
 
 
 @safe class DARTFile {
+
     enum KEY_SPAN        = ubyte.max+1;
     enum uint request_limit=KEY_SPAN;
     enum INDEX_NULL=BlockFile.INDEX_NULL;
@@ -177,7 +181,7 @@ alias check=Check!DARTException;
      +  Recorder to recorder (REMOVE, ADD) actions while can be executed by the
      +  modify method
      +/
-    @safe
+    version(none) @safe
         struct Recorder {
         alias Archives=RedBlackTree!(Archive, (a,b) => a.fingerprint < b.fingerprint);
         private HashNet net;
@@ -457,7 +461,7 @@ alias check=Check!DARTException;
         void dump() const {
             import std.stdio;
             foreach(a; _archives) {
-                writefln("Archive %s %s", a.fingerprint.toHex, a._type);
+                writefln("Archive %s %s", a.fingerprint.toHexString!true, a._type);
             }
         }
 
@@ -718,7 +722,7 @@ alias check=Check!DARTException;
             import std.stdio;
             foreach(key, index; _indices) {
                 if ( index !is INDEX_NULL ) {
-                    writefln("branches[%02X]=%s", key, _fingerprints[key].toHex);
+                    writefln("branches[%02X]=%s", key, _fingerprints[key].toHexString);
                 }
             }
 
@@ -817,9 +821,9 @@ alias check=Check!DARTException;
         return local_indent(rim);
     }
 
-    HiBON loadAll(Recorder.Archive.Type type=Recorder.Archive.Type.ADD){
+    HiBON loadAll(Archive.Type type=Archive.Type.ADD){
         // auto result=Recorder(net);
-        DARTFile.Recorder.Archive[] archives;
+        Archive[] archives;
 
         void local_load(const uint branch_index,  const ubyte rim_key=0, const uint rim=0) @trusted {
             if ( branch_index !is INDEX_NULL ) {
@@ -836,7 +840,7 @@ alias check=Check!DARTException;
 
                 }
                 else {
-                    auto archive=new Recorder.Archive(net, doc, type);
+                    auto archive=new Archive(net, doc, type);
                     archives~=archive;
                     // result.insert(archive);
                     // writeln(result.length);
@@ -860,7 +864,7 @@ alias check=Check!DARTException;
         return result;
     }
     // Loads all the archives in the list of fingerprints
-    Recorder loads(Range)(Range fingerprints, Recorder.Archive.Type type=Recorder.Archive.Type.REMOVE) {
+    Recorder loads(Range)(Range fingerprints, Archive.Type type=Archive.Type.REMOVE) {
 	pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         import std.algorithm.comparison : min;
         auto result=Recorder(net);
@@ -891,7 +895,7 @@ alias check=Check!DARTException;
                     // Loads the Archives into the archives
                     .check(ordered_fingerprints.length == 1, format("Data base is broken at rim=%d fingerprint=%s", rim, ordered_fingerprints[0].hex));
                     // The archive is set in erase mode so it can be easily be erased later
-                    auto archive=new Recorder.Archive(net, doc, type);
+                    auto archive=new Archive(net, doc, type);
                     if ( ordered_fingerprints[0] == archive.fingerprint ) {
                         result.insert(archive);
                     }
@@ -915,11 +919,11 @@ alias check=Check!DARTException;
     // Range over a Range with the same key in the a specific rim
 //    alias FilterRange=FilterResult!(unaryFun, RimKeyRange);
     struct RimKeyRange {
-        protected Recorder.Archive[] current;
+        protected Archive[] current;
         @disable this();
         this(Range)(scope ref Range range, const uint rim) @trusted {
             if ( !range.empty ) {
-                Recorder.Archive[] list;
+                Archive[] list;
                 immutable key=range.front.fingerprint.rim_key(rim);
                 static if ( is(Range == RimKeyRange) ) {
                     auto reuse_current=range.current;
@@ -945,7 +949,7 @@ alias check=Check!DARTException;
                             list[no]=a;
                         }
                         else {
-                            list=new Recorder.Archive[no];
+                            list=new Archive[no];
                         }
                     }
                     build(range);
@@ -955,7 +959,7 @@ alias check=Check!DARTException;
         }
 
         bool onlyRemove() pure const  {
-            bool check(const(Recorder.Archive[]) list) {
+            bool check(const(Archive[]) list) {
                 if ( list.length > 1 ) {
                     if ( list[0].isRemove ) {
                         return check(list[1..$]);
@@ -985,7 +989,7 @@ alias check=Check!DARTException;
             }
         }
 
-        Recorder.Archive front() {
+        Archive front() {
             if ( empty ) {
                 return null;
             }
@@ -1085,7 +1089,7 @@ alias check=Check!DARTException;
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The A new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart=new Recorder.Archive(net, doc, branch_index);
+                            scope archive_in_dart=new Archive(net, doc, branch_index);
                             scope(success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -1538,7 +1542,7 @@ alias check=Check!DARTException;
             import std.bitmanip;
 
             auto doc_in=DARTFakeNet.fake_doc(table[0]);
-            auto a_in=new Recorder.Archive(net, doc_in, Recorder.Archive.Type.ADD);
+            auto a_in=new Archive(net, doc_in, Archive.Type.ADD);
 //            auto data_out=
             auto a_table=a_in.fingerprint.peek!ulong;
 //            *cast(ulong*)(a_in.fingerprint.ptr[0..ulong.sizeof]);
@@ -1546,7 +1550,7 @@ alias check=Check!DARTException;
 //                assert(a_table == table[0]);
             auto data_out=a_in.toHiBON.serialize;
             auto doc_out=Document(data_out);
-            auto a_out=new Recorder.Archive(net, doc_out);
+            auto a_out=new Archive(net, doc_out);
 
             // Test recorder
             auto recorder=Recorder(net);
@@ -1697,7 +1701,7 @@ alias check=Check!DARTException;
             //dart_B.dump;
             auto remove_recorder=records(net, table[8..10]);
             foreach(ref a; remove_recorder._archives) {
-                a._type=Recorder.Archive.Type.REMOVE;
+                a._type=Archive.Type.REMOVE;
             }
             auto bulleye_A=dart_A.modify(remove_recorder);
             //dart_A.dump;
@@ -1723,7 +1727,7 @@ alias check=Check!DARTException;
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
             auto remove_recorder=records(net, random_table[N-100..N]);
             foreach(ref a; remove_recorder._archives) {
-                a._type=Recorder.Archive.Type.REMOVE;
+                a._type=Archive.Type.REMOVE;
             }
             bulleye_A=dart_A.modify(remove_recorder);
             // dart_A.dump;
@@ -1783,7 +1787,7 @@ alias check=Check!DARTException;
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
             auto remove_recorder=records(net, random_table[N-100..N]);
             foreach(ref a; remove_recorder._archives) {
-                a._type=Recorder.Archive.Type.REMOVE;
+                a._type=Archive.Type.REMOVE;
             }
             bulleye_A=dart_A.modify(remove_recorder);
             // dart_A.dump;
@@ -1859,12 +1863,12 @@ alias check=Check!DARTException;
             assert(dart_A.fingerprint == dart_B.fingerprint);
 
             auto recorder=dart_A.recorder;
-            const archive_1=new Recorder.Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Recorder.Archive.Type.NONE);
+            const archive_1=new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive.Type.NONE);
 //            immutable nonexisting_print_1=net.fake_doc(0xABB7_1111_1111_0000UL);
-            recorder.remove_by_print(archive_1.fingerprint);
-            const archive_2=new Recorder.Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Recorder.Archive.Type.NONE);
+            recorder.remove(archive_1.fingerprint);
+            const archive_2=new Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Archive.Type.NONE);
 //            immutable nonexisting_print_2=net.fake_doc(0xABB7_1112_1111_0000UL);
-            recorder.remove_by_print(archive_2.fingerprint);
+            recorder.remove(archive_2.fingerprint);
 
             //writefln("calcHash(nonexisting_print)=%s", net.calcHash(nonexisting_print).cutHex!true);
 

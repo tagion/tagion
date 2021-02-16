@@ -16,6 +16,7 @@ import tagion.hibon.Document : Document;
 //import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
+import tagion.dart.Recorder : Archive;
 import tagion.crypto.SecureInterface : HashNet, SecureNet;
 import tagion.communication.HiRPC;
 import tagion.basic.Basic : EnumText;
@@ -213,7 +214,7 @@ class DART : DARTFile, HiRPC.Supports {
         }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope result=loadAll(Recorder.Archive.Type.ADD);
+        scope result=loadAll(Archive.Type.ADD);
         return hirpc.result(received, result);
     }
     /++
@@ -267,7 +268,7 @@ class DART : DARTFile, HiRPC.Supports {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
         scope doc_fingerprints=received.method.params[Params.fingerprints].get!(Document);
         scope fingerprints=doc_fingerprints.range!(Buffer[]);
-        scope recorder=loads(fingerprints, Recorder.Archive.Type.ADD);
+        scope recorder=loads(fingerprints, Archive.Type.ADD);
         return hirpc.result(received, recorder.toHiBON);
     }
     /++
@@ -619,7 +620,7 @@ class DART : DARTFile, HiRPC.Supports {
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
-                    Recorder.Archive[Buffer] set_of_archives;
+                    Archive[Buffer] set_of_archives;
                     foreach(a; foreign_recoder.archives[]) {
                         set_of_archives[a.fingerprint]=a;
                     }
@@ -648,7 +649,7 @@ class DART : DARTFile, HiRPC.Supports {
                                 if ( !Branches.isBranches(Document(possible_branches_data)) ) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
-                                    local_recorder.remove_by_print(local_print);
+                                    local_recorder.remove(local_print);
                                 }
                             }
                             iterate(sub_rims, indent~"**");
@@ -700,12 +701,12 @@ class DART : DARTFile, HiRPC.Supports {
                 scope action_recorder=recorder;
                 foreach(a; replay_recorder.archives[]) {
                     static if (remove) {
-                        if ( a.type is Recorder.Archive.Type.REMOVE ) {
+                        if ( a.type is Archive.Type.REMOVE ) {
                             action_recorder.insert(a);
                         }
                     }
                     else {
-                        if ( a.type !is Recorder.Archive.Type.REMOVE ) {
+                        if ( a.type !is Archive.Type.REMOVE ) {
                             action_recorder.insert(a);
                         }
                     }

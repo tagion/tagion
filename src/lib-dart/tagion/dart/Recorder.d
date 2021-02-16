@@ -1,18 +1,24 @@
 module tagion.dart.Recorder;
 
 import std.container.rbtree : RedBlackTree;
-import  std.range.primitives : isInputRange;
+import std.range.primitives : isInputRange;
+import std.format;
 
 import tagion.crypto.SecureInterface : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub;
 import tagion.basic.Basic : Buffer;
+import tagion.Keywords;
+
 import tagion.basic.Message;;
 import tagion.dart.DARTException : DARTRecorderException;
 
 import tagion.basic.TagionExceptions : Check;
-
+import tagion.dart.DARTFile : DARTFile;
+import tagion.dart.BlockFile : BlockFile;
+alias Params=DARTFile.Params;
+enum INDEX_NULL=BlockFile.INDEX_NULL;
 //import tagion.utils.Miscellaneous : toHex=toHexString;
 
 import tagion.utils.Miscellaneous : toHexString;
@@ -22,7 +28,7 @@ private alias check=Check!DARTRecorderException;
 
 //    alias recorder=factory.recorder;
 @safe
-class Factory {
+struct Factory {
 
 
     const HashNet net;
@@ -30,22 +36,22 @@ class Factory {
     protected this(const HashNet net) {
         this.net=net;
     }
-    static Factory opCall(const HashNet net) {
-        return new Factory(net);
-    }
+    // static Factory opCall(const HashNet net) {
+    //     return new Factory(net);
+    // }
     /++
      Creates an empty Recorder
      +/
-    Recorder recorder() nothrow {
-        return new Recorder;
-    }
+    // Recorder recorder() nothrow {
+    //     return new Recorder;
+    // }
 
     /++
      Creates an empty Recorder
      +/
-    Recorder recorder(const(Document) doc) {
-        return new Recorder(doc);
-    }
+    // Recorder recorder(const(Document) doc) {
+    //     return new Recorder(doc);
+    // }
 
     /++
      + Creates a Recorder base on an existing archive list
@@ -53,13 +59,13 @@ class Factory {
      + Params:
      +     archives = Archive list
      +/
-    Recorder recorder(Recorder.Archives archives) nothrow  {
-        return new Recorder(archives);
-    }
+    // Recorder recorder(Recorder.Archives archives) nothrow  {
+    //     return new Recorder(archives);
+    // }
 
-    Recorder recorder(R)(R range) if(isInputRange!R) {
-        return new Recorder(range);
-    }
+    // Recorder recorder(R)(R range) if(isInputRange!R) {
+    //     return new Recorder(range);
+    // }
 
 
     /++
@@ -67,21 +73,26 @@ class Factory {
      +  modify method
      +/
     @safe
-    class Recorder {
-        alias Archives=RedBlackTree!(Archive, (a,b) @safe => a.fingerprint < b.fingerprint);
-//        protected HashNet net;
-        private Archives _archives;
+    struct Recorder {
+        alias Archives=RedBlackTree!(Archive, (a,b) => a.fingerprint < b.fingerprint);
+        private HashNet net;
+        //private Archives _archives;
+        Archives _archives;
 //        @disable this();
 //        alias BranchRange=Archives.Range;
-//        this(ref return scope Recorder rec) {}
 
         /++
          + Creates a Recorder with an empty archive list
          + Params:
          +     net = Secure net should be the same as define in the DARTFile class
          +/
-        private this() pure nothrow {
-            this._archives = new Archives;
+        private this(HashNet net) pure nothrow
+            in {
+                assert(net);
+            }
+        do {
+            this.net=net;
+            _archives=new Archives;
         }
 
         /++
@@ -91,16 +102,17 @@ class Factory {
          +     net      = Secure net should be the same as define in the DARTFile class
          +     archives = Archive list
          +/
-        private this(Archives archives) pure nothrow {
+        private this(HashNet net, Archives archives) pure nothrow
+            in {
+                assert(net);
+            }
+        do {
+            this.net=net;
             this._archives=archives;
         }
 
-        @trusted private this(R)(R range) if(isInputRange!R) {
-            this._archives=new Archives(range);
-        }
-
-        private this(Document doc) {
-            this._archives = new Archives;
+        this(HashNet net, Document doc) {
+            this(net);
             foreach(e; doc[]) {
                 auto doc_archive=e.get!Document;
                 auto archive=new Archive(net, doc_archive);
@@ -108,26 +120,20 @@ class Factory {
             }
         }
 
-        package inout(Archives) archives() inout  {
+        @trusted inout(Archives) archives() inout  {
             return _archives;
-        }
-
-
-        auto opSlice() {
-            pragma(msg, typeof(this._archives));
-            return _archives[];
         }
 
         void removeOutOfRange(ushort from, ushort to){  //TODO: write unit tests
             if(from == to) return;
             immutable ushort to_origin=(to-from) & ushort.max;
-            foreach(archive; _archives){
+            foreach(archive; archives){
                 if(archive.type != Archive.Type.REMOVE){
                     short archiveSector = archive.fingerprint[0] | archive.fingerprint[1];
                     // writeln("CHECK STUBS: arcive fp:%s sector: %d", archive.fingerprint, archiveSector);
                     ushort sector_origin=(archiveSector-from) & ushort.max;
                     if( sector_origin >= to_origin ){
-                        _archives.removeKey(archive);
+                        archives.removeKey(archive);
                     }
                 }
             }
@@ -153,7 +159,7 @@ class Factory {
             }
         do {
             if ( _archives ) {
-                scope archive=new Archive(fingerprint, Archive.Type.NONE);
+                scope archive=new Archive(fingerprint);
                 scope range=_archives.equalRange(archive);
                 if ( (!range.empty) && ( archive.fingerprint == range.front.fingerprint ) ) {
                     return range.front;
@@ -229,8 +235,8 @@ class Factory {
             auto result=new HiBON;
             uint i;
             foreach(a; _archives) {
-                //result[i]=Document(a.toHiBON.serialize);
-                result[i]=a.toDoc;
+                result[i]=Document(a.toHiBON.serialize);
+                //result[i]=a.toDoc;
                 i++;
             }
             return result;
@@ -238,65 +244,50 @@ class Factory {
     }
 }
 
-/++
- +/
-@safe class Archive {
-    enum Type : int {
-        NONE = 0,
-            REMOVE = -1,
-            ADD = 1,
-            //    STUB
-            }
-    @Label("") immutable(Buffer) fingerprint;
-    @Label("$a", true) const Document doc;
-    @Label("$t", true) Type type;
 
-//            immutable uint index;
+@safe class Archive {
+    enum Type {
+        NONE,
+        REMOVE,
+        ADD,
+        STUB
+    }
+    immutable(Buffer) fingerprint;
+    const Document doc;
+    //immutable(Buffer) data;
+    //private Type _type;
+    Type _type;
+    immutable uint index;
     bool done;
 
-    bool isStub() const {
-        return .isStub(doc);
-    }
-
-    this(const HashNet net, const Document _doc, const Type type=Type.NONE)
+    this(HashNet net, const(Document) _doc, const Type type)
     in {
         assert(net);
     }
     do {
-        enum archiveLabel=GetLabel!(this.doc).name;
-        if (_doc.hasMember(archiveLabel)) {
-            doc=_doc[archiveLabel].get!Document;
+        if (type is Type.STUB) {
+            // The type is stub the data contains the fingerprint not data
+            fingerprint=doc.data;
         }
         else {
+            fingerprint=net.hashOf(_doc);
             doc=_doc;
         }
-        fingerprint=net.hashOf(doc);
-        enum typeLabel=GetLabel!(this.type).name;
-        if (type !is Type.NONE) {
-            this.type=type;
-        }
-        else if (doc.hasMember(typeLabel)) {
-            this.type=doc[typeLabel].get!Type;
-        }
-        //index=INDEX_NULL;
+        _type=type;
+        index=INDEX_NULL;
     }
 
-//    version(none)
-    this(const HashNet net, const Document _doc, const uint _index)
+    this(HashNet net, Document _doc, const uint _index)
     in {
         assert(net);
     }
     do {
-        assert(0, "Is this used");
         fingerprint=net.hashOf(_doc);
-        if (!.isStub(_doc)) {
-            doc=_doc;
-        }
-        //this.index=index;
-        type=Type.NONE;
+        this.doc=_doc;
+        this.index=index;
+        _type=Type.NONE;
     }
 
-    version(none)
     this(HashNet net, Document _doc) {
         uint type=_doc[Params.type].get!uint;
 //                Buffer _data;
@@ -338,74 +329,55 @@ class Factory {
             }
     }
 
-    const(Document) toDoc() const {
-        if (isStub) {
-            auto hibon=new HiBON;
-            enum fingerprintLabel=GetLabel!(this.fingerprint).name;
-            hibon[fingerprintLabel]=fingerprint;
-            return Document(hibon.serialize);
+    HiBON toHiBON() const {
+        auto hibon=new HiBON;
+        hibon[Params.type]=cast(uint)(_type);
+        if ( doc.length ) {
+            hibon[Params.archive]=doc;
         }
-        if (type !is Type.NONE) {
-            auto hibon=new HiBON;
-            enum typeLabel=GetLabel!(this.type).name;
-            hibon[typeLabel]=type;
-            enum archiveLabel=GetLabel!(this.doc).name;
-            hibon[archiveLabel]=doc;
-            return Document(hibon.serialize);
+        else {
+            hibon[Params.fingerprint]=fingerprint;
         }
-        return doc;
+        return hibon;
     }
 
-    // import tagion.hibon.HiBONJSON;
-    // mixin JSONString;
-    // HiBON toHiBON() const {
-    //     auto hibon=new HiBON;
-    //     hibon[Params.type]=cast(uint)(_type);
-    //     if ( doc.empty ) {
-    //         hibon[Params.archive]=doc;
-    //     }
-    //     else {
-    //         hibon[Params.fingerprint]=fingerprint;
-    //     }
-    //     return hibon;
-    // }
-
     // Define a remove archive by it fingerprint
-    private this(Buffer fingerprint, const Type type) {
-        this.type=type;
+    private this(Buffer fingerprint, const Type type=Type.REMOVE) {
+        _type=type;
+        index=INDEX_NULL;
         doc=Document();
+        //data=null;
         this.fingerprint=fingerprint;
     }
 
     final bool isRemove() pure const nothrow {
-        return type is Type.REMOVE;
+        return _type is Type.REMOVE;
     }
 
     final bool isAdd() pure const nothrow {
-        return type is Type.ADD;
+        return _type is Type.ADD;
     }
 
-    // final bool isStub() pure const nothrow {
-    //     return _type is Type.STUB;
-    // }
+    final bool isStub() pure const nothrow {
+        return _type is Type.STUB;
+    }
 
-    // final Type type() pure const nothrow {
-    //     return _type;
-    // }
+    final Type type() pure const nothrow {
+        return _type;
+    }
 
     /++
      + Returns:
      +     Generates Buffer to be store in the BlockFile
      +/
-    const(Document) store() const {
-        if (isStub) {
+    immutable(Buffer) store() const {
+        if ( _type is Type.STUB ) {
             auto hibon=new HiBON;
-            enum fingerprintLabel=GetLabel!(this.fingerprint).name;
-            hibon[fingerprintLabel]=fingerprint;
-            return Document(hibon.serialize);
+            hibon[Keywords.stub]=fingerprint;
+            return hibon.serialize;
         }
-        .check(!doc.empty, message("Archive is %s type and it must contain data", type));
-        return doc;
+        .check(doc.serialize.length !is 0, format("Archive is %s type and it must contain data", _type));
+        return doc.serialize;
     }
 
 }
