@@ -18,11 +18,12 @@ import std.traits;
 import std.exception : assumeUnique;
 import std.container.rbtree : RedBlackTree, redBlackTree;
 import tagion.basic.Basic : basename, Buffer, log2;
-import tagion.basic.TagionExceptions : Check, TagionException;
+import tagion.basic.TagionExceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
+import tagion.dart.DARTException : BlockFileException;
 
 // version(unittest) {
     import std.math : rint;
@@ -59,16 +60,6 @@ void truncate(ref File file, long length) {
 
 //alias BlockFileT=BlockFile!0x200;
 //private alias SmallBlockFile=BlockFile!0x40;
-
-/**
- * Exception type used by tagion.dart.BlockFile module
- */
-@safe
-class BlockFileException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( msg, file, line );
-    }
-}
 
 alias check=Check!BlockFileException;
 
