@@ -1,23 +1,9 @@
 module tagion.dart.DARTFile;
 
 private {
-    import tagion.basic.Basic : Buffer;
-    import tagion.Keywords;
-
-    import tagion.hibon.HiBON : HiBON;
-    import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONRecord : isStub;
-
-    import tagion.dart.BlockFile;
-
-    import tagion.crypto.SecureInterface : HashNet;
-
-
-    import tagion.utils.Miscellaneous : toHex=toHexString;
-
     import std.format;
     import std.stdio : File;
-    import std.container.rbtree : RedBlackTree;
+
     import std.algorithm.sorting : sort;
     import std.algorithm.iteration  : filter, each;
     import std.algorithm.searching : count, maxElement;
@@ -30,12 +16,24 @@ private {
     import std.conv : to;
     import core.thread : Fiber;
 
-    import tagion.utils.Miscellaneous : toHexString;
-    alias hex=toHexString;
+    import tagion.basic.Basic : Buffer;
+    import tagion.Keywords;
+
+    import tagion.hibon.HiBON : HiBON;
+//    import tagion.hibon.HiBONRecord : GetLabel, Label, HiBONPrefix, isStub, STUB;
+    import tagion.hibon.HiBONRecord : isStub;
+    import tagion.hibon.Document : Document;
+
+    import tagion.dart.BlockFile;
+    import tagion.dart.Recorder;
     import tagion.dart.DARTException : DARTException;
+
+    import tagion.crypto.SecureInterface : HashNet;
 
     import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;
+    import tagion.utils.Miscellaneous : toHex=toHexString;
+
 }
 
 /++
@@ -426,7 +424,7 @@ alias Recorder=Factory.Recorder;
             import std.stdio;
             foreach(key, index; _indices) {
                 if ( index !is INDEX_NULL ) {
-                    writefln("branches[%02X]=%s", key, _fingerprints[key].toHexString);
+                    writefln("branches[%02X]=%s", key, _fingerprints[key].toHex);
                 }
             }
 
