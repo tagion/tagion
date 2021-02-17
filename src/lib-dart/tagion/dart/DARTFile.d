@@ -94,6 +94,8 @@ alias Recorder=Factory.Recorder;
     immutable(string) filename;
 
     package HashNet net;
+    protected Factory manufactor;
+
 
     protected {
         BlockFile blockfile;
@@ -140,6 +142,7 @@ alias Recorder=Factory.Recorder;
     this(HashNet net, string filename) {
         blockfile=BlockFile(filename);
         this.net=net;
+        this.manufactor=Factory(net);
         this.filename=filename;
     }
 
@@ -156,15 +159,15 @@ alias Recorder=Factory.Recorder;
     /++
      Creates an empty Recorder
      +/
-    Recorder recorder() nothrow {
-        return Recorder(net);
+    Factory.Recorder recorder() nothrow {
+        return manufactor.recorder;
     }
 
     /++
      Creates an empty Recorder
      +/
-    Recorder recorder(const(Document) doc) {
-        return Recorder(net, doc);
+    Factory.Recorder recorder(const(Document) doc) {
+        return manufactor.recorder(doc);
     }
 
     /++
@@ -173,8 +176,8 @@ alias Recorder=Factory.Recorder;
      + Params:
      +     archives = Archive list
      +/
-    Recorder recorder(Recorder.Archives archives) nothrow {
-        return Recorder(net, archives);
+    Factory.Recorder recorder(Factory.Recorder.Archives archives) nothrow {
+        return manufactor.recorder(archives);
     }
 
     /++
@@ -858,7 +861,7 @@ alias Recorder=Factory.Recorder;
         uint i;
         // writeln(archives.length);
         foreach(a; archives) {
-            result[i]=Document(a.toHiBON.serialize);
+            result[i]=a.toDoc;
             i++;
         }
         return result;
@@ -867,7 +870,7 @@ alias Recorder=Factory.Recorder;
     Recorder loads(Range)(Range fingerprints, Archive.Type type=Archive.Type.REMOVE) {
 	pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         import std.algorithm.comparison : min;
-        auto result=Recorder(net);
+        auto result=recorder;
         void traverse_dart(
             const uint branch_index,
             Buffer[]  ordered_fingerprints,
@@ -1089,7 +1092,7 @@ alias Recorder=Factory.Recorder;
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The A new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart=new Archive(net, doc, branch_index);
+                            scope archive_in_dart=new Archive(net, doc);
                             scope(success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -1106,16 +1109,17 @@ alias Recorder=Factory.Recorder;
                                             return Leave(INDEX_NULL, null);
                                         }
                                         else {
-                                            return Leave(blockfile.save(single_archive.store).begin_index,
+                                            return Leave(blockfile.save(single_archive.store.serialize).begin_index,
                                                 single_archive.fingerprint);
                                         }
                                     }
                                     else {
 
-                                        scope archives=new Recorder.Archives;
-                                        archives.insert(archive_in_dart);
-                                        archives.insert(single_archive);
-                                        scope archives_range=archives[];
+                                        scope recorder=manufactor.recorder;
+
+                                        recorder.insert(archive_in_dart);
+                                        recorder.insert(single_archive);
+                                        scope archives_range=recorder.archives[];
                                         do {
                                             scope sub_range=RimKeyRange(archives_range, rim);
                                             scope sub_archive=sub_range.front;
@@ -1128,7 +1132,7 @@ alias Recorder=Factory.Recorder;
                                 }
                             }
                             else {
-                                scope archives=new Recorder.Archives(range);
+                                scope archives=manufactor.recorder(range).archives;
                                 range.force_empty;
 //                                    assert(range.empty);
                                 scope equal_range=archives.equalRange(archive_in_dart);
@@ -1170,11 +1174,11 @@ alias Recorder=Factory.Recorder;
                                     if ( rim is RIMS_IN_SECTOR) {
                                         // Return a branch with as single leave when the leave is on the on
                                         // the edge between the sector
-                                        branches[lonely_rim_key]=Leave(blockfile.save(single_archive.store).begin_index, single_archive.fingerprint);
+                                        branches[lonely_rim_key]=Leave(blockfile.save(single_archive.store.serialize).begin_index, single_archive.fingerprint);
                                         return Leave(blockfile.save(branches.toHiBON.serialize).begin_index, branches.fingerprint(this));
                                     }
                                     else {
-                                        return Leave(blockfile.save(single_archive.store).begin_index, single_archive.fingerprint);
+                                        return Leave(blockfile.save(single_archive.store.serialize).begin_index, single_archive.fingerprint);
                                     }
                                 }
                             }
@@ -1432,9 +1436,9 @@ alias Recorder=Factory.Recorder;
                 //     equal!(q{a.data == b.data})(A.archives[], B.archives[]);
             }
 
-            Buffer write(DARTFile dart, const(ulong[]) table, out Recorder recorder, bool isStubs = false) {
-                recorder = isStubs ? stubs(dart.net, table) : records(dart.net, table);
-                return dart.modify(recorder);
+            Buffer write(DARTFile dart, const(ulong[]) table, out Factory.Recorder rec, bool isStubs = false) {
+                rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
+                return dart.modify(rec);
             }
 
             Buffer[] fingerprints(Recorder recorder) {
@@ -1455,17 +1459,17 @@ alias Recorder=Factory.Recorder;
                 return check(recorder, find_recorder);
             }
 
-            Recorder records(HashNet net, const(ulong[]) table) {
-                auto recorder=Recorder(net);
+            Factory.Recorder records(Factory factory, const(ulong[]) table) {
+                auto rec = factory.recorder;
                 foreach(t; table) {
                     const doc=DARTFakeNet.fake_doc(t);
-                    recorder.add(doc);
+                    rec.add(doc);
                 }
-                return recorder;
+                return rec;
             }
 
-            Recorder stubs(HashNet net, const(ulong[]) table){
-                auto rec = Recorder(net);
+            Factory.Recorder stubs(Factory factory, const(ulong[]) table){
+                auto rec = factory.recorder;
                 foreach(t; table) {
                     import std.bitmanip;
                     immutable fp = nativeToBigEndian(t).idup;
@@ -1491,6 +1495,7 @@ alias Recorder=Factory.Recorder;
 
 //        @safe
         auto net=new DARTFakeNet;
+        auto manufactor=Factory(net);
 
         immutable(ulong[]) table=[
             //  RIM 2 test (rim=2)
@@ -1548,17 +1553,17 @@ alias Recorder=Factory.Recorder;
 //            *cast(ulong*)(a_in.fingerprint.ptr[0..ulong.sizeof]);
 
 //                assert(a_table == table[0]);
-            auto data_out=a_in.toHiBON.serialize;
-            auto doc_out=Document(data_out);
+//            auto data_out=a_in.toHiBON.serialize;
+            auto doc_out=a_in.toDoc; //Document(data_out);
             auto a_out=new Archive(net, doc_out);
 
             // Test recorder
-            auto recorder=Recorder(net);
+            auto recorder=manufactor.recorder;
             recorder.insert(a_in);
-            auto recorder_data_out=recorder.toHiBON.serialize;
+//            auto recorder_data_out=recorder.toHiBON.serialize;
             //
-            auto recorder_doc_out=Document(recorder_data_out);
-            auto recorder_out=Recorder(net, recorder_doc_out);
+            auto recorder_doc_out=recorder.toDoc; //Document(recorder_data_out);
+            auto recorder_out=manufactor.recorder(recorder_doc_out);
 //                auto recorder_archives=recorder_out.archives;
             auto recorder_archive=recorder_out.archives[].front;
             assert(recorder_archive.fingerprint == a_in.fingerprint);
@@ -1566,7 +1571,7 @@ alias Recorder=Factory.Recorder;
         }
 
         { // Test RimKeyRange
-            auto recorder=Recorder(net);
+            auto recorder=manufactor.recorder;
             auto test_tabel=table[0..8].dup;
             foreach(t; test_tabel) {
                 const doc=DARTFakeNet.fake_doc(t);
@@ -1582,7 +1587,7 @@ alias Recorder=Factory.Recorder;
 
             uint i;
             foreach(a; recorder.archives) {
-                assert(a.doc.data == net.fake_doc(test_tabel[i]).data);
+                assert(a.filed.data == net.fake_doc(test_tabel[i]).data);
                 i++;
             }
             //assert(0);
@@ -1699,7 +1704,8 @@ alias Recorder=Factory.Recorder;
 
             //dart_A.dump;
             //dart_B.dump;
-            auto remove_recorder=records(net, table[8..10]);
+            auto remove_recorder=records(manufactor, table[8..10]);
+
             foreach(ref a; remove_recorder._archives) {
                 a.type=Archive.Type.REMOVE;
             }
@@ -1725,7 +1731,8 @@ alias Recorder=Factory.Recorder;
 
             auto bulleye_A=write(dart_A, random_table, recorder_A);
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
-            auto remove_recorder=records(net, random_table[N-100..N]);
+            auto remove_recorder=records(manufactor, random_table[N-100..N]);
+
             foreach(ref a; remove_recorder._archives) {
                 a.type=Archive.Type.REMOVE;
             }
@@ -1777,15 +1784,16 @@ alias Recorder=Factory.Recorder;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
 
             auto bulleye_A=write(dart_A, random_table, recorder_A);
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
-            auto remove_recorder=records(net, random_table[N-100..N]);
+            auto remove_recorder=records(manufactor, random_table[N-100..N]);
+
             foreach(ref a; remove_recorder._archives) {
                 a.type=Archive.Type.REMOVE;
             }
@@ -1807,8 +1815,8 @@ alias Recorder=Factory.Recorder;
                 ];
             create_dart(filename_A);
             create_dart(filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //

@@ -201,7 +201,7 @@ class DART : DARTFile, HiRPC.Supports {
 
         const(HiRPCSender) dartModify(scope const Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
             auto params=new HiBON;
-            params[Params.recorder]=recorder.toHiBON;
+            params[Params.recorder]=recorder.toDoc;
             return hirpc.dartModify(params, id);
         }
     }
@@ -269,7 +269,7 @@ class DART : DARTFile, HiRPC.Supports {
         scope doc_fingerprints=received.method.params[Params.fingerprints].get!(Document);
         scope fingerprints=doc_fingerprints.range!(Buffer[]);
         scope recorder=loads(fingerprints, Archive.Type.ADD);
-        return hirpc.result(received, recorder.toHiBON);
+        return hirpc.result(received, recorder.toDoc);
     }
     /++
      +  The dartRim method is called from opCall function
@@ -335,7 +335,7 @@ class DART : DARTFile, HiRPC.Supports {
                     const doc=Document(data);
                     auto super_recorder=recorder;
                     super_recorder.add(doc);
-                    hibon_params[Params.recorder]=super_recorder.toHiBON;
+                    hibon_params[Params.recorder]=super_recorder.toDoc;
                 }
             }
         }
@@ -388,7 +388,7 @@ class DART : DARTFile, HiRPC.Supports {
         HiRPC.check(!read_only, "The DART is read only");
         //HiRPC.check_element!Document(received.params, Params.recorder);
         scope recorder_doc=received.method.params[Params.recorder].get!Document;
-        scope recorder=Recorder(net, recorder_doc);
+        scope recorder=manufactor.recorder(recorder_doc);
         immutable bullseye=modify(recorder);
         auto hibon_params=new HiBON;
         hibon_params[Params.bullseye]=bullseye;
@@ -487,7 +487,7 @@ class DART : DARTFile, HiRPC.Supports {
             if ( !recorder.empty ) {
                 auto hibon=new HiBON;
                 hibon[Params.index]=index;
-                hibon[Params.recorder]=recorder.toHiBON;
+                hibon[Params.recorder]=recorder.toDoc;
                 auto data=hibon.serialize;
                 auto doc=Document(data);
 //                writefln("--->%s", doc.toText);
@@ -600,7 +600,7 @@ class DART : DARTFile, HiRPC.Supports {
                 if ( !result_branches.response.result.hasMember(Params.branches) ) {
                     if ( result_branches.response.result.hasMember(Params.recorder) ) {
 
-                        scope foreign_recoder=Recorder(net, result_branches.method.params);
+                        scope foreign_recoder=manufactor.recorder(result_branches.method.params);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -616,7 +616,7 @@ class DART : DARTFile, HiRPC.Supports {
                     //
                     scope request_archives=dartRead(foreign_branches.fingerprints, hirpc, id);
                     scope result_archives=sync.query(request_archives);
-                    scope foreign_recoder=Recorder(net, result_archives.response.result);
+                    scope foreign_recoder=manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
@@ -697,7 +697,7 @@ class DART : DARTFile, HiRPC.Supports {
 
                 scope replay_recorder_doc=doc[Params.recorder].get!Document;
 
-                scope replay_recorder=Recorder(net, replay_recorder_doc);
+                scope replay_recorder=manufactor.recorder(replay_recorder_doc);
                 scope action_recorder=recorder;
                 foreach(a; replay_recorder.archives[]) {
                     static if (remove) {

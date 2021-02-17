@@ -50,11 +50,13 @@ class ModifyRequestHandler : ResponseHandler{
         HiRPC hirpc;
         const string task_name;
         HiRPCReceiver receiver;
+
     }
     this(HiRPC hirpc, const string task_name, const HiRPCReceiver receiver){
         this.hirpc = hirpc;
         this.task_name = task_name;
         this.receiver = receiver;
+
     }
 
     void setResponse(Buffer response){
@@ -74,7 +76,8 @@ class ModifyRequestHandler : ResponseHandler{
             auto tid = locate(task_name);
             if(tid != Tid.init){
                 send(tid, response);
-            }else{
+            }
+            else{
                 log("ModifyRequestHandler: couldn't locate task: %s", task_name);
             }
         }
@@ -83,10 +86,12 @@ class ModifyRequestHandler : ResponseHandler{
 
 class ReadRequestHandler : ResponseHandler{
     private{
+        pragma(msg, "Why is the a Buffer[Buffer] Why not just a Recorder? It seems to solve the same problem");
         Buffer[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
         HiRPCReceiver receiver;
+        Factory manufactor;
     }
     immutable(string) task_name;
     this(const Buffer[] fp, HiRPC hirpc, const string task_name, const HiRPCReceiver receiver){
@@ -94,15 +99,16 @@ class ReadRequestHandler : ResponseHandler{
         this.hirpc = hirpc;
         this.task_name = task_name;
         this.receiver = receiver;
+        manufactor=Factory(hirpc.net);
     }
 
     void setResponse(Buffer response){
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        scope foreign_recoder=Factory.Recorder(hirpc.net, received.method.params);
+        scope foreign_recoder=manufactor.recorder( received.method.params);
         foreach(archive; foreign_recoder.archives){
-            fp_result[archive.fingerprint] = archive.toHiBON.serialize;
+            fp_result[archive.fingerprint] = archive.toDoc.serialize;
             import std.algorithm: arrRemove = remove, countUntil;
             requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
         }
@@ -119,13 +125,13 @@ class ReadRequestHandler : ResponseHandler{
         }
         else{
             auto empty_hirpc = HiRPC(null);
-            auto recorder = Factory.Recorder(hirpc.net);
+            auto recorder = manufactor.recorder;
             foreach(fp, doc; fp_result){
                 recorder.insert(new Archive(hirpc.net, Document(doc)));
             }
             auto tid = locate(task_name);   //TODO: moveout outside
-            if(tid != Tid.init){
-                const result =  empty_hirpc.result(receiver, recorder.toHiBON);
+            if (tid != Tid.init){
+                const result =  empty_hirpc.result(receiver, recorder.toDoc);
                 send(tid, result.toDoc.serialize);
             }
             else{

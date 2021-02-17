@@ -1,5 +1,8 @@
 module tagion.dart.Recorder;
 
+import std.stdio;
+import tagion.hibon.HiBONJSON;
+
 import std.container.rbtree : RedBlackTree;
 import std.range.primitives : isInputRange;
 import std.format;
@@ -28,7 +31,7 @@ private alias check=Check!DARTRecorderException;
 
 //    alias recorder=factory.recorder;
 @safe
-struct Factory {
+class Factory {
 
 
     const HashNet net;
@@ -36,22 +39,22 @@ struct Factory {
     protected this(const HashNet net) {
         this.net=net;
     }
-    // static Factory opCall(const HashNet net) {
-    //     return new Factory(net);
-    // }
+    static Factory opCall(const HashNet net) {
+        return new Factory(net);
+    }
     /++
      Creates an empty Recorder
      +/
-    // Recorder recorder() nothrow {
-    //     return new Recorder;
-    // }
+    Recorder recorder() nothrow {
+        return new Recorder;
+    }
 
     /++
      Creates an empty Recorder
      +/
-    // Recorder recorder(const(Document) doc) {
-    //     return new Recorder(doc);
-    // }
+    Recorder recorder(const(Document) doc) {
+        return new Recorder(doc);
+    }
 
     /++
      + Creates a Recorder base on an existing archive list
@@ -59,13 +62,13 @@ struct Factory {
      + Params:
      +     archives = Archive list
      +/
-    // Recorder recorder(Recorder.Archives archives) nothrow  {
-    //     return new Recorder(archives);
-    // }
+    Recorder recorder(Recorder.Archives archives) nothrow  {
+        return new Recorder(archives);
+    }
 
-    // Recorder recorder(R)(R range) if(isInputRange!R) {
-    //     return new Recorder(range);
-    // }
+    Recorder recorder(R)(R range) if(isInputRange!R) {
+        return new Recorder(range);
+    }
 
 
     /++
@@ -73,10 +76,10 @@ struct Factory {
      +  modify method
      +/
     @safe
-    struct Recorder {
-        alias Archives=RedBlackTree!(Archive, (a,b) => a.fingerprint < b.fingerprint);
-        private HashNet net;
-        //private Archives _archives;
+    class Recorder {
+        alias Archives=RedBlackTree!(Archive, (a,b) @safe => a.fingerprint < b.fingerprint);
+//        protected HashNet net;
+//        private Archives _archives;
         Archives _archives;
 //        @disable this();
 //        alias BranchRange=Archives.Range;
@@ -86,13 +89,8 @@ struct Factory {
          + Params:
          +     net = Secure net should be the same as define in the DARTFile class
          +/
-        private this(HashNet net) pure nothrow
-            in {
-                assert(net);
-            }
-        do {
-            this.net=net;
-            _archives=new Archives;
+        private this() pure nothrow {
+            this._archives = new Archives;
         }
 
         /++
@@ -102,17 +100,16 @@ struct Factory {
          +     net      = Secure net should be the same as define in the DARTFile class
          +     archives = Archive list
          +/
-        private this(HashNet net, Archives archives) pure nothrow
-            in {
-                assert(net);
-            }
-        do {
-            this.net=net;
+        private this(Archives archives) pure nothrow {
             this._archives=archives;
         }
 
-        this(HashNet net, Document doc) {
-            this(net);
+        @trusted private this(R)(R range) if(isInputRange!R) {
+            this._archives=new Archives(range);
+        }
+
+        private this(Document doc) {
+            this._archives = new Archives;
             foreach(e; doc[]) {
                 auto doc_archive=e.get!Document;
                 auto archive=new Archive(net, doc_archive);
@@ -159,7 +156,7 @@ struct Factory {
             }
         do {
             if ( _archives ) {
-                scope archive=new Archive(fingerprint);
+                scope archive=new Archive(fingerprint, Archive.Type.NONE);
                 scope range=_archives.equalRange(archive);
                 if ( (!range.empty) && ( archive.fingerprint == range.front.fingerprint ) ) {
                     return range.front;
@@ -231,15 +228,16 @@ struct Factory {
             }
         }
 
-        HiBON toHiBON() const {
+        const(Document) toDoc() const {
+//        HiBON toHiBON() const {
             auto result=new HiBON;
             uint i;
             foreach(a; _archives) {
-                result[i]=Document(a.toHiBON.serialize);
+                result[i]=a.toDoc; //Document(a.toHiBON.serialize);
                 //result[i]=a.toDoc;
                 i++;
             }
-            return result;
+            return Document(result);
         }
     }
 }
@@ -250,103 +248,65 @@ struct Factory {
         NONE = 0,
             REMOVE = -1,
             ADD = 1,
-            STUB
             }
-    @Label("") immutable(Buffer) fingerprint;
-    @Label("$a", true) const Document doc;
+
+    @Label(STUB, true) immutable(Buffer) fingerprint;
+    @Label("$a", true) const Document filed;
+    enum archiveLabel=GetLabel!(this.filed).name;
+    enum fingerprintLabel=GetLabel!(this.fingerprint).name;
+    enum typeLabel=GetLabel!(this.type).name;
     @Label("$t", true) Type type;
+    @Label("") bool done;
 
-//            immutable uint index;
-    bool done;
-
-    this(HashNet net, const(Document) _doc, const Type t)
+    mixin JSONString;
+    this(const HashNet net, const(Document) doc, const Type t=Type.NONE, const bool print=false)
     in {
         assert(net);
+        assert(!doc.empty);
     }
     do {
-        if (t is Type.STUB) {
-            // The type is stub the data contains the fingerprint not data
-            fingerprint=doc.data;
+        if (.isStub(doc)) {
+            fingerprint=net.hashOf(doc);
         }
         else {
-            fingerprint=net.hashOf(_doc);
-            doc=_doc;
-        }
-        type=t;
-        //index=INDEX_NULL;
-    }
-
-//    version(none)
-    this(HashNet net, Document _doc, const uint _index)
-    in {
-        assert(net);
-    }
-    do {
-        fingerprint=net.hashOf(_doc);
-        this.doc=_doc;
-        //      this.index=index;
-        type=Type.NONE;
-    }
-
-    this(HashNet net, Document _doc) {
-        uint doc_type=_doc[Params.type].get!uint;
-//                Buffer _data;
-        Buffer _fingerprint;
-        Document inner_doc;
-        scope(success) {
-            type=cast(Type)doc_type;
-            doc=inner_doc;
-            if ( _fingerprint ) {
-                fingerprint=_fingerprint;
+            if (doc.hasMember(archiveLabel)) {
+                filed=doc[archiveLabel].get!Document;
             }
             else {
-                fingerprint=net.hashOf(doc);
+                filed=doc;
             }
+            fingerprint=net.hashOf(filed);
         }
-        // scope(exit) {
-        //     this.index=INDEX_NULL;
-        // }
-        with(Type) switch(doc_type) {
-            case ADD, NONE:
-                const archive_doc=_doc[Params.archive].get!Document;
-                inner_doc=archive_doc;
-                // _data=archive_doc.data.idup;
+        if (print) {
+            writefln("Archive filed=%s", filed.toPretty);
+            writefln("Archive   doc=%s", doc.toPretty);
+        }
+        type=t;
+        if (type is Type.NONE && doc.hasMember(typeLabel)) {
+            type=doc[typeLabel].get!Type;
+        }
 
-                break;
-            case REMOVE:
-                if ( _doc.hasMember(Params.fingerprint) ) {
-                    goto case STUB;
-                }
-                else {
-                    goto case NONE;
-                }
-                break;
-            case STUB:
-                _fingerprint=_doc[Params.fingerprint].get!Buffer;
-                break;
-            default:
-                .check(0, format("Unsupported archive type number=%d", type));
-            }
     }
 
-    HiBON toHiBON() const {
+    const(Document) toDoc() const {
         auto hibon=new HiBON;
-        hibon[Params.type]=cast(uint)(type);
-        if ( doc.length ) {
-            hibon[Params.archive]=doc;
+        if (isStub) {
+            hibon[fingerprintLabel]=fingerprint;
+//            return Document(hibon);
         }
         else {
-            hibon[Params.fingerprint]=fingerprint;
+            hibon[archiveLabel]=filed;
         }
-        return hibon;
+        if (type !is Type.NONE) {
+            hibon[typeLabel]=type;
+        }
+        return Document(hibon);
     }
 
     // Define a remove archive by it fingerprint
-    private this(Buffer fingerprint, const Type t=Type.REMOVE) {
+    private this(Buffer fingerprint, const Type t=Type.NONE) {
         type=t;
-        //index=INDEX_NULL;
-        doc=Document();
-        //data=null;
+        filed=Document();
         this.fingerprint=fingerprint;
     }
 
@@ -359,7 +319,7 @@ struct Factory {
     }
 
     final bool isStub() pure const nothrow {
-        return type is Type.STUB;
+        return filed.empty;
     }
 
     // final Type type() pure const nothrow {
@@ -370,14 +330,156 @@ struct Factory {
      + Returns:
      +     Generates Buffer to be store in the BlockFile
      +/
-    immutable(Buffer) store() const {
-        if ( type is Type.STUB ) {
-            auto hibon=new HiBON;
-            hibon[Keywords.stub]=fingerprint;
-            return hibon.serialize;
-        }
-        .check(doc.serialize.length !is 0, format("Archive is %s type and it must contain data", type));
-        return doc.serialize;
+    const(Document) store() const
+    out(result) {
+        assert(!result.empty, format("Archive is %s type and it must contain data", type));
     }
+    do {
+        if ( filed.empty ) {
+            auto hibon=new HiBON;
+            hibon[fingerprintLabel]=fingerprint;
+            return Document(hibon);
+        }
+        return filed;
+    }
+
+
+}
+
+unittest {
+    import std.stdio;
+    import std.format;
+    import tagion.hibon.HiBONJSON;
+    import tagion.dart.DARTFakeNet;
+    import tagion.utils.Miscellaneous : toHex=toHexString;
+    import std.string : representation;
+
+
+    auto net=new DARTFakeNet;
+    auto manufactor=Factory(net);
+
+    static assert(isHiBONRecord!Archive);
+    writeln("### Start Archve unittest");
+    Document filed_doc; // This is the data which is filed in the DART
+    {
+        auto hibon=new HiBON;
+        hibon["text"]="Some text";
+        filed_doc=Document(hibon);
+    }
+    immutable filed_doc_fingerprint=net.hashOf(filed_doc);
+
+    writefln("filed_doc=%s", filed_doc.toPretty);
+    Archive a;
+    { // Simple archive
+        a=new Archive(net, filed_doc);
+        writefln("a=%s", a.toPretty);
+        assert(!a.isStub);
+        assert(a.fingerprint == filed_doc_fingerprint);
+        assert(a.filed == filed_doc);
+        assert(a.type is Archive.Type.NONE);
+
+        const archived_doc=a.toDoc;
+        assert(archived_doc[Archive.archiveLabel].get!Document == filed_doc);
+        const result_a=new Archive(net, archived_doc);
+        writefln("result_a=%s", result_a.toPretty);
+        assert(result_a.fingerprint == a.fingerprint);
+        assert(result_a.filed == a.filed);
+        assert(result_a.type == a.type);
+        assert(!result_a.isStub);
+        assert(result_a.store == filed_doc);
+
+    }
+
+    a.type = Archive.Type.ADD;
+    { // Simple archive with ADD/REMOVE Type
+        // a=new Archive(net, filed_doc);
+        writefln("a=%s", a.toPretty);
+        assert(!a.isStub);
+        assert(a.fingerprint == filed_doc_fingerprint);
+        const archived_doc=a.toDoc;
+
+        { // Same type
+            const result_a=new Archive(net, archived_doc);
+            assert(result_a.fingerprint == a.fingerprint);
+            assert(result_a.filed == a.filed);
+            assert(result_a.type == a.type);
+            assert(!result_a.isStub);
+            assert(result_a.store == filed_doc);
+        }
+
+        { // Chnage type
+            const result_a=new Archive(net, archived_doc, Archive.Type.REMOVE);
+            assert(result_a.fingerprint == a.fingerprint);
+            assert(result_a.filed == a.filed);
+            assert(result_a.type == Archive.Type.REMOVE);
+            assert(!result_a.isStub);
+            assert(result_a.store == filed_doc);
+        }
+    }
+
+
+    { // Create Stub
+        auto stub=new Archive(a.fingerprint);
+        writefln("stub=%s", stub.toPretty);
+        assert(stub.isStub);
+        assert(stub.fingerprint == a.fingerprint);
+        assert(stub.filed.empty);
+        const filed_stub=stub.toDoc;
+        assert(filed_stub[STUB].get!Buffer == a.fingerprint);
+        assert(isStub(filed_stub));
+        writefln("stub.store=%s", stub.store.toPretty);
+
+        {
+            const result_stub=new Archive(net, filed_stub, Archive.Type.NONE, true);
+            assert(result_stub.isStub);
+            writefln("stub=%J", result_stub);
+            writefln("filed=%s", result_stub.filed.toPretty);
+            writefln("net.hashOf(filed_stub) =%s", net.hashOf(filed_stub).toHex);
+            writefln("result_stub.fingerprint=%s", result_stub.fingerprint.toHex);
+            writefln("stub.fingerprint       =%s", stub.fingerprint.toHex);
+
+            assert(result_stub.fingerprint == stub.fingerprint);
+            assert(result_stub.type == stub.type);
+            assert(result_stub.filed.empty);
+            assert(result_stub.toDoc == stub.toDoc);
+            assert(result_stub.store == stub.store);
+            assert(isStub(result_stub.store));
+        }
+
+        { // Stub with type
+            stub.type = Archive.Type.REMOVE;
+            const result_stub=new Archive(net, stub.toDoc, Archive.Type.NONE, true);
+            assert(result_stub.fingerprint == stub.fingerprint);
+            assert(result_stub.type == stub.type);
+            assert(result_stub.type == Archive.Type.REMOVE);
+            assert(result_stub.store == stub.store);
+            assert(isStub(result_stub.store));
+
+            writefln("stub=%s", stub.toPretty);
+
+        }
+    }
+
+    { // Filed archive with hash-key
+        enum key_name="#name";
+        enum keytext="some_key_text";
+        immutable hashkey_fingerprint=net.calcHash(keytext.representation);
+        Document filed_hash;
+        {
+            auto hibon=new HiBON;
+            hibon[key_name]=keytext;
+            filed_hash=Document(hibon);
+        }
+        auto hash=new Archive(net, filed_hash, Archive.Type.NONE, true);
+        writefln("net.hashOf(filed_hash) =%s", net.hashOf(filed_hash).toHex);
+        writefln("hashkey_fingerprint    =%s", hashkey_fingerprint.toHex);
+        writefln("hash.fingerprint       =%s", hash.fingerprint.toHex);
+
+        assert(hash.fingerprint == hashkey_fingerprint);
+    }
+//        assert(stub.fingerprint == a.fingerprint);
+
+
+    writeln("### End Archve unittest");
 
 }
