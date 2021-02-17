@@ -1,6 +1,6 @@
 module tagion.dart.Recorder;
 
-import std.stdio;
+//import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import std.container.rbtree : RedBlackTree;
@@ -277,10 +277,6 @@ class Factory {
             }
             fingerprint=net.hashOf(filed);
         }
-        if (print) {
-            writefln("Archive filed=%s", filed.toPretty);
-            writefln("Archive   doc=%s", doc.toPretty);
-        }
         type=t;
         if (type is Type.NONE && doc.hasMember(typeLabel)) {
             type=doc[typeLabel].get!Type;
@@ -346,8 +342,8 @@ class Factory {
 
 }
 
-unittest {
-    import std.stdio;
+unittest { // Archive
+//    import std.stdio;
     import std.format;
     import tagion.hibon.HiBONJSON;
     import tagion.dart.DARTFakeNet;
@@ -359,7 +355,6 @@ unittest {
     auto manufactor=Factory(net);
 
     static assert(isHiBONRecord!Archive);
-    writeln("### Start Archve unittest");
     Document filed_doc; // This is the data which is filed in the DART
     {
         auto hibon=new HiBON;
@@ -368,11 +363,9 @@ unittest {
     }
     immutable filed_doc_fingerprint=net.hashOf(filed_doc);
 
-    writefln("filed_doc=%s", filed_doc.toPretty);
     Archive a;
     { // Simple archive
         a=new Archive(net, filed_doc);
-        writefln("a=%s", a.toPretty);
         assert(!a.isStub);
         assert(a.fingerprint == filed_doc_fingerprint);
         assert(a.filed == filed_doc);
@@ -381,7 +374,6 @@ unittest {
         const archived_doc=a.toDoc;
         assert(archived_doc[Archive.archiveLabel].get!Document == filed_doc);
         const result_a=new Archive(net, archived_doc);
-        writefln("result_a=%s", result_a.toPretty);
         assert(result_a.fingerprint == a.fingerprint);
         assert(result_a.filed == a.filed);
         assert(result_a.type == a.type);
@@ -393,7 +385,6 @@ unittest {
     a.type = Archive.Type.ADD;
     { // Simple archive with ADD/REMOVE Type
         // a=new Archive(net, filed_doc);
-        writefln("a=%s", a.toPretty);
         assert(!a.isStub);
         assert(a.fingerprint == filed_doc_fingerprint);
         const archived_doc=a.toDoc;
@@ -420,24 +411,16 @@ unittest {
 
     { // Create Stub
         auto stub=new Archive(a.fingerprint);
-        writefln("stub=%s", stub.toPretty);
         assert(stub.isStub);
         assert(stub.fingerprint == a.fingerprint);
         assert(stub.filed.empty);
         const filed_stub=stub.toDoc;
         assert(filed_stub[STUB].get!Buffer == a.fingerprint);
         assert(isStub(filed_stub));
-        writefln("stub.store=%s", stub.store.toPretty);
 
         {
             const result_stub=new Archive(net, filed_stub, Archive.Type.NONE, true);
             assert(result_stub.isStub);
-            writefln("stub=%J", result_stub);
-            writefln("filed=%s", result_stub.filed.toPretty);
-            writefln("net.hashOf(filed_stub) =%s", net.hashOf(filed_stub).toHex);
-            writefln("result_stub.fingerprint=%s", result_stub.fingerprint.toHex);
-            writefln("stub.fingerprint       =%s", stub.fingerprint.toHex);
-
             assert(result_stub.fingerprint == stub.fingerprint);
             assert(result_stub.type == stub.type);
             assert(result_stub.filed.empty);
@@ -454,9 +437,6 @@ unittest {
             assert(result_stub.type == Archive.Type.REMOVE);
             assert(result_stub.store == stub.store);
             assert(isStub(result_stub.store));
-
-            writefln("stub=%s", stub.toPretty);
-
         }
     }
 
@@ -471,15 +451,6 @@ unittest {
             filed_hash=Document(hibon);
         }
         auto hash=new Archive(net, filed_hash, Archive.Type.NONE, true);
-        writefln("net.hashOf(filed_hash) =%s", net.hashOf(filed_hash).toHex);
-        writefln("hashkey_fingerprint    =%s", hashkey_fingerprint.toHex);
-        writefln("hash.fingerprint       =%s", hash.fingerprint.toHex);
-
         assert(hash.fingerprint == hashkey_fingerprint);
     }
-//        assert(stub.fingerprint == a.fingerprint);
-
-
-    writeln("### End Archve unittest");
-
 }
