@@ -612,7 +612,7 @@ unittest { // check is_index
  Returns:
  true if the value of key a is less than the value of key b
 +/
-@safe @nogc bool less_than(string a, string b) pure
+@safe @nogc bool less_than(string a, string b) pure nothrow
     in {
         assert(a.length > 0);
         assert(b.length > 0);

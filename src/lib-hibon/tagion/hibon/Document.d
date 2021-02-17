@@ -147,7 +147,7 @@ static assert(uint.sizeof == 4);
      The deligate used by the valid function to report errors
      +/
     alias ErrorCallback = void delegate(scope const(Element) current,
-        scope const(Element) previous);
+        scope const(Element) previous) nothrow;
 
     /++
      This function check's if the Document is a valid HiBON format
@@ -156,7 +156,8 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
-    Element.ErrorCode valid(ErrorCallback error_callback =null) const {
+    Element.ErrorCode valid(ErrorCallback error_callback =null) const nothrow {
+        import tagion.basic.TagionExceptions : TagionException;
         auto previous=this[];
         bool not_first;
         foreach(ref e; this[]) {
@@ -168,7 +169,18 @@ static assert(uint.sizeof == 4);
                 error_code = Element.ErrorCode.KEY_ORDER;
             }
             else if ( e.type is Type.DOCUMENT ) {
-                error_code = e.get!(Document).valid(error_callback);
+                try {
+                    error_code = e.get!(Document).valid(error_callback);
+                }
+                catch (HiBONException e) {
+                    error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
+                }
+                catch (TagionException e) {
+                    error_code = Element.ErrorCode.UNKNOW_TAGION;
+                }
+                catch (Exception e) {
+                    error_code = Element.ErrorCode.UNKNOW;
+                }
             }
             else {
                 error_code = e.valid;
@@ -194,7 +206,7 @@ static assert(uint.sizeof == 4);
      true if the Document is inorder
      +/
     @trusted
-    bool isInorder() const {
+    bool isInorder() const nothrow {
         try {
             return valid() is Element.ErrorCode.NONE;
         }
@@ -242,8 +254,6 @@ static assert(uint.sizeof == 4);
             bool empty() {
                 return _data.length is 0;
             }
-
-
             /**
              * InputRange primitive operation that returns the currently iterated element.
              */
@@ -1212,7 +1222,9 @@ static assert(uint.sizeof == 4);
                 ARRAY_SIZE_BAD, /// The binary-array size in bytes is not a multipla of element size in the array
                 KEY_NOT_DEFINED, /// Key in the target was not defined
                 BAD_SUB_DOCUMENT, /// Error convering sub document
-                NOT_AN_ARRAY      /// Not an Document array
+                NOT_AN_ARRAY,      /// Not an Document array
+                UNKNOW_TAGION,  /// Unknow error (used when some underlaying function thows an TagionException
+                UNKNOW          /// Unknow error (used when some underlaying function thows an Exception
             }
 
             /++

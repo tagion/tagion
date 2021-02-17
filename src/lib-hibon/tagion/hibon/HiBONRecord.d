@@ -28,9 +28,41 @@ enum isHiBONRecordArray(T)=isArray!T && isHiBONRecord!(ForeachType!T);
 enum STUB=HiBONPrefix.HASH~"";
 @safe
 bool isStub(const Document doc) {
-//    auto range=doc[];
     return !doc.empty && doc.keys.front == STUB;
 }
+
+enum HiBONPrefix {
+    HASH = '#',
+    PARAM = '$'
+}
+
+bool hasHashKey(T)(T doc) if (is(T:const(HiBON)) || is(T:const(Document))) {
+    return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH && doc.keys.front != STUB;
+}
+
+unittest {
+    import std.range : iota;
+    import std.array : array;
+    Document doc;
+    { // Define stub
+        auto h=new HiBON;
+        h[STUB]=iota(ubyte(5)).array.idup;
+        doc=Document(h);
+    }
+
+    assert(isStub(doc));
+    assert(!hasHashKey(doc));
+
+    { // Define document with hash key
+        auto h=new HiBON;
+        h["#key"]="some data";
+        doc=Document(h);
+    }
+
+    assert(!isStub(doc));
+    assert(hasHashKey(doc));
+}
+
 
 /++
  Label use to set the HiBON member name
@@ -88,15 +120,6 @@ template GetLabel(alias member) {
     else {
         enum GetLabel=Label(basename!(member));
     }
-}
-
-enum HiBONPrefix {
-    HASH = '#',
-    PARAM = '$'
-}
-
-bool hasHashKey(T)(T doc) if (is(T:const(HiBON)) || is(T:const(Document))) {
-    return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH;
 }
 
 // bool hasHashKey(T)(T value) if (isHiBONRecord!T) {
