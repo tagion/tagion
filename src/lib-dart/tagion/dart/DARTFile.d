@@ -6,6 +6,7 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
     import tagion.hibon.Document : Document;
+    import tagion.hibon.HiBONRecord : isStub;
 
     import tagion.dart.BlockFile;
 
@@ -538,7 +539,7 @@ alias Recorder=Factory.Recorder;
                         local_load(index, cast(ubyte)key, rim+1);
                     }
                 }
-                else if ( doc.hasMember(Keywords.stub) ) {
+                else if ( isStub(doc) ) {
 //                        writeln("stub");
 
                 }
@@ -730,7 +731,7 @@ alias Recorder=Factory.Recorder;
      + If the function executes succesfully then the DART is update or else it does not affect the DART
      + The function return the bulleye of the dart
      +/
-    Buffer modify(Recorder modify_records) {
+    Buffer modify(Factory.Recorder modify_records) {
         Leave traverse_dart(R)(
             scope ref R range,
             const uint branch_index,
@@ -814,9 +815,7 @@ alias Recorder=Factory.Recorder;
                                         }
                                     }
                                     else {
-
                                         scope recorder=manufactor.recorder;
-
                                         recorder.insert(archive_in_dart);
                                         recorder.insert(single_archive);
                                         scope archives_range=recorder.archives[];
@@ -1328,14 +1327,14 @@ alias Recorder=Factory.Recorder;
         {  // Rim 2 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Recorder recorder;
+            Factory.Recorder recorder;
             assert(validate(dart, table[0..4], recorder));
         }
 
         {  // Rim 3 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Recorder recorder;
+            Factory.Recorder recorder;
             //=Recorder(net);
 
             assert(validate(dart, table[4..9], recorder));
@@ -1345,7 +1344,7 @@ alias Recorder=Factory.Recorder;
         {  // Rim 3 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Recorder recorder;
+            Factory.Recorder recorder;
             //=Recorder(net);
 
             assert(validate(dart, table[4..9], recorder));
@@ -1355,7 +1354,7 @@ alias Recorder=Factory.Recorder;
         {  // Rim 4 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Recorder recorder;
+            Factory.Recorder recorder;
 
             assert(validate(dart, table[17..$], recorder));
             // dart.dump;
@@ -1365,7 +1364,7 @@ alias Recorder=Factory.Recorder;
         {  // Rim 2 & 3
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Recorder recorder;
+            Factory.Recorder recorder;
 
             assert(validate(dart, table[0..9], recorder));
             // dart.dump;
@@ -1375,7 +1374,7 @@ alias Recorder=Factory.Recorder;
         {  // Rim 2 & 3 & 4
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Recorder recorder;
+            Factory.Recorder recorder;
 
             assert(validate(dart, table[0..9]~table[17..$], recorder));
             // dart.dump;
@@ -1384,7 +1383,7 @@ alias Recorder=Factory.Recorder;
         {  // Rim all
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Recorder recorder;
+            Factory.Recorder recorder;
 
             assert(validate(dart, table, recorder));
             // dart.dump;
@@ -1393,8 +1392,8 @@ alias Recorder=Factory.Recorder;
         { // Remove two archives and check the bulleye
             create_dart(filename_A);
             create_dart(filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1423,8 +1422,8 @@ alias Recorder=Factory.Recorder;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1454,8 +1453,8 @@ alias Recorder=Factory.Recorder;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1537,8 +1536,8 @@ alias Recorder=Factory.Recorder;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
 
@@ -1563,8 +1562,8 @@ alias Recorder=Factory.Recorder;
 
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
+            Factory.Recorder recorder_A;
+            Factory.Recorder recorder_B;
 
             write(dart_A, random_table, recorder_A);
             write(dart_B, random_table, recorder_B);
@@ -1690,6 +1689,5 @@ alias Recorder=Factory.Recorder;
             // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
             // assert(dart_A.fingerprint == dart_B.fingerprint);
         }
-
     }
 }
