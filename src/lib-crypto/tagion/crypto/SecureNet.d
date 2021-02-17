@@ -24,6 +24,7 @@ private alias check=Check!SecurityConsensusException;
 
 @safe
 class StdHashNet : HashNet {
+    import std.format;
 //    import std.stdio;
     protected enum HASH_SIZE=32;
     @nogc final uint hashSize() const pure nothrow {
@@ -61,8 +62,10 @@ class StdHashNet : HashNet {
 
     immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
         in {
-            assert(h1.length is 0 || h1.length is HASH_SIZE, "h1 is not a valid hash");
-            assert(h2.length is 0 || h2.length is HASH_SIZE, "h1 is not a valid hash");
+            assert(h1.length is 0 || h1.length is HASH_SIZE,
+                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
+            assert(h2.length is 0 || h2.length is HASH_SIZE,
+                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
         }
     out(result) {
         if (h1.length is 0) {
@@ -74,15 +77,16 @@ class StdHashNet : HashNet {
     }
     do {
         pragma(msg, "dlang: Pre and post condition does not work here");
-        assert(h1.length is 0 || h1.length is HASH_SIZE, "h1 is not a valid hash");
-        assert(h2.length is 0 || h2.length is HASH_SIZE, "h1 is not a valid hash");
+        assert(h1.length is 0 || h1.length is HASH_SIZE,
+            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
+        assert(h2.length is 0 || h2.length is HASH_SIZE,
+            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
         if (h1.length is 0) {
             return h2.idup;
         }
         if (h2.length is 0) {
             return h1.idup;
-        }
-        return calcHash(h1~h2);
+        }        return calcHash(h1~h2);
     }
 
     immutable(Buffer) hashOf(const(Document) doc) const {
@@ -98,72 +102,6 @@ class StdHashNet : HashNet {
     }
 }
 
-unittest { // StdHashNet
-    //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
-    import std.string : representation;
-    import std.exception : assertThrown;
-    import core.exception : AssertError;
-    // import std.stdio;
-
-    import tagion.hibon.HiBON;
-
-    const net=new StdHashNet;
-    Document doc; // This is the data which is filed in the DART
-    {
-        auto hibon=new HiBON;
-        hibon["text"]="Some text";
-        doc=Document(hibon);
-    }
-
-    immutable doc_fingerprint=net.rawCalcHash(doc.serialize);
-
-    { // calcHash should not be used on a Document hashOf should be used instead
-        assertThrown!AssertError(net.calcHash(doc.serialize));
-
-        assertThrown!AssertError(net.calcHash(doc.serialize, null));
-        assertThrown!AssertError(net.calcHash(null, doc.serialize));
-    }
-
-    {
-        assert(net.calcHash(null, null).length is 0);
-        assert(net.calcHash(doc_fingerprint, null) == doc_fingerprint);
-        assert(net.calcHash(null, doc_fingerprint) == doc_fingerprint);
-    }
-
-    immutable stub_fingerprint=net.calcHash(doc_fingerprint, doc_fingerprint);
-    Document stub;
-    {
-        auto hibon=new HiBON;
-        hibon[STUB]=stub_fingerprint;
-        stub=Document(hibon);
-    }
-
-    { // calcHash should not be used on a Document hashOf should be used instead
-        assertThrown!AssertError(net.calcHash(stub.serialize));
-    }
-
-    assert(isStub(stub));
-    assert(!hasHashKey(stub));
-
-    assert(net.hashOf(stub) == stub_fingerprint);
-
-
-    enum key_name="#name";
-    enum keytext="some_key_text";
-    immutable hashkey_fingerprint=net.calcHash(keytext.representation);
-    immutable hashkey_fingerprint_1=net.calcHash(cast(Buffer)keytext);
-    Document hash_doc;
-    {
-        auto hibon=new HiBON;
-        hibon[key_name]=hashkey_fingerprint;
-        hash_doc=Document(hibon);
-    }
-
-    assert(!isStub(hash_doc));
-    assert(hasHashKey(hash_doc));
-    assert(net.hashOf(hash_doc) == net.calcHash(hashkey_fingerprint));
-}
 
 @safe
 class StdSecureNet : StdHashNet, SecureNet  {
@@ -393,4 +331,70 @@ class StdSecureNet : StdHashNet, SecureNet  {
     this() {
         this._crypt = new NativeSecp256k1;
     }
+}
+
+unittest { // StdHashNet
+    //import tagion.utils.Miscellaneous : toHex=toHexString;
+    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
+    import std.string : representation;
+    import std.exception : assertThrown;
+    import core.exception : AssertError;
+    // import std.stdio;
+
+    import tagion.hibon.HiBON;
+
+    const net=new StdHashNet;
+    Document doc; // This is the data which is filed in the DART
+    {
+        auto hibon=new HiBON;
+        hibon["text"]="Some text";
+        doc=Document(hibon);
+    }
+
+    immutable doc_fingerprint=net.rawCalcHash(doc.serialize);
+
+    { // calcHash should not be used on a Document hashOf should be used instead
+        assertThrown!AssertError(net.calcHash(doc.serialize));
+
+        assertThrown!AssertError(net.calcHash(doc.serialize, null));
+        assertThrown!AssertError(net.calcHash(null, doc.serialize));
+    }
+
+    {
+        assert(net.calcHash(null, null).length is 0);
+        assert(net.calcHash(doc_fingerprint, null) == doc_fingerprint);
+        assert(net.calcHash(null, doc_fingerprint) == doc_fingerprint);
+    }
+
+    immutable stub_fingerprint=net.calcHash(doc_fingerprint, doc_fingerprint);
+    Document stub;
+    {
+        auto hibon=new HiBON;
+        hibon[STUB]=stub_fingerprint;
+        stub=Document(hibon);
+    }
+
+    { // calcHash should not be used on a Document hashOf should be used instead
+        assertThrown!AssertError(net.calcHash(stub.serialize));
+    }
+
+    assert(isStub(stub));
+    assert(!hasHashKey(stub));
+
+    assert(net.hashOf(stub) == stub_fingerprint);
+
+
+    enum key_name="#name";
+    enum keytext="some_key_text";
+    immutable hashkey_fingerprint=net.calcHash(keytext.representation);
+    Document hash_doc;
+    {
+        auto hibon=new HiBON;
+        hibon[key_name]=keytext;
+        hash_doc=Document(hibon);
+    }
+
+    assert(!isStub(hash_doc));
+    assert(hasHashKey(hash_doc));
+    assert(net.hashOf(hash_doc) == hashkey_fingerprint);
 }
