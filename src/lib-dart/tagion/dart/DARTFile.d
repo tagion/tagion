@@ -15,6 +15,7 @@ private {
     import std.typecons;
     import std.conv : to;
     import core.thread : Fiber;
+    import std.range.primitives : isInputRange;
 
     import tagion.basic.Basic : Buffer;
     import tagion.Keywords;
@@ -411,11 +412,11 @@ alias Recorder=Factory.Recorder;
                             _fingerprints[key]=doc[Keywords.stub].get!Buffer;
                         }
                         else {
-                            _fingerprints[key]=dartfile.net.calcHash(doc.data);
+                            _fingerprints[key]=dartfile.manufactor.net.hashOf(doc);
                         }
                     }
                 }
-                _fingerprint=sparsed_merkletree(dartfile.net, _fingerprints);
+                _fingerprint=sparsed_merkletree(dartfile.manufactor.net, _fingerprints);
             }
             return _fingerprint;
         }
@@ -523,6 +524,7 @@ alias Recorder=Factory.Recorder;
         return local_indent(rim);
     }
 
+    pragma(msg, "fixme(alex); Remove loadAll function");
     HiBON loadAll(Archive.Type type=Archive.Type.ADD){
         // auto result=Recorder(net);
         Archive[] archives;
@@ -566,7 +568,8 @@ alias Recorder=Factory.Recorder;
         return result;
     }
     // Loads all the archives in the list of fingerprints
-    Recorder loads(Range)(Range fingerprints, Archive.Type type=Archive.Type.REMOVE) {
+    Factory.Recorder loads(Range)(Range fingerprints, Archive.Type type=Archive.Type.REMOVE) if (isInputRange!Range) {
+
 	pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         import std.algorithm.comparison : min;
         auto result=recorder;
