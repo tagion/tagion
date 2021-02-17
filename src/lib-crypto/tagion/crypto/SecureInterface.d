@@ -1,12 +1,17 @@
 module tagion.crypto.SecureInterface;
 
 import tagion.basic.Basic : Buffer, Pubkey, Signature;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
 import tagion.hibon.Document : Document;
+
+import tagion.basic.ConsensusExceptions : Check, SecurityConsensusException, ConsensusFailCode;
+
+alias check=Check!SecurityConsensusException;
 
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const;
     /++
@@ -22,12 +27,16 @@ interface HashNet {
 }
 
 
+
 @safe
 interface SecureNet : HashNet {
+    import std.typecons : Tuple;
+    alias Signed=Tuple!(Signature, "signature", Buffer, "message");
     Pubkey pubkey() pure const nothrow;
     bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
-        immutable message=hashOf(doc);
+        .check(doc.keys.front[0] !is HiBONPrefix.HASH, ConsensusFailCode.SECURITY_MESSAGE_HASH_KEY);
+        immutable message=rawCalcHash(doc.serialize);
         return verify(message, signature, pubkey);
     }
     final bool verify(T)(T pack, const Signature signature, const Pubkey pubkey) const if(isHiBONRecord!T) {
@@ -37,11 +46,14 @@ interface SecureNet : HashNet {
     // The private should be added implicite by the GossipNet
     // The message is a hash of the 'real' message
     Signature sign(immutable(ubyte[]) message) const;
-    final Signature sign(const Document doc) const {
-        return sign(doc.serialize);
+
+    final Signed sign(const Document doc) const {
+        .check(doc.keys.front[0] !is HiBONPrefix.HASH, ConsensusFailCode.SECURITY_MESSAGE_HASH_KEY);
+        immutable fingerprint=rawCalcHash(doc.serialize);
+        return Signed(sign(fingerprint), fingerprint);
     }
 
-    final Signature sign(T)(T pack) const if(isHiBONRecord!T) {
+    final Signed sign(T)(T pack) const if(isHiBONRecord!T) {
         return sign(pack.toDoc);
     }
 

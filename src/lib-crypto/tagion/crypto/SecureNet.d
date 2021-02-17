@@ -31,7 +31,7 @@ class StdHashNet : HashNet {
         return HASH_SIZE;
     }
 
-    protected final immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
+    final immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest;
         return digest!SHA256(data).idup;
@@ -397,4 +397,37 @@ unittest { // StdHashNet
     assert(!isStub(hash_doc));
     assert(hasHashKey(hash_doc));
     assert(net.hashOf(hash_doc) == hashkey_fingerprint);
+}
+
+
+unittest { // StdSecureNet
+    import tagion.hibon.HiBON;
+    import std.exception : assertThrown;
+    import tagion.basic.ConsensusExceptions : SecurityConsensusException;
+
+    SecureNet net=new StdSecureNet;
+    net.generateKeyPair("Secret password");
+
+    Document doc;
+    {
+        auto h=new HiBON;
+        h["message"]="Some message";
+        doc=Document(h);
+    }
+
+    const doc_signed=net.sign(doc);
+
+    assert(doc_signed.message == net.rawCalcHash(doc.serialize));
+    assert(net.verify(doc, doc_signed.signature, net.pubkey));
+
+    { // Hash key
+        auto h=new HiBON;
+        h["#message"]="Some message";
+        doc=Document(h);
+    }
+
+    // A document containing a hash-ket can not be signed or verified
+    assertThrown!SecurityConsensusException(net.sign(doc));
+    assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
+
 }
