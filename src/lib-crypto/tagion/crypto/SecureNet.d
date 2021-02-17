@@ -24,8 +24,9 @@ private alias check=Check!SecurityConsensusException;
 
 @safe
 class StdHashNet : HashNet {
+//    import std.stdio;
     protected enum HASH_SIZE=32;
-    final uint hashSize() const pure nothrow {
+    @nogc final uint hashSize() const pure nothrow {
         return HASH_SIZE;
     }
 
@@ -35,11 +36,16 @@ class StdHashNet : HashNet {
         return digest!SHA256(data).idup;
     }
 
+
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const
         in {
-            assert(!Document(data).isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
+            const doc=Document(data.idup);
+            assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
         }
     do {
+        pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
+        const doc=Document(data.idup);
+        assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
         return rawCalcHash(data);
     }
 
@@ -53,21 +59,110 @@ class StdHashNet : HashNet {
         return assumeUnique(result);
     }
 
-    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
+    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
+        in {
+            assert(h1.length is 0 || h1.length is HASH_SIZE, "h1 is not a valid hash");
+            assert(h2.length is 0 || h2.length is HASH_SIZE, "h1 is not a valid hash");
+        }
+    out(result) {
+        if (h1.length is 0) {
+            assert(h2 == result);
+        }
+        else if (h2.length is 0) {
+            assert(h1 == result);
+        }
+    }
+    do {
+        pragma(msg, "dlang: Pre and post condition does not work here");
+        assert(h1.length is 0 || h1.length is HASH_SIZE, "h1 is not a valid hash");
+        assert(h2.length is 0 || h2.length is HASH_SIZE, "h1 is not a valid hash");
+        if (h1.length is 0) {
+            return h2.idup;
+        }
+        if (h2.length is 0) {
+            return h1.idup;
+        }
         return calcHash(h1~h2);
     }
 
     immutable(Buffer) hashOf(const(Document) doc) const {
-        auto range=doc[];
-        if (!range.empty && (range.front.key[0] is HiBONPrefix.HASH)) {
-            if (range.front.key == STUB) {
+        if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
+            if (doc.keys.front == STUB) {
                 return doc[STUB].get!Buffer;
             }
-            immutable value_data=range.front.data[range.front.dataPos..range.front.dataPos + range.front.dataSize];
+            auto first=doc[].front;
+            immutable value_data=first.data[first.dataPos..first.dataPos + first.dataSize];
             return calcHash(value_data);
         }
-        return calcHash(doc.serialize);
+        return rawCalcHash(doc.serialize);
     }
+}
+
+unittest { // StdHashNet
+    //import tagion.utils.Miscellaneous : toHex=toHexString;
+    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
+    import std.string : representation;
+    import std.exception : assertThrown;
+    import core.exception : AssertError;
+    // import std.stdio;
+
+    import tagion.hibon.HiBON;
+
+    const net=new StdHashNet;
+    Document doc; // This is the data which is filed in the DART
+    {
+        auto hibon=new HiBON;
+        hibon["text"]="Some text";
+        doc=Document(hibon);
+    }
+
+    immutable doc_fingerprint=net.rawCalcHash(doc.serialize);
+
+    { // calcHash should not be used on a Document hashOf should be used instead
+        assertThrown!AssertError(net.calcHash(doc.serialize));
+
+        assertThrown!AssertError(net.calcHash(doc.serialize, null));
+        assertThrown!AssertError(net.calcHash(null, doc.serialize));
+    }
+
+    {
+        assert(net.calcHash(null, null).length is 0);
+        assert(net.calcHash(doc_fingerprint, null) == doc_fingerprint);
+        assert(net.calcHash(null, doc_fingerprint) == doc_fingerprint);
+    }
+
+    immutable stub_fingerprint=net.calcHash(doc_fingerprint, doc_fingerprint);
+    Document stub;
+    {
+        auto hibon=new HiBON;
+        hibon[STUB]=stub_fingerprint;
+        stub=Document(hibon);
+    }
+
+    { // calcHash should not be used on a Document hashOf should be used instead
+        assertThrown!AssertError(net.calcHash(stub.serialize));
+    }
+
+    assert(isStub(stub));
+    assert(!hasHashKey(stub));
+
+    assert(net.hashOf(stub) == stub_fingerprint);
+
+
+    enum key_name="#name";
+    enum keytext="some_key_text";
+    immutable hashkey_fingerprint=net.calcHash(keytext.representation);
+    immutable hashkey_fingerprint_1=net.calcHash(cast(Buffer)keytext);
+    Document hash_doc;
+    {
+        auto hibon=new HiBON;
+        hibon[key_name]=hashkey_fingerprint;
+        hash_doc=Document(hibon);
+    }
+
+    assert(!isStub(hash_doc));
+    assert(hasHashKey(hash_doc));
+    assert(net.hashOf(hash_doc) == net.calcHash(hashkey_fingerprint));
 }
 
 @safe
