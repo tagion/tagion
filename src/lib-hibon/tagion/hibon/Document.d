@@ -165,6 +165,9 @@ static assert(uint.sizeof == 4);
             if (!isValidType(e.type)) {
                 error_code = Element.ErrorCode.INVALID_TYPE;
             }
+            else if (e.key.length is 0) {
+                error_code = Element.ErrorCode.KEY_ZERO_SIZE;
+            }
             else if (not_first && !less_than(previous.front.key, e.key)) {
                 error_code = Element.ErrorCode.KEY_ORDER;
             }
@@ -1223,6 +1226,7 @@ static assert(uint.sizeof == 4);
                 KEY_NOT_DEFINED, /// Key in the target was not defined
                 BAD_SUB_DOCUMENT, /// Error convering sub document
                 NOT_AN_ARRAY,      /// Not an Document array
+                KEY_ZERO_SIZE,  /// Invalid zero key size
                 UNKNOW_TAGION,  /// Unknow error (used when some underlaying function thows an TagionException
                 UNKNOW          /// Unknow error (used when some underlaying function thows an Exception
             }

@@ -158,10 +158,13 @@ struct toJSONT(bool HASHSAFE) {
     @trusted
     static JSONValue opCall(const Document doc) {
         JSONValue result;
-        immutable isarray=doc.isArray;
+        immutable isarray=doc.isArray && !doc.empty;
         if (isarray) {
             result.array=null;
             result.array.length=doc.length;
+        }
+        else {
+            result.object=null;
         }
         foreach(e; doc[]) {
             with(Type) {
@@ -435,6 +438,7 @@ HiBON toHiBON(scope const JSONValue json) {
 
 @safe
 unittest {
+//    import std.stdio;
     import tagion.hibon.HiBON : HiBON;
     import std.typecons : Tuple;
     alias Tabel = Tuple!(
@@ -475,6 +479,10 @@ unittest {
     // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
     // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
+    { // Empty Document
+        const doc=Document();
+        assert(doc.toJSON.toString == "{}");
+    }
 
     { // Test sample 1 HiBON Objects
         auto hibon=new HiBON;
