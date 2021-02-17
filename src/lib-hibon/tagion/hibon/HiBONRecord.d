@@ -28,8 +28,8 @@ enum isHiBONRecordArray(T)=isArray!T && isHiBONRecord!(ForeachType!T);
 enum STUB=HiBONPrefix.HASH~"";
 @safe
 bool isStub(const Document doc) {
-    auto range=doc[];
-    return !range.empty && range.front.key == STUB;
+//    auto range=doc[];
+    return !doc.empty && doc.keys.front == STUB;
 }
 
 /++

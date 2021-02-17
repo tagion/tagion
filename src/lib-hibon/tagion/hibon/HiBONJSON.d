@@ -115,9 +115,9 @@ string toPretty(T)(T value) {
 mixin template JSONString() {
     import std.format;
     import std.conv : to;
-    @safe
-    void toString(scope void delegate(const(char)[]) @safe sink,
-                  FormatSpec!char fmt) const {
+    @trusted
+    void toString(scope void delegate(scope const(char)[]) @system sink,
+                  const FormatSpec!char fmt) const {
         alias ThisT=typeof(this);
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;

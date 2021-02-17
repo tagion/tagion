@@ -105,7 +105,7 @@ static assert(uint.sizeof == 4);
 
     @property @nogc const pure nothrow {
         @safe bool empty() {
-            return data.length < 1;
+            return data.length <= 1;
         }
 
         @trusted uint size() {
@@ -113,6 +113,27 @@ static assert(uint.sizeof == 4);
         }
     }
 
+    unittest { // Empty doc
+        {
+            const doc=Document();
+            assert(doc.data.length is 0);
+            assert(doc.empty);
+            assert(doc.size is 0);
+            assert(doc.length is 0);
+            assert(doc[].empty);
+        }
+
+        {
+            immutable(ubyte[]) _data=[0];
+            assert(_data.length is 1);
+            const doc=Document(_data);
+            assert(doc.data.length is 1);
+            assert(doc.empty);
+            assert(doc.size is 0);
+            assert(doc.length is 0);
+            assert(doc[].empty);
+        }
+    }
     /++
      Counts the number of members in a Document
      Returns:
