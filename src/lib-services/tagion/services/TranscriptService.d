@@ -8,7 +8,7 @@ import std.exception : assumeUnique;
 
 import tagion.Options;
 import tagion.basic.Basic : Control, Buffer;
-import tagion.hashgraph.Event : EventBody;
+import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
@@ -18,7 +18,7 @@ import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract;
 import tagion.basic.ConsensusExceptions : ConsensusException;
-import tagion.gossip.GossipNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;

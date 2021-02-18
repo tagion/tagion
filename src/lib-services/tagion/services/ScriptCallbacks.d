@@ -4,7 +4,8 @@ import std.concurrency;
 import std.datetime;   // Date, DateTime
 import std.exception : assumeUnique;
 
-import tagion.hashgraph.Event : Event, EventScriptCallbacks, EventBody;
+import tagion.hashgraph.Event : Event, EventScriptCallbacks;
+import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.basic.Basic : Buffer, Control;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;

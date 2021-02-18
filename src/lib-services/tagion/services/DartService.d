@@ -33,7 +33,7 @@ import tagion.communication.HandlerPool;
 
 import tagion.communication.HiRPC;
 import tagion.services.DartSynchronizeService;
-import tagion.gossip.InterfaceNet: SecureNet;
+import tagion.crypto.SecureInterface : SecureNet;
 //import tagion.services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : NodeAddress;
 
@@ -108,7 +108,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 
         auto net = new Net();
-        net.drive(opts.dart.task_name, master_net);
+        net.derive(opts.dart.task_name, master_net);
 
         HiRPC hirpc;
         auto empty_hirpc = HiRPC(null);

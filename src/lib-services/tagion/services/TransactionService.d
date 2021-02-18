@@ -19,7 +19,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.script.StandardRecords : Contract, SignedContract;
 import tagion.script.SmartScript;
-import tagion.gossip.GossipNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.basic.TagionExceptions : fatal, TagionException;
 
@@ -65,7 +65,7 @@ void transactionServiceTask(immutable(Options) opts) {
 
         @trusted void requestInputs(Buffer[] inputs, uint id){
             auto sender = DART.dartRead(inputs, internal_hirpc, id);
-            auto tosend = internal_hirpc.toHiBON(sender).serialize;
+            auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
             send(dart_sync_tid, opts.transaction.service.response_task_name, tosend);
             // Buffer response = receiveOnly!Buffer;
             // auto received = internal_hirpc.receive(Document(response));
@@ -113,7 +113,7 @@ void transactionServiceTask(immutable(Options) opts) {
                     import tagion.script.ScriptParser;
                     import tagion.script.Script;
 
-                    const method=hirpc_received.message.method;
+                    const method=hirpc_received.method;
                     const params=hirpc_received.params;
 
                     void yield() @trusted {

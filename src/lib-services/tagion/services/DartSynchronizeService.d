@@ -15,18 +15,22 @@ import std.getopt;
 import std.stdio;
 import std.conv;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
+import tagion.dart.Recorder : Factory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.DARTSynchronization;
+
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
-import tagion.dart.DARTSynchronization;
+
+
 version(unittest) import tagion.dart.BlockFile: fileId;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.gossip.InterfaceNet: SecureNet, HashNet;
+import tagion.crypto.SecureInterface: SecureNet, HashNet;
 import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;
@@ -97,7 +101,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
         log("Dart file created with filename: %s", filename);
 
         auto net = new Net();
-        net.drive(task_name, master_net);
+        net.derive(task_name, master_net);
         DART dart = new DART(net, filename, sector_range.from_sector, sector_range.to_sector);
         log("DART initialized with angle: %s", sector_range);
 
@@ -131,11 +135,11 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     log.error("Bad Control command %s", ts);
                 }
         }
-        void recorderReplayFunc(immutable(DARTFile.Recorder) recorder){
-            dart.modify(cast(DARTFile.Recorder) recorder);
+        void recorderReplayFunc(immutable(Factory.Recorder) recorder){
+            dart.modify(cast(Factory.Recorder) recorder);
         }
         auto journalReplayFiber= new ReplayPool!string((string journal) => dart.replay(journal));
-        auto recorderReplayFiber= new ReplayPool!(immutable(DARTFile.Recorder))(&recorderReplayFunc);
+        auto recorderReplayFiber= new ReplayPool!(immutable(Factory.Recorder))(&recorderReplayFunc);
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts, net.pubkey);
@@ -172,7 +176,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                 : opts.dart.sync.tick_timeout.msecs;
             receiveTimeout(tick_timeout,
                 &handleControl,
-                (immutable(DARTFile.Recorder) recorder){
+                (immutable(Factory.Recorder) recorder){
                     log("DSS: recorder received");
                     recorderReplayFiber.insert(recorder);
                 },
@@ -204,10 +208,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         // log("Req:%s", doc.toJSON);
                         auto received = hrpc.receive(doc);
                         auto request = dart(received);
-                        auto tosend = hrpc.toHiBON(request).serialize;
-                        import tagion.hibon.HiBONJSON;
+                        // auto tosend = hrpc.toHiBON(request).serialize;
+                        // import tagion.hibon.HiBONJSON;
+                        pragma(msg, "request ", typeof(request));
                         // log("Res:%s", Document(tosend).toJSON);
-                        connectionPool.send(resp.key, tosend);
+//                        connectionPool.send(resp.key, tosend);
+                        connectionPool.send(resp.key, request.toDoc.serialize);
                         // log("DSS: Sended response to connection: %s", resp.key);
                     }
                     if(message_doc.hasMember(Keywords.method) && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
@@ -232,20 +238,20 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                             send(tid, result);
                         }
                         else{
-                            log("couldn't locate task: %s", taskName);
+                            log.warning("couldn't locate task: %s", taskName);
                         }
                     }
                     const doc = Document(data);
                     auto receiver = empty_hirpc.receive(doc);
                     // auto message_doc = doc[Keywords.message].get!Document;
-                    if(DART.supports(receiver)){
+                    if (DART.supports(receiver.method)) {
                         auto request = dart(receiver, false);
-                        auto tosend = empty_hirpc.toHiBON(request).serialize;
+                        const tosend = request.toDoc.serialize;
                         sendResult(tosend);
                     }
                     else{
                         // auto epoch = receiver.params["epoch"].get!int;
-                        auto owners_doc = receiver.params["owners"].get!Document;
+                        auto owners_doc = receiver.response.result["owners"].get!Document;
                         Buffer[] owners;
                         foreach(owner; owners_doc[]){
                             owners ~= owner.get!Buffer;
@@ -253,18 +259,17 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         // log("epoch: %d, owner: %s", epoch, owner);
                         auto result_doc = loadAll(hrpc);
                         StandardBill[] bills;
-                        foreach(archive_doc;result_doc[]){
-                            auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
+                        foreach(archive_doc; result_doc[]){
+                            auto archive = new Archive(net, archive_doc.get!Document);
                             //auto data_doc = Document(archive.data);
-                            log("%s", archive.doc.toJSON);
-                            if(archive.doc.hasMember("$type")){
-                                if(archive.doc["$type"].get!string == "BIL"){
-                                    auto bill = StandardBill(archive.doc);
-                                    import std.algorithm: canFind;
-                                    // log("bill.owner: %s, owner: %s", bill.owner, owner);
-                                    if( owners.canFind(bill.owner)){
-                                        bills~=bill;
-                                    }
+                            log("%J", archive);
+                            if (archive.isRecord!StandardBill) {
+//                                if(archive.doc["$type"].get!string == "BIL"){
+                                const bill = StandardBill(archive.filed);
+                                import std.algorithm: canFind;
+                                // log("bill.owner: %s, owner: %s", bill.owner, owner);
+                                if( owners.canFind(bill.owner)){
+                                    bills~=bill;
                                 }
                             }
                         }
@@ -273,7 +278,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                             params[i] = bill.toHiBON;
                         }
                         auto response = empty_hirpc.result(receiver, params);
-                        sendResult(empty_hirpc.toHiBON(response).serialize);
+                        sendResult(response.toDoc.serialize);
                     }
                 },
                 (immutable(AddressBook!Pubkey) update){
@@ -453,7 +458,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
                 (Response!(ControlCode.Control_RequestHandled) response){
                     writeln("Subscribe recorder received");
                     auto doc = Document(response.data);
-                    immutable recorder = cast(immutable)DARTFile.Recorder(net, doc);
+                    immutable recorder = cast(immutable)Factory.Recorder(net, doc);
                     send(ownerTid, recorder);
                 }
             );

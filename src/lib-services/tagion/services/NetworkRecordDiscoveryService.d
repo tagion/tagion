@@ -14,7 +14,7 @@ import std.stdio;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
-import tagion.gossip.InterfaceNet : HashNet;
+import tagion.crypto.SecureInterface : HashNet;
 import std.array;
 import tagion.gossip.P2pGossipNet: NodeAddress, AddressBook;
 import tagion.dart.DARTFile;
@@ -39,7 +39,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         auto result = new HiBON;
         foreach (i, pk; node_addresses.keys)
         {
-            result[i] = pk; 
+            result[i] = pk;
         }
         return Document(result.serialize);
     }
@@ -52,7 +52,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
             send(dart_sync_tid, taskName, tosend);
             Buffer buffer = receiveOnly!Buffer;
             const received = internal_hirpc.receive(Document(buffer));
-            return DARTFile.Recorder(cast(HashNet) net, received.params);            
+            return DARTFile.Recorder(cast(HashNet) net, received.params);
         }else{
             log("DART sync not running");
             return DARTFile.Recorder(cast(HashNet) net);
@@ -90,18 +90,18 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
             }
         }
             const addr_table_fp = net.calcHash(cast(Buffer)"address_table");
-            
+
                 NetworkNameRecord ncr;
                 NetworkNameCard ncl;
             auto recorder = getFromDart(addr_table_fp);
-            
+
                 if(recorder.length == 0){
                     ncr = getNetworkNameRecord();
                     ncl = NetworkNameCard();
                     ncl.name = "address_table";
                     ncl.pubkey = pubkey;
                 }else{
-                    ncl = NetworkNameCard(recorder.archives().front().doc);                    
+                    ncl = NetworkNameCard(recorder.archives().front().doc);
                     auto ncr_recorder = getFromDart(ncl.record);
                     if(ncr_recorder.archives.length != 0){
                         const prev_ncr = NetworkNameRecord(ncr_recorder.archives.front().doc);
@@ -164,7 +164,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
     receiveOnly!Control;
     ownerTid.send(Control.LIVE);
     auto stop = false;
-    do{            
+    do{
         receive(
             &receiveAddrBook,
             (immutable(Pubkey) key, Tid tid){

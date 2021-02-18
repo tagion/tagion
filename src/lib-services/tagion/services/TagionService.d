@@ -8,9 +8,9 @@ import std.traits : hasMember;
 import core.thread;
 
 import tagion.utils.Miscellaneous: cutHex;
-import tagion.hashgraph.Event;
-import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.Event : Event;
+import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraph.HashGraphBasic : buildEventPackage, EventBody, ExchangeState;
 import tagion.basic.ConsensusExceptions;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
@@ -21,7 +21,7 @@ import tagion.services.ScriptCallbacks;
 import tagion.services.EpochDebugService;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
-import tagion.communication.Monitor;
+import tagion.monitor.Monitor;
 import tagion.ServiceNames;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
@@ -242,14 +242,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         }
 
         void next_mother(const(Document) payload) {
-            auto own_node=hashgraph.getNode(net.pubkey);
             if ( (gossip_count >= max_gossip) || (payload.length) ) {
 
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
                     log.trace("next_mother %d eva", timeout_count);
                     immutable ebody=EventBody.eva(net);
-                    immutable epack=new immutable(EventPackage)(net, ebody);
+                    immutable epack=buildEventPackage(net, ebody);
                     event=hashgraph.registerEvent(epack);
                 }
                 else {
@@ -257,7 +256,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    immutable epack=new immutable(EventPackage)(net, ebody);
+                    immutable epack=buildEventPackage(net, ebody);
                     event=hashgraph.registerEvent(epack);
                 }
                 immutable send_channel=net.selectRandomNode;

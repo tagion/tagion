@@ -14,8 +14,8 @@ import tagion.basic.Basic : Pubkey, Control, nameOf;
 import tagion.basic.Logger;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.gossip.InterfaceNet : SecureNet;
-import tagion.gossip.GossipNet : StdSecureNet;
+import tagion.crypto.SecureInterface : SecureNet, HashNet;
+import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
@@ -27,7 +27,7 @@ import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import std.conv;
 import tagion.gossip.P2pGossipNet;
-import tagion.communication.Monitor;
+import tagion.monitor.Monitor;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
@@ -106,7 +106,7 @@ do {
         master_net.generateKeyPair(passphrase);
         shared shared_net=cast(shared)master_net;
         net=new P2pGossipNet(hashgraph, opts, p2pnode, connectionPool, connectionPoolBridge);
-        net.drive("tagion_service", shared_net);
+        net.derive("tagion_service", shared_net);
         hashgraph.gossip_net=net;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
@@ -388,7 +388,7 @@ do {
                 // fout.writeln("After build wave front");
                 if ( own_node.event is null ) {
                     immutable ebody=EventBody.eva(net);
-                    immutable epack=new immutable(EventPackage)(net, ebody);
+                    immutable epack=buildEventPackage(net, ebody);
                     // const ebody_hibon = ebody.toHiBON;
                     // const pack=net.buildPackage(ebody_hibon, ExchangeState.NONE);
                     // immutable signature=net.sign(ebody);
@@ -399,7 +399,7 @@ do {
                     auto mother=own_node.event;
                     immutable mother_hash=mother.fingerprint;
                     immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    immutable epack=new immutable(EventPackage)(net, ebody);
+                    immutable epack=buildEventPackage(net, ebody);
                     // const pack=net.buildPackage(ebody.toHiBON, ExchangeState.NONE);
                     //immutable signature=net.sign(ebody);
                     // event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);

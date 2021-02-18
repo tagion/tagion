@@ -12,7 +12,7 @@ import tagion.basic.Basic : Control, basename, Pubkey;
 import tagion.basic.TagionExceptions : TagionException;
 
 import tagion.hibon.Document;
-import tagion.communication.ListenerSocket;
+import tagion.network.ListenerSocket;
 import tagion.basic.TagionExceptions;
 
 //Create flat webserver start class function - create Backend class.
