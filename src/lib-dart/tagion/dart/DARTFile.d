@@ -226,7 +226,7 @@ alias check=Check!DARTException;
 
 +/
     @safe struct Branches {
-        protected Buffer _fingerprint;    /// The sparsed Merkle root hash of the branches
+        protected Buffer merkleroot;    /// The sparsed Merkle root hash of the branches
         protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
         protected uint[] _indices;         /// Array of index pointer to BlockFile
         private bool done;
@@ -299,7 +299,7 @@ alias check=Check!DARTException;
          +/
         HiBON toHiBON(const bool exclude_indices=false) const
             in {
-                assert(_fingerprint is null, "Fingerprint must be calcuted before toHiBON is called");
+                assert(merkleroot is null, "Fingerprint must be calcuted before toHiBON is called");
             }
         do {
             auto hibon=new HiBON;
@@ -394,7 +394,7 @@ alias check=Check!DARTException;
         }
 
         private immutable(Buffer) fingerprint(DARTFile dartfile, scope bool[uint] index_used=null) @trusted {
-            if ( _fingerprint is null ) {
+            if ( merkleroot is null ) {
                 foreach(key, index; _indices) {
                     if ( (index !is INDEX_NULL) && (_fingerprints[key] is null) ) {
                         .check((index in index_used) is null, format("The DART contains a recursive tree @ index %d", index));
@@ -413,9 +413,9 @@ alias check=Check!DARTException;
                         }
                     }
                 }
-                _fingerprint=sparsed_merkletree(dartfile.manufactor.net, _fingerprints);
+                merkleroot=sparsed_merkletree(dartfile.manufactor.net, _fingerprints);
             }
-            return _fingerprint;
+            return merkleroot;
         }
 
         void dump() const {

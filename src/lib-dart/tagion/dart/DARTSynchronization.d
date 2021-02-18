@@ -50,13 +50,11 @@ class ModifyRequestHandler : ResponseHandler{
         HiRPC hirpc;
         const string task_name;
         HiRPCReceiver receiver;
-
     }
     this(HiRPC hirpc, const string task_name, const HiRPCReceiver receiver){
         this.hirpc = hirpc;
         this.task_name = task_name;
         this.receiver = receiver;
-
     }
 
     void setResponse(Buffer response){
@@ -86,8 +84,8 @@ class ModifyRequestHandler : ResponseHandler{
 
 class ReadRequestHandler : ResponseHandler{
     private{
-        pragma(msg, "Why is the a Buffer[Buffer] Why not just a Recorder? It seems to solve the same problem");
-        Buffer[Buffer] fp_result;
+        pragma(msg, "Fixme: Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
+        Document[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
         HiRPCReceiver receiver;
@@ -108,7 +106,7 @@ class ReadRequestHandler : ResponseHandler{
         auto received = hirpc.receive(doc);
         scope foreign_recoder=manufactor.recorder( received.method.params);
         foreach(archive; foreign_recoder.archives){
-            fp_result[archive.fingerprint] = archive.toDoc.serialize;
+            fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm: arrRemove = remove, countUntil;
             requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
         }
@@ -127,11 +125,11 @@ class ReadRequestHandler : ResponseHandler{
             auto empty_hirpc = HiRPC(null);
             auto recorder = manufactor.recorder;
             foreach(fp, doc; fp_result){
-                recorder.insert(new Archive(hirpc.net, Document(doc)));
+                recorder.insert(doc);
             }
             auto tid = locate(task_name);   //TODO: moveout outside
             if (tid != Tid.init){
-                const result =  empty_hirpc.result(receiver, recorder.toDoc);
+                const result =  empty_hirpc.result(receiver, recorder);
                 send(tid, result.toDoc.serialize);
             }
             else{
@@ -364,11 +362,12 @@ class P2pSynchronizationFactory: SynchronizationFactory{
             scope(exit){
                 finish;
             }
-            if(alive){
+            if (alive){
                 log("P2pSynchronizer: close alive. Sector: %d", convertFromBuffer!ushort(fiber.root_rims));
                 onfailure(fiber.root_rims);
                 fiber.reset();
-            }else{
+            }
+            else{
                 log("P2pSynchronizer: Synchronization Completed! Sector: %d", convertFromBuffer!ushort(fiber.root_rims));
                 oncomplete(filename);
             }
