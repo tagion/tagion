@@ -73,7 +73,9 @@ static assert(uint.sizeof == 4);
     import tagion.hibon.HiBON : HiBON;
 
     this(const HiBON hibon) {
-        this._data = hibon.serialize;
+        if (hibon) {
+            this._data = hibon.serialize;
+        }
     }
 
     import tagion.hibon.HiBONJSON : JSONString;

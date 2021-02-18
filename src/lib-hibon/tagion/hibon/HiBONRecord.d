@@ -198,13 +198,13 @@ mixin template HiBONRecord(string CTOR="") {
     import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON;
+    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, Label, GetLabel, Filter, Assign, Inspect;
     protected alias check=Check!(HiBONRecordException);
 
     import tagion.hibon.HiBONJSON : JSONString;
     mixin JSONString;
 
-//    alias ThisType=typeof(this);
+    alias ThisType=typeof(this);
 
 
     mixin HiBONRecordType;
@@ -283,6 +283,9 @@ mixin template HiBONRecord(string CTOR="") {
                     }
                     else static if (isHiBON!BaseT) {
                         hibon[name]=m.toHiBON;
+                    }
+                    else static if (isHiBONRecord!BaseT) {
+                        hibon[name]=m.toDoc;
                     }
                     else static if (is(MemberT == enum)) {
                         hibon[name]=cast(OriginalType!MemberT)m;
