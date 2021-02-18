@@ -90,7 +90,6 @@ class Factory {
 
         /++
          + Creates an Recorder base on an existing archive list
-
          + Params:
          +     net      = Secure net should be the same as define in the DARTFile class
          +     archives = Archive list
@@ -319,6 +318,11 @@ class Factory {
     final bool isStub() pure const nothrow {
         return filed.empty;
     }
+
+    final bool isRecord(T)() const {
+        return T.isRecord(filed);
+    }
+
 
     // final Type type() pure const nothrow {
     //     return _type;
