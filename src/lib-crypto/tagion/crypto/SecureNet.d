@@ -158,19 +158,13 @@ class StdSecureNet : StdHashNet, SecureNet  {
     // }
 
     protected NativeSecp256k1 _crypt;
-    final bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
+    bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
             ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         return _crypt.verify(message, cast(Buffer)signature, cast(Buffer)pubkey);
     }
 
-    // final immutable(ubyte[]) sign(T)(T pack) const if ( __traits(compiles, pack.serialize) ) {
-    //     auto message=calcHash(pack.serialize);
-    //     auto result=sign(message);
-    //     return result;
-    // }
-
-    final Signature sign(immutable(ubyte[]) message) const
+    Signature sign(immutable(ubyte[]) message) const
     in {
         assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
         assert(message.length == 32);
@@ -182,12 +176,12 @@ class StdSecureNet : StdHashNet, SecureNet  {
         return Signature(_secret.sign(message));
     }
 
-    void derive(string tweak_word, ref ubyte[] tweak_privkey) {
+    final void derive(string tweak_word, ref ubyte[] tweak_privkey) {
         const data = HMAC(tweak_word.representation);
         derive(data, tweak_privkey);
     }
 
-    void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
+    final void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
         in {
             assert(tweak_privkey.length >= 32);
         }
@@ -280,15 +274,11 @@ class StdSecureNet : StdHashNet, SecureNet  {
             }
             void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        // scope hmac = HMAC!SHA256(tweek_code.representation);
-                        // auto data = hmac.finish.dup;
                         _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
                     });
             }
             void tweakAdd(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        // scope hmac = HMAC!SHA256(tweek_code.representation);
-                        // auto data = hmac.finish.dup;
                         _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
                     });
             }
@@ -398,6 +388,20 @@ unittest { // StdHashNet
     assert(hasHashKey(hash_doc));
     assert(net.hashOf(hash_doc) == hashkey_fingerprint);
 }
+
+
+class BadSecureNet : StdSecureNet {
+    this(string passphrase) {
+        super();
+        generateKeyPair(passphrase);
+    }
+
+    override Signature sign(immutable(ubyte[]) message) const {
+        immutable false_message=super.rawCalcHash(message~message);
+        return super.sign(false_message);
+    }
+}
+
 
 
 unittest { // StdSecureNet
