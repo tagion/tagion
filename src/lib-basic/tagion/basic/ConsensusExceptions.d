@@ -5,7 +5,6 @@ import tagion.basic.TagionExceptions : TagionException;
 
 @safe
 void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure if (is(E:ConsensusException)) {
-//    static assert(is(E:ConsensusException));
     if (!flag) {
         throw new E(code, file, line);
     }
@@ -52,6 +51,7 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
 
     SECURITY_MASK_VECTOR_IS_ZERO,
+    SECURITY_MESSAGE_HASH_KEY,
 
     DART_ARCHIVE_ALREADY_ADDED,
     DART_ARCHIVE_DOES_NOT_EXIST,
@@ -196,6 +196,7 @@ shared static this() {
             SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT        : "Failed to tweak mult public key",
 
             SECURITY_MASK_VECTOR_IS_ZERO                : "Mask vector must be different from zero",
+            SECURITY_MESSAGE_HASH_KEY                   : "A message containg a hash-kye can not be signed",
 
             DART_ARCHIVE_ALREADY_ADDED                  : "DART Failed archive is already added",
             DART_ARCHIVE_DOES_NOT_EXIST                 : "DART Failed archive does not exist",
