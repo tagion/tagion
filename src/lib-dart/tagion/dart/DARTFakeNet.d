@@ -37,6 +37,18 @@ class DARTFakeNet : StdSecureNet {
         if (h.length is ulong.sizeof) {
             fake_h.length=hashSize;
             fake_h[0..ulong.sizeof]=h;
+            // import std.stdio;
+            // import std.exception;
+            // const doc=Document(h.idup);
+            // void error(const(Document.Element) current, const(Document.Element) previous) @trusted nothrow {
+            //     try {
+            //         writefln("Fail: key=%s type=%s", current.key, current.type);
+            //     }
+            //     catch (Exception e) {
+            //         assumeWontThrow(writefln("%s", e));
+            //     }
+            // }
+            // writefln("Valid=%s", doc.valid(&error));
         }
         else {
             fake_h=h.dup;

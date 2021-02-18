@@ -13,7 +13,8 @@ import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-//import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel;
+import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
 import tagion.crypto.SecureInterface : HashNet, SecureNet;
@@ -461,6 +462,30 @@ class DART : DARTFile, HiRPC.Supports {
          +/
         bool empty() const pure nothrow;
     }
+        @RecordType("Journal") struct Journal {
+            uint index;
+            Factory.Recorder recorder;
+            enum indexName=GetLabel!(index).name;
+            enum recorderName=GetLabel!(recorder).name;
+            this(Factory manufactor, const Document doc) {
+                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+                index=doc[indexName].get!uint;
+                const recorder_doc=doc[recorderName].get!Document;
+                pragma(msg, typeof(recorder_doc));
+                recorder=manufactor.recorder(recorder_doc);
+            }
+
+            // const(Documen) toDoc() const {
+            //     auto h=new HiBON;
+            //     h[indexName]=index;
+            //     h[recorderName]=recorder.toDoc;
+            //     return Document(h);
+            // }
+
+//            mixin JSONString;
+            mixin HiBONRecord!"{}";
+
+        }
 
 //            import std.stdio;
     static abstract class StdSynchronizer : Synchronizer {
@@ -489,13 +514,14 @@ class DART : DARTFile, HiRPC.Supports {
         void record(Factory.Recorder recorder) {
 //            writefln("RECORD %s", recorder.empty);
             if ( !recorder.empty ) {
+                Journal journal;
                 auto hibon=new HiBON;
-                hibon[Params.index]=index;
-                hibon[Params.recorder]=recorder.toDoc;
-                auto data=hibon.serialize;
-                auto doc=Document(data);
+                journal.index=index;
+                journal.recorder = recorder;
+                // auto data=hibon.serialize;
+                // auto doc=Document(data);
 //                writefln("--->%s", doc.toText);
-                const allocated=journalfile.save(data);
+                const allocated=journalfile.save(journal.toDoc.serialize);
                 index=allocated.begin_index;
                 journalfile.root_index=index;
                 scope(exit) {
@@ -601,8 +627,7 @@ class DART : DARTFile, HiRPC.Supports {
                 scope request_branches=dartRim(rims, hirpc, id);
                 scope result_branches =sync.query(request_branches);
                 if ( !Branches.isRecord(result_branches.response.result) ) {
-                    if ( result_branches.response.result.hasMember(Params.recorder) ) {
-
+                    if ( result_branches.isRecord!(Factory.Recorder) ) {
                         scope foreign_recoder=manufactor.recorder(result_branches.method.params);
                         sync.record(foreign_recoder);
                     }
@@ -695,13 +720,17 @@ class DART : DARTFile, HiRPC.Supports {
             for(uint index=journalfile.masterBlock.root_index; index !is INDEX_NULL;) {
                 immutable data=journalfile.load(index);
                 scope doc=Document(data);
-                index=doc[Params.index].get!uint;
+                // index=doc[Params.index].get!uint;
 
-                scope replay_recorder_doc=doc[Params.recorder].get!Document;
+                //scope replay_recorder_doc=doc[Params.recorder].get!Document;
 
-                scope replay_recorder=manufactor.recorder(replay_recorder_doc);
+               // scope replay_recorder=manufactor.recorder(replay_recorder_doc);
+                // writefln("replay_recorder_doc=%s", replay_recorder_doc);
+                // writefln("doc.keys=%s", doc.keys);
+                auto journal_replay=Journal(manufactor, doc);
+                index=journal_replay.index;
                 scope action_recorder=recorder;
-                foreach(a; replay_recorder.archives[]) {
+                foreach(a; journal_replay.recorder.archives[]) {
                     static if (remove) {
                         if ( a.type is Archive.Type.REMOVE ) {
                             action_recorder.insert(a);

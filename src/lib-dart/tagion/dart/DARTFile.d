@@ -106,7 +106,7 @@ alias check=Check!DARTException;
         "rims",
 //        "limit",
         "bullseye",
-        "recorder",
+//        "recorder",
         "archives",
 //        "archive",
 //        "remove_rims",
