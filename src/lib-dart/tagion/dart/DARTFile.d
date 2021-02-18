@@ -92,7 +92,7 @@ alias Recorder=Factory.Recorder;
     enum INDEX_NULL=BlockFile.INDEX_NULL;
     immutable(string) filename;
 
-    package HashNet net;
+    package const HashNet net;
     protected Factory manufactor;
 
 
@@ -138,7 +138,7 @@ alias Recorder=Factory.Recorder;
      auto dartfile=new DARTFile(net, filename);
      ---
      +/
-    this(HashNet net, string filename) {
+    this(const HashNet net, string filename) {
         blockfile=BlockFile(filename);
         this.net=net;
         this.manufactor=Factory(net);
@@ -598,9 +598,10 @@ alias Recorder=Factory.Recorder;
                 }
                 else {
                     // Loads the Archives into the archives
-                    .check(ordered_fingerprints.length == 1, format("Data base is broken at rim=%d fingerprint=%s", rim, ordered_fingerprints[0].hex));
+                    .check(ordered_fingerprints.length == 1, format("Data base is broken at rim=%d fingerprint=%s",
+ 			rim, ordered_fingerprints[0].toHex));
                     // The archive is set in erase mode so it can be easily be erased later
-                    auto archive=new Archive(net, doc, type);
+                    auto archive=new Archive(manufactor.net, doc, type);
                     if ( ordered_fingerprints[0] == archive.fingerprint ) {
                         result.insert(archive);
                     }
@@ -778,7 +779,7 @@ alias Recorder=Factory.Recorder;
                         scope data=blockfile.load(branch_index);
                         scope doc=Document(data);
 
-                        .check(!doc.hasMember(Keywords.stub), "DART failure a stub is not allowed within the sector angle");
+                        .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if ( doc.hasMember(Keywords.indices) ) {
                             branches=Branches(doc);
                             do {
