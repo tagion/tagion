@@ -46,7 +46,7 @@ class StdHashNet : HashNet {
     do {
         pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
         const doc=Document(data.idup);
-        assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
+        assert(!doc.isInorder, "calcHash should not be use on a Document use hashOf instead");
         return rawCalcHash(data);
     }
 
