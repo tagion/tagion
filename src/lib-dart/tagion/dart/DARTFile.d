@@ -107,11 +107,11 @@ alias check=Check!DARTException;
 //        "limit",
         "bullseye",
 //        "recorder",
-        "archives",
+//        "archives",
 //        "archive",
 //        "remove_rims",
 //        "fingerprint",
-        "index",
+//        "index",
 //        "type"
         ];
 
