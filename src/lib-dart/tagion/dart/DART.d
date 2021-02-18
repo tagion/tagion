@@ -199,7 +199,7 @@ class DART : DARTFile, HiRPC.Supports {
             return hirpc.dartRim(params, id);
         }
 
-        const(HiRPCSender) dartModify(scope const Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        const(HiRPCSender) dartModify(scope const Factory.Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
             auto params=new HiBON;
             params[Params.recorder]=recorder.toDoc;
             return hirpc.dartModify(params, id);
@@ -738,7 +738,7 @@ class DART : DARTFile, HiRPC.Supports {
             // in a single thread
             //
             const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
-                Document send_request_to_forien_dart(const Document foreign_doc){
+                Document send_request_to_foreign_dart(const Document foreign_doc){
                     //
                     // Remote excution
                     // Receive on the foreign end
@@ -753,7 +753,7 @@ class DART : DARTFile, HiRPC.Supports {
                 fiber.yield;
                 // Here a yield loop should be implement to poll for response from the foriegn DART
                 // A timeout should also be implemented in this poll loop
-                const response_doc=send_request_to_forien_dart(foreign_doc);
+                const response_doc=send_request_to_foreign_dart(foreign_doc);
                 //
                 // Process the response returned for the foreign DART
                 //

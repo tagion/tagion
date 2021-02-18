@@ -70,8 +70,6 @@ void printfp(string msg, const Buffer[] fingerprints) {
 }
 
 alias check=Check!DARTException;
-import tagion.dart.Recorder;
-alias Recorder=Factory.Recorder;
 
 /++
  + DART File system
@@ -947,9 +945,8 @@ alias Recorder=Factory.Recorder;
         }
     }
 
-    Recorder readStubs(){   //RIMS_IN_SECTOR
-        Recorder rec = recorder();
-
+    Factory.Recorder readStubs(){   //RIMS_IN_SECTOR
+        Factory.Recorder rec = manufactor.recorder();
         void iterate(const uint branch_index, immutable uint rim=0) @trusted {
             if(branch_index !is INDEX_NULL){
                 scope data=blockfile.load(branch_index);
@@ -1135,7 +1132,7 @@ alias Recorder=Factory.Recorder;
                 BlockFile.create(filename, DARTFile.stringof, TEST_BLOCK_SIZE);
             }
 
-            bool check(const(Recorder) A, const(Recorder) B) {
+            bool check(const(Factory.Recorder) A, const(Factory.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
                 // &&
                 //     equal!(q{a.data == b.data})(A.archives[], B.archives[]);
@@ -1146,7 +1143,7 @@ alias Recorder=Factory.Recorder;
                 return dart.modify(rec);
             }
 
-            Buffer[] fingerprints(Recorder recorder) {
+            Buffer[] fingerprints(Factory.Recorder recorder) {
                 Buffer[] results;
                 foreach(a; recorder.archives) {
                     assert(a.done);
@@ -1156,7 +1153,7 @@ alias Recorder=Factory.Recorder;
 
             }
 
-            bool validate(DARTFile dart, const(ulong[]) table, out Recorder recorder) {
+            bool validate(DARTFile dart, const(ulong[]) table, out Factory.Recorder recorder) {
                 write(dart, table, recorder);
                 auto _fingerprints=fingerprints(recorder);
 
@@ -1604,7 +1601,7 @@ alias Recorder=Factory.Recorder;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Recorder recorder_A;
+            Factory.Recorder recorder_A;
             // Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
