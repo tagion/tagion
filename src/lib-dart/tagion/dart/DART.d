@@ -646,7 +646,7 @@ class DART : DARTFile, HiRPC.Supports {
                             // Foreign is poits to branches
                             if ( local_print ) {
                                 scope possible_branches_data=load(local_branches, key);
-                                if ( !Branches.isBranches(Document(possible_branches_data)) ) {
+                                if ( !Branches.isRecord(Document(possible_branches_data)) ) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
                                     local_recorder.remove(local_print);

@@ -22,7 +22,7 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 //    import tagion.hibon.HiBONRecord : GetLabel, Label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONRecord : isStub;
+    import tagion.hibon.HiBONRecord : isStub, Label, Filter, GetLabel, RecordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -225,29 +225,42 @@ alias check=Check!DARTException;
     /++
 
 +/
-    @safe struct Branches {
-        protected Buffer merkleroot;    /// The sparsed Merkle root hash of the branches
-        protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
-        protected uint[] _indices;         /// Array of index pointer to BlockFile
-        private bool done;
+    @RecordType("Branches") struct Branches {
+        import std.stdio;
+        import tagion.hibon.HiBONJSON;
+        @Label("") protected Buffer merkleroot;    /// The sparsed Merkle root hash of the branches
+        @Label("$prints", true) @(Filter.Initialized) protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
+        @Label("$idx", true) @(Filter.Initialized) protected uint[] _indices;         /// Array of index pointer to BlockFile
+        @Label("") private bool done;
+        enum fingerprintsName=GetLabel!(_fingerprints).name;
+        enum indicesName=GetLabel!(_indices).name;
         this(Document doc) {
-            if ( doc.hasMember(Keywords.indices) ) {
+            if (!isRecord(doc)) {
+                writefln("doc=%s", doc.toPretty);
+            }
+            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+            if ( doc.hasMember(indicesName) ) {
                 _indices=new uint[KEY_SPAN];
-                foreach(e; doc[Keywords.indices].get!Document[]) {
+                foreach(e; doc[indicesName].get!Document[]) {
                     _indices[e.index]=e.get!uint;
                 }
             }
-            if ( doc.hasMember(Keywords.fingerprints) ) {
+            if ( doc.hasMember(fingerprintsName) ) {
                 _fingerprints=new Buffer[KEY_SPAN];
-                foreach(e; doc[Keywords.fingerprints].get!Document) {
+                foreach(e; doc[fingerprintsName].get!Document) {
                     _fingerprints[e.index]=e.get!(immutable(ubyte)[]).idup;
                 }
             }
         }
 
-        static bool isBranches(Document doc) {
-            return !doc.empty && doc.hasMember(Keywords.fingerprints);
+        @nogc
+        bool hasIndices() const pure nothrow {
+            return _indices.length !is 0;
         }
+
+        // static bool isBranches(Document doc) {
+        //     return !doc.empty && doc.hasMember(fingerprintsName);
+        // }
 
         /++
          + Params:
@@ -255,7 +268,7 @@ alias check=Check!DARTException;
          + Returns:
          +      The fingerprint at key
          +/
-        immutable(Buffer) fingerprint(const size_t key) pure const
+        immutable(Buffer) fingerprint(const size_t key) pure const nothrow
         in {
             assert(key < KEY_SPAN);
         }
@@ -315,7 +328,7 @@ alias check=Check!DARTException;
                     }
                 }
                 if ( indices_set ) {
-                    hibon[Keywords.indices]=hibon_indices;
+                    hibon[indicesName]=hibon_indices;
                 }
             }
             foreach(key, print; _fingerprints) {
@@ -324,9 +337,20 @@ alias check=Check!DARTException;
                 }
             }
 
-            hibon[Keywords.fingerprints]=hibon_fingerprints;
+            hibon[fingerprintsName]=hibon_fingerprints;
+            hibon[TYPENAME]=type_name;
             return hibon;
         }
+
+        const(Document) toDoc() const {
+            return Document(toHiBON);
+        }
+
+        import tagion.hibon.HiBONJSON : JSONString;
+        mixin JSONString;
+
+        import tagion.hibon.HiBONRecord : HiBONRecordType;
+        mixin HiBONRecordType;
 
         // immutable(Buffer) serialize(bool exclude_indices=false) const {
         //     return toHiBON(exclude_indices).serialize;
@@ -401,7 +425,7 @@ alias check=Check!DARTException;
                         index_used[index]=true;
                         scope data=dartfile.blockfile.load(index);
                         scope doc=Document(data);
-                        if ( doc.hasMember(Keywords.indices) ) {
+                        if ( doc.hasMember(indicesName) ) {
                             scope subbranch=Branches(doc);
                             _fingerprints[key]=subbranch.fingerprint(dartfile, index_used);
                         }
@@ -458,7 +482,7 @@ alias check=Check!DARTException;
                     data=owner.blockfile.load(index);
                     scope doc=Document(data);
                     if ( rim < rims.length ) {
-                        if ( doc.hasMember(Keywords.indices) ) {
+                        if ( Branches.isRecord(doc) ) {
                             scope branches=Branches(doc);
                             // This branches
                             immutable key=rim_key(rims, rim);
@@ -467,7 +491,7 @@ alias check=Check!DARTException;
                         }
                     }
                     else  {
-                        if ( doc.hasMember(Keywords.indices) ) {
+                        if ( Branches.isRecord(doc) ) {
                             scope branches=Branches(doc);
                             foreach(next_index; branches.indices) {
                                 treverse(next_index, rim+1);
@@ -530,8 +554,8 @@ alias check=Check!DARTException;
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasMember(Keywords.indices) ) {
-                    auto branches=Branches(doc);
+                const branches=Branches(doc);
+                if ( branches.indices.length ) {
                     foreach(key, index; branches._indices) {
                         local_load(index, cast(ubyte)key, rim+1);
                     }
@@ -582,7 +606,7 @@ alias check=Check!DARTException;
             if ( (ordered_fingerprints) && (branch_index !is INDEX_NULL) ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasMember(Keywords.indices) ) {
+                if ( Branches.isRecord(doc) ) {
                     scope branches=Branches(doc);
                     scope selected_fingerprints=ordered_fingerprints;
                     foreach(rim_key, index; branches._indices) {
@@ -751,8 +775,8 @@ alias check=Check!DARTException;
                     if ( branch_index !is INDEX_NULL ) {
                         scope data=blockfile.load(branch_index);
                         scope doc=Document(data);
-                        .check(doc.hasMember(Keywords.indices), "DART failure within the sector rims the DART should contain a branch");
                         branches=Branches(doc);
+                        .check(branches.hasIndices, "DART failure within the sector rims the DART should contain a branch");
                     }
 
                     while (!range.empty) {
@@ -781,7 +805,7 @@ alias check=Check!DARTException;
                         scope doc=Document(data);
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
-                        if ( doc.hasMember(Keywords.indices) ) {
+                        if ( Branches.isRecord(doc) ) {
                             branches=Branches(doc);
                             do {
                                 scope sub_range=RimKeyRange(range, rim);
@@ -950,7 +974,7 @@ alias check=Check!DARTException;
             if(branch_index !is INDEX_NULL){
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasMember(Keywords.indices) ) {
+                if ( Branches.isRecord(doc) ) {
                     scope branches=Branches(doc);
                     if(rim == RIMS_IN_SECTOR){
                         // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
@@ -985,11 +1009,11 @@ alias check=Check!DARTException;
     Branches branches(const(ubyte[]) rims) {
         Branches search(const(ubyte[]) rims, const uint index,  const uint rim=0) @trusted {
             scope data=blockfile.load(index);
-            scope branches_doc=Document(data);
+            scope doc=Document(data);
 //            writefln("data.length=%d keys=%s", data.length, branches_doc.keys);
 //            Branches branches;
-            if ( branches_doc.hasMember(Keywords.indices) ) {
-                Branches branches=Branches(branches_doc);
+            if ( Branches.isRecord(doc) ) {
+                Branches branches=Branches(doc);
                 if ( rim < rims.length ) {
                     immutable rim_key=rims.rim_key(rim);
                     immutable sub_index=branches._indices[rim_key];
@@ -1035,9 +1059,9 @@ alias check=Check!DARTException;
             void local_iterator(const(ubyte[]) rims, const uint index, const uint rim=0) @trusted {
                 if ( index !is INDEX_NULL ) {
                     data=blockfile.load(index);
-                    scope branches_doc=Document(data);
-                    if ( branches_doc.hasMember(Keywords.indices) ) {
-                        Branches branches=Branches(branches_doc);
+                    scope doc=Document(data);
+                    if ( Branches.isRecord(doc) ) {
+                        Branches branches=Branches(doc);
                         foreach(key, sub_index; branches._indices) {
                             local_iterator(rims~cast(ubyte)key, sub_index, rim+1);
                         }
@@ -1048,9 +1072,9 @@ alias check=Check!DARTException;
             uint search(const(ubyte[]) rims, const uint index, const uint rim=0)  @trusted {
                 if ( index !is INDEX_NULL ) {
                     scope local_data=owner.blockfile.load(index);
-                    scope branches_doc=Document(local_data);
-                    if ( branches_doc.hasMember(Keywords.indices) ) {
-                        Branches branches=Branches(branches_doc);
+                    scope doc=Document(local_data);
+                    if ( Branches.isRecord(doc) ) {
+                        Branches branches=Branches(doc);
                         if ( rim < rims.length ) {
                             immutable rim_key=rims.rim_key(rim);
                             immutable sub_index=branches._indices[rim_key];
@@ -1094,7 +1118,7 @@ alias check=Check!DARTException;
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                if ( doc.hasMember(Keywords.indices) ) {
+                if ( Branches.isRecord(doc) ) {
                     auto branches=Branches(doc);
                     string _indent;
                     if ( rim > 0 ) {
