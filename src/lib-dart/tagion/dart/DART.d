@@ -200,9 +200,9 @@ class DART : DARTFile, HiRPC.Supports {
         }
 
         const(HiRPCSender) dartModify(scope const Factory.Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
-            auto params=new HiBON;
-            params[Params.recorder]=recorder.toDoc;
-            return hirpc.dartModify(params, id);
+            // auto params=new HiBON;
+            // params[Params.recorder]=recorder.toDoc;
+            return hirpc.dartModify(recorder, id);
         }
     }
 
@@ -337,7 +337,9 @@ class DART : DARTFile, HiRPC.Supports {
                     const doc=Document(data);
                     auto super_recorder=recorder;
                     super_recorder.add(doc);
-                    hibon_params[Params.recorder]=super_recorder.toDoc;
+                    return hirpc.result(received, super_recorder);
+
+//                    hibon_params[Params.recorder]=super_recorder.toDoc;
                 }
             }
         }
@@ -389,8 +391,8 @@ class DART : DARTFile, HiRPC.Supports {
     do {
         HiRPC.check(!read_only, "The DART is read only");
         //HiRPC.check_element!Document(received.params, Params.recorder);
-        scope recorder_doc=received.method.params[Params.recorder].get!Document;
-        scope recorder=manufactor.recorder(recorder_doc);
+//        scope recorder_doc=received.method.params[Params.recorder].get!Document;
+        scope recorder=manufactor.recorder(received.method.params);
         immutable bullseye=modify(recorder);
         auto hibon_params=new HiBON;
         hibon_params[Params.bullseye]=bullseye;
