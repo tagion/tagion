@@ -104,13 +104,13 @@ alias check=Check!DARTException;
         "fingerprints",
 //        "branches",
         "rims",
-        "limit",
+//        "limit",
         "bullseye",
         "recorder",
         "archives",
-        "archive",
-        "remove_rims",
-        "fingerprint",
+//        "archive",
+//        "remove_rims",
+//        "fingerprint",
         "index",
 //        "type"
         ];
