@@ -1,6 +1,6 @@
 module tagion.dart.DART;
 
-//import std.stdio;
+import std.stdio;
 import core.thread : Fiber;
 import core.exception : RangeError;
 import std.conv : ConvException;
@@ -319,11 +319,13 @@ class DART : DARTFile, HiRPC.Supports {
         immutable rims=received.method.params[Params.rims].get!Buffer;
 
         scope rim_branches=branches(rims);
-        auto hibon_params=new HiBON;
+        HiBON hibon_params;
         if ( !rim_branches.empty ) {
-            hibon_params[Params.branches]=rim_branches.toHiBON(true);
+//            hibon_params=new HiBON;
+            hibon_params=rim_branches.toHiBON(true);
         }
         else if ( rims.length > ushort.sizeof ) {
+            hibon_params=new HiBON;
             // It not branches so maybe it is an archive
             immutable key=rims[$-1];
             scope super_branches=branches(rims[0..$-1]);
@@ -589,7 +591,6 @@ class DART : DARTFile, HiRPC.Supports {
                 assert(blockfile);
             }
         do {
-            import std.stdio;
             void iterate(Buffer rims, immutable(string) indent) {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
@@ -597,7 +598,7 @@ class DART : DARTFile, HiRPC.Supports {
                 scope local_branches=branches(rims);
                 scope request_branches=dartRim(rims, hirpc, id);
                 scope result_branches =sync.query(request_branches);
-                if ( !result_branches.response.result.hasMember(Params.branches) ) {
+                if ( !Branches.isRecord(result_branches.response.result) ) {
                     if ( result_branches.response.result.hasMember(Params.recorder) ) {
 
                         scope foreign_recoder=manufactor.recorder(result_branches.method.params);
@@ -609,8 +610,7 @@ class DART : DARTFile, HiRPC.Supports {
                     sync.remove_recursive(rims);
                 }
                 else {
-                    scope foreign_branches_doc=result_branches.response.result[Params.branches].get!Document;
-                    scope foreign_branches=Branches(foreign_branches_doc);
+                    scope foreign_branches=result_branches.result!Branches;
                     //
                     // Read all the archives from the foreign DART
                     //
