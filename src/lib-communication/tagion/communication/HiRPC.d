@@ -221,8 +221,9 @@ struct HiRPC {
                 }
                 type=getType(post);
                 if (net !is null) {
-                    immutable fingerprint=net.hashOf(message);
-                    signature=net.sign(fingerprint);
+                    // immutable signed=net.sign(message);
+                    // fingerprint=signed.message;
+                    signature=net.sign(message).signature;
                     pubkey=net.pubkey;
                 }
             }
@@ -378,28 +379,14 @@ struct HiRPC {
 
 unittest {
     import tagion.hibon.HiBONRecord;
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
     class HiRPCNet : StdSecureNet {
         this(string passphrase) {
             super();
             generateKeyPair(passphrase);
-//        writefln("Pubkey %s:%d", (cast(Buffer)pubkey).toHexString!true, pubkey.length);
         }
-    }
-
-    class BadHiRPCNet : HiRPCNet {
-        this(string passphrase) {
-            super(passphrase);
-//            generateKeyPair(passphrase);
-//        writefln("Pubkey %s:%d", (cast(Buffer)pubkey).toHexString!true, pubkey.length);
-        }
-
-        override immutable(Buffer) hashOf(const(Document) doc) const {
-            return calcHash(doc.serialize~doc.serialize);
-        }
-
     }
 
     immutable passphrase="Very secret password for the server";
@@ -409,7 +396,7 @@ unittest {
         HiRPC hirpc;
         HiRPC bad_hirpc;
         hirpc.net=new HiRPCNet(passphrase);
-        bad_hirpc.net=new BadHiRPCNet(passphrase);
+        bad_hirpc.net=new BadSecureNet(passphrase);
         auto params=new HiBON;
         params["test"]=42;
         const sender=hirpc.action(func_name, params);
