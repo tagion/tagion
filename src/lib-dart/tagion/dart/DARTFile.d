@@ -406,9 +406,9 @@ alias check=Check!DARTException;
                             scope subbranch=Branches(doc);
                             _fingerprints[key]=subbranch.fingerprint(dartfile, index_used);
                         }
-                        else if ( doc.hasMember(Keywords.stub) ) {
-                            _fingerprints[key]=doc[Keywords.stub].get!Buffer;
-                        }
+                        // else if ( doc.hasMember(Keywords.stub) ) {
+                        //     _fingerprints[key]=doc[Keywords.stub].get!Buffer;
+                        // }
                         else {
                             _fingerprints[key]=dartfile.manufactor.net.hashOf(doc);
                         }
@@ -964,14 +964,14 @@ alias check=Check!DARTException;
                     }
                 }
 	        else{
-                    if(doc.hasMember(Keywords.stub)){
-                        // writeln("ADD STUB FP");
-                        rec.stub(doc[Keywords.stub].get!Buffer);
-                    }
-                    else{
-                        // writeln("ADD SINGLE EL FP");
-                        rec.stub(net.calcHash(doc.data));
-                    }
+                    // if(doc.hasMember(Keywords.stub)){
+                    //     // writeln("ADD STUB FP");
+                    //     rec.stub(doc[Keywords.stub].get!Buffer);
+                    // }
+                    // else{
+                    // writeln("ADD SINGLE EL FP");
+                    rec.stub(net.hashOf(doc));
+                    // }
                 }
             }
         }
@@ -1106,11 +1106,11 @@ alias check=Check!DARTException;
                         local_dump(index, cast(ubyte)key, rim+1, _indent);
                     }
                 }
-                else if ( doc.hasMember(Keywords.stub) ) {
-                    immutable fingerprint=doc[Keywords.stub].get!(Buffer);
-                    auto lastRing = full ? fingerprint.length : rim+1;
-                    writefln("%s>%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
-                }
+                // else if ( doc.hasMember(Keywords.stub) ) {
+                //     immutable fingerprint=doc[Keywords.stub].get!(Buffer);
+                //     auto lastRing = full ? fingerprint.length : rim+1;
+                //     writefln("%s>%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
+                // }
                 else {
                     immutable fingerprint=manufactor.net.hashOf(doc);
                     auto lastRing = full ? fingerprint.length : rim+1;
