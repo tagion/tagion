@@ -591,7 +591,7 @@ class DART : DARTFile, HiRPC.Supports {
                 assert(blockfile);
             }
         do {
-            void iterate(Buffer rims, immutable(string) indent) {
+            void iterate(Buffer rims) {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
@@ -652,7 +652,7 @@ class DART : DARTFile, HiRPC.Supports {
                                     local_recorder.remove(local_print);
                                 }
                             }
-                            iterate(sub_rims, indent~"**");
+                            iterate(sub_rims);
                         }
                         else if ( local_print ) {
                             sync.remove_recursive(sub_rims);
@@ -661,7 +661,7 @@ class DART : DARTFile, HiRPC.Supports {
                 }
             }
 //            scope local_branches=branches(root_rims);
-            iterate(root_rims, "");
+            iterate(root_rims);
             sync.finish;
         }
 
