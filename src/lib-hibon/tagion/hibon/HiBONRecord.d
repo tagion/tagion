@@ -129,10 +129,25 @@ template GetLabel(alias member) {
 enum TYPENAME=HiBONPrefix.PARAM~"@";
 enum VOID="*";
 
-enum Choice {
-    NONE,
-    CONFINED
+mixin template HiBONRecordType() {
+    import tagion.hibon.Document : Document;
+    import tagion.hibon.HiBONRecord : TYPENAME;
+    alias ThisType=typeof(this);
+    static if (hasUDA!(ThisType, RecordType)) {
+        alias record_types=getUDAs!(ThisType, RecordType);
+        static assert(record_types.length is 1, "Only one RecordType UDA allowed");
+        static if (record_types[0].name.length) {
+            enum type_name=record_types[0].name;
+            static bool isRecord(const Document doc) {
+                if (doc.hasMember(TYPENAME)) {
+                    return doc[TYPENAME].get!string == type_name;
+                }
+                return false;
+           }
+        }
+    }
 }
+
 /++
  HiBON Helper template to implement constructor and toHiBON member functions
  Params:
@@ -188,17 +203,19 @@ mixin template HiBONRecord(string CTOR="") {
     import tagion.hibon.HiBONJSON : JSONString;
     mixin JSONString;
 
-    alias ThisType=typeof(this);
+//    alias ThisType=typeof(this);
 
-    static if (hasUDA!(ThisType, RecordType)) {
-        alias record_types=getUDAs!(ThisType, RecordType);
-        static assert(record_types.length is 1, "Only one RecordType UDA allowed");
-        static if (record_types[0].name.length) {
-            enum type=record_types[0].name;
-        }
-    }
 
-    enum HAS_TYPE=hasMember!(ThisType, "type");
+    mixin HiBONRecordType;
+    // static if (hasUDA!(ThisType, RecordType)) {
+    //     alias record_types=getUDAs!(ThisType, RecordType);
+    //     static assert(record_types.length is 1, "Only one RecordType UDA allowed");
+    //     static if (record_types[0].name.length) {
+    //         enum type=record_types[0].name;
+    //     }
+    // }
+
+    enum HAS_TYPE=hasMember!(ThisType, "type_name");
 
     @trusted final inout(HiBON) toHiBON() inout {
         auto hibon= new HiBON;
@@ -294,7 +311,7 @@ mixin template HiBONRecord(string CTOR="") {
             }
         }
         static if (HAS_TYPE) {
-            hibon[TYPENAME]=type;
+            hibon[TYPENAME]=type_name;
         }
         @nogc @trusted inout(HiBON) result() inout pure nothrow {
             return cast(inout)hibon;
@@ -348,7 +365,7 @@ mixin template HiBONRecord(string CTOR="") {
         @safe this(const Document doc)  {
             static if (HAS_TYPE) {
                 string _type=doc[TYPENAME].get!string;
-                check(_type == type, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
+                check(_type == type_name, format("Wrong %s type %s should be %s", TYPENAME, _type, type_name));
             }
             static if (hasUDA!(ThisType, RecordType)) {
                 enum record=getUDAs!(ThisType, RecordType)[0];
@@ -626,7 +643,8 @@ unittest {
             // writefln("keys=%s", docS.keys);
             assert(docS["s"].get!int == -42);
             assert(docS["text"].get!string == "some text");
-            assert(docS[TYPENAME].get!string == Simpel.type);
+            assert(docS[TYPENAME].get!string == Simpel.type_name);
+            assert(Simpel.isRecord(docS));
             const s_check=Simpel(docS);
             // const s_check=Simpel(s);
             assert(s == s_check);
@@ -638,7 +656,8 @@ unittest {
             const docS=s.toDoc;
             assert(docS["$S"].get!int == 42);
             assert(docS["TEXT"].get!string == "other text");
-            assert(docS[TYPENAME].get!string == SimpelLabel.type);
+            assert(docS[TYPENAME].get!string == SimpelLabel.type_name);
+            assert(SimpelLabel.isRecord(docS));
             const s_check=SimpelLabel(docS);
 
             assert(s == s_check);
@@ -701,7 +720,7 @@ unittest {
             assertThrown!HiBONException(WithLabel(doc));
 
             auto h=s.toHiBON;
-            h[TYPENAME]=WithLabel.type;
+            h[TYPENAME]=WithLabel.type_name;
             const doc_label=Document(h.serialize);
             // writefln("docS=\n%s", doc_label.toJSON(true).toPrettyString);
 
