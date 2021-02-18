@@ -82,15 +82,15 @@ protected enum _keywords = [
     "source",
 
     // DART
-    "indices",
+//    "indices",
     "fingerprint",
-    "fingerprints",
+//    "fingerprints",
     "archives",
     "branches",
     "read",
     "rims",
     "keys",
-    "stub",
+//    "stub",
 
     // HiRPC (Similar to JSON-RPC 2.0)
 //    "rev",
