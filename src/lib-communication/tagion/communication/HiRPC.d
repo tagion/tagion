@@ -22,6 +22,10 @@ class HiRPCException : HiBONException {
     }
 }
 
+struct HiBONMethod {
+    string name;
+}
+
 
 @safe
 struct HiRPC {
@@ -276,6 +280,10 @@ struct HiRPC {
             }
         }
 
+        // bool Suports(T)() {
+        //     import std.traits : Fields;
+        //     static foreach(
+        // }
 
         mixin HiBONRecord!("{}");
     }
