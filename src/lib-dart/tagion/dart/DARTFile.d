@@ -90,7 +90,6 @@ alias check=Check!DARTException;
     enum INDEX_NULL=BlockFile.INDEX_NULL;
     immutable(string) filename;
 
-    package const HashNet net;
     protected Factory manufactor;
 
 
@@ -138,7 +137,7 @@ alias check=Check!DARTException;
      +/
     this(const HashNet net, string filename) {
         blockfile=BlockFile(filename);
-        this.net=net;
+//        this.net=net;
         this.manufactor=Factory(net);
         this.filename=filename;
     }
@@ -970,7 +969,7 @@ alias check=Check!DARTException;
                     // }
                     // else{
                     // writeln("ADD SINGLE EL FP");
-                    rec.stub(net.hashOf(doc));
+                    rec.stub(manufactor.net.hashOf(doc));
                     // }
                 }
             }
