@@ -198,7 +198,7 @@ mixin template HiBONRecord(string CTOR="") {
     import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, Label, GetLabel, Filter, Assign, Inspect;
+    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, Label, GetLabel, Filter, Assign, Inspect, VOID;
     protected alias check=Check!(HiBONRecordException);
 
     import tagion.hibon.HiBONJSON : JSONString;
@@ -332,7 +332,7 @@ mixin template HiBONRecord(string CTOR="") {
     }
 
 
-    import std.traits : FieldNameTuple, Fields;
+//    import std.traits : FieldNameTuple, Fields;
 
     template GetKeyName(uint i) {
         enum default_name=basename!(this.tupleof[i]);

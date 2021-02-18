@@ -148,8 +148,8 @@ static assert(uint.sizeof == 4);
     /++
      The deligate used by the valid function to report errors
      +/
-    alias ErrorCallback = void delegate(scope const(Element) current,
-        scope const(Element) previous) nothrow;
+    alias ErrorCallback = void delegate(const(Element) current,
+        const(Element) previous) nothrow;
 
     /++
      This function check's if the Document is a valid HiBON format
