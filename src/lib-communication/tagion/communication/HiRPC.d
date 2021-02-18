@@ -203,12 +203,27 @@ struct HiRPC {
                 return _message.method;
             }
 
-            const(T) params(T)() const pure if (isHiBONRecord!T) {
+            const(T) params(T)() const if (isHiBONRecord!T) {
                 return T(method.params);
             }
 
-            const(T) result(T)() const pure if (isHiBONRecord!T) {
+            const(T) result(T)() const if (isHiBONRecord!T) {
                 return T(response.result);
+            }
+
+            @trusted
+            bool isRecord(T)() const {
+                with (Type) {
+                    final switch(type) {
+                    case none, error:
+                        return false;
+                    case method:
+                        return T.isRecord(_message.method.params);
+                    case result:
+                        return T.isRecord(_message.response.result);
+                    }
+                }
+                assert(0);
             }
         }
         else {
