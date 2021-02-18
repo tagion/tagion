@@ -116,16 +116,22 @@ class Factory {
             return _archives;
         }
 
+
+        auto opSlice() {
+            pragma(msg, typeof(this._archives));
+            return _archives[];
+        }
+
         void removeOutOfRange(ushort from, ushort to){  //TODO: write unit tests
             if(from == to) return;
             immutable ushort to_origin=(to-from) & ushort.max;
-            foreach(archive; archives){
+            foreach(archive; _archives){
                 if(archive.type != Archive.Type.REMOVE){
                     short archiveSector = archive.fingerprint[0] | archive.fingerprint[1];
                     // writeln("CHECK STUBS: arcive fp:%s sector: %d", archive.fingerprint, archiveSector);
                     ushort sector_origin=(archiveSector-from) & ushort.max;
                     if( sector_origin >= to_origin ){
-                        archives.removeKey(archive);
+                        _archives.removeKey(archive);
                     }
                 }
             }

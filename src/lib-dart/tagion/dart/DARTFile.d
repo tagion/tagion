@@ -527,8 +527,8 @@ alias Recorder=Factory.Recorder;
     pragma(msg, "fixme(alex); Remove loadAll function");
     HiBON loadAll(Archive.Type type=Archive.Type.ADD){
         // auto result=Recorder(net);
-        Archive[] archives;
-
+        //Factory.Recorder.Archive[] archives;
+        auto recorder=manufactor.recorder;
         void local_load(const uint branch_index,  const ubyte rim_key=0, const uint rim=0) @trusted {
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
@@ -544,10 +544,7 @@ alias Recorder=Factory.Recorder;
 
                 }
                 else {
-                    auto archive=new Archive(net, doc, type);
-                    archives~=archive;
-                    // result.insert(archive);
-                    // writeln(result.length);
+                    recorder.insert(doc, type);
                 }
             }
         }
@@ -560,8 +557,15 @@ alias Recorder=Factory.Recorder;
         // auto  result = DARTFile.Recorder(net, archives_tree);
         auto result=new HiBON;
         uint i;
-        // writeln(archives.length);
-        foreach(a; archives) {
+        // // writeln(archives.length);
+        // pragma(msg, "Factory=", typeof(factory));
+        // pragma(msg, typeof(factory.recorder));
+        // pragma(msg, typeof(factory.recorder[]));
+        // pragma(msg, typeof(factory.recorder.archives[]));
+
+        foreach(a; recorder[]) {
+            // pragma(msg, "a=", typeof(a));
+            // a.type=type;
             result[i]=a.toDoc;
             i++;
         }
