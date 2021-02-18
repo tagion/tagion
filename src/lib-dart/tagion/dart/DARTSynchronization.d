@@ -14,7 +14,7 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
 import tagion.dart.DARTBasic;
-import tagion.dart.Recorder : Factory;
+import tagion.dart.Recorder;
 
 import core.time;
 import std.datetime;
@@ -74,7 +74,8 @@ class ModifyRequestHandler : ResponseHandler{
             auto tid = locate(task_name);
             if(tid != Tid.init){
                 send(tid, response);
-            }else{
+            }
+            else{
                 log("ModifyRequestHandler: couldn't locate task: %s", task_name);
             }
         }
@@ -83,6 +84,7 @@ class ModifyRequestHandler : ResponseHandler{
 
 class ReadRequestHandler : ResponseHandler{
     private{
+        pragma(msg, "Fixme: Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
         Document[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
@@ -98,12 +100,11 @@ class ReadRequestHandler : ResponseHandler{
         manufactor=Factory(hirpc.net);
     }
 
-
     void setResponse(Buffer response){
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        scope foreign_recoder=manufactor.recorder(received.method.params);
+        scope foreign_recoder=manufactor.recorder( received.method.params);
         foreach(archive; foreign_recoder.archives){
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm: arrRemove = remove, countUntil;
@@ -128,7 +129,7 @@ class ReadRequestHandler : ResponseHandler{
             }
             auto tid = locate(task_name);   //TODO: moveout outside
             if (tid != Tid.init){
-                const result =  empty_hirpc.result(receiver, recorder.toHiBON);
+                const result =  empty_hirpc.result(receiver, recorder);
                 send(tid, result.toDoc.serialize);
             }
             else{

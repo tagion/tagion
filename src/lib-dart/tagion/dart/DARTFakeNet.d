@@ -12,6 +12,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
 import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
 
 
 import std.stdio;
@@ -29,6 +30,51 @@ class DARTFakeNet : StdSecureNet {
     this() {
         import tagion.crypto.secp256k1.NativeSecp256k1;
         this._crypt = new NativeSecp256k1;
+
+    }
+
+    override immutable(Buffer) calcHash(scope const(ubyte[]) h) const {
+        scope ubyte[] fake_h;
+        if (h.length is ulong.sizeof) {
+            fake_h.length=hashSize;
+            fake_h[0..ulong.sizeof]=h;
+            // import std.stdio;
+            // import std.exception;
+            // const doc=Document(h.idup);
+            // void error(const(Document.Element) current, const(Document.Element) previous) @trusted nothrow {
+            //     try {
+            //         writefln("Fail: key=%s type=%s", current.key, current.type);
+            //     }
+            //     catch (Exception e) {
+            //         assumeWontThrow(writefln("%s", e));
+            //     }
+            // }
+            // writefln("Valid=%s", doc.valid(&error));
+        }
+        else {
+            fake_h=h.dup;
+        }
+        return super.calcHash(h);
+    }
+
+    override immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
+        scope ubyte[] fake_h1;
+        scope ubyte[] fake_h2;
+        if (h1.length is ulong.sizeof) {
+            fake_h1.length=hashSize;
+            fake_h1[0..ulong.sizeof]=h1;
+        }
+        else {
+            fake_h1=h1.dup;
+        }
+        if (h2.length is ulong.sizeof) {
+            fake_h2.length=hashSize;
+            fake_h2[0..ulong.sizeof]=h2;
+        }
+        else {
+            fake_h2=h2.dup;
+        }
+        return super.calcHash(fake_h1, fake_h2);
     }
 
     @trusted
