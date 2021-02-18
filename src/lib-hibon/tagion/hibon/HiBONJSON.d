@@ -148,7 +148,7 @@ mixin template JSONString() {
             sink(doc.serialize.to!string);
             break;
         default:
-            check(0, "Unknown format specifier: %" ~ fmt.spec);
+            throw new HiBON2JSONException("Unknown format specifier: %" ~ fmt.spec);
         }
     }
 }
