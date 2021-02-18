@@ -1115,7 +1115,7 @@ alias Recorder=Factory.Recorder;
                     writefln("%s>%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
                 }
                 else {
-                    immutable fingerprint=net.calcHash(doc.data);
+                    immutable fingerprint=manufactor.net.hashOf(doc);
                     auto lastRing = full ? fingerprint.length : rim+1;
                     writefln("%s:%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
                 }
