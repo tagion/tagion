@@ -10,7 +10,7 @@ import std.format;
 import tagion.crypto.SecureInterface : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub;
+import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
 import tagion.basic.Basic : Buffer;
 import tagion.basic.Message;;
 import tagion.dart.DARTException : DARTRecorderException;
@@ -71,14 +71,14 @@ class Factory {
      +  modify method
      +/
     @safe
-    class Recorder {
+    @RecordType("Recorder") class Recorder {
         alias Archives=RedBlackTree!(Archive, (a,b) @safe => a.fingerprint < b.fingerprint);
-//        protected HashNet net;
-//        private Archives _archives;
         Archives _archives;
-//        @disable this();
-//        alias BranchRange=Archives.Range;
 
+        import tagion.hibon.HiBONJSON : JSONString;
+        mixin JSONString;
+        import tagion.hibon.HiBONRecord : HiBONRecordType;
+        mixin HiBONRecordType;
         /++
          + Creates a Recorder with an empty archive list
          + Params:
@@ -104,11 +104,14 @@ class Factory {
         }
 
         private this(Document doc) {
+            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this._archives = new Archives;
             foreach(e; doc[]) {
-                auto doc_archive=e.get!Document;
-                auto archive=new Archive(net, doc_archive);
-                _archives.insert(archive);
+                if (e.key != TYPENAME) {
+                    const doc_archive=e.get!Document;
+                    auto archive=new Archive(net, doc_archive);
+                    _archives.insert(archive);
+                }
             }
         }
 
@@ -118,7 +121,6 @@ class Factory {
 
 
         auto opSlice() {
-            pragma(msg, typeof(this._archives));
             return _archives[];
         }
 
@@ -230,14 +232,13 @@ class Factory {
         }
 
         const(Document) toDoc() const {
-//        HiBON toHiBON() const {
             auto result=new HiBON;
             uint i;
             foreach(a; _archives) {
-                result[i]=a.toDoc; //Document(a.toHiBON.serialize);
-                //result[i]=a.toDoc;
+                result[i]=a.toDoc;
                 i++;
             }
+            result[TYPENAME]=type_name;
             return Document(result);
         }
     }

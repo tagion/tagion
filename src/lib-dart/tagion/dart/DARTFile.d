@@ -235,9 +235,6 @@ alias check=Check!DARTException;
         enum fingerprintsName=GetLabel!(_fingerprints).name;
         enum indicesName=GetLabel!(_indices).name;
         this(Document doc) {
-            if (!isRecord(doc)) {
-                writefln("doc=%s", doc.toPretty);
-            }
             .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if ( doc.hasMember(indicesName) ) {
                 _indices=new uint[KEY_SPAN];
