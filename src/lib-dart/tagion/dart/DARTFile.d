@@ -798,8 +798,8 @@ alias Recorder=Factory.Recorder;
                         else {
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
-                            // The A new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart=new Archive(net, doc);
+                            // The new Archives is constructed to include the archive which is already in the DART
+                            scope archive_in_dart=new Archive(manufactor.net, doc);
                             scope(success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -922,7 +922,7 @@ alias Recorder=Factory.Recorder;
             return _fingerprint;
         }
         else {
-            auto range=modify_records._archives[];
+            scope range=modify_records.archives[];
             immutable new_root=traverse_dart(range, blockfile.masterBlock.root_index);
 
             scope(success) {
