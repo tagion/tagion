@@ -35,7 +35,7 @@ import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;
 //import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
+import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress, ActiveNodeAddressBook, ConnectionPool;
 
 import tagion.basic.TagionExceptions;
 

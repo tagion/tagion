@@ -37,7 +37,7 @@ import tagion.communication.HiRPC;
 import tagion.services.DartSynchronizeService;
 import tagion.crypto.SecureInterface : SecureNet;
 //import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : NodeAddress;
+import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
 
 import std.array;
 
