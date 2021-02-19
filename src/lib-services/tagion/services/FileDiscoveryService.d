@@ -2,36 +2,34 @@ module tagion.services.FileDiscoveryService;
 
 import core.time;
 import std.datetime;
+import tagion.Options;
+import std.typecons;
+import std.conv;
+// import tagion.services.LoggerService;
+import tagion.basic.Logger;
+import std.concurrency;
+import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import std.stdio;
+import tagion.services.MdnsDiscoveryService;
+
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import std.file;
 import std.file: fwrite = write;
 import std.array;
-import std.typecons;
-import std.conv;
-import std.concurrency;
-//import std.stdio;
+import tagion.services.ServerFileDiscoveryService: DiscoveryRequestCommand, DiscoveryState;
+import tagion.gossip.P2pGossipNet;
 
-
-import tagion.Options;
-import tagion.basic.Logger;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.basic.TagionExceptions;
-import tagion.services.ServerFileDiscoveryService: DiscoveryRequestCommand, DicvoryControl;
-
-void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, immutable(Options) opts) {  //TODO: for test
-    bool stop = false;
+void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, immutable(Options) opts){  //TODO: for test
     scope(exit){
         log("exit");
-        if (stop) {
-            ownerTid.prioritySend(Control.END);
-        }
+        ownerTid.prioritySend(Control.END);
     }
     string shared_storage = opts.path_to_shared_info;
 
     log.register(task_name);
 
+    auto stop = false;
     NodeAddress[Pubkey] node_addresses;
 
     void recordOwnInfo() nothrow {
@@ -53,8 +51,6 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
         try{
             log("erase");
             auto read_buff = cast(ubyte[]) shared_storage.read;
-            pragma(msg, "fixme(alex): This part could break, because you use /n to split");
-            pragma(msg, "fixme(alex): Use the The Document length to find the boundries instead");
             auto splited_read_buff = read_buff.split("/n");
             log("%d", splited_read_buff.length);
             foreach(node_info_buff; splited_read_buff){
@@ -69,17 +65,11 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
                     }
                 }
             }
-        }
-        catch(Exception e){
-            log.error("Exception: %s", e.msg);
+        }catch(Exception e){
+            log("Exception: %s", e.msg);
             stop = true;
         }
     }
-
-    scope(exit){
-        eraseOwnInfo();
-    }
-
 
     bool checkTimestamp(SysTime time, Duration duration){
         return (Clock.currTime - time) > duration;
@@ -97,12 +87,15 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
         if(!owner_notified){
             const after_delay = checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs);
             if(after_delay && is_ready){
-                ownerTid.send(DicvoryControl.READY);
+                ownerTid.send(DiscoveryState.READY);
                 owner_notified = true;
             }
         }
     }
     
+    scope(exit){
+        eraseOwnInfo();
+    }
 
     void initialize() nothrow {
         log("initializing");
@@ -124,13 +117,14 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
                 }
             }
             log("initialized %d", node_addresses.length);
-        }
-        catch(Exception e){
-            log.error("Exception %s", e.msg);
+        }catch(Exception e){
+            writeln("Er:", e.msg);
+            log.fatal(e.msg);
         }
     }
 
     ownerTid.send(Control.LIVE);
+
     try{
         while(!stop){
             receiveTimeout(
@@ -155,7 +149,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
                         }
                         case DiscoveryRequestCommand.RequestTable: {
                             initialize();
-                            auto address_book = new immutable AddressBook!Pubkey(node_addresses);
+                            auto address_book = new ActiveNodeAddressBook(node_addresses);
                             ownerTid.send(address_book);
                             break;
                         }
