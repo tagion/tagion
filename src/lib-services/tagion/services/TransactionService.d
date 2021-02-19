@@ -78,7 +78,7 @@ void transactionServiceTask(immutable(Options) opts) {
             auto n_params=new HiBON;
             n_params["owners"] = doc;
             auto sender = internal_hirpc.search(n_params, id);
-            auto tosend = internal_hirpc.toHiBON(sender).serialize;
+            auto tosend = sender.toDoc.serialize;
             send(dart_sync_tid, opts.transaction.service.response_task_name, tosend);
             /// Buffer response = receiveOnly!Buffer;
             // return response;
@@ -113,8 +113,8 @@ void transactionServiceTask(immutable(Options) opts) {
                     import tagion.script.ScriptParser;
                     import tagion.script.Script;
 
-                    const method=hirpc_received.method;
-                    const params=hirpc_received.params;
+                    const method_name=hirpc_received.method.name;
+                    const params=hirpc_received.response.params;
 
                     void yield() @trusted {
                         Fiber.yield;
@@ -160,7 +160,7 @@ void transactionServiceTask(immutable(Options) opts) {
                                 sendPayload(payload);
                                 auto empty_params = new HiBON;
                                 auto empty_response = internal_hirpc.result(hirpc_received, empty_params);
-                                ssl_relay.send(hirpc.toHiBON(empty_response).serialize);
+                                ssl_relay.send(empty_response.toDoc.serialize);
                             }
                         }
                         catch (TagionException e) {

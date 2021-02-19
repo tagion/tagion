@@ -25,6 +25,8 @@ import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.dart.DARTSynchronization;
+import tagion.dart.Recorder : Factory;
+
 import tagion.Options;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
@@ -153,15 +155,15 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                         requestPool.setResponse(response);
 
                     },
-                    (immutable(DARTFile.Recorder) recorder){ //TODO: change to HiRPC
+                    (immutable(Factory.Recorder) recorder){ //TODO: change to HiRPC
                         log("DS: received recorder");
                         if(subscribe_handler_tid !=Tid.init){
                             send(subscribe_handler_tid, recorder);
                         }
-                        auto params=new HiBON;
-                        params[DARTFile.Params.recorder]=recorder.toHiBON;
-                        auto request = empty_hirpc.dartModify(params, recorder_hrpc_id); //TODO: remove out of range archives
-                        auto request_data = cast(Buffer) empty_hirpc.toHiBON(request).serialize;
+                        // auto params=new HiBON;
+                        // params[DARTFile.Params.recorder]=recorder.toHiBON;
+                        auto request = empty_hirpc.dartModify(recorder, recorder_hrpc_id); //TODO: remove out of range archives
+                        auto request_data = request.toDoc.serialize;
                         auto dstid = locate(opts.dart.sync.task_name);
                         if(dstid != Tid.init){
                             send(dstid, task_name, request_data); //TODO: => handle for the bullseye from dart
