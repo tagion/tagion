@@ -34,25 +34,11 @@ class DARTFakeNet : StdSecureNet {
     }
 
     override immutable(Buffer) calcHash(scope const(ubyte[]) h) const {
-        scope ubyte[] fake_h;
         if (h.length is ulong.sizeof) {
+            scope ubyte[] fake_h;
             fake_h.length=hashSize;
             fake_h[0..ulong.sizeof]=h;
-            // import std.stdio;
-            // import std.exception;
-            // const doc=Document(h.idup);
-            // void error(const(Document.Element) current, const(Document.Element) previous) @trusted nothrow {
-            //     try {
-            //         writefln("Fail: key=%s type=%s", current.key, current.type);
-            //     }
-            //     catch (Exception e) {
-            //         assumeWontThrow(writefln("%s", e));
-            //     }
-            // }
-            // writefln("Valid=%s", doc.valid(&error));
-        }
-        else {
-            fake_h=h.dup;
+            return fake_h.idup;
         }
         return super.calcHash(h);
     }
@@ -161,7 +147,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     static void setSectors(immutable Sector sector, ubyte rw, int rings, shared Factory.Recorder rec) {
         ubyte[ulong.sizeof] buf;
         foreach(j; cast(Sector)sector) {
-            buf[0 .. ushort.sizeof] = convert_sector_to_rims(j);
+            buf[0 .. ushort.sizeof] = DART.Rims(j).rims;
             setRings(2, rings, buf.dup, rw, cast(Factory.Recorder) rec);
         }
         if(!stop) ownerTid.send(true, rec);
