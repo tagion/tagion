@@ -207,41 +207,11 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         }
 
 
-<<<<<<< HEAD
         enum max_gossip=1;
         uint gossip_count=max_gossip;
         bool stop=false;
         // // True of the network has been initialized;
         uint timeout_count;
-=======
-    // if ( receiveOnly!Control is Control.LIVE ) {
-    //     log("Transcript started");
-    // }
-
-
-    enum max_gossip=1;
-    uint gossip_count=max_gossip;
-    bool stop=false;
-    // // True of the network has been initialized;
-    // bool initialised=false;
-    enum timeout_end=10;
-    uint timeout_count;
-//    Event mother;
-    Event event;
-    auto own_node=hashgraph.getNode(net.pubkey);
-    log("Wait for some delay %s", opts.node_name);
-//    Thread.sleep(2.seconds);
-
-    auto net_random=cast(Net)net;
-    enum bool has_random_seed=__traits(compiles, net_random.random.seed(0));
-//    pragma(msg, has_random_seed);
-    static if ( has_random_seed ) {
-//        pragma(msg, "Random seed works");
-        if ( !opts.sequential ) {
-            net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
-        }
-    }
->>>>>>> b5c20fbc2c386ff761ddaa30813d9ea66f396122
 
         Event event; // Current evnet for this node
         auto own_node=hashgraph.getNode(net.pubkey);
