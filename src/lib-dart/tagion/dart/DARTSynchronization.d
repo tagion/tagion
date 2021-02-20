@@ -233,7 +233,7 @@ class P2pSynchronizationFactory: SynchronizationFactory{
     protected string task_name;
     protected immutable(Pubkey) pkey;
 
-    this(DART dart, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, immutable(Options) opts, immutable(Pubkey) pkey){
+    this(DART dart, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, immutable(Options) opts, Pubkey pkey){
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
