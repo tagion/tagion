@@ -78,8 +78,8 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    import tagion.hibon.HiBONJSON : JSONString;
-    mixin JSONString;
+    // import tagion.hibon.HiBONJSON : JSONString;
+    // mixin JSONString;
 
     /++
      This function returns the HiBON version

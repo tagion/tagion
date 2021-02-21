@@ -67,8 +67,8 @@ static size_t size(U)(const(U[]) array) pure {
         _members = new Members;
     }
 
-    import tagion.hibon.HiBONJSON : JSONString;
-    mixin JSONString;
+    // import tagion.hibon.HiBONJSON : JSONString;
+    // mixin JSONString;
 
     /++
      Calculated the size in bytes of HiBON payload
