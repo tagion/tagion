@@ -9,7 +9,7 @@ LIBS+=${call GETLIB,tagion_hibon}
 LIBS+=${call GETLIB,tagion_gossip}
 LIBS+=${call GETLIB,tagion_crypto}
 # Dependence of DART should maybe be removed
-#LIBS+=${call GETLIB,tagion_dart}
+LIBS+=${call GETLIB,tagion_dart}
 LIBS+=${call GETLIB,tagion_communication}
 
 LIBS+=$(LIBSECP256K1)
