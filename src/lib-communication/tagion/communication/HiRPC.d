@@ -22,9 +22,63 @@ class HiRPCException : HiBONException {
     }
 }
 
-struct HiBONMethod {
+struct HiRPCMethod {
     string name;
 }
+
+        private static string[] _Callers(T)() {
+            import std.traits : isCallable, hasUDA, getUDAs;
+            string[] result;
+            static foreach(name; __traits(derivedMembers, T)) {
+                {
+                    static if (is(typeof(__traits(getMember, T, name)))) {
+                        enum prot = __traits(getProtection,
+                            __traits(getMember, T, name));
+                        static if (prot == "public") {
+                            enum code=format(q{alias MemberA=T.%s;}, name);
+                            mixin(code);
+                            static if (hasUDA!(MemberA, HiRPCMethod)) {
+                                enum hirpc_method=getUDAs!(MemberA, HiRPCMethod)[0];
+                                result~=name;
+                            }
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        enum Callers(T)=_Callers!T();
+
+        private static string[] _Methods(T)() {
+            import std.traits : isCallable, hasUDA, getUDAs;
+            string[] result;
+            static foreach(name; __traits(derivedMembers, T)) {
+                    {
+                        static if (is(typeof(__traits(getMember, T, name)))) {
+                            enum prot = __traits(getProtection,
+                                __traits(getMember, T, name));
+                            static if (prot == "public") {
+                                enum code=format(q{alias MemberA=T.%s;}, name);
+                                mixin(code);
+                                static if (hasUDA!(MemberA, HiRPCMethod)) {
+                                    enum hirpc_method=getUDAs!(MemberA, HiRPCMethod)[0];
+                                    static if (hirpc_method.name) {
+                                        enum method_name=hirpc_method.name;
+                                    }
+                                    else {
+                                        enum method_name=name;
+                                    }
+                                            result~=method_name;
+                                }
+                            }
+                        }
+                    }
+                }
+            return result;
+        }
+
+        enum Methods(T)=_Methods!T();
 
 
 @safe
@@ -122,6 +176,53 @@ struct HiRPC {
         @Label("$pkey", true) @(Filter.Initialized) Pubkey pubkey;
         @Label("$msg") Document message;
         @Label("") immutable Type type;
+
+        @nogc const pure nothrow {
+            bool isMethod() {
+                return type is Type.method;
+            }
+            bool isResult() {
+                return type is Type.method;
+            }
+            bool isError() {
+                return type is Type.method;
+            }
+        }
+
+        bool supports(T)() const {
+            import std.traits : isCallable, hasUDA, getUDAs;
+            if (type is Type.method) {
+            CaseMethod:
+                switch (method.name) {
+                    static foreach(name; __traits(derivedMembers, T)) {
+                        {
+                            static if (is(typeof(__traits(getMember, T, name)))) {
+                                enum prot = __traits(getProtection,
+                                    __traits(getMember, T, name));
+                                static if (prot == "public") {
+                                    enum code=format(q{alias MemberA=T.%s;}, name);
+                                    mixin(code);
+                                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                                        enum hirpc_method=getUDAs!(MemberA, HiRPCMethod)[0];
+                                        static if (hirpc_method.name) {
+                                            enum method_name=hirpc_method.name;
+                                        }
+                                        else {
+                                            enum method_name=name;
+                                        }
+                                    case method_name:
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                default:
+                    // empty
+                }
+            }
+            return false;
+        }
 
         bool verify(const Document doc) {
             if (pubkey.length) {
@@ -295,21 +396,6 @@ struct HiRPC {
         static bool supports(ref const(Receiver) receiver);
     }
 
-    mixin template Support(Enum) {
-        import tagion.communication.HiRPC : HiRPC;
-        import std.traits : EnumMembers;
-        static bool supports(const HiRPC.Method message) {
-            switch (message.name) {
-                static foreach(E; EnumMembers!Enum) {
-                case E.stringof:
-                    return true;
-                }
-            default:
-                return false;
-            }
-            assert(0);
-        }
-    }
 
     alias check=Check!HiRPCException;
     SecureNet net;
