@@ -1316,7 +1316,7 @@ alias check=Check!DARTException;
 
             immutable rim=3;
             {
-                auto range=recorder._archives[];
+                auto range=recorder.archives[];
                 auto rim_range=DARTFile.RimKeyRange(range, rim);
                 i=0;
                 immutable key=rim_range.front.fingerprint.rim_key(rim);
@@ -1329,7 +1329,7 @@ alias check=Check!DARTException;
             }
 
             {
-                auto range=recorder._archives[];
+                auto range=recorder.archives[];
                 auto rim_range=DARTFile.RimKeyRange(range, rim);
                 assert(!rim_range.empty);
                 assert(!rim_range.single);
@@ -1428,7 +1428,7 @@ alias check=Check!DARTException;
             //dart_B.dump;
             auto remove_recorder=records(manufactor, table[8..10]);
 
-            foreach(ref a; remove_recorder._archives) {
+            foreach(ref a; remove_recorder.archives) {
                 a.type=Archive.Type.REMOVE;
             }
             auto bulleye_A=dart_A.modify(remove_recorder);
@@ -1455,7 +1455,7 @@ alias check=Check!DARTException;
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
             auto remove_recorder=records(manufactor, random_table[N-100..N]);
 
-            foreach(ref a; remove_recorder._archives) {
+            foreach(ref a; remove_recorder.archives) {
                 a.type=Archive.Type.REMOVE;
             }
             bulleye_A=dart_A.modify(remove_recorder);
@@ -1516,7 +1516,7 @@ alias check=Check!DARTException;
             auto bulleye_B=write(dart_B, random_table[0..N-100], recorder_B);
             auto remove_recorder=records(manufactor, random_table[N-100..N]);
 
-            foreach(ref a; remove_recorder._archives) {
+            foreach(ref a; remove_recorder.archives) {
                 a.type=Archive.Type.REMOVE;
             }
             bulleye_A=dart_A.modify(remove_recorder);

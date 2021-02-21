@@ -66,10 +66,14 @@ class DARTFakeNet : StdSecureNet {
     @trusted
     override immutable(Buffer) hashOf(scope const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
+        import std.exception : assumeUnique;
         if ( doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x=doc[FAKE].get!ulong;
             import std.bitmanip: nativeToBigEndian;
-            return nativeToBigEndian(x).idup;
+            ubyte[] fingerprint;
+            fingerprint.length=hashSize;
+            fingerprint[0..ulong.sizeof]=nativeToBigEndian(x);
+            return assumeUnique(fingerprint);
         }
         return super.hashOf(doc);
     }
@@ -77,9 +81,7 @@ class DARTFakeNet : StdSecureNet {
     static const(Document) fake_doc(const ulong x) {
         auto hibon=new HiBON;
         hibon[FAKE]=x;
-        //import tagion.hibon.HiBONBase : Type;
-        //assert(hibon[FAKE].type is Type.UINT64);
-        return Document(hibon.serialize);
+        return Document(hibon);
     }
 }
 
