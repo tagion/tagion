@@ -18,7 +18,7 @@ import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
 import tagion.crypto.SecureInterface : HashNet, SecureNet;
-import tagion.communication.HiRPC;
+import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
 import tagion.basic.Basic : EnumText;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
@@ -43,17 +43,11 @@ uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure not
     return to-from;
 }
 
-// DART.Rims convert_sector_to_rims(const ushort sector) pure nothrow {
-//     DART.Rims result;
-//     result.rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
-//     return result;
-// }
-
 /++
  some text
  +/
 
-class DART : DARTFile, HiRPC.Supports {
+class DART : DARTFile { //, HiRPC.Supports {
     immutable ushort from_sector;
     immutable ushort to_sector;
     HiRPC hirpc;
@@ -167,17 +161,18 @@ class DART : DARTFile, HiRPC.Supports {
             }
         }
     }
-    protected enum _quries = [
-        nameOf!dartRead,
-        nameOf!dartRim,
-        nameOf!dartModify,
-        nameOf!dartFullRead
-        ];
+
+    //protected enum _quries = Callers!DART;
+    //     nameOf!dartRead,
+    //     nameOf!dartRim,
+    //     nameOf!dartModify,
+    //     nameOf!dartFullRead
+    //     ];
 
 
-    mixin(EnumText!("Quries", _quries));
+    mixin(EnumText!(q{Quries}, Callers!DART));
 
-    mixin HiRPC.Support!Quries;
+    // mixin Support!Quries;
 
     alias HiRPCSender=HiRPC.Sender;
     alias HiRPCReceiver=HiRPC.Receiver;
@@ -212,7 +207,7 @@ class DART : DARTFile, HiRPC.Supports {
     }
 
     static {
-        const(HiRPCSender) dartRead(Range)(scope Range fingerprints, HiRPC hirpc = HiRPC(null), uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
+        @HiRPCMethod() const(HiRPCSender) dartRead(Range)(scope Range fingerprints, HiRPC hirpc = HiRPC(null), uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
             auto params=new HiBON;
             auto params_fingerprints=new HiBON;
             foreach(i, b; fingerprints) {
@@ -224,13 +219,13 @@ class DART : DARTFile, HiRPC.Supports {
             return hirpc.dartRead(params, id);
         }
 
-        const(HiRPCSender) dartRim(scope const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        @HiRPCMethod() const(HiRPCSender) dartRim(scope const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.rims]=rims;
             return hirpc.dartRim(rims, id);
         }
 
-        const(HiRPCSender) dartModify(scope const Factory.Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        @HiRPCMethod() const(HiRPCSender) dartModify(scope const Factory.Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.recorder]=recorder.toDoc;
             return hirpc.dartModify(recorder, id);
@@ -414,7 +409,7 @@ class DART : DARTFile, HiRPC.Supports {
      ---
      +/
 
-    private const(HiRPCSender) dartModify(ref const(HiRPCReceiver) received, const bool read_only)
+    @HiRPCMethod private const(HiRPCSender) dartModify(ref const(HiRPCReceiver) received, const bool read_only)
         in {
             mixin FUNCTION_NAME;
             assert(received.method.name == __FUNCTION_NAME__);
@@ -446,10 +441,9 @@ class DART : DARTFile, HiRPC.Supports {
         import std.conv : to;
         const scope method=received.method;
         switch (method.name) {
-            static foreach(E; EnumMembers!Quries) {
-                case E.to!string:
-                    enum code=format(q{return %s(received, read_only);}, E);
-                    pragma(msg, code);
+            static foreach(call; Callers!DART) {
+                case call:
+                    enum code=format(q{return %s(received, read_only);}, call);
                     mixin(code);
             }
         default:
@@ -505,17 +499,7 @@ class DART : DARTFile, HiRPC.Supports {
                 pragma(msg, typeof(recorder_doc));
                 recorder=manufactor.recorder(recorder_doc);
             }
-
-            // const(Documen) toDoc() const {
-            //     auto h=new HiBON;
-            //     h[indexName]=index;
-            //     h[recorderName]=recorder.toDoc;
-            //     return Document(h);
-            // }
-
-//            mixin JSONString;
             mixin HiBONRecord!"{}";
-
         }
 
 //            import std.stdio;

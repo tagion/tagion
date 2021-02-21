@@ -3,13 +3,12 @@ module tagion.dart.DARTSynchronization;
 import std.conv;
 import std.stdio;
 import p2plib = p2p.node;
-import p2p.connection;
 import p2p.callback;
 import p2p.cgo.helper;
 import std.random;
 import std.concurrency;
 
-import tagion.gossip.P2pGossipNet : NodeAddress;
+import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
@@ -233,7 +232,7 @@ class P2pSynchronizationFactory: SynchronizationFactory{
     protected string task_name;
     protected immutable(Pubkey) pkey;
 
-    this(DART dart, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, immutable(Options) opts, Pubkey pkey){
+    this(DART dart, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, immutable(Options) opts, immutable(Pubkey) pkey){
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
