@@ -196,27 +196,27 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                         const method = message_doc[Keywords.method].get!string;
 
                         void readDart(){
-                            scope doc_fingerprints=receiver.params[DARTFile.Params.fingerprints].get!(Document);
+                            scope doc_fingerprints=receiver.method.params[DARTFile.Params.fingerprints].get!(Document);
                             scope fingerprints=doc_fingerprints.range!(Buffer[]);
                             alias bufArr = Buffer[];
                             bufArr[NodeAddress] remote_fp_requests;
                             Buffer[] local_fp;
                             fpIterator: foreach(fp; fingerprints){
-                                ushort sector = fp[0] | fp[1];
-                                if(sector_range.inRange(sector)){
+                                const rims=DART.Rims(fp);
+                                if (sector_range.inRange(rims)){
                                     local_fp~=fp;
                                     continue fpIterator;
                                 }
                                 else{
                                     foreach(address, fps; remote_fp_requests){
-                                        if(address.sector.inRange(sector)){
+                                        if (address.sector.inRange(rims)){
                                             fps~=fp;
                                             remote_fp_requests[address] = fps;
                                             continue fpIterator;
                                         }
                                     }
                                     foreach(id, address; node_addrses){
-                                        if(address.sector.inRange(sector)){
+                                        if (address.sector.inRange(rims)){
                                             remote_fp_requests[address] = [fp];
                                             continue fpIterator;
                                         }
@@ -240,7 +240,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                                 }
                                 params[DARTFile.Params.fingerprints]=params_fingerprints;
                                 const request = hirpc.dartRead(params, hrpc_id);
-                                return hirpc.toHiBON(request).serialize;
+                                return request.toDoc.serialize;
                             }
 
                             if(remote_fp_requests.length > 0){
@@ -260,7 +260,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                         }
 
                         void modifyDart(){  //TODO: not implemented yet
-                            HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
+                            //HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
                             auto mrh = cast(ResponseHandler)(new ModifyRequestHandler(hirpc, taskName, receiver));
                             requestPool.add(hrpc_id, mrh);
                             send(dart_sync_tid, data);
@@ -336,9 +336,9 @@ private void subscibeHandler(immutable(Options) opts){
                         log("DS-subs: Client Disconnected key: %d", resp.key);
                         connectionPool.close(resp.key);
                     },
-                    (immutable(DARTFile.Recorder) recorder){ //TODO: change to HiRPC
+                    (immutable(Factory.Recorder) recorder){ //TODO: change to HiRPC
                         log("DS-subs: received recorder");
-                        connectionPool.broadcast(recorder.toHiBON.serialize); //+save to journal etc..
+                        connectionPool.broadcast(recorder.toDoc.serialize); //+save to journal etc..
                         // if not ready/started => send error
                         // if(dartSyncTid != Tid.init){
                         //     send(dartSyncTid, recorder);

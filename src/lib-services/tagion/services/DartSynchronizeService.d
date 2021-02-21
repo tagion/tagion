@@ -6,7 +6,7 @@ import std.concurrency;
 import tagion.Options;
 
 import p2plib = p2p.node;
-import p2p.connection;
+//import p2p.connection;
 import p2p.callback;
 import p2p.cgo.helper;
 import tagion.basic.Logger;
@@ -22,8 +22,7 @@ import tagion.dart.BlockFile : BlockFile;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
-
-
+import tagion.dart.DARTSynchronization;
 version(unittest) import tagion.dart.BlockFile: fileId;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
@@ -33,7 +32,7 @@ import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;
 //import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
+import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress, ActiveNodeAddressBook, ConnectionPool;
 
 import tagion.basic.TagionExceptions;
 
@@ -99,7 +98,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
         log("Dart file created with filename: %s", filename);
 
         auto net = new Net();
-        net.drive(task_name, master_net);
+        net.derive(task_name, master_net);
         DART dart = new DART(net, filename, sector_range.from_sector, sector_range.to_sector);
         log("DART initialized with angle: %s", sector_range);
 
@@ -131,11 +130,11 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     log.error("Bad Control command %s", ts);
                 }
         }
-        void recorderReplayFunc(immutable(DARTFile.Recorder) recorder){
-            dart.modify(cast(DARTFile.Recorder) recorder);
+        void recorderReplayFunc(immutable(Factory.Recorder) recorder){
+            dart.modify(cast(Factory.Recorder) recorder);
         }
         auto journalReplayFiber= new ReplayPool!string((string journal) => dart.replay(journal));
-        auto recorderReplayFiber= new ReplayPool!(immutable(DARTFile.Recorder))(&recorderReplayFunc);
+        auto recorderReplayFiber= new ReplayPool!(immutable(Factory.Recorder))(&recorderReplayFunc);
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts, net.pubkey);
@@ -191,29 +190,30 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                             destroy(resp.stream);
                         }
                     }
-                    auto doc = Document(resp.data);
-                    auto message_doc = doc[Keywords.message].get!Document;
+                    const doc = Document(resp.data);
+                    //auto message_doc = doc[Keywords.message].get!Document;
+                    const received = hrpc.receive(doc);
+
                     void closeConnection(){
                         log("DSS: Forced close connection");
                         connectionPool.close(resp.key);
                     }
                     void serverHandler(){
-                        if(message_doc[Keywords.method].get!string == DART.Quries.dartModify){  //Not allowed
+                        if (received.method.name == DART.Quries.dartModify){  //Not allowed
                             closeConnection();
                         }
                         // log("Req:%s", doc.toJSON);
-                        auto received = hrpc.receive(doc);
                         auto request = dart(received);
-                        auto tosend = hrpc.toHiBON(request).serialize;
-                        import tagion.hibon.HiBONJSON;
+                        // auto tosend = request.toDoc.serialize;
+                        // import tagion.hibon.HiBONJSON;
                         // log("Res:%s", Document(tosend).toJSON);
-                        connectionPool.send(resp.key, tosend);
+                        connectionPool.send(resp.key, request.toDoc.serialize);
                         // log("DSS: Sended response to connection: %s", resp.key);
                     }
-                    if(message_doc.hasElement(Keywords.method) && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
+                    if ( received.isMethod && state.checkState(DartSynchronizeState.READY)){ //TODO: to switch
                         serverHandler();
                     }
-                    else if(!message_doc.hasElement(Keywords.method)&& state.checkState(DartSynchronizeState.SYNCHRONIZING)){
+                    else if(!received.isMethod && state.checkState(DartSynchronizeState.SYNCHRONIZING)){
                         syncPool.setResponse(resp);
                     }
                     else{
@@ -236,16 +236,25 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         }
                     }
                     const doc = Document(data);
-                    auto receiver = empty_hirpc.receive(doc);
+                    const receiver = empty_hirpc.receive(doc);
                     // auto message_doc = doc[Keywords.message].get!Document;
-                    if(DART.supports(receiver)){
-                        auto request = dart(receiver, false);
-                        auto tosend = empty_hirpc.toHiBON(request).serialize;
+                    // const method=receiver.method;
+                    pragma(msg, "############# receiver=", typeof(receiver));
+                    // pragma(msg, "############# method=", typeof(method));
+                    // pragma(msg, "############# method.name=", typeof(method.name));
+
+                      // // HiRPC.Method m;
+                    // // m.name="name";
+                    // // const supports_1=DART.supports(m);
+                    //const supports=receiver.supports!DART;
+                    if (receiver.supports!DART) {
+                        const request = dart(receiver, false);
+                        const tosend = request.toDoc.serialize;
                         sendResult(tosend);
                     }
                     else{
                         // auto epoch = receiver.params["epoch"].get!int;
-                        auto owners_doc = receiver.params["owners"].get!Document;
+                        auto owners_doc = receiver.method.params["owners"].get!Document;
                         Buffer[] owners;
                         foreach(owner; owners_doc[]){
                             owners ~= owner.get!Buffer;
@@ -254,26 +263,27 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         auto result_doc = loadAll(hrpc);
                         StandardBill[] bills;
                         foreach(archive_doc;result_doc[]){
-                            auto archive = new DARTFile.Recorder.Archive(net, archive_doc.get!Document);
+                            auto archive = new Archive(net, archive_doc.get!Document);
                             //auto data_doc = Document(archive.data);
                             // log("%s", archive.doc.toJSON);
-                            if(archive.doc.hasElement("$type")){
-                                if(archive.doc["$type"].get!string == "BIL"){
-                                    auto bill = StandardBill(archive.doc);
-                                    import std.algorithm: canFind;
-                                    // log("bill.owner: %s, owner: %s", bill.owner, owner);
-                                    if( owners.canFind(bill.owner)){
-                                        bills~=bill;
-                                    }
-                                }
+                            const bill=StandardBill(archive.filed);
+                            // if (archive.filed.hasMember("$type")){
+                            //     if (archive.filed["$type"].get!string == "BIL"){
+                            //         auto bill = StandardBill(archive.filed);
+                            import std.algorithm: canFind;
+                            // log("bill.owner: %s, owner: %s", bill.owner, owner);
+                            if( owners.canFind(bill.owner)){
+                                bills~=bill;
                             }
+                                // }
+                        // }
                         }
                         HiBON params = new HiBON;
                         foreach(i, bill; bills){
                             params[i] = bill.toHiBON;
                         }
                         auto response = empty_hirpc.result(receiver, params);
-                        sendResult(empty_hirpc.toHiBON(response).serialize);
+                        sendResult(response.toDoc.serialize);
                     }
                 },
                 (ActiveNodeAddressBook update){
@@ -440,6 +450,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
         auto stop = false;
         ownerTid.send(Control.LIVE);
 
+        auto manufactor=Factory(net);
         while(!stop){
             receive(
                 (Control cntrl){
@@ -453,10 +464,34 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
                 (Response!(ControlCode.Control_RequestHandled) response){
                     writeln("Subscribe recorder received");
                     auto doc = Document(response.data);
-                    immutable recorder = cast(immutable)Factory.Recorder(net, doc);
+                    immutable recorder = cast(immutable)manufactor.recorder(doc);
                     send(ownerTid, recorder);
                 }
             );
         }
     }
 }
+
+/+
+Error: constructor
+tagion.dart.DARTSynchronization.P2pSynchronizationFactory.this(
+    DART dart,
+    shared(Node) node,
+    shared(ConnectionPool!(shared(Stream), ulong)) connection_pool,
+    immutable(Options) opts,
+    immutable(Typedef!(immutable(ubyte)[], null, "PUBKEY")) pkey)
+
+
+    DART,
+    shared(Node),
+    shared(ConnectionPool!(shared(Stream), ulong)),
+    immutable(Options),
+    Typedef!(immutable(ubyte)[], null, "PUBKEY"))
++/
+
+/+
+     cannot pass argument `connectionPool` of type
+shared(tagion.gossip.P2pGossipNet.ConnectionPool!(shared(Stream), ulong))
+     to parameter
+shared(p2p.connection.ConnectionPool!(shared(Stream), ulong)) connection_pool
++/

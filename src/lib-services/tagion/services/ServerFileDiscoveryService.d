@@ -1,23 +1,24 @@
 module tagion.services.ServerFileDiscoveryService;
 
+import std.stdio;
 import core.time;
 import std.datetime;
-import tagion.Options;
 import std.typecons;
 import std.conv;
-// import tagion.services.LoggerService;
-import tagion.basic.Logger;
 import std.concurrency;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
-import std.stdio;
-
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
 import std.file;
 import std.file: fwrite = write;
 import std.array;
 import p2plib = p2p.node;
 import std.net.curl;
+
+// import tagion.services.LoggerService;
+import tagion.basic.Logger;
+import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.basic.TagionExceptions : fatal;
+import tagion.Options;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.gossip.P2pGossipNet;
 
@@ -28,11 +29,11 @@ enum DiscoveryRequestCommand{
     UpdateTable = 4 // on epoch
 }
 
-enum DicvoryControl{
-    READY = 1,
+enum DiscoveryState{
+    READY = 1
 }
 
-void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string taskName, immutable(Options) opts){  //TODO: for test
+void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string taskName, immutable(Options) opts) nothrow {  //TODO: for test
     try{
         scope(exit){
             log("exit");
@@ -101,20 +102,19 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
                 log("initialized %d", node_addresses.length);
             }
             catch(Exception e){
-                log.fatal(e.msg);
-                ownerTid.send(cast(immutable) e);
+                fatal(e);
             }
         }
 
         auto addr_changed_tid = spawn(&handleAddrChanedEvent, node);
-        receive((Control ctrl) { 
-            assert(ctrl == Control.LIVE);
-        });
+        receive((Control ctrl) {
+                assert(ctrl == Control.LIVE);
+            });
 
         auto rechability_changed_tid = spawn(&handleRechabilityChanged, node);
-        receive((Control ctrl) { 
-            assert(ctrl == Control.LIVE);
-        });
+        receive((Control ctrl) {
+                assert(ctrl == Control.LIVE);
+            });
         scope(exit){
             {
                 addr_changed_tid.send(Control.STOP);
@@ -186,30 +186,30 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
                 },
                 (DiscoveryRequestCommand cmd){
                     switch(cmd){
-                        case DiscoveryRequestCommand.BecomeOnline: {
-                            log("Becoming online..");
-                            is_online = true;
-                            if(last_seen_addr!=""){
-                                recordOwnInfo(last_seen_addr);
-                                is_ready = true;
-                            }
-                            break;
+                    case DiscoveryRequestCommand.BecomeOnline: {
+                        log("Becoming online..");
+                        is_online = true;
+                        if(last_seen_addr!=""){
+                            recordOwnInfo(last_seen_addr);
+                            is_ready = true;
                         }
-                        case DiscoveryRequestCommand.RequestTable: {
-                            initialize();
-                            auto address_book = new ActiveNodeAddressBook(node_addresses);
-                            ownerTid.send(address_book);
-                            break;
-                        }
-                        case DiscoveryRequestCommand.BecomeOffline: {
-                            eraseOwnInfo();
-                            break;
-                        }
-                        default:
-                            pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                        break;
+                    }
+                    case DiscoveryRequestCommand.RequestTable: {
+                        initialize();
+                        auto address_book = new ActiveNodeAddressBook(node_addresses);
+                        ownerTid.send(address_book);
+                        break;
+                    }
+                    case DiscoveryRequestCommand.BecomeOffline: {
+                        eraseOwnInfo();
+                        break;
+                    }
+                    default:
+                        pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
                     }
                 }
-            );
+                );
             notifyReadyAfterDelay();
         }while(!stop);
     }
@@ -219,32 +219,32 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string t
 }
 
 void handleAddrChanedEvent(shared p2plib.Node node) nothrow{
-try {
-    register("addr_changed_handler", thisTid);
-    ownerTid.send(Control.LIVE);
-    scope(exit){
-        log("stop");
-        ownerTid.prioritySend(Control.END);
-    
-    auto stop = false;
-    do{
-        receive(
-            (immutable(ubyte)[] data){
-                auto pub_addr = node.PublicAddress;
-                writefln("Addr changed %s", pub_addr);
-                if(pub_addr.length > 0){
-                    auto addrinfo = node.AddrInfo();
-                    ownerTid.send(addrinfo);
+    try {
+        register("addr_changed_handler", thisTid);
+        ownerTid.send(Control.LIVE);
+        scope(exit){
+            log("stop");
+            ownerTid.prioritySend(Control.END);
+	}
+        auto stop = false;
+        do {
+            receive(
+                (immutable(ubyte)[] data){
+                    auto pub_addr = node.PublicAddress;
+                    writefln("Addr changed %s", pub_addr);
+                    if(pub_addr.length > 0){
+                        auto addrinfo = node.AddrInfo();
+                        ownerTid.send(addrinfo);
+                    }
+                },
+                (Control control){
+                    if(control == Control.STOP){
+                        log("stop");
+                        stop = true;
+                    }
                 }
-            },
-            (Control control){
-                if(control == Control.STOP){
-                    log("stop");
-                    stop = true;
-                }
-            }
-        );
-    }while(!stop);
+                );
+        } while(!stop);
     }
     catch (Throwable t) {
         log("ERROR: %s", t.msg);
@@ -256,35 +256,35 @@ try {
 void handleRechabilityChanged(shared p2plib.Node node) nothrow{
     try {
 
-    register("rechability_handler", thisTid);
-    ownerTid.send(Control.LIVE);
-    scope(exit){
-        log("stop");
-        ownerTid.prioritySend(Control.END);
+        register("rechability_handler", thisTid);
+        ownerTid.send(Control.LIVE);
+        scope(exit){
+            log("stop");
+            ownerTid.prioritySend(Control.END);
+        }
+        auto stop = false;
+        do{
+            receive(
+                (immutable(ubyte)[] data){
+                    writefln("RECHABILITY CHANGED: %s", cast(string) data);
+                    auto pub_addr = node.PublicAddress;
+                    writefln("Addr changed %s", pub_addr);
+                    if(pub_addr.length > 0){
+                        auto addrinfo = node.AddrInfo();
+                        ownerTid.send(addrinfo);
+                    }
+                },
+                (Control control){
+                    if(control == Control.STOP){
+                        log("stop");
+                        stop = true;
+                    }
+                }
+                );
+        } while(!stop);
     }
-    auto stop = false;
-    do{
-        receive(
-            (immutable(ubyte)[] data){
-                writefln("RECHABILITY CHANGED: %s", cast(string) data);
-                auto pub_addr = node.PublicAddress;
-                writefln("Addr changed %s", pub_addr);
-                if(pub_addr.length > 0){
-                    auto addrinfo = node.AddrInfo();
-                    ownerTid.send(addrinfo);
-                }
-            },
-            (Control control){
-                if(control == Control.STOP){
-                    log("stop");
-                    stop = true;
-                }
-            }
-        );
-    }while(!stop);
     catch (Throwable t) {
         log("ERROR: %s", t.msg);
         fatal(t);
     }
-}
 }

@@ -22,6 +22,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
+import tagion.dart.Recorder : Factory;
 import tagion.hibon.HiBONJSON;
 //import tagion.gossip.EmulatorGossipNet;
 
@@ -50,6 +51,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
 
         auto net=new StdSecureNet;
+        auto rec_factory=Factory(net);
         auto empty_hirpc = HiRPC(null);
         scope SmartScript[Buffer] smart_scripts;
 
@@ -62,7 +64,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         }
 
 
-        void modifyDART(DARTFile.Recorder recorder) {
+        void modifyDART(Factory.Recorder recorder) {
             Tid dart_tid = locate(dart_task_name);
             // auto sender = DART.dartModify(recorder, empty_hirpc);
             if (dart_tid != Tid.init){
@@ -88,7 +90,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                     smart_scripts=null;
                     current_epoch++;
                 }
-                auto recorder = DARTFile.Recorder(net);
+                auto recorder = rec_factory.recorder;
                 foreach(payload_el; payload_doc[]) {
                     immutable data=payload_el.get!Buffer;
                     const doc=Document(data);

@@ -4,49 +4,54 @@ import core.thread;
 import std.concurrency;
 
 import std.datetime: Clock;
-import tagion.Options;
+import std.conv;
 
-import tagion.utils.Random;
-
-import tagion.GlobalSignals : abort;
-
-import tagion.basic.Basic : Pubkey, Payload, Control, nameOf;
-import tagion.basic.Logger;
-import tagion.services.TagionService;
-import tagion.gossip.EmulatorGossipNet;
-import tagion.gossip.InterfaceNet : SecureNet;
-import tagion.gossip.GossipNet : StdSecureNet;
-import tagion.ServiceNames : get_node_name;
-import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
-import p2p.connection;
+//import p2p.connection;
 import p2p.callback;
 import p2p.cgo.helper;
+
+import tagion.Options : Options, setOptions, options;
+import tagion.utils.Random;
+import tagion.GlobalSignals : abort;
+
+import tagion.basic.Basic : Pubkey, Control, nameOf;
+import tagion.basic.Logger;
+import tagion.hashgraph.Event : Event;
+import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraph.HashGraphBasic : buildEventPackage, EventBody, ExchangeState;
+
+import tagion.services.TagionService;
+import tagion.gossip.EmulatorGossipNet;
+import tagion.crypto.SecureInterface : SecureNet, HashNet;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.ServiceNames : get_node_name;
+import tagion.basic.TagionExceptions;
 import tagion.services.DartSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
-import std.conv;
 import tagion.gossip.P2pGossipNet;
-import tagion.communication.Monitor;
+import tagion.gossip.InterfaceNet;
+import tagion.gossip.EmulatorGossipNet;
+
+import tagion.monitor.Monitor;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
-import tagion.Options : Options, setOptions, options;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 
 import tagion.utils.Miscellaneous: cutHex;
-import tagion.hashgraph.Event;
-import tagion.hashgraph.HashGraph;
+// import tagion.hashgraph.Event;
+// import tagion.hashgraph.HashGraph;
 import tagion.basic.ConsensusExceptions;
-import tagion.gossip.InterfaceNet;
-import tagion.gossip.EmulatorGossipNet;
 import tagion.basic.TagionExceptions : TagionException;
 
 import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
 import tagion.services.ServerFileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
-import tagion.gossip.P2pGossipNet: AddressBook;
+//mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DartService;
 import tagion.Keywords: NetworkMode;
 import std.stdio;
@@ -116,10 +121,10 @@ do
     }
     auto master_net = new StdSecureNet;
     P2pGossipNet net;
-    auto hashgraph = new HashGraph();
+    auto hashgraph = new HashGraph(opts.nodes);
     auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
     auto connectionPoolBridge = new shared(ConnectionPoolBridge)();
-    // connectionPoolBridge[Pubkey([0])] = 0; 
+    // connectionPoolBridge[Pubkey([0])] = 0;
     Tid discovery_tid;
     Tid dart_sync_tid;
     Tid dart_tid;
@@ -132,11 +137,12 @@ do
         master_net.generateKeyPair(passphrase);
         shared shared_net = cast(shared) master_net;
         net = new P2pGossipNet(hashgraph, opts, p2pnode, connectionPool, connectionPoolBridge);
-        net.drive("tagion_service", shared_net);
-        hashgraph.request_net=net;
+        net.derive("tagion_service", shared_net);
+        hashgraph.gossip_net=net;
 
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
+        pragma(msg, "CBR: Casting net to immutable(HashNet) not nice");
         discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, cast(immutable HashNet) net, opts.discovery.task_name, opts);
         auto ctrl = receiveOnly!Control;
         assert(ctrl == Control.LIVE);
@@ -201,7 +207,7 @@ do
     discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
     scope(exit){
         discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
-    }    
+    }
     receive((DiscoveryState state){
         assert(state == DiscoveryState.READY);
     });
@@ -273,7 +279,7 @@ do
 
         if (net.callbacks)
         {
-            net.callbacks.exiting(hashgraph.getNode(net.pubkey));
+            net.callbacks.exiting(net.pubkey, hashgraph);
         }
 
         // version(none)
@@ -382,10 +388,18 @@ do
             net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
         }
     }
-    Payload empty_payload;
+    const empty_payload=Document();
 
     immutable(ubyte)[] data;
 
+    void receive_buffer(Document doc) {
+        timeout_count=0;
+        net.time=net.time+100;
+        log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, doc.data.length);
+        net.receive(doc);
+    }
+
+    version(none)
     void receive_buffer(immutable(ubyte[]) buf)
     {
         try
@@ -416,7 +430,7 @@ do
         }
     }
 
-    void next_mother(Payload payload)
+    void next_mother(const Document payload)
     {
         try
         {
@@ -425,24 +439,35 @@ do
             if ((gossip_count >= max_gossip) || (payload.length))
             {
                 // fout.writeln("After build wave front");
-                if (own_node.event is null)
-                {
-                    immutable ebody = immutable(EventBody)(net.evaPackage,
-                            null, null, net.time, net.eva_altitude);
-                    const ebody_hibon = ebody.toHiBON;
-                    const pack = net.buildEvent(ebody_hibon, ExchangeState.NONE);
-                    // immutable signature=net.sign(ebody);
-                    event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                // if (own_node.event is null)
+                // {
+                //     immutable ebody = immutable(EventBody)(net.evaPackage,
+                //             null, null, net.time, net.eva_altitude);
+                //     const ebody_hibon = ebody.toHiBON;
+                //     const pack = net.buildEvent(ebody_hibon, ExchangeState.NONE);
+                //     // immutable signature=net.sign(ebody);
+                //     event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                // }
+                if ( own_node.event is null ) {
+                    log.trace("next_mother %d eva", timeout_count);
+                    immutable ebody=EventBody.eva(net);
+                    immutable epack=buildEventPackage(net, ebody);
+                    event=hashgraph.registerEvent(epack);
                 }
-                else
-                {
-                    auto mother = own_node.event;
-                    immutable mother_hash = mother.fingerprint;
-                    immutable ebody = immutable(EventBody)(payload,
-                            mother_hash, null, net.time, mother.altitude + 1);
-                    const pack = net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-                    //immutable signature=net.sign(ebody);
-                    event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
+                else {
+                    auto mother=own_node.event;
+                    immutable mother_hash=mother.fingerprint;
+                    immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
+                    immutable epack=buildEventPackage(net, ebody);
+                    event=hashgraph.registerEvent(epack);
+
+                    // auto mother = own_node.event;
+                    // immutable mother_hash = mother.fingerprint;
+                    // immutable ebody = immutable(EventBody)(payload,
+                    //         mother_hash, null, net.time, mother.altitude + 1);
+                    // const pack = net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
+                    // //immutable signature=net.sign(ebody);
+                    // event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
                 }
                 immutable send_channel = net.selectRandomNode;
                 auto send_node = hashgraph.getNode(send_channel);
@@ -452,14 +477,25 @@ do
                         && !connectionPoolBridge.contains(send_node.pubkey))
                 {
                     send_node.state = ExchangeState.INIT_TIDE;
-                    auto tidewave = new HiBON;
-                    auto tides = net.tideWave(tidewave, net.callbacks !is null);
-                    auto pack = net.buildEvent(tidewave, ExchangeState.TIDAL_WAVE);
-                    net.send(send_channel, pack.toHiBON.serialize);
-                    if (net.callbacks)
-                    {
+                    auto tidewave   = new HiBON;
+                    auto tides      = hashgraph.tideWave(tidewave, net.callbacks !is null);
+                    const pack_doc  = hashgraph.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
+
+                    net.send(send_channel, pack_doc);
+                    //log.trace("Send to %s", send_node.pubkey.cutHex);
+                    if ( net.callbacks ) {
                         net.callbacks.sent_tidewave(send_channel, tides);
                     }
+
+                    // send_node.state = ExchangeState.INIT_TIDE;
+                    // auto tidewave = new HiBON;
+                    // auto tides = net.tideWave(tidewave, net.callbacks !is null);
+                    // auto pack = net.buildEvent(tidewave, ExchangeState.TIDAL_WAVE);
+                    // net.send(send_channel, pack.toHiBON.serialize);
+                    // if (net.callbacks)
+                    // {
+                    //     net.callbacks.sent_tidewave(send_channel, tides);
+                    // }
                 }
                 gossip_count = 0;
             }
@@ -478,7 +514,7 @@ do
         }
     }
 
-    void receive_payload(Payload pload)
+    void receive_payload(const Document pload)
     {
         log("payload.length=%d", pload.length);
         next_mother(pload);
@@ -582,7 +618,7 @@ do
                 }
                 // log("response: %s", doc.toJSON);
                 log("received in: %s", resp.stream.Identifier);
-                receive_buffer(resp.data);
+                receive_buffer(Document(resp.data));
             }, (immutable(Pubkey) send_channel) { //On sending failed
                 log("Removing channel from net");
                 auto send_node = hashgraph.getNode(send_channel);
@@ -618,11 +654,11 @@ do
                 writefln("TIME OUT %d", opts.node_id);
                 timeout_count++;
                 net.time = Clock.currTime.toUnixTime!long;
-                if (!net.queue.empty)
-                {
-                    log("FROM QUEUE");
-                    receive_buffer(net.queue.read);
-                }
+                // if (!net.queue.empty)
+                // {
+                //     log("FROM QUEUE");
+                //     receive_buffer(net.queue.read);
+                // }
                 next_mother(empty_payload);
             }
         }

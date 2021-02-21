@@ -12,7 +12,7 @@ import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : buildEventPackage, EventBody, ExchangeState;
 import tagion.basic.ConsensusExceptions;
-import tagion.gossip.InterfaceNet;
+import tagion.crypto.SecureInterface : SecureNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 
@@ -61,7 +61,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
     Net net;
     net=new Net(hashgraph);
-    net.drive("tagion_service", master_net);
+    net.derive("tagion_service", master_net);
     hashgraph.gossip_net=net;
 
     log("\n\n\n\n\n##### Received %s #####", opts.node_name);

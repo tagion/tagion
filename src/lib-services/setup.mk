@@ -16,6 +16,7 @@ LIBS+=${call GETLIB,tagion_funnel}
 LIBS+=${call GETLIB,tagion_gossip}
 LIBS+=${call GETLIB,tagion_communication}
 LIBS+=${call GETLIB,tagion_wallet}
+LIBS+=${call GETLIB,tagion_monitor}
 
 LIBS+=$(LIBSECP256K1)
 LIBS+=$(LIBP2P)

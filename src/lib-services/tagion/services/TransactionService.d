@@ -23,8 +23,9 @@ import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.basic.TagionExceptions : fatal, TagionException;
 
-import tagion.dart.DARTFile;
+//import tagion.dart.DARTFile;
 import tagion.dart.DART;
+import tagion.dart.Recorder : Factory;
 
 @safe
 class HiRPCNet : StdSecureNet {
@@ -56,6 +57,7 @@ void transactionServiceTask(immutable(Options) opts) {
         HiRPC internal_hirpc = HiRPC(null);
         immutable passphrase="Very secret password for the server";
         hirpc.net=new HiRPCNet(passphrase);
+        auto rec_factory=Factory(hirpc.net);
         Tid node_tid=locate(opts.node_name);
 
         @trusted void sendPayload(Document payload) {
@@ -114,13 +116,13 @@ void transactionServiceTask(immutable(Options) opts) {
                     import tagion.script.Script;
 
                     const method_name=hirpc_received.method.name;
-                    const params=hirpc_received.response.params;
+                    const params=hirpc_received.method.params;
 
                     void yield() @trusted {
                         Fiber.yield;
                     }
-                    log(method);
-                    switch (method) {
+                    log(method_name);
+                    switch (method_name ) {
                     case "transaction":
                         // Should be EXTERNAL
                         try {
@@ -136,13 +138,13 @@ void transactionServiceTask(immutable(Options) opts) {
                                 //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                 const response=ssl_relay.response;
                                 const received = internal_hirpc.receive(Document(response));
-                                const foreign_recorder = DARTFile.Recorder(hirpc.net, received.params);
+                                const foreign_recorder = rec_factory.recorder(received.response.result);
                                 //return recorder;
 
                                 import tagion.script.StandardRecords: StandardBill;
                                 // writefln("input loaded %d", foreign_recoder.archive);
                                 foreach(archive; foreign_recorder.archives){
-                                    auto std_bill = StandardBill(archive.doc);
+                                    auto std_bill = StandardBill(archive.filed);
                                     signed_contract.input ~= std_bill;
                                 }
 
@@ -166,14 +168,14 @@ void transactionServiceTask(immutable(Options) opts) {
                         catch (TagionException e) {
                             log.error("Bad contract: %s", e.msg);
                             auto bad_response = internal_hirpc.error(hirpc_received, e.msg, 1);
-                            ssl_relay.send(hirpc.toHiBON(bad_response).serialize);
+                            ssl_relay.send(bad_response.toDoc.serialize);
                             return true;
                         }
                         {
                             auto response = new HiBON;
                             response["done"]=true;
                             const hirpc_send = hirpc.result(hirpc_received, response);
-                            immutable send_buffer=hirpc.toHiBON(hirpc_send).serialize;
+                            immutable send_buffer=hirpc_send.toDoc.serialize;
                             ssl_relay.send(send_buffer);
                         }
                         return true;

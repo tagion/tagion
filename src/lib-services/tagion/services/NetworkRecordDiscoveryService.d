@@ -14,11 +14,12 @@ import std.stdio;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
-import tagion.gossip.InterfaceNet : HashNet;
+import tagion.crypto.SecureInterface : HashNet;
 import std.array;
 import tagion.gossip.P2pGossipNet;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
+import tagion.dart.Recorder : Factory;
 import tagion.script.StandardRecords;
 import tagion.communication.HiRPC;
 import tagion.services.ServerFileDiscoveryService;
@@ -39,30 +40,33 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
     HiRPC internal_hirpc = HiRPC(null);
     NodeAddress[Pubkey] internal_nodeaddr_table;
 
-    DARTFile.Recorder loadFromDart(Buffer[] fp){
+    auto rec_factory=Factory(net);
+    Factory.Recorder loadFromDart(Buffer[] fp){
         try{
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if(dart_sync_tid!=Tid.init){
                 auto sender = DART.dartRead(fp, internal_hirpc);
 
-                auto tosend = internal_hirpc.toHiBON(sender).serialize;
+                auto tosend = sender.toDoc.serialize;
                 send(dart_sync_tid, taskName, tosend);
                 Buffer buffer;
                 receive((Buffer buf){
                     buffer = buf;
                 });
                 const received = internal_hirpc.receive(Document(buffer));
-                return DARTFile.Recorder(cast(HashNet) net, received.params);            
+                return rec_factory.recorder(received.response.result);
             }else{
                 log("DART sync not running");
-                return DARTFile.Recorder(cast(HashNet) net);
+                return rec_factory.recorder;
             }
-        }catch(Throwable e){
+        }
+        catch(Throwable e){
+            pragma(msg, "fixme(alex) Why catch when it is thrown again");
             log("err: %s", e.msg);
             throw e;
         }
     }
-    
+
     void update_internal_table(immutable NodeAddress[Pubkey] node_addresses){
         internal_nodeaddr_table = cast(NodeAddress[Pubkey])node_addresses.dup;
     }
@@ -73,16 +77,16 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         auto addr_table_recorder = loadFromDart([addr_table_fp]);
         if(addr_table_recorder.length > 0){
             assert(addr_table_recorder.length == 1);
-            auto ncl = NetworkNameCard(addr_table_recorder.archives().front().doc);                    
+            auto ncl = NetworkNameCard(addr_table_recorder.archives.front.filed);
             auto ncr_recorder = loadFromDart([ncl.record]);
             assert(ncr_recorder.length == 1);
-            const prev_ncr = NetworkNameRecord(ncr_recorder.archives.front().doc);
+            const prev_ncr = NetworkNameRecord(ncr_recorder.archives.front.filed);
             auto range = prev_ncr.payload[];
             auto active_pubkeys = range.map!(a=>cast(Buffer)net.calcHash(a.get!Buffer));
             const addresses_recorder = loadFromDart(active_pubkeys.array);
             NodeAddress[Pubkey] node_addresses;
             foreach(archive; addresses_recorder.archives){
-                auto nnr = NetworkNodeRecord(archive.doc);
+                auto nnr = NetworkNodeRecord(archive.filed);
                 if(nnr.state == NetworkNodeRecord.State.ACTIVE){
                     auto node_addr = NodeAddress(nnr.address, opts, true);
                     auto pk = cast(Pubkey) nnr.node;
@@ -101,7 +105,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
             auto result = new HiBON;
             foreach (i, pk; node_addresses.keys)
             {
-                result[i] = pk; 
+                result[i] = pk;
             }
             return Document(result.serialize);
         }
@@ -116,11 +120,11 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
             return addresses_record;
         }
         const addr_table_fp = net.calcHash(cast(Buffer)ADDR_TABLE);
-        
+
         auto addr_table_recorder = loadFromDart([addr_table_fp]);
-        
-        auto insert_recorder = DARTFile.Recorder(cast(HashNet)net);
-        auto remove_recorder = DARTFile.Recorder(cast(HashNet)net);
+
+        auto insert_recorder = rec_factory.recorder;
+        auto remove_recorder = rec_factory.recorder;
         NetworkNameRecord ncr;
         NetworkNameCard ncl;
         if(addr_table_recorder.length == 0){
@@ -130,12 +134,12 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
             ncl.pubkey = pubkey;
         }else{
             assert(addr_table_recorder.length == 1);
-            ncl = NetworkNameCard(addr_table_recorder.archives().front().doc);                    
+            ncl = NetworkNameCard(addr_table_recorder.archives.front.filed);
             remove_recorder.remove(Document(ncl.toHiBON.serialize));
             auto ncr_recorder = loadFromDart([ncl.record]);
             if(ncr_recorder.archives.length != 0){
                 assert(ncr_recorder.length == 1);
-                const prev_ncr = NetworkNameRecord(ncr_recorder.archives.front().doc);
+                const prev_ncr = NetworkNameRecord(ncr_recorder.archives.front.filed);
                 ncr = getNetworkNameRecord(ncl.record, prev_ncr.index + 1);
             }else{
                 ncr = getNetworkNameRecord();
@@ -147,7 +151,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         const prev_addresses_recorder = loadFromDart(node_addresses.keys.map!(a=>cast(Buffer)net.calcHash(cast(Buffer)a)).array);
         if(prev_addresses_recorder.length>0){
             foreach(archive; prev_addresses_recorder.archives){
-                remove_recorder.remove(archive.doc);
+                remove_recorder.remove(archive.filed);
             }
         }
 
@@ -166,13 +170,13 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         }
         insert_recorder.add(Document(ncr.toHiBON.serialize));
         insert_recorder.add(Document(ncl.toHiBON.serialize));
-        void updateDart(DARTFile.Recorder recorder){
+        void updateDart(Factory.Recorder recorder){
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if(dart_sync_tid!=Tid.init){
                 log("modifying dart with: %d archives", recorder.archives.length);
                 recorder.dump();
                 auto sender = DART.dartModify(recorder, internal_hirpc);
-                auto tosend = internal_hirpc.toHiBON(sender).serialize;
+                auto tosend = sender.toDoc.serialize;
                 send(dart_sync_tid, taskName, tosend);
                 receive((Buffer result){
                     log("Update dart result: %s", cast(string)result);
@@ -216,7 +220,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
     ownerTid.send(Control.LIVE);
 
     auto stop = false;
-    do{            
+    do{
         receive(
             &receiveAddrBook,
             (immutable(Pubkey) key, Tid tid){

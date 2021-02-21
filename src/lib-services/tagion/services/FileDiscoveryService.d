@@ -9,6 +9,7 @@ import std.conv;
 import tagion.basic.Logger;
 import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.basic.TagionExceptions : TagionException, taskException;
 import std.stdio;
 import tagion.services.MdnsDiscoveryService;
 
@@ -92,7 +93,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
             }
         }
     }
-    
+
     scope(exit){
         eraseOwnInfo();
     }
@@ -117,8 +118,9 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
                 }
             }
             log("initialized %d", node_addresses.length);
-        }catch(Exception e){
-            writeln("Er:", e.msg);
+        }
+        catch(Exception e){
+            //logwriteln("Er:", e.msg);
             log.fatal(e.msg);
         }
     }
@@ -166,13 +168,9 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
         }
     }
     catch(TagionException e){
-        immutable task_e=e.taskException;
-        log(task_e);
-        ownerTid.send(task_e);
+        ownerTid.send(e.taskException);
     }
     catch(Throwable t){
-        immutable task_e=t.taskException;
-        log(task_e);
-        ownerTid.send(task_e);
+        ownerTid.send(t.taskException);
     }
 }

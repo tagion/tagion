@@ -2,7 +2,7 @@ module tagion.service.SecureFactory;
 
 import tagion.gossip.InterfaceNet : FactoryNet;
 import tagion.crypto.SecureInterface : HashNet;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 @safe
