@@ -1,5 +1,5 @@
 include git.mk
-
+PRECMD?=@
 DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
@@ -85,7 +85,7 @@ lib: $(REVISION) $(LIBRARY)
 unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST): $(LIBS) $(WAYS)
+$(UNITTEST): $(LIBS) $(WAYS) $(DFILES)
 	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
