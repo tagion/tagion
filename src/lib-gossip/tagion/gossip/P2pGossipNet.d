@@ -171,6 +171,7 @@ class ConnectionPool(T: shared(p2plib.Stream), TKey){
 }
 // version(none)
 unittest{
+    import p2p.node : Stream;
     @trusted
     synchronized
     class FakeStream: Stream{
