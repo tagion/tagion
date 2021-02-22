@@ -12,7 +12,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.basic.Basic : Buffer, Pubkey, Signature;
 import tagion.basic.TagionExceptions : Check;
 import tagion.Keywords;
-import tagion.crypto.SecureInterface : SecureNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.utils.Miscellaneous : toHexString;
 
 @safe
