@@ -9,7 +9,7 @@ import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Basic;
 
-import tagion.crypto.SecureInterface : HashNet, SecureNet;
+import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
