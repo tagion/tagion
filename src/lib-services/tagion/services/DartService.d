@@ -24,6 +24,7 @@ version(unittest) {
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.Recorder : Factory;
 
@@ -35,7 +36,7 @@ import tagion.communication.HandlerPool;
 
 import tagion.communication.HiRPC;
 import tagion.services.DartSynchronizeService;
-import tagion.crypto.SecureInterface : SecureNet;
+
 //import tagion.services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
 

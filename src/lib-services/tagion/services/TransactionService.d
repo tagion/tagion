@@ -143,7 +143,7 @@ void transactionServiceTask(immutable(Options) opts) {
 
                                 import tagion.script.StandardRecords: StandardBill;
                                 // writefln("input loaded %d", foreign_recoder.archive);
-                                foreach(archive; foreign_recorder.archives){
+                                foreach(archive; foreign_recorder[]){
                                     auto std_bill = StandardBill(archive.filed);
                                     signed_contract.input ~= std_bill;
                                 }

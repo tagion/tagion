@@ -14,7 +14,7 @@ import std.stdio;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
-import tagion.crypto.SecureInterface : HashNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import std.array;
 import tagion.gossip.P2pGossipNet;
 import tagion.dart.DARTFile;
@@ -77,15 +77,15 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         auto addr_table_recorder = loadFromDart([addr_table_fp]);
         if(addr_table_recorder.length > 0){
             assert(addr_table_recorder.length == 1);
-            auto ncl = NetworkNameCard(addr_table_recorder.archives.front.filed);
+            auto ncl = NetworkNameCard(addr_table_recorder[].front.filed);
             auto ncr_recorder = loadFromDart([ncl.record]);
             assert(ncr_recorder.length == 1);
-            const prev_ncr = NetworkNameRecord(ncr_recorder.archives.front.filed);
+            const prev_ncr = NetworkNameRecord(ncr_recorder[].front.filed);
             auto range = prev_ncr.payload[];
             auto active_pubkeys = range.map!(a=>cast(Buffer)net.calcHash(a.get!Buffer));
             const addresses_recorder = loadFromDart(active_pubkeys.array);
             NodeAddress[Pubkey] node_addresses;
-            foreach(archive; addresses_recorder.archives){
+            foreach(archive; addresses_recorder[]){
                 auto nnr = NetworkNodeRecord(archive.filed);
                 if(nnr.state == NetworkNodeRecord.State.ACTIVE){
                     auto node_addr = NodeAddress(nnr.address, opts, true);
@@ -134,23 +134,25 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
             ncl.pubkey = pubkey;
         }else{
             assert(addr_table_recorder.length == 1);
-            ncl = NetworkNameCard(addr_table_recorder.archives.front.filed);
+            ncl = NetworkNameCard(addr_table_recorder[].front.filed);
             remove_recorder.remove(Document(ncl.toHiBON.serialize));
             auto ncr_recorder = loadFromDart([ncl.record]);
-            if(ncr_recorder.archives.length != 0){
+            if(ncr_recorder.length != 0){
                 assert(ncr_recorder.length == 1);
-                const prev_ncr = NetworkNameRecord(ncr_recorder.archives.front.filed);
+                const prev_ncr = NetworkNameRecord(ncr_recorder[].front.filed);
                 ncr = getNetworkNameRecord(ncl.record, prev_ncr.index + 1);
             }else{
                 ncr = getNetworkNameRecord();
             }
         }
+        pragma(msg, "fixme(Alex) Here you should use .hashOf because ncr is a HiBON");
         ncl.record = net.calcHash(ncr.toHiBON.serialize);
 
         /// Removing previous node addresses
+        pragma(msg, "fixme(Alex) Why not just use the maps range instead of copying the keys to an array");
         const prev_addresses_recorder = loadFromDart(node_addresses.keys.map!(a=>cast(Buffer)net.calcHash(cast(Buffer)a)).array);
         if(prev_addresses_recorder.length>0){
-            foreach(archive; prev_addresses_recorder.archives){
+            foreach(archive; prev_addresses_recorder[]){
                 remove_recorder.remove(archive.filed);
             }
         }
@@ -173,7 +175,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         void updateDart(Factory.Recorder recorder){
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if(dart_sync_tid!=Tid.init){
-                log("modifying dart with: %d archives", recorder.archives.length);
+                log("modifying dart with: %d archives", recorder.length);
                 recorder.dump();
                 auto sender = DART.dartModify(recorder, internal_hirpc);
                 auto tosend = sender.toDoc.serialize;

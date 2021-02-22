@@ -22,12 +22,13 @@ import tagion.dart.BlockFile : BlockFile;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
+import tagion.crypto.SecureInterfaceNet: SecureNet, HashNet;
+
 import tagion.dart.DARTSynchronization;
 version(unittest) import tagion.dart.BlockFile: fileId;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.crypto.SecureInterface: SecureNet, HashNet;
 import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;

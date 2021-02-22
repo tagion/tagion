@@ -12,7 +12,7 @@ import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : buildEventPackage, EventBody, ExchangeState;
 import tagion.basic.ConsensusExceptions;
-import tagion.crypto.SecureInterface : SecureNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 

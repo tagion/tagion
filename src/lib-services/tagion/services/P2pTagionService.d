@@ -23,7 +23,7 @@ import tagion.hashgraph.HashGraphBasic : buildEventPackage, EventBody, ExchangeS
 
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.crypto.SecureInterface : SecureNet, HashNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;

@@ -13,7 +13,7 @@ import tagion.basic.Basic : Pubkey, Control;
 import tagion.basic.Logger;
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.crypto.SecureInterface : SecureNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
