@@ -398,7 +398,7 @@ struct HiRPC {
 
 
     alias check=Check!HiRPCException;
-    SecureNet net;
+    const SecureNet net;
 
     const(uint) generateId(){
         uint id = 0;
@@ -502,10 +502,8 @@ unittest {
     enum func_name="func_name";
 
     {
-        HiRPC hirpc;
-        HiRPC bad_hirpc;
-        hirpc.net=new HiRPCNet(passphrase);
-        bad_hirpc.net=new BadSecureNet(passphrase);
+        HiRPC hirpc=HiRPC(new HiRPCNet(passphrase));
+        HiRPC bad_hirpc=HiRPC(new BadSecureNet(passphrase));
         auto params=new HiBON;
         params["test"]=42;
         const sender=hirpc.action(func_name, params);
