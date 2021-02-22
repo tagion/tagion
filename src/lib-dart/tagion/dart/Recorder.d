@@ -26,7 +26,7 @@ private alias check=Check!DARTRecorderException;
 
 //    alias recorder=factory.recorder;
 @safe
-class Factory {
+class RecordFactory {
 
 
     const HashNet net;
@@ -34,8 +34,8 @@ class Factory {
     protected this(const HashNet net) {
         this.net=net;
     }
-    static Factory opCall(const HashNet net) {
-        return new Factory(net);
+    static RecordFactory opCall(const HashNet net) {
+        return new RecordFactory(net);
     }
     /++
      Creates an empty Recorder
@@ -368,7 +368,7 @@ unittest { // Archive
 
 
     auto net=new DARTFakeNet;
-    auto manufactor=Factory(net);
+    auto manufactor=RecordFactory(net);
 
     static assert(isHiBONRecord!Archive);
     Document filed_doc; // This is the data which is filed in the DART

@@ -90,7 +90,7 @@ alias check=Check!DARTException;
     enum INDEX_NULL=BlockFile.INDEX_NULL;
     immutable(string) filename;
 
-    protected Factory manufactor;
+    protected RecordFactory manufactor;
 
 
     protected {
@@ -138,7 +138,7 @@ alias check=Check!DARTException;
     this(const HashNet net, string filename) {
         blockfile=BlockFile(filename);
 //        this.net=net;
-        this.manufactor=Factory(net);
+        this.manufactor=RecordFactory(net);
         this.filename=filename;
     }
 
@@ -155,14 +155,14 @@ alias check=Check!DARTException;
     /++
      Creates an empty Recorder
      +/
-    Factory.Recorder recorder() nothrow {
+    RecordFactory.Recorder recorder() nothrow {
         return manufactor.recorder;
     }
 
     /++
      Creates an empty Recorder
      +/
-    Factory.Recorder recorder(const(Document) doc) {
+    RecordFactory.Recorder recorder(const(Document) doc) {
         return manufactor.recorder(doc);
     }
 
@@ -172,7 +172,7 @@ alias check=Check!DARTException;
      + Params:
      +     archives = Archive list
      +/
-    Factory.Recorder recorder(Factory.Recorder.Archives archives) nothrow {
+    RecordFactory.Recorder recorder(RecordFactory.Recorder.Archives archives) nothrow {
         return manufactor.recorder(archives);
     }
 
@@ -545,7 +545,7 @@ alias check=Check!DARTException;
     pragma(msg, "fixme(alex); Remove loadAll function");
     HiBON loadAll(Archive.Type type=Archive.Type.ADD){
         // auto result=Recorder(net);
-        //Factory.Recorder.Archive[] archives;
+        //RecordFactory.Recorder.Archive[] archives;
         auto recorder=manufactor.recorder;
         void local_load(const uint branch_index,  const ubyte rim_key=0, const uint rim=0) @trusted {
             if ( branch_index !is INDEX_NULL ) {
@@ -576,7 +576,7 @@ alias check=Check!DARTException;
         auto result=new HiBON;
         uint i;
         // // writeln(archives.length);
-        // pragma(msg, "Factory=", typeof(factory));
+        // pragma(msg, "RecordFactory=", typeof(factory));
         // pragma(msg, typeof(factory.recorder));
         // pragma(msg, typeof(factory.recorder[]));
         // pragma(msg, typeof(factory.recorder.archives[]));
@@ -590,7 +590,7 @@ alias check=Check!DARTException;
         return result;
     }
     // Loads all the archives in the list of fingerprints
-    Factory.Recorder loads(Range)(Range fingerprints, Archive.Type type=Archive.Type.REMOVE) if (isInputRange!Range) {
+    RecordFactory.Recorder loads(Range)(Range fingerprints, Archive.Type type=Archive.Type.REMOVE) if (isInputRange!Range) {
 
 	pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         import std.algorithm.comparison : min;
@@ -755,7 +755,7 @@ alias check=Check!DARTException;
      + If the function executes succesfully then the DART is update or else it does not affect the DART
      + The function return the bulleye of the dart
      +/
-    Buffer modify(Factory.Recorder modify_records) {
+    Buffer modify(RecordFactory.Recorder modify_records) {
         Leave traverse_dart(R)(
             scope ref R range,
             const uint branch_index,
@@ -965,8 +965,8 @@ alias check=Check!DARTException;
         }
     }
 
-    Factory.Recorder readStubs(){   //RIMS_IN_SECTOR
-        Factory.Recorder rec = manufactor.recorder();
+    RecordFactory.Recorder readStubs(){   //RIMS_IN_SECTOR
+        RecordFactory.Recorder rec = manufactor.recorder();
         void iterate(const uint branch_index, immutable uint rim=0) @trusted {
             if(branch_index !is INDEX_NULL){
                 scope data=blockfile.load(branch_index);
@@ -1152,18 +1152,18 @@ alias check=Check!DARTException;
                 BlockFile.create(filename, DARTFile.stringof, TEST_BLOCK_SIZE);
             }
 
-            bool check(const(Factory.Recorder) A, const(Factory.Recorder) B) {
+            bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
                 // &&
                 //     equal!(q{a.data == b.data})(A.archives[], B.archives[]);
             }
 
-            Buffer write(DARTFile dart, const(ulong[]) table, out Factory.Recorder rec, bool isStubs = false) {
+            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
                 rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart.modify(rec);
             }
 
-            Buffer[] fingerprints(Factory.Recorder recorder) {
+            Buffer[] fingerprints(RecordFactory.Recorder recorder) {
                 Buffer[] results;
                 foreach(a; recorder.archives) {
                     assert(a.done);
@@ -1173,7 +1173,7 @@ alias check=Check!DARTException;
 
             }
 
-            bool validate(DARTFile dart, const(ulong[]) table, out Factory.Recorder recorder) {
+            bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder recorder) {
                 write(dart, table, recorder);
                 auto _fingerprints=fingerprints(recorder);
 
@@ -1181,7 +1181,7 @@ alias check=Check!DARTException;
                 return check(recorder, find_recorder);
             }
 
-            Factory.Recorder records(Factory factory, const(ulong[]) table) {
+            RecordFactory.Recorder records(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach(t; table) {
                     const doc=DARTFakeNet.fake_doc(t);
@@ -1190,7 +1190,7 @@ alias check=Check!DARTException;
                 return rec;
             }
 
-            Factory.Recorder stubs(Factory factory, const(ulong[]) table){
+            RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table){
                 auto rec = factory.recorder;
                 foreach(t; table) {
                     import std.bitmanip;
@@ -1217,7 +1217,7 @@ alias check=Check!DARTException;
 
 //        @safe
         auto net=new DARTFakeNet;
-        auto manufactor=Factory(net);
+        auto manufactor=RecordFactory(net);
 
         immutable(ulong[]) table=[
             //  RIM 2 test (rim=2)
@@ -1350,14 +1350,14 @@ alias check=Check!DARTException;
         {  // Rim 2 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
             assert(validate(dart, table[0..4], recorder));
         }
 
         {  // Rim 3 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
             //=Recorder(net);
 
             assert(validate(dart, table[4..9], recorder));
@@ -1367,7 +1367,7 @@ alias check=Check!DARTException;
         {  // Rim 3 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
             //=Recorder(net);
 
             assert(validate(dart, table[4..9], recorder));
@@ -1377,7 +1377,7 @@ alias check=Check!DARTException;
         {  // Rim 4 test
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
 
             assert(validate(dart, table[17..$], recorder));
             // dart.dump;
@@ -1387,7 +1387,7 @@ alias check=Check!DARTException;
         {  // Rim 2 & 3
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
 
             assert(validate(dart, table[0..9], recorder));
             // dart.dump;
@@ -1397,7 +1397,7 @@ alias check=Check!DARTException;
         {  // Rim 2 & 3 & 4
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
 
             assert(validate(dart, table[0..9]~table[17..$], recorder));
             // dart.dump;
@@ -1406,7 +1406,7 @@ alias check=Check!DARTException;
         {  // Rim all
             create_dart(filename);
             auto dart=new DARTFile(net, filename);
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
 
             assert(validate(dart, table, recorder));
             // dart.dump;
@@ -1415,8 +1415,8 @@ alias check=Check!DARTException;
         { // Remove two archives and check the bulleye
             create_dart(filename_A);
             create_dart(filename_B);
-            Factory.Recorder recorder_A;
-            Factory.Recorder recorder_B;
+            RecordFactory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1445,8 +1445,8 @@ alias check=Check!DARTException;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Factory.Recorder recorder_A;
-            Factory.Recorder recorder_B;
+            RecordFactory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1476,8 +1476,8 @@ alias check=Check!DARTException;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Factory.Recorder recorder_A;
-            Factory.Recorder recorder_B;
+            RecordFactory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1506,8 +1506,8 @@ alias check=Check!DARTException;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Factory.Recorder recorder_A;
-            Factory.Recorder recorder_B;
+            RecordFactory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1537,8 +1537,8 @@ alias check=Check!DARTException;
                 ];
             create_dart(filename_A);
             create_dart(filename_B);
-            Factory.Recorder recorder_A;
-            Factory.Recorder recorder_B;
+            RecordFactory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
             //
@@ -1559,8 +1559,8 @@ alias check=Check!DARTException;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Factory.Recorder recorder_A;
-            Factory.Recorder recorder_B;
+            RecordFactory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
 
@@ -1585,8 +1585,8 @@ alias check=Check!DARTException;
 
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);
-            Factory.Recorder recorder_A;
-            Factory.Recorder recorder_B;
+            RecordFactory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_B;
 
             write(dart_A, random_table, recorder_A);
             write(dart_B, random_table, recorder_B);
@@ -1621,7 +1621,7 @@ alias check=Check!DARTException;
             }
             create_dart(filename_A);
             create_dart(filename_B);
-            Factory.Recorder recorder_A;
+            RecordFactory.Recorder recorder_A;
             // Recorder recorder_B;
             auto dart_A=new DARTFile(net, filename_A);
             auto dart_B=new DARTFile(net, filename_B);

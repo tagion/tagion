@@ -25,7 +25,7 @@ class DARTException : BlockFileException {
 }
 
 /++
- + Excection used in the Recorder Factory
+ + Excection used in the Recorder RecordFactory
  +/
 @safe
 class DARTRecorderException : DARTException {

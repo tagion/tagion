@@ -26,7 +26,7 @@ import tagion.Keywords : isValid;
 //import tagion.Base : Check;
 import tagion.basic.TagionExceptions : Check;
 import tagion.dart.BlockFile : BlockFile;
-import tagion.dart.Recorder : Factory, Archive;
+import tagion.dart.Recorder : RecordFactory, Archive;
 
 alias hex=toHexString;
 
@@ -225,7 +225,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             return hirpc.dartRim(rims, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartModify(scope const Factory.Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        @HiRPCMethod() const(HiRPCSender) dartModify(scope const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.recorder]=recorder.toDoc;
             return hirpc.dartModify(recorder, id);
@@ -461,7 +461,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         /++
          + Stores the add and remove actions in the journal replay log file
          +/
-        void record(Factory.Recorder recorder);
+        void record(RecordFactory.Recorder recorder);
         /++
          + This function is call when hole branches doesn't exist in the foreign DART
          + and need to be removed in the local DART
@@ -489,10 +489,10 @@ class DART : DARTFile { //, HiRPC.Supports {
 
     @RecordType("Journal") struct Journal {
         uint index;
-            Factory.Recorder recorder;
+            RecordFactory.Recorder recorder;
             enum indexName=GetLabel!(index).name;
             enum recorderName=GetLabel!(recorder).name;
-            this(Factory manufactor, const Document doc) {
+            this(RecordFactory manufactor, const Document doc) {
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
                 index=doc[indexName].get!uint;
                 const recorder_doc=doc[recorderName].get!Document;
@@ -526,7 +526,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             this.chunck_size=chunck_size;
         }
 
-        void record(Factory.Recorder recorder) {
+        void record(RecordFactory.Recorder recorder) {
 //            writefln("RECORD %s", recorder.empty);
             if ( !recorder.empty ) {
                 Journal journal;
@@ -642,7 +642,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                 scope request_branches=dartRim(params, hirpc, id);
                 scope result_branches =sync.query(request_branches);
                 if ( !Branches.isRecord(result_branches.response.result) ) {
-                    if ( result_branches.isRecord!(Factory.Recorder) ) {
+                    if ( result_branches.isRecord!(RecordFactory.Recorder) ) {
                         scope foreign_recoder=manufactor.recorder(result_branches.method.params);
                         sync.record(foreign_recoder);
                     }
@@ -852,8 +852,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                foreach(test_no; 0..3) {
                    DARTFile.create_dart(filename_A);
                    DARTFile.create_dart(filename_B);
-                   Factory.Recorder recorder_B;
-                   Factory.Recorder recorder_A;
+                   RecordFactory.Recorder recorder_B;
+                   RecordFactory.Recorder recorder_A;
                    // Recorder recorder_B;
                    auto dart_A=new DART(net, filename_A, from, to);
                    auto dart_B=new DART(net, filename_B, from, to);
@@ -931,8 +931,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                // writefln("Test 0.1");
                DARTFile.create_dart(filename_A);
                create_dart(filename_B);
-               Factory.Recorder recorder_B;
-               Factory.Recorder recorder_A;
+               RecordFactory.Recorder recorder_B;
+               RecordFactory.Recorder recorder_A;
                // Recorder recorder_B;
                auto dart_A=new DART(net, filename_A, from, to);
                auto dart_B=new DART(net, filename_B, from, to);
@@ -983,7 +983,7 @@ class DART : DARTFile { //, HiRPC.Supports {
 
                 DARTFile.create_dart(filename_A);
                 create_dart(filename_B);
-                Factory.Recorder recorder_B;
+                RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
@@ -1038,8 +1038,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // writefln("Test 2");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Factory.Recorder recorder_A;
-                Factory.Recorder recorder_B;
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1091,8 +1091,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // writefln("Test 3");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Factory.Recorder recorder_A;
-                Factory.Recorder recorder_B;
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1147,8 +1147,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // writefln("Test 4");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Factory.Recorder recorder_A;
-                Factory.Recorder recorder_B;
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1204,8 +1204,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // writefln("Test 5");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Factory.Recorder recorder_A;
-                Factory.Recorder recorder_B;
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //
@@ -1258,8 +1258,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // writefln("Test 6");
                 create_dart(filename_A);
                 create_dart(filename_B);
-                Factory.Recorder recorder_A;
-                Factory.Recorder recorder_B;
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
                 auto dart_A=new DART(net, filename_A, from, to);
                 auto dart_B=new DART(net, filename_B, from, to);
                 //

@@ -7,7 +7,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.basic.Basic : Buffer, Control;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
-import tagion.dart.Recorder : Factory;
+import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
@@ -99,7 +99,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     all_iterations = count(dart_range) * pow(ringWidth, (rings-2));
     float angDiff = cast(float)count(dart_range) / cores;
     static void setRings(int ring, int rings, ubyte[] buffer, ubyte ringWidth,
-            Factory.Recorder rec) {
+            RecordFactory.Recorder rec) {
         if(stop) return;
         auto rnd = Random(unpredictableSeed);
         bool randomChance(int proc) {
@@ -146,11 +146,11 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
         }
     }
 
-    static void setSectors(immutable Sector sector, ubyte rw, int rings, shared Factory.Recorder rec) {
+    static void setSectors(immutable Sector sector, ubyte rw, int rings, shared RecordFactory.Recorder rec) {
         ubyte[ulong.sizeof] buf;
         foreach(j; cast(Sector)sector) {
             buf[0 .. ushort.sizeof] = DART.Rims(j).rims;
-            setRings(2, rings, buf.dup, rw, cast(Factory.Recorder) rec);
+            setRings(2, rings, buf.dup, rw, cast(RecordFactory.Recorder) rec);
         }
         if(!stop) ownerTid.send(true, rec);
     }
@@ -175,13 +175,13 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
                     send(ownerTid, Control.END);
                 }
             },
-            (bool flag, shared Factory.Recorder recorder){
+            (bool flag, shared RecordFactory.Recorder recorder){
                 active_threads--;
-                auto non_shared_recorder = cast(Factory.Recorder) recorder;
+                auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
                 last_result = dart.modify(non_shared_recorder);
             },
-            (shared Factory.Recorder recorder, Tid sender){
-                auto non_shared_recorder = cast(Factory.Recorder) recorder;
+            (shared RecordFactory.Recorder recorder, Tid sender){
+                auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
                 dart.modify(non_shared_recorder);
                 non_shared_recorder.clear();
                 send(sender, true);

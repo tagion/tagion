@@ -88,7 +88,7 @@ class ReadRequestHandler : ResponseHandler{
         Buffer[] requested_fp;
         HiRPC hirpc;
         HiRPCReceiver receiver;
-        Factory manufactor;
+        RecordFactory manufactor;
     }
     immutable(string) task_name;
     this(const Buffer[] fp, HiRPC hirpc, const string task_name, const HiRPCReceiver receiver){
@@ -96,7 +96,7 @@ class ReadRequestHandler : ResponseHandler{
         this.hirpc = hirpc;
         this.task_name = task_name;
         this.receiver = receiver;
-        manufactor=Factory(hirpc.net);
+        manufactor=RecordFactory(hirpc.net);
     }
 
     void setResponse(Buffer response){
