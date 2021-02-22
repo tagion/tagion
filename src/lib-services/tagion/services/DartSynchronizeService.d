@@ -156,9 +156,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
             state.setState(DartSynchronizeState.READY);
         }
 
-        HiRPC hrpc;
+        auto hrpc=HiRPC(net);
         auto empty_hirpc = HiRPC(null);
-        hrpc.net = net;
 
         auto subscription = ActiveNodeSubscribtion!Net(opts);
         NodeAddress[Pubkey] node_addrses;

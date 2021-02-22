@@ -113,9 +113,9 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         auto net = new Net();
         net.derive(opts.dart.task_name, master_net);
 
-        HiRPC hirpc;
+        auto hirpc=HiRPC(net);
         auto empty_hirpc = HiRPC(null);
-        hirpc.net = net;
+        //hirpc.net = net;
 
         auto requestPool = new StdHandlerPool!(ResponseHandler, uint)(opts.dart.commands.read_timeout.msecs);
 

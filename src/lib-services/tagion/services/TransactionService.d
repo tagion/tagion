@@ -53,10 +53,9 @@ void transactionServiceTask(immutable(Options) opts) {
 
         import std.conv;
 
-        HiRPC hirpc;
         HiRPC internal_hirpc = HiRPC(null);
         immutable passphrase="Very secret password for the server";
-        hirpc.net=new HiRPCNet(passphrase);
+        auto hirpc=HiRPC(new HiRPCNet(passphrase));
         auto rec_factory=RecordFactory(hirpc.net);
         Tid node_tid=locate(opts.node_name);
 
