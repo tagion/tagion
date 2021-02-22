@@ -132,7 +132,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
 
     protected SecretMethods _secret;
 
-    final Pubkey pubkey() pure const nothrow {
+    @nogc final Pubkey pubkey() pure const nothrow {
         return _pubkey;
     }
 
