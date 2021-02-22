@@ -25,7 +25,7 @@ import tagion.basic.TagionExceptions : fatal, TagionException;
 
 //import tagion.dart.DARTFile;
 import tagion.dart.DART;
-import tagion.dart.Recorder : Factory;
+import tagion.dart.Recorder : RecordFactory;
 
 @safe
 class HiRPCNet : StdSecureNet {
@@ -57,7 +57,7 @@ void transactionServiceTask(immutable(Options) opts) {
         HiRPC internal_hirpc = HiRPC(null);
         immutable passphrase="Very secret password for the server";
         hirpc.net=new HiRPCNet(passphrase);
-        auto rec_factory=Factory(hirpc.net);
+        auto rec_factory=RecordFactory(hirpc.net);
         Tid node_tid=locate(opts.node_name);
 
         @trusted void sendPayload(Document payload) {

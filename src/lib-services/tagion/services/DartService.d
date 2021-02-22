@@ -26,7 +26,7 @@ import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.dart.DARTSynchronization;
-import tagion.dart.Recorder : Factory;
+import tagion.dart.Recorder : RecordFactory;
 
 import tagion.Options;
 import tagion.hibon.HiBONJSON;
@@ -156,7 +156,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                         requestPool.setResponse(response);
 
                     },
-                    (immutable(Factory.Recorder) recorder){ //TODO: change to HiRPC
+                    (immutable(RecordFactory.Recorder) recorder){ //TODO: change to HiRPC
                         log("DS: received recorder");
                         if(subscribe_handler_tid !=Tid.init){
                             send(subscribe_handler_tid, recorder);
@@ -337,7 +337,7 @@ private void subscibeHandler(immutable(Options) opts){
                         log("DS-subs: Client Disconnected key: %d", resp.key);
                         connectionPool.close(resp.key);
                     },
-                    (immutable(Factory.Recorder) recorder){ //TODO: change to HiRPC
+                    (immutable(RecordFactory.Recorder) recorder){ //TODO: change to HiRPC
                         log("DS-subs: received recorder");
                         connectionPool.broadcast(recorder.toDoc.serialize); //+save to journal etc..
                         // if not ready/started => send error

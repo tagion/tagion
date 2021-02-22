@@ -19,7 +19,7 @@ import std.array;
 import tagion.gossip.P2pGossipNet;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
-import tagion.dart.Recorder : Factory;
+import tagion.dart.Recorder : RecordFactory;
 import tagion.script.StandardRecords;
 import tagion.communication.HiRPC;
 import tagion.services.ServerFileDiscoveryService;
@@ -40,8 +40,8 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
     HiRPC internal_hirpc = HiRPC(null);
     NodeAddress[Pubkey] internal_nodeaddr_table;
 
-    auto rec_factory=Factory(net);
-    Factory.Recorder loadFromDart(Buffer[] fp){
+    auto rec_factory=RecordFactory(net);
+    RecordFactory.Recorder loadFromDart(Buffer[] fp){
         try{
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if(dart_sync_tid!=Tid.init){
@@ -172,7 +172,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
         }
         insert_recorder.add(Document(ncr.toHiBON.serialize));
         insert_recorder.add(Document(ncl.toHiBON.serialize));
-        void updateDart(Factory.Recorder recorder){
+        void updateDart(RecordFactory.Recorder recorder){
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if(dart_sync_tid!=Tid.init){
                 log("modifying dart with: %d archives", recorder.length);

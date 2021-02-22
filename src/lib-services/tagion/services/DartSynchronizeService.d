@@ -15,7 +15,7 @@ import std.getopt;
 import std.stdio;
 import std.conv;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
-import tagion.dart.Recorder : Factory, Archive;
+import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.BlockFile : BlockFile;
@@ -131,11 +131,11 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     log.error("Bad Control command %s", ts);
                 }
         }
-        void recorderReplayFunc(immutable(Factory.Recorder) recorder){
-            dart.modify(cast(Factory.Recorder) recorder);
+        void recorderReplayFunc(immutable(RecordFactory.Recorder) recorder){
+            dart.modify(cast(RecordFactory.Recorder) recorder);
         }
         auto journalReplayFiber= new ReplayPool!string((string journal) => dart.replay(journal));
-        auto recorderReplayFiber= new ReplayPool!(immutable(Factory.Recorder))(&recorderReplayFunc);
+        auto recorderReplayFiber= new ReplayPool!(immutable(RecordFactory.Recorder))(&recorderReplayFunc);
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts, net.pubkey);
@@ -172,7 +172,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                 : opts.dart.sync.tick_timeout.msecs;
             receiveTimeout(tick_timeout,
                 &handleControl,
-                (immutable(Factory.Recorder) recorder){
+                (immutable(RecordFactory.Recorder) recorder){
                     log("DSS: recorder received");
                     recorderReplayFiber.insert(recorder);
                 },
@@ -451,7 +451,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
         auto stop = false;
         ownerTid.send(Control.LIVE);
 
-        auto manufactor=Factory(net);
+        auto manufactor=RecordFactory(net);
         while(!stop){
             receive(
                 (Control cntrl){
