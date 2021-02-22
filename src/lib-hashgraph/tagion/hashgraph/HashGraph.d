@@ -10,7 +10,7 @@ import std.typecons : TypedefType;
 
 import tagion.hashgraph.Event;
 import tagion.gossip.InterfaceNet;
-import tagion.utils.LRU;
+//import tagion.utils.LRU;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.utils.Miscellaneous;
@@ -26,9 +26,6 @@ class HashGraph : HashGraphI {
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
     import tagion.utils.Statistic;
-    //alias Pubkey=immutable(ubyte)[];
-    //alias Privkey=immutable(ubyte)[];
-    //alias HashPointer=RequestNet.HashPointer;
     private GossipNet net;
     private uint iterative_tree_count;
     private uint iterative_strong_count;
@@ -57,6 +54,11 @@ class HashGraph : HashGraphI {
         this.net=net;
     }
 
+    @nogc
+    immutable(Pubkey) pubkey() const pure nothrow {
+        return net.pubkey;
+    }
+
     alias EventPackageCache=immutable(EventPackage)*[const(ubyte[])];
     alias EventCache=Event[const(ubyte[])];
 
@@ -64,14 +66,6 @@ class HashGraph : HashGraphI {
         EventPackageCache _event_package_cache;
         EventCache _event_cache;
     }
-
-    // final bool isRegistered(scope immutable(ubyte[]) fingerprint) pure {
-    //     return _request_net.isRegistered(fingerprint);
-    // }
-
-    // final Event register(immutable(Buffer) fingerprint) {
-    //     return _request_net.register(fingerprint);
-    // }
 
     final Event lookup(scope const(ubyte[]) fingerprint) {
         if (fingerprint in _event_cache) {
@@ -807,64 +801,11 @@ class HashGraph : HashGraphI {
             log.trace("Try to remove round %d", r.number);
             if (r[].all!(a => (a is null) || (a.round_received !is null))) {
                 log.trace("Remove and disconnection round in %d", r.number);
-                //import core.memory : GC;
-//                log.fatal("round.decided=%s round=%d usedSize=%d", r._decided, r.number, GC.stats.usedSize);
-//                r.range.each!(a => a._grounded = true);
                 r.range.each!((a) => {if (a !is null) {a.disconnect; pragma(msg, typeof(a));}});
-                // foreach(e; r.range) {
-                //     if (e) {
-                //         e.disconnect(this);
-                //     }
-                // }
 
             }
-//             version(none) {
-//                 scope round_numbers = new int[r.node_size];
-//                 scope round_received_numbers = new int[r.node_size];
-//                 bool sealed_round=true;
-//                 // scope(exit) {
-//                 //     log.fatal("round.decided=%s", r._decided);
-//                 //     log.fatal("   round:%s", round_numbers);
-//                 //     log.fatal("received:%s", round_received_numbers);
-//                 //     if (sealed_round) {
-//                 //         //   log.fatal("ROUND Sealed!!");
-//                 //         log.fatal("ROUND Sealed!! %s", r[].all!(a => a._mother.round_received !is null));
-//                 //     }
-//                 // }
-
-//                 foreach(node_id, e; r[].enumerate) {
-// //                e._mother._grounded=true;
-//                     round_numbers[node_id]=r.number;
-//                     if (e._mother.round_received) {
-// //                    sealed_round &= (e._mother.round_received.number == r.number+1);
-
-//                         round_received_numbers[node_id]=e._mother.round_received.number;
-//                     }
-//                     else {
-// //                    sealed_round=false;
-//                         round_received_numbers[node_id]=-1;
-// //                    log.fatal("node_id=%d round=%d NO ROUND_RECEIVED !!!", node_id, r.number);
-//                     }
-//                     // void scrap_event(Event e) {
-//                     //     if ( e ) {
-//                     //         scrap_event(e._mother);
-//                     //         if ( Event.callbacks ) {
-//                     //             Event.callbacks.remove(e);
-//                     //         }
-//                     //         hashgraph.eliminate(e.fingerprint);
-//                     //         e.disconnect;
-//                     //         e.destroy;
-//                     //     }
-//                     // }
-//                     // scrap_event(e._mother);
-//                     // if ( e ) {
-//                     //     assert(e._mother is null);
-//                     // }
-//                 }
-//             }
         }
         Round _lowest=Round.lowest;
-//        version(none)
         if ( _lowest ) {
             local_scrap(_lowest);
             _lowest.__grounded=true;
@@ -902,6 +843,7 @@ class HashGraph : HashGraphI {
 
         }
     }
+
 
 
     version(none)
@@ -979,14 +921,113 @@ class HashGraph : HashGraphI {
         }
     }
 
-    version(none)
+    version(unittest) {
+
+        static class UnittestNetwork {
+            import core.thread.fiber : Fiber;
+            import tagion.gossip.GossipNet : StdGossipNet;
+            import tagion.utils.Random;
+            Random!uint random;
+//            private HashGraph[] hashgraphs;
+            @safe class UnittestGossipNet : StdGossipNet {
+//            private Tid[immutable(Pubkey)] _tids;
+                private Pubkey[] _pkeys;
+//                protected uint _send_node_id;
+
+
+                this(HashGraph hashgraph) {
+                    super(hashgraph);
+                }
+
+                void set(Pubkey[] pkeys)
+                    in {
+                        assert(_hashgraph.node_size is pkeys.length);
+                    }
+                do {
+                    _pkeys=pkeys;
+//                auto tids=new Tid[pkeys.length];
+                    // getTids(tids);
+                // foreach(i, p; pkeys) {
+                //     _tids[p]=tids[cast(uint)i];
+                // }
+                }
+
+                immutable(Pubkey) selectRandomNode(const bool active=true)
+                out(result)  {
+                    assert(result != pubkey);
+                }
+                do {
+//                immutable N=cast(uint)_p.length;
+                    for(;;) {
+                        const node_index=random.value(0, _hashgraph.node_size);
+                        auto result=_pkeys[node_index];
+                        if (result != pubkey) {
+                            return result;
+                        }
+                    }
+                    assert(0);
+                }
+
+
+
+                void dump(const(HiBON[]) events) const {
+                    foreach(e; events) {
+                        auto pack_doc=Document(e.serialize);
+                        immutable pack=buildEventPackage(this, pack_doc);
+//            immutable fingerprint=pack.event_body.fingerprint;
+//                    log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack.event_body.altitude);
+                    }
+                }
+
+//            protected uint _send_count;
+                @trusted
+                void send(immutable(Pubkey) channel, const(Document) doc) {
+                    log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
+                    if ( callbacks ) {
+                        callbacks.send(channel, doc);
+                    }
+                    //_tids[channel].send(doc);
+                }
+            }
+
+            class FiberNetwork : Fiber {
+                private HashGraph hashgraph;
+                @trusted this(HashGraph hashgraph) {
+                    this.hashgraph=hashgraph;
+                    super(&run);
+                }
+
+                private void run() {
+                    (() @trusted {
+                        yield;
+                    })();
+                }
+            }
+
+            FiberNetwork[Pubkey] networks;
+            @disable this();
+            this(HashGraph[] hashgraphs) {
+                foreach(i, ref h; hashgraphs) {
+                    //auto h=new HashGraph(N);
+                    auto net=new UnittestGossipNet(h);
+                    net.generateKeyPair(format("very secret %s", i));
+                    h.gossip_net=net;
+                    networks[h.pubkey]=new FiberNetwork(h);
+                }
+            }
+        }
+
+    }
+
+//    version(none)
     unittest { // strongSee
         // This is the example taken from
         // HASHGRAPH CONSENSUS
         // SWIRLDS TECH REPORT TR-2016-01
-        import tagion.crypto.SHA256;
+        //import tagion.crypto.SHA256;
         import std.traits;
         import std.conv;
+        import tagion.gossip.GossipNet : StdGossipNet;
         enum NodeLable {
             Alice,
             Bob,
@@ -994,10 +1035,22 @@ class HashGraph : HashGraphI {
             Dave,
             Elisa
         }
+
         struct Emitter {
             Pubkey pubkey;
         }
-        auto h=new HashGraph;
+
+//        const net=new StdGossipNet("very secret");
+        enum N=EnumMembers!NodeLable.length;
+        HashGraph[] hashgraphs; //=new HashGraph[N];
+        hashgraphs.length=N;
+        foreach(E; EnumMembers!NodeLable) {
+            hashgraphs[E]=new HashGraph(N);
+        }
+        auto network=new UnittestNetwork(hashgraphs);
+
+        version(none) {
+        //auto h=new HashGraph(net, feature/active_node);
         Emitter[NodeLable.max+1] emitters;
 //        writefln("@@@ Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
         foreach (immutable l; [EnumMembers!NodeLable]) {
@@ -1123,5 +1176,5 @@ class HashGraph : HashGraphI {
         writeln("Row end");
 
     }
-
+    }
 }
