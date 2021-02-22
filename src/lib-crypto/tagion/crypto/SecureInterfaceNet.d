@@ -1,4 +1,4 @@
-module tagion.crypto.SecureInterface;
+module tagion.crypto.SecureInterfaceNet;
 
 import tagion.basic.Basic : Buffer, Pubkey, Signature;
 import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
@@ -11,7 +11,7 @@ alias check=Check!SecurityConsensusException;
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
+    protected immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const;
     /++
