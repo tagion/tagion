@@ -17,7 +17,7 @@ import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
-import tagion.crypto.SecureInterface : HashNet, SecureNet;
+import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
 import tagion.basic.Basic : EnumText;
 

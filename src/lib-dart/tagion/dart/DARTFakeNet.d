@@ -40,7 +40,7 @@ class DARTFakeNet : StdSecureNet {
             fake_h[0..ulong.sizeof]=h;
             return fake_h.idup;
         }
-        return super.calcHash(h);
+        return super.rawCalcHash(h);
     }
 
     override immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {

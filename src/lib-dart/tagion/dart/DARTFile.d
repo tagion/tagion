@@ -29,7 +29,7 @@ private {
     import tagion.dart.Recorder;
     import tagion.dart.DARTException : DARTException;
 
-    import tagion.crypto.SecureInterface : HashNet;
+    import tagion.crypto.SecureInterfaceNet : HashNet;
 
     import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;

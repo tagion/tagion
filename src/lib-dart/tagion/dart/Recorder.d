@@ -7,7 +7,7 @@ import std.container.rbtree : RedBlackTree;
 import std.range.primitives : isInputRange;
 import std.format;
 
-import tagion.crypto.SecureInterface : HashNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
@@ -114,7 +114,7 @@ class Factory {
             }
         }
 
-        auto opSlice() {
+        Archives.ConstRange opSlice() const pure nothrow  {
             return archives[];
         }
 
