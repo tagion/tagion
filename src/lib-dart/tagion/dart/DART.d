@@ -575,10 +575,12 @@ class DART : DARTFile { //, HiRPC.Supports {
             record(recorder_worker);
         }
 
-        void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc) nothrow {
+        @trusted void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc) nothrow {
+            import std.conv : emplace;
             this.fiber=fiber;
             this.owner=owner;
-            this.hirpc = hirpc;
+            emplace(&this.hirpc, hirpc);
+//            this.hirpc = HiRPC(hirpc.net);
         }
 
         void finish() {
