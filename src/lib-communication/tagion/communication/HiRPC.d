@@ -181,8 +181,8 @@ struct HiRPC {
             bool isMethod() {
                 return type is Type.method;
             }
-            bool isResult() {
-                return type is Type.method;
+            bool isResponse() {
+                return type is Type.result;
             }
             bool isError() {
                 return type is Type.method;
