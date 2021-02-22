@@ -1,6 +1,6 @@
 module tagion.crypto.SecureNet;
 
-import tagion.crypto.SecureInterface;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
 import tagion.basic.Basic : Buffer, Signature;
 import tagion.hibon.Document : Document;
@@ -39,10 +39,10 @@ class StdHashNet : HashNet {
 
 
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const
-        in {
-            const doc=Document(data.idup);
-            assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
-        }
+    in {
+        const doc=Document(data.idup);
+        assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
+    }
     do {
         pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
         const doc=Document(data.idup);
@@ -61,12 +61,12 @@ class StdHashNet : HashNet {
     }
 
     immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
-        in {
-            assert(h1.length is 0 || h1.length is HASH_SIZE,
-                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
-            assert(h2.length is 0 || h2.length is HASH_SIZE,
-                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
-        }
+    in {
+        assert(h1.length is 0 || h1.length is HASH_SIZE,
+            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
+        assert(h2.length is 0 || h2.length is HASH_SIZE,
+            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
+    }
     out(result) {
         if (h1.length is 0) {
             assert(h2 == result);
@@ -121,7 +121,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
        returns
        If method is SIGN the signed message or
        If method is DERIVE it returns the derived privat key
-     */
+    */
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
@@ -165,10 +165,10 @@ class StdSecureNet : StdHashNet, SecureNet  {
     }
 
     Signature sign(immutable(ubyte[]) message) const
-    in {
-        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
-        assert(message.length == 32);
-    }
+        in {
+            assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
+            assert(message.length == 32);
+        }
     do {
         import std.traits;
         assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
@@ -248,7 +248,7 @@ class StdSecureNet : StdHashNet, SecureNet  {
         AES.encrypt(aes_key, encrypted_privkey, privkey);
 
         @safe
-        void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
+            void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
@@ -320,6 +320,37 @@ class StdSecureNet : StdHashNet, SecureNet  {
 
     this() {
         this._crypt = new NativeSecp256k1;
+    }
+    unittest { // StdSecureNet
+        import tagion.hibon.HiBON;
+        import std.exception : assertThrown;
+        import tagion.basic.ConsensusExceptions : SecurityConsensusException;
+
+        SecureNet net=new StdSecureNet;
+        net.generateKeyPair("Secret password");
+
+        Document doc;
+        {
+            auto h=new HiBON;
+            h["message"]="Some message";
+            doc=Document(h);
+        }
+
+        const doc_signed=net.sign(doc);
+
+        assert(doc_signed.message == net.rawCalcHash(doc.serialize));
+        assert(net.verify(doc, doc_signed.signature, net.pubkey));
+
+        { // Hash key
+            auto h=new HiBON;
+            h["#message"]="Some message";
+            doc=Document(h);
+        }
+
+        // A document containing a hash-ket can not be signed or verified
+        assertThrown!SecurityConsensusException(net.sign(doc));
+        assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
+
     }
 }
 
@@ -400,38 +431,4 @@ class BadSecureNet : StdSecureNet {
         immutable false_message=super.rawCalcHash(message~message);
         return super.sign(false_message);
     }
-}
-
-
-
-unittest { // StdSecureNet
-    import tagion.hibon.HiBON;
-    import std.exception : assertThrown;
-    import tagion.basic.ConsensusExceptions : SecurityConsensusException;
-
-    SecureNet net=new StdSecureNet;
-    net.generateKeyPair("Secret password");
-
-    Document doc;
-    {
-        auto h=new HiBON;
-        h["message"]="Some message";
-        doc=Document(h);
-    }
-
-    const doc_signed=net.sign(doc);
-
-    assert(doc_signed.message == net.rawCalcHash(doc.serialize));
-    assert(net.verify(doc, doc_signed.signature, net.pubkey));
-
-    { // Hash key
-        auto h=new HiBON;
-        h["#message"]="Some message";
-        doc=Document(h);
-    }
-
-    // A document containing a hash-ket can not be signed or verified
-    assertThrown!SecurityConsensusException(net.sign(doc));
-    assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
-
 }
