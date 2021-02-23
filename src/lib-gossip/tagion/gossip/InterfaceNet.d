@@ -15,7 +15,7 @@ alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 
-@safe
+version(none) @safe
 struct Package {
     private const(HiBON) block;
     private Pubkey pubkey;
@@ -139,6 +139,10 @@ interface GossipNet : SecureNet, PackageNet {
     void set(immutable(Pubkey)[] pkeys);
 
     NetCallbacks callbacks();
+
+    HashGraphI hashgraph() pure nothrow;
+
+    void hashgraph(HashGraphI h) nothrow;
 
 //    void send(immutable(Pubkey) channel, ref immutable(ubyte[]) data);
 //    alias Request=bool delegate(Buffer);

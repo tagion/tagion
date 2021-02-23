@@ -20,8 +20,8 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
-import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.HashGraphBasic : buildEventPackage;
+//import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.HashGraphBasic : buildEventPackage, HashGraphI;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
@@ -52,8 +52,8 @@ class EmulatorGossipNet : StdGossipNet {
 
     Random!uint random;
 
-    this(HashGraph hashgraph) {
-        super(hashgraph);
+    this() {
+        super();
     }
 
     void set(immutable(Pubkey)[] pkeys)

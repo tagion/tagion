@@ -54,10 +54,23 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
         return result;
     }
 
-    this( HashGraph hashgraph) {
-        _hashgraph=hashgraph;
+    this() {
         super();
     }
+    // this( HashGraph hashgraph) {
+    //     _hashgraph=hashgraph;
+    //     super();
+    // }
+
+    // override void hashgraph(HashGraphI h) nothrow
+    //     in {
+    //         assert(_hashgraph is null);
+    //     }
+    // do {
+    //     _hashgraph=h;
+    // }
+
+
 
     override NetCallbacks callbacks() {
         return (cast(NetCallbacks)Event.callbacks);
@@ -73,19 +86,13 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
         string node_name;
     }
 
-    bool online() const  {
-        // Does my own node exist and do the node have an event
-        auto own_node=_hashgraph.getNode(pubkey);
-        return (own_node !is null) && (own_node.event !is null);
-    }
-
     protected {
         ulong _current_time;
-        HashGraph _hashgraph;
+//        HashGraphI _hashgraph;
     }
 
     override void receive(const(Document) doc) {
-        _hashgraph.wavefront_machine(doc);
+        hashgraph.wavefront_machine(doc);
     }
 
 

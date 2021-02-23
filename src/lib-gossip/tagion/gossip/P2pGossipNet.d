@@ -321,8 +321,8 @@ class P2pGossipNet : StdGossipNet {
     Tid sender_tid;
     static uint counter;
 
-    this(HashGraph hashgraph, immutable(Options) opts, shared p2plib.Node node, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, ref shared ConnectionPoolBridge connectionPoolBridge) {
-        super(hashgraph);
+    this(immutable(Options) opts, shared p2plib.Node node, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, ref shared ConnectionPoolBridge connectionPoolBridge) {
+//        super(hashgraph);
         this.connectionPool = connectionPool;
         shared_storage = opts.path_to_shared_info;
         this.node = node;
