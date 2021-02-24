@@ -26,59 +26,59 @@ struct HiRPCMethod {
     string name;
 }
 
-        private static string[] _Callers(T)() {
-            import std.traits : isCallable, hasUDA, getUDAs;
-            string[] result;
-            static foreach(name; __traits(derivedMembers, T)) {
-                {
-                    static if (is(typeof(__traits(getMember, T, name)))) {
-                        enum prot = __traits(getProtection,
-                            __traits(getMember, T, name));
-                        static if (prot == "public") {
-                            enum code=format(q{alias MemberA=T.%s;}, name);
-                            mixin(code);
-                            static if (hasUDA!(MemberA, HiRPCMethod)) {
-                                enum hirpc_method=getUDAs!(MemberA, HiRPCMethod)[0];
-                                result~=name;
-                            }
-                        }
+private static string[] _Callers(T)() {
+    import std.traits : isCallable, hasUDA, getUDAs;
+    string[] result;
+    static foreach(name; __traits(derivedMembers, T)) {
+        {
+            static if (is(typeof(__traits(getMember, T, name)))) {
+                enum prot = __traits(getProtection,
+                    __traits(getMember, T, name));
+                static if (prot == "public") {
+                    enum code=format(q{alias MemberA=T.%s;}, name);
+                    mixin(code);
+                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                        enum hirpc_method=getUDAs!(MemberA, HiRPCMethod)[0];
+                        result~=name;
                     }
                 }
             }
-            return result;
         }
+    }
+    return result;
+}
 
-        enum Callers(T)=_Callers!T();
+enum Callers(T)=_Callers!T();
 
-        private static string[] _Methods(T)() {
-            import std.traits : isCallable, hasUDA, getUDAs;
-            string[] result;
-            static foreach(name; __traits(derivedMembers, T)) {
-                    {
-                        static if (is(typeof(__traits(getMember, T, name)))) {
-                            enum prot = __traits(getProtection,
-                                __traits(getMember, T, name));
-                            static if (prot == "public") {
-                                enum code=format(q{alias MemberA=T.%s;}, name);
-                                mixin(code);
-                                static if (hasUDA!(MemberA, HiRPCMethod)) {
-                                    enum hirpc_method=getUDAs!(MemberA, HiRPCMethod)[0];
-                                    static if (hirpc_method.name) {
-                                        enum method_name=hirpc_method.name;
-                                    }
-                                    else {
-                                        enum method_name=name;
-                                    }
-                                            result~=method_name;
-                                }
-                            }
+private static string[] _Methods(T)() {
+    import std.traits : isCallable, hasUDA, getUDAs;
+    string[] result;
+    static foreach(name; __traits(derivedMembers, T)) {
+        {
+            static if (is(typeof(__traits(getMember, T, name)))) {
+                enum prot = __traits(getProtection,
+                    __traits(getMember, T, name));
+                static if (prot == "public") {
+                    enum code=format(q{alias MemberA=T.%s;}, name);
+                    mixin(code);
+                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                        enum hirpc_method=getUDAs!(MemberA, HiRPCMethod)[0];
+                        static if (hirpc_method.name) {
+                            enum method_name=hirpc_method.name;
                         }
+                        else {
+                            enum method_name=name;
+                        }
+                        result~=method_name;
                     }
                 }
-            return result;
+            }
         }
+    }
+    return result;
+}
 
-        enum Methods(T)=_Methods!T();
+enum Methods(T)=_Methods!T();
 
 
 @safe
@@ -126,8 +126,8 @@ struct HiRPC {
         none, /// No valid Type
             method,  /// Action method
             result, /// Respose
-        error
-    }
+            error
+            }
 
     enum Direction {
         SEND,
@@ -317,7 +317,7 @@ struct HiRPC {
             }
 
             @trusted
-            bool isRecord(T)() const {
+                bool isRecord(T)() const {
                 with (Type) {
                     final switch(type) {
                     case none, error:
