@@ -87,7 +87,7 @@ interface EventMonitorCallbacks {
     void remove(const(Round) r);
     void epoch(const(Event[]) received_event);
     void iterations(const(Event) e, const uint count);
-    void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
+    //void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
     void wavefront_state_receive(const(Document) wavefron_doc);
     void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
 
@@ -153,7 +153,7 @@ class Round {
         return famousVote == _event_counts;
     }
 
-    private this(Round previous, const uint node_size, immutable int round_number) pure nothrow {
+    private this(Round previous, const size_t node_size, immutable int round_number) pure nothrow {
         // if ( r is null ) {
         //     // First round created
         //     _decided=true;
@@ -384,7 +384,7 @@ class Round {
     }
 
     @nogc
-    inout(Event) event(const uint node_id) pure inout {
+    inout(Event) event(const size_t node_id) pure inout {
         return _events[node_id];
     }
 
@@ -397,7 +397,7 @@ class Round {
 
 
     @trusted @nogc
-    private bool ground(const uint node_id, ref const(BitArray) rhs) nothrow {
+    private bool ground(const size_t node_id, ref const(BitArray) rhs) nothrow {
         _ground_mask[node_id]=true;
         return rhs == _ground_mask;
     }
@@ -442,7 +442,7 @@ class Round {
             ulong find_middel_time() {
             try{
                 log("finding middel time");
-                uint famous_node_id;
+                size_t famous_node_id;
                 foreach(e; _events) {
                     if(e is null){
                         log.trace("(event is null)");
@@ -1012,7 +1012,7 @@ class Event {
 // Note pubkey is redundent information
 // The node_id should be enought this will be changed later
     this(
-        immutable(EventPackage)* epack,
+        immutable(EventPackage) epack,
         HashGraphI hashgraph,
 //        immutable(ubyte[]) signature,
 //        Pubkey pubkey,
@@ -1206,7 +1206,7 @@ class Event {
         return (_visit == visit_marker);
     }
     // The altitude increases by one from mother to daughter
-    const(immutable(EventPackage)*) event_package;
+    immutable(EventPackage) event_package;
 
     ref immutable(EventBody) event_body() const nothrow {
         return event_package.event_body;
@@ -1642,7 +1642,7 @@ class Event {
     }
 
 
-    immutable uint node_id;
+    immutable size_t node_id;
 // Disconnect the Event from the graph
     version(none)
     @trusted

@@ -31,7 +31,10 @@ bool isMajority(scope const(BitArray) mask) pure nothrow {
     return isMajority(mask.count, mask.length);
 }
 
-alias Tides=int[immutable(Pubkey)];
+// struct Tides {
+//     int[Pubkey]
+// }
+// alias Tides=int[immutable(Pubkey)];
 
 
 protected enum _params = [
@@ -65,7 +68,7 @@ interface HashGraphI {
 
     void eliminate(scope const(ubyte[]) fingerprint);
 
-    Event registerEvent(immutable(EventPackage*) event_pack);
+    //Event registerEvent(immutable(EventPackage*) event_pack);
 
     //   void register(scope immutable(Buffer) fingerprint, Event event);
 
@@ -73,23 +76,28 @@ interface HashGraphI {
 
     size_t number_of_registered_event() const pure nothrow;
 
-    const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
+    //const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
 
-    Tides tideWave(HiBON hibon, bool build_tides);
+    //Tides tideWave(HiBON hibon, bool build_tides);
 
-    void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
+    //void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
 
     bool front_seat(Event event);
 
-    void register_wavefront();
+    //void register_wavefront();
 
-    HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
+    //HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
 
-    void wavefront_machine(const(Document) doc);
+    const(Wavefront) wavefront_machine(const(Wavefront) receiver_wave);
 
     Round.Rounder rounds() pure nothrow;
-    const(uint) nodeId(scope Pubkey pubkey) const pure;
-    const(uint) node_size() const pure nothrow;
+    const(size_t) nodeId(scope Pubkey pubkey) const pure;
+    const(size_t) node_size() const pure nothrow;
+
+    bool add_node(const Pubkey pubkey) nothrow;
+
+    bool remove_node(const Pubkey pubkey) nothrow;
+
 
 }
 
@@ -131,14 +139,6 @@ struct EventBody {
     }
 
 
-//    version(none)
-
-    version(none)
-    this(immutable(ubyte[]) data) inout {
-        auto doc=Document(data);
-        this(doc);
-    }
-
     @nogc
     bool isEva() pure const nothrow {
         return (mother.length == 0);
@@ -147,19 +147,12 @@ struct EventBody {
     static immutable(EventBody) eva(GossipNet net) {
         auto hibon=new HiBON;
         hibon["pubkey"]=net.pubkey;
-//        hibon["git"]=HASH;
+        pragma(msg, "fixme(cbr): The nonce should be unique maybe the dependend on the bulleye");
         hibon["nonce"]="Should be implemented:"; //~to!string(eva_count);
-//        immutable payload=immutable(Payload)(hibon.serialize);
-        immutable result=EventBody(Document(hibon.serialize), null, null, net.time, HashGraphI.eva_altitude);
+        immutable result=EventBody(Document(hibon), null, null, net.time, HashGraphI.eva_altitude);
         return result;
     }
 
-//    mixin HiBONRecord!("BODY", consensus);
-
-    //mixin HiBONRecord!("BDY");
-
-    // enum TYPE="";
-    // enum TYPENAME="$T";
     version(none)
     this(const Document doc) {
         static if (TYPE.length) {
@@ -260,35 +253,6 @@ struct EventBody {
         }
     }
 
-    version(none)
-    this(inout Document doc) inout {
-        foreach(i, ref m; this.tupleof) {
-            alias Type=typeof(m);
-            alias UnqualT=Unqual!Type;
-            enum name=basename!(this.tupleof[i]);
-            if ( doc.hasMember(name) ) {
-                // static if ( name == mother.stringof || name == father.stringof ) {
-                //     if ( request_net ) {
-                //         immutable event_id=doc[name].get!uint;
-                //         this.tupleof[i]=request_net.eventHashFromId(event_id);
-                //     }
-                //     else {
-                //         this.tupleof[i]=(doc[name].get!type).idup;
-                //     }
-                // }
-                // else {
-                static if ( is(Type : immutable(ubyte[])) ) {
-                    this.tupleof[i]=(doc[name].get!UnqualT).idup;
-                }
-                else {
-                    this.tupleof[i]=doc[name].get!UnqualT;
-                }
-                // }
-            }
-        }
-        consensus();
-    }
-
     void consensus() inout {
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
@@ -303,44 +267,9 @@ struct EventBody {
         }
     }
 
-
-    version(none)
-    HiBON toHiBON(const(Event) use_event=null) const {
-        auto hibon=new HiBON;
-        foreach(i, m; this.tupleof) {
-            enum name=basename!(this.tupleof[i]);
-            static if ( __traits(compiles, m.toHiBON) ) {
-                hibon[name]=m.toHiBON;
-            }
-            else {
-                bool include_member=true;
-                static if ( __traits(compiles, m.length) ) {
-                    include_member=m.length != 0;
-                }
-                if ( include_member ) {
-                    if ( use_event && name == basename!mother &&  use_event._mother ) {
-                        hibon[name]=use_event._mother.id;
-                    }
-                    else if ( use_event && name == basename!father && use_event._father ) {
-                        hibon[name]=use_event._father.id;
-                    }
-                    else {
-                        hibon[name]=m;
-                    }
-                }
-            }
-        }
-        return hibon;
-    }
-
-    version(none)
-    @trusted
-    immutable(ubyte[]) serialize(const(Event) use_event=null) const {
-        return toHiBON(use_event).serialize;
-    }
-
 }
 
+version(none)
 @trusted
 static immutable(EventPackage*) buildEventPackage(Args...)(Args args) {
     immutable result=cast(immutable)(new EventPackage(args));
@@ -351,21 +280,16 @@ static immutable(EventPackage*) buildEventPackage(Args...)(Args args) {
 //@RecordType("EPACK") @safe
 pragma(msg, "fixme(cbr): Should be a HiRPC");
 @safe
-struct EventPackage {
-
-    @Label("") immutable(ubyte)[] fingerprint;
+class EventPackage {
+    @Label("") Buffer fingerprint;
     @Label("$sign", true) Signature signature;
     @Label("$pkey", true) Pubkey pubkey;
     @Label("$body") EventBody event_body;
 
     mixin HiBONRecord!(
         q{
-            // import tagion.basic.ConsensusExceptions;
-//            import tagion.basic.TagionExceptions : TagionExceptionInterface;
             import tagion.basic.ConsensusExceptions: ConsensusCheck=Check, EventConsensusException, ConsensusFailCode;
             protected alias consensus_check=ConsensusCheck!EventConsensusException;
-//            pragma(msg, check);
-            //protected alias check=Check!EventConsensusException;
             /++
              Used when a Event is receved from another node
              +/
@@ -381,22 +305,6 @@ struct EventPackage {
                 consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
-            version(none)
-            this(GossipNet net, const(HiBON) hibon_ebody) {
-            //     in {
-            //         assert(!hibon_ebody.hasMember(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
-            //         assert(!hibon_ebody.hasMember(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
-
-            //     }
-            // do {
-                this(doc_epack);
-                pubkey=net.pubkey;
-                // const doc_ebody=Document(hibon_ebody.serialize);
-                // event_body=EventBody(doc_ebody);
-                fingerprint=net.hashOf(doc_ebody);
-                signature=net.sign(fingerprint);
-            }
-
             /++
              Create a
              +/
@@ -405,41 +313,45 @@ struct EventPackage {
                 event_body=ebody;
                 fingerprint=net.hashOf(event_body);
                 signature=net.sign(fingerprint);
-//                signed_correctly=true;
             }
 
         });
-    version(none)
-    HiBON toHiBON() const {
-        auto hibon=new HiBON;
-        foreach(i, m; this.tupleof) {
-            enum name=basename!(this.tupleof[i]);
-            alias Type=typeof(this.tupleof[i]);
-            // static if ( member_name == basename!(event_body) ) {
-            //     enum name=Params.ebody;
-            // }
-            // else {
-            //     enum name=member_name;
-            // }
-//            static if ( name[0] != '_' ) {
-            static if (name != Event.Params.fingerprint) {
-                static if ( __traits(compiles, m.toHiBON) ) {
-                    hibon[name]=m.toHiBON;
+}
+
+alias Tides=int[Pubkey];
+@RecordType("Wavefront") @safe
+struct Wavefront {
+    @Label("$tides", true) private Tides _tides;
+    @Label("$events", true) EventPackage[] epacks;
+    @Label("$state", true) ExchangeState state;
+    mixin HiBONRecord!(
+        q{
+            this(Tides tides) pure nothrow {
+                this.tides=tides;
+                epacks.length=0;
+                state=ExchangeState.TIDEL_WAVE;
+            }
+            this(EventPackage[] epacks, const ExchangeState state) pure nothrow
+            in {
+                assert(state is ExchangeState.FIRST_WAVE || state is ExchangeState.SECOND_WAVE);
+            }
+            do {
+                this.epacks;
+                this.state=state;
+            }
+        });
+    const(int[Pubkey]) tides() const pure nothrow {
+        if (tides.length is 0) {
+            foreach(ref e; epacks) {
+                if (e.pubkey in _tides) {
+                    _tides[e.pubkey]=highest(_tides[e.pubkey], event_package.event_body.altitude);
                 }
                 else {
-                    hibon[name]=cast(TypedefType!Type)m;
+                    _tides[e.pubkey]=e.event_body.altitude;
                 }
             }
         }
-        return hibon;
-    }
-
-    version(none)
-    static EventPackage undefined() {
-        import tagion.basic.ConsensusExceptions;
-        alias check = consensusCheck!(GossipConsensusException);
-        check(false, ConsensusFailCode.GOSSIPNET_EVENTPACKAGE_NOT_FOUND);
-        assert(0);
+        return _tides;
     }
 }
 
