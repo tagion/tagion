@@ -121,7 +121,8 @@ do
     }
     auto master_net = new StdSecureNet;
     P2pGossipNet net;
-    auto hashgraph = new HashGraph(opts.nodes);
+    HashGraph hashgraph; // = new HashGraph(opts.nodes);
+
     auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
     auto connectionPoolBridge = new shared(ConnectionPoolBridge)();
     // connectionPoolBridge[Pubkey([0])] = 0;
@@ -136,9 +137,9 @@ do
 
         master_net.generateKeyPair(passphrase);
         shared shared_net = cast(shared) master_net;
-        net = new P2pGossipNet(hashgraph, opts, p2pnode, connectionPool, connectionPoolBridge);
+        net = new P2pGossipNet(opts, p2pnode, connectionPool, connectionPoolBridge);
         net.derive("tagion_service", shared_net);
-        hashgraph.gossip_net=net;
+        hashgraph=new HashGraph(opts.nodes, net);
 
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 

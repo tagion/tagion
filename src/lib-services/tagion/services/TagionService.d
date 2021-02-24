@@ -56,13 +56,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 //    HRPC hrpc;
     import std.datetime.systime;
 
-    // Create hash-graph
-    auto hashgraph=new HashGraph(opts.nodes);
 
     Net net;
-    net=new Net(hashgraph);
+//    net=new Net(hashgraph);
     net.derive("tagion_service", master_net);
-    hashgraph.gossip_net=net;
+//    hashgraph.gossip_net=net;
+    // Create hash-graph
+    auto hashgraph=new HashGraph(opts.nodes, net);
 
     log("\n\n\n\n\n##### Received %s #####", opts.node_name);
 
