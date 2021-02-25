@@ -407,6 +407,7 @@ class P2pGossipNet : StdGossipNet {
         }
     }
 
+    version(none)
     override void receive(const(Document) doc) {
 //    Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
         log("received time: %s", Clock.currTime().toUTC());

@@ -21,7 +21,7 @@ import tagion.hibon.Document : Document;
 import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 //import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.HashGraphBasic : buildEventPackage, HashGraphI;
+import tagion.hashgraph.HashGraphBasic : HashGraphI;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
@@ -86,6 +86,7 @@ class EmulatorGossipNet : StdGossipNet {
     }
 
 
+    version(none)
     void dump(const(HiBON[]) events) const {
         foreach(e; events) {
             auto pack_doc=Document(e.serialize);
@@ -99,8 +100,8 @@ class EmulatorGossipNet : StdGossipNet {
     @trusted
     void send(immutable(Pubkey) channel, const(Document) doc) {
         log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
-        if ( callbacks ) {
-            callbacks.send(channel, doc);
+        if ( Event.callbacks ) {
+            Event.callbacks.send(channel, doc);
         }
         _tids[channel].send(doc);
     }

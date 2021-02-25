@@ -17,6 +17,7 @@ alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 //import tagion.hashgraph.HashGraphBasic : Tides;
 
+version(none)
 @safe
 interface NetCallbacks : EventMonitorCallbacks {
 
@@ -34,8 +35,10 @@ interface GossipNet : SecureNet {
 //    Event receive(const(Document) received, Event delegate(Buffer father_fingerprint) @safe register_leading_event );
 //    void receive(const(Document) received); //, Event delegate(Buffer father_fingerprint) @safe register_leading_event );
 
+    void send(const Pubkey channel, const(Document) doc);
 //    void send(const Pubkey channel, const(Document) doc);
-    void send(const Pubkey channel, const(HiPRC.Sender) sender);
+    // void send(const Pubkey channel, const(HiPRC.Sender) sender);
+    // void send(const Pubkey channel, const(HiPRC.Sender) sender);
     // final void send(T)(const Pubkey channel, const T message) if(isHiBONRecord!T) {
     //     send(message.toDoc);
     // }
@@ -58,11 +61,11 @@ interface GossipNet : SecureNet {
 //     // and is use to collect node to be send to anotehr node
 // //    uint globalNodeId(immutable(Pubkey) channel);
 
-//     @property
-//     const(ulong) time() pure const;
+    @property
+    const(ulong) time() pure const;
 
-//     @property
-//     void time(const(ulong) t);
+    @property
+    void time(const(ulong) t);
 
     // Tides tideWave(HiBON hibon, bool build_tides);
 

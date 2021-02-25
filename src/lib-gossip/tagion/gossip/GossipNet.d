@@ -72,9 +72,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 
 
 
-    override NetCallbacks callbacks() {
-        return (cast(NetCallbacks)Event.callbacks);
-    }
+    // override NetCallbacks callbacks() {
+    //     return (cast(NetCallbacks)Event.callbacks);
+    // }
 
     static struct Init {
         uint timeout;
@@ -91,9 +91,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 //        HashGraphI _hashgraph;
     }
 
-    override void receive(const(Document) doc) {
-        hashgraph.wavefront_machine(doc);
-    }
+    // override void receive(const(Document) doc) {
+    //     hashgraph.wavefront_machine(doc);
+    // }
 
 
     @property
