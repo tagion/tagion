@@ -65,18 +65,13 @@ unittest {
 
 template isSpecialKeyType(T) {
     import std.traits : isAssociativeArray, isUnsigned, KeyType;
-    pragma(msg, "T=", T);
     static if (isAssociativeArray!T) {
         alias KeyT=KeyType!T;
-        pragma(msg, "KeyT=", KeyT);
-        pragma(msg, "isUnsigned!KeyT=", isUnsigned!KeyT, " is(KeyT:string)=", is(KeyT:string));
-        pragma(msg, "!isUnsigned!KeyT && !is(KeyT:string)=", !isUnsigned!KeyT && !is(KeyT:string));
         enum isSpecialKeyType=!(isUnsigned!KeyT) && !is(KeyT:string);
     }
     else {
         enum isSpecialKeyType=false;
     }
-    pragma(msg, "Result=", isSpecialKeyType);
 }
 
 
@@ -280,7 +275,7 @@ mixin template HiBONRecord(string CTOR="") {
                             element[0]=Index(key);
                         }
                         else static if (isHiBONRecord!BaseIndex) {
-                            element[0]=Index(key.toDoc);
+                            element[0]=BaseIndex(key.toDoc);
                         }
                         else {
                             assert(0, format("Index %s is not supported", Index.stringof));
@@ -289,8 +284,6 @@ mixin template HiBONRecord(string CTOR="") {
                         result[list_index++]=element;
                     }
                     else {
-                        pragma(msg, "Index=", Index);
-                        pragma(msg, "isSpecialKeyType!Index=", isSpecialKeyType!Index);
                         result[index]=value;
                     }
                 }
@@ -471,7 +464,7 @@ mixin template HiBONRecord(string CTOR="") {
                                 const key=KeyT(value_doc[0].get!BaseKeyT);
                             }
                             else {
-                                auto key=value_doc[0].get!KeyT;
+                                auto key=KeyT(value_doc[0].get!BaseKeyT);
                             }
                             const e=value_doc[1];
                         }
@@ -1217,44 +1210,94 @@ unittest {
 
     { // None standard Keys
         import std.typecons : Typedef;
-        import std.algorithm : map;
+        import std.algorithm : map, each;
         import std.bitmanip : binwrite=write;
-        alias Bytes=Typedef!(immutable(ubyte)[], null, "Bytes");
-        alias Tabel=int[Bytes];
-        static struct StructBytes {
-            Tabel tabel;
-            mixin HiBONRecord;
-        }
-        static assert(isSpecialKeyType!Tabel);
-
-        import std.outbuffer;
-
-        Tabel tabel;
-        auto list=[-17, 117, 3, 17, 42];
-        foreach(i; [-17, 117, 3, 17, 42]) {
-            auto key=new OutBuffer;
-//            pragma(msg, typeof(key.write(i))
-            key.write(i);
-
-            tabel[Bytes(key.toBytes.idup)]=i;
-        }
-
-        StructBytes s;
-        s.tabel=tabel;
-
+        import std.algorithm : sort;
+        import std.array : array;
+        import std.typecons : tuple;
+        import std.algorithm.sorting : isStrictlyMonotonic;
         import std.stdio;
-        writefln("s=%J", s);
 
-        const s_doc=s.toDoc;
-        const result = StructBytes(s_doc);
-        writefln("s=%J", result);
+        import tagion.basic.Basic : Buffer;
+        { // Typedef on HiBON.type is used as key in an associative-array
+            alias Bytes=Typedef!(immutable(ubyte)[], null, "Bytes");
+            alias Tabel=int[Bytes];
+            static struct StructBytes {
+                Tabel tabel;
+                mixin HiBONRecord;
+            }
+            static assert(isSpecialKeyType!Tabel);
 
-        auto buffer=new ubyte[int.sizeof];
-        writefln("%s", list.map!(
-                (a) {
-                    buffer.binwrite(a,0);
-                    return Bytes(buffer.idup);}));
+            import std.outbuffer;
 
+            Tabel tabel;
+            auto list=[-17, 117, 3, 17, 42];
+            auto buffer=new ubyte[int.sizeof];
+            foreach(i; list) {
+                buffer.binwrite(i,0);
+                tabel[Bytes(buffer.idup)]=i;
+            }
+
+            StructBytes s;
+            s.tabel=tabel;
+            const s_doc=s.toDoc;
+            const result = StructBytes(s_doc);
+
+           assert(
+               equal(
+                   list
+                   .map!(i => {buffer.binwrite(i,0); return tuple(buffer.idup, i);})
+                   .map!(q{a()})
+                   .array
+                   .sort,
+                   s_doc["tabel"]
+                   .get!Document[]
+                   .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+                   ));
+
+            assert(s_doc == result.toDoc);
+        }
+
+        {  // Typedef of a HiBONRecord is used as key in an associative-array
+            static struct KeyStruct {
+                int x;
+                string text;
+                mixin HiBONRecord!(
+                    q{
+                        this(int x, string text) {
+                            this.x=x; this.text=text;
+                        }
+                    });
+            }
+            alias Key=Typedef!(KeyStruct, KeyStruct.init, "Key");
+
+            alias Tabel=int[Key];
+
+            static struct StructKeys {
+                Tabel tabel;
+                mixin HiBONRecord;
+            }
+
+
+            Tabel list=[
+                Key(KeyStruct(2, "two")) : 2,  Key(KeyStruct(4, "four")) : 4, Key(KeyStruct(1, "one")) : 1, Key(KeyStruct(3, "three")) : 3];
+
+            StructKeys s;
+            s.tabel=list;
+
+            const s_doc=s.toDoc;
+
+            // Checks that the key is ordered in the tabel
+            assert(s_doc["tabel"].get!Document[]
+                .map!(a => a.get!Document[0].get!Document.serialize)
+                .array
+                .isStrictlyMonotonic);
+
+            const result=StructKeys(s_doc);
+            //assert(result == s);
+            assert(result.toDoc == s.toDoc);
+
+
+        }
     }
-
 }
