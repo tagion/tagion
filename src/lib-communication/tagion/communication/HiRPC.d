@@ -381,20 +381,12 @@ struct HiRPC {
             }
         }
 
-        // bool Suports(T)() {
-        //     import std.traits : Fields;
-        //     static foreach(
-        // }
-
         mixin HiBONRecord!("{}");
     }
 
     alias Sender=Post!(Direction.SEND);
     alias Receiver=Post!(Direction.RECEIVE);
 
-    interface Supports {
-        static bool supports(ref const(Receiver) receiver);
-    }
 
 
     alias check=Check!HiRPCException;
@@ -534,7 +526,6 @@ unittest {
             hibon["x"]=42;
             const send_back=hirpc.result(receiver, hibon);
             const result=ResultStruct(send_back.response.result);
-
             assert(result.x is 42);
         }
 
