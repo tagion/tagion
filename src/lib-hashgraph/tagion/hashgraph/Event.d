@@ -27,7 +27,7 @@ import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, bitarray_clear, 
 import tagion.Keywords : Keywords;
 
 import tagion.basic.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, HashGraphI, EventBody, EventPackage, Tides;
+import tagion.hashgraph.HashGraphBasic : isMajority, HashGraphI, EventBody, EventPackage, Tides, EventMonitorCallbacks;
 
 /// check function used in the Event package
 
@@ -67,31 +67,6 @@ unittest { // Test of the altitude measure function
 }
 
 
-@safe
-interface EventMonitorCallbacks {
-    void create(const(Event) e);
-    void witness(const(Event) e);
-    void witness_mask(const(Event) e);
-    void strongly_seeing(const(Event) e);
-    void strong_vote(const(Event) e, immutable uint vote);
-    void round_seen(const(Event) e);
-    void looked_at(const(Event) e);
-    void round_decided(const(Round.Rounder) rounder);
-    void round_received(const(Event) e);
-    void coin_round(const(Round) r);
-    void famous(const(Event) e);
-    void round(const(Event) e);
-    void son(const(Event) e);
-    void daughter(const(Event) e);
-    void forked(const(Event) e);
-    void remove(const(Round) r);
-    void epoch(const(Event[]) received_event);
-    void iterations(const(Event) e, const uint count);
-    //void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
-    void wavefront_state_receive(const(Document) wavefron_doc);
-    void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
-
-}
 
 @safe
 interface EventScriptCallbacks {
@@ -1012,7 +987,7 @@ class Event {
 // Note pubkey is redundent information
 // The node_id should be enought this will be changed later
     this(
-        immutable(EventPackage) epack,
+        const(EventPackage) epack,
         HashGraphI hashgraph,
 //        immutable(ubyte[]) signature,
 //        Pubkey pubkey,
@@ -1206,9 +1181,9 @@ class Event {
         return (_visit == visit_marker);
     }
     // The altitude increases by one from mother to daughter
-    immutable(EventPackage) event_package;
+    const(EventPackage) event_package;
 
-    ref immutable(EventBody) event_body() const nothrow {
+    ref const(EventBody) event_body() const nothrow {
         return event_package.event_body;
     }
 
@@ -1823,7 +1798,7 @@ class Event {
     }
 
 // +++
-    static Event register(HashGraphI hashgraph, scope const(ubyte[]) fingerprint) {
+    static Event register(HashGraphI hashgraph, scope const(Buffer) fingerprint) {
         Event event;
         if (fingerprint) {
             event = hashgraph.lookup(fingerprint);
@@ -2051,7 +2026,7 @@ class Event {
     }
 
     @nogc
-    ref immutable(EventBody) eventbody() const pure nothrow {
+    ref const(EventBody) eventbody() const pure nothrow {
         return event_package.event_body;
     }
 

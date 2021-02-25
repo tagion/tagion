@@ -43,7 +43,7 @@ class HashGraph : HashGraphI {
 
     this(const size_t size, GossipNet net) {
         this.net=net;
-        net.hashgraph=this;
+        //net.hashgraph=this;
         nodes=new Node[size];
         _rounds=Round.Rounder(this);
         add_node(net.pubkey);
@@ -60,15 +60,15 @@ class HashGraph : HashGraphI {
         return net.pubkey;
     }
 
-    alias EventPackageCache=EventPackage[Pubkey];
-    alias EventCache=Event[Pubkey];
+    alias EventPackageCache=EventPackage[Buffer];
+    alias EventCache=Event[Buffer];
 
     protected {
         EventPackageCache _event_package_cache;
         EventCache _event_cache;
     }
 
-    final Event lookup(scope const(ubyte[]) fingerprint) {
+    final Event lookup(scope Buffer fingerprint) {
         if (fingerprint in _event_cache) {
             return _event_cache[fingerprint];
         }
@@ -83,7 +83,7 @@ class HashGraph : HashGraphI {
         return null;
     }
 
-    void eliminate(scope const(ubyte[]) fingerprint) {
+    void eliminate(scope const(Buffer) fingerprint) {
         _event_cache.remove(fingerprint);
     }
 
@@ -109,7 +109,7 @@ class HashGraph : HashGraphI {
     }
 
     Event registerEvent(
-        immutable(EventPackage)* event_pack)
+        const(EventPackage) event_pack)
         in {
             assert(event_pack.fingerprint !in _event_cache, format("Event %s has already been registerd", event_pack.fingerprint.toHexString));
         }
@@ -131,7 +131,7 @@ class HashGraph : HashGraphI {
 
     static {
         @HiRPCMethod() const(HiRPC.Sender) wavefront(const Wavefront wave, const uint id=0) {
-            return hirpc.wavefront(wave);
+            return hirpc.wavefront(wave, id);
 //            return senrder;
         }
     }
@@ -186,7 +186,7 @@ class HashGraph : HashGraphI {
         const(EventPackage)[] result;
         foreach(n; nodes) {
             if ( n.pubkey in tides ) {
-                const other_altitude=tides[n.pibkey];
+                const other_altitude=tides[n.pubkey];
                 foreach(e; n[]) {
                     if ( higher( other_altitude, e.altitude) ) {
                         break;
@@ -206,20 +206,20 @@ class HashGraph : HashGraphI {
     }
 
     void register_wavefront(const(Wavefront) received_wave) {
-        foreach(e; receiver_wave.epacks) {
-            if (!e.fingerprint in receiver_wave.epacks) {
+        foreach(e; received_wave.epacks) {
+            if (!e.fingerprint in received_wave.epacks) {
                 _event_package_cache[e.fingerprint] = e;
             }
         }
     }
 
 
-    const(Wavefront) wavefront_machine(const(Wavefront) received_wave) {
-        if ( net.callbacks ) {
-            net.callbacks.receive(received_wave);
-        }
+    const(Wavefront) wavefront_machine(const(HiRPC.Receiver) received) {
         auto received_node=getNode(received_wave.pubkey);
-        log("%J", wave);
+        if ( Event.callbacks ) {
+            Event.callbacks.receive(received_wave);
+        }
+        log("%J", received_wave);
         with(ExchangeState) {
             final switch (received_wave.state) {
             case NONE:
@@ -228,22 +228,22 @@ class HashGraph : HashGraphI {
                 break;
             case TIDAL_WAVE: ///
                 if (received_node.state !is NONE) {
-                    return buildWavefront(BREAK_WAVE);
+                    return buildWavefront(BREAKING_WAVE);
                 }
                 // Receive the tide wave
-                consensus(wave.state, INIT_TIDE, NONE).
-                    check((wave.state is INIT_TIDE) || (wave.state is NONE),
+                consensus(received_wave.state, INIT_TIDE, NONE).
+                    check((received_wave.state is INIT_TIDE) || (received_wave.state is NONE),
                         ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                 check(received_wave.epack.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                 received_node.state=received_wave.state;
-                return buildWavefront(receiver_wave, FIRST_WAVE);
+                return buildWavefront(received_wave, FIRST_WAVE);
             case BREAKING_WAVE:
                 log.trace("BREAKING_WAVE");
                 received_node.state=NONE;
                 break;
             case FIRST_WAVE:
-                if (received_node.state !is INIT) {
-                    return buildWavefront(BREAK_WAVE);
+                if (received_node.state !is INIT_TIDE) {
+                    return buildWavefront(BREAKING_WAVE);
                 }
                 consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
                     check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
@@ -252,8 +252,8 @@ class HashGraph : HashGraphI {
                 register_wavefront(receive_wave);
                 return buildPackage(received_wave, SECOND_WAVE);
             case SECOND_WAVE:
-                if (received_node.state !is TIDAL) {
-                    return buildWavefront(BREAK_WAVE);
+                if (received_node.state !is TIDAL_WAVE) {
+                    return buildWavefront(BREAKING_WAVE);
                 }
                 consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
                     ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);

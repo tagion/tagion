@@ -11,7 +11,7 @@ import tagion.hibon.HiBONRecord;
 
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
-import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException;
+import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException, ConsensusException;
 enum minimum_nodes = 3;
 /++
  + Calculates the majority votes
@@ -59,20 +59,49 @@ enum ExchangeState : uint {
 alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
 
 @safe
+interface EventMonitorCallbacks {
+    void create(const(Event) e);
+    void witness(const(Event) e);
+    void witness_mask(const(Event) e);
+    void strongly_seeing(const(Event) e);
+    void strong_vote(const(Event) e, immutable uint vote);
+    void round_seen(const(Event) e);
+    void looked_at(const(Event) e);
+    void round_decided(const(Round.Rounder) rounder);
+    void round_received(const(Event) e);
+    void coin_round(const(Round) r);
+    void famous(const(Event) e);
+    void round(const(Event) e);
+    void son(const(Event) e);
+    void daughter(const(Event) e);
+    void forked(const(Event) e);
+    void remove(const(Round) r);
+    void epoch(const(Event[]) received_event);
+    void iterations(const(Event) e, const uint count);
+    //void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
+    void wavefront_state_receive(const(Document) wavefron_doc);
+    void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
+    void send(const Pubkey channel, const Document doc);
+    void receive(const Wavefront wavefront);
+    void consensus_failure(const(ConsensusException) e);
+
+}
+
+@safe
 interface HashGraphI {
     enum int eva_altitude=-77;
 
     //  void request(scope immutable(Buffer) fingerprint);
 
-    Event lookup(scope const(ubyte[]) fingerprint);
+    Event lookup(scope const(Buffer) fingerprint);
 
-    void eliminate(scope const(ubyte[]) fingerprint);
+    void eliminate(scope const(Buffer) fingerprint);
 
     //Event registerEvent(immutable(EventPackage*) event_pack);
 
     //   void register(scope immutable(Buffer) fingerprint, Event event);
 
-    bool isRegistered(scope immutable(Buffer) fingerprint) pure;
+    bool isRegistered(scope const(Buffer) fingerprint) pure;
 
     size_t number_of_registered_event() const pure nothrow;
 
@@ -87,8 +116,9 @@ interface HashGraphI {
     //void register_wavefront();
 
     //HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
+    const(Wavefront) wavefront_machine(const(Wavefront) received_wave);
 
-    const(Wavefront) wavefront_machine(const(Wavefront) receiver_wave);
+    // const(Wavefront) wavefront_machine(const(Wavefront) receiver_wave);
 
     Round.Rounder rounds() pure nothrow;
     const(size_t) nodeId(scope Pubkey pubkey) const pure;
@@ -327,24 +357,33 @@ struct Wavefront {
     mixin HiBONRecord!(
         q{
             this(Tides tides) pure nothrow {
-                this.tides=tides;
+                _tides=tides;
                 epacks.length=0;
-                state=ExchangeState.TIDEL_WAVE;
+                state=ExchangeState.TIDAL_WAVE;
             }
             this(EventPackage[] epacks, const ExchangeState state) pure nothrow
             in {
                 assert(state is ExchangeState.FIRST_WAVE || state is ExchangeState.SECOND_WAVE);
             }
             do {
-                this.epacks;
+                this.epacks=epacks;
                 this.state=state;
             }
         });
-    const(int[Pubkey]) tides() const pure nothrow {
+    @nogc
+    const(int[Pubkey]) tides() const pure nothrow
+        in {
+            assert(_tides.length !is 0);
+        }
+    do {
+        return _tides;
+    }
+
+    const(int[Pubkey]) tides() nothrow {
         if (tides.length is 0) {
             foreach(ref e; epacks) {
                 if (e.pubkey in _tides) {
-                    _tides[e.pubkey]=highest(_tides[e.pubkey], event_package.event_body.altitude);
+                    _tides[e.pubkey]=highest(_tides[e.pubkey], e.event_body.altitude);
                 }
                 else {
                     _tides[e.pubkey]=e.event_body.altitude;
