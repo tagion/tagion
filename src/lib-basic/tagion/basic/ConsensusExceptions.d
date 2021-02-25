@@ -34,6 +34,7 @@ enum ConsensusFailCode {
     GOSSIPNET_REPLICATED_PUBKEY,
     GOSSIPNET_EVENTPACKAGE_NOT_FOUND,
     GOSSIPNET_MISSING_EVENTS,
+    GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS,
 //    EVENT_MISSING_BODY,
 
     SECURITY_SIGN_FAULT,
@@ -179,7 +180,7 @@ shared static this() {
             GOSSIPNET_REPLICATED_PUBKEY                 : "The public key of the received package is the same as the nodes public key",
             GOSSIPNET_EVENTPACKAGE_NOT_FOUND            : "Event package not found in the event package cache",
             GOSSIPNET_MISSING_EVENTS                    : "Gossip network missing events",
-
+            GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS        : "Tidal wave should not contain events",
             SECURITY_SIGN_FAULT                         : "Sign of message failed",
             SECURITY_PUBLIC_KEY_CREATE_FAULT            : "Failed to create public key",
             SECURITY_PUBLIC_KEY_PARSE_FAULT             : "Failed to parse public key",
