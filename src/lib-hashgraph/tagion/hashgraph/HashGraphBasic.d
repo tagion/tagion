@@ -9,9 +9,12 @@ import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONJSON : JSONString;
+import tagion.utils.StdTime;
 
 import tagion.hibon.Document : Document;
-import tagion.gossip.InterfaceNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+//import tagion.gossip.InterfaceNet;
 import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException, ConsensusException;
 enum minimum_nodes = 3;
 /++
@@ -58,6 +61,16 @@ enum ExchangeState : uint {
 
 
 alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
+
+@safe
+interface EventScriptCallbacks {
+    void epoch(const(Event[]) received_event, const sdt_t  epoch_time);
+    void send(ref Document[] payloads, const sdt_t epoch_time); // Should be execute when and epoch is finished
+
+    void send(immutable(EventBody) ebody);
+    bool stop(); // Stops the task
+}
+
 
 @safe
 interface EventMonitorCallbacks {
@@ -129,7 +142,31 @@ interface HashGraphI {
 
     bool remove_node(const Pubkey pubkey) nothrow;
 
+    const(NodeI) getNode(const size_t node_id) const pure nothrow;
 
+    const(NodeI) getNode(Pubkey pubkey) const pure;
+
+    bool areWeOnline() const pure nothrow;
+
+    immutable(Pubkey) channel() const pure nothrow;
+
+    void time(const(sdt_t) t);
+
+    const(sdt_t) time() pure const nothrow;
+
+}
+
+@safe
+interface NodeI {
+    void remove() nothrow;
+
+    bool isOnline() pure const nothrow;
+
+    final void altitude(int a) nothrow;
+
+    final int altitude() const pure nothrow;
+
+    immutable(Pubkey) channel() const pure nothrow;
 }
 
 
@@ -145,14 +182,14 @@ struct EventBody {
     @Label("$f", true) Buffer father; // Hash of the other-parent
     @Label("$a") int altitude;
 
-    @Label("$t") ulong time;
+    @Label("$t") sdt_t time;
     mixin HiBONRecord!(
         q{
             this(
                 Document payload,
                 Buffer mother,
                 Buffer father,
-                immutable ulong time,
+                const sdt_t time,
                 immutable int altitude) inout {
                 this.time      =    time;
                 this.altitude  =    altitude;
@@ -175,12 +212,12 @@ struct EventBody {
         return (mother.length == 0);
     }
 
-    static immutable(EventBody) eva(GossipNet net) {
+    static immutable(EventBody) eva(HashGraphI hashgraph) {
         auto hibon=new HiBON;
-        hibon["pubkey"]=net.pubkey;
+        hibon["channel"]=hashgraph.channel;
         pragma(msg, "fixme(cbr): The nonce should be unique maybe the dependend on the bulleye");
         hibon["nonce"]="Should be implemented:"; //~to!string(eva_count);
-        immutable result=EventBody(Document(hibon), null, null, net.time, HashGraphI.eva_altitude);
+        immutable result=EventBody(Document(hibon), null, null, hashgraph.time, hashgraph.eva_altitude);
         return result;
     }
 
@@ -324,7 +361,7 @@ struct EventPackage {
             /++
              Used when a Event is receved from another node
              +/
-            this(const GossipNet net, const(Document) doc_epack)
+            this(const SecureNet net, const(Document) doc_epack)
                 in {
                     assert(!doc_epack.hasMember(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
                 }
@@ -339,7 +376,7 @@ struct EventPackage {
             /++
              Create a
              +/
-            this(GossipNet net, immutable(EventBody) ebody) {
+            this(const SecureNet net, immutable(EventBody) ebody) {
                 pubkey=net.pubkey;
                 event_body=ebody;
                 fingerprint=net.hashOf(event_body);
@@ -360,6 +397,7 @@ struct Wavefront {
     enum stateName=GetLabel!(state).name;
 
     mixin HiBONRecordType;
+    mixin JSONString;
 
     // mixin HiBONRecord!(
     //     q{

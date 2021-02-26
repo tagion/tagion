@@ -19,15 +19,16 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord ;
 
 import tagion.utils.Miscellaneous;
+import tagion.utils.StdTime;
 
-import tagion.gossip.InterfaceNet;
+//import tagion.gossip.InterfaceNet;
 
 import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, countVotes, EnumText, buf_idup;
 //import tagion.hashgraph.HashGraphBasic : isMajority, check;
 import tagion.Keywords : Keywords;
 
 import tagion.basic.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, HashGraphI, EventBody, EventPackage, Tides, EventMonitorCallbacks;
+import tagion.hashgraph.HashGraphBasic : isMajority, HashGraphI, EventBody, EventPackage, Tides, EventMonitorCallbacks, EventScriptCallbacks;
 
 /// check function used in the Event package
 
@@ -66,16 +67,6 @@ unittest { // Test of the altitude measure function
     assert(!higher(x,x));
 }
 
-
-
-@safe
-interface EventScriptCallbacks {
-    void epoch(const(Event[]) received_event, immutable long epoch_time);
-    void send(ref Document[] payloads, immutable long epoch_time); // Should be execute when and epoch is finished
-
-    void send(immutable(EventBody) ebody);
-    bool stop(); // Stops the task
-}
 
 
 @safe
@@ -414,7 +405,7 @@ class Round {
         BitArray unique_famous_mask;
         bitarray_change(unique_famous_mask, node_size);
         @trusted
-            ulong find_middel_time() {
+            sdt_t find_middel_time() {
             try{
                 log("finding middel time");
                 size_t famous_node_id;

@@ -18,6 +18,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
+import tagion.utils.StdTime;
 
 import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, bitarray_clear, countVotes;
 import tagion.hashgraph.HashGraphBasic;
@@ -37,6 +38,7 @@ class HashGraph : HashGraphI {
         uint iterative_strong_count;
         Statistic!uint iterative_tree;
         Statistic!uint iterative_strong;
+        sdt_t _current_time;
         HiRPC hirpc;
     }
     //alias LRU!(Round, uint*) RoundCounter;
@@ -57,6 +59,22 @@ class HashGraph : HashGraphI {
     Round.Rounder rounds() pure nothrow {
         return _rounds;
     }
+
+    bool areWeOnline() const pure nothrow {
+        foreach(n; nodes[1..$]) {
+            if (n !is null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    final immutable(Pubkey) channel() const pure nothrow {
+        return nodes[0].pubkey;
+    }
+
+
+
 
     // @nogc
     // immutable(Pubkey) pubkey() const pure nothrow {
@@ -179,7 +197,7 @@ class HashGraph : HashGraphI {
      Puts the event in the front seat of the wavefront if the event altitude is highest
      +/
     bool front_seat(Event event) {
-        auto current_node = getNode(event.pubkey);
+        auto current_node = nodes[node_ids[event.pubkey]];
         if ((current_node.event is null) || highest(event.altitude, current_node.event.altitude)) {
             // If the current event is in front of the wave front is set to the current event
             current_node.event = event;
@@ -226,7 +244,7 @@ class HashGraph : HashGraphI {
 
     const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received) {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
-        auto received_node=getNode(received.pubkey);
+        auto received_node=nodes[node_ids[received.pubkey]];
         auto received_wave=received.params!Wavefront;
         if ( Event.callbacks ) {
             Event.callbacks.receive(received_wave);
@@ -281,7 +299,7 @@ class HashGraph : HashGraphI {
 
 
     @safe
-    static class Node {
+    static class Node : NodeI {
         ExchangeState state;
         immutable size_t node_id;
 //        immutable ulong discovery_time;
@@ -292,6 +310,10 @@ class HashGraph : HashGraphI {
             this.node_id=node_id;
 
 //            this.discovery_time=time;
+        }
+
+        final immutable(Pubkey) channel() const pure nothrow {
+            return pubkey;
         }
 
         private Event _event; // Latest event
@@ -490,6 +512,16 @@ class HashGraph : HashGraphI {
         return (pubkey in node_ids) !is null;
     }
 
+    @property
+    void time(const(sdt_t) t) {
+        _current_time=sdt_t(t);
+    }
+
+    @property
+    const(sdt_t) time() pure const {
+        return _current_time;
+    }
+
     void dumpNodes() {
         import std.stdio;
         foreach(i, n; nodes) {
@@ -531,6 +563,7 @@ class HashGraph : HashGraphI {
         }
     }
 
+    version(none)
     @nogc
     Pubkey nodePubkey(const uint node_id) pure const nothrow
         in {
@@ -579,11 +612,11 @@ class HashGraph : HashGraphI {
         return cast(uint)(nodes.length);
     }
 
-    inout(Node) getNode(const size_t node_id) inout pure nothrow {
+    const(Node) getNode(const size_t node_id) const pure nothrow {
         return nodes[node_id];
     }
 
-    inout(Node) getNode(Pubkey pubkey) inout pure {
+    const(Node) getNode(Pubkey pubkey) const pure {
         return getNode(nodeId(pubkey));
     }
 
@@ -779,90 +812,59 @@ class HashGraph : HashGraphI {
             import core.thread.fiber : Fiber;
             import tagion.crypto.SecureNet : StdSecureNet;
             import tagion.utils.Random;
+            import tagion.utils.Queue;
             Random!size_t random;
-//            private HashGraph[] hashgraphs;
-            @safe class UnittestGossipNet : StdSecureNet {
-//            private Tid[immutable(Pubkey)] _tids;
-                private Pubkey[] _pkeys;
-                private HashGraph _hashgraph;
-//                protected uint _send_node_id;
 
-
-                this() {
-                    super();
+            alias Channel=Queue!Document;
+            protected Channel[Pubkey] channels;
+//            @trusted
+            void send(const(Pubkey) channel, const(Document) doc) {
+                log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
+                if ( Event.callbacks ) {
+                    Event.callbacks.send(channel, doc);
                 }
+                channels[channel].write(doc);
+                //_tids[channel].send(doc);
+            }
 
-                void set(Pubkey[] pkeys)
-                    in {
-                        assert(_hashgraph.node_size is pkeys.length);
-                    }
-                do {
-                    _pkeys=pkeys;
-                }
+            class FiberNetwork : Fiber {
+                private HashGraphI _hashgraph;
 
-                HashGraphI hashgraph() pure nothrow {
-                    return _hashgraph;
-                }
+                // @trusted
+                // private this() {
+                //     super(&run);
+                // }
 
-                void hashgraph(HashGraphI h) nothrow
+                @trusted
+                this(HashGraphI h) nothrow
                     in {
                         assert(_hashgraph is null);
                     }
                 do {
-                    _hashgraph=cast(HashGraph)h;
-
+                    super(&run);
+                    _hashgraph=h;
                 }
 
+                const(HashGraphI) hashgraph() const pure nothrow {
+                    return _hashgraph;
+                }
 
-                immutable(Pubkey) selectRandomNode(const bool active=true)
+                const(Pubkey) selectRandomNode(const bool active=true) pure nothrow
+                in {
+                    assert(_hashgraph.areWeOnline);
+                }
                 out(result)  {
-                    assert(result != pubkey);
+                    assert(result != _hashgraph.channel);
                 }
                 do {
                     for(;;) {
-                        const node_index=random.value(0, _hashgraph.node_size);
-                        auto result=_pkeys[node_index];
-                        if (result != pubkey) {
-                            return result;
+                        const node_index=random.value(1, _hashgraph.node_size);
+                        auto node=_hashgraph.getNode(node_index);
+                        if ((node !is null)) {
+                            return node.channel;
                         }
                     }
                     assert(0);
-                }
-
-
-
-                void dump(const(HiBON[]) events) const {
-                    foreach(e; events) {
-                        auto pack_doc=Document(e.serialize);
-                        immutable pack=buildEventPackage(this, pack_doc);
-//            immutable fingerprint=pack.event_body.fingerprint;
-//                    log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack.event_body.altitude);
-                    }
-                }
-
-//            protected uint _send_count;
-                @trusted
-                void send(immutable(Pubkey) channel, const(Document) doc) {
-                    log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
-                    if ( callbacks ) {
-                        callbacks.send(channel, doc);
-                    }
-                    //_tids[channel].send(doc);
-                }
-
-                bool online() const  {
-                    // Does my own node exist and do the node have an event
-                    auto own_node=_hashgraph.getNode(pubkey);
-                    return (own_node !is null) && (own_node.event !is null);
-                }
-
-            }
-
-            class FiberNetwork : Fiber {
-                private GossipNet net;
-                @trusted this(GossipNet net) {
-                    this.net=net;
-                    super(&run);
                 }
 
                 private void run() {
@@ -878,16 +880,17 @@ class HashGraph : HashGraphI {
             this(string[] passphrases) {
                 immutable N=passphrases.length;
                 foreach(passphrase; passphrases) {
-                    auto net=new UnittestGossipNet();
+                    auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
                     auto h=new HashGraph(N, net);
-                    networks[net.pubkey]=new FiberNetwork(net);
+                    networks[net.pubkey]=new FiberNetwork(h);
+                    channels[net.pubkey]=new Channel;
                 }
 
                 foreach(n; networks) {
                     foreach(m; networks) {
                         if (n !is m) {
-                            n.net.hashgraph.add_node(m.net.pubkey);
+                            n._hashgraph.add_node(m._hashgraph.channel);
                         }
                     }
                 }
@@ -899,12 +902,13 @@ class HashGraph : HashGraphI {
 //    version(none)
     unittest { // strongSee
         // This is the example taken from
-        // HASHGRAPH CONSENSUS
+        // HASHGRAPH CONSENSUSE
         // SWIRLDS TECH REPORT TR-2016-01
         //import tagion.crypto.SHA256;
         import std.traits;
         import std.conv;
-        import tagion.gossip.GossipNet : StdGossipNet;
+
+        import tagion.crypto.SecureNet : StdSecureNet;
         enum NodeLable {
             Alice,
             Bob,
@@ -917,7 +921,6 @@ class HashGraph : HashGraphI {
             Pubkey pubkey;
         }
 
-//        const net=new StdGossipNet("very secret");
         enum N=EnumMembers!NodeLable.length;
 //        HashGraph[] hashgraphs; //=new HashGraph[N];
         //hashgraphs.length=N;
