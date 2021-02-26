@@ -101,7 +101,7 @@ alias check=Check!DARTException;
     }
 
     protected enum _params = [
-//        "fingerprints",
+        "fingerprints",
 //        "branches",
 //        "rims",
 //        "limit",
