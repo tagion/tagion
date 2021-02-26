@@ -987,7 +987,7 @@ class Event {
 // Note pubkey is redundent information
 // The node_id should be enought this will be changed later
     this(
-        const(EventPackage) epack,
+        immutable(EventPackage)* epack,
         HashGraphI hashgraph,
 //        immutable(ubyte[]) signature,
 //        Pubkey pubkey,
@@ -1170,6 +1170,7 @@ class Event {
     // alias pubkey=event_package.pubkey;
     // alias signature=event_package.signature;
 
+
     // Recursive markes
     private uint _visit;
     package static uint visit_marker;
@@ -1181,7 +1182,7 @@ class Event {
         return (_visit == visit_marker);
     }
     // The altitude increases by one from mother to daughter
-    const(EventPackage) event_package;
+    immutable(EventPackage*) event_package;
 
     ref const(EventBody) event_body() const nothrow {
         return event_package.event_body;

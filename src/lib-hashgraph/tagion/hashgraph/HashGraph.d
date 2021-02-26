@@ -1,5 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
+
 import std.stdio;
 import std.conv;
 import std.format;
@@ -10,7 +11,8 @@ import std.typecons : TypedefType;
 import std.algorithm.iteration : map;
 
 import tagion.hashgraph.Event;
-import tagion.gossip.InterfaceNet;
+import tagion.hashgraph.HashGraphBasic : HashGraphI;
+import tagion.crypto.SecureInterfaceNet;
 //import tagion.utils.LRU;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
@@ -27,9 +29,10 @@ import tagion.utils.Miscellaneous : toHex=toHexString;
 class HashGraph : HashGraphI {
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
+    //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.utils.Statistic;
     private {
-        GossipNet net;
+//        GossipNet net;
         uint iterative_tree_count;
         uint iterative_strong_count;
         Statistic!uint iterative_tree;
@@ -41,8 +44,8 @@ class HashGraph : HashGraphI {
     // List of rounds
     package Round.Rounder _rounds;
 
-    this(const size_t size, GossipNet net) {
-        this.net=net;
+    this(const size_t size, SecureNet net) {
+//        this.net=net;
         //net.hashgraph=this;
         nodes=new Node[size];
         _rounds=Round.Rounder(this);
@@ -55,12 +58,12 @@ class HashGraph : HashGraphI {
         return _rounds;
     }
 
-    @nogc
-    immutable(Pubkey) pubkey() const pure nothrow {
-        return net.pubkey;
-    }
+    // @nogc
+    // immutable(Pubkey) pubkey() const pure nothrow {
+    //     return net.pubkey;
+    // }
 
-    alias EventPackageCache=EventPackage[Buffer];
+    alias EventPackageCache=immutable(EventPackage)*[Buffer];
     alias EventCache=Event[Buffer];
 
     protected {
@@ -73,7 +76,7 @@ class HashGraph : HashGraphI {
             return _event_cache[fingerprint];
         }
         else if (fingerprint in _event_package_cache) {
-            auto event_pack=_event_package_cache[fingerprint];
+            immutable event_pack=_event_package_cache[fingerprint];
             _event_package_cache.remove(fingerprint);
             auto event=new Event(event_pack, this);
             _event_cache[fingerprint]=event;
@@ -109,7 +112,7 @@ class HashGraph : HashGraphI {
     }
 
     Event registerEvent(
-        const(EventPackage) event_pack)
+        immutable(EventPackage*) event_pack)
         in {
             assert(event_pack.fingerprint !in _event_cache, format("Event %s has already been registerd", event_pack.fingerprint.toHexString));
         }
@@ -122,28 +125,31 @@ class HashGraph : HashGraphI {
     }
 
     version(none)
-    const(HiRPC.Sender) buildPackage(const(HiBON) block, const ExchangeState state) {
-        const pack=Package(block, state);
-        hirpc.wavefront(pack);
-//        const pack=Package(net, block, state);
-        return hirpc.sender.toDoc;
+    const(HiRPC.Sender) buildPackage(const(Wavefront) wave, const ExchangeState state) {
+
+        // pragma(msg, "isHiBONRecord!Wavefront=", isHiBONRecord!Wavefront);
+        // const x=hirpc.opDispatch!("wavefront")(wave);
+        const sender=hirpc.wavefront(wave);
+        return sender;
     }
 
-    static {
-        @HiRPCMethod() const(HiRPC.Sender) wavefront(const Wavefront wave, const uint id=0) {
-            return hirpc.wavefront(wave, id);
+    //static {
+    @HiRPCMethod() const(HiRPC.Sender) wavefront(const Wavefront wave, const uint id=0) {
+        // import tagion.hibon.HiBONRecord;
+        // pragma(msg, "isHiBONRecord!Wavefront=", isHiBONRecord!Wavefront);
+        // const x=hirpc.opDispatch!("wavefront")(wave);
+        return hirpc.wavefront(wave, id);
 //            return senrder;
-        }
     }
 
-    private const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) receiver) {
-        if (receiver.pubkey in node_ids) {
-            wavefront(receiver.params!Wavefront);
-        }
-        else {
-            log.warning("Node channel %s unknown", receiver.pubkey.toHex);
-        }
-    }
+    // private const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) receiver) {
+    //     if (receiver.pubkey in node_ids) {
+    //         wavefront(receiver.params!Wavefront);
+    //     }
+    //     else {
+    //         log.warning("Node channel %s unknown", receiver.pubkey.toHex);
+    //     }
+    // }
 
     /++ to synchronize two nodes A and B
      +  1)
@@ -182,8 +188,11 @@ class HashGraph : HashGraphI {
         return false;
     }
 
-    const(EventPackage[]) buildWavefront(const Tides tides) const {
-        const(EventPackage)[] result;
+    const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides=null) const {
+        if (tides is null) {
+            return Wavefront(null, state);
+        }
+        immutable(EventPackage*)[] result;
         foreach(n; nodes) {
             if ( n.pubkey in tides ) {
                 const other_altitude=tides[n.pubkey];
@@ -202,41 +211,45 @@ class HashGraph : HashGraphI {
                 }
             }
         }
-        return result;
+//        Wavefront.epacks=result;
+        return Wavefront(result, state);
     }
 
-    void register_wavefront(const(Wavefront) received_wave) {
+    void register_wavefront(const Wavefront received_wave) {
         foreach(e; received_wave.epacks) {
-            if (!e.fingerprint in received_wave.epacks) {
+            if (!(e.fingerprint in _event_package_cache)) {
                 _event_package_cache[e.fingerprint] = e;
             }
         }
     }
 
 
-    const(Wavefront) wavefront_machine(const(HiRPC.Receiver) received) {
-        auto received_node=getNode(received_wave.pubkey);
+    const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received) {
+        alias consensus = consensusCheckArguments!(GossipConsensusException);
+        auto received_node=getNode(received.pubkey);
+        auto received_wave=received.params!Wavefront;
         if ( Event.callbacks ) {
             Event.callbacks.receive(received_wave);
         }
         log("%J", received_wave);
-        with(ExchangeState) {
-            final switch (received_wave.state) {
-            case NONE:
-            case INIT_TIDE:
-                consensus(received_wave.state).check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
-                break;
-            case TIDAL_WAVE: ///
-                if (received_node.state !is NONE) {
-                    return buildWavefront(BREAKING_WAVE);
-                }
-                // Receive the tide wave
+        const(Wavefront) wavefront_response() {
+            with(ExchangeState) {
+                final switch (received_wave.state) {
+                case NONE:
+                case INIT_TIDE:
+                    consensus(received_wave.state).check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
+                    break;
+                case TIDAL_WAVE: ///
+                    if (received_node.state !is NONE) {
+                        return buildWavefront(BREAKING_WAVE);
+                    }
+                    // Receive the tide wave
                 consensus(received_wave.state, INIT_TIDE, NONE).
                     check((received_wave.state is INIT_TIDE) || (received_wave.state is NONE),
                         ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
-                check(received_wave.epack.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
+                check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                 received_node.state=received_wave.state;
-                return buildWavefront(received_wave, FIRST_WAVE);
+                return buildWavefront(FIRST_WAVE, received_wave.tides);
             case BREAKING_WAVE:
                 log.trace("BREAKING_WAVE");
                 received_node.state=NONE;
@@ -249,8 +262,8 @@ class HashGraph : HashGraphI {
                     check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
                         ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                 received_node.state=NONE;
-                register_wavefront(receive_wave);
-                return buildPackage(received_wave, SECOND_WAVE);
+                register_wavefront(received_wave);
+                return buildWavefront(SECOND_WAVE, received_wave.tides);
             case SECOND_WAVE:
                 if (received_node.state !is TIDAL_WAVE) {
                     return buildWavefront(BREAKING_WAVE);
@@ -258,10 +271,12 @@ class HashGraph : HashGraphI {
                 consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
                     ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                 received_node.state=NONE;
-                register_wavefront(receive_wave);
+                register_wavefront(received_wave);
             }
-            return Wavefront(NONE);
+            return buildWavefront(NONE);
         }
+        }
+        return hirpc.wavefront(wavefront_response);
     }
 
 
@@ -762,11 +777,11 @@ class HashGraph : HashGraphI {
 
         static class UnittestNetwork {
             import core.thread.fiber : Fiber;
-            import tagion.gossip.GossipNet : StdGossipNet;
+            import tagion.crypto.SecureNet : StdSecureNet;
             import tagion.utils.Random;
             Random!size_t random;
 //            private HashGraph[] hashgraphs;
-            @safe class UnittestGossipNet : StdGossipNet {
+            @safe class UnittestGossipNet : StdSecureNet {
 //            private Tid[immutable(Pubkey)] _tids;
                 private Pubkey[] _pkeys;
                 private HashGraph _hashgraph;

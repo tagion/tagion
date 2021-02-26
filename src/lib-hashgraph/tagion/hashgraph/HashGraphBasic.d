@@ -7,6 +7,7 @@ import std.typecons : TypedefType;
 import tagion.basic.Basic : Buffer, Signature, Pubkey, EnumText;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
+import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;
 
 import tagion.hibon.Document : Document;
@@ -116,7 +117,7 @@ interface HashGraphI {
     //void register_wavefront();
 
     //HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
-    const(Wavefront) wavefront_machine(const(Wavefront) received_wave);
+    const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received);
 
     // const(Wavefront) wavefront_machine(const(Wavefront) receiver_wave);
 
@@ -310,7 +311,7 @@ static immutable(EventPackage*) buildEventPackage(Args...)(Args args) {
 //@RecordType("EPACK") @safe
 pragma(msg, "fixme(cbr): Should be a HiRPC");
 @safe
-class EventPackage {
+struct EventPackage {
     @Label("") Buffer fingerprint;
     @Label("$sign", true) Signature signature;
     @Label("$pkey", true) Pubkey pubkey;
@@ -338,7 +339,7 @@ class EventPackage {
             /++
              Create a
              +/
-            this(GossipNet net, immutable(EventBody) ebody)  {
+            this(GossipNet net, immutable(EventBody) ebody) {
                 pubkey=net.pubkey;
                 event_body=ebody;
                 fingerprint=net.hashOf(event_body);
@@ -351,25 +352,77 @@ class EventPackage {
 alias Tides=int[Pubkey];
 @RecordType("Wavefront") @safe
 struct Wavefront {
-    @Label("$tides", true) private Tides _tides;
-    @Label("$events", true) EventPackage[] epacks;
-    @Label("$state", true) ExchangeState state;
-    mixin HiBONRecord!(
-        q{
-            this(Tides tides) pure nothrow {
-                _tides=tides;
-                epacks.length=0;
-                state=ExchangeState.TIDAL_WAVE;
+    @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
+    @Label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
+    @Label("$state") ExchangeState state;
+    enum tidesName=GetLabel!(_tides).name;
+    enum epacksName=GetLabel!(epacks).name;
+    enum stateName=GetLabel!(state).name;
+
+    mixin HiBONRecordType;
+
+    // mixin HiBONRecord!(
+    //     q{
+    this(Tides tides) pure nothrow {
+        _tides=tides;
+        epacks=null;
+        state=ExchangeState.TIDAL_WAVE;
+    }
+
+    this(immutable(EventPackage*)[] epacks, const ExchangeState state) pure nothrow
+    in {
+        assert(state is ExchangeState.FIRST_WAVE || state is ExchangeState.SECOND_WAVE);
+    }
+    do {
+        this.epacks=epacks;
+        this.state=state;
+    }
+    private  struct LoadTides {
+        @Label(tidesName) Tides tides;
+        mixin HiBONRecord!(
+            q{
+                this(const(Tides) _tides) const {
+                    tides=_tides;
+                }
+            });
+
+    }
+
+    this(const Document doc) {
+        state=doc[stateName].get!ExchangeState;
+        if (doc.hasMember(tidesName)) {
+            _tides=doc[tidesName].get!LoadTides.tides;
+        }
+        immutable(EventPackage)*[] event_packages;
+        if (doc.hasMember(epacksName)) {
+            const sub_doc=doc[epacksName].get!Document;
+            foreach(e; sub_doc[]) {
+                (() @trusted {
+                    immutable epack=cast(immutable)(new EventPackage(e.get!Document));
+                    event_packages~=epack;
+                })();
             }
-            this(EventPackage[] epacks, const ExchangeState state) pure nothrow
-            in {
-                assert(state is ExchangeState.FIRST_WAVE || state is ExchangeState.SECOND_WAVE);
+        }
+        epacks=event_packages;
+    }
+
+    const(Document) toDoc() const {
+        auto h=new HiBON;
+        h[stateName]=state;
+        if (_tides.length) {
+            h[tidesName]=const(LoadTides)(_tides);
+        }
+        if (epacks.length) {
+            auto epacks_hibon=new HiBON;
+            foreach(i, epack; epacks) {
+                epacks_hibon[i]=epack.toDoc;
             }
-            do {
-                this.epacks=epacks;
-                this.state=state;
-            }
-        });
+            h[epacksName]=epacks_hibon;
+        }
+        return Document(h);
+    }
+    //     });
+
     @nogc
     const(int[Pubkey]) tides() const pure nothrow
         in {
@@ -394,6 +447,7 @@ struct Wavefront {
     }
 }
 
-static assert(isHiBON!(EventPackage));
+static assert(isHiBONRecord!Wavefront);
+static assert(isHiBONRecord!(EventPackage));
 
-static assert(isHiBON!(immutable(EventPackage)));
+static assert(isHiBONRecord!(immutable(EventPackage)));
