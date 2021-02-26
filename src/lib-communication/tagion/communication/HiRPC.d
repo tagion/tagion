@@ -404,7 +404,7 @@ struct HiRPC {
     }
 
 
-    const(Sender) opDispatch(string method,T)(T params, const uint id=0) {
+    const(Sender) opDispatch(string method,T)(const T params, const uint id=0) {
         pragma(msg, "method=",method, " T=", T);
         return action(method, params, id);
     }
