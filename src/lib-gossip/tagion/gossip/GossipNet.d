@@ -96,16 +96,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     // }
 
 
-    @property
-    void time(const(ulong) t) {
-        _current_time=t;
-    }
-
-    @property
-    const(ulong) time() pure const {
-        return _current_time;
-    }
-
     protected Tid _transcript_tid;
     @property void transcript_tid(Tid tid)
         @trusted in {
