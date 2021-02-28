@@ -6,8 +6,8 @@ import tagion.network.ListenerSocket;
 
 import tagion.hashgraph.Event : Event, Round;
 //import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : Tides, HashGraphI;
-import tagion.gossip.InterfaceNet : NetCallbacks;
+import tagion.hashgraph.HashGraphBasic : Tides, HashGraphI, EventMonitorCallbacks;
+//import tagion.hashg : EventMonitorCallbacks; //NetCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
@@ -48,7 +48,7 @@ import std.socket;
 import core.thread;
 
 @safe
-class MonitorCallBacks : NetCallbacks {
+class MonitorCallBacks : EventMonitorCallbacks {
     protected {
         Tid _socket_thread_id;
         Tid _network_socket_tread_id;
@@ -253,10 +253,10 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  msg=%s ",  __FUNCTION__, e.msg);
     }
 
-    void wavefront_state_receive(const(Document) doc) {
-        //import tagion.Base : cutHex;
-        // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
-    }
+    // void wavefront_state_receive(const(Document) doc) {
+    //     //import tagion.Base : cutHex;
+    //     // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
+    // }
 
     void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides) {
         // writefln("Impl. needed. %s  tides=%d ",  __FUNCTION__, tides.length);
@@ -270,7 +270,7 @@ class MonitorCallBacks : NetCallbacks {
         // writefln("Impl. needed. %s  ",  __FUNCTION__);
     }
 
-    void send(immutable(Pubkey) channel, const(Document) doc) {
+    void send(const(Pubkey) channel, lazy const(Document) doc) {
         //import tagion.Base : cutHex;
         // writefln("Impl. needed. %s  channel=%s",  __FUNCTION__, channel.cutHex);
     }
