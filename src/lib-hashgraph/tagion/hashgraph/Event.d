@@ -112,7 +112,7 @@ class Round {
     }
 
     @nogc uint famousVote() pure const nothrow {
-        return cast(uint)(opSlice.map!((e) => (e !is null) && (e.witness.famous)).count(true));
+        return cast(uint)(_events.map!((e) => (e !is null) && (e.witness.famous)).count(true));
     }
 
     private @nogc bool famous_can_be_decided() pure const nothrow {
@@ -260,16 +260,16 @@ class Round {
         return result;
     }
 
-    @nogc
-    package Range!false range() pure nothrow {
-        return Range!false(this);
+    // @nogc
+    // package Event[] events() pure nothrow {
+    //     return _events;
+    // }
+
+    const(Event[]) events() const pure nothrow {
+        return _events;
     }
 
-    @nogc
-    Range!true opSlice() const pure nothrow {
-        return Range!true(this);
-    }
-
+    version(none)
     @nogc
     struct Range(bool CONST=false) {
         static if (CONST) {
@@ -734,7 +734,7 @@ class Round {
 
         this(HashGraphI hashgraph) pure nothrow {
             this.hashgraph=hashgraph;
-            last_decided_round = last_round = new Round(null, hashgraph.node_size, -1);
+            last_decided_round = last_round = new Round(null, hashgraph.active_nodes, -1);
         }
 
         @nogc
@@ -802,7 +802,7 @@ class Round {
                 }
                 else {
                     log.error("EVA create round");
-                    e._round = last_round = new Round(last_round, hashgraph.node_size, last_round.number+1);
+                    e._round = last_round = new Round(last_round, hashgraph.active_nodes, last_round.number+1);
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
                     }
@@ -985,14 +985,14 @@ class Event {
 //        const uint node_id,
         ) {
         event_package=epack;
-        this.node_id=hashgraph.nodeId(epack.pubkey);
+        this.node_id=hashgraph.getNode(epack.pubkey).nodeId;
         this.id=next_id;
         _count++;
 
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             BitArray round_mask;
-            bitarray_clear(round_mask, hashgraph.node_size);
+            bitarray_clear(round_mask, hashgraph.active_nodes);
             _witness = new Witness(this, round_mask);
             assert(_round is null);
             hashgraph.rounds.next_round(this);
@@ -1772,7 +1772,7 @@ class Event {
                 _round = _mother._round;
                 assert(!hashgraph.rounds.decided(_round),
                             "Fixme(cbr):This node is way behind we need to find a solution");
-                const calc_mask = calc_witness_mask(hashgraph.node_size);
+                const calc_mask = calc_witness_mask(hashgraph.active_nodes);
                 if ( calc_mask.isMajority ) {
                     // Witness detected
                     hashgraph.rounds.next_round(this);

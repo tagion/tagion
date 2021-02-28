@@ -8,7 +8,8 @@ import std.bitmanip : BitArray;
 import std.exception : assumeWontThrow;
 import std.algorithm.searching : count;
 import std.typecons : TypedefType;
-import std.algorithm.iteration : map;
+import std.algorithm.iteration : map, each;
+import std.algorithm.comparison : max;
 
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic : HashGraphI;
@@ -32,24 +33,29 @@ class HashGraph : HashGraphI {
     protected alias check=Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.utils.Statistic;
+    immutable size_t min_voting_nodes;
     private {
 //        GossipNet net;
         uint iterative_tree_count;
         uint iterative_strong_count;
+        private Node[Pubkey] nodes; // List of participating nodes T
+        //    private size_t[Pubkey] node_ids; // Translation table from pubkey to node_indices;
         Statistic!uint iterative_tree;
         Statistic!uint iterative_strong;
-        sdt_t _current_time;
         HiRPC hirpc;
+        Authorising authorising;
     }
     //alias LRU!(Round, uint*) RoundCounter;
 //    alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
     // List of rounds
     package Round.Rounder _rounds;
 
-    this(const size_t size, SecureNet net) {
+    this(const size_t min_voting_nodes, const SecureNet net, Authorising authorising) {
 //        this.net=net;
         //net.hashgraph=this;
-        nodes=new Node[size];
+        this.min_voting_nodes=min_voting_nodes;
+        this.authorising=authorising;
+        //nodes=new Node[size];
         _rounds=Round.Rounder(this);
         add_node(net.pubkey);
         hirpc=HiRPC(net);
@@ -61,20 +67,24 @@ class HashGraph : HashGraphI {
     }
 
     bool areWeOnline() const pure nothrow {
-        foreach(n; nodes[1..$]) {
-            if (n !is null) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    final immutable(Pubkey) channel() const pure nothrow {
-        return nodes[0].pubkey;
+        return nodes.length > 1;
     }
 
 
+    final Pubkey channel() const pure nothrow {
+        return hirpc.net.pubkey;
+    }
 
+
+    @trusted
+    const(Pubkey[]) channels() const pure nothrow {
+        return nodes.keys;
+    }
+
+    @nogc
+    size_t voting_nodes() const pure nothrow {
+        return max(nodes.length, min_voting_nodes);
+    }
 
     // @nogc
     // immutable(Pubkey) pubkey() const pure nothrow {
@@ -183,11 +193,11 @@ class HashGraph : HashGraphI {
      +  3)
      +  A send the rest of the event which is in front of B's wave-front
      +/
-    const(Wavefront) tideWave() const pure nothrow {
+    const(Wavefront) tideWave() const pure {
         Tides tides;
-        foreach(n; nodes) {
+        foreach(pkey, n; nodes) {
             if ( n.isOnline ) {
-                tides[n.pubkey] = n.altitude;
+                tides[pkey] = n.altitude;
             }
         }
         return Wavefront(tides);
@@ -197,7 +207,7 @@ class HashGraph : HashGraphI {
      Puts the event in the front seat of the wavefront if the event altitude is highest
      +/
     bool front_seat(Event event) {
-        auto current_node = nodes[node_ids[event.pubkey]];
+        auto current_node = nodes[event.pubkey];
         if ((current_node.event is null) || highest(event.altitude, current_node.event.altitude)) {
             // If the current event is in front of the wave front is set to the current event
             current_node.event = event;
@@ -244,7 +254,7 @@ class HashGraph : HashGraphI {
 
     const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received) {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
-        auto received_node=nodes[node_ids[received.pubkey]];
+        auto received_node=nodes[received.pubkey];
         auto received_wave=received.params!Wavefront;
         if ( Event.callbacks ) {
             Event.callbacks.receive(received_wave);
@@ -302,14 +312,17 @@ class HashGraph : HashGraphI {
     static class Node : NodeI {
         ExchangeState state;
         immutable size_t node_id;
+
+        @nogc
+        size_t nodeId() const pure nothrow {
+            return node_id;
+        }
 //        immutable ulong discovery_time;
         immutable(Pubkey) pubkey;
         @nogc
         this(const Pubkey pubkey, const size_t node_id) pure nothrow {
             this.pubkey=pubkey;
             this.node_id=node_id;
-
-//            this.discovery_time=time;
         }
 
         final immutable(Pubkey) channel() const pure nothrow {
@@ -444,27 +457,38 @@ class HashGraph : HashGraphI {
         }
     }
 
-    @nogc
-    const(size_t) node_size() const pure nothrow {
-        return nodes.length;
-    }
+    // @nogc
+    // const(size_t) node_size() const pure nothrow {
+    //     return nodes.length;
+    // }
 
-    private Node[] nodes; // List of participating nodes T
-    private size_t[Pubkey] node_ids; // Translation table from pubkey to node_indices;
 //    private uint[] unused_node_ids; // Stack of unused node ids
 
-
-
-    @nogc
-    Range opSlice() const pure nothrow {
-        return Range(this);
+    immutable(EventBody) eva(const Buffer nonce) {
+        EvaPayload payload;
+        payload.channel=channel;
+        payload.nonce=nonce;
+        immutable result=EventBody(payload.toDoc, null, null, authorising.time, eva_altitude);
+        return result;
     }
 
+    import std.traits : fullyQualifiedName;
+    alias NodeRange=typeof((cast(const)nodes).byValue);
     @nogc
-    bool isOnline(Pubkey pubkey) pure nothrow const {
-        return (pubkey in node_ids) !is null;
+    NodeRange opSlice() const pure nothrow {
+        // pragma(msg, "NodeRange=", fullyQualifiedName!NodeRange);
+        // pragma (msg, "typeof(nodes.byValue)=", fullyQualifiedName!(typeof(nodes.byValue)));
+        // const result=nodes;
+        // pragma (msg, "typeof(nodes.byValue)=", fullyQualifiedName!(typeof(result)));
+        return nodes.byValue;
     }
 
+    // @nogc
+    // bool isOnline(Pubkey pubkey) pure nothrow const {
+    //     return (pubkey in node_ids) !is null;
+    // }
+
+    version(none)
     bool createNode(Pubkey pubkey) nothrow
         in {
             assert(pubkey !in node_ids,
@@ -474,7 +498,7 @@ class HashGraph : HashGraphI {
         scope(exit) {
             log.error("createNode %d", node_ids[pubkey]);
         }
-        if ( pubkey in node_ids ) {
+        if ( pubkey in nodes ) {
             return false;
         }
         foreach(id, ref n; nodes) {
@@ -494,33 +518,22 @@ class HashGraph : HashGraphI {
         // return true;
     }
 
-    const(size_t) nodeId(scope Pubkey pubkey) const pure {
-        auto result=pubkey in node_ids;
-        check(result !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-        return *result;
-    }
+    // const(size_t) nodeId(scope Pubkey pubkey) const pure {
+    //     auto node=pubkey in nodes;
+    //     check(node !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+    //     return node.node_id;
+    // }
 
     void setAltitude(scope Pubkey pubkey, const(int) altitude) {
-        auto nid=pubkey in node_ids;
-        check(nid !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-        auto n=nodes[*nid];
-        n.altitude=altitude;
+        auto node=pubkey in nodes;
+        check(node !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
+        node.altitude=altitude;
     }
 
-    @nogc
-    bool isNodeIdKnown(scope Pubkey pubkey) const pure nothrow {
-        return (pubkey in node_ids) !is null;
-    }
-
-    @property
-    void time(const(sdt_t) t) {
-        _current_time=sdt_t(t);
-    }
-
-    @property
-    const(sdt_t) time() pure const {
-        return _current_time;
-    }
+    // @nogc
+    // bool isNodeIdKnown(scope Pubkey pubkey) const pure nothrow {
+    //     return (pubkey in node_ids) !is null;
+    // }
 
     void dumpNodes() {
         import std.stdio;
@@ -536,32 +549,35 @@ class HashGraph : HashGraphI {
         log("");
     }
 
-    struct Range {
-        private {
-            Node[] r;
-        }
-        @nogc @trusted
-        this(const HashGraph owner) nothrow pure {
-            r = cast(Node[])owner.nodes;
-        }
+    pragma(msg, "typeof(nodes[])=", typeof(nodes.byValue));
+    // struct Range {
+    //     alias NodeRange
+    //     private {
 
-        @nogc @property pure nothrow {
-            bool empty() {
-                return r.length is 0;
-            }
+    //         typeof(nodes.byValue) r;
+    //     }
+    //     @nogc @trusted
+    //     this(const HashGraph owner) nothrow pure {
+    //         r = cast(Node[Pubkey])owner.byValue;
+    //     }
 
-            const(Node) front() {
-                return r[0];
-            }
+    //     @nogc @property pure nothrow {
+    //         bool empty() {
+    //             return r.length is 0;
+    //         }
 
-            void popFront() {
-                while (!empty && (r[0] !is null)) {
-                    r=r[1..$];
-                }
-            }
+    //         const(Node) front() {
+    //             return r[0];
+    //         }
 
-        }
-    }
+    //         void popFront() {
+    //             while (!empty && (r[0] !is null)) {
+    //                 r=r[1..$];
+    //             }
+    //         }
+
+    //     }
+    // }
 
     version(none)
     @nogc
@@ -580,10 +596,10 @@ class HashGraph : HashGraphI {
         }
     }
 
-    @nogc
-    bool isNodeActive(const uint node_id) pure const nothrow {
-        return (node_id < nodes.length) && (nodes[node_id] !is null);
-    }
+    // @nogc
+    // bool isNodeActive(const uint node_id) pure const nothrow {
+    //     return (node_id < nodes.length) && (nodes[node_id] !is null);
+    // }
 
     version(none)
     void assign(Event event)
@@ -601,69 +617,68 @@ class HashGraph : HashGraphI {
     }
 
     // Returns the number of active nodes in the network
-    @nogc
-    uint active_nodes() const pure nothrow {
-        return cast(uint)nodes.count!(q{a is null})(false);
-//        return cast(uint)(node_ids.length);
-    }
+//     @nogc
+//     uint active_nodes() const pure nothrow {
+//         return cast(uint)nodes.count!(q{a is null})(false);
+// //        return cast(uint)(node_ids.length);
+//     }
 
     @nogc
-    uint total_nodes() const pure nothrow {
-        return cast(uint)(nodes.length);
+    size_t active_nodes() const pure nothrow {
+        return nodes.length;
     }
 
-    const(Node) getNode(const size_t node_id) const pure nothrow {
-        return nodes[node_id];
-    }
+    // const(Node) getNode(const size_t node_id) const pure nothrow {
+    //     return nodes[node_id];
+    // }
 
-    const(Node) getNode(Pubkey pubkey) const pure {
-        return getNode(nodeId(pubkey));
+    const(Node) getNode(Pubkey channel) const pure {
+        return nodes.get(channel, null);
     }
 
     @nogc
     bool isMajority(const uint voting) const pure nothrow {
-        return .isMajority(voting, active_nodes);
+        return .isMajority(voting, voting_nodes);
     }
 
     private void remove_node(Node n) nothrow
         in {
 //            import std.format;
             assert(n !is null);
-            assert(n.node_id < nodes.length);
-            assert(nodes[n.node_id] !is null, format("Node id %d is not removable because it does not exist", n.node_id));
+            assert(n.pubkey in nodes, format("Node id %d is not removable because it does not exist", n.node_id));
         }
     do {
-        scope(success) {
-            nodes[n.node_id] = null;
-        }
-        node_ids.remove(n.pubkey);
+        nodes.remove(n.pubkey);
     }
 
     bool remove_node(const Pubkey pkey) nothrow {
-        const node_id_p=pkey in node_ids;
-        //if (
-        //const node_id=node_ids.get(pkey, size_t.max);
-        // if (node_id < nodes.length) {
-        //     //remove_node(nodes[node_id]);
-        //     return true;
-        // }
+        if (pkey in nodes) {
+            nodes.remove(pkey);
+            return true;
+        }
         return false;
     }
 
-    bool add_node(const Pubkey pkey) nothrow
+    @trusted
+    size_t next_node_id() const pure nothrow {
+        import std.algorithm.searching : maxElement;
+        scope BitArray used_nodes;
+        used_nodes.length=nodes.byValue.map!(a => a.node_id).maxElement; //.max;
+        nodes.byValue.map!(a => a.node_id).each!((n) {used_nodes[n] = true;});
+        auto unused_list=(~used_nodes).bitsSet;
+        if (unused_list.empty) {
+            return used_nodes.length+1;
+        }
+        return unused_list.front;
+    }
+
+    void add_node(const Pubkey pkey) nothrow
         in {
 //            assert(pkey != net.pubkey);
-            assert(!(pkey in node_ids), format("Node with pubkey %s has already been added", pkey.toHex));
+            assert(!(pkey in nodes), format("Node with pubkey %s has already been added", pkey.toHex));
         }
     do {
-        foreach(node_id, ref node; nodes) {
-            if (node is null) {
-                node=new Node(pkey, node_id);
-                node_ids[pkey]=node_id;
-                return true;
-            }
-        }
-        return false;
+        nodes[pkey]=new Node(pkey, next_node_id);
     }
 
 
@@ -813,10 +828,28 @@ class HashGraph : HashGraphI {
             import tagion.crypto.SecureNet : StdSecureNet;
             import tagion.utils.Random;
             import tagion.utils.Queue;
+            import std.datetime.systime : SysTime;
             Random!size_t random;
-
+            SysTime global_time;
             alias Channel=Queue!Document;
             protected Channel[Pubkey] channels;
+
+            class UnittestAuthorising  : Authorising {
+                sdt_t _current_time;
+                @property
+                void time(const(sdt_t) t) {
+                    _current_time=sdt_t(t);
+                }
+
+                @property
+                const(sdt_t) time() pure const {
+                    return _current_time;
+                }
+
+                bool isValidChannel(const(Pubkey) channel) {
+                    return true;
+                }
+            }
 //            @trusted
             void send(const(Pubkey) channel, const(Document) doc) {
                 log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
@@ -829,11 +862,6 @@ class HashGraph : HashGraphI {
 
             class FiberNetwork : Fiber {
                 private HashGraphI _hashgraph;
-
-                // @trusted
-                // private this() {
-                //     super(&run);
-                // }
 
                 @trusted
                 this(HashGraphI h) nothrow
@@ -857,17 +885,18 @@ class HashGraph : HashGraphI {
                     assert(result != _hashgraph.channel);
                 }
                 do {
+                    const _channels=_hashgraph.channels;
                     for(;;) {
-                        const node_index=random.value(1, _hashgraph.node_size);
-                        auto node=_hashgraph.getNode(node_index);
-                        if ((node !is null)) {
-                            return node.channel;
+                        const node_index=random.value(0, _channels.length);
+                        if ((_channels[node_index] != _hashgraph.channel)) {
+                            return _channels[node_index];
                         }
                     }
                     assert(0);
                 }
 
                 private void run() {
+
                     (() @trusted {
                         yield;
                     })();
@@ -878,11 +907,12 @@ class HashGraph : HashGraphI {
             @disable this();
 //            this(HashGraph[] hashgraphs) {
             this(string[] passphrases) {
+                auto authorising=new UnittestAuthorising;
                 immutable N=passphrases.length;
                 foreach(passphrase; passphrases) {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h=new HashGraph(N, net);
+                    auto h=new HashGraph(N, net, authorising);
                     networks[net.pubkey]=new FiberNetwork(h);
                     channels[net.pubkey]=new Channel;
                 }
@@ -907,8 +937,7 @@ class HashGraph : HashGraphI {
         //import tagion.crypto.SHA256;
         import std.traits;
         import std.conv;
-
-        import tagion.crypto.SecureNet : StdSecureNet;
+        import std.datetime;
         enum NodeLable {
             Alice,
             Bob,
@@ -938,9 +967,10 @@ class HashGraph : HashGraphI {
             }
             networks=new UnittestNetwork(phrases);
 
-            enum ToString(alias T)=T.stringof;
-            writefln("xxx %s", staticMap!(ToString, EnumMembers!NodeLable));
         }
+
+        networks.global_time=SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
+
 //        auto network=new UnittestNetwork(hashgraphs);
 
         //foreach(n; ne

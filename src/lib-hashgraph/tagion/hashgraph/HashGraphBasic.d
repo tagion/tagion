@@ -93,10 +93,19 @@ interface EventMonitorCallbacks {
     void epoch(const(Event[]) received_event);
     void iterations(const(Event) e, const uint count);
     //void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
-    void wavefront_state_receive(const(Document) wavefron_doc);
+//    void wavefront_state_receive(const(Document) wavefron_doc);
     void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
-    void send(const Pubkey channel, const Document doc);
-    void receive(const Wavefront wavefront);
+
+    void send(const Pubkey channel, lazy const Document doc);
+    final void send(T)(const Pubkey channel, lazy T pack) if(isHiBONRecord!T) {
+        send(channel, pack.toDoc);
+    }
+
+    void receive(lazy const Document doc);
+    void receive(T)(lazy const T pack) if(isHiBONRecord!T) {
+        receive(pack);
+    }
+
     void consensus_failure(const(ConsensusException) e);
 
 }
@@ -135,25 +144,25 @@ interface HashGraphI {
     // const(Wavefront) wavefront_machine(const(Wavefront) receiver_wave);
 
     Round.Rounder rounds() pure nothrow;
-    const(size_t) nodeId(scope Pubkey pubkey) const pure;
-    const(size_t) node_size() const pure nothrow;
+//    const(size_t) nodeId(scope Pubkey pubkey) const pure;
+//    const(size_t) node_size() const pure nothrow;
 
-    bool add_node(const Pubkey pubkey) nothrow;
+    size_t active_nodes() const pure nothrow;
+
+    size_t voting_nodes() const pure nothrow;
+
+    void add_node(const Pubkey pubkey) nothrow;
 
     bool remove_node(const Pubkey pubkey) nothrow;
 
-    const(NodeI) getNode(const size_t node_id) const pure nothrow;
+    // const(NodeI) getNode(const size_t node_id) const pure nothrow;
 
     const(NodeI) getNode(Pubkey pubkey) const pure;
 
     bool areWeOnline() const pure nothrow;
 
-    immutable(Pubkey) channel() const pure nothrow;
-
-    void time(const(sdt_t) t);
-
-    const(sdt_t) time() pure const nothrow;
-
+    Pubkey channel() const pure nothrow;
+    const(Pubkey[]) channels() const pure nothrow;
 }
 
 @safe
@@ -167,8 +176,19 @@ interface NodeI {
     final int altitude() const pure nothrow;
 
     immutable(Pubkey) channel() const pure nothrow;
+
+    size_t nodeId() const pure nothrow;
 }
 
+
+@safe
+interface Authorising {
+//    void time(const(sdt_t) t);
+
+    const(sdt_t) time() pure const nothrow;
+
+    bool isValidChannel(const(Pubkey) channel);
+}
 
 @safe
 @RecordType("EBODY")
@@ -212,14 +232,7 @@ struct EventBody {
         return (mother.length == 0);
     }
 
-    static immutable(EventBody) eva(HashGraphI hashgraph) {
-        auto hibon=new HiBON;
-        hibon["channel"]=hashgraph.channel;
-        pragma(msg, "fixme(cbr): The nonce should be unique maybe the dependend on the bulleye");
-        hibon["nonce"]="Should be implemented:"; //~to!string(eva_count);
-        immutable result=EventBody(Document(hibon), null, null, hashgraph.time, hashgraph.eva_altitude);
-        return result;
-    }
+    immutable(EventBody) eva();
 
     version(none)
     this(const Document doc) {
@@ -483,6 +496,13 @@ struct Wavefront {
         }
         return _tides;
     }
+}
+
+@RecordType("Eva")
+struct EvaPayload {
+    @Label("$channel") Pubkey channel;
+    @Label("$nonce") Buffer nonce;
+    mixin HiBONRecord;
 }
 
 static assert(isHiBONRecord!Wavefront);
