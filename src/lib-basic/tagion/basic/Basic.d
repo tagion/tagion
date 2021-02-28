@@ -95,7 +95,7 @@ void  bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothr
 /++
  Change the size of the bitarray
 +/
-void bitarray_change(ref scope BitArray bits, uint length) @trusted {
+void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     pragma(msg, "Fixme(cbr): function name should be change to bitarray_change_size");
     bits.length=length;
 }
