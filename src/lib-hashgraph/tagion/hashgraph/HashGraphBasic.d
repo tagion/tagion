@@ -187,8 +187,32 @@ interface Authorising {
 
     const(sdt_t) time() pure const nothrow;
 
-    bool isValidChannel(const(Pubkey) channel);
+    bool isValidChannel(const(Pubkey) channel) const pure nothrow;
+
+    void send(const(Pubkey) channel, const(Document) doc);
+
+    final void send(T)(const(Pubkey) channel, T pack) if(isHiBONRecord!T) {
+        send(channel, pack.toDoc);
+    }
+
+    void gossip(const(Pubkey) channel_owner, const Document);
+
+    final void gossip(T)(T pack) if(isHiBONRecord!T) {
+        gossip(channel_owner, pack.toDoc);
+    }
+
+    void add_channel(const(Pubkey) channel);
+    void remove_channel(const(Pubkey) channel);
 }
+
+immutable(EventBody) eva(const Pubkey channel, const Buffer nonce, const sdt_t time, const int eva_altitude) {
+    const payload=EvaPayload(channel, nonce);
+    // payload.channel=channel;
+    // payload.nonce=nonce;
+    immutable result=EventBody(payload.toDoc, null, null, time, eva_altitude);
+    return result;
+}
+
 
 @safe
 @RecordType("EBODY")
@@ -502,7 +526,14 @@ struct Wavefront {
 struct EvaPayload {
     @Label("$channel") Pubkey channel;
     @Label("$nonce") Buffer nonce;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(
+        q{
+            this(const Pubkey channel, const Buffer nonce) {
+                this.channel=channel;
+                this.nonce=nonce;
+            }
+        }
+        );
 }
 
 static assert(isHiBONRecord!Wavefront);

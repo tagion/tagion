@@ -6,10 +6,11 @@ import std.conv;
 import std.format;
 import std.bitmanip : BitArray;
 import std.exception : assumeWontThrow;
-import std.algorithm.searching : count;
 import std.typecons : TypedefType;
-import std.algorithm.iteration : map, each;
+import std.algorithm.searching : count;
+import std.algorithm.iteration : map, each, filter;
 import std.algorithm.comparison : max;
+import std.range : dropExactly;
 
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic : HashGraphI;
@@ -464,14 +465,6 @@ class HashGraph : HashGraphI {
 
 //    private uint[] unused_node_ids; // Stack of unused node ids
 
-    immutable(EventBody) eva(const Buffer nonce) {
-        EvaPayload payload;
-        payload.channel=channel;
-        payload.nonce=nonce;
-        immutable result=EventBody(payload.toDoc, null, null, authorising.time, eva_altitude);
-        return result;
-    }
-
     import std.traits : fullyQualifiedName;
     alias NodeRange=typeof((cast(const)nodes).byValue);
     @nogc
@@ -661,6 +654,9 @@ class HashGraph : HashGraphI {
 
     @trusted
     size_t next_node_id() const pure nothrow {
+        if (nodes.length is 0) {
+            return 0;
+        }
         import std.algorithm.searching : maxElement;
         scope BitArray used_nodes;
         used_nodes.length=nodes.byValue.map!(a => a.node_id).maxElement; //.max;
@@ -831,35 +827,62 @@ class HashGraph : HashGraphI {
             import std.datetime.systime : SysTime;
             Random!size_t random;
             SysTime global_time;
-            alias Channel=Queue!Document;
-            protected Channel[Pubkey] channels;
+            alias ChannelQueue=Queue!Document;
 
             class UnittestAuthorising  : Authorising {
-                sdt_t _current_time;
+                protected {
+                    ChannelQueue[Pubkey] channel_queues;
+                    Pubkey[] channel_keys;
+                    sdt_t _current_time;
+                }
+
                 @property
                 void time(const(sdt_t) t) {
                     _current_time=sdt_t(t);
                 }
+
 
                 @property
                 const(sdt_t) time() pure const {
                     return _current_time;
                 }
 
-                bool isValidChannel(const(Pubkey) channel) {
-                    return true;
+                bool isValidChannel(const(Pubkey) channel) const pure nothrow {
+                    return (channel in channel_queues) !is null;
+                }
+
+                void send(const(Pubkey) channel, const(Document) doc) {
+                    log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
+                    if ( Event.callbacks ) {
+                        Event.callbacks.send(channel, doc);
+                    }
+                    channel_queues[channel].write(doc);
+                }
+
+                void gossip(const(Pubkey) channel_owner, const Document doc) {
+                    const(Pubkey) selectRandomNode(const bool active=true) pure nothrow {
+                        const channels=channel_queues.byKey;
+                        const node_index=random.value(0, channel_queues.length-1);
+                        return channel_queues
+                            .byKey
+                            .filter!((a) => a != channel_owner)
+                            .dropExactly(node_index)
+                            .front;
+                    }
+                    if (channel_queues.length > 1) {
+                        gossip(selectRandomNode, doc);
+                    }
+                }
+
+                void add_channel(const Pubkey channel) {
+                    channel_queues[channel]=new ChannelQueue;
+                }
+
+                void remove_channel(const Pubkey channel) {
+                    channel_queues.remove(channel);
                 }
             }
 //            @trusted
-            void send(const(Pubkey) channel, const(Document) doc) {
-                log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
-                if ( Event.callbacks ) {
-                    Event.callbacks.send(channel, doc);
-                }
-                channels[channel].write(doc);
-                //_tids[channel].send(doc);
-            }
-
             class FiberNetwork : Fiber {
                 private HashGraphI _hashgraph;
 
@@ -875,24 +898,6 @@ class HashGraph : HashGraphI {
 
                 const(HashGraphI) hashgraph() const pure nothrow {
                     return _hashgraph;
-                }
-
-                const(Pubkey) selectRandomNode(const bool active=true) pure nothrow
-                in {
-                    assert(_hashgraph.areWeOnline);
-                }
-                out(result)  {
-                    assert(result != _hashgraph.channel);
-                }
-                do {
-                    const _channels=_hashgraph.channels;
-                    for(;;) {
-                        const node_index=random.value(0, _channels.length);
-                        if ((_channels[node_index] != _hashgraph.channel)) {
-                            return _channels[node_index];
-                        }
-                    }
-                    assert(0);
                 }
 
                 private void run() {
@@ -914,16 +919,19 @@ class HashGraph : HashGraphI {
                     net.generateKeyPair(passphrase);
                     auto h=new HashGraph(N, net, authorising);
                     networks[net.pubkey]=new FiberNetwork(h);
-                    channels[net.pubkey]=new Channel;
+//                    channels[net.pubkey]=new Channel;
                 }
 
-                foreach(n; networks) {
-                    foreach(m; networks) {
-                        if (n !is m) {
-                            n._hashgraph.add_node(m._hashgraph.channel);
-                        }
-                    }
-                }
+
+                networks.byKey.each!((a) => authorising.add_channel(a));
+//                authorising.add_cha
+                // foreach(n; networks) {
+                //     foreach(m; networks) {
+                //         if (n !is m) {
+                //             n._hashgraph.add_node(m._hashgraph.channel);
+                //         }
+                //     }
+                // }
             }
         }
 
