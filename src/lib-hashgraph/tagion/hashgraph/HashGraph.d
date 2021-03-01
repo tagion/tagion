@@ -476,57 +476,12 @@ class HashGraph : HashGraphI {
         return nodes.byValue;
     }
 
-    // @nogc
-    // bool isOnline(Pubkey pubkey) pure nothrow const {
-    //     return (pubkey in node_ids) !is null;
-    // }
-
-    version(none)
-    bool createNode(Pubkey pubkey) nothrow
-        in {
-            assert(pubkey !in node_ids,
-                assumeWontThrow(format("Node %d has already created for pubkey %s", node_ids[pubkey], pubkey.hex)));
-        }
-    do {
-        scope(exit) {
-            log.error("createNode %d", node_ids[pubkey]);
-        }
-        if ( pubkey in nodes ) {
-            return false;
-        }
-        foreach(id, ref n; nodes) {
-            if (n is null) {
-                const node_id=cast(uint)id;
-                n=new Node(pubkey, node_id);
-                node_ids[pubkey]=node_id;
-                return true;
-            }
-        }
-        assert(0, "Node creating overflow");
-        //     const node_id=
-        // auto node_id=cast(uint)node_ids.length;
-        // node_ids[pubkey]=node_id;
-
-        // nodes[node_id]=node;
-        // return true;
-    }
-
-    // const(size_t) nodeId(scope Pubkey pubkey) const pure {
-    //     auto node=pubkey in nodes;
-    //     check(node !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-    //     return node.node_id;
-    // }
 
     void setAltitude(scope Pubkey pubkey, const(int) altitude) {
         auto node=pubkey in nodes;
         check(node !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
         node.altitude=altitude;
     }
-
-    // @nogc
-    // bool isNodeIdKnown(scope Pubkey pubkey) const pure nothrow {
-    //     return (pubkey in node_ids) !is null;
-    // }
 
     void dumpNodes() {
         import std.stdio;
@@ -540,73 +495,6 @@ class HashGraph : HashGraphI {
             }
         }
         log("");
-    }
-
-    pragma(msg, "typeof(nodes[])=", typeof(nodes.byValue));
-    // struct Range {
-    //     alias NodeRange
-    //     private {
-
-    //         typeof(nodes.byValue) r;
-    //     }
-    //     @nogc @trusted
-    //     this(const HashGraph owner) nothrow pure {
-    //         r = cast(Node[Pubkey])owner.byValue;
-    //     }
-
-    //     @nogc @property pure nothrow {
-    //         bool empty() {
-    //             return r.length is 0;
-    //         }
-
-    //         const(Node) front() {
-    //             return r[0];
-    //         }
-
-    //         void popFront() {
-    //             while (!empty && (r[0] !is null)) {
-    //                 r=r[1..$];
-    //             }
-    //         }
-
-    //     }
-    // }
-
-    version(none)
-    @nogc
-    Pubkey nodePubkey(const uint node_id) pure const nothrow
-        in {
-            assert(node_id < nodes.length, "node_id out of range");
-        }
-    do {
-        auto node=nodes[node_id];
-        if ( node ) {
-            return node.pubkey;
-        }
-        else {
-            Pubkey _null;
-            return _null;
-        }
-    }
-
-    // @nogc
-    // bool isNodeActive(const uint node_id) pure const nothrow {
-    //     return (node_id < nodes.length) && (nodes[node_id] !is null);
-    // }
-
-    version(none)
-    void assign(Event event)
-    in {
-        assert(net !is null, "RequestNet must be set");
-    }
-    do {
-        auto node=getNode(event.channel);
-        node.event=event;
-        _hashgraph.register(event.fingerprint, event);
-//        _event_cache[event.fingerprint]=event;
-        if ( event.isEva ) {
-            node.latest_witness_event=event;
-        }
     }
 
     // Returns the number of active nodes in the network
@@ -659,7 +547,7 @@ class HashGraph : HashGraphI {
         }
         import std.algorithm.searching : maxElement;
         scope BitArray used_nodes;
-        used_nodes.length=nodes.byValue.map!(a => a.node_id).maxElement; //.max;
+        used_nodes.length=nodes.byValue.map!(a => a.node_id).maxElement+1; //.max;
         nodes.byValue.map!(a => a.node_id).each!((n) {used_nodes[n] = true;});
         auto unused_list=(~used_nodes).bitsSet;
         if (unused_list.empty) {
@@ -670,7 +558,6 @@ class HashGraph : HashGraphI {
 
     void add_node(const Pubkey pkey) nothrow
         in {
-//            assert(pkey != net.pubkey);
             assert(!(pkey in nodes), format("Node with pubkey %s has already been added", pkey.toHex));
         }
     do {
@@ -825,8 +712,14 @@ class HashGraph : HashGraphI {
             import tagion.utils.Random;
             import tagion.utils.Queue;
             import std.datetime.systime : SysTime;
+            UnittestAuthorising authorising;
             Random!size_t random;
             SysTime global_time;
+            enum timestep {
+                MIN = 50,
+                MAX = 150
+            }
+
             alias ChannelQueue=Queue!Document;
 
             class UnittestAuthorising  : Authorising {
@@ -870,7 +763,7 @@ class HashGraph : HashGraphI {
                             .front;
                     }
                     if (channel_queues.length > 1) {
-                        gossip(selectRandomNode, doc);
+                        send(selectRandomNode, doc);
                     }
                 }
 
@@ -900,38 +793,42 @@ class HashGraph : HashGraphI {
                     return _hashgraph;
                 }
 
+                sdt_t time() {
+                    const systime=global_time+random.value(timestep.MIN, timestep.MAX).msecs;
+                    return std_t(systime);
+                }
                 private void run() {
+                    {
+                        immutable eva_body=eva(
+                            _hashgraph.channel,
+                            _hashgraph.hirpc.net.calcHash(_hashgraph.channel),
+                            time, -77);
+                        immutable event_pack=new EventPackage(_hashgraph.hirpc.net, eva_body);
 
-                    (() @trusted {
-                        yield;
-                    })();
+                    }
+
+                    bool stop;
+                    while (!stop) {
+
+                        (() @trusted {
+                            yield;
+                        })();
+                    }
                 }
             }
 
             FiberNetwork[Pubkey] networks;
             @disable this();
-//            this(HashGraph[] hashgraphs) {
             this(string[] passphrases) {
-                auto authorising=new UnittestAuthorising;
+                authorising=new UnittestAuthorising;
                 immutable N=passphrases.length;
                 foreach(passphrase; passphrases) {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
                     auto h=new HashGraph(N, net, authorising);
                     networks[net.pubkey]=new FiberNetwork(h);
-//                    channels[net.pubkey]=new Channel;
                 }
-
-
                 networks.byKey.each!((a) => authorising.add_channel(a));
-//                authorising.add_cha
-                // foreach(n; networks) {
-                //     foreach(m; networks) {
-                //         if (n !is m) {
-                //             n._hashgraph.add_node(m._hashgraph.channel);
-                //         }
-                //     }
-                // }
             }
         }
 

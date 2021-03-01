@@ -71,7 +71,7 @@ unittest { // Test of the altitude measure function
 
 @safe
 class Round {
-    package bool __grounded;
+//    package bool __grounded;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     private Round _previous;
@@ -1234,7 +1234,7 @@ class Event {
         bool _loaded;
         // This indicates that the hashgraph aften this event
         bool _forked;
-        bool _grounded;
+//        bool _grounded;
     }
 
     @nogc @property
@@ -1670,10 +1670,10 @@ class Event {
         }
     }
 
-    @nogc
-    bool grounded() pure const nothrow {
-        return _grounded || (_mother is null);
-    }
+    // @nogc
+    // bool grounded() pure const nothrow {
+    //     return _grounded || (_mother is null);
+    // }
 
     @nogc
     static int received_order_max(const(Event) mother, const(Event) father) pure nothrow {
@@ -2028,16 +2028,12 @@ class Event {
         return !payload.empty;
     }
 
+    version(none)
     @nogc
     bool motherExists() const pure nothrow {
-        //     in {
-        //         assert(!_grounded, "This function should not be used on a grounded event");
-        //     }
-        // do {
         return event_package.event_body.mother !is null;
     }
 
-    version(none)
     @nogc
     bool fatherExists() const pure nothrow {
         return event_package.event_body.father !is null;
@@ -2045,20 +2041,23 @@ class Event {
 
 // is true if the event does not have a mother or a father
     @nogc
-    bool isEva() pure const nothrow {
-        //     in {
-        //         assert(!_grounded, "This function should not be used on a grounded event");
-        //     }
-        // do {
-        return event_package.event_body.isEva; //!motherExists;
+    bool isEva() pure const nothrow
+        out(result) {
+            if (result) {
+                assert(event_package.event_body.father is null);
+            }
+        }
+    do {
+        return (_mother is null) && (event_package.event_body.mother is null);
+    }
+
+    @nogc
+    bool isGounded() pure const nothrow {
+        return (_mother is null) && (event_package.event_body.mother !is null);
     }
 
     @nogc
     immutable(Buffer) fingerprint() const pure nothrow {
-        // in {
-        //     assert(_fingerprint, "Hash has not been calculated");
-        // }
-        // do {
         return event_package.fingerprint;
     }
 
