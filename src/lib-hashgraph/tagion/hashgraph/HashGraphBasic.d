@@ -1,5 +1,6 @@
 module tagion.hashgraph.HashGraphBasic;
 
+import std.stdio;
 import std.bitmanip;
 import std.format;
 import std.typecons : TypedefType;
@@ -117,7 +118,7 @@ interface HashGraphI {
 
     //  void request(scope immutable(Buffer) fingerprint);
 
-    Event lookup(scope const(Buffer) fingerprint);
+//    Event lookup(scope const(Buffer) fingerprint);
 
     void eliminate(scope const(Buffer) fingerprint);
 
@@ -218,7 +219,7 @@ interface Authorising {
 }
 
 @safe
-@RecordType("EBODY")
+//@RecordType("EBODY")
 struct EventBody {
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
@@ -226,7 +227,7 @@ struct EventBody {
 
     @Label("$doc", true)  Document payload; // Transaction
     @Label("$m") Buffer mother; // Hash of the self-parent
-    @Label("$f", true) Buffer father; // Hash of the other-parent
+    @Label("$f", true) @(Filter.Initialized) Buffer father; // Hash of the other-parent
     @Label("$a") int altitude;
 
     @Label("$t") sdt_t time;
@@ -449,7 +450,8 @@ struct Wavefront {
 
     this(immutable(EventPackage*)[] epacks, const ExchangeState state) pure nothrow
     in {
-        assert(state is ExchangeState.FIRST_WAVE || state is ExchangeState.SECOND_WAVE);
+        debug writefln("state=%s", state);
+        assert(state !is ExchangeState.NONE); // || state is ExchangeState.SECOND_WAVE);
     }
     do {
         this.epacks=epacks;
@@ -469,7 +471,11 @@ struct Wavefront {
     this(const Document doc) {
         state=doc[stateName].get!ExchangeState;
         if (doc.hasMember(tidesName)) {
-            _tides=doc[tidesName].get!LoadTides.tides;
+            auto load_tides=LoadTides(doc);
+            // (() @trusted {
+            //     writefln("this load_tides %J", load_tides);
+            // })();
+            _tides=load_tides.tides;
         }
         immutable(EventPackage)*[] event_packages;
         if (doc.hasMember(epacksName)) {
@@ -488,7 +494,8 @@ struct Wavefront {
         auto h=new HiBON;
         h[stateName]=state;
         if (_tides.length) {
-            h[tidesName]=const(LoadTides)(_tides);
+            const load_tides=const(LoadTides)(_tides);
+            h[tidesName]=load_tides.toDoc[tidesName].get!Document;
         }
         if (epacks.length) {
             auto epacks_hibon=new HiBON;
@@ -525,7 +532,8 @@ struct Wavefront {
     }
 }
 
-@RecordType("Eva") @safe
+//@RecordType("Eva")
+@safe
 struct EvaPayload {
     @Label("$channel") Pubkey channel;
     @Label("$nonce") Buffer nonce;

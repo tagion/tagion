@@ -124,6 +124,13 @@ class Round {
         //     // First round created
         //     _decided=true;
         // }
+        debug {
+            if (node_size is 0) {
+                log.error("DDD");
+            }
+            log.error("Round node_size=%d", node_size);
+        }
+
         _previous=previous;
         if (previous) {
             previous._next = this;
@@ -734,7 +741,10 @@ class Round {
 
         this(HashGraphI hashgraph) pure nothrow {
             this.hashgraph=hashgraph;
-            last_decided_round = last_round = new Round(null, hashgraph.active_nodes, -1);
+            debug {
+                log.error("hashgraph.voting_nodes=%d", hashgraph.voting_nodes);
+            }
+            last_decided_round = last_round = new Round(null, hashgraph.voting_nodes, -1);
         }
 
         @nogc
@@ -802,7 +812,7 @@ class Round {
                 }
                 else {
                     log.error("EVA create round");
-                    e._round = last_round = new Round(last_round, hashgraph.active_nodes, last_round.number+1);
+                    e._round = last_round = new Round(last_round, hashgraph.voting_nodes, last_round.number+1);
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
                     }
@@ -992,7 +1002,7 @@ class Event {
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             BitArray round_mask;
-            bitarray_clear(round_mask, hashgraph.active_nodes);
+            bitarray_clear(round_mask, hashgraph.voting_nodes);
             _witness = new Witness(this, round_mask);
             assert(_round is null);
             hashgraph.rounds.next_round(this);
@@ -1001,8 +1011,6 @@ class Event {
             //_round.add(this);
             _received_order=-1;
         }
-
-
     }
 
     ~this() {
@@ -1145,7 +1153,7 @@ class Event {
 
     }
 
-    alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
+//    alias Event delegate(immutable(ubyte[]) fingerprint, Event child) @safe Lookup;
     alias bool delegate(Event) @safe Assign;
     static EventMonitorCallbacks callbacks;
     static EventScriptCallbacks scriptcallbacks;
@@ -1772,7 +1780,7 @@ class Event {
                 _round = _mother._round;
                 assert(!hashgraph.rounds.decided(_round),
                             "Fixme(cbr):This node is way behind we need to find a solution");
-                const calc_mask = calc_witness_mask(hashgraph.active_nodes);
+                const calc_mask = calc_witness_mask(hashgraph.voting_nodes);
                 if ( calc_mask.isMajority ) {
                     // Witness detected
                     hashgraph.rounds.next_round(this);
@@ -1794,6 +1802,7 @@ class Event {
         return (_mother !is null) || isEva;
     }
 
+    version(none)
     @nogc
     package Event mother_raw() pure nothrow
         in {
@@ -2057,6 +2066,7 @@ class Event {
         return event_package.fingerprint;
     }
 
+    version(none)
     int opApply(scope int delegate(immutable uint level,
             immutable bool mother ,const(Event) e) @safe dg) const {
         int iterator(const(Event) e, immutable bool mother=true, immutable uint level=0) @safe {
@@ -2071,6 +2081,37 @@ class Event {
             return result;
         }
         return iterator(this);
+    }
+
+    Range opSlice() nothrow {
+        return Range(this);
+    }
+
+    @nogc
+    struct Range {
+        private Event current;
+        @trusted
+        this(const Event event) pure nothrow {
+            current=cast(Event)event;
+        }
+
+        @property pure nothrow {
+            bool empty() const {
+                return current is null;
+            }
+
+            const(Event) front() const {
+                return current;
+            }
+
+            void popFront() {
+                current = current._mother;
+            }
+
+            Range save() pure nothrow {
+                return Range(current);
+            }
+        }
     }
 
 }

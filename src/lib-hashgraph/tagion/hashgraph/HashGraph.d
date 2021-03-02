@@ -55,12 +55,13 @@ class HashGraph : HashGraphI {
     this(const size_t min_voting_nodes, const SecureNet net, Authorising authorising) {
 //        this.net=net;
         //net.hashgraph=this;
+        hirpc=HiRPC(net);
         this.min_voting_nodes=min_voting_nodes;
         this.authorising=authorising;
         //nodes=new Node[size];
         _rounds=Round.Rounder(this);
         add_node(net.pubkey);
-        hirpc=HiRPC(net);
+
     }
 
     @nogc
@@ -120,10 +121,13 @@ class HashGraph : HashGraphI {
     alias EventCache=Event[Buffer];
 
     protected {
-        EventPackageCache _event_package_cache;
+//        EventPackageCache _event_package_cache;
         EventCache _event_cache;
     }
 
+    // alias Lookup=Event delegate(scope Buffer fingerprint);
+    // package Lookup=lookup;
+    version(none)
     final Event lookup(scope Buffer fingerprint) {
         if (fingerprint in _event_cache) {
             return _event_cache[fingerprint];
@@ -139,6 +143,7 @@ class HashGraph : HashGraphI {
         return null;
     }
 
+    version(none)
     final Event register(scope const(Buffer) fingerprint) {
         Event event;
         if (fingerprint) {
@@ -163,6 +168,7 @@ class HashGraph : HashGraphI {
         return (fingerprint in _event_cache) !is null;
     }
 
+    version(none)
     bool isCached(scope const(ubyte[]) fingerprint) const pure nothrow {
         return (fingerprint in _event_package_cache) !is null;
     }
@@ -189,8 +195,52 @@ class HashGraph : HashGraphI {
         return event;
     }
 
-    void registerCache() {
-        _event_package_cache.byKey.each!((fingerprint) => register(fingerprint));
+    class Register {
+        private EventPackageCache event_package_cache;
+        this(const Wavefront received_wave) {
+            foreach(e; received_wave.epacks) {
+                if (!(e.fingerprint in event_package_cache)) {
+                    event_package_cache[e.fingerprint] = e;
+                }
+            }
+        }
+        final Event lookup(scope Buffer fingerprint) {
+            if (fingerprint in _event_cache) {
+                return _event_cache[fingerprint];
+            }
+            else if (fingerprint in event_package_cache) {
+                immutable event_pack=event_package_cache[fingerprint];
+                event_package_cache.remove(fingerprint);
+                auto event=new Event(event_pack, this.outer);
+                _event_cache[fingerprint]=event;
+                return event;
+            }
+            return null;
+        }
+        final Event register(scope const(Buffer) fingerprint) {
+            Event event;
+            if (fingerprint) {
+                event = lookup(fingerprint);
+                if ( event ) {
+                    event.connect(this.outer);
+                }
+            }
+            return event;
+        }
+    }
+
+    protected Register _register;
+
+    final Event register(scope const(Buffer) fingerprint) {
+        return _register.register(fingerprint);
+    }
+
+    void register_wavefront(const Wavefront received_wave) {
+        _register=new Register(received_wave);
+        scope(exit) {
+            _register=null;
+        }
+        _register.event_package_cache.byKey.each!((fingerprint) => register(fingerprint));
     }
 
     version(none)
@@ -284,7 +334,9 @@ class HashGraph : HashGraphI {
         return Wavefront(result, state);
     }
 
+    version(none)
     void register_wavefront(const Wavefront received_wave) {
+        EventPackageCache _event_package_cache;
         foreach(e; received_wave.epacks) {
             if (!(e.fingerprint in _event_package_cache)) {
                 _event_package_cache[e.fingerprint] = e;
@@ -298,6 +350,9 @@ class HashGraph : HashGraphI {
         const(Wavefront) received_wave,
         void delegate(const(Wavefront) send_wave) @safe response) {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
+        writefln("channels=%s", nodes.byKey.map!(a => a.cutHex));
+        writefln("channel=%s", channel.cutHex);
+
         auto received_node=nodes[channel];
         //    auto received_wave=received.params!Wavefront;
         if ( Event.callbacks ) {
@@ -317,10 +372,11 @@ class HashGraph : HashGraphI {
                     }
                     // Receive the tide wave
                     consensus(received_wave.state, INIT_TIDE, NONE).
-                        check((received_wave.state is INIT_TIDE) || (received_wave.state is NONE),
+                        check((received_wave.state !is INIT_TIDE) && (received_wave.state !is NONE),
                             ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                     check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state=received_wave.state;
+//                    register_wavefront(received_wave);
                     return buildWavefront(FIRST_WAVE, received_wave.tides);
                 case BREAKING_WAVE:
                     log.trace("BREAKING_WAVE");
@@ -478,8 +534,9 @@ class HashGraph : HashGraphI {
                     return current;
                 }
 
+                @trusted
                 void popFront() {
-                    current = current.mother_raw;
+                    current = cast(Event)current.raw_mother;
                 }
 
 
@@ -489,9 +546,9 @@ class HashGraph : HashGraphI {
             }
         }
 
-        @nogc
-        Range!false opSlice() const pure nothrow {
-            return Range!false(_event);
+        @trusted
+        Event.Range opSlice() const pure nothrow {
+            return Event.Range(_event);
         }
 
         invariant {
@@ -584,7 +641,12 @@ class HashGraph : HashGraphI {
     }
 
     @trusted
-    size_t next_node_id() const pure nothrow {
+    size_t next_node_id() const pure nothrow
+        out(result) {
+            debug
+                writefln("%s next_node_id=%d", channel.cutHex, result);
+        }
+    do {
         if (nodes.length is 0) {
             return 0;
         }
@@ -592,19 +654,23 @@ class HashGraph : HashGraphI {
         scope BitArray used_nodes;
         used_nodes.length=nodes.byValue.map!(a => a.node_id).maxElement+1; //.max;
         nodes.byValue.map!(a => a.node_id).each!((n) {used_nodes[n] = true;});
+        debug writefln("used_nodes=%b", used_nodes);
+
         auto unused_list=(~used_nodes).bitsSet;
         if (unused_list.empty) {
-            return used_nodes.length+1;
+            return used_nodes.length;
         }
         return unused_list.front;
     }
 
-    void add_node(const Pubkey pkey) nothrow
-        in {
-            assert(!(pkey in nodes), format("Node with pubkey %s has already been added", pkey.toHex));
+    void add_node(const Pubkey pkey) nothrow {
+    //     in {
+    //         assert(!(pkey in nodes), format("Node with pubkey %s has already been added", pkey.toHex));
+    //     }
+    // do {
+        if (!(pkey in nodes)) {
+            nodes[pkey]=new Node(pkey, next_node_id);
         }
-    do {
-        nodes[pkey]=new Node(pkey, next_node_id);
     }
 
 
@@ -749,7 +815,7 @@ class HashGraph : HashGraphI {
     */
     version(unittest) {
 
-        static class UnittestNetwork {
+        static class UnittestNetwork(NodeList) if (is(NodeList == enum)) {
             import core.thread.fiber : Fiber;
             import tagion.crypto.SecureNet : StdSecureNet;
             import tagion.utils.Random;
@@ -834,15 +900,16 @@ class HashGraph : HashGraphI {
 //            @trusted
             class FiberNetwork : Fiber {
                 private HashGraph _hashgraph;
-
+                immutable(string) name;
                 @trusted
-                this(HashGraphI h) nothrow
+                this(HashGraphI h, string name) nothrow
                 in {
                     assert(_hashgraph is null);
                 }
                 do {
                     super(&run);
                     _hashgraph=cast(HashGraph)h;
+                    this.name=name;
                 }
 
                 const(HashGraphI) hashgraph() const pure nothrow {
@@ -862,13 +929,46 @@ class HashGraph : HashGraphI {
 
                     bool stop;
                     while (!stop) {
-                        _hashgraph.registerCache;
+                        writefln("Node %s", name);
+//                        _hashgraph.registerCache;
                         (() @trusted {
                             yield;
                         })();
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
+                            const doc=received.toDoc["$msg"].get!Document["params"].get!Document;
+                            if (doc.hasMember("$events")) {
+                                const events_doc=doc["$events"].get!Document;
 
+                                writefln("events_doc.keys=%s", events_doc.keys);
+//                                writefln("events_doc[0].type=%s", events_doc[0].type);
+                                foreach(e; events_doc[]) {
+                                    writefln("e.key=%s e.type=%s e.keyPos=%s e.valuePos=%s", e.key, e.type, e.keyPos, e.valuePos);
+                                    writefln("e.isIndex=%s", e.isIndex);
+                                    import tagion.hibon.HiBONBase;
+                                    if (e.type is Type.DOCUMENT) {
+                                        const e_doc=e.get!Document;
+                                        writefln("e_doc=%s", e_doc.data);
+                                        writefln("e_doc.keys=%s", e_doc.keys);
+
+                                        foreach(e_e; e_doc[]) {
+                                            writefln("e_e.isIndex=%s", e_e.isIndex);
+                                            writefln("e_e.data=%s", e_e.data);
+                                            writefln("e_e.type=%s e_e.keyLen=%s e_e.keyPos=%s, e_e.valuePos=%s e_e.dataPos=%d e_e.dataSize=%d",
+                                                e_e.type, e_e.keyLen, e_e.keyPos, e_e.valuePos,
+                                                e_e.dataPos, e_e.dataSize);
+                                            writefln("e_e.key=%s", e_e.key);
+                                        }
+                                        // writefln("e_doc=%s", e_doc.keys);
+                                        // writefln("e_doc=%s", e_doc.keys);
+                                    }
+                                }
+
+                            }
+//                            if (doc.hasMember("$msg")) {
+//                            writefln("received.toDoc.keys=%s", doc.keys);
+                                //                          }
+                            writefln("received=%J", received);
                             _hashgraph.wavefront(
                                 received.pubkey,
                                 received.params!Wavefront,
@@ -890,18 +990,33 @@ class HashGraph : HashGraphI {
                 }
             }
 
+            @trusted
+            const(Pubkey[]) channels() const pure nothrow {
+                return networks.keys;
+            }
+
             FiberNetwork[Pubkey] networks;
-            @disable this();
-            this(string[] passphrases) {
+//            @disable this();
+            this() {
+                import std.traits : EnumMembers;
+                import std.conv : to;
                 authorising=new UnittestAuthorising;
-                immutable N=passphrases.length;
-                foreach(passphrase; passphrases) {
+                immutable N=EnumMembers!NodeList.length;
+                foreach(E; EnumMembers!NodeList) {
+                    immutable passphrase=format("very secret %s", E);
+//                }
+
+//                immutable N=passphrases.length;
+//                foreach(passphrase; passphrases) {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
                     auto h=new HashGraph(N, net, authorising);
-                    networks[net.pubkey]=new FiberNetwork(h);
+                    networks[net.pubkey]=new FiberNetwork(h, E.to!string);
                 }
                 networks.byKey.each!((a) => authorising.add_channel(a));
+                foreach(net; networks) {
+                    networks.byKey.each!((a) => net._hashgraph.add_node(a));
+                }
             }
         }
 
@@ -913,9 +1028,12 @@ class HashGraph : HashGraphI {
         // HASHGRAPH CONSENSUSE
         // SWIRLDS TECH REPORT TR-2016-01
         //import tagion.crypto.SHA256;
+        import std.stdio;
         import std.traits;
         import std.conv;
         import std.datetime;
+        import tagion.basic.Logger : log;
+        log.push(0);
         enum NodeLable {
             Alice,
             Bob,
@@ -928,27 +1046,42 @@ class HashGraph : HashGraphI {
             Pubkey pubkey;
         }
 
-        enum N=EnumMembers!NodeLable.length;
+        //enum N=EnumMembers!NodeLable.length;
 //        HashGraph[] hashgraphs; //=new HashGraph[N];
         //hashgraphs.length=N;
         // foreach(E; EnumMembers!NodeLable) {
         //     hashgraphs[E]=new HashGraph(N);
         // }
-        UnittestNetwork networks;
-        {
+        // UnittestNetwork!NodeLable network;
+        // {
 
-            import std.meta : staticMap;
-            import std.conv;
-            string[] phrases;
-            foreach(E; EnumMembers!NodeLable) {
-                phrases~=format("very secret %s", E);
-            }
-            networks=new UnittestNetwork(phrases);
+        //     import std.meta : staticMap;
+        //     import std.conv;
+        //     // string[] phrases;
+        //     // foreach(E; EnumMembers!NodeLable) {
+        //     //     phrases~=format("very secret %s", E);
+        //     // }
+        //     network=new UnittestNetwork!NodeLable;
 
+        // }
+        auto network=new UnittestNetwork!NodeLable();
+        network.random.seed(123456789);
+
+
+        network.global_time=SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
+
+
+        const channels=network.channels;
+        foreach(i; 0..17) {
+            const channel_number=network.random.value(0, channels.length);
+            const channel=channels[channel_number];
+            writefln("channels.length=%d", channels.length);
+            writefln("network.random.value(0,100)=%d", network.random.value(0,100));
+            writefln("channel_number=%d", channel_number);
+            (() @trusted {
+                network.networks[channel].call;
+            })();
         }
-
-        networks.global_time=SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
-
 //        auto network=new UnittestNetwork(hashgraphs);
 
         //foreach(n; ne
