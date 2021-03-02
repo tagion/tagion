@@ -18,6 +18,7 @@ import tagion.crypto.SecureInterfaceNet;
 //import tagion.utils.LRU;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
@@ -87,6 +88,29 @@ class HashGraph : HashGraphI {
         return max(nodes.length, min_voting_nodes);
     }
 
+    // @safe
+    // immutable(EventBody) eva(const Pubkey channel, const Buffer nonce, const sdt_t time, const int eva_altitude) {
+    // const payload=EvaPayload(channel, nonce);
+    // // payload.channel=channel;
+    // // payload.nonce=nonce;
+    // immutable result=EventBody(payload.toDoc, null, null, time, eva_altitude);
+    // return result;
+    // }
+
+
+
+    immutable(EventPackage*) eva_pack(const sdt_t time, const Buffer nonce) @trusted {
+        const payload=EvaPayload(channel, nonce);
+        immutable eva_body=EventBody(payload.toDoc, null, null, time, eva_altitude);
+        return cast(immutable)new EventPackage(hirpc.net, eva_body);
+    }
+
+    immutable(EventPackage*) single_pack(const sdt_t time, const Document doc) @trusted {
+        const node=nodes[channel];
+        immutable ebody=EventBody(doc, node.event, null, time);
+        return cast(immutable)new EventPackage(hirpc.net, ebody);
+    }
+
     // @nogc
     // immutable(Pubkey) pubkey() const pure nothrow {
     //     return net.pubkey;
@@ -115,6 +139,18 @@ class HashGraph : HashGraphI {
         return null;
     }
 
+    final Event register(scope const(Buffer) fingerprint) {
+        Event event;
+        if (fingerprint) {
+            event = lookup(fingerprint);
+            if ( event ) {
+                event.connect(this);
+            }
+        }
+        return event;
+    }
+
+
     void eliminate(scope const(Buffer) fingerprint) {
         _event_cache.remove(fingerprint);
     }
@@ -133,9 +169,9 @@ class HashGraph : HashGraphI {
 
     version(none)
     void cache(scope const(ubyte[]) fingerprint, immutable(EventPackage)* event_package) nothrow
-        in {
-            assert(fingerprint !in _event_package_cache, "Event has already been registered");
-        }
+    in {
+        assert(fingerprint !in _event_package_cache, "Event has already been registered");
+    }
     do {
         _event_package_cache[fingerprint] = event_package;
     }
@@ -151,6 +187,10 @@ class HashGraph : HashGraphI {
 //        event.connect(this);
         front_seat(event);
         return event;
+    }
+
+    void registerCache() {
+        _event_package_cache.byKey.each!((fingerprint) => register(fingerprint));
     }
 
     version(none)
@@ -253,15 +293,18 @@ class HashGraph : HashGraphI {
     }
 
 
-    const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received) {
+    void wavefront(
+        const Pubkey channel,
+        const(Wavefront) received_wave,
+        void delegate(const(Wavefront) send_wave) @safe response) {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
-        auto received_node=nodes[received.pubkey];
-        auto received_wave=received.params!Wavefront;
+        auto received_node=nodes[channel];
+        //    auto received_wave=received.params!Wavefront;
         if ( Event.callbacks ) {
             Event.callbacks.receive(received_wave);
         }
         log("%J", received_wave);
-        const(Wavefront) wavefront_response() {
+        const(Wavefront) wavefront_response() @safe {
             with(ExchangeState) {
                 final switch (received_wave.state) {
                 case NONE:
@@ -273,39 +316,39 @@ class HashGraph : HashGraphI {
                         return buildWavefront(BREAKING_WAVE);
                     }
                     // Receive the tide wave
-                consensus(received_wave.state, INIT_TIDE, NONE).
-                    check((received_wave.state is INIT_TIDE) || (received_wave.state is NONE),
-                        ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
-                check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
-                received_node.state=received_wave.state;
-                return buildWavefront(FIRST_WAVE, received_wave.tides);
-            case BREAKING_WAVE:
-                log.trace("BREAKING_WAVE");
-                received_node.state=NONE;
-                break;
-            case FIRST_WAVE:
-                if (received_node.state !is INIT_TIDE) {
-                    return buildWavefront(BREAKING_WAVE);
+                    consensus(received_wave.state, INIT_TIDE, NONE).
+                        check((received_wave.state is INIT_TIDE) || (received_wave.state is NONE),
+                            ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                    check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
+                    received_node.state=received_wave.state;
+                    return buildWavefront(FIRST_WAVE, received_wave.tides);
+                case BREAKING_WAVE:
+                    log.trace("BREAKING_WAVE");
+                    received_node.state=NONE;
+                    break;
+                case FIRST_WAVE:
+                    if (received_node.state !is INIT_TIDE) {
+                        return buildWavefront(BREAKING_WAVE);
+                    }
+                    consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
+                        check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
+                            ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                    received_node.state=NONE;
+                    register_wavefront(received_wave);
+                    return buildWavefront(SECOND_WAVE, received_wave.tides);
+                case SECOND_WAVE:
+                    if (received_node.state !is TIDAL_WAVE) {
+                        return buildWavefront(BREAKING_WAVE);
+                    }
+                    consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
+                        ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
+                    received_node.state=NONE;
+                    register_wavefront(received_wave);
                 }
-                consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
-                    check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
-                        ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
-                received_node.state=NONE;
-                register_wavefront(received_wave);
-                return buildWavefront(SECOND_WAVE, received_wave.tides);
-            case SECOND_WAVE:
-                if (received_node.state !is TIDAL_WAVE) {
-                    return buildWavefront(BREAKING_WAVE);
-                }
-                consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
-                    ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
-                received_node.state=NONE;
-                register_wavefront(received_wave);
+                return buildWavefront(NONE);
             }
-            return buildWavefront(NONE);
         }
-        }
-        return hirpc.wavefront(wavefront_response);
+        response(wavefront_response);
     }
 
 
@@ -712,6 +755,7 @@ class HashGraph : HashGraphI {
             import tagion.utils.Random;
             import tagion.utils.Queue;
             import std.datetime.systime : SysTime;
+            import core.time;
             UnittestAuthorising authorising;
             Random!size_t random;
             SysTime global_time;
@@ -744,7 +788,7 @@ class HashGraph : HashGraphI {
                     return (channel in channel_queues) !is null;
                 }
 
-                void send(const(Pubkey) channel, const(Document) doc) {
+                void send(const(Pubkey) channel, const(Document) doc) nothrow {
                     log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
                     if ( Event.callbacks ) {
                         Event.callbacks.send(channel, doc);
@@ -752,7 +796,11 @@ class HashGraph : HashGraphI {
                     channel_queues[channel].write(doc);
                 }
 
-                void gossip(const(Pubkey) channel_owner, const Document doc) {
+                const(Document) receive(const Pubkey channel) nothrow {
+                    return channel_queues[channel].read;
+                }
+
+                void gossip(const(Pubkey) channel_owner, const Document doc) nothrow {
                     const(Pubkey) selectRandomNode(const bool active=true) pure nothrow {
                         const channels=channel_queues.byKey;
                         const node_index=random.value(0, channel_queues.length-1);
@@ -767,6 +815,14 @@ class HashGraph : HashGraphI {
                     }
                 }
 
+                void gossip(T)(const(Pubkey) channel_owner, const T pack) if(isHiBONRecord!T) {
+                    gossip(channel_owner, pack.toDoc);
+                }
+
+                bool empty(const Pubkey channel) const pure nothrow {
+                    return channel_queues[channel].empty;
+                }
+
                 void add_channel(const Pubkey channel) {
                     channel_queues[channel]=new ChannelQueue;
                 }
@@ -777,16 +833,16 @@ class HashGraph : HashGraphI {
             }
 //            @trusted
             class FiberNetwork : Fiber {
-                private HashGraphI _hashgraph;
+                private HashGraph _hashgraph;
 
                 @trusted
                 this(HashGraphI h) nothrow
-                    in {
-                        assert(_hashgraph is null);
-                    }
+                in {
+                    assert(_hashgraph is null);
+                }
                 do {
                     super(&run);
-                    _hashgraph=h;
+                    _hashgraph=cast(HashGraph)h;
                 }
 
                 const(HashGraphI) hashgraph() const pure nothrow {
@@ -795,24 +851,41 @@ class HashGraph : HashGraphI {
 
                 sdt_t time() {
                     const systime=global_time+random.value(timestep.MIN, timestep.MAX).msecs;
-                    return std_t(systime);
+                    return sdt_t(systime.stdTime);
                 }
                 private void run() {
                     {
-                        immutable eva_body=eva(
-                            _hashgraph.channel,
-                            _hashgraph.hirpc.net.calcHash(_hashgraph.channel),
-                            time, -77);
-                        immutable event_pack=new EventPackage(_hashgraph.hirpc.net, eva_body);
-
+                        immutable buf=cast(Buffer)_hashgraph.channel;
+                        const nonce=_hashgraph.hirpc.net.calcHash(buf);
+                        _hashgraph.registerEvent(_hashgraph.eva_pack(time, nonce));
                     }
 
                     bool stop;
                     while (!stop) {
-
+                        _hashgraph.registerCache;
                         (() @trusted {
                             yield;
                         })();
+                        while (!authorising.empty(_hashgraph.channel)) {
+                            const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
+
+                            _hashgraph.wavefront(
+                                received.pubkey,
+                                received.params!Wavefront,
+                                (const Wavefront return_wavefront) @safe {
+                                    if (return_wavefront.state !is ExchangeState.NONE) {
+                                        const sender=_hashgraph.hirpc.wavefront(return_wavefront);
+                                        //const sender=_hashgraph.hirpc.action("wavefront", return_wavefront);
+                                        authorising.gossip(_hashgraph.channel, sender);
+                                    }
+                                });
+                        }
+                        if (random.value(0,2) is 1) {
+                            immutable epack=_hashgraph.single_pack(time, Document());
+                            _hashgraph.registerEvent(epack);
+                            const sender=_hashgraph.hirpc.wavefront(_hashgraph.tideWave);
+                            authorising.gossip(_hashgraph.channel, sender);
+                        }
                     }
                 }
             }
@@ -880,131 +953,131 @@ class HashGraph : HashGraphI {
 
         //foreach(n; ne
         version(none) {
-        //auto h=new HashGraph(net, feature/active_node);
-        Emitter[NodeLable.max+1] emitters;
+            //auto h=new HashGraph(net, feature/active_node);
+            Emitter[NodeLable.max+1] emitters;
 //        writefln("@@@ Typeof Emitter=%s %s", typeof(emitters).stringof, emitters.length);
-        foreach (immutable l; [EnumMembers!NodeLable]) {
+            foreach (immutable l; [EnumMembers!NodeLable]) {
 //            writefln("label=%s", l);
-            emitters[l].pubkey=cast(Pubkey)to!string(l);
-        }
-        ulong current_time;
-        uint dummy_index;
-        ulong dummy_time() {
-            current_time+=1;
-            return current_time;
-        }
-        Hash hash(immutable(ubyte)[] data) {
-            return new SHA256(data);
-        }
-        immutable(EventBody) newbody(immutable(EventBody)* mother, immutable(EventBody)* father) {
-            dummy_index++;
-            if ( father is null ) {
-                auto hm=hash(mother.serialize).digits;
-                return EventBody(null, hm, null, dummy_time);
+                emitters[l].pubkey=cast(Pubkey)to!string(l);
             }
-            else {
-                auto hm=hash(mother.serialize).digits;
-                auto hf=hash(father.serialize).digits;
-                return EventBody(null, hm, hf, dummy_time);
+            ulong current_time;
+            uint dummy_index;
+            ulong dummy_time() {
+                current_time+=1;
+                return current_time;
             }
+            Hash hash(immutable(ubyte)[] data) {
+                return new SHA256(data);
+            }
+            immutable(EventBody) newbody(immutable(EventBody)* mother, immutable(EventBody)* father) {
+                dummy_index++;
+                if ( father is null ) {
+                    auto hm=hash(mother.serialize).digits;
+                    return EventBody(null, hm, null, dummy_time);
+                }
+                else {
+                    auto hm=hash(mother.serialize).digits;
+                    auto hf=hash(father.serialize).digits;
+                    return EventBody(null, hm, hf, dummy_time);
+                }
+            }
+            // Row number zero
+            writeln("Row 0");
+            // EventBody* a,b,c,d,e;
+            with(NodeLable) {
+                immutable a0=EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0);
+                immutable b0=EventBody(hash(emitters[Bob].pubkey).digits, null, null, 0);
+                immutable c0=EventBody(hash(emitters[Carol].pubkey).digits, null, null, 0);
+                immutable d0=EventBody(hash(emitters[Dave].pubkey).digits, null, null, 0);
+                immutable e0=EventBody(hash(emitters[Elisa].pubkey).digits, null, null, 0);
+                h.registerEvent(emitters[Bob].pubkey,   b0, &hash);
+                h.registerEvent(emitters[Carol].pubkey, c0, &hash);
+                h.registerEvent(emitters[Alice].pubkey, a0, &hash);
+                h.registerEvent(emitters[Elisa].pubkey, e0, &hash);
+                h.registerEvent(emitters[Dave].pubkey,  d0, &hash);
+
+                // Row number one
+                writeln("Row 1");
+                alias a0 a1;
+                alias b0 b1;
+                immutable c1=newbody(&c0, &d0);
+                immutable e1=newbody(&e0, &b0);
+                alias d0 d1;
+                //with(NodeLable) {
+                h.registerEvent(emitters[Carol].pubkey, c1, &hash);
+                h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
+
+                // Row number two
+                writeln("Row 2");
+                alias a1 a2;
+                immutable b2=newbody(&b1, &c1);
+                immutable c2=newbody(&c1, &e1);
+                alias d1 d2;
+                immutable e2=newbody(&e1, null);
+                h.registerEvent(emitters[Bob].pubkey,   b1, &hash);
+                h.registerEvent(emitters[Carol].pubkey, c1, &hash);
+                h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
+                // Row number 2 1/2
+                writeln("Row 2 1/2");
+
+                alias a2 a2a;
+                alias b2 b2a;
+                alias c2 c2a;
+                immutable d2a=newbody(&d2, &c2);
+                alias e2 e2a;
+                h.registerEvent(emitters[Dave].pubkey,  d2a, &hash);
+                // Row number 3
+                writeln("Row 3");
+
+                immutable a3=newbody(&a2, &b2);
+                immutable b3=newbody(&b2, &c2);
+                immutable c3=newbody(&c2, &d2);
+                alias d2a d3;
+                immutable e3=newbody(&e2, null);
+                //
+                h.registerEvent(emitters[Alice].pubkey, a3, &hash);
+                h.registerEvent(emitters[Bob].pubkey,   b3, &hash);
+                h.registerEvent(emitters[Carol].pubkey, c3, &hash);
+                h.registerEvent(emitters[Elisa].pubkey, e3, &hash);
+                // Row number 4
+                writeln("Row 4");
+
+
+                immutable a4=newbody(&a3, null);
+                alias b3 b4;
+                alias c3 c4;
+                alias d3 d4;
+                immutable e4=newbody(&e3, null);
+                //
+                h.registerEvent(emitters[Alice].pubkey, a4, &hash);
+                h.registerEvent(emitters[Elisa].pubkey, e4, &hash);
+                // Row number 5
+                writeln("Row 5");
+                alias a4 a5;
+                alias b4 b5;
+                immutable c5=newbody(&c4, &e4);
+                alias d4 d5;
+                alias e4 e5;
+
+
+
+                //
+
+                h.registerEvent(emitters[Carol].pubkey, c5, &hash);
+                // Row number 6
+                writeln("Row 6");
+
+                alias a5 a6;
+                alias b5 b6;
+                immutable c6=newbody(&c5, &a5);
+                alias d5 d6;
+                alias e5 e6;
+
+                //
+                h.registerEvent(emitters[Alice].pubkey, a6, &hash);
+            }
+            writeln("Row end");
+
         }
-        // Row number zero
-        writeln("Row 0");
-        // EventBody* a,b,c,d,e;
-        with(NodeLable) {
-            immutable a0=EventBody(hash(emitters[Alice].pubkey).digits, null, null, 0);
-            immutable b0=EventBody(hash(emitters[Bob].pubkey).digits, null, null, 0);
-            immutable c0=EventBody(hash(emitters[Carol].pubkey).digits, null, null, 0);
-            immutable d0=EventBody(hash(emitters[Dave].pubkey).digits, null, null, 0);
-            immutable e0=EventBody(hash(emitters[Elisa].pubkey).digits, null, null, 0);
-            h.registerEvent(emitters[Bob].pubkey,   b0, &hash);
-            h.registerEvent(emitters[Carol].pubkey, c0, &hash);
-            h.registerEvent(emitters[Alice].pubkey, a0, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e0, &hash);
-            h.registerEvent(emitters[Dave].pubkey,  d0, &hash);
-
-            // Row number one
-            writeln("Row 1");
-            alias a0 a1;
-            alias b0 b1;
-            immutable c1=newbody(&c0, &d0);
-            immutable e1=newbody(&e0, &b0);
-            alias d0 d1;
-            //with(NodeLable) {
-            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
-
-            // Row number two
-            writeln("Row 2");
-            alias a1 a2;
-            immutable b2=newbody(&b1, &c1);
-            immutable c2=newbody(&c1, &e1);
-            alias d1 d2;
-            immutable e2=newbody(&e1, null);
-            h.registerEvent(emitters[Bob].pubkey,   b1, &hash);
-            h.registerEvent(emitters[Carol].pubkey, c1, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e1, &hash);
-            // Row number 2 1/2
-            writeln("Row 2 1/2");
-
-            alias a2 a2a;
-            alias b2 b2a;
-            alias c2 c2a;
-            immutable d2a=newbody(&d2, &c2);
-            alias e2 e2a;
-            h.registerEvent(emitters[Dave].pubkey,  d2a, &hash);
-            // Row number 3
-            writeln("Row 3");
-
-            immutable a3=newbody(&a2, &b2);
-            immutable b3=newbody(&b2, &c2);
-            immutable c3=newbody(&c2, &d2);
-            alias d2a d3;
-            immutable e3=newbody(&e2, null);
-            //
-            h.registerEvent(emitters[Alice].pubkey, a3, &hash);
-            h.registerEvent(emitters[Bob].pubkey,   b3, &hash);
-            h.registerEvent(emitters[Carol].pubkey, c3, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e3, &hash);
-            // Row number 4
-            writeln("Row 4");
-
-
-            immutable a4=newbody(&a3, null);
-            alias b3 b4;
-            alias c3 c4;
-            alias d3 d4;
-            immutable e4=newbody(&e3, null);
-            //
-            h.registerEvent(emitters[Alice].pubkey, a4, &hash);
-            h.registerEvent(emitters[Elisa].pubkey, e4, &hash);
-            // Row number 5
-            writeln("Row 5");
-            alias a4 a5;
-            alias b4 b5;
-            immutable c5=newbody(&c4, &e4);
-            alias d4 d5;
-            alias e4 e5;
-
-
-
-            //
-
-            h.registerEvent(emitters[Carol].pubkey, c5, &hash);
-            // Row number 6
-            writeln("Row 6");
-
-            alias a5 a6;
-            alias b5 b6;
-            immutable c6=newbody(&c5, &a5);
-            alias d5 d6;
-            alias e5 e6;
-
-            //
-            h.registerEvent(emitters[Alice].pubkey, a6, &hash);
-        }
-        writeln("Row end");
-
-    }
     }
 }

@@ -74,40 +74,41 @@ interface EventScriptCallbacks {
 
 @safe
 interface EventMonitorCallbacks {
-    void create(const(Event) e);
-    void witness(const(Event) e);
-    void witness_mask(const(Event) e);
-    void strongly_seeing(const(Event) e);
-    void strong_vote(const(Event) e, immutable uint vote);
-    void round_seen(const(Event) e);
-    void looked_at(const(Event) e);
-    void round_decided(const(Round.Rounder) rounder);
-    void round_received(const(Event) e);
-    void coin_round(const(Round) r);
-    void famous(const(Event) e);
-    void round(const(Event) e);
-    void son(const(Event) e);
-    void daughter(const(Event) e);
-    void forked(const(Event) e);
-    void remove(const(Round) r);
-    void epoch(const(Event[]) received_event);
-    void iterations(const(Event) e, const uint count);
+    nothrow {
+        void create(const(Event) e);
+        void witness(const(Event) e);
+        void witness_mask(const(Event) e);
+        void strongly_seeing(const(Event) e);
+        void strong_vote(const(Event) e, immutable uint vote);
+        void round_seen(const(Event) e);
+        void looked_at(const(Event) e);
+        void round_decided(const(Round.Rounder) rounder);
+        void round_received(const(Event) e);
+        void coin_round(const(Round) r);
+        void famous(const(Event) e);
+        void round(const(Event) e);
+        void son(const(Event) e);
+        void daughter(const(Event) e);
+        void forked(const(Event) e);
+        void remove(const(Round) r);
+        void epoch(const(Event[]) received_event);
+        void iterations(const(Event) e, const uint count);
     //void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
 //    void wavefront_state_receive(const(Document) wavefron_doc);
-    void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
+        void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
 
-    void send(const Pubkey channel, lazy const Document doc);
-    final void send(T)(const Pubkey channel, lazy T pack) if(isHiBONRecord!T) {
-        send(channel, pack.toDoc);
+        void send(const Pubkey channel, lazy const Document doc);
+        final void send(T)(const Pubkey channel, lazy T pack) if(isHiBONRecord!T) {
+            send(channel, pack.toDoc);
+        }
+
+        void receive(lazy const Document doc);
+        void receive(T)(lazy const T pack) if(isHiBONRecord!T) {
+            receive(pack);
+        }
+
+        void consensus_failure(const(ConsensusException) e);
     }
-
-    void receive(lazy const Document doc);
-    void receive(T)(lazy const T pack) if(isHiBONRecord!T) {
-        receive(pack);
-    }
-
-    void consensus_failure(const(ConsensusException) e);
-
 }
 
 @safe
@@ -136,10 +137,21 @@ interface HashGraphI {
 
     bool front_seat(Event event);
 
+    Event register(scope const(Buffer) fingerprint);
+
     //void register_wavefront();
 
     //HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
-    const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received);
+//    const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received);
+    void wavefront(
+        const Pubkey channel,
+        const(Wavefront) received_wave,
+        void delegate(const(Wavefront) send_wave) @safe response);
+
+    // void wavefront(
+    //     const Pubkey channel,
+    //     ref const(HiRPC.Receiver) received_wave,
+    //     void delegate(ref const(Wavefront) response));
 
     // const(Wavefront) wavefront_machine(const(Wavefront) receiver_wave);
 
@@ -205,15 +217,6 @@ interface Authorising {
     void remove_channel(const(Pubkey) channel);
 }
 
-immutable(EventBody) eva(const Pubkey channel, const Buffer nonce, const sdt_t time, const int eva_altitude) {
-    const payload=EvaPayload(channel, nonce);
-    // payload.channel=channel;
-    // payload.nonce=nonce;
-    immutable result=EventBody(payload.toDoc, null, null, time, eva_altitude);
-    return result;
-}
-
-
 @safe
 @RecordType("EBODY")
 struct EventBody {
@@ -231,14 +234,14 @@ struct EventBody {
         q{
             this(
                 Document payload,
-                Buffer mother,
-                Buffer father,
+                const Event mother,
+                const Event father,
                 const sdt_t time,
-                immutable int altitude) inout {
+                immutable int altitude=int.min) inout {
                 this.time      =    time;
-                this.altitude  =    altitude;
-                this.father    =    father;
-                this.mother    =    mother;
+                this.mother    =    (mother is null)?null:mother.fingerprint;
+                this.altitude  =    (mother is null)?altitude:mother.altitude+1;
+                this.father    =    (father is null)?null:father.fingerprint;
                 this.payload   =    payload;
                 consensus();
             }
@@ -522,7 +525,7 @@ struct Wavefront {
     }
 }
 
-@RecordType("Eva")
+@RecordType("Eva") @safe
 struct EvaPayload {
     @Label("$channel") Pubkey channel;
     @Label("$nonce") Buffer nonce;

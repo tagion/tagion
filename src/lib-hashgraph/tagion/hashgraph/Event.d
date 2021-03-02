@@ -459,7 +459,7 @@ class Round {
             Event event_to_be_grounded;
             bool trigger;
             void clear_round_counters(Event e) nothrow {
-                if ( e && !e.grounded ) {
+                if ( e && !e.isGrounded ) {
                     if ( !trigger && e.round_received ) {
                         trigger=true;
                         event_to_be_grounded=e;
@@ -475,14 +475,14 @@ class Round {
             clear_round_counters(event._mother);
 
 //            version(none)
-            if ( event_to_be_grounded ) {
-                event_to_be_grounded._grounded=true;
-                if ( event_to_be_grounded._round._previous ) {
-                    if ( event_to_be_grounded._round._previous.ground(event_to_be_grounded.node_id, unique_famous_mask) ) {
-                        // scrap round!!!!
-                    }
-                }
-            }
+            // if ( event_to_be_grounded ) {
+            //     event_to_be_grounded.ground;
+            //     if ( event_to_be_grounded._round._previous ) {
+            //         if ( event_to_be_grounded._round._previous.ground(event_to_be_grounded.node_id, unique_famous_mask) ) {
+            //             // scrap round!!!!
+            //         }
+            //     }
+            // }
         }
         //
         // Select the round received events
@@ -491,7 +491,7 @@ class Round {
         foreach(event; famous_events) {
             Event.visit_marker++;
             void famous_seeing_count(Event e) {
-                if ( e && !e.visit && !e.grounded ) {
+                if ( e && !e.visit && !e.isGrounded ) {
                     if ( e.check_if_round_was_received(number_of_famous, this) ) {
                         round_received_events~=e;
                     }
@@ -1400,7 +1400,7 @@ class Event {
     @nogc
     Round round() nothrow
         in {
-            if ( !_grounded && motherExists ) {
+            if ( !isGrounded ) {
                 assert(_mother, "Graph has not been resolved");
             }
         }
@@ -1750,16 +1750,16 @@ class Event {
 
 
     @trusted
-    protected void connect(HashGraphI hashgraph) {
+    package void connect(HashGraphI hashgraph) {
         if (!connected) {
             scope(exit) {
                 hashgraph.front_seat(this);
             }
-            _mother = register(hashgraph, event_package.event_body.mother);
+            _mother = hashgraph.register(event_package.event_body.mother);
             if (_mother) {
                 check(!_daughter, ConsensusFailCode.EVENT_FORK);
                 _mother._daughter = this;
-                _father = register(hashgraph, event_package.event_body.father);
+                _father = hashgraph.register(event_package.event_body.father);
                 if (_father) {
                     check(!_father._son, ConsensusFailCode.EVENT_FORK);
                     _father._son = this;
@@ -1790,17 +1790,6 @@ class Event {
     }
 
 // +++
-    static Event register(HashGraphI hashgraph, scope const(Buffer) fingerprint) {
-        Event event;
-        if (fingerprint) {
-            event = hashgraph.lookup(fingerprint);
-            if ( event ) {
-                event.connect(hashgraph);
-            }
-        }
-        return event;
-    }
-
     bool connected() {
         return (_mother !is null) || isEva;
     }
@@ -1853,7 +1842,7 @@ class Event {
 
     const(Event) mother() const pure nothrow
     in {
-        assert(!_grounded, "Mother can't be accessed becuase this event is grounded");
+        assert(!isGrounded, "Mother can't be accessed becuase this event is grounded");
         if ( event_package.event_body.mother ) {
             assert(_mother);
             assert( (altitude-_mother.altitude) == 1 );
@@ -2052,8 +2041,15 @@ class Event {
     }
 
     @nogc
-    bool isGounded() pure const nothrow {
+    bool isGrounded() pure const nothrow {
         return (_mother is null) && (event_package.event_body.mother !is null);
+    }
+
+    @nogc
+    private void ground() nothrow {
+
+//        _mother=_father=null;
+
     }
 
     @nogc
