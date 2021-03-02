@@ -1255,7 +1255,7 @@ unittest {
                    .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
                    ));
 
-            assert(s_doc == result.toDoc);
+           assert(s_doc == result.toDoc);
         }
 
         {  // Typedef of a HiBONRecord is used as key in an associative-array

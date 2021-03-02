@@ -349,7 +349,6 @@ static size_t size(U)(const(U[]) array) pure {
                     static foreach(E; EnumMembers!Type) {
                         static if(isHiBONType(E) || isNative(E)) {
                         case E:
-
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
                                 Document.buildKey(buffer, E, key, index);
@@ -983,8 +982,7 @@ static size_t size(U)(const(U[]) array) pure {
         }
     }
 
-    unittest
-    { // Override of a key is not allowed
+    unittest { // Override of a key is not allowed
         import std.exception : assertThrown, assertNotThrown;
 
         enum override_key="okey";
@@ -1000,4 +998,15 @@ static size_t size(U)(const(U[]) array) pure {
 
     }
 
+    unittest { // Test sdt_t
+        import tagion.utils.StdTime;
+        import std.typecons : TypedefType;
+        auto h=new HiBON;
+        enum time="$t";
+        h[time]=sdt_t(1_100_100_101);
+
+        const doc=Document(h);
+
+        assert(doc[time].get!sdt_t == 1_100_100_101);
+    }
 }
