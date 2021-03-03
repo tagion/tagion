@@ -46,9 +46,13 @@ static assert(uint.sizeof == 4);
      Returns:
      The buffer of the HiBON document
      +/
-    @nogc
+//    @nogc
     immutable(ubyte[]) data() const pure nothrow {
-        return _data;
+        if (_data.length) {
+            return _data;
+        }
+        immutable(ubyte[]) empty_doc=[0];
+        return empty_doc;
     }
 
     /++
@@ -107,22 +111,29 @@ static assert(uint.sizeof == 4);
 
     @property @nogc const pure nothrow {
         @safe bool empty() {
-            return data.length <= 1;
+            return _data.length <= ubyte.sizeof;
         }
 
         @trusted uint size() {
-            return LEB128.decode!uint(data).value;
+            if (_data.length) {
+                return LEB128.decode!uint(_data).value;
+            }
+            return 0;
         }
     }
 
     unittest { // Empty doc
         {
             const doc=Document();
-            assert(doc.data.length is 0);
+            assert(doc._data.length is 0);
+            assert(doc.data.length is 1);
             assert(doc.empty);
             assert(doc.size is 0);
             assert(doc.length is 0);
-            assert(doc[].empty);
+            auto range=doc[];
+            assert(range.empty);
+            range.popFront;
+            assert(range.empty);
         }
 
         {
@@ -248,7 +259,7 @@ static assert(uint.sizeof == 4);
         }
 
         this(const Document doc) pure nothrow {
-            this(doc.data);
+            this(doc._data);
         }
 
         immutable(ubyte[]) data() const pure nothrow {
@@ -284,7 +295,7 @@ static assert(uint.sizeof == 4);
      +/
     @nogc
     Range opSlice() const pure nothrow {
-        return Range(data);
+        return Range(_data);
     }
 
     /++

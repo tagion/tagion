@@ -1009,4 +1009,51 @@ static size_t size(U)(const(U[]) array) pure {
 
         assert(doc[time].get!sdt_t == 1_100_100_101);
     }
+
+    unittest { // Test of empty Document
+        import std.stdio;
+        enum doc_name="$doc";
+        { // Buffer with empty Document
+            auto h=new HiBON;
+            immutable(ubyte[]) empty_doc_buffer=[0];
+            h[doc_name]=Document(empty_doc_buffer);
+            {
+                const doc=Document(h);
+                assert(doc[doc_name].get!Document.empty);
+            }
+            h[int.stringof]=42;
+
+            {
+                const doc=Document(h);
+                auto range=doc[];
+                assert(range.front.get!Document.empty);
+                range.popFront;
+                assert(range.front.get!int is 42);
+                range.popFront;
+                assert(range.empty);
+            }
+
+
+        }
+
+        { // Empty buffer
+            auto h=new HiBON;
+            h[doc_name]=Document();
+            {
+                const doc=Document(h);
+                assert(doc[doc_name].get!Document.empty);
+            }
+            h[int.stringof]=42;
+
+            {
+                const doc=Document(h);
+                auto range=doc[];
+                assert(range.front.get!Document.empty);
+                range.popFront;
+                assert(range.front.get!int is 42);
+                range.popFront;
+                assert(range.empty);
+            }
+        }
+    }
 }
