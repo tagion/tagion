@@ -274,10 +274,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 // This function adds the round key to state.
 // The round key is added to the state by an XOR function.
-    static void AddRoundKey(ubyte round, ref state_t state, ref const(ubyte[AES_keyExpSize]) RoundKey) {
+    void AddRoundKey(ubyte round, ref state_t state) {
         static foreach(i; 0..4) {
             static foreach(j; 0..4) {
-                state[i][j] ^= RoundKey[(round * Nb * 4) + (i * Nb) + j];
+                state[i][j] ^= _ctx.RoundKey[(round * Nb * 4) + (i * Nb) + j];
             }
         }
     }
@@ -435,7 +435,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         ubyte round = 0;
 
         // Add the First round key to the state before starting the rounds.
-        AddRoundKey(0, state, _ctx.RoundKey);
+        AddRoundKey(0, state);
 
         // There will be Nr rounds.
         // The first Nr-1 rounds are identical.
@@ -449,17 +449,17 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 break;
             }
             MixColumns(state);
-            AddRoundKey(round, state, _ctx.RoundKey);
+            AddRoundKey(round, state);
         }
         // Add round key to last round
-        AddRoundKey(Nr, state, _ctx.RoundKey);
+        AddRoundKey(Nr, state);
     }
 
     void InvCipher(ref state_t state) {
         ubyte round = 0;
 
         // Add the First round key to the state before starting the rounds.
-        AddRoundKey(Nr, state, _ctx.RoundKey);
+        AddRoundKey(Nr, state);
 
         // There will be Nr rounds.
         // The first Nr-1 rounds are identical.
@@ -469,7 +469,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         {
             InvShiftRows(state);
             InvSubBytes(state);
-            AddRoundKey(round, state, _ctx.RoundKey);
+            AddRoundKey(round, state);
             if (round == 0) {
                 break;
             }
