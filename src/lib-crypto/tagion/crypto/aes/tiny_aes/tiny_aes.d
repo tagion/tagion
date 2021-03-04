@@ -194,7 +194,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //    static ubyte getSBoxValue(ubyte num) {return sbox[(num)];}
 
 // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states.
-    void KeyExpansion(ref const(ubyte[KEY_SIZE]) Key) {
+    private void KeyExpansion(ref const(ubyte[KEY_SIZE]) Key) {
         ubyte[4] tempa; // Used for the column/row operations
         foreach(i; 0..Nk) {
             static foreach(j; 0..4) {
@@ -431,11 +431,11 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     }
 
 // Cipher is the main function that encrypts the PlainText.
-    static void Cipher(ref state_t state, ref const(ubyte[AES_keyExpSize]) RoundKey) {
+    void Cipher(ref state_t state) {
         ubyte round = 0;
 
         // Add the First round key to the state before starting the rounds.
-        AddRoundKey(0, state, RoundKey);
+        AddRoundKey(0, state, _ctx.RoundKey);
 
         // There will be Nr rounds.
         // The first Nr-1 rounds are identical.
@@ -449,10 +449,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 break;
             }
             MixColumns(state);
-            AddRoundKey(round, state, RoundKey);
+            AddRoundKey(round, state, _ctx.RoundKey);
         }
         // Add round key to last round
-        AddRoundKey(Nr, state, RoundKey);
+        AddRoundKey(Nr, state, _ctx.RoundKey);
     }
 
     static void InvCipher(ref state_t state, ref const(ubyte[AES_keyExpSize]) RoundKey) {
@@ -485,7 +485,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
     void AES_ECB_encrypt(ubyte[] buf) {
         // The next function call encrypts the PlainText with the Key using AES algorithm.
-        Cipher(State(buf), _ctx.RoundKey);
+        Cipher(State(buf));
     }
 
     void AES_ECB_decrypt(ubyte[] buf) {
@@ -507,7 +507,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         // for (i = 0; i < length; i += AES_BLOCKLEN)
         // {
             XorWithIv(buf, Iv);
-            Cipher(State(buf), _ctx.RoundKey);
+            Cipher(State(buf));
             Iv = buf[0..AES_BLOCKLEN];
             buf=buf[AES_BLOCKLEN..$];
         }
@@ -543,7 +543,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             if (i % AES_BLOCKLEN == 0) { //bi == AES_BLOCKLEN) { /* we need to regen xor compliment in buffer */
                 buffer[0..AES_BLOCKLEN]=_ctx.Iv;
 //                memcpy(buffer, ctx.Iv, AES_BLOCKLEN);
-                Cipher(State(buffer), _ctx.RoundKey);
+                Cipher(State(buffer));
 
                 /* Increment Iv and handle overflow */
                 foreach_reverse(j; 0..AES_BLOCKLEN) {
