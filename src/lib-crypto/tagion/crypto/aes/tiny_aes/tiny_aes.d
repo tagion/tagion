@@ -499,7 +499,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     }
 
     static void AES_CBC_encrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
-        size_t i;
+        //      size_t i;
         auto Iv = ctx.Iv;
         while(buf.length) {
         // for (i = 0; i < length; i += AES_BLOCKLEN)
@@ -515,7 +515,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     }
 
     static void AES_CBC_decrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
-        size_t i;
+//        size_t i;
         ubyte[AES_BLOCKLEN] storeNextIv;
         while(buf.length) {
         // for (i = 0; i < length; i += AES_BLOCKLEN)
@@ -534,31 +534,32 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 /* Symmetrical operation: same function for encrypting as for decrypting. Note any IV/nonce should never be reused with the same key */
     static void AES_CTR_xcrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
         ubyte[AES_BLOCKLEN] buffer;
-        size_t i;
-        int bi;
-        for (i = 0, bi = AES_BLOCKLEN; i < length; ++i, ++bi) {
-            if (bi == AES_BLOCKLEN) /* we need to regen xor compliment in buffer */
-            {
+//        size_t i;
+        size_t bi; //=AES_BLOCKLEN;
+        foreach(i; 0..length) {
+//        for (i = 0; i < length; ++i) {
+            if (i % AES_BLOCKLEN == 0) { //bi == AES_BLOCKLEN) { /* we need to regen xor compliment in buffer */
                 buffer[0..AES_BLOCKLEN]=ctx.Iv;
 //                memcpy(buffer, ctx.Iv, AES_BLOCKLEN);
                 Cipher(State(buffer),ctx.RoundKey);
 
                 /* Increment Iv and handle overflow */
-                for (bi = (AES_BLOCKLEN - 1); bi >= 0; --bi)
-                {
+                foreach_reverse(j; 0..AES_BLOCKLEN) {
+                // for (bi = (AES_BLOCKLEN - 1); bi >= 0; --bi)
+                // {
                     /* inc will overflow */
-                    if (ctx.Iv[bi] == 255)
-                    {
-                        ctx.Iv[bi] = 0;
+                    if (ctx.Iv[j] == 255) {
+                        ctx.Iv[j] = 0;
                         continue;
                     }
-                    ctx.Iv[bi] += 1;
+                    ctx.Iv[j] += 1;
                     break;
                 }
                 bi = 0;
             }
 
-            buf[i] = (buf[i] ^ buffer[bi]);
+            buf[i] ^= buffer[bi];
+            bi++;
         }
     }
 
