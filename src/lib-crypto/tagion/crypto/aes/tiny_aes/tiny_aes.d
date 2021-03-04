@@ -191,25 +191,29 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
   return sbox[num];
   }
 */
-    static ubyte getSBoxValue(ubyte num) {return sbox[(num)];}
+//    static ubyte getSBoxValue(ubyte num) {return sbox[(num)];}
 
 // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states.
     static void KeyExpansion(ref ubyte[AES_keyExpSize] RoundKey, ref const(ubyte[KEY_SIZE]) Key) {
-        uint i, j, k;
         ubyte[4] tempa; // Used for the column/row operations
 
         // The first round key is the key itself.
-        for (i = 0; i < Nk; ++i)
-        {
-            RoundKey[(i * 4) + 0] = Key[(i * 4) + 0];
-            RoundKey[(i * 4) + 1] = Key[(i * 4) + 1];
-            RoundKey[(i * 4) + 2] = Key[(i * 4) + 2];
-            RoundKey[(i * 4) + 3] = Key[(i * 4) + 3];
+//        for (i = 0; i < Nk; ++i) {
+        foreach(i; 0..Nk) {
+            static foreach(j; 0..4) {
+                RoundKey[(i * 4) + j] = Key[(i * 4) + j];
+            }
+            // RoundKey[(i * 4) + 0] = Key[(i * 4) + 0];
+            // RoundKey[(i * 4) + 1] = Key[(i * 4) + 1];
+            // RoundKey[(i * 4) + 2] = Key[(i * 4) + 2];
+            // RoundKey[(i * 4) + 3] = Key[(i * 4) + 3];
         }
+        uint j, k;
 
         // All other round keys are found from the previous round keys.
-        for (i = Nk; i < Nb * (Nr + 1); ++i)
-        {
+        static foreach(i; Nk..Nb * (Nr + 1)) {
+        // for (i = Nk; i < Nb * (Nr + 1); ++i)
+        // {
             {
                 k = (i - 1) * 4;
                 tempa[0]=RoundKey[k + 0];
@@ -382,7 +386,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
   return rsbox[num];
   }
 */
-    static ubyte getSBoxInvert(ubyte num) {return rsbox[num];};
+//    static ubyte getSBoxInvert(ubyte num) {return rsbox[num];};
 
 // MixColumns function mixes the columns of the state matrix.
 // The method used to multiply may be difficult to understand for the inexperienced.
