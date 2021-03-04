@@ -214,10 +214,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
                 // Function Subword()
                 {
-                    tempa[0] = getSBoxValue(tempa[0]);
-                    tempa[1] = getSBoxValue(tempa[1]);
-                    tempa[2] = getSBoxValue(tempa[2]);
-                    tempa[3] = getSBoxValue(tempa[3]);
+                    tempa[0] = sbox[tempa[0]];
+                    tempa[1] = sbox[tempa[1]];
+                    tempa[2] = sbox[tempa[2]];
+                    tempa[3] = sbox[tempa[3]];
                 }
 
                 tempa[0] = tempa[0] ^ Rcon[i/Nk];
@@ -228,10 +228,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 {
                     // Function Subword()
                     {
-                        tempa[0] = getSBoxValue(tempa[0]);
-                        tempa[1] = getSBoxValue(tempa[1]);
-                        tempa[2] = getSBoxValue(tempa[2]);
-                        tempa[3] = getSBoxValue(tempa[3]);
+                        tempa[0] = sbox[tempa[0]];
+                        tempa[1] = sbox[tempa[1]];
+                        tempa[2] = sbox[tempa[2]];
+                        tempa[3] = sbox[tempa[3]];
                     }
                 }
             }
@@ -284,7 +284,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         {
             for (j = 0; j < 4; ++j)
             {
-                state[j][i] = getSBoxValue(state[j][i]);
+                state[j][i] = sbox[state[j][i]];
             }
         }
     }
