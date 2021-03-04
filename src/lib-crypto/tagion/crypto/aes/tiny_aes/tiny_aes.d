@@ -266,10 +266,13 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //#endif
             {
                 const j = i * 4; k=(i - Nk) * 4;
-                RoundKey[j + 0] = RoundKey[k + 0] ^ tempa[0];
-                RoundKey[j + 1] = RoundKey[k + 1] ^ tempa[1];
-                RoundKey[j + 2] = RoundKey[k + 2] ^ tempa[2];
-                RoundKey[j + 3] = RoundKey[k + 3] ^ tempa[3];
+                static foreach(l; 0..4) {
+                    RoundKey[j + l] = RoundKey[k + l] ^ tempa[l];
+                }
+                // RoundKey[j + 0] = RoundKey[k + 0] ^ tempa[0];
+                // RoundKey[j + 1] = RoundKey[k + 1] ^ tempa[1];
+                // RoundKey[j + 2] = RoundKey[k + 2] ^ tempa[2];
+                // RoundKey[j + 3] = RoundKey[k + 3] ^ tempa[3];
             }
         }
     }
