@@ -488,9 +488,9 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         Cipher(State(buf), ctx.RoundKey);
     }
 
-    static void AES_ECB_decrypt(ref const AES_ctx ctx, ubyte[] buf) {
+    void AES_ECB_decrypt(ubyte[] buf) {
         // The next function call decrypts the PlainText with the Key using AES algorithm.
-        InvCipher(State(buf), ctx.RoundKey);
+        InvCipher(State(buf), _ctx.RoundKey);
     }
 
 
@@ -853,7 +853,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             //AES_ctx ctx;
             Tiny_AES aes;
             aes.AES_init_ctx(key);
-            AES_ECB_decrypt(aes._ctx, indata);
+            aes.AES_ECB_decrypt(indata);
 
             printf("ECB decrypt: ");
 
