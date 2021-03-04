@@ -194,11 +194,11 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //    static ubyte getSBoxValue(ubyte num) {return sbox[(num)];}
 
 // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states.
-    static void KeyExpansion(ref ubyte[AES_keyExpSize] RoundKey, ref const(ubyte[KEY_SIZE]) Key) {
+    void KeyExpansion(ref const(ubyte[KEY_SIZE]) Key) {
         ubyte[4] tempa; // Used for the column/row operations
         foreach(i; 0..Nk) {
             static foreach(j; 0..4) {
-                RoundKey[(i * 4) + j] = Key[(i * 4) + j];
+                _ctx.RoundKey[(i * 4) + j] = Key[(i * 4) + j];
             }
         }
         // All other round keys are found from the previous round keys.
@@ -206,7 +206,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             static foreach(j; 0..4) {
                 {
                     const k = (i - 1) * 4;
-                    tempa[j]=RoundKey[k + j];
+                    tempa[j]=_ctx.RoundKey[k + j];
                 }
             }
 
@@ -245,7 +245,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             {
                 const j = i * 4; const k=(i - Nk) * 4;
                 static foreach(l; 0..4) {
-                    RoundKey[j + l] = RoundKey[k + l] ^ tempa[l];
+                    _ctx.RoundKey[j + l] = _ctx.RoundKey[k + l] ^ tempa[l];
                 }
             }
         }
@@ -254,13 +254,13 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
     AES_ctx _ctx;
     void AES_init_ctx(ref const(ubyte[KEY_SIZE]) key) {
-        KeyExpansion(_ctx.RoundKey, key);
+        KeyExpansion(key);
     }
 
     static if (CBC_CTR) {
 //#if (defined(CBC) && (CBC == 1)) || (defined(CTR) && (CTR == 1))
         void AES_init_ctx_iv(ref const(ubyte[KEY_SIZE]) key, ref const(ubyte[AES_BLOCKLEN]) iv) {
-            KeyExpansion(_ctx.RoundKey, key);
+            KeyExpansion(key);
             _ctx.Iv=iv;
 //            memcpy (ctx.Iv, iv, AES_BLOCKLEN);
         }
