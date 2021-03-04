@@ -363,7 +363,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             }
 
             // Cipher is the main function that encrypts the PlainText.
-            void Cipher(ref state_t state) {
+            void cipher(ref state_t state) {
                 ubyte round = 0;
 
                 // Add the First round key to the state before starting the rounds.
@@ -424,7 +424,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
         void ECB_encrypt(ubyte[] buf) {
             // The next function call encrypts the PlainText with the Key using AES algorithm.
-            Cipher(State(buf));
+            cipher(State(buf));
         }
 
         void ECB_decrypt(ubyte[] buf) {
@@ -436,7 +436,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             auto Iv = ctx.Iv;
             while(buf.length) {
                 XorWithIv(buf, Iv);
-                Cipher(State(buf));
+                cipher(State(buf));
                 Iv = buf[0..BLOCKLEN];
                 buf=buf[BLOCKLEN..$];
             }
@@ -462,7 +462,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             foreach(i; 0..length) {
                 if (i % BLOCKLEN == 0) { //bi == BLOCKLEN) { /* we need to regen xor compliment in buffer */
                     buffer[0..BLOCKLEN]=ctx.Iv;
-                    Cipher(State(buffer));
+                    cipher(State(buffer));
 
                     /* Increment Iv and handle overflow */
                     foreach_reverse(j; 0..BLOCKLEN) {
