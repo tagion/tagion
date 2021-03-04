@@ -455,11 +455,11 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         AddRoundKey(Nr, state, _ctx.RoundKey);
     }
 
-    static void InvCipher(ref state_t state, ref const(ubyte[AES_keyExpSize]) RoundKey) {
+    void InvCipher(ref state_t state) {
         ubyte round = 0;
 
         // Add the First round key to the state before starting the rounds.
-        AddRoundKey(Nr, state, RoundKey);
+        AddRoundKey(Nr, state, _ctx.RoundKey);
 
         // There will be Nr rounds.
         // The first Nr-1 rounds are identical.
@@ -469,7 +469,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         {
             InvShiftRows(state);
             InvSubBytes(state);
-            AddRoundKey(round, state, RoundKey);
+            AddRoundKey(round, state, _ctx.RoundKey);
             if (round == 0) {
                 break;
             }
@@ -490,7 +490,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
     void AES_ECB_decrypt(ubyte[] buf) {
         // The next function call decrypts the PlainText with the Key using AES algorithm.
-        InvCipher(State(buf), _ctx.RoundKey);
+        InvCipher(State(buf));
     }
 
 
@@ -524,7 +524,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         // {
             storeNextIv=buf[0..AES_BLOCKLEN];
 //            memcpy(storeNextIv, buf, AES_BLOCKLEN);
-            InvCipher(State(buf), _ctx.RoundKey);
+            InvCipher(State(buf));
             XorWithIv(buf, _ctx.Iv);
             pragma(msg, "fixme(cbr): It seems that this can be move outside the loop");
             _ctx.Iv=storeNextIv;
