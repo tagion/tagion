@@ -66,7 +66,7 @@ endif
 
 # Define flag for gdc other
 ifeq ($(COMPILER),gdc)
-    DCFLAGS    = -O2
+    OPT       = -O2
     LINKERFLAG= -Xlinker
     OUTPUT    = -o
     HF        = -fintfc-file=
@@ -74,7 +74,7 @@ ifeq ($(COMPILER),gdc)
     NO_OBJ    = -fsyntax-only
     DDOC_MACRO= -fdoc-inc=
 else
-    DCFLAGS    = -O
+    OPT       = -O
     LINKERFLAG= -L
     OUTPUT    = -of
     HF        = -Hf

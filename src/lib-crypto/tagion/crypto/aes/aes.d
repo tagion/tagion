@@ -1,4 +1,13 @@
 module tagion.crypto.aes.aes;
+version(tiny_aes) {
+    public import tagion.crypto.aes.c.aes;
+    extern(C) {
+        enum {
+            AES_BLOCK_SIZE = AES_BLOCKLEN
+        }
+    }
+}
+else {
 /* This is a D translation the openssl/aes.h header file
 /*
  * Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
@@ -85,4 +94,5 @@ extern(C) {
     int AES_unwrap_key(AES_KEY* key, const ubyte* iv,
         ubyte* output,
         const ubyte* input, uint inlen);
+}
 }

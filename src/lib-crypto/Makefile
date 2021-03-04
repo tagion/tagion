@@ -61,7 +61,7 @@ ifndef DFILES
 include $(REPOROOT)/source.mk
 endif
 
-info:
+info: $(INFO)
 	@echo "WAYS    =$(WAYS)"
 	@echo "DFILES  =$(DFILES)"
 #	@echo "OBJS    =$(OBJS)"
@@ -80,13 +80,13 @@ lib: $(REVISION) dfiles.mk
 unittest: dfiles.mk
 	$(MAKE) unittest
 else
-lib: $(REVISION) $(LIBRARY)
+lib: $(PREBUILD) $(REVISION) $(LIBRARY)
 
 unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST): $(LIBS) $(WAYS) $(DFILES)
-	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OUTPUT)$@
+$(UNITTEST): $(LIBS) $(WAYS) $(DFILES) $(OBJS)
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OBJS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
 endif
@@ -115,15 +115,17 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 
 #include $(DDOCBUILDER)
 
-$(LIBRARY): ${DFILES}
+$(LIBRARY): ${DFILES} $(OBJS)
 	@echo "########################################################################################"
 	@echo "## Library $@"
 	@echo "########################################################################################"
-	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $(DFILES) -c $(OUTPUT)$(LIBRARY)
+	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $(DFILES) $(OBJS) -c $(OUTPUT)$(LIBRARY)
 
 install: $(INSTALL)
 
 CLEANER+=clean
+
+-include dstep.mk
 
 clean:
 #	rm -f $(LIBRARY)

@@ -15,3 +15,5 @@ LIBS+=$(LIBSECP256K1)
 
 LDCFLAGS+=$(LDCFLAGS_GMP)
 LDCFLAGS+=$(LDCFLAGS_CRYPT)
+
+include dstep_setup.mk
