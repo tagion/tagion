@@ -422,17 +422,17 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 /*****************************************************************************/
 
 
-        void ECB_encrypt(ubyte[] buf) {
+        void ECB_encrypt_block(ubyte[] buf) {
             // The next function call encrypts the PlainText with the Key using AES algorithm.
             cipher(State(buf));
         }
 
-        void ECB_decrypt(ubyte[] buf) {
+        void ECB_decrypt_block(ubyte[] buf) {
             // The next function call decrypts the PlainText with the Key using AES algorithm.
             InvCipher(State(buf));
         }
 
-        void CBC_encrypt_buffer(ubyte[] buf) {
+        void CBC_encrypt(ubyte[] buf) {
             auto Iv = ctx.Iv;
             while(buf.length) {
                 xorWithIv(buf, Iv);
@@ -444,7 +444,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             ctx.Iv=Iv;
         }
 
-        void CBC_decrypt_buffer(ubyte[] buf) {
+        void CBC_decrypt(ubyte[] buf) {
             ubyte[BLOCKLEN] storeNextIv;
             while(buf.length) {
                 storeNextIv=buf[0..BLOCKLEN];
@@ -456,10 +456,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         }
 
         /* Symmetrical operation: same function for encrypting as for decrypting. Note any IV/nonce should never be reused with the same key */
-        void CTR_xcrypt_buffer(ubyte[] buf, size_t length) {
+        void CTR_xcrypt(ubyte[] buf) {
             ubyte[BLOCKLEN] buffer;
             size_t bi; //=BLOCKLEN;
-            foreach(i; 0..length) {
+            foreach(i; 0..buf.length) {
                 if (i % BLOCKLEN == 0) { //bi == BLOCKLEN) { /* we need to regen xor compliment in buffer */
                     buffer[0..BLOCKLEN]=ctx.Iv;
                     cipher(State(buffer));
@@ -528,7 +528,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                     auto aes=Tiny_AES(key);
 
                     foreach(i; 0..4) {
-                        aes.ECB_encrypt(plain_text[i * 16..$]);
+                        aes.ECB_encrypt_block(plain_text[i * 16..$]);
                         phex(plain_text[i * 16..$]);
                     }
                     writeln();
@@ -554,7 +554,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 ubyte[] indata  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key);
-                aes.ECB_encrypt(indata);
+                aes.ECB_encrypt_block(indata);
 
                 version(PRINT) writeln("ECB encrypt: ");
 
@@ -594,7 +594,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key, iv);
-                aes.CBC_decrypt_buffer(indata);
+                aes.CBC_decrypt(indata);
 
                 version(PRINT) writeln("CBC decrypt: ");
 
@@ -634,7 +634,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //            ctx ctx;
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key, iv);
-                aes.CBC_encrypt_buffer(indata);
+                aes.CBC_encrypt(indata);
 
                 version(PRINT) writeln("CBC encrypt: ");
 
@@ -672,7 +672,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                     0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key, iv);
-                aes.CTR_xcrypt_buffer(indata, 64);
+                aes.CTR_xcrypt(indata);
 
 
                 assert(outdata == indata);
@@ -698,7 +698,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 ubyte[] outdata   = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key);
-                aes.ECB_decrypt(indata);
+                aes.ECB_decrypt_block(indata);
 
                 version(PRINT) writeln("ECB decrypt: ");
 
