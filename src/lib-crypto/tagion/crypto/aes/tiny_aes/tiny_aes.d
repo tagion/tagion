@@ -500,19 +500,19 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         }
     }
 
-    static void AES_CBC_encrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
+    void AES_CBC_encrypt_buffer(ubyte[] buf, size_t length) {
         //      size_t i;
-        auto Iv = ctx.Iv;
+        auto Iv = _ctx.Iv;
         while(buf.length) {
         // for (i = 0; i < length; i += AES_BLOCKLEN)
         // {
             XorWithIv(buf, Iv);
-            Cipher(State(buf), ctx.RoundKey);
+            Cipher(State(buf), _ctx.RoundKey);
             Iv = buf[0..AES_BLOCKLEN];
             buf=buf[AES_BLOCKLEN..$];
         }
         /* store Iv in ctx for next call */
-        ctx.Iv=Iv;
+        _ctx.Iv=Iv;
         //memcpy(ctx.Iv, Iv, AES_BLOCKLEN);
     }
 
@@ -534,27 +534,27 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     }
 
 /* Symmetrical operation: same function for encrypting as for decrypting. Note any IV/nonce should never be reused with the same key */
-    static void AES_CTR_xcrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
+    void AES_CTR_xcrypt_buffer(ubyte[] buf, size_t length) {
         ubyte[AES_BLOCKLEN] buffer;
 //        size_t i;
         size_t bi; //=AES_BLOCKLEN;
         foreach(i; 0..length) {
 //        for (i = 0; i < length; ++i) {
             if (i % AES_BLOCKLEN == 0) { //bi == AES_BLOCKLEN) { /* we need to regen xor compliment in buffer */
-                buffer[0..AES_BLOCKLEN]=ctx.Iv;
+                buffer[0..AES_BLOCKLEN]=_ctx.Iv;
 //                memcpy(buffer, ctx.Iv, AES_BLOCKLEN);
-                Cipher(State(buffer),ctx.RoundKey);
+                Cipher(State(buffer), _ctx.RoundKey);
 
                 /* Increment Iv and handle overflow */
                 foreach_reverse(j; 0..AES_BLOCKLEN) {
                 // for (bi = (AES_BLOCKLEN - 1); bi >= 0; --bi)
                 // {
                     /* inc will overflow */
-                    if (ctx.Iv[j] == 255) {
-                        ctx.Iv[j] = 0;
+                    if (_ctx.Iv[j] == 255) {
+                        _ctx.Iv[j] = 0;
                         continue;
                     }
-                    ctx.Iv[j] += 1;
+                    _ctx.Iv[j] += 1;
                     break;
                 }
                 bi = 0;
@@ -751,7 +751,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             AES_ctx ctx;
             Tiny_AES aes;
             aes.AES_init_ctx_iv(key, iv);
-            AES_CBC_encrypt_buffer(aes._ctx, indata, 64);
+            aes.AES_CBC_encrypt_buffer(indata, 64);
 
             printf("CBC encrypt: ");
 
@@ -812,7 +812,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //            AES_ctx ctx;
             Tiny_AES aes;
             aes.AES_init_ctx_iv(key, iv);
-            AES_CTR_xcrypt_buffer(aes._ctx, indata, 64);
+            aes.AES_CTR_xcrypt_buffer(indata, 64);
 
 //            writefln("CTR %s: ", xcrypt);
 
