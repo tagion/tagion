@@ -389,7 +389,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         {
             for (j = 0; j < 4; ++j)
             {
-                state[j][i] = getSBoxInvert(state[j][i]);
+                state[j][i] = rsbox[state[j][i]];
             }
         }
     }
