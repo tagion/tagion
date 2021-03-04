@@ -259,9 +259,9 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
     static if (CBC_CTR) {
 //#if (defined(CBC) && (CBC == 1)) || (defined(CTR) && (CTR == 1))
-        static void AES_init_ctx_iv(ref AES_ctx ctx, ref const(ubyte[KEY_SIZE]) key, ref const(ubyte[AES_BLOCKLEN]) iv) {
-            KeyExpansion(ctx.RoundKey, key);
-            ctx.Iv=iv;
+        void AES_init_ctx_iv(ref const(ubyte[KEY_SIZE]) key, ref const(ubyte[AES_BLOCKLEN]) iv) {
+            KeyExpansion(_ctx.RoundKey, key);
+            _ctx.Iv=iv;
 //            memcpy (ctx.Iv, iv, AES_BLOCKLEN);
         }
         static void AES_ctx_set_iv(ref AES_ctx ctx, ref const(ubyte[AES_BLOCKLEN]) iv) {
@@ -696,10 +696,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
                 0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
 //  ubyte buffer[64];
-            AES_ctx ctx;
-
-            AES_init_ctx_iv(ctx, key, iv);
-            AES_CBC_decrypt_buffer(ctx, indata, 64);
+//            AES_ctx ctx;
+            Tiny_AES aes;
+            aes.AES_init_ctx_iv(key, iv);
+            AES_CBC_decrypt_buffer(aes._ctx, indata, 64);
 
             printf("CBC decrypt: ");
 
@@ -749,9 +749,9 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
                 0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
             AES_ctx ctx;
-
-            AES_init_ctx_iv(ctx, key, iv);
-            AES_CBC_encrypt_buffer(ctx, indata, 64);
+            Tiny_AES aes;
+            aes.AES_init_ctx_iv(key, iv);
+            AES_CBC_encrypt_buffer(aes._ctx, indata, 64);
 
             printf("CBC encrypt: ");
 
@@ -809,10 +809,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
                 0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
                 0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
-            AES_ctx ctx;
-
-            AES_init_ctx_iv(ctx, key, iv);
-            AES_CTR_xcrypt_buffer(ctx, indata, 64);
+//            AES_ctx ctx;
+            Tiny_AES aes;
+            aes.AES_init_ctx_iv(key, iv);
+            AES_CTR_xcrypt_buffer(aes._ctx, indata, 64);
 
 //            writefln("CTR %s: ", xcrypt);
 
