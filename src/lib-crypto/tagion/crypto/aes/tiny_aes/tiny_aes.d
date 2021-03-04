@@ -208,7 +208,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 
         Context ctx;
-        void init_ctx(ref const(ubyte[KEY_SIZE]) key) {
+        this(ref const(ubyte[KEY_SIZE]) key) {
             keyExpansion(key);
         }
 
@@ -525,7 +525,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                     writeln("ciphertext:");
                     //ctx ctx;
                     Tiny_AES aes;
-                    aes.init_ctx(key);
+                    auto aes=Tiny_AES(key);
 
                     foreach(i; 0..4) {
                         aes.ECB_encrypt(plain_text[i * 16..$]);
@@ -552,8 +552,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 }
 
                 ubyte[] indata  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
-                Tiny_AES aes;
-                aes.init_ctx(key);
+                //Tiny_AES aes;
+                auto aes=Tiny_AES(key);
                 aes.ECB_encrypt(indata);
 
                 version(PRINT) writeln("ECB encrypt: ");
@@ -696,8 +696,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 }
 
                 ubyte[] outdata   = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
-                Tiny_AES aes;
-                aes.init_ctx(key);
+                //Tiny_AES aes;
+                auto aes=Tiny_AES(key);
                 aes.ECB_decrypt(indata);
 
                 version(PRINT) writeln("ECB decrypt: ");
