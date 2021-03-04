@@ -196,31 +196,18 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states.
     static void KeyExpansion(ref ubyte[AES_keyExpSize] RoundKey, ref const(ubyte[KEY_SIZE]) Key) {
         ubyte[4] tempa; // Used for the column/row operations
-
-        // The first round key is the key itself.
-//        for (i = 0; i < Nk; ++i) {
         foreach(i; 0..Nk) {
             static foreach(j; 0..4) {
                 RoundKey[(i * 4) + j] = Key[(i * 4) + j];
             }
-            // RoundKey[(i * 4) + 0] = Key[(i * 4) + 0];
-            // RoundKey[(i * 4) + 1] = Key[(i * 4) + 1];
-            // RoundKey[(i * 4) + 2] = Key[(i * 4) + 2];
-            // RoundKey[(i * 4) + 3] = Key[(i * 4) + 3];
         }
-        uint k;
-
         // All other round keys are found from the previous round keys.
         static foreach(i; Nk..Nb * (Nr + 1)) {
-        // for (i = Nk; i < Nb * (Nr + 1); ++i)
-        // {
             static foreach(j; 0..4) {
-                k = (i - 1) * 4;
-                tempa[j]=RoundKey[k + j];
-                // tempa[1]=RoundKey[k + 1];
-                // tempa[2]=RoundKey[k + 2];
-                // tempa[3]=RoundKey[k + 3];
-
+                {
+                    const k = (i - 1) * 4;
+                    tempa[j]=RoundKey[k + j];
+                }
             }
 
             if (i % Nk == 0)
@@ -243,36 +230,23 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 // Function Subword()
                 static foreach(j; 0..4) {
                     tempa[j] = sbox[tempa[j]];
-                    // tempa[j] = sbox[tempa[1]];
-                    // tempa[j] = sbox[tempa[2]];
-                    // tempa[j] = sbox[tempa[3]];
                 }
 
                 tempa[0] = tempa[0] ^ Rcon[i/Nk];
             }
             static if (KEY_LENGTH == 256) {
-//#if defined(AES256) && (AES256 == 1)
-                if (i % Nk == 4)
-                {
+                if (i % Nk is 4) {
                     // Function Subword()
                     static foreach(j; 0..4) {
                         tempa[j] = sbox[tempa[j]];
-                        // tempa[1] = sbox[tempa[1]];
-                        // tempa[2] = sbox[tempa[2]];
-                        // tempa[3] = sbox[tempa[3]];
                     }
                 }
             }
-//#endif
             {
-                const j = i * 4; k=(i - Nk) * 4;
+                const j = i * 4; const k=(i - Nk) * 4;
                 static foreach(l; 0..4) {
                     RoundKey[j + l] = RoundKey[k + l] ^ tempa[l];
                 }
-                // RoundKey[j + 0] = RoundKey[k + 0] ^ tempa[0];
-                // RoundKey[j + 1] = RoundKey[k + 1] ^ tempa[1];
-                // RoundKey[j + 2] = RoundKey[k + 2] ^ tempa[2];
-                // RoundKey[j + 3] = RoundKey[k + 3] ^ tempa[3];
             }
         }
     }
@@ -299,11 +273,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 // This function adds the round key to state.
 // The round key is added to the state by an XOR function.
     static void AddRoundKey(ubyte round, ref state_t state, ref const(ubyte[AES_keyExpSize]) RoundKey) {
-        ubyte i,j;
-        for (i = 0; i < 4; ++i)
-        {
-            for (j = 0; j < 4; ++j)
-            {
+        static foreach(i; 0..4) {
+            static foreach(j; 0..4) {
                 state[i][j] ^= RoundKey[(round * Nb * 4) + (i * Nb) + j];
             }
         }
@@ -312,11 +283,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 // The SubBytes Function Substitutes the values in the
 // state matrix with values in an S-box.
     static void SubBytes(ref state_t state) {
-        ubyte i, j;
-        for (i = 0; i < 4; ++i)
-        {
-            for (j = 0; j < 4; ++j)
-            {
+        static foreach(i; 0..4) {
+            static foreach(j; 0..4) {
                 state[j][i] = sbox[state[j][i]];
             }
         }
@@ -358,16 +326,17 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 // MixColumns function mixes the columns of the state matrix
     static void MixColumns(ref state_t state) {
-        ubyte i;
-        ubyte Tmp, Tm, t;
-        for (i = 0; i < 4; ++i)
-        {
-            t   = state[i][0];
-            Tmp = state[i][0] ^ state[i][1] ^ state[i][2] ^ state[i][3] ;
-            Tm  = state[i][0] ^ state[i][1] ; Tm = xtime(Tm);  state[i][0] ^= Tm ^ Tmp ;
-            Tm  = state[i][1] ^ state[i][2] ; Tm = xtime(Tm);  state[i][1] ^= Tm ^ Tmp ;
-            Tm  = state[i][2] ^ state[i][3] ; Tm = xtime(Tm);  state[i][2] ^= Tm ^ Tmp ;
-            Tm  = state[i][3] ^ t ;              Tm = xtime(Tm);  state[i][3] ^= Tm ^ Tmp ;
+//        ubyte i;
+        ubyte Tmp, Tm; //, t;
+        static foreach(i; 0..4) {
+            {
+                const t = state[i][0];
+                Tmp = state[i][0] ^ state[i][1] ^ state[i][2] ^ state[i][3] ;
+                Tm  = state[i][0] ^ state[i][1] ; Tm = xtime(Tm);  state[i][0] ^= Tm ^ Tmp ;
+                Tm  = state[i][1] ^ state[i][2] ; Tm = xtime(Tm);  state[i][1] ^= Tm ^ Tmp ;
+                Tm  = state[i][2] ^ state[i][3] ; Tm = xtime(Tm);  state[i][2] ^= Tm ^ Tmp ;
+                Tm  = state[i][3] ^ t ;              Tm = xtime(Tm);  state[i][3] ^= Tm ^ Tmp ;
+            }
         }
     }
 
@@ -397,19 +366,22 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 // The method used to multiply may be difficult to understand for the inexperienced.
 // Please use the references to gain more information.
     static void InvMixColumns(ref state_t state) {
-        int i;
-        ubyte a, b, c, d;
-        for (i = 0; i < 4; ++i)
-        {
-            a = state[i][0];
-            b = state[i][1];
-            c = state[i][2];
-            d = state[i][3];
+        // int i;
+        // ubyte a, b, c, d;
+        static foreach(i; 0..4) {
+        // for (i = 0; i < 4; ++i)
+        // {
+            {
+                const a = state[i][0];
+                const b = state[i][1];
+                const c = state[i][2];
+                const d = state[i][3];
 
-            state[i][0] = Multiply(a, 0x0e) ^ Multiply(b, 0x0b) ^ Multiply(c, 0x0d) ^ Multiply(d, 0x09);
-            state[i][1] = Multiply(a, 0x09) ^ Multiply(b, 0x0e) ^ Multiply(c, 0x0b) ^ Multiply(d, 0x0d);
-            state[i][2] = Multiply(a, 0x0d) ^ Multiply(b, 0x09) ^ Multiply(c, 0x0e) ^ Multiply(d, 0x0b);
-            state[i][3] = Multiply(a, 0x0b) ^ Multiply(b, 0x0d) ^ Multiply(c, 0x09) ^ Multiply(d, 0x0e);
+                state[i][0] = Multiply(a, 0x0e) ^ Multiply(b, 0x0b) ^ Multiply(c, 0x0d) ^ Multiply(d, 0x09);
+                state[i][1] = Multiply(a, 0x09) ^ Multiply(b, 0x0e) ^ Multiply(c, 0x0b) ^ Multiply(d, 0x0d);
+                state[i][2] = Multiply(a, 0x0d) ^ Multiply(b, 0x09) ^ Multiply(c, 0x0e) ^ Multiply(d, 0x0b);
+                state[i][3] = Multiply(a, 0x0b) ^ Multiply(b, 0x0d) ^ Multiply(c, 0x09) ^ Multiply(d, 0x0e);
+            }
         }
     }
 
@@ -417,11 +389,13 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 // The SubBytes Function Substitutes the values in the
 // state matrix with values in an S-box.
     static void InvSubBytes(ref state_t state) {
-        ubyte i, j;
-        for (i = 0; i < 4; ++i)
-        {
-            for (j = 0; j < 4; ++j)
-            {
+        // ubyte i, j;
+        static foreach(i; 0..4) {
+            static foreach(j; 0..4) {
+        // for (i = 0; i < 4; ++i)
+        // {
+        //     for (j = 0; j < 4; ++j)
+        //     {
                 state[j][i] = rsbox[state[j][i]];
             }
         }
@@ -519,9 +493,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 
     static void XorWithIv(ubyte[] buf, ref const(ubyte[AES_BLOCKLEN])  Iv) {
-        ubyte i;
-        for (i = 0; i < AES_BLOCKLEN; ++i) // The block in AES is always 128bit no matter the key size
-        {
+        static foreach(i; 0..AES_BLOCKLEN) {
             buf[i] ^= Iv[i];
         }
     }
@@ -529,8 +501,9 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     static void AES_CBC_encrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
         size_t i;
         auto Iv = ctx.Iv;
-        for (i = 0; i < length; i += AES_BLOCKLEN)
-        {
+        while(buf.length) {
+        // for (i = 0; i < length; i += AES_BLOCKLEN)
+        // {
             XorWithIv(buf, Iv);
             Cipher(State(buf), ctx.RoundKey);
             Iv = buf[0..AES_BLOCKLEN];
@@ -544,8 +517,9 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     static void AES_CBC_decrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
         size_t i;
         ubyte[AES_BLOCKLEN] storeNextIv;
-        for (i = 0; i < length; i += AES_BLOCKLEN)
-        {
+        while(buf.length) {
+        // for (i = 0; i < length; i += AES_BLOCKLEN)
+        // {
             storeNextIv=buf[0..AES_BLOCKLEN];
 //            memcpy(storeNextIv, buf, AES_BLOCKLEN);
             InvCipher(State(buf), ctx.RoundKey);
