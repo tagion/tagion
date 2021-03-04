@@ -251,8 +251,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         }
     }
 
-    static void AES_init_ctx(ref AES_ctx ctx, ref const(ubyte[KEY_SIZE]) key) {
-        KeyExpansion(ctx.RoundKey, key);
+
+    AES_ctx _ctx;
+    void AES_init_ctx(ref const(ubyte[KEY_SIZE]) key) {
+        KeyExpansion(_ctx.RoundKey, key);
     }
 
     static if (CBC_CTR) {
@@ -614,12 +616,13 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             // print the resulting cipher as 4 x 16 byte strings
             printf("ciphertext:\n");
 
-            AES_ctx ctx;
-            AES_init_ctx(ctx, key);
+            //AES_ctx ctx;
+            Tiny_AES aes;
+            aes.AES_init_ctx(key);
 
             for (i = 0; i < 4; ++i)
             {
-                AES_ECB_encrypt(ctx, plain_text[i * 16..$]);
+                AES_ECB_encrypt(aes._ctx, plain_text[i * 16..$]);
                 phex(plain_text[i * 16..$]);
             }
             printf("\n");
@@ -644,10 +647,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             }
 
             ubyte[] indata  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
-            AES_ctx ctx;
-
-            AES_init_ctx(ctx, key);
-            AES_ECB_encrypt(ctx, indata);
+//            AES_ctx ctx;
+            Tiny_AES aes;
+            aes.AES_init_ctx(key);
+            AES_ECB_encrypt(aes._ctx, indata);
 
             printf("ECB encrypt: ");
 
@@ -847,10 +850,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 // #endif
 
             ubyte[] outdata   = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
-            AES_ctx ctx;
-
-            AES_init_ctx(ctx, key);
-            AES_ECB_decrypt(ctx, indata);
+            //AES_ctx ctx;
+            Tiny_AES aes;
+            aes.AES_init_ctx(key);
+            AES_ECB_decrypt(aes._ctx, indata);
 
             printf("ECB decrypt: ");
 
