@@ -60,7 +60,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         }
 
         struct Context {
-            ubyte[keyExpSize] RoundKey;
+            ubyte[keyExpSize] round_key;
             static if (CBC_CTR) {
                 ubyte[BLOCKLEN] Iv;
             }
@@ -153,7 +153,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             ubyte[4] tempa; // Used for the column/row operations
             foreach(i; 0..Nk) {
                 static foreach(j; 0..4) {
-                    ctx.RoundKey[(i * 4) + j] = Key[(i * 4) + j];
+                    ctx.round_key[(i * 4) + j] = Key[(i * 4) + j];
                 }
             }
             // All other round keys are found from the previous round keys.
@@ -161,7 +161,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 static foreach(j; 0..4) {
                     {
                         const k = (i - 1) * 4;
-                        tempa[j]=ctx.RoundKey[k + j];
+                        tempa[j]=ctx.round_key[k + j];
                     }
                 }
 
@@ -200,7 +200,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 {
                     const j = i * 4; const k=(i - Nk) * 4;
                     static foreach(l; 0..4) {
-                        ctx.RoundKey[j + l] = ctx.RoundKey[k + l] ^ tempa[l];
+                        ctx.round_key[j + l] = ctx.round_key[k + l] ^ tempa[l];
                     }
                 }
             }
@@ -217,9 +217,9 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 keyExpansion(key);
                 ctx.Iv=iv;
             }
-            void ctx_set_iv(ref const(ubyte[BLOCKLEN]) iv) {
-                ctx.Iv=iv;
-            }
+            // void ctx_set_iv(ref const(ubyte[BLOCKLEN]) iv) {
+            //     ctx.Iv=iv;
+            // }
         }
 
         private {
@@ -228,7 +228,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             void AddRoundKey(ubyte round, ref state_t state) const {
                 static foreach(i; 0..4) {
                     static foreach(j; 0..4) {
-                        state[i][j] ^= ctx.RoundKey[(round * Nb * 4) + (i * Nb) + j];
+                        state[i][j] ^= ctx.round_key[(round * Nb * 4) + (i * Nb) + j];
                     }
                 }
             }
