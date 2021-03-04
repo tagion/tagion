@@ -409,7 +409,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 }
 
             }
-            static void XorWithIv(ubyte[] buf, ref const(ubyte[BLOCKLEN])  Iv) {
+            static void xorWithIv(ubyte[] buf, ref const(ubyte[BLOCKLEN])  Iv) {
                 static foreach(i; 0..BLOCKLEN) {
                     buf[i] ^= Iv[i];
                 }
@@ -435,7 +435,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         void CBC_encrypt_buffer(ubyte[] buf) {
             auto Iv = ctx.Iv;
             while(buf.length) {
-                XorWithIv(buf, Iv);
+                xorWithIv(buf, Iv);
                 cipher(State(buf));
                 Iv = buf[0..BLOCKLEN];
                 buf=buf[BLOCKLEN..$];
@@ -449,7 +449,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             while(buf.length) {
                 storeNextIv=buf[0..BLOCKLEN];
                 InvCipher(State(buf));
-                XorWithIv(buf, ctx.Iv);
+                xorWithIv(buf, ctx.Iv);
                 ctx.Iv=storeNextIv;
                 buf=buf[BLOCKLEN..$];
             }
