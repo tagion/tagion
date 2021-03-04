@@ -225,7 +225,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         private {
             // This function adds the round key to state.
             // The round key is added to the state by an XOR function.
-            void AddRoundKey(ubyte round, ref state_t state) const {
+            void addRoundKey(ubyte round, ref state_t state) const {
                 static foreach(i; 0..4) {
                     static foreach(j; 0..4) {
                         state[i][j] ^= ctx.round_key[(round * Nb * 4) + (i * Nb) + j];
@@ -367,7 +367,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 ubyte round = 0;
 
                 // Add the First round key to the state before starting the rounds.
-                AddRoundKey(0, state);
+                addRoundKey(0, state);
 
                 // There will be Nr rounds.
                 // The first Nr-1 rounds are identical.
@@ -381,17 +381,17 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                         break;
                     }
                     MixColumns(state);
-                    AddRoundKey(round, state);
+                    addRoundKey(round, state);
                 }
                 // Add round key to last round
-                AddRoundKey(Nr, state);
+                addRoundKey(Nr, state);
             }
 
             void InvCipher(ref state_t state) {
                 ubyte round = 0;
 
                 // Add the First round key to the state before starting the rounds.
-                AddRoundKey(Nr, state);
+                addRoundKey(Nr, state);
 
                 // There will be Nr rounds.
                 // The first Nr-1 rounds are identical.
@@ -401,7 +401,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 {
                     InvShiftRows(state);
                     InvSubBytes(state);
-                    AddRoundKey(round, state);
+                    addRoundKey(round, state);
                     if (round == 0) {
                         break;
                     }
