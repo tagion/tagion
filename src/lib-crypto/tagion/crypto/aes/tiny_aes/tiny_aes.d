@@ -1,3 +1,4 @@
+module tagion.crypto.aes.tiny_aes;
 /*
 
   This is an implementation of the AES algorithm, specifically ECB, CTR and CBC mode.
@@ -147,11 +148,11 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 
 // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states.
-    private void KeyExpansion(ref const(ubyte[KEY_SIZE]) Key) {
+    private void keyExpansion(ref const(ubyte[KEY_SIZE]) Key) {
         ubyte[4] tempa; // Used for the column/row operations
         foreach(i; 0..Nk) {
             static foreach(j; 0..4) {
-                _ctx.RoundKey[(i * 4) + j] = Key[(i * 4) + j];
+                ctx.RoundKey[(i * 4) + j] = Key[(i * 4) + j];
             }
         }
         // All other round keys are found from the previous round keys.
@@ -159,7 +160,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             static foreach(j; 0..4) {
                 {
                     const k = (i - 1) * 4;
-                    tempa[j]=_ctx.RoundKey[k + j];
+                    tempa[j]=ctx.RoundKey[k + j];
                 }
             }
 
@@ -198,25 +199,25 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             {
                 const j = i * 4; const k=(i - Nk) * 4;
                 static foreach(l; 0..4) {
-                    _ctx.RoundKey[j + l] = _ctx.RoundKey[k + l] ^ tempa[l];
+                    ctx.RoundKey[j + l] = ctx.RoundKey[k + l] ^ tempa[l];
                 }
             }
         }
     }
 
 
-    AES_ctx _ctx;
+    AES_ctx ctx;
     void AES_init_ctx(ref const(ubyte[KEY_SIZE]) key) {
-        KeyExpansion(key);
+        keyExpansion(key);
     }
 
     static if (CBC_CTR) {
         void AES_init_ctx_iv(ref const(ubyte[KEY_SIZE]) key, ref const(ubyte[AES_BLOCKLEN]) iv) {
-            KeyExpansion(key);
-            _ctx.Iv=iv;
+            keyExpansion(key);
+            ctx.Iv=iv;
         }
         void AES_ctx_set_iv(ref const(ubyte[AES_BLOCKLEN]) iv) {
-            _ctx.Iv=iv;
+            ctx.Iv=iv;
         }
     }
 
@@ -226,7 +227,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         void AddRoundKey(ubyte round, ref state_t state) const {
             static foreach(i; 0..4) {
                 static foreach(j; 0..4) {
-                    state[i][j] ^= _ctx.RoundKey[(round * Nb * 4) + (i * Nb) + j];
+                    state[i][j] ^= ctx.RoundKey[(round * Nb * 4) + (i * Nb) + j];
                 }
             }
         }
@@ -431,7 +432,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     }
 
     void AES_CBC_encrypt_buffer(ubyte[] buf) {
-        auto Iv = _ctx.Iv;
+        auto Iv = ctx.Iv;
         while(buf.length) {
             XorWithIv(buf, Iv);
             Cipher(State(buf));
@@ -439,7 +440,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             buf=buf[AES_BLOCKLEN..$];
         }
         /* store Iv in ctx for next call */
-        _ctx.Iv=Iv;
+        ctx.Iv=Iv;
     }
 
     void AES_CBC_decrypt_buffer(ubyte[] buf) {
@@ -447,8 +448,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         while(buf.length) {
             storeNextIv=buf[0..AES_BLOCKLEN];
             InvCipher(State(buf));
-            XorWithIv(buf, _ctx.Iv);
-            _ctx.Iv=storeNextIv;
+            XorWithIv(buf, ctx.Iv);
+            ctx.Iv=storeNextIv;
             buf=buf[AES_BLOCKLEN..$];
         }
     }
@@ -459,17 +460,17 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         size_t bi; //=AES_BLOCKLEN;
         foreach(i; 0..length) {
             if (i % AES_BLOCKLEN == 0) { //bi == AES_BLOCKLEN) { /* we need to regen xor compliment in buffer */
-                buffer[0..AES_BLOCKLEN]=_ctx.Iv;
+                buffer[0..AES_BLOCKLEN]=ctx.Iv;
                 Cipher(State(buffer));
 
                 /* Increment Iv and handle overflow */
                 foreach_reverse(j; 0..AES_BLOCKLEN) {
                     /* inc will overflow */
-                    if (_ctx.Iv[j] == 255) {
-                        _ctx.Iv[j] = 0;
+                    if (ctx.Iv[j] == 255) {
+                        ctx.Iv[j] = 0;
                         continue;
                     }
-                    _ctx.Iv[j] += 1;
+                    ctx.Iv[j] += 1;
                     break;
                 }
                 bi = 0;
