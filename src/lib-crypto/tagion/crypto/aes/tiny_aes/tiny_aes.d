@@ -264,8 +264,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             _ctx.Iv=iv;
 //            memcpy (ctx.Iv, iv, AES_BLOCKLEN);
         }
-        static void AES_ctx_set_iv(ref AES_ctx ctx, ref const(ubyte[AES_BLOCKLEN]) iv) {
-            ctx.Iv=iv;
+        void AES_ctx_set_iv(ref const(ubyte[AES_BLOCKLEN]) iv) {
+            _ctx.Iv=iv;
 //            memcpy (ctx.Iv, iv, AES_BLOCKLEN);
         }
     }
@@ -516,7 +516,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         //memcpy(ctx.Iv, Iv, AES_BLOCKLEN);
     }
 
-    static void AES_CBC_decrypt_buffer(ref AES_ctx ctx, ubyte[] buf, size_t length) {
+    void AES_CBC_decrypt_buffer(ubyte[] buf, size_t length) {
 //        size_t i;
         ubyte[AES_BLOCKLEN] storeNextIv;
         while(buf.length) {
@@ -524,10 +524,10 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         // {
             storeNextIv=buf[0..AES_BLOCKLEN];
 //            memcpy(storeNextIv, buf, AES_BLOCKLEN);
-            InvCipher(State(buf), ctx.RoundKey);
-            XorWithIv(buf, ctx.Iv);
+            InvCipher(State(buf), _ctx.RoundKey);
+            XorWithIv(buf, _ctx.Iv);
             pragma(msg, "fixme(cbr): It seems that this can be move outside the loop");
-            ctx.Iv=storeNextIv;
+            _ctx.Iv=storeNextIv;
 //            memcpy(ctx.Iv, storeNextIv, AES_BLOCKLEN);
             buf=buf[AES_BLOCKLEN..$];
         }
@@ -699,7 +699,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //            AES_ctx ctx;
             Tiny_AES aes;
             aes.AES_init_ctx_iv(key, iv);
-            AES_CBC_decrypt_buffer(aes._ctx, indata, 64);
+            aes.AES_CBC_decrypt_buffer(indata, 64);
 
             printf("CBC decrypt: ");
 
