@@ -31,6 +31,7 @@
 
 */
 
+@safe
 struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     enum KEY_SIZE=KEY_LENGTH >> 3;
     enum AES_BLOCKLEN = 16; // Block length in bytes - AES is 128b block only
@@ -85,9 +86,9 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //        @disable this();
         @trusted
         static ref state_t opCall(ubyte[] buf)
-        in {
-            assert(buf.length >= state_t.sizeof);
-        }
+            in {
+                assert(buf.length >= state_t.sizeof);
+            }
         do {
             State state;
             pragma(msg, "state_t.sizeof=", state_t.sizeof);
@@ -272,88 +273,89 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 //#endif
 
+    pure nothrow {
 // This function adds the round key to state.
 // The round key is added to the state by an XOR function.
-    void AddRoundKey(ubyte round, ref state_t state) {
-        static foreach(i; 0..4) {
-            static foreach(j; 0..4) {
-                state[i][j] ^= _ctx.RoundKey[(round * Nb * 4) + (i * Nb) + j];
+        void AddRoundKey(ubyte round, ref state_t state) const {
+            static foreach(i; 0..4) {
+                static foreach(j; 0..4) {
+                    state[i][j] ^= _ctx.RoundKey[(round * Nb * 4) + (i * Nb) + j];
+                }
             }
         }
-    }
 
 // The SubBytes Function Substitutes the values in the
 // state matrix with values in an S-box.
-    static void SubBytes(ref state_t state) {
-        static foreach(i; 0..4) {
-            static foreach(j; 0..4) {
-                state[j][i] = sbox[state[j][i]];
+        static void SubBytes(ref state_t state) {
+            static foreach(i; 0..4) {
+                static foreach(j; 0..4) {
+                    state[j][i] = sbox[state[j][i]];
+                }
             }
         }
-    }
 
 // The ShiftRows() function shifts the rows in the state to the left.
 // Each row is shifted with different offset.
 // Offset = Row number. So the first row is not shifted.
-    static void ShiftRows(ref state_t state) {
-        ubyte temp;
+        static void ShiftRows(ref state_t state) {
+            ubyte temp;
 
-        // Rotate first row 1 columns to left
-        temp           = state[0][1];
-        state[0][1] = state[1][1];
-        state[1][1] = state[2][1];
-        state[2][1] = state[3][1];
-        state[3][1] = temp;
+            // Rotate first row 1 columns to left
+            temp           = state[0][1];
+            state[0][1] = state[1][1];
+            state[1][1] = state[2][1];
+            state[2][1] = state[3][1];
+            state[3][1] = temp;
 
-        // Rotate second row 2 columns to left
-        temp           = state[0][2];
-        state[0][2] = state[2][2];
-        state[2][2] = temp;
+            // Rotate second row 2 columns to left
+            temp           = state[0][2];
+            state[0][2] = state[2][2];
+            state[2][2] = temp;
 
-        temp           = state[1][2];
-        state[1][2] = state[3][2];
-        state[3][2] = temp;
+            temp           = state[1][2];
+            state[1][2] = state[3][2];
+            state[3][2] = temp;
 
-        // Rotate third row 3 columns to left
-        temp           = state[0][3];
-        state[0][3] = state[3][3];
-        state[3][3] = state[2][3];
-        state[2][3] = state[1][3];
-        state[1][3] = temp;
-    }
+            // Rotate third row 3 columns to left
+            temp           = state[0][3];
+            state[0][3] = state[3][3];
+            state[3][3] = state[2][3];
+            state[2][3] = state[1][3];
+            state[1][3] = temp;
+        }
 
-    static ubyte xtime(ubyte x) {
-        return ((x<<1) ^ (((x>>7) & 1) * 0x1b)) & ubyte.max;
-    }
+        static ubyte xtime(ubyte x) {
+            return ((x<<1) ^ (((x>>7) & 1) * 0x1b)) & ubyte.max;
+        }
 
 // MixColumns function mixes the columns of the state matrix
-    static void MixColumns(ref state_t state) {
+        static void MixColumns(ref state_t state) {
 //        ubyte i;
-        ubyte Tmp, Tm; //, t;
-        static foreach(i; 0..4) {
-            {
-                const t = state[i][0];
-                Tmp = state[i][0] ^ state[i][1] ^ state[i][2] ^ state[i][3] ;
-                Tm  = state[i][0] ^ state[i][1] ; Tm = xtime(Tm);  state[i][0] ^= Tm ^ Tmp ;
-                Tm  = state[i][1] ^ state[i][2] ; Tm = xtime(Tm);  state[i][1] ^= Tm ^ Tmp ;
-                Tm  = state[i][2] ^ state[i][3] ; Tm = xtime(Tm);  state[i][2] ^= Tm ^ Tmp ;
-                Tm  = state[i][3] ^ t ;              Tm = xtime(Tm);  state[i][3] ^= Tm ^ Tmp ;
+            ubyte Tmp, Tm; //, t;
+            static foreach(i; 0..4) {
+                {
+                    const t = state[i][0];
+                    Tmp = state[i][0] ^ state[i][1] ^ state[i][2] ^ state[i][3] ;
+                    Tm  = state[i][0] ^ state[i][1] ; Tm = xtime(Tm);  state[i][0] ^= Tm ^ Tmp ;
+                    Tm  = state[i][1] ^ state[i][2] ; Tm = xtime(Tm);  state[i][1] ^= Tm ^ Tmp ;
+                    Tm  = state[i][2] ^ state[i][3] ; Tm = xtime(Tm);  state[i][2] ^= Tm ^ Tmp ;
+                    Tm  = state[i][3] ^ t ;              Tm = xtime(Tm);  state[i][3] ^= Tm ^ Tmp ;
+                }
             }
         }
-    }
 
 // Multiply is used to multiply numbers in the field GF(2^8)
 // Note: The last call to xtime() is unneeded, but often ends up generating a smaller binary
 //       The compiler seems to be able to vectorize the operation better this way.
 //       See https://github.com/kokke/tiny-AES-c/pull/34
 //#if MULTIPLY_AS_A_FUNCTION
-    static ubyte Multiply(ubyte x, ubyte y) {
-        return (((y & 1) * x) ^
-            ((y>>1 & 1) * xtime(x)) ^
-            ((y>>2 & 1) * xtime(xtime(x))) ^
-            ((y>>3 & 1) * xtime(xtime(xtime(x)))) ^
-            ((y>>4 & 1) * xtime(xtime(xtime(xtime(x)))))); /* this last call to xtime() can be omitted */
-    }
+        static ubyte Multiply(ubyte x, ubyte y) {
+            return (((y & 1) * x) ^
+                ((y>>1 & 1) * xtime(x)) ^
+                ((y>>2 & 1) * xtime(xtime(x))) ^
+                ((y>>3 & 1) * xtime(xtime(xtime(x)))) ^
+                ((y>>4 & 1) * xtime(xtime(xtime(xtime(x)))))); /* this last call to xtime() can be omitted */
+        }
 
 //#if (defined(CBC) && CBC == 1) || (defined(ECB) && ECB == 1)
 /*
@@ -367,117 +369,124 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 // MixColumns function mixes the columns of the state matrix.
 // The method used to multiply may be difficult to understand for the inexperienced.
 // Please use the references to gain more information.
-    static void InvMixColumns(ref state_t state) {
-        // int i;
-        // ubyte a, b, c, d;
-        static foreach(i; 0..4) {
-        // for (i = 0; i < 4; ++i)
-        // {
-            {
-                const a = state[i][0];
-                const b = state[i][1];
-                const c = state[i][2];
-                const d = state[i][3];
+        static void InvMixColumns(ref state_t state) {
+            // int i;
+            // ubyte a, b, c, d;
+            static foreach(i; 0..4) {
+                // for (i = 0; i < 4; ++i)
+                // {
+                {
+                    const a = state[i][0];
+                    const b = state[i][1];
+                    const c = state[i][2];
+                    const d = state[i][3];
 
-                state[i][0] = Multiply(a, 0x0e) ^ Multiply(b, 0x0b) ^ Multiply(c, 0x0d) ^ Multiply(d, 0x09);
-                state[i][1] = Multiply(a, 0x09) ^ Multiply(b, 0x0e) ^ Multiply(c, 0x0b) ^ Multiply(d, 0x0d);
-                state[i][2] = Multiply(a, 0x0d) ^ Multiply(b, 0x09) ^ Multiply(c, 0x0e) ^ Multiply(d, 0x0b);
-                state[i][3] = Multiply(a, 0x0b) ^ Multiply(b, 0x0d) ^ Multiply(c, 0x09) ^ Multiply(d, 0x0e);
+                    state[i][0] = Multiply(a, 0x0e) ^ Multiply(b, 0x0b) ^ Multiply(c, 0x0d) ^ Multiply(d, 0x09);
+                    state[i][1] = Multiply(a, 0x09) ^ Multiply(b, 0x0e) ^ Multiply(c, 0x0b) ^ Multiply(d, 0x0d);
+                    state[i][2] = Multiply(a, 0x0d) ^ Multiply(b, 0x09) ^ Multiply(c, 0x0e) ^ Multiply(d, 0x0b);
+                    state[i][3] = Multiply(a, 0x0b) ^ Multiply(b, 0x0d) ^ Multiply(c, 0x09) ^ Multiply(d, 0x0e);
+                }
             }
         }
-    }
 
 
 // The SubBytes Function Substitutes the values in the
 // state matrix with values in an S-box.
-    static void InvSubBytes(ref state_t state) {
-        // ubyte i, j;
-        static foreach(i; 0..4) {
-            static foreach(j; 0..4) {
-        // for (i = 0; i < 4; ++i)
-        // {
-        //     for (j = 0; j < 4; ++j)
-        //     {
-                state[j][i] = rsbox[state[j][i]];
+        static void InvSubBytes(ref state_t state) {
+            // ubyte i, j;
+            static foreach(i; 0..4) {
+                static foreach(j; 0..4) {
+                    // for (i = 0; i < 4; ++i)
+                    // {
+                    //     for (j = 0; j < 4; ++j)
+                    //     {
+                    state[j][i] = rsbox[state[j][i]];
+                }
             }
         }
-    }
 
-    static void InvShiftRows(ref state_t state) {
-        ubyte temp;
+        static void InvShiftRows(ref state_t state) {
+            ubyte temp;
 
-        // Rotate first row 1 columns to right
-        temp = state[3][1];
-        state[3][1] = state[2][1];
-        state[2][1] = state[1][1];
-        state[1][1] = state[0][1];
-        state[0][1] = temp;
+            // Rotate first row 1 columns to right
+            temp = state[3][1];
+            state[3][1] = state[2][1];
+            state[2][1] = state[1][1];
+            state[1][1] = state[0][1];
+            state[0][1] = temp;
 
-        // Rotate second row 2 columns to right
-        temp = state[0][2];
-        state[0][2] = state[2][2];
-        state[2][2] = temp;
+            // Rotate second row 2 columns to right
+            temp = state[0][2];
+            state[0][2] = state[2][2];
+            state[2][2] = temp;
 
-        temp = state[1][2];
-        state[1][2] = state[3][2];
-        state[3][2] = temp;
+            temp = state[1][2];
+            state[1][2] = state[3][2];
+            state[3][2] = temp;
 
-        // Rotate third row 3 columns to right
-        temp = state[0][3];
-        state[0][3] = state[1][3];
-        state[1][3] = state[2][3];
-        state[2][3] = state[3][3];
-        state[3][3] = temp;
-    }
+            // Rotate third row 3 columns to right
+            temp = state[0][3];
+            state[0][3] = state[1][3];
+            state[1][3] = state[2][3];
+            state[2][3] = state[3][3];
+            state[3][3] = temp;
+        }
 
 // Cipher is the main function that encrypts the PlainText.
-    void Cipher(ref state_t state) {
-        ubyte round = 0;
+        void Cipher(ref state_t state) {
+            ubyte round = 0;
 
-        // Add the First round key to the state before starting the rounds.
-        AddRoundKey(0, state);
+            // Add the First round key to the state before starting the rounds.
+            AddRoundKey(0, state);
 
-        // There will be Nr rounds.
-        // The first Nr-1 rounds are identical.
-        // These Nr rounds are executed in the loop below.
-        // Last one without MixColumns()
-        for (round = 1; ; ++round)
-        {
-            SubBytes(state);
-            ShiftRows(state);
-            if (round == Nr) {
-                break;
+            // There will be Nr rounds.
+            // The first Nr-1 rounds are identical.
+            // These Nr rounds are executed in the loop below.
+            // Last one without MixColumns()
+            for (round = 1; ; ++round)
+            {
+                SubBytes(state);
+                ShiftRows(state);
+                if (round == Nr) {
+                    break;
+                }
+                MixColumns(state);
+                AddRoundKey(round, state);
             }
-            MixColumns(state);
-            AddRoundKey(round, state);
-        }
-        // Add round key to last round
-        AddRoundKey(Nr, state);
-    }
-
-    void InvCipher(ref state_t state) {
-        ubyte round = 0;
-
-        // Add the First round key to the state before starting the rounds.
-        AddRoundKey(Nr, state);
-
-        // There will be Nr rounds.
-        // The first Nr-1 rounds are identical.
-        // These Nr rounds are executed in the loop below.
-        // Last one without InvMixColumn()
-        for (round = (Nr - 1); ; --round)
-        {
-            InvShiftRows(state);
-            InvSubBytes(state);
-            AddRoundKey(round, state);
-            if (round == 0) {
-                break;
-            }
-            InvMixColumns(state);
+            // Add round key to last round
+            AddRoundKey(Nr, state);
         }
 
-    }
+        void InvCipher(ref state_t state) {
+            ubyte round = 0;
 
+            // Add the First round key to the state before starting the rounds.
+            AddRoundKey(Nr, state);
+
+            // There will be Nr rounds.
+            // The first Nr-1 rounds are identical.
+            // These Nr rounds are executed in the loop below.
+            // Last one without InvMixColumn()
+            for (round = (Nr - 1); ; --round)
+            {
+                InvShiftRows(state);
+                InvSubBytes(state);
+                AddRoundKey(round, state);
+                if (round == 0) {
+                    break;
+                }
+                InvMixColumns(state);
+            }
+
+        }
+        static void XorWithIv(ubyte[] buf, ref const(ubyte[AES_BLOCKLEN])  Iv) {
+            static foreach(i; 0..AES_BLOCKLEN) {
+                buf[i] ^= Iv[i];
+            }
+        }
+
+
+    }
 /*****************************************************************************/
 /* Public functions:                                                         */
 /*****************************************************************************/
@@ -494,18 +503,12 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     }
 
 
-    static void XorWithIv(ubyte[] buf, ref const(ubyte[AES_BLOCKLEN])  Iv) {
-        static foreach(i; 0..AES_BLOCKLEN) {
-            buf[i] ^= Iv[i];
-        }
-    }
-
     void AES_CBC_encrypt_buffer(ubyte[] buf) {
         //      size_t i;
         auto Iv = _ctx.Iv;
         while(buf.length) {
-        // for (i = 0; i < length; i += AES_BLOCKLEN)
-        // {
+            // for (i = 0; i < length; i += AES_BLOCKLEN)
+            // {
             XorWithIv(buf, Iv);
             Cipher(State(buf));
             Iv = buf[0..AES_BLOCKLEN];
@@ -520,8 +523,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //        size_t i;
         ubyte[AES_BLOCKLEN] storeNextIv;
         while(buf.length) {
-        // for (i = 0; i < length; i += AES_BLOCKLEN)
-        // {
+            // for (i = 0; i < length; i += AES_BLOCKLEN)
+            // {
             storeNextIv=buf[0..AES_BLOCKLEN];
 //            memcpy(storeNextIv, buf, AES_BLOCKLEN);
             InvCipher(State(buf));
@@ -547,8 +550,8 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
                 /* Increment Iv and handle overflow */
                 foreach_reverse(j; 0..AES_BLOCKLEN) {
-                // for (bi = (AES_BLOCKLEN - 1); bi >= 0; --bi)
-                // {
+                    // for (bi = (AES_BLOCKLEN - 1); bi >= 0; --bi)
+                    // {
                     /* inc will overflow */
                     if (_ctx.Iv[j] == 255) {
                         _ctx.Iv[j] = 0;
@@ -587,45 +590,45 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 //        static void test_encrypt_ecb_verbose(void)
         static if (KEY_LENGTH is 128) {{
-         // test_encrypt_ecb_verbose
-            // Example of more verbose verification
+                // test_encrypt_ecb_verbose
+                // Example of more verbose verification
 
-            ubyte i;
+                ubyte i;
 
-            // 128bit key
-            ubyte[KEY_SIZE] key = [ 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c ];
-            // 512bit text
-            ubyte[64] plain_text  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
-                0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
-                0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
-                0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
+                // 128bit key
+                ubyte[KEY_SIZE] key = [ 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c ];
+                // 512bit text
+                ubyte[64] plain_text  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                    0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                    0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+                    0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
 
-            // print text to encrypt, key and IV
-            printf("ECB encrypt verbose:\n\n");
-            printf("plain text:\n");
-            for (i = 0; i < 4; ++i)
-            {
-                phex(plain_text[i * 16..$]);
-            }
-            printf("\n");
+                // print text to encrypt, key and IV
+                writeln("ECB encrypt verbose:\n");
+                writeln("plain text:\n");
+                for (i = 0; i < 4; ++i)
+                {
+                    phex(plain_text[i * 16..$]);
+                }
+                writeln();
 
-            printf("key:\n");
-            phex(key);
-            printf("\n");
+                write("key:");
+                phex(key);
+                writeln();
 
-            // print the resulting cipher as 4 x 16 byte strings
-            printf("ciphertext:\n");
+                // print the resulting cipher as 4 x 16 byte strings
+                writeln("ciphertext:");
 
-            //AES_ctx ctx;
-            Tiny_AES aes;
-            aes.AES_init_ctx(key);
+                //AES_ctx ctx;
+                Tiny_AES aes;
+                aes.AES_init_ctx(key);
 
-            for (i = 0; i < 4; ++i)
-            {
-                aes.AES_ECB_encrypt(plain_text[i * 16..$]);
-                phex(plain_text[i * 16..$]);
-            }
-            printf("\n");
+                for (i = 0; i < 4; ++i)
+                {
+                    aes.AES_ECB_encrypt(plain_text[i * 16..$]);
+                    phex(plain_text[i * 16..$]);
+                }
+                writeln();
             }}
 
 
@@ -638,7 +641,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             }
             else static if (KEY_LENGTH is 192) {
                 ubyte[KEY_SIZE] key = [ 0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10, 0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
-                                0x62, 0xf8, 0xea, 0xd2, 0x52, 0x2c, 0x6b, 0x7b ];
+                    0x62, 0xf8, 0xea, 0xd2, 0x52, 0x2c, 0x6b, 0x7b ];
                 ubyte[] outdata = [ 0xbd, 0x33, 0x4f, 0x1d, 0x6e, 0x45, 0xf2, 0x5f, 0xf7, 0x12, 0xa2, 0x14, 0x57, 0x1f, 0xa5, 0xcc ];
             }
             else static if (KEY_LENGTH is 128) {
@@ -652,7 +655,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             aes.AES_init_ctx(key);
             aes.AES_ECB_encrypt(indata);
 
-            printf("ECB encrypt: ");
+            writeln("ECB encrypt: ");
 
             assert(outdata == indata);
             // if (0 == memcmp((char*) outdata, (char*) indata, 16)) {
@@ -701,7 +704,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             aes.AES_init_ctx_iv(key, iv);
             aes.AES_CBC_decrypt_buffer(indata);
 
-            printf("CBC decrypt: ");
+            writeln("CBC decrypt: ");
 
             assert(outdata == indata);
 
@@ -753,7 +756,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             aes.AES_init_ctx_iv(key, iv);
             aes.AES_CBC_encrypt_buffer(indata);
 
-            printf("CBC encrypt: ");
+            writeln("CBC encrypt: ");
 
             assert(outdata == indata);
             //     printf("SUCCESS!\n");
@@ -778,11 +781,11 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             static if (KEY_LENGTH is 256) {
 // w#if defined(AES256)
                 ubyte[KEY_SIZE] key = [ 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
-                                  0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7, 0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4 ];
+                    0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7, 0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4 ];
                 ubyte[64] indata  = [ 0x60, 0x1e, 0xc3, 0x13, 0x77, 0x57, 0x89, 0xa5, 0xb7, 0xa7, 0xf5, 0x04, 0xbb, 0xf3, 0xd2, 0x28,
-                                      0xf4, 0x43, 0xe3, 0xca, 0x4d, 0x62, 0xb5, 0x9a, 0xca, 0x84, 0xe9, 0x90, 0xca, 0xca, 0xf5, 0xc5,
-                                      0x2b, 0x09, 0x30, 0xda, 0xa2, 0x3d, 0xe9, 0x4c, 0xe8, 0x70, 0x17, 0xba, 0x2d, 0x84, 0x98, 0x8d,
-                                      0xdf, 0xc9, 0xc5, 0x8d, 0xb6, 0x7a, 0xad, 0xa6, 0x13, 0xc2, 0xdd, 0x08, 0x45, 0x79, 0x41, 0xa6 ];
+                    0xf4, 0x43, 0xe3, 0xca, 0x4d, 0x62, 0xb5, 0x9a, 0xca, 0x84, 0xe9, 0x90, 0xca, 0xca, 0xf5, 0xc5,
+                    0x2b, 0x09, 0x30, 0xda, 0xa2, 0x3d, 0xe9, 0x4c, 0xe8, 0x70, 0x17, 0xba, 0x2d, 0x84, 0x98, 0x8d,
+                    0xdf, 0xc9, 0xc5, 0x8d, 0xb6, 0x7a, 0xad, 0xa6, 0x13, 0xc2, 0xdd, 0x08, 0x45, 0x79, 0x41, 0xa6 ];
             }
             else static if (KEY_LENGTH is 192) {
 
@@ -855,7 +858,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             aes.AES_init_ctx(key);
             aes.AES_ECB_decrypt(indata);
 
-            printf("ECB decrypt: ");
+            writeln("ECB decrypt: ");
 
             assert(outdata == indata);
             // if (0 == memcmp((char*) out, (char*) in, 16)) {
