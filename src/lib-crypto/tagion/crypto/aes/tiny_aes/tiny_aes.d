@@ -500,7 +500,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         }
     }
 
-    void AES_CBC_encrypt_buffer(ubyte[] buf, size_t length) {
+    void AES_CBC_encrypt_buffer(ubyte[] buf) {
         //      size_t i;
         auto Iv = _ctx.Iv;
         while(buf.length) {
@@ -751,7 +751,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             AES_ctx ctx;
             Tiny_AES aes;
             aes.AES_init_ctx_iv(key, iv);
-            aes.AES_CBC_encrypt_buffer(indata, 64);
+            aes.AES_CBC_encrypt_buffer(indata);
 
             printf("CBC encrypt: ");
 
