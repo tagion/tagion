@@ -31,7 +31,7 @@
 
 */
 
-@safe
+@safe @nogc
 struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
     enum KEY_SIZE=KEY_LENGTH >> 3;
     enum AES_BLOCKLEN = 16; // Block length in bytes - AES is 128b block only
@@ -273,7 +273,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 //#endif
 
-    pure nothrow {
+    private pure nothrow {
 // This function adds the round key to state.
 // The round key is added to the state by an XOR function.
         void AddRoundKey(ubyte round, ref state_t state) const {
