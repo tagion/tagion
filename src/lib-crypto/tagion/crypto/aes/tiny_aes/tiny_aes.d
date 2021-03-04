@@ -208,18 +208,18 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
             // RoundKey[(i * 4) + 2] = Key[(i * 4) + 2];
             // RoundKey[(i * 4) + 3] = Key[(i * 4) + 3];
         }
-        uint j, k;
+        uint k;
 
         // All other round keys are found from the previous round keys.
         static foreach(i; Nk..Nb * (Nr + 1)) {
         // for (i = Nk; i < Nb * (Nr + 1); ++i)
         // {
-            {
+            static foreach(j; 0..4) {
                 k = (i - 1) * 4;
-                tempa[0]=RoundKey[k + 0];
-                tempa[1]=RoundKey[k + 1];
-                tempa[2]=RoundKey[k + 2];
-                tempa[3]=RoundKey[k + 3];
+                tempa[j]=RoundKey[k + j];
+                // tempa[1]=RoundKey[k + 1];
+                // tempa[2]=RoundKey[k + 2];
+                // tempa[3]=RoundKey[k + 3];
 
             }
 
@@ -241,11 +241,11 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 // applies the S-box to each of the four bytes to produce an output word.
 
                 // Function Subword()
-                {
-                    tempa[0] = sbox[tempa[0]];
-                    tempa[1] = sbox[tempa[1]];
-                    tempa[2] = sbox[tempa[2]];
-                    tempa[3] = sbox[tempa[3]];
+                static foreach(j; 0..4) {
+                    tempa[j] = sbox[tempa[j]];
+                    // tempa[j] = sbox[tempa[1]];
+                    // tempa[j] = sbox[tempa[2]];
+                    // tempa[j] = sbox[tempa[3]];
                 }
 
                 tempa[0] = tempa[0] ^ Rcon[i/Nk];
@@ -255,20 +255,22 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 if (i % Nk == 4)
                 {
                     // Function Subword()
-                    {
-                        tempa[0] = sbox[tempa[0]];
-                        tempa[1] = sbox[tempa[1]];
-                        tempa[2] = sbox[tempa[2]];
-                        tempa[3] = sbox[tempa[3]];
+                    static foreach(j; 0..4) {
+                        tempa[j] = sbox[tempa[j]];
+                        // tempa[1] = sbox[tempa[1]];
+                        // tempa[2] = sbox[tempa[2]];
+                        // tempa[3] = sbox[tempa[3]];
                     }
                 }
             }
 //#endif
-            j = i * 4; k=(i - Nk) * 4;
-            RoundKey[j + 0] = RoundKey[k + 0] ^ tempa[0];
-            RoundKey[j + 1] = RoundKey[k + 1] ^ tempa[1];
-            RoundKey[j + 2] = RoundKey[k + 2] ^ tempa[2];
-            RoundKey[j + 3] = RoundKey[k + 3] ^ tempa[3];
+            {
+                const j = i * 4; k=(i - Nk) * 4;
+                RoundKey[j + 0] = RoundKey[k + 0] ^ tempa[0];
+                RoundKey[j + 1] = RoundKey[k + 1] ^ tempa[1];
+                RoundKey[j + 2] = RoundKey[k + 2] ^ tempa[2];
+                RoundKey[j + 3] = RoundKey[k + 3] ^ tempa[3];
+            }
         }
     }
 
