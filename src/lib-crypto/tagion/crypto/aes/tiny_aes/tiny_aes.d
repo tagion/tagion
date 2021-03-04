@@ -516,7 +516,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
         //memcpy(ctx.Iv, Iv, AES_BLOCKLEN);
     }
 
-    void AES_CBC_decrypt_buffer(ubyte[] buf, size_t length) {
+    void AES_CBC_decrypt_buffer(ubyte[] buf) {
 //        size_t i;
         ubyte[AES_BLOCKLEN] storeNextIv;
         while(buf.length) {
@@ -699,7 +699,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //            AES_ctx ctx;
             Tiny_AES aes;
             aes.AES_init_ctx_iv(key, iv);
-            aes.AES_CBC_decrypt_buffer(indata, 64);
+            aes.AES_CBC_decrypt_buffer(indata);
 
             printf("CBC decrypt: ");
 
