@@ -231,21 +231,22 @@ class StdSecureNet : StdHashNet, SecureNet  {
         scramble(seed);
         // CBR: Note AES need to be change to beable to handle const keys
         auto aes_key=calcHash(seed).dup;
-
+//        ubyte[AES.BLOCK_SIZE] aes_iv;
         scramble(seed);
+        auto aes_iv=calcHash(seed)[4..4+AES.BLOCK_SIZE].dup;
 
         // Encrypt private key
         auto encrypted_privkey=new ubyte[privkey.length];
-        AES.encrypt(aes_key, privkey, encrypted_privkey);
+        AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
 
-        AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+        AES.encrypt(calcHash(seed), aes_iv, encrypted_privkey, privkey);
         scramble(seed);
 
-        AES.encrypt(aes_key, encrypted_privkey, privkey);
+        AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
 
-        AES.encrypt(aes_key, privkey, seed);
+        AES.encrypt(aes_key, aes_iv, privkey, seed);
 
-        AES.encrypt(aes_key, encrypted_privkey, privkey);
+        AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
 
         @safe
             void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
@@ -257,10 +258,12 @@ class StdSecureNet : StdHashNet, SecureNet  {
             scope(exit) {
                 auto seed=new ubyte[32];
                 scramble(seed, aes_key);
-                AES.encrypt(aes_key, privkey, encrypted_privkey);
-                AES.encrypt(calcHash(seed), encrypted_privkey, privkey);
+                scramble(aes_key, seed);
+                scramble(aes_iv);
+                AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
+                AES.encrypt(calcHash(seed), aes_iv, encrypted_privkey, privkey);
             }
-            AES.decrypt(aes_key, encrypted_privkey, privkey);
+            AES.decrypt(aes_key, aes_iv, encrypted_privkey, privkey);
             dg(privkey);
         }
 
