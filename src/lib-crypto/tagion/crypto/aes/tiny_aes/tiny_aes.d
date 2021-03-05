@@ -110,7 +110,10 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode=Mode.CBC) {
 // The lookup-tables are marked const so they can be placed in read-only storage instead of RAM
 // The numbers below can be computed dynamically trading ROM for RAM -
 // This can be useful in (embedded) bootloader applications, where ROM is often limited.
-        enum sbox = cast(ubyte[256])[
+        shared static immutable(ubyte[256]) sbox;
+        shared static immutable(ubyte[256]) rsbox;
+        shared static this() {
+            sbox = [
             //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
             0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
             0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -128,17 +131,16 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode=Mode.CBC) {
             0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
             0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
             0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 ];
-
-        private static immutable(ubyte[256]) _reverse_sbox() {
-            ubyte[256] result;
-            static foreach(i; 0..256) {
-                result[sbox[i]]=i;
+            static immutable(ubyte[256]) _reverse_sbox() {
+                ubyte[256] result;
+                static foreach(i; 0..256) {
+                    result[sbox[i]]=i;
+                }
+                return result;
             }
-            return result;
+            // Generate the reverse sbox
+            rsbox = _reverse_sbox();
         }
-        // Generate the reverse sbox
-        enum rsbox = _reverse_sbox();
-
 
 // The round constant word array, Rcon[i], contains the values given by
 // x to the power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
