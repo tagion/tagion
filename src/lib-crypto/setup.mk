@@ -16,4 +16,11 @@ LIBS+=$(LIBSECP256K1)
 LDCFLAGS+=$(LDCFLAGS_GMP)
 LDCFLAGS+=$(LDCFLAGS_CRYPT)
 
-include dstep_setup.mk
+-include dstep_setup.mk
+
+ifdef OPENSSL_AES
+SOURCEFLAGS+=-a -not -path "*/tiny_aes/*"
+else
+SOURCEFLAGS+=-a -not -path "*/openssl_aes/*"
+DCFLAGS+=$(DVERSION)=TINY_AES
+endif

@@ -1,4 +1,4 @@
-module tagion.crypto.aes.tiny_aes;
+module tagion.crypto.aes.tiny_aes.tiny_aes;
 /*
 
   This is an implementation of the AES algorithm, specifically ECB, CTR and CBC mode.
@@ -34,8 +34,16 @@ module tagion.crypto.aes.tiny_aes;
 
 //version = PRINT;
 
+enum Mode {
+    ECB, /// mode: Electronic Code Book mode
+    CBC, /// mode: Cipher Block Chaining mode
+    CFB, /// mode: Cipher FeedBack mode
+//    OFB, /// mode: Output FeedBack mode
+    CTR  /// mode: Counter mode
+}
+
 @safe @nogc
-struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
+struct Tiny_AES(int KEY_LENGTH, Mode mode=CBC) {
     pure nothrow {
         enum KEY_SIZE=KEY_LENGTH >> 3;
         enum BLOCKLEN = 16; // Block length in bytes - AES is 128b block only
@@ -61,7 +69,7 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
         struct Context {
             ubyte[keyExpSize] round_key;
-            static if (CBC_CTR) {
+            static if (mode !is Mode.ECB) {
                 ubyte[BLOCKLEN] Iv;
             }
         }
@@ -208,18 +216,20 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
 
         Context ctx;
-        this(ref const(ubyte[KEY_SIZE]) key) {
-            keyExpansion(key);
+        static if (mode is Mode.ECB) {
+            this(ref const(ubyte[KEY_SIZE]) key) {
+                keyExpansion(key);
+            }
         }
-
-        static if (CBC_CTR) {
+        else {
             this(ref const(ubyte[KEY_SIZE]) key, ref const(ubyte[BLOCKLEN]) iv) {
                 keyExpansion(key);
                 ctx.Iv=iv;
             }
-            // void ctx_set_iv(ref const(ubyte[BLOCKLEN]) iv) {
-            //     ctx.Iv=iv;
-            // }
+
+            void iv(ref const(ubyte[BLOCKLEN]) iv) {
+                ctx.Iv=iv;
+            }
         }
 
         private {
@@ -422,119 +432,159 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 /*****************************************************************************/
 
 
-        void ECB_encrypt_block(ubyte[] buf) {
-            // The next function call encrypts the PlainText with the Key using AES algorithm.
-            cipher(State(buf));
-        }
-
-        void ECB_decrypt_block(ubyte[] buf) {
-            // The next function call decrypts the PlainText with the Key using AES algorithm.
-            InvCipher(State(buf));
-        }
-
-        void CBC_encrypt(ubyte[] buf) {
-            auto Iv = ctx.Iv;
-            while(buf.length) {
-                xorWithIv(buf, Iv);
-                cipher(State(buf));
-                Iv = buf[0..BLOCKLEN];
-                buf=buf[BLOCKLEN..$];
+//        version(unittest) {
+        static if (mode is Mode.ECB) {
+            void encrypt(ubyte[] buf) {
+                // The next function call encrypts the PlainText with the Key using AES algorithm.
+                while (buf.length) {
+                    cipher(State(buf));
+                    buf=buf[BLOCKLEN..$];
+                }
             }
-            /* store Iv in ctx for next call */
-            ctx.Iv=Iv;
+
+            void decrypt(ubyte[] buf) {
+                // The next function call decrypts the PlainText with the Key using AES algorithm.
+                while (buf.length) {
+                    InvCipher(State(buf));
+                    buf=buf[BLOCKLEN..$];
+                }
+            }
         }
 
-        void CBC_decrypt(ubyte[] buf) {
-            ubyte[BLOCKLEN] storeNextIv;
-            while(buf.length) {
-                storeNextIv=buf[0..BLOCKLEN];
-                InvCipher(State(buf));
-                xorWithIv(buf, ctx.Iv);
-                ctx.Iv=storeNextIv;
-                buf=buf[BLOCKLEN..$];
+        static if (mode is Mode.CBC) {
+            void encrypt(ubyte[] buf) {
+                auto Iv = ctx.Iv;
+                while(buf.length) {
+                    xorWithIv(buf, Iv);
+                    cipher(State(buf));
+                    Iv = buf[0..BLOCKLEN];
+                    buf=buf[BLOCKLEN..$];
+                }
+                /* store Iv in ctx for next call */
+                ctx.Iv=Iv;
+            }
+
+            void decrypt(ubyte[] buf) {
+                ubyte[BLOCKLEN] storeNextIv;
+                while(buf.length) {
+                    storeNextIv=buf[0..BLOCKLEN];
+                    InvCipher(State(buf));
+                    xorWithIv(buf, ctx.Iv);
+                    ctx.Iv=storeNextIv;
+                    buf=buf[BLOCKLEN..$];
+                }
+            }
+        }
+
+        static if (mode is Mode.CFB) {
+            void encrypt(ubyte[] buf) {
+                auto storeNextIv=ctx.Iv;
+                while (buf.length) {
+                    cipher(State(storeNextIv));
+                    xorWithIv(buf, storeNextIv);
+                    storeNextIv=buf[0..BLOCKLEN];
+                    buf=buf[BLOCKLEN..$];
+                }
+            }
+
+            void decrypt(ubyte[] buf) {
+                auto storeNextIv=ctx.Iv;
+                while (buf.length) {
+                    cipher(State(storeNextIv));
+                    const xor=storeNextIv;
+                    storeNextIv=buf[0..BLOCKLEN];
+                    xorWithIv(buf, xor);
+                    buf=buf[BLOCKLEN..$];
+                }
             }
         }
 
         /* Symmetrical operation: same function for encrypting as for decrypting. Note any IV/nonce should never be reused with the same key */
-        void CTR_xcrypt(ubyte[] buf) {
-            ubyte[BLOCKLEN] buffer;
-            size_t bi; //=BLOCKLEN;
-            foreach(i; 0..buf.length) {
-                if (i % BLOCKLEN == 0) { //bi == BLOCKLEN) { /* we need to regen xor compliment in buffer */
-                    buffer[0..BLOCKLEN]=ctx.Iv;
-                    cipher(State(buffer));
+        static if (mode is Mode.CTR) {
+            alias encrypt=xcrypt;
+            alias decrypt=xcrypt;
+            void xcrypt(ubyte[] buf) {
+                ubyte[BLOCKLEN] buffer;
+                size_t bi; //=BLOCKLEN;
+                foreach(i; 0..buf.length) {
+                    if (i % BLOCKLEN == 0) { //bi == BLOCKLEN) { /* we need to regen xor compliment in buffer */
+                        buffer[0..BLOCKLEN]=ctx.Iv;
+                        cipher(State(buffer));
 
-                    /* Increment Iv and handle overflow */
-                    foreach_reverse(j; 0..BLOCKLEN) {
-                        /* inc will overflow */
-                        if (ctx.Iv[j] == 255) {
-                            ctx.Iv[j] = 0;
-                            continue;
+                        /* Increment Iv and handle overflow */
+                        foreach_reverse(j; 0..BLOCKLEN) {
+                            /* inc will overflow */
+                            if (ctx.Iv[j] == 255) {
+                                ctx.Iv[j] = 0;
+                                continue;
+                            }
+                            ctx.Iv[j] += 1;
+                            break;
                         }
-                        ctx.Iv[j] += 1;
-                        break;
+                        bi = 0;
                     }
-                    bi = 0;
-                }
 
-                buf[i] ^= buffer[bi];
-                bi++;
+                    buf[i] ^= buffer[bi];
+                    bi++;
+                }
+            }
+        }
+
+    }
+    unittest {
+        version(PRINT) import std.stdio;
+        version(PRINT) writefln("Start unittest %s %s", KEY_LENGTH, mode);
+        // prints string as hex
+        static void phex(ubyte[] str)
+        {
+            version(PRINT) {
+                ubyte len = KEY_SIZE;
+                ubyte i;
+                for (i = 0; i < len; ++i)
+                    writef("%.2x", str[i]);
+                writeln;
+            }
+        }
+
+        version(PRINT) static if (mode is Mode.ECB && KEY_LENGTH is 128) {
+            {
+                // Example of more verbose verification
+
+                // 128bit key
+                ubyte[KEY_SIZE] key = [ 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c ];
+                // 512bit text
+                ubyte[64] plain_text  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                    0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                    0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+                    0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
+
+                // print text to encrypt, key and IV
+                writeln("ECB encrypt verbose:\n");
+                writeln("plain text:\n");
+                foreach(i; 0..4) {
+                    phex(plain_text[i * 16..$]);
+                }
+                writeln();
+
+                write("key:");
+                phex(key);
+                writeln();
+
+                // print the resulting cipher as 4 x 16 byte strings
+                writeln("ciphertext:");
+                //ctx ctx;
+                auto aes=Tiny_AES(key);
+
+                foreach(i; 0..4) {
+                    aes.encrypt(plain_text[i * 16..$]);
+                    phex(plain_text[i * 16..$]);
+                }
+                writeln();
             }
         }
 
 
-        unittest {
-            version(PRINT) import std.stdio;
-            version(PRINT) writefln("Start unittest %s", KEY_LENGTH);
-            // prints string as hex
-            static void phex(ubyte[] str)
-            {
-                version(PRINT) {
-                    ubyte len = KEY_SIZE;
-                    ubyte i;
-                    for (i = 0; i < len; ++i)
-                        writef("%.2x", str[i]);
-                    writeln;
-                }
-            }
-
-            version(PRINT) static if (KEY_LENGTH is 128) {{
-                    // Example of more verbose verification
-
-                    // 128bit key
-                    ubyte[KEY_SIZE] key = [ 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c ];
-                    // 512bit text
-                    ubyte[64] plain_text  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
-                        0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
-                        0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
-                        0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
-
-                    // print text to encrypt, key and IV
-                    writeln("ECB encrypt verbose:\n");
-                    writeln("plain text:\n");
-                    foreach(i; 0..4) {
-                        phex(plain_text[i * 16..$]);
-                    }
-                    writeln();
-
-                    write("key:");
-                    phex(key);
-                    writeln();
-
-                    // print the resulting cipher as 4 x 16 byte strings
-                    writeln("ciphertext:");
-                    //ctx ctx;
-                    Tiny_AES aes;
-                    auto aes=Tiny_AES(key);
-
-                    foreach(i; 0..4) {
-                        aes.ECB_encrypt_block(plain_text[i * 16..$]);
-                        phex(plain_text[i * 16..$]);
-                    }
-                    writeln();
-                }
-            }
-
+        static if (mode is Mode.ECB) {
             { // test_encrypt_ecb
                 static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [ 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -554,18 +604,21 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 ubyte[] indata  = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key);
-                aes.ECB_encrypt_block(indata);
+                aes.encrypt(indata);
 
                 version(PRINT) writeln("ECB encrypt: ");
 
                 assert(outdata == indata);
             }
+        }
 
+        static if (mode is Mode.CBC) {
             { // test_decrypt_cbc
                 static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [ 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
                         0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7, 0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4 ];
-                    ubyte[] indata  = [ 0xf5, 0x8c, 0x4c, 0x04, 0xd6, 0xe5, 0xf1, 0xba, 0x77, 0x9e, 0xab, 0xfb, 0x5f, 0x7b, 0xfb, 0xd6,
+                    ubyte[] indata  = [
+                        0xf5, 0x8c, 0x4c, 0x04, 0xd6, 0xe5, 0xf1, 0xba, 0x77, 0x9e, 0xab, 0xfb, 0x5f, 0x7b, 0xfb, 0xd6,
                         0x9c, 0xfc, 0x4e, 0x96, 0x7e, 0xdb, 0x80, 0x8d, 0x67, 0x9f, 0x77, 0x7b, 0xc6, 0x70, 0x2c, 0x7d,
                         0x39, 0xf2, 0x33, 0x69, 0xa9, 0xd9, 0xba, 0xcf, 0xa5, 0x30, 0xe2, 0x63, 0x04, 0x23, 0x14, 0x61,
                         0xb2, 0xeb, 0x05, 0xe2, 0xc3, 0x9b, 0xe9, 0xfc, 0xda, 0x6c, 0x19, 0x07, 0x8c, 0x6a, 0x9d, 0x1b ];
@@ -594,33 +647,42 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key, iv);
-                aes.CBC_decrypt(indata);
+                aes.decrypt(indata);
 
                 version(PRINT) writeln("CBC decrypt: ");
 
                 assert(outdata == indata);
             }
+        }
 
+        static if (mode is Mode.CBC) {
             { // test_encrypt_cbc
                 static if (KEY_LENGTH is 256) {
-                    ubyte[KEY_SIZE] key = [ 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
+                    ubyte[KEY_SIZE] key = [
+                        0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
                         0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7, 0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4 ];
-                    ubyte[] outdata = [ 0xf5, 0x8c, 0x4c, 0x04, 0xd6, 0xe5, 0xf1, 0xba, 0x77, 0x9e, 0xab, 0xfb, 0x5f, 0x7b, 0xfb, 0xd6,
+                    ubyte[] outdata = [
+                        0xf5, 0x8c, 0x4c, 0x04, 0xd6, 0xe5, 0xf1, 0xba, 0x77, 0x9e, 0xab, 0xfb, 0x5f, 0x7b, 0xfb, 0xd6,
                         0x9c, 0xfc, 0x4e, 0x96, 0x7e, 0xdb, 0x80, 0x8d, 0x67, 0x9f, 0x77, 0x7b, 0xc6, 0x70, 0x2c, 0x7d,
                         0x39, 0xf2, 0x33, 0x69, 0xa9, 0xd9, 0xba, 0xcf, 0xa5, 0x30, 0xe2, 0x63, 0x04, 0x23, 0x14, 0x61,
                         0xb2, 0xeb, 0x05, 0xe2, 0xc3, 0x9b, 0xe9, 0xfc, 0xda, 0x6c, 0x19, 0x07, 0x8c, 0x6a, 0x9d, 0x1b ];
                 }
                 else static if (KEY_LENGTH is 192) {
 
-                    ubyte[KEY_SIZE] key = [ 0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10, 0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5, 0x62, 0xf8, 0xea, 0xd2, 0x52, 0x2c, 0x6b, 0x7b ];
-                    ubyte[] outdata = [ 0x4f, 0x02, 0x1d, 0xb2, 0x43, 0xbc, 0x63, 0x3d, 0x71, 0x78, 0x18, 0x3a, 0x9f, 0xa0, 0x71, 0xe8,
+                    ubyte[KEY_SIZE] key = [
+                        0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10, 0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
+                        0x62, 0xf8, 0xea, 0xd2, 0x52, 0x2c, 0x6b, 0x7b ];
+                    ubyte[] outdata = [
+                        0x4f, 0x02, 0x1d, 0xb2, 0x43, 0xbc, 0x63, 0x3d, 0x71, 0x78, 0x18, 0x3a, 0x9f, 0xa0, 0x71, 0xe8,
                         0xb4, 0xd9, 0xad, 0xa9, 0xad, 0x7d, 0xed, 0xf4, 0xe5, 0xe7, 0x38, 0x76, 0x3f, 0x69, 0x14, 0x5a,
                         0x57, 0x1b, 0x24, 0x20, 0x12, 0xfb, 0x7a, 0xe0, 0x7f, 0xa9, 0xba, 0xac, 0x3d, 0xf1, 0x02, 0xe0,
                         0x08, 0xb0, 0xe2, 0x79, 0x88, 0x59, 0x88, 0x81, 0xd9, 0x20, 0xa9, 0xe6, 0x4f, 0x56, 0x15, 0xcd ];
                 }
                 else static if (KEY_LENGTH is 128) {
-                    ubyte[KEY_SIZE] key = [ 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c ];
-                    ubyte[] outdata = [ 0x76, 0x49, 0xab, 0xac, 0x81, 0x19, 0xb2, 0x46, 0xce, 0xe9, 0x8e, 0x9b, 0x12, 0xe9, 0x19, 0x7d,
+                    ubyte[KEY_SIZE] key = [
+                        0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c ];
+                    ubyte[] outdata = [
+                        0x76, 0x49, 0xab, 0xac, 0x81, 0x19, 0xb2, 0x46, 0xce, 0xe9, 0x8e, 0x9b, 0x12, 0xe9, 0x19, 0x7d,
                         0x50, 0x86, 0xcb, 0x9b, 0x50, 0x72, 0x19, 0xee, 0x95, 0xdb, 0x11, 0x3a, 0x91, 0x76, 0x78, 0xb2,
                         0x73, 0xbe, 0xd6, 0xb8, 0xe3, 0xc1, 0x74, 0x3b, 0x71, 0x16, 0xe6, 0x9e, 0x22, 0x22, 0x95, 0x16,
                         0x3f, 0xf1, 0xca, 0xa1, 0x68, 0x1f, 0xac, 0x09, 0x12, 0x0e, 0xca, 0x30, 0x75, 0x86, 0xe1, 0xa7 ];
@@ -634,13 +696,15 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
 //            ctx ctx;
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key, iv);
-                aes.CBC_encrypt(indata);
+                aes.encrypt(indata);
 
                 version(PRINT) writeln("CBC encrypt: ");
 
                 assert(outdata == indata);
             }
+        }
 
+        static if (mode is Mode.CTR) {
             { // test ctr
                 static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [ 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -672,13 +736,14 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                     0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 ];
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key, iv);
-                aes.CTR_xcrypt(indata);
+                aes.xcrypt(indata);
 
 
                 assert(outdata == indata);
             }
+        }
 
-
+        static if (mode is Mode.ECB) {
             { // test_decrypt_ecb
                 static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [ 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -698,31 +763,26 @@ struct Tiny_AES(int KEY_LENGTH, bool CBC_CTR=true) {
                 ubyte[] outdata   = [ 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a ];
                 //Tiny_AES aes;
                 auto aes=Tiny_AES(key);
-                aes.ECB_decrypt_block(indata);
+                aes.decrypt(indata);
 
                 version(PRINT) writeln("ECB decrypt: ");
 
                 assert(outdata == indata);
             }
-
-
         }
     }
 }
 
 unittest {
     version(PRINT) import std.stdio;
-
-//version(unittest) {
+    import std.traits : EnumMembers;
     static foreach(key_size; [128, 192, 256]) {
-        {
-            alias AES=Tiny_AES!key_size;
-            AES aes;
-            version(PRINT) writefln("%s", AES.stringof);
+        static foreach(mode; EnumMembers!Mode) {
+            {
+                alias AES=Tiny_AES!(key_size, mode);
+                AES aes;
+                version(PRINT) writefln("%s", AES.stringof);
+            }
         }
     }
-    // alias AES192=Tiny_AES!192;
-    // alias AES128=Tiny_AES!128;
-
-//}
 }
