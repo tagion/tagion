@@ -18,6 +18,8 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 //import tagion.gossip.InterfaceNet;
 import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException, ConsensusException;
 enum minimum_nodes = 3;
+import  tagion.utils.Miscellaneous : cutHex;
+import std.exception : assumeWontThrow;
 /++
  + Calculates the majority votes
  + Params:
@@ -204,15 +206,18 @@ interface Authorising {
 
     void send(const(Pubkey) channel, const(Document) doc);
 
-    final void send(T)(const(Pubkey) channel, T pack) if(isHiBONRecord!T) {
-        send(channel, pack.toDoc);
-    }
+    // final void send(T)(const(Pubkey) channel, T pack) if(isHiBONRecord!T) {
+    //     send(channel, pack.toDoc);
+    // }
 
-    void gossip(const(Pubkey) channel_owner, const Document);
+    const(Pubkey) gossip(const(Pubkey) channel_owner, const Document);
 
-    final void gossip(T)(T pack) if(isHiBONRecord!T) {
-        gossip(channel_owner, pack.toDoc);
-    }
+    // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) if(isHiBONRecord!T) {
+    //     return gossip(channel_owner, pack.toDoc);
+    // }
+    // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) nothrow if(isHiBONRecord!T) {
+    //     return gossip(channel_owner, pack.toDoc);
+    // }
 
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
@@ -225,12 +230,15 @@ struct EventBody {
     protected alias check=Check!HashGraphConsensusException;
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
-    @Label("$doc", true)  Document payload; // Transaction
-    @Label("$m") Buffer mother; // Hash of the self-parent
+    @Label("$doc", true)  @Filter(q{!a.empty}) Document payload; // Transaction
+    @Label("$m", true) @(Filter.Initialized) Buffer mother; // Hash of the self-parent
     @Label("$f", true) @(Filter.Initialized) Buffer father; // Hash of the other-parent
     @Label("$a") int altitude;
-
     @Label("$t") sdt_t time;
+
+    bool verify() {
+        return (father is null)?true:(mother !is null);
+    }
     mixin HiBONRecord!(
         q{
             this(
@@ -399,6 +407,7 @@ struct EventPackage {
         q{
             import tagion.basic.ConsensusExceptions: ConsensusCheck=Check, EventConsensusException, ConsensusFailCode;
             protected alias consensus_check=ConsensusCheck!EventConsensusException;
+            import std.stdio;
             /++
              Used when a Event is receved from another node
              +/
@@ -410,6 +419,10 @@ struct EventPackage {
                 this(doc_epack);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
+                (() @trusted {
+                    writefln("event_body=%J", event_body);
+                })();
+//                event_body=EventBody(doc_epa
                 fingerprint=net.hashOf(event_body);
                 consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
@@ -448,12 +461,12 @@ struct Wavefront {
         state=ExchangeState.TIDAL_WAVE;
     }
 
-    this(immutable(EventPackage*)[] epacks, const ExchangeState state) pure nothrow
-    in {
-        debug writefln("state=%s", state);
-        assert(state !is ExchangeState.NONE); // || state is ExchangeState.SECOND_WAVE);
-    }
-    do {
+    this(immutable(EventPackage*)[] epacks, const ExchangeState state) pure nothrow {
+//     in {
+//         debug writefln("state=%s", state);
+// //        assert(state !is ExchangeState.NONE); // || state is ExchangeState.SECOND_WAVE);
+//     }
+//     do {
         this.epacks=epacks;
         this.state=state;
     }
@@ -470,24 +483,27 @@ struct Wavefront {
 
     this(const Document doc) {
         state=doc[stateName].get!ExchangeState;
-        if (doc.hasMember(tidesName)) {
-            auto load_tides=LoadTides(doc);
-            // (() @trusted {
-            //     writefln("this load_tides %J", load_tides);
-            // })();
-            _tides=load_tides.tides;
-        }
         immutable(EventPackage)*[] event_packages;
+        writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
         if (doc.hasMember(epacksName)) {
             const sub_doc=doc[epacksName].get!Document;
             foreach(e; sub_doc[]) {
+                writefln("event key=%s", e.key);
                 (() @trusted {
                     immutable epack=cast(immutable)(new EventPackage(e.get!Document));
                     event_packages~=epack;
                 })();
             }
+            writefln("event_packages.length=%d", event_packages.length);
         }
         epacks=event_packages;
+        if (doc.hasMember(tidesName)) {
+            auto load_tides=LoadTides(doc);
+            _tides=load_tides.tides;
+        }
+        else {
+            init_tides;
+        }
     }
 
     const(Document) toDoc() const {
@@ -517,8 +533,11 @@ struct Wavefront {
         return _tides;
     }
 
-    const(int[Pubkey]) tides() nothrow {
-        if (tides.length is 0) {
+    private void init_tides() nothrow {
+        assumeWontThrow(
+            writefln("_tides.length=%d epacks.length=%d", _tides.length, epacks.length)
+            );
+        if (_tides.length is 0) {
             foreach(ref e; epacks) {
                 if (e.pubkey in _tides) {
                     _tides[e.pubkey]=highest(_tides[e.pubkey], e.event_body.altitude);
@@ -526,9 +545,12 @@ struct Wavefront {
                 else {
                     _tides[e.pubkey]=e.event_body.altitude;
                 }
+                assumeWontThrow(
+                    writefln("_tides[%s]=%d", e.pubkey.cutHex, _tides[e.pubkey])
+                    );
             }
         }
-        return _tides;
+//        return _tides;
     }
 }
 

@@ -124,12 +124,12 @@ class Round {
         //     // First round created
         //     _decided=true;
         // }
-        debug {
-            if (node_size is 0) {
-                log.error("DDD");
-            }
-            log.error("Round node_size=%d", node_size);
-        }
+        // debug {
+        //     if (node_size is 0) {
+        //         log.error("DDD");
+        //     }
+        //     log.error("Round node_size=%d", node_size);
+        // }
 
         _previous=previous;
         if (previous) {
@@ -618,35 +618,6 @@ class Round {
         }
         return local_lowest;
     }
-
-    // Scrap the lowest Round
-//     static void _scrap(H)(H hashgraph) {
-//         // Scrap the rounds and events below this
-//         void local_scrap(Round r) @trusted {
-//             foreach(node_id, ref e; r[].enumarate) {
-//                 void scrap_event(Event e) {
-//                     if ( e ) {
-//                         scrap_event(e._mother);
-//                         if ( Event.callbacks ) {
-//                             Event.callbacks.remove(e);
-//                         }
-//                         hashgraph.eliminate(e.fingerprint);
-//                         e.disconnect;
-//                         e.destroy;
-//                     }
-//                 }
-//                 scrap_event(e._mother);
-//                 if ( e ) {
-//                     assert(e._mother is null);
-//                 }
-//             }
-//         }
-//         Round _lowest=lowest;
-// //        version(none)
-//         if ( _lowest ) {
-//             local_scrap(_lowest);
-//         }
-//     }
 
     // Scrap the lowest Round
     version(none)

@@ -45,19 +45,19 @@ class HashGraph : HashGraphI {
         Statistic!uint iterative_tree;
         Statistic!uint iterative_strong;
         HiRPC hirpc;
-        Authorising authorising;
+//        Authorising authorising;
     }
     //alias LRU!(Round, uint*) RoundCounter;
 //    alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
     // List of rounds
     package Round.Rounder _rounds;
 
-    this(const size_t min_voting_nodes, const SecureNet net, Authorising authorising) {
+    this(const size_t min_voting_nodes, const SecureNet net) {
 //        this.net=net;
         //net.hashgraph=this;
         hirpc=HiRPC(net);
         this.min_voting_nodes=min_voting_nodes;
-        this.authorising=authorising;
+//        this.authorising=authorising;
         //nodes=new Node[size];
         _rounds=Round.Rounder(this);
         add_node(net.pubkey);
@@ -89,6 +89,9 @@ class HashGraph : HashGraphI {
         return max(nodes.length, min_voting_nodes);
     }
 
+    void init_tide(const(Pubkey) send_channel) {
+        nodes[send_channel].state=ExchangeState.INIT_TIDE;
+    }
     // @safe
     // immutable(EventBody) eva(const Pubkey channel, const Buffer nonce, const sdt_t time, const int eva_altitude) {
     // const payload=EvaPayload(channel, nonce);
@@ -350,15 +353,18 @@ class HashGraph : HashGraphI {
         const(Wavefront) received_wave,
         void delegate(const(Wavefront) send_wave) @safe response) {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
-        writefln("channels=%s", nodes.byKey.map!(a => a.cutHex));
-        writefln("channel=%s", channel.cutHex);
+        // writefln("channels=%s", nodes.byKey.map!(a => a.cutHex));
+        // writefln("channel=%s", channel.cutHex);
 
         auto received_node=nodes[channel];
         //    auto received_wave=received.params!Wavefront;
         if ( Event.callbacks ) {
             Event.callbacks.receive(received_wave);
         }
-        log("%J", received_wave);
+        log("received_wave(%s <- %s)=%J", received_wave.state, received_node.state, received_wave);
+        scope(exit) {
+            log("next <- %s", received_node.state);
+        }
         const(Wavefront) wavefront_response() @safe {
             with(ExchangeState) {
                 final switch (received_wave.state) {
@@ -368,6 +374,7 @@ class HashGraph : HashGraphI {
                     break;
                 case TIDAL_WAVE: ///
                     if (received_node.state !is NONE) {
+                        received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
                     // Receive the tide wave
@@ -380,10 +387,11 @@ class HashGraph : HashGraphI {
                     return buildWavefront(FIRST_WAVE, received_wave.tides);
                 case BREAKING_WAVE:
                     log.trace("BREAKING_WAVE");
-                    received_node.state=NONE;
+                    received_node.state = NONE;
                     break;
                 case FIRST_WAVE:
                     if (received_node.state !is INIT_TIDE) {
+                        received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
                     consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
@@ -394,6 +402,7 @@ class HashGraph : HashGraphI {
                     return buildWavefront(SECOND_WAVE, received_wave.tides);
                 case SECOND_WAVE:
                     if (received_node.state !is TIDAL_WAVE) {
+                        received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
                     consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
@@ -862,12 +871,16 @@ class HashGraph : HashGraphI {
                     channel_queues[channel].write(doc);
                 }
 
+                final void send(T)(const(Pubkey) channel, T pack) if(isHiBONRecord!T) {
+                    send(channel, pack.toDoc);
+                }
+
                 const(Document) receive(const Pubkey channel) nothrow {
                     return channel_queues[channel].read;
                 }
 
-                void gossip(const(Pubkey) channel_owner, const Document doc) nothrow {
-                    const(Pubkey) selectRandomNode(const bool active=true) pure nothrow {
+                const(Pubkey) gossip(const(Pubkey) channel_owner, const Document doc) {
+                    const(Pubkey) selectRandomNode() pure nothrow {
                         const channels=channel_queues.byKey;
                         const node_index=random.value(0, channel_queues.length-1);
                         return channel_queues
@@ -877,13 +890,17 @@ class HashGraph : HashGraphI {
                             .front;
                     }
                     if (channel_queues.length > 1) {
-                        send(selectRandomNode, doc);
+			const send_channel = selectRandomNode;
+                        send(send_channel, doc);
+                        return send_channel;
                     }
+                    return Pubkey();
                 }
 
-                void gossip(T)(const(Pubkey) channel_owner, const T pack) if(isHiBONRecord!T) {
-                    gossip(channel_owner, pack.toDoc);
+                final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) if(isHiBONRecord!T) {
+                    return gossip(channel_owner, pack.toDoc);
                 }
+
 
                 bool empty(const Pubkey channel) const pure nothrow {
                     return channel_queues[channel].empty;
@@ -926,65 +943,38 @@ class HashGraph : HashGraphI {
                         const nonce=_hashgraph.hirpc.net.calcHash(buf);
                         _hashgraph.registerEvent(_hashgraph.eva_pack(time, nonce));
                     }
-
+                    uint count;
                     bool stop;
                     while (!stop) {
                         writefln("Node %s", name);
-//                        _hashgraph.registerCache;
                         (() @trusted {
                             yield;
                         })();
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
-                            const doc=received.toDoc["$msg"].get!Document["params"].get!Document;
-                            if (doc.hasMember("$events")) {
-                                const events_doc=doc["$events"].get!Document;
-
-                                writefln("events_doc.keys=%s", events_doc.keys);
-//                                writefln("events_doc[0].type=%s", events_doc[0].type);
-                                foreach(e; events_doc[]) {
-                                    writefln("e.key=%s e.type=%s e.keyPos=%s e.valuePos=%s", e.key, e.type, e.keyPos, e.valuePos);
-                                    writefln("e.isIndex=%s", e.isIndex);
-                                    import tagion.hibon.HiBONBase;
-                                    if (e.type is Type.DOCUMENT) {
-                                        const e_doc=e.get!Document;
-                                        writefln("e_doc=%s", e_doc.data);
-                                        writefln("e_doc.keys=%s", e_doc.keys);
-
-                                        foreach(e_e; e_doc[]) {
-                                            writefln("e_e.isIndex=%s", e_e.isIndex);
-                                            writefln("e_e.data=%s", e_e.data);
-                                            writefln("e_e.type=%s e_e.keyLen=%s e_e.keyPos=%s, e_e.valuePos=%s e_e.dataPos=%d e_e.dataSize=%d",
-                                                e_e.type, e_e.keyLen, e_e.keyPos, e_e.valuePos,
-                                                e_e.dataPos, e_e.dataSize);
-                                            writefln("e_e.key=%s", e_e.key);
-                                        }
-                                        // writefln("e_doc=%s", e_doc.keys);
-                                        // writefln("e_doc=%s", e_doc.keys);
-                                    }
-                                }
-
-                            }
-//                            if (doc.hasMember("$msg")) {
-//                            writefln("received.toDoc.keys=%s", doc.keys);
-                                //                          }
-                            writefln("received=%J", received);
+                            writefln("received(%s:%d)=%J", name, count, received);
                             _hashgraph.wavefront(
                                 received.pubkey,
                                 received.params!Wavefront,
                                 (const Wavefront return_wavefront) @safe {
+                                    log("Return <- %s", return_wavefront.state);
                                     if (return_wavefront.state !is ExchangeState.NONE) {
                                         const sender=_hashgraph.hirpc.wavefront(return_wavefront);
-                                        //const sender=_hashgraph.hirpc.action("wavefront", return_wavefront);
-                                        authorising.gossip(_hashgraph.channel, sender);
+                                        authorising.send(received.pubkey, sender);
                                     }
                                 });
+                            count++;
                         }
-                        if (random.value(0,2) is 1) {
-                            immutable epack=_hashgraph.single_pack(time, Document());
+                        if (_hashgraph.areWeOnline && random.value(0,2) is 1) {
+                            auto h=new HiBON;
+                            h["node"]=format("%s-%d", name, count);
+                            immutable epack=_hashgraph.single_pack(time, Document(h));
                             _hashgraph.registerEvent(epack);
                             const sender=_hashgraph.hirpc.wavefront(_hashgraph.tideWave);
-                            authorising.gossip(_hashgraph.channel, sender);
+                            pragma(msg, "isHiBONRecord!(typeof(sender))=", isHiBONRecord!(typeof(sender)));
+                            const send_channel=authorising.gossip(_hashgraph.channel, sender);
+                            _hashgraph.init_tide(send_channel);
+                            //count++;
                         }
                     }
                 }
@@ -1010,7 +1000,7 @@ class HashGraph : HashGraphI {
 //                foreach(passphrase; passphrases) {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h=new HashGraph(N, net, authorising);
+                    auto h=new HashGraph(N, net);
                     networks[net.pubkey]=new FiberNetwork(h, E.to!string);
                 }
                 networks.byKey.each!((a) => authorising.add_channel(a));
@@ -1072,12 +1062,12 @@ class HashGraph : HashGraphI {
 
 
         const channels=network.channels;
-        foreach(i; 0..17) {
+        foreach(i; 0..57) {
             const channel_number=network.random.value(0, channels.length);
             const channel=channels[channel_number];
-            writefln("channels.length=%d", channels.length);
-            writefln("network.random.value(0,100)=%d", network.random.value(0,100));
-            writefln("channel_number=%d", channel_number);
+            // writefln("channels.length=%d", channels.length);
+            // writefln("network.random.value(0,100)=%d", network.random.value(0,100));
+            // writefln("channel_number=%d", channel_number);
             (() @trusted {
                 network.networks[channel].call;
             })();
