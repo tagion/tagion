@@ -112,7 +112,7 @@ struct AESCrypto(int KEY_LENGTH) {
                 auto enc_input=indata.ptr;
                 auto dec_output=outdata.ptr;
                 AES_set_decrypt_key(aes_key, KEY_LENGTH, &crypt_key);
-                AES_cbc_encrypt(enc_input, dec_output, enclength(indata.length), &crypt_key, menm_iv.ptr, AES_DECRYPT);
+                AES_cbc_encrypt(enc_input, dec_output, enclength(indata.length), &crypt_key, mem_iv.ptr, AES_DECRYPT);
 
             }
         }
