@@ -120,8 +120,10 @@ static struct Logger {
                 import core.stdc.stdio;
                 scope const _type=assumeWontThrow(type.to!string);
                 scope const _text=assumeWontThrow(toStringz(text));
-                printf("ERROR: Logger not register for '%.*s'", cast(int)_task_name.length, _task_name.ptr);
-                printf("\t%.*s:%.*s: %s",
+                if (_task_name.length > 0) {
+                    printf("ERROR: Logger not register for '%.*s'\n", cast(int)_task_name.length, _task_name.ptr);
+                }
+                printf("%.*s:%.*s: %s\n",
                     cast(int)_task_name.length, _task_name.ptr,
                     cast(int)_type.length, _type.ptr,
                     _text);
