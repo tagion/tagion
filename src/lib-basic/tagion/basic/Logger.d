@@ -112,7 +112,7 @@ static struct Logger {
 
     @trusted
     void report(LoggerType type, lazy scope string text) const nothrow {
-        if ( (type | masks[$-1]) && !silent ) {
+        if ( (type & masks[$-1]) && !silent ) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
