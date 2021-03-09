@@ -290,9 +290,11 @@ struct HiRPC {
                 set_message;
                 signed=verifySignature(net, message, signature, pubkey);
             }
+
             this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
                 this(net, pack.toDoc);
             }
+
             @trusted const(Error) error() const pure {
                 check(type is Type.error, format("Message type %s expected not %s", Type.error, type));
                 return _message.error;
@@ -308,11 +310,11 @@ struct HiRPC {
                 return _message.method;
             }
 
-            const(T) params(T)() const if (isHiBONRecord!T) {
-                return T(method.params);
+            const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T) {
+                return T(args, method.params);
             }
 
-            const(T) result(T)() const if (isHiBONRecord!T) {
+            const(T) result(T, Args...)(Args args)const if (isHiBONRecord!T) {
                 return T(response.result);
             }
 
@@ -347,6 +349,7 @@ struct HiRPC {
                     pubkey=net.pubkey;
                 }
             }
+
             Error error() const
                 in {
                     assert(type is Type.error, format("Message type %s expected not %s", Type.error, type));
@@ -370,6 +373,7 @@ struct HiRPC {
             do {
                 return Method(message);
             }
+
             /++
              Checks if the message has been signed
              NOTE!! This does not mean that the signature is correct
@@ -399,19 +403,19 @@ struct HiRPC {
         auto rnd = Random!uint(stdrnd.unpredictableSeed);
         do {
             id = rnd.value();
-        } while (id is 0);
+        } while (id is 0 || id is uint.max);
         return id;
     }
 
 
-    const(Sender) opDispatch(string method,T)(const T params, const uint id=0) {
+    const(Sender) opDispatch(string method,T)(const T params, const uint id=uint.max) {
         pragma(msg, "method=",method, " T=", T);
         return action(method, params, id);
     }
 
-    const(Sender) action(string method, const Document params, const uint id=0) {
+    const(Sender) action(string method, const Document params, const uint id = uint.max) {
         Method message;
-        message.id=(id is 0)?generateId:id;
+        message.id=(id is uint.max)?generateId:id;
         if (!params.empty) {
             message.params=params;
         }
@@ -421,11 +425,11 @@ struct HiRPC {
         return sender;
     }
 
-    const(Sender) action(T)(string method, T params, const uint id = 0) if (isHiBONRecord!T) {
+    const(Sender) action(T)(string method, T params, const uint id = uint.max) if (isHiBONRecord!T) {
         return action(method, params.toDoc, id);
     }
 
-    const(Sender) action(string method, const(HiBON) params=null, const uint id = 0)  {
+    const(Sender) action(string method, const(HiBON) params=null, const uint id = uint.max)  {
         const doc=Document(params);
         return action(method, doc, id);
     }
