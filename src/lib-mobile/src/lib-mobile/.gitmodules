@@ -1,0 +1,3 @@
+[submodule "tagion_hashgraph"]
+	path = tagion_hashgraph
+	url = https://github.com/tagion/tagion_hashgraph.git
