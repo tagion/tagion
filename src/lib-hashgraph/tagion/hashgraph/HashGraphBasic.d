@@ -79,26 +79,28 @@ interface EventScriptCallbacks {
 interface EventMonitorCallbacks {
     nothrow {
         void create(const(Event) e);
+        void connect(const(Event) e);
         void witness(const(Event) e);
-        void witness_mask(const(Event) e);
-        void strongly_seeing(const(Event) e);
-        void strong_vote(const(Event) e, immutable uint vote);
+//        void witness_mask(const(Event) e);
+//        void strongly_seeing(const(Event) e);
+//        void strong_vote(const(Event) e, immutable uint vote);
         void round_seen(const(Event) e);
-        void looked_at(const(Event) e);
+//        void looked_at(const(Event) e);
+        void round(const(Event) e);
         void round_decided(const(Round.Rounder) rounder);
         void round_received(const(Event) e);
-        void coin_round(const(Round) r);
+//        void coin_round(const(Round) r);
         void famous(const(Event) e);
         void round(const(Event) e);
         void son(const(Event) e);
         void daughter(const(Event) e);
         void forked(const(Event) e);
-        void remove(const(Round) r);
+//        void remove(const(Round) r);
         void epoch(const(Event[]) received_event);
-        void iterations(const(Event) e, const uint count);
+//        void iterations(const(Event) e, const uint count);
     //void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
 //    void wavefront_state_receive(const(Document) wavefron_doc);
-        void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
+//        void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
 
         void send(const Pubkey channel, lazy const Document doc);
         final void send(T)(const Pubkey channel, lazy T pack) if(isHiBONRecord!T) {
@@ -106,14 +108,15 @@ interface EventMonitorCallbacks {
         }
 
         void receive(lazy const Document doc);
-        void receive(T)(lazy const T pack) if(isHiBONRecord!T) {
-            receive(pack);
+        final void receive(T)(lazy const T pack) if(isHiBONRecord!T) {
+            receive(pack.toDoc);
         }
 
-        void consensus_failure(const(ConsensusException) e);
+        //void consensus_failure(const(ConsensusException) e);
     }
 }
 
+version(none)
 @safe
 interface HashGraphI {
     enum int eva_altitude=-77;
@@ -141,6 +144,8 @@ interface HashGraphI {
     bool front_seat(Event event);
 
     Event register(scope const(Buffer) fingerprint);
+
+    uint next_event_id() nothrow;
 
     //void register_wavefront();
 
@@ -178,6 +183,8 @@ interface HashGraphI {
 
     Pubkey channel() const pure nothrow;
     const(Pubkey[]) channels() const pure nothrow;
+
+    const(SecureNet) net() const pure nothrow;
 }
 
 @safe
@@ -411,24 +418,16 @@ struct EventPackage {
             /++
              Used when a Event is receved from another node
              +/
-            this(const SecureNet net, const(Document) doc_epack)
-                in {
-                    assert(!doc_epack.hasMember(Event.Params.fingerprint), "Fingerprint should not be a part of the event body");
-                }
-            do {
+            this(const SecureNet net, const(Document) doc_epack) {
                 this(doc_epack);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
-                (() @trusted {
-                    writefln("event_body=%J", event_body);
-                })();
-//                event_body=EventBody(doc_epa
                 fingerprint=net.hashOf(event_body);
                 consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
             /++
-             Create a
+             Create a EventPackage from a body
              +/
             this(const SecureNet net, immutable(EventBody) ebody) {
                 pubkey=net.pubkey;
@@ -462,11 +461,6 @@ struct Wavefront {
     }
 
     this(immutable(EventPackage*)[] epacks, const ExchangeState state) pure nothrow {
-//     in {
-//         debug writefln("state=%s", state);
-// //        assert(state !is ExchangeState.NONE); // || state is ExchangeState.SECOND_WAVE);
-//     }
-//     do {
         this.epacks=epacks;
         this.state=state;
     }
@@ -481,7 +475,7 @@ struct Wavefront {
 
     }
 
-    this(const Document doc) {
+    this(const SecureNet net, const Document doc) {
         state=doc[stateName].get!ExchangeState;
         immutable(EventPackage)*[] event_packages;
         writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
@@ -490,7 +484,7 @@ struct Wavefront {
             foreach(e; sub_doc[]) {
                 writefln("event key=%s", e.key);
                 (() @trusted {
-                    immutable epack=cast(immutable)(new EventPackage(e.get!Document));
+                    immutable epack=cast(immutable)(new EventPackage(net, e.get!Document));
                     event_packages~=epack;
                 })();
             }
@@ -561,7 +555,7 @@ struct EvaPayload {
     @Label("$nonce") Buffer nonce;
     mixin HiBONRecord!(
         q{
-            this(const Pubkey channel, const Buffer nonce) {
+            this(const Pubkey channel, const Buffer nonce) pure {
                 this.channel=channel;
                 this.nonce=nonce;
             }
