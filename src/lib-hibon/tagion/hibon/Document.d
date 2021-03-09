@@ -179,9 +179,11 @@ static assert(uint.sizeof == 4);
         }
         foreach(ref e; this[]) {
             Element.ErrorCode error_code;
-            if (!isValidType(e.type)) {
-                error_code = Element.ErrorCode.INVALID_TYPE;
-            }
+            error_code=e.valid;
+            if (error_code is Element.ErrorCode.NONE) {
+            // if (!isValidType(e.type)) {
+            //     error_code = Element.ErrorCode.INVALID_TYPE;
+            // }
             // else if (e.key.length is 0) {
             //     error_code = Element.ErrorCode.KEY_ZERO_SIZE;
             // }
@@ -194,23 +196,24 @@ static assert(uint.sizeof == 4);
             // else if (not_first && !less_than(previous.front.key, e.key)) {
             //     error_code = Element.ErrorCode.KEY_ORDER;
             // }
-            else if ( e.type is Type.DOCUMENT ) {
-                try {
-                    error_code = e.get!(Document).valid(error_callback);
-                }
-                catch (HiBONException e) {
-                    error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
-                }
-                catch (TagionException e) {
-                    error_code = Element.ErrorCode.UNKNOW_TAGION;
-                }
-                catch (Exception e) {
-                    error_code = Element.ErrorCode.UNKNOW;
+                if ( e.type is Type.DOCUMENT ) {
+                    try {
+                        error_code = e.get!(Document).valid(error_callback);
+                    }
+                    catch (HiBONException e) {
+                        error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
+                    }
+                    catch (TagionException e) {
+                        error_code = Element.ErrorCode.UNKNOW_TAGION;
+                    }
+                    catch (Exception e) {
+                        error_code = Element.ErrorCode.UNKNOW;
+                    }
                 }
             }
-            else {
-                error_code = e.valid;
-            }
+            // else {
+            //     error_code = e.valid;
+            // }
             if ( error_code !is Element.ErrorCode.NONE ) {
                 if ( error_callback ) {
                     error_callback(e, previous.front);
@@ -1240,7 +1243,8 @@ static assert(uint.sizeof == 4);
                 NONE,           /// No errors
                 INVALID_NULL,   /// Invalid null object
                 DOCUMENT_TYPE,  /// Warning document type
-                DOCUMENT_OVERFLOW, /// Document length extends the buffer length
+                DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
+                VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
                 TOO_SMALL,      /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE,   /// Use of internal types is illegal
                 INVALID_TYPE,   /// Type is not defined
@@ -1248,8 +1252,9 @@ static assert(uint.sizeof == 4);
                 ARRAY_SIZE_BAD, /// The binary-array size in bytes is not a multipla of element size in the array
                 KEY_ORDER,      /// Error in the key order
                 KEY_NOT_DEFINED, /// Key in the target was not defined
-                KEY_INVALID, /// Key is not a valid string
-                KEY_SIZE_OVERFLOW, /// Key size overflow (Key size extents beyond the data buffer
+                KEY_INVALID,     /// Key is not a valid string
+//                KEY_SIZE_OVERFLOW, /// Key size overflow (Key size extents beyond the data buffer
+                KEY_POS_OVERFLOW,  /// The start
                 BAD_SUB_DOCUMENT, /// Error convering sub document
                 NOT_AN_ARRAY,      /// Not an Document array
                 KEY_ZERO_SIZE,  /// Invalid zero key size
@@ -1281,12 +1286,18 @@ static assert(uint.sizeof == 4);
                             return INVALID_NULL;
                         }
                     }
+                    if (keyPos >= data.length) {
+                        return KEY_POS_OVERFLOW;
+                    }
+                    if (valuePos >= data.length) {
+                        return VALUE_POS_OVERFLOW;
+                    }
                     if (key.length is 0) {
                         return KEY_ZERO_SIZE;
                     }
-                    if (key.length >= data.length) {
-                        return KEY_SIZE_OVERFLOW;
-                    }
+                    // if (key.length >= data.length) {
+                    //     return KEY_SIZE_OVERFLOW;
+                    // }
                     if (!key.is_key_valid) {
                         return KEY_INVALID;
                     }
