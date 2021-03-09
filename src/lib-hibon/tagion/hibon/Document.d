@@ -173,17 +173,27 @@ static assert(uint.sizeof == 4);
         import tagion.basic.TagionExceptions : TagionException;
         auto previous=this[];
         bool not_first;
+        const doc_size=LEB128.decode!uint(_data);
+        if (doc_size.size+doc_size.value > _data.length) {
+            return Element.ErrorCode.DOCUMENT_OVERFLOW;
+        }
         foreach(ref e; this[]) {
             Element.ErrorCode error_code;
             if (!isValidType(e.type)) {
                 error_code = Element.ErrorCode.INVALID_TYPE;
             }
-            else if (e.key.length is 0) {
-                error_code = Element.ErrorCode.KEY_ZERO_SIZE;
-            }
-            else if (not_first && !less_than(previous.front.key, e.key)) {
-                error_code = Element.ErrorCode.KEY_ORDER;
-            }
+            // else if (e.key.length is 0) {
+            //     error_code = Element.ErrorCode.KEY_ZERO_SIZE;
+            // }
+            // else if (e.key.length >= e.data.length) {
+            //     error_code = Element.ErrorCode.KEY_SIZE_OVERFLOW;
+            // }
+            // else if (!e.key.is_key_valid) {
+            //     error_code = Element.ErrorCode.KEY_INVALID;
+            // }
+            // else if (not_first && !less_than(previous.front.key, e.key)) {
+            //     error_code = Element.ErrorCode.KEY_ORDER;
+            // }
             else if ( e.type is Type.DOCUMENT ) {
                 try {
                     error_code = e.get!(Document).valid(error_callback);
@@ -207,7 +217,7 @@ static assert(uint.sizeof == 4);
                 }
                 return error_code;
             }
-            if(not_first) {
+            if (not_first) {
                 previous.popFront;
             }
             not_first=true;
@@ -223,16 +233,16 @@ static assert(uint.sizeof == 4);
      +/
     @trusted
     bool isInorder() const nothrow {
-        try {
+//        try {
             return valid() is Element.ErrorCode.NONE;
-        }
-        catch (HiBONException exp) {
-            return false;
-        }
-        catch (RangeError exp) {
-            return false;
-        }
-        assert(0);
+        // }
+        // catch (HiBONException exp) {
+        //     return false;
+        // }
+        // catch (RangeError exp) {
+        //     return false;
+        // }
+        // assert(0);
     }
 
     /++
@@ -1229,14 +1239,17 @@ static assert(uint.sizeof == 4);
             enum ErrorCode {
                 NONE,           /// No errors
                 INVALID_NULL,   /// Invalid null object
-                KEY_ORDER,      /// Error in the key order
                 DOCUMENT_TYPE,  /// Warning document type
+                DOCUMENT_OVERFLOW, /// Document length extends the buffer length
                 TOO_SMALL,      /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE,   /// Use of internal types is illegal
                 INVALID_TYPE,   /// Type is not defined
                 OVERFLOW,       /// The specifed data does not fit into the data stream
                 ARRAY_SIZE_BAD, /// The binary-array size in bytes is not a multipla of element size in the array
+                KEY_ORDER,      /// Error in the key order
                 KEY_NOT_DEFINED, /// Key in the target was not defined
+                KEY_INVALID, /// Key is not a valid string
+                KEY_SIZE_OVERFLOW, /// Key size overflow (Key size extents beyond the data buffer
                 BAD_SUB_DOCUMENT, /// Error convering sub document
                 NOT_AN_ARRAY,      /// Not an Document array
                 KEY_ZERO_SIZE,  /// Invalid zero key size
@@ -1244,6 +1257,7 @@ static assert(uint.sizeof == 4);
                 UNKNOW          /// Unknow error (used when some underlaying function thows an Exception
             }
 
+        }
             /++
              Check if the element is valid
              Returns:
@@ -1251,8 +1265,8 @@ static assert(uint.sizeof == 4);
              ErrorCode.NONE means that the element is valid
 
              +/
-            @nogc
-                @trusted ErrorCode valid() const pure nothrow {
+//            @nogc
+            @trusted ErrorCode valid() const pure nothrow {
                 enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
                 with(ErrorCode) {
@@ -1267,6 +1281,16 @@ static assert(uint.sizeof == 4);
                             return INVALID_NULL;
                         }
                     }
+                    if (key.length is 0) {
+                        return KEY_ZERO_SIZE;
+                    }
+                    if (key.length >= data.length) {
+                        return KEY_SIZE_OVERFLOW;
+                    }
+                    if (!key.is_key_valid) {
+                        return KEY_INVALID;
+                    }
+
                     if ( (isNative(type) || (type is Type.DEFINED_ARRAY) ) ) {
                         return ILLEGAL_TYPE;
                     }
@@ -1279,13 +1303,15 @@ static assert(uint.sizeof == 4);
                             return OVERFLOW;
                         }
                     }
+                    if (!isValidType(type)) {
+                        return INVALID_TYPE;
+                    }
                     return NONE;
                 }
             }
 
 
 
-        }
 
         @property const pure nothrow {
 
@@ -1303,4 +1329,29 @@ static assert(uint.sizeof == 4);
         }
 
     }
+}
+
+unittest { // Bugfix (Fails in isInorder);
+    import std.stdio;
+    {
+        immutable(ubyte[]) data=[220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212, 161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161, 131, 175];
+        const doc=Document(data);
+        assert(!doc.isInorder);
+        assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
+    }
+    // writefln("isInorder=%s", doc.isInorder);
+    // writefln("doc.size=%s", doc.size);
+    // writefln("doc.data.length=%s", doc.data.length);
+    // writefln("doc.keys=%s", doc.keys);
+    // writefln("doc.valid=%s", doc.valid);
+
+    // foreach(e; doc[]) {
+    //     writefln("e.key=%s", e.key);
+    //     writefln("e.type=%s", e.type);
+    //     writefln("e.keyLen=%s", e.keyLen);
+    //     writefln("e.size=%s e.data.length=%d", e.size, e.data.length);
+    //     writefln("e.is_key_valid=%s", e.key.is_key_valid);
+    // }
+    // //   writefln("doc.type=%s", doc.type);
+
 }
