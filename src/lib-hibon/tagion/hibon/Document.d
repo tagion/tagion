@@ -7,7 +7,7 @@ module tagion.hibon.Document;
 //import std.format;
 import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType, isIntegral, hasMember,
-isArrayT=isArray, isAssociativeArray, OriginalType;
+isArrayT=isArray, isAssociativeArray, OriginalType, isCallable;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
@@ -159,8 +159,11 @@ static assert(uint.sizeof == 4);
     /++
      The deligate used by the valid function to report errors
      +/
-    alias ErrorCallback = void delegate(const(Element) current,
-        const(Element) previous) nothrow;
+    alias ErrorCallback = bool delegate(
+        const Document main_doc,
+        const Element.ErrorCode error_code,
+        const(Element) current,
+        const(Element) previous) nothrow @safe;
 
     /++
      This function check's if the Document is a valid HiBON format
@@ -169,63 +172,77 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
-    Element.ErrorCode valid(ErrorCallback error_callback =null) const nothrow {
-        import tagion.basic.TagionExceptions : TagionException;
-        auto previous=this[];
-        bool not_first;
-        const doc_size=LEB128.decode!uint(_data);
-        if (doc_size.size+doc_size.value > _data.length) {
-            return Element.ErrorCode.DOCUMENT_OVERFLOW;
-        }
-        foreach(ref e; this[]) {
+    Element.ErrorCode valid(ErrorCallback error_callback=null) const nothrow {
+        Element.ErrorCode inner_valid(const Document sub_doc, ErrorCallback error_callback=null) const nothrow {
+            import tagion.basic.TagionExceptions : TagionException;
+            auto previous=sub_doc[];
+            bool not_first;
             Element.ErrorCode error_code;
-            error_code=e.valid;
-            if (error_code is Element.ErrorCode.NONE) {
-            // if (!isValidType(e.type)) {
-            //     error_code = Element.ErrorCode.INVALID_TYPE;
-            // }
-            // else if (e.key.length is 0) {
-            //     error_code = Element.ErrorCode.KEY_ZERO_SIZE;
-            // }
-            // else if (e.key.length >= e.data.length) {
-            //     error_code = Element.ErrorCode.KEY_SIZE_OVERFLOW;
-            // }
-            // else if (!e.key.is_key_valid) {
-            //     error_code = Element.ErrorCode.KEY_INVALID;
-            // }
-            // else if (not_first && !less_than(previous.front.key, e.key)) {
-            //     error_code = Element.ErrorCode.KEY_ORDER;
-            // }
-                if ( e.type is Type.DOCUMENT ) {
-                    try {
-                        error_code = e.get!(Document).valid(error_callback);
+            const doc_size=LEB128.decode!uint(_data);
+            if (doc_size.size+doc_size.value > _data.length) {
+                error_code = Element.ErrorCode.DOCUMENT_OVERFLOW;
+                try {
+                    if ( !error_callback || error_callback(this, error_code, Element(), sub_doc.opSlice.front)) {
+                        return error_code;
                     }
-                    catch (HiBONException e) {
-                        error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
+                }
+                catch (HiBONException e) {
+                    error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
+                }
+                catch (TagionException e) {
+                    error_code = Element.ErrorCode.UNKNOW_TAGION;
+                }
+                catch (Exception e) {
+                    error_code = Element.ErrorCode.UNKNOW;
+                }
+            }
+            foreach(ref e; sub_doc[]) {
+                error_code=e.valid;
+                if (not_first) {
+                    if (e.data is previous.data) {
+                        if ( error_callback ) {
+                            error_callback(this, error_code, e, previous.front);
+                            error_code=Element.ErrorCode.DOCUMENT_ITERATION;
+                            error_callback(this, error_code, Document.Element(), Document.Element());
+                        }
+                        return error_code;
                     }
-                    catch (TagionException e) {
-                        error_code = Element.ErrorCode.UNKNOW_TAGION;
+                    previous.popFront;
+                }
+                else {
+                    not_first=true;
+                }
+                if (error_code is Element.ErrorCode.NONE) {
+                    if ( e.type is Type.DOCUMENT ) {
+                        try {
+                            error_code = inner_valid(e.get!(Document), error_callback);
+                        }
+                        catch (HiBONException e) {
+                            error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
+                        }
+                        catch (TagionException e) {
+                            error_code = Element.ErrorCode.UNKNOW_TAGION;
+                        }
+                        catch (Exception e) {
+                            error_code = Element.ErrorCode.UNKNOW;
+                        }
                     }
-                    catch (Exception e) {
-                        error_code = Element.ErrorCode.UNKNOW;
+                }
+                if ( error_code !is Element.ErrorCode.NONE ) {
+                    if ( !error_callback || error_callback(this, error_code, e, previous.front)) {
+                        return error_code;
                     }
                 }
             }
-            // else {
-            //     error_code = e.valid;
-            // }
-            if ( error_code !is Element.ErrorCode.NONE ) {
-                if ( error_callback ) {
-                    error_callback(e, previous.front);
-                }
-                return error_code;
-            }
-            if (not_first) {
-                previous.popFront;
-            }
-            not_first=true;
+            return Element.ErrorCode.NONE;
         }
-        return Element.ErrorCode.NONE;
+        return inner_valid(this, error_callback);
+    }
+
+    Element.ErrorCode valid(Callback)(Callback error_callback) const nothrow @trusted if (isCallable!Callback) {
+        import std.functional : toDelegate;
+        auto dg=error_callback.toDelegate;
+        return valid(dg);
     }
 
     /++
@@ -234,18 +251,9 @@ static assert(uint.sizeof == 4);
      Params:
      true if the Document is inorder
      +/
-    @trusted
+    // @trusted
     bool isInorder() const nothrow {
-//        try {
-            return valid() is Element.ErrorCode.NONE;
-        // }
-        // catch (HiBONException exp) {
-        //     return false;
-        // }
-        // catch (RangeError exp) {
-        //     return false;
-        // }
-        // assert(0);
+        return valid() is Element.ErrorCode.NONE;
     }
 
     /++
@@ -1244,6 +1252,7 @@ static assert(uint.sizeof == 4);
                 INVALID_NULL,   /// Invalid null object
                 DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
+                DOCUMENT_ITERATION,  /// Document can not be iterated because of a Document format fail
                 VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
                 TOO_SMALL,      /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE,   /// Use of internal types is illegal
@@ -1263,63 +1272,63 @@ static assert(uint.sizeof == 4);
             }
 
         }
-            /++
-             Check if the element is valid
-             Returns:
-             The error code the element.
-             ErrorCode.NONE means that the element is valid
+        /++
+         Check if the element is valid
+         Returns:
+         The error code the element.
+         ErrorCode.NONE means that the element is valid
 
-             +/
+         +/
 //            @nogc
-            @trusted ErrorCode valid() const pure nothrow {
-                enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
+        @trusted ErrorCode valid() const pure nothrow {
+            enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
-                with(ErrorCode) {
-                    if ( type is Type.DOCUMENT ) {
-                        return DOCUMENT_TYPE;
+            with(ErrorCode) {
+                if ( type is Type.DOCUMENT ) {
+                    return DOCUMENT_TYPE;
+                }
+                if ( data.length < MIN_ELEMENT_SIZE ) {
+                    if (data.length !is ubyte.sizeof) {
+                        return TOO_SMALL;
                     }
-                    if ( data.length < MIN_ELEMENT_SIZE ) {
-                        if (data.length !is ubyte.sizeof) {
-                            return TOO_SMALL;
-                        }
-                        else if (data[0] !is 0) {
-                            return INVALID_NULL;
-                        }
+                    else if (data[0] !is 0) {
+                        return INVALID_NULL;
                     }
-                    if (keyPos >= data.length) {
-                        return KEY_POS_OVERFLOW;
-                    }
-                    if (valuePos >= data.length) {
-                        return VALUE_POS_OVERFLOW;
-                    }
-                    if (key.length is 0) {
-                        return KEY_ZERO_SIZE;
-                    }
-                    // if (key.length >= data.length) {
-                    //     return KEY_SIZE_OVERFLOW;
-                    // }
-                    if (!key.is_key_valid) {
-                        return KEY_INVALID;
-                    }
+                }
+                if (keyPos >= data.length) {
+                    return KEY_POS_OVERFLOW;
+                }
+                if (valuePos >= data.length) {
+                    return VALUE_POS_OVERFLOW;
+                }
+                if (key.length is 0) {
+                    return KEY_ZERO_SIZE;
+                }
+                // if (key.length >= data.length) {
+                //     return KEY_SIZE_OVERFLOW;
+                // }
+                if (!key.is_key_valid) {
+                    return KEY_INVALID;
+                }
 
-                    if ( (isNative(type) || (type is Type.DEFINED_ARRAY) ) ) {
-                        return ILLEGAL_TYPE;
-                    }
-                    if ( size > data.length ) {
+                if ( (isNative(type) || (type is Type.DEFINED_ARRAY) ) ) {
+                    return ILLEGAL_TYPE;
+                }
+                if ( size > data.length ) {
+                    return OVERFLOW;
+                }
+                if (type is Type.BINARY) {
+                    const leb128_size=LEB128.decode!ulong(data[valuePos..$]);
+                    if (leb128_size.value > uint.max) {
                         return OVERFLOW;
                     }
-                    if (type is Type.BINARY) {
-                        const leb128_size=LEB128.decode!ulong(data[valuePos..$]);
-                        if (leb128_size.value > uint.max) {
-                            return OVERFLOW;
-                        }
-                    }
-                    if (!isValidType(type)) {
-                        return INVALID_TYPE;
-                    }
-                    return NONE;
                 }
+                if (!isValidType(type)) {
+                    return INVALID_TYPE;
+                }
+                return NONE;
             }
+        }
 
 
 

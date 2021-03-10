@@ -605,6 +605,11 @@ unittest { // check is_index
     assert(!is_index("0x0", index));
     assert(!is_index("00", index));
     assert(!is_index("01", index));
+
+    assert(is_index("7", index));
+    assert(index is 7);
+    assert(is_index("69", index));
+    assert(index is 69);
 }
 
 /++
@@ -656,6 +661,8 @@ unittest { // Check less_than
     assert(less_than(0.to!string, 1.to!string));
     assert(!less_than("00", "0"));
     assert(less_than("0", "abe"));
+
+    assert(less_than("7", "69"));
     // assert(less_than(0, "1"));
     // assert(less_than(5, 7));
 }
