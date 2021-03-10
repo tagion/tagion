@@ -27,19 +27,14 @@ import tagion.dart.DARTException : BlockFileException;
 
 // version(unittest) {
 import std.math : rint;
-alias FileNames=Tuple!(string, "tempdir", string, "filename", string, "fullpath");
 
-const(FileNames) fileId(T=BlockFile)(string prefix=null) @safe {
-    import std.process : environment, thisProcessID;
-    import std.file;
-    import std.path;
-    //import std.traits;
-    FileNames names;
-    names.tempdir=tempDir.buildPath(environment.get("USER"));
-    names.filename=setExtension(prefix~thisProcessID.to!string~T.stringof, "dbdart");
-    names.fullpath=buildPath(names.tempdir, names.filename);
-    names.tempdir.exists || names.tempdir.mkdir;
-    return names;
+
+version(unittest) {
+    import Basic=tagion.basic.Basic;
+    const(Basic.FileNames) fileId(T=BlockFile)(string prefix=null) @safe {
+        import basic=tagion.basic.Basic;
+        return basic.fileId!T("dbdart", prefix);
+    }
 }
 
 static this() {
@@ -682,7 +677,7 @@ class BlockFile {
         long create_time;       /// Time of creation
         char[ID_SIZE] id;       /// Short description string
 
-        void write(ref File file) const @trusted 
+        void write(ref File file) const @trusted
             in {
                 assert(block_size >= HeaderBlock.sizeof);
             }
@@ -702,7 +697,7 @@ class BlockFile {
             file.rawWrite(buffer);
         }
 
-        
+
         void read(ref File file, immutable uint BLOCK_SIZE) @trusted
             in {
                 assert(BLOCK_SIZE >= HeaderBlock.sizeof);

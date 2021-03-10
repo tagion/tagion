@@ -17,7 +17,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange;
 
-    import tagion.basic.Basic : Buffer;
+    import tagion.basic.Basic : Buffer, EnumText;
     import tagion.Keywords;
 
     import tagion.hibon.HiBON : HiBON;
@@ -31,7 +31,7 @@ private {
 
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
-    import tagion.basic.Basic;
+    //import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;
     import tagion.utils.Miscellaneous : toHex=toHexString;
 
@@ -1208,7 +1208,7 @@ alias check=Check!DARTException;
         pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
 
         import std.algorithm.sorting : sort;
-        import tagion.basic.Basic;
+        //    import tagion.basic.Basic;
         import std.typecons;
         import tagion.utils.Random;
         import std.bitmanip : BitArray;
