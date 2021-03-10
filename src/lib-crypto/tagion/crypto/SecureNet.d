@@ -46,6 +46,12 @@ class StdHashNet : HashNet {
     do {
         pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
         const doc=Document(data.idup);
+        if (doc.isInorder) {
+            import std.stdio;
+            import tagion.hibon.HiBONJSON;
+            writefln("data=%s", doc.data);
+            writefln("doc=%s", doc.toPretty);
+        }
         assert(!doc.isInorder, "calcHash should not be use on a Document use hashOf instead");
         return rawCalcHash(data);
     }
@@ -86,7 +92,8 @@ class StdHashNet : HashNet {
         }
         if (h2.length is 0) {
             return h1.idup;
-        }        return calcHash(h1~h2);
+        }
+        return rawCalcHash(h1~h2);
     }
 
     immutable(Buffer) hashOf(const(Document) doc) const {
@@ -96,7 +103,7 @@ class StdHashNet : HashNet {
             }
             auto first=doc[].front;
             immutable value_data=first.data[first.dataPos..first.dataPos + first.dataSize];
-            return calcHash(value_data);
+            return rawCalcHash(value_data);
         }
         return rawCalcHash(doc.serialize);
     }
