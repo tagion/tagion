@@ -11,6 +11,7 @@ import std.algorithm.searching : count;
 import std.algorithm.iteration : map, each, filter;
 import std.algorithm.comparison : max;
 import std.range : dropExactly;
+// import std.stdio : File;
 
 import tagion.hashgraph.Event;
 //import tagion.hashgraph.HashGraphBasic : HashGraphI;
@@ -63,7 +64,7 @@ class HashGraph {
         //nodes=new Node[size];
         _rounds=Round.Rounder(this);
         add_node(net.pubkey);
-
+        next_event_id; // event_id (0 or event_id.init) is defined as null event
     }
 
 
@@ -316,7 +317,7 @@ class HashGraph {
         if ( Event.callbacks ) {
             Event.callbacks.receive(received_wave);
         }
-        log("received_wave(%s <- %s)=%J", received_wave.state, received_node.state, received_wave);
+        log("received_wave(%s <- %s)", received_wave.state, received_node.state);
         scope(exit) {
             log("next <- %s", received_node.state);
         }
@@ -604,7 +605,11 @@ class HashGraph {
 
     @nogc
     uint next_event_id() nothrow {
-        return event_id++;
+        event_id++;
+        if (event_id is event_id.init) {
+            return event_id.init+1;
+        }
+        return event_id;
     }
 
     @trusted
@@ -661,6 +666,21 @@ class HashGraph {
             _lowest.__grounded=true;
             log("Round scrapped");
         }
+    }
+
+    /++
+     Dumps all events in the Hashgraph to a file
+     +/
+    @trusted
+    void fwrite(string filename) {
+        import tagion.hibon.HiBONRecord : fwrite;
+        scope h=new HiBON;
+        foreach(n; nodes) {
+            foreach(e; n[]) {
+                h[e.id]=EventView(e);
+            }
+        }
+        filename.fwrite(h);
     }
 
     /**
@@ -796,7 +816,7 @@ class HashGraph {
                         })();
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
-                            writefln("received(%s:%d)=%J", name, count, received);
+                            //writefln("received(%s:%d)=%J", name, count, received);
                             _hashgraph.wavefront(
                                 received.pubkey,
                                 received.params!(Wavefront)(_hashgraph.hirpc.net),
@@ -950,6 +970,15 @@ class HashGraph {
                 current.call;
             })();
         }
+
+        foreach(net; network.networks) {
+            const filename=fileId(net.name);
+            // auto fout = File(filename.fullpath, "w");
+            // scope(exit) {
+            //     fout.close;
+            // }
+            net._hashgraph.fwrite(filename.fullpath);
+        }
 //        auto network=new UnittestNetwork(hashgraphs);
 
         //foreach(n; ne
@@ -1080,5 +1109,14 @@ class HashGraph {
             writeln("Row end");
 
         }
+    }
+}
+
+
+version(unittest) {
+    import Basic=tagion.basic.Basic;
+    const(Basic.FileNames) fileId(T=HashGraph)(string prefix=null) @safe {
+        import basic=tagion.basic.Basic;
+        return basic.fileId!T("hibon", prefix);
     }
 }

@@ -43,7 +43,7 @@ bool isMajority(scope const(BitArray) mask) pure nothrow {
 // }
 // alias Tides=int[immutable(Pubkey)];
 
-
+version(none) {
 protected enum _params = [
     "type",
     "tidewave",
@@ -52,6 +52,7 @@ protected enum _params = [
     ];
 
 mixin(EnumText!("Params", _params));
+}
 
 enum ExchangeState : uint {
     NONE,
@@ -114,6 +115,39 @@ interface EventMonitorCallbacks {
 
         //void consensus_failure(const(ConsensusException) e);
     }
+}
+
+// EventView is used to store event has a
+struct EventView {
+    enum eventsName="$events";
+    uint id;
+    @Label("$m", true) @(Filter.Initialized) uint mother;
+    @Label("$f", true) @(Filter.Initialized) uint father;
+    @Label("$n") size_t node_id;
+    @Label("$a") int altitude;
+    @Label("$o") int order;
+
+    mixin HiBONRecord!(
+        q{
+            this(const Event event) {
+                id=event.id;
+                if (event.isGrounded) {
+                    mother=father=uint.max;
+                }
+                else {
+                    if (event.mother) {
+                        mother=event.mother.id;
+                    }
+                    if (event.father) {
+                        father=event.father.id;
+                    }
+                }
+                node_id=event.node_id;
+                altitude=event.altitude;
+                order=event.received_order;
+            }
+        });
+
 }
 
 version(none)

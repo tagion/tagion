@@ -1479,22 +1479,11 @@ class Event {
 
     @nogc
     static int received_order_max(const(Event) mother, const(Event) father) pure nothrow {
-        static int order(const int a, const int b) pure nothrow {
-            if (b is int.init) {
-                if (a is int.init) {
-                    return int.init;
-                }
-                return a;
-            }
-            else if (a is int.init) {
-                return b;
-            }
-            return (a-b > 0)?a:b;
-        }
         const a=(mother)?mother._received_order:int.init;
         const b=(father)?father._received_order:int.init;
-        const result=order(a, b);
-        return (result is int.init)?int.init:result+1;
+        int result=(a-b > 0)?a:b;
+        result++;
+        return (result is int.init)?1:result;
     }
 
 
@@ -1581,10 +1570,11 @@ class Event {
                     _witness_mask = _mother._witness_mask;
                 }
                 _received_order = received_order_max(_mother, _father);
+                writefln("_received_order=%d", _received_order);
                 attach_round;
-                if (_round is null) {
-                    writefln("########### Round is null");
-                }
+                // if (_round is null) {
+                //     writefln("########### Round is null");
+                // }
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
