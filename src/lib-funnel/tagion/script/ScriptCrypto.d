@@ -1,7 +1,6 @@
 module tagion.script.ScriptCrypto;
 
 import std.bigint;
-import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.script.Script;
 import tagion.script.ScriptBase : Value, FunnelType, check, ScriptException;
 import tagion.script.ScriptParser;
