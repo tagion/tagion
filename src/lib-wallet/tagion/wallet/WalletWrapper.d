@@ -1,4 +1,4 @@
-module tagion_wallet.tagion.wallet.Wallet;
+module tagion.wallet.WalletWrapper;
 
 import std.format;
 import std.string: representation;
@@ -20,22 +20,44 @@ import tagion.wallet.KeyRecover;
 import tagion.basic.Message;
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
-import tagion_wallet.tagion.wallet.TagionCurrency;
+import tagion.wallet.TagionCurrency;
+struct WalletData{
+    protected @Label("$wallet") Wallet _wallet;
+    protected @Label("$account") Buffer[Pubkey] _account;
+    protected @Label("$bills") StandardBill[] _bills;
+    protected @Label("$drive_state") Buffer _drive_state;
 
+    mixin HiBONRecord!(
+            q{
+                this(Wallet wallet, Buffer[Pubkey] account = null, Buffer drive_state = null, StandardBill[] bills = null){
+                    _wallet = wallet;
+                    _account = account;
+                    _bills = bills;
+                    _drive_state = drive_state;
+                }
+            }
+    );
+}
 // @safe
 struct WalletWrapper {
-    protected Wallet _wallet;
-    protected Buffer[Pubkey] _account;
-    protected StandardBill[] _bills;
+    protected WalletData data;
     protected StdSecureNet net;
 
-    Buffer drive_state;
 
     this(Wallet wallet, Buffer[Pubkey] account = null, Buffer drive_state = null, StandardBill[] bills = null){
-        _wallet = wallet;
-        _account = account;
-        _bills = bills;
-        this.drive_state = drive_state;
+        data._wallet = wallet;
+        data._account = account;
+        data._bills = bills;
+        data._drive_state = drive_state;
+    }
+
+
+    this(WalletData data){
+        this.data = data;        
+    }
+
+    @trusted final inout(HiBON) toHiBON() inout {
+        return data.toHiBON();
     }
 
     static WalletWrapper createWallet(const(string[]) questions, const(string[]) answers, uint confidence, Buffer pincode)
@@ -86,8 +108,8 @@ struct WalletWrapper {
         auto recover=new KeyRecover(hashnet);
         auto pinhash=recover.checkHash(pincode.representation);
         auto R=new ubyte[hashnet.hashSize];
-        xor(R, _wallet.Y, pinhash);
-        if (_wallet.check == recover.checkHash(R)) {
+        xor(R, data._wallet.Y, pinhash);
+        if (data._wallet.check == recover.checkHash(R)) {
             auto net=new StdSecureNet;
             net.createKeyPair(R);
             return true;
@@ -96,7 +118,7 @@ struct WalletWrapper {
     }
 
     ulong total() nothrow{
-        return WalletWrapper.calcTotal(_bills);
+        return WalletWrapper.calcTotal(data._bills);
     }
 
     void registerInvoice(ref Invoice invoice) 
@@ -107,11 +129,11 @@ struct WalletWrapper {
         string current_time=MonoTime.currTime.toString;
         scope seed=new ubyte[net.hashSize];
         scramble(seed);
-        drive_state=net.calcHash(seed~drive_state~current_time.representation);
+        data._drive_state=net.calcHash(seed~data._drive_state~current_time.representation);
         scramble(seed);
-        const pkey=net.derivePubkey(drive_state);
+        const pkey=net.derivePubkey(data._drive_state);
         invoice.pkey=cast(Buffer)pkey;
-        _account[pkey]=drive_state;
+        data._account[pkey]=data._drive_state;
     }
 
     static Invoice createInvoice(string label, TagionCurency tagions = TagionCurency.init){
@@ -150,7 +172,7 @@ struct WalletWrapper {
             ulong amount=topay;
 
 
-            foreach(b; _bills) {
+            foreach(b; data._bills) {
                 amount-=min(amount, b.value);
                 contract_bills~=b;
                 if (amount == 0) {
@@ -189,8 +211,8 @@ struct WalletWrapper {
         shared shared_net=cast(shared)net;
         foreach(i, b; contract_bills) {
             Pubkey pkey=b.owner;
-            if (pkey in _account) {
-                immutable tweak_code=_account[pkey];
+            if (pkey in data._account) {
+                immutable tweak_code=data._account[pkey];
                 auto bill_net=new StdSecureNet;
                 bill_net.derive(tweak_code, shared_net);
                 immutable signature=bill_net.sign(message);
