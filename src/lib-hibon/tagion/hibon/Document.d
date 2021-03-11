@@ -181,19 +181,8 @@ static assert(uint.sizeof == 4);
             const doc_size=LEB128.decode!uint(_data);
             if (doc_size.size+doc_size.value > _data.length) {
                 error_code = Element.ErrorCode.DOCUMENT_OVERFLOW;
-                try {
-                    if ( !error_callback || error_callback(this, error_code, Element(), sub_doc.opSlice.front)) {
-                        return error_code;
-                    }
-                }
-                catch (HiBONException e) {
-                    error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
-                }
-                catch (TagionException e) {
-                    error_code = Element.ErrorCode.UNKNOW_TAGION;
-                }
-                catch (Exception e) {
-                    error_code = Element.ErrorCode.UNKNOW;
+                if ( !error_callback || error_callback(this, error_code, Element(), sub_doc.opSlice.front)) {
+                    return error_code;
                 }
             }
             foreach(ref e; sub_doc[]) {
@@ -1250,7 +1239,7 @@ static assert(uint.sizeof == 4);
             enum ErrorCode {
                 NONE,           /// No errors
                 INVALID_NULL,   /// Invalid null object
-                DOCUMENT_TYPE,  /// Warning document type
+                //DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION,  /// Document can not be iterated because of a Document format fail
                 VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
@@ -1284,9 +1273,9 @@ static assert(uint.sizeof == 4);
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
             with(ErrorCode) {
-                if ( type is Type.DOCUMENT ) {
-                    return DOCUMENT_TYPE;
-                }
+                // if ( type is Type.DOCUMENT ) {
+                //     return DOCUMENT_TYPE;
+                // }
                 if ( data.length < MIN_ELEMENT_SIZE ) {
                     if (data.length !is ubyte.sizeof) {
                         return TOO_SMALL;
@@ -1352,7 +1341,7 @@ static assert(uint.sizeof == 4);
 }
 
 unittest { // Bugfix (Fails in isInorder);
-    import std.stdio;
+//    import std.stdio;
     {
         immutable(ubyte[]) data=[220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212, 161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161, 131, 175];
         const doc=Document(data);
