@@ -1,4 +1,4 @@
-module tagion_wallet.tagion.wallet.TagionCurrency;
+module tagion.wallet.TagionCurrency;
 
 import std.format;
 

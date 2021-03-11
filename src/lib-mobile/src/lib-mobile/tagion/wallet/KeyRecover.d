@@ -1,6 +1,6 @@
 module tagion.wallet.KeyRecover;
 
-import tagion.crypto.SecureInterface : HashNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : scramble, StdSecureNet;
 import tagion.utils.Miscellaneous : xor;
 import tagion.basic.Basic : Buffer;
