@@ -110,7 +110,7 @@ struct WalletWrapper {
         auto R=new ubyte[hashnet.hashSize];
         xor(R, data._wallet.Y, pinhash);
         if (data._wallet.check == recover.checkHash(R)) {
-            auto net=new StdSecureNet;
+            net=new StdSecureNet;
             net.createKeyPair(R);
             return true;
         }
