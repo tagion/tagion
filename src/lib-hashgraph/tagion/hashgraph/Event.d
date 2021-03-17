@@ -203,11 +203,11 @@ class Round {
         return result;
     }
 
-    int opApply(scope int delegate(const uint node_id, const(Event) event) @safe dg) const {
+    int opApply(scope int delegate(const size_t node_id, const(Event) event) @safe dg) const {
         int result;
         foreach(node_id, e; _events) {
             if ( e ) {
-                result=dg(cast(uint)node_id, e);
+                result=dg(node_id, e);
                 if ( result ) {
                     break;
                 }
@@ -576,27 +576,28 @@ class Round {
             }
         do {
             log.error("isEva %s (last_round is null) = %s", e.isEva, (last_round is null));
-            scope (exit) {
-                assert(e._round !is null);
-                e._round.add(e);
-            }
-            if (e.isEva) {
-                log.error("e.isEva");
-                assert(last_decided_round);
-                for(Round r=last_decided_round; r !is null; r = r._next) {
-                    log.error("e.isEva e.node_id = %d r._events.length=%d e.fingerprint=%s",
-                        e.node_id, r._events.length, e.fingerprint.cutHex);
-                    if (r._events[e.node_id] is null) {
-                        log.error("e.isEva (r is null) = %s", r is null);
-
-                        e._round = r;
-                        break;
-                    }
+            if (!e.isFatherLess) {
+                log.error("e.isFatherLess");
+                scope (exit) {
+                    assert(e._round !is null);
+                    e._round.add(e);
                 }
-                log.error("EVA (e._round is null) = %s", e._round is null);
-                assert(e._round !is null);
-            }
-            else {
+
+                // assert(last_decided_round);
+                // for(Round r=last_decided_round; r !is null; r = r._next) {
+                //     log.error("e.isEva e.node_id = %d r._events.length=%d e.fingerprint=%s",
+                //         e.node_id, r._events.length, e.fingerprint.cutHex);
+                //     if (r._events[e.node_id] is null) {
+                //         log.error("e.isEva (r is null) = %s", r is null);
+
+                //         e._round = r;
+                //         break;
+                //     }
+                // }
+                // log.error("EVA (e._round is null) = %s", e._round is null);
+                // assert(e._round !is null);
+            // }
+            // else {
                 if (e._round && e._round._next) {
                     log.error("EVA Defined");
                     e._round = e._round._next;
@@ -610,6 +611,7 @@ class Round {
                     }
                     assert(e._round !is null);
                 }
+
             }
         }
 
@@ -755,6 +757,36 @@ class Round {
 
 @safe
 class Event {
+    static void print(string pref, const Event e) @safe  {
+        writef("%s\t(%d:%d:%d)@%s %s->", pref, e.node_id, e.id, e.altitude, e.fingerprint.cutHex, e.isGrounded?"G":"");
+        if (e._mother) {
+            string daughter() {
+                if (e._mother._daughter) {
+                    return format("d(%d:%d:%d)", e._mother._daughter.node_id, e._mother._daughter.id, e._mother._daughter.altitude);
+                }
+                return "";
+            }
+            writef(" m(%d:%d:%d)%s@%s", e._mother.node_id, e._mother.id, e._mother.altitude, daughter, e.event_package.event_body.mother.cutHex);
+        }
+        else {
+            writef(" m(#)@%s", e.event_package.event_body.mother.cutHex);
+        }
+        if (e._father) {
+            string son() {
+                if (e._father) {
+                    return format("s(%d:%d:%d)", e._father._son.node_id, e._father._son.id, e._father.altitude);
+                }
+                return "";
+            }
+            writef(" f(%d:%d)%s@%s", e._father.node_id, e._father.id, son, e.event_package.event_body.father.cutHex);
+        }
+        else {
+            writef(" f(#)@%s",e.event_package.event_body.father.cutHex);
+        }
+        writeln();
+    }
+
+
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!EventConsensusException;
     protected static uint _count;
@@ -770,11 +802,10 @@ class Event {
         HashGraph hashgraph,
         ) {
         event_package=epack;
-        this.node_id=hashgraph.getNode(epack.pubkey).nodeId;
         this.id=hashgraph.next_event_id;
         _count++;
 
-        version(none)
+        //version(none)
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             BitArray round_mask;
@@ -785,7 +816,15 @@ class Event {
             log.error("#### lastround is null %s", hashgraph.rounds.last_round is null);
             //Round.seed_round(node_size);
             //_round.add(this);
-            _received_order=-1;
+            //_received_order=-1;
+        }
+        this.node_id=hashgraph.getNode(channel).node_id;
+
+        if (fingerprint.cutHex == "b925110521d2a9b0") {
+            import tagion.hibon.HiBONJSON;
+            (() @trusted {
+                writefln("Create %s %d %J", hashgraph.channel.cutHex, id, *epack);
+            })();
         }
         if (Event.callbacks) {
             Event.callbacks.create(this);
@@ -794,6 +833,7 @@ class Event {
     }
 
     /// An eva event must be create as the first event when the hashgraph is started
+    version(none)
     package static Event createEvaEvent(HashGraph hashgraph, const sdt_t time, const Buffer nonce) @trusted {
         const payload=EvaPayload(hashgraph.channel, nonce);
         immutable eva_body=EventBody(payload.toDoc, null, null, time, hashgraph.eva_altitude);
@@ -806,7 +846,7 @@ class Event {
         eva_event._round=hashgraph.rounds.last_decided_round;
         // Sets the first event in the
         //auto node=hashgraph.getNode(eva_event.channel);
-        hashgraph.front_seat(eva_event);
+        //hashgraph.front_seat(eva_event);
         return eva_event;
     }
 
@@ -815,9 +855,15 @@ class Event {
         _count--;
     }
 
+//    package static Event f
     // static Event createEva(HashGraphI hashgraph, const sdt_t time, const Buffer nonce) {
 
     // }
+
+    @nogc
+    bool isInFront() const pure nothrow {
+        return !_daughter;
+    }
 
     @safe
     static class Witness {
@@ -995,14 +1041,17 @@ class Event {
         Round  _round_received;
     }
 
-    private void attach_round() pure nothrow
+    private void attach_round(HashGraph hashgraph) pure nothrow
         in {
             assert(_round is null, "Round has already been attached");
         }
     do {
         if (_mother.isFatherLess) {
-            if (_father) {
+            if (_father && _father._round) {
                 _round = _father._round;
+            }
+            else {
+                _round = hashgraph.rounds.last_round;
             }
         }
         else {
@@ -1512,9 +1561,8 @@ class Event {
     do {
         BitArray result;
         result.bitarray_clear(size);
-        if (_father) {
-
-            const round_diff=_round.number - _father._round.number;
+        if (_father && !_father.isFatherLess) {
+            const round_diff = _round.number - _father._round.number;
             if (round_diff == 0) {
                 result = _father._witness_mask.dup;
             }
@@ -1550,18 +1598,53 @@ class Event {
     @trusted
     package void connect(HashGraph hashgraph) {
         if (!connected) {
+            hashgraph.getNode(channel).event=this;
+            //hashgraph.front_seat(this);
             scope(exit) {
-                hashgraph.front_seat(this);
+                Event.print("CON ", this);
+                writefln("\tMother %s", _mother !is null);
                 if (Event.callbacks) {
                     Event.callbacks.connect(this);
                 }
             }
+            writefln("!!CONNECT %s in cache %s", event_package.event_body.mother.cutHex, hashgraph.isRegistered(event_package.event_body.mother));
             _mother = hashgraph.register(event_package.event_body.mother);
             if (_mother) {
+                if (_mother.isEva) {
+                    writefln("Connecting EVA");
+                }
                 check(!_mother._daughter, ConsensusFailCode.EVENT_FORK);
+                print(">> ", this);
                 _mother._daughter = this;
+                // if (_father && _father._son) {
+                //     writefln(">f(%d) -> s(%d) m(%d)", _father.id, _father._son.id, id);
+
+                // }
                 _father = hashgraph.register(event_package.event_body.father);
+//                 if (_father && _father._son) {
+//                     writefln("}f(%d) -> s(%d) m(%d)", _father.id, _father._son.id, id);
+//                     writefln("}f[%d] -> s[%d] m[%d]", _father.node_id, _father._son.node_id, node_id);
+// //                    writefln("}(%d) -> (%d)", _father.id, _father._son.id);
+
+//                 }
                 if (_father) {
+//                    writefln("father is infront=%s (_father._son is this) %s", _father.isInFront, _father._son is this);
+                    // writef("# (%d:%d:%d) ->",
+                    //     _father.node_id, _father.id, _father.altitude);
+                    if (_father._son) {
+                        print("fs ", this);
+
+                        // writef(" (%d:%d:%d)",
+                        //     _father._son.node_id, _father._son.id, _father._son.altitude
+                        //     );
+                        // writefln("#f[%d] -> s[%d] m[%d]", _father.node_id, _father._son.node_id, node_id);
+                        // while(_father._son) {
+                        // }
+                    }
+                    // writefln(" :(%d:%d:%d)",
+                    //     node_id, id, altitude);
+                    // writefln("#isInFront %s", _father.isInFront);
+
                     check(!_father._son, ConsensusFailCode.EVENT_FORK);
                     _father._son = this;
                     _witness_mask = _mother._witness_mask | _father._witness_mask;
@@ -1571,10 +1654,10 @@ class Event {
                 }
                 _received_order = received_order_max(_mother, _father);
                 writefln("_received_order=%d", _received_order);
-                attach_round;
-                // if (_round is null) {
-                //     writefln("########### Round is null");
-                // }
+                attach_round(hashgraph);
+                if (_round is null) {
+                    writefln("########### Round is null %s _father is null=%s", isFatherLess, _father is null);
+                }
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
@@ -1609,21 +1692,14 @@ class Event {
             else {
                 assert(0, "We need some defined exception here (Event without a mother is not allowed)");
             }
-            // else if (isEva) {
-            //     _received_order = int.init;
-
-            //     // BitArray round_mask;
-            //     // bitarray_clear(round_mask, hashgraph.voting_nodes);
-            //     // _witness = new Witness(this, round_mask);
-
-            // }
         }
     }
 
 // +++
     @nogc
     bool connected() const pure nothrow {
-        return (_mother !is null) || isEva;
+//        return (_mother !is null) || isEva;
+        return (_mother !is null);
     }
 
     version(none)
@@ -1756,6 +1832,11 @@ class Event {
 
     @nogc
     const(Event) daughter() const pure nothrow {
+        return _daughter;
+    }
+
+    @nogc
+    package Event daughter_raw() pure nothrow {
         return _daughter;
     }
 
@@ -1920,7 +2001,7 @@ class Event {
         return iterator(this);
     }
 
-    Range opSlice() nothrow {
+    Range opSlice() pure nothrow {
         return Range(this);
     }
 

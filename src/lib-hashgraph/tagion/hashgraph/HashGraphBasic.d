@@ -38,21 +38,23 @@ bool isMajority(scope const(BitArray) mask) pure nothrow {
     return isMajority(mask.count, mask.length);
 }
 
+enum int eva_altitude=-77;
+@safe @nogc
+int nextAltitide(const Event event) pure nothrow {
+    return (event)?event.altitude+1:eva_altitude;
+}
 // struct Tides {
 //     int[Pubkey]
 // }
 // alias Tides=int[immutable(Pubkey)];
 
-version(none) {
 protected enum _params = [
-    "type",
-    "tidewave",
-    "wavefront",
-    "block"
+    "events",
+    "nodes",
     ];
 
 mixin(EnumText!("Params", _params));
-}
+
 
 enum ExchangeState : uint {
     NONE,
@@ -153,7 +155,6 @@ struct EventView {
 version(none)
 @safe
 interface HashGraphI {
-    enum int eva_altitude=-77;
 
     //  void request(scope immutable(Buffer) fingerprint);
 
@@ -220,7 +221,7 @@ interface HashGraphI {
 
     const(SecureNet) net() const pure nothrow;
 }
-
+version(none)
 @safe
 interface NodeI {
     void remove() nothrow;
@@ -267,6 +268,7 @@ interface Authorising {
 @safe
 //@RecordType("EBODY")
 struct EventBody {
+    enum int eva_altitude=-77;
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
@@ -286,13 +288,12 @@ struct EventBody {
                 Document payload,
                 const Event mother,
                 const Event father,
-                const sdt_t time,
-                immutable int altitude=int.min) inout {
+                lazy const sdt_t time) inout {
                 this.time      =    time;
                 this.mother    =    (mother is null)?null:mother.fingerprint;
-                this.altitude  =    (mother is null)?altitude:mother.altitude+1;
                 this.father    =    (father is null)?null:father.fingerprint;
                 this.payload   =    payload;
+                this.altitude  =    mother.nextAltitide;
                 consensus();
             }
         });
