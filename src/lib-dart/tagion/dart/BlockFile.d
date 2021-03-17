@@ -37,11 +37,11 @@ version(unittest) {
     }
 }
 
-static this() {
-    // Activate unittest
-    immutable filename=fileId("dummy");
-    //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
-}
+// static this() {
+//     // Activate unittest
+//     immutable filename=fileId("dummy");
+//     //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
+// }
 // }
 extern(C) {
     int ftruncate(int fd, long length);

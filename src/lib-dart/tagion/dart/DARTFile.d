@@ -1261,9 +1261,9 @@ alias check=Check!DARTException;
 
 
         immutable filename=fileId!DARTFile.fullpath;
-        immutable filename_A=fileId!DARTFile("A_").fullpath;
-        immutable filename_B=fileId!DARTFile("B_").fullpath;
-        immutable filename_C=fileId!DARTFile("C_").fullpath;
+        immutable filename_A=fileId!DARTFile("A").fullpath;
+        immutable filename_B=fileId!DARTFile("B").fullpath;
+        immutable filename_C=fileId!DARTFile("C").fullpath;
 
         { // Test the fake hash on Archive
             import std.bitmanip;
