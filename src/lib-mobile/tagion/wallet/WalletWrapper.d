@@ -185,7 +185,7 @@ struct WalletWrapper {
 //        result.input=contract_bills; // Input _bills
 //        Buffer[] inputs;
             foreach(b; contract_bills) {
-                result.contract.input~=net.calcHash(b.toHiBON.serialize);
+                result.contract.input~=net.hashOf(b.toDoc);
             }
             const _total_input=WalletWrapper.calcTotal(contract_bills);
             if ( _total_input >= topay) {
@@ -207,7 +207,7 @@ struct WalletWrapper {
         }
 
         // Sign all inputs
-        immutable message=net.calcHash(result.contract.toHiBON.serialize);
+        immutable message=net.hashOf(result.contract.toDoc);
         shared shared_net=cast(shared)net;
         foreach(i, b; contract_bills) {
             Pubkey pkey=b.owner;
