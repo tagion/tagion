@@ -400,13 +400,8 @@ class HashGraph {
 
                 // EventLoop:
                 auto range=n[];
-                while (!range.empty) { // && higher(range.front.altitude, other_altitude)) {
-                    if (higher(range.front.altitude, other_altitude)) {
-                        result~=range.front.event_package;
-                    }
-                    else {
-                        break;
-                    }
+                while (!range.empty && higher(range.front.altitude, other_altitude)) {
+                    result~=range.front.event_package;
                     range.popFront;
                 }
             }
