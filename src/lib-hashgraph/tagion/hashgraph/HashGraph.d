@@ -420,12 +420,12 @@ class HashGraph {
                     //         // }
                     //         //log.trace("\t%d) buildWavefront[%s] %d -> %d", n.node_id, n.channel.cutHex, other_altitude, e.altitude);
                     //         // Event.print("@#>", e);
-                    //if (higher(range.front.altitude, other_altitude)) {
+                    if (higher(range.front.altitude, other_altitude)) {
                         result~=range.front.event_package;
                         if (front_seat is range.front) {
                             ok=true;
                         }
-                        //}
+                    }
                     if (front_seat is range.front) {
                         no_wave_ok=true;
                     }
