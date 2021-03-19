@@ -11,7 +11,7 @@ LIBS+=${call GETLIB,tagion_crypto}
 LIBS+=${call GETLIB,tagion_funnel}
 #LIBS+=${call GETLIB,tagion_services}
 #LIBS+=${call GETLIB,tagion_hashgraph}
-#LIBS+=${call GETLIB,tagion_communication}
+LIBS+=${call GETLIB,tagion_communication}
 #LIBS+=${call GETLIB,tagion_dart}
 
 LIBS+=$(LIBSECP256K1)
