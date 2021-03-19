@@ -386,7 +386,6 @@ class HashGraph {
 
     const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides, const Event front_seat) {
         if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
-//            writefln("BUILDWAVEFRONT %s", state);
             return Wavefront(null, state);
         }
         immutable(EventPackage)*[] result;
@@ -401,63 +400,21 @@ class HashGraph {
 
                 // EventLoop:
                 auto range=n[];
-                bool ok;
-                bool no_wave_ok;
                 while (!range.empty) { // && higher(range.front.altitude, other_altitude)) {
-                    // writefln("\talt=%d %s %d (%d)",
-                    //     range.front.altitude,
-                    //     higher(range.front.altitude, other_altitude)?
-                    //     "higher than ":
-                    //     "not higher than",
-                    //     other_altitude,
-                    //     range.front.altitude - other_altitude
-                    //     );
-
-
-                    //         //foreach(e; n[]) {
-                    //         // if ( higher( other_altitude, e.altitude) ) {
-                    //         //     break EventLoop;
-                    //         // }
-                    //         //log.trace("\t%d) buildWavefront[%s] %d -> %d", n.node_id, n.channel.cutHex, other_altitude, e.altitude);
-                    //         // Event.print("@#>", e);
                     if (higher(range.front.altitude, other_altitude)) {
                         result~=range.front.event_package;
-                        if (front_seat is range.front) {
-                            ok=true;
-                        }
                     }
-                    if (front_seat is range.front) {
-                        no_wave_ok=true;
+                    else {
+                        break;
                     }
                     range.popFront;
-                }
-                if (front_seat.channel is n.channel) {
-                    assert(no_wave_ok);
-                    assert(ok);
-                    assert(front_seat.isInFront);
                 }
             }
             else {
                 n[].each!((e) => result~=e.event_package);
             }
         }
-        // if ( result.length is 0) {
-        //     writefln("State %s", state);
-        //     foreach(key, a; tides) {
-        //         writefln("P%s %d node %d", key.cutHex, a, (key in nodes)?nodes[key].node_id:-1);
-        //     }
-        //     foreach(key, n; nodes) {
-        //         writef("P%s ", key.cutHex);
-        //         if (n.isOnline) {
-        //             Event.print("BLD ", n.event);
-        //         }
-        //         else {
-        //             writeln();
-        //         }
-        //     }
-        // }
         assert(result.length);
-//        Wavefront.epacks=result;
         return Wavefront(result, state);
     }
 
