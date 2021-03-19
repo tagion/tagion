@@ -1,8 +1,8 @@
 module tagion.hashgraph.Event;
 
-import std.stdio;
+//import std.stdio;
 import std.datetime;   // Date, DateTime
-import  std.exception : assumeWontThrow;
+import std.exception : assumeWontThrow;
 import std.conv;
 import std.bitmanip;
 
@@ -758,6 +758,8 @@ class Round {
 @safe
 class Event {
     static void print(string pref, const Event e) @safe  {
+        import std.stdio;
+//         version(none) {
         writef("%s\t(%d:%d:%d)@%s %s->", pref, e.node_id, e.id, e.altitude, e.fingerprint.cutHex, e.isGrounded?"G":"");
         if (e._mother) {
             string daughter() {
@@ -784,11 +786,12 @@ class Event {
             writef(" f(#)@%s",e.event_package.event_body.father.cutHex);
         }
         writeln();
+//        }
     }
 
 
     import tagion.basic.ConsensusExceptions;
-    protected alias check=Check!EventConsensusException;
+    alias check=Check!EventConsensusException;
     protected static uint _count;
     static uint count() nothrow {
         return _count;
@@ -820,12 +823,12 @@ class Event {
         }
         this.node_id=hashgraph.getNode(channel).node_id;
 
-        if (fingerprint.cutHex == "b925110521d2a9b0") {
-            import tagion.hibon.HiBONJSON;
-            (() @trusted {
-                writefln("Create %s %d %J", hashgraph.channel.cutHex, id, *epack);
-            })();
-        }
+        // if (fingerprint.cutHex == "b925110521d2a9b0") {
+        //     import tagion.hibon.HiBONJSON;
+        //     (() @trusted {
+        //         writefln("Create %s %d %J", hashgraph.channel.cutHex, id, *epack);
+        //     })();
+        // }
         if (Event.callbacks) {
             Event.callbacks.create(this);
         }
@@ -1596,25 +1599,40 @@ class Event {
 
 
     @trusted
-    package void connect(HashGraph hashgraph) {
+    package void connect(HashGraph hashgraph)
+        out {
+            assert(event_package.event_body.mother && _mother || !_mother);
+            assert(event_package.event_body.father && _father || !_father);
+        }
+    do {
         if (!connected) {
-            hashgraph.getNode(channel).event=this;
-            //hashgraph.front_seat(this);
             scope(exit) {
-                Event.print("CON ", this);
-                writefln("\tMother %s", _mother !is null);
+                if (_mother) {
+                    // writefln("highest(this.altitude=%d _mother.altitude=%d", this.altitude, _mother.altitude);
+                    Event.check(this.altitude-_mother.altitude is 1,
+                        ConsensusFailCode.EVENT_ALTITUDE);
+                    Event.check(channel == _mother.channel,
+                        ConsensusFailCode.EVENT_MOTHER_CHANNEL);
+                }
+                hashgraph.front_seat(this);
                 if (Event.callbacks) {
                     Event.callbacks.connect(this);
                 }
+                //check(hashgraph.mother_less(this), ConsensusFailCode.EVENT_MOTHER_LESS);
+                // Event.print("CON ", this);
+                // writefln("\tMother %s", _mother !is null);
             }
-            writefln("!!CONNECT %s in cache %s", event_package.event_body.mother.cutHex, hashgraph.isRegistered(event_package.event_body.mother));
             _mother = hashgraph.register(event_package.event_body.mother);
+            // writefln("!!CONNECT %s in cache %s", event_package.event_body.mother.cutHex, hashgraph.isRegistered(event_package.event_body.mother));
+            // if (!_mother) {
+            //     writefln("%s hash no mother", fingerprint.cutHex);
+            // }
             if (_mother) {
-                if (_mother.isEva) {
-                    writefln("Connecting EVA");
-                }
-                check(!_mother._daughter, ConsensusFailCode.EVENT_FORK);
-                print(">> ", this);
+                // if (_mother.isEva) {
+                //     writefln("Connecting EVA");
+                // }
+                check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
+                // print(">> ", this);
                 _mother._daughter = this;
                 // if (_father && _father._son) {
                 //     writefln(">f(%d) -> s(%d) m(%d)", _father.id, _father._son.id, id);
@@ -1632,20 +1650,20 @@ class Event {
                     // writef("# (%d:%d:%d) ->",
                     //     _father.node_id, _father.id, _father.altitude);
                     if (_father._son) {
-                        print("fs ", this);
+                         print("fs ", this);
 
-                        // writef(" (%d:%d:%d)",
-                        //     _father._son.node_id, _father._son.id, _father._son.altitude
-                        //     );
-                        // writefln("#f[%d] -> s[%d] m[%d]", _father.node_id, _father._son.node_id, node_id);
-                        // while(_father._son) {
-                        // }
+                    //     // writef(" (%d:%d:%d)",
+                    //     //     _father._son.node_id, _father._son.id, _father._son.altitude
+                    //     //     );
+                    //     // writefln("#f[%d] -> s[%d] m[%d]", _father.node_id, _father._son.node_id, node_id);
+                    //     // while(_father._son) {
+                    //     // }
                     }
                     // writefln(" :(%d:%d:%d)",
                     //     node_id, id, altitude);
-                    // writefln("#isInFront %s", _father.isInFront);
+                    // writefln("#isInFront %s", _father.isInFront);2
 
-                    check(!_father._son, ConsensusFailCode.EVENT_FORK);
+                    check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
                     _father._son = this;
                     _witness_mask = _mother._witness_mask | _father._witness_mask;
                 }
@@ -1653,11 +1671,11 @@ class Event {
                     _witness_mask = _mother._witness_mask;
                 }
                 _received_order = received_order_max(_mother, _father);
-                writefln("_received_order=%d", _received_order);
+                //writefln("_received_order=%d", _received_order);
                 attach_round(hashgraph);
-                if (_round is null) {
-                    writefln("########### Round is null %s _father is null=%s", isFatherLess, _father is null);
-                }
+                // if (_round is null) {
+                //     writefln("########### Round is null %s _father is null=%s", isFatherLess, _father is null);
+                // }
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
@@ -1682,7 +1700,7 @@ class Event {
                 // This means that we must climb upwards the graph to find the first father
                 // which has the first defined round
                 if (_mother) {
-                    check(!_mother._daughter, ConsensusFailCode.EVENT_FORK);
+                    check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
                     _mother._daughter = this;
                     _witness_mask = _mother._witness_mask;
                     _received_order = int.init;
@@ -1690,7 +1708,7 @@ class Event {
                 }
             }
             else {
-                assert(0, "We need some defined exception here (Event without a mother is not allowed)");
+                check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
         }
     }
@@ -1749,15 +1767,15 @@ class Event {
         return _mother;
     }
 
-    const(Event) mother() const pure nothrow
-    in {
-        assert(!isGrounded, "Mother can't be accessed becuase this event is grounded");
-        if ( event_package.event_body.mother ) {
-            assert(_mother);
-            assert( (altitude-_mother.altitude) == 1 );
-        }
-    }
-    do {
+    const(Event) mother() const pure {
+    // in {
+    //     if ( event_package.event_body.mother ) {
+    //         assert(_mother);
+    //         assert( (altitude-_mother.altitude) == 1 );
+    //     }
+    // }
+    // do {
+        Event.check(!isGrounded, ConsensusFailCode.EVENT_MOTHER_GROUNDED);
         return _mother;
     }
 
@@ -2023,7 +2041,9 @@ class Event {
             }
 
             void popFront() {
-                current = current._mother;
+                if (current) {
+                    current = current._mother;
+                }
             }
 
             Range save() pure nothrow {

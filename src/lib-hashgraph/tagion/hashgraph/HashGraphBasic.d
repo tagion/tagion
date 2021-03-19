@@ -252,11 +252,13 @@ interface Authorising {
     //     send(channel, pack.toDoc);
     // }
 
-    const(Pubkey) gossip(const(Pubkey) channel_owner, const Document);
+    alias ChannelFilter=bool delegate(const(Pubkey) channel) @safe;
+    const(Pubkey) gossip(ChannelFilter channel_filter, const Document);
 
-    // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) if(isHiBONRecord!T) {
-    //     return gossip(channel_owner, pack.toDoc);
-    // }
+    final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const T pack) if(isHiBONRecord!T) {
+        return gossip(channel_owner, pack.toDoc);
+    }
+
     // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) nothrow if(isHiBONRecord!T) {
     //     return gossip(channel_owner, pack.toDoc);
     // }
@@ -477,106 +479,133 @@ struct EventPackage {
 alias Tides=int[Pubkey];
 @RecordType("Wavefront") @safe
 struct Wavefront {
-    @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
+//    @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
     @Label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @Label("$state") ExchangeState state;
-    enum tidesName=GetLabel!(_tides).name;
+    Buffer front_seat;
+    //enum tidesName=GetLabel!(_tides).name;
     enum epacksName=GetLabel!(epacks).name;
     enum stateName=GetLabel!(state).name;
+    enum front_seatName=GetLabel!(front_seat).name;
 
     mixin HiBONRecordType;
     mixin JSONString;
 
-    // mixin HiBONRecord!(
-    //     q{
-    this(Tides tides) pure nothrow {
-        _tides=tides;
-        epacks=null;
-        state=ExchangeState.TIDAL_WAVE;
-    }
+    // this(Tides tides) pure nothrow {
+    //     _tides=tides;
+    //     epacks=null;
+    //     state=ExchangeState.TIDAL_WAVE;
+    // }
 
-    this(immutable(EventPackage*)[] epacks, const ExchangeState state) pure nothrow {
+    this(immutable(EventPackage)*[] epacks, const ExchangeState state, const Buffer front_seat) pure nothrow {
         this.epacks=epacks;
         this.state=state;
+        this.front_seat=front_seat;
     }
-    private  struct LoadTides {
-        @Label(tidesName) Tides tides;
-        mixin HiBONRecord!(
-            q{
-                this(const(Tides) _tides) const {
-                    tides=_tides;
-                }
-            });
 
+    this(Wavefront wavefront) {
+        epacks=wavefront.epacks;
+        state=wavefront.state;
+        front_seat=wavefront.front_seat;
     }
+    // private  struct LoadTides {
+    //     @Label(tidesName) Tides tides;
+    //     mixin HiBONRecord!(
+    //         q{
+    //             this(const(Tides) _tides) const {
+    //                 tides=_tides;
+    //             }
+    //         });
+
+    // }
 
     this(const SecureNet net, const Document doc) {
         state=doc[stateName].get!ExchangeState;
+//        if (doc.hasMember(front_seatName)) {
+        front_seat=doc[front_seatName].get!Buffer;
+//        }
         immutable(EventPackage)*[] event_packages;
-        writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
-        if (doc.hasMember(epacksName)) {
-            const sub_doc=doc[epacksName].get!Document;
-            foreach(e; sub_doc[]) {
-                writefln("event key=%s", e.key);
-                (() @trusted {
-                    immutable epack=cast(immutable)(new EventPackage(net, e.get!Document));
-                    event_packages~=epack;
-                })();
-            }
-            writefln("event_packages.length=%d", event_packages.length);
+        //writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
+        //if (doc.hasMember(epacksName)) {
+        const sub_doc=doc[epacksName].get!Document;
+        foreach(e; sub_doc[]) {
+            //writefln("event key=%s", e.key);
+            (() @trusted {
+                immutable epack=cast(immutable)(new EventPackage(net, e.get!Document));
+                event_packages~=epack;
+            })();
         }
+        //writefln("event_packages.length=%d", event_packages.length);
+            // }
         epacks=event_packages;
-        if (doc.hasMember(tidesName)) {
-            auto load_tides=LoadTides(doc);
-            _tides=load_tides.tides;
-        }
-        else {
-            init_tides;
-        }
+
+        // if (doc.hasMember(tidesName)) {
+        //     auto load_tides=LoadTides(doc);
+        //     _tides=load_tides.tides;
+        // }
+        // else {
+        //     init_tides;
+        // }
     }
 
     const(Document) toDoc() const {
         auto h=new HiBON;
         h[stateName]=state;
-        if (_tides.length) {
-            const load_tides=const(LoadTides)(_tides);
-            h[tidesName]=load_tides.toDoc[tidesName].get!Document;
+        h[front_seatName]=front_seat;
+        // if (_tides.length) {
+        //     const load_tides=const(LoadTides)(_tides);
+        //     h[tidesName]=load_tides.toDoc[tidesName].get!Document;
+        // }
+        //if (epacks.length) {
+        auto epacks_hibon=new HiBON;
+        foreach(i, epack; epacks) {
+            epacks_hibon[i]=epack.toDoc;
         }
-        if (epacks.length) {
-            auto epacks_hibon=new HiBON;
-            foreach(i, epack; epacks) {
-                epacks_hibon[i]=epack.toDoc;
-            }
-            h[epacksName]=epacks_hibon;
-        }
+        h[epacksName]=epacks_hibon;
+        // }
+        // else {
+        //     const load_tides=const(LoadTides)(_tides);
+        //     h[tidesName]=load_tides.toDoc[tidesName].get!Document;
+        // }
         return Document(h);
     }
-    //     });
 
-    @nogc
-    const(int[Pubkey]) tides() const pure nothrow
-        in {
-            assert(_tides.length !is 0);
+    const(Tides) tides() const pure nothrow {
+        //if (_tides.length is 0) {
+        Tides result;
+        foreach(e; epacks) {
+            result.update(e.pubkey,
+                {
+                    return e.event_body.altitude;
+                },
+                (int altitude)
+                {
+                    return highest(altitude, e.event_body.altitude);
+                });
         }
-    do {
-        return _tides;
+        return result;
+        // }
+        // else {
+        //     return _tides;
+        // }
     }
 
+    version(none)
     private void init_tides() nothrow {
-        assumeWontThrow(
-            writefln("_tides.length=%d epacks.length=%d", _tides.length, epacks.length)
-            );
+        // assumeWontThrow(
+        //     writefln("_tides.length=%d epacks.length=%d", _tides.length, epacks.length)
+        //     );
         if (_tides.length is 0) {
-            foreach(ref e; epacks) {
+            foreach(e; epacks) {
                 if (e.pubkey in _tides) {
                     _tides[e.pubkey]=highest(_tides[e.pubkey], e.event_body.altitude);
                 }
                 else {
                     _tides[e.pubkey]=e.event_body.altitude;
                 }
-                assumeWontThrow(
-                    writefln("_tides[%s]=%d", e.pubkey.cutHex, _tides[e.pubkey])
-                    );
+                // assumeWontThrow(
+                //     writefln("_tides[%s]=%d", e.pubkey.cutHex, _tides[e.pubkey])
+                //     );
             }
         }
 //        return _tides;
