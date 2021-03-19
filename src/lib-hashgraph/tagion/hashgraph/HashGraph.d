@@ -226,21 +226,11 @@ class HashGraph {
     class Register {
         private EventPackageCache event_package_cache;
         this(const Wavefront received_wave) {
-            bool ok;
             foreach(e; received_wave.epacks) {
-                if (received_wave.front_seat == e.fingerprint) {
-                    ok=true;
-                }
                 if (!(e.fingerprint in event_package_cache || e.fingerprint in _event_cache)) {
                     //log.trace("Received[%s] fingerprint=%s %d", e.pubkey.cutHex, e.fingerprint.cutHex, e.fingerprint.length);
                     event_package_cache[e.fingerprint] = e;
                 }
-            }
-            if (received_wave.front_seat) {
-                writefln("Register received_wave.front_seat %s", received_wave.front_seat.cutHex);
-                writefln("Register cached %s", isCached(received_wave.front_seat));
-
-                assert(ok);
             }
         }
 
@@ -331,10 +321,6 @@ class HashGraph {
                 writefln("P%s front_seat %d", from_channel.cutHex, front_seat_event.altitude);
             }
         }
-        if (!_register.isCached(received_wave.front_seat)) {
-            writefln("_register.isCached(received_wave.front_seat) %s %s",
-                received_wave.front_seat.cutHex, _register.isCached(received_wave.front_seat));
-        }
         //assert(!_register.isCached(received_wave.front_seat));
         assert(front_seat_event);
         return front_seat_event;
@@ -376,7 +362,7 @@ class HashGraph {
         // debug {
         //     writefln("tides.length=%d nodes.length=%d", tides.length, nodes.length);
         // }
-        return Wavefront(event_packages, ExchangeState.TIDAL_WAVE, null);
+        return Wavefront(event_packages, ExchangeState.TIDAL_WAVE);
     }
 
     /++
@@ -401,7 +387,7 @@ class HashGraph {
     const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides, const Event front_seat) {
         if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
 //            writefln("BUILDWAVEFRONT %s", state);
-            return Wavefront(null, state, null);
+            return Wavefront(null, state);
         }
         immutable(EventPackage)*[] result;
         assert(front_seat.channel == channel);
@@ -472,7 +458,7 @@ class HashGraph {
         // }
         assert(result.length);
 //        Wavefront.epacks=result;
-        return Wavefront(result, state, front_seat.fingerprint);
+        return Wavefront(result, state);
     }
 
     void wavefront(
@@ -557,9 +543,9 @@ class HashGraph {
                             ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                     received_node.state=NONE;
                     const from_front_seat=register_wavefront(received_wave, from_channel);
-                    writefln("received_wave.front_seat %s from_front_seat.fingerprint %s",
-                        received_wave.front_seat.cutHex, from_front_seat.fingerprint.cutHex);
-                    assert(received_wave.front_seat == from_front_seat.fingerprint);
+                    // writefln("received_wave.front_seat %s from_front_seat.fingerprint %s",
+                    //     received_wave.front_seat.cutHex, from_front_seat.fingerprint.cutHex);
+                    // assert(received_wave.front_seat == from_front_seat.fingerprint);
                     // Create a new event
                     writef("%s a=%d ->", received_wave.state, getNode(channel).altitude);
                     immutable epack=event_pack(time, from_front_seat, Document());
@@ -600,14 +586,14 @@ class HashGraph {
                     //     writefln("ALT %d %d", from_event_pack.event_body.altitude, getNode(from_channel).altitude);
                     // }
                     const from_front_seat=register_wavefront(received_wave, from_channel);
-                    writefln("received_wave.front_seat %s from_front_seat.fingerprint %s",
-                        received_wave.front_seat.cutHex, from_front_seat.fingerprint.cutHex);
-                    if (received_wave.front_seat != from_front_seat.fingerprint) {
-                        assert(isRegistered(from_front_seat.fingerprint));
-                        assert(isRegistered(received_wave.front_seat));
-                    }
+                    // writefln("received_wave.front_seat %s from_front_seat.fingerprint %s",
+                    //     received_wave.front_seat.cutHex, from_front_seat.fingerprint.cutHex);
+                    // if (received_wave.front_seat != from_front_seat.fingerprint) {
+                    //     assert(isRegistered(from_front_seat.fingerprint));
+                    //     assert(isRegistered(received_wave.front_seat));
+                    // }
 
-                    assert(received_wave.front_seat == from_front_seat.fingerprint);
+                    // assert(received_wave.front_seat == from_front_seat.fingerprint);
                     immutable epack=event_pack(time, from_front_seat, Document());
                     const registrated=registerEventPackage(epack);
                     Event.print("RegS ", registrated);

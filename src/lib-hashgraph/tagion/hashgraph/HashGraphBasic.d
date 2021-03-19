@@ -482,11 +482,9 @@ struct Wavefront {
 //    @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
     @Label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @Label("$state") ExchangeState state;
-    Buffer front_seat;
     //enum tidesName=GetLabel!(_tides).name;
     enum epacksName=GetLabel!(epacks).name;
     enum stateName=GetLabel!(state).name;
-    enum front_seatName=GetLabel!(front_seat).name;
 
     mixin HiBONRecordType;
     mixin JSONString;
@@ -497,16 +495,14 @@ struct Wavefront {
     //     state=ExchangeState.TIDAL_WAVE;
     // }
 
-    this(immutable(EventPackage)*[] epacks, const ExchangeState state, const Buffer front_seat) pure nothrow {
+    this(immutable(EventPackage)*[] epacks, const ExchangeState state) pure nothrow {
         this.epacks=epacks;
         this.state=state;
-        this.front_seat=front_seat;
     }
 
     this(Wavefront wavefront) {
         epacks=wavefront.epacks;
         state=wavefront.state;
-        front_seat=wavefront.front_seat;
     }
     // private  struct LoadTides {
     //     @Label(tidesName) Tides tides;
@@ -521,9 +517,6 @@ struct Wavefront {
 
     this(const SecureNet net, const Document doc) {
         state=doc[stateName].get!ExchangeState;
-//        if (doc.hasMember(front_seatName)) {
-        front_seat=doc[front_seatName].get!Buffer;
-//        }
         immutable(EventPackage)*[] event_packages;
         //writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
         //if (doc.hasMember(epacksName)) {
@@ -551,7 +544,6 @@ struct Wavefront {
     const(Document) toDoc() const {
         auto h=new HiBON;
         h[stateName]=state;
-        h[front_seatName]=front_seat;
         // if (_tides.length) {
         //     const load_tides=const(LoadTides)(_tides);
         //     h[tidesName]=load_tides.toDoc[tidesName].get!Document;
