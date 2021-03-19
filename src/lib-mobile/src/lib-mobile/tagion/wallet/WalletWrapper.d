@@ -21,6 +21,8 @@ import tagion.basic.Message;
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 import tagion.wallet.TagionCurrency;
+import tagion.communication.HiRPC;
+
 struct WalletData{
     protected @Label("$wallet") Wallet _wallet;
     protected @Label("$account") Buffer[Pubkey] _account;
@@ -29,7 +31,7 @@ struct WalletData{
 
     mixin HiBONRecord!(
             q{
-                this(Wallet wallet, Buffer[Pubkey] account = null, Buffer drive_state = null, StandardBill[] bills = null){
+                this(ref Wallet wallet, Buffer[Pubkey] account = null, Buffer drive_state = null, StandardBill[] bills = null){
                     _wallet = wallet;
                     _account = account;
                     _bills = bills;
@@ -44,7 +46,7 @@ struct WalletWrapper {
     protected StdSecureNet net;
 
 
-    this(Wallet wallet, Buffer[Pubkey] account = null, Buffer drive_state = null, StandardBill[] bills = null){
+    this(ref Wallet wallet, Buffer[Pubkey] account = null, Buffer drive_state = null, StandardBill[] bills = null){
         data._wallet = wallet;
         data._account = account;
         data._bills = bills;
@@ -52,7 +54,7 @@ struct WalletWrapper {
     }
 
 
-    this(WalletData data){
+    this(ref WalletData data){
         this.data = data;        
     }
 
@@ -222,6 +224,50 @@ struct WalletWrapper {
 
         return true;
     }
+
+    Document get_request_update_wallet(){
+        HiRPC hirpc;
+        Buffer prepareSearch(Buffer[] owners){
+            HiBON params = new HiBON;
+            foreach(i, owner; owners){
+                params[i] = owner;
+            }
+            const sender=hirpc.action("search", params);
+            immutable data=sender.toDoc.serialize;
+            return data;
+        }
+        Buffer[] pkeys;
+        foreach(pkey, dkey; data._account){
+            pkeys~=cast(Buffer)pkey;
+        }
+
+        return Document(prepareSearch(pkeys));
+    }
+
+    bool set_response_update_wallet(Document response_doc){
+        HiRPC hirpc;
+        StandardBill[] new_bills;
+        auto received = hirpc.receive(response_doc);
+        if(HiRPC.getType(received) == HiRPC.Type.result){
+            foreach(bill; received.response.result[]){
+                auto std_bill = StandardBill(bill.get!Document);
+                new_bills ~= std_bill;
+            }
+            data._bills = new_bills;
+            // writeln("Wallet updated");
+            return true;
+        }else{
+            // writeln("Wallet update failed");
+            return false;
+        }
+    }
+
+    ulong get_balance(){
+        const balance = calcTotal(data._bills);
+        return balance;
+    }
+
+
 
     static protected{
         ulong calcTotal(const(StandardBill[]) bills) nothrow{
