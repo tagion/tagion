@@ -1013,15 +1013,9 @@ class HashGraph {
 
         foreach(_net; network.networks) {
             const filename=fileId(_net.name);
-            // auto fout = File(filename.fullpath, "w");
-            // scope(exit) {
-            //     fout.close;
-            // }
             _net._hashgraph.fwrite(filename.fullpath);
         }
-//        auto network=new UnittestNetwork(hashgraphs);
 
-        //foreach(n; ne
         version(none) {
             //auto h=new HashGraph(net, feature/active_node);
             Emitter[NodeLable.max+1] emitters;
