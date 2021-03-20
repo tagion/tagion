@@ -495,55 +495,20 @@ class HashGraph {
             assert(event, "event must be defined");
         }
     do {
-        // if (event.isEva) {
-        //     // auto node=getNode(event.channel);
-        //     // if (!node[].empty) {
-        //     //     Event.print("TOP ", node.event);
-        //     //     Event.print("FST ", event);
-        //     // }
-        //     // Event.check(node[].empty, ConsensusFailCode.EVENT_PHONY_EVA);
-        //     // noden
-        //     getNode(event.channel).front_seat(event);
-        // }
-        // else {
-        //     writefln("event.event_package.event_body.mother.cutHex=%s", event.event_package.event_body.mother.cutHex);
-        //     Event.check(event.mother !is null, ConsensusFailCode.EVENT_MOTHER_LESS);
         getNode(event.channel).front_seat(event);
-        // }
     }
 
     @safe
     static class Node {
         ExchangeState state;
         immutable size_t node_id;
-
-        // @nogc
-        // size_t nodeId() const pure nothrow {
-        //     return node_id;
-        // }
-//        immutable ulong discovery_time;
         immutable(Pubkey) channel;
         @nogc
         this(const Pubkey channel, const size_t node_id) pure nothrow  {
-            //     in {
-            //         assert(event !is null, "First event a node must be definded");
-            //     }
-            // do {
-//            this.pubkey=pubkey;
             this.node_id=node_id;
             this.channel=channel;
-//            _event=event;
         }
 
-        version(none)
-        package void event(Event e) {
-            if (!_event) {
-                _event=e;
-                if (e.witness) {
-                    _latest_witness_event=e;
-                }
-            }
-        }
         /++
          Register first event
          +/
@@ -561,86 +526,18 @@ class HashGraph {
             }
         }
 
-        // @nogc
-        // final immutable(Pubkey) channel() const pure nothrow
-        //     in {
-        //         assert(_event, "Event has hot been signed yet");
-        //     }
-        // do {
-        //     return _event.channel;
-        // }
-
         private Event _event; // Latest event
-        // private Event _latest_witness_event; // Latest witness event
 
 
-        version(none)
-        @nogc
-        final package void event(Event e) nothrow
-        in {
-            assert(e);
-            // assert(e.son is null);
-            // assert(e.daughter is null);
-        }
-        do {
-
-            // if ( _event is null ) {
-            //     //_cache_altitude=e.altitude;
-            //     _event=e;
-            // }
-            if ( (_event is null) ||  lower(_event.altitude, e.altitude) ) {
-                //altitude=e.altitude;
-                _event=e;
-                if ( _event.witness ) {
-                    latest_witness_event=_event;
-                }
-            }
-        }
 
         @nogc
         package final Event event() pure nothrow {
             return _event;
         }
 
-        version(none)
-        package final const(Event) latest_witness_event() pure nothrow
-        out (result) {
-            assert(result, format("No witness has been defined for Node %s", channel.hex));
-        }
-        do {
-            event;
-            return _latest_witness_event;
-        }
-
-        version(none)
-        @nogc void remove() nothrow {
-            state = ExchangeState.NONE;
-            _event = null;
-            latest_witness_event = null;
-        }
-
         @nogc
         final bool isOnline() pure const nothrow {
             return (_event !is null);
-        }
-
-        // This is the altiude of the cache Event
-//        private int _cache_altitude;
-
-        version(none)
-        @nogc
-        final void altitude(int a) nothrow
-        in {
-            if ( _event ) {
-                assert(_event.daughter is null);
-            }
-        }
-        do {
-            int result=_cache_altitude;
-            if ( _event ) {
-                _cache_altitude=highest(_event.altitude, _cache_altitude);
-            }
-            _cache_altitude=highest(a, _cache_altitude);
         }
 
         @nogc
@@ -657,53 +554,12 @@ class HashGraph {
 
         @trusted
         Event.Range opSlice() pure nothrow {
-            // if (_event) {
-            //     event;
-            // }
-            //if (_event) {
-            //return Range();
-            // }
             if (event) {
                 return _event[];
             }
             return Event.Range(null);
         }
 
-        version(none)
-        invariant {
-            if ( _latest_witness_event ) {
-                assert(_latest_witness_event.witness);
-            }
-        }
-
-        version(none)
-        @nogc
-        struct Range {
-            private Event current;
-            this(ref Node node) pure nothrow {
-                current=event;
-            }
-
-            pure nothrow {
-                bool empty() const {
-                    return current is null;
-                }
-
-                Event popFront() {
-                    return current;
-                }
-            }
-
-            void popFront() {
-                if (current) {
-                    current=current.mother_raw;
-                }
-            }
-
-            Range save() pure nothrow {
-                return Range(current);
-            }
-        }
     }
 
     import std.traits : fullyQualifiedName;
@@ -711,13 +567,6 @@ class HashGraph {
     @nogc
     NodeRange opSlice() const pure nothrow {
         return nodes.byValue;
-    }
-
-    version(none)
-    void setAltitude(scope Pubkey pubkey, const(int) altitude) {
-        auto node=pubkey in nodes;
-        check(node !is null, ConsensusFailCode.EVENT_NODE_ID_UNKNOWN);
-        node.altitude=altitude;
     }
 
     void dumpNodes() {
@@ -741,20 +590,6 @@ class HashGraph {
 
     const(SecureNet) net() const pure nothrow {
         return hirpc.net;
-    }
-
-    // const(Node) getNode(const size_t node_id) const pure nothrow {
-    //     return nodes[node_id];
-    // }
-
-    version(none)
-    public const(Node) getNode(Pubkey channel) const pure
-    out(result) {
-        assert(result, "No front seat event defined for the node "~channel.hex);
-        assert(result._event.isInFront, "The event on this node is not in the front seat the node "~channel.hex);
-    }
-    do {
-        return nodes.get(channel, null);
     }
 
     package Node getNode(Pubkey channel) {
@@ -817,14 +652,6 @@ class HashGraph {
         return unused_list.front;
     }
 
-
-
-    // void add_node(const Pubkey pkey) nothrow {
-    //     nodes.required
-    //     if (!(pkey in nodes)) {
-    //         nodes[pkey]=new Node(next_node_id);
-    //     }
-    // }
 
 
     enum max_package_size=0x1000;
