@@ -391,19 +391,21 @@ class HashGraph {
         immutable(EventPackage)*[] result;
         assert(front_seat.channel == channel);
         foreach(n; nodes) {
-            //writefln("node P%s", n.channel.cutHex);
-            //log.trace("node_id=%d alt=%d", n.node_id, (n._event is null)?-117:n._event.altitude);
-
             if ( n.channel in tides ) {
                 const other_altitude=tides[n.channel];
-//                n[].each!((e) => result~=e.event_package);
+                foreach(e; n[]) {
+                    if (!higher(e.altitude, other_altitude)) {
+                        break;
+                    }
+                    result~=e.event_package;
 
-                // EventLoop:
-                auto range=n[];
-                while (!range.empty && higher(range.front.altitude, other_altitude)) {
-                    result~=range.front.event_package;
-                    range.popFront;
                 }
+                // auto range=n[];
+                // while (!range.empty && higher(range.front.altitude, other_altitude)) {
+                //     result~=range.front.event_package;
+                //     range.popFront;
+                // }
+                // n[].each!((e) {result~=e.event_package; return higher(e.altitude, other_altitude)
             }
             else {
                 n[].each!((e) => result~=e.event_package);
