@@ -454,7 +454,6 @@ class Round {
 
 
         if ( Event.scriptcallbacks ) {
-            import std.stdio;
             log("EPOCH received %d time=%d", round_received_events.length, middel_time);
             Event.scriptcallbacks.epoch(round_received_events, middel_time);
         }
@@ -757,9 +756,9 @@ class Round {
 
 @safe
 class Event {
-    static void print(string pref, const Event e) @safe  {
+    static void _print(string pref, const Event e) @safe  {
         import std.stdio;
-//         version(none) {
+         version(none) {
         writef("%s\t(%d:%d:%d)@%s %s->", pref, e.node_id, e.id, e.altitude, e.fingerprint.cutHex, e.isGrounded?"G":"");
         if (e._mother) {
             string daughter() {
@@ -786,7 +785,7 @@ class Event {
             writef(" f(#)@%s",e.event_package.event_body.father.cutHex);
         }
         writeln();
-//        }
+        }
     }
 
 
@@ -1608,7 +1607,6 @@ class Event {
         if (!connected) {
             scope(exit) {
                 if (_mother) {
-                    // writefln("highest(this.altitude=%d _mother.altitude=%d", this.altitude, _mother.altitude);
                     Event.check(this.altitude-_mother.altitude is 1,
                         ConsensusFailCode.EVENT_ALTITUDE);
                     Event.check(channel == _mother.channel,
@@ -1618,51 +1616,13 @@ class Event {
                 if (Event.callbacks) {
                     Event.callbacks.connect(this);
                 }
-                //check(hashgraph.mother_less(this), ConsensusFailCode.EVENT_MOTHER_LESS);
-                // Event.print("CON ", this);
-                // writefln("\tMother %s", _mother !is null);
             }
             _mother = hashgraph.register(event_package.event_body.mother);
-            // writefln("!!CONNECT %s in cache %s", event_package.event_body.mother.cutHex, hashgraph.isRegistered(event_package.event_body.mother));
-            // if (!_mother) {
-            //     writefln("%s hash no mother", fingerprint.cutHex);
-            // }
             if (_mother) {
-                // if (_mother.isEva) {
-                //     writefln("Connecting EVA");
-                // }
                 check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
-                // print(">> ", this);
                 _mother._daughter = this;
-                // if (_father && _father._son) {
-                //     writefln(">f(%d) -> s(%d) m(%d)", _father.id, _father._son.id, id);
-
-                // }
                 _father = hashgraph.register(event_package.event_body.father);
-//                 if (_father && _father._son) {
-//                     writefln("}f(%d) -> s(%d) m(%d)", _father.id, _father._son.id, id);
-//                     writefln("}f[%d] -> s[%d] m[%d]", _father.node_id, _father._son.node_id, node_id);
-// //                    writefln("}(%d) -> (%d)", _father.id, _father._son.id);
-
-//                 }
                 if (_father) {
-//                    writefln("father is infront=%s (_father._son is this) %s", _father.isInFront, _father._son is this);
-                    // writef("# (%d:%d:%d) ->",
-                    //     _father.node_id, _father.id, _father.altitude);
-                    if (_father._son) {
-                         print("fs ", this);
-
-                    //     // writef(" (%d:%d:%d)",
-                    //     //     _father._son.node_id, _father._son.id, _father._son.altitude
-                    //     //     );
-                    //     // writefln("#f[%d] -> s[%d] m[%d]", _father.node_id, _father._son.node_id, node_id);
-                    //     // while(_father._son) {
-                    //     // }
-                    }
-                    // writefln(" :(%d:%d:%d)",
-                    //     node_id, id, altitude);
-                    // writefln("#isInFront %s", _father.isInFront);2
-
                     check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
                     _father._son = this;
                     _witness_mask = _mother._witness_mask | _father._witness_mask;
@@ -1671,16 +1631,10 @@ class Event {
                     _witness_mask = _mother._witness_mask;
                 }
                 _received_order = received_order_max(_mother, _father);
-                //writefln("_received_order=%d", _received_order);
                 attach_round(hashgraph);
-                // if (_round is null) {
-                //     writefln("########### Round is null %s _father is null=%s", isFatherLess, _father is null);
-                // }
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
-                // assert(!hashgraph.rounds.decided(_round),
-                //             "Fixme(cbr):This node is way behind we need to find a solution");
                 const calc_mask = calc_witness_mask(hashgraph.voting_nodes);
                 if ( calc_mask.isMajority ) {
                     // Witness detected

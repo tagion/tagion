@@ -446,36 +446,10 @@ class HashGraph {
                             ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                     check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state=received_wave.state;
-                    //register_wavefront(received_wave);
-                    writeln("Before");
-                    foreach(key, n; nodes) {
-                        writef("P%s ", key.cutHex);
-                        if (n.isOnline) {
-                            Event.print("< ", n.event);
-                        }
-                        else {
-                            writeln();
-                        }
-                    }
 
                     immutable epack=event_pack(time, null, Document());
                     const registered=registerEventPackage(epack);
                     assert(registered);
-                    // Event.print("TDL ", registered);
-                    // writeln("After");
-                    // foreach(key, n; nodes) {
-                    //     writef("P%s ", key.cutHex);
-                    //     if (n.isOnline) {
-                    //         Event.print("< ", n.event);
-                    //     }
-                    //     else {
-                    //         writeln();
-                    //     }
-                    // }
-
-                    // writefln("isInFront %s", registrated.isInFront);
-
-//                    register_wavefront(received_wave);
                     return buildWavefront(FIRST_WAVE, received_wave.tides);
                 case BREAKING_WAVE:
                     log.trace("BREAKING_WAVE");
@@ -491,16 +465,9 @@ class HashGraph {
                             ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                     received_node.state=NONE;
                     const from_front_seat=register_wavefront(received_wave, from_channel);
-                    // writefln("received_wave.front_seat %s from_front_seat.fingerprint %s",
-                    //     received_wave.front_seat.cutHex, from_front_seat.fingerprint.cutHex);
-                    // assert(received_wave.front_seat == from_front_seat.fingerprint);
-                    // Create a new event
-                    writef("%s a=%d ->", received_wave.state, getNode(channel).altitude);
                     immutable epack=event_pack(time, from_front_seat, Document());
                     const registreted=registerEventPackage(epack);
                     assert(registreted);
-                    Event.print("RegF ", registreted);
-                    writefln("a=%d", getNode(channel).altitude);
                     assert(registreted, "The event package has not been registered correct (The wave should be dumped)");
                     return buildWavefront(SECOND_WAVE, received_wave.tides);
                 case SECOND_WAVE:
@@ -511,40 +478,9 @@ class HashGraph {
                     consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
                         ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                     received_node.state=NONE;
-                    // immutable(EventPackage)* from_event_pack;
-                    // {
-
-                    //     foreach(epack; received_wave.epacks) {
-                    //         if (from_channel == epack.pubkey) {
-                    //             //writefln("From_channel alt=%d", epack.event_body.altitude);
-                    //             if (from_event_pack) {
-                    //                 if (higher(epack.event_body.altitude, from_event_pack.event_body.altitude)) {
-                    //                     from_event_pack=epack;
-                    //                 }
-                    //             //from_event=true;
-                    //             }
-                    //             else {
-                    //                 from_event_pack=epack;
-                    //             }
-                    //         }
-                    //     }
-                    // }
-                    // assert(from_event_pack);
-                    // if (getNode(from_channel)._event) {
-                    //     writefln("ALT %d %d", from_event_pack.event_body.altitude, getNode(from_channel).altitude);
-                    // }
                     const from_front_seat=register_wavefront(received_wave, from_channel);
-                    // writefln("received_wave.front_seat %s from_front_seat.fingerprint %s",
-                    //     received_wave.front_seat.cutHex, from_front_seat.fingerprint.cutHex);
-                    // if (received_wave.front_seat != from_front_seat.fingerprint) {
-                    //     assert(isRegistered(from_front_seat.fingerprint));
-                    //     assert(isRegistered(received_wave.front_seat));
-                    // }
-
-                    // assert(received_wave.front_seat == from_front_seat.fingerprint);
                     immutable epack=event_pack(time, from_front_seat, Document());
                     const registrated=registerEventPackage(epack);
-                    Event.print("RegS ", registrated);
                     assert(registrated, "The event package has not been registered correct (The wave should be dumped)");
                 }
                 return buildWavefront(NONE);
