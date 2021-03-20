@@ -152,91 +152,6 @@ struct EventView {
 
 }
 
-version(none)
-@safe
-interface HashGraphI {
-
-    //  void request(scope immutable(Buffer) fingerprint);
-
-//    Event lookup(scope const(Buffer) fingerprint);
-
-    void eliminate(scope const(Buffer) fingerprint);
-
-    //Event registerEvent(immutable(EventPackage*) event_pack);
-
-    //   void register(scope immutable(Buffer) fingerprint, Event event);
-
-    bool isRegistered(scope const(Buffer) fingerprint) pure;
-
-    size_t number_of_registered_event() const pure nothrow;
-
-    //const(Document) buildPackage(const(HiBON) pack, const ExchangeState type);
-
-    //Tides tideWave(HiBON hibon, bool build_tides);
-
-    //void wavefront(Pubkey received_pubkey, Document doc, ref Tides tides);
-
-    bool front_seat(Event event);
-
-    Event register(scope const(Buffer) fingerprint);
-
-    uint next_event_id() nothrow;
-
-    //void register_wavefront();
-
-    //HiBON[] buildWavefront(Tides tides, bool is_tidewave) const;
-//    const(HiRPC.Sender) wavefront(ref const(HiRPC.Receiver) received);
-    void wavefront(
-        const Pubkey channel,
-        const(Wavefront) received_wave,
-        void delegate(const(Wavefront) send_wave) @safe response);
-
-    // void wavefront(
-    //     const Pubkey channel,
-    //     ref const(HiRPC.Receiver) received_wave,
-    //     void delegate(ref const(Wavefront) response));
-
-    // const(Wavefront) wavefront_machine(const(Wavefront) receiver_wave);
-
-    Round.Rounder rounds() pure nothrow;
-//    const(size_t) nodeId(scope Pubkey pubkey) const pure;
-//    const(size_t) node_size() const pure nothrow;
-
-    size_t active_nodes() const pure nothrow;
-
-    size_t voting_nodes() const pure nothrow;
-
-    void add_node(const Pubkey pubkey) nothrow;
-
-    bool remove_node(const Pubkey pubkey) nothrow;
-
-    // const(NodeI) getNode(const size_t node_id) const pure nothrow;
-
-    const(NodeI) getNode(Pubkey pubkey) const pure;
-
-    bool areWeOnline() const pure nothrow;
-
-    Pubkey channel() const pure nothrow;
-    const(Pubkey[]) channels() const pure nothrow;
-
-    const(SecureNet) net() const pure nothrow;
-}
-version(none)
-@safe
-interface NodeI {
-    void remove() nothrow;
-
-    bool isOnline() pure const nothrow;
-
-    final void altitude(int a) nothrow;
-
-    final int altitude() const pure nothrow;
-
-    immutable(Pubkey) channel() const pure nothrow;
-
-    size_t nodeId() const pure nothrow;
-}
-
 
 @safe
 interface Authorising {
@@ -314,106 +229,6 @@ struct EventBody {
 
     immutable(EventBody) eva();
 
-    version(none)
-    this(const Document doc) {
-        static if (TYPE.length) {
-            string _type=doc[TYPENAME].get!string;
-            .check(_type == TYPE, format("Wrong %s type %s should be %s", TYPENAME, _type, type));
-        }
-    ForeachTuple:
-        foreach(i, ref m; this.tupleof) {
-            static if (__traits(compiles, typeof(m))) {
-                static if (hasUDA!(this.tupleof[i], Label)) {
-                    alias label=GetLabel!(this.tupleof[i])[0];
-                    enum name=label.name;
-                    enum optional=label.optional;
-                    static if (label.optional) {
-                        if (!doc.hasMember(name)) {
-                            break;
-                        }
-                    }
-                    static if (TYPE.length) {
-                        static assert(TYPENAME != label.name,
-                            format("Default %s is already definded to %s but is redefined for %s.%s",
-                                TYPENAME, TYPE, typeof(this).stringof, basename!(this.tupleof[i])));
-                    }
-                }
-                else {
-                    enum name=basename!(this.tupleof[i]);
-                    enum optional=false;
-                }
-                static if (name.length) {
-                    enum member_name=this.tupleof[i].stringof;
-                    enum code=format("%s=doc[name].get!BaseT;", member_name);
-                    alias MemberT=typeof(m);
-                    alias BaseT=TypedefType!MemberT;
-                    alias UnqualT=Unqual!BaseT;
-                    static if (is(BaseT : const(Document))) {
-                        auto dub_doc = doc[name].get!Document;
-                        m = dub_doc;
-                    }
-                    else static if (is(BaseT == struct)) {
-                        auto dub_doc = doc[name].get!Document;
-                        enum doc_code=format("%s=UnqualT(dub_doc);", member_name);
-                        pragma(msg, doc_code, ": ", BaseT, ": ", UnqualT);
-                        mixin(doc_code);
-                    }
-                    else static if (is(BaseT == class)) {
-                        const dub_doc = Document(doc[name].get!Document);
-                        m=new BaseT(dub_doc);
-                    }
-                    else static if (is(BaseT == enum)) {
-                        alias EnumBaseT=OriginalType!BaseT;
-                        m=cast(BaseT)doc[name].get!EnumBaseT;
-                    }
-                    else {
-                        static if (is(BaseT:U[], U)) {
-                            static if (hasMember!(U, "toHiBON")) {
-                                MemberT array;
-                                auto doc_array=doc[name].get!Document;
-                                static if (optional) {
-                                    if (doc_array.length == 0) {
-                                        continue ForeachTuple;
-                                    }
-                                }
-                                check(doc_array.isArray, message("Document array expected for %s member",  name));
-                                foreach(e; doc_array[]) {
-                                    const sub_doc=e.get!Document;
-                                    array~=U(sub_doc);
-                                }
-                                enum doc_array_code=format("%s=array;", member_name);
-                                mixin(doc_array_code);
-                            }
-                            else static if (Document.Value.hasType!U) {
-                                MemberT array;
-                                auto doc_array=doc[name].get!Document;
-                                static if (optional) {
-                                    if (doc_array.length == 0) {
-                                        continue ForeachTuple;
-                                    }
-                                }
-                                check(doc_array.isArray, message("Document array expected for %s member",  name));
-                                foreach(e; doc_array[]) {
-                                    array~=e.get!U;
-                                }
-                                m=array;
-//                                static assert(0, format("Special handling of array %s", MemberT.stringof));
-                            }
-                            else {
-                                static assert(is(U == immutable), format("The array must be immutable not %s but is %s",
-                                        BaseT.stringof, cast(immutable(U)[]).stringof));
-                                mixin(code);
-                            }
-                        }
-                        else {
-                            mixin(code);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     void consensus() inout {
         if ( mother.length == 0 ) {
             // Seed event first event in the chain
@@ -429,14 +244,6 @@ struct EventBody {
     }
 
 }
-
-version(none)
-@trusted
-static immutable(EventPackage*) buildEventPackage(Args...)(Args args) {
-    immutable result=cast(immutable)(new EventPackage(args));
-    return result;
-}
-
 
 //@RecordType("EPACK") @safe
 pragma(msg, "fixme(cbr): Should be a HiRPC");
@@ -515,20 +322,15 @@ struct Wavefront {
     this(const SecureNet net, const Document doc) {
         state=doc[stateName].get!ExchangeState;
         immutable(EventPackage)*[] event_packages;
-        writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
         if (doc.hasMember(epacksName)) {
             const sub_doc=doc[epacksName].get!Document;
             foreach(e; sub_doc[]) {
-                writefln("event key=%s", e.key);
                 (() @trusted {
                     immutable epack=cast(immutable)(new EventPackage(net, e.get!Document));
                     event_packages~=epack;
                 })();
             }
-            writefln("event_packages.length=%d", event_packages.length);
         }
-        //writefln("event_packages.length=%d", event_packages.length);
-            // }
         epacks=event_packages;
         if (doc.hasMember(tidesName)) {
             auto load_tides=LoadTides(doc);
@@ -554,7 +356,9 @@ struct Wavefront {
     }
 
     const(Tides) tides() const pure nothrow {
-        //if (_tides.length is 0) {
+        if (_tides) {
+            return _tides;
+        }
         Tides result;
         foreach(e; epacks) {
             result.update(e.pubkey,
@@ -567,32 +371,8 @@ struct Wavefront {
                 });
         }
         return result;
-        // }
-        // else {
-        //     return _tides;
-        // }
     }
 
-    version(none)
-    private void init_tides() nothrow {
-        // assumeWontThrow(
-        //     writefln("_tides.length=%d epacks.length=%d", _tides.length, epacks.length)
-        //     );
-        if (_tides.length is 0) {
-            foreach(e; epacks) {
-                if (e.pubkey in _tides) {
-                    _tides[e.pubkey]=highest(_tides[e.pubkey], e.event_body.altitude);
-                }
-                else {
-                    _tides[e.pubkey]=e.event_body.altitude;
-                }
-                // assumeWontThrow(
-                //     writefln("_tides[%s]=%d", e.pubkey.cutHex, _tides[e.pubkey])
-                //     );
-            }
-        }
-//        return _tides;
-    }
 }
 
 //@RecordType("Eva")

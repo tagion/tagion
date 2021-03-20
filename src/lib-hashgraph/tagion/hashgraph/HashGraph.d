@@ -132,46 +132,17 @@ class HashGraph {
     }
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
-        //     in {
-        //         assert(
-        //             ((channel in nodes) !is null) ||
-        //             (nodes[channel]._event is null),
-        //             format("
-        //     }
-        // do {
-        // Make sure that the owners Node exists
-
         getNode(channel);
         writefln("channel in nodes=%s", (channel in nodes) !is null);
         immutable eva_epack=eva_pack(time, nonce);
         auto eva_event=registerEventPackage(eva_epack);
-        //eva_event.connect;
-//        if (eva_event) {
-        // Initialize the eva event as the first event in the owner node
-        //nodes[channel].event=eva_event;
-        // }
-        // else {
-        //     log.error("The channel of this oner is not valid");
-        // }
         return eva_event;
     }
-
-    // immutable(EventPackage*) bind_pack(const sdt_t time, const Document doc) @trusted {
-    //     const node=nodes[channel];
-    //     immutable ebody=EventBody(doc, node.event, null, time);
-    //     return cast(immutable)new EventPackage(hirpc.net, ebody);
-    // }
-
-    // @nogc
-    // immutable(Pubkey) pubkey() const pure nothrow {
-    //     return net.pubkey;
-    // }
 
     alias EventPackageCache=immutable(EventPackage)*[Buffer];
     alias EventCache=Event[Buffer];
 
     protected {
-//        EventPackageCache _event_package_cache;
         EventCache _event_cache;
     }
 
@@ -187,11 +158,6 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
-    version(none)
-    bool isCached(scope const(ubyte[]) fingerprint) const pure nothrow {
-        return (fingerprint in _event_package_cache) !is null;
-    }
-
     /++
      @return true if the event package has been register correct
      +/
@@ -204,24 +170,12 @@ class HashGraph {
         if (valid_channel(event_pack.pubkey)) {
             auto event=new Event(event_pack, this);
             _event_cache[event.fingerprint]=event;
-            // writefln("!! %s register %s", event.fingerprint.cutHex, isRegistered(event.fingerprint));
-            // writef("registerEvent %s inFront=%s (%s)", event.connected, event.isInFront, getNode(event.channel)._event !is null);
             event.connect(this);
-            // writefln(":register %s inFront=%s (%s)", event.connected, event.isInFront, getNode(event.channel)._event !is null);
             return event;
         }
         return null;
     }
 
-
-    version(none)
-    private bool channel_available(Event event) {
-        auto node=nodes.get(event.channel, null);
-        if (node) {
-            node.front_seat(event);
-        }
-        return false;
-    }
 
     class Register {
         private EventPackageCache event_package_cache;
@@ -273,25 +227,6 @@ class HashGraph {
         }
         return _event_cache.get(fingerprint, null);
     }
-
-    version(none)
-    final bool isCached(scope const(Buffer) fingerprint) const pure nothrow {
-        if (_register) {
-            return _register.isCached(fingerprint);
-        }
-        return false;
-    }
-
-    version(none)
-    final const(Event) lookup(scope const(Buffer) fingerprint) const
-    in {
-        assert(!isCached(fingerprint),
-            format("The event %s has not been registered yet it is not in the graph yet", fingerprint.toHex));
-    }
-    do {
-        return _event_cache.get(fingerprint, null);
-    }
-
 
     /++
      Returns:
@@ -360,25 +295,6 @@ class HashGraph {
         return Wavefront(tides);
     }
 
-    /++
-     Puts the event in the front seat of the wavefront if the event altitude is highest
-     +/
-    version(none)
-    bool front_seat(Event event) {
-        //     in {
-        //         assert(!current_node.event._daughter, "The event in the front seat should not have a daugther yet");
-        //     }
-        // do {
-        auto current_node = nodes[event.channel];
-        if ((current_node._event is null) || higher(event.altitude, current_node.event.altitude)) {
-            // If the current event is in front of the wave front it is set to the current event
-            current_node.event = event;
-            assert(!current_node.event.daughter, "The event in the front seat should not have a daugther yet");
-            return true;
-        }
-        return false;
-    }
-
     const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides=null) {
         if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
             return Wavefront(null, state);
@@ -394,12 +310,6 @@ class HashGraph {
                     result~=e.event_package;
 
                 }
-                // auto range=n[];
-                // while (!range.empty && higher(range.front.altitude, other_altitude)) {
-                //     result~=range.front.event_package;
-                //     range.popFront;
-                // }
-                // n[].each!((e) {result~=e.event_package; return higher(e.altitude, other_altitude)
             }
             else {
                 n[].each!((e) => result~=e.event_package);
@@ -657,28 +567,6 @@ class HashGraph {
     enum max_package_size=0x1000;
 //    alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
     enum round_clean_limit=10;
-
-    version(none)
-    protected void scrap() {
-        // Scrap the rounds and events below this
-        import std.algorithm.searching : all;
-        import std.algorithm.iteration : each;
-
-        void local_scrap(Round r) @trusted {
-            log.trace("Try to remove round %d", r.number);
-            if (r[].all!(a => (a is null) || (a.round_received !is null))) {
-                log.trace("Remove and disconnection round in %d", r.number);
-                r.range.each!((a) => {if (a !is null) {a.disconnect; pragma(msg, typeof(a));}});
-
-            }
-        }
-        Round _lowest=Round.lowest;
-        if ( _lowest ) {
-            local_scrap(_lowest);
-            _lowest.__grounded=true;
-            log("Round scrapped");
-        }
-    }
 
     /++
      Dumps all events in the Hashgraph to a file

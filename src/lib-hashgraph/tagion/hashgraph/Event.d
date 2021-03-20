@@ -702,18 +702,8 @@ class Event {
             assert(_round is null);
             hashgraph.rounds.next_round(this);
             log.error("#### lastround is null %s", hashgraph.rounds.last_round is null);
-            //Round.seed_round(node_size);
-            //_round.add(this);
-            //_received_order=-1;
         }
         this.node_id=hashgraph.getNode(channel).node_id;
-
-        // if (fingerprint.cutHex == "b925110521d2a9b0") {
-        //     import tagion.hibon.HiBONJSON;
-        //     (() @trusted {
-        //         writefln("Create %s %d %J", hashgraph.channel.cutHex, id, *epack);
-        //     })();
-        // }
         if (Event.callbacks) {
             Event.callbacks.create(this);
         }
@@ -901,16 +891,16 @@ class Event {
         }
     }
 
-
-
     @nogc
     package bool is_marked() const nothrow {
         return _marker is _mark;
     }
+
     @nogc
     package void mark() nothrow {
         _mark=_marker;
     }
+
     @nogc
     package static void set_marker() nothrow {
         _marker++;
@@ -1202,13 +1192,6 @@ class Event {
     immutable(int) altitude() const pure nothrow {
         return event_package.event_body.altitude;
     }
-
-
-    // @nogc
-    // immutable(Pubkey) pubkey() const pure nothrow {
-    //     return event_package.pubkey;
-    // }
-
 
     immutable size_t node_id;
 // Disconnect the Event from the graph
