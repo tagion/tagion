@@ -479,86 +479,77 @@ struct EventPackage {
 alias Tides=int[Pubkey];
 @RecordType("Wavefront") @safe
 struct Wavefront {
-//    @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
+    @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
     @Label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @Label("$state") ExchangeState state;
-    //enum tidesName=GetLabel!(_tides).name;
+    enum tidesName=GetLabel!(_tides).name;
     enum epacksName=GetLabel!(epacks).name;
     enum stateName=GetLabel!(state).name;
 
     mixin HiBONRecordType;
     mixin JSONString;
 
-    // this(Tides tides) pure nothrow {
-    //     _tides=tides;
-    //     epacks=null;
-    //     state=ExchangeState.TIDAL_WAVE;
-    // }
+    // mixin HiBONRecord!(
+    //     q{
+    this(Tides tides) pure nothrow {
+        _tides=tides;
+        epacks=null;
+        state=ExchangeState.TIDAL_WAVE;
+    }
 
     this(immutable(EventPackage)*[] epacks, const ExchangeState state) pure nothrow {
         this.epacks=epacks;
         this.state=state;
     }
+    private  struct LoadTides {
+        @Label(tidesName) Tides tides;
+        mixin HiBONRecord!(
+            q{
+                this(const(Tides) _tides) const {
+                    tides=_tides;
+                }
+            });
 
-    this(Wavefront wavefront) {
-        epacks=wavefront.epacks;
-        state=wavefront.state;
     }
-    // private  struct LoadTides {
-    //     @Label(tidesName) Tides tides;
-    //     mixin HiBONRecord!(
-    //         q{
-    //             this(const(Tides) _tides) const {
-    //                 tides=_tides;
-    //             }
-    //         });
-
-    // }
 
     this(const SecureNet net, const Document doc) {
         state=doc[stateName].get!ExchangeState;
         immutable(EventPackage)*[] event_packages;
-        //writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
-        //if (doc.hasMember(epacksName)) {
-        const sub_doc=doc[epacksName].get!Document;
-        foreach(e; sub_doc[]) {
-            //writefln("event key=%s", e.key);
-            (() @trusted {
-                immutable epack=cast(immutable)(new EventPackage(net, e.get!Document));
-                event_packages~=epack;
-            })();
+        writefln("doc.hasMember(%s)=%s", epacksName, doc.hasMember(epacksName));
+        if (doc.hasMember(epacksName)) {
+            const sub_doc=doc[epacksName].get!Document;
+            foreach(e; sub_doc[]) {
+                writefln("event key=%s", e.key);
+                (() @trusted {
+                    immutable epack=cast(immutable)(new EventPackage(net, e.get!Document));
+                    event_packages~=epack;
+                })();
+            }
+            writefln("event_packages.length=%d", event_packages.length);
         }
         //writefln("event_packages.length=%d", event_packages.length);
             // }
         epacks=event_packages;
-
-        // if (doc.hasMember(tidesName)) {
-        //     auto load_tides=LoadTides(doc);
-        //     _tides=load_tides.tides;
-        // }
-        // else {
-        //     init_tides;
-        // }
+        if (doc.hasMember(tidesName)) {
+            auto load_tides=LoadTides(doc);
+            _tides=load_tides.tides;
+        }
     }
 
     const(Document) toDoc() const {
         auto h=new HiBON;
         h[stateName]=state;
-        // if (_tides.length) {
-        //     const load_tides=const(LoadTides)(_tides);
-        //     h[tidesName]=load_tides.toDoc[tidesName].get!Document;
-        // }
-        //if (epacks.length) {
-        auto epacks_hibon=new HiBON;
-        foreach(i, epack; epacks) {
-            epacks_hibon[i]=epack.toDoc;
+        if (_tides.length) {
+            const load_tides=const(LoadTides)(_tides);
+            h[tidesName]=load_tides.toDoc[tidesName].get!Document;
         }
-        h[epacksName]=epacks_hibon;
-        // }
-        // else {
-        //     const load_tides=const(LoadTides)(_tides);
-        //     h[tidesName]=load_tides.toDoc[tidesName].get!Document;
-        // }
+        if (epacks.length) {
+            auto epacks_hibon=new HiBON;
+            foreach(i, epack; epacks) {
+                epacks_hibon[i]=epack.toDoc;
+            }
+            h[epacksName]=epacks_hibon;
+        }
         return Document(h);
     }
 

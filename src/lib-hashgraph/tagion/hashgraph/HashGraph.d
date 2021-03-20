@@ -347,22 +347,17 @@ class HashGraph {
      +  A send the rest of the event which is in front of B's wave-front
      +/
     const(Wavefront) tidalWave() pure {
-        //immutable(EventPackage)*[] event_packages;
-        auto event_packages=new immutable(EventPackage)*[nodes.length];
-        size_t index;
-        //Tides tides;
-        foreach(n; nodes) {
+        Tides tides;
+        foreach(pkey, n; nodes) {
             if ( n.isOnline ) {
-                event_packages[index++]=n.event.event_package;
-                //tides[pkey] = n.altitude;
-                //assert(n._event.isInFront);
+                tides[pkey] = n.altitude;
+                assert(n._event.isInFront);
             }
         }
-        event_packages=event_packages[0..index];
-        // debug {
-        //     writefln("tides.length=%d nodes.length=%d", tides.length, nodes.length);
-        // }
-        return Wavefront(event_packages, ExchangeState.TIDAL_WAVE);
+        debug {
+            writefln("tides.length=%d nodes.length=%d", tides.length, nodes.length);
+        }
+        return Wavefront(tides);
     }
 
     /++
@@ -384,12 +379,11 @@ class HashGraph {
         return false;
     }
 
-    const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides, const Event front_seat) {
+    const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides=null) {
         if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
             return Wavefront(null, state);
         }
         immutable(EventPackage)*[] result;
-        assert(front_seat.channel == channel);
         foreach(n; nodes) {
             if ( n.channel in tides ) {
                 const other_altitude=tides[n.channel];
@@ -444,13 +438,13 @@ class HashGraph {
                 case TIDAL_WAVE: ///
                     if (received_node.state !is NONE) {
                         received_node.state = NONE;
-                        return buildWavefront(BREAKING_WAVE, null, null);
+                        return buildWavefront(BREAKING_WAVE);
                     }
                     // Receive the tide wave
                     consensus(received_wave.state, INIT_TIDE, NONE).
                         check((received_wave.state !is INIT_TIDE) && (received_wave.state !is NONE),
                             ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
-                    check(received_wave.epacks.length !is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
+                    check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state=received_wave.state;
                     //register_wavefront(received_wave);
                     writeln("Before");
@@ -482,7 +476,7 @@ class HashGraph {
                     // writefln("isInFront %s", registrated.isInFront);
 
 //                    register_wavefront(received_wave);
-                    return buildWavefront(FIRST_WAVE, received_wave.tides, registered);
+                    return buildWavefront(FIRST_WAVE, received_wave.tides);
                 case BREAKING_WAVE:
                     log.trace("BREAKING_WAVE");
                     received_node.state = NONE;
@@ -490,7 +484,7 @@ class HashGraph {
                 case FIRST_WAVE:
                     if (received_node.state !is INIT_TIDE) {
                         received_node.state = NONE;
-                        return buildWavefront(BREAKING_WAVE, null, null);
+                        return buildWavefront(BREAKING_WAVE);
                     }
                     consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
                         check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
@@ -508,11 +502,11 @@ class HashGraph {
                     Event.print("RegF ", registreted);
                     writefln("a=%d", getNode(channel).altitude);
                     assert(registreted, "The event package has not been registered correct (The wave should be dumped)");
-                    return buildWavefront(SECOND_WAVE, received_wave.tides, registreted);
+                    return buildWavefront(SECOND_WAVE, received_wave.tides);
                 case SECOND_WAVE:
                     if (received_node.state !is TIDAL_WAVE) {
                         received_node.state = NONE;
-                        return buildWavefront(BREAKING_WAVE, null, null);
+                        return buildWavefront(BREAKING_WAVE);
                     }
                     consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
                         ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
@@ -553,7 +547,7 @@ class HashGraph {
                     Event.print("RegS ", registrated);
                     assert(registrated, "The event package has not been registered correct (The wave should be dumped)");
                 }
-                return buildWavefront(NONE, null, null);
+                return buildWavefront(NONE);
             }
         }
         response(wavefront_response);
@@ -961,74 +955,6 @@ class HashGraph {
                 MAX = 150
             }
 
-            struct WaveLog {
-                Pubkey from;
-                Pubkey to;
-                Wavefront wavefront;
-                // this(const Pubkey from,
-                //     const Pubkey to,
-                //     const Wavefront wavefront) {
-                //     this.from=from;
-                //     this.to=to;
-                //     this.wavefront=wavefront;
-                // }
-
-
-                // this(ref WaveLog wavelog) {
-                //     from=wavelog.from;
-                //     to=wavelog.to;
-                //     wavefront=wavelog.wavefront;
-                // }
-            }
-
-            const(WaveLog)*[Buffer] wavelogs;
-
-            private HiRPC hirpc;
-
-            void wavefront_log(const Pubkey to, const Document doc) nothrow {
-                assumeWontThrow(
-                    {
-                        import std.stdio;
-                        const receiver=hirpc.receive(doc);
-                        const wavefront=receiver.params!Wavefront(hirpc.net);
-                        const from=receiver.pubkey;
-//                Buffer front_fingerprin;
-                        immutable(EventPackage)* front_epack;
-                        foreach(epack; wavefront.epacks) {
-                            if (to == epack.pubkey) {
-                                if (front_epack) {
-                                    if (higher(epack.event_body.altitude, front_epack.event_body.altitude)) {
-                                        front_epack=epack;
-                                    }
-                                }
-                                else {
-                                    front_epack=epack;
-                                }
-                            }
-                        }
-                        assert(front_epack);
-                        const wavelog=new WaveLog(from, to, wavefront);
-                        if (front_epack.fingerprint in wavelogs) {
-                            const old_wavelog=wavelogs[front_epack.fingerprint];
-                            (() @trusted {
-                                writefln("OLD Wavefront [%s] hash already been send from [%s] to [%s]",
-                                    front_epack.fingerprint.cutHex,
-                                    old_wavelog.from.cutHex,
-                                    old_wavelog.to.cutHex);
-                                writefln("old=%J", old_wavelog.wavefront);
-                                writefln("NEW Wavefront [%s] hash already been send from [%s] to [%s]",
-                                    front_epack.fingerprint.cutHex,
-                                    wavelog.from.cutHex,
-                                    wavelog.to.cutHex);
-                                writefln("new=%J", wavelog.wavefront);
-                            })();
-                        }
-                        else {
-                            wavelogs[front_epack.fingerprint]=wavelog;
-                        }
-                    });
-            }
-
             alias ChannelQueue=Queue!Document;
 
             class UnittestAuthorising  : Authorising {
@@ -1059,7 +985,6 @@ class HashGraph {
                     if ( Event.callbacks ) {
                         Event.callbacks.send(channel, doc);
                     }
-                    wavefront_log(channel, doc);
                     channel_queues[channel].write(doc);
                 }
 
@@ -1197,14 +1122,6 @@ class HashGraph {
                 }
             }
 
-            // tagion/hashgraph/HashGraph.d(1212): Error: function
-            // tagion.hashgraph.HashGraph.HashGraph.UnittestNetwork!(NodeLabel).UnittestNetwork.UnittestAuthorising.gossip(
-            //     bool delegate(const(Typedef!(immutable(ubyte)[], null, "PUBKEY")) channel) @safe channel_filter,
-            //     const(Document) doc)
-            //     is not callable using argument types
-            //     (
-            //         bool delegate(const(Typedef!(immutable(ubyte)[], null, "PUBKEY")) channel) @safe,
-            //         const(Post!Direction.SEND))
             @trusted
             const(Pubkey[]) channels() const pure nothrow {
                 return networks.keys;
@@ -1212,8 +1129,7 @@ class HashGraph {
 
             FiberNetwork[Pubkey] networks;
 //            @disable this();
-            this(const SecureNet securenet) {
-                hirpc=HiRPC(securenet);
+            this() {
                 import std.traits : EnumMembers;
                 import std.conv : to;
                 authorising=new UnittestAuthorising;
@@ -1243,7 +1159,6 @@ class HashGraph {
 
         import  std.typecons : BlackHole;
         import tagion.hashgraph.Event;
-        import tagion.crypto.SecureNet : StdSecureNet;
         // This is the example taken from
         // HASHGRAPH CONSENSUSE
         // SWIRLDS TECH REPORT TR-2016-01
@@ -1269,7 +1184,7 @@ class HashGraph {
             nothrow {
                 string name;
                 @trusted
-                    void create(const(Event) e) {
+                void create(const(Event) e) {
                     assumeWontThrow(
                         writefln("\t$%s$ create id=%d", name, e.id));
                 }
@@ -1305,8 +1220,8 @@ class HashGraph {
 
         alias UnittestMonitor=BlackHole!UnittestAbstractMonitor;
 
-        auto net=new StdSecureNet();
-        auto network=new UnittestNetwork!NodeLabel(net);
+
+        auto network=new UnittestNetwork!NodeLabel();
         network.random.seed(123456789);
 
         network.global_time=SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
