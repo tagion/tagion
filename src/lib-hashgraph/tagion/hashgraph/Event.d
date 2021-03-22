@@ -471,7 +471,7 @@ class Round {
                 assert(last_round, "Base round must be created");
                 assert(last_decided_round, "Last decided round must exist");
                 assert(e, "Event must create before a round can be added");
-                assert(e._round is null, "Round has already been added");
+                //assert(e._round is null, "Round has already been added");
             }
         do {
             log.error("isEva %s (last_round is null) = %s", e.isEva, (last_round is null));
@@ -481,22 +481,6 @@ class Round {
                     assert(e._round !is null);
                     e._round.add(e);
                 }
-
-                // assert(last_decided_round);
-                // for(Round r=last_decided_round; r !is null; r = r._next) {
-                //     log.error("e.isEva e.node_id = %d r._events.length=%d e.fingerprint=%s",
-                //         e.node_id, r._events.length, e.fingerprint.cutHex);
-                //     if (r._events[e.node_id] is null) {
-                //         log.error("e.isEva (r is null) = %s", r is null);
-
-                //         e._round = r;
-                //         break;
-                //     }
-                // }
-                // log.error("EVA (e._round is null) = %s", e._round is null);
-                // assert(e._round !is null);
-            // }
-            // else {
                 if (e._round && e._round._next) {
                     log.error("EVA Defined");
                     e._round = e._round._next;
@@ -697,11 +681,8 @@ class Event {
         if ( isEva ) {
             // If the event is a Eva event the round is undefined
             BitArray round_mask;
-            bitarray_clear(round_mask, hashgraph.voting_nodes);
+            bitarray_clear(round_mask, hashgraph.max_nodes);
             _witness = new Witness(this, round_mask);
-            assert(_round is null);
-            hashgraph.rounds.next_round(this);
-            log.error("#### lastround is null %s", hashgraph.rounds.last_round is null);
         }
         this.node_id=hashgraph.getNode(channel).node_id;
         if (Event.callbacks) {
@@ -714,6 +695,7 @@ class Event {
         _count--;
     }
 
+
 //    package static Event f
     // static Event createEva(HashGraphI hashgraph, const sdt_t time, const Buffer nonce) {
 
@@ -725,7 +707,7 @@ class Event {
     }
 
     @safe
-    static class Witness {
+    class Witness {
         protected static uint _count;
         @nogc static uint count() nothrow {
             return _count;
@@ -789,8 +771,10 @@ class Event {
                 owner_event._witness_mask[owner_event.node_id] = true;
             }
             foreach(privous_witness_node_id, e; owner_event._round._previous._events) {
-                if (owner_event._witness_mask[privous_witness_node_id]) {
-                    e._witness._seen_in_next_round_mask[privous_witness_node_id] = true;
+                if (e) {
+                    if (owner_event._witness_mask[privous_witness_node_id]) {
+                        e._witness._seen_in_next_round_mask[privous_witness_node_id] = true;
+                    }
                 }
             }
         }
@@ -1024,6 +1008,7 @@ class Event {
         return _round;
     }
 
+    version(none)
     @nogc
     Round round() nothrow
         in {
@@ -1110,11 +1095,11 @@ class Event {
 
 
     @nogc
-    ref const(BitArray) witness_mask() pure const nothrow
-        in {
-            assert(is_witness_mask_checked);
-        }
-    do {
+    ref const(BitArray) witness_mask() pure const nothrow {
+    //     in {
+    //         assert(is_witness_mask_checked);
+    //     }
+    // do {
         return _witness_mask;
     }
 
@@ -1225,7 +1210,7 @@ class Event {
                 result = _father._witness_mask.dup;
             }
             else if (round_diff == -1) {
-                bitarray_clear(result, node_size);
+                bitarray_clear(result, size);
                 foreach(node_id, e; _father._round) {
                     if ( e && _father._witness_mask[node_id] ) {
                         result |= e._witness._strong_seeing_mask;
@@ -1233,7 +1218,7 @@ class Event {
                 }
             }
             else if (round_diff < 0) {
-                bitarray_clear(result, _father.node_size);
+                bitarray_clear(result, size);
                 foreach(node_id, e; _father._round) {
                     if ( e && _father._witness_mask[node_id] ) {
                         result |= e.calc_witness_mask(size);
@@ -1291,7 +1276,7 @@ class Event {
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
-                const calc_mask = calc_witness_mask(hashgraph.voting_nodes);
+                const calc_mask = calc_witness_mask(hashgraph.max_nodes);
                 if ( calc_mask.isMajority ) {
                     // Witness detected
                     hashgraph.rounds.next_round(this);
@@ -1315,6 +1300,12 @@ class Event {
                     _witness_mask = _mother._witness_mask;
                     _received_order = int.init;
                     _round = _mother._round;
+                }
+                else {
+                    bitarray_clear(_witness_mask, hashgraph.voting_nodes);
+                    (() @trusted {
+                        _witness_mask[node_id]=true;
+                    })();
                 }
             }
             else {

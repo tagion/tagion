@@ -128,10 +128,13 @@ struct EventView {
     @Label("$n") size_t node_id;
     @Label("$a") int altitude;
     @Label("$o") int order;
+    @Label("$w") bool witness;
+    @Label("$mask") uint[] witness_mask;
 
     mixin HiBONRecord!(
         q{
             this(const Event event) {
+                import std.algorithm : each;
                 id=event.id;
                 if (event.isGrounded) {
                     mother=father=uint.max;
@@ -147,6 +150,8 @@ struct EventView {
                 node_id=event.node_id;
                 altitude=event.altitude;
                 order=event.received_order;
+                witness=event.witness !is null;
+                event.witness_mask.bitsSet.each!((n) => witness_mask~=cast(uint)(n));
             }
         });
 

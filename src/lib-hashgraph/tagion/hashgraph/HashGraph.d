@@ -38,6 +38,7 @@ class HashGraph {
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.utils.Statistic;
     immutable size_t min_voting_nodes;
+    immutable size_t max_nodes;
     private {
 //        GossipNet net;
         uint iterative_tree_count;
@@ -58,11 +59,12 @@ class HashGraph {
     alias ValidChannel=bool delegate(const Pubkey channel);
     private ValidChannel valid_channel;
 
-    this(const size_t min_voting_nodes, const SecureNet net, ValidChannel valid_channel) {
+    this(const size_t min_voting_nodes, const size_t max_nodes, const SecureNet net, ValidChannel valid_channel) {
 //        this.net=net;1
         //net.hashgraph=this;
         hirpc=HiRPC(net);
         this.min_voting_nodes=min_voting_nodes;
+        this.max_nodes=max_nodes;
         this.valid_channel=valid_channel;
 //        this.authorising=authorising;
         //nodes=new Node[size];
@@ -239,12 +241,12 @@ class HashGraph {
         }
         assert(_register.event_package_cache.length);
         Event front_seat_event;
-        writefln("_register.event_package_cache.length=%d", _register.event_package_cache.length);
+        //writefln("_register.event_package_cache.length=%d", _register.event_package_cache.length);
         // const keys=(() @trusted {
         //         return _register.event_package_cache.keys;
         //     })();
         foreach(fingerprint; _register.event_package_cache.byKey) {
-            writefln("isRegisered(%s)=%s", fingerprint.cutHex, isRegistered(fingerprint));
+            //writefln("isRegisered(%s)=%s", fingerprint.cutHex, isRegistered(fingerprint));
             auto registered_event=register(fingerprint);
             if (registered_event.channel == from_channel) {
                 if (front_seat_event is null) {
@@ -253,11 +255,11 @@ class HashGraph {
                 else if (higher(registered_event.altitude, front_seat_event.altitude)) {
                     front_seat_event=registered_event;
                 }
-                writefln("P%s front_seat %d", from_channel.cutHex, front_seat_event.altitude);
+                //writefln("P%s front_seat %d", from_channel.cutHex, front_seat_event.altitude);
             }
         }
         //assert(!_register.isCached(received_wave.front_seat));
-        assert(front_seat_event);
+        //assert(front_seat_event);
         return front_seat_event;
     }
 
@@ -436,9 +438,7 @@ class HashGraph {
             }
         }
 
-        private Event _event; // Latest event
-
-
+        private Event _event; /// Latest event (front-seat)
 
         @nogc
         package final Event event() pure nothrow {
@@ -541,11 +541,6 @@ class HashGraph {
 
     @trusted
     size_t next_node_id() const pure nothrow {
-        //     out(result) {
-        //         debug
-        //             writefln("%s next_node_id=%d", channel.cutHex, result);
-        //     }
-        // do {
         if (nodes.length is 0) {
             return 0;
         }
@@ -727,7 +722,7 @@ class HashGraph {
                         // (() @trusted {
                         //     yield;
                         // })();
-                        writefln("\t\tempty %s", authorising.empty(_hashgraph.channel));
+                        // writefln("\t\tempty %s", authorising.empty(_hashgraph.channel));
 
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
@@ -750,21 +745,16 @@ class HashGraph {
                         })();
                         const onLine=_hashgraph.areWeOnline;
                         const init_tide=random.value(0,2) is 1;
-                        writefln("\t\tonLine %s init_tide %s", onLine, init_tide);
-                        //if (_hashgraph.areWeOnline && random.value(0,2) is 1) {
+                        // writefln("\t\tonLine %s init_tide %s", onLine, init_tide);
+                        // //if (_hashgraph.areWeOnline && random.value(0,2) is 1) {
                         if (onLine && init_tide) {
                             auto h=new HiBON;
                             h["node"]=format("%s-%d", name, count);
                             immutable epack=_hashgraph.event_pack(time, null, Document(h));
                             const registrated=_hashgraph.registerEventPackage(epack);
                             assert(registrated, "Should not fail here");
-                            //writefln("\t\tepack=%s", epack.toDoc.toPretty);
-
-                            // const tide_wave=_hashgraph.tideWave;
-                            // writefln("tide_wave.tides.length=%d", tide_wave._tides.length);
                             const sender=_hashgraph.hirpc.wavefront(_hashgraph.tidalWave);
-                            //writefln("sender=%J", sender);
-                            pragma(msg, "isHiBONRecord!(typeof(sender))=", isHiBONRecord!(typeof(sender)));
+                            // pragma(msg, "isHiBONRecord!(typeof(sender))=", isHiBONRecord!(typeof(sender)));
                             const send_channel=authorising.gossip(&_hashgraph.not_used_channels, sender);
                             _hashgraph.init_tide(send_channel);
                             count++;
@@ -793,7 +783,7 @@ class HashGraph {
 //                foreach(passphrase; passphrases) {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h=new HashGraph(N, net, &authorising.isValidChannel);
+                    auto h=new HashGraph(N, N, net, &authorising.isValidChannel);
                     networks[net.pubkey]=new FiberNetwork(h, E.to!string);
                 }
                 networks.byKey.each!((a) => authorising.add_channel(a));
@@ -805,7 +795,7 @@ class HashGraph {
 
     }
 
-//    version(none)
+    version(none)
     unittest { // strongSee
 
         import  std.typecons : BlackHole;
