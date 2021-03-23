@@ -1229,27 +1229,6 @@ class Event {
                 }
             }
             _mother = hashgraph.register(event_package.event_body.mother);
-            // if (isFatherLess) {
-            //     // The round of a received Eva event is defined but the daugthers... first father
-            //     // This means that we must climb upwards the graph to find the first father
-            //     // which has the first defined round
-            //     if (_mother) {
-            //         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
-            //         _mother._daughter = this;
-            //         writefln("Before _mother.witness_mask=%6s", _mother._witness_mask);
-            //         _witness_mask = _mother._witness_mask;
-            //         writefln("After _mother.witness_mask=%6s", _mother._witness_mask);
-            //         _received_order = int.init;
-            //         _round = _mother._round;
-            //     }
-            //     else {
-            //         // bitarray_clear(_witness_mask, hashgraph.voting_nodes);
-            //         // (() @trusted {
-            //         _witness_mask[node_id]=true;
-            //             // })();
-            //     }
-            // }
-            // else
             if (_mother) {
                 check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
                 _mother._daughter = this;
@@ -1267,7 +1246,10 @@ class Event {
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
-                const calc_mask = calc_witness_mask;
+                BitMask calc_mask=_witness_mask;
+                if (!calc_mask.isMajority(hashgraph.node_size)) {
+                    calc_mask = calc_witness_mask;
+                }
                 if ( calc_mask.isMajority(hashgraph.node_size) ) {
                     // Witness detected
                     hashgraph.rounds.next_round(this);
@@ -1279,32 +1261,15 @@ class Event {
                     }
                     // Search for famous
                     hashgraph.rounds.check_decided_round(hashgraph.node_size);
+                    _witness_mask.clear;
+                    _witness_mask[node_id]=true;
+
                 }
                 if (isFatherLess) {
                     writefln("isFatherLess=%5s node_id=%d id=%d", _witness_mask, node_id, id);
                 }
 
             }
-            // else if (isFatherLess) {
-            //     // The round of a received Eva event is defined but the daugthers... first father
-            //     // This means that we must climb upwards the graph to find the first father
-            //     // which has the first defined round
-            //     if (_mother) {
-            //         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
-            //         _mother._daughter = this;
-            //         writefln("Before _mother.witness_mask=%6s", _mother._witness_mask);
-            //         _witness_mask = _mother._witness_mask;
-            //         writefln("After _mother.witness_mask=%6s", _mother._witness_mask);
-            //         _received_order = int.init;
-            //         _round = _mother._round;
-            //     }
-            //     else {
-            //         // bitarray_clear(_witness_mask, hashgraph.voting_nodes);
-            //         // (() @trusted {
-            //         _witness_mask[node_id]=true;
-            //             // })();
-            //     }
-            // }
             else if (!isEva) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }

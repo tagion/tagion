@@ -56,6 +56,10 @@ struct BitMask {
         return result;
     }
 
+    void clear() pure nothrow {
+        mask=null;
+    }
+
     version(none)
     @nogc
     bool opEquals(const BitMask rhs) const pure nothrow {

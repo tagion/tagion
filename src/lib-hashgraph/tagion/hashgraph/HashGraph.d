@@ -805,7 +805,7 @@ class HashGraph {
 
     }
 
-    version(none)
+    //version(none)
     unittest {
         import tagion.hashgraph.Event;
         // This is the example taken from
