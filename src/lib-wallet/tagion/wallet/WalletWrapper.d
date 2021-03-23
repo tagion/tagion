@@ -141,7 +141,7 @@ struct WalletWrapper {
     static Invoice createInvoice(string label, TagionCurency tagions = TagionCurency.init){
         Invoice new_invoice;
         new_invoice.name=label;
-        if(tagions==TagionCurency.init){
+        if(tagions!=TagionCurency.init){
             new_invoice.amount=tagions.axios();
         }
         return new_invoice;
