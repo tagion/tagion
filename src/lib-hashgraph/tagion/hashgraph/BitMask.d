@@ -4,31 +4,35 @@ module tagion.hashgraph.BitMask;
 
 enum WORD_SIZE=size_t(size_t.sizeof*8);
 
-size_t bitsize(const size_t[] mask) pure nothrow @nogc {
+size_t bitsize(const size_t[] mask) pure nothrow @nogc @safe {
     return mask.length*WORD_SIZE;
 }
 
-size_t wordindex(const size_t i) pure nothrow @nogc {
+size_t wordindex(const size_t i) pure nothrow @nogc @safe {
     return i / WORD_SIZE;
 }
 
-size_t word_bitindex(const size_t i) pure nothrow @nogc {
+size_t word_bitindex(const size_t i) pure nothrow @nogc @safe {
     return i % WORD_SIZE;
 }
 
+@safe
 struct BitMask {
     import std.format;
-    import std.algorithm : filter, each;
+    import std.algorithm : filter, each, max;
     import std.range : enumerate;
     import std.range.primitives : isInputRange;
     import std.traits : isSomeString;
     enum absolute_mask=0x1000;
     private size_t[] mask;
 
-    this(const BitMask bits) pure nothrow {
-        mask=bits.mask.dup;
-    }
+    // this(const BitMask bits) pure nothrow {
+    //     mask=bits.mask;
+    // }
 
+    void opAssign(const BitMask rhs) pure nothrow {
+        mask=rhs.mask.dup;
+    }
     /++
      This set the mask as bit stream with LSB first
      +/
@@ -46,15 +50,50 @@ struct BitMask {
         range.each!((n) => this[n]=true);
     }
 
+    BitMask dup() const pure nothrow {
+        BitMask result;
+        result.mask=mask.dup;
+        return result;
+    }
+
+    version(none)
     @nogc
     bool opEquals(const BitMask rhs) const pure nothrow {
         return mask == rhs.mask;
     }
 
+    @trusted
     void toString(scope void delegate(scope const(char)[]) @trusted sink,
         const FormatSpec!char fmt) const {
         enum separator='_';
         import std.stdio;
+        @nogc @safe struct BitRange {
+            size_t index;
+            const size_t width;
+            const(size_t[]) mask;
+            this(const BitMask bitmask, const size_t width) {
+                mask=bitmask.mask;
+                this.width=(width is 0)?mask.bitsize:width;
+            }
+            pure nothrow {
+                char front() const {
+                    const word_index=index.wordindex;
+                    if (word_index < mask.length) {
+                        return (mask[word_index] & (size_t(1) << (index.word_bitindex)))?'1':'0';
+                    }
+                    return '0';
+                }
+
+                bool empty() const {
+                    return index >= width;
+                }
+
+                void popFront() {
+                    index++;
+                }
+            }
+        }
+
         switch (fmt.spec) {
         // case 'j':
         //     // Normal stringefied JSON
@@ -66,33 +105,24 @@ struct BitMask {
         //     break;
 
         case 's':
+            auto bit_range=BitRange(this, fmt.width);
             scope char[] str;
             //auto max_size=mask.length*(8*size_t.sizeof+((fmt.precision is )?0:(size_t.sizeof/fmt.precision+1)));
-            auto max_size=mask.bitsize;
-            auto width=(fmt.width is 0)?max_size:fmt.width;
-            if (fmt.precision < mask.bitsize) {
-                max_size += (max_size)/fmt.precision + 1;
-            }
+            auto max_size=bit_range.width+(bit_range.width)/fmt.precision + 1;
             str.length=max_size;
             size_t index;
             size_t sep_count;
-        FormatLoop:
-            foreach(i, m; mask) {
-                foreach(j; 0..WORD_SIZE) {
-                    str[index++]=(m & (size_t(1) << (j)))?'1':'0';
-                    if (index >= width) {
-                        break FormatLoop;
-                    }
-                    if (fmt.precision !is 0 ) {
-                        sep_count++;
-                        if ((sep_count % fmt.precision) is 0 ) {
-                            str[index++]=separator;
-                            width++;
-                        }
+            while(!bit_range.empty) {
+                str[index++]=bit_range.front;
+                bit_range.popFront;
+                if (fmt.precision !is 0 && !bit_range.empty) {
+                    sep_count++;
+                    if ((sep_count % fmt.precision) is 0 ) {
+                        str[index++]=separator;
                     }
                 }
             }
-            sink(str[0..width]);
+            sink(str[0..index]);
             break;
         default:
             assert(0, "Unknown format specifier: %" ~ fmt.spec);
@@ -168,7 +198,7 @@ struct BitMask {
                 }
             }
             if (mask.length !is rhs.mask.length) {
-                auto rest=(mask.length < rhs.mask.length)?mask:rhs.mask;
+                auto rest=(mask.length > rhs.mask.length)?mask:rhs.mask;
                 static if (op == "|" || op == "^") {
                     enum code=format(q{result.mask[min_length..$] %s= rest[min_length..$];}, op);
                     pragma(msg, code);
@@ -239,7 +269,9 @@ struct BitMask {
 
         this(const size_t[] mask) pure nothrow {
             this.mask = mask;
-            popFront;
+            if (mask.length && (mask[0] & 0x1) is 0) {
+                popFront;
+            }
         }
 
         static size_t pos(size_t BIT_SIZE=WORD_SIZE)(const size_t x, const size_t index=0) pure nothrow {
@@ -273,7 +305,7 @@ struct BitMask {
         pure nothrow {
             const {
                 size_t rest() {
-                    return (mask[index] &~ ((size_t(1) << (bit_pos+1))-1));
+                    return (bit_pos<WORD_SIZE-1)?(mask[index] &~ ((size_t(1) << (bit_pos+1))-1)):0;
                 }
 
                 bool empty() {
@@ -290,7 +322,9 @@ struct BitMask {
                     if (bit_pos >= WORD_SIZE) {
                         bit_pos = 0;
                         index++;
-                        popFront;
+                        if (index < mask.length && ((mask[index] & 0x1) is 0)) {
+                            popFront;
+                        }
                     }
                 }
             }
@@ -302,11 +336,65 @@ struct BitMask {
         //}
     }
 
+    @trusted
     unittest {
         import std.algorithm : equal;
         import std.algorithm.sorting : merge, sort;
         import std.algorithm.iteration : uniq, fold;
         import std.stdio;
+        { // Range
+            const bit_list=[17, 52, 53, 54, 75, 28, 101];
+            { // Empty Range
+                BitMask a;
+                assert(a[].empty);
+                size_t[] a_empty;
+                assert(equal(a[], a_empty));
+            }
+
+            { // First element
+                BitMask a;
+                a[0]=true;
+                auto range=a[];
+                assert(range.front is 0);
+                assert(!range.empty);
+                range.popFront;
+                assert(range.empty);
+                assert(equal(a[], [0]));
+            }
+
+            { // One element
+                BitMask a;
+                a[2]=true;
+                assert(equal(a[], [2]));
+            }
+
+            { // One element at the end of a word
+                BitMask a;
+                a[63]=true;
+                assert(equal(a[], [63]));
+            }
+
+            { // One element at the begin of the next word
+                BitMask a;
+                a[64]=true;
+                assert(equal(a[], [64]));
+            }
+
+            { //  elements at the end and begin of a word
+                BitMask a;
+                a[63]=true;
+                a[64]=true;
+                writefln("a[]=%s", a[]);
+                assert(equal(a[], [63, 64]));
+            }
+
+            { // Simple range test
+                auto a=BitMask(bit_list);
+                writefln("a[]=%s", a[]);
+                assert(equal(a[], bit_list.dup.sort));
+            }
+        }
+
         {
             auto bits=BitMask("0101_1");
             assert(format("%16.8s", bits) == "01011000_00000000");
@@ -354,7 +442,7 @@ struct BitMask {
             }
 
             {
-                auto y=BitMask(a);
+                auto y=a.dup;
                 y |=b;
                 assert(format("%16.4s", y) == "1010_1101_1101_0000");
                 assert(y.count is 8);
@@ -362,7 +450,7 @@ struct BitMask {
             }
 
             { // bit and
-                auto y=BitMask(a);
+                auto y=a.dup;
                 y &= b;
                 assert(format("%16.4s", y) == "0000_1000_0100_0000");
                 assert(y.count is 2);
@@ -370,14 +458,14 @@ struct BitMask {
             }
 
             { // bit xor
-                auto y=BitMask(a);
+                auto y=a.dup;
                 y ^= b;
                 assert(format("%16.4s", y) == "1010_0101_1001_0000");
                 assert(y.count is 6);
             }
 
             { // bit and not
-                auto y=BitMask(a);
+                auto y=a.dup;
                 y -= b;
                 assert(format("%16.4s", y) == "1000_0100_1000_0000");
                 assert(y.count is 3);
@@ -389,21 +477,6 @@ struct BitMask {
                 y.chunk(16);
                 assert(format("%32.4s", y) == "0111_0011_0011_1111_0000_0000_0000_0000");
                 assert(y.count is 11);
-            }
-        }
-
-        { // Range
-            const bit_list=[17, 52, 53, 54, 75, 28, 101];
-            { // Empty Range
-                BitMask a;
-                assert(a[].empty);
-                size_t[] a_empty;
-                assert(equal(a[], a_empty));
-            }
-
-            { // Simple range test
-                auto a=BitMask(bit_list);
-                assert(equal(a[], bit_list.dup.sort));
             }
         }
 
@@ -479,7 +552,62 @@ struct BitMask {
                 assert(result == y);
                 assert(y.count is 2);
             }
+
+            { // Empty Or=
+                BitMask y;
+                y |= a;
+                writefln("%.16s", y);
+                assert(y == a);
+                assert(a.count is y.count);
+            }
+
+            { // Or
+                auto y = a.dup;
+                y |= b;
+                auto y_list=(a_list~b_list).dup.sort.uniq; //uniq;//.dup.sort;
+                assert(equal(y[], y_list));
+                assert(y.count is 10);
+            }
+
+            { // And
+                auto y = a.dup;
+                y &= b;
+                BitMask result;
+                and_filter(result, a[], b[]);
+                assert(result == y);
+                assert(y.count is 5);
+            }
+
+            { // Xor
+                auto y = a.dup;
+                y ^= b;
+                //const y= a ^ b;
+                const result=~a & b | a & ~b;
+                assert(result == y);
+                assert(y.count is 5);
+            }
+
+            { // and not
+                auto y = a.dup;
+                y -= b;
+
+                //const y= a - b;
+                const result= a & ~b;
+                assert(result == y);
+                assert(y.count is 2);
+            }
         }
 
+        { // Duplicate on assign
+            BitMask z;
+            auto y=z;
+            z[3]=true;
+            assert(equal(z[], [3]));
+            assert(y[].empty);
+            y=z;
+            z[5]=true;
+            assert(equal(z[], [3, 5]));
+            assert(equal(y[], [3]));
+        }
     }
 }

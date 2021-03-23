@@ -1,12 +1,13 @@
 module tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
-import std.bitmanip;
+//import std.bitmanip;
 import std.format;
 import std.typecons : TypedefType;
 
 import tagion.basic.Basic : Buffer, Signature, Pubkey, EnumText;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.BitMask;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;
@@ -34,8 +35,8 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
 }
 
 @trusted
-bool isMajority(scope const(BitArray) mask) pure nothrow {
-    return isMajority(mask.count, mask.length);
+bool isMajority(scope const(BitMask) mask, const size_t node_size) pure nothrow {
+    return isMajority(mask.count, node_size);
 }
 
 enum int eva_altitude=-77;
@@ -50,7 +51,7 @@ int nextAltitide(const Event event) pure nothrow {
 
 protected enum _params = [
     "events",
-    "nodes",
+    "size",
     ];
 
 mixin(EnumText!("Params", _params));
@@ -128,8 +129,11 @@ struct EventView {
     @Label("$n") size_t node_id;
     @Label("$a") int altitude;
     @Label("$o") int order;
+    @Label("$r") int round;
     @Label("$w") bool witness;
     @Label("$mask") uint[] witness_mask;
+    //@Label("*", true) @(Filter.Initialized)
+    bool father_less;
 
     mixin HiBONRecord!(
         q{
@@ -151,7 +155,17 @@ struct EventView {
                 altitude=event.altitude;
                 order=event.received_order;
                 witness=event.witness !is null;
-                event.witness_mask.bitsSet.each!((n) => witness_mask~=cast(uint)(n));
+                event.witness_mask[].each!((n) => witness_mask~=cast(uint)(n));
+                round=(event.hasRound)?event.round.number:event.round.number.min;
+                father_less=event.isFatherLess;
+                if (event.isFatherLess) {
+                    (() @trusted {
+                        writefln("EventView isFatherLess %s node_id=%s id=%d mother_id=%d %s m=%s f=%s",
+                            witness_mask, event.node_id, event.id, mother, event.fingerprint.cutHex,
+                            event.event_package.event_body.mother.cutHex,
+                            event.event_package.event_body.mother.cutHex);
+                    })();
+                }
             }
         });
 

@@ -3,7 +3,7 @@ module tagion.hashgraph.HashGraph;
 import std.stdio;
 import std.conv;
 import std.format;
-import std.bitmanip : BitArray;
+//import std.bitmanip : BitArray;
 import std.exception : assumeWontThrow;
 import std.typecons : TypedefType;
 import std.algorithm.searching : count, all;
@@ -27,6 +27,7 @@ import tagion.utils.StdTime;
 
 import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, bitarray_clear, countVotes;
 import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.BitMask;
 
 import tagion.basic.Logger;
 import tagion.utils.Miscellaneous : toHex=toHexString;
@@ -37,8 +38,9 @@ class HashGraph {
     protected alias check=Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.utils.Statistic;
-    immutable size_t min_voting_nodes;
-    immutable size_t max_nodes;
+    immutable size_t node_size;
+//    immutable size_t min_voting_nodes;
+//    immutable size_t max_nodes;
     private {
 //        GossipNet net;
         uint iterative_tree_count;
@@ -59,18 +61,19 @@ class HashGraph {
     alias ValidChannel=bool delegate(const Pubkey channel);
     private ValidChannel valid_channel;
 
-    this(const size_t min_voting_nodes, const size_t max_nodes, const SecureNet net, ValidChannel valid_channel) {
+    this(const size_t node_size, const SecureNet net, ValidChannel valid_channel) {
 //        this.net=net;1
         //net.hashgraph=this;
         hirpc=HiRPC(net);
-        this.min_voting_nodes=min_voting_nodes;
-        this.max_nodes=max_nodes;
+        this.node_size=node_size;
+        // this.min_voting_nodes=min_voting_nodes;
+        // this.max_nodes=max_nodes;
         this.valid_channel=valid_channel;
 //        this.authorising=authorising;
         //nodes=new Node[size];
         _rounds=Round.Rounder(this);
         //add_node(net.pubkey);
-        next_event_id; // event_id (0 or event_id.init) is defined as null event
+        //next_event_id; // event_id (0 or event_id.init) is defined as null event
     }
 
 
@@ -105,10 +108,10 @@ class HashGraph {
         return true;
     }
 
-    @nogc
-    size_t voting_nodes() const pure nothrow {
-        return max(nodes.length, min_voting_nodes);
-    }
+    // @nogc
+    // size_t voting_nodes() const pure nothrow {
+    //     return max(nodes.length, min_voting_nodes);
+    // }
 
     void init_tide(const(Pubkey) send_channel) {
         if (send_channel !is Pubkey(null)) {
@@ -128,16 +131,17 @@ class HashGraph {
         immutable eva_event_body=EventBody(payload.toDoc, null, null, time);
         immutable epack=cast(immutable)new EventPackage(hirpc.net, eva_event_body);
         return epack;
-        //return event_pack(time, Pubkey(null), payload.toDoc);
-        // immutable eva_body=EventBody(payload.toDoc, null, null, time, hashgraph.eva_altitude);
-
     }
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
-        getNode(channel);
-        writefln("channel in nodes=%s", (channel in nodes) !is null);
+        // getNode(channel);
+        // writefln("channel in nodes=%s", (channel in nodes) !is null);
         immutable eva_epack=eva_pack(time, nonce);
         auto eva_event=registerEventPackage(eva_epack);
+        assert(eva_event);
+        (() @trusted {
+            writefln("createEvent=%5s", eva_event.witness_mask);
+        })();
         return eva_event;
     }
 
@@ -509,7 +513,7 @@ class HashGraph {
 
     @nogc
     bool isMajority(const uint voting) const pure nothrow {
-        return .isMajority(voting, voting_nodes);
+        return .isMajority(voting, node_size);
     }
 
     private void remove_node(Node n) nothrow
@@ -545,16 +549,10 @@ class HashGraph {
             return 0;
         }
         import std.algorithm.searching : maxElement;
-        scope BitArray used_nodes;
-        used_nodes.length=nodes.byValue.map!(a => a.node_id).maxElement+1; //.max;
+        import tagion.hashgraph.BitMask;
+        scope BitMask used_nodes;
         nodes.byValue.map!(a => a.node_id).each!((n) {used_nodes[n] = true;});
-        //debug writefln("used_nodes=%b", used_nodes);
-
-        auto unused_list=(~used_nodes).bitsSet;
-        if (unused_list.empty) {
-            return used_nodes.length;
-        }
-        return unused_list.front;
+        return (~used_nodes)[].front;
     }
 
 
@@ -570,12 +568,19 @@ class HashGraph {
     void fwrite(string filename) {
         import tagion.hibon.HiBONRecord : fwrite;
         scope events=new HiBON;
+        // bool[size_t] inuse;
+        // uint count;
         foreach(n; nodes) {
             foreach(e; n[]) {
-                events[e.id]=EventView(e);
+                auto event_view=EventView(e);
+                events[e.id]=event_view;
+                if (e.witness_mask[].empty) {
+                    writefln("FWRITE %J", event_view);
+                }
             }
         }
         scope h=new HiBON;
+        h[Params.size]=node_size;
         h[Params.events]=events;
         filename.fwrite(h);
     }
@@ -754,6 +759,11 @@ class HashGraph {
                             const registrated=_hashgraph.registerEventPackage(epack);
                             assert(registrated, "Should not fail here");
                             const sender=_hashgraph.hirpc.wavefront(_hashgraph.tidalWave);
+                            if (registrated.isFatherLess) {
+                                (() @trusted {
+                                    writefln("Own isFatherLess=%5s", registrated.witness_mask);
+                                })();
+                            }
                             // pragma(msg, "isHiBONRecord!(typeof(sender))=", isHiBONRecord!(typeof(sender)));
                             const send_channel=authorising.gossip(&_hashgraph.not_used_channels, sender);
                             _hashgraph.init_tide(send_channel);
@@ -783,7 +793,7 @@ class HashGraph {
 //                foreach(passphrase; passphrases) {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h=new HashGraph(N, N, net, &authorising.isValidChannel);
+                    auto h=new HashGraph(N, net, &authorising.isValidChannel);
                     networks[net.pubkey]=new FiberNetwork(h, E.to!string);
                 }
                 networks.byKey.each!((a) => authorising.add_channel(a));
@@ -796,9 +806,7 @@ class HashGraph {
     }
 
     version(none)
-    unittest { // strongSee
-
-        import  std.typecons : BlackHole;
+    unittest {
         import tagion.hashgraph.Event;
         // This is the example taken from
         // HASHGRAPH CONSENSUSE
@@ -820,47 +828,6 @@ class HashGraph {
             Dave,
             Elisa
         }
-
-        @safe static abstract class UnittestAbstractMonitor : EventMonitorCallbacks {
-            nothrow {
-                string name;
-                @trusted
-                void create(const(Event) e) {
-                    assumeWontThrow(
-                        writefln("\t$%s$ create id=%d", name, e.id));
-                }
-                void connect(const(Event) e) {
-                    assumeWontThrow(
-                        writefln("\t$%s$ connect id=%d %s %s", name, e.id, e.connected, e.isGrounded));
-                }
-                abstract {
-                    void witness(const(Event) e);
-                    //void witness_mask(const(Event) e);
-                    //void strongly_seeing(const(Event) e);
-                    //void strong_vote(const(Event) e, immutable uint vote);
-                    void round_seen(const(Event) e);
-                    //void looked_at(const(Event) e);
-                    void round_decided(const(Round.Rounder) rounder);
-                    void round_received(const(Event) e);
-                    //void coin_round(const(Round) r);
-                    void famous(const(Event) e);
-                    void round(const(Event) e);
-                    void son(const(Event) e);
-                    void daughter(const(Event) e);
-                    void forked(const(Event) e);
-                    //void remove(const(Round) r);
-                    void epoch(const(Event[]) received_event);
-                    //void iterations(const(Event) e, const uint count);
-                    //void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
-                    void send(const Pubkey channel, lazy const Document doc);
-                    void receive(lazy const Document doc);
-                    //void consensus_failure(const(ConsensusException) e);
-                }
-            }
-        }
-
-        alias UnittestMonitor=BlackHole!UnittestAbstractMonitor;
-
 
         auto network=new UnittestNetwork!NodeLabel();
         network.random.seed(123456789);
@@ -890,8 +857,10 @@ class HashGraph {
         }
 
         foreach(_net; network.networks) {
-            const filename=fileId(_net.name);
-            _net._hashgraph.fwrite(filename.fullpath);
+            if (_net.name == "Alice") {
+                const filename=fileId(_net.name);
+                _net._hashgraph.fwrite(filename.fullpath);
+            }
         }
 
         version(none) {
