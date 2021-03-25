@@ -4,7 +4,7 @@ module tagion.utils.Queue;
 class Queue(T) {
     private Element _head;
     private Element _tail;
-    class Element {
+    static class Element {
         Element _next;
         Element _previous;
         private T data;
@@ -134,6 +134,21 @@ class Queue(T) {
         assert(!q.empty);
         assert(q.read == elm1);
         assert(q.empty);
+    }
+
+    unittest { // two element
+        auto q=new Queue!string;
+        immutable elm1="A";
+        immutable elm2="B";
+        assert(q.empty);
+        q.write(elm1);
+        assert(!q.empty);
+        q.write(elm2);
+        assert(!q.empty);
+        assert(q.read == elm1);
+        assert(q.read == elm2);
+        assert(q.empty);
+
     }
 
     unittest { // More elements
