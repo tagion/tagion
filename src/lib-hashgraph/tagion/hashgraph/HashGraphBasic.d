@@ -131,7 +131,9 @@ struct EventView {
     @Label("$o") int order;
     @Label("$r") int round;
     @Label("$w") bool witness;
-    @Label("$mask") uint[] witness_mask;
+    @Label("witness") uint[] witness_mask;
+    @Label("$strong") uint[] strongly_seeing_mask;
+    @Label("$seen") uint[] round_seen_mask;
     //@Label("*", true) @(Filter.Initialized)
     bool father_less;
 
@@ -158,14 +160,19 @@ struct EventView {
                 event.witness_mask[].each!((n) => witness_mask~=cast(uint)(n));
                 round=(event.hasRound)?event.round.number:event.round.number.min;
                 father_less=event.isFatherLess;
-                if (event.isFatherLess) {
-                    (() @trusted {
-                        writefln("EventView isFatherLess %s node_id=%s id=%d mother_id=%d %s m=%s f=%s",
-                            witness_mask, event.node_id, event.id, mother, event.fingerprint.cutHex,
-                            event.event_package.event_body.mother.cutHex,
-                            event.event_package.event_body.mother.cutHex);
-                    })();
+                if (witness) {
+                    event.witness.strong_seeing_mask[].each!((n) => strongly_seeing_mask~=cast(uint)(n));
+                    event.witness.round_seen_mask[].each!((n) => round_seen_mask~=cast(uint)(n));
+
                 }
+                // if (event.isFatherLess) {
+                //     (() @trusted {
+                //         writefln("EventView isFatherLess %s node_id=%s id=%d mother_id=%d %s m=%s f=%s",
+                //             witness_mask, event.node_id, event.id, mother, event.fingerprint.cutHex,
+                //             event.event_package.event_body.mother.cutHex,
+                //             event.event_package.event_body.mother.cutHex);
+                //     })();
+                // }
             }
         });
 

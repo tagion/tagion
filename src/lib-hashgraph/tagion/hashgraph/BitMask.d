@@ -33,6 +33,10 @@ struct BitMask {
     void opAssign(const BitMask rhs) pure nothrow {
         mask=rhs.mask.dup;
     }
+
+    // void opAssign(const BitMask rhs) pure nothrow {
+    //     mask=rhs.mask.dup;
+    // }
     /++
      This set the mask as bit stream with LSB first
      +/

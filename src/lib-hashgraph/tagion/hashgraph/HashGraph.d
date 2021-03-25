@@ -77,8 +77,9 @@ class HashGraph {
     }
 
 
+    version(none)
     @nogc
-    Round.Rounder rounds() pure nothrow {
+    const(Round.Rounder) rounds() const pure nothrow {
         return _rounds;
     }
 
@@ -138,10 +139,11 @@ class HashGraph {
         // writefln("channel in nodes=%s", (channel in nodes) !is null);
         immutable eva_epack=eva_pack(time, nonce);
         auto eva_event=registerEventPackage(eva_epack);
-        assert(eva_event);
-        (() @trusted {
-            writefln("createEvent=%5s", eva_event.witness_mask);
-        })();
+        eva_event.set_eva_order;
+        //assert(eva_event);
+        // (() @trusted {
+        //     writefln("createEvent=%5s", eva_event.witness_mask);
+        // })();
         return eva_event;
     }
 
@@ -177,11 +179,11 @@ class HashGraph {
             auto event=new Event(event_pack, this);
             _event_cache[event.fingerprint]=event;
             event.connect(this);
+            //event.received_order;
             return event;
         }
         return null;
     }
-
 
     class Register {
         private EventPackageCache event_package_cache;
@@ -261,7 +263,15 @@ class HashGraph {
                 }
                 //writefln("P%s front_seat %d", from_channel.cutHex, front_seat_event.altitude);
             }
+//            registered_event.received_order;
         }
+
+        // foreach(n; nodes) {
+        //     if (n && n.event) {
+        //         n.event.received_order;
+        //     }
+        // }
+
         //assert(!_register.isCached(received_wave.front_seat));
         //assert(front_seat_event);
         return front_seat_event;
@@ -444,40 +454,45 @@ class HashGraph {
 
         private Event _event; /// Latest event (front-seat)
 
-        @nogc
-        package final Event event() pure nothrow {
-            return _event;
-        }
-
-        @nogc
-        final bool isOnline() pure const nothrow {
-            return (_event !is null);
-        }
-
-        @nogc
-        final int altitude() pure nothrow
-            in {
-                assert(_event !is null, "This node has no events so the altitude is not set yet");
+        @nogc pure nothrow {
+            package final Event event()  {
+                return _event;
             }
-        out {
-            assert(_event.isInFront);
-        }
-        do {
-            return event.altitude;
-        }
 
-        @trusted
-        Event.Range opSlice() pure nothrow {
-            if (event) {
-                return _event[];
+            final bool isOnline() const  {
+                return (_event !is null);
             }
-            return Event.Range(null);
-        }
 
+            final int altitude() const
+                in {
+                    assert(_event !is null, "This node has no events so the altitude is not set yet");
+                }
+            out {
+                assert(_event.isInFront);
+            }
+            do {
+                return _event.altitude;
+            }
+
+            package Event.Range!false opSlice()  {
+                if (_event) {
+                    return _event[];
+                }
+                return Event.Range!false(null);
+            }
+
+            Event.Range!true opSlice() const  {
+                if (_event) {
+                    return _event[];
+                }
+                return Event.Range!true(null);
+            }
+        }
     }
 
     import std.traits : fullyQualifiedName;
     alias NodeRange=typeof((cast(const)nodes).byValue);
+
     @nogc
     NodeRange opSlice() const pure nothrow {
         return nodes.byValue;
@@ -502,6 +517,7 @@ class HashGraph {
         return nodes.length;
     }
 
+    @nogc
     const(SecureNet) net() const pure nothrow {
         return hirpc.net;
     }
@@ -535,7 +551,7 @@ class HashGraph {
     }
 
     @nogc
-    uint next_event_id() nothrow {
+    uint next_event_id() pure nothrow {
         event_id++;
         if (event_id is event_id.init) {
             return event_id.init+1;
@@ -571,12 +587,19 @@ class HashGraph {
         // bool[size_t] inuse;
         // uint count;
         foreach(n; nodes) {
+//            n._event.received_order;
+//            pragma(msg, "n._event=", typeof(n._event));
             foreach(e; n[]) {
+                //pragma(msg, typeof(e.received_order));
+//                if (e.hasOrder) {
                 auto event_view=EventView(e);
                 events[e.id]=event_view;
-                if (e.witness_mask[].empty) {
-                    writefln("FWRITE %J", event_view);
-                }
+//                 if (e.received_order is int.init) {
+//                     writefln("id=%d:%d isFatherLess=%s received_order=%d alt=%d",
+//                         e.id, e.node_id, e.isFatherLess, e.received_order, e.altitude);
+// //                    writefln("FWRITE %J", event_view);
+//                     //                  }
+//                 }
             }
         }
         scope h=new HiBON;
@@ -618,7 +641,6 @@ class HashGraph {
                 void time(const(sdt_t) t) {
                     _current_time=sdt_t(t);
                 }
-
 
                 @property
                 const(sdt_t) time() pure const {
@@ -713,6 +735,7 @@ class HashGraph {
                         immutable buf=cast(Buffer)_hashgraph.channel;
                         const nonce=_hashgraph.hirpc.net.calcHash(buf);
                         auto eva_event=_hashgraph.createEvaEvent(time, nonce);
+                        writefln("### eva_event.received_order=%d node_id=%d", eva_event.received_order, eva_event.node_id);
                         //const registrated=_hashgraph.registerEventPackage(epack);
 
                         if (eva_event is null) {
@@ -837,13 +860,13 @@ class HashGraph {
         //auto monitor=new UnittestMonitor;
         //Event.callbacks=monitor;
         const channels=network.channels;
-        writefln("channels.length=%d", channels.length);
+        //writefln("channels.length=%d", channels.length);
         try {
-            foreach(i; 0..257) {
+            foreach(i; 0..557) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
                 auto current=network.networks[channel];
-                writefln("channel_number=%d channel=%s", channel_number, channel.cutHex);
+                // writefln("channel_number=%d channel=%s", channel_number, channel.cutHex);
                 //monitor.name=current.name;
                 (() @trusted {
                     current.call;
