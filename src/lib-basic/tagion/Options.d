@@ -470,6 +470,8 @@ struct TransactionMiddlewareOptions {
 
 static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool overwrite_switch, ref scope Options options) {
     import std.getopt;
+    import std.algorithm;
+    import std.conv;
     return getopt(
         args,
         std.getopt.config.caseSensitive,
@@ -524,7 +526,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
         "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
-        "net-mode", format("Network mode: one of [%s]: default: %s", EnumMembers!NetworkMode, options.net_mode), &(options.net_mode),
+        "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
         "server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
