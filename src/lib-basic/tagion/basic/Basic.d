@@ -19,7 +19,7 @@ enum BufferType {
     SIGNATURE,   /// Signature buffer type
     HASHPOINTER, /// Hash pointre buffer type
     MESSAGE,     /// Message buffer type
-//    PAYLOAD      /// Payload buffer type
+   PAYLOAD      /// Payload buffer type
 }
 
 enum BillType {
@@ -33,7 +33,7 @@ alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer 
 alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
 alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 
-//alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
+alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
 version(none) {
 alias Message    =Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
