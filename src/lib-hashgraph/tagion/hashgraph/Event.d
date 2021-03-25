@@ -1,6 +1,6 @@
 module tagion.hashgraph.Event;
 
-import std.stdio;
+//import std.stdio;
 import core.stdc.stdio;
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
@@ -468,36 +468,36 @@ class Round {
                     e._round.add(e);
                 }
                 if (e._round && e._round._next) {
-                    assumeWontThrow(
-                        writefln("Next Round (%d)", e._round._next.number));
+                    // assumeWontThrow(
+                    //     writefln("Next Round (%d)", e._round._next.number));
                     //log.error("EVA Defined");
                     e._round = e._round._next;
                     //assert(e._round !is null);
                 }
                 else {
                     //log.error("EVA create round");
-                    debug assumeWontThrow(
-                        (() @trusted {
-                            printf("%p New Round (%d) before\n", _last_round, last_round.number);})());
+                    // debug assumeWontThrow(
+                    //     (() @trusted {
+                    //         printf("%p New Round (%d) before\n", _last_round, last_round.number);})());
                     e._round = new Round(last_round, hashgraph.node_size);
                     _last_round = e._round;
-                    debug assumeWontThrow(
-                        (() @trusted {
-                            printf("%p New Round (%d) after\n", _last_round, last_round.number);})());
+                    // debug assumeWontThrow(
+                    //     (() @trusted {
+                    //         printf("%p New Round (%d) after\n", _last_round, last_round.number);})());
 
-                    void dump(const Round round) pure nothrow {
-                        if (round) {
-                            debug assumeWontThrow(
-                                writef("(%d) ", round.number));
-                            dump(round._previous);
-                        }
-                        debug assumeWontThrow(
-                            writeln());
-                    }
-                    debug assumeWontThrow(
-                        (() @trusted {
-                            writefln("rounds.length = %d", length);
-                            writefln("rounds = (%s)", this[].map!((a) => a.number));})());
+                    // void dump(const Round round) pure nothrow {
+                    //     if (round) {
+                    //         debug assumeWontThrow(
+                    //             writef("(%d) ", round.number));
+                    //         dump(round._previous);
+                    //     }
+                    //     debug assumeWontThrow(
+                    //         writeln());
+                    // }
+                    // debug assumeWontThrow(
+                    //     (() @trusted {
+                    //         writefln("rounds.length = %d", length);
+                    //         writefln("rounds = (%s)", this[].map!((a) => a.number));})());
 //                    dump(last_round);
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
@@ -1330,9 +1330,9 @@ class Event {
                     received_order;
 
                     // Witness detected
-                    writefln("%d:%d ROUND Before %d", node_id, id, _round.number);
+                    // writefln("%d:%d ROUND Before %d", node_id, id, _round.number);
                     hashgraph._rounds.next_round(this);
-                    writefln("%d:%d      after %d", node_id, id, _round.number);
+                    // writefln("%d:%d      after %d", node_id, id, _round.number);
                     _witness = new Witness(this, witness_seen_mask);
                     // Set the witness seen from the previous round
                     _witness.seen_from_previous_round(this);
@@ -1345,9 +1345,9 @@ class Event {
                     _witness_mask[node_id]=true;
 
                 }
-                if (isFatherLess) {
-                    writefln("isFatherLess=%5s node_id=%d id=%d", _witness_mask, node_id, id);
-                }
+                // if (isFatherLess) {
+                //     writefln("isFatherLess=%5s node_id=%d id=%d", _witness_mask, node_id, id);
+                // }
 
             }
             else if (!isEva) {
