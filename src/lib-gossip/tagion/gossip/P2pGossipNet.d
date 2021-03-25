@@ -171,6 +171,9 @@ class ConnectionPool(T: shared(p2plib.Stream), TKey){
 }
 // version(none)
 unittest{
+    import tagion.basic.Logger;
+    log.push(LoggerType.NONE);
+
     import p2p.node : Stream;
     @trusted
     synchronized
