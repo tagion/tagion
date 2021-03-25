@@ -11,6 +11,7 @@ import tagion.basic.TagionExceptions;
 extern(C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
 enum LoggerType {
+    NONE    = 0,
     INFO    = 1,
     TRACE   = INFO<<1,
     WARNING = TRACE<<1,

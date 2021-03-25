@@ -335,10 +335,11 @@ const(FileNames) fileId(T)(string ext, string prefix=null) @safe {
     import std.process : environment, thisProcessID;
     import std.file;
     import std.path;
+    import std.array : join;
     //import std.traits;
     FileNames names;
     names.tempdir=tempDir.buildPath(environment.get("USER"));
-    names.filename=setExtension(prefix~thisProcessID.to!string~T.stringof, ext);
+    names.filename=setExtension([prefix, thisProcessID.to!string, T.stringof].join("_"), ext);
     names.fullpath=buildPath(names.tempdir, names.filename);
     names.tempdir.exists || names.tempdir.mkdir;
     return names;
