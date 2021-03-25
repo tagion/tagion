@@ -137,9 +137,9 @@ do
 
         master_net.generateKeyPair(passphrase);
         shared shared_net = cast(shared) master_net;
-        net = new P2pGossipNet(opts, p2pnode, connectionPool, connectionPoolBridge);
         net.derive("tagion_service", shared_net);
-        hashgraph=new HashGraph(opts.nodes, net);
+        hashgraph=new HashGraph(opts.nodes);
+        net = new P2pGossipNet(hashgraph, opts, p2pnode, connectionPool, connectionPoolBridge);
 
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 

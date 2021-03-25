@@ -62,7 +62,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
     net.derive("tagion_service", master_net);
 //    hashgraph.gossip_net=net;
     // Create hash-graph
-    auto hashgraph=new HashGraph(opts.nodes, net);
+    auto hashgraph=new HashGraph(opts.nodes);
 
     log("\n\n\n\n\n##### Received %s #####", opts.node_name);
 
