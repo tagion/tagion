@@ -150,7 +150,7 @@ unittest{
         enum testfp = cast(Buffer)(nativeToBigEndian(0x20_21_22_36_40_50_80_90));
         Buffer[] fps = [testfp];
         auto sender = hirpc.dartRead(null);
-        auto receiver = hirpc.receive(Document(hirpc.toHiBON(sender).serialize));
+        auto receiver = hirpc.receive(Document(sender.toDoc.serialize));
         auto readSync = new ReadRequestHandler(fps, hirpc, "", receiver);
         assert(readSync.alive);
 
