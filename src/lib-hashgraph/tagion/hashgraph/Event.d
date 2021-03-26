@@ -1,6 +1,6 @@
 module tagion.hashgraph.Event;
 
-//import std.stdio;
+import std.stdio;
 import core.stdc.stdio;
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
@@ -11,9 +11,11 @@ import std.format;
 import std.typecons;
 import std.traits : Unqual, ReturnType;
 import std.range : enumerate;
+import std.array : array;
+
 //import std.algorithm.searching : all;
-import std.algorithm.iteration : map, each, filter;
-import std.algorithm.searching : count, any;
+import std.algorithm.iteration : map, each, filter, cache;
+import std.algorithm.searching : count, any, all;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
 
 import tagion.hibon.HiBON : HiBON;
@@ -751,6 +753,7 @@ class Event {
             // If the event is a Eva event the round is undefined
             BitMask round_mask;
             _witness = new Witness(this, round_mask);
+            hashgraph.witness_front[node_id]=this;
         }
         if (Event.callbacks) {
             Event.callbacks.create(this);
@@ -851,9 +854,10 @@ class Event {
             in {
                 assert(owner_event._witness is this, "The owner_event does not own this witness");
                 assert(owner_event._round, "Event must have a round");
-                assert(owner_event._round._previous, "The round of this witness must have a previous round");
+                //assert(owner_event._round._previous, "The round of this witness must have a previous round");
             }
         do {
+            if (owner_event._round._previous) {
             scope(success) {
                 // The witness mask for a witness is set to node_id
                 //owner_event._witness_mask.bitarray_clear(owner_event._witness_mask.length);
@@ -865,6 +869,7 @@ class Event {
                         e._witness._seen_in_next_round_mask[privous_witness_node_id] = true;
                     }
                 }
+            }
             }
         }
 
@@ -1250,43 +1255,181 @@ class Event {
         return (result is int.init)?1:result;
     }
 
+    @nogc
+    int expected_order() const pure nothrow {
+        const m=(_mother)?_mother._received_order:int.init;
+        const f=(_father)?_father._received_order:int.init;
+        int result=(m-f > 0)?m:f;
+        result++;
+        result=(result is int.init)?int.init+1:result;
+        return result;
+    }
+
+    void order() {
+        if (isFatherLess) {
+            if (_mother) {
+                if (_mother._received_order is int.init) {
+                    _mother.order;
+                }
+                _received_order = expected_order;
+            }
+        }
+        else if (_received_order is int.init) {
+            _received_order = expected_order;
+            if (_received_order !is int.init) {
+                order;
+            }
+        }
+        else {
+            const expected = expected_order;
+            if ((expected - _received_order) > 0) {
+                _received_order = expected;
+                if (_son) {
+                    _son.order;
+                }
+                if (_daughter) {
+                    _daughter.order;
+                }
+
+            }
+            else if ((expected - _received_order) < 0) {
+                if (_father) {
+                    _father.order;
+                }
+                if (_mother) {
+                    _mother.order;
+                }
+                _received_order = expected_order;
+                if (_son) {
+                    _son.order;
+                }
+                if (_daughter) {
+                    _daughter.order;
+                }
+
+            }
+        }
+    }
 
     // +++
     @trusted
-    private BitMask calc_witness_mask() nothrow
+    private const(BitMask) calc_witness_mask(HashGraph hashgraph) //nothrow
         in {
             assert(!_mother._witness_mask[].empty);
         }
     do {
+
         BitMask result = _mother._witness_mask.dup;
+        //BitMask witness_result;
+        const(BitMask) calc_witness(scope Event[] events, const BitMask witness_mask) {
+            uint count;
+            enum inspect_id =26;
+            if (id == inspect_id && hashgraph.print_flag) {
+                events
+                    .filter!((e) => (e !is null))
+                    .each!((e) => count++);
+                writefln(">%d) count=%d", id, count);
+                count = 0;
+                events
+                    .filter!((e) => (e) && witness_mask[e.node_id])
+                    .each!((e) => count++);
+                writefln("#%d) count=%d", id, count);
+                count = 0;
+                events
+                    .filter!((e) => (e) && witness_mask[e.node_id] && (!e.isFatherLess))
+                    .each!((e) => count++);
+                writefln("f%d) count=%d", id, count);
+                count = 0;
+                events
+                    .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0))
+                    .each!((e) => count++);
+                writefln("r%d) count=%d", id, count);
+                writefln(":%d) witness_mask=%7s", id, witness_mask);
+
+
+            }
+            count = 0;
+            events
+                .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0))
+                    .each!((e) => count++);
+            auto new_events=events
+                .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0));
+            if (id == inspect_id && hashgraph.print_flag) {
+                writefln(" %d) events ids=%s node_ids=%s fags=%s", id,
+                    new_events.map!((e) => e.id),
+                    new_events.map!((e) => e.node_id),
+                    new_events.map!((e) => witness_mask[e.node_id])
+                    );
+            }
+            BitMask new_witness_mask;
+            foreach(e; new_events) {
+                if (id == inspect_id && hashgraph.print_flag) {
+                    writefln("(%d:%d) (%d:%d) new_witness_mask=%7s", id, node_id, e.id, e.node_id, new_witness_mask);
+                }
+                if (e._round.number == _round.number) {
+                    new_witness_mask[e.node_id] = true;
+                }
+                else {
+                    new_witness_mask |= e._witness.round_seen_mask;
+                }
+            }
+            if (id == inspect_id && hashgraph.print_flag) {
+                BitMask mask;
+                count=0;
+                new_events
+                    .each!((e) => count++);
+
+                new_events
+                    .each!((e) => mask[e.id]=true);
+                writefln("(%d) new_mask=%7s witness_mask=%7s count=%d", id, mask, witness_mask, count);
+                writefln("(%d) new_witness_mask=%7s", id, new_witness_mask);
+            }
+            const finish=
+                //(new_witness_mask.count >= hashgraph.node_size) ||
+                new_events
+                .all!((e) => (e._round.number == _round.number));
+
+            if (finish) {
+                BitMask include_mask;
+                new_events
+                    //  .filter!((e) => e._round.number == _round.number)
+                    .each!((e) => include_mask[e.node_id] = true);
+                return new_witness_mask & include_mask;
+            }
+            // writeln("After");
+
+            scope next_events=
+                new_events
+                    .map!((e) => (e._round.number == _round.number)?e:
+                    e._round._previous._events[e.node_id])
+                .array;
+            //pragma(msg, typeof(new_events));
+            //return new_witness_mask;
+            return calc_witness(next_events, new_witness_mask);
+        }
+
+        const alt_result = calc_witness(hashgraph.witness_front, _witness_mask);
+//        return alt_result;
+        //     version(none) {
         if (_father) {
             const round_diff = _father._round.number - _round.number;
-            // writefln("round_diff=%d _round.number=%d _father._round.number=%d",
-            //     round_diff, _round.number, _father._round.number);
             if (round_diff == 0) {
-//                writefln("result=%5s father=%5s", result, _father._witness_mask);
                 result |= _father._witness_mask;
-//                writefln("\tresult=%5s", result);
             }
             else if (round_diff == 1) {
                 _father._round._events
-                    .filter!((e) => e && _father._witness_mask[e.node_id])
-                    .each!((e) => result |= e._witness.round_seen_mask);
+                    .filter!((e) => e && e._witness_mask[e.node_id])
+                    .each!((e) => result |= e._witness_mask);
             }
             else if (round_diff > 0) {
                 _father._round._events
-                    .filter!((e) => e && _father._witness_mask[e.node_id])
-                    .each!((e) => result |= e.calc_witness_mask);
-            }
-            // else if (round_diff == 1) {
-            //     result |= _father._witness_mask;
-            // }
-            else {
-                //assert(0, format("fixme(cbr): No solution jet for round higher than the current event (round diff %d)", round_diff));
-                log.error("fixme(cbr): No solution jet for round higher than the current event");
+                    .filter!((e) => e && e._witness.round_seen_mask[e.node_id])
+                    .each!((e) => result |= e.calc_witness_mask(hashgraph));
             }
         }
-        return result;
+        //writefln("result=%7s alt_result=%7s witness_mask=%7s %s", result, alt_result, _witness_mask, result == alt_result);
+        return alt_result;
+//        }
     }
 
 
@@ -1310,6 +1453,7 @@ class Event {
                     Event.callbacks.connect(this);
                 }
             }
+            //witness_front = hashgraph.witness_front;
             _mother = hashgraph.register(event_package.event_body.mother);
             if (_mother) {
                 check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
@@ -1325,15 +1469,17 @@ class Event {
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
-                auto witness_seen_mask = calc_witness_mask;
+                order;
+                auto witness_seen_mask = calc_witness_mask(hashgraph);
                 if ( witness_seen_mask.isMajority(hashgraph.node_size) ) {
-                    received_order;
-
+                    //received_order;
                     // Witness detected
                     // writefln("%d:%d ROUND Before %d", node_id, id, _round.number);
                     hashgraph._rounds.next_round(this);
                     // writefln("%d:%d      after %d", node_id, id, _round.number);
                     _witness = new Witness(this, witness_seen_mask);
+                    //hashgraph.witness_front=hashgraph.witness_front.dup;
+                    hashgraph.witness_front[node_id] = this;
                     // Set the witness seen from the previous round
                     _witness.seen_from_previous_round(this);
                     if ( callbacks) {
@@ -1376,14 +1522,15 @@ class Event {
     }
 
     @nogc
-    int received_order() const pure nothrow
-        in {
-            assert(_received_order !is int.init, "The received order of this event has not been defined");
-        }
-    do {
+    int received_order() const pure nothrow {
+    //     in {
+    //         assert(_received_order !is int.init, "The received order of this event has not been defined");
+    //     }
+    // do {
         return _received_order;
     }
 
+    version(none)
     int received_order() pure nothrow {
         if (_received_order is int.init) {
             bool end_search;
@@ -1391,13 +1538,6 @@ class Event {
                 if (event) {
                     if ((event._received_order is int.init) && !end_search) {
                         int result;
-                        // debug {
-                        //     if (event.isEva) {
-                        //         writefln("### Eva %d:%d order=%d", event.node_id, event.id, event._received_order);
-                        //     }
-                        // }
-//                    if (nodeOwner)
-                        // debug writefln("### Start %d:%d", event.id, event.node_id);
                         scope(exit) {
                             if (result !is int.init) {
                                 // Increase by one
@@ -1417,9 +1557,6 @@ class Event {
                                         order--;
                                         order = (order is int.init)?int.init-1:order;
                                         next._received_order = order;
-                                        // debug {
-                                        //     writefln("###less id %d:%d received_order=%d", next.id, next.node_id, next._received_order);
-                                        // }
                                     }
                                     result = father_order;
                                 }

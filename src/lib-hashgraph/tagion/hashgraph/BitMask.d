@@ -142,8 +142,12 @@ struct BitMask {
             assert(i < absolute_mask);
         }
     do {
+        // import std.exception;
+        // import std.stdio;
         if (i < mask.bitsize) {
-            return (mask[i.wordindex] & ~(1 << i.word_bitindex)) != 0;
+            // debug assumeWontThrow(
+            //     writefln("%b %b %d", (size_t(1) << i.word_bitindex), ~(size_t(1) << i.word_bitindex), i.word_bitindex));
+            return (mask[i.wordindex] & (size_t(1) << i.word_bitindex)) != 0;
         }
         return false;
     }
@@ -350,6 +354,26 @@ struct BitMask {
         import std.algorithm.sorting : merge, sort;
         import std.algorithm.iteration : uniq, fold;
         import std.stdio;
+        { // Bit assign
+            BitMask a;
+            assert(!a[42]);
+            assert(!a[17]);
+            assert(!a[0]);
+            a[42]=true;
+            assert(a[42]);
+            assert(!a[17]);
+            assert(!a[0]);
+            a[0]=true;
+            assert(a[42]);
+            assert(!a[17]);
+            assert(a[0]);
+            a[17]=true;
+            assert(a[42]);
+            assert(a[17]);
+            assert(a[0]);
+
+        }
+
         { // Range
             const bit_list=[17, 52, 53, 54, 75, 28, 101];
             { // Empty Range
@@ -617,5 +641,7 @@ struct BitMask {
             assert(equal(z[], [3, 5]));
             assert(equal(y[], [3]));
         }
+
+
     }
 }

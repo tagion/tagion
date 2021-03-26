@@ -34,6 +34,7 @@ import tagion.utils.Miscellaneous : toHex=toHexString;
 
 @safe
 class HashGraph {
+    bool print_flag;
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
@@ -41,11 +42,13 @@ class HashGraph {
     immutable size_t node_size;
 //    immutable size_t min_voting_nodes;
 //    immutable size_t max_nodes;
+    package Event[] witness_front;
+
     private {
 //        GossipNet net;
         uint iterative_tree_count;
         uint iterative_strong_count;
-        private Node[Pubkey] nodes; // List of participating nodes T
+        Node[Pubkey] nodes; // List of participating nodes T
         //    private size_t[Pubkey] node_ids; // Translation table from pubkey to node_indices;
         Statistic!uint iterative_tree;
         Statistic!uint iterative_strong;
@@ -66,6 +69,7 @@ class HashGraph {
         //net.hashgraph=this;
         hirpc=HiRPC(net);
         this.node_size=node_size;
+        witness_front.length = node_size;
         // this.min_voting_nodes=min_voting_nodes;
         // this.max_nodes=max_nodes;
         this.valid_channel=valid_channel;
@@ -139,7 +143,7 @@ class HashGraph {
         // writefln("channel in nodes=%s", (channel in nodes) !is null);
         immutable eva_epack=eva_pack(time, nonce);
         auto eva_event=registerEventPackage(eva_epack);
-        eva_event.set_eva_order;
+        //eva_event.set_eva_order;
         //assert(eva_event);
         // (() @trusted {
         //     writefln("createEvent=%5s", eva_event.witness_mask);
@@ -263,7 +267,7 @@ class HashGraph {
                 }
                 //writefln("P%s front_seat %d", from_channel.cutHex, front_seat_event.altitude);
             }
-//            registered_event.received_order;
+            //registered_event.received_order;
         }
 
         // foreach(n; nodes) {
@@ -719,6 +723,9 @@ class HashGraph {
                     super(&run);
                     _hashgraph=h;
                     this.name=name;
+                    if (name == "Alice") {
+                        _hashgraph.print_flag=true;
+                    }
                 }
 
                 const(HashGraph) hashgraph() const pure nothrow {
@@ -735,7 +742,7 @@ class HashGraph {
                         immutable buf=cast(Buffer)_hashgraph.channel;
                         const nonce=_hashgraph.hirpc.net.calcHash(buf);
                         auto eva_event=_hashgraph.createEvaEvent(time, nonce);
-                        writefln("### eva_event.received_order=%d node_id=%d", eva_event.received_order, eva_event.node_id);
+                        //writefln("### eva_event.received_order=%d node_id=%d", eva_event.received_order, eva_event.node_id);
                         //const registrated=_hashgraph.registerEventPackage(epack);
 
                         if (eva_event is null) {
@@ -849,7 +856,9 @@ class HashGraph {
             Bob,
             Carol,
             Dave,
-            Elisa
+            Elisa,
+            Freja,
+            Geoge
         }
 
         auto network=new UnittestNetwork!NodeLabel();
@@ -860,9 +869,15 @@ class HashGraph {
         //auto monitor=new UnittestMonitor;
         //Event.callbacks=monitor;
         const channels=network.channels;
+        // foreach(_net; network.networks) {
+        //     if (_net.name == "Alice") {
+        //         const filename=fileId(_net.name);
+        //         _net._hashgraph.fwrite(filename.fullpath);
+        //     }
+        // }
         //writefln("channels.length=%d", channels.length);
         try {
-            foreach(i; 0..557) {
+            foreach(i; 0..76) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
                 auto current=network.networks[channel];
