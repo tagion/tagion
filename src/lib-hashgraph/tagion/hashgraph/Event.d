@@ -184,8 +184,8 @@ class Round {
 
     version(none)
     private void consensus_order(HashGraph hashgraph)
-        in {
-        }
+    in {
+    }
     do {
         // import std.stdio;
         // writeln("consensus order");
@@ -367,48 +367,19 @@ class Round {
             assert(e._round !is null);
         }
         do {
-            //log.error("isEva %s (last_round is null) = %s", e.isEva, (last_round is null));
             if (!e.isFatherLess) {
-                // log.error("e.isFatherLess");
                 scope (exit) {
                     e._round.add(e);
                 }
                 if (e._round && e._round._next) {
-                    // assumeWontThrow(
-                    //     writefln("Next Round (%d)", e._round._next.number));
-                    //log.error("EVA Defined");
                     e._round = e._round._next;
-                    //assert(e._round !is null);
                 }
                 else {
-                    //log.error("EVA create round");
-                    // debug assumeWontThrow(
-                    //     (() @trusted {
-                    //         printf("%p New Round (%d) before\n", _last_round, last_round.number);})());
                     e._round = new Round(last_round, hashgraph.node_size);
                     _last_round = e._round;
-                    // debug assumeWontThrow(
-                    //     (() @trusted {
-                    //         printf("%p New Round (%d) after\n", _last_round, last_round.number);})());
-
-                    // void dump(const Round round) pure nothrow {
-                    //     if (round) {
-                    //         debug assumeWontThrow(
-                    //             writef("(%d) ", round.number));
-                    //         dump(round._previous);
-                    //     }
-                    //     debug assumeWontThrow(
-                    //         writeln());
-                    // }
-                    // debug assumeWontThrow(
-                    //     (() @trusted {
-                    //         writefln("rounds.length = %d", length);
-                    //         writefln("rounds = (%s)", this[].map!((a) => a.number));})());
-//                    dump(last_round);
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
                     }
-                    //assert(e._round !is null);
                 }
 
             }
@@ -427,18 +398,6 @@ class Round {
             }
             return _decided(last_decided_round);
         }
-
-        // void dump() const nothrow {
-        //     log("ROUND dump");
-        //     void _dump(const Round r) nothrow {
-        //         if (r) {
-        //             log("\tRound %d %s", r.number, decided(r));
-        //             _dump(r._previous);
-        //         }
-        //     }
-        //     return _dump(last_decided_round);
-        // }
-
 
         @nogc
         int coin_round_distance() pure const nothrow {
@@ -486,7 +445,6 @@ class Round {
                         }
                         else {
                             BitMask strong_seeing_mask;
-                            //bitarray_clear(strong_seeing_mask, node_size);
                             /// See through the next round
                             auto next_round = e._round._next;
                             const(BitMask) calc_seeing_mask() @safe pure nothrow {
@@ -598,38 +556,6 @@ class Round {
 
 @safe
 class Event {
-    static void _print(string pref, const Event e) @safe  {
-        import std.stdio;
-         version(none) {
-        writef("%s\t(%d:%d:%d)@%s %s->", pref, e.node_id, e.id, e.altitude, e.fingerprint.cutHex, e.isGrounded?"G":"");
-        if (e._mother) {
-            string daughter() {
-                if (e._mother._daughter) {
-                    return format("d(%d:%d:%d)", e._mother._daughter.node_id, e._mother._daughter.id, e._mother._daughter.altitude);
-                }
-                return "";
-            }
-            writef(" m(%d:%d:%d)%s@%s", e._mother.node_id, e._mother.id, e._mother.altitude, daughter, e.event_package.event_body.mother.cutHex);
-        }
-        else {
-            writef(" m(#)@%s", e.event_package.event_body.mother.cutHex);
-        }
-        if (e._father) {
-            string son() {
-                if (e._father) {
-                    return format("s(%d:%d:%d)", e._father._son.node_id, e._father._son.id, e._father.altitude);
-                }
-                return "";
-            }
-            writef(" f(%d:%d)%s@%s", e._father.node_id, e._father.id, son, e.event_package.event_body.father.cutHex);
-        }
-        else {
-            writef(" f(#)@%s",e.event_package.event_body.father.cutHex);
-        }
-        writeln();
-        }
-    }
-
 
     import tagion.basic.ConsensusExceptions;
     alias check=Check!EventConsensusException;
@@ -652,9 +578,8 @@ class Event {
         _witness_mask[node_id]=true;
         _count++;
 
-        //version(none)
         if ( isEva ) {
-            // If the event is a Eva event the round is undefined
+            // If the event is a Eva event the round is undefined until a daughter in generation after get a father
             BitMask round_mask;
             _witness = new Witness(this, round_mask);
         }
@@ -730,16 +655,16 @@ class Event {
             }
         do {
             if (owner_event._round._previous) {
-            scope(success) {
-                owner_event._witness_mask[owner_event.node_id] = true;
-            }
-            foreach(privous_witness_node_id, e; owner_event._round._previous._events) {
-                if (e) {
-                    if (owner_event._witness_mask[privous_witness_node_id]) {
-                        e._witness._seen_in_next_round_mask[privous_witness_node_id] = true;
+                scope(success) {
+                    owner_event._witness_mask[owner_event.node_id] = true;
+                }
+                foreach(privous_witness_node_id, e; owner_event._round._previous._events) {
+                    if (e) {
+                        if (owner_event._witness_mask[privous_witness_node_id]) {
+                            e._witness._seen_in_next_round_mask[privous_witness_node_id] = true;
+                        }
                     }
                 }
-            }
             }
         }
 
@@ -1133,10 +1058,10 @@ class Event {
 
     @trusted
     package void connect(HashGraph hashgraph)
-        out {
-            assert(event_package.event_body.mother && _mother || !_mother);
-            assert(event_package.event_body.father && _father || !_father);
-        }
+    out {
+        assert(event_package.event_body.mother && _mother || !_mother);
+        assert(event_package.event_body.father && _father || !_father);
+    }
     do {
         if (!connected) {
             scope(exit) {
@@ -1191,10 +1116,10 @@ class Event {
 
     @nogc
     int received_order() const pure nothrow {
-    //     in {
-    //         assert(_received_order !is int.init, "The received order of this event has not been defined");
-    //     }
-    // do {
+        //     in {
+        //         assert(_received_order !is int.init, "The received order of this event has not been defined");
+        //     }
+        // do {
         return _received_order;
     }
 
