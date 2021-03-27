@@ -119,15 +119,8 @@ class HashGraph {
     }
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
-        // getNode(channel);
-        // writefln("channel in nodes=%s", (channel in nodes) !is null);
         immutable eva_epack=eva_pack(time, nonce);
         auto eva_event=registerEventPackage(eva_epack);
-        //eva_event.set_eva_order;
-        //assert(eva_event);
-        // (() @trusted {
-        //     writefln("createEvent=%5s", eva_event.witness_mask);
-        // })();
         return eva_event;
     }
 
@@ -163,7 +156,6 @@ class HashGraph {
             auto event=new Event(event_pack, this);
             _event_cache[event.fingerprint]=event;
             event.connect(this);
-            //event.received_order;
             return event;
         }
         return null;
@@ -174,7 +166,6 @@ class HashGraph {
         this(const Wavefront received_wave) {
             foreach(e; received_wave.epacks) {
                 if (!(e.fingerprint in event_package_cache || e.fingerprint in _event_cache)) {
-                    //log.trace("Received[%s] fingerprint=%s %d", e.pubkey.cutHex, e.fingerprint.cutHex, e.fingerprint.length);
                     event_package_cache[e.fingerprint] = e;
                 }
             }
@@ -187,7 +178,6 @@ class HashGraph {
             else if (fingerprint in event_package_cache) {
                 immutable event_pack=event_package_cache[fingerprint];
                 if (valid_channel(event_pack.pubkey)) {
-                    //event_package_cache.remove(fingerprint);
                     auto event=new Event(event_pack, this.outer);
                     _event_cache[fingerprint]=event;
                     return event;
@@ -231,12 +221,7 @@ class HashGraph {
         }
         assert(_register.event_package_cache.length);
         Event front_seat_event;
-        //writefln("_register.event_package_cache.length=%d", _register.event_package_cache.length);
-        // const keys=(() @trusted {
-        //         return _register.event_package_cache.keys;
-        //     })();
         foreach(fingerprint; _register.event_package_cache.byKey) {
-            //writefln("isRegisered(%s)=%s", fingerprint.cutHex, isRegistered(fingerprint));
             auto registered_event=register(fingerprint);
             if (registered_event.channel == from_channel) {
                 if (front_seat_event is null) {
@@ -245,23 +230,12 @@ class HashGraph {
                 else if (higher(registered_event.altitude, front_seat_event.altitude)) {
                     front_seat_event=registered_event;
                 }
-                //writefln("P%s front_seat %d", from_channel.cutHex, front_seat_event.altitude);
             }
-            //registered_event.received_order;
         }
 
-        // foreach(n; nodes) {
-        //     if (n && n.event) {
-        //         n.event.received_order;
-        //     }
-        // }
-
-        //assert(!_register.isCached(received_wave.front_seat));
-        //assert(front_seat_event);
         return front_seat_event;
     }
 
-    //static {
     @HiRPCMethod() const(HiRPC.Sender) wavefront(const Wavefront wave, const uint id=0) {
         return hirpc.wavefront(wave, id);
     }
@@ -322,12 +296,9 @@ class HashGraph {
         lazy const(sdt_t) time,
         void delegate(const(Wavefront) send_wave) @safe response) {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
-        // writefln("channels=%s", nodes.byKey.map!(a => a.cutHex));
-        // writefln("channel=%s", channel.cutHex);
 
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node=getNode(from_channel);
-        //    auto received_wave=received.params!Wavefront;
         if ( Event.callbacks ) {
             Event.callbacks.receive(received_wave);
         }
