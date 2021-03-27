@@ -93,16 +93,6 @@ class Round {
         return cast(uint)_events.length;
     }
 
-    version(none)
-    @nogc uint famousVote() pure const nothrow {
-        return cast(uint)(_events.map!((e) => (e !is null) && (e.witness.famous)).count(true));
-    }
-
-    version(none)
-    private @nogc bool famous_can_be_decided() pure const nothrow {
-        return famousVote == _event_counts;
-    }
-
     private this(Round previous, const size_t node_size) pure nothrow {
         if (previous) {
             number=previous.number+1;
@@ -151,20 +141,13 @@ class Round {
         return _events;
     }
 
-    //  @nogc
+    //@nogc
     package void add(Event event) pure nothrow
     in {
         assert(_events[event.node_id] is null, "Event at node_id "~event.node_id.to!string~" should only be added once");
     }
     do {
-//        if ( _events[event.node_id] is null ) {
-        //log.error("Add node_id %d", event.node_id);
-        //_event_counts++;
         _events[event.node_id]=event;
-//        }
-        // if (this is _seed_round) {
-        //     log.error("Node %d add to seed_round (event_count=%d)", event.node_id, _event_counts);
-        // }
     }
 
 
@@ -186,25 +169,8 @@ class Round {
         }
     do {
         if ( _events[event.node_id] ) {
-            //_event_counts--;
             _events[event.node_id]=null;
         }
-        // if (this is _seed_round) {
-        //     log.error("Node %d removed to seed_round (event_count=%d)", event.node_id, _event_counts);
-        // }
-    }
-
-    version(none)
-    @nogc
-    bool empty() pure const nothrow {
-        return _event_counts == 0;
-    }
-
-    // Return true if all witness in this round has been created
-    version(none)
-    @nogc
-    bool completed() pure const nothrow {
-        return _event_counts == node_size;
     }
 
     @nogc
