@@ -1,6 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
-import std.stdio;
+//import std.stdio;
 import std.conv;
 import std.format;
 //import std.bitmanip : BitArray;
@@ -308,9 +308,6 @@ class HashGraph {
                 tides[pkey] = n.altitude;
                 assert(n._event.isInFront);
             }
-        }
-        debug {
-            writefln("tides.length=%d nodes.length=%d", tides.length, nodes.length);
         }
         return Wavefront(tides);
     }
@@ -753,12 +750,6 @@ class HashGraph {
                     uint count;
                     bool stop;
                     while (!stop) {
-                        writefln("Node %s %s", name, _hashgraph.channel.cutHex);
-                        // (() @trusted {
-                        //     yield;
-                        // })();
-                        // writefln("\t\tempty %s", authorising.empty(_hashgraph.channel));
-
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
                             //writefln("received(%s:%d)=%J", name, count, received);
@@ -789,12 +780,6 @@ class HashGraph {
                             const registrated=_hashgraph.registerEventPackage(epack);
                             assert(registrated, "Should not fail here");
                             const sender=_hashgraph.hirpc.wavefront(_hashgraph.tidalWave);
-                            if (registrated.isFatherLess) {
-                                (() @trusted {
-                                    writefln("Own isFatherLess=%5s", registrated.witness_mask);
-                                })();
-                            }
-                            // pragma(msg, "isHiBONRecord!(typeof(sender))=", isHiBONRecord!(typeof(sender)));
                             const send_channel=authorising.gossip(&_hashgraph.not_used_channels, sender);
                             _hashgraph.init_tide(send_channel);
                             count++;

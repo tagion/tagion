@@ -128,9 +128,6 @@ class Round {
             number=-1;
         }
         _events=new Event[node_size];
-        debug assumeWontThrow(
-            (() @trusted {
-                printf("%p %p New Round (%d)\n", this, previous, number);})());
     }
 
     version(none)
