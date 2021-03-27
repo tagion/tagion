@@ -1315,9 +1315,9 @@ class Event {
             assert(!_mother._witness_mask[].empty);
         }
     do {
-
+        static uint max_count;
         BitMask result = _mother._witness_mask.dup;
-        enum inspect_id =52;
+        enum inspect_id =242;
 
         //BitMask witness_result;
         const(BitMask) calc_witness(scope Event[] events, const BitMask witness_mask) {
@@ -1426,21 +1426,37 @@ class Event {
         //     }
         // }
 
-        int iter_count = 20;
+        //int iter_count = 20;
 
-        const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask) {
-            iter_count--;
-            if (e && e._round && iter_count >= 0) {
+        //BitMask marker_mask;
+
+        // int[] altitude;
+        // alittude.length=hashgraph.node_size;
+        const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, scope const BitMask marker_mask) {
+            hashgraph.iterative_witness_search_count++;
+            //iter_count--;
+            if (e && e._round && !marker_mask[e.node_id]) {// && !marker_mask[e.node_id]) {
+                // scope new_marker_mask=marker_mask.dup;
+                // new_marker_mask[node_id]=true;
+                //marker_mask[e.node_id]=true;
                 if (id == inspect_id && hashgraph.print_flag) {
-                    writef("(%d:%d) ->", e.id, e.node_id);
+                    writef("(%d:%d:%7s) ->", e.id, e.node_id, voting_mask);
                 }
                 BitMask result = voting_mask.dup;
                 if (e._round.number == _round.number) {
+                    // if (e._mother &&  (e._mother._round.number == _round.number)
+                    //     && ((!e._father) || (e._father._round.number == _round.number) ) ) {
+                    //     result |= e._witness_mask;
+                    // }
+                    // else {
                     result[e.node_id] = true;
                     const collecting_voting_mask = e._witness_mask & ~result;
+                    if (id == inspect_id && hashgraph.print_flag) {
+                        writef("[%7s:%7s]", collecting_voting_mask, marker_mask);
+                    }
                     if (!collecting_voting_mask[].empty) {
-                        result |= local_calc_witness_mask(e._father, result);
-                        result |= local_calc_witness_mask(e._mother, result);
+                        result |= local_calc_witness_mask(e._father, result, marker_mask+e.node_id);
+                        result |= local_calc_witness_mask(e._mother, result, marker_mask);
                     }
                 }
                 else if (e._round.number > _round.number) {
@@ -1449,8 +1465,8 @@ class Event {
                         result |= event_round._witness.round_seen_mask;
                         const collecting_voting_mask = e._witness_mask & ~result;
                         if (!collecting_voting_mask[].empty) {
-                            result |= local_calc_witness_mask(event_round, result);
-                            result |= local_calc_witness_mask(e._father, result);
+                            result |= local_calc_witness_mask(event_round, result, marker_mask);
+                            result |= local_calc_witness_mask(e._father, result, marker_mask+node_id);
                         }
                     }
                 }
@@ -1459,8 +1475,16 @@ class Event {
             return voting_mask;
         }
 
-        const new_alt_result = local_calc_witness_mask(this, BitMask());
-
+        hashgraph.iterative_witness_search_count = 0;
+        const new_alt_result = local_calc_witness_mask(this, BitMask(), BitMask());
+        if (hashgraph.print_flag) {
+            import std.algorithm : max;
+            if (hashgraph.iterative_witness_search_count > max_count) {
+                max_count = max(max_count, hashgraph.iterative_witness_search_count);
+                writefln("hashgraph.iterative_witness_search_count = %d %d (%d:%d)",
+                    hashgraph.iterative_witness_search_count, max_count, id, node_id);
+            }
+        }
         if (id == inspect_id && hashgraph.print_flag) {
             writefln("%7s", new_alt_result);
         }

@@ -220,6 +220,13 @@ struct BitMask {
             return result;
         }
 
+    BitMask opBinary(string op)(const size_t index) const pure nothrow
+        if ((op == "-" || op == "+")) {
+            BitMask result=dup;
+            result[index]=(op == "+");
+            return result;
+        }
+
     BitMask opUnary(string op)() const pure nothrow
         if (op == "~")
         {

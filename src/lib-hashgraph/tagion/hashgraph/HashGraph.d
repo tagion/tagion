@@ -43,6 +43,7 @@ class HashGraph {
 //    immutable size_t min_voting_nodes;
 //    immutable size_t max_nodes;
     package Event[] witness_front;
+    package uint iterative_witness_search_count;
 
     private {
 //        GossipNet net;
@@ -862,7 +863,7 @@ class HashGraph {
         // }
         //writefln("channels.length=%d", channels.length);
         try {
-            foreach(i; 0..776) {
+            foreach(i; 0..1776) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
                 auto current=network.networks[channel];
@@ -879,6 +880,7 @@ class HashGraph {
             })();
         }
 
+        writefln("Save Alice");
         foreach(_net; network.networks) {
             if (_net.name == "Alice") {
                 const filename=fileId(_net.name);
