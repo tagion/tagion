@@ -43,7 +43,7 @@ class HashGraph {
 //    immutable size_t min_voting_nodes;
 //    immutable size_t max_nodes;
     package Event[] witness_front;
-    package uint iterative_witness_search_count;
+    Statistic!uint witness_search_statistic;
 
     private {
 //        GossipNet net;
