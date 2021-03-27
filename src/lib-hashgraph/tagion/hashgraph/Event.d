@@ -77,28 +77,16 @@ unittest { // Test of the altitude measure function
 
 @safe
 class Round {
-//    package bool __grounded;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     private Round _previous;
     private Round _next;
-    // Counts the number of nodes in this round
     immutable int number;
-//    immutable size_t node_size;
-//    private bool _decided;
-//    private static uint _decided_count;
 
     private BitMask _looked_at_mask;
     private uint _looked_at_count;
-    // static int increase_number(const(Round) r) nothrow pure {
-    //     return r.number+1;
-    // }
 
     private Event[] _events;
-    // Counts the witness in the round
-    //private uint _event_counts;
-    //
-    private BitMask _ground_mask;
 
     @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
@@ -250,25 +238,6 @@ class Round {
     @nogc
     inout(Event) event(const size_t node_id) pure inout {
         return _events[node_id];
-    }
-
-    // // Whole round decided
-    // @nogc
-    // bool decided() pure const nothrow {
-
-    //     return _decided;
-    // }
-
-
-    @trusted
-    private bool ground(const size_t node_id, ref const(BitMask) rhs) nothrow {
-        _ground_mask[node_id]=true;
-        return rhs == _ground_mask;
-    }
-
-    @nogc
-    ref const(BitMask) ground_mask() pure const nothrow {
-        return _ground_mask;
     }
 
     private void consensus_order(HashGraph hashgraph) {

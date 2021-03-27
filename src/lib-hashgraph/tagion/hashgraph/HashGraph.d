@@ -526,7 +526,6 @@ class HashGraph {
 
 
     enum max_package_size=0x1000;
-//    alias immutable(Hash) function(immutable(ubyte)[]) @safe Hfunc;
     enum round_clean_limit=10;
 
     /++
@@ -536,22 +535,10 @@ class HashGraph {
     void fwrite(string filename) {
         import tagion.hibon.HiBONRecord : fwrite;
         scope events=new HiBON;
-        // bool[size_t] inuse;
-        // uint count;
         foreach(n; nodes) {
-//            n._event.received_order;
-//            pragma(msg, "n._event=", typeof(n._event));
             foreach(e; n[]) {
-                //pragma(msg, typeof(e.received_order));
-//                if (e.hasOrder) {
                 auto event_view=EventView(e);
                 events[e.id]=event_view;
-//                 if (e.received_order is int.init) {
-//                     writefln("id=%d:%d isFatherLess=%s received_order=%d alt=%d",
-//                         e.id, e.node_id, e.isFatherLess, e.received_order, e.altitude);
-// //                    writefln("FWRITE %J", event_view);
-//                     //                  }
-//                 }
             }
         }
         scope h=new HiBON;
