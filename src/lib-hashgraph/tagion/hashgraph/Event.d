@@ -750,7 +750,6 @@ class Event {
             // If the event is a Eva event the round is undefined
             BitMask round_mask;
             _witness = new Witness(this, round_mask);
-            hashgraph.witness_front[node_id]=this;
         }
         if (Event.callbacks) {
             Event.callbacks.create(this);
@@ -1389,28 +1388,17 @@ class Event {
                 order;
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
                 if ( witness_seen_mask.isMajority(hashgraph.node_size) ) {
-                    //received_order;
-                    // Witness detected
-                    // writefln("%d:%d ROUND Before %d", node_id, id, _round.number);
                     hashgraph._rounds.next_round(this);
-                    // writefln("%d:%d      after %d", node_id, id, _round.number);
                     _witness = new Witness(this, witness_seen_mask);
-                    //hashgraph.witness_front=hashgraph.witness_front.dup;
-                    hashgraph.witness_front[node_id] = this;
-                    // Set the witness seen from the previous round
                     _witness.seen_from_previous_round(this);
                     if ( callbacks) {
                         callbacks.witness(this);
                     }
-                    // Search for famous
                     hashgraph._rounds.check_decided_round(hashgraph.node_size);
                     _witness_mask.clear;
                     _witness_mask[node_id]=true;
 
                 }
-                // if (isFatherLess) {
-                //     writefln("isFatherLess=%5s node_id=%d id=%d", _witness_mask, node_id, id);
-                // }
 
             }
             else if (!isEva) {

@@ -40,9 +40,6 @@ class HashGraph {
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.utils.Statistic;
     immutable size_t node_size;
-//    immutable size_t min_voting_nodes;
-//    immutable size_t max_nodes;
-    package Event[] witness_front;
     Statistic!uint witness_search_statistic;
 
     private {
@@ -66,19 +63,10 @@ class HashGraph {
     private ValidChannel valid_channel;
 
     this(const size_t node_size, const SecureNet net, ValidChannel valid_channel) {
-//        this.net=net;1
-        //net.hashgraph=this;
         hirpc=HiRPC(net);
         this.node_size=node_size;
-        witness_front.length = node_size;
-        // this.min_voting_nodes=min_voting_nodes;
-        // this.max_nodes=max_nodes;
         this.valid_channel=valid_channel;
-//        this.authorising=authorising;
-        //nodes=new Node[size];
         _rounds=Round.Rounder(this);
-        //add_node(net.pubkey);
-        //next_event_id; // event_id (0 or event_id.init) is defined as null event
     }
 
 
