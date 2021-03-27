@@ -673,22 +673,11 @@ class Event {
             assert(!_witness_mask[].empty);
             assert(_mother._daughter is this);
             assert(event_package.event_body.altitude - _mother.event_package.event_body.altitude is 1);
-            if (!(_received_order is int.init || (_received_order - _mother._received_order > 0))) {
-                //writefln("_received_order=%d _mother._received_order=%d ", _received_order, _mother._received_order);
-                // void dump(const Event e) {
-                //     if (e !is null) {
-                //         writefln("%d isFatherLess %s received_order=%d node_id=%d",
-                //             e.id, e._father is null, e._received_order, e.node_id);
-                //         dump(e._mother);
-                //     }
-                // }
-                // dump(this);
-            }
-            //assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
+            assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
         }
         if (_father) {
             assert(_father._son is this);
-            //assert(_received_order - _father._received_order > 0);
+            assert(_received_order is int.init || (_received_order - _father._received_order > 0));
         }
     }
 //    package static Event f
