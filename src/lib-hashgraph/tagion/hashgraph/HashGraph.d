@@ -877,7 +877,7 @@ class HashGraph {
         // }
         //writefln("channels.length=%d", channels.length);
         try {
-            foreach(i; 0..76) {
+            foreach(i; 0..776) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
                 auto current=network.networks[channel];

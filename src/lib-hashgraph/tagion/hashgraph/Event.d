@@ -1320,52 +1320,53 @@ class Event {
     do {
 
         BitMask result = _mother._witness_mask.dup;
+        enum inspect_id =52;
+
         //BitMask witness_result;
         const(BitMask) calc_witness(scope Event[] events, const BitMask witness_mask) {
             uint count;
-            enum inspect_id =26;
-            if (id == inspect_id && hashgraph.print_flag) {
-                events
-                    .filter!((e) => (e !is null))
-                    .each!((e) => count++);
-                writefln(">%d) count=%d", id, count);
-                count = 0;
-                events
-                    .filter!((e) => (e) && witness_mask[e.node_id])
-                    .each!((e) => count++);
-                writefln("#%d) count=%d", id, count);
-                count = 0;
-                events
-                    .filter!((e) => (e) && witness_mask[e.node_id] && (!e.isFatherLess))
-                    .each!((e) => count++);
-                writefln("f%d) count=%d", id, count);
-                count = 0;
-                events
-                    .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0))
-                    .each!((e) => count++);
-                writefln("r%d) count=%d", id, count);
-                writefln(":%d) witness_mask=%7s", id, witness_mask);
+            // if (id == inspect_id && hashgraph.print_flag) {
+            //     events
+            //         .filter!((e) => (e !is null))
+            //         .each!((e) => count++);
+            //     writefln(">%d) count=%d", id, count);
+            //     count = 0;
+            //     events
+            //         .filter!((e) => (e) && witness_mask[e.node_id])
+            //         .each!((e) => count++);
+            //     writefln("#%d) count=%d", id, count);
+            //     count = 0;
+            //     events
+            //         .filter!((e) => (e) && witness_mask[e.node_id] && (!e.isFatherLess))
+            //         .each!((e) => count++);
+            //     writefln("f%d) count=%d", id, count);
+            //     count = 0;
+            //     events
+            //         .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0))
+            //         .each!((e) => count++);
+            //     writefln("r%d) count=%d", id, count);
+            //     writefln(":%d) witness_mask=%7s", id, witness_mask);
 
 
-            }
-            count = 0;
-            events
-                .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0))
-                    .each!((e) => count++);
+            // }
+            // count = 0;
+            // events
+            //     .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0))
+            //         .each!((e) => count++);
             auto new_events=events
                 .filter!((e) => (e) && witness_mask[e.node_id] && (e._round) && (e._round.number - _round.number >= 0));
-            if (id == inspect_id && hashgraph.print_flag) {
-                writefln(" %d) events ids=%s node_ids=%s fags=%s", id,
-                    new_events.map!((e) => e.id),
-                    new_events.map!((e) => e.node_id),
-                    new_events.map!((e) => witness_mask[e.node_id])
-                    );
-            }
+            // if (id == inspect_id && hashgraph.print_flag) {
+            //     writefln(" %d) events ids=%s node_ids=%s fags=%s", id,
+            //         new_events.map!((e) => e.id),
+            //         new_events.map!((e) => e.node_id),
+            //         new_events.map!((e) => witness_mask[e.node_id])
+            //         );
+            // }
             BitMask new_witness_mask;
             foreach(e; new_events) {
-                if (id == inspect_id && hashgraph.print_flag) {
-                    writefln("(%d:%d) (%d:%d) new_witness_mask=%7s", id, node_id, e.id, e.node_id, new_witness_mask);
-                }
+                // if (id == inspect_id && hashgraph.print_flag) {
+                //     writefln("(%d:%d) (%d:%d) new_witness_mask=%7s", id, node_id, e.id, e.node_id, new_witness_mask);
+                // }
                 if (e._round.number == _round.number) {
                     new_witness_mask[e.node_id] = true;
                 }
@@ -1373,17 +1374,17 @@ class Event {
                     new_witness_mask |= e._witness.round_seen_mask;
                 }
             }
-            if (id == inspect_id && hashgraph.print_flag) {
-                BitMask mask;
-                count=0;
-                new_events
-                    .each!((e) => count++);
+            // if (id == inspect_id && hashgraph.print_flag) {
+            //     BitMask mask;
+            //     count=0;
+            //     new_events
+            //         .each!((e) => count++);
 
-                new_events
-                    .each!((e) => mask[e.id]=true);
-                writefln("(%d) new_mask=%7s witness_mask=%7s count=%d", id, mask, witness_mask, count);
-                writefln("(%d) new_witness_mask=%7s", id, new_witness_mask);
-            }
+            //     new_events
+            //         .each!((e) => mask[e.id]=true);
+            //     writefln("(%d) new_mask=%7s witness_mask=%7s count=%d", id, mask, witness_mask, count);
+            //     writefln("(%d) new_witness_mask=%7s", id, new_witness_mask);
+            // }
             const finish=
                 //(new_witness_mask.count >= hashgraph.node_size) ||
                 new_events
@@ -1411,24 +1412,63 @@ class Event {
         const alt_result = calc_witness(hashgraph.witness_front, _witness_mask);
 //        return alt_result;
         //     version(none) {
-        if (_father) {
-            const round_diff = _father._round.number - _round.number;
-            if (round_diff == 0) {
-                result |= _father._witness_mask;
+        // if (_father) {
+        //     const round_diff = _father._round.number - _round.number;
+        //     if (round_diff == 0) {
+        //         result |= _father._witness_mask;
+        //     }
+        //     else if (round_diff == 1) {
+        //         _father._round._events
+        //             .filter!((e) => e && e._witness_mask[e.node_id])
+        //             .each!((e) => result |= e._witness_mask);
+        //     }
+        //     else if (round_diff > 0) {
+        //         _father._round._events
+        //             .filter!((e) => e && e._witness.round_seen_mask[e.node_id])
+        //             .each!((e) => result |= e.calc_witness_mask(hashgraph));
+        //     }
+        // }
+
+        int iter_count = 20;
+
+        const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask) {
+            iter_count--;
+            if (e && e._round && iter_count >= 0) {
+                if (id == inspect_id && hashgraph.print_flag) {
+                    writef("(%d:%d) ->", e.id, e.node_id);
+                }
+                BitMask result = voting_mask.dup;
+                if (e._round.number == _round.number) {
+                    result[e.node_id] = true;
+                    const collecting_voting_mask = e._witness_mask & ~result;
+                    if (!collecting_voting_mask[].empty) {
+                        result |= local_calc_witness_mask(e._father, result);
+                        result |= local_calc_witness_mask(e._mother, result);
+                    }
+                }
+                else if (e._round.number > _round.number) {
+                    const event_round = e._round.events[e.node_id];
+                    if (event_round) {
+                        result |= event_round._witness.round_seen_mask;
+                        const collecting_voting_mask = e._witness_mask & ~result;
+                        if (!collecting_voting_mask[].empty) {
+                            result |= local_calc_witness_mask(event_round, result);
+                            result |= local_calc_witness_mask(e._father, result);
+                        }
+                    }
+                }
+                return result;
             }
-            else if (round_diff == 1) {
-                _father._round._events
-                    .filter!((e) => e && e._witness_mask[e.node_id])
-                    .each!((e) => result |= e._witness_mask);
-            }
-            else if (round_diff > 0) {
-                _father._round._events
-                    .filter!((e) => e && e._witness.round_seen_mask[e.node_id])
-                    .each!((e) => result |= e.calc_witness_mask(hashgraph));
-            }
+            return voting_mask;
+        }
+
+        const new_alt_result = local_calc_witness_mask(this, BitMask());
+
+        if (id == inspect_id && hashgraph.print_flag) {
+            writefln("%7s", new_alt_result);
         }
         //writefln("result=%7s alt_result=%7s witness_mask=%7s %s", result, alt_result, _witness_mask, result == alt_result);
-        return alt_result;
+        return new_alt_result;
 //        }
     }
 
