@@ -83,9 +83,6 @@ class Round {
     private Round _next;
     immutable int number;
 
-    private BitMask _looked_at_mask;
-    private uint _looked_at_count;
-
     private Event[] _events;
 
     @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
@@ -148,31 +145,6 @@ class Round {
             before._previous=null;
 //            _decided_count--;
         }
-    }
-
-    // Used to make than an witness in the next round at the node_id has looked at this round
-    @trusted
-    package void looked_at(const uint node_id) nothrow {
-        if ( !_looked_at_mask[node_id] ) {
-            _looked_at_mask[node_id]=true;
-            _looked_at_count++;
-        }
-    }
-
-    // Checked if all active nodes/events in this round has beend looked at
-    @nogc
-    bool seeing_completed() const pure nothrow {
-        return _looked_at_count == node_size;
-    }
-
-    @nogc
-    ref const(BitMask) looked_at_mask() pure const nothrow {
-        return _looked_at_mask;
-    }
-
-    @nogc
-    uint looked_at_count() pure const nothrow {
-        return _looked_at_count;
     }
 
     const(Event[]) events() const pure nothrow {
