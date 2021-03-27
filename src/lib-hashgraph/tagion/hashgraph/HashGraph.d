@@ -43,20 +43,11 @@ class HashGraph {
     Statistic!uint witness_search_statistic;
 
     private {
-//        GossipNet net;
-        uint iterative_tree_count;
-        uint iterative_strong_count;
         Node[Pubkey] nodes; // List of participating nodes T
-        //    private size_t[Pubkey] node_ids; // Translation table from pubkey to node_indices;
-        Statistic!uint iterative_tree;
-        Statistic!uint iterative_strong;
         uint event_id;
         HiRPC hirpc;
-//        Authorising authorising;
     }
-    //alias LRU!(Round, uint*) RoundCounter;
-//    alias Sign=immutable(ubyte)[] function(Pubkey, Privkey,  immutable(ubyte)[] message);
-    // List of rounds
+
     package Round.Rounder _rounds;
 
     alias ValidChannel=bool delegate(const Pubkey channel);
