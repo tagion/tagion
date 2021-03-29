@@ -142,11 +142,7 @@ struct BitMask {
             assert(i < absolute_mask);
         }
     do {
-        // import std.exception;
-        // import std.stdio;
         if (i < mask.bitsize) {
-            // debug assumeWontThrow(
-            //     writefln("%b %b %d", (size_t(1) << i.word_bitindex), ~(size_t(1) << i.word_bitindex), i.word_bitindex));
             return (mask[i.wordindex] & (size_t(1) << i.word_bitindex)) != 0;
         }
         return false;
@@ -169,7 +165,7 @@ struct BitMask {
         return b;
     }
 
-    BitMask opOpAssign(string op)(const BitMask rhs) pure nothrow
+    BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
         if (op == "-" || op == "&" || op == "|" || op == "^")
         {
             if (mask.length > rhs.mask.length) {
@@ -191,7 +187,7 @@ struct BitMask {
             return this;
         }
 
-    BitMask opBinary(string op)(const BitMask rhs) const pure nothrow
+    BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
         if (op == "-" || op == "&" || op == "|" || op == "^")
         {
             import std.algorithm.comparison : max, min;

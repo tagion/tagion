@@ -41,6 +41,8 @@ class HashGraph {
     import tagion.utils.Statistic;
     immutable size_t node_size;
     Statistic!uint witness_search_statistic;
+    Statistic!uint string_seeing_statistic;
+    Statistic!uint received_order_statistic;
 
     private {
         Node[Pubkey] nodes; // List of participating nodes T
@@ -536,10 +538,7 @@ class HashGraph {
         import tagion.hibon.HiBONRecord : fwrite;
         scope events=new HiBON;
         foreach(n; nodes) {
-            foreach(e; n[]) {
-                auto event_view=EventView(e);
-                events[e.id]=event_view;
-            }
+            n[].each!((e) => events[e.id]=EventView(e));
         }
         scope h=new HiBON;
         h[Params.size]=node_size;

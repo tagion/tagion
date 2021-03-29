@@ -7,6 +7,7 @@ import std.typecons : TypedefType;
 
 import tagion.basic.Basic : Buffer, Signature, Pubkey, EnumText;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.BitMask;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC : HiRPC;
@@ -34,10 +35,16 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3*voting > 2*node_size);
 }
 
-@trusted
-bool isMajority(scope const(BitMask) mask, const size_t node_size) pure nothrow {
-    return isMajority(mask.count, node_size);
+@safe @nogc
+bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
+    return isMajority(mask.count, hashgraph.node_size);
 }
+
+@safe @nogc
+bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
+    return mask.count is hashgraph.node_size;
+}
+
 
 enum int eva_altitude=-77;
 @safe @nogc

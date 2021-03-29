@@ -14,7 +14,7 @@ import std.range : enumerate;
 import std.array : array;
 
 //import std.algorithm.searching : all;
-import std.algorithm.iteration : map, each, filter, cache;
+import std.algorithm.iteration : map, each, filter, cache, fold;
 import std.algorithm.searching : count, any, all;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
 
@@ -32,7 +32,7 @@ import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, bitarray_clear, 
 import tagion.Keywords : Keywords;
 
 import tagion.basic.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks, EventScriptCallbacks;
+import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks, EventScriptCallbacks;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.BitMask : BitMask;
 
@@ -81,6 +81,7 @@ class Round {
     enum int coin_round_limit = 10;
     private Round _previous;
     private Round _next;
+    private bool _decided;
     immutable int number;
 
     private Event[] _events;
@@ -171,6 +172,10 @@ class Round {
         if ( _events[event.node_id] ) {
             _events[event.node_id]=null;
         }
+    }
+
+    @nogc bool decided() const pure nothrow {
+        return _decided;
     }
 
     @nogc
@@ -463,14 +468,14 @@ class Round {
                             bool famous_search(ref const(BitMask) seeing_mask,
                                 ref scope const(Round) current_round) @safe {
                                 if (current_round) {
-                                    const seeing_through=seeing_mask.isMajority(node_size);
+                                    const seeing_through=seeing_mask.isMajority(hashgraph);
                                     BitMask next_seeing_mask;
                                     //next_seeing_mask.length=node_size;
                                     //bitarray_clear(next_seeing_mask, node_size);
                                     foreach(next_node_id, e; current_round._events) {
                                         if (seeing_mask[next_node_id] && e) {
                                             next_seeing_mask |= next_round._events[next_node_id]._witness._seen_in_next_round_mask;
-                                            if (seeing_through && next_seeing_mask.isMajority(node_size)) {
+                                            if (seeing_through && next_seeing_mask.isMajority(hashgraph)) {
                                                 return true;
                                             }
                                         }
@@ -479,7 +484,7 @@ class Round {
                                 }
                                 return false;
                             }
-                            e._witness._famous = seeing_mask.isMajority(node_size) && famous_search(seeing_mask, next_round._next);
+                            e._witness._famous = seeing_mask.isMajority(hashgraph) && famous_search(seeing_mask, next_round._next);
                             if (e._witness.famous(node_size)) {
                                 famous_votes++;
                                 if (Event.callbacks) {
@@ -968,11 +973,11 @@ class Event {
         return result;
     }
 
-    void order() {
+    private void received_order(ref uint iteration_count) {
         if (isFatherLess) {
             if (_mother) {
                 if (_mother._received_order is int.init) {
-                    _mother.order;
+                    _mother.received_order(iteration_count);
                 }
                 _received_order = expected_order;
             }
@@ -980,7 +985,7 @@ class Event {
         else if (_received_order is int.init) {
             _received_order = expected_order;
             if (_received_order !is int.init) {
-                order;
+                received_order(iteration_count);
             }
         }
         else {
@@ -988,35 +993,71 @@ class Event {
             if ((expected - _received_order) > 0) {
                 _received_order = expected;
                 if (_son) {
-                    _son.order;
+                    _son.received_order(iteration_count);
                 }
                 if (_daughter) {
-                    _daughter.order;
+                    _daughter.received_order(iteration_count);
                 }
 
             }
             else if ((expected - _received_order) < 0) {
                 if (_father) {
-                    _father.order;
+                    _father.received_order(iteration_count);
                 }
                 if (_mother) {
-                    _mother.order;
+                    _mother.received_order(iteration_count);
                 }
                 _received_order = expected_order;
                 if (_son) {
-                    _son.order;
+                    _son.received_order(iteration_count);
                 }
                 if (_daughter) {
-                    _daughter.order;
+                    _daughter.received_order(iteration_count);
                 }
 
             }
         }
     }
 
+    private void strong_seeing(HashGraph hashgraph) @trusted {
+        uint strong_seeing_interation_count;
+        scope(exit) {
+            hashgraph.string_seeing_statistic(strong_seeing_interation_count);
+        }
+        void local_strong_seeing(Round r, const BitMask seeing_mask) @trusted {
+            strong_seeing_interation_count++;
+            if (r && r._previous && !r._previous.decided) {
+                BitMask next_seeing_mask;
+                foreach(e; r._events) {
+                    if (e && seeing_mask[e.node_id]) {
+                        next_seeing_mask |= e._witness.round_seen_mask;
+                        if (next_seeing_mask.isAllVotes(hashgraph)) {
+                            break;
+                        }
+                    }
+                    //     && !e._witness) {
+                    //     writefln("Something odd in round %d (%d:%d)", e.id, e.node_id, r.number);
+                    // }
+                }
+                // BitMask start_mask; //=seeing_mask.dup;
+                // const next_seeing_mask=r._events
+                //     .filter!((e) => (e) && seeing_mask[e.node_id])
+                //     .fold!((mask, e) => mask | e._witness.round_seen_mask)(start_mask);
+                // assert(result_mask == next_seeing_mask);
+                local_strong_seeing(r._previous, next_seeing_mask);
+                if (next_seeing_mask.isMajority(hashgraph)) {
+                    r._previous._events
+                        .filter!((e) => (e) && next_seeing_mask[e.node_id])
+                        .each!((e) => e._witness._strong_seeing_mask[node_id]=true);
+                }
+            }
+        }
+        local_strong_seeing(_round._previous, _witness.round_seen_mask); //._events[seeing_node_id], _witness.round_seen_mask);
+        writefln("strong_seeing_interation_count=%d round=%d", strong_seeing_interation_count, _round.number);
+    }
+
     // +++
-    @trusted
-    private const(BitMask) calc_witness_mask(HashGraph hashgraph) //nothrow
+    private const(BitMask) calc_witness_mask(HashGraph hashgraph) nothrow
         in {
             assert(!_mother._witness_mask[].empty);
         }
@@ -1025,7 +1066,7 @@ class Event {
         scope(exit) {
             hashgraph.witness_search_statistic(iterative_witness_search_count);
         }
-        const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, scope const BitMask marker_mask) {
+        const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
             iterative_witness_search_count++;
             if (e && e._round && !marker_mask[e.node_id]) {
                 BitMask result = voting_mask.dup;
@@ -1056,7 +1097,7 @@ class Event {
     }
 
 
-    @trusted
+    //@trusted
     package void connect(HashGraph hashgraph)
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
@@ -1092,18 +1133,23 @@ class Event {
                 if ( callbacks ) {
                     callbacks.round(this);
                 }
-                order;
+                uint received_order_iteration_count;
+                received_order(received_order_iteration_count);
+                hashgraph.received_order_statistic(received_order_iteration_count);
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
-                if ( witness_seen_mask.isMajority(hashgraph.node_size) ) {
+                if ( witness_seen_mask.isMajority(hashgraph) ) {
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
-                    _witness.seen_from_previous_round(this);
+                    if (hashgraph.print_flag) {
+                        strong_seeing(hashgraph);
+                    }
+                    //_witness.seen_from_previous_round(this);
+                    //hashgraph._rounds.check_decided_round(hashgraph.node_size);
+                    _witness_mask.clear;
+                    _witness_mask[node_id]=true;
                     if ( callbacks) {
                         callbacks.witness(this);
                     }
-                    hashgraph._rounds.check_decided_round(hashgraph.node_size);
-                    _witness_mask.clear;
-                    _witness_mask[node_id]=true;
 
                 }
 
@@ -1115,11 +1161,11 @@ class Event {
     }
 
     @nogc
-    int received_order() const pure nothrow {
-        //     in {
-        //         assert(_received_order !is int.init, "The received order of this event has not been defined");
-        //     }
-        // do {
+    int received_order() const pure nothrow
+        in {
+            assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
+        }
+    do {
         return _received_order;
     }
 
