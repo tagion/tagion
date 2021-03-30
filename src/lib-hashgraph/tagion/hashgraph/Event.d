@@ -884,16 +884,6 @@ class Event {
         return event_package.pubkey;
     }
 
-    // Recursive markes
-    private uint _visit;
-    package static uint visit_marker;
-    @nogc
-    private bool visit() nothrow {
-        scope(exit) {
-            _visit = visit_marker;
-        }
-        return (_visit == visit_marker);
-    }
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
 
@@ -917,8 +907,8 @@ class Event {
         Witness _witness;
         BitMask _witness_mask;
         BitMask _round_seen_mask;
-        uint     _mark;
-        static uint _marker;
+        // uint     _mark;
+        // static uint _marker;
     }
 
     private {
@@ -954,27 +944,30 @@ class Event {
         }
     }
 
+    version(none)
     @nogc
     package bool is_marked() const nothrow {
         return _marker is _mark;
     }
 
+    version(node)
     @nogc
     package void mark() nothrow {
         _mark=_marker;
     }
 
+    version(none)
     @nogc
     package static void set_marker() nothrow {
         _marker++;
     }
 
     immutable uint id;
-    protected {
-        bool _strongly_seeing_checked;
-        bool _loaded;
-        bool _forked;
-    }
+    // protected {
+    //     bool _strongly_seeing_checked;
+    //     bool _loaded;
+    //     bool _forked;
+    // }
 
     @nogc
     static bool cmp(scope const(size_t[]) a, scope const(size_t[]) b) pure nothrow
@@ -1079,6 +1072,7 @@ class Event {
         return _witness !is null;
     }
 
+    version(none)
     @nogc
     package void strongly_seeing_checked() nothrow
     in {
@@ -1088,6 +1082,7 @@ class Event {
         _strongly_seeing_checked=true;
     }
 
+    version(none)
     @nogc
     bool is_strongly_seeing_checked() const pure nothrow {
         return _strongly_seeing_checked;
@@ -1119,6 +1114,7 @@ class Event {
         return result;
     }
 
+    version(none)
     private void forked(bool s)
         in {
             if ( s ) {
@@ -1133,6 +1129,7 @@ class Event {
     }
 
 
+    version(none)
     @nogc
     bool forked() const pure nothrow {
         return _forked;
