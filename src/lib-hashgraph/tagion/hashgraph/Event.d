@@ -336,6 +336,7 @@ class Round {
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph=hashgraph;
             last_decided_round = _last_round = new Round(null, hashgraph.node_size);
+            last_decided_round._decided=true;
             debug assumeWontThrow(
                 (() @trusted {
                     printf("%p New Rounder (%d)\n", last_round, last_round.number);})());
@@ -435,7 +436,7 @@ class Round {
         bool check_decided_round_limit() pure const nothrow {
             return cached_decided_count > total_limit;
         }
-
+        version(none)
         void check_decided_round(const size_t node_size)
             in {
                 assert(last_decided_round, "Not decided round found");
@@ -624,12 +625,12 @@ class Event {
         }
         private {
             immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The maks resulting to this witness
-            BitMask _famous_decided_mask;
+            //BitMask _famous_decided_mask;
             BitMask _strong_seeing_mask;
             BitMask _seen_in_next_round_mask;
-            uint     _round_seen_count;
-            uint     _famous_votes;
-            bool     _famous_decided;
+            // uint     _round_seen_count;
+            // uint     _famous_votes;
+            // bool     _famous_decided;
             bool _famous;
         }
 
@@ -679,19 +680,26 @@ class Event {
         }
 
 
-        @trusted
-        bool famous_decided() pure const nothrow {
-            return _famous_decided;
+        // @trusted
+        // bool famous_decided() pure const nothrow {
+        //     return _famous_decided;
+        // }
+
+        // @nogc
+        // uint famous_votes() pure const nothrow {
+        //     return _famous_votes;
+        // }
+
+        bool famous() pure const nothrow {
+            return _famous;
         }
 
         @nogc
-        uint famous_votes() pure const nothrow {
-            return _famous_votes;
-        }
-
-        @nogc
-        bool famous(const size_t node_size) pure const nothrow {
-            return isMajority(_famous_votes, node_size);
+        private bool famous(const HashGraph hashgraph) pure nothrow {
+            if (!_famous) {
+                _famous=_strong_seeing_mask.isMajority(hashgraph);
+            }
+            return _famous;
         }
 
     }
@@ -731,12 +739,14 @@ class Event {
         Event _son;
 
         int _received_order;
-        uint _round_received_count;
+        //uint _round_received_count;
+
 
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
         BitMask _witness_mask;
+        BitMask _round_seen_mask;
         uint     _mark;
         static uint _marker;
     }
@@ -744,6 +754,7 @@ class Event {
     private {
         Round  _round;
         Round  _round_received;
+        BitMask _round_received_mask;
     }
 
     private void attach_round(HashGraph hashgraph) pure nothrow
@@ -836,6 +847,7 @@ class Event {
         }
         return 1;
     }
+    version(none)
     @nogc
     private void clear_round_received_count() pure nothrow {
         if ( !_round_received ) {
@@ -1299,7 +1311,7 @@ class Event {
                 }
             }
             else {
-                Event front() {
+                ref Event front() {
                     return current;
                 }
             }
