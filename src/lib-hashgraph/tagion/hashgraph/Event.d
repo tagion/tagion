@@ -797,7 +797,7 @@ class Event {
             immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The maks resulting to this witness
             //BitMask _famous_decided_mask;
             BitMask _strong_seeing_mask;
-            BitMask _seen_in_next_round_mask;
+            //BitMask _seen_in_next_round_mask;
             // uint     _round_seen_count;
             // uint     _famous_votes;
             // bool     _famous_decided;
@@ -823,6 +823,7 @@ class Event {
             return _strong_seeing_mask;
         }
 
+        version(none)
         @trusted
         private void seen_from_previous_round(Event owner_event) nothrow
             in {
