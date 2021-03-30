@@ -143,6 +143,7 @@ struct EventView {
     @Label("witness") uint[] witness_mask;
     @Label("$strong") uint[] strongly_seeing_mask;
     @Label("$seen") uint[] round_seen_mask;
+    @Label("$received") uint[] round_received_mask;
     //@Label("*", true) @(Filter.Initialized)
     bool father_less;
 
@@ -174,7 +175,9 @@ struct EventView {
                     event.witness.round_seen_mask[].each!((n) => round_seen_mask~=cast(uint)(n));
                     famous = event.witness.famous;
                 }
-
+                if (!event.round_received_mask[].empty) {
+                    event.round_received_mask[].each!((n) => round_received_mask~=cast(uint)(n));
+                }
                 round_received=(event.round_received)?event.round_received.number:int.min;
                 // if (event.isFatherLess) {
                 //     (() @trusted {

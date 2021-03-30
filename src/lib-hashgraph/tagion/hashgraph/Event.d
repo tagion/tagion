@@ -457,6 +457,14 @@ class Round {
                     .until!((e) => (e._round_received !is null))
                     .each!((ref e) => e._round_received_mask.clear)); //{pragma(msg, (typeof(e))); true;});
 
+            // uint count_1;
+            // r._events
+            //     .filter!((e) => (e !is null))
+            //     .each!((e) => e[]
+            //         .until!((e) => (e._round_received !is null))
+            //         .each!((e) => count_1++)); //e._round_received_mask.clear)); //{pragma(msg, (typeof(e))); true;});
+            // writefln("count_1=%d", count_1);
+
             void mark_received_events(const size_t voting_node_id, Event e, const BitMask marker_mask) {
                 mark_received_iteration_count++;
                 if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id] && !marker_mask[e.node_id] ) {
@@ -484,11 +492,11 @@ class Round {
                     .until!((e) => (e._round_received !is null))
                     .filter!((e) => (e._round_received_mask.isMajority(hashgraph))));
 
-            uint count_1;
-            event_filter
-                .joiner
-                .each!((ref e) => count_1++);
-            writefln("count_1=%d", count_1);
+            // uint count_1;
+            // event_filter
+            //     .joiner
+            //     .each!((ref e) => count_1++);
+            // writefln("count_1=%d", count_1);
             // uint count_2;
             // event_filter
             //     .joiner
@@ -917,6 +925,11 @@ class Event {
         Round  _round;
         Round  _round_received;
         BitMask _round_received_mask;
+    }
+
+    @nogc
+    const(BitMask) round_received_mask() const pure nothrow {
+        return _round_received_mask;
     }
 
     private void attach_round(HashGraph hashgraph) pure nothrow
