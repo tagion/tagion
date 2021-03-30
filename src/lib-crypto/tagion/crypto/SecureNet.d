@@ -45,14 +45,14 @@ class StdHashNet : HashNet {
     }
     do {
         pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
-        const doc=Document(data.idup);
-        if (doc.isInorder) {
-            import std.stdio;
-            import tagion.hibon.HiBONJSON;
-            writefln("data=%s", doc.data);
-            writefln("doc=%s", doc.toPretty);
-        }
-        assert(!doc.isInorder, "calcHash should not be use on a Document use hashOf instead");
+        //const doc=Document(data.idup);
+        // if (doc.isInorder) {
+        //     import std.stdio;
+        //     import tagion.hibon.HiBONJSON;
+        //     writefln("data=%s", doc.data);
+        //     writefln("doc=%s", doc.toPretty);
+        // }
+        assert(!Document(data.idup).isInorder, "calcHash should not be use on a Document use hashOf instead");
         return rawCalcHash(data);
     }
 
