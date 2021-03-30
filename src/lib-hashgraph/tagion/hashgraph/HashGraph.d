@@ -43,11 +43,21 @@ class HashGraph {
     Statistic!uint witness_search_statistic;
     Statistic!uint string_seeing_statistic;
     Statistic!uint received_order_statistic;
+    Statistic!uint mark_received_statistic;
+    Statistic!uint order_compare_statistic;
+    Statistic!uint epoch_events_statistic;
+    //const HiRPC hirpc;
 
     private {
+        BitMask _excluded_nodes_mask;
         Node[Pubkey] nodes; // List of participating nodes T
         uint event_id;
         HiRPC hirpc;
+    }
+
+    @nogc
+    const(BitMask) excluded_nodes_mask() const pure nothrow {
+        return _excluded_nodes_mask;
     }
 
     package Round.Rounder _rounds;
@@ -145,6 +155,10 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
+    void epoch(const Round decided_round) {
+        import std.stdio;
+        writefln("Epoch round %d", decided_round.number);
+    }
     /++
      @return true if the event package has been register correct
      +/
