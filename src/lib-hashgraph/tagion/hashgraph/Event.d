@@ -14,8 +14,9 @@ import std.range : enumerate;
 import std.array : array;
 
 //import std.algorithm.searching : all;
+import std.algorithm.sorting : sort;
 import std.algorithm.iteration : map, each, filter, cache, fold;
-import std.algorithm.searching : count, any, all;
+import std.algorithm.searching : count, any, all, until;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
 
 import tagion.hibon.HiBON : HiBON;
@@ -436,6 +437,155 @@ class Round {
         bool check_decided_round_limit() pure const nothrow {
             return cached_decided_count > total_limit;
         }
+
+        private const(Event[]) collect_received_round(Round r, HashGraph hashgraph) {
+            uint mark_received_iteration_count;
+            uint order_compare_iteration_count;
+            uint epoch_events_count;
+            scope(success) {
+            }
+            // Clean the round_seen_masks which has been assign to a round_received
+            r._events
+                .filter!((e) => (e !is null))
+                .each!((e) => e[]
+                    .until!((e) => (e._round_received !is null))
+                    .each!((ref e) => e._round_received_mask.clear)); //{pragma(msg, (typeof(e))); true;});
+
+            void mark_received_events(const size_t voting_node_id, Event e, const BitMask marker_mask) {
+                mark_received_iteration_count++;
+                if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id] && !marker_mask[e.node_id] ) {
+                    e._round_received_mask[voting_node_id]=true;
+                    mark_received_events(voting_node_id, e._father, marker_mask+e.node_id);
+                    mark_received_events(voting_node_id, e._mother, marker_mask);
+                }
+            }
+            // Marks all the event below round r
+            r._events
+                .filter!((e) => (e !is null))
+                .each!((ref e) => mark_received_events(e.node_id, e, BitMask()));
+            // Filter events with majoity famous votes
+            auto event_filter=r._events
+                .filter!((e) => (e !is null))
+                .until!((e) => (e._round_received !is null))
+                .filter!((e) => (e._round_received_mask.isMajority(hashgraph)));
+            // Sets the found received round for the selected events
+            event_filter
+                .each!((ref e) => {e._round_received = r; epoch_events_count++;});
+
+            bool order_less(const Event a, const Event b) @safe
+                in {
+                    assert(a._round_received is b._round_received);
+                }
+            do {
+                order_compare_iteration_count++;
+                if (a.received_order is b.received_order) {
+                    if (a._mother && b._mother &&
+                        a._mother._round_received is a._round_received &&
+                        b._mother._round_received is a._round_received) {
+                        return order_less(a._mother, b._mother);
+                    }
+                    if (a._father && b._father &&
+                        a._father._round_received is a._round_received &&
+                        b._father._round_received is a._round_received) {
+                        return order_less(a._father, b._father);
+                    }
+                    if (a._mother &&
+                        a._mother._round_received is a._round_received) {
+                        return false;
+                    }
+                    if (a._father &&
+                        a._father._round_received is a._round_received) {
+                        return true;
+                    }
+
+                    bool rare_less(Buffer a, Buffer b) {
+                        const ab=hashgraph.hirpc.net.calcHash(a~b);
+                        const ba=hashgraph.hirpc.net.calcHash(b~a);
+                        const A=(BitMask(ab).count);
+                        const B=(BitMask(ba).count);
+                        if (A is B) {
+                            return rare_less(ab, ba);
+                        }
+                        return A < B;
+                    }
+                    return rare_less(a.fingerprint, b.fingerprint);
+                }
+                return a.received_order < b.received_order;
+            }
+
+
+            // Collect events with payload information and order them
+            auto event_collection = event_filter
+                .filter!((e) => !e.event_body.payload.empty)
+                .array
+                .sort!((a, b) => order_less(a,b))
+                .release;
+//                .sort!(q{order_compare(a, b)});
+
+            event_collection
+                .each!((ref e) => e._round_received = r);
+
+            return event_collection;
+
+
+                // .map!((ref e) => e[])
+                // .until!((e_range) => (e.front._round_received is null))
+                // .each!((ref e) => e._round_received_mask.clear);
+
+            // r._events[0]
+            //     .map!((ref e) => e[]);
+            //.until!((ref e) => (e is null));
+            /++
+            r._events
+                .filter!((ref e) => (e !is null))
+                //.map!((ref e) => e[])
+                //.until!((mothers) =>
+                .each!((ref e) => e[]
+                    .until!((ref e) => (e is null)));
+                    ++/
+//                    .filter!((ref e) => (e is null)));
+                //     .until!((ref e) => (e._round_received !is null))
+                //     .each!((ref e) => e._round_seen_mask.clean));
+
+            //foreach(e; r.filter((e)
+        }
+
+        void check_decided_round(HashGraph hashgraph) @trusted {
+            import std.stdio;
+            auto round_to_be_decided=last_decided_round._next;
+            //writefln("\tcheck_decided_round %d", round_to_be_decided.number);
+            const votes_mask=BitMask(round_to_be_decided.events
+                .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
+                .map!((e) => e.node_id));
+            // (() @trusted {
+            //writefln("round %d %7s %d (%d)", round_to_be_decided.number, votes_mask, votes_mask.isMajority(hashgraph), last_round.number);
+                // })();
+//            assert(votes_mask.isMajority(hashgraph), format("Round %d can not decided because there is not enough nodes in this round",
+//                    round_to_be_decided.number));
+            //const x=round_to_be_decided._events[0]._witness.strong_seeing_mask.isMajority(hashgraph);
+            if (votes_mask.isMajority(hashgraph)) {
+                // foreach(vote_node_id; votes_mask[]) {
+                //     auto w=round_to_be_decided._events[vote_node_id]._witness;
+                //     pragma(msg, "w=", typeof(w));
+                //     writefln("\t %7s %s %s", w.strong_seeing_mask, w.strong_seeing_mask.isMajority(hashgraph), w.famous(hashgraph));
+                // }
+                const round_decided=votes_mask[]
+                    .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(hashgraph));
+//                .all!((w) => w is null);
+//            round_to_be_decided._events[vote_node_id]._wintess.strong_seeing_mask.isMajority(hashgraph))();
+                if (round_decided) {
+                    writefln("\tround decided %d", round_to_be_decided.number);
+                    //uint collect_received_iteration_count;
+                    collect_received_round(round_to_be_decided, hashgraph);
+                    //writefln("\tcollect_received_iteration_count=%d", collect_received_iteration_count);
+                    hashgraph.epoch(round_to_be_decided);
+                    round_to_be_decided._decided=true;
+                    last_decided_round=round_to_be_decided;
+                    check_decided_round(hashgraph);
+                }
+            }
+        }
+
         version(none)
         void check_decided_round(const size_t node_size)
             in {

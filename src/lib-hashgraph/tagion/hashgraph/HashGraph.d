@@ -52,8 +52,9 @@ class HashGraph {
         BitMask _excluded_nodes_mask;
         Node[Pubkey] nodes; // List of participating nodes T
         uint event_id;
-        HiRPC hirpc;
     }
+
+    package HiRPC hirpc;
 
     @nogc
     const(BitMask) excluded_nodes_mask() const pure nothrow {
