@@ -34,7 +34,7 @@ import tagion.utils.Miscellaneous : toHex=toHexString;
 
 @safe
 class HashGraph {
-    //bool print_flag;
+    bool print_flag;
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
@@ -151,7 +151,12 @@ class HashGraph {
 
     void epoch(const Round decided_round) {
         import std.stdio;
-        writefln("Epoch round %d event.count=%d witness.count=%d", decided_round.number, Event.count, Event.Witness.count);
+        if (!disable_scrapping && print_flag) {
+            _rounds.dustman;
+        }
+        if (print_flag) {
+            writefln("Epoch round %d event.count=%d witness.count=%d", decided_round.number, Event.count, Event.Witness.count);
+        }
     }
     /++
      @return true if the event package has been register correct
@@ -665,9 +670,9 @@ class HashGraph {
                     super(&run);
                     _hashgraph=h;
                     this.name=name;
-                    // if (name == "Alice") {
-                    //     _hashgraph.print_flag=true;
-                    // }
+                    if (name == "Alice") {
+                        _hashgraph.print_flag=true;
+                    }
                 }
 
                 const(HashGraph) hashgraph() const pure nothrow {

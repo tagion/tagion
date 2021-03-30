@@ -71,6 +71,7 @@ unittest { // Test of the altitude measure function
 
 @safe
 class Round {
+    bool erased;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     private Round _previous;
@@ -127,36 +128,58 @@ class Round {
     @nogc
     private void remove(const(Event) event) nothrow
         in {
-            assert(_events[event.node_id] is event, "This event does not exist in round at the current node so it can not be remove from this round");
-            assert(!empty, "No events exists in this round");
+            assert(event.isEva || _events[event.node_id] is event, "This event does not exist in round at the current node so it can not be remove from this round");
+            assert(event.isEva || !empty, "No events exists in this round");
         }
     do {
-        if ( _events[event.node_id] ) {
+        if ( !event.isEva && _events[event.node_id] ) {
             _events[event.node_id]=null;
         }
     }
 
+    // void _scrap_events(Event e) {
+    //     if (e !is null) {
+    //         _scrap_events(e._mother);
+    //         //e._xxx;
+    //         // writefln("(%d:%d) %s", e.id, e.node_id, e.isEva);
+    //         //e.disconnect(hashgraph);
+    //         //e.destroy;
+    //     }
+    // }
 
     @trusted
     private void scrap(HashGraph hashgraph)
         in {
-            assert(!_previous, "Round can not be scrapped due that a previous round still exists");
+            //assert(!_previous, "Round can not be scrapped due that a previous round still exists");
         }
     out {
-        assert(_events.all!((e) => e is null));
+        //assert(_events.all!((e) => e is null));
     }
     do {
-        void scrap_events(ref Event e) {
-            if (e) {
+        import std.stdio;
+        writefln("number=%d", number);
+        // writefln("Before _events=%s", _events.map!((e) => e is null));
+        uint count;
+        void scrap_events(Event e) {
+            if (e !is null && !e.erased) {
+                count++;
                 scrap_events(e._mother);
-                e.destroy;
+
+                //e._xxx;
+                // writefln("(%d:%d) %s", e.id, e.node_id, e.isEva);
+                e.disconnect(hashgraph);
+                //e.destroy;
             }
         }
-        foreach(ref e; _events) {
+        foreach(node_id, e; _events) {
+            count=0;
             scrap_events(e);
+            writefln("After %d count=%d", node_id, count);
         }
-        _next._previous = null;
-        _next = null;
+        erased = true;
+        // _next._previous = null;
+        // _next = null;
+        // writefln("After _events=%s", _events.map!((e) => e is null));
     }
 
     @nogc bool decided() const pure nothrow {
@@ -174,17 +197,20 @@ class Round {
     }
 
     invariant {
-        void check_round_order(const Round r, const Round p) pure {
-            if ( ( r !is null) && ( p !is null ) ) {
-                assert( (r.number-p.number) == 1,
-                    format("Consecutive round-numbers has to increase by one (rounds %d and %d)", r.number, p.number));
-                if ( r._decided ) {
-                     assert( p._decided, "If a higher round is decided all rounds below must be decided");
-                }
-                check_round_order(r._previous, p._previous);
-            }
-        }
-        check_round_order(this, _previous);
+        // void check_round_order(const Round r, const Round p) pure {
+        //     if ( ( r !is null) && ( p !is null ) ) {
+        //         assert( (r.number-p.number) == 1,
+        //             format("Consecutive round-numbers has to increase by one (rounds %d and %d)", r.number, p.number));
+        //         if ( r._decided ) {
+        //              assert( p._decided, "If a higher round is decided all rounds below must be decided");
+        //         }
+        //         check_round_order(r._previous, p._previous);
+        //     }
+        // }
+        // check_round_order(this, _previous);
+        assert(!_previous || (_previous.number+1 is number));
+        assert(!_next || (_next.number-1 is number));
+
     }
 
 
@@ -202,14 +228,30 @@ class Round {
         }
 
         void dustman() {
+            if (!hashgraph.print_flag) return;
             void local_dustman(Round r) @trusted {
-                if (r) {
+                if (r !is null && !r.erased) {
                     local_dustman(r._previous);
                     r.scrap(hashgraph);
-                    r.destroy;
+                    //r.destroy;
                 }
             }
-            local_dustman(last_decided_round._previous);
+            Event.scrapping=true;
+            scope(exit) {
+                Event.scrapping=false;
+            }
+            int depth=10;
+            import std.stdio;
+            for(Round r=last_decided_round; r !is null && !r.erased; r=r._previous) {
+                depth--;
+                writef(" [%d]", depth);
+                if (depth < 0) {
+                    local_dustman(r);
+                    //r.erased=true;
+                    break;
+                }
+            }
+            writeln();
         }
 
         @nogc
@@ -396,7 +438,7 @@ class Round {
                 const round_decided=votes_mask[]
                     .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(hashgraph));
                 if (round_decided) {
-                    writefln("\tround decided %d", round_to_be_decided.number);
+                    if (hashgraph.print_flag) writefln("\tround decided %d", round_to_be_decided.number);
                     collect_received_round(round_to_be_decided, hashgraph);
                     hashgraph.epoch(round_to_be_decided);
                     round_to_be_decided._decided=true;
@@ -467,6 +509,8 @@ class Round {
 
 @safe
 class Event {
+    bool erased;
+    package static bool scrapping;
 
     import tagion.basic.ConsensusExceptions;
     alias check=Check!EventConsensusException;
@@ -505,15 +549,17 @@ class Event {
     }
 
     invariant {
-        if (_mother) {
-            assert(!_witness_mask[].empty);
-            assert(_mother._daughter is this);
-            assert(event_package.event_body.altitude - _mother.event_package.event_body.altitude is 1);
-            assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
-        }
-        if (_father) {
-            assert(_father._son is this);
-            assert(_received_order is int.init || (_received_order - _father._received_order > 0));
+        if (!scrapping) {
+            if (_mother) {
+                assert(!_witness_mask[].empty);
+                assert(_mother._daughter is this);
+                assert(event_package.event_body.altitude - _mother.event_package.event_body.altitude is 1);
+                assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
+            }
+            if (_father) {
+                assert(_father._son is this);
+                assert(_received_order is int.init || (_received_order - _father._received_order > 0));
+            }
         }
     }
 
@@ -973,26 +1019,35 @@ class Event {
         return (_mother !is null);
     }
 
+    private void _xxx() {
+        erased=true;
+    }
+
     @trusted
-    private void diconnect(HashGraph hashgraph)
-        in {
-            assert(!_mother, "Event with a mother can not be disconnected");
-            assert(!_father, "Event with a father can not be disconnected");
-        }
-    do {
-        hashgraph.eliminate(fingerprint);
-        if (_witness) {
-            _round.remove(this);
-            _witness.destroy;
-            _witness=null;
-        }
-        if (_daughter) {
-            _daughter._mother = null;
-        }
-        if (_son) {
-            _son._father = null;
-        }
-        _daughter=_son=null;
+    private void disconnect(HashGraph hashgraph) {
+    //     in {
+    //         //assert(!_mother, "Event with a mother can not be disconnected");
+    //         //  assert(!_father, "Event with a father can not be disconnected");
+    //     }
+    // do {
+        //hashgraph.eliminate(fingerprint);
+        erased=true;
+        // return;
+        // if (_witness) {
+        //     // import std.stdio;
+        //     // writefln("Before remove node_id=%d %s", node_id, _round._events[node_id] !is null);
+        //     _round.remove(this);
+        //     // writefln("After node_id=%d %s", node_id, _round._events[node_id] !is null);
+        //     _witness.destroy;
+        //     _witness=null;
+        // }
+        // if (_daughter) {
+        //     _daughter._mother = null;
+        // }
+        // if (_son) {
+        //     _son._father = null;
+        // }
+        // _daughter=_son=null;
     }
 
     const(Event) mother() const pure {
