@@ -1,11 +1,8 @@
 module tagion.hashgraph.Event;
 
-//import std.stdio;
-//import core.stdc.stdio;
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
 import std.conv;
-//import std.bitmanip;
 
 import std.format;
 import std.typecons;
@@ -13,7 +10,6 @@ import std.traits : Unqual, ReturnType;
 import std.range : enumerate;
 import std.array : array;
 
-//import std.algorithm.searching : all;
 import std.algorithm.sorting : sort;
 import std.algorithm.iteration : map, each, filter, cache, fold, joiner;
 import std.algorithm.searching : count, any, all, until;
@@ -27,10 +23,7 @@ import tagion.hibon.HiBONRecord ;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-//import tagion.gossip.InterfaceNet;
-
 import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, EnumText, buf_idup;
-//import tagion.hashgraph.HashGraphBasic : isMajority, check;
 import tagion.Keywords : Keywords;
 
 import tagion.basic.Logger;
@@ -39,7 +32,6 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask : BitMask;
 
 /// check function used in the Event package
-
 // Returns the highest altitude
 @safe @nogc
 int highest(int a, int b) pure nothrow {
@@ -185,6 +177,7 @@ class Round {
         return _events[node_id];
     }
 
+    version(none)
     private void consensus_order(HashGraph hashgraph) {
         assert(0, "Not implemented yet");
     }
@@ -318,9 +311,9 @@ class Round {
             if ( ( r !is null) && ( p !is null ) ) {
                 assert( (r.number-p.number) == 1,
                     format("Consecutive round-numbers has to increase by one (rounds %d and %d)", r.number, p.number));
-                // if ( r._decided ) {
-                //     assert( p._decided, "If a higher round is decided all rounds below must be decided");
-                // }
+                if ( r._decided ) {
+                     assert( p._decided, "If a higher round is decided all rounds below must be decided");
+                }
                 check_round_order(r._previous, p._previous);
             }
         }
@@ -419,6 +412,7 @@ class Round {
             return _cached_decided_count(last_round);
         }
 
+        version(none)
         private void decide() {
             auto round_to_be_decided = last_decided_round._next;
             scope(success) {
@@ -451,14 +445,6 @@ class Round {
                     .until!((e) => (e._round_received !is null))
                     .each!((ref e) => e._round_received_mask.clear)); //{pragma(msg, (typeof(e))); true;});
 
-            // uint count_1;
-            // r._events
-            //     .filter!((e) => (e !is null))
-            //     .each!((e) => e[]
-            //         .until!((e) => (e._round_received !is null))
-            //         .each!((e) => count_1++)); //e._round_received_mask.clear)); //{pragma(msg, (typeof(e))); true;});
-            // writefln("count_1=%d", count_1);
-
             void mark_received_events(const size_t voting_node_id, Event e, const BitMask marker_mask) {
                 mark_received_iteration_count++;
                 if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id] && !marker_mask[e.node_id] ) {
@@ -471,14 +457,6 @@ class Round {
             r._events
                 .filter!((e) => (e !is null))
                 .each!((ref e) => mark_received_events(e.node_id, e, BitMask()));
-            // Filter events with majoity famous votes
-            // auto event_filter_1 = r._events
-            //     .filter!((e) => (e !is null))
-            //     .map!((ref e) => e[]
-            //         .until!((e) => (e._round_received !is null))
-            //         .filter!((e) => (e._round_received_mask.isMajority(hashgraph))));
-
-
 
             auto event_filter = r._events
                 .filter!((e) => (e !is null))
@@ -486,31 +464,10 @@ class Round {
                     .until!((e) => (e._round_received !is null))
                     .filter!((e) => (e._round_received_mask.isMajority(hashgraph))));
 
-            // uint count_1;
-            // event_filter
-            //     .joiner
-            //     .each!((ref e) => count_1++);
-            // writefln("count_1=%d", count_1);
-            // uint count_2;
-            // event_filter
-            //     .joiner
-            //     .each!((ref e) => count_2++);
-            // writefln("count_2=%d", count_2);
-// Sets all the selected event to the round r
+            // Sets all the selected event to the round r
             event_filter
                 .joiner
                 .each!((ref e) => e._round_received = r);
-            // epoch_events_count=0;
-            // event_filter
-            //     .joiner
-            //     .each!((ref e) => {
-            //             epoch_events_count++;
-            //             e._round_received = r; return Yes.each;});
-            // writefln("epoch_events_count=%d", epoch_events_count);
-
-            // event_filter
-            //     .each!((ref e) => {e._round_received = r; epoch_events_count++;});
-
             bool order_less(const Event a, const Event b) @safe
                 in {
                     assert(a._round_received is b._round_received);
