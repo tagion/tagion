@@ -104,11 +104,6 @@ class HashGraph {
         return true;
     }
 
-    // @nogc
-    // size_t voting_nodes() const pure nothrow {
-    //     return max(nodes.length, min_voting_nodes);
-    // }
-
     void init_tide(const(Pubkey) send_channel) {
         if (send_channel !is Pubkey(null)) {
             getNode(send_channel).state=ExchangeState.INIT_TIDE;
@@ -156,7 +151,7 @@ class HashGraph {
 
     void epoch(const Round decided_round) {
         import std.stdio;
-        writefln("Epoch round %d", decided_round.number);
+        writefln("Epoch round %d event.count=%d witness.count=%d", decided_round.number, Event.count, Event.Witness.count);
     }
     /++
      @return true if the event package has been register correct
@@ -538,7 +533,7 @@ class HashGraph {
         return (~used_nodes)[].front;
     }
 
-
+    bool disable_scrapping;
 
     enum max_package_size=0x1000;
     enum round_clean_limit=10;

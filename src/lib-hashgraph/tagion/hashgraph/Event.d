@@ -100,38 +100,6 @@ class Round {
         _events=new Event[node_size];
     }
 
-    version(none)
-    private void disconnect()
-    in {
-        // if (_previous !is null) {
-        //     log.warning("Only the last round can be disconnected (round %d)", number);
-        // }
-        //   assert((_previous is null) || (_previous is _seed_round), "Only the last round can be disconnected");
-        assert(_event_counts is 0, "All witness must be removed before the round can be disconnected");
-    }
-    do {
-        if (_previous !is null) {
-            log.warning("Not the last to be disconnected (round %d) events_count=%d", number, _event_counts);
-            if (_previous._event_counts !is 0) {
-                log.warning("Round is not disconnected because the previuos rounds still contains events (round %d) events_count=%d", number, _previous._event_counts);
-                return;
-            }
-            _previous.disconnect;
-            // && (_previous._event_counts is 0)) {
-            // _previous.disconnect;
-        }
-        else {
-            Round before;
-
-            for(before=_rounds; (before !is null) && (before._previous !is this); before=before._previous) {
-                // Empty
-            }
-
-            before._previous=null;
-//            _decided_count--;
-        }
-    }
-
     const(Event[]) events() const pure nothrow {
         return _events;
     }
@@ -166,6 +134,29 @@ class Round {
         if ( _events[event.node_id] ) {
             _events[event.node_id]=null;
         }
+    }
+
+
+    @trusted
+    private void scrap(HashGraph hashgraph)
+        in {
+            assert(!_previous, "Round can not be scrapped due that a previous round still exists");
+        }
+    out {
+        assert(_events.all!((e) => e is null));
+    }
+    do {
+        void scrap_events(ref Event e) {
+            if (e) {
+                scrap_events(e._mother);
+                e.destroy;
+            }
+        }
+        foreach(ref e; _events) {
+            scrap_events(e);
+        }
+        _next._previous = null;
+        _next = null;
     }
 
     @nogc bool decided() const pure nothrow {
@@ -208,6 +199,17 @@ class Round {
             this.hashgraph=hashgraph;
             last_decided_round = _last_round = new Round(null, hashgraph.node_size);
             last_decided_round._decided=true;
+        }
+
+        void dustman() {
+            void local_dustman(Round r) @trusted {
+                if (r) {
+                    local_dustman(r._previous);
+                    r.scrap(hashgraph);
+                    r.destroy;
+                }
+            }
+            local_dustman(last_decided_round._previous);
         }
 
         @nogc
@@ -971,6 +973,27 @@ class Event {
         return (_mother !is null);
     }
 
+    @trusted
+    private void diconnect(HashGraph hashgraph)
+        in {
+            assert(!_mother, "Event with a mother can not be disconnected");
+            assert(!_father, "Event with a father can not be disconnected");
+        }
+    do {
+        hashgraph.eliminate(fingerprint);
+        if (_witness) {
+            _round.remove(this);
+            _witness.destroy;
+            _witness=null;
+        }
+        if (_daughter) {
+            _daughter._mother = null;
+        }
+        if (_son) {
+            _son._father = null;
+        }
+        _daughter=_son=null;
+    }
 
     const(Event) mother() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_MOTHER_GROUNDED);
