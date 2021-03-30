@@ -27,7 +27,7 @@ import tagion.utils.StdTime;
 
 import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, bitarray_clear, countVotes;
 import tagion.hashgraph.HashGraphBasic;
-import tagion.hashgraph.BitMask;
+import tagion.utils.BitMask;
 
 import tagion.basic.Logger;
 import tagion.utils.Miscellaneous : toHex=toHexString;
@@ -534,7 +534,7 @@ class HashGraph {
             return 0;
         }
         import std.algorithm.searching : maxElement;
-        import tagion.hashgraph.BitMask;
+        //import tagion.utils.BitMask;
         scope BitMask used_nodes;
         nodes.byValue.map!(a => a.node_id).each!((n) {used_nodes[n] = true;});
         return (~used_nodes)[].front;

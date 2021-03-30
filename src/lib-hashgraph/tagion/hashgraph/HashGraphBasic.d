@@ -8,7 +8,7 @@ import std.typecons : TypedefType;
 import tagion.basic.Basic : Buffer, Signature, Pubkey, EnumText;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.BitMask;
+import tagion.utils.BitMask;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;

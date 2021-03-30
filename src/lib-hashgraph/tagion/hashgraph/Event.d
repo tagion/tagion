@@ -36,7 +36,7 @@ import tagion.Keywords : Keywords;
 import tagion.basic.Logger;
 import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks, EventScriptCallbacks;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.BitMask : BitMask;
+import tagion.utils.BitMask : BitMask;
 
 /// check function used in the Event package
 
