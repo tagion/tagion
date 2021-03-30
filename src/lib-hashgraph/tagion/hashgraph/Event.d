@@ -1304,6 +1304,7 @@ class Event {
                     _witness = new Witness(this, witness_seen_mask);
                     if (hashgraph.print_flag) {
                         strong_seeing(hashgraph);
+                        hashgraph._rounds.check_decided_round(hashgraph);
                     }
                     //_witness.seen_from_previous_round(this);
                     //hashgraph._rounds.check_decided_round(hashgraph.node_size);
