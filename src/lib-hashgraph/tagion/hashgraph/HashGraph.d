@@ -34,7 +34,7 @@ import tagion.utils.Miscellaneous : toHex=toHexString;
 
 @safe
 class HashGraph {
-    bool print_flag;
+    //bool print_flag;
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
@@ -672,9 +672,9 @@ class HashGraph {
                     super(&run);
                     _hashgraph=h;
                     this.name=name;
-                    if (name == "Alice") {
-                        _hashgraph.print_flag=true;
-                    }
+                    // if (name == "Alice") {
+                    //     _hashgraph.print_flag=true;
+                    // }
                 }
 
                 const(HashGraph) hashgraph() const pure nothrow {
@@ -814,7 +814,7 @@ class HashGraph {
         // }
         //writefln("channels.length=%d", channels.length);
         try {
-            foreach(i; 0..1776) {
+            foreach(i; 0..3776) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
                 auto current=network.networks[channel];

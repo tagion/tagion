@@ -177,134 +177,10 @@ class Round {
         return _events[node_id];
     }
 
-    version(none)
-    private void consensus_order(HashGraph hashgraph) {
-        assert(0, "Not implemented yet");
-    }
-
-    version(none)
-    private void consensus_order(HashGraph hashgraph)
-    in {
-    }
-    do {
-        // import std.stdio;
-        // writeln("consensus order");
-        import std.algorithm : sort, SwapStrategy;
-        import std.functional;
-        import tagion.hibon.HiBONJSON;
-        scope Event[] famous_events=new Event[_events.length];
-        BitMask unique_famous_mask;
-        //bitarray_change(unique_famous_mask, node_size);
-        @trusted
-            sdt_t find_middel_time() {
-            try{
-                log("finding middel time");
-                size_t famous_node_id;
-                foreach(e; _events) {
-                    if(e is null){
-                        log.trace("(event is null)");
-                        //stdout.flush();
-                        // writeln(Document(e.toHiBON.serialize).toJSON);
-                    }
-                    if(e._witness is null){
-                        //log("witness is null");
-                        //stdout.flush();
-                        //log.error("(witness is null) %s", Document(e.toHiBON.serialize).toJSON);
-                    }
-                    else{
-                        //log("ok");
-                        if (e._witness.famous(hashgraph.node_size)) {
-                            famous_events[famous_node_id]=e;
-                            unique_famous_mask[famous_node_id]=true;
-                            famous_node_id++;
-                        }
-                    }
-                }
-                famous_events.length=famous_node_id;
-                // Sort the time stamps
-                famous_events.sort!((a,b) => (Event.timeCmp(a,b) <0));
-                log("famous sorted");
-                // Find middel time
-                immutable middel_time_index=(famous_events.length >> 2) + (famous_events.length & 1);
-                log.trace("middle time index: %d, len: %d", middel_time_index, famous_events.length);
-                //stdout.flush();
-                scope(exit){
-                    log("calc successfully");
-                }
-                return famous_events[middel_time_index].eventbody.time;
-            }
-            catch(Exception e){
-                import tagion.basic.TagionExceptions : fatal;
-                fatal(e);
-                // writeln("exc: ", e.msg);
-                // throw e;
-            }
-        }
-
-        immutable middel_time=find_middel_time;
-        immutable number_of_famous=cast(uint)famous_events.length;
-        //
-        // Clear round received counters
-        //
-        foreach(event; famous_events) {
-            Event event_to_be_grounded;
-            bool trigger;
-            void clear_round_counters(Event e) nothrow {
-                if ( e && !e.isGrounded ) {
-                    if ( !trigger && e.round_received ) {
-                        trigger=true;
-                        event_to_be_grounded=e;
-                    }
-                    else if ( !e.round_received ) {
-                        trigger=false;
-                        event_to_be_grounded=null;
-                    }
-                    e.clear_round_received_count;
-                    clear_round_counters(e._mother);
-                }
-            }
-            clear_round_counters(event._mother);
-        }
-        //
-        // Select the round received events
-        //
-        Event[] round_received_events;
-        foreach(event; famous_events) {
-            Event.visit_marker++;
-            void famous_seeing_count(Event e) {
-                if ( e && !e.visit && !e.isGrounded ) {
-                    if ( e.check_if_round_was_received(number_of_famous, this) ) {
-                        round_received_events~=e;
-                    }
-                    famous_seeing_count(e._mother);
-                    famous_seeing_count(e._father);
-                }
-            }
-            famous_seeing_count(event);
-        }
-        //
-        // Consensus sort
-        //
-        sort!((a,b) => ( a<b ), SwapStrategy.stable)(round_received_events);
-
-
-        if ( Event.scriptcallbacks ) {
-            log("EPOCH received %d time=%d", round_received_events.length, middel_time);
-            Event.scriptcallbacks.epoch(round_received_events, middel_time);
-        }
-
-        if ( Event.callbacks ) {
-            log.trace("Total (Events=%d Witness=%d Rounds=%d)", Event.count, Event.Witness.count, hashgraph.rounds.cached_count);
-            Event.callbacks.epoch(round_received_events);
-        }
-    }
-
-
     @nogc
     package inout(Round) previous() inout pure nothrow {
         return _previous;
     }
-
 
     invariant {
         void check_round_order(const Round r, const Round p) pure {
@@ -410,18 +286,6 @@ class Round {
                 return i;
             }
             return _cached_decided_count(last_round);
-        }
-
-        version(none)
-        private void decide() {
-            auto round_to_be_decided = last_decided_round._next;
-            scope(success) {
-                last_decided_round = round_to_be_decided;
-                if ( Event.callbacks ) {
-                    Event.callbacks.round_decided(hashgraph._rounds);
-                }
-            }
-            round_to_be_decided.consensus_order(hashgraph);
         }
 
         @nogc
@@ -552,71 +416,6 @@ class Round {
                     round_to_be_decided._decided=true;
                     last_decided_round=round_to_be_decided;
                     check_decided_round(hashgraph);
-                }
-            }
-        }
-
-        version(none)
-        void check_decided_round(const size_t node_size)
-            in {
-                assert(last_decided_round, "Not decided round found");
-            }
-        do {
-            if (last_decided_round._next && last_decided_round._next._next) {
-                uint famous_votes;
-                foreach(ref e; last_decided_round._next._events) {
-                    if (e && e._witness) {
-                        if (e._witness._famous) {
-                            famous_votes++;
-                        }
-                        else {
-                            BitMask strong_seeing_mask;
-                            /// See through the next round
-                            auto next_round = e._round._next;
-                            const(BitMask) calc_seeing_mask() @safe pure nothrow {
-                                BitMask result;
-                                //result.length=node_size;
-                                foreach(seeing_node_id; e._witness._seen_in_next_round_mask[]) {
-                                    if (next_round._events[seeing_node_id]) {
-                                        result |= next_round._events[seeing_node_id]._witness._seen_in_next_round_mask;
-                                    }
-                                }
-                                return result;
-                            }
-
-                            const seeing_mask=calc_seeing_mask;
-
-                            bool famous_search(ref const(BitMask) seeing_mask,
-                                ref scope const(Round) current_round) @safe {
-                                if (current_round) {
-                                    const seeing_through=seeing_mask.isMajority(hashgraph);
-                                    BitMask next_seeing_mask;
-                                    //next_seeing_mask.length=node_size;
-                                    //bitarray_clear(next_seeing_mask, node_size);
-                                    foreach(next_node_id, e; current_round._events) {
-                                        if (seeing_mask[next_node_id] && e) {
-                                            next_seeing_mask |= next_round._events[next_node_id]._witness._seen_in_next_round_mask;
-                                            if (seeing_through && next_seeing_mask.isMajority(hashgraph)) {
-                                                return true;
-                                            }
-                                        }
-                                    }
-                                    return famous_search(next_seeing_mask, current_round._next);
-                                }
-                                return false;
-                            }
-                            e._witness._famous = seeing_mask.isMajority(hashgraph) && famous_search(seeing_mask, next_round._next);
-                            if (e._witness.famous(node_size)) {
-                                famous_votes++;
-                                if (Event.callbacks) {
-                                    Event.callbacks.famous(e);
-                                }
-                            }
-                        }
-                    }
-                }
-                if (last_decided_round._next.event_count == famous_votes) {
-                    decide;
                 }
             }
         }
@@ -773,43 +572,11 @@ class Event {
             return _strong_seeing_mask;
         }
 
-        version(none)
-        @trusted
-        private void seen_from_previous_round(Event owner_event) nothrow
-            in {
-                assert(owner_event._witness is this, "The owner_event does not own this witness");
-                assert(owner_event._round, "Event must have a round");
-            }
-        do {
-            if (owner_event._round._previous) {
-                scope(success) {
-                    owner_event._witness_mask[owner_event.node_id] = true;
-                }
-                foreach(privous_witness_node_id, e; owner_event._round._previous._events) {
-                    if (e) {
-                        if (owner_event._witness_mask[privous_witness_node_id]) {
-                            e._witness._seen_in_next_round_mask[privous_witness_node_id] = true;
-                        }
-                    }
-                }
-            }
-        }
 
         @nogc
         ref const(BitMask) round_seen_mask() pure const nothrow {
             return _seeing_witness_in_previous_round_mask;
         }
-
-
-        // @trusted
-        // bool famous_decided() pure const nothrow {
-        //     return _famous_decided;
-        // }
-
-        // @nogc
-        // uint famous_votes() pure const nothrow {
-        //     return _famous_votes;
-        // }
 
         bool famous() pure const nothrow {
             return _famous;
@@ -895,24 +662,6 @@ class Event {
         }
     }
 
-    version(none)
-    @nogc
-    package bool is_marked() const nothrow {
-        return _marker is _mark;
-    }
-
-    version(node)
-    @nogc
-    package void mark() nothrow {
-        _mark=_marker;
-    }
-
-    version(none)
-    @nogc
-    package static void set_marker() nothrow {
-        _marker++;
-    }
-
     immutable uint id;
     // protected {
     //     bool _strongly_seeing_checked;
@@ -966,13 +715,6 @@ class Event {
         }
         return 1;
     }
-    version(none)
-    @nogc
-    private void clear_round_received_count() pure nothrow {
-        if ( !_round_received ) {
-            _round_received_count=0;
-        }
-    }
 
     @nogc
     final const(Round) round_received() pure const nothrow {
@@ -1023,22 +765,6 @@ class Event {
         return _witness !is null;
     }
 
-    version(none)
-    @nogc
-    package void strongly_seeing_checked() nothrow
-    in {
-        assert(!_strongly_seeing_checked);
-    }
-    do {
-        _strongly_seeing_checked=true;
-    }
-
-    version(none)
-    @nogc
-    bool is_strongly_seeing_checked() const pure nothrow {
-        return _strongly_seeing_checked;
-    }
-
     @trusted
     bool seeing_witness(const uint node_id) const pure
         in {
@@ -1063,27 +789,6 @@ class Event {
             }
         }
         return result;
-    }
-
-    version(none)
-    private void forked(bool s)
-        in {
-            if ( s ) {
-                assert(!_forked, "An event can not unforked");
-            }
-        }
-    do {
-        _forked = s;
-        if ( callbacks && _forked ) {
-            callbacks.forked(this);
-        }
-    }
-
-
-    version(none)
-    @nogc
-    bool forked() const pure nothrow {
-        return _forked;
     }
 
     @nogc
@@ -1274,10 +979,10 @@ class Event {
                 if ( witness_seen_mask.isMajority(hashgraph) ) {
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
-                    if (hashgraph.print_flag) {
-                        strong_seeing(hashgraph);
-                        hashgraph._rounds.check_decided_round(hashgraph);
-                    }
+                    //if (hashgraph.print_flag) {
+                    strong_seeing(hashgraph);
+                    hashgraph._rounds.check_decided_round(hashgraph);
+                    //}
                     //_witness.seen_from_previous_round(this);
                     //hashgraph._rounds.check_decided_round(hashgraph.node_size);
                     _witness_mask.clear;
@@ -1357,12 +1062,6 @@ class Event {
     @nogc
     bool containPayload() const pure nothrow {
         return !payload.empty;
-    }
-
-    version(none)
-    @nogc
-    bool motherExists() const pure nothrow {
-        return event_package.event_body.mother !is null;
     }
 
     @nogc
@@ -1462,26 +1161,4 @@ class Event {
     static assert(isInputRange!(Range!true));
     static assert(isForwardRange!(Range!true));
     static assert(isBidirectionalRange!(Range!true));
-}
-
-version(none)
-unittest { // Serialize and unserialize EventBody
-    import std.digest.sha;
-
-    HiBON hibon;
-    hibon=new HiBON;
-    hibon["payload"]="Some payload";
-    const payload=Document(hibon);
-//    auto mother=SHA256(cast(uint[])"self").digits;
-    immutable mother=sha256Of("self");
-    immutable father=sha256Of("other");
-    auto seed_body=EventBody(payload, mother, father, 0, 0);
-
-    auto raw=seed_body.serialize;
-
-    auto replicate_body=EventBody(raw);
-
-    // Raw and repicate should be the same
-    assert(seed_body == replicate_body);
-//    auto seed_event=new Event(seed_body);
 }
