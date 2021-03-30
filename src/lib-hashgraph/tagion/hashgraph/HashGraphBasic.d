@@ -137,6 +137,7 @@ struct EventView {
     @Label("$a") int altitude;
     @Label("$o") int order;
     @Label("$r") int round;
+    @Label("$rec") int round_received;
     @Label("$w", true) @(Filter.Initialized) bool witness;
     @Label("$famous", true) @(Filter.Initialized) bool famous;
     @Label("witness") uint[] witness_mask;
@@ -173,6 +174,8 @@ struct EventView {
                     event.witness.round_seen_mask[].each!((n) => round_seen_mask~=cast(uint)(n));
                     famous = event.witness.famous;
                 }
+
+                round_received=(event.round_received)?event.round_received.number:int.min;
                 // if (event.isFatherLess) {
                 //     (() @trusted {
                 //         writefln("EventView isFatherLess %s node_id=%s id=%d mother_id=%d %s m=%s f=%s",

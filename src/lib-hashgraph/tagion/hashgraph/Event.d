@@ -15,9 +15,10 @@ import std.array : array;
 
 //import std.algorithm.searching : all;
 import std.algorithm.sorting : sort;
-import std.algorithm.iteration : map, each, filter, cache, fold;
+import std.algorithm.iteration : map, each, filter, cache, fold, joiner;
 import std.algorithm.searching : count, any, all, until;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
+import std.range : chain;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -443,6 +444,11 @@ class Round {
             uint order_compare_iteration_count;
             uint epoch_events_count;
             scope(success) {
+                hashgraph.mark_received_statistic(mark_received_iteration_count);
+                hashgraph.order_compare_statistic(order_compare_iteration_count);
+                hashgraph.epoch_events_statistic(epoch_events_count);
+                writefln("\tmark_received_iteration_count=%d", mark_received_iteration_count);
+                writefln("\tepoch_events_count=%d", epoch_events_count);
             }
             // Clean the round_seen_masks which has been assign to a round_received
             r._events
@@ -464,13 +470,45 @@ class Round {
                 .filter!((e) => (e !is null))
                 .each!((ref e) => mark_received_events(e.node_id, e, BitMask()));
             // Filter events with majoity famous votes
-            auto event_filter=r._events
+            // auto event_filter_1 = r._events
+            //     .filter!((e) => (e !is null))
+            //     .map!((ref e) => e[]
+            //         .until!((e) => (e._round_received !is null))
+            //         .filter!((e) => (e._round_received_mask.isMajority(hashgraph))));
+
+
+
+            auto event_filter = r._events
                 .filter!((e) => (e !is null))
-                .until!((e) => (e._round_received !is null))
-                .filter!((e) => (e._round_received_mask.isMajority(hashgraph)));
-            // Sets the found received round for the selected events
+                .map!((ref e) => e[]
+                    .until!((e) => (e._round_received !is null))
+                    .filter!((e) => (e._round_received_mask.isMajority(hashgraph))));
+
+            uint count_1;
             event_filter
-                .each!((ref e) => {e._round_received = r; epoch_events_count++;});
+                .joiner
+                .each!((ref e) => count_1++);
+            writefln("count_1=%d", count_1);
+            // uint count_2;
+            // event_filter
+            //     .joiner
+            //     .each!((ref e) => count_2++);
+            // writefln("count_2=%d", count_2);
+// Sets all the selected event to the round r
+            event_filter
+                .joiner
+                .each!((ref e) => e._round_received = r);
+            writefln("epoch_events_count=%d", epoch_events_count);
+            // epoch_events_count=0;
+            // event_filter
+            //     .joiner
+            //     .each!((ref e) => {
+            //             epoch_events_count++;
+            //             e._round_received = r; return Yes.each;});
+            // writefln("epoch_events_count=%d", epoch_events_count);
+
+            // event_filter
+            //     .each!((ref e) => {e._round_received = r; epoch_events_count++;});
 
             bool order_less(const Event a, const Event b) @safe
                 in {
@@ -513,41 +551,15 @@ class Round {
                 return a.received_order < b.received_order;
             }
 
-
-            // Collect events with payload information and order them
+            // Collect and sort all events
             auto event_collection = event_filter
+                .joiner
                 .filter!((e) => !e.event_body.payload.empty)
                 .array
                 .sort!((a, b) => order_less(a,b))
                 .release;
-//                .sort!(q{order_compare(a, b)});
-
-            event_collection
-                .each!((ref e) => e._round_received = r);
 
             return event_collection;
-
-
-                // .map!((ref e) => e[])
-                // .until!((e_range) => (e.front._round_received is null))
-                // .each!((ref e) => e._round_received_mask.clear);
-
-            // r._events[0]
-            //     .map!((ref e) => e[]);
-            //.until!((ref e) => (e is null));
-            /++
-            r._events
-                .filter!((ref e) => (e !is null))
-                //.map!((ref e) => e[])
-                //.until!((mothers) =>
-                .each!((ref e) => e[]
-                    .until!((ref e) => (e is null)));
-                    ++/
-//                    .filter!((ref e) => (e is null)));
-                //     .until!((ref e) => (e._round_received !is null))
-                //     .each!((ref e) => e._round_seen_mask.clean));
-
-            //foreach(e; r.filter((e)
         }
 
         void check_decided_round(HashGraph hashgraph) @trusted {
