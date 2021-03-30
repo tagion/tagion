@@ -1,7 +1,7 @@
 module tagion.hashgraph.Event;
 
-import std.stdio;
-import core.stdc.stdio;
+//import std.stdio;
+//import core.stdc.stdio;
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
 import std.conv;
@@ -339,10 +339,6 @@ class Round {
             this.hashgraph=hashgraph;
             last_decided_round = _last_round = new Round(null, hashgraph.node_size);
             last_decided_round._decided=true;
-            debug assumeWontThrow(
-                (() @trusted {
-                    printf("%p New Rounder (%d)\n", last_round, last_round.number);})());
-
         }
 
         @nogc
@@ -447,8 +443,6 @@ class Round {
                 hashgraph.mark_received_statistic(mark_received_iteration_count);
                 hashgraph.order_compare_statistic(order_compare_iteration_count);
                 hashgraph.epoch_events_statistic(epoch_events_count);
-                writefln("\tmark_received_iteration_count=%d", mark_received_iteration_count);
-                writefln("\tepoch_events_count=%d", epoch_events_count);
             }
             // Clean the round_seen_masks which has been assign to a round_received
             r._events
@@ -506,7 +500,6 @@ class Round {
             event_filter
                 .joiner
                 .each!((ref e) => e._round_received = r);
-            writefln("epoch_events_count=%d", epoch_events_count);
             // epoch_events_count=0;
             // event_filter
             //     .joiner
@@ -1238,7 +1231,6 @@ class Event {
             }
         }
         local_strong_seeing(_round._previous, _witness.round_seen_mask); //._events[seeing_node_id], _witness.round_seen_mask);
-        writefln("strong_seeing_interation_count=%d round=%d", strong_seeing_interation_count, _round.number);
     }
 
     // +++
