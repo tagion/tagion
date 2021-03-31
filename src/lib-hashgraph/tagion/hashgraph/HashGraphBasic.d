@@ -210,11 +210,16 @@ interface Authorising {
     // }
 
     alias ChannelFilter=bool delegate(const(Pubkey) channel) @safe;
-    const(Pubkey) gossip(ChannelFilter channel_filter, const Document);
+    alias SenderCallBack=const(HiRPC.Sender) delegate() nothrow @safe;
+    const(Pubkey) select_channel(ChannelFilter channel_filter);
 
-    final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const T pack) if(isHiBONRecord!T) {
-        return gossip(channel_owner, pack.toDoc);
-    }
+    const(Pubkey) gossip(ChannelFilter channel_filter, SenderCallBack sender);
+
+    const(Document) receive(const Pubkey channel) nothrow;
+
+    // final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const(HiPRC.Sender) sender) {
+    //     return gossip(channel_owner, sender.toDoc);
+    // }
 
     // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) nothrow if(isHiBONRecord!T) {
     //     return gossip(channel_owner, pack.toDoc);

@@ -104,7 +104,28 @@ class HashGraph {
         return true;
     }
 
+    version(none)
     void init_tide(const(Pubkey) send_channel) {
+        if (send_channel !is Pubkey(null)) {
+            getNode(send_channel).state=ExchangeState.INIT_TIDE;
+        }
+    }
+
+    void init_tide(
+        const(Pubkey) delegate(Authorising.ChannelFilter channel_filter, const(HiRPC.Sender) delegate() response) @safe responde,
+        const(Document) delegate() @safe payload,
+        lazy const sdt_t time) {
+        const(HiRPC.Sender) payload_sender() @safe {
+            const doc=payload();
+            pragma(msg, "doc ", typeof(doc));
+            const doc_1=Document(doc);
+            immutable epack=event_pack(time, null, doc);
+            const registrated=registerEventPackage(epack);
+            assert(registrated, "Should not fail here");
+            const sender=hirpc.wavefront(tidalWave);
+            return sender;
+        }
+        const send_channel=responde(&not_used_channels, &payload_sender);
         if (send_channel !is Pubkey(null)) {
             getNode(send_channel).state=ExchangeState.INIT_TIDE;
         }
@@ -306,11 +327,16 @@ class HashGraph {
     }
 
     void wavefront(
-        const Pubkey from_channel,
-        const(Wavefront) received_wave,
+        const HiRPC.Receiver received,
+        // const Pubkey from_channel,
+        // const(Wavefront) received_wave,
         lazy const(sdt_t) time,
-        void delegate(const(Wavefront) send_wave) @safe response) {
+        void delegate(const(Wavefront) send_wave) @safe response,
+        Document delegate() @safe payload) {
+
         alias consensus = consensusCheckArguments!(GossipConsensusException);
+        immutable from_channel=received.pubkey;
+        const received_wave=received.params!(Wavefront)(hirpc.net);
 
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node=getNode(from_channel);
@@ -340,7 +366,7 @@ class HashGraph {
                     check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state=received_wave.state;
 
-                    immutable epack=event_pack(time, null, Document());
+                    immutable epack=event_pack(time, null, payload());
                     const registered=registerEventPackage(epack);
                     assert(registered);
                     return buildWavefront(FIRST_WAVE, received_wave.tides);
@@ -358,7 +384,7 @@ class HashGraph {
                             ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                     received_node.state=NONE;
                     const from_front_seat=register_wavefront(received_wave, from_channel);
-                    immutable epack=event_pack(time, from_front_seat, Document());
+                    immutable epack=event_pack(time, from_front_seat, payload());
                     const registreted=registerEventPackage(epack);
                     assert(registreted);
                     assert(registreted, "The event package has not been registered correct (The wave should be dumped)");
@@ -372,7 +398,7 @@ class HashGraph {
                         ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                     received_node.state=NONE;
                     const from_front_seat=register_wavefront(received_wave, from_channel);
-                    immutable epack=event_pack(time, from_front_seat, Document());
+                    immutable epack=event_pack(time, from_front_seat, payload());
                     const registrated=registerEventPackage(epack);
                     assert(registrated, "The event package has not been registered correct (The wave should be dumped)");
                 }
@@ -620,8 +646,7 @@ class HashGraph {
                     return channel_queues[channel].read;
                 }
 
-                const(Pubkey) gossip(
-                    ChannelFilter channel_filter, const Document doc) {
+                const(Pubkey) select_channel(ChannelFilter channel_filter) {
                     foreach(count; 0..channel_queues.length/2) {
                         const node_index=random.value(0, channel_queues.length);
                         const send_channel = channel_queues
@@ -629,17 +654,24 @@ class HashGraph {
                             .dropExactly(node_index)
                             .front;
                         if (channel_filter(send_channel)) {
-                            send(send_channel, doc);
                             return send_channel;
                         }
                     }
-                    //assert(null);
                     return Pubkey();
                 }
 
-                final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const T pack) if(isHiBONRecord!T) {
-                    return gossip(channel_filter, pack.toDoc);
+                const(Pubkey) gossip(
+                    ChannelFilter channel_filter, SenderCallBack sender) {
+                    const send_channel=select_channel(channel_filter);
+                    if (send_channel.length) {
+                        send(send_channel, sender());
+                    }
+                    return send_channel;
                 }
+
+                // final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const T pack) if(isHiBONRecord!T) {
+                //     return gossip(channel_filter, pack.toDoc);
+                // }
 
                 // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) if(isHiBONRecord!T) {
                 //     return gossip(channel_owner, pack.toDoc);
@@ -699,13 +731,19 @@ class HashGraph {
                     }
                     uint count;
                     bool stop;
+                    Document payload() @safe {
+                        auto h=new HiBON;
+                        h["node"]=format("%s-%d", name, count);
+                        return Document(h);
+                    }
                     while (!stop) {
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
                             //writefln("received(%s:%d)=%J", name, count, received);
                             _hashgraph.wavefront(
-                                received.pubkey,
-                                received.params!(Wavefront)(_hashgraph.hirpc.net),
+                                received,
+                                // received.pubkey,
+                                // received.params!(Wavefront)(_hashgraph.hirpc.net),
                                 time,
                                 (const Wavefront return_wavefront) @safe {
                                     log("Return <- %s", return_wavefront.state);
@@ -713,8 +751,10 @@ class HashGraph {
                                         const sender=_hashgraph.hirpc.wavefront(return_wavefront);
                                         authorising.send(received.pubkey, sender);
                                     }
-                                });
-                            //count++;
+                                },
+                                &payload
+                                );
+                            count++;
                         }
                         (() @trusted {
                             yield;
@@ -724,14 +764,15 @@ class HashGraph {
                         // writefln("\t\tonLine %s init_tide %s", onLine, init_tide);
                         // //if (_hashgraph.areWeOnline && random.value(0,2) is 1) {
                         if (onLine && init_tide) {
-                            auto h=new HiBON;
-                            h["node"]=format("%s-%d", name, count);
-                            immutable epack=_hashgraph.event_pack(time, null, Document(h));
-                            const registrated=_hashgraph.registerEventPackage(epack);
-                            assert(registrated, "Should not fail here");
-                            const sender=_hashgraph.hirpc.wavefront(_hashgraph.tidalWave);
-                            const send_channel=authorising.gossip(&_hashgraph.not_used_channels, sender);
-                            _hashgraph.init_tide(send_channel);
+                            // auto h=new HiBON;
+                            // h["node"]=format("%s-%d", name, count);
+                            // immutable epack=_hashgraph.event_pack(time, null, Document(h));
+                            // const registrated=_hashgraph.registerEventPackage(epack);
+                            // assert(registrated, "Should not fail here");
+                            // const sender=_hashgraph.hirpc.wavefront(_hashgraph.tidalWave);
+                            // const send_channel=authorising.gossip(&_hashgraph.not_used_channels, sender);
+                            // _hashgraph.init_tide(send_channel);
+                            _hashgraph.init_tide(&authorising.gossip, &payload, time);
                             count++;
                         }
                     }
