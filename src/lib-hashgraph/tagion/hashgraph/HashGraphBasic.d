@@ -215,7 +215,7 @@ interface Authorising {
 
     const(Pubkey) gossip(ChannelFilter channel_filter, SenderCallBack sender);
 
-    const(Document) receive(const Pubkey channel) nothrow;
+    //const(Document) receive(const Pubkey channel) nothrow;
 
     // final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const(HiPRC.Sender) sender) {
     //     return gossip(channel_owner, sender.toDoc);

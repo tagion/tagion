@@ -328,10 +328,8 @@ class HashGraph {
 
     void wavefront(
         const HiRPC.Receiver received,
-        // const Pubkey from_channel,
-        // const(Wavefront) received_wave,
         lazy const(sdt_t) time,
-        void delegate(const(Wavefront) send_wave) @safe response,
+        void delegate(const(HiRPC.Sender) send_wave) @safe response,
         Document delegate() @safe payload) {
 
         alias consensus = consensusCheckArguments!(GossipConsensusException);
@@ -405,7 +403,11 @@ class HashGraph {
                 return buildWavefront(NONE);
             }
         }
-        response(wavefront_response);
+        const return_wavefront=wavefront_response;
+        if (return_wavefront.state !is ExchangeState.NONE) {
+            const sender=hirpc.wavefront(return_wavefront);
+            response(sender);
+        }
     }
 
 
@@ -669,14 +671,6 @@ class HashGraph {
                     return send_channel;
                 }
 
-                // final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const T pack) if(isHiBONRecord!T) {
-                //     return gossip(channel_filter, pack.toDoc);
-                // }
-
-                // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) if(isHiBONRecord!T) {
-                //     return gossip(channel_owner, pack.toDoc);
-                // }
-
                 bool empty(const Pubkey channel) const pure nothrow {
                     return channel_queues[channel].empty;
                 }
@@ -739,18 +733,11 @@ class HashGraph {
                     while (!stop) {
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
-                            //writefln("received(%s:%d)=%J", name, count, received);
                             _hashgraph.wavefront(
                                 received,
-                                // received.pubkey,
-                                // received.params!(Wavefront)(_hashgraph.hirpc.net),
                                 time,
-                                (const Wavefront return_wavefront) @safe {
-                                    log("Return <- %s", return_wavefront.state);
-                                    if (return_wavefront.state !is ExchangeState.NONE) {
-                                        const sender=_hashgraph.hirpc.wavefront(return_wavefront);
-                                        authorising.send(received.pubkey, sender);
-                                    }
+                                (const(HiRPC.Sender) return_wavefront) @safe {
+                                    authorising.send(received.pubkey, return_wavefront);
                                 },
                                 &payload
                                 );
@@ -761,17 +748,7 @@ class HashGraph {
                         })();
                         const onLine=_hashgraph.areWeOnline;
                         const init_tide=random.value(0,2) is 1;
-                        // writefln("\t\tonLine %s init_tide %s", onLine, init_tide);
-                        // //if (_hashgraph.areWeOnline && random.value(0,2) is 1) {
                         if (onLine && init_tide) {
-                            // auto h=new HiBON;
-                            // h["node"]=format("%s-%d", name, count);
-                            // immutable epack=_hashgraph.event_pack(time, null, Document(h));
-                            // const registrated=_hashgraph.registerEventPackage(epack);
-                            // assert(registrated, "Should not fail here");
-                            // const sender=_hashgraph.hirpc.wavefront(_hashgraph.tidalWave);
-                            // const send_channel=authorising.gossip(&_hashgraph.not_used_channels, sender);
-                            // _hashgraph.init_tide(send_channel);
                             _hashgraph.init_tide(&authorising.gossip, &payload, time);
                             count++;
                         }
@@ -793,19 +770,12 @@ class HashGraph {
                 immutable N=EnumMembers!NodeList.length;
                 foreach(E; EnumMembers!NodeList) {
                     immutable passphrase=format("very secret %s", E);
-//                }
-
-//                immutable N=passphrases.length;
-//                foreach(passphrase; passphrases) {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
                     auto h=new HashGraph(N, net, &authorising.isValidChannel);
                     networks[net.pubkey]=new FiberNetwork(h, E.to!string);
                 }
                 networks.byKey.each!((a) => authorising.add_channel(a));
-                // foreach(net; networks) {
-                //     networks.byKey.each!((a) => net._hashgraph.add_node(a));
-                // }
             }
         }
 
