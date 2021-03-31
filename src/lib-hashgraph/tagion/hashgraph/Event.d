@@ -71,7 +71,7 @@ unittest { // Test of the altitude measure function
 
 @safe
 class Round {
-    bool erased;
+//    bool erased;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     private Round _previous;
@@ -162,7 +162,7 @@ class Round {
         // writefln("Before _events=%s", _events.map!((e) => e is null));
         uint count;
         void scrap_events(Event e) {
-            if (e !is null && !e.erased) {
+            if (e !is null) {
                 count++;
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
@@ -172,7 +172,7 @@ class Round {
         foreach(node_id, e; _events) {
             scrap_events(e);
         }
-        erased = true;
+        //erased = true;
         _next._previous = null;
         _next = null;
         // writefln("After _events=%s", _events.map!((e) => e is null));
@@ -226,7 +226,7 @@ class Round {
         void dustman() {
             //if (!hashgraph.print_flag) return;
             void local_dustman(Round r) @trusted {
-                if (r !is null && !r.erased) {
+                if (r !is null) {
                     local_dustman(r._previous);
                     r.scrap(hashgraph);
                     //r.destroy;
@@ -237,7 +237,7 @@ class Round {
                 Event.scrapping=false;
             }
             int depth=hashgraph.scrap_depth;
-            for(Round r=last_decided_round; r !is null && !r.erased; r=r._previous) {
+            for(Round r=last_decided_round; r !is null; r=r._previous) {
                 depth--;
                 if (depth < 0) {
                     local_dustman(r);
@@ -501,7 +501,7 @@ class Round {
 
 @safe
 class Event {
-    bool erased;
+//    bool erased;
     package static bool scrapping;
 
     import tagion.basic.ConsensusExceptions;
@@ -1018,7 +1018,7 @@ class Event {
     //         //  assert(!_father, "Event with a father can not be disconnected");
     //     }
     // do {
-        erased=true;
+//        erased=true;
         hashgraph.eliminate(fingerprint);
 
         // return;
