@@ -166,7 +166,7 @@ class HashGraph {
             const e=_event_cache[fingerprint];
 //            writefln("Remove (%d:%d:%d) %s", e.id, e.node_id, e.altitude, fingerprint.cutHex);
         }
-        //_event_cache.remove(fingerprint);
+        _event_cache.remove(fingerprint);
         //writefln("After _event_cache.length=%d", _event_cache.length);
     }
 

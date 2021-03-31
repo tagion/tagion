@@ -128,7 +128,8 @@ class Round {
     @nogc
     private void remove(const(Event) event) nothrow
         in {
-            assert(event.isEva || _events[event.node_id] is event, "This event does not exist in round at the current node so it can not be remove from this round");
+            assert(event.isEva || _events[event.node_id] is event,
+                "This event does not exist in round at the current node so it can not be remove from this round");
             assert(event.isEva || !empty, "No events exists in this round");
         }
     do {
@@ -174,7 +175,7 @@ class Round {
         foreach(node_id, e; _events) {
             count=0;
             scrap_events(e);
-            writefln("After %d count=%d", node_id, count);
+            //writefln("After %d count=%d", node_id, count);
         }
         erased = true;
         // _next._previous = null;
