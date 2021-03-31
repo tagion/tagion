@@ -157,8 +157,8 @@ class Round {
         //assert(_events.all!((e) => e is null));
     }
     do {
-        import std.stdio;
-        writefln("number=%d", number);
+        //import std.stdio;
+        //writefln("number=%d", number);
         // writefln("Before _events=%s", _events.map!((e) => e is null));
         uint count;
         void scrap_events(Event e) {
@@ -166,7 +166,7 @@ class Round {
                 count++;
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
-                //e.destroy;
+                e.destroy;
             }
         }
         foreach(node_id, e; _events) {
@@ -224,7 +224,7 @@ class Round {
         }
 
         void dustman() {
-            if (!hashgraph.print_flag) return;
+            //if (!hashgraph.print_flag) return;
             void local_dustman(Round r) @trusted {
                 if (r !is null && !r.erased) {
                     local_dustman(r._previous);
@@ -236,18 +236,14 @@ class Round {
             scope(exit) {
                 Event.scrapping=false;
             }
-            int depth=10;
-            import std.stdio;
+            int depth=hashgraph.scrap_depth;
             for(Round r=last_decided_round; r !is null && !r.erased; r=r._previous) {
                 depth--;
-                writef(" [%d]", depth);
                 if (depth < 0) {
                     local_dustman(r);
-                    //r.erased=true;
                     break;
                 }
             }
-            writeln();
         }
 
         @nogc
@@ -1031,7 +1027,7 @@ class Event {
             // writefln("Before remove node_id=%d %s", node_id, _round._events[node_id] !is null);
             _round.remove(this);
             // writefln("After node_id=%d %s", node_id, _round._events[node_id] !is null);
-            //_witness.destroy;
+            _witness.destroy;
             _witness=null;
         }
         if (_daughter) {

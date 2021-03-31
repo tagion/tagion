@@ -1,6 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
-import std.stdio;
+//import std.stdio;
 import std.conv;
 import std.format;
 //import std.bitmanip : BitArray;
@@ -34,7 +34,9 @@ import tagion.utils.Miscellaneous : toHex=toHexString;
 
 @safe
 class HashGraph {
+    enum default_scrap_depth=5;
     bool print_flag;
+    int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
@@ -46,6 +48,9 @@ class HashGraph {
     Statistic!uint mark_received_statistic;
     Statistic!uint order_compare_statistic;
     Statistic!uint epoch_events_statistic;
+    Statistic!uint wavefront_event_package_statistic;
+    Statistic!uint wavefront_event_package_used_statistic;
+
     //const HiRPC hirpc;
 
     private {
@@ -214,18 +219,21 @@ class HashGraph {
     class Register {
         private EventPackageCache event_package_cache;
         this(const Wavefront received_wave) {
-            uint count;
+            uint count_events;
             scope(exit) {
-                if (print_flag) {
-                    writefln("\tevent_package_cache.length=%4d %16s received_wave.length=%4d",
-                        event_package_cache.length, received_wave.state, count, received_wave.state);
-                    // if (received_wave.state is ExchangeState.SECOND_WAVE) {
-                    //     writefln("\t\t tides=%s", received_wave.tides.byValue);
-                    // }
-                }
+                wavefront_event_package_statistic(count_events);
+                wavefront_event_package_used_statistic(cast(uint)event_package_cache.length);
+                // if (print_flag) {
+                //     writefln("\tevent_package_cache.length=%4d %16s received_wave.length=%4d",
+                //         event_package_cache.length, received_wave.state, count, received_wave.state);
+
+                //     // if (received_wave.state is ExchangeState.SECOND_WAVE) {
+                //     //     writefln("\t\t tides=%s", received_wave.tides.byValue);
+                //     // }
+                // }
             }
             foreach(e; received_wave.epacks) {
-                count++;
+                count_events++;
                 if (e.fingerprint in _event_cache) {
                     const event=_event_cache[e.fingerprint];
                     // if (event.connected) {
@@ -261,15 +269,15 @@ class HashGraph {
             Event event;
             if (fingerprint) {
                 event = lookup(fingerprint);
-                if (print_flag)  {
-                    if (!event) {
-                        writefln("Event missing %s", fingerprint.cutHex);
-                    }
-                    else if (event.erased) {
-                        writefln("Event missing (%d:%d:%d) ", event.id, event.node_id, event.altitude);
-                        Event.check(false, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-                    }
-                }
+                // if (print_flag)  {
+                //     if (!event) {
+                //         writefln("Event missing %s", fingerprint.cutHex);
+                //     }
+                //     else if (event.erased) {
+                //         writefln("Event missing (%d:%d:%d) ", event.id, event.node_id, event.altitude);
+                //         Event.check(false, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+                //     }
+                // }
                 Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
                 event.connect(this.outer);
             }
@@ -348,15 +356,15 @@ class HashGraph {
         }
 
         immutable(EventPackage)*[] result;
-        if (print_flag && state is ExchangeState.SECOND_WAVE) {
-            writefln("\t\t tides=%s", tides.byValue);
-        }
-        scope(exit) {
-            if (print_flag && state is ExchangeState.SECOND_WAVE) {
-                writefln("\t\t events.length=%s", result.length);
+        // if (print_flag && state is ExchangeState.SECOND_WAVE) {
+        //     writefln("\t\t tides=%s", tides.byValue);
+        // }
+        // scope(exit) {
+        //     if (print_flag && state is ExchangeState.SECOND_WAVE) {
+        //         writefln("\t\t events.length=%s", result.length);
 
-            }
-        }
+        //     }
+        // }
         Tides owner_tides;
         foreach(n; nodes) {
             if ( n.channel in tides ) {
