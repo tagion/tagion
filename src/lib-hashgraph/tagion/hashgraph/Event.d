@@ -871,7 +871,7 @@ class Event {
     private void strong_seeing(HashGraph hashgraph) @trusted {
         uint strong_seeing_interation_count;
         scope(exit) {
-            hashgraph.string_seeing_statistic(strong_seeing_interation_count);
+            hashgraph.strong_seeing_statistic(strong_seeing_interation_count);
         }
         void local_strong_seeing(Round r, const BitMask seeing_mask) @trusted {
             strong_seeing_interation_count++;

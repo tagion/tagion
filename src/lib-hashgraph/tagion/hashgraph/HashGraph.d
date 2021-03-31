@@ -43,13 +43,15 @@ class HashGraph {
     import tagion.utils.Statistic;
     immutable size_t node_size;
     Statistic!uint witness_search_statistic;
-    Statistic!uint string_seeing_statistic;
+    Statistic!uint strong_seeing_statistic;
     Statistic!uint received_order_statistic;
     Statistic!uint mark_received_statistic;
     Statistic!uint order_compare_statistic;
     Statistic!uint epoch_events_statistic;
     Statistic!uint wavefront_event_package_statistic;
     Statistic!uint wavefront_event_package_used_statistic;
+    Statistic!uint live_events_statistic;
+    Statistic!uint live_witness_statistic;
 
     //const HiRPC hirpc;
 
@@ -183,11 +185,11 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
-    void dustman() {
-        if (!disable_scrapping && print_flag) {
-            _rounds.dustman;
-        }
-    }
+    // void dustman() {
+    //     if (!disable_scrapping) {
+    //         _rounds.dustman;
+    //     }
+    // }
 
     package void epoch(const(Event)[] events, const Round decided_round) {
         import std.stdio;
@@ -196,6 +198,11 @@ class HashGraph {
         }
         if (epoch_callback !is null) {
             epoch_callback(events);
+        }
+        if (!disable_scrapping) {
+            live_events_statistic(Event.count);
+            live_witness_statistic(Event.Witness.count);
+            _rounds.dustman;
         }
     }
     /++
@@ -814,7 +821,7 @@ class HashGraph {
                             _hashgraph.init_tide(&authorising.gossip, &payload, time);
                             count++;
                         }
-                        _hashgraph.dustman;
+                        //_hashgraph.dustman;
                     }
                 }
             }
