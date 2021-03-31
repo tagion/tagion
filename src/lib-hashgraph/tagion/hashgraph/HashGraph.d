@@ -1,6 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
-//import std.stdio;
+import std.stdio;
 import std.conv;
 import std.format;
 //import std.bitmanip : BitArray;
@@ -65,11 +65,14 @@ class HashGraph {
 
     alias ValidChannel=bool delegate(const Pubkey channel);
     private ValidChannel valid_channel;
+    alias EpochCallback = void delegate(const(Event)[] events) @safe;
+    EpochCallback epoch_callback;
 
-    this(const size_t node_size, const SecureNet net, ValidChannel valid_channel) {
+    this(const size_t node_size, const SecureNet net, ValidChannel valid_channel, EpochCallback epoch_callback) {
         hirpc=HiRPC(net);
         this.node_size=node_size;
         this.valid_channel=valid_channel;
+        this.epoch_callback=epoch_callback;
         _rounds=Round.Rounder(this);
     }
 
@@ -159,7 +162,12 @@ class HashGraph {
     }
 
     void eliminate(scope const(Buffer) fingerprint) {
-        _event_cache.remove(fingerprint);
+        if (print_flag) {
+            const e=_event_cache[fingerprint];
+//            writefln("Remove (%d:%d:%d) %s", e.id, e.node_id, e.altitude, fingerprint.cutHex);
+        }
+        //_event_cache.remove(fingerprint);
+        //writefln("After _event_cache.length=%d", _event_cache.length);
     }
 
     size_t number_of_registered_event() const pure nothrow {
@@ -170,13 +178,19 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
-    void epoch(const Round decided_round) {
-        import std.stdio;
+    void dustman() {
         if (!disable_scrapping && print_flag) {
             _rounds.dustman;
         }
+    }
+
+    package void epoch(const(Event)[] events, const Round decided_round) {
+        import std.stdio;
         if (print_flag) {
             writefln("Epoch round %d event.count=%d witness.count=%d", decided_round.number, Event.count, Event.Witness.count);
+        }
+        if (epoch_callback !is null) {
+            epoch_callback(events);
         }
     }
     /++
@@ -200,7 +214,24 @@ class HashGraph {
     class Register {
         private EventPackageCache event_package_cache;
         this(const Wavefront received_wave) {
+            uint count;
+            scope(exit) {
+                if (print_flag) {
+                    writefln("\tevent_package_cache.length=%4d %16s received_wave.length=%4d",
+                        event_package_cache.length, received_wave.state, count, received_wave.state);
+                    // if (received_wave.state is ExchangeState.SECOND_WAVE) {
+                    //     writefln("\t\t tides=%s", received_wave.tides.byValue);
+                    // }
+                }
+            }
             foreach(e; received_wave.epacks) {
+                count++;
+                if (e.fingerprint in _event_cache) {
+                    const event=_event_cache[e.fingerprint];
+                    // if (event.connected) {
+                    //     writefln("Evnet already connected (%d:%d:%d)", event.id, event.node_id, event.altitude, event.fingerprint.cutHex);
+                    // }
+                }
                 if (!(e.fingerprint in event_package_cache || e.fingerprint in _event_cache)) {
                     event_package_cache[e.fingerprint] = e;
                 }
@@ -230,6 +261,15 @@ class HashGraph {
             Event event;
             if (fingerprint) {
                 event = lookup(fingerprint);
+                if (print_flag)  {
+                    if (!event) {
+                        writefln("Event missing %s", fingerprint.cutHex);
+                    }
+                    else if (event.erased) {
+                        writefln("Event missing (%d:%d:%d) ", event.id, event.node_id, event.altitude);
+                        Event.check(false, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+                    }
+                }
                 Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
                 event.connect(this.outer);
             }
@@ -304,14 +344,26 @@ class HashGraph {
 
     const(Wavefront) buildWavefront(const ExchangeState state, const Tides tides=null) {
         if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
-            return Wavefront(null, state);
+            return Wavefront(null, null, state);
         }
+
         immutable(EventPackage)*[] result;
+        if (print_flag && state is ExchangeState.SECOND_WAVE) {
+            writefln("\t\t tides=%s", tides.byValue);
+        }
+        scope(exit) {
+            if (print_flag && state is ExchangeState.SECOND_WAVE) {
+                writefln("\t\t events.length=%s", result.length);
+
+            }
+        }
+        Tides owner_tides;
         foreach(n; nodes) {
             if ( n.channel in tides ) {
                 const other_altitude=tides[n.channel];
                 foreach(e; n[]) {
                     if (!higher(e.altitude, other_altitude)) {
+                        owner_tides[n.channel]=e.altitude;
                         break;
                     }
                     result~=e.event_package;
@@ -323,7 +375,7 @@ class HashGraph {
             }
         }
         assert(result.length);
-        return Wavefront(result, state);
+        return Wavefront(result, owner_tides, state);
     }
 
     void wavefront(
@@ -752,6 +804,7 @@ class HashGraph {
                             _hashgraph.init_tide(&authorising.gossip, &payload, time);
                             count++;
                         }
+                        _hashgraph.dustman;
                     }
                 }
             }
@@ -772,7 +825,7 @@ class HashGraph {
                     immutable passphrase=format("very secret %s", E);
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h=new HashGraph(N, net, &authorising.isValidChannel);
+                    auto h=new HashGraph(N, net, &authorising.isValidChannel, null);
                     networks[net.pubkey]=new FiberNetwork(h, E.to!string);
                 }
                 networks.byKey.each!((a) => authorising.add_channel(a));

@@ -351,10 +351,12 @@ struct Wavefront {
         state=ExchangeState.TIDAL_WAVE;
     }
 
-    this(immutable(EventPackage)*[] epacks, const ExchangeState state) pure nothrow {
+    this(immutable(EventPackage)*[] epacks, Tides tides, const ExchangeState state) pure nothrow {
         this.epacks=epacks;
+        this._tides=tides;
         this.state=state;
     }
+
     private  struct LoadTides {
         @Label(tidesName) Tides tides;
         mixin HiBONRecord!(
@@ -383,15 +385,12 @@ struct Wavefront {
             auto load_tides=LoadTides(doc);
             _tides=load_tides.tides;
         }
+        update_tides;
     }
 
     const(Document) toDoc() const {
         auto h=new HiBON;
         h[stateName]=state;
-        if (_tides.length) {
-            const load_tides=const(LoadTides)(_tides);
-            h[tidesName]=load_tides.toDoc[tidesName].get!Document;
-        }
         if (epacks.length) {
             auto epacks_hibon=new HiBON;
             foreach(i, epack; epacks) {
@@ -399,9 +398,33 @@ struct Wavefront {
             }
             h[epacksName]=epacks_hibon;
         }
+        if (_tides.length) {
+            const load_tides=const(LoadTides)(_tides);
+            h[tidesName]=load_tides.toDoc[tidesName].get!Document;
+        }
         return Document(h);
     }
 
+    private void update_tides() pure nothrow {
+        //Tides result;
+        foreach(e; epacks) {
+            _tides.update(e.pubkey,
+                {
+                    return e.event_body.altitude;
+                },
+                (int altitude)
+                {
+                    return highest(altitude, e.event_body.altitude);
+                });
+        }
+    }
+
+    @nogc
+    const(Tides) tides() const pure nothrow {
+        return _tides;
+    }
+
+    version(none)
     const(Tides) tides() const pure nothrow {
         if (_tides) {
             return _tides;

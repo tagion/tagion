@@ -439,8 +439,8 @@ class Round {
                     .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(hashgraph));
                 if (round_decided) {
                     if (hashgraph.print_flag) writefln("\tround decided %d", round_to_be_decided.number);
-                    collect_received_round(round_to_be_decided, hashgraph);
-                    hashgraph.epoch(round_to_be_decided);
+                    const events=collect_received_round(round_to_be_decided, hashgraph);
+                    hashgraph.epoch(events, round_to_be_decided);
                     round_to_be_decided._decided=true;
                     last_decided_round=round_to_be_decided;
                     check_decided_round(hashgraph);
@@ -1030,8 +1030,9 @@ class Event {
     //         //  assert(!_father, "Event with a father can not be disconnected");
     //     }
     // do {
-        //hashgraph.eliminate(fingerprint);
         erased=true;
+        hashgraph.eliminate(fingerprint);
+
         // return;
         // if (_witness) {
         //     // import std.stdio;
