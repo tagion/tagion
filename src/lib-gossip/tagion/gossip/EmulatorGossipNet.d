@@ -18,7 +18,6 @@ import tagion.utils.Queue;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 //import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
@@ -26,6 +25,8 @@ import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
 import tagion.ServiceNames : get_node_name;
+
+import tagion.communication.HiRPC;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 @trusted
@@ -44,16 +45,12 @@ static uint getTids(Tid[] tids) {
 
 
 @safe
-class EmulatorGossipNet : StdGossipNet {
+class EmulatorGossipNet : GossipNet {
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
     protected uint _send_node_id;
 
     Random!uint random;
-
-    this() {
-        super();
-    }
 
     void set(immutable(Pubkey)[] pkeys)
         in {
@@ -68,21 +65,14 @@ class EmulatorGossipNet : StdGossipNet {
         }
     }
 
-    immutable(Pubkey) selectRandomNode(const bool active=true)
-    out(result)  {
-        assert(result != pubkey);
-    }
-    do {
-        immutable N=cast(uint)_tids.length;
-        for(;;) {
-            const node_index=random.value(0, N);
-            auto result=_pkeys[node_index];
-            if (result != pubkey) {
-                return result;
-            }
-        }
-        assert(0);
-    }
+//     void dump(const(HiBON[]) events) const {
+//         foreach(e; events) {
+//             auto pack_doc=Document(e.serialize);
+//             immutable pack=buildEventPackage(this, pack_doc);
+// //            immutable fingerprint=pack.event_body.fingerprint;
+//             log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack.event_body.altitude);
+//         }
+//     }
 
 
     version(none)
@@ -97,11 +87,11 @@ class EmulatorGossipNet : StdGossipNet {
 
     protected uint _send_count;
     @trusted
-    void send(immutable(Pubkey) channel, const(Document) doc) {
-        log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
-        if ( Event.callbacks ) {
-            Event.callbacks.send(channel, doc);
-        }
-        _tids[channel].send(doc);
+    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+        log.trace("send to %s %d bytes", channel.cutHex, sender.toDoc.serialize.length);
+        // if ( callbacks ) {
+        //     callbacks.send(channel, sender.toDoc);
+        // }
+        _tids[channel].send(sender.toDoc);
     }
 }

@@ -21,7 +21,6 @@ import tagion.utils.Queue;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.gossip.GossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
@@ -33,14 +32,15 @@ import tagion.ServiceNames : get_node_name;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 //import tagion.services.MdnsDiscoveryService;
 import p2plib = p2p.node;
-import p2p.connection;
+import p2p.callback;
+import p2p.cgo.helper;
 import std.array;
 //import tagion.services.P2pTagionService;
 
 import tagion.dart.DART;
+import tagion.communication.HiRPC;
 
 import std.datetime;
-
 synchronized
 class ConnectionPool(T: shared(p2plib.Stream), TKey){
     private shared final class ActiveConnection{
@@ -211,7 +211,7 @@ unittest{
     }
 }
 
-shared class ConnectionPoolBridge{
+class ConnectionPoolBridge{
     ulong[Pubkey] lookup;
 
     void removeConnection(ulong connectionId){
@@ -311,27 +311,19 @@ struct NodeAddress{
     }
 }
 
-
 @safe
-class P2pGossipNet : StdGossipNet {
-    protected uint _send_node_id;
-    protected string shared_storage;
-    immutable(Pubkey)[] pkeys;
+class P2pGossipNet : GossipNet {
     shared p2plib.Node node;
     protected immutable(Options) opts;
-    protected shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool;
-    Random!uint random;
     Tid sender_tid;
     static uint counter;
 
-    this(immutable(Options) opts, shared p2plib.Node node, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, ref shared ConnectionPoolBridge connectionPoolBridge) {
+    this(immutable(Options) opts, shared p2plib.Node node) {
 //        super(hashgraph);
-        this.connectionPool = connectionPool;
-        shared_storage = opts.path_to_shared_info;
         this.node = node;
         this.opts = opts;
         @trusted void spawn_sender(){
-            this.sender_tid = spawn(&async_send, node, opts, connectionPool, connectionPoolBridge);
+            this.sender_tid = spawn(&async_send, node, opts);
         }
         spawn_sender();
     }
@@ -347,51 +339,15 @@ class P2pGossipNet : StdGossipNet {
         }
         send_stop();
     }
-    void set(immutable(Pubkey)[] pkeys){
-        this.pkeys = pkeys;
-    }
 
-    immutable(Pubkey) selectRandomNode(const bool active=true) {
-        uint node_index;
-        do {
-            node_index=random.value(0, cast(int)pkeys.length);
-        } while (pkeys[node_index] == pubkey);
-        return pkeys[node_index];
-    }
-
-
-    // void dump(const(HiBON[]) events) const {
-    //     foreach(e; events) {
-    //         auto pack_doc=Document(e.serialize);
-    //         auto pack=EventPackage(pack_doc);
-    //         immutable fingerprint=calcHash(pack.event_body.serialize);
-    //         log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, fingerprint.cutHex, pack.event_body.altitude);
-    //     }
-    // }
-
-    version(none)
     @trusted
-    override void trace(string type, immutable(ubyte[]) data) {
-        debug {
-            if ( options.trace_gossip ) {
-                import std.file;
-//                immutable packfile=format("%s/%s_%d_%s.hibon", options.tmp, options.node_name, _send_count, type); //.to!string~"_receive.hibon";
-                log.trace("%s/%s_%d_%s.hibon", options.tmp, options.node_name, _send_count, type);
-//                write(packfile, data);
-                _send_count++;
-            }
-        }
-    }
-
-    protected uint _send_count;
-    @trusted
-    void send(immutable(Pubkey) channel, const(Document) doc) {
+    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.concurrency: tsend=send, prioritySend, Tid, locate;
-        auto sender = locate(opts.transaction.net_task_name);
-        if(sender!=Tid.init){
+        auto internal_net = locate(opts.transaction.net_task_name);
+        if(internal_net!=Tid.init){
             counter++;
             // log("sending to sender %d", counter);
-            tsend(sender, channel, doc.data, counter);
+            tsend(internal_net, channel, sender.toDoc, counter);
         }else{
             log("sender not found");
         }
@@ -410,49 +366,42 @@ class P2pGossipNet : StdGossipNet {
         }
     }
 
-    version(none)
-    override void receive(const(Document) doc) {
-//    Event delegate(immutable(ubyte)[] father_fingerprint) @safe register_leading_event ) {
-        log("received time: %s", Clock.currTime().toUTC());
-        // log("1.receive");
-//        auto doc=Document(data);
-        immutable type=doc[Params.type].get!uint;
-        immutable received_state=convertState(type);
-        Pubkey received_pubkey=doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
 
-        // log("2.receive");
-        super.receive(doc);//, register_leading_event);
-        import std.algorithm: canFind;
+    // private uint eva_count;
 
-        log("3.receive");
-        if([/*ExchangeState.FIRST_WAVE,*/ ExchangeState.SECOND_WAVE, ExchangeState.BREAKING_WAVE].canFind(received_state)){
-            log("send remove with state: %s", received_state);
-            send_remove(received_pubkey);
-        }
-        //return result;
-    }
-
-
-    private uint eva_count;
-
-    Document evaPackage() {
-        eva_count++;
-        auto hibon=new HiBON;
-        hibon["pubkey"]=pubkey;
-        hibon["git"]=HASH;
-        hibon["nonce"]="Should be implemented:"~to!string(eva_count);
-        return Document(hibon.serialize);
-    }
+    // Document evaPackage() {
+    //     eva_count++;
+    //     auto hibon=new HiBON;
+    //     hibon["pubkey"]=pubkey;
+    //     hibon["git"]=HASH;
+    //     hibon["nonce"]="Should be implemented:"~to!string(eva_count);
+    //     return Document(hibon.serialize);
+    // }
 
 }
 
 
-static void async_send(shared p2plib.Node node, immutable Options opts, shared(ConnectionPool!(shared p2plib.Stream, ulong)) connectionPool, shared ConnectionPoolBridge connectionPoolBridge){
+static void async_send(shared p2plib.Node node, immutable Options opts){
     scope(exit){
         // log("SENDER CLOSED!!");
         ownerTid.send(Control.END);
     }
     log.register(opts.transaction.net_task_name);
+
+    auto connectionPool = new shared ConnectionPool!(shared p2plib.Stream, ulong)();
+    auto connectionPoolBridge = new ConnectionPoolBridge();
+
+    log("start listening");
+    node.listen(opts.transaction.protocol_id, &StdHandlerCallback,
+            opts.transaction.net_task_name, opts.dart.sync.host.timeout.msecs,
+            cast(uint) opts.dart.sync.host.max_size);
+
+    scope (exit)
+    {
+        log("close listener");
+        node.closeListener(opts.transaction.protocol_id);
+    }
+
     void send_to_channel(immutable(Pubkey) channel, Buffer data){
 
         log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
@@ -497,10 +446,10 @@ static void async_send(shared p2plib.Node node, immutable Options opts, shared(C
     do{
         // log("handling %s", thisTid);
         receive(
-            (immutable(Pubkey) channel, Buffer data, uint id){
+            (immutable(Pubkey) channel, Document doc, uint id){
                 // log("received sender %d", id);
                 try{
-                    send_to_channel(channel, data);
+                    send_to_channel(channel, doc.serialize);
                 }catch(Exception e){
                     log("Error on sending to channel: %s", e.msg);
                     ownerTid.send(channel);
@@ -519,6 +468,34 @@ static void async_send(shared p2plib.Node node, immutable Options opts, shared(C
                 }catch(Exception e){
                     log("SDERROR: %s", e.msg);
                 }
+            },
+
+            (Response!(ControlCode.Control_Connected) resp) {
+                log("Client Connected key: %d", resp.key);
+                connectionPool.add(resp.key, resp.stream, true);
+            }, (Response!(ControlCode.Control_Disconnected) resp) {
+                synchronized(connectionPoolBridge){
+                    log("Client Disconnected key: %d", resp.key);
+                    connectionPool.close(cast(void*) resp.key);
+                    connectionPoolBridge.removeConnection(resp.key);
+                }
+            }, (Response!(ControlCode.Control_RequestHandled) resp) {
+                import tagion.hibon.Document;
+
+                auto doc = Document(resp.data);
+                Pubkey received_pubkey = doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
+                if ((received_pubkey in connectionPoolBridge.lookup) !is null)
+                {
+                    log("previous cpb: %d, now: %d",
+                        connectionPoolBridge.lookup[received_pubkey], resp.stream.Identifier);
+                }
+                else
+                {
+                    connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
+                }
+                // log("response: %s", doc.toJSON);
+                log("received in: %s", resp.stream.Identifier);
+                ownerTid.send(doc);
             },
             (Control control){
                 // log("received control");
