@@ -497,7 +497,7 @@ unittest{
     fast_load - load full dart
 +/
 class DartSynchronizationPool(THandlerPool: HandlerPool!(ResponseHandler, uint)): Fiber{    //TODO: move fiber inside as a field
-    enum root = DART.Rims();
+    enum root = DART.Rims.root;
     bool fast_load;
     protected enum State{
         READY,
@@ -541,12 +541,14 @@ class DartSynchronizationPool(THandlerPool: HandlerPool!(ResponseHandler, uint))
 
     protected bool[DART.Rims] sync_sectors;
     protected DART.Rims[] failed_sync_sectors;
+    HiRPC hirpc;
     this(DART.SectorRange sectors, ReplayPool!string journal_replay, immutable(Options) opts){
         this.fast_load = opts.dart.fast_load;
         // writefln("Fast load: %s", fast_load);
         if(fast_load){
             assert(fast_load && sectors.isFullRange, "Fast load will load full dart");
         }
+        hirpc = HiRPC();
         _state = State.READY;
         this.journal_replay = journal_replay;
         this.opts = opts;
@@ -566,7 +568,7 @@ class DartSynchronizationPool(THandlerPool: HandlerPool!(ResponseHandler, uint))
         import std.algorithm: filter,reduce;
         import std.array : array;
         if (fast_load){
-            auto result = sync_factory.syncSector(DART.Rims(), &onComplete, &onFailure);
+            auto result = sync_factory.syncSector(DART.Rims.root, &onComplete, &onFailure);
             if(result[1] is null) {
                 // log("Couldn't synchronize root");
                 onFailure(root); //TODO: or just ignore?
@@ -628,8 +630,8 @@ class DartSynchronizationPool(THandlerPool: HandlerPool!(ResponseHandler, uint))
     do{
         auto doc = Document(resp.data);
         import tagion.hibon.HiBONJSON;
-        auto message_doc = doc[Keywords.message].get!Document;
-        auto response = ResponseHandler.Response!uint(message_doc[Keywords.id].get!uint, resp.data);
+        auto received = hirpc.receive(doc);
+        auto response = ResponseHandler.Response!uint(received.response.id, resp.data);
         handlerPool.setResponse(response);
     }
 

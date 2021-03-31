@@ -180,13 +180,15 @@ class DART : DARTFile { //, HiRPC.Supports {
     @RecordType("Rims")
     struct Rims {
         Buffer rims;
-
+        protected enum root_rim = [];
+        static immutable root = Rims(root_rim);
         ushort sector() const pure nothrow
             in {
-                assert(rims.length >= ushort.sizeof,
+                assert(rims.length >= ushort.sizeof || rims is root_rim,
                     format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims.length));
             }
         do {
+            if(rims is root_rim) return ushort.init;
             ushort result=ushort(rims[0]) + ushort(rims[1] << ubyte.sizeof * 8);
             return result;
         }
