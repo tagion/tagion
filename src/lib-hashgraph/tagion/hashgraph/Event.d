@@ -165,21 +165,16 @@ class Round {
             if (e !is null && !e.erased) {
                 count++;
                 scrap_events(e._mother);
-
-                //e._xxx;
-                // writefln("(%d:%d) %s", e.id, e.node_id, e.isEva);
                 e.disconnect(hashgraph);
                 //e.destroy;
             }
         }
         foreach(node_id, e; _events) {
-            count=0;
             scrap_events(e);
-            //writefln("After %d count=%d", node_id, count);
         }
         erased = true;
-        // _next._previous = null;
-        // _next = null;
+        _next._previous = null;
+        _next = null;
         // writefln("After _events=%s", _events.map!((e) => e is null));
     }
 
@@ -1020,10 +1015,6 @@ class Event {
         return (_mother !is null);
     }
 
-    private void _xxx() {
-        erased=true;
-    }
-
     @trusted
     private void disconnect(HashGraph hashgraph) {
     //     in {
@@ -1035,14 +1026,14 @@ class Event {
         hashgraph.eliminate(fingerprint);
 
         // return;
-        // if (_witness) {
-        //     // import std.stdio;
-        //     // writefln("Before remove node_id=%d %s", node_id, _round._events[node_id] !is null);
-        //     _round.remove(this);
-        //     // writefln("After node_id=%d %s", node_id, _round._events[node_id] !is null);
-        //     _witness.destroy;
-        //     _witness=null;
-        // }
+        if (_witness) {
+            // import std.stdio;
+            // writefln("Before remove node_id=%d %s", node_id, _round._events[node_id] !is null);
+            _round.remove(this);
+            // writefln("After node_id=%d %s", node_id, _round._events[node_id] !is null);
+            //_witness.destroy;
+            _witness=null;
+        }
         // if (_daughter) {
         //     _daughter._mother = null;
         // }
