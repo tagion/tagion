@@ -1034,13 +1034,14 @@ class Event {
             //_witness.destroy;
             _witness=null;
         }
-        // if (_daughter) {
-        //     _daughter._mother = null;
-        // }
-        // if (_son) {
-        //     _son._father = null;
-        // }
-        // _daughter=_son=null;
+        if (_daughter) {
+            _daughter._mother = null;
+        }
+        if (_son) {
+            _son._father = null;
+        }
+        _daughter=_son=null;
+        //_mother=_father=null;
     }
 
     const(Event) mother() const pure {
@@ -1052,7 +1053,11 @@ class Event {
     const(Event) father() const pure nothrow
     in {
         if ( event_package.event_body.father ) {
-            assert(_father);
+            if (!_father) {
+                import std.stdio;
+                debug assumeWontThrow(writefln("Father is dead"));
+            }
+            assert(_father, "Father is dead");
         }
     }
     do {
@@ -1112,7 +1117,7 @@ class Event {
     /// This also means that the event has not valid order and must not be included in the epoch order.
     @nogc
     bool isFatherLess() pure const nothrow {
-        return isEva || (event_package.event_body.father is null) && _mother.isFatherLess;
+        return isEva || !isGrounded && (event_package.event_body.father is null) && _mother.isFatherLess;
     }
 
     @nogc
@@ -1122,7 +1127,9 @@ class Event {
 
     @nogc
     bool isGrounded() pure const nothrow {
-        return (_mother is null) && (event_package.event_body.mother !is null);
+        return
+            (_mother is null) && (event_package.event_body.mother !is null) ||
+            (_father is null) && (event_package.event_body.father !is null);
     }
 
     @nogc

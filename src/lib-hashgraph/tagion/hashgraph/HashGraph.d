@@ -631,7 +631,9 @@ class HashGraph {
         import tagion.hibon.HiBONRecord : fwrite;
         scope events=new HiBON;
         foreach(n; nodes) {
-            n[].each!((e) => events[e.id]=EventView(e));
+            n[]
+                .filter!((e) => !e.isGrounded)
+                .each!((e) => events[e.id]=EventView(e));
         }
         scope h=new HiBON;
         h[Params.size]=node_size;
