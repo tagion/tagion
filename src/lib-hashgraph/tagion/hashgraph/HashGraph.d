@@ -594,8 +594,23 @@ class HashGraph {
         filename.fwrite(h);
     }
 
-    @safe struct Compare {
-        alias ErrorCallback=bool delegate(const Event e1, const Event e2, string msg) nothrow @safe;
+
+    @safe
+    struct Compare {
+        enum ErrorCode {
+            NONE,
+            NODES_DOES_NOT_MATCH,
+            FINGERPRINT_NOT_THE_SAME,
+            MOTHER_NOT_THE_SAME,
+            FATHER_NOT_THE_SAME,
+            ALTITUDE_NOT_THE_SAME,
+            ORDER_NOT_THE_SAME,
+            ROUND_NOT_THE_SAME,
+            WITNESS_CONFLICT,
+
+
+        }
+        alias ErrorCallback=bool delegate(const Event e1, const Event e2, ErrorCode) nothrow @safe;
         const HashGraph h1, h2;
         const ErrorCallback error_callback;
         int order_offset;
@@ -621,9 +636,8 @@ class HashGraph {
                     .array;
             }
             catch (Exception e) {
-
                 if (error_callback) {
-                    error_callback(null, null, "Can't compare the graph because the do not share the same node channels");
+                    error_callback(null, null, ErrorCode.NODES_DOES_NOT_MATCH);
                 }
                 return false;
             }
@@ -635,9 +649,9 @@ class HashGraph {
                 while (higher(h2_events.front.altitude, h1_events.front.altitude) && !h2_events.empty) {
                     h2_events.popFront;
                 }
-                bool check(bool ok, string msg) {
+                bool check(bool ok, const ErrorCode code) {
                     if (!ok && error_callback) {
-                        return error_callback(h1_events.front, h2_events.front, msg);
+                        return error_callback(h1_events.front, h2_events.front, code);
                     }
                     return ok;
                 }
@@ -651,18 +665,14 @@ class HashGraph {
                 const e2=h2_events.front;
 
                 bool ok;
-                ok=check(e1.fingerprint == e2.fingerprint,
-                    "The fingerprint of the two events is not the same");
-                ok=check(e1.event_body.mother == e2.event_body.mother,
-                    "The mothers of the two events is not the same");
-                ok=check(e1.event_body.father == e2.event_body.father,
-                    "The fathers of the two events is not the same");
-                ok=check(e1.altitude == e2.altitude,
-                    "The fathers of the two events is not the same");
-                ok=check(e1.received_order - e2.received_order == order_offset,
-                    "The order of the two events is not the same");
-                ok=check(e1.round.number - e2.round.number == round_offset,
-                    "The round level of the two events is not the same");
+                with(ErrorCode) {
+                    ok=check(e1.fingerprint == e2.fingerprint, FINGERPRINT_NOT_THE_SAME);
+                    ok|=check(e1.event_body.mother == e2.event_body.mother, MOTHER_NOT_THE_SAME);
+                    ok|=check(e1.event_body.father == e2.event_body.father, FATHER_NOT_THE_SAME);
+                    ok|=check(e1.altitude == e2.altitude, ALTITUDE_NOT_THE_SAME);
+                    ok|=check(e1.received_order - e2.received_order == order_offset, ORDER_NOT_THE_SAME);
+                    ok|=check(e1.round.number - e2.round.number == round_offset, ROUND_NOT_THE_SAME);
+                }
                 if (!ok) {
                     return ok;
                 }
@@ -882,7 +892,7 @@ class HashGraph {
             Dave,
             Elisa,
             Freja,
-            Geoge
+            George
         }
 
         auto network=new UnittestNetwork!NodeLabel();
@@ -911,10 +921,8 @@ class HashGraph {
 
         writefln("Save Alice");
         foreach(_net; network.networks) {
-            if (_net.name == "Alice") {
-                const filename=fileId(_net.name);
-                _net._hashgraph.fwrite(filename.fullpath);
-            }
+            const filename=fileId(_net.name);
+            _net._hashgraph.fwrite(filename.fullpath);
         }
 
         HashGraph h1, h2;
@@ -927,8 +935,19 @@ class HashGraph {
             }
         }
 
-        // bool
-        // auto comp=Compare(h1, h2,
+        bool event_error(const Event e1, const Event e2, Compare.ErrorCode code) @safe nothrow {
+            string print(const Event e) nothrow {
+                if (e) {
+                    return assumeWontThrow(format("(%d:%d:%s)", e1.id, e1.node_id, e1.fingerprint.cutHex));
+                }
+                return assumeWontThrow(format("(%d:%d:%s)", 0, -1, "nil"));
+            }
+            assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
+            return false;
+        }
+
+        auto comp=Compare(h1, h2, &event_error);
+        //comp.compare;
     }
 }
 
