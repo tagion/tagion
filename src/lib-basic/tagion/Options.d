@@ -146,6 +146,8 @@ struct Options {
         mixin JSONCommon;
     }
 
+    Host host;
+
     uint nodes;     /// Number of concurrent nodes (Test mode)
 
     uint seed;             /// Random seed for pseudo random sequency (Test mode)
@@ -560,6 +562,10 @@ static setDefaultOption(ref Options options) {
         min_port=6000;
         path_to_shared_info = "/tmp/info.hibon";
         p2plogs = false;
+        with(host){
+            timeout = 3000;
+            max_size = 1024 * 100;
+        }
     }
 
     with(options.heartbeat) {
