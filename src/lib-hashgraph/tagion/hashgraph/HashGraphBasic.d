@@ -1,7 +1,6 @@
 module tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
-//import std.bitmanip;
 import std.format;
 import std.typecons : TypedefType;
 
@@ -17,7 +16,7 @@ import tagion.utils.StdTime;
 
 import tagion.hibon.Document : Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
-//import tagion.gossip.InterfaceNet;
+
 import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException, ConsensusException;
 enum minimum_nodes = 3;
 import  tagion.utils.Miscellaneous : cutHex;
@@ -51,10 +50,6 @@ enum int eva_altitude=-77;
 int nextAltitide(const Event event) pure nothrow {
     return (event)?event.altitude+1:eva_altitude;
 }
-// struct Tides {
-//     int[Pubkey]
-// }
-// alias Tides=int[immutable(Pubkey)];
 
 protected enum _params = [
     "events",
@@ -62,7 +57,6 @@ protected enum _params = [
     ];
 
 mixin(EnumText!("Params", _params));
-
 
 enum ExchangeState : uint {
     NONE,
@@ -77,42 +71,21 @@ enum ExchangeState : uint {
 alias convertState=convertEnum!(ExchangeState, GossipConsensusException);
 
 @safe
-interface EventScriptCallbacks {
-    void epoch(const(Event[]) received_event, const sdt_t  epoch_time);
-    void send(ref Document[] payloads, const sdt_t epoch_time); // Should be execute when and epoch is finished
-
-    void send(immutable(EventBody) ebody);
-    bool stop(); // Stops the task
-}
-
-
-@safe
 interface EventMonitorCallbacks {
     nothrow {
         void create(const(Event) e);
         void connect(const(Event) e);
         void witness(const(Event) e);
-//        void witness_mask(const(Event) e);
-//        void strongly_seeing(const(Event) e);
-//        void strong_vote(const(Event) e, immutable uint vote);
         void round_seen(const(Event) e);
-//        void looked_at(const(Event) e);
         void round(const(Event) e);
         void round_decided(const(Round.Rounder) rounder);
         void round_received(const(Event) e);
-//        void coin_round(const(Round) r);
         void famous(const(Event) e);
         void round(const(Event) e);
         void son(const(Event) e);
         void daughter(const(Event) e);
         void forked(const(Event) e);
-//        void remove(const(Round) r);
         void epoch(const(Event[]) received_event);
-//        void iterations(const(Event) e, const uint count);
-    //void received_tidewave(immutable(Pubkey) sending_channel, const(Tides) tides);
-//    void wavefront_state_receive(const(Document) wavefron_doc);
-//        void exiting(const(Pubkey) owner_key, const(HashGraphI) hashgraph);
-
         void send(const Pubkey channel, lazy const Document doc);
         final void send(T)(const Pubkey channel, lazy T pack) if(isHiBONRecord!T) {
             send(channel, pack.toDoc);
@@ -122,8 +95,6 @@ interface EventMonitorCallbacks {
         final void receive(T)(lazy const T pack) if(isHiBONRecord!T) {
             receive(pack.toDoc);
         }
-
-        //void consensus_failure(const(ConsensusException) e);
     }
 }
 
@@ -144,8 +115,6 @@ struct EventView {
     @Label("$strong") uint[] strongly_seeing_mask;
     @Label("$seen") uint[] round_seen_mask;
     @Label("$received") uint[] round_received_mask;
-    //bool erased;
-    //@Label("*", true) @(Filter.Initialized)
     bool father_less;
 
     mixin HiBONRecord!(
@@ -180,15 +149,6 @@ struct EventView {
                     event.round_received_mask[].each!((n) => round_received_mask~=cast(uint)(n));
                 }
                 round_received=(event.round_received)?event.round_received.number:int.min;
-                //erased=event.erased;
-                // if (event.isFatherLess) {
-                //     (() @trusted {
-                //         writefln("EventView isFatherLess %s node_id=%s id=%d mother_id=%d %s m=%s f=%s",
-                //             witness_mask, event.node_id, event.id, mother, event.fingerprint.cutHex,
-                //             event.event_package.event_body.mother.cutHex,
-                //             event.event_package.event_body.mother.cutHex);
-                //     })();
-                // }
             }
         });
 
@@ -197,7 +157,6 @@ struct EventView {
 
 @safe
 interface Authorising {
-//    void time(const(sdt_t) t);
 
     const(sdt_t) time() pure const nothrow;
 
@@ -205,32 +164,17 @@ interface Authorising {
 
     void send(const(Pubkey) channel, const(Document) doc);
 
-    // final void send(T)(const(Pubkey) channel, T pack) if(isHiBONRecord!T) {
-    //     send(channel, pack.toDoc);
-    // }
-
     alias ChannelFilter=bool delegate(const(Pubkey) channel) @safe;
     alias SenderCallBack=const(HiRPC.Sender) delegate() nothrow @safe;
     const(Pubkey) select_channel(ChannelFilter channel_filter);
 
     const(Pubkey) gossip(ChannelFilter channel_filter, SenderCallBack sender);
 
-    //const(Document) receive(const Pubkey channel) nothrow;
-
-    // final const(Pubkey) gossip(T)(ChannelFilter channel_filter, const(HiPRC.Sender) sender) {
-    //     return gossip(channel_owner, sender.toDoc);
-    // }
-
-    // final const(Pubkey) gossip(T)(const(Pubkey) channel_owner, const T pack) nothrow if(isHiBONRecord!T) {
-    //     return gossip(channel_owner, pack.toDoc);
-    // }
-
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
 }
 
 @safe
-//@RecordType("EBODY")
 struct EventBody {
     enum int eva_altitude=-77;
     import tagion.basic.ConsensusExceptions;
@@ -292,8 +236,6 @@ struct EventBody {
 
 }
 
-//@RecordType("EPACK") @safe
-pragma(msg, "fixme(cbr): Should be a HiRPC");
 @safe
 struct EventPackage {
     @Label("") Buffer fingerprint;
@@ -331,6 +273,7 @@ struct EventPackage {
 }
 
 alias Tides=int[Pubkey];
+
 @RecordType("Wavefront") @safe
 struct Wavefront {
     @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
@@ -343,8 +286,6 @@ struct Wavefront {
     mixin HiBONRecordType;
     mixin JSONString;
 
-    // mixin HiBONRecord!(
-    //     q{
     this(Tides tides) pure nothrow {
         _tides=tides;
         epacks=null;
@@ -365,7 +306,6 @@ struct Wavefront {
                     tides=_tides;
                 }
             });
-
     }
 
     this(const SecureNet net, const Document doc) {
@@ -406,7 +346,6 @@ struct Wavefront {
     }
 
     private void update_tides() pure nothrow {
-        //Tides result;
         foreach(e; epacks) {
             _tides.update(e.pubkey,
                 {
@@ -445,7 +384,6 @@ struct Wavefront {
 
 }
 
-//@RecordType("Eva")
 @safe
 struct EvaPayload {
     @Label("$channel") Pubkey channel;
@@ -462,5 +400,4 @@ struct EvaPayload {
 
 static assert(isHiBONRecord!Wavefront);
 static assert(isHiBONRecord!(EventPackage));
-
 static assert(isHiBONRecord!(immutable(EventPackage)));

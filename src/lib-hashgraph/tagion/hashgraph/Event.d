@@ -27,7 +27,7 @@ import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, bitarray_clear, 
 import tagion.Keywords : Keywords;
 
 import tagion.basic.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks, EventScriptCallbacks;
+import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask : BitMask;
 
@@ -569,9 +569,7 @@ class Event {
 
     }
 
-    alias bool delegate(Event) @safe Assign;
     static EventMonitorCallbacks callbacks;
-    static EventScriptCallbacks scriptcallbacks;
 
     @nogc
     immutable(Pubkey) channel() pure const nothrow {

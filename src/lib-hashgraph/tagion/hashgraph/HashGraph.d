@@ -3,7 +3,6 @@ module tagion.hashgraph.HashGraph;
 //import std.stdio;
 import std.conv;
 import std.format;
-//import std.bitmanip : BitArray;
 import std.exception : assumeWontThrow;
 import std.typecons : TypedefType;
 import std.algorithm.searching : count, all;
@@ -12,12 +11,8 @@ import std.algorithm.comparison : max;
 import std.range : dropExactly;
 import std.array : array;
 
-// import std.stdio : File;
-
 import tagion.hashgraph.Event;
-//import tagion.hashgraph.HashGraphBasic : HashGraphI;
 import tagion.crypto.SecureInterfaceNet;
-//import tagion.utils.LRU;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
@@ -52,8 +47,6 @@ class HashGraph {
     Statistic!uint wavefront_event_package_used_statistic;
     Statistic!uint live_events_statistic;
     Statistic!uint live_witness_statistic;
-
-    //const HiRPC hirpc;
 
     private {
         BitMask _excluded_nodes_mask;
@@ -114,13 +107,6 @@ class HashGraph {
         return true;
     }
 
-    version(none)
-    void init_tide(const(Pubkey) send_channel) {
-        if (send_channel !is Pubkey(null)) {
-            getNode(send_channel).state=ExchangeState.INIT_TIDE;
-        }
-    }
-
     void init_tide(
         const(Pubkey) delegate(Authorising.ChannelFilter channel_filter, const(HiRPC.Sender) delegate() response) @safe responde,
         const(Document) delegate() @safe payload,
@@ -169,12 +155,7 @@ class HashGraph {
     }
 
     void eliminate(scope const(Buffer) fingerprint) {
-        if (print_flag) {
-            const e=_event_cache[fingerprint];
-//            writefln("Remove (%d:%d:%d) %s", e.id, e.node_id, e.altitude, fingerprint.cutHex);
-        }
         _event_cache.remove(fingerprint);
-        //writefln("After _event_cache.length=%d", _event_cache.length);
     }
 
     size_t number_of_registered_event() const pure nothrow {
@@ -184,12 +165,6 @@ class HashGraph {
     bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
         return (fingerprint in _event_cache) !is null;
     }
-
-    // void dustman() {
-    //     if (!disable_scrapping) {
-    //         _rounds.dustman;
-    //     }
-    // }
 
     package void epoch(const(Event)[] events, const Round decided_round) {
         import std.stdio;
@@ -230,22 +205,11 @@ class HashGraph {
             scope(exit) {
                 wavefront_event_package_statistic(count_events);
                 wavefront_event_package_used_statistic(cast(uint)event_package_cache.length);
-                // if (print_flag) {
-                //     writefln("\tevent_package_cache.length=%4d %16s received_wave.length=%4d",
-                //         event_package_cache.length, received_wave.state, count, received_wave.state);
-
-                //     // if (received_wave.state is ExchangeState.SECOND_WAVE) {
-                //     //     writefln("\t\t tides=%s", received_wave.tides.byValue);
-                //     // }
-                // }
             }
             foreach(e; received_wave.epacks) {
                 count_events++;
                 if (e.fingerprint in _event_cache) {
                     const event=_event_cache[e.fingerprint];
-                    // if (event.connected) {
-                    //     writefln("Evnet already connected (%d:%d:%d)", event.id, event.node_id, event.altitude, event.fingerprint.cutHex);
-                    // }
                 }
                 if (!(e.fingerprint in event_package_cache || e.fingerprint in _event_cache)) {
                     event_package_cache[e.fingerprint] = e;
@@ -276,15 +240,6 @@ class HashGraph {
             Event event;
             if (fingerprint) {
                 event = lookup(fingerprint);
-                // if (print_flag)  {
-                //     if (!event) {
-                //         writefln("Event missing %s", fingerprint.cutHex);
-                //     }
-                //     else if (event.erased) {
-                //         writefln("Event missing (%d:%d:%d) ", event.id, event.node_id, event.altitude);
-                //         Event.check(false, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-                //     }
-                // }
                 Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
                 event.connect(this.outer);
             }
@@ -582,7 +537,6 @@ class HashGraph {
 
     private void remove_node(Node n) nothrow
         in {
-//            import std.format;
             assert(n !is null);
             assert(n.channel in nodes, format("Node id %d is not removable because it does not exist", n.node_id));
         }
@@ -612,8 +566,6 @@ class HashGraph {
         if (nodes.length is 0) {
             return 0;
         }
-        import std.algorithm.searching : maxElement;
-        //import tagion.utils.BitMask;
         scope BitMask used_nodes;
         nodes.byValue.map!(a => a.node_id).each!((n) {used_nodes[n] = true;});
         return (~used_nodes)[].front;
@@ -736,7 +688,7 @@ class HashGraph {
                     channel_queues.remove(channel);
                 }
             }
-//            @trusted
+
             class FiberNetwork : Fiber {
                 private HashGraph _hashgraph;
                 immutable(string) name;
@@ -768,8 +720,6 @@ class HashGraph {
                         immutable buf=cast(Buffer)_hashgraph.channel;
                         const nonce=_hashgraph.hirpc.net.calcHash(buf);
                         auto eva_event=_hashgraph.createEvaEvent(time, nonce);
-                        //writefln("### eva_event.received_order=%d node_id=%d", eva_event.received_order, eva_event.node_id);
-                        //const registrated=_hashgraph.registerEventPackage(epack);
 
                         if (eva_event is null) {
                             log.error("The channel of this oner is not valid");
@@ -805,7 +755,6 @@ class HashGraph {
                             _hashgraph.init_tide(&authorising.gossip, &payload, time);
                             count++;
                         }
-                        //_hashgraph.dustman;
                     }
                 }
             }
@@ -816,7 +765,8 @@ class HashGraph {
             }
 
             FiberNetwork[Pubkey] networks;
-//            @disable this();
+
+
             this() {
                 import std.traits : EnumMembers;
                 import std.conv : to;
@@ -835,20 +785,14 @@ class HashGraph {
 
     }
 
-    //version(none)
     unittest {
         import tagion.hashgraph.Event;
-        // This is the example taken from
-        // HASHGRAPH CONSENSUSE
-        // SWIRLDS TECH REPORT TR-2016-01
-        //import tagion.crypto.SHA256;
         import std.stdio;
         import std.traits;
         import std.conv;
         import std.datetime;
         import tagion.hibon.HiBONJSON;
         import tagion.basic.Logger : log, LoggerType;
-        //log.push(LoggerType.ALL);
         log.push(LoggerType.NONE);
 
         enum NodeLabel {
@@ -866,23 +810,13 @@ class HashGraph {
 
         network.global_time=SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
 
-        //auto monitor=new UnittestMonitor;
-        //Event.callbacks=monitor;
         const channels=network.channels;
-        // foreach(_net; network.networks) {
-        //     if (_net.name == "Alice") {
-        //         const filename=fileId(_net.name);
-        //         _net._hashgraph.fwrite(filename.fullpath);
-        //     }
-        // }
-        //writefln("channels.length=%d", channels.length);
+
         try {
             foreach(i; 0..3776) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
                 auto current=network.networks[channel];
-                // writefln("channel_number=%d channel=%s", channel_number, channel.cutHex);
-                //monitor.name=current.name;
                 (() @trusted {
                     current.call;
                 })();
