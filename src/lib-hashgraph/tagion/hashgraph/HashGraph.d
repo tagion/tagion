@@ -560,20 +560,6 @@ class HashGraph {
         return nodes.byValue;
     }
 
-    void dumpNodes() {
-        import std.stdio;
-        foreach(i, n; nodes) {
-            log("%d:%s:", i, n !is null);
-            if ( n !is null ) {
-                log("%s ",n.channel.cutHex);
-            }
-            else {
-                log("Non ");
-            }
-        }
-        log("");
-    }
-
     @nogc
     size_t active_nodes() const pure nothrow {
         return nodes.length;
@@ -656,9 +642,9 @@ class HashGraph {
         filename.fwrite(h);
     }
 
-    /**
+    /++
        This function makes sure that the HashGraph has all the events connected to this event
-    */
+    +/
     version(unittest) {
 
         static class UnittestNetwork(NodeList) if (is(NodeList == enum)) {
@@ -701,8 +687,6 @@ class HashGraph {
 
                 void send(const(Pubkey) channel, const(Document) doc) nothrow {
                     log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
-                    // assumeWontThrow(
-                    //     writefln("send %s", doc.toPretty));
                     if ( Event.callbacks ) {
                         Event.callbacks.send(channel, doc);
                     }
@@ -907,6 +891,7 @@ class HashGraph {
         catch (Exception e) {
             (() @trusted {
                 writefln("%s", e);
+                assert(0, e.msg);
             })();
         }
 
