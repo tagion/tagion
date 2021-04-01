@@ -646,15 +646,6 @@ class Event {
     }
 
     @nogc
-    inout(Round) round() inout pure nothrow
-        out(result) {
-            assert(result, "Round should be defined before it is used");
-        }
-    do {
-        return _round;
-    }
-
-    @nogc
     bool hasRound() const pure nothrow {
         return (_round !is null);
     }
@@ -669,19 +660,13 @@ class Event {
     }
 
     @nogc
-    ref const(BitMask) witness_mask() pure const nothrow {
+    const(BitMask) witness_mask() pure const nothrow {
         return _witness_mask;
     }
 
     @nogc
     const(Witness) witness() pure const nothrow {
         return _witness;
-    }
-
-
-    @nogc
-    bool strongly_seeing() const pure nothrow {
-        return _witness !is null;
     }
 
     @nogc
