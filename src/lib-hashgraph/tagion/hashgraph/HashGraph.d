@@ -26,6 +26,7 @@ import tagion.utils.BitMask;
 
 import tagion.basic.Logger;
 import tagion.utils.Miscellaneous : toHex=toHexString;
+import tagion.gossip.InterfaceNet;
 
 @safe
 class HashGraph {
@@ -108,7 +109,7 @@ class HashGraph {
     }
 
     void init_tide(
-        const(Pubkey) delegate(Authorising.ChannelFilter channel_filter, const(HiRPC.Sender) delegate() response) @safe responde,
+        const(Pubkey) delegate(GossipNet.ChannelFilter channel_filter, const(HiRPC.Sender) delegate() response) @safe responde,
         const(Document) delegate() @safe payload,
         lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
@@ -706,7 +707,7 @@ class HashGraph {
 
             alias ChannelQueue=Queue!Document;
 
-            class UnittestAuthorising  : Authorising {
+            class UnittestAuthorising  : GossipNet {
                 protected {
                     ChannelQueue[Pubkey] channel_queues;
                     sdt_t _current_time;
