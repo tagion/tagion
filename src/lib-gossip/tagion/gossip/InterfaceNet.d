@@ -8,6 +8,8 @@ import tagion.hibon.Document : Document;
 //import tagion.utils.Queue;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Basic;
+import tagion.communication.HiRPC;
+import tagion.utils.StdTime;
 
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC;
@@ -32,8 +34,22 @@ interface NetCallbacks : EventMonitorCallbacks {
 }
 
 @safe
-interface GossipNet {
-    void send(const Pubkey channel, const(HiRPC.Sender) sender);
+interface P2pNet {
+    void send(const(Pubkey) channel, const(HiRPC.Sender) doc);
+    void close();
+}
+
+@safe
+interface GossipNet : P2pNet {
+    alias ChannelFilter=bool delegate(const(Pubkey) channel) @safe;
+    alias SenderCallBack=const(HiRPC.Sender) delegate() nothrow @safe;
+    const(sdt_t) time() pure const nothrow;
+
+    bool isValidChannel(const(Pubkey) channel) const pure nothrow;
+    void add_channel(const(Pubkey) channel);
+    void remove_channel(const(Pubkey) channel);
+    const(Pubkey) gossip(ChannelFilter channel_filter, SenderCallBack sender);
+    const(Pubkey) select_channel(ChannelFilter channel_filter);
 }
 
 @safe

@@ -19,6 +19,7 @@ import tagion.utils.Queue;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
+// import tagion.gossip.GossipNet;
 //import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
@@ -26,8 +27,10 @@ import tagion.basic.ConsensusExceptions;
 import tagion.basic.Logger;
 import tagion.ServiceNames : get_node_name;
 
+import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
 import tagion.crypto.secp256k1.NativeSecp256k1;
+import core.atomic;
 
 @trusted
 static uint getTids(Tid[] tids) {
@@ -43,26 +46,77 @@ static uint getTids(Tid[] tids) {
     return result;
 }
 
+@trusted 
+static Tid getTid(uint i){
+    immutable taskname=get_node_name(*options, i);
+    auto tid=locate(taskname);
+    return tid;
+}
 
+private static shared uint node_counter = 0;
 @safe
 class EmulatorGossipNet : GossipNet {
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
     protected uint _send_node_id;
+    protected sdt_t _current_time;
 
     Random!uint random;
 
-    void set(immutable(Pubkey)[] pkeys)
-        in {
-            assert(_tids is null);
+    void add_channel(const Pubkey channel) {
+        atomicOp!"+="(node_counter, 1);
+        _pkeys~=channel;
+        _tids[channel] = getTid(node_counter);
+    }
+
+    void remove_channel(const Pubkey channel) {
+        import std.algorithm.searching;
+        const channel_index = countUntil(_pkeys, channel);
+        _pkeys= _pkeys[0..channel_index] ~ _pkeys[channel_index+1 .. $];
+        _tids.remove(channel);
+    }
+    
+    @safe
+    void close(){
+
+    }
+
+    @property
+    void time(const(sdt_t) t) {
+        _current_time=sdt_t(t);
+    }
+
+    @property
+    const(sdt_t) time() pure const {
+        return _current_time;
+    }
+
+    bool isValidChannel(const(Pubkey) channel) const pure nothrow {
+        return (channel in _tids) !is null;
+    }
+
+    const(Pubkey) select_channel(ChannelFilter channel_filter) {
+        import std.range : dropExactly;
+        foreach(count; 0.._tids.length/2) {
+            const node_index=random.value(0, cast(uint)_tids.length);
+            const send_channel = _tids
+                .byKey
+                .dropExactly(node_index)
+                .front;
+            if (channel_filter(send_channel)) {
+                return send_channel;
+            }
         }
-    do {
-        _pkeys=pkeys;
-        auto tids=new Tid[pkeys.length];
-        getTids(tids);
-        foreach(i, p; pkeys) {
-            _tids[p]=tids[cast(uint)i];
+        return Pubkey();
+    }
+
+    const(Pubkey) gossip(
+        ChannelFilter channel_filter, SenderCallBack sender) {
+        const send_channel=select_channel(channel_filter);
+        if (send_channel.length) {
+            send(send_channel, sender());
         }
+        return send_channel;
     }
 
 //     void dump(const(HiBON[]) events) const {

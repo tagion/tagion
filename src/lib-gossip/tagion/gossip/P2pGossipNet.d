@@ -10,6 +10,7 @@ import std.file: fwrite = write;
 import std.typecons;
 
 import tagion.gossip.revision;
+// import tagion.gossip.GossipNet;
 import tagion.Options;
 import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup,  basename, isBufferType, Control;
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
@@ -35,6 +36,7 @@ import p2plib = p2p.node;
 import p2p.callback;
 import p2p.cgo.helper;
 import std.array;
+import tagion.utils.StdTime;
 //import tagion.services.P2pTagionService;
 
 import tagion.dart.DART;
@@ -310,27 +312,34 @@ struct NodeAddress{
         return address;
     }
 }
+@safe
+private static string convert_to_net_task_name(string task_name){
+    return task_name ~ "net";
+}
 
 @safe
-class P2pGossipNet : GossipNet {
+class StdP2pNet : P2pNet {
     shared p2plib.Node node;
-    protected immutable(Options) opts;
     Tid sender_tid;
     static uint counter;
+    protected string owner_task_name;
+    protected string internal_task_name;
 
-    this(immutable(Options) opts, shared p2plib.Node node) {
+    this(string owner_task_name, string discovery_task_name, const(Options.Host) host, shared p2plib.Node node) {
 //        super(hashgraph);
+        this.owner_task_name = owner_task_name;
+        internal_task_name = convert_to_net_task_name(owner_task_name);
         this.node = node;
-        this.opts = opts;
         @trusted void spawn_sender(){
-            this.sender_tid = spawn(&async_send, node, opts);
+            this.sender_tid = spawn(&async_send, owner_task_name, discovery_task_name, host, node);
         }
         spawn_sender();
     }
+    @safe
     void close(){
         @trusted void send_stop(){
             import std.concurrency: prioritySend, Tid, locate;
-            auto sender = locate(opts.transaction.net_task_name);
+            auto sender = locate(owner_task_name);
             if (sender!=Tid.init){
                 // log("sending stop to gossip net");
                 sender.prioritySend(Control.STOP);
@@ -343,11 +352,11 @@ class P2pGossipNet : GossipNet {
     @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.concurrency: tsend=send, prioritySend, Tid, locate;
-        auto internal_net = locate(opts.transaction.net_task_name);
-        if(internal_net!=Tid.init){
+        auto internal_sender = locate(owner_task_name);
+        if(internal_sender!=Tid.init){
             counter++;
             // log("sending to sender %d", counter);
-            tsend(internal_net, channel, sender.toDoc, counter);
+            tsend(internal_sender, channel, sender.toDoc, counter);
         }else{
             log("sender not found");
         }
@@ -356,7 +365,7 @@ class P2pGossipNet : GossipNet {
     @trusted
     protected void send_remove(Pubkey pk){
         import std.concurrency: tsend=send, Tid, locate;
-        auto sender = locate(opts.transaction.net_task_name);
+        auto sender = locate(owner_task_name);
         if(sender!=Tid.init){
             counter++;
             // log("sending close to sender %d", counter);
@@ -365,62 +374,51 @@ class P2pGossipNet : GossipNet {
             log("sender not found");
         }
     }
-
-
-    // private uint eva_count;
-
-    // Document evaPackage() {
-    //     eva_count++;
-    //     auto hibon=new HiBON;
-    //     hibon["pubkey"]=pubkey;
-    //     hibon["git"]=HASH;
-    //     hibon["nonce"]="Should be implemented:"~to!string(eva_count);
-    //     return Document(hibon.serialize);
-    // }
-
 }
 
 
-static void async_send(shared p2plib.Node node, immutable Options opts){
+static void async_send(string task_name, string discovery_task_name, const(Options.Host) host, shared p2plib.Node node){
     scope(exit){
         // log("SENDER CLOSED!!");
         ownerTid.send(Control.END);
     }
-    log.register(opts.transaction.net_task_name);
+    // const net = new StdSecureNet();
+    const hirpc = new HiRPC(null);
+    const internal_task_name = convert_to_net_task_name(task_name);
+    log.register(internal_task_name);
 
     auto connectionPool = new shared ConnectionPool!(shared p2plib.Stream, ulong)();
     auto connectionPoolBridge = new ConnectionPoolBridge();
 
     log("start listening");
-    node.listen(opts.transaction.protocol_id, &StdHandlerCallback,
-            opts.transaction.net_task_name, opts.dart.sync.host.timeout.msecs,
-            cast(uint) opts.dart.sync.host.max_size);
+    node.listen(internal_task_name, &StdHandlerCallback,
+            internal_task_name, host.timeout.msecs, host.max_size);
 
     scope (exit)
     {
         log("close listener");
-        node.closeListener(opts.transaction.protocol_id);
+        node.closeListener(internal_task_name);
     }
 
-    void send_to_channel(immutable(Pubkey) channel, Buffer data){
+    void send_to_channel(immutable(Pubkey) channel, Document doc){
 
         log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
         auto streamIdPtr = channel in connectionPoolBridge.lookup;
         auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
         // log("stream id: %d", streamId);
         if(streamId == 0 || !connectionPool.contains(streamId)){
-             auto discovery_tid = locate(opts.discovery.task_name);
+            auto discovery_tid = locate(discovery_task_name);
             if(discovery_tid != Tid.init){
                 discovery_tid.send(channel, thisTid);
                 // writeln("waiting for response");
                 // auto node_address = receiveOnly!(NodeAddress);
                 receive(
                     (NodeAddress node_address){
-                        auto stream = node.connect(node_address.address, node_address.is_marshal, [opts.transaction.protocol_id]);
+                        auto stream = node.connect(node_address.address, node_address.is_marshal, [internal_task_name]);
                         streamId = stream.Identifier;
                         import p2p.callback;
                         connectionPool.add(streamId, stream, true);
-                        stream.listen(&StdHandlerCallback, "p2ptagion", opts.transaction.host.timeout.msecs, opts.transaction.host.max_size);
+                        stream.listen(&StdHandlerCallback, internal_task_name, host.timeout.msecs, host.max_size);
                         // log("add stream to connection pool %d", streamId);
                         connectionPoolBridge.lookup[channel] = streamId;
                     }
@@ -432,7 +430,7 @@ static void async_send(shared p2plib.Node node, immutable Options opts){
 
         try{
             log("send to:%d", streamId);
-            auto sended = connectionPool.send(streamId, data);
+            auto sended = connectionPool.send(streamId, doc.serialize);
             if(!sended){
                 log("\n\n\n not sended \n\n\n");
             }
@@ -449,7 +447,7 @@ static void async_send(shared p2plib.Node node, immutable Options opts){
             (immutable(Pubkey) channel, Document doc, uint id){
                 // log("received sender %d", id);
                 try{
-                    send_to_channel(channel, doc.serialize);
+                    send_to_channel(channel, doc);
                 }catch(Exception e){
                     log("Error on sending to channel: %s", e.msg);
                     ownerTid.send(channel);
@@ -483,7 +481,8 @@ static void async_send(shared p2plib.Node node, immutable Options opts){
                 import tagion.hibon.Document;
 
                 auto doc = Document(resp.data);
-                Pubkey received_pubkey = doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
+                const receiver = hirpc.receive(doc);
+                Pubkey received_pubkey = receiver.pubkey;
                 if ((received_pubkey in connectionPoolBridge.lookup) !is null)
                 {
                     log("previous cpb: %d, now: %d",
@@ -493,9 +492,9 @@ static void async_send(shared p2plib.Node node, immutable Options opts){
                 {
                     connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
                 }
-                // log("response: %s", doc.toJSON);
+                // log("response: %s", doc.toJSON);у
                 log("received in: %s", resp.stream.Identifier);
-                ownerTid.send(doc);
+                ownerTid.send(receiver.pubkey, receiver.method.toDoc);
             },
             (Control control){
                 // log("received control");
@@ -505,4 +504,62 @@ static void async_send(shared p2plib.Node node, immutable Options opts){
             }
         );
     }while(!stop);
+}
+
+@safe class P2pGossipNet: StdP2pNet, GossipNet{
+    protected {
+        sdt_t _current_time;
+        bool[Pubkey] pks;
+    }
+    Random!uint random;
+    
+    this(string owner_task_name, string discovery_task_name, const(Options.Host) host, shared p2plib.Node node) {
+        super(owner_task_name, discovery_task_name, host, node);
+    }
+        
+    @property
+    void time(const(sdt_t) t) {
+        _current_time=sdt_t(t);
+    }
+
+    @property
+    const(sdt_t) time() pure const {
+        return _current_time;
+    }
+    
+    bool isValidChannel(const(Pubkey) channel) const pure nothrow {
+        return (channel in pks) !is null;
+    }
+
+    const(Pubkey) select_channel(ChannelFilter channel_filter) {
+        import std.range : dropExactly;
+        foreach(count; 0..pks.length/2) {
+            const node_index=random.value(0, cast(uint)pks.length);
+            const send_channel = pks
+                .byKey
+                .dropExactly(node_index)
+                .front;
+            if (channel_filter(send_channel)) {
+                return send_channel;
+            }
+        }
+        return Pubkey();
+    }
+
+    const(Pubkey) gossip(
+        ChannelFilter channel_filter, SenderCallBack sender) {
+        const send_channel=select_channel(channel_filter);
+        if (send_channel.length) {
+            send(send_channel, sender());
+        }
+        return send_channel;
+    }
+
+    void add_channel(const Pubkey channel) {
+        pks[channel]=true;
+    }
+
+    void remove_channel(const Pubkey channel) {
+        pks.remove(channel);
+    }
 }

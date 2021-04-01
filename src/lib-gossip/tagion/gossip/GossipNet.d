@@ -32,14 +32,49 @@
 // //import tagion.basic.Logger;
 
 // @safe
-// abstract class StdGossipNet : StdSecureNet {
+// abstract class StdGossipNet : StdSecureNet, GossipNet {
+//     static private shared uint _next_global_id;
+//     static private shared uint[immutable(Pubkey)] _node_id_pair;
+
+//     uint globalNodeId(immutable(Pubkey) channel) {
+//         if ( channel in _node_id_pair ) {
+//             return _node_id_pair[channel];
+//         }
+//         else {
+//             return setGlobalNodeId(channel);
+//         }
+//     }
+
+//     @trusted
+//     static private uint setGlobalNodeId(immutable(Pubkey) channel) {
+//         import core.atomic;
+//         auto result = _next_global_id;
+//         _node_id_pair[channel] = _next_global_id;
+//         atomicOp!"+="(_next_global_id, 1);
+//         return result;
+//     }
+
 //     this() {
 //         super();
 //     }
+//     // this( HashGraph hashgraph) {
+//     //     _hashgraph=hashgraph;
+//     //     super();
+//     // }
 
-//     override NetCallbacks callbacks() {
-//         return (cast(NetCallbacks)Event.callbacks);
-//     }
+//     // override void hashgraph(HashGraphI h) nothrow
+//     //     in {
+//     //         assert(_hashgraph is null);
+//     //     }
+//     // do {
+//     //     _hashgraph=h;
+//     // }
+
+
+
+//     // override NetCallbacks callbacks() {
+//     //     return (cast(NetCallbacks)Event.callbacks);
+//     // }
 
 //     static struct Init {
 //         uint timeout;
@@ -56,20 +91,10 @@
 // //        HashGraphI _hashgraph;
 //     }
 
-//     override void receive(const(Document) doc) {
-//         hashgraph.wavefront_machine(doc);
-//     }
+//     // override void receive(const(Document) doc) {
+//     //     hashgraph.wavefront_machine(doc);
+//     // }
 
-
-//     @property
-//     void time(const(ulong) t) {
-//         _current_time=t;
-//     }
-
-//     @property
-//     const(ulong) time() pure const {
-//         return _current_time;
-//     }
 
 //     protected Tid _transcript_tid;
 //     @property void transcript_tid(Tid tid)
@@ -84,37 +109,15 @@
 //         return _transcript_tid;
 //     }
 
-    // override void receive(const(Document) doc) {
-    //     hashgraph.wavefront_machine(doc);
-    // }
+//     protected Tid _scripting_engine_tid;
+//     @property void scripting_engine_tid(Tid tid) @trusted in {
+//         assert(_scripting_engine_tid != _scripting_engine_tid.init, format("%s hash already been set", __FUNCTION__));
+//     }
+//     do {
+//         _scripting_engine_tid=tid;
+//     }
 
 //     @property Tid scripting_engine_tid() pure nothrow {
 //         return _scripting_engine_tid;
 //     }
 // }
-
-    protected Tid _transcript_tid;
-    @property void transcript_tid(Tid tid)
-        @trusted in {
-        assert(_transcript_tid != _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
-    }
-    do {
-        _transcript_tid=tid;
-    }
-
-    @property Tid transcript_tid() pure nothrow {
-        return _transcript_tid;
-    }
-
-    protected Tid _scripting_engine_tid;
-    @property void scripting_engine_tid(Tid tid) @trusted in {
-        assert(_scripting_engine_tid != _scripting_engine_tid.init, format("%s hash already been set", __FUNCTION__));
-    }
-    do {
-        _scripting_engine_tid=tid;
-    }
-
-    @property Tid scripting_engine_tid() pure nothrow {
-        return _scripting_engine_tid;
-    }
-}
