@@ -15,11 +15,11 @@ import tagion.Options : Options, setOptions, options;
 import tagion.utils.Random;
 import tagion.GlobalSignals : abort;
 
-import tagion.basic.Basic : Pubkey, Control, nameOf;
+import tagion.basic.Basic : Pubkey, Control, nameOf, Buffer;
 import tagion.basic.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : buildEventPackage, EventBody, ExchangeState;
+import tagion.hashgraph.HashGraphBasic : EventBody, ExchangeState, Wavefront;
 
 import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
@@ -40,6 +40,7 @@ import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.communication.HiRPC;
 
 import tagion.utils.Miscellaneous: cutHex;
 // import tagion.hashgraph.Event;
@@ -120,7 +121,8 @@ do
         opts.dart.path = opts.dart.path.replace(dir_token, node_name);
     }
     auto master_net = new StdSecureNet;
-    P2pGossipNet net;
+    SecureNet net;
+    GossipNet gossip_net;
     HashGraph hashgraph; // = new HashGraph(opts.nodes);
 
     auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
@@ -138,8 +140,11 @@ do
         master_net.generateKeyPair(passphrase);
         shared shared_net = cast(shared) master_net;
         net.derive("tagion_service", shared_net);
-        hashgraph=new HashGraph(opts.nodes);
-        net = new P2pGossipNet(hashgraph, opts, p2pnode, connectionPool, connectionPoolBridge);
+        bool valid(const(Pubkey) pk) const pure nothrow{
+            return true;
+        }
+        hashgraph=new HashGraph(opts.nodes, net, &valid, null);
+        gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
 
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
@@ -151,7 +156,7 @@ do
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         receive((ActiveNodeAddressBook address_book) {
             auto pkeys = cast(immutable) address_book.data.keys;
-            net.set(pkeys);
+            foreach(p; pkeys) gossip_net.add_channel(p);
             dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
                 opts, p2pnode, shared_net, sector_range);
             // receiveOnly!Control;
@@ -174,7 +179,7 @@ do
     scope (exit)
     {
         log("Closing net");
-        net.close();
+        gossip_net.close();
     }
     if (force_stop)
         return;
@@ -216,12 +221,12 @@ do
     discovery_tid.send(DiscoveryRequestCommand.RequestTable);
     receive((ActiveNodeAddressBook address_book) {
         auto pkeys = cast(immutable) address_book.data.keys;
-        net.set(pkeys);
+        foreach(p; pkeys) gossip_net.add_channel(p);
     });
 
     Tid monitor_socket_tid;
     Tid transaction_socket_tid;
-    // Tid transcript_tid;
+    Tid transcript_tid;
     scope (exit)
     {
         log("close listener");
@@ -231,10 +236,10 @@ do
     {
         log("!!!==========!!!!!! Existing %s", opts.node_name);
 
-        if (net.transcript_tid != net.transcript_tid.init)
+        if (transcript_tid != transcript_tid.init)
         {
             log("Send stop to %s", opts.transcript.task_name);
-            net.transcript_tid.prioritySend(Control.STOP);
+            transcript_tid.prioritySend(Control.STOP);
             if (receiveOnly!Control is Control.END)
             {
                 log("Scripting api end!!");
@@ -278,10 +283,10 @@ do
         //     }
         // }
 
-        if (net.callbacks)
-        {
-            net.callbacks.exiting(net.pubkey, hashgraph);
-        }
+        // if (net.callbacks)
+        // {
+        //     net.callbacks.exiting(net.pubkey, hashgraph);
+        // }
 
         // version(none)
         if (transaction_socket_tid != transaction_socket_tid.init)
@@ -322,14 +327,14 @@ do
         ownerTid.prioritySend(Control.END);
     }
 
-    hashgraph.createNode(net.pubkey);
-    foreach (i, p; net.pkeys)
-    {
-        if (hashgraph.createNode(p))
-        {
-            log("%d] %s", i, p.cutHex);
-        }
-    }
+    // hashgraph.createNode(net.pubkey);
+    // foreach (i, p; net.pkeys)
+    // {
+    //     if (hashgraph.createNode(p))
+    //     {
+    //         log("%d] %s", i, p.cutHex);
+    //     }
+    // }
     //     log("BEFORE DELAY");
     // import core.time;
     //     Thread.sleep(10.seconds);
@@ -338,8 +343,8 @@ do
     try
     {
         monitor_socket_tid = spawn(&monitorServiceTask, opts);
-        Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id,
-                net.globalNodeId(net.pubkey), opts.monitor.dataformat);
+        // Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id,
+        //         net.globalNodeId(net.pubkey), opts.monitor.dataformat);
         stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
         if (receiveOnly!Control is Control.LIVE)
@@ -363,11 +368,11 @@ do
     }
     if (force_stop)
         return;
-    // transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name, opts.dart.sync.task_name, opts);
-    Event.scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
-    scope(exit) {
-        Event.scriptcallbacks.stop;
-    }
+    transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name, opts.dart.sync.task_name);
+    // Event.scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
+    // scope(exit) {
+    //     Event.scriptcallbacks.stop;
+    // }
     enum max_gossip = 2;
     uint gossip_count = max_gossip;
     bool stop = false;
@@ -390,45 +395,37 @@ do
         }
     }
     const empty_payload=Document();
-
+    Document empty_payload_func(){
+        return empty_payload;
+    }
     immutable(ubyte)[] data;
+
+
+    {
+        immutable buf=cast(Buffer)hashgraph.channel;
+        const nonce=net.calcHash(buf);
+        auto eva_event=hashgraph.createEvaEvent(gossip_net.time, nonce);
+
+        if (eva_event is null) {
+            log.error("The channel of this oner is not valid");
+            return;
+        }
+    }
 
     void receive_buffer(Document doc) {
         timeout_count=0;
-        net.time=net.time+100;
+        // gossip_net.time=gossip_net.time+100;
         log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, doc.data.length);
-        net.receive(doc);
-    }
-
-    version(none)
-    void receive_buffer(immutable(ubyte[]) buf)
-    {
-        try
-        {
-            timeout_count = 0;
-            net.time = net.time + 100;
-            log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, buf.length);
-            auto own_node = hashgraph.getNode(net.pubkey);
-
-            Event register_leading_event(immutable(ubyte)[] father_fingerprint) @safe {
-                auto mother=own_node.event;
-                immutable ebody=immutable(EventBody)(empty_payload, mother.fingerprint,
-                    father_fingerprint, net.time, mother.altitude+1);
-                const pack=net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-                // immutable signature=net.sign(ebody);
-                return hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
-            }
-
-            event = net.receive(buf, &register_leading_event);
-        }
-        catch (Exception e)
-        {
-            log("Exception: %s", e.msg);
-        }
-        catch (Throwable t)
-        {
-            log("THROWABLE: %s\n%s", t.msg, t.info);
-        }
+        //const received=hirpc.receive(doc);
+        const receiver = HiRPC.Receiver(doc);
+        hashgraph.wavefront(
+            receiver,
+            gossip_net.time,
+            (const(HiRPC.Sender) return_wavefront) @safe {
+                gossip_net.send(receiver.pubkey, return_wavefront);
+            },
+            &empty_payload_func
+        );
     }
 
     void next_mother(const Document payload)
@@ -572,11 +569,6 @@ do
         }
     }
 
-    log("start listening");
-    p2pnode.listen(opts.transaction.protocol_id, &StdHandlerCallback,
-            cast(string) task_name, opts.dart.sync.host.timeout.msecs,
-            cast(uint) opts.dart.sync.host.max_size);
-
     // ownerTid.send(Control.LIVE);
     auto iteration = 0;
     while (!stop && !abort)
@@ -624,10 +616,6 @@ do
                 log("Removing channel from net");
                 auto send_node = hashgraph.getNode(send_channel);
                 send_node.state = ExchangeState.NONE;
-                // auto pkeys = net.pkeys;  //Remove channel from net.pkeys
-                // import std.algorithm: remove, SwapStrategy, countUntil;
-                // auto i = pkeys.countUntil(send_channel);
-                // net.set(pkeys[0..i]~pkeys[i+1..$]);
             }, (ActiveNodeAddressBook address_book) {
                 log("Update address book");
                 auto pkeys = cast(immutable) address_book.data.keys;
@@ -651,16 +639,11 @@ do
 
             if (!message_received && net.pkeys.length > 1)
             {
-                log("TIME OUT");
-                writefln("TIME OUT %d", opts.node_id);
-                timeout_count++;
-                net.time = Clock.currTime.toUnixTime!long;
-                // if (!net.queue.empty)
-                // {
-                //     log("FROM QUEUE");
-                //     receive_buffer(net.queue.read);
-                // }
-                next_mother(empty_payload);
+                const onLine=hashgraph.areWeOnline;
+                const init_tide=random.value(0,2) is 1;
+                if (onLine && init_tide) {
+                    hashgraph.init_tide(&gossip_net.gossip, &empty_payload_func, gossip_net.time);
+                }
             }
         }
         catch (Exception e)

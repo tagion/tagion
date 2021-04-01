@@ -10,7 +10,7 @@ import core.thread;
 import tagion.utils.Miscellaneous: cutHex;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : buildEventPackage, EventBody, ExchangeState;
+import tagion.hashgraph.HashGraphBasic : EventBody, ExchangeState;
 import tagion.basic.ConsensusExceptions;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.gossip.EmulatorGossipNet;
