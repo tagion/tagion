@@ -58,6 +58,11 @@ class HashGraph {
     package HiRPC hirpc;
 
     @nogc
+    bool active() pure const nothrow {
+        return true;
+    }
+
+    @nogc
     const(BitMask) excluded_nodes_mask() const pure nothrow {
         return _excluded_nodes_mask;
     }
@@ -692,6 +697,7 @@ class HashGraph {
         static class UnittestNetwork(NodeList) if (is(NodeList == enum)) {
             import core.thread.fiber : Fiber;
             import tagion.crypto.SecureNet : StdSecureNet;
+            import tagion.gossip.InterfaceNet : GossipNet;
             import tagion.utils.Random;
             import tagion.utils.Queue;
             import tagion.hibon.HiBONJSON;
@@ -727,6 +733,10 @@ class HashGraph {
                     return (channel in channel_queues) !is null;
                 }
 
+                void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
+                    channel_queues[channel].write(sender.toDoc);
+                }
+
                 void send(const(Pubkey) channel, const(Document) doc) nothrow {
                     log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
                     if ( Event.callbacks ) {
@@ -741,6 +751,10 @@ class HashGraph {
 
                 const(Document) receive(const Pubkey channel) nothrow {
                     return channel_queues[channel].read;
+                }
+
+                void close() {
+                    // Dummy empty
                 }
 
                 const(Pubkey) select_channel(ChannelFilter channel_filter) {
