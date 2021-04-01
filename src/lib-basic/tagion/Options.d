@@ -164,7 +164,7 @@ struct Options {
     string tmp;            /// Directory for the trace files etc.
     string stdout;         /// Overwrites the standard output
 
-    bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
+    //bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
 
     string separator;      /// Name separator
     string nodeprefix;     /// Node name prefix used in emulator mode to set the node name and generate keypairs
