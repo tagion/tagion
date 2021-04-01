@@ -13,6 +13,7 @@ import p2p.cgo.helper;
 
 import tagion.Options : Options, setOptions, options;
 import tagion.utils.Random;
+import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
 import tagion.basic.Basic : Pubkey, Control, nameOf, Buffer;
@@ -58,11 +59,11 @@ import tagion.Keywords: NetworkMode;
 import std.stdio;
 
 void p2pTagionService(Options opts)
-in
-{
-    import std.algorithm : canFind;
-    assert([NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
-}
+    in
+    {
+        import std.algorithm : canFind;
+        assert([NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
+    }
 do
 {
     setOptions(opts);
@@ -108,8 +109,9 @@ do
             force_stop = true;
         }
     }
-    if (force_stop)
+    if (force_stop) {
         return;
+    }
     enum dir_token = "%dir%";
     if (opts.dart.path.indexOf(dir_token) != -1)
     {
@@ -155,59 +157,61 @@ do
 
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         receive((ActiveNodeAddressBook address_book) {
-            auto pkeys = cast(immutable) address_book.data.keys;
-            foreach(p; pkeys) gossip_net.add_channel(p);
-            dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
-                opts, p2pnode, shared_net, sector_range);
-            // receiveOnly!Control;
-            dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
-                shared_net, sector_range);
-            log("address_book len: %d", address_book.data.length);
-            send(dart_sync_tid, cast(immutable) address_book);
-        }, (Control ctrl) {
-            if (ctrl is Control.STOP)
-            {
-                force_stop = true;
-            }
+                auto pkeys = cast(immutable) address_book.data.keys;
+                foreach(p; pkeys) gossip_net.add_channel(p);
+                dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
+                    opts, p2pnode, shared_net, sector_range);
+                // receiveOnly!Control;
+                dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
+                    shared_net, sector_range);
+                log("address_book len: %d", address_book.data.length);
+                send(dart_sync_tid, cast(immutable) address_book);
+            }, (Control ctrl) {
+                if (ctrl is Control.STOP)
+                {
+                    force_stop = true;
+                }
 
-            if (ctrl is Control.END)
-            {
-                force_stop = true;
-            }
-        });
+                if (ctrl is Control.END)
+                {
+                    force_stop = true;
+                }
+            });
     }
     scope (exit)
     {
         log("Closing net");
         gossip_net.close();
     }
-    if (force_stop)
+    if (force_stop) {
         return;
+    }
 
     bool ready = false;
     int ready_counter = 0;
     do
     {
         receive((Control ctrl) {
-            log("Received ctrl: %s", ctrl);
-            if (ctrl is Control.LIVE)
-            {
-                ready_counter++;
-            }
-            else if (ctrl is Control.STOP)
-            {
-                force_stop = true;
-            }
-        }, (DartSynchronizeState state) {
-            if (state == DartSynchronizeState.READY)
-            {
-                ready = true;
-            }
-        });
+                log("Received ctrl: %s", ctrl);
+                if (ctrl is Control.LIVE)
+                {
+                    ready_counter++;
+                }
+                else if (ctrl is Control.STOP)
+                {
+                    force_stop = true;
+                }
+            }, (DartSynchronizeState state) {
+                if (state == DartSynchronizeState.READY)
+                {
+                    ready = true;
+                }
+            });
         if (force_stop)
             return;
     }
-    while (!ready || ready_counter != 2);
+    while (!ready || ready_counter != 2); // empty
+
     log("Ready: %s", ready);
 
     discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
@@ -215,14 +219,14 @@ do
         discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
     }
     receive((DiscoveryState state){
-        assert(state == DiscoveryState.READY);
-    });
+            assert(state == DiscoveryState.READY);
+        });
 
     discovery_tid.send(DiscoveryRequestCommand.RequestTable);
     receive((ActiveNodeAddressBook address_book) {
-        auto pkeys = cast(immutable) address_book.data.keys;
-        foreach(p; pkeys) gossip_net.add_channel(p);
-    });
+            auto pkeys = cast(immutable) address_book.data.keys;
+            foreach(p; pkeys) gossip_net.add_channel(p);
+        });
 
     Tid monitor_socket_tid;
     Tid transaction_socket_tid;
@@ -312,15 +316,15 @@ do
             monitor_socket_tid.prioritySend(Control.STOP);
 
             receive((Control ctrl) {
-                if (ctrl is Control.END)
-                {
-                    log("Closed monitor");
-                }
-                // else if (ctrl is Control.FAIL)
-                // {
-                //     log.error("Closed monitor with failure");
-                // }
-            }, (immutable Exception e) { ownerTid.prioritySend(e); });
+                    if (ctrl is Control.END)
+                    {
+                        log("Closed monitor");
+                    }
+                    // else if (ctrl is Control.FAIL)
+                    // {
+                    //     log.error("Closed monitor with failure");
+                    // }
+                }, (immutable Exception e) { ownerTid.prioritySend(e); });
         }
 
         log("End");
@@ -386,7 +390,8 @@ do
     auto net_random = cast(P2pGossipNet) net;
     enum bool has_random_seed = __traits(compiles, net_random.random.seed(0));
     //    pragma(msg, has_random_seed);
-    static if (has_random_seed)
+    version(none)
+        static if (has_random_seed)
     {
         //        pragma(msg, "Random seed works");
         if (!opts.sequential)
@@ -394,10 +399,10 @@ do
             net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
         }
     }
-    const empty_payload=Document();
-    Document empty_payload_func(){
-        return empty_payload;
-    }
+//    const empty_payload=Document();
+    // Document empty_payload_func(){
+    //     return empty_payload;
+    // }
     immutable(ubyte)[] data;
 
 
@@ -412,11 +417,40 @@ do
         }
     }
 
-    void receive_buffer(Document doc) {
+
+    alias PayloadQueue=Queue!Document;
+    PayloadQueue payload_queue;
+    void receive_payload(const Document pload) {
+        log.trace("payload.size=%d", pload.size);
+        payload_queue.write(pload);
+    }
+
+    Document payload() @safe {
+        if (!hashgraph.active && payload_queue.empty) {
+            return Document();
+        }
+        return payload_queue.read;
+    }
+
+    void controller(Control ctrl) {
+        log("Ctrl: %s", ctrl);
+        with (Control) {
+            switch (ctrl) {
+            case STOP:
+                stop = true;
+                log("##### Stop %s", opts.node_name);
+                break;
+            case LIVE:
+                break;
+            default:
+                log.error("Unsupported control %s", ctrl);
+            }
+        }
+    }
+
+    void receive_wavefront(Document doc) {
         timeout_count=0;
-        // gossip_net.time=gossip_net.time+100;
         log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, doc.data.length);
-        //const received=hirpc.receive(doc);
         const receiver = HiRPC.Receiver(doc);
         hashgraph.wavefront(
             receiver,
@@ -424,142 +458,38 @@ do
             (const(HiRPC.Sender) return_wavefront) @safe {
                 gossip_net.send(receiver.pubkey, return_wavefront);
             },
-            &empty_payload_func
-        );
+            &payload
+            );
     }
 
-    void next_mother(const Document payload)
-    {
-        try
-        {
-            log("next mother %d", gossip_count);
-            auto own_node = hashgraph.getNode(net.pubkey);
-            if ((gossip_count >= max_gossip) || (payload.length))
-            {
-                // fout.writeln("After build wave front");
-                // if (own_node.event is null)
-                // {
-                //     immutable ebody = immutable(EventBody)(net.evaPackage,
-                //             null, null, net.time, net.eva_altitude);
-                //     const ebody_hibon = ebody.toHiBON;
-                //     const pack = net.buildEvent(ebody_hibon, ExchangeState.NONE);
-                //     // immutable signature=net.sign(ebody);
-                //     event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
-                // }
-                if ( own_node.event is null ) {
-                    log.trace("next_mother %d eva", timeout_count);
-                    immutable ebody=EventBody.eva(net);
-                    immutable epack=buildEventPackage(net, ebody);
-                    event=hashgraph.registerEvent(epack);
-                }
-                else {
-                    auto mother=own_node.event;
-                    immutable mother_hash=mother.fingerprint;
-                    immutable ebody=immutable(EventBody)(payload, mother_hash, null, net.time, mother.altitude+1);
-                    immutable epack=buildEventPackage(net, ebody);
-                    event=hashgraph.registerEvent(epack);
-
-                    // auto mother = own_node.event;
-                    // immutable mother_hash = mother.fingerprint;
-                    // immutable ebody = immutable(EventBody)(payload,
-                    //         mother_hash, null, net.time, mother.altitude + 1);
-                    // const pack = net.buildEvent(ebody.toHiBON, ExchangeState.NONE);
-                    // //immutable signature=net.sign(ebody);
-                    // event=hashgraph.registerEvent(net.pubkey, pack.signature, ebody);
-                }
-                immutable send_channel = net.selectRandomNode;
-                auto send_node = hashgraph.getNode(send_channel);
-                log("selected %s STATE: %s, is in pool: %s", send_node.pubkey.cutHex,
-                        send_node.state, connectionPoolBridge.contains(send_node.pubkey));
-                if (send_node.state is ExchangeState.NONE
-                        && !connectionPoolBridge.contains(send_node.pubkey))
-                {
-                    send_node.state = ExchangeState.INIT_TIDE;
-                    auto tidewave   = new HiBON;
-                    auto tides      = hashgraph.tideWave(tidewave, net.callbacks !is null);
-                    const pack_doc  = hashgraph.buildPackage(tidewave, ExchangeState.TIDAL_WAVE);
-
-                    net.send(send_channel, pack_doc);
-                    //log.trace("Send to %s", send_node.pubkey.cutHex);
-                    if ( net.callbacks ) {
-                        net.callbacks.sent_tidewave(send_channel, tides);
-                    }
-
-                    // send_node.state = ExchangeState.INIT_TIDE;
-                    // auto tidewave = new HiBON;
-                    // auto tides = net.tideWave(tidewave, net.callbacks !is null);
-                    // auto pack = net.buildEvent(tidewave, ExchangeState.TIDAL_WAVE);
-                    // net.send(send_channel, pack.toHiBON.serialize);
-                    // if (net.callbacks)
-                    // {
-                    //     net.callbacks.sent_tidewave(send_channel, tides);
-                    // }
-                }
-                gossip_count = 0;
-            }
-            else
-            {
-                gossip_count++;
-            }
-        }
-        catch (Exception e)
+    version(none) {
+        void tagionexception(immutable(TagionException) e)
         {
             log("Exception: %s", e.msg);
+            ownerTid.send(e);
         }
-        catch (Throwable t)
+
+        void exception(immutable(Exception) e)
         {
-            log("THROWABLE1: %s\n%s", t.msg, t.info);
+            log("Exception: %s", e.msg);
+            ownerTid.send(e);
         }
-    }
 
-    void receive_payload(const Document pload)
-    {
-        log("payload.length=%d", pload.length);
-        next_mother(pload);
-    }
-
-    void controller(Control ctrl)
-    {
-        log("Ctrl: %s", ctrl);
-        with (Control) switch (ctrl)
+        void throwable(immutable(Throwable) t)
         {
-        case STOP:
-            stop = true;
-            writefln("##### Stop %s", opts.node_name);
-            log("##### Stop %s", opts.node_name);
-            break;
-        case LIVE:
-            break;
-        default:
-            log.error("Unsupported control %s", ctrl);
+            log("Throwable: %s", t.msg);
+            ownerTid.send(t);
         }
     }
 
-    void tagionexception(immutable(TagionException) e)
-    {
-        log("Exception: %s", e.msg);
-        ownerTid.send(e);
-    }
-
-    void exception(immutable(Exception) e)
-    {
-        log("Exception: %s", e.msg);
-        ownerTid.send(e);
-    }
-
-    void throwable(immutable(Throwable) t)
-    {
-        log("Throwable: %s", t.msg);
-        ownerTid.send(t);
-    }
-
-    static if (has_random_seed)
+    version(none)
+        static if (has_random_seed)
     {
         void sequential(uint time, uint random)
-        in
-        {
-            assert(opts.sequential);
-        }
+            in
+            {
+                assert(opts.sequential);
+            }
         do
         {
             immutable(ubyte[]) payload;
@@ -571,83 +501,89 @@ do
 
     // ownerTid.send(Control.LIVE);
     auto iteration = 0;
-    while (!stop && !abort)
-    {
+    while (!stop && !abort) {
         log("Iteration %d", iteration);
         if(iteration % 20 == 0) {
             log("Send request table to discovery");
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         }
         iteration++;
-        try
-        {
+        try {
             immutable message_received = receiveTimeout(opts.timeout.msecs,
-                    &receive_payload, &controller, // &sequential,
-                    &receive_buffer,
-                    &tagionexception, &exception, &throwable,
-                    (Response!(ControlCode.Control_Connected) resp) {
-                log("Client Connected key: %d", resp.key);
-                connectionPool.add(resp.key, resp.stream, true);
-            }, (Response!(ControlCode.Control_Disconnected) resp) {
-                synchronized(connectionPoolBridge){
-                    log("Client Disconnected key: %d", resp.key);
-                    connectionPool.close(cast(void*) resp.key);
-                    connectionPoolBridge.removeConnection(resp.key);
-                }
-            }, (Response!(ControlCode.Control_RequestHandled) resp) {
-                import tagion.hibon.Document;
-                import tagion.hibon.HiBONJSON;
-
-                auto doc = Document(resp.data);
-                Pubkey received_pubkey = doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-                if ((received_pubkey in connectionPoolBridge.lookup) !is null)
-                {
-                    log("previous cpb: %d, now: %d",
-                        connectionPoolBridge.lookup[received_pubkey], resp.stream.Identifier);
-                }
-                else
-                {
-                    connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
-                }
-                // log("response: %s", doc.toJSON);
-                log("received in: %s", resp.stream.Identifier);
-                receive_buffer(Document(resp.data));
-            }, (immutable(Pubkey) send_channel) { //On sending failed
-                log("Removing channel from net");
-                auto send_node = hashgraph.getNode(send_channel);
-                send_node.state = ExchangeState.NONE;
-            }, (ActiveNodeAddressBook address_book) {
-                log("Update address book");
-                auto pkeys = cast(immutable) address_book.data.keys;
-                if(dart_sync_tid!=Tid.init){
-                    send(dart_sync_tid, address_book);
-                }else{
-                    log("Dart sync not found");
-                }
-                net.set(pkeys);
-                foreach (i, p; net.pkeys)
-                {
-                    if (hashgraph.createNode(p))
-                    {
-                        log("%d] %s", i, p.cutHex);
+                &receive_payload,
+                &controller,
+                &receive_wavefront,
+                &taskfailure,
+                //&tagionexception, &exception, &throwable,
+                /*
+                (Response!(ControlCode.Control_Connected) resp) {
+                    log("Client Connected key: %d", resp.key);
+                    connectionPool.add(resp.key, resp.stream, true);
+                },
+                (Response!(ControlCode.Control_Disconnected) resp) {
+                    synchronized(connectionPoolBridge){
+                        log("Client Disconnected key: %d", resp.key);
+                        connectionPool.close(cast(void*) resp.key);
+                        connectionPoolBridge.removeConnection(resp.key);
                     }
-                }
-            });
+                },
+
+                (Response!(ControlCode.Control_RequestHandled) resp) {
+                    import tagion.hibon.Document;
+                    import tagion.hibon.HiBONJSON;
+                    pragma(msg, "fixme(Alex): resp.data can't it be a document (Because or else Document isInOrder need to be called here. It is better to verify that the Document is correct inside the Response");
+                    auto doc = Document(resp.data);
+                    Pubkey received_pubkey = doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
+                    if ((received_pubkey in connectionPoolBridge.lookup) !is null)
+                    {
+                        log("previous cpb: %d, now: %d",
+                            connectionPoolBridge.lookup[received_pubkey], resp.stream.Identifier);
+                    }
+                    else
+                    {
+                        connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
+                    }
+                    // log("response: %s", doc.toJSON);
+                    log("received in: %s", resp.stream.Identifier);
+                    receive_buffer(Document(resp.data));
+                },
+                */
+                // (immutable(Pubkey) send_channel) { //On sending failed
+                //     log("Removing channel from net");
+                //     auto send_node = hashgraph.getNode(send_channel);
+                //     send_node.state = ExchangeState.NONE;
+                // },
+                (ActiveNodeAddressBook address_book) {
+                    log("Update address book");
+                    auto pkeys = cast(immutable) address_book.data.keys;
+                    if (dart_sync_tid!=Tid.init){
+                        send(dart_sync_tid, address_book);
+                    }
+                    else {
+                        log("Dart sync not found");
+                    }
+                    net.set(pkeys);
+                    foreach (p; net.pkeys) {
+                        hashgraph.add_node(p);
+                        // if (hashgraph.createNode(p)) {
+                        //     log("%d] %s", i, p.cutHex);
+                        // }
+                    }
+                });
             log("received: %s", message_received);
             log("MY PK: %s, net.pkeys.len: %d, cpb len: %d", net.pubkey.cutHex,
-                    net.pkeys.length, connectionPoolBridge.lookup.length);
+                net.pkeys.length, connectionPoolBridge.lookup.length);
 
-            if (!message_received && net.pkeys.length > 1)
-            {
+            if (!message_received) {
                 const onLine=hashgraph.areWeOnline;
+                pragma(msg, "Replace with a realy random");
                 const init_tide=random.value(0,2) is 1;
                 if (onLine && init_tide) {
                     hashgraph.init_tide(&gossip_net.gossip, &empty_payload_func, gossip_net.time);
                 }
             }
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             log.fatal(e.msg);
         }
     }
