@@ -349,15 +349,14 @@ class HashGraph {
     }
 
     void wavefront(
-        const Pubkey from_channel,
-        const Wavefront received_wave,
+        const HiRPC.Receiver received,
         lazy const(sdt_t) time,
         void delegate(const(HiRPC.Sender) send_wave) @safe response,
         Document delegate() @safe payload) {
 
         alias consensus = consensusCheckArguments!(GossipConsensusException);
-        // immutable from_channel=received.pubkey;
-        // const received_wave=received.params!(Wavefront)(hirpc.net);
+        immutable from_channel=received.pubkey;
+        const received_wave=received.params!(Wavefront)(hirpc.net);
 
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node=getNode(from_channel);
@@ -816,10 +815,8 @@ class HashGraph {
                     while (!stop) {
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
-                            const received_wave=received.params!(Wavefront)(_hashgraph.hirpc.net);
                             _hashgraph.wavefront(
-                                received.pubkey,
-                                received_wave,
+                                received,
                                 time,
                                 (const(HiRPC.Sender) return_wavefront) @safe {
                                     authorising.send(received.pubkey, return_wavefront);
