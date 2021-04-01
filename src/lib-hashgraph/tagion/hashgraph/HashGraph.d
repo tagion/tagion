@@ -8,7 +8,7 @@ import std.typecons : TypedefType;
 import std.algorithm.searching : count, all;
 import std.algorithm.iteration : map, each, filter;
 import std.algorithm.comparison : max;
-import std.range : dropExactly;
+import std.range : dropExactly, lockstep;
 import std.array : array;
 
 import tagion.hashgraph.Event;
@@ -349,14 +349,15 @@ class HashGraph {
     }
 
     void wavefront(
-        const HiRPC.Receiver received,
+        const Pubkey from_channel,
+        const Wavefront received_wave,
         lazy const(sdt_t) time,
         void delegate(const(HiRPC.Sender) send_wave) @safe response,
         Document delegate() @safe payload) {
 
         alias consensus = consensusCheckArguments!(GossipConsensusException);
-        immutable from_channel=received.pubkey;
-        const received_wave=received.params!(Wavefront)(hirpc.net);
+        // immutable from_channel=received.pubkey;
+        // const received_wave=received.params!(Wavefront)(hirpc.net);
 
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node=getNode(from_channel);
@@ -594,6 +595,85 @@ class HashGraph {
         filename.fwrite(h);
     }
 
+    @safe struct Compare {
+        alias ErrorCallback=bool delegate(const Event e1, const Event e2, string msg) nothrow @safe;
+        const HashGraph h1, h2;
+        const ErrorCallback error_callback;
+        int order_offset;
+        int round_offset;
+        this(const HashGraph h1, const HashGraph h2, const ErrorCallback error_callback) {
+            this.h1=h1;
+            this.h2=h2;
+            this.error_callback=error_callback;
+        }
+
+        bool compare() @trusted {
+            auto h1_nodes=h1.nodes
+                .byValue
+                .map!((n) => n[])
+                .array;
+            typeof(h1_nodes) h2_nodes;
+            try {
+                pragma(msg, typeof(h1_nodes));
+                //pragma(msg, typeof(h1_nodes.front));
+                h2_nodes=h1.nodes
+                    .byValue
+                    .map!((n) => h2.nodes[n.channel][])
+                    .array;
+            }
+            catch (Exception e) {
+
+                if (error_callback) {
+                    error_callback(null, null, "Can't compare the graph because the do not share the same node channels");
+                }
+                return false;
+            }
+
+            foreach(ref h1_events, ref h2_events; lockstep(h1_nodes, h2_nodes)) {
+                while (higher(h1_events.front.altitude, h1_events.front.altitude) && !h1_events.empty) {
+                    h1_events.popFront;
+                }
+                while (higher(h2_events.front.altitude, h1_events.front.altitude) && !h2_events.empty) {
+                    h2_events.popFront;
+                }
+                bool check(bool ok, string msg) {
+                    if (!ok && error_callback) {
+                        return error_callback(h1_events.front, h2_events.front, msg);
+                    }
+                    return ok;
+                }
+
+                if (!h1_events.empty && !h2_events.empty) {
+                    order_offset = h1_events.front.received_order - h2_events.front.received_order;
+                    round_offset = h1_events.front.round.number - h2_events.front.round.number;
+                }
+            while (!h1_events.empty && !h2_events.empty) {
+                const e1=h1_events.front;
+                const e2=h2_events.front;
+
+                bool ok;
+                ok=check(e1.fingerprint == e2.fingerprint,
+                    "The fingerprint of the two events is not the same");
+                ok=check(e1.event_body.mother == e2.event_body.mother,
+                    "The mothers of the two events is not the same");
+                ok=check(e1.event_body.father == e2.event_body.father,
+                    "The fathers of the two events is not the same");
+                ok=check(e1.altitude == e2.altitude,
+                    "The fathers of the two events is not the same");
+                ok=check(e1.received_order - e2.received_order == order_offset,
+                    "The order of the two events is not the same");
+                ok=check(e1.round.number - e2.round.number == round_offset,
+                    "The round level of the two events is not the same");
+                if (!ok) {
+                    return ok;
+                }
+                h1_events.popFront;
+                h2_events.popFront;
+            }
+            }
+            return true;
+        }
+    }
     /++
        This function makes sure that the HashGraph has all the events connected to this event
     +/
@@ -736,8 +816,10 @@ class HashGraph {
                     while (!stop) {
                         while (!authorising.empty(_hashgraph.channel)) {
                             const received=_hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
+                            const received_wave=received.params!(Wavefront)(_hashgraph.hirpc.net);
                             _hashgraph.wavefront(
-                                received,
+                                received.pubkey,
+                                received_wave,
                                 time,
                                 (const(HiRPC.Sender) return_wavefront) @safe {
                                     authorising.send(received.pubkey, return_wavefront);
@@ -777,6 +859,7 @@ class HashGraph {
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
                     auto h=new HashGraph(N, net, &authorising.isValidChannel, null);
+                    h.scrap_depth=0;
                     networks[net.pubkey]=new FiberNetwork(h, E.to!string);
                 }
                 networks.byKey.each!((a) => authorising.add_channel(a));
@@ -836,6 +919,19 @@ class HashGraph {
                 _net._hashgraph.fwrite(filename.fullpath);
             }
         }
+
+        HashGraph h1, h2;
+        foreach(_net; network.networks) {
+            if (_net.name == "Alice") {
+                h1=_net._hashgraph;
+            }
+            if (_net.name == "Bob") {
+                h2=_net._hashgraph;
+            }
+        }
+
+        // bool
+        // auto comp=Compare(h1, h2,
     }
 }
 
