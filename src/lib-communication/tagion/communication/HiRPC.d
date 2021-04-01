@@ -234,6 +234,12 @@ struct HiRPC {
         static if (DIRECTION is Direction.RECEIVE) {
             @Label("") protected Message _message;
             @Label("") immutable SignedState signed;
+            enum signName=GetLabel!(signature).name;
+            enum pubkeyName=GetLabel!(pubkey).name;
+            enum messageName=GetLabel!(message).name;
+            this(const Document doc) {
+                this(null, doc);
+            }
             this(const SecureNet net, const Document doc)
                 in {
                     if (signature.length) {
@@ -244,9 +250,6 @@ struct HiRPC {
                 check(!doc.hasHashKey, "Document containing hashkey can not be used as a message in HiPRC");
 
                 type=getType(doc);
-                enum signName=GetLabel!(signature).name;
-                enum pubkeyName=GetLabel!(pubkey).name;
-                enum messageName=GetLabel!(message).name;
                 message=doc[messageName].get!Document;
                 signature=doc.hasMember(signName)?doc[signName].get!(TypedefType!Signature):null;
                 pubkey=doc.hasMember(pubkeyName)?doc[pubkeyName].get!(TypedefType!Pubkey):null;
