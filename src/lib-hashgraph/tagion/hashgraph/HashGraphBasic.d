@@ -60,6 +60,7 @@ mixin(EnumText!("Params", _params));
 
 enum ExchangeState : uint {
     NONE,
+        RIPPLE,     /// Ripple is used the first time a node connects to the network
         INIT_TIDE,
         TIDAL_WAVE,
         FIRST_WAVE,

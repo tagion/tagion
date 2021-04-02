@@ -657,6 +657,19 @@ class Event {
         return _round;
     }
 
+    /**
+       This function is
+    */
+    package void genesis_event()
+    in {
+        assert(isEva);
+        assert(!_witness);
+    }
+    do {
+        BitMask round_mask;
+        _witness = new Witness(this, round_mask);
+    }
+
     @nogc
     const(BitMask) witness_mask() pure const nothrow {
         return _witness_mask;
