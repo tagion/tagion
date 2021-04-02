@@ -1,5 +1,7 @@
 module tagion.hashgraph.Event;
 
+import std.stdio;
+
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
 import std.conv;
@@ -483,11 +485,11 @@ class Event {
         _witness_mask[node_id]=true;
         _count++;
 
-        if ( isEva ) {
-            // If the event is a Eva event the round is undefined until a daughter in generation after get a father
-            BitMask round_mask;
-            _witness = new Witness(this, round_mask);
-        }
+        // if ( isEva ) {
+        //     // If the event is a Eva event the round is undefined until a daughter in generation after get a father
+        //     BitMask round_mask;
+        //     _witness = new Witness(this, round_mask);
+        // }
         if (Event.callbacks) {
             Event.callbacks.create(this);
         }
@@ -663,6 +665,9 @@ class Event {
     package void genesis_event()
     in {
         assert(isEva);
+        if (_witness !is null) {
+            writefln("Witness defined");
+        }
         assert(!_witness);
     }
     do {
@@ -817,11 +822,29 @@ class Event {
     }
 
     package void connect(HashGraph hashgraph)
+    in {
+        if (!hashgraph.areWeInGraph) {
+            writefln("Event should not be connected before we are in the Graph");
+        }
+        assert(hashgraph.areWeInGraph);
+
+    }
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
         assert(event_package.event_body.father && _father || !_father);
     }
     do {
+        // writefln("CONNECT !!!!!!!!!!!!!!!!!!!!!!!!!!!!! areWeInGraph=%s", hashgraph.areWeInGraph);
+        // if (!hashgraph.getNodes
+        //     .byValue
+        //     .all!((n) => n.event !is null)) {
+        //     writefln("All nodes should have an event");
+        // }
+
+        // assert(hashgraph.getNodes
+        //     .byValue
+        //     .all!((n) => n.event !is null));
+
         if (!connected) {
             scope(exit) {
                 if (_mother) {

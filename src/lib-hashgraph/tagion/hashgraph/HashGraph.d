@@ -8,9 +8,9 @@ import std.typecons : TypedefType;
 import std.algorithm.searching : count, all, any;
 import std.algorithm.iteration : map, each, filter, fold;
 import std.algorithm.comparison : max;
+import std.range.primitives : walkLength;
 import std.range : dropExactly, lockstep;
 import std.array : array;
-
 import tagion.hashgraph.Event;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.Document : Document;
@@ -54,6 +54,10 @@ class HashGraph {
         BitMask _excluded_nodes_mask;
         Node[Pubkey] nodes; // List of participating nodes T
         uint event_id;
+    }
+
+    public const(Node[Pubkey]) getNodes() pure const nothrow {
+        return nodes;
     }
 
     package HiRPC hirpc;
@@ -132,9 +136,21 @@ class HashGraph {
             const sender=hirpc.wavefront(tidalWave);
             return sender;
         }
-        const send_channel=responde(&not_used_channels, &payload_sender);
-        if (send_channel !is Pubkey(null)) {
-            getNode(send_channel).state=ExchangeState.INIT_TIDE;
+        const(HiRPC.Sender) ripple_sender() @safe {
+            const ripple_wavefront=rippleWave(Wavefront());
+            writefln("ripple_wavefront.epacks.length=%d", ripple_wavefront.epacks.length);
+            const sender=hirpc.wavefront(ripple_wavefront);
+            return sender;
+        }
+        if (areWeInGraph) {
+            const send_channel=responde(&not_used_channels, &payload_sender);
+            writefln("send_channel=%s", send_channel.cutHex);
+            if (send_channel !is Pubkey(null)) {
+                getNode(send_channel).state=ExchangeState.INIT_TIDE;
+            }
+        }
+        else {
+            const send_channel=responde(&not_used_channels, &ripple_sender);
         }
     }
 
@@ -154,7 +170,13 @@ class HashGraph {
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
         immutable eva_epack=eva_pack(time, nonce);
-        auto eva_event=registerEventPackage(eva_epack);
+        auto eva_event=new Event(eva_epack, this);
+
+        _event_cache[eva_event.fingerprint]=eva_event;
+        //_event_cache[first_event.fingerprint]=first_event;
+
+        //auto eva_event=registerEventPackage(eva_epack);
+        front_seat(eva_event);
         return eva_event;
     }
 
@@ -355,37 +377,103 @@ class HashGraph {
             assert(
                 received_wave.state is ExchangeState.NONE ||
                 received_wave.state is ExchangeState.RIPPLE);
+            if (areWeInGraph) {
+                writefln("Function should called");
+            }
+            assert(!areWeInGraph, "The rippleWave should not be called where we are in the Graph");
         }
+    out(result) {
+        if (result.epacks
+            .map!((epack) => epack.event_body.mother)
+            .any!((mother) => mother !is null)) {
+            result.epacks
+                .filter!((epack) => epack.event_body.mother !is null)
+                .each!((epack) => writefln("\tmother=%s channel=%s", epack.event_body.mother.cutHex, epack.pubkey.cutHex));
+            // (() @trusted {
+            //     writefln("rippleWave=%J", result);
+            // })();
+
+        }
+
+        assert(result.epacks
+            .map!((epack) => epack.event_body.mother)
+            .all!((mother) => mother is null));
+    }
     do {
         scope(exit) {
             if (!_in_graph) {
-                _in_graph = (nodes.length is node_size);
-                // auto x=nodes.byValue.all!((n) => n._event.isEva);
-                // pragma(msg, "x ", typeof(x));
-                if (nodes.byValue.all!((n) => n._event.isEva)) {
-                    // This should only happen at genesis when the network is born
-                    nodes
-                        .byValue
-                        .map!((n) => n._event)
-                        .each!((e) => e.genesis_event);
+                // const len=nodes
+                //     .byValue
+                //     .map!((n) => n._event !is null)
+                //     .walkLength(0);
+                // pragma(msg, "len ", typeof(len));
+                _in_graph = nodes
+                    .byValue
+                    .all!((n) => n._event !is null) &&
+                    nodes.length is node_size;
+                if (_in_graph) {
+                    nodes.byValue
+                        .each!((n) => writefln("(n._event) %s n._event.isEva=%s", (n._event !is null), (n._event) && n._event.isEva));
+
+                    if (nodes.byValue.all!((n) => (n._event) && n._event.isEva)) {
+                        // This should only happen at genesis when the network is born
+                        writefln("\tGenesis");
+                        nodes
+                            .byValue
+                            .map!((n) => n._event)
+                            .each!((e) => e.genesis_event);
+                    }
                 }
             }
         }
         foreach(epack; received_wave.epacks) {
-            if (!(epack.pubkey in nodes)) {
+            if (getNode(epack.pubkey).event is null) {
                 auto first_event=new Event(epack, this);
+
+                if (!first_event.isEva) {
+                    writefln("First event must be an Eva event mother=%s alt=%d", epack.event_body.mother.cutHex, epack.event_body.altitude);
+                }
                 check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
-                auto node=getNode(first_event.channel);
-                node.front_seat(first_event);
+                // auto node=getNode(first_event.channel);
+                // assert(node._event is null);
+                _event_cache[first_event.fingerprint]=first_event;
+                front_seat(first_event);
             }
         }
         auto ripple_channels=received_wave.epacks
             .map!((epack) => epack.pubkey);
 
         immutable(EventPackage)*[] result;
+        // ripple_channels
+        //     .each!((epack) => writefln("epack channel %s", epack.cutHex));
+        writefln("Begin");
         nodes.byKeyValue
-            .filter!((node) => ripple_channels.any!((ripple_channel) => ripple_channel == node.key))
+            .filter!((node) => (node.value._event !is null))
+            .filter!((node) => ripple_channels.all!((ripple_channel) => ripple_channel != node.key))
+            .each!((node) => writefln("node.key       %s", node.key.cutHex));
+
+        nodes.byKeyValue
+            .filter!((node) => (node.value._event !is null))
+//            .filter!((node) => ripple_channels.all!((ripple_channel) => ripple_channel != node.key))
             .each!((node) => result~=node.value._event.event_package);
+        result
+            .each!((epack) => writefln("result channel %s", epack.pubkey.cutHex));
+        writefln("nodes.length=%d all-definded=%s %s %s",
+            nodes.length,
+            nodes
+            .byValue
+            .all!((n) => n._event !is null),
+            nodes
+            .byValue
+            .all!((n) => n._event is null),
+            nodes
+            .byValue
+            .map!((n) => n._event !is null),
+
+            );
+        // (() @trusted {
+        //     writefln("rippleWave arguments=%J", received_wave);
+        // })();
         return Wavefront(result, null, ExchangeState.RIPPLE);
     }
 
@@ -413,23 +501,40 @@ class HashGraph {
                 final switch (received_wave.state) {
                 case NONE:
                 case INIT_TIDE:
-                    consensus(received_wave.state).check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
+                    consensus(received_wave.state)
+                        .check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
                     break;
-                case RIPPLE:
-                    received_node.state=received_wave.state;
-                    if (areWeInGraph) {
-                        return tidalWave;
-                    }
-                    return rippleWave(received_wave);
-                case TIDAL_WAVE: ///
-                    if (received_node.state !is NONE && received_node.state !is RIPPLE && !areWeInGraph) {
+                case RIPPLE: ///
+                    if (received_node.state !is NONE && received_node.state !is RIPPLE) {
                         received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
+
+                    // consensus(received_node.state, NONE, RIPPLE)
+                    //     .check((received_node.state is NONE) || (received_node.state is RIPPLE),
+                    //         ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                    received_node.state=received_wave.state;
+                    // (() @trusted {
+                    //     writefln("%J", received_wave);
+                    // })();
+                    writefln("received_wave.state=%s received_node.state=%s %s", received_wave.state, received_node.state, areWeInGraph);
+                    if (areWeInGraph) {
+                        received_node.state = INIT_TIDE;
+                        return tidalWave;
+                    }
+                    const ripple_wave=rippleWave(received_wave);
+                    return ripple_wave;
+                case TIDAL_WAVE: ///
+                    if (received_node.state !is NONE && received_node.state !is RIPPLE) {
+                        received_node.state = NONE;
+                        return buildWavefront(BREAKING_WAVE);
+                    }
+                    if (received_node.state is RIPPLE) {
+                    }
                     // Receive the tide wave
-                    consensus(received_wave.state, INIT_TIDE, NONE).
-                        check((received_wave.state !is INIT_TIDE) && (received_wave.state !is NONE),
-                            ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                    // consensus(received_node.state, NONE, RIPPLE)
+                    //     .check((received_node.state !is RIPPLE) && (received_node.state !is NONE),
+                    //         ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                     check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state=received_wave.state;
 
@@ -446,9 +551,9 @@ class HashGraph {
                         received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
-                    consensus(received_node.state, INIT_TIDE, TIDAL_WAVE).
-                        check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
-                            ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
+                    // consensus(received_node.state, INIT_TIDE, TIDAL_WAVE)
+                    //     .check((received_node.state is INIT_TIDE) || (received_node.state is TIDAL_WAVE),
+                    //         ConsensusFailCode.GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE);
                     received_node.state=NONE;
                     const from_front_seat=register_wavefront(received_wave, from_channel);
                     immutable epack=event_pack(time, from_front_seat, payload());
@@ -461,8 +566,9 @@ class HashGraph {
                         received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
-                    consensus(received_node.state, TIDAL_WAVE).check( received_node.state is TIDAL_WAVE,
-                        ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
+                    // consensus(received_node.state, TIDAL_WAVE)
+                    //     .check(received_node.state is TIDAL_WAVE,
+                    //         ConsensusFailCode.GOSSIPNET_EXPECTED_EXCHANGE_STATE);
                     received_node.state=NONE;
                     const from_front_seat=register_wavefront(received_wave, from_channel);
                     immutable epack=event_pack(time, from_front_seat, payload());
@@ -517,6 +623,11 @@ class HashGraph {
         }
 
         private Event _event; /// Latest event (front-seat)
+
+        @nogc
+        const(Event) event() const pure nothrow {
+            return _event;
+        }
 
         @nogc pure nothrow {
             package final Event event()  {
@@ -906,9 +1017,9 @@ class HashGraph {
                         (() @trusted {
                             yield;
                         })();
-                        const onLine=_hashgraph.areWeOnline;
+                        //const onLine=_hashgraph.areWeOnline;
                         const init_tide=random.value(0,2) is 1;
-                        if (onLine && init_tide) {
+                        if (init_tide) {
                             _hashgraph.init_tide(&authorising.gossip, &payload, time);
                             count++;
                         }
