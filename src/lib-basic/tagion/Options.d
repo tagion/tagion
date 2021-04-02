@@ -497,7 +497,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch, ref bool 
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
         "monitor|P",    format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
         // "transaction|p",    format("Sets first transaction port of the port sequency (port>=%d): default %d", options.min_port, options.transaction.port),  &(options.transaction.port),
-        "seq|s",     format("The event is produced sequential this is only used in test mode: default %s", options.sequential), &(options.sequential),
+//        "seq|s",     format("The event is produced sequential this is only used in test mode: default %s", options.sequential), &(options.sequential),
         "stdout",    format("Set the stdout: default %s", options.stdout), &(options.stdout),
 
         "transaction-ip",  format("Sets the listener ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
@@ -558,7 +558,7 @@ static setDefaultOption(ref Options options) {
         stdout="/dev/tty";
         separator="_";
 //  s.network_socket_port =11900;
-        sequential=false;
+//        sequential=false;
         min_port=6000;
         path_to_shared_info = "/tmp/info.hibon";
         p2plogs = false;

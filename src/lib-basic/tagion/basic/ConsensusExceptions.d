@@ -44,6 +44,7 @@ enum ConsensusFailCode {
     GOSSIPNET_MISSING_EVENTS,
     GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS,
     GOSSIPNET_ILLEGAL_CHANNEL,
+    GOSSIPNET_FIRST_EVENT_MUST_BE_EVA,
 //    EVENT_MISSING_BODY,
 
     SECURITY_SIGN_FAULT,
@@ -199,6 +200,7 @@ shared static this() {
             GOSSIPNET_MISSING_EVENTS                    : "Gossip network missing events",
             GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS        : "Tidal wave should not contain events",
             GOSSIPNET_ILLEGAL_CHANNEL                   : "Gossip channel not valid",
+            GOSSIPNET_FIRST_EVENT_MUST_BE_EVA           : "First event send in a ripple wavefront must be an Eva event",
 
             SECURITY_SIGN_FAULT                         : "Sign of message failed",
             SECURITY_PUBLIC_KEY_CREATE_FAULT            : "Failed to create public key",
