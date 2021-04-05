@@ -1,6 +1,6 @@
 module tagion.hibon.HiBONRecord;
 
-//import std.stdio;
+import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file=std.file;
@@ -101,11 +101,12 @@ struct Inspect {
 }
 
 /++
- Used to set a member value from the information in t
+ Used to set a member default value of the member is not defined in the Document
  +/
-struct Assign {
+struct Default {
     string code;
 }
+
 /++
  Sets the HiBONRecord type
  +/
@@ -156,7 +157,7 @@ mixin template HiBONRecordType() {
                     return doc[TYPENAME].get!string == type_name;
                 }
                 return false;
-           }
+            }
         }
     }
 }
@@ -210,7 +211,7 @@ mixin template HiBONRecord(string CTOR="") {
     import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, Label, GetLabel, Filter, Assign, Inspect, VOID;
+    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, Label, GetLabel, Filter, Inspect, VOID;
     protected alias check=Check!(HiBONRecordException);
 
     import tagion.hibon.HiBONJSON : JSONString;
@@ -541,14 +542,18 @@ mixin template HiBONRecord(string CTOR="") {
                         enum name=default_name;
                         enum optional=false;
                     }
-                    static if(hasUDA!(this.tupleof[i], Assign)) {
-                        alias assigns=getUDAs!(this.tupleof[i], Assign);
-                        static assert(assigns.length is 1, "Only one Assignn UDA allowed per member");
-                        alias assignFun=unaryFun!(assigns[0].code);
-                        auto x=assignFun(doc);
-                        this.tupleof[i]=assignFun(doc);
-                    }
-                    else static if (name.length) {
+                    static if (name.length) {
+                        static if(hasUDA!(this.tupleof[i], Default)) {
+                            alias assigns=getUDAs!(this.tupleof[i], Default);
+                            static assert(assigns.length is 1, "Only one Default UDA allowed per member");
+                            static assert(!optional,
+                                "The optional parameter in Label can not be used in connection with the Default attribute");
+                            enum code=format(q{this.tupleof[i]=%s;}, assigns[0].code);
+                            if (!doc.hasMember(name)) {
+                                mixin(code);
+                                continue ForeachTuple;
+                            }
+                        }
                         enum member_name=this.tupleof[i].stringof;
                         alias MemberT=typeof(m);
                         alias BaseT=TypedefType!MemberT;
@@ -643,7 +648,7 @@ const(Document) fread(string filename) {
 
 @safe
 unittest {
-//   import std.stdio;
+    import std.stdio;
     import std.format;
     import std.exception : assertThrown, assertNotThrown;
     import std.traits : OriginalType, staticMap, Unqual;
@@ -1094,7 +1099,7 @@ unittest {
         }
         { // Jagged Array
             @safe
-            static struct Jagged {
+                static struct Jagged {
                 Simpel[][] y;
                 mixin HiBONRecord;
             }
@@ -1120,7 +1125,7 @@ unittest {
 
         {
             @safe
-            static struct Associative {
+                static struct Associative {
                 Simpel[string] a;
                 mixin HiBONRecord;
             }
@@ -1147,7 +1152,7 @@ unittest {
         { // Test of enum
             enum Count : uint {
                 one=1, two, three
-            }
+                    }
 
             { // Single enum
                 static struct CountStruct {
@@ -1243,19 +1248,19 @@ unittest {
             const s_doc=s.toDoc;
             const result = StructBytes(s_doc);
 
-           assert(
-               equal(
-                   list
-                   .map!(i => {buffer.binwrite(i,0); return tuple(buffer.idup, i);})
-                   .map!(q{a()})
-                   .array
-                   .sort,
-                   s_doc["tabel"]
-                   .get!Document[]
-                   .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-                   ));
+            assert(
+                equal(
+                    list
+                    .map!(i => {buffer.binwrite(i,0); return tuple(buffer.idup, i);})
+                    .map!(q{a()})
+                    .array
+                    .sort,
+                    s_doc["tabel"]
+                    .get!Document[]
+                    .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+                    ));
 
-           assert(s_doc == result.toDoc);
+            assert(s_doc == result.toDoc);
         }
 
         {  // Typedef of a HiBONRecord is used as key in an associative-array
@@ -1298,6 +1303,30 @@ unittest {
             assert(result.toDoc == s.toDoc);
 
 
+        }
+    }
+
+    { // Default Attribute
+        // The Default atttibute is used set a default i value in case the member was not defined in the Document
+        static struct DefaultStruct {
+            @Label("$x") @Filter(q{a != 17}) @Default(q{-1}) int x;
+            mixin HiBONRecord;
+        }
+
+        { // No effect
+            DefaultStruct s;
+            s.x=42;
+            const s_doc=s.toDoc;
+            const result=DefaultStruct(s_doc);
+            assert(result.x is 42);
+        }
+
+        { // Because x=17 is filtered out the Default -1 value will be set
+            DefaultStruct s;
+            s.x=17;
+            const s_doc=s.toDoc;
+            const result=DefaultStruct(s_doc);
+            assert(result.x is -1);
         }
     }
 }
