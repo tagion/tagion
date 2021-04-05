@@ -581,7 +581,7 @@ class Event {
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
 
-    ref const(EventBody) event_body() const nothrow {
+    ref const(EventBody) event_body() const pure nothrow {
         return event_package.event_body;
     }
 

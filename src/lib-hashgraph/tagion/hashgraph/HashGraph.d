@@ -529,8 +529,9 @@ class HashGraph {
                         received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
-                    if (received_node.state is RIPPLE) {
-                    }
+                    // if (received_node.state is RIPPLE) {
+                    //     if (!validRipple
+                    // }
                     // Receive the tide wave
                     // consensus(received_node.state, NONE, RIPPLE)
                     //     .check((received_node.state !is RIPPLE) && (received_node.state !is NONE),
