@@ -487,11 +487,6 @@ class Event {
         _witness_mask[node_id]=true;
         _count++;
 
-        // if ( isEva ) {
-        //     // If the event is a Eva event the round is undefined until a daughter in generation after get a father
-        //     BitMask round_mask;
-        //     _witness = new Witness(this, round_mask);
-        // }
         if (Event.callbacks) {
             Event.callbacks.create(this);
         }
@@ -543,7 +538,7 @@ class Event {
             _count--;
         }
 
-        pure nothrow {
+        pure nothrow final {
             @nogc
                 const(BitMask) strong_seeing_mask() const {
                 return _strong_seeing_mask;
@@ -573,10 +568,6 @@ class Event {
 
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
-
-    ref const(EventBody) event_body() const pure nothrow {
-        return event_package.event_body;
-    }
 
     protected {
         // This is the internal pointer to the connected Event's
@@ -623,15 +614,10 @@ class Event {
 
     immutable uint id;
 
-    @nogc
-    final const(Round) round_received() pure const nothrow {
-        return _round_received;
-    }
-
     /**
        This function is
     */
-    package void genesis_event()
+    package void genesis_event() nothrow
     in {
         assert(isEva);
         if (_witness !is null) {
@@ -760,7 +746,7 @@ class Event {
         return local_calc_witness_mask(this, BitMask(), BitMask());
     }
 
-    package void connect(HashGraph hashgraph)
+    package final void connect(HashGraph hashgraph)
     in {
         if (!hashgraph.areWeInGraph) {
             writefln("Event should not be connected before we are in the Graph");
@@ -827,7 +813,7 @@ class Event {
 
 // +++
     @trusted
-    private void disconnect(HashGraph hashgraph)
+    final private void disconnect(HashGraph hashgraph)
         in {
             assert(!_mother, "Event with a mother can not be disconnected");
             //  assert(!_father, "Event with a father can not be disconnected");
@@ -848,17 +834,25 @@ class Event {
         _daughter=_son=null;
     }
 
-    const(Event) mother() const pure {
+    final const(Event) mother() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_MOTHER_GROUNDED);
         return _mother;
     }
 
-    const(Event) father() const pure {
+    final const(Event) father() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_FATHER_GROUNDED);
         return _father;
     }
 
-    @nogc pure nothrow const {
+    @nogc pure nothrow const final {
+        ref const(EventBody) event_body() {
+            return event_package.event_body;
+        }
+
+        const(Round) round_received() {
+            return _round_received;
+        }
+
         immutable(Pubkey) channel() {
             return event_package.pubkey;
         }
@@ -983,14 +977,12 @@ class Event {
         Range!true opSlice() {
             return Range!true (this);
         }
-
     }
 
     @nogc
     package Range!false opSlice() pure nothrow {
         return Range!false (this);
     }
-
 
     @nogc
     struct Range(bool CONST=true) {
