@@ -339,7 +339,7 @@ class HashGraph {
         foreach(pkey, n; nodes) {
             if ( n.isOnline ) {
                 tides[pkey] = n.altitude;
-                assert(n._event.isInFront);
+                assert(n._event.isFront);
             }
         }
         return Wavefront(tides);
@@ -623,11 +623,17 @@ class HashGraph {
             }
         }
 
-        private Event _event; /// Latest event (front-seat)
+        private Event _event; /// This is the last event in this Node
+        private Event _last_epoch_event; /// This is the deciding event for the last epoch
 
         @nogc
         const(Event) event() const pure nothrow {
             return _event;
+        }
+
+        @nogc
+        const(Event) last_epoch_event() const pure nothrow {
+            return _last_epoch_event;
         }
 
         @nogc pure nothrow {
@@ -644,7 +650,7 @@ class HashGraph {
                     assert(_event !is null, "This node has no events so the altitude is not set yet");
                 }
             out {
-                assert(_event.isInFront);
+                assert(_event.isFront);
             }
             do {
                 return _event.altitude;

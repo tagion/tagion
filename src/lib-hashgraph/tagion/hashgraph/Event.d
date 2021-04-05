@@ -96,6 +96,7 @@ class Round {
         _events=new Event[node_size];
     }
 
+    @nogc
     const(Event[]) events() const pure nothrow {
         return _events;
     }
@@ -471,6 +472,7 @@ class Event {
     import tagion.basic.ConsensusExceptions;
     alias check=Check!EventConsensusException;
     protected static uint _count;
+    @nogc
     static uint count() nothrow {
         return _count;
     }
@@ -515,11 +517,6 @@ class Event {
         }
     }
 
-    @nogc
-    bool isInFront() const pure nothrow {
-        return !_daughter;
-    }
-
     @safe
     class Witness {
         protected static uint _count;
@@ -546,37 +543,33 @@ class Event {
             _count--;
         }
 
-        @nogc
-        const(BitMask) strong_seeing_mask() pure const nothrow {
-            return _strong_seeing_mask;
-        }
-
-
-        @nogc
-        ref const(BitMask) round_seen_mask() pure const nothrow {
-            return _seeing_witness_in_previous_round_mask;
-        }
-
-        bool famous() pure const nothrow {
-            return _famous;
-        }
-
-        @nogc
-        private bool famous(const HashGraph hashgraph) pure nothrow {
-            if (!_famous) {
-                _famous=_strong_seeing_mask.isMajority(hashgraph);
+        pure nothrow {
+            @nogc
+                const(BitMask) strong_seeing_mask() const {
+                return _strong_seeing_mask;
             }
-            return _famous;
-        }
 
+
+            @nogc
+                ref const(BitMask) round_seen_mask() const {
+                return _seeing_witness_in_previous_round_mask;
+            }
+
+            bool famous() const {
+                return _famous;
+            }
+
+            @nogc
+                private bool famous(const HashGraph hashgraph) {
+                if (!_famous) {
+                    _famous=_strong_seeing_mask.isMajority(hashgraph);
+                }
+                return _famous;
+            }
+        }
     }
 
     static EventMonitorCallbacks callbacks;
-
-    @nogc
-    immutable(Pubkey) channel() pure const nothrow {
-        return event_package.pubkey;
-    }
 
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
@@ -604,11 +597,6 @@ class Event {
         Round  _round;
         Round  _round_received;
         BitMask _round_received_mask;
-    }
-
-    @nogc
-    const(BitMask) round_received_mask() const pure nothrow {
-        return _round_received_mask;
     }
 
     private void attach_round(HashGraph hashgraph) pure nothrow
@@ -640,25 +628,6 @@ class Event {
         return _round_received;
     }
 
-    @nogc
-    bool isFront() pure const nothrow {
-        return _daughter is null;
-    }
-
-    @nogc
-    bool hasRound() const pure nothrow {
-        return (_round !is null);
-    }
-
-    @nogc
-    const(Round) round() pure const nothrow
-    out(result) {
-        assert(result, "Round must be set before this function is called");
-    }
-    do {
-        return _round;
-    }
-
     /**
        This function is
     */
@@ -675,39 +644,9 @@ class Event {
         _witness = new Witness(this, round_mask);
     }
 
-    @nogc
-    const(BitMask) witness_mask() pure const nothrow {
-        return _witness_mask;
-    }
-
-    @nogc
-    const(Witness) witness() pure const nothrow {
-        return _witness;
-    }
-
-    @nogc
-    immutable(int) altitude() const pure nothrow {
-        return event_package.event_body.altitude;
-    }
-
     immutable size_t node_id;
 
-    @nogc
-    bool nodeOwner() const pure nothrow {
-        return node_id is 0;
-    }
-
-    @nogc
-    int expected_order() const pure nothrow {
-        const m=(_mother)?_mother._received_order:int.init;
-        const f=(_father)?_father._received_order:int.init;
-        int result=(m-f > 0)?m:f;
-        result++;
-        result=(result is int.init)?int.init+1:result;
-        return result;
-    }
-
-    private void received_order(ref uint iteration_count) {
+    private void received_order(ref uint iteration_count) pure nothrow {
         if (isFatherLess) {
             if (_mother) {
                 if (_mother._received_order is int.init) {
@@ -834,17 +773,6 @@ class Event {
         assert(event_package.event_body.father && _father || !_father);
     }
     do {
-        // writefln("CONNECT !!!!!!!!!!!!!!!!!!!!!!!!!!!!! areWeInGraph=%s", hashgraph.areWeInGraph);
-        // if (!hashgraph.getNodes
-        //     .byValue
-        //     .all!((n) => n.event !is null)) {
-        //     writefln("All nodes should have an event");
-        // }
-
-        // assert(hashgraph.getNodes
-        //     .byValue
-        //     .all!((n) => n.event !is null));
-
         if (!connected) {
             scope(exit) {
                 if (_mother) {
@@ -897,21 +825,7 @@ class Event {
         }
     }
 
-    @nogc
-    int received_order() const pure nothrow
-        in {
-            assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
-        }
-    do {
-        return _received_order;
-    }
-
 // +++
-    @nogc
-    bool connected() const pure nothrow {
-        return (_mother !is null);
-    }
-
     @trusted
     private void disconnect(HashGraph hashgraph)
         in {
@@ -944,77 +858,132 @@ class Event {
         return _father;
     }
 
-    @nogc
-    const(Event) daughter() const pure nothrow {
-        return _daughter;
-    }
-
-    // @nogc
-    // package Event daughter_raw() pure nothrow {
-    //     return _daughter;
-    // }
-
-    @nogc
-    const(Event) son() const pure nothrow {
-        return _son;
-    }
-
-    @nogc
-    const(Document) payload() const pure nothrow {
-        return event_package.event_body.payload;
-    }
-
-    @nogc
-    ref const(EventBody) eventbody() const pure nothrow {
-        return event_package.event_body;
-    }
-
-    //True if Event contains a payload or is the initial Event of its creator
-    @nogc
-    bool containPayload() const pure nothrow {
-        return !payload.empty;
-    }
-
-    // @nogc
-    // bool fatherExists() const pure nothrow {
-    //     return event_package.event_body.father !is null;
-    // }
-
-    // is true if the event does not have a mother or a father
-    @nogc
-    bool isEva() pure const nothrow
-        out(result) {
-            if (result) {
-                assert(event_package.event_body.father is null);
-            }
+    @nogc pure nothrow const {
+        immutable(Pubkey) channel() {
+            return event_package.pubkey;
         }
-    do {
-        return (_mother is null) && (event_package.event_body.mother is null);
-    }
 
-    /// A father less event is an event where the ancestor event is connect to an Eva event without an father event
-    /// An Eva is is also defined as han father less event
-    /// This also means that the event has not valid order and must not be included in the epoch order.
-    @nogc
-    bool isFatherLess() pure const nothrow {
-        return isEva || !isGrounded && (event_package.event_body.father is null) && _mother.isFatherLess;
-    }
+        const(BitMask) round_received_mask() {
+            return _round_received_mask;
+        }
 
-    @nogc
-    bool hasOrder() pure const nothrow {
-        return _received_order !is int.init;
-    }
+        bool isFront() {
+            return _daughter is null;
+        }
 
-    @nogc
-    bool isGrounded() pure const nothrow {
-        return
-            (_mother is null) && (event_package.event_body.mother !is null) ||
-            (_father is null) && (event_package.event_body.father !is null);
-    }
+        bool hasRound() {
+            return (_round !is null);
+        }
 
-    @nogc
-    immutable(Buffer) fingerprint() const pure nothrow {
-        return event_package.fingerprint;
+        const(Round) round()
+            out(result) {
+                    assert(result, "Round must be set before this function is called");
+                }
+        do {
+            return _round;
+        }
+
+        const(BitMask) witness_mask() {
+            return _witness_mask;
+        }
+
+        const(Witness) witness() {
+            return _witness;
+        }
+
+        immutable(int) altitude() {
+            return event_package.event_body.altitude;
+        }
+
+
+        int expected_order() {
+            const m=(_mother)?_mother._received_order:int.init;
+            const f=(_father)?_father._received_order:int.init;
+            int result=(m-f > 0)?m:f;
+            result++;
+            result=(result is int.init)?int.init+1:result;
+            return result;
+        }
+
+        bool nodeOwner() {
+            return node_id is 0;
+        }
+
+
+        int received_order()
+            in {
+                assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
+            }
+        do {
+            return _received_order;
+        }
+
+        bool connected() {
+            return (_mother !is null);
+        }
+
+        const(Event) daughter() {
+            return _daughter;
+        }
+
+        const(Event) son() {
+            return _son;
+        }
+
+        const(Document) payload() {
+            return event_package.event_body.payload;
+        }
+
+        ref const(EventBody) eventbody() {
+            return event_package.event_body;
+        }
+
+        //True if Event contains a payload or is the initial Event of its creator
+        bool containPayload() {
+            return !payload.empty;
+        }
+
+        // @nogc
+        // bool fatherExists() const pure nothrow {
+        //     return event_package.event_body.father !is null;
+        // }
+
+        // is true if the event does not have a mother or a father
+        bool isEva()
+            out(result) {
+                    if (result) {
+                        assert(event_package.event_body.father is null);
+                    }
+                }
+        do {
+            return (_mother is null) && (event_package.event_body.mother is null);
+        }
+
+        /// A father less event is an event where the ancestor event is connect to an Eva event without an father event
+        /// An Eva is is also defined as han father less event
+        /// This also means that the event has not valid order and must not be included in the epoch order.
+        bool isFatherLess() {
+            return isEva || !isGrounded && (event_package.event_body.father is null) && _mother.isFatherLess;
+        }
+
+        bool hasOrder() {
+            return _received_order !is int.init;
+        }
+
+        bool isGrounded() {
+            return
+                (_mother is null) && (event_package.event_body.mother !is null) ||
+                (_father is null) && (event_package.event_body.father !is null);
+        }
+
+        immutable(Buffer) fingerprint() {
+            return event_package.fingerprint;
+        }
+
+        Range!true opSlice() {
+            return Range!true (this);
+        }
+
     }
 
     @nogc
@@ -1022,10 +991,6 @@ class Event {
         return Range!false (this);
     }
 
-    @nogc
-    Range!true opSlice() const pure nothrow {
-        return Range!true (this);
-    }
 
     @nogc
     struct Range(bool CONST=true) {
