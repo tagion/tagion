@@ -211,7 +211,7 @@ mixin template HiBONRecord(string CTOR="") {
     import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, Label, GetLabel, Filter, Inspect, VOID;
+    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, Label, GetLabel, Filter, Default, Inspect, VOID;
     protected alias check=Check!(HiBONRecordException);
 
     import tagion.hibon.HiBONJSON : JSONString;
@@ -318,7 +318,6 @@ mixin template HiBONRecord(string CTOR="") {
                     alias filters=getUDAs!(this.tupleof[i], Filter);
                     static foreach(F; filters) {
                         {
-
                             alias filterFun=unaryFun!(F.code);
                             if (!filterFun(this.tupleof[i])) {
                                 continue MemberLoop;
@@ -627,6 +626,23 @@ mixin template HiBONRecord(string CTOR="") {
 @safe
 void fwrite(string filename, const HiBON hibon) {
     file.write(filename, hibon.serialize);
+}
+
+
+/++
+ Serialize the hibon and writes it a file
+ Params:
+ filename = is the name of the file
+ hibon = is the HiBON object
+ +/
+@safe
+void fwrite(string filename, const Document doc) {
+    file.write(filename, doc.serialize);
+}
+
+@safe
+void fwrite(T)(string filename, const T doc) if(isHiBONRecord) {
+    file.write(filename, doc.serialize);
 }
 
 
