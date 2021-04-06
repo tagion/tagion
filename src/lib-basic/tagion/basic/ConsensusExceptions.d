@@ -34,10 +34,15 @@ enum ConsensusFailCode {
     EVENT_MISSING_PUBKEY,
     EVENT_MISSING_SIGNATURE,
 
-    GOSSIPNET_EVNET_HAS_BEEN_CACHED,
+    HASHGRAPH_EVENT_INITIALIZE,
+    HASHGRAPH_EVENT_INITIALIZE_SIZE,
+    HASHGRAPH_DUBLICATE_WITNESS,
+
+    GOSSIPNET_EVENT_HAS_BEEN_CACHED,
     GOSSIPNET_ILLEGAL_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE,
+    GOSSIPNET_EXPECTED_3_EXCHANGE_STATE,
 //    GOSSIPNET_BAD_EXCHNAGE_STATE,
     GOSSIPNET_REPLICATED_PUBKEY,
     GOSSIPNET_EVENTPACKAGE_NOT_FOUND,
@@ -189,12 +194,17 @@ shared static this() {
             EVENT_MISSING_PUBKEY                        : "Pubkey missing in Event",
             EVENT_MISSING_SIGNATURE                     : "Signature missing in Event",
 
+            HASHGRAPH_EVENT_INITIALIZE                  : "Majority of events must be witnesses to initialize the network",
+            HASHGRAPH_EVENT_INITIALIZE_SIZE             : "Number of events in coherent wavefront is too large",
+            HASHGRAPH_DUBLICATE_WITNESS                 : "Only one witness per node is alowes for a coherent wavefront",
+
 //            EVENT_MISSING_BODY                        : "Event is missing eventbody",
 
-            GOSSIPNET_EVNET_HAS_BEEN_CACHED             : "Gossip net has already cached event",
+            GOSSIPNET_EVENT_HAS_BEEN_CACHED             : "Gossip net has already cached event",
             GOSSIPNET_ILLEGAL_EXCHANGE_STATE            : "Gossip exchange state is illegal %s",
             GOSSIPNET_EXPECTED_EXCHANGE_STATE           : "Gossip exchange state is illegal %s expected %s",
             GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE        : "Gossip exchange state is illegal %s expected %s or %s",
+            GOSSIPNET_EXPECTED_3_EXCHANGE_STATE         : "Gossip exchange state is illegal %s expected %s, %s or %s",
             GOSSIPNET_REPLICATED_PUBKEY                 : "The public key of the received package is the same as the nodes public key",
             GOSSIPNET_EVENTPACKAGE_NOT_FOUND            : "Event package not found in the event package cache",
             GOSSIPNET_MISSING_EVENTS                    : "Gossip network missing events",
