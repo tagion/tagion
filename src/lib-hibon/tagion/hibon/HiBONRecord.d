@@ -641,8 +641,8 @@ void fwrite(string filename, const Document doc) {
 }
 
 @safe
-void fwrite(T)(string filename, const T doc) if(isHiBONRecord) {
-    file.write(filename, doc.serialize);
+void fwrite(T)(string filename, const T rec) if(isHiBONRecord!T) {
+    file.write(filename, rec.toDoc);
 }
 
 
@@ -660,6 +660,14 @@ const(Document) fread(string filename) {
     const doc=Document(data);
     check(doc.isInorder, "HiBON Document format failed");
     return doc;
+}
+
+const(T) fread(T, Args...)(string filename, T, Args args) if(isHiBONRecord!T) {
+    import tagion.hibon.HiBONException : check;
+    immutable data=assumeUnique(cast(ubyte[])file.read(filename));
+    const doc=Document(data);
+    check(doc.isInorder, "HiBON Document format failed");
+    return T(doc, args);
 }
 
 @safe
