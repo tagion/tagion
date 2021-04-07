@@ -1,5 +1,7 @@
 module tagion.hashgraph.Event;
 
+//import std.stdio;
+
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
 import std.conv;
@@ -94,6 +96,7 @@ class Round {
         _events=new Event[node_size];
     }
 
+    @nogc
     const(Event[]) events() const pure nothrow {
         return _events;
     }
@@ -152,8 +155,10 @@ class Round {
         foreach(node_id, e; _events) {
             scrap_events(e);
         }
-        _next._previous = null;
-        _next = null;
+        if (_next) {
+            _next._previous = null;
+            _next = null;
+        }
     }
 
     @nogc bool decided() const pure nothrow {
@@ -177,7 +182,7 @@ class Round {
 
 
     struct Rounder {
-        Round _last_round;
+        Round last_round;
         Round last_decided_round;
         HashGraph hashgraph;
 
@@ -185,16 +190,31 @@ class Round {
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph=hashgraph;
-            last_decided_round = _last_round = new Round(null, hashgraph.node_size);
-            last_decided_round._decided=true;
+            last_round = new Round(null, hashgraph.node_size);
+//            last_decided_round._decided=true;
+        }
+
+        package void erase() {
+            void local_erase(Round r) @trusted {
+                if (r !is null) {
+                    local_erase(r._previous);
+                    r.scrap(hashgraph);
+                    r.destroy;
+                }
+            }
+            Event.scrapping=true;
+            scope(exit) {
+                Event.scrapping=false;
+            }
+            last_decided_round=null;
+            local_erase(last_round);
         }
 
         void dustman() {
-            void local_dustman(Round r) @trusted {
+            void local_dustman(Round r) {
                 if (r !is null) {
                     local_dustman(r._previous);
                     r.scrap(hashgraph);
-                    //r.destroy;
                 }
             }
             Event.scrapping=true;
@@ -213,10 +233,10 @@ class Round {
             }
         }
 
-        @nogc
-        inout(Round) last_round() inout pure nothrow {
-            return _last_round;
-        }
+        // @nogc
+        // inout(Round) last_round() inout pure nothrow {
+        //     return _last_round;
+        // }
 
         @nogc
         size_t length() const pure nothrow {
@@ -251,7 +271,7 @@ class Round {
                 }
                 else {
                     e._round = new Round(last_round, hashgraph.node_size);
-                    _last_round = e._round;
+                    last_round = e._round;
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
                     }
@@ -399,18 +419,19 @@ class Round {
                     round_to_be_decided._decided=true;
                     last_decided_round=round_to_be_decided;
                     check_decided_round(hashgraph);
+
                 }
             }
         }
 
         @nogc
         package Range!false opSlice() pure nothrow {
-            return Range!false(_last_round);
+            return Range!false(last_round);
         }
 
         @nogc
         Range!true opSlice() const pure nothrow {
-            return Range!true(_last_round);
+            return Range!true(last_round);
         }
 
         @nogc
@@ -469,6 +490,7 @@ class Event {
     import tagion.basic.ConsensusExceptions;
     alias check=Check!EventConsensusException;
     protected static uint _count;
+    @nogc
     static uint count() nothrow {
         return _count;
     }
@@ -483,11 +505,6 @@ class Event {
         _witness_mask[node_id]=true;
         _count++;
 
-        if ( isEva ) {
-            // If the event is a Eva event the round is undefined until a daughter in generation after get a father
-            BitMask round_mask;
-            _witness = new Witness(this, round_mask);
-        }
         if (Event.callbacks) {
             Event.callbacks.create(this);
         }
@@ -511,11 +528,6 @@ class Event {
                 assert(_received_order is int.init || (_received_order - _father._received_order > 0));
             }
         }
-    }
-
-    @nogc
-    bool isInFront() const pure nothrow {
-        return !_daughter;
     }
 
     @safe
@@ -544,44 +556,36 @@ class Event {
             _count--;
         }
 
-        @nogc
-        const(BitMask) strong_seeing_mask() pure const nothrow {
-            return _strong_seeing_mask;
-        }
-
-
-        @nogc
-        ref const(BitMask) round_seen_mask() pure const nothrow {
-            return _seeing_witness_in_previous_round_mask;
-        }
-
-        bool famous() pure const nothrow {
-            return _famous;
-        }
-
-        @nogc
-        private bool famous(const HashGraph hashgraph) pure nothrow {
-            if (!_famous) {
-                _famous=_strong_seeing_mask.isMajority(hashgraph);
+        pure nothrow final {
+            @nogc
+                const(BitMask) strong_seeing_mask() const {
+                return _strong_seeing_mask;
             }
-            return _famous;
-        }
 
+
+            @nogc
+                ref const(BitMask) round_seen_mask() const {
+                return _seeing_witness_in_previous_round_mask;
+            }
+
+            bool famous() const {
+                return _famous;
+            }
+
+            @nogc
+                private bool famous(const HashGraph hashgraph) {
+                if (!_famous) {
+                    _famous=_strong_seeing_mask.isMajority(hashgraph);
+                }
+                return _famous;
+            }
+        }
     }
 
     static EventMonitorCallbacks callbacks;
 
-    @nogc
-    immutable(Pubkey) channel() pure const nothrow {
-        return event_package.pubkey;
-    }
-
     // The altitude increases by one from mother to daughter
     immutable(EventPackage*) event_package;
-
-    ref const(EventBody) event_body() const nothrow {
-        return event_package.event_body;
-    }
 
     protected {
         // This is the internal pointer to the connected Event's
@@ -604,16 +608,12 @@ class Event {
         BitMask _round_received_mask;
     }
 
-    @nogc
-    const(BitMask) round_received_mask() const pure nothrow {
-        return _round_received_mask;
-    }
-
-    private void attach_round(HashGraph hashgraph) pure nothrow
+    package void attach_round(HashGraph hashgraph) pure nothrow
         in {
             assert(_round is null, "Round has already been attached");
         }
     do {
+        if (_mother) {
         if (_mother.isFatherLess) {
             if (_father && _father._round) {
                 _round = _father._round;
@@ -629,67 +629,30 @@ class Event {
         else {
             _round = _mother._round;
         }
+        }
+        else {
+            assert(hashgraph._rounds.last_round._previous is null);
+            _round = hashgraph._rounds.last_round;
+        }
     }
 
     immutable uint id;
 
-    @nogc
-    final const(Round) round_received() pure const nothrow {
-        return _round_received;
-    }
-
-    @nogc
-    bool isFront() pure const nothrow {
-        return _daughter is null;
-    }
-
-    @nogc
-    bool hasRound() const pure nothrow {
-        return (_round !is null);
-    }
-
-    @nogc
-    const(Round) round() pure const nothrow
-    out(result) {
-        assert(result, "Round must be set before this function is called");
+    /**
+       This function is
+    */
+    package void witness_event() nothrow
+    in {
+        assert(!_witness);
     }
     do {
-        return _round;
-    }
-
-    @nogc
-    const(BitMask) witness_mask() pure const nothrow {
-        return _witness_mask;
-    }
-
-    @nogc
-    const(Witness) witness() pure const nothrow {
-        return _witness;
-    }
-
-    @nogc
-    immutable(int) altitude() const pure nothrow {
-        return event_package.event_body.altitude;
+        BitMask round_mask;
+        _witness = new Witness(this, round_mask);
     }
 
     immutable size_t node_id;
 
-    @nogc
-    bool nodeOwner() const pure nothrow {
-        return node_id is 0;
-    }
-
-    @nogc
-    int expected_order() const pure nothrow {
-        const m=(_mother)?_mother._received_order:int.init;
-        const f=(_father)?_father._received_order:int.init;
-        int result=(m-f > 0)?m:f;
-        result++;
-        result=(result is int.init)?int.init+1:result;
-        return result;
-    }
-
-    private void received_order(ref uint iteration_count) {
+    private void received_order(ref uint iteration_count) pure nothrow {
         if (isFatherLess) {
             if (_mother) {
                 if (_mother._received_order is int.init) {
@@ -803,7 +766,11 @@ class Event {
         return local_calc_witness_mask(this, BitMask(), BitMask());
     }
 
-    package void connect(HashGraph hashgraph)
+    package final void connect(HashGraph hashgraph)
+    in {
+        assert(hashgraph.areWeInGraph);
+
+    }
     out {
         assert(event_package.event_body.mother && _mother || !_mother);
         assert(event_package.event_body.father && _father || !_father);
@@ -861,23 +828,9 @@ class Event {
         }
     }
 
-    @nogc
-    int received_order() const pure nothrow
-        in {
-            assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
-        }
-    do {
-        return _received_order;
-    }
-
 // +++
-    @nogc
-    bool connected() const pure nothrow {
-        return (_mother !is null);
-    }
-
     @trusted
-    private void disconnect(HashGraph hashgraph)
+    final private void disconnect(HashGraph hashgraph)
         in {
             assert(!_mother, "Event with a mother can not be disconnected");
             //  assert(!_father, "Event with a father can not be disconnected");
@@ -898,97 +851,149 @@ class Event {
         _daughter=_son=null;
     }
 
-    const(Event) mother() const pure {
+    final const(Event) mother() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_MOTHER_GROUNDED);
         return _mother;
     }
 
-    const(Event) father() const pure {
+    final const(Event) father() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_FATHER_GROUNDED);
         return _father;
     }
 
-    @nogc
-    const(Event) daughter() const pure nothrow {
-        return _daughter;
-    }
-
-    // @nogc
-    // package Event daughter_raw() pure nothrow {
-    //     return _daughter;
-    // }
-
-    @nogc
-    const(Event) son() const pure nothrow {
-        return _son;
-    }
-
-    @nogc
-    const(Document) payload() const pure nothrow {
-        return event_package.event_body.payload;
-    }
-
-    @nogc
-    ref const(EventBody) eventbody() const pure nothrow {
-        return event_package.event_body;
-    }
-
-    //True if Event contains a payload or is the initial Event of its creator
-    @nogc
-    bool containPayload() const pure nothrow {
-        return !payload.empty;
-    }
-
-    // @nogc
-    // bool fatherExists() const pure nothrow {
-    //     return event_package.event_body.father !is null;
-    // }
-
-    // is true if the event does not have a mother or a father
-    @nogc
-    bool isEva() pure const nothrow
-        out(result) {
-            if (result) {
-                assert(event_package.event_body.father is null);
-            }
+    @nogc pure nothrow const final {
+        ref const(EventBody) event_body() {
+            return event_package.event_body;
         }
-    do {
-        return (_mother is null) && (event_package.event_body.mother is null);
-    }
 
-    /// A father less event is an event where the ancestor event is connect to an Eva event without an father event
-    /// An Eva is is also defined as han father less event
-    /// This also means that the event has not valid order and must not be included in the epoch order.
-    @nogc
-    bool isFatherLess() pure const nothrow {
-        return isEva || !isGrounded && (event_package.event_body.father is null) && _mother.isFatherLess;
-    }
+        const(Round) round_received() {
+            return _round_received;
+        }
 
-    @nogc
-    bool hasOrder() pure const nothrow {
-        return _received_order !is int.init;
-    }
+        immutable(Pubkey) channel() {
+            return event_package.pubkey;
+        }
 
-    @nogc
-    bool isGrounded() pure const nothrow {
-        return
-            (_mother is null) && (event_package.event_body.mother !is null) ||
-            (_father is null) && (event_package.event_body.father !is null);
-    }
+        const(BitMask) round_received_mask() {
+            return _round_received_mask;
+        }
 
-    @nogc
-    immutable(Buffer) fingerprint() const pure nothrow {
-        return event_package.fingerprint;
+        bool isFront() {
+            return _daughter is null;
+        }
+
+        bool hasRound() {
+            return (_round !is null);
+        }
+
+        const(Round) round()
+            out(result) {
+                    assert(result, "Round must be set before this function is called");
+                }
+        do {
+            return _round;
+        }
+
+        const(BitMask) witness_mask() {
+            return _witness_mask;
+        }
+
+        const(Witness) witness() {
+            return _witness;
+        }
+
+        immutable(int) altitude() {
+            return event_package.event_body.altitude;
+        }
+
+
+        int expected_order() {
+            const m=(_mother)?_mother._received_order:int.init;
+            const f=(_father)?_father._received_order:int.init;
+            int result=(m-f > 0)?m:f;
+            result++;
+            result=(result is int.init)?int.init+1:result;
+            return result;
+        }
+
+        bool nodeOwner() {
+            return node_id is 0;
+        }
+
+
+        int received_order()
+            in {
+                assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
+            }
+        do {
+            return _received_order;
+        }
+
+        bool connected() {
+            return (_mother !is null);
+        }
+
+        const(Event) daughter() {
+            return _daughter;
+        }
+
+        const(Event) son() {
+            return _son;
+        }
+
+        const(Document) payload() {
+            return event_package.event_body.payload;
+        }
+
+        ref const(EventBody) eventbody() {
+            return event_package.event_body;
+        }
+
+        //True if Event contains a payload or is the initial Event of its creator
+        bool containPayload() {
+            return !payload.empty;
+        }
+
+        // is true if the event does not have a mother or a father
+        bool isEva()
+            out(result) {
+                    if (result) {
+                        assert(event_package.event_body.father is null);
+                    }
+                }
+        do {
+            return (_mother is null) && (event_package.event_body.mother is null);
+        }
+
+        /// A father less event is an event where the ancestor event is connect to an Eva event without an father event
+        /// An Eva is is also defined as han father less event
+        /// This also means that the event has not valid order and must not be included in the epoch order.
+        bool isFatherLess() {
+            return isEva || !isGrounded && (event_package.event_body.father is null) && _mother.isFatherLess;
+        }
+
+        bool hasOrder() {
+            return _received_order !is int.init;
+        }
+
+        bool isGrounded() {
+            return
+                (_mother is null) && (event_package.event_body.mother !is null) ||
+                (_father is null) && (event_package.event_body.father !is null);
+        }
+
+        immutable(Buffer) fingerprint() {
+            return event_package.fingerprint;
+        }
+
+        Range!true opSlice() {
+            return Range!true (this);
+        }
     }
 
     @nogc
     package Range!false opSlice() pure nothrow {
         return Range!false (this);
-    }
-
-    @nogc
-    Range!true opSlice() const pure nothrow {
-        return Range!true (this);
     }
 
     @nogc

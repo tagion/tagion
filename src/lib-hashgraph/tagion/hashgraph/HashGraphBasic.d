@@ -3,6 +3,7 @@ module tagion.hashgraph.HashGraphBasic;
 import std.stdio;
 import std.format;
 import std.typecons : TypedefType;
+import std.exception : assumeWontThrow;
 
 import tagion.basic.Basic : Buffer, Signature, Pubkey, EnumText;
 import tagion.hashgraph.Event;
@@ -20,7 +21,6 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException, ConsensusException;
 enum minimum_nodes = 3;
 import  tagion.utils.Miscellaneous : cutHex;
-import std.exception : assumeWontThrow;
 /++
  + Calculates the majority votes
  + Params:
@@ -64,7 +64,11 @@ enum ExchangeState : uint {
         TIDAL_WAVE,
         FIRST_WAVE,
         SECOND_WAVE,
-        BREAKING_WAVE
+        BREAKING_WAVE,
+        RIPPLE,     /// Ripple is used the first time a node connects to the network
+        COHERENT,   /** Coherent state is when an the least epoch wavefront has been received or
+                        if all the nodes isEva notes (This only occurs at genesis).
+                     */
         }
 
 
@@ -119,7 +123,7 @@ struct EventView {
 
     mixin HiBONRecord!(
         q{
-            this(const Event event) {
+            this(const Event event, const size_t relocate_node_id=size_t.max) {
                 import std.algorithm : each;
                 id=event.id;
                 if (event.isGrounded) {
@@ -133,7 +137,7 @@ struct EventView {
                         father=event.father.id;
                     }
                 }
-                node_id=event.node_id;
+                node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
                 altitude=event.altitude;
                 order=event.received_order;
                 witness=event.witness !is null;
@@ -181,7 +185,7 @@ struct EventBody {
     protected alias check=Check!HashGraphConsensusException;
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
-    @Label("$doc", true)  @Filter(q{!a.empty}) Document payload; // Transaction
+    @Label("$p", true)  @Filter(q{!a.empty}) Document payload; // Transaction
     @Label("$m", true) @(Filter.Initialized) Buffer mother; // Hash of the self-parent
     @Label("$f", true) @(Filter.Initialized) Buffer father; // Hash of the other-parent
     @Label("$a") int altitude;
@@ -204,6 +208,22 @@ struct EventBody {
                 this.altitude  =    mother.nextAltitide;
                 consensus();
             }
+
+            package this(
+                Document payload,
+                const Buffer mother_fingerprint,
+                const Buffer father_fingerprint,
+                const int altitude,
+                lazy const sdt_t time) inout {
+                this.time      =    time;
+                this.mother    =    mother_fingerprint;
+                this.father    =    father_fingerprint;
+                this.payload   =    payload;
+                this.altitude  =    altitude;
+                consensus();
+            }
+
+
         });
 
     invariant {
@@ -239,8 +259,8 @@ struct EventBody {
 @safe
 struct EventPackage {
     @Label("") Buffer fingerprint;
-    @Label("$sign", true) Signature signature;
-    @Label("$pkey", true) Pubkey pubkey;
+    @Label("$sign") Signature signature;
+    @Label("$pkey") Pubkey pubkey;
     @Label("$body") EventBody event_body;
 
     mixin HiBONRecord!(
@@ -269,6 +289,13 @@ struct EventPackage {
                 signature=net.sign(fingerprint);
             }
 
+            this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
+                pubkey=pkey;
+                event_body=ebody;
+                fingerprint=net.hashOf(event_body);
+                this.signature=signature;
+                consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
+            }
         });
 }
 
@@ -362,26 +389,6 @@ struct Wavefront {
     const(Tides) tides() const pure nothrow {
         return _tides;
     }
-
-    version(none)
-    const(Tides) tides() const pure nothrow {
-        if (_tides) {
-            return _tides;
-        }
-        Tides result;
-        foreach(e; epacks) {
-            result.update(e.pubkey,
-                {
-                    return e.event_body.altitude;
-                },
-                (int altitude)
-                {
-                    return highest(altitude, e.event_body.altitude);
-                });
-        }
-        return result;
-    }
-
 }
 
 @safe
