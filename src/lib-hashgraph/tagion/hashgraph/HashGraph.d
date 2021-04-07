@@ -188,17 +188,11 @@ class HashGraph {
         }
         const(HiRPC.Sender) ripple_sender() @safe {
             const ripple_wavefront=rippleWave(Wavefront());
-            if (print_flag) {
-                writefln("ripple_wavefront.epacks.length=%d", ripple_wavefront.epacks.length);
-            }
             const sender=hirpc.wavefront(ripple_wavefront);
             return sender;
         }
         if (areWeInGraph) {
             const send_channel=responde(&not_used_channels, &payload_sender);
-            if (print_flag) {
-                writefln("send_channel=%s", send_channel.cutHex);
-            }
             if (send_channel !is Pubkey(null)) {
                 getNode(send_channel).state=ExchangeState.INIT_TIDE;
             }
@@ -330,9 +324,6 @@ class HashGraph {
             Event event;
             if (fingerprint) {
                 event = lookup(fingerprint);
-                if (event is null) {
-                    writefln("Register faild");
-                }
                 Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
                 event.connect(this.outer);
             }
@@ -444,20 +435,20 @@ class HashGraph {
                 .filter!((e) => (e !is null))
                 .map!((e) => cast(immutable(EventPackage)*)e.event_package)
                 .array;
-            pragma(msg, "_rounds.last_decided_round.events ", typeof(_rounds.last_decided_round.events));
-            pragma(msg, "result ", typeof(result));
-            auto list=                nodes
-                .byValue
-                .map!((n) => n._event)
-                .filter!((e) => e !is null)
-                .map!((e) => e.channel)
-                .array
-                .dup
-                .sort
-                .map!((e) => e.cutHex)
-                .array;
+            // pragma(msg, "_rounds.last_decided_round.events ", typeof(_rounds.last_decided_round.events));
+            // pragma(msg, "result ", typeof(result));
+            // auto list=                nodes
+            //     .byValue
+            //     .map!((n) => n._event)
+            //     .filter!((e) => e !is null)
+            //     .map!((e) => e.channel)
+            //     .array
+            //     .dup
+            //     .sort
+            //     .map!((e) => e.cutHex)
+            //     .array;
 
-            writefln("Nodes  (%s) %s length=%d", name, list, list.length);
+            // writefln("Nodes  (%s) %s length=%d", name, list, list.length);
             return Wavefront(result, null, ExchangeState.COHERENT);
         }
         foreach(epack; received_wave.epacks) {
