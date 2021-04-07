@@ -72,7 +72,7 @@ class ConnectionPool(T: shared(p2plib.Stream), TKey){
         }
 
         void close(){
-            log("CLOSING EXPIRED STREAM");
+            // log("CLOSING EXPIRED STREAM");
             connection.close();
             // destroy(connection);
         }
@@ -93,12 +93,12 @@ class ConnectionPool(T: shared(p2plib.Stream), TKey){
             auto activeConnection = new shared ActiveConnection(connection, long_lived);
             shared_connections[key] = activeConnection;
         }else{
-            log("ignore key: ", key);
+            // log("ignore key: ", key);
         }
     }
 
     void close(const TKey key){
-        log("CONNECTION!! Close stream: key: ", key);
+        // log("CONNECTION!! Close stream: key: ", key);
         auto connection = get(key);
         if(connection){
             shared_connections.remove(key);
@@ -142,10 +142,10 @@ class ConnectionPool(T: shared(p2plib.Stream), TKey){
         auto connection = this.get(key);
         if(connection !is null){
             (*connection).send(data);
-            log("LIBP2P: SENDED");
+            // log("LIBP2P: SENDED");
             return true;
         }else{
-            log("LIBP2P: Connection not found");
+            // log("LIBP2P: Connection not found");
             return false;
         }
     }

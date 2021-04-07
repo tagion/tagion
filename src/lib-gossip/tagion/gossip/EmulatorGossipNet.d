@@ -46,16 +46,17 @@ static uint getTids(Tid[] tids) {
     return result;
 }
 
-@trusted 
-static Tid getTid(uint i){
-    immutable taskname=get_node_name(*options, i);
-    auto tid=locate(taskname);
-    return tid;
-}
 
-private static shared uint node_counter = 0;
 @safe
 class EmulatorGossipNet : GossipNet {
+    private uint node_counter = 0;
+    @trusted 
+    static Tid getTidByNodeNumber(uint i){
+        immutable taskname=get_node_name(*options, i);
+            log("trying to locate: %s", taskname);
+        auto tid=locate(taskname);
+        return tid;
+    }
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
     protected uint _send_node_id;
@@ -64,9 +65,10 @@ class EmulatorGossipNet : GossipNet {
     Random!uint random;
 
     void add_channel(const Pubkey channel) {
-        atomicOp!"+="(node_counter, 1);
         _pkeys~=channel;
-        _tids[channel] = getTid(node_counter);
+        _tids[channel] = getTidByNodeNumber(node_counter);
+        log("channel: %s tid: %s", channel.cutHex, _tids[channel]);
+        node_counter++;
     }
 
     void remove_channel(const Pubkey channel) {
@@ -113,6 +115,7 @@ class EmulatorGossipNet : GossipNet {
     const(Pubkey) gossip(
         ChannelFilter channel_filter, SenderCallBack sender) {
         const send_channel=select_channel(channel_filter);
+        log("selected channel: %s", send_channel.cutHex);
         if (send_channel.length) {
             send(send_channel, sender());
         }
@@ -146,6 +149,9 @@ class EmulatorGossipNet : GossipNet {
         // if ( callbacks ) {
         //     callbacks.send(channel, sender.toDoc);
         // }
+        log("%d", _tids.length);
+        // log(_tids)
         _tids[channel].send(sender.toDoc);
+        log.trace("sended");
     }
 }
