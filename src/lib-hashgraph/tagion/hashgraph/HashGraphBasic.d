@@ -60,12 +60,15 @@ mixin(EnumText!("Params", _params));
 
 enum ExchangeState : uint {
     NONE,
-        RIPPLE,     /// Ripple is used the first time a node connects to the network
         INIT_TIDE,
         TIDAL_WAVE,
         FIRST_WAVE,
         SECOND_WAVE,
-        BREAKING_WAVE
+        BREAKING_WAVE,
+        RIPPLE,     /// Ripple is used the first time a node connects to the network
+        COHERENT,   /** Coherent state is when an the least epoch wavefront has been received or
+                        if all the nodes isEva notes (This only occurs at genesis).
+                     */
         }
 
 
@@ -120,7 +123,7 @@ struct EventView {
 
     mixin HiBONRecord!(
         q{
-            this(const Event event) {
+            this(const Event event, const size_t relocate_node_id=size_t.max) {
                 import std.algorithm : each;
                 id=event.id;
                 if (event.isGrounded) {
@@ -134,7 +137,7 @@ struct EventView {
                         father=event.father.id;
                     }
                 }
-                node_id=event.node_id;
+                node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
                 altitude=event.altitude;
                 order=event.received_order;
                 witness=event.witness !is null;

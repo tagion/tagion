@@ -1,6 +1,6 @@
 module tagion.hashgraph.Event;
 
-import std.stdio;
+//import std.stdio;
 
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
@@ -155,8 +155,10 @@ class Round {
         foreach(node_id, e; _events) {
             scrap_events(e);
         }
-        _next._previous = null;
-        _next = null;
+        if (_next) {
+            _next._previous = null;
+            _next = null;
+        }
     }
 
     @nogc bool decided() const pure nothrow {
@@ -180,7 +182,7 @@ class Round {
 
 
     struct Rounder {
-        Round _last_round;
+        Round last_round;
         Round last_decided_round;
         HashGraph hashgraph;
 
@@ -188,16 +190,31 @@ class Round {
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph=hashgraph;
-            last_decided_round = _last_round = new Round(null, hashgraph.node_size);
-            last_decided_round._decided=true;
+            last_round = new Round(null, hashgraph.node_size);
+//            last_decided_round._decided=true;
+        }
+
+        package void erase() {
+            void local_erase(Round r) @trusted {
+                if (r !is null) {
+                    local_erase(r._previous);
+                    r.scrap(hashgraph);
+                    r.destroy;
+                }
+            }
+            Event.scrapping=true;
+            scope(exit) {
+                Event.scrapping=false;
+            }
+            last_decided_round=null;
+            local_erase(last_round);
         }
 
         void dustman() {
-            void local_dustman(Round r) @trusted {
+            void local_dustman(Round r) {
                 if (r !is null) {
                     local_dustman(r._previous);
                     r.scrap(hashgraph);
-                    //r.destroy;
                 }
             }
             Event.scrapping=true;
@@ -216,10 +233,10 @@ class Round {
             }
         }
 
-        @nogc
-        inout(Round) last_round() inout pure nothrow {
-            return _last_round;
-        }
+        // @nogc
+        // inout(Round) last_round() inout pure nothrow {
+        //     return _last_round;
+        // }
 
         @nogc
         size_t length() const pure nothrow {
@@ -254,7 +271,7 @@ class Round {
                 }
                 else {
                     e._round = new Round(last_round, hashgraph.node_size);
-                    _last_round = e._round;
+                    last_round = e._round;
                     if (Event.callbacks) {
                         Event.callbacks.round_seen(e);
                     }
@@ -402,18 +419,19 @@ class Round {
                     round_to_be_decided._decided=true;
                     last_decided_round=round_to_be_decided;
                     check_decided_round(hashgraph);
+
                 }
             }
         }
 
         @nogc
         package Range!false opSlice() pure nothrow {
-            return Range!false(_last_round);
+            return Range!false(last_round);
         }
 
         @nogc
         Range!true opSlice() const pure nothrow {
-            return Range!true(_last_round);
+            return Range!true(last_round);
         }
 
         @nogc
@@ -590,11 +608,12 @@ class Event {
         BitMask _round_received_mask;
     }
 
-    private void attach_round(HashGraph hashgraph) pure nothrow
+    package void attach_round(HashGraph hashgraph) pure nothrow
         in {
             assert(_round is null, "Round has already been attached");
         }
     do {
+        if (_mother) {
         if (_mother.isFatherLess) {
             if (_father && _father._round) {
                 _round = _father._round;
@@ -610,6 +629,11 @@ class Event {
         else {
             _round = _mother._round;
         }
+        }
+        else {
+            assert(hashgraph._rounds.last_round._previous is null);
+            _round = hashgraph._rounds.last_round;
+        }
     }
 
     immutable uint id;
@@ -617,12 +641,8 @@ class Event {
     /**
        This function is
     */
-    package void genesis_event() nothrow
+    package void witness_event() nothrow
     in {
-        assert(isEva);
-        if (_witness !is null) {
-            writefln("Witness defined");
-        }
         assert(!_witness);
     }
     do {
@@ -748,9 +768,6 @@ class Event {
 
     package final void connect(HashGraph hashgraph)
     in {
-        if (!hashgraph.areWeInGraph) {
-            writefln("Event should not be connected before we are in the Graph");
-        }
         assert(hashgraph.areWeInGraph);
 
     }
@@ -936,11 +953,6 @@ class Event {
         bool containPayload() {
             return !payload.empty;
         }
-
-        // @nogc
-        // bool fatherExists() const pure nothrow {
-        //     return event_package.event_body.father !is null;
-        // }
 
         // is true if the event does not have a mother or a father
         bool isEva()
