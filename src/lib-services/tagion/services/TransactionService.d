@@ -60,7 +60,7 @@ void transactionServiceTask(immutable(Options) opts) {
         Tid node_tid=locate(opts.node_name);
 
         @trusted void sendPayload(Document payload) {
-            node_tid.send(payload);
+            node_tid.send(payload, true);
         }
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 

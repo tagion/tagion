@@ -30,6 +30,7 @@ import tagion.services.MdnsDiscoveryService;
 import tagion.Keywords: NetworkMode;
 
 import std.stdio;
+version(none)
 void heartBeatServiceTask(immutable(Options) opts) nothrow
     in{
         assert(opts.net_mode == NetworkMode.internal);

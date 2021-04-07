@@ -15,6 +15,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
 import tagion.crypto.SecureInterfaceNet : HashNet;
+
 import std.array;
 import tagion.gossip.P2pGossipNet;
 import tagion.dart.DARTFile;
@@ -24,23 +25,28 @@ import tagion.script.StandardRecords;
 import tagion.communication.HiRPC;
 import tagion.services.ServerFileDiscoveryService;
 import tagion.services.FileDiscoveryService;
+import tagion.services.MdnsDiscoveryService;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hibon.HiBONJSON;
 import tagion.Keywords: NetworkMode;
 import tagion.basic.TagionExceptions : fatal, TagionException;
 import std.algorithm.iteration;
+import tagion.crypto.SecureNet;
 
-void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, const HashNet net, string taskName, immutable(Options) opts){
+void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, string task_name, immutable(Options) opts){
     scope(exit){
         log("exit");
         ownerTid.prioritySend(Control.END);
     }
     const ADDR_TABLE = "address_table";
-    log.register(taskName);
+    immutable inner_task_name = task_name~"internal";
+    log.register(task_name);
+    HashNet net = new StdHashNet();
     HiRPC internal_hirpc = HiRPC(null);
     NodeAddress[Pubkey] internal_nodeaddr_table;
 
     auto rec_factory=RecordFactory(net);
+    log("net created");
     RecordFactory.Recorder loadFromDart(Buffer[] fp){
         try{
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
@@ -48,7 +54,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
                 auto sender = DART.dartRead(fp, internal_hirpc);
 
                 auto tosend = sender.toDoc.serialize;
-                send(dart_sync_tid, taskName, tosend);
+                send(dart_sync_tid, task_name, tosend);
                 Buffer buffer;
                 receive((Buffer buf){
                     buffer = buf;
@@ -146,7 +152,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
             }
         }
         pragma(msg, "fixme(Alex) Here you should use .hashOf because ncr is a HiBON");
-        ncl.record = net.calcHash(ncr.toHiBON.serialize);
+        ncl.record = net.hashOf(ncr.toDoc);
 
         /// Removing previous node addresses
         pragma(msg, "fixme(Alex) Why not just use the maps range instead of copying the keys to an array");
@@ -179,7 +185,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
                 recorder.dump();
                 auto sender = DART.dartModify(recorder, internal_hirpc);
                 auto tosend = sender.toDoc.serialize;
-                send(dart_sync_tid, taskName, tosend);
+                send(dart_sync_tid, task_name, tosend);
                 receive((Buffer result){
                     log("Update dart result: %s", cast(string)result);
                 });
@@ -192,22 +198,29 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode, co
     }
     auto is_ready = false;
     void receiveAddrBook(ActiveNodeAddressBook address_book) {
+        log("updated addr book: %d", address_book.data.length);
         if(is_ready){
+            log("updated addr book internal: %d", address_book.data.length);
             update_internal_table(address_book.data);
             update_dart(address_book.data);
         }
         ownerTid.send(address_book);
     }
     Tid bootstrap_tid;
-    if (opts.net_mode == NetworkMode.local)
-    {
-        bootstrap_tid = spawn(&fileDiscoveryService, pubkey, p2pnode.LlistenAddress, "internal_discovery", opts);
-    }
-    else if (opts.net_mode == NetworkMode.pub)
-    {
-        bootstrap_tid = spawn(&serverFileDiscoveryService, pubkey, p2pnode, "internal_discovery", opts);
-    }else{
-        throw new NotImplementedError("Network mode is not correct");
+
+    final switch(opts.net_mode){
+        case NetworkMode.internal:{
+            bootstrap_tid = spawn(&mdnsDiscoveryService, p2pnode, inner_task_name, opts);
+            break;
+        }
+        case NetworkMode.local:{
+            bootstrap_tid = spawn(&fileDiscoveryService, pubkey, p2pnode.LlistenAddress, inner_task_name, opts);
+            break;
+        }
+        case NetworkMode.pub:{
+            bootstrap_tid = spawn(&serverFileDiscoveryService, pubkey, p2pnode, inner_task_name, opts);
+            break;
+        }
     }
 
     scope(exit){

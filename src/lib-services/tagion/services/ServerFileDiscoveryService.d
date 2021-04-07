@@ -30,7 +30,9 @@ enum DiscoveryRequestCommand{
 }
 
 enum DiscoveryState{
-    READY = 1
+    READY = 1,
+    ONLINE = 2,
+    OFFLINE = 3
 }
 
 void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, string taskName, immutable(Options) opts) nothrow {  //TODO: for test

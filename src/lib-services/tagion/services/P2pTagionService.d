@@ -5,13 +5,14 @@ import std.concurrency;
 
 import std.datetime: Clock;
 import std.conv;
+import std.algorithm.searching: canFind;
 
 import p2plib = p2p.node;
 //import p2p.connection;
 import p2p.callback;
 import p2p.cgo.helper;
 
-import tagion.Options : Options, setOptions, options;
+import tagion.Options : Options, setOptions, options, OptionException;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
@@ -56,38 +57,16 @@ import tagion.services.NetworkRecordDiscoveryService;
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DartService;
 import tagion.Keywords: NetworkMode;
+
 import std.stdio;
+import std.array : replace, split;
+import std.string : indexOf;
+import std.file : mkdir, exists;
+import std.format;
 
-void p2pTagionService(Options opts)
-    in
-    {
-        import std.algorithm : canFind;
-        assert([NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
-    }
-do
-{
-    setOptions(opts);
-
-    immutable task_name = "p2ptagion";
-    opts.node_name = task_name;
-    log.register(task_name);
-    scope (exit)
-    {
-        log("----- Stop all tasks -----");
-        log.close;
-        ownerTid.prioritySend(Control.END);
-    }
-
-    bool force_stop = false;
-
-    auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
-    import std.array : replace, split;
-    import std.string : indexOf;
-    import std.file : mkdir, exists;
-    import std.format;
-
+shared(p2plib.Node) initialize_node(immutable Options opts){
     auto p2pnode = new shared(p2plib.Node)(format("/ip4/%s/tcp/%s", opts.ip,
-            to!string(opts.port)), 0);
+        to!string(opts.port)), 0);
     if (opts.p2plogs)
     {
         p2plib.EnableLogger();
@@ -105,60 +84,106 @@ do
         }
         else
         {
-            log.error("List of bootstrap nodes missing");
-            force_stop = true;
+            throw new OptionException("Bootstrap nodes list is empty");
         }
     }
-    if (force_stop) {
-        return;
-    }
-    enum dir_token = "%dir%";
-    if (opts.dart.path.indexOf(dir_token) != -1)
+    return p2pnode;
+}
+
+void tagionService(NetworkMode net_mode)(Options opts)
+    in
     {
-        const i = opts.port - opts.port_base;
-        immutable node_name = "node" ~ i.to!string;
-        auto path_to_dir = opts.dart.path[0 .. opts.dart.path.indexOf(dir_token)] ~ node_name;
-        if (!path_to_dir.exists)
-            path_to_dir.mkdir;
-        opts.dart.path = opts.dart.path.replace(dir_token, node_name);
+        import std.algorithm : canFind;
+        assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
     }
+do
+{
+    setOptions(opts);
+
+    log.register(opts.node_name);
+    scope (exit)
+    {
+        log("----- Stop all tasks -----");
+        log.close;
+        ownerTid.prioritySend(Control.END);
+    }
+
+
+    static if(net_mode == NetworkMode.internal){
+        immutable passphrase=format("Secret_word_%s",opts.node_name).idup;
+    }else{
+        immutable passphrase = format("Secret_word_%d", opts.port).idup;
+    }
+
+    bool force_stop = false;
+
+    import std.format;
+    auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
+    shared(p2plib.Node) p2pnode;
+    string passpharse;
+      
     auto master_net = new StdSecureNet;
-    SecureNet net;
+    StdSecureNet net = new StdSecureNet;
     GossipNet gossip_net;
     HashGraph hashgraph; // = new HashGraph(opts.nodes);
 
-    auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))();
-    auto connectionPoolBridge = new shared(ConnectionPoolBridge)();
-    // connectionPoolBridge[Pubkey([0])] = 0;
     Tid discovery_tid;
     Tid dart_sync_tid;
     Tid dart_tid;
+    Pubkey[] pkeys;
+    void update_pkeys(Pubkey[] pubkeys){
+        if(net_mode != NetworkMode.internal){
+            pkeys = pubkeys;
+            foreach(p; pkeys) gossip_net.add_channel(p);
+        }
+    }
+      
     synchronized (master_net)
     {
         import std.format;
 
-        immutable passphrase = format("Secret_word_%d", opts.port).idup;
+        immutable secret = passpharse.idup;
 
-        master_net.generateKeyPair(passphrase);
+        master_net.generateKeyPair(secret);
         shared shared_net = cast(shared) master_net;
-        net.derive("tagion_service", shared_net);
-        bool valid(const(Pubkey) pk) const pure nothrow{
-            return true;
+        log("opts.node_name = %s", opts.node_name);
+        net.derive(opts.node_name, shared_net);
+        p2pnode = initialize_node(opts);
+        static if(net_mode == NetworkMode.internal){
+            gossip_net = new EmulatorGossipNet();
+            ownerTid.send(net.pubkey);
+            Pubkey[] received_pkeys;
+            foreach(i;0..opts.nodes) {
+                received_pkeys~=receiveOnly!(Pubkey);
+                log.trace("Receive %d %s", i, received_pkeys[i].cutHex);
+            }
+            import std.exception: assumeUnique;
+            pkeys=received_pkeys.dup;
+            foreach(p; pkeys) gossip_net.add_channel(p);
+        }else if([NetworkMode.local, NetworkMode.pub].canFind(net_mode)){
+            // immutable task_name = "p2ptagion";
+            // opts.node_name = task_name;
+            gossip_net = new P2pGossipNet(opts.node_name, opts.discovery.task_name, opts.host, p2pnode);
+        }else{
+            throw new OptionException("Unknown network mode");
         }
-        hashgraph=new HashGraph(opts.nodes, net, &valid, null);
-        gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
+        // gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
 
+        hashgraph=new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, null);
+        hashgraph.print_flag = true;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
-        pragma(msg, "CBR: Casting net to immutable(HashNet) not nice");
-        discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, cast(immutable HashNet) net, opts.discovery.task_name, opts);
+        
+        discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, opts.discovery.task_name, opts);
         auto ctrl = receiveOnly!Control;
         assert(ctrl == Control.LIVE);
 
+        receive((DiscoveryState state){
+            assert(state == DiscoveryState.READY);
+        });
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         receive((ActiveNodeAddressBook address_book) {
-                auto pkeys = cast(immutable) address_book.data.keys;
-                foreach(p; pkeys) gossip_net.add_channel(p);
+                update_pkeys(address_book.data.keys);
                 dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
                     opts, p2pnode, shared_net, sector_range);
                 // receiveOnly!Control;
@@ -219,14 +244,13 @@ do
         discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
     }
     receive((DiscoveryState state){
-            assert(state == DiscoveryState.READY);
+            assert(state == DiscoveryState.ONLINE);
         });
 
     discovery_tid.send(DiscoveryRequestCommand.RequestTable);
     receive((ActiveNodeAddressBook address_book) {
-            auto pkeys = cast(immutable) address_book.data.keys;
-            foreach(p; pkeys) gossip_net.add_channel(p);
-        });
+        update_pkeys(address_book.data.keys);
+    });
 
     Tid monitor_socket_tid;
     Tid transaction_socket_tid;
@@ -387,18 +411,18 @@ do
     //    Event mother;
     Event event;
     //    Thread.sleep(2.seconds);
-    auto net_random = cast(P2pGossipNet) net;
-    enum bool has_random_seed = __traits(compiles, net_random.random.seed(0));
-    //    pragma(msg, has_random_seed);
-    version(none)
-        static if (has_random_seed)
-    {
-        //        pragma(msg, "Random seed works");
-        if (!opts.sequential)
-        {
-            net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
-        }
-    }
+    // auto net_random = cast(P2pGossipNet) net;
+    // enum bool has_random_seed = __traits(compiles, net_random.random.seed(0));
+    // //    pragma(msg, has_random_seed);
+    // version(none)
+    //     static if (has_random_seed)
+    // {
+    //     //        pragma(msg, "Random seed works");
+    //     if (!opts.sequential)
+    //     {
+    //         net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
+    //     }
+    // }
 //    const empty_payload=Document();
     // Document empty_payload_func(){
     //     return empty_payload;
@@ -419,14 +443,14 @@ do
 
 
     alias PayloadQueue=Queue!Document;
-    PayloadQueue payload_queue;
-    void receive_payload(const Document pload) {
+    PayloadQueue payload_queue = new PayloadQueue();
+    void receive_payload(const Document pload, bool flag) { //TODO: remove flag. Maybe try switch(doc.type)
         log.trace("payload.size=%d", pload.size);
         payload_queue.write(pload);
     }
 
     Document payload() @safe {
-        if (!hashgraph.active && payload_queue.empty) {
+        if (!hashgraph.active || payload_queue.empty) {
             return Document();
         }
         return payload_queue.read;
@@ -448,7 +472,7 @@ do
         }
     }
 
-    void receive_wavefront(Document doc) {
+    void receive_wavefront(const Document doc) {
         timeout_count=0;
         log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, doc.data.length);
         const receiver = HiRPC.Receiver(doc);
@@ -482,32 +506,35 @@ do
         }
     }
 
-    version(none)
-        static if (has_random_seed)
-    {
-        void sequential(uint time, uint random)
-            in
-            {
-                assert(opts.sequential);
-            }
-        do
-        {
-            immutable(ubyte[]) payload;
-            net_random.random.seed(random);
-            net_random.time = time;
-            next_mother(empty_payload);
-        }
-    }
+    // version(none)
+    //     static if (has_random_seed)
+    // {
+    //     void sequential(uint time, uint random)
+    //         in
+    //         {
+    //             assert(opts.sequential);
+    //         }
+    //     do
+    //     {
+    //         immutable(ubyte[]) payload;
+    //         net_random.random.seed(random);
+    //         net_random.time = time;
+    //         next_mother(empty_payload);
+    //     }
+    // }
 
+    import tagion.utils.Random;
+    Random!size_t random;
+    random.seed(123456789);
     // ownerTid.send(Control.LIVE);
-    auto iteration = 0;
+    // auto iteration = 0;
     while (!stop && !abort) {
-        log("Iteration %d", iteration);
-        if(iteration % 20 == 0) {
-            log("Send request table to discovery");
-            discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-        }
-        iteration++;
+        // log("Iteration %d", iteration);
+        // if(iteration % 20 == 0) {
+        //     log("Send request table to discovery");
+        //     discovery_tid.send(DiscoveryRequestCommand.RequestTable);
+        // }
+        // iteration++;
         try {
             immutable message_received = receiveTimeout(opts.timeout.msecs,
                 &receive_payload,
@@ -555,31 +582,31 @@ do
                 // },
                 (ActiveNodeAddressBook address_book) {
                     log("Update address book");
-                    auto pkeys = cast(immutable) address_book.data.keys;
+                    update_pkeys(address_book.data.keys);
                     if (dart_sync_tid!=Tid.init){
                         send(dart_sync_tid, address_book);
                     }
                     else {
                         log("Dart sync not found");
                     }
-                    net.set(pkeys);
-                    foreach (p; net.pkeys) {
-                        hashgraph.add_node(p);
-                        // if (hashgraph.createNode(p)) {
-                        //     log("%d] %s", i, p.cutHex);
-                        // }
-                    }
+                    // foreach (p; net.pkeys) {
+                    //     // if (hashgraph.createNode(p)) {
+                    //     //     log("%d] %s", i, p.cutHex);
+                    //     // }
+                    // }
                 });
-            log("received: %s", message_received);
-            log("MY PK: %s, net.pkeys.len: %d, cpb len: %d", net.pubkey.cutHex,
-                net.pkeys.length, connectionPoolBridge.lookup.length);
+            // log("received: %s", message_received);
+            // log("MY PK: %s, net.pkeys.len: %d, cpb len: %d", net.pubkey.cutHex,
+            //     net.pkeys.length, connectionPoolBridge.lookup.length);
 
             if (!message_received) {
                 const onLine=hashgraph.areWeOnline;
                 pragma(msg, "Replace with a realy random");
                 const init_tide=random.value(0,2) is 1;
+                    // log("online: %s init?: %s", onLine, init_tide);
                 if (onLine && init_tide) {
-                    hashgraph.init_tide(&gossip_net.gossip, &empty_payload_func, gossip_net.time);
+                    log("init_tide");
+                    hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
                 }
             }
         }
