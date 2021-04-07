@@ -1,6 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
-import std.stdio;
+//import std.stdio;
 import std.conv;
 import std.format;
 import std.exception : assumeWontThrow;
@@ -470,28 +470,28 @@ class HashGraph {
             .map!((n) => cast(immutable(EventPackage)*)n._event.event_package)
             .array;
 
-        writefln("nodes.length=%d all-definded=%s %s %s",
-            nodes.length,
-            nodes
-            .byValue
-            .all!((n) => n._event !is null),
-            nodes
-            .byValue
-            .all!((n) => n._event is null),
-            nodes
-            .byValue
-            .map!((n) => n._event !is null),
+        // writefln("nodes.length=%d all-definded=%s %s %s",
+        //     nodes.length,
+        //     nodes
+        //     .byValue
+        //     .all!((n) => n._event !is null),
+        //     nodes
+        //     .byValue
+        //     .all!((n) => n._event is null),
+        //     nodes
+        //     .byValue
+        //     .map!((n) => n._event !is null),
 
-            );
+        //     );
         const contain_all=
             nodes
             .byValue
             .all!((n) => n._event !is null);
 
         const state=(nodes.length is node_size && contain_all)?ExchangeState.COHERENT:ExchangeState.RIPPLE;
-        writefln("contain_all=%s nodes.length is node_size=%s state=%s", contain_all, nodes.length is node_size, state);
-        Pubkey a, b;
-        const x=a < b;
+        // writefln("contain_all=%s nodes.length is node_size=%s state=%s", contain_all, nodes.length is node_size, state);
+        // Pubkey a, b;
+        // const x=a < b;
         if (state is ExchangeState.COHERENT) {
             // pragma(msg, typeof(
             //         nodes
@@ -502,18 +502,18 @@ class HashGraph {
             //         .array.dup));
                 // .sort
                 // .map!((e) => e.cutHex)
-            auto list=                nodes
-                .byValue
-                .map!((n) => n._event)
-                .filter!((e) => e !is null)
-                .map!((e) => e.channel)
-                .array
-                .dup
-                .sort
-                .map!((e) => e.cutHex)
-                .array;
+            // auto list=                nodes
+            //     .byValue
+            //     .map!((n) => n._event)
+            //     .filter!((e) => e !is null)
+            //     .map!((e) => e.channel)
+            //     .array
+            //     .dup
+            //     .sort
+            //     .map!((e) => e.cutHex)
+            //     .array;
 
-            writefln("Nodes! [%s] %s length=%d", name, list, list.length);
+            // writefln("Nodes! [%s] %s length=%d", name, list, list.length);
 
             // writefln("Nodes %s",
             //     nodes
@@ -561,7 +561,7 @@ class HashGraph {
                         .check(false, ConsensusFailCode.GOSSIPNET_ILLEGAL_EXCHANGE_STATE);
                     break;
                 case RIPPLE: ///
-                    writefln("--> RIPPLE");
+                    // writefln("--> RIPPLE");
                     received_node.state = NONE;
 
                     // if (received_node.state !is NONE && received_node.state !is RIPPLE) {
@@ -576,7 +576,7 @@ class HashGraph {
                     // (() @trusted {
                     //     writefln("%J", received_wave);
                     // })();
-                    writefln("received_wave.state=%s received_node.state=%s %s", received_wave.state, received_node.state, areWeInGraph);
+                    // writefln("received_wave.state=%s received_node.state=%s %s", received_wave.state, received_node.state, areWeInGraph);
                     // if (areWeInGraph) {
                     //     received_node.state = INIT_TIDE;
                     //     return tidalWave;
@@ -590,7 +590,7 @@ class HashGraph {
                         //     received_node.state = NONE;
                         // }
                         // else {
-                        writefln("--> COHERENT");
+                        // writefln("--> COHERENT");
 //                        received_node.state=received_wave.state;
                         try {
                             initialize_witness(received_wave.epacks);
@@ -599,7 +599,7 @@ class HashGraph {
                             // intilaized witness not correct
                         }
 
-                        writefln("--> START");
+                        // writefln("--> START");
                     }
                     break;
                 case TIDAL_WAVE: ///
@@ -828,7 +828,7 @@ class HashGraph {
             }
 
         }
-        writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
+        // writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
         scope events=new HiBON;
         foreach(n; nodes) {
             const node_id = (node_id_relocation.length is 0)?size_t.max: node_id_relocation[n.channel];
