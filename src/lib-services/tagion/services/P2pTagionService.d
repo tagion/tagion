@@ -171,6 +171,7 @@ do
 
         hashgraph=new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, null);
         hashgraph.print_flag = true;
+        hashgraph.disable_scrapping = true;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
         
@@ -444,15 +445,17 @@ do
 
     alias PayloadQueue=Queue!Document;
     PayloadQueue payload_queue = new PayloadQueue();
-    void receive_payload(const Document pload, bool flag) { //TODO: remove flag. Maybe try switch(doc.type)
+    void receive_payload(Document pload, bool flag) { //TODO: remove flag. Maybe try switch(doc.type)
         log.trace("payload.size=%d", pload.size);
         payload_queue.write(pload);
     }
 
     Document payload() @safe {
+        // log("Select payload: %s", payload_queue.empty);
         if (!hashgraph.active || payload_queue.empty) {
             return Document();
         }
+        log("Payload readed");
         return payload_queue.read;
     }
 
@@ -598,7 +601,7 @@ do
             // log("received: %s", message_received);
             // log("MY PK: %s, net.pkeys.len: %d, cpb len: %d", net.pubkey.cutHex,
             //     net.pkeys.length, connectionPoolBridge.lookup.length);
-
+            log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
             if (!message_received) {
                 const onLine=hashgraph.areWeOnline;
                 pragma(msg, "Replace with a realy random");

@@ -254,6 +254,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     }
                     else{
                         // auto epoch = receiver.params["epoch"].get!int;
+                        log("received: %s", doc.toJSON);
                         auto owners_doc = receiver.method.params["owners"].get!Document;
                         Buffer[] owners;
                         foreach(owner; owners_doc[]){
@@ -265,14 +266,18 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                         foreach(archive_doc;result_doc[]){
                             auto archive = new Archive(net, archive_doc.get!Document);
                             //auto data_doc = Document(archive.data);
-                            // log("%s", archive.doc.toJSON);
+                            log("%s", archive.filed.toJSON);
+                            if(!StandardBill.isRecord(archive.filed)) continue;
+                            log("is standardbill");
                             const bill=StandardBill(archive.filed);
+
                             // if (archive.filed.hasMember("$type")){
                             //     if (archive.filed["$type"].get!string == "BIL"){
                             //         auto bill = StandardBill(archive.filed);
                             import std.algorithm: canFind;
                             // log("bill.owner: %s, owner: %s", bill.owner, owner);
                             if( owners.canFind(bill.owner)){
+                                log("owners found");
                                 bills~=bill;
                             }
                                 // }

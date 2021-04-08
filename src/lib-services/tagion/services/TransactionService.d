@@ -137,8 +137,10 @@ void transactionServiceTask(immutable(Options) opts) {
                                 //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                 const response=ssl_relay.response;
                                 const received = internal_hirpc.receive(Document(response));
+                                log("%s", Document(response).toJSON);
                                 const foreign_recorder = rec_factory.recorder(received.response.result);
                                 //return recorder;
+                                log("constructed");
 
                                 import tagion.script.StandardRecords: StandardBill;
                                 // writefln("input loaded %d", foreign_recoder.archive);
@@ -150,6 +152,7 @@ void transactionServiceTask(immutable(Options) opts) {
                                 // Send the contract as payload to the HashGraph
                                 // The data inside HashGraph is pure payload not an HiRPC
                                 SmartScript.check(hirpc.net, signed_contract);
+                                log("checked");
                                 const payload=Document(signed_contract.toHiBON.serialize);
                                 {
                                     immutable data=signed_contract.toHiBON.serialize;
@@ -158,9 +161,11 @@ void transactionServiceTask(immutable(Options) opts) {
 
                                     log("Contract:\n%s", json.toPrettyString);
                                 }
+                                log("before send payload");
                                 sendPayload(payload);
                                 auto empty_params = new HiBON;
                                 auto empty_response = internal_hirpc.result(hirpc_received, empty_params);
+                                log("before send");
                                 ssl_relay.send(empty_response.toDoc.serialize);
                             }
                         }
