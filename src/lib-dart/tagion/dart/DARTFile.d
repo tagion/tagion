@@ -551,10 +551,12 @@ alias check=Check!DARTException;
             if ( branch_index !is INDEX_NULL ) {
                 scope data=blockfile.load(branch_index);
                 scope doc=Document(data);
-                const branches=Branches(doc);
-                if ( branches.indices.length ) {
-                    foreach(key, index; branches._indices) {
-                        local_load(index, cast(ubyte)key, rim+1);
+                if( Branches.isRecord(doc)){
+                    const branches=Branches(doc);
+                    if ( branches.indices.length ) {
+                        foreach(key, index; branches._indices) {
+                            local_load(index, cast(ubyte)key, rim+1);
+                        }
                     }
                 }
                 else if ( isStub(doc) ) {
