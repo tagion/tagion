@@ -31,7 +31,7 @@ import tagion.gossip.InterfaceNet;
 
 @safe
 class HashGraph {
-    enum default_scrap_depth=5;
+    enum default_scrap_depth=10;
     bool print_flag;
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
@@ -257,7 +257,7 @@ class HashGraph {
         if (epoch_callback !is null) {
             epoch_callback(events);
         }
-        if (!disable_scrapping) {
+        if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             live_witness_statistic(Event.Witness.count);
             _rounds.dustman;
@@ -807,7 +807,7 @@ class HashGraph {
         return (~used_nodes)[].front;
     }
 
-    bool disable_scrapping;
+    //bool disable_scrapping;
 
     enum max_package_size=0x1000;
     enum round_clean_limit=10;
@@ -877,7 +877,7 @@ class HashGraph {
                 .array;
             typeof(h1_nodes) h2_nodes;
             try {
-                pragma(msg, typeof(h1_nodes));
+                //pragma(msg, typeof(h1_nodes));
                 //pragma(msg, typeof(h1_nodes.front));
                 h2_nodes=h1.nodes
                     .byValue
@@ -907,9 +907,12 @@ class HashGraph {
 
                 if (!h1_events.empty && !h2_events.empty) {
                     order_offset = h1_events.front.received_order - h2_events.front.received_order;
+                    if (!h1_events.front.hasRound || !h2_events.front.hasRound) {
+                        return error_callback(null, null, ErrorCode.NODES_DOES_NOT_MATCH);
+                    }
                     round_offset = h1_events.front.round.number - h2_events.front.round.number;
                 }
-                error_callback(h1_events.front, h2_events.front, ErrorCode.NONE);
+                //error_callback(h1_events.front, h2_events.front, ErrorCode.NONE);
                 while (!h1_events.empty && !h2_events.empty) {
                     const e1=h1_events.front;
                     const e2=h2_events.front;
@@ -1155,10 +1158,25 @@ class HashGraph {
             Bob,
             Carol,
             Dave,
+
             Elisa,
             Freja,
-            George
-        }
+            George,
+            Hermine,
+
+            Illa,
+            Joella,
+            Kattie,
+            Laureen,
+            // Manual,
+            // Niels,
+            // Ove,
+            // Poul,
+            // Roberto,
+            // Samatha,
+            // Tamekia,
+
+       }
 
         auto network=new UnittestNetwork!NodeLabel();
         network.random.seed(123456789);
@@ -1168,7 +1186,7 @@ class HashGraph {
         const channels=network.channels;
 
         try {
-            foreach(i; 0..3776) {
+            foreach(i; 0..5776) {
 //            foreach(i; 0..300) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
@@ -1211,18 +1229,49 @@ class HashGraph {
         }
 
 
+        auto names=network.networks.byValue
+            .map!((net) => net._hashgraph.name)
+            .array.dup
+            .sort;
+
+        HashGraph[string] hashgraphs;
+        foreach(net; network.networks) {
+            hashgraphs[net._hashgraph.name]=net._hashgraph;
+        }
+
+        foreach(name_h1; names) {
+            const h1=hashgraphs[name_h1];
+            foreach(name_h2; names) {
+                const h2=hashgraphs[name_h2];
+                auto comp=Compare(h1, h2, &event_error);
+                writefln("%s %s round_offset=%d order_offset=%d",
+                    h1.name, h2.name, comp.round_offset, comp.order_offset);
+                const result=comp.compare;
+            }
+        }
+
+        version(none) {
+
         auto hashgraphs=network.networks.byValue
             .map!((net) => net._hashgraph);
+//        auto hashgraphs_h2=hashgraphs;
         while(!hashgraphs.empty) {
             auto h1=hashgraphs.front;
-            hashgraphs.popFront;
-            if (!hashgraphs.empty) {
-                auto h2=hashgraphs.front;
+        auto hashgraphs_h2=network.networks.byValue
+            .map!((net) => net._hashgraph);
+            //hashgraphs.popFront;
+            //    auto hashgraphs_h2=hashgraphs;
+            while (!hashgraphs_h2.empty) {
+                auto h2=hashgraphs_h2.front;
+                hashgraphs_h2.popFront;
                 auto comp=Compare(h1, h2, &event_error);
+                writefln("%s %s round_offset=%d order_offset=%d",
+                    h1.name, h2.name, comp.round_offset, comp.order_offset);
                 const result=comp.compare;
-                writefln("result=%s round_offset=%d order_offset=%d", result, comp.round_offset, comp.order_offset);
                 assert(result);
             }
+            hashgraphs.popFront;
+        }
         }
         //     .fold!((net1, net2) => Compare(net1._hashgraph, net2._hashgraph, &event_error));
         // auto comp=Compare(h1, h2, &event_error);
