@@ -49,7 +49,7 @@ class SmartScript {
         }
     do {
         .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
-        const message=net.calcHash(signed_contract.contract.toHiBON.serialize);
+        const message=net.hashOf(signed_contract.contract.toDoc);
         .check(signed_contract.signs.length >= signed_contract.input.length,
             ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE);
         .check(signed_contract.contract.input.length == signed_contract.input.length,
@@ -57,7 +57,7 @@ class SmartScript {
 
         foreach(i, print, input, signature; lockstep(signed_contract.contract.input, signed_contract.input, signed_contract.signs)) {
             import tagion.utils.Miscellaneous: toHexString;
-            immutable fingerprint=net.calcHash(input.toHiBON.serialize);
+            immutable fingerprint=net.hashOf(input.toDoc);
             .check(print == fingerprint, ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
             Pubkey pkey=input.owner;
             .check(net.verify(message, signature, pkey),
