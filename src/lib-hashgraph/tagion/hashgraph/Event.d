@@ -9,14 +9,13 @@ import std.conv;
 import std.format;
 import std.typecons;
 import std.traits : Unqual, ReturnType;
-import std.range : enumerate;
 import std.array : array;
 
 import std.algorithm.sorting : sort;
 import std.algorithm.iteration : map, each, filter, cache, fold, joiner;
 import std.algorithm.searching : count, any, all, until;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
-import std.range : chain;
+import std.range : enumerate, chain, tee;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -347,35 +346,41 @@ class Round {
                 .filter!((e) => (e !is null))
                 .map!((ref e) => e[]
                     .until!((e) => (e._round_received !is null))
-                    .filter!((e) => (e._round_received_mask.isMajority(hashgraph))));
+                    .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
+                .joiner
+                .tee!((e) => e._round_received = r)
+                .map!((e) => e);
+
+
+
+            //writefln("\tevent_filter %d",  event_filter.joiner.array.length);
 
             // Sets all the selected event to the round r
-            event_filter
-                .joiner
-                .each!((ref e) => e._round_received = r);
-            bool order_less(const Event a, const Event b) @safe
-                in {
-                    assert(a._round_received is b._round_received);
-                }
-            do {
+//             auto event_round_set=event_filter.save;
+//             event_round_set
+// //                .joiner
+//                 .each!((ref e) => e._round_received = r);
+            // writefln("\tevent_filter %d",  event_filter.map!((e)array.length);
+            // writefln("\tevent_filter %d",  event_filter.array.length);
+            // writefln("\tevent_filter %s", event_round_set.map!((ref e) => e._round_received.number));
+
+            bool order_less(const Event a, const Event b) @safe {
+            //     in {
+            //         assert(a._round_received is b._round_received);
+            //     }
+            // do {
                 order_compare_iteration_count++;
                 if (a.received_order is b.received_order) {
-                    if (a._mother && b._mother &&
-                        a._mother._round_received is a._round_received &&
-                        b._mother._round_received is a._round_received) {
+                    if (a._mother && b._mother ) {
                         return order_less(a._mother, b._mother);
                     }
-                    if (a._father && b._father &&
-                        a._father._round_received is a._round_received &&
-                        b._father._round_received is a._round_received) {
+                    if (a._father && b._father ) {
                         return order_less(a._father, b._father);
                     }
-                    if (a._mother &&
-                        a._mother._round_received is a._round_received) {
+                    if (!a._father) {
                         return false;
                     }
-                    if (a._father &&
-                        a._father._round_received is a._round_received) {
+                    if (b._father) {
                         return true;
                     }
 
@@ -394,9 +399,15 @@ class Round {
                 return a.received_order < b.received_order;
             }
 
+//             auto event_collection_array = event_filter
+// //                .joiner
+//                 .array;
+
+//             writefln("\tevent_collection_array %d", event_collection_array.length);
+
             // Collect and sort all events
             auto event_collection = event_filter
-                .joiner
+//                .joiner
                 .filter!((e) => !e.event_body.payload.empty)
                 .array
                 .sort!((a, b) => order_less(a,b))
@@ -415,6 +426,9 @@ class Round {
                     .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(hashgraph));
                 if (round_decided) {
                     const events=collect_received_round(round_to_be_decided, hashgraph);
+                    // if (hashgraph.print_flag) {
+                    //     writefln("\tevents %d", events.length);
+                    // }
                     hashgraph.epoch(events, round_to_be_decided);
                     round_to_be_decided._decided=true;
                     last_decided_round=round_to_be_decided;

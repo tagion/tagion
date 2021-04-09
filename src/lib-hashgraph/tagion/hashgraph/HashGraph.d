@@ -103,22 +103,47 @@ class HashGraph {
         Event[] initialized_events;
         auto owner_node=getNode(channel);
         scope(success) {
+            void init_event(immutable(EventPackage*) epack) {
+                auto event=new Event(epack, this);
+                _event_cache[event.fingerprint]=event;
+                event.witness_event;
+                _rounds.last_round.add(event);
+                front_seat(event);
+            }
             _rounds.erase;
             _rounds=Round.Rounder(this);
             _rounds.last_decided_round=_rounds.last_round;
-            auto owen_event=new Event(owner_node.event.event_package, this);
-            _event_cache[owen_event.fingerprint]=owen_event;
-            owen_event.witness_event;
-            _rounds.last_round.add(owen_event);
-            front_seat(owen_event);
+            (() @trusted {
+                _event_cache.clear;
+            })();
+            init_event(owner_node.event.event_package);
+            // auto owen_event=new Event(owner_node.event.event_package, this);
+            // _event_cache[owen_event.fingerprint]=owen_event;
+            // owen_event.witness_event;
+            // _rounds.last_round.add(owen_event);
+            // front_seat(owen_event);
             foreach(epack; epacks) {
                 if (epack.pubkey != channel) {
-                    auto event=new Event(epack, this);
-                    _event_cache[event.fingerprint]=event;
+                    init_event(epack);
+                    // auto event=new Event(epack, this);
+                    // _event_cache[event.fingerprint]=event;
 
-                    event.witness_event;
-                    _rounds.last_round.add(event);
-                    front_seat(event);
+                    // event.witness_event;
+                    // _rounds.last_round.add(event);
+                    // front_seat(event);
+                }
+            }
+            foreach(channel, recovered_node; recovered_nodes) {
+                if (!(channel in nodes)) {
+                    if (recovered_node.event) {
+                        init_event(recovered_node.event.event_package);
+
+                        // auto event=new Event(recovered_node.event.event_package, this);
+                        // _event_cache[event.fingerprint]=event;
+                        // event.witness_event;
+                        // _rounds.last_round.add(event);
+                        // front_seat(event);
+                    }
                 }
             }
         }
@@ -252,7 +277,7 @@ class HashGraph {
     package void epoch(const(Event)[] events, const Round decided_round) {
         import std.stdio;
         if (print_flag) {
-            writefln("Epoch round %d event.count=%d witness.count=%d", decided_round.number, Event.count, Event.Witness.count);
+            writefln("Epoch round %d event.count=%d witness.count=%d event in epoch=%d", decided_round.number, Event.count, Event.Witness.count, events.length);
         }
         if (epoch_callback !is null) {
             epoch_callback(events);
@@ -587,11 +612,6 @@ class HashGraph {
                     log.trace("COHERENT");
                     received_node.state = NONE;
                     if (!areWeInGraph) {
-                        //     received_node.state = NONE;
-                        // }
-                        // else {
-                        // writefln("--> COHERENT");
-//                        received_node.state=received_wave.state;
                         try {
                             initialize_witness(received_wave.epacks);
                         }
@@ -1168,8 +1188,8 @@ class HashGraph {
             Joella,
             Kattie,
             Laureen,
-            // Manual,
-            // Niels,
+            Manual,
+            Niels,
             // Ove,
             // Poul,
             // Roberto,
