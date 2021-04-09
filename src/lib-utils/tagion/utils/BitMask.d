@@ -194,7 +194,7 @@ struct BitMask {
 
             BitMask result;
             const max_length=max(mask.length, rhs.mask.length);
-            result.mask.length=max_length;
+            result.mask =new size_t[max_length];
             const min_length=min(mask.length, rhs.mask.length);
             static if (op == "-") {
                 result.mask[0..min_length] = mask[0..min_length] &~ rhs.mask[0..min_length];
@@ -227,7 +227,7 @@ struct BitMask {
         if (op == "~")
         {
             BitMask result;
-            result.mask.length = mask.length;
+            result.mask =new size_t[mask.length];
             result.mask[]=~mask[];
             return result;
         }
