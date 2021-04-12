@@ -1,6 +1,6 @@
 module tagion.hashgraph.Event;
 
-import std.stdio;
+//import std.stdio;
 
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
@@ -751,30 +751,30 @@ class Event {
             assert(!_mother._witness_mask[].empty);
         }
     do {
-        const _test=test(hashgraph);
-        if (_test) {
-            assumeWontThrow(
-                (() @trusted {
-                    writefln("%s %d", hashgraph.name, id);
-                })());
-        }
+        // const _test=test(hashgraph);
+        // if (_test) {
+        //     assumeWontThrow(
+        //         (() @trusted {
+        //             writefln("%s %d", hashgraph.name, id);
+        //         })());
+        // }
         uint iterative_witness_search_count;
         scope(exit) {
             hashgraph.witness_search_statistic(iterative_witness_search_count);
         }
         const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
             iterative_witness_search_count++;
-            if (_test) {
-                assumeWontThrow(
-                    (() @trusted {
-                        if (e) {
-                            writefln("%s \t (%d:%d) round=%d %7s", hashgraph.name, e.id, e.node_id, (e._round)?e._round.number:-42, voting_mask);
-                        }
-                        else {
-                            writefln("%s %7s", hashgraph.name, voting_mask);
-                        }
-                    })());
-            }
+            // if (_test) {
+            //     assumeWontThrow(
+            //         (() @trusted {
+            //             if (e) {
+            //                 writefln("%s \t (%d:%d) round=%d %7s", hashgraph.name, e.id, e.node_id, (e._round)?e._round.number:-42, voting_mask);
+            //             }
+            //             else {
+            //                 writefln("%s %7s", hashgraph.name, voting_mask);
+            //             }
+            //         })());
+            // }
             if (e && e._round && !marker_mask[e.node_id]) {
                 BitMask result = voting_mask.dup;
                 if (e._round.number == _round.number) {
@@ -854,16 +854,16 @@ class Event {
                 // if (((id == 97) && hashgraph.name == "Alice") ||
                 //     ((id == 38) && hashgraph.name == "George")
                 //     ) {
-                if (test(hashgraph)) {
-                    (() @trusted {
-                        writefln("%s (%d:%d:%d) witness=%7s strong=%7s %s round=%d",
-                            hashgraph.name,
-                            id, node_id, altitude,
-                            _witness_mask,
-                            witness_seen_mask, witness_seen_mask.isMajority(hashgraph),
-                            (_round)?_round.number:-42);
-                    })();
-                }
+                // if (test(hashgraph)) {
+                //     (() @trusted {
+                //         writefln("%s (%d:%d:%d) witness=%7s strong=%7s %s round=%d",
+                //             hashgraph.name,
+                //             id, node_id, altitude,
+                //             _witness_mask,
+                //             witness_seen_mask, witness_seen_mask.isMajority(hashgraph),
+                //             (_round)?_round.number:-42);
+                //     })();
+                // }
                 if ( witness_seen_mask.isMajority(hashgraph) ) {
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
