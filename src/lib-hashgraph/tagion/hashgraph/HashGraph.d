@@ -1182,14 +1182,14 @@ class HashGraph {
             Elisa,
             Freja,
             George,
-            Hermine,
+            // Hermine,
 
-            Illa,
-            Joella,
-            Kattie,
-            Laureen,
-            Manual,
-            Niels,
+            // Illa,
+            // Joella,
+            // Kattie,
+            // Laureen,
+            // Manual,
+            // Niels,
             // Ove,
             // Poul,
             // Roberto,
@@ -1206,7 +1206,8 @@ class HashGraph {
         const channels=network.channels;
 
         try {
-            foreach(i; 0..5776) {
+//            foreach(i; 0..5776) {
+            foreach(i; 0..1276) {
 //            foreach(i; 0..300) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];

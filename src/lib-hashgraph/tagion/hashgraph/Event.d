@@ -1,6 +1,6 @@
 module tagion.hashgraph.Event;
 
-//import std.stdio;
+import std.stdio;
 
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
@@ -107,6 +107,7 @@ class Round {
     }
     do {
         _events[event.node_id]=event;
+        event._round = this;
     }
 
 
@@ -261,7 +262,7 @@ class Round {
             assert(e._round !is null);
         }
         do {
-            if (!e.isFatherLess) {
+//            if (!e.isFatherLess) {
                 scope (exit) {
                     e._round.add(e);
                 }
@@ -276,7 +277,7 @@ class Round {
                     }
                 }
 
-            }
+                //          }
         }
 
         @nogc
@@ -622,32 +623,36 @@ class Event {
         BitMask _round_received_mask;
     }
 
-    package void attach_round(HashGraph hashgraph) pure nothrow
-        in {
-            assert(_round is null, "Round has already been attached");
-        }
-    do {
-        if (_mother) {
-        if (_mother.isFatherLess) {
-            if (_father && _father._round) {
-                _round = _father._round;
-            }
-            else {
-                _round = hashgraph._rounds.last_round;
-            }
-            for(Event e=_mother; e !is null; e=e._mother) {
-                assert(e.isFatherLess);
-                e._round =_round;
-            }
-        }
-        else {
+    package void attach_round(HashGraph hashgraph) pure nothrow {
+    //     in {
+    //         assert(_round is null, "Round has already been attached");
+    //     }
+    // do {
+//        if (_mother) {
+        // if (_mother.isFatherLess) {
+        //     if (_father && _father._round) {
+        //         _round = _father._round;
+        //     }
+        //     else {
+        //         _round = hashgraph._rounds.last_round;
+        //     }
+        //     for(Event e=_mother; e !is null; e=e._mother) {
+        //         assert(e.isFatherLess);
+        //         e._round =_round;
+        //     }
+        // }
+        // else {
+        if (!_round) {
+        // }
+        // else {
             _round = _mother._round;
         }
-        }
-        else {
-            assert(hashgraph._rounds.last_round._previous is null);
-            _round = hashgraph._rounds.last_round;
-        }
+        // }
+        // }
+        // else {
+        //     assert(hashgraph._rounds.last_round._previous is null);
+        //     _round = hashgraph._rounds.last_round;
+        // }
     }
 
     immutable uint id;
@@ -746,12 +751,30 @@ class Event {
             assert(!_mother._witness_mask[].empty);
         }
     do {
+        const _test=test(hashgraph);
+        if (_test) {
+            assumeWontThrow(
+                (() @trusted {
+                    writefln("%s %d", hashgraph.name, id);
+                })());
+        }
         uint iterative_witness_search_count;
         scope(exit) {
             hashgraph.witness_search_statistic(iterative_witness_search_count);
         }
         const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
             iterative_witness_search_count++;
+            if (_test) {
+                assumeWontThrow(
+                    (() @trusted {
+                        if (e) {
+                            writefln("%s \t (%d:%d) round=%d %7s", hashgraph.name, e.id, e.node_id, (e._round)?e._round.number:-42, voting_mask);
+                        }
+                        else {
+                            writefln("%s %7s", hashgraph.name, voting_mask);
+                        }
+                    })());
+            }
             if (e && e._round && !marker_mask[e.node_id]) {
                 BitMask result = voting_mask.dup;
                 if (e._round.number == _round.number) {
@@ -769,10 +792,16 @@ class Event {
                         const collecting_voting_mask = e._witness_mask & ~result;
                         if (!collecting_voting_mask[].empty) {
                             result |= local_calc_witness_mask(event_round, result, marker_mask);
-                            result |= local_calc_witness_mask(e._father, result, marker_mask+node_id);
+                            result |= local_calc_witness_mask(e._father, result, marker_mask+e.node_id);
                         }
                     }
                 }
+            // else if (e.isEva) {
+            //     result[e.node_id] = true;
+            // }
+                // else {
+                //     result[e.node_id] = true;
+                // }
                 return result;
             }
             return voting_mask;
@@ -822,9 +851,23 @@ class Event {
                 received_order(received_order_iteration_count);
                 hashgraph.received_order_statistic(received_order_iteration_count);
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
+                // if (((id == 97) && hashgraph.name == "Alice") ||
+                //     ((id == 38) && hashgraph.name == "George")
+                //     ) {
+                if (test(hashgraph)) {
+                    (() @trusted {
+                        writefln("%s (%d:%d:%d) witness=%7s strong=%7s %s round=%d",
+                            hashgraph.name,
+                            id, node_id, altitude,
+                            _witness_mask,
+                            witness_seen_mask, witness_seen_mask.isMajority(hashgraph),
+                            (_round)?_round.number:-42);
+                    })();
+                }
                 if ( witness_seen_mask.isMajority(hashgraph) ) {
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
+
                     strong_seeing(hashgraph);
                     hashgraph._rounds.check_decided_round(hashgraph);
                     _witness_mask.clear;
@@ -842,6 +885,11 @@ class Event {
         }
     }
 
+    bool test(const HashGraph hashgraph) const pure nothrow {
+        return (((id == 97) && hashgraph.name == "Alice") ||
+            ((id == 38) && hashgraph.name == "George"));
+
+    }
 // +++
     @trusted
     final private void disconnect(HashGraph hashgraph)
