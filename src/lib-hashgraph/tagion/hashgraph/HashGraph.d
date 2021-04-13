@@ -1,6 +1,6 @@
 module tagion.hashgraph.HashGraph;
 
-//import std.stdio;
+import std.stdio;
 import std.conv;
 import std.format;
 import std.exception : assumeWontThrow;
@@ -1036,12 +1036,10 @@ class HashGraph {
 
 
             this(const(string[]) node_names) {
-                // import std.traits : EnumMembers;
-                // import std.conv : to;
                 authorising=new TestGossipNet;
                 immutable N=node_names.length; //EnumMembers!NodeList.length;
                 foreach(name; node_names) {
-                    immutable passphrase=format("very secret %s", node_names);
+                    immutable passphrase=format("very secret %s", name);
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
                     auto h=new HashGraph(N, net, &authorising.isValidChannel, null, name);
@@ -1090,8 +1088,8 @@ class HashGraph {
         }
 
         auto node_labels=[EnumMembers!NodeLabel].map!((E) => E.to!string).array;
-        writefln("node_labels=%s %s", node_labels, typeof(node_labels).stringof);
         auto network=new TestNetwork(node_labels); //!NodeLabel();
+        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
 
         network.global_time=SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
