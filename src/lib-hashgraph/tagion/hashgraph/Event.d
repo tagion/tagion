@@ -1,6 +1,6 @@
 module tagion.hashgraph.Event;
 
-import std.stdio;
+//import std.stdio;
 
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
@@ -324,12 +324,6 @@ class Round {
                 hashgraph.mark_received_statistic(mark_received_iteration_count);
                 hashgraph.order_compare_statistic(order_compare_iteration_count);
                 hashgraph.epoch_events_statistic(epoch_events_count);
-                if (r.number == 46) {
-                    writefln("%s r=%d mark_received_iteration_count=%d %s", hashgraph.name, r.number, mark_received_iteration_count, hashgraph.mark_received_statistic.result);
-                }
-            }
-            if (r.number == 46) {
-                writefln("%s events=%s", hashgraph.name, r._events.filter!((e) => (e !is null)).map!((e) => e.id));
             }
             r._events
                 .filter!((e) => (e !is null))
