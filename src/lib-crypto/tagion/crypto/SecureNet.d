@@ -38,13 +38,13 @@ class StdHashNet : HashNet {
     }
 
 
-    immutable(Buffer) calcHash(scope const(ubyte[]) data) const
-    in {
-        const doc=Document(data.idup);
-        assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
-    }
-    do {
-        pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
+    immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
+    // in {
+    //     const doc=Document(data.idup);
+    //     assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
+    // }
+    // do {
+        //pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
         //const doc=Document(data.idup);
         // if (doc.isInorder) {
         //     import std.stdio;
@@ -52,7 +52,9 @@ class StdHashNet : HashNet {
         //     writefln("data=%s", doc.data);
         //     writefln("doc=%s", doc.toPretty);
         // }
-        assert(!Document(data.idup).isInorder, "calcHash should not be use on a Document use hashOf instead");
+        version(unittest) {
+            assert(!Document(data.idup).isInorder, "calcHash should not be use on a Document use hashOf instead");
+        }
         return rawCalcHash(data);
     }
 
