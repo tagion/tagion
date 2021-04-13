@@ -61,7 +61,7 @@ struct BitMask {
     }
 
     void clear() pure nothrow {
-        mask=null;
+        mask[]=0;
     }
 
     version(none)
