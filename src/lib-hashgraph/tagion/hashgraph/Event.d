@@ -107,6 +107,7 @@ class Round {
     }
     do {
         _events[event.node_id]=event;
+        event._round = this;
     }
 
 
@@ -232,11 +233,6 @@ class Round {
             }
         }
 
-        // @nogc
-        // inout(Round) last_round() inout pure nothrow {
-        //     return _last_round;
-        // }
-
         @nogc
         size_t length() const pure nothrow {
             return this[].walkLength;
@@ -261,21 +257,18 @@ class Round {
             assert(e._round !is null);
         }
         do {
-            if (!e.isFatherLess) {
-                scope (exit) {
-                    e._round.add(e);
+            scope (exit) {
+                e._round.add(e);
+            }
+            if (e._round && e._round._next) {
+                e._round = e._round._next;
+            }
+            else {
+                e._round = new Round(last_round, hashgraph.node_size);
+                last_round = e._round;
+                if (Event.callbacks) {
+                    Event.callbacks.round_seen(e);
                 }
-                if (e._round && e._round._next) {
-                    e._round = e._round._next;
-                }
-                else {
-                    e._round = new Round(last_round, hashgraph.node_size);
-                    last_round = e._round;
-                    if (Event.callbacks) {
-                        Event.callbacks.round_seen(e);
-                    }
-                }
-
             }
         }
 
@@ -314,10 +307,11 @@ class Round {
             return cached_decided_count > total_limit;
         }
 
-        private const(Event[]) collect_received_round(Round r, HashGraph hashgraph) {
+        private void collect_received_round(Round r, HashGraph hashgraph) {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
             uint epoch_events_count;
+            // uint count;
             scope(success) {
                 hashgraph.mark_received_statistic(mark_received_iteration_count);
                 hashgraph.order_compare_statistic(order_compare_iteration_count);
@@ -329,18 +323,19 @@ class Round {
                     .until!((e) => (e._round_received !is null))
                     .each!((ref e) => e._round_received_mask.clear));
 
-            void mark_received_events(const size_t voting_node_id, Event e, const BitMask marker_mask) {
+            void mark_received_events(const size_t voting_node_id, Event e) {
                 mark_received_iteration_count++;
-                if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id] && !marker_mask[e.node_id] ) {
+                if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id]) { // && !marker_mask[e.node_id] ) {
                     e._round_received_mask[voting_node_id]=true;
-                    mark_received_events(voting_node_id, e._father, marker_mask+e.node_id);
-                    mark_received_events(voting_node_id, e._mother, marker_mask);
+                    mark_received_events(voting_node_id, e._father);
+                    mark_received_events(voting_node_id, e._mother);
                 }
             }
             // Marks all the event below round r
             r._events
                 .filter!((e) => (e !is null))
-                .each!((ref e) => mark_received_events(e.node_id, e, BitMask()));
+                .each!((ref e) => mark_received_events(e.node_id, e));
+
 
             auto event_filter = r._events
                 .filter!((e) => (e !is null))
@@ -351,24 +346,7 @@ class Round {
                 .tee!((e) => e._round_received = r)
                 .map!((e) => e);
 
-
-
-            //writefln("\tevent_filter %d",  event_filter.joiner.array.length);
-
-            // Sets all the selected event to the round r
-//             auto event_round_set=event_filter.save;
-//             event_round_set
-// //                .joiner
-//                 .each!((ref e) => e._round_received = r);
-            // writefln("\tevent_filter %d",  event_filter.map!((e)array.length);
-            // writefln("\tevent_filter %d",  event_filter.array.length);
-            // writefln("\tevent_filter %s", event_round_set.map!((ref e) => e._round_received.number));
-
             bool order_less(const Event a, const Event b) @safe {
-            //     in {
-            //         assert(a._round_received is b._round_received);
-            //     }
-            // do {
                 order_compare_iteration_count++;
                 if (a.received_order is b.received_order) {
                     if (a._mother && b._mother ) {
@@ -399,41 +377,50 @@ class Round {
                 return a.received_order < b.received_order;
             }
 
-//             auto event_collection_array = event_filter
-// //                .joiner
-//                 .array;
-
-//             writefln("\tevent_collection_array %d", event_collection_array.length);
-
             // Collect and sort all events
+            pragma(msg, "event_filter ", typeof(event_filter));
+            sdt_t[] times;
             auto event_collection = event_filter
-//                .joiner
+                .tee!((e) => times~=e.event_body.time)
                 .filter!((e) => !e.event_body.payload.empty)
                 .array
                 .sort!((a, b) => order_less(a,b))
                 .release;
+            // const times_1=event_filter
+            //     .map!((e) => e.event_body.time)
+            //     .array.dup;
 
-            return event_collection;
+            // const times=event_filter
+            //     .map!((e) => e.event_body.time)
+            //     .array.dup
+            //     .sort!((a,b) => (a - b) < 0)
+            //     .release;
+            times.sort;
+            const mid=times.length/2+(times.length % 1);
+
+            hashgraph.epoch(event_collection, times[mid], r);
+
+//            return event_collection;
         }
+
 
         void check_decided_round(HashGraph hashgraph) @trusted {
             auto round_to_be_decided=last_decided_round._next;
-            const votes_mask=BitMask(round_to_be_decided.events
-                .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
-                .map!((e) => e.node_id));
-            if (votes_mask.isMajority(hashgraph)) {
-                const round_decided=votes_mask[]
-                    .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(hashgraph));
-                if (round_decided) {
-                    const events=collect_received_round(round_to_be_decided, hashgraph);
-                    // if (hashgraph.print_flag) {
-                    //     writefln("\tevents %d", events.length);
-                    // }
-                    hashgraph.epoch(events, round_to_be_decided);
-                    round_to_be_decided._decided=true;
-                    last_decided_round=round_to_be_decided;
-                    check_decided_round(hashgraph);
 
+            if (hashgraph.can_round_be_decided(round_to_be_decided)) {
+                const votes_mask=BitMask(round_to_be_decided.events
+                    .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
+                    .map!((e) => e.node_id));
+                if (votes_mask.isMajority(hashgraph)) {
+                    const round_decided=votes_mask[]
+                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(hashgraph));
+                    if (round_decided) {
+                        collect_received_round(round_to_be_decided, hashgraph);
+                        round_to_be_decided._decided=true;
+                        last_decided_round=round_to_be_decided;
+                        check_decided_round(hashgraph);
+
+                    }
                 }
             }
         }
@@ -622,31 +609,9 @@ class Event {
         BitMask _round_received_mask;
     }
 
-    package void attach_round(HashGraph hashgraph) pure nothrow
-        in {
-            assert(_round is null, "Round has already been attached");
-        }
-    do {
-        if (_mother) {
-        if (_mother.isFatherLess) {
-            if (_father && _father._round) {
-                _round = _father._round;
-            }
-            else {
-                _round = hashgraph._rounds.last_round;
-            }
-            for(Event e=_mother; e !is null; e=e._mother) {
-                assert(e.isFatherLess);
-                e._round =_round;
-            }
-        }
-        else {
+    package void attach_round(HashGraph hashgraph) pure nothrow {
+        if (!_round) {
             _round = _mother._round;
-        }
-        }
-        else {
-            assert(hashgraph._rounds.last_round._previous is null);
-            _round = hashgraph._rounds.last_round;
         }
     }
 
@@ -769,7 +734,7 @@ class Event {
                         const collecting_voting_mask = e._witness_mask & ~result;
                         if (!collecting_voting_mask[].empty) {
                             result |= local_calc_witness_mask(event_round, result, marker_mask);
-                            result |= local_calc_witness_mask(e._father, result, marker_mask+node_id);
+                            result |= local_calc_witness_mask(e._father, result, marker_mask+e.node_id);
                         }
                     }
                 }
@@ -825,6 +790,7 @@ class Event {
                 if ( witness_seen_mask.isMajority(hashgraph) ) {
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
+
                     strong_seeing(hashgraph);
                     hashgraph._rounds.check_decided_round(hashgraph);
                     _witness_mask.clear;
@@ -847,7 +813,6 @@ class Event {
     final private void disconnect(HashGraph hashgraph)
         in {
             assert(!_mother, "Event with a mother can not be disconnected");
-            //  assert(!_father, "Event with a father can not be disconnected");
         }
     do {
         hashgraph.eliminate(fingerprint);
