@@ -29,6 +29,10 @@ import tagion.basic.Logger;
 import tagion.utils.Miscellaneous : toHex=toHexString;
 import tagion.gossip.InterfaceNet;
 
+version(unittest) {
+    version = hashgraph_fibertest;
+}
+
 @safe
 class HashGraph {
     enum default_scrap_depth=10;
@@ -853,28 +857,8 @@ class HashGraph {
     /++
      This function makes sure that the HashGraph has all the events connected to this event
      +/
-    version(unittest) {
-        // static struct Epoch {
-        //     const(Event)[] events;
-        //     std_t epoch_time;
-        //     void epoch(const(Event[]) events)
-        //         in {
-        //             assert(events.length > 0);
-        //         }
-        //     do {
-        //         this.events=events
-        //             .filter!((e) => !e.event_body.payload.empty)
-        //             .array;
-        //         const times=events
-        //             .map!((e) => e.event_body.time)
-        //             .array
-        //             .sort!((a,b) => a < b);
-        //         const mid=times.length/2+(times.length % 1);
-        //         epoch_time=times[
-        //     }
-        // }
-
-        static class UnittestNetwork(NodeList) if (is(NodeList == enum)) {
+    version(hashgraph_fibertest) {
+        static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             import core.thread.fiber : Fiber;
             import tagion.crypto.SecureNet : StdSecureNet;
             import tagion.gossip.InterfaceNet : GossipNet;
@@ -883,7 +867,7 @@ class HashGraph {
             import tagion.hibon.HiBONJSON;
             import std.datetime.systime : SysTime;
             import core.time;
-            UnittestAuthorising authorising;
+            TestGossipNet authorising;
             Random!size_t random;
             SysTime global_time;
             enum timestep {
@@ -893,7 +877,7 @@ class HashGraph {
 
             alias ChannelQueue=Queue!Document;
 
-            class UnittestAuthorising  : GossipNet {
+            class TestGossipNet  : GossipNet {
                 protected {
                     ChannelQueue[Pubkey] channel_queues;
                     sdt_t _current_time;
@@ -1051,16 +1035,16 @@ class HashGraph {
             FiberNetwork[Pubkey] networks;
 
 
-            this() {
-                import std.traits : EnumMembers;
-                import std.conv : to;
-                authorising=new UnittestAuthorising;
-                immutable N=EnumMembers!NodeList.length;
-                foreach(E; EnumMembers!NodeList) {
-                    immutable passphrase=format("very secret %s", E);
+            this(const(string[]) node_names) {
+                // import std.traits : EnumMembers;
+                // import std.conv : to;
+                authorising=new TestGossipNet;
+                immutable N=node_names.length; //EnumMembers!NodeList.length;
+                foreach(name; node_names) {
+                    immutable passphrase=format("very secret %s", node_names);
                     auto net=new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h=new HashGraph(N, net, &authorising.isValidChannel, null, E.to!string);
+                    auto h=new HashGraph(N, net, &authorising.isValidChannel, null, name);
                     h.scrap_depth=0;
                     networks[net.pubkey]=new FiberNetwork(h);
                 }
@@ -1105,7 +1089,9 @@ class HashGraph {
 
         }
 
-        auto network=new UnittestNetwork!NodeLabel();
+        auto node_labels=[EnumMembers!NodeLabel].map!((E) => E.to!string).array;
+        writefln("node_labels=%s %s", node_labels, typeof(node_labels).stringof);
+        auto network=new TestNetwork(node_labels); //!NodeLabel();
         network.random.seed(123456789);
 
         network.global_time=SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
