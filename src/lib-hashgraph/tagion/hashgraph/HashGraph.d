@@ -33,7 +33,7 @@ import tagion.gossip.InterfaceNet;
 class HashGraph {
     enum default_scrap_depth=10;
     enum default_awake=3;
-    bool print_flag;
+    //bool print_flag;
     int scrap_depth = default_scrap_depth;
     uint awake=default_awake;
     import tagion.basic.ConsensusExceptions;
@@ -263,23 +263,8 @@ class HashGraph {
 
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
-        if (print_flag) {
-            writeln("");
-        }
-        writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
+        // writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
-            // const payloads=events
-            //     .filter!((e) => !e.event_body.payload.empty)
-            //     .array
-            //     .sort!((a, b) => order_less(a,b))
-            //     .release;
-            // const times=events
-            //     .map!((e) => e.event_body.time)
-            //     .array
-            //     .sort!((a,b) => a < b)
-            //     .release;
-            // const mid=times.length/2+(times.length % 1);
-
             epoch_callback(events, epoch_time);
         }
         if (scrap_depth > 0) {
@@ -802,8 +787,6 @@ class HashGraph {
                 .array;
             typeof(h1_nodes) h2_nodes;
             try {
-                //pragma(msg, typeof(h1_nodes));
-                //pragma(msg, typeof(h1_nodes.front));
                 h2_nodes=h1.nodes
                     .byValue
                     .map!((n) => h2.nodes[n.channel][])
@@ -815,6 +798,7 @@ class HashGraph {
                 }
                 return false;
             }
+            bool ok=true;
 
             foreach(ref h1_events, ref h2_events; lockstep(h1_nodes, h2_nodes)) {
                 while (!h1_events.empty && higher(h1_events.front.altitude, h2_events.front.altitude)) {
@@ -842,29 +826,28 @@ class HashGraph {
                     const e1=h1_events.front;
                     const e2=h2_events.front;
 
-                    bool ok;
                     with(ErrorCode) {
-                        ok=check(e1.fingerprint == e2.fingerprint, FINGERPRINT_NOT_THE_SAME);
-                        ok|=check(e1.event_body.mother == e2.event_body.mother, MOTHER_NOT_THE_SAME);
-                        ok|=check(e1.event_body.father == e2.event_body.father, FATHER_NOT_THE_SAME);
-                        ok|=check(e1.altitude == e2.altitude, ALTITUDE_NOT_THE_SAME);
-                        ok|=check(e1.received_order - e2.received_order == order_offset, ORDER_NOT_THE_SAME);
-                        ok|=check(e1.round.number - e2.round.number == round_offset, ROUND_NOT_THE_SAME);
+                        ok&=check(e1.fingerprint == e2.fingerprint, FINGERPRINT_NOT_THE_SAME);
+                        ok&=check(e1.event_body.mother == e2.event_body.mother, MOTHER_NOT_THE_SAME);
+                        ok&=check(e1.event_body.father == e2.event_body.father, FATHER_NOT_THE_SAME);
+                        ok&=check(e1.altitude == e2.altitude, ALTITUDE_NOT_THE_SAME);
+                        ok&=check(e1.received_order - e2.received_order == order_offset, ORDER_NOT_THE_SAME);
+                        ok&=check(e1.round.number - e2.round.number == round_offset, ROUND_NOT_THE_SAME);
                         if ((e1.round_received) && (e2.round_received)) {
-                            ok|=check(e1.round_received.number - e2.round_received.number == round_offset,
+                            ok&=check(e1.round_received.number - e2.round_received.number == round_offset,
                                 ROUND_RECEIVED_NOT_THE_SAME);
                         }
-                        ok|=check((e1.witness is null) == (e2.witness is null), WITNESS_CONFLICT);
+                        ok&=check((e1.witness is null) == (e2.witness is null), WITNESS_CONFLICT);
                     }
-                    if (!ok) {
-                        return ok;
-                    }
+                    // if (!ok) {
+                    //     return ok;
+                    // }
                     count++;
                     h1_events.popFront;
                     h2_events.popFront;
                 }
             }
-            return true;
+            return ok;
         }
     }
     /++
@@ -1001,10 +984,10 @@ class HashGraph {
                 do {
                     super(&run);
                     _hashgraph=h;
-                    //this.name=name;
-                    if (_hashgraph.name == "Alice") {
-                        _hashgraph.print_flag=true;
-                    }
+                    // //this.name=name;
+                    // if (_hashgraph.name == "Alice") {
+                    //     _hashgraph.print_flag=true;
+                    // }
                 }
 
                 const(HashGraph) hashgraph() const pure nothrow {
@@ -1148,15 +1131,17 @@ class HashGraph {
             })();
         }
 
-        writefln("Save Alice");
-        Pubkey[string] node_labels;
+        version(none) {
+            writefln("Save Alice");
+            Pubkey[string] node_labels;
 
-        foreach(channel, _net; network.networks) {
-            node_labels[_net._hashgraph.name] = channel;
-        }
-        foreach(_net; network.networks) {
-            const filename=fileId(_net._hashgraph.name);
-            _net._hashgraph.fwrite(filename.fullpath, node_labels);
+            foreach(channel, _net; network.networks) {
+                node_labels[_net._hashgraph.name] = channel;
+            }
+            foreach(_net; network.networks) {
+                const filename=fileId(_net._hashgraph.name);
+                _net._hashgraph.fwrite(filename.fullpath, node_labels);
+            }
         }
 
         bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
@@ -1177,20 +1162,22 @@ class HashGraph {
         auto names=network.networks.byValue
             .map!((net) => net._hashgraph.name)
             .array.dup
-            .sort;
+            .sort
+            .array;
 
+        pragma(msg, typeof(names));
         HashGraph[string] hashgraphs;
         foreach(net; network.networks) {
             hashgraphs[net._hashgraph.name]=net._hashgraph;
         }
 
-        foreach(name_h1; names) {
+        foreach(i, name_h1; names[0..$-1]) {
             const h1=hashgraphs[name_h1];
-            foreach(name_h2; names) {
+            foreach(name_h2; names[i+1..$]) {
                 const h2=hashgraphs[name_h2];
                 auto comp=Compare(h1, h2, &event_error);
-                writefln("%s %s round_offset=%d order_offset=%d",
-                    h1.name, h2.name, comp.round_offset, comp.order_offset);
+                // writefln("%s %s round_offset=%d order_offset=%d",
+                //     h1.name, h2.name, comp.round_offset, comp.order_offset);
                 const result=comp.compare;
             }
         }
