@@ -1,6 +1,6 @@
 module tagion.hashgraph.Event;
 
-//import std.stdio;
+import std.stdio;
 
 import std.datetime;   // Date, DateTime
 import std.exception : assumeWontThrow;
@@ -319,10 +319,17 @@ class Round {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
             uint epoch_events_count;
+            // uint count;
             scope(success) {
                 hashgraph.mark_received_statistic(mark_received_iteration_count);
                 hashgraph.order_compare_statistic(order_compare_iteration_count);
                 hashgraph.epoch_events_statistic(epoch_events_count);
+                if (r.number == 46) {
+                    writefln("%s r=%d mark_received_iteration_count=%d %s", hashgraph.name, r.number, mark_received_iteration_count, hashgraph.mark_received_statistic.result);
+                }
+            }
+            if (r.number == 46) {
+                writefln("%s events=%s", hashgraph.name, r._events.filter!((e) => (e !is null)).map!((e) => e.id));
             }
             r._events
                 .filter!((e) => (e !is null))
@@ -330,18 +337,19 @@ class Round {
                     .until!((e) => (e._round_received !is null))
                     .each!((ref e) => e._round_received_mask.clear));
 
-            void mark_received_events(const size_t voting_node_id, Event e, const BitMask marker_mask) {
+            void mark_received_events(const size_t voting_node_id, Event e) {
                 mark_received_iteration_count++;
-                if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id] && !marker_mask[e.node_id] ) {
+                if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id]) { // && !marker_mask[e.node_id] ) {
                     e._round_received_mask[voting_node_id]=true;
-                    mark_received_events(voting_node_id, e._father, marker_mask+e.node_id);
-                    mark_received_events(voting_node_id, e._mother, marker_mask);
+                    mark_received_events(voting_node_id, e._father);
+                    mark_received_events(voting_node_id, e._mother);
                 }
             }
             // Marks all the event below round r
             r._events
                 .filter!((e) => (e !is null))
-                .each!((ref e) => mark_received_events(e.node_id, e, BitMask()));
+                .each!((ref e) => mark_received_events(e.node_id, e));
+
 
             auto event_filter = r._events
                 .filter!((e) => (e !is null))
@@ -417,8 +425,24 @@ class Round {
             return event_collection;
         }
 
+
         void check_decided_round(HashGraph hashgraph) @trusted {
             auto round_to_be_decided=last_decided_round._next;
+
+        if (hashgraph.can_round_be_decided(round_to_be_decided)) {
+            // hashgraph
+            //     .nodes
+            //     .byValue
+            //     .filter!((n) => (n.event is null))
+            //     .each!((ref n) => n.asleep);
+            // const can_round_be_decided=hashgraph
+            //     .nodes
+            //     .byValue
+            //     .map!((n) => n.node_id)
+            //     .filter!((node_id) => !hashgraph.excluded_nodes_mask[e.node_id])
+            //     .all!((n) => !n.sleeping);
+            // if (can_round_be_decided) {
+
             const votes_mask=BitMask(round_to_be_decided.events
                 .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                 .map!((e) => e.node_id));
@@ -438,6 +462,7 @@ class Round {
                 }
             }
         }
+    }
 
         @nogc
         package Range!false opSlice() pure nothrow {

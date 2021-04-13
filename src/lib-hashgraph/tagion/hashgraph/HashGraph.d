@@ -10,7 +10,7 @@ import std.algorithm.iteration : map, each, filter, fold;
 import std.algorithm.comparison : max;
 import std.algorithm.sorting : sort;
 import std.range.primitives : walkLength;
-import std.range : dropExactly, lockstep;
+import std.range : dropExactly, lockstep, tee;
 import std.array : array;
 import tagion.hashgraph.Event;
 import tagion.crypto.SecureInterfaceNet;
@@ -32,8 +32,10 @@ import tagion.gossip.InterfaceNet;
 @safe
 class HashGraph {
     enum default_scrap_depth=10;
+    enum default_awake=3;
     bool print_flag;
     int scrap_depth = default_scrap_depth;
+    uint awake=default_awake;
     import tagion.basic.ConsensusExceptions;
     protected alias check=Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
@@ -50,7 +52,6 @@ class HashGraph {
     Statistic!uint wavefront_event_package_used_statistic;
     Statistic!uint live_events_statistic;
     Statistic!uint live_witness_statistic;
-
     private {
         BitMask _excluded_nodes_mask;
         Node[Pubkey] nodes; // List of participating nodes T
@@ -162,6 +163,21 @@ class HashGraph {
                 auto node=getNode(epack.pubkey);
             }
         }
+    }
+
+    package bool can_round_be_decided(const Round r) nothrow {
+        const result=nodes
+            .byValue
+            .filter!((n) => (r.events[n.node_id] is null))
+            .filter!((n) => !excluded_nodes_mask[n.node_id])
+            .tee!((n) => n.asleep)
+            .all!((n) => n.sleeping);
+        // const result=nodes
+        //     .byValue
+        //     //.map!((n) => n.node_id)
+        //     .filter!((n) => !excluded_nodes_mask[n.node_id])
+        //     .all!((n) => !n.sleeping);
+        return result;
     }
 
     @nogc
@@ -277,8 +293,10 @@ class HashGraph {
     package void epoch(const(Event)[] events, const Round decided_round) {
         import std.stdio;
         if (print_flag) {
-            writefln("Epoch round %d event.count=%d witness.count=%d event in epoch=%d", decided_round.number, Event.count, Event.Witness.count, events.length);
+            writeln("");
         }
+        writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
+            //      }
         if (epoch_callback !is null) {
             epoch_callback(events);
         }
@@ -693,7 +711,7 @@ class HashGraph {
     }
 
     @safe
-    static class Node {
+    class Node {
         ExchangeState state;
         immutable size_t node_id;
         immutable(Pubkey) channel;
@@ -718,9 +736,21 @@ class HashGraph {
                 Event.check(event.mother !is null, ConsensusFailCode.EVENT_MOTHER_LESS);
                 _event=event;
             }
+            awake = this.outer.awake;
         }
 
         private Event _event; /// This is the last event in this Node
+
+
+        @nogc
+        void asleep() pure nothrow {
+            awake=(awake is 0)?0:awake -1;
+        }
+
+        @nogc
+        bool sleeping() const pure nothrow {
+            return awake is 0;
+        }
 
         @nogc
         const(Event) event() const pure nothrow {
@@ -1207,7 +1237,7 @@ class HashGraph {
 
         try {
 //            foreach(i; 0..5776) {
-            foreach(i; 0..1276) {
+            foreach(i; 0..3276) {
 //            foreach(i; 0..300) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
