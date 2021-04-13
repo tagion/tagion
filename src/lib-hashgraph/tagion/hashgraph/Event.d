@@ -139,9 +139,9 @@ class Round {
         in {
             assert(!_previous, "Round can not be scrapped due that a previous round still exists");
         }
-    out {
-        assert(_events.all!((e) => e is null));
-    }
+    // out {
+    //     assert(_events.all!((e) => e is null));
+    // }
     do {
         uint count;
         void scrap_events(Event e) {
