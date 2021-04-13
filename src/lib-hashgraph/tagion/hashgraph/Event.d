@@ -395,6 +395,7 @@ class Round {
             //     .array.dup
             //     .sort!((a,b) => (a - b) < 0)
             //     .release;
+            times.sort;
             const mid=times.length/2+(times.length % 1);
 
             hashgraph.epoch(event_collection, times[mid], r);
