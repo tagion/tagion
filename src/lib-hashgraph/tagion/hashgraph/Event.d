@@ -307,7 +307,7 @@ class Round {
             return cached_decided_count > total_limit;
         }
 
-        private const(Event[]) collect_received_round(Round r, HashGraph hashgraph) {
+        private void collect_received_round(Round r, HashGraph hashgraph) {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
             uint epoch_events_count;
@@ -378,13 +378,28 @@ class Round {
             }
 
             // Collect and sort all events
+            pragma(msg, "event_filter ", typeof(event_filter));
+            sdt_t[] times;
             auto event_collection = event_filter
+                .tee!((e) => times~=e.event_body.time)
                 .filter!((e) => !e.event_body.payload.empty)
                 .array
                 .sort!((a, b) => order_less(a,b))
                 .release;
+            // const times_1=event_filter
+            //     .map!((e) => e.event_body.time)
+            //     .array.dup;
 
-            return event_collection;
+            // const times=event_filter
+            //     .map!((e) => e.event_body.time)
+            //     .array.dup
+            //     .sort!((a,b) => (a - b) < 0)
+            //     .release;
+            const mid=times.length/2+(times.length % 1);
+
+            hashgraph.epoch(event_collection, times[mid], r);
+
+//            return event_collection;
         }
 
 
@@ -399,8 +414,7 @@ class Round {
                     const round_decided=votes_mask[]
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(hashgraph));
                     if (round_decided) {
-                        const events=collect_received_round(round_to_be_decided, hashgraph);
-                        hashgraph.epoch(events, round_to_be_decided);
+                        collect_received_round(round_to_be_decided, hashgraph);
                         round_to_be_decided._decided=true;
                         last_decided_round=round_to_be_decided;
                         check_decided_round(hashgraph);

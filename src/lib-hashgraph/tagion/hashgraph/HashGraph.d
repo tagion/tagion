@@ -78,7 +78,7 @@ class HashGraph {
 
     alias ValidChannel=bool delegate(const Pubkey channel);
     private ValidChannel valid_channel;
-    alias EpochCallback = void delegate(const(Event)[] events) @safe;
+    alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
     EpochCallback epoch_callback;
 
     this(const size_t node_size, const SecureNet net, ValidChannel valid_channel, EpochCallback epoch_callback, string name=null) {
@@ -261,14 +261,26 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
-    package void epoch(const(Event)[] events, const Round decided_round) {
+    package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
         if (print_flag) {
             writeln("");
         }
         writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
-            epoch_callback(events);
+            // const payloads=events
+            //     .filter!((e) => !e.event_body.payload.empty)
+            //     .array
+            //     .sort!((a, b) => order_less(a,b))
+            //     .release;
+            // const times=events
+            //     .map!((e) => e.event_body.time)
+            //     .array
+            //     .sort!((a,b) => a < b)
+            //     .release;
+            // const mid=times.length/2+(times.length % 1);
+
+            epoch_callback(events, epoch_time);
         }
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
@@ -859,6 +871,25 @@ class HashGraph {
      This function makes sure that the HashGraph has all the events connected to this event
      +/
     version(unittest) {
+        // static struct Epoch {
+        //     const(Event)[] events;
+        //     std_t epoch_time;
+        //     void epoch(const(Event[]) events)
+        //         in {
+        //             assert(events.length > 0);
+        //         }
+        //     do {
+        //         this.events=events
+        //             .filter!((e) => !e.event_body.payload.empty)
+        //             .array;
+        //         const times=events
+        //             .map!((e) => e.event_body.time)
+        //             .array
+        //             .sort!((a,b) => a < b);
+        //         const mid=times.length/2+(times.length % 1);
+        //         epoch_time=times[
+        //     }
+        // }
 
         static class UnittestNetwork(NodeList) if (is(NodeList == enum)) {
             import core.thread.fiber : Fiber;
