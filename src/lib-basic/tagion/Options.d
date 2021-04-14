@@ -178,6 +178,7 @@ struct Options {
     ushort min_port;       /// Minum value of the port number
     string path_to_shared_info;
     bool p2plogs;
+    uint scrap_depth;
 
     string net_mode;
     mixin JSONCommon;
@@ -544,6 +545,7 @@ static setDefaultOption(ref Options options) {
         ip="0.0.0.0";
         port = 4001;
         port_base = 4000;
+        scrap_depth = 5;
         logext="log";
         seed=42;
         delay=200;
