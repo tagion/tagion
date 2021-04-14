@@ -62,9 +62,9 @@ class EmulatorGossipNet : GossipNet {
     private immutable(Pubkey)[] _pkeys;
     protected uint _send_node_id;
     protected sdt_t _current_time;
-
+    protected Pubkey mypk;
     Random random;
-    this(){
+    this(const Pubkey mypk){
         this.random = Random(unpredictableSeed);
     }
 
@@ -98,18 +98,15 @@ class EmulatorGossipNet : GossipNet {
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        return (channel in _tids) !is null;
+        return (channel in _tids) !is null && channel != mypk;
     }
 
     const(Pubkey) select_channel(ChannelFilter channel_filter) {
         import std.range : dropExactly;
-        foreach(count; 0.._tids.length/2) {
+        foreach(count; 0.._tids.length*2) {
             const node_index=uniform(0, cast(uint)_tids.length, random);
             // log("selected index: %d %d", node_index, _tids.length);
-            const send_channel = _tids
-                .byKey
-                .dropExactly(node_index)
-                .front;
+            const send_channel = _pkeys[node_index];
             // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(send_channel));
             if (channel_filter(send_channel)) {
                 return send_channel;
@@ -151,11 +148,13 @@ class EmulatorGossipNet : GossipNet {
     protected uint _send_count;
     @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        log.trace("send to %s %d bytes", channel.cutHex, sender.toDoc.serialize.length);
+        import std.algorithm.searching: countUntil;
+        import tagion.hibon.HiBONJSON;
+        log.trace("send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender.toDoc.serialize.length);
+        // log("%s", sender.toDoc.toJSON);
         // if ( callbacks ) {
         //     callbacks.send(channel, sender.toDoc);
         // }
-        log("%d", _tids.length);
         // log(_tids)
         _tids[channel].send(sender.toDoc);
         log.trace("sended");
