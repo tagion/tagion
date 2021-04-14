@@ -189,7 +189,7 @@ do
         }
         hashgraph=new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
         // hashgraph.print_flag = true;
-        hashgraph.scrap_depth=0;
+        hashgraph.scrap_depth=opts.scrap_depth;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
         
