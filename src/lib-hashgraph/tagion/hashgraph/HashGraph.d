@@ -269,7 +269,7 @@ class HashGraph {
 
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
-        writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
+        log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
@@ -677,10 +677,16 @@ class HashGraph {
         return hirpc.net;
     }
 
-    package Node getNode(Pubkey channel) {
+    package Node getNode(Pubkey channel) pure{
         const next_id=next_node_id;
         return nodes.require(channel, new Node(channel, next_id));
     }
+
+    // public bool canSelectNode(Pubkey channel) pure nothrow {
+    //     import std.exception: assumeWontThrow
+    //     const node = assumeWontThrow(getNode(channel));
+    //     return node.state is ExchangeState.NONE;
+    // }
 
     @nogc
     bool isMajority(const uint voting) const pure nothrow {
