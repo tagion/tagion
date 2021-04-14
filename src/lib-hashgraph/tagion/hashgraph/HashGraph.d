@@ -56,10 +56,12 @@ class HashGraph {
     Statistic!uint wavefront_event_package_used_statistic;
     Statistic!uint live_events_statistic;
     Statistic!uint live_witness_statistic;
+    Statistic!long epoch_delay_statistic;
     private {
         BitMask _excluded_nodes_mask;
         Node[Pubkey] nodes; // List of participating nodes T
         uint event_id;
+        sdt_t last_epoch_time;
     }
 
     public const(Node[Pubkey]) getNodes() pure const nothrow {
@@ -267,7 +269,7 @@ class HashGraph {
 
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
-        // writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
+        writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
@@ -958,7 +960,7 @@ class HashGraph {
             }
 
             class FiberNetwork : Fiber {
-                private HashGraph _hashgraph;
+                HashGraph _hashgraph;
                 //immutable(string) name;
                 @trusted
                 this(HashGraph h) nothrow
@@ -1097,9 +1099,7 @@ class HashGraph {
         const channels=network.channels;
 
         try {
-//            foreach(i; 0..5776) {
             foreach(i; 0..3276) {
-//            foreach(i; 0..300) {
                 const channel_number=network.random.value(0, channels.length);
                 const channel=channels[channel_number];
                 auto current=network.networks[channel];
