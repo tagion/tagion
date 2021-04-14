@@ -248,6 +248,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts, shared
                     // // const supports_1=DART.supports(m);
                     //const supports=receiver.supports!DART;
                     if (receiver.supports!DART) {
+                        log("receiver: %s", receiver.toDoc.toJSON);
                         const request = dart(receiver, false);
                         const tosend = request.toDoc.serialize;
                         sendResult(tosend);

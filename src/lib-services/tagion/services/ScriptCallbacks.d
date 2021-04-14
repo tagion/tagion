@@ -14,8 +14,8 @@ import tagion.Keywords;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.basic.Logger;
 
-version(none)
-@safe class ScriptCallbacks : EventScriptCallbacks {
+// version(none)
+@safe class ScriptCallbacks {
     import std.datetime;
     alias Time=MonoTimeImpl!(ClockType.normal);
     private {

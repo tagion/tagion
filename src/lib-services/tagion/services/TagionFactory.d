@@ -38,7 +38,7 @@ void tagionServiceWrapper(Options opts){
     Tid[] tids;
 
     if(opts.net_mode == NetworkMode.internal){
-        Options[uint] node_opts;
+        Options[] node_opts;
         import std.array: replace;
         import std.string: indexOf;
         import std.file: mkdir, exists;
@@ -71,6 +71,7 @@ void tagionServiceWrapper(Options opts){
                     service_options.dart.path = stripExtension(opts.dart.path) ~ to!string(i) ~ extension(opts.dart.path);
                 }
             }
+            service_options.transcript.task_name = opts.transcript.task_name~to!string(i);
             service_options.transaction.task_name = opts.transaction.task_name~to!string(i);
             service_options.transaction.service.task_name = opts.transaction.service.task_name~to!string(i);
             service_options.transaction.service.response_task_name = opts.transaction.service.response_task_name~to!string(i);
@@ -87,7 +88,7 @@ void tagionServiceWrapper(Options opts){
                 service_options.transaction.service.port=cast(ushort)(opts.transaction.service.port + i);
             }
             service_options.node_name = get_node_name(service_options, i);
-            node_opts[i] = service_options;
+            node_opts~= service_options;
         }
         log("options configurated");
         Pubkey[] pkeys;
@@ -100,6 +101,7 @@ void tagionServiceWrapper(Options opts){
             foreach(pkey; pkeys) {
                 tid.send(pkey);
             }
+            assert(receiveOnly!Control == Control.LIVE);
         }
     }else if(opts.net_mode == NetworkMode.local){
         opts.node_name = "local-tagion";

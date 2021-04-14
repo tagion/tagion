@@ -66,13 +66,45 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
         void modifyDART(RecordFactory.Recorder recorder) {
             Tid dart_tid = locate(dart_task_name);
-            // auto sender = DART.dartModify(recorder, empty_hirpc);
+            auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid != Tid.init){
-                dart_tid.send(cast(immutable) recorder); //TODO: remove blackhole
+                dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
             }
             else{
                 log.error("Cannot locate Dart service");
                 stop=true;
+            }
+        }
+bool to_smart_script(SignedContract signed_contract) nothrow  {
+            try {
+                auto smart_script=new SmartScript(signed_contract);
+                smart_script.check(net);
+                const signed_contract_doc=signed_contract.toDoc;
+                const fingerprint=net.HashNet.hashOf(signed_contract_doc);
+
+                smart_script.run(current_epoch+1);
+
+
+                smart_scripts[fingerprint]=smart_script;
+                return true;
+            }
+            catch (ConsensusException e) {
+                log.warning("ConsensusException: %s", e.msg);
+                return false;
+                // Not approved
+            }
+            catch(TagionException e){
+                log.warning("TagionException: %s", e.msg);
+                return false;
+            }
+            catch(Exception e){
+                log.warning("Exception: %s", e.msg);
+                return false;
+            }
+            catch(Error e){
+                fatal(e);
+                return false;
+                //log("Throwable: %s", e.msg);
             }
         }
 
@@ -80,8 +112,8 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         void receive_epoch(Buffer payloads_buff) nothrow {
             try{
                 // pragma(msg, "transcript: ", typeof(payloads));
-                log("Received epoch: len:%d", payloads_buff.length);
                 auto payload_doc = Document(payloads_buff);
+                log("Received epoch: len:%d", payload_doc.length);
 
                 // log("Epoch: %s", payload_doc.toJSON);
                 scope bool[Buffer] used_inputs;
@@ -92,9 +124,14 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                 }
                 auto recorder = rec_factory.recorder;
                 foreach(payload_el; payload_doc[]) {
-                    immutable data=payload_el.get!Buffer;
-                    const doc=Document(data);
+                    immutable doc=payload_el.get!Document;
                     // log("payload: %s", doc.toJSON);
+                    log("PAYLOAD: %s", doc.toJSON);
+                    if(!SignedContract.isRecord(doc)){
+                        continue;
+                    }
+import std.datetime: Clock;
+                    log("Signed contract %s", Clock.currTime().toUTC());
                     scope signed_contract=SignedContract(doc);
                     //smart_script.check(net);
                     bool invalid;
@@ -109,22 +146,26 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                         }
                     }
                     if (!invalid) {
-                        const signed_contract_doc=Document(signed_contract.toHiBON.serialize);
-                        const fingerprint=net.calcHash(signed_contract_doc.serialize);
-                        if(fingerprint in smart_scripts){
+                        const signed_contract_doc=signed_contract.toDoc;
+                        const fingerprint=net.hashOf(signed_contract_doc);
+                        const added = to_smart_script(signed_contract);
+                        if(added && fingerprint in smart_scripts){
                             scope smart_script=smart_scripts[fingerprint];
                             foreach(bill; smart_script.signed_contract.input){
-                                const bill_doc=Document(bill.toHiBON.serialize);
+                                const bill_doc=bill.toDoc;
                                 recorder.remove(bill_doc);
                             }
                             foreach(bill; smart_script.output_bills){
-                                const bill_doc=Document(bill.toHiBON.serialize);
+                                const bill_doc=bill.toDoc;
                                 recorder.add(bill_doc);
                             }
                         }
                         else{
+                            log("not in smart script");
                             invalid = true;
                         }
+                    }else{
+                        log("invalid!!");
                     }
                 }
                 if(recorder.length > 0){
@@ -147,37 +188,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
         }
 
-        void receive_ebody(immutable(EventBody) ebody) nothrow  {
-            try {
-                log("Received Ebody %d", ebody.payload.length);
-                const doc=Document(ebody.payload);
-                auto signed_contract=SignedContract(doc);
-                auto smart_script=new SmartScript(signed_contract);
-                smart_script.check(net);
-                const signed_contract_doc=Document(signed_contract.toHiBON.serialize);
-                const fingerprint=net.HashNet.calcHash(signed_contract_doc.serialize);
-
-                smart_script.run(current_epoch+1);
-
-
-                smart_scripts[fingerprint]=smart_script;
-            }
-            catch (ConsensusException e) {
-                log.warning("ConsensusException: %s", e.msg);
-                // Not approved
-            }
-            catch(TagionException e){
-                log.warning("TagionException: %s", e.msg);
-            }
-            catch(Exception e){
-                log.warning("Exception: %s", e.msg);
-            }
-            catch(Error e){
-                fatal(e);
-                //log("Throwable: %s", e.msg);
-            }
-        }
-
+        
         // void taskfailure(immutable(TaskFailure) t) {
         //     ownerTid.send(t);
         // }
@@ -202,7 +213,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
             receive(
                 &receive_epoch,
-                &receive_ebody,
                 &controller,
                 &taskfailure,
                 // &tagionexception,

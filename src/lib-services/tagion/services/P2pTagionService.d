@@ -4,6 +4,8 @@ import core.thread;
 import std.concurrency;
 
 import std.datetime: Clock;
+import tagion.utils.StdTime;
+
 import std.conv;
 import std.algorithm.searching: canFind;
 
@@ -125,11 +127,15 @@ do
     auto master_net = new StdSecureNet;
     StdSecureNet net = new StdSecureNet;
     GossipNet gossip_net;
+    ScriptCallbacks scriptcallbacks;
     HashGraph hashgraph; // = new HashGraph(opts.nodes);
 
     Tid discovery_tid;
     Tid dart_sync_tid;
     Tid dart_tid;
+    Tid monitor_socket_tid;
+    Tid transaction_socket_tid;
+    Tid transcript_tid;
     Pubkey[] pkeys;
     void update_pkeys(Pubkey[] pubkeys){
         if(net_mode != NetworkMode.internal){
@@ -150,7 +156,7 @@ do
         net.derive(opts.node_name, shared_net);
         p2pnode = initialize_node(opts);
         static if(net_mode == NetworkMode.internal){
-            gossip_net = new EmulatorGossipNet();
+            gossip_net = new EmulatorGossipNet(net.pubkey);
             ownerTid.send(net.pubkey);
             Pubkey[] received_pkeys;
             foreach(i;0..opts.nodes) {
@@ -160,6 +166,7 @@ do
             import std.exception: assumeUnique;
             pkeys=received_pkeys.dup;
             foreach(p; pkeys) gossip_net.add_channel(p);
+            ownerTid.send(Control.LIVE);
         }else if([NetworkMode.local, NetworkMode.pub].canFind(net_mode)){
             // immutable task_name = "p2ptagion";
             // opts.node_name = task_name;
@@ -168,10 +175,21 @@ do
             throw new OptionException("Unknown network mode");
         }
         // gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
-
-        hashgraph=new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, null);
-        hashgraph.print_flag = true;
-        hashgraph.disable_scrapping = true;
+        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted{
+            import std.algorithm;
+            import std.array : array;
+            import tagion.hibon.HiBONJSON;
+            HiBON params = new HiBON;
+            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
+            foreach(i, payload; events.map!((e) => e.event_body.payload).array){
+                params[i] = payload;
+            }
+            log("Send to transcript: %s", Document(params).toJSON);
+            transcript_tid.send(params.serialize);
+        }
+        hashgraph=new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
+        // hashgraph.print_flag = true;
+        hashgraph.scrap_depth=0;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
         
@@ -253,9 +271,6 @@ do
         update_pkeys(address_book.data.keys);
     });
 
-    Tid monitor_socket_tid;
-    Tid transaction_socket_tid;
-    Tid transcript_tid;
     scope (exit)
     {
         log("close listener");
@@ -398,9 +413,9 @@ do
     if (force_stop)
         return;
     transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name, opts.dart.sync.task_name);
-    // Event.scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
+    // scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
     // scope(exit) {
-    //     Event.scriptcallbacks.stop;
+    //     scriptcallbacks.stop;
     // }
     enum max_gossip = 2;
     uint gossip_count = max_gossip;
@@ -455,7 +470,7 @@ do
         if (!hashgraph.active || payload_queue.empty) {
             return Document();
         }
-        log("Payload readed");
+        log("Payload readed %s", Clock.currTime().toUTC());
         return payload_queue.read;
     }
 
@@ -532,57 +547,12 @@ do
     // ownerTid.send(Control.LIVE);
     // auto iteration = 0;
     while (!stop && !abort) {
-        // log("Iteration %d", iteration);
-        // if(iteration % 20 == 0) {
-        //     log("Send request table to discovery");
-        //     discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-        // }
-        // iteration++;
         try {
             immutable message_received = receiveTimeout(opts.timeout.msecs,
                 &receive_payload,
                 &controller,
                 &receive_wavefront,
                 &taskfailure,
-                //&tagionexception, &exception, &throwable,
-                /*
-                (Response!(ControlCode.Control_Connected) resp) {
-                    log("Client Connected key: %d", resp.key);
-                    connectionPool.add(resp.key, resp.stream, true);
-                },
-                (Response!(ControlCode.Control_Disconnected) resp) {
-                    synchronized(connectionPoolBridge){
-                        log("Client Disconnected key: %d", resp.key);
-                        connectionPool.close(cast(void*) resp.key);
-                        connectionPoolBridge.removeConnection(resp.key);
-                    }
-                },
-
-                (Response!(ControlCode.Control_RequestHandled) resp) {
-                    import tagion.hibon.Document;
-                    import tagion.hibon.HiBONJSON;
-                    pragma(msg, "fixme(Alex): resp.data can't it be a document (Because or else Document isInOrder need to be called here. It is better to verify that the Document is correct inside the Response");
-                    auto doc = Document(resp.data);
-                    Pubkey received_pubkey = doc[Event.Params.pubkey].get!(immutable(ubyte)[]);
-                    if ((received_pubkey in connectionPoolBridge.lookup) !is null)
-                    {
-                        log("previous cpb: %d, now: %d",
-                            connectionPoolBridge.lookup[received_pubkey], resp.stream.Identifier);
-                    }
-                    else
-                    {
-                        connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
-                    }
-                    // log("response: %s", doc.toJSON);
-                    log("received in: %s", resp.stream.Identifier);
-                    receive_buffer(Document(resp.data));
-                },
-                */
-                // (immutable(Pubkey) send_channel) { //On sending failed
-                //     log("Removing channel from net");
-                //     auto send_node = hashgraph.getNode(send_channel);
-                //     send_node.state = ExchangeState.NONE;
-                // },
                 (ActiveNodeAddressBook address_book) {
                     log("Update address book");
                     update_pkeys(address_book.data.keys);
@@ -592,22 +562,14 @@ do
                     else {
                         log("Dart sync not found");
                     }
-                    // foreach (p; net.pkeys) {
-                    //     // if (hashgraph.createNode(p)) {
-                    //     //     log("%d] %s", i, p.cutHex);
-                    //     // }
-                    // }
                 });
-            // log("received: %s", message_received);
-            // log("MY PK: %s, net.pkeys.len: %d, cpb len: %d", net.pubkey.cutHex,
-            //     net.pkeys.length, connectionPoolBridge.lookup.length);
             log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
-            if (!message_received) {
-                const onLine=hashgraph.areWeOnline;
+            if (!message_received || !hashgraph.areWeInGraph ) {
+                // const onLine=hashgraph.areWeOnline;
                 pragma(msg, "Replace with a realy random");
                 const init_tide=random.value(0,2) is 1;
                     // log("online: %s init?: %s", onLine, init_tide);
-                if (onLine && init_tide) {
+                if (init_tide) {
                     log("init_tide");
                     hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
                 }
