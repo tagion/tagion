@@ -33,14 +33,14 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
 
     log("Run mdns service");
     p2plib.MdnsNotifee notifee;
-    if(opts.discovery.notify_enabled){
+    // if(opts.discovery.notify_enabled){
         log("Mdns: notify enabled");
         notifee = discovery.registerNotifee(&StdHandlerCallback, task_name);
-    }
+    // }
     scope(exit){
-        if(opts.discovery.notify_enabled){
+        // if(opts.discovery.notify_enabled){
             notifee.close();
-        }
+        // }
     }
     
     auto stop = false;

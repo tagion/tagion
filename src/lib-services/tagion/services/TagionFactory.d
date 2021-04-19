@@ -39,6 +39,7 @@ void tagionServiceWrapper(Options opts){
 
     if(opts.net_mode == NetworkMode.internal){
         Options[] node_opts;
+        log("in ineternal");
         import std.array: replace;
         import std.string: indexOf;
         import std.file: mkdir, exists;
@@ -93,6 +94,7 @@ void tagionServiceWrapper(Options opts){
         log("options configurated");
         Pubkey[] pkeys;
         foreach(node_opt; node_opts){
+            
             tids~=spawn(&tagionService!(NetworkMode.internal), node_opt);
             pkeys~=receiveOnly!(Pubkey);
         }

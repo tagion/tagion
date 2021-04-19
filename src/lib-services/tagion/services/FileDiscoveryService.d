@@ -88,7 +88,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
         if(!owner_notified){
             const after_delay = checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs);
             if(after_delay && is_ready){
-                ownerTid.send(DiscoveryState.READY);
+                ownerTid.send(DiscoveryState.ONLINE);
                 owner_notified = true;
             }
         }
@@ -126,6 +126,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
     }
 
     ownerTid.send(Control.LIVE);
+    ownerTid.send(DiscoveryState.READY);
 
     try{
         while(!stop){

@@ -112,9 +112,9 @@ do
 
 
     static if(net_mode == NetworkMode.internal){
-        immutable passphrase=format("Secret_word_%s",opts.node_name).idup;
+        immutable passpharse=format("Secret_word_%s",opts.node_name).idup;
     }else{
-        immutable passphrase = format("Secret_word_%d", opts.port).idup;
+        immutable passpharse = format("Secret_word_%d", opts.port).idup;
     }
 
     bool force_stop = false;
@@ -122,7 +122,7 @@ do
     import std.format;
     auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
     shared(p2plib.Node) p2pnode;
-    string passpharse;
+    // string passpharse;
       
     auto master_net = new StdSecureNet;
     StdSecureNet net = new StdSecureNet;
@@ -170,7 +170,7 @@ do
         }else if([NetworkMode.local, NetworkMode.pub].canFind(net_mode)){
             // immutable task_name = "p2ptagion";
             // opts.node_name = task_name;
-            gossip_net = new P2pGossipNet(opts.node_name, opts.discovery.task_name, opts.host, p2pnode);
+            gossip_net = new P2pGossipNet(net.pubkey, opts.node_name, opts.discovery.task_name, opts.host, p2pnode);
         }else{
             throw new OptionException("Unknown network mode");
         }
