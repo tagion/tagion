@@ -156,7 +156,7 @@ do
         net.derive(opts.node_name, shared_net);
         p2pnode = initialize_node(opts);
         static if(net_mode == NetworkMode.internal){
-            gossip_net = new EmulatorGossipNet(net.pubkey);
+            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             ownerTid.send(net.pubkey);
             Pubkey[] received_pkeys;
             foreach(i;0..opts.nodes) {
@@ -576,6 +576,7 @@ do
             }
         }
         catch (Exception e) {
+            log(e.msg);
             log.fatal(e.msg);
         }
     }
