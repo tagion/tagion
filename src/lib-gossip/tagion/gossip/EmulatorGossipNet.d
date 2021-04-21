@@ -32,6 +32,9 @@ import tagion.communication.HiRPC;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import core.atomic;
 import std.random: Random, unpredictableSeed, uniform;
+import core.time;
+import std.datetime;
+import core.thread;
 
 @trusted
 static uint getTids(Tid[] tids) {
@@ -51,6 +54,7 @@ static uint getTids(Tid[] tids) {
 @safe
 class EmulatorGossipNet : GossipNet {
     private uint node_counter = 0;
+    private Duration duration;
     @trusted 
     static Tid getTidByNodeNumber(uint i){
         immutable taskname=get_node_name(*options, i);
@@ -64,8 +68,9 @@ class EmulatorGossipNet : GossipNet {
     protected sdt_t _current_time;
     protected Pubkey mypk;
     Random random;
-    this(const Pubkey mypk){
+    this(const Pubkey mypk, Duration duration){
         this.random = Random(unpredictableSeed);
+        this.duration = duration;
     }
 
     void add_channel(const Pubkey channel) {
@@ -145,7 +150,6 @@ class EmulatorGossipNet : GossipNet {
         }
     }
 
-    protected uint _send_count;
     @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.algorithm.searching: countUntil;
@@ -156,6 +160,7 @@ class EmulatorGossipNet : GossipNet {
         //     callbacks.send(channel, sender.toDoc);
         // }
         // log(_tids)
+        Thread.sleep(duration);
         _tids[channel].send(sender.toDoc);
         log.trace("sended");
     }

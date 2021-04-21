@@ -15,7 +15,7 @@ import tagion.Options;
 import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup,  basename, isBufferType, Control;
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous: cutHex;
-import tagion.utils.Random;
+// import tagion.utils.Random;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
 //import tagion.Keywords;
@@ -41,6 +41,7 @@ import tagion.utils.StdTime;
 
 import tagion.dart.DART;
 import tagion.communication.HiRPC;
+import std.random: Random, unpredictableSeed, uniform;
 
 import std.datetime;
 synchronized
@@ -328,7 +329,7 @@ class StdP2pNet : P2pNet {
     this(string owner_task_name, string discovery_task_name, const(Options.Host) host, shared p2plib.Node node) {
 //        super(hashgraph);
         this.owner_task_name = owner_task_name;
-        internal_task_name = convert_to_net_task_name(owner_task_name);
+        this.internal_task_name = convert_to_net_task_name(owner_task_name);
         this.node = node;
         @trusted void spawn_sender(){
             this.sender_tid = spawn(&async_send, owner_task_name, discovery_task_name, host, node);
@@ -339,7 +340,7 @@ class StdP2pNet : P2pNet {
     void close(){
         @trusted void send_stop(){
             import std.concurrency: prioritySend, Tid, locate;
-            auto sender = locate(owner_task_name);
+            auto sender = locate(internal_task_name);
             if (sender!=Tid.init){
                 // log("sending stop to gossip net");
                 sender.prioritySend(Control.STOP);
@@ -352,10 +353,14 @@ class StdP2pNet : P2pNet {
     @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.concurrency: tsend=send, prioritySend, Tid, locate;
-        auto internal_sender = locate(owner_task_name);
+        auto internal_sender = locate(internal_task_name);
+        log("send called");
         if(internal_sender!=Tid.init){
             counter++;
-            // log("sending to sender %d", counter);
+            log("sending to sender %s", internal_sender);
+            auto t= sender.toDoc;
+            pragma(msg, "\n\n\n\n\n\n");
+            pragma(msg, typeof(t));
             tsend(internal_sender, channel, sender.toDoc, counter);
         }else{
             log("sender not found");
@@ -365,7 +370,7 @@ class StdP2pNet : P2pNet {
     @trusted
     protected void send_remove(Pubkey pk){
         import std.concurrency: tsend=send, Tid, locate;
-        auto sender = locate(owner_task_name);
+        auto sender = locate(internal_task_name);
         if(sender!=Tid.init){
             counter++;
             // log("sending close to sender %d", counter);
@@ -442,10 +447,10 @@ static void async_send(string task_name, string discovery_task_name, const(Optio
     }
     auto stop = false;
     do{
-        // log("handling %s", thisTid);
+        log("handling %s", thisTid);
         receive(
-            (immutable(Pubkey) channel, Document doc, uint id){
-                // log("received sender %d", id);
+            (const(Pubkey) channel, const(Document) doc, uint id){
+                log("received sender %d", id);
                 try{
                     send_to_channel(channel, doc);
                 }catch(Exception e){
@@ -494,7 +499,7 @@ static void async_send(string task_name, string discovery_task_name, const(Optio
                 }
                 // log("response: %s", doc.toJSON);у
                 log("received in: %s", resp.stream.Identifier);
-                ownerTid.send(receiver.pubkey, receiver.method.toDoc);
+                ownerTid.send(receiver.toDoc);
             },
             (Control control){
                 // log("received control");
@@ -510,11 +515,14 @@ static void async_send(string task_name, string discovery_task_name, const(Optio
     protected {
         sdt_t _current_time;
         bool[Pubkey] pks;
+        Pubkey mypk;
     }
-    Random!uint random;
+    Random random;
     
-    this(string owner_task_name, string discovery_task_name, const(Options.Host) host, shared p2plib.Node node) {
+    this(Pubkey pk, string owner_task_name, string discovery_task_name, const(Options.Host) host, shared p2plib.Node node) {
         super(owner_task_name, discovery_task_name, host, node);
+        this.random = Random(unpredictableSeed);
+        this.mypk = pk;
     }
         
     @property
@@ -528,17 +536,16 @@ static void async_send(string task_name, string discovery_task_name, const(Optio
     }
     
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        return (channel in pks) !is null;
+        return (channel in pks) !is null && channel != mypk;
     }
 
     const(Pubkey) select_channel(ChannelFilter channel_filter) {
         import std.range : dropExactly;
-        foreach(count; 0..pks.length/2) {
-            const node_index=random.value(0, cast(uint)pks.length);
-            const send_channel = pks
-                .byKey
-                .dropExactly(node_index)
-                .front;
+        foreach(count; 0..pks.length*2) {
+            const node_index=uniform(0, cast(uint)pks.length, random);
+            log("selected index: %d %d", node_index, pks.length);
+            const send_channel = pks.byKey.dropExactly(node_index).front;
+            log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(send_channel));
             if (channel_filter(send_channel)) {
                 return send_channel;
             }
