@@ -20,6 +20,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.utils.BitMask;
+import tagion.basic.Logger;
 // import tagion.Keywords;
 
 @safe
@@ -79,26 +80,27 @@ class MonitorCallBacks : EventMonitorCallbacks {
         Tid _network_socket_tread_id;
     }
     immutable uint _local_node_id;
-    immutable uint _global_node_id;
+    // immutable uint _global_node_id;
     immutable DataFormat dataformat;
 
     @trusted
     void socket_send(const(HiBON) hibon) nothrow {
-        assumeWontThrow({
-        const doc=Document(hibon);
-        with(DataFormat) {
-            switch (dataformat) {
-            case json:
-                _socket_thread_id.send(doc.toJSON.toString);
-                break;
-            case hibon:
-                _socket_thread_id.send(doc);
-                break;
-            default:
-                throw new MonitorException(message("Bad dataformat %s. Only %s and %s allowed", json, hibon));
+        void inner_send(){
+            const doc=Document(hibon);
+            with(DataFormat) {
+                switch (dataformat) {
+                case json:
+                    _socket_thread_id.send(doc.toJSON.toString);
+                    break;
+                case hibon:
+                    _socket_thread_id.send(doc);
+                    break;
+                default:
+                    throw new MonitorException(message("Bad dataformat %s. Only %s and %s allowed", json, hibon));
+                }
             }
         }
-            });
+        assumeWontThrow(inner_send());
     }
 
     static HiBON createHiBON(const(Event) e) nothrow {
@@ -158,11 +160,11 @@ class MonitorCallBacks : EventMonitorCallbacks {
         socket_send(hibon);
     }
 
-    // void round_seen(const(Event) e) {
-    //     auto hibon=createHiBON(e);
-    //     hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
-    //     socket_send(hibon);
-    // }
+    void round_seen(const(Event) e) {
+        // auto hibon=createHiBON(e);
+        // hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
+        // socket_send(hibon);
+    }
 
     void round_received(const(Event) e) {
         auto hibon=createHiBON(e);
@@ -347,12 +349,12 @@ class MonitorCallBacks : EventMonitorCallbacks {
     @trusted
     this(Tid socket_thread_id,
         const uint local_node_id,
-        const uint global_node_id,
+        // const uint global_node_id,
         const DataFormat dataformat) {
         this._socket_thread_id = socket_thread_id;
         this._network_socket_tread_id = locate("network_socket_thread");
         this._local_node_id = local_node_id;
-        this._global_node_id = global_node_id;
+        // this._global_node_id = global_node_id;
         this.dataformat = dataformat;
         // writefln("Created monitor socket with local node id: %s and global node id: %s. Has network socket %s", this._local_node_id, this._global_node_id, this._network_socket_tread_id != Tid.init);
     }
