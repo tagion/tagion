@@ -6,7 +6,7 @@ import tagion.network.ListenerSocket;
 
 import tagion.hashgraph.Event : Event, Round;
 //import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : Tides, HashGraphI, EventMonitorCallbacks;
+// import tagion.hashgraph.HashGraphBasic : Tides, HashGraphI, EventMonitorCallbacks;
 //import tagion.hashg : EventMonitorCallbacks; //NetCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;
 import tagion.basic.ConsensusExceptions : ConsensusException;
@@ -46,7 +46,7 @@ import std.stdio : writeln, writefln;
 // import std.bitmanip : write;
 import std.socket;
 import core.thread;
-
+version(none)
 @safe
 class MonitorCallBacks : EventMonitorCallbacks {
     protected {
