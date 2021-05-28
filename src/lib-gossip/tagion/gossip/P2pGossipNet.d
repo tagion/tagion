@@ -34,7 +34,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 //import tagion.services.MdnsDiscoveryService;
 import p2plib = p2p.node;
 import p2p.callback;
-import p2p.cgo.helper;
+//import p2p.cgo.helper;
 import std.array;
 import tagion.utils.StdTime;
 //import tagion.services.P2pTagionService;
@@ -473,16 +473,16 @@ static void async_send(string task_name, string discovery_task_name, const(Optio
                 }
             },
 
-            (Response!(ControlCode.Control_Connected) resp) {
+            (Response!(p2plib.ControlCode.Control_Connected) resp) {
                 log("Client Connected key: %d", resp.key);
                 connectionPool.add(resp.key, resp.stream, true);
-            }, (Response!(ControlCode.Control_Disconnected) resp) {
+            }, (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
                 synchronized(connectionPoolBridge){
                     log("Client Disconnected key: %d", resp.key);
                     connectionPool.close(cast(void*) resp.key);
                     connectionPoolBridge.removeConnection(resp.key);
                 }
-            }, (Response!(ControlCode.Control_RequestHandled) resp) {
+            }, (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
                 import tagion.hibon.Document;
 
                 auto doc = Document(resp.data);
