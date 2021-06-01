@@ -2,7 +2,7 @@ SOURCE:=tagion
 dfiles.mk: ${WAYS}
 	@echo "########################################################################################"
 	@echo "## DFILES"
-	$(PRECMD)find $(SOURCE) -name "*.d" -a -not -name ".#*" -a -path "*tagion*" -printf "DFILES+=$(SOURCE)/%P\n" > dfiles.mk
+	$(PRECMD)find . -name "*.d" -a -not -name ".#*" -a -path "*tagion*" | sed -e "s/^/DFILES+=/" > dfiles.mk
 
 CLEANER+=clean-dfiles
 
