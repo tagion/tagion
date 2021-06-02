@@ -1,30 +1,32 @@
 include git.mk
-
+PRECMD?=@
 DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
+
+
+include $(MAINROOT)/dinclude_setup.mk
+DCFLAGS+=$(addprefix -I$(MAINROOT)/,$(DINC))
 
 include setup.mk
 
 -include $(REPOROOT)/dfiles.mk
 
-BIN:=bin/
-LDCFLAGS+=$(LINKERFLAG)-L$(BIN)
+#BIN:=bin/
+LDCFLAGS+=$(LINKERFLAG)-L$(BINDIR)
 ARFLAGS:=rcs
 BUILD?=$(REPOROOT)/build
 #SRC?=$(REPOROOT)
 
 .SECONDARY: $(TOUCHHOOK)
 .PHONY: makeway
-
+.SECONDARY: $(LIBS)
 
 INCFLAGS=${addprefix -I,${INC}}
 
-LIBRARY:=$(BIN)/$(LIBNAME)
-LIBOBJ:=${LIBRARY:.a=.o};
+#LIBRARY:=$(BIN)/$(LIBNAME)
+#LIBOBJ:=${LIBRARY:.a=.o};
 
-REVISION:=$(REPOROOT)/$(SOURCE)/revision.di
-.PHONY: $(REVISION)
 .SECONDARY: .touch
 
 ifdef COV
@@ -39,7 +41,7 @@ HELP+=help-main
 help: $(HELP)
 	@echo "make lib       : Builds $(LIBNAME) library"
 	@echo
-	@echo "make test      : Run the unittests"
+	@echo "make unittest  : Run the unittests"
 	@echo
 
 help-main:
@@ -53,6 +55,8 @@ help-main:
 	@echo "                 make PRECMD= <tag> # Prints the command while executing"
 	@echo
 
+include $(MAINROOT)/libraries.mk
+
 ifndef DFILES
 include $(REPOROOT)/source.mk
 endif
@@ -61,23 +65,28 @@ info:
 	@echo "WAYS    =$(WAYS)"
 	@echo "DFILES  =$(DFILES)"
 #	@echo "OBJS    =$(OBJS)"
-	@echo "LDCFLAGS=$(LDCFLAGS)"
-	@echo "DCFLAGS =$(DCFLAGS)"
-	@echo "INCFLAGS=$(INCFLAGS)"
+	@echo "LDCFLAGS =$(LDCFLAGS)"
+	@echo "DCFLAGS  =$(DCFLAGS)"
+	@echo "INCFLAGS =$(INCFLAGS)"
+	@echo "GIT_REVNO=$(GIT_REVNO)"
+	@echo "GIT_HASH =$(GIT_HASH)"
 
-include $(REPOROOT)/revsion.mk
+include $(REPOROOT)/revision.mk
 
 ifndef DFILES
 lib: $(REVISION) dfiles.mk
 	$(MAKE) lib
+
+unittest: dfiles.mk
+	$(MAKE) unittest
 else
 lib: $(REVISION) $(LIBRARY)
 
-test: $(UNITTEST)
+unittest: $(UNITTEST)
 	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
 
-$(UNITTEST):
-	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(OUTPUT)$@
+$(UNITTEST): $(LIBS) $(WAYS) $(DFILES)
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OUTPUT)$@
 #$(LDCFLAGS)
 
 endif
@@ -103,10 +112,8 @@ $(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 	$(PRECMD)mkdir -p $(@D)
 	$(PRECMD)touch $@
 
-$(DDOCMODULES): $(DFILES)
-	$(PRECMD)echo $(DFILES) | scripts/ddocmodule.pl > $@
 
-include $(DDOCBUILDER)
+#include $(DDOCBUILDER)
 
 $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
@@ -114,15 +121,25 @@ $(LIBRARY): ${DFILES}
 	@echo "########################################################################################"
 	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $(DFILES) -c $(OUTPUT)$(LIBRARY)
 
+install: $(INSTALL)
+
 CLEANER+=clean
 
 clean:
-	rm -f $(LIBRARY)
+#	rm -f $(LIBRARY)
 	rm -f ${OBJS}
 	rm -f $(UNITTEST) $(UNITTEST).o
+	rm -f $(REVISION)
+	rm -f dfiles.mk
 
 proper: $(CLEANER)
 	rm -fR $(WAYS)
+	rm -f dfiles.mk
+
+#%.a:
+# Find the root of the %.a repo
+# and calls the lib tag
+#	make -C${call GITROOT,${dir $(@D)}} lib
 
 $(PROGRAMS):
 	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@

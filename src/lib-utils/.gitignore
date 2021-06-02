@@ -7,3 +7,4 @@ dfiles.mk
 revision.di
 bin
 modules.ddoc
+*.parked

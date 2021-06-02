@@ -1,9 +1,10 @@
 module tagion.utils.Miscellaneous;
 
 import tagion.basic.Basic : Buffer, isBufferType;
+import std.exception;
 
-@safe
-string toHexString(bool UCASE=false, BUF)(BUF buffer) pure if ( isBufferType!BUF ) {
+@trusted
+string toHexString(bool UCASE=false, BUF)(BUF buffer) pure nothrow if ( isBufferType!BUF ) {
     static if ( UCASE ) {
         enum hexdigits = "0123456789ABCDEF";
     }
@@ -18,10 +19,10 @@ string toHexString(bool UCASE=false, BUF)(BUF buffer) pure if ( isBufferType!BUF
         text[i++] = hexdigits[b & 0xf];
     }
 
-    return text.idup;
+    return assumeUnique(text);
 }
 
-alias hex=toHexString!(true, immutable(ubyte)[]);
+alias hex=toHexString;
 
 unittest {
     {
@@ -101,7 +102,7 @@ string cutHex(bool UCASE=false, BUF)(BUF buf) pure if ( isBufferType!BUF ) {
 }
 
 @safe
-Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure
+Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
     in {
         assert(a.length == b.length);
         assert(a.length % ulong.sizeof == 0);
@@ -113,8 +114,8 @@ do {
     return cast(Buffer)gene_xor(_a, _b);
 }
 
-@safe
-void xor(ref ubyte[] result, const(ubyte[]) a, const(ubyte[]) b) pure
+@nogc @safe
+void xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
     in {
         assert(a.length == b.length);
         assert(a.length % ulong.sizeof == 0);
@@ -130,5 +131,5 @@ do {
 @safe
 Buffer xor(Range)(Range range) pure {
     import std.algorithm.iteration: fold;
-    return range.fold!((a,b) => xor(a,b));
+    return range.fold!((a,b)  => xor(a,b));
 }
