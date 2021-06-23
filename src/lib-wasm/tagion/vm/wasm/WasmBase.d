@@ -595,22 +595,6 @@ static string secname(immutable Section s) {
     return assumeUnique(format("%s_sec", toLower(s.to!string)));
 }
 
-
-// protected template SecType(T, bool READ_ONLY) {
-//     static if (READ_ONLY) {
-//         static assert(!isAssociativeArray!T);
-//         alias SecType=const(T)*;
-//     }
-//     else {
-//         static if (isAssociativeArray!T) {
-//             alias SecType=T;
-//         }
-//         else {
-//             alias SecType=T*;
-//         }
-//     }
-// }
-
 alias SectionsT(SectionType)=AliasSeq!(
     SectionType.Custom,
     SectionType.Type,
@@ -626,26 +610,17 @@ alias SectionsT(SectionType)=AliasSeq!(
     SectionType.Data,
     );
 
-
 protected string GenerateInterfaceModule(T...)() {
     import std.array : join;
     string[] result;
     foreach(i, E; EnumMembers!Section) {
         result~=format(q{alias SecType_%s=T[Section.%s];}, i, E);
-        // static if (E is Section.CUSTOM) {
-        //     result~=format(q{alias SecType_%s=ForeachType!(_SecType_%d);}, i, i);
-        // }
-        // else {
-        //     result~=format(q{alias SecType_%s=_SecType_%d;}, i, i);
-        // }
         result~=format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
     }
     return result.join("\n");
 }
 
 interface InterfaceModuleT(T...) {
-    // alias SecType=T[Section.CUSTOM];
-    // pragma(msg, SecType);
     enum code=GenerateInterfaceModule!(T)();
     pragma(msg, code);
     mixin(code);
@@ -689,8 +664,6 @@ struct WasmArg {
         }
         else static if (is(BaseT == WasmArg)) {
             emplace!WasmArg(&this, x);
-            //type=x.type;
-
         }
         else {
             static assert(0, format("Type %s is not supported by WasmArg", T.stringof));
@@ -767,16 +740,8 @@ struct ExprRange {
 
     }
 
-    // int count;
-    // bool test;
     this(immutable(ubyte[]) data) {
-        //count=int.max;
-        // this.count=count;
-        // this.test=test;
         this.data=data;
-        // test=true;
-        // count=int.max;
-        //size_t dummy_index;
         set_front(current, _index);
     }
 
@@ -885,7 +850,6 @@ struct ExprRange {
                     }
                     break;
                 case END:
-                    //writefln("END index=%d", index);
                     _level--;
                     break;
                 }
@@ -896,8 +860,6 @@ struct ExprRange {
                 index++;
             }
             elm=IRElement.unreachable;
-            // IRElement result;
-            // elm=result; //IRElement(IR.UNREACHABLE);
         }
     }
 
@@ -911,19 +873,10 @@ struct ExprRange {
         }
 
         bool empty() const pure nothrow {
-            // if (test) {
-            //     return _index > data.length;
-            // }
-            // else {
             return _index > data.length;
-            // }
         }
 
         void popFront() {
-            // if (test) {
-            //     count--;
-            //     assert(count > 0);
-            // }
             set_front(current, _index);
         }
     }

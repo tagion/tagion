@@ -1,5 +1,5 @@
 include git.mk
-
+PRECMD?=@
 DC?=dmd
 AR?=ar
 include $(REPOROOT)/command.mk
