@@ -1,12 +1,12 @@
 module tagion.utils.JSONCommon;
 
-import JSON=std.json;
-import std.format;
-import std.traits;
-import std.file;
-import std.getopt;
-import std.array : join;
-import std.string : strip;
+// import JSON=std.json;
+// import std.format;
+// import std.traits;
+// import std.file;
+// import std.getopt;
+// import std.array : join;
+// import std.string : strip;
 
 import tagion.basic.Basic : basename, DataFormat;
 import tagion.basic.TagionExceptions;
@@ -26,6 +26,10 @@ alias check=Check!OptionException;
  mixin for implememts a JSON interface for a struct
 +/
 mixin template JSONCommon() {
+    import tagion.basic.Basic : basename;
+    import JSON=std.json;
+    import std.traits;
+    import std.format;
     /++
      Returns:
      JSON of the struct
@@ -129,7 +133,8 @@ mixin template JSONCommon() {
 }
 
 mixin template JSONConfig() {
-
+    import JSON=std.json;
+    import std.file;
     void parseJSON(string json_text) {
         auto json=JSON.parseJSON(json_text);
         parse(json);
