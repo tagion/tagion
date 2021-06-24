@@ -1,4 +1,4 @@
-module tagion.vm.wasm.WasmBase;
+module tagion.wasm.WasmBase;
 
 import std.traits : EnumMembers, Unqual, isAssociativeArray, ForeachType, ConstOf;
 import std.meta : AliasSeq;
@@ -10,7 +10,7 @@ import std.range.primitives : isInputRange;
 import std.bitmanip : binread = read, binwrite = write, binpeek=peek, Endian;
 
 import std.stdio;
-import tagion.vm.wasm.WasmException;
+import tagion.wasm.WasmException;
 
 import LEB128=tagion.utils.LEB128;
 

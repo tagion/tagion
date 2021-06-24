@@ -1,8 +1,8 @@
-module tagion.vm.wasm.WasmReader;
+module tagion.wasm.WasmReader;
 
 import std.format;
-import tagion.vm.wasm.WasmException;
-import tagion.vm.wasm.WasmBase;
+import tagion.wasm.WasmException;
+import tagion.wasm.WasmBase;
 
 import std.meta : AliasSeq;
 import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget, ForeachType;
