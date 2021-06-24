@@ -622,7 +622,6 @@ protected string GenerateInterfaceModule(T...)() {
 
 interface InterfaceModuleT(T...) {
     enum code=GenerateInterfaceModule!(T)();
-    pragma(msg, code);
     mixin(code);
 }
 

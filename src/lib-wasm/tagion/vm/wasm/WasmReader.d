@@ -115,12 +115,12 @@ struct WasmReader {
 
     static assert(isInputRange!WasmRange);
 
-    struct WasmRange {
+    @safe struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
         immutable(string) magic;
         immutable(uint)   vernum;
-        this(immutable(ubyte[]) data) {
+        this(immutable(ubyte[]) data) @trusted {
             this.data=data;
             magic=cast(string)(data[0..uint.sizeof]);
             _index=uint.sizeof;
@@ -137,7 +137,7 @@ struct WasmReader {
             return WasmSection(data[_index..$]);
         }
 
-        @property void popFront() {
+        @property void popFront() pure {
             size_t u32_size;
             _index+=Section.sizeof;
             const size=u32(data, _index);
