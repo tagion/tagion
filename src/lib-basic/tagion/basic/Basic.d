@@ -6,6 +6,7 @@ private import std.traits;
 private import std.exception : assumeUnique;
 import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
+import std.range.primitives : isInputRange;
 
 enum this_dot="this.";
 
@@ -375,4 +376,21 @@ static unittest {
         one=1, two, three
     }
     static assert(EnumContinuousSequency!OffsetCount);
+}
+
+
+/**
+ Returns:
+ If the range is not empty the first element is return
+ else the .init value of the range element type is return
+ The first element is returned
+*/
+template doFront(Range) if(isInputRange!Range) {
+    alias T=ForeachType!Range;
+    T doFront(Range r) {
+        if (r.empty) {
+            return T.init;
+        }
+        return r.front;
+    }
 }
