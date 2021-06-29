@@ -12,8 +12,8 @@ interface TagionExceptionInterface {
  +/
 @safe
 class TagionException : Exception, TagionExceptionInterface {
-    string task_name; /// Contains the name of the task when the execption has throw
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure {
+//    string task_name; /// Contains the name of the task when the execption has throw
+    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
         super( msg, file, line );
     }
 
@@ -24,15 +24,16 @@ class TagionException : Exception, TagionExceptionInterface {
      Returns:
      The immutable version of the Exception
      +/
+    version(none)
     @trusted
-    final immutable(TagionException) taskException() {
-        version(LOGGER) {
-            import tagion.services.LoggerService;
-            if (task_name.length > 0) {
-                task_name=log.task_name;
-            }
-        }
-        return cast(immutable)this;
+    final immutable(TaskException) taskException() {
+        // version(LOGGER) {
+        import tagion.basic.Logger;
+        // if (task_name.length > 0) {
+        //     task_name=log.task_name;
+        // }
+        // }
+        return immutable(TaskException)(cast(immutable)this, log.task_name);
     }
 }
 
@@ -44,5 +45,52 @@ void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = 
     static assert(is(E:TagionExceptionInterface));
     if (!flag) {
         throw new E(msg, file, line);
+    }
+}
+
+struct TaskFailure {
+    Throwable throwable;
+    string task_name;
+}
+
+
+/++
+ This function set the taskname set by the logger
+ The version LOGGER must be enabled for this to work
+ The function is used to send the exception to the task owner ownerTid
+ Returns:
+ The immutable version of the Exception
+ +/
+@trusted
+static immutable(TaskFailure) taskException(const(Throwable) e) nothrow  { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+    import tagion.basic.Logger;
+    return immutable(TaskFailure)(cast(immutable)e, log.task_name);
+}
+
+// @trusted
+// static void send(immutable(TaskFailure) task_e) {
+//     import std.concurrency;
+//     ownerTid.send(task_e);
+// }
+
+@safe
+static void fatal(const(Throwable) e) nothrow {
+    import tagion.basic.Logger;
+
+    immutable task_e = taskException(e);
+    log(task_e);
+    try {
+        task_e.taskfailure;
+    }
+    catch (Exception e) {
+        log.fatal(e.msg);
+    }
+}
+
+@trusted
+static void taskfailure(immutable(TaskFailure) t) {
+    import std.concurrency;
+    if (ownerTid != Tid.init) {
+        ownerTid.send(t);
     }
 }

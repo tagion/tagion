@@ -6,6 +6,7 @@ private import std.traits;
 private import std.exception : assumeUnique;
 import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
+import std.range.primitives : isInputRange;
 
 enum this_dot="this.";
 
@@ -19,7 +20,7 @@ enum BufferType {
     SIGNATURE,   /// Signature buffer type
     HASHPOINTER, /// Hash pointre buffer type
     MESSAGE,     /// Message buffer type
-    PAYLOAD      /// Payload buffer type
+   PAYLOAD      /// Payload buffer type
 }
 
 enum BillType {
@@ -30,10 +31,11 @@ enum BillType {
 
 alias Buffer=immutable(ubyte)[]; /// General buffer
 alias Pubkey     =Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer used for public keys
+alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
+alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
+
 alias Payload    =Typedef!(Buffer, null, BufferType.PAYLOAD.stringof);  // Buffer used fo the event payload
 version(none) {
-alias Privkey    =Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
-alias Signature  =Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
 alias Message    =Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 alias HashPointer=Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 }
@@ -87,14 +89,14 @@ template find_dot(string str, size_t index=0) {
 /++
  Creates a new clean bitarray
 +/
-void  bitarray_clear(out BitArray bits, uint length) @trusted {
+void  bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length=length;
 }
 
 /++
  Change the size of the bitarray
 +/
-void bitarray_change(ref scope BitArray bits, uint length) @trusted {
+void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     pragma(msg, "Fixme(cbr): function name should be change to bitarray_change_size");
     bits.length=length;
 }
@@ -227,7 +229,7 @@ unittest {
 enum Control{
     LIVE=1, /// Send to the ownerTid when the task has been started
     STOP,   /// Send when the child task to stop task
-    FAIL,   /// This if a something failed other than an exception
+//    FAIL,   /// This if a something failed other than an exception
     END     /// Send for the child to the ownerTid when the task ends
 };
 
@@ -282,8 +284,6 @@ template isOneOf(T, TList...) {
     }
 }
 
-void func(T)(T x) if (isOneOf!(int, long)) {
-}
 ///
 static unittest {
     import std.meta;
@@ -316,6 +316,10 @@ template CastTo(T, TList...) {
 static unittest {
     static assert(is(void==CastTo!(string, AliasSeq!(int, long, double))));
     static assert(is(double==CastTo!(float, AliasSeq!(int, long, double))));
+    static assert(is(string==CastTo!(string, AliasSeq!(uint, string))));
+    static assert(is(uint==CastTo!(ushort, AliasSeq!(uint, string))));
+    static assert(is(uint==CastTo!(int, AliasSeq!(string, uint))));
+    static assert(is(const(uint)==CastTo!(inout(uint), AliasSeq!(const(uint), const(string)))));
 }
 
 enum DataFormat {
@@ -324,4 +328,69 @@ enum DataFormat {
     wasm    = "wasm",  // WebAssembler binary format
     wast    = "wast",  // WebAssembler text format
     dartdb  = "drt",   // DART data-base
+}
+
+import std.typecons : Tuple;
+alias FileNames=Tuple!(string, "tempdir", string, "filename", string, "fullpath");
+const(FileNames) fileId(T)(string ext, string prefix=null) @safe {
+    import std.process : environment, thisProcessID;
+    import std.file;
+    import std.path;
+    import std.array : join;
+    //import std.traits;
+    FileNames names;
+    names.tempdir=tempDir.buildPath(environment.get("USER"));
+    names.filename=setExtension([prefix, thisProcessID.to!string, T.stringof].join("_"), ext);
+    names.fullpath=buildPath(names.tempdir, names.filename);
+    names.tempdir.exists || names.tempdir.mkdir;
+    return names;
+}
+
+template EnumContinuousSequency(Enum) if (is(Enum == enum)) {
+    template Sequency(EList...) {
+        static if (EList.length is 1) {
+            enum Sequency=true;
+        }
+        else static if (EList[0]+1 is EList[1]) {
+            enum Sequency=Sequency!(EList[1..$]);
+        }
+        else {
+            enum Sequency=false;
+        }
+    }
+    enum EnumContinuousSequency=Sequency!(EnumMembers!Enum);
+}
+
+static unittest {
+    enum Count {
+        zero, one, two, three
+    }
+    static assert(EnumContinuousSequency!Count);
+
+    enum NoCount {
+        zero, one, three=3
+    }
+    static assert(!EnumContinuousSequency!NoCount);
+
+    enum OffsetCount {
+        one=1, two, three
+    }
+    static assert(EnumContinuousSequency!OffsetCount);
+}
+
+
+/**
+ Returns:
+ If the range is not empty the first element is return
+ else the .init value of the range element type is return
+ The first element is returned
+*/
+template doFront(Range) if(isInputRange!Range) {
+    alias T=ForeachType!Range;
+    T doFront(Range r) {
+        if (r.empty) {
+            return T.init;
+        }
+        return r.front;
+    }
 }
