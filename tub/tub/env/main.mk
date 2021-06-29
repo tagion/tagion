@@ -6,6 +6,7 @@ GIT_REVNO ?= ${shell git log --pretty=format:'%h' | wc -l}
 # Root project directory
 DIR_MAKER := ./
 DIR_SRC := ../src
+DIR_BUILD := ../build
 
 # Directory for libs and bins
 DIR_LIBS ?= $(DIR_SRC)/libs
