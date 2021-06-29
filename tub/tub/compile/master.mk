@@ -6,7 +6,7 @@ include $(REPOROOT)/command.mk
 
 
 include $(DIR_SCRIPTS)/dinclude_setup.mk
-DCFLAGS+=$(addprefix -I$(DIR_LAB)/,$(DINC))
+DCFLAGS+=$(addprefix -I$(DIR_MAKER)/,$(DINC))
 
 include setup.mk
 

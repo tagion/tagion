@@ -2,7 +2,7 @@ define LIBMAKE
 ALL_LIBS+=${call GETLIB,$(1)}
 #ifeq (${call GETLIB,$(1)} ,$(LIBRARY) )
 ${call GETLIB,$(1)}:
-	cd $(DIR_LAB); $(MAKE) -C $(2) lib
+	cd $(DIR_MAKER); $(MAKE) -C $(2) lib
 	echo $(LIBS)
 #endif
 endef

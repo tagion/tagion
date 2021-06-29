@@ -1,7 +1,8 @@
-include scripts/log/main.mk
-include scripts/env/main.mk
-include scripts/help/main.mk
-# include scripts/compile/main.mk
+include log/main.mk
+include env/main.mk
+include help/main.mk
+include map/main.mk
+include compile/main.mk
 
 help: $(HELP)
 info: $(INFO)
