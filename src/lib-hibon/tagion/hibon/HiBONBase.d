@@ -164,6 +164,27 @@ bool isHiBONType(Type type) pure nothrow {
     return flags[type];
 }
 
+/++
+ Returns:
+ true if the type is a valid HiBONType excluding narive types
++/
+@safe
+bool isValidType(Type type) pure nothrow {
+    bool[] make_flags() {
+        bool[] str;
+        str.length = ubyte.max+1;
+        with(Type) {
+            static foreach(E; EnumMembers!Type) {
+                str[E]=(E !is NONE);
+            }
+        }
+        return str;
+    }
+    enum flags = make_flags;
+    return flags[type];
+}
+
+
 @safe @nogc
 bool isDataBlock(Type type) pure nothrow {
     with(Type) {
@@ -584,6 +605,11 @@ unittest { // check is_index
     assert(!is_index("0x0", index));
     assert(!is_index("00", index));
     assert(!is_index("01", index));
+
+    assert(is_index("7", index));
+    assert(index is 7);
+    assert(is_index("69", index));
+    assert(index is 69);
 }
 
 /++
@@ -591,7 +617,7 @@ unittest { // check is_index
  Returns:
  true if the value of key a is less than the value of key b
 +/
-@safe @nogc bool less_than(string a, string b) pure
+@safe @nogc bool less_than(string a, string b) pure nothrow
     in {
         assert(a.length > 0);
         assert(b.length > 0);
@@ -635,6 +661,8 @@ unittest { // Check less_than
     assert(less_than(0.to!string, 1.to!string));
     assert(!less_than("00", "0"));
     assert(less_than("0", "abe"));
+
+    assert(less_than("7", "69"));
     // assert(less_than(0, "1"));
     // assert(less_than(5, 7));
 }
