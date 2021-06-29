@@ -44,7 +44,7 @@ endif
 
 INFO += info-env-cmd
 info-env-cmd:
-	$(call log.open, info :: env :: commands ($(OS)))
+	$(call log.header, info :: env :: commands ($(OS)))
 	$(call log.kvp, RM, $(RM))
 	$(call log.kvp, RMDIR, $(RMDIR))
 	$(call log.kvp, MKDIR, $(MKDIR))
@@ -171,7 +171,7 @@ endif
 
 INFO += info-env-compiler
 info-env-compiler:
-	$(call log.open, info :: env :: compiler)
+	$(call log.header, info :: env :: compiler)
 	$(call log.kvp, DC, $(DC))
 	$(call log.kvp, COMPILER, $(COMPILER))
 	$(call log.separator)

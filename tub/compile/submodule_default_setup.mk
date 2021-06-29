@@ -37,11 +37,11 @@ INC+=$(REPOROOT)
 include unittest_setup.mk
 
 LIBSGMP:=/usr/local/homebrew/Cellar/gmp/6.2.1/lib/libgmp.a
-LIBSOPENSSL:=$(DIR_LAB)/openssl/libssl.a
-LIBSCRYPTO:=$(DIR_LAB)/openssl/libcrypto.a
-LIBSECP256K1:=$(DIR_LAB)/secp256k1/.libs/libsecp256k1.a
-LIBP2P:=$(DIR_LAB)/libp2pDWrapper/bin//libp2p.a
-LIBP2P_GO:=$(DIR_LAB)/libp2pDWrapper/bin//libp2p_go.a
+LIBSOPENSSL:=$(DIR_MAKER)/openssl/libssl.a
+LIBSCRYPTO:=$(DIR_MAKER)/openssl/libcrypto.a
+LIBSECP256K1:=$(DIR_MAKER)/secp256k1/.libs/libsecp256k1.a
+LIBP2P:=$(DIR_MAKER)/libp2pDWrapper/bin//libp2p.a
+LIBP2P_GO:=$(DIR_MAKER)/libp2pDWrapper/bin//libp2p_go.a
 
 LDCFLAGS_GMP:=$(LINKERFLAG)-lgmp
 LDCFLAGS_SSL:=$(LINKERFLAG)-lssl
