@@ -58,47 +58,13 @@ SOME=hello0
 # 	$(call log.line, $(DEPS))
 # 	$(call log.close)
 
-define find_d_files
-${shell find $(DIR_SRC)/lib_${strip $1} -name '*.d'}
-endef
 
 # With wrap work differently - point to it as dependency and resolve it here
 
-wrap/%:
-	@echo todo
-
-lib/%: ctx/lib/%
-	$(call log.header, building lib/$(@F))
-
-	${eval LIBS += $(@F)}
-
-	$(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
-	$(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
-
-	$(call log.line, All dependencies of lib/$(@F) are present)
-	$(call log.kvp, wraps, $(WRAPS))
-	$(call log.kvp, libs, $(LIBS))
-	${eval DFILES := ${foreach LIB, $(LIBS), ${call find_d_files, $(LIB)}}}
-	
-	$(call log.separator)
-	${eval COMPILE_CMD := $(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(LDCFLAGS) -c -of$(DIR_BUILD)/libs/lib_$(@F).a}
-	$(call log.kvp, Compiler, $(DC))
-	$(call log.kvp, DCFLAGS, $(DCFLAGS))
-	$(call log.kvp, LDCFLAGS, $(LDCFLAGS))
-	$(call log.kvp, INCFLAGS, $(INCFLAGS))
-	$(call log.kvp, DIR_BUILD, $(DIR_BUILD)/$@)
-	$(call log.kvp, D Files)
-	$(call log.lines, $(DFILES))
-	$(call log.separator)
-
-	$(call log.line, Compiling...)
-	$(call log.space)
-	@$(COMPILE_CMD)
-	$(call log.close)
 
 map:
 	$(call log.header, map)
-	$(call log.line, $(LIBS))
+	$(call log.lines, $(CONTEXTS))
 	$(call log.close)
 
 .PHONY: map
