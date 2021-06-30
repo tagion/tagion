@@ -1,4 +1,33 @@
+# OS
 OS ?= $(shell uname)
+
+# Root project directory
+DIR_MAKER := ./
+DIR_SRC := ../src
+DIR_BUILD := ../build
+
+# Directory for libs and bins
+DIR_LIBS ?= $(DIR_SRC)/libs
+DIR_BINS ?= $(DIR_SRC)/bins
+
+# Directory for make scripts
+DIR_MAKER ?= ./
+
+# Pointer to current file directory
+DIR_SELF = $(dir $(lastword $(MAKEFILE_LIST)))
+
+MAKE_SHOW_ENV += show-env-dirs
+show-env-dirs:
+	$(call log.header, info :: env :: dirs)
+	$(call log.kvp, DIR_MAKER, $(DIR_MAKER))
+	$(call log.kvp, DIR_SRC, $(DIR_SRC))
+	$(call log.separator)
+	$(call log.kvp, DIR_MAKER, $(DIR_MAKER))
+	$(call log.separator)
+	$(call log.kvp, DIR_LIBS, $(DIR_LIBS))
+	$(call log.kvp, DIR_BINS, $(DIR_BINS))
+	$(call log.close)
+
 
 # 
 # Commands
@@ -42,8 +71,8 @@ MV := mv
 LN := ln -s
 endif
 
-INFO += info-env-cmd
-info-env-cmd:
+MAKE_SHOW_ENV += show-env-commands
+show-env-commands:
 	$(call log.header, info :: env :: commands ($(OS)))
 	$(call log.kvp, RM, $(RM))
 	$(call log.kvp, RMDIR, $(RMDIR))
@@ -169,8 +198,8 @@ DCFLAGS  += -m32
 LDCFLAGS += -m32
 endif
 
-INFO += info-env-compiler
-info-env-compiler:
+MAKE_SHOW_ENV += show-env-compiler
+show-env-compiler:
 	$(call log.header, info :: env :: compiler)
 	$(call log.kvp, DC, $(DC))
 	$(call log.kvp, COMPILER, $(COMPILER))
@@ -200,3 +229,5 @@ info-env-compiler:
 	$(call log.kvp, LDCFLAGS, $(LDCFLAGS))
 	$(call log.kvp, DCFLAGS, $(DCFLAGS))
 	$(call log.close)
+
+show-env: $(MAKE_SHOW_ENV)
