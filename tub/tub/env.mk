@@ -1,6 +1,9 @@
 # OS
 OS ?= $(shell uname)
 
+# PRECMD is used to add command before the compiliation commands
+PRECMD ?= @
+
 # Root project directory
 DIR_MAKER := ./
 DIR_SRC := ../src
@@ -14,7 +17,7 @@ DIR_BINS ?= $(DIR_SRC)/bins
 DIR_MAKER ?= ./
 
 # Pointer to current file directory
-DIR_SELF = $(dir $(lastword $(MAKEFILE_LIST)))
+DIR_MAKER = ${dir_self}
 
 MAKE_SHOW_ENV += show-env-dirs
 show-env-dirs:
