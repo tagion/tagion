@@ -4,7 +4,7 @@ module tagion.utils.Queue;
 class Queue(T) {
     private Element _head;
     private Element _tail;
-    class Element {
+    static class Element {
         Element _next;
         Element _previous;
         private T data;
@@ -16,7 +16,7 @@ class Queue(T) {
         }
     }
 
-    void write(T data) {
+    void write(T data) nothrow {
         auto element=new Element(data);
         if ( _head ) {
             element._next = _head;
@@ -29,7 +29,7 @@ class Queue(T) {
         }
     }
 
-    T read()
+    T read() nothrow
         in {
             assert(_tail, "Data queue is empty");
         }
@@ -80,32 +80,44 @@ class Queue(T) {
         }
     }
 
-    bool empty() nothrow {
+    @nogc
+    bool empty() const pure nothrow {
         return _head is null;
     }
 
-    Iterator iterator() {
-        return Iterator(this);
+    Range opSlice() {
+        return Range(this);
     }
 
-    struct Iterator {
+    struct Range {
         private Element entry;
         private Queue owner;
-        this(Queue owner) {
+        this(Queue owner) pure nothrow {
             this.owner=owner;
             entry=owner._tail;
         }
-        bool empty() pure const nothrow {
-            return entry is null;
-        }
-        void popFront() {
-            entry=entry._previous;
-        }
+
+        pure nothrow {
+            bool empty() const  {
+                return entry is null;
+            }
+
+            void popFront() {
+                entry=entry._previous;
+            }
         // void popBack() {
         //     entry=entry._previous;
         // }
-        T front() {
-            return entry.data;
+            inout(T) front() inout {
+                return entry.data;
+            }
+        }
+
+        Range save() nothrow {
+            Range result;
+            result.owner=owner;
+            result.entry=entry;
+            return result;
         }
 
         void remove() {
@@ -122,6 +134,21 @@ class Queue(T) {
         assert(!q.empty);
         assert(q.read == elm1);
         assert(q.empty);
+    }
+
+    unittest { // two element
+        auto q=new Queue!string;
+        immutable elm1="A";
+        immutable elm2="B";
+        assert(q.empty);
+        q.write(elm1);
+        assert(!q.empty);
+        q.write(elm2);
+        assert(!q.empty);
+        assert(q.read == elm1);
+        assert(q.read == elm2);
+        assert(q.empty);
+
     }
 
     unittest { // More elements
@@ -156,7 +183,7 @@ class Queue(T) {
             }
 
             uint i=0;
-            foreach(d; q.iterator) {
+            foreach(d; q[]) {
                 assert(elm[i] == d);
                 i++;
             }
@@ -167,7 +194,7 @@ class Queue(T) {
                 q.write(e);
             }
 
-            auto iter=q.iterator;
+            auto iter=q[];
 
             iter.remove;
             assert(q.read == elm[1]);
@@ -179,7 +206,7 @@ class Queue(T) {
                 q.write(e);
             }
 
-            auto iter=q.iterator;
+            auto iter=q[];
             iter.popFront;
             iter.remove;
             assert(q.read == elm[0]);
@@ -191,7 +218,7 @@ class Queue(T) {
                 q.write(e);
             }
 
-            auto iter=q.iterator;
+            auto iter=q[];
             iter.popFront;
             iter.popFront;
             iter.remove;

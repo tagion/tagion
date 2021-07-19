@@ -1,83 +1,145 @@
-REPOROOT?=$(shell git root)
-PROGRAMS+=test
-
-DC?=ldc2
+include git.mk
+PRECMD?=@
+DC?=dmd
 AR?=ar
-LIBNAME:=libbakery.a
 include $(REPOROOT)/command.mk
 
--include dfiles.mk
 
+include $(MAINROOT)/dinclude_setup.mk
+DCFLAGS+=$(addprefix -I$(MAINROOT)/,$(DINC))
 
+include setup.mk
+
+-include $(REPOROOT)/dfiles.mk
+
+#BIN:=bin/
+LDCFLAGS+=$(LINKERFLAG)-L$(BINDIR)
 ARFLAGS:=rcs
-BUILD:=build
-OBJS:=$(addprefix $(BUILD)/,$(DFILES:.d=.o))
+BUILD?=$(REPOROOT)/build
+#SRC?=$(REPOROOT)
 
-BUILDROOT:=$(sort $(dir $(OBJS)))
-TOUCHHOOK:=$(addsuffix /.touch,$(BUILDROOT))
-#MAKEDIRS:=$(foreach dir,$(BUILDROOT), mkdir -p $(dir)\;)
+.SECONDARY: $(TOUCHHOOK)
+.PHONY: makeway
+.SECONDARY: $(LIBS)
 
-#objs:
-#	echo $(OBJS)
-#	echo $(BUILDROOT)
-#	echo $(MAKEDIRS)
+INCFLAGS=${addprefix -I,${INC}}
 
-DCFLAGS+=-unittest
-DCFLAGS+=-g
-TANGOROOT:=$(REPOROOT)/../Tango-D2/
-#DCFLAGS+=-I.
-DCFLAGS+=-I$(TANGOROOT)
-#LDCFLAGS+=$(LINKERFLAG)-L.
-LDCFLAGS+=$(LINKERFLAG)-L$(TANGOROOT)
-LDCFLAGS+=$(LINKERFLAG)-ltango-$(COMPILER)
-#LDCFLAGS+=$(LINKERFLAG)-lbarkey
+#LIBRARY:=$(BIN)/$(LIBNAME)
+#LIBOBJ:=${LIBRARY:.a=.o};
 
-LIBS+=
-LIBS+=$(LIBNAME)
-#MAIN:=baker
-MAIN+=test_script
-MAIN+=test_bigint
+.SECONDARY: .touch
 
-
-ifndef DFILES
-include source.mk
+ifdef COV
+RUNFLAGS+=--DRT-covopt="merge:1 dstpath:reports"
+DCFLAGS+=-cov
 endif
 
-all: $(MAIN)
 
-run: $(MAIN)
-	./bin/$(MAIN)
+
+HELP+=help-main
+
+help: $(HELP)
+	@echo "make lib       : Builds $(LIBNAME) library"
+	@echo
+	@echo "make unittest  : Run the unittests"
+	@echo
+
+help-main:
+	@echo "Usage "
+	@echo
+	@echo "make info      : Prints the Link and Compile setting"
+	@echo
+	@echo "make proper    : Clean all"
+	@echo
+	@echo "make PRECMD=   : Verbose mode"
+	@echo "                 make PRECMD= <tag> # Prints the command while executing"
+	@echo
+
+include $(MAINROOT)/libraries.mk
+
+ifndef DFILES
+include $(REPOROOT)/source.mk
+endif
 
 info:
-	@echo "DFILES =$(DFILES)"
-	@echo "OBJS   =$(OBJS)"
+	@echo "WAYS    =$(WAYS)"
+	@echo "DFILES  =$(DFILES)"
+#	@echo "OBJS    =$(OBJS)"
+	@echo "LDCFLAGS =$(LDCFLAGS)"
+	@echo "DCFLAGS  =$(DCFLAGS)"
+	@echo "INCFLAGS =$(INCFLAGS)"
+	@echo "GIT_REVNO=$(GIT_REVNO)"
+	@echo "GIT_HASH =$(GIT_HASH)"
 
+include $(REPOROOT)/revision.mk
 
-#$(eval $(call
-define COMPILE
-$(1): $(OBJS)
-	$(DC) $(LDCFLAGS) $(DCFLAGS) $(DFILES) $(1).d $(OBJS) $(OUTPUT)bin/$(1)
+ifndef DFILES
+lib: $(REVISION) dfiles.mk
+	$(MAKE) lib
 
+unittest: dfiles.mk
+	$(MAKE) unittest
+else
+lib: $(REVISION) $(LIBRARY)
+
+unittest: $(UNITTEST)
+	export LD_LIBRARY_PATH=$(LIBBRARY_PATH); $(UNITTEST)
+
+$(UNITTEST): $(LIBS) $(WAYS) $(DFILES)
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(TESTDCFLAGS) $(LDCFLAGS) $(OUTPUT)$@
+#$(LDCFLAGS)
+
+endif
+
+define LINK
+$(1): $(1).d $(LIBRARY)
+	@echo "########################################################################################"
+	@echo "## Linking $(1)"
+#	@echo "########################################################################################"
+	$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(1).d $(OUTPUT)$(BIN)/$(1) $(LDCFLAGS)
 endef
-#compile: $(OBJS)
-#	$(DC) $(LDCFLAGS) $(DCFLAGS) $(DFILES) $(MAIN).d $(OBJS) $(OUTPUT)bin/$(MAIN)
 
-$(eval $(foreach main,$(MAIN),$(call COMPILE,$(main))))
+$(eval $(foreach main,$(MAIN),$(call LINK,$(main))))
 
-$(LIBNAME): $(TOUCHHOOK) $(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
+makeway: ${WAYS}
 
-$(BUILD)/%.o:%.d
-	$(DC) $(DCFLAGS) -c $< $(OUTPUT) $@
+include $(REPOROOT)/makeway.mk
+$(eval $(foreach dir,$(WAYS),$(call MAKEWAY,$(dir))))
 
 %.touch:
-	mkdir -p $(@D)
-	touch $@
+	@echo "########################################################################################"
+	@echo "## Create dir $(@D)"
+	$(PRECMD)mkdir -p $(@D)
+	$(PRECMD)touch $@
+
+
+#include $(DDOCBUILDER)
+
+$(LIBRARY): ${DFILES}
+	@echo "########################################################################################"
+	@echo "## Library $@"
+	@echo "########################################################################################"
+	${PRECMD}$(DC) ${INCFLAGS} $(DCFLAGS) $(DFILES) -c $(OUTPUT)$(LIBRARY)
+
+install: $(INSTALL)
+
+CLEANER+=clean
 
 clean:
-	rm -fR $(BUILD)
-	rm -f $(LIBNAME)
+#	rm -f $(LIBRARY)
+	rm -f ${OBJS}
+	rm -f $(UNITTEST) $(UNITTEST).o
+	rm -f $(REVISION)
 	rm -f dfiles.mk
 
+proper: $(CLEANER)
+	rm -fR $(WAYS)
+	rm -f dfiles.mk
+
+#%.a:
+# Find the root of the %.a repo
+# and calls the lib tag
+#	make -C${call GITROOT,${dir $(@D)}} lib
+
 $(PROGRAMS):
-	$(DC) $(DCFLGAS) $(LDCFLAGS) $(OUTPUT) $@
+	$(DC) $(DCFLAGS) $(LDCFLAGS) $(OUTPUT) $@

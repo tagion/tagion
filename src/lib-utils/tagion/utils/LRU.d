@@ -5,21 +5,15 @@ module tagion.utils.LRU;
 
 //import std.stdio;
 import tagion.utils.DList;
+import tagion.utils.Result;
 import std.conv;
 import std.format;
 import std.traits;
-
+import std.algorithm : map;
 
 // LRU implements a non-thread safe fixed size LRU cache
 @safe
 class LRU(K,V)  {
-//    enum value_is_immutable=is(V == struct);
-    // static if ( value_is_immutable ) {
-    //     alias Value=V*;
-    // }
-    // else {
-    //     alias Value=V;
-    // }
     enum does_not_have_immutable_members=__traits(compiles, {
             V v;
             void f(ref V _v) {
@@ -31,29 +25,21 @@ class LRU(K,V)  {
         static assert(hasMember!(V, "undefined"), format("%s must have a static member named 'undefined'", V.stringof));
     }
 
-    // pragma(msg, format("%s does not have immutable members %s", V.stringof, does_not_have_immutable_members));
-    @safe
+    @safe @nogc
     struct Entry {
         K key;
         V value;
-        // static if ( value_is_immutable ) {
-        //     @trusted
-        //     this(K key, ref V value) {
-        //         this.key=key;
-        //         this.value=&value;
-        //     }
-        // }
-        // else {
-        this(K key, ref V value) {
+        this(K key, ref V value) pure nothrow {
             this.key=key;
             this.value=value;
         }
     }
-    alias DList!(Entry*)  EvictList;
-    alias EvictList.Element Element;
+
+    alias EvictList=DList!(Entry*);
+    alias Element=EvictList.Element;
     private EvictList evictList;
     private Element*[K] items;
-    alias void delegate(const(K), Element*) @safe EvictCallback;
+    alias void delegate(scope const(K), Element*) @safe nothrow EvictCallback;
     immutable uint      size;
     private EvictCallback onEvict;
 
@@ -61,10 +47,9 @@ class LRU(K,V)  {
 
 // NewLRU constructs an LRU of the given size
     // size zero means unlimited
-    this( EvictCallback onEvict=null, immutable uint size=0) {
+    this (EvictCallback onEvict=null, immutable uint size=0) pure nothrow {
         this.size=      size;
         evictList = new EvictList;
-            //	items:     make(map[interface{}]*list.Element),
         this.onEvict=onEvict;
     }
 
@@ -81,7 +66,7 @@ class LRU(K,V)  {
 
 // add adds a value to the cache.  Returns true if an eviction occurred.
 //    @trusted // <--- only in debug
-    bool add(const(K) key, ref V value ) {
+    bool add(scope const(K) key, ref V value ) {
         // Check for existing item
         auto ent = key in items;
         if ( ent !is null ) {
@@ -102,18 +87,14 @@ class LRU(K,V)  {
             // Remove the oldest element
             removeOldest;
         }
-//         static if ( is (K:const(ubyte)[]) ) {
-//             import std.stdio;
-//             import tagion.crypto.Hash : toHexString;
-// //            writefln("Add[%s]=%s evict=%s", key.toHexString, value.id, evict);
-//         }
         return evict;
     }
 
 
 // Get looks up a key's value from the cache.
-    bool get(const(K) key, ref V value) {
-        static if (does_not_have_immutable_members) {
+    static if (does_not_have_immutable_members) {
+        bool get(scope const(K) key, ref V value) nothrow {
+
             auto ent = key in items;
             if ( ent !is null ) {
                 auto element=*ent;
@@ -122,12 +103,13 @@ class LRU(K,V)  {
                 return true;
             }
             return false;
+            // }
+        // assert(0,
+        //     format("%s has immutable members, use %s instead", V.stringof, opIndex(key).stringof));
         }
-        assert(0,
-            format("%s has immutable members, use %s instead", V.stringof, opIndex(key).stringof));
     }
 
-    V opIndex(const(K) key) {
+    V opIndex(scope const(K) key) {
         static if (does_not_have_immutable_members) {
             V value;
             get(key, value);
@@ -144,30 +126,30 @@ class LRU(K,V)  {
         }
     }
 
-
-    void opIndexAssign(ref V value, const(K) key) {
+    void opIndexAssign(ref V value, scope const(K) key) {
         add(key, value);
     }
 
 // Check if a key is in the cache, without updating the recent-ness
 // or deleting it for being stale.
-    bool contains(const(K) key) const {
+    @nogc
+    bool contains(scope const(K) key) const pure nothrow {
         return (key in items) !is null;
     }
 
 // Returns the key value (or undefined if not found) without updating
 // the "recently used"-ness of the key.
-    bool peek(const(K) key, ref V value) {
-        static if (does_not_have_immutable_members) {
+    static if (does_not_have_immutable_members) {
+        @nogc
+        bool peek(const(K) key, ref V value) pure nothrow {
             auto ent = key in items;
             if ( ent !is null ) {
+                pragma(msg, "(*ent).entry.value ", typeof((*ent).entry.value));
                 value=(*ent).entry.value;
                 return true;
             }
             return false;
         }
-        assert(0,
-            format("%s has immutable members, use %s instead", V.stringof, peek(key).stringof));
     }
 
     V peek(const(K) key) {
@@ -187,48 +169,43 @@ class LRU(K,V)  {
 
 // Remove removes the provided key from the cache, returning if the
 // key was contained.
-    import std.stdio;
-    // static bool display;
-    // static File fout;
 
 
-    bool remove(const(K) key) {
+    bool remove(scope const(K) key) {
         auto ent=key in items;
-        // if ( display ) fout.writefln("Aften remove %s", ent !is null);
         if ( ent !is null ) {
             auto element=*ent;
             if (onEvict !is null) {
                 onEvict(key, element);
             }
-            // if ( display ) fout.writefln("Aften onEvict(element)");
             evictList.remove(element);
-            // if ( display ) fout.writefln("Aften evictList.remove(element)");
             items.remove(key);
-            // if ( display ) fout.writefln("Aften item.remove(element)");
             return true;
         }
         return false;
     }
 
-    void setEvict(EvictCallback evict) {
+    @nogc
+    void setEvict(EvictCallback evict) nothrow {
         onEvict=evict;
     }
-// RemoveOldest removes the oldest item from the cache.
-    const(Entry)* removeOldest() {
 
-        auto ent = evictList.pop;
-        if (ent !is null) {
-            auto element=items[ent.key];
-            items.remove(ent.key);
+// RemoveOldest removes the oldest item from the cache.
+    const(Result!(Entry*)) removeOldest() nothrow {
+        const e = evictList.pop;
+        if (!e.error) {
+            auto element=items[e.value.key];
+            items.remove(e.value.key);
             if (onEvict !is null) {
-                onEvict(ent.key, element);
+                onEvict(e.value.key, element);
             }
         }
-        return ent;
+        return e;
     }
 
 // GetOldest returns the oldest entry
-    const(Entry)* getOldest() {
+    @nogc
+    const(Entry)* getOldest() const pure nothrow  {
         auto last=evictList.last;
         if ( last ) {
             return evictList.last.entry;
@@ -237,63 +214,39 @@ class LRU(K,V)  {
             return null;
         }
     }
-//}
 
-// keys returns a slice of the keys in the cache, from oldest to newest.
-    const(K[]) keys() {
-        const(K)[] result;
-	uint i;
-        foreach_reverse(entry; evictList) {
-            result~=entry.key;
-	}
-	return result;
+/// keys returns a slice of the keys in the cache, from oldest to newest.
+    @nogc
+    auto keys() pure nothrow {
+        return evictList.revert.map!(a => a.key);
     }
 
+
 // length returns the number of items in the cache.
-    uint length() pure const {
+    @nogc
+    uint length() pure const nothrow {
         return evictList.length;
     }
 
-    EvictList.Iterator iterator() {
-        return evictList.iterator;
+    @nogc
+    EvictList.Range!false opSlice() nothrow {
+        return evictList[];
     }
 
     invariant {
         assert(items.length == evictList.length);
     }
-// // removeOldest removes the oldest item from the cache.
-//     void removeOldest() {
-//         auto ent = evictList.Back();
-//         if ( ent !is null) {
-//             removeElement(ent);
-// 	}
-//     }
-
-// // removeElement is used to remove a given list element from the cache
-//     func (c *LRU) removeElement(e *list.Element) {
-// 	c.evictList.Remove(e)
-// 	auto kv = e.Value.(*entry)
-// 	delete(c.items, kv.key)
-// 	if c.onEvict != nil {
-// 		c.onEvict(kv.key, kv.value)
-// 	}
-//     }
 }
 
-// package common
-
-// import "testing"
-
-// func TestLRU(t *testing.T) {
-// 	evictCounter := 0
 unittest {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
 
-    void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
         assert( e.entry.key == e.entry.value );
         evictCounter++;
     }
+
     enum amount = 8;
     auto l = new TestLRU(&onEvicted, amount);
     foreach(i;0..amount) {
@@ -324,7 +277,8 @@ unittest {
     assert(evictCounter == amount);
     int v;
     bool ok;
-    foreach(i, k; l.keys ) {
+    import std.range : enumerate;
+    foreach(i, k; l.keys.enumerate ) {
         ok=l.get(k, v);
         assert(ok);
         assert(k == v);
@@ -351,7 +305,7 @@ unittest {
 
     l.get(amount2, v); // expect amount2 to be last key in l.Keys()
 
-    foreach(i, k; l.keys) {
+    foreach(i, k; l.keys.enumerate) {
         enum amount_i = amount/2-1;
         bool not_good=((i < amount_i) && (k != i+amount2+1)) || ((i == amount_i) && (k != amount2));
         assert(!not_good, "out of order key: "~to!string(k));
@@ -364,7 +318,6 @@ unittest {
     assert(!ok, "should contain nothing");
 }
 
-//func TestLRU_GetOldest_RemoveOldest(t *testing.T) {
 unittest { // getOldest removeOldest
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
@@ -380,39 +333,17 @@ unittest { // getOldest removeOldest
     }
     auto e = l.getOldest();
     assert(e !is null, "missing");
-    // if !ok {
-    // 	t.Fatalf("missing")
-    // }
     assert(e.value == amount, "bad value "~to!string(e.key));
-	// if k.(int) != 128 {
-	// 	t.Fatalf("bad: %v", k)
-	// }
-
-    e = l.removeOldest();
+    e = l.removeOldest.value;
     assert(e !is null, "missing");
     assert(e.value == amount, "bad value "~to!string(e.key));
-	// if !ok {
-	// 	t.Fatalf("missing")
-	// }
-	// if k.(int) != 128 {
-	// 	t.Fatalf("bad: %v", k)
-	// }
-    e = l.removeOldest();
+    e = l.removeOldest.value;
     assert(e !is null, "missing");
     assert(e.value == amount+1, "bad value "~to!string(e.value));
-
-	// k, _, ok = l.RemoveOldest()
-	// if !ok {
-	// 	t.Fatalf("missing")
-	// }
-	// if k.(int) != 129 {
-	// 	t.Fatalf("bad: %v", k)
-	// }
 }
 
 // Test that Add returns true/false if an eviction occurred
 unittest { // add
-//func TestLRU_Add(t *testing.T) {
     alias LRU!(int,int) TestLRU;
     uint evictCounter;
     void onEvicted(const(int) i, TestLRU.Element* e) @safe {
@@ -483,22 +414,20 @@ unittest {
     assert( !l.contains(1), "should not have updated recent-ness of 1");
 }
 
-unittest { // immutable struct
+unittest { // Test undefined
     @safe
     struct E {
         immutable(char[]) x;
         static E undefined() {
             return E("Not found");
         }
-        // this(int x) inout {
-        //     this.x=x;
-        // }
     }
     alias TestLRU=LRU!(int,E);
+    uint count;
+    import std.stdio;
     void onEvicted(const(int) i, TestLRU.Element* e) @safe {
-        assert(0, "Not used");
+        count++;
     }
-
 
     auto l=new TestLRU(&onEvicted);
 
@@ -509,11 +438,10 @@ unittest { // immutable struct
     }
 
     assert(l[N] == E.undefined);
+    assert(l[N-1] != E.undefined);
     assert(l.length == N);
     assert(l.remove(2));
+    assert(count == 1);
     assert(l.length == N-1);
-    auto l1=l[1];
-    import std.stdio;
-    writefln("l.length=%d", l.length);
-    assert(0, "Stop");
+    assert(l[2] == E.undefined);
 }

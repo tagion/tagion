@@ -1,8 +1,9 @@
 module tagion.utils.Gene;
 
-@safe
+import std.exception : assumeUnique;
+@nogc @safe
 uint gene_count(const size_t bitstring) pure nothrow {
-     static uint count_ones(size_t BITS=size_t.size*8)(const size_t x) pure nothrow {
+     static uint count_ones(size_t BITS=size_t.sizeof*8)(const size_t x) pure nothrow {
          static if ( BITS == 1 ) {
              return x & 0x1;
          }
@@ -11,27 +12,42 @@ uint gene_count(const size_t bitstring) pure nothrow {
          }
          else {
              enum HALF_BITS=BITS/2;
-             enum MASK=(1 << (HALF_BITS))-1;
+             enum MASK=size_t(1UL << (HALF_BITS))-1;
              return count_ones!(HALF_BITS)(x & MASK) + count_ones!(HALF_BITS)(x >> HALF_BITS);
          }
      }
-     return count_ones(bitstream);
+     return count_ones(bitstring);
 }
 
-@safe
-uint gene_count(const(ulong[]) bitstream) pure {
-
+@nogc @safe
+uint gene_count(scope const(ulong[]) bitstream) pure nothrow {
     uint result;
     foreach(x; cast(const(size_t[]))bitstream) {
         result+=gene_count(x);
     }
+    return result;
 }
 
 @trusted
-immutable(ulong[]) gene_xor(const(ulong[]) a, const(ulong[]) b) pure
+immutable(ulong[]) gene_xor(scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
 in {
      assert(a.length == b.length);
 }
 do {
-    return a[]^b[];
+    auto result=new ulong[a.length];
+    gene_xor(result, a, b);
+    return assumeUnique(result);
+}
+
+
+@nogc @safe
+void gene_xor(ref scope ulong[] result, scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
+in {
+     assert(a.length == b.length);
+     assert(result.length == b.length);
+}
+do {
+    foreach(i, ref r; result) {
+        r=a[i]^b[i];
+    }
 }
