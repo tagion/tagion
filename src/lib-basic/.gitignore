@@ -1,4 +1,11 @@
-*~
+core
 *.o
 *#
 .#*
+*~
+dfiles.mk
+revision.di
+bin
+modules.ddoc
+ddoc
+*.parked

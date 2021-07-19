@@ -1,9 +1,9 @@
 module tagion.Keywords;
 
-private import tagion.Base : EnumText;
+private import tagion.basic.Basic : EnumText;
 
-// Keyword list for the BSON packages
-enum _keywords = [
+// Keyword list for the HiBON packages
+protected enum _keywords = [
     "pubkey",       // Pubkey
     "signature",        // signature of the block
 //    "altitude",   // altitude
@@ -73,7 +73,7 @@ enum _keywords = [
     "value",
     "ownerkey",
 
-    // FixMe should be change to "result" and "error" to fit the HBSON-RPC
+    // FixMe should be change to "result" and "error" to fit the HiRPC
     "result_code",
     "error_code",
 
@@ -82,17 +82,17 @@ enum _keywords = [
     "source",
 
     // DART
-    "indices",
+//    "indices",
     "fingerprint",
-    "fingerprints",
+//    "fingerprints",
     "archives",
     "branches",
     "read",
     "rims",
     "keys",
-    "stub",
+//    "stub",
 
-    // HBSON-RPC (Similar to JSON-RPC 2.0)
+    // HiRPC (Similar to JSON-RPC 2.0)
 //    "rev",
     "method",
     "params",
@@ -100,12 +100,20 @@ enum _keywords = [
     "result",
     "id", //
     "data",
-    "hrpc"
+    "hirpc"
     ];
 
 // Generated the Keywords and enum string list
 mixin(EnumText!("Keywords", _keywords));
 
+protected enum _network_modes = [
+    "internal",
+    "local",
+    "pub"
+];
+import std.array: join;
+enum ValidNetwrokModes = join(_network_modes, ",");
+mixin(EnumText!("NetworkMode", _network_modes));
 /++
  Check if the CTE string $(LREF word) belongs to $(LREF K) string enum
 +/

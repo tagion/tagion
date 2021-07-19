@@ -79,6 +79,7 @@ else
     OUTPUT    = -of
     HF        = -Hf
     DF        = -Df
+    DD        = -Dd
     NO_OBJ    = -o-
     DDOC_MACRO=
 endif
@@ -88,13 +89,24 @@ endif
 ifeq ($(COMPILER),ldc)
     DVERSION    = -d-version
     SONAME_FLAG = -soname
+    DEBUG       ?= -d-debug
+    DIP         := --dip
 else ifeq ($(COMPILER),gdc)
     DVERSION    = -fversion
     SONAME_FLAG = $(LINKERFLAG)-soname
+    DEBUG       ?= -f-d-debug
+    DIP         := unknown-dip
 else
     DVERSION    = -version
     SONAME_FLAG = $(LINKERFLAG)-soname
+    DEBUG       ?= -debug
+    DIP         := -dip
 endif
+
+DIP25   := $(DIP)25
+DIP1000 := $(DIP)1000
+#DIP1021 := $(DIP)1021
+
 
 # Define relocation model for ldc or other
 ifeq ($(COMPILER),ldc)
