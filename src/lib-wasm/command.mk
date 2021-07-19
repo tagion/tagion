@@ -90,21 +90,23 @@ ifeq ($(COMPILER),ldc)
     DVERSION    = -d-version
     SONAME_FLAG = -soname
     DEBUG       ?= -d-debug
-    DIP1000     = --dip1000
-    DIP25       = --dip25
+    DIP         := --dip
 else ifeq ($(COMPILER),gdc)
     DVERSION    = -fversion
     SONAME_FLAG = $(LINKERFLAG)-soname
-    DEBUG       ?= -fdebug
-    DIP1000     = -ftransition=dip1000
-    DIP25       = -ftransition=dip25
+    DEBUG       ?= -f-d-debug
+    DIP         := unknown-dip
 else
     DVERSION    = -version
     SONAME_FLAG = $(LINKERFLAG)-soname
     DEBUG       ?= -debug
-    DIP1000     = -dip1000
-    DIP25       = -dip25
+    DIP         := -dip
 endif
+
+DIP25   := $(DIP)25
+DIP1000 := $(DIP)1000
+#DIP1021 := $(DIP)1021
+
 
 # Define relocation model for ldc or other
 ifeq ($(COMPILER),ldc)
@@ -132,8 +134,6 @@ ifndef ARCH
 endif
 ifndef MODEL
     ifeq ($(ARCH), x86_64)
-        MODEL = 64
-    else ifeq ($(ARCH), aarch64)
         MODEL = 64
     else
         MODEL = 32

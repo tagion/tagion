@@ -1,10 +1,9 @@
-module tagion.vm.wasm.WasmReader;
+module tagion.wasm.WasmReader;
 
 import std.format;
-import tagion.vm.wasm.WasmException;
-import tagion.vm.wasm.WasmBase;
+import tagion.wasm.WasmException;
+import tagion.wasm.WasmBase;
 
-//import std.stdio;
 import std.meta : AliasSeq;
 import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget, ForeachType;
 
@@ -52,7 +51,6 @@ struct WasmReader {
                 final switch(a.section) {
                     foreach(E; EnumMembers!(Section)) {
                     case E:
-//                        verbose("E=%s a=%s", E, a);
                         const sec=a.sec!E;
                         verbose("Begin(%d)", range.index);
                         verbose.down;
@@ -117,12 +115,12 @@ struct WasmReader {
 
     static assert(isInputRange!WasmRange);
 
-    struct WasmRange {
+    @safe struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
         immutable(string) magic;
         immutable(uint)   vernum;
-        this(immutable(ubyte[]) data) {
+        this(immutable(ubyte[]) data) @trusted {
             this.data=data;
             magic=cast(string)(data[0..uint.sizeof]);
             _index=uint.sizeof;
@@ -139,7 +137,7 @@ struct WasmReader {
             return WasmSection(data[_index..$]);
         }
 
-        @property void popFront() {
+        @property void popFront() pure {
             size_t u32_size;
             _index+=Section.sizeof;
             const size=u32(data, _index);
@@ -160,8 +158,6 @@ struct WasmReader {
                 size_t index=Section.sizeof;
                 const size=u32(data, index);
                 this.data=data[index..index+size];
-
-//                debug writefln("section=%s %s", section, data[0..index+size]);
             }
 
             auto sec(Section S)()
@@ -170,12 +166,7 @@ struct WasmReader {
                 }
             do {
                 alias T=Sections[S];
-                // static if (S is Section.CUSTOM) {
-                //     return new ForeachType!(T)(data);
-                // }
-                // else {
                 return new T(data);
-                // }
             }
 
             struct VectorRange(ModuleSection, Element) {
@@ -402,7 +393,6 @@ struct WasmReader {
                     while(!range.empty) {
                         const elm=range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            //   range.popFront;
                             break;
                         }
                         range.popFront;
@@ -454,7 +444,6 @@ struct WasmReader {
                     while(!range.empty) {
                         const elm=range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            //range.popFront;
                             return data[0..range.index];
                         }
                         range.popFront;
@@ -490,7 +479,6 @@ struct WasmReader {
                     uint count;
                     Types type;
                     this(immutable(ubyte[]) data, ref size_t index) pure {
-                        // debug writefln("index=%d data=%s", index, data[index..$]);
                         count=u32(data, index);
                         type=cast(Types)data[index];
                         index+=Types.sizeof;
@@ -572,7 +560,6 @@ struct WasmReader {
                     while(!range.empty) {
                         const elm=range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            // range.popFront;
                             break;
                         }
                         range.popFront;
@@ -598,32 +585,15 @@ struct WasmReader {
         import std.stdio;
         import std.file;
         import std.exception : assumeUnique;
-        //      import std.file : fread=read, fwrite=write;
-
 
         @trusted
             static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
             import std.file : _read=read;
             auto data=cast(ubyte[])_read(name, upTo);
-            // writefln("read data=%s", data);
             return assumeUnique(data);
         }
         writeln("WAVM Started");
         {
-            //string filename="../tests/simple/simple.wasm";
-            //string filename="../tests/wasm/custom_1.wasm";
-            //string filename="../tests/wasm/func_2.wasm";
-            //string filename="../tests/wasm/table_copy_2.wasm"; //../tests/wasm/func_2.wasm";
-//            string filename="../tests/wasm/memory_4.wasm"; //../tests/wasm/func_2.wasm";
-            //string filename="../tests/wasm/global_1.wasm";
-//            string filename="../tests/wasm/start_4.wasm";
-//            string filename="../tests/wasm/memory_1.wasm";
-            //string filename="../tests/wasm/memory_9.wasm";
-//            string filename="../tests/wasm/global_1.wasm";
-//            string filename="../tests/wasm/imports_2.wasm";
-            //string filename="../tests/wasm/table_copy_2.wasm";
-            string filename="../tests/wasm/func_1.wasm";
-
             immutable code=fread(filename);
             auto wasm=Wasm(code);
             auto range=wasm[];
@@ -633,142 +603,56 @@ struct WasmReader {
                 writefln("%s length=%d data=%s", a.section, a.data.length, a.data);
                 if (a.section == Section.TYPE) {
                     auto _type=a.sec!(Section.TYPE);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Type types length %d %s", _type.length, _type[]);
                 }
                 else if (a.section == Section.IMPORT) {
                     auto _import=a.sec!(Section.IMPORT);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Import types length %d %s", _import.length, _import[]);
                 }
                 else if (a.section == Section.EXPORT) {
                     auto _export=a.sec!(Section.EXPORT);
-//                    writefln("Function types %s", _type.func_types);
-//                    writefln("export %s", _export.data);
                     writefln("Export types length %d %s", _export.length, _export[]);
                 }
                 else if (a.section == Section.FUNCTION) {
                     auto _function=a.sec!(Section.FUNCTION);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Function types length %d %s", _function.length, _function[]);
                 }
                 else if (a.section == Section.TABLE) {
                     auto _table=a.sec!(Section.TABLE);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Table types length %d %s", _table.length, _table[]);
-//                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.MEMORY) {
                     auto _memory=a.sec!(Section.MEMORY);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Memory types length %d %s", _memory.length, _memory[]);
-//                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.GLOBAL) {
                     auto _global=a.sec!(Section.GLOBAL);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Global types length %d %s", _global.length, _global[]);
-//                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.START) {
                     auto _start=a.sec!(Section.START);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Start types %s", _start);
-//                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.ELEMENT) {
                     auto _element=a.sec!(Section.ELEMENT);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Element types %s", _element);
-//                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.CODE) {
                     auto _code=a.sec!(Section.CODE);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Code types length=%s", _code.length);
                     foreach(c; _code[]) {
                         writefln("c.size=%d c.data.length=%d c.locals=%s c[]=%s", c.size, c.data.length, c.locals, c[]);
                     }
-//                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.DATA) {
                     auto _data=a.sec!(Section.DATA);
-//                    writefln("Function types %s", _type.func_types);
                     writefln("Data types length=%s", _data.length);
                     foreach(d; _data[]) {
                         writefln("d.size=%d d.data.length=%d d.lodals=%s d[]=%s", d.size, d.init.length, d.init, d[]);
                     }
-//                    writefln("Table types %s", _table);
                 }
             }
 
         }
     }
 }
-/+
-
-param-len
-|  return-len
-| i32 |
-|  |  |
-00000000  00 61 73 6d 01 00 00 00  01 08 02 60 01 7f 00 60  |.asm.......`...`|
-|  |     |          |
-magic       version   typesec|   func        func
-pack-len
-
-import
-|      len i  m   p  o  qq t  s len i  m
-00000010  00 00|02 19 01 07 69 6d  70 6f 72 74 73 0d 69 6d  |......imports.im|
-len |
-25 num-imports
-typeidx
-| end-19
-p  o  r  t  e  d  _  f  u   n  c     | |
-00000020  70 6f 72 74 65 64 5f 66  75 6e 63|00 00|03 02 01  |ported_func.....|
-|  funcsec
-import-type-func
-
-len-export
-|   len e  x  p   o  r  t  e  d  _  f  u
-00000030  01 07 11 01 0d 65 78 70  6f 72 74 65 64 5f 66 75  |.....exported_fu|
-|
-export
-
-export-end             42   $i end
-n  c       |                    |    |  |
-00000040  6e 63 00 01|0a 08 01 06  00 41 2a 10 00 0b|       |nc.......A*...|
-|   |           |   call      |
-code  |       i32.const         |
-code-len                 code-end
-
-+/
-
-/+
- 00000000  00 61 73 6d 01 00 00 00  01 0d 03 60 00 01 7f 60  |.asm.......`...`|
- 00000010  00 00 60 01 7f 01 7f 02  29 05 01 61 03 65 66 30  |..`.....)..a.ef0|
- 00000020  00 00 01 61 03 65 66 31  00 00 01 61 03 65 66 32  |...a.ef1...a.ef2|
- 00000030  00 00 01 61 03 65 66 33  00 00 01 61 03 65 66 34  |...a.ef3...a.ef4|
- 00000040  00 00 03 08 07 00 00 00  00 00 01 02 04 05 01 70  |...............p|
- 00000050  01 1e 1e 07 10 02 04 74  65 73 74 00 0a 05 63 68  |.......test...ch|
- 00000060  65 63 6b 00 0b 09 23 04  00 41 02 0b 04 03 01 04  |eck...#..A......|
- 00000070  01 01 00 04 02 07 01 08  00 41 0c 0b 05 07 05 02  |.........A......|
- 00000080  03 06 01 00 05 05 09 02  07 06 0a 26 07 04 00 41  |...........&...A|
- 00000090  05 0b 04 00 41 06 0b 04  00 41 07 0b 04 00 41 08  |....A....A....A.|
- 000000a0  0b 04 00 41 09 0b 03 00  01 0b 07 00 20 00 11 00  |...A........ ...|
- 000000b0  00 0b                                             |..|
- 000000b2
- +/
-
-/++     i32.const                                       end           n:32               bytesize    u:32
- bytesize |        n32   from to    n:32   i32.store8  |   len-locals|    from to    end  |    call |     u:32   u:32
- len  |      |         |      |   |     |        |        |      |      |      |  |      |   |      |  |      |      |
- [3, 15, 0, 65, 0, 65, 0, 45, 0, 0, 65, 1, 106, 58, 0, 0, 11, 8, 0, 65, 0, 45, 0, 0, 15, 11, 8, 0, 16, 0, 16, 0, 16, 0, 11]
- |    n:32  |     |         |       |       |  |      |      |      |         |         |          |     |     end
- |          |  i32.load8_u  |   i32.add   from to   bytesize |      |       return   len-local   call   call
- len-locals    |           i32.const                        i32.const  |
- i32.const                                                  i32.load8_u
- +/
-
-/+
- Type types length 14 [(type (func)), (type (func)), (type (func(param i32))), (type (func(param i32))), (type (func (results i32))), (type (func(param i32) (results i32))), (type (func(param i32) (results i32))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64 i32 f64 i32 i32))), (type (func(param f32 f64 i32)))]
- +/

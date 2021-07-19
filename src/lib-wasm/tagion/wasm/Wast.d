@@ -1,4 +1,4 @@
-module tagion.vm.wasm.Wast;
+module tagion.wasm.Wast;
 
 import std.format;
 import std.stdio;
@@ -9,9 +9,9 @@ import std.conv : to;
 import std.range.primitives : isOutputRange;
 import std.range : StoppingPolicy, lockstep, enumerate;
 
-import tagion.vm.wasm.WasmReader;
-import tagion.vm.wasm.WasmBase;
-import tagion.vm.wasm.WasmException;
+import tagion.wasm.WasmReader;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmException;
 import tagion.basic.TagionExceptions;
 
 @safe

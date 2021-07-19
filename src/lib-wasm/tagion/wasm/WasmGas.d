@@ -1,8 +1,8 @@
-module tagion.vm.wasm.WasmGas;
+module tagion.wasm.WasmGas;
 
-import tagion.vm.wasm.WasmWriter;
-import tagion.vm.wasm.WasmBase;
-import tagion.vm.wasm.WasmExpr;
+import tagion.wasm.WasmWriter;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmExpr;
 import tagion.utils.LEB128;
 
 import std.traits : Unqual, TemplateArgsOf, PointerTarget, EnumMembers;
@@ -279,8 +279,8 @@ unittest {
     import std.stdio;
     import std.file;
     import std.exception : assumeUnique;
-    import tagion.vm.wasm.Wast;
-    import tagion.vm.wasm.WasmReader;
+    import tagion.wasm.Wast;
+    import tagion.wasm.WasmReader;
     //      import std.file : fread=read, fwrite=write;
 
 
