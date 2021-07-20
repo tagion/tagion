@@ -10,6 +10,7 @@ import std.meta : AliasSeq, staticSort;
 //import std.algorithm : sort;
 
 enum {
+    // dfmt off
     BLACK   = Color.Black.code,
     RED     = Color.Red.code,
     GREEN   = Color.Green.code,
@@ -36,6 +37,7 @@ enum {
     CLEARLINE   = Cursor.ClearLine.code(2),
     CLEAREOL    = Cursor.ClearLine.code(0),
     HOME        = "\u001b[f",
+    // dfmt on
 }
 
 enum Color {
@@ -147,17 +149,20 @@ struct KeyStroke {
         }
     }
 
-     alias strain = AliasSeq!(
-          KeyStrain(KeyCode.UP, [27,91,65]),
-          KeyStrain(KeyCode.DOWN, [27,91,66]),
-          KeyStrain(KeyCode.RIGHT, [27,91,67]),
-          KeyStrain(KeyCode.LEFT, [27,91,68]),
-          KeyStrain(KeyCode.HOME, [27,91,49,59,50,72]),
-          KeyStrain(KeyCode.END, [27,91,49,59,50,70]),
-          KeyStrain(KeyCode.PAGEDOWN, [27,91,54,126]),
-          KeyStrain(KeyCode.PAGEUP, [27,91,53,126]),
-          KeyStrain(KeyCode.ENTER, [13]),
-          );
+
+    alias strain = AliasSeq!(
+        // dfmt off
+        KeyStrain(KeyCode.UP, [27,91,65]),
+        KeyStrain(KeyCode.DOWN, [27,91,66]),
+        KeyStrain(KeyCode.RIGHT, [27,91,67]),
+        KeyStrain(KeyCode.LEFT, [27,91,68]),
+        KeyStrain(KeyCode.HOME, [27,91,49,59,50,72]),
+        KeyStrain(KeyCode.END, [27,91,49,59,50,70]),
+        KeyStrain(KeyCode.PAGEDOWN, [27,91,54,126]),
+        KeyStrain(KeyCode.PAGEUP, [27,91,53,126]),
+        KeyStrain(KeyCode.ENTER, [13]),
+        // dfmt on
+        );
 
      KeyCode getKey(ref int ch) {
           enum StaticComp(KeyStrain a, KeyStrain b) = a.branch < b.branch;

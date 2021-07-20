@@ -1,4 +1,4 @@
-module tagion.util.BitMask;
+module tagion.utils.BitMask;
 
 //import std.stdio;
 
