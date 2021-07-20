@@ -2,19 +2,20 @@ module tagion.basic.TagionExceptions;
 
 import std.exception;
 
-@safe
-interface TagionExceptionInterface {
-// Empty
+@safe interface TagionExceptionInterface
+{
+    // Empty
 }
 
 /++
  + Exception used as a base exception class for all exceptions use in tagion project
  +/
-@safe
-class TagionException : Exception, TagionExceptionInterface {
-//    string task_name; /// Contains the name of the task when the execption has throw
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
-        super( msg, file, line );
+@safe class TagionException : Exception, TagionExceptionInterface
+{
+    //    string task_name; /// Contains the name of the task when the execption has throw
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow
+    {
+        super(msg, file, line);
     }
 
     /++
@@ -24,35 +25,36 @@ class TagionException : Exception, TagionExceptionInterface {
      Returns:
      The immutable version of the Exception
      +/
-    version(none)
-    @trusted
-    final immutable(TaskException) taskException() {
+    version (none) @trusted final immutable(TaskException) taskException()
+    {
         // version(LOGGER) {
         import tagion.basic.Logger;
+
         // if (task_name.length > 0) {
         //     task_name=log.task_name;
         // }
         // }
-        return immutable(TaskException)(cast(immutable)this, log.task_name);
+        return immutable(TaskException)(cast(immutable) this, log.task_name);
     }
 }
 
 /++
  + Builds a check function out of a TagionExecption
  +/
-@safe
-void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) pure {
-    static assert(is(E:TagionExceptionInterface));
-    if (!flag) {
+@safe void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) pure
+{
+    static assert(is(E : TagionExceptionInterface));
+    if (!flag)
+    {
         throw new E(msg, file, line);
     }
 }
 
-struct TaskFailure {
+struct TaskFailure
+{
     Throwable throwable;
     string task_name;
 }
-
 
 /++
  This function set the taskname set by the logger
@@ -61,10 +63,11 @@ struct TaskFailure {
  Returns:
  The immutable version of the Exception
  +/
-@trusted
-static immutable(TaskFailure) taskException(const(Throwable) e) nothrow  { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+@trusted static immutable(TaskFailure) taskException(const(Throwable) e) nothrow
+{ //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
     import tagion.basic.Logger;
-    return immutable(TaskFailure)(cast(immutable)e, log.task_name);
+
+    return immutable(TaskFailure)(cast(immutable) e, log.task_name);
 }
 
 // @trusted
@@ -73,24 +76,28 @@ static immutable(TaskFailure) taskException(const(Throwable) e) nothrow  { //if 
 //     ownerTid.send(task_e);
 // }
 
-@safe
-static void fatal(const(Throwable) e) nothrow {
+@safe static void fatal(const(Throwable) e) nothrow
+{
     import tagion.basic.Logger;
 
     immutable task_e = taskException(e);
     log(task_e);
-    try {
+    try
+    {
         task_e.taskfailure;
     }
-    catch (Exception e) {
+    catch (Exception e)
+    {
         log.fatal(e.msg);
     }
 }
 
-@trusted
-static void taskfailure(immutable(TaskFailure) t) {
+@trusted static void taskfailure(immutable(TaskFailure) t)
+{
     import std.concurrency;
-    if (ownerTid != Tid.init) {
+
+    if (ownerTid != Tid.init)
+    {
         ownerTid.send(t);
     }
 }
