@@ -1,21 +1,15 @@
 module tagion.utils.DList;
 
-//import std.stdio;
-
-@safe
-class UtilException : Exception {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
-        super( msg, file, line);
-    }
-}
+import tagion.utils.Result;
 
 @safe
 class DList(E) {
+    @nogc
     struct Element {
         E entry;
         protected Element* next;
         protected Element* prev;
-        this(E e) {
+        this(E e) pure nothrow {
             entry=e;
         }
     }
@@ -23,7 +17,7 @@ class DList(E) {
     private Element* _tail;
     // Number of element in the DList
     private uint count;
-    Element* unshift(E e) {
+    Element* unshift(E e) nothrow {
         auto element=new Element(e);
         if ( _head is null ) {
             element.prev=null;
@@ -40,19 +34,19 @@ class DList(E) {
         return element;
     }
 
-    E shift() {
+    Result!E shift() nothrow {
+        if ( _head is null ) {
+            return Result!E(E.init, this.stringof~" is empty");
+        }
         scope(success) {
             _head=_head.next;
             _head.prev = null;
             count--;
         }
-        if ( _head is null ) {
-            throw new UtilException(this.stringof~" is empty");
-        }
-        return _head.entry;
+        return Result!E(_head.entry);
     }
 
-    Element* push(E e) {
+    const(Element*) push(E e) nothrow {
         auto element=new Element(e);
         if ( _head is null ) {
             _head = _tail = element;
@@ -66,7 +60,7 @@ class DList(E) {
         return element;
     }
 
-    ref E pop() {
+    Result!E pop() nothrow {
         Element* result;
         if ( _tail !is null ) {
             result = _tail;
@@ -78,14 +72,17 @@ class DList(E) {
                 _tail.next=null;
             }
             count--;
+            return Result!E(result.entry);
+
         }
-        else {
-            throw new UtilException("Pop from an empty list");
-        }
-        return result.entry;
+        return Result!E(E.init, "Pop from an empty list");
     }
 
-    void remove(Element* e)
+    /**
+       Returns; true if the element was not found
+     */
+    @nogc
+    bool remove(Element* e) nothrow
         in {
             assert(e !is null);
             if ( _head is null ) {
@@ -100,7 +97,8 @@ class DList(E) {
         }
     do {
         if ( _head is null ) {
-            throw new UtilException("Remove from an empty list");
+            return true;
+//            throw new UtilException("Remove from an empty list");
         }
         if ( _head is e ) {
             if ( _head.next is null ) {
@@ -128,9 +126,11 @@ class DList(E) {
             e.prev.next = e.next;
         }
         count--;
+        return false;
     }
 
-    void moveToFront(Element* e)
+    @nogc
+    void moveToFront(Element* e) nothrow
         in {
             assert(e !is null);
         }
@@ -149,12 +149,10 @@ class DList(E) {
             _head=e;
             _head.prev=null;
         }
-        // remove(e);
-        // unshift(e.entry);
-
     }
 
-    uint length() pure const
+    @nogc
+    uint length() pure const nothrow
         out(result) {
             uint internal_count(const(Element)* e, uint i=0) pure {
                 if ( e is null ) {
@@ -171,41 +169,31 @@ class DList(E) {
         return count;
     }
 
-    Element* first() {
+    @nogc
+    inout(Element*) first() inout pure nothrow {
         return _head;
     }
-    Element* last() {
+
+    @nogc
+    inout(Element*) last() inout pure nothrow {
         return _tail;
     }
 
-    Iterator iterator(bool revert=false) {
-        auto result=Iterator(this, revert);
-        return result;
+    @nogc
+    Range!false opSlice() pure nothrow {
+        return Range!false(this);
     }
 
-    int opApply(scope int delegate(E e) @safe dg) {
-        auto I=iterator;
-        int result;
-        for(; (!I.empty) && (result == 0); I.popFront) {
-            result=dg(I.front);
-        }
-        return result;
+    @nogc
+    Range!true revert() pure nothrow {
+        return Range!true(this);
     }
 
-    int opApplyReverse(scope int delegate(E e) @safe  dg) {
-        auto I=iterator(true);
-        int result;
-        for(; (!I.empty) && (result == 0); I.popBack) {
-            result=dg(I.front);
-        }
-        return result;
-    }
-
-
-    struct Iterator {
+    @nogc
+    struct Range(bool revert) {
         private Element* cursor;
-        this(DList l, bool revert) {
-            if (revert) {
+        this(DList l) pure nothrow {
+            static if (revert) {
                 cursor = l._tail;
             }
             else {
@@ -217,25 +205,35 @@ class DList(E) {
             return cursor is null;
         }
 
-        Iterator* popFront() {
+        void popFront() nothrow {
             if ( cursor !is null) {
-                cursor = cursor.next;
+                static if (revert) {
+                    cursor = cursor.prev;
+                }
+                else {
+                    cursor = cursor.next;
+                }
             }
-            return &this;
         }
 
-        Iterator* popBack() {
-            if ( cursor !is null) {
-                cursor = cursor.prev;
-            }
-            return &this;
-        }
+        // void popBack() nothrow {
+        //     if ( cursor !is null) {
+        //         static if (revert) {
+        //             cursor = cursor.next;
+        //         }
+        //         else {
+        //             cursor = cursor.prev;
+        //         }
+        //     }
+        // }
 
-        E front() {
+        E front() pure nothrow {
             return cursor.entry;
         }
 
-        Element* current() pure nothrow {
+        // alias back=front;
+
+        inout(Element*) current() inout pure nothrow {
             return cursor;
         }
     }
@@ -274,28 +272,20 @@ unittest {
         auto l=new DList!int;
 //        auto e = l.shift;
 //        assert(e is null);
-        bool flag;
+        // bool flag;
         assert(l.length == 0);
-        try {
-            flag=false;
-            l.pop;
+        {
+            const r=l.pop;
+            assert(r.error);
         }
-        catch ( UtilException e ) {
-            flag=true;
-        }
-        assert(flag);
         assert(l.length == 0);
-
-        try {
-            flag=false;
-            l.shift;
+        {
+            const r=l.shift;
+            assert(r.error);
         }
-        catch ( UtilException e ) {
-            flag=true;
-        }
-        assert(flag);
         assert(l.length == 0);
     }
+
     { // One element test
         auto l=new DList!int;
         l.unshift(7);
@@ -337,13 +327,13 @@ unittest {
             l.push(i);
             test~=i;
         }
-        auto I=l.iterator;
+        auto I=l[];
         // This statement does not work anymore
         // assert(equal(I, test));
         assert(array(I) == test);
 
         foreach_reverse(i;0..amount) {
-            assert(l.pop == i);
+            assert(l.pop.value == i);
             assert(l.length == i);
         }
     }
@@ -357,14 +347,14 @@ unittest {
         assert(l.length == amount);
 
         { // Forward iteration test
-            auto I=l.iterator(false);
+            auto I=l[];
             uint i;
             for(i=0; !I.empty; I.popFront, i++) {
                 assert(I.front == i);
             }
             assert(i == amount);
             i=0;
-            I=l.iterator(false);
+            I=l[];
             foreach(entry; I) {
                 assert(entry == i);
                 i++;
@@ -374,17 +364,20 @@ unittest {
 
         assert(l.length == amount);
 
+        import std.stdio;
+        import std.algorithm : map;
+
         {  // Backward iteration test
-            auto I=l.iterator(true);
+            auto I=l.revert;
             uint i;
-            for(i=amount; !I.empty; I.popBack) {
+            for(i=amount; !I.empty; I.popFront) {
                 i--;
                 assert(I.front == i);
             }
             assert(i == 0);
             i=amount;
-//            I=l.iterator(true);
-            foreach_reverse(entry; l) {
+
+            foreach(entry; l.revert) {
                 i--;
                 assert(entry == i);
             }
@@ -395,14 +388,14 @@ unittest {
 
         {
             import std.array;
-            auto I=l.iterator;
+            auto I=l[];
             I.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l.iterator;
+            I=l[];
             // This statem does not work anymore
             // assert(equal(I, [1, 0, 2, 3]));
             assert(array(I)== [1, 0, 2, 3]);
@@ -410,26 +403,18 @@ unittest {
 
         {
             import std.array;
-            auto I=l.iterator;
-            I.popFront.popFront;
+            auto I=l[];
+            I.popFront; I.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l.iterator;
+            I=l[];
             // This statem does not work anymore
             // assert(equal(I, [2, 1, 0, 3]));
             assert(array(I) == [2, 1, 0, 3]);
         }
-
-        // foreach(i;0..amount) {
-        //     assert(current.entry == i);
-        //     current=current.next;
-        // }
-
-        // moveToFront second element( enumber 1 )
-
 
     }
 }

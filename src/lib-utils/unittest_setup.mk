@@ -1,6 +1,7 @@
-UNITTEST:=$(BIN)/uinttest
+UNITTEST:=$(BINDIR)/uinttest_$(PACKAGE)
 
 TESTDCFLAGS+=$(LIBS)
 TESTDCFLAGS+=-main
+TESTDCFLAGS+=-g
 
-vpath %.d tests/
+#vpath %.d tests/
