@@ -2,11 +2,13 @@ module tagion.wasm.WasmWriter;
 
 import std.outbuffer;
 import std.bitmanip : nativeToLittleEndian;
-import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual, TemplateArgsOf, PointerTarget, getUDAs, hasUDA, isPointer, ConstOf, ForeachType;
+import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
+    TemplateArgsOf, PointerTarget, getUDAs, hasUDA, isPointer, ConstOf, ForeachType;
 import std.typecons : Tuple;
 import std.format;
 import std.algorithm.iteration : each, map, sum, fold, filter;
 import std.range.primitives : isInputRange;
+
 //import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
 import std.meta : staticMap, Replace;
 import std.exception : assumeUnique;
@@ -19,26 +21,27 @@ import tagion.utils.LEB128 : encode;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmException;
+
 //import wavm.Wdisasm;
 
-@safe
-class WasmWriter {
+@safe class WasmWriter
+{
 
-    alias ReaderSections=WasmReader.Sections;
+    alias ReaderSections = WasmReader.Sections;
 
-    alias ReaderCustom=ReaderSections[Section.CUSTOM];
+    alias ReaderCustom = ReaderSections[Section.CUSTOM];
 
     // alias Module=ModuleT!(WasmSection);
-    alias Sections=SectionsT!(WasmSection);
+    alias Sections = SectionsT!(WasmSection);
 
     // The first element Custom is Sections sequency is replaced with CustomList
     alias Modules = Tuple!(Replace!(WasmSection.Custom, WasmSection.CustomList, Sections));
-//    pragma(msg, Modules);
-//    alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
+    //    pragma(msg, Modules);
+    //    alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
 
-    alias InterfaceModule=InterfaceModuleT!(Sections);
+    alias InterfaceModule = InterfaceModuleT!(Sections);
 
-    alias ReaderSecType(Section sec)=TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
+    alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
 
     // alias X=Sections[
     // protected static string GenerateModules(T...)() {
@@ -57,7 +60,7 @@ class WasmWriter {
     //     return results.join("\n");
     // }
 
-//    enum code=GenerateModules!Sections;
+    //    enum code=GenerateModules!Sections;
     // pragma(msg, code);
     // mixin(code);
     // Tuple!(
@@ -68,70 +71,81 @@ class WasmWriter {
     //     );
 
     Modules mod;
-    this(ref const(WasmReader) reader) {
-        auto loader=new WasmLoader;
+    this(ref const(WasmReader) reader)
+    {
+        auto loader = new WasmLoader;
         reader(loader);
     }
 
-    static WasmWriter opCall(ref const(WasmReader) reader) {
+    static WasmWriter opCall(ref const(WasmReader) reader)
+    {
         return new WasmWriter(reader);
     }
 
-    template AsType(T, TList...) {
-        static foreach(E; EnumMembers!Section) {
-            static if (is(T == TList[E])) {
-                enum AsType=E;
+    template AsType(T, TList...)
+    {
+        static foreach (E; EnumMembers!Section)
+        {
+            static if (is(T == TList[E]))
+            {
+                enum AsType = E;
             }
         }
     }
 
-    enum asType(T)=AsType!(T, staticMap!(PointerTarget, Module.Types));
+    enum asType(T) = AsType!(T, staticMap!(PointerTarget, Module.Types));
 
-    template FromSecType(SecType, TList...) {
-        alias T=WasmSection.SectionT!SecType;
-        static foreach(E; EnumMembers!Section) {
-            static if (is(T == TList[E])) {// || (isPointer!(TList[E])) && is(T == PointerTarget!(TList[E]))) {
-                enum FromSecType=E;
+    template FromSecType(SecType, TList...)
+    {
+        alias T = WasmSection.SectionT!SecType;
+        static foreach (E; EnumMembers!Section)
+        {
+            static if (is(T == TList[E]))
+            { // || (isPointer!(TList[E])) && is(T == PointerTarget!(TList[E]))) {
+                enum FromSecType = E;
             }
         }
     }
 
-
-    enum fromSecType(T)=FromSecType!(T, Sections);
+    enum fromSecType(T) = FromSecType!(T, Sections);
 
     // alias getType(Section sec)=WasmSection.Sections.Types[sec];
 
-    mixin template loadSec(Section sec_type) {
-        enum code=format(
-            q{
+    mixin template loadSec(Section sec_type)
+    {
+        enum code = format(q{
                 final void %s(ref ConstOf!(ReaderSections[Section.%s]) sec) {
                     enum sec_type=Section.%s;
                     previous_sec=sec_type;
                     section_secT!(sec_type)(sec);
                 }
-            }
-            , secname(sec_type), sec_type, sec_type);
+            }, secname(sec_type), sec_type, sec_type);
         mixin(code);
     }
 
-    class WasmLoader : WasmReader.InterfaceModule {
-//        alias SecType(Section sec)=Sections[sec];
-        alias SecElement(Section sec)=TemplateArgsOf!(Sections[sec])[0];
+    class WasmLoader : WasmReader.InterfaceModule
+    {
+        //        alias SecType(Section sec)=Sections[sec];
+        alias SecElement(Section sec) = TemplateArgsOf!(Sections[sec])[0];
         private Section previous_sec;
-        void section_secT(Section sec)(ref ConstOf!(ReaderSections[sec]) _reader_sec) {
-            if (_reader_sec !is null) {
+        void section_secT(Section sec)(ref ConstOf!(ReaderSections[sec]) _reader_sec)
+        {
+            if (_reader_sec !is null)
+            {
                 //alias ModT=Sections[sec];
-                alias ModuleType=Sections[sec];
-                alias SectionElement=TemplateArgsOf!(ModuleType);
-                auto _sec=new ModuleType; //ecType!sec;
-                mod[sec]=_sec;
-                foreach(s; _reader_sec[]) {
-                    _sec.sectypes~=SecElement!(sec)(s);
+                alias ModuleType = Sections[sec];
+                alias SectionElement = TemplateArgsOf!(ModuleType);
+                auto _sec = new ModuleType; //ecType!sec;
+                mod[sec] = _sec;
+                foreach (s; _reader_sec[])
+                {
+                    _sec.sectypes ~= SecElement!(sec)(s);
                 }
             }
         }
 
-        final void custom_sec(ref ConstOf!(ReaderCustom) sec) {
+        final void custom_sec(ref ConstOf!(ReaderCustom) sec)
+        {
             mod[Section.CUSTOM].add(previous_sec, sec);
         }
 
@@ -149,11 +163,11 @@ class WasmWriter {
 
         mixin loadSec!(Section.EXPORT);
 
-        final void start_sec(ref ConstOf!(ReaderSections[Section.START]) sec) {
-            previous_sec=Section.START;
-            mod[Section.START]=new WasmSection.Start(sec);
+        final void start_sec(ref ConstOf!(ReaderSections[Section.START]) sec)
+        {
+            previous_sec = Section.START;
+            mod[Section.START] = new WasmSection.Start(sec);
         }
-
 
         mixin loadSec!(Section.ELEMENT);
 
@@ -163,31 +177,37 @@ class WasmWriter {
 
     }
 
-
-    immutable(ubyte[]) serialize() const {
-        OutBuffer[EnumMembers!Section.length+1] buffers;
-        OutBuffer[EnumMembers!Section.length+1] custom_buffers;
-        scope(exit) {
-            buffers=null;
-            custom_buffers=null;
+    immutable(ubyte[]) serialize() const
+    {
+        OutBuffer[EnumMembers!Section.length + 1] buffers;
+        OutBuffer[EnumMembers!Section.length + 1] custom_buffers;
+        scope (exit)
+        {
+            buffers = null;
+            custom_buffers = null;
         }
         size_t output_size;
         Section previous_sec;
-        void output_custom(const(WasmSection.Custom) custom) {
-            if (custom) {
-                custom_buffers[previous_sec]=new OutBuffer;
+        void output_custom(const(WasmSection.Custom) custom)
+        {
+            if (custom)
+            {
+                custom_buffers[previous_sec] = new OutBuffer;
                 custom_buffers[previous_sec].reserve(custom.guess_size);
                 custom.serialize(custom_buffers[previous_sec]);
             }
         }
-        foreach(E; EnumMembers!Section) {
+
+        foreach (E; EnumMembers!Section)
+        {
             //static if (E is Section.CUSTOM) {
-//            if (mod[Section.CUSTOM][previous_sec]e.length) {
+            //            if (mod[Section.CUSTOM][previous_sec]e.length) {
             writefln("mod[Section.CUSTOM] %s ", mod[Section.CUSTOM]);
             writefln("mod[Section.CUSTOM].list=%s", mod[Section.CUSTOM].list);
             writefln("mod[Section.CUSTOM].list %s", typeof(mod[Section.CUSTOM].list).stringof);
             writefln("mod[Section.CUSTOM].list[0] %s", typeof(mod[Section.CUSTOM].list[0]).stringof);
-            foreach(const sec; mod[Section.CUSTOM].list[previous_sec]) {
+            foreach (const sec; mod[Section.CUSTOM].list[previous_sec])
+            {
                 // }
                 output_custom(sec);
             }
@@ -196,66 +216,79 @@ class WasmWriter {
             //     custom_buffers[previous_sec].reserve(custom.guess_size);
             //     custom.serialize(custom_buffers[previous_sec]);
             // }
-            static if (E !is Section.CUSTOM) {
-                if (mod[E] !is null) {
-                    buffers[E]=new OutBuffer;
-                    static if (E !is Section.CUSTOM) {
+            static if (E !is Section.CUSTOM)
+            {
+                if (mod[E]!is null)
+                {
+                    buffers[E] = new OutBuffer;
+                    static if (E !is Section.CUSTOM)
+                    {
                         mod[E].serialize(buffers[E]);
-                        output_size+=buffers[E].offset+uint.sizeof+Section.sizeof;
+                        output_size += buffers[E].offset + uint.sizeof + Section.sizeof;
                     }
                 }
             }
-            previous_sec=E;
+            previous_sec = E;
         }
-        foreach(const sec; mod[Section.CUSTOM].list[previous_sec]) {
+        foreach (const sec; mod[Section.CUSTOM].list[previous_sec])
+        {
             // }
             output_custom(sec);
         }
         //output_custom(mod[Section.CUSTOM][previous_sec]);
         //
-        previous_sec=Section.CUSTOM;
-        auto output=new OutBuffer;
-        output_size+=magic.length+wasm_version.length;
+        previous_sec = Section.CUSTOM;
+        auto output = new OutBuffer;
+        output_size += magic.length + wasm_version.length;
         output.reserve(output_size);
         output.write(magic);
         output.write(wasm_version);
-        void append_buffer(const OutBuffer b, const(Section) sec) {
-            if (b !is null) {
-                output.write(cast(ubyte)sec);
+        void append_buffer(const OutBuffer b, const(Section) sec)
+        {
+            if (b !is null)
+            {
+                output.write(cast(ubyte) sec);
                 output.write(encode(b.offset));
                 output.write(b);
             }
         }
-        foreach(E; EnumMembers!Section) {
+
+        foreach (E; EnumMembers!Section)
+        {
             append_buffer(buffers[E], E);
             append_buffer(custom_buffers[E], Section.CUSTOM);
         }
-        append_buffer(custom_buffers[$-1], Section.CUSTOM);
+        append_buffer(custom_buffers[$ - 1], Section.CUSTOM);
         return output.toBytes.idup;
     }
 
-    version(none)
-    @trusted
-    void opCall(InterfaceModule reader) {
+    version (none) @trusted void opCall(InterfaceModule reader)
+    {
         //if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
         //scope Module mod;
         Section previous_sec;
-//        writefln("WasmWriter opCall");
-        foreach(a; reader[]) {
-//            writefln("a=%s", a);
-            with(Section) {
+        //        writefln("WasmWriter opCall");
+        foreach (a; reader[])
+        {
+            //            writefln("a=%s", a);
+            with (Section)
+            {
                 check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
-                previous_sec=a.section;
-                final switch(a.section) {
-                    foreach(E; EnumMembers!(Section)) {
-                    case E:
-                        const sec=a.sec!E;
-                        mod[E]=&sec;
-                        static if (is(T==ModuleIterator)) {
+                previous_sec = a.section;
+                final switch (a.section)
+                {
+                    foreach (E; EnumMembers!(Section))
+                    {
+                case E:
+                        const sec = a.sec!E;
+                        mod[E] = &sec;
+                        static if (is(T == ModuleIterator))
+                        {
                             iter(a.section, mod);
                         }
-                        else {
-                            enum code=format(q{reader.%s(mod);}, secname(E));
+                        else
+                        {
+                            enum code = format(q{reader.%s(mod);}, secname(E));
                             mixin(code);
                         }
                         break;
@@ -265,53 +298,72 @@ class WasmWriter {
         }
     }
 
-    struct WasmSection {
-        mixin template Serialize() {
-            final void serialize(ref OutBuffer bout) const {
-                alias MainType=typeof(this);
-                static if (hasMember!(MainType,  "guess_size")) {
+    struct WasmSection
+    {
+        mixin template Serialize()
+        {
+            final void serialize(ref OutBuffer bout) const
+            {
+                alias MainType = typeof(this);
+                static if (hasMember!(MainType, "guess_size"))
+                {
                     bout.reserve(guess_size);
                 }
 
-                foreach(i, m; this.tupleof) {
-                    alias T=typeof(m);
-                    static if (is(T==struct) || is(T==class)) {
+                foreach (i, m; this.tupleof)
+                {
+                    alias T = typeof(m);
+                    static if (is(T == struct) || is(T == class))
+                    {
                         m.serialize(bout);
                     }
-                    else {
-                        static if (T.sizeof == 1) {
-                            bout.write(cast(ubyte)m);
+                    else
+                    {
+                        static if (T.sizeof == 1)
+                        {
+                            bout.write(cast(ubyte) m);
                         }
-                        else static if (isIntegral!T) {
+                        else static if (isIntegral!T)
+                        {
                             bout.write(encode(m));
                         }
-                        else static if (isFloatingPoint!T) {
+                        else static if (isFloatingPoint!T)
+                        {
                             bout.write(nativeToLittleEndian(m));
                         }
-                        else static if (is(T: U[], U)) {
-                            alias spec=getUDAs!(this.tupleof[i], Section);
-                            static if ((spec.length == 0) || (spec[0] !is Section.CODE)) {
+                        else static if (is(T : U[], U))
+                        {
+                            alias spec = getUDAs!(this.tupleof[i], Section);
+                            static if ((spec.length == 0) || (spec[0]!is Section.CODE))
+                            {
                                 // Check to avoid adding the length for an expression
                                 bout.write(encode(m.length));
                             }
-                            static if (U.sizeof == 1) {
-                                bout.write(cast(const(ubyte[]))m);
+                            static if (U.sizeof == 1)
+                            {
+                                bout.write(cast(const(ubyte[])) m);
                             }
-                            else static if (isIntegral!U) {
+                            else static if (isIntegral!U)
+                            {
                                 m.each!((e) => bout.write(encode(e)));
                             }
-                            else static if (hasMember!(U,  "serialize")) {
+                            else static if (hasMember!(U, "serialize"))
+                            {
                                 //writefln("serialize %s m.length=%d", m, m.length);
-                                foreach(e; m) {
+                                foreach (e; m)
+                                {
                                     e.serialize(bout);
                                 }
                                 //writefln("bout=%s", bout.toBytes);
                             }
-                            else {
-                                static assert(0, format("Array type %s is not supported", T.stringof));
+                            else
+                            {
+                                static assert(0,
+                                        format("Array type %s is not supported", T.stringof));
                             }
                         }
-                        else {
+                        else
+                        {
                             static assert(0, format("Type %s is not supported", T.stringof));
                         }
                     }
@@ -319,20 +371,26 @@ class WasmWriter {
             }
         }
 
-        struct Limit {
+        struct Limit
+        {
             Limits lim;
             uint from;
             uint to;
-            this(ref const(WasmReader.Limit) l) {
-                lim=l.lim;
-                from=l.from;
-                to=l.to;
+            this(ref const(WasmReader.Limit) l)
+            {
+                lim = l.lim;
+                from = l.from;
+                to = l.to;
             }
-            void serialize(ref OutBuffer bout) const {
-                bout.write(cast(ubyte)lim);
+
+            void serialize(ref OutBuffer bout) const
+            {
+                bout.write(cast(ubyte) lim);
                 bout.write(encode(from));
-                with(Limits) {
-                    final switch(lim) {
+                with (Limits)
+                {
+                    final switch (lim)
+                    {
                     case INFINITE:
                         // Empty
                         break;
@@ -345,151 +403,204 @@ class WasmWriter {
             //mixin Serialize;
         }
 
-        static class SectionT(SecType) {
+        static class SectionT(SecType)
+        {
             SecType[] sectypes;
-            @property size_t length() const pure nothrow {
+            @property size_t length() const pure nothrow
+            {
                 return sectypes.length;
             }
-            size_t guess_size() const pure nothrow {
-                if (sectypes.length>0) {
-                    static if (hasMember!(SecType, "guess_size")) {
-                        return sectypes.map!(s => s.guess_size()).sum+uint.sizeof;
+
+            size_t guess_size() const pure nothrow
+            {
+                if (sectypes.length > 0)
+                {
+                    static if (hasMember!(SecType, "guess_size"))
+                    {
+                        return sectypes.map!(s => s.guess_size()).sum + uint.sizeof;
                     }
-                    else {
-                        return sectypes.length*SecType.sizeof+uint.sizeof;
+                    else
+                    {
+                        return sectypes.length * SecType.sizeof + uint.sizeof;
                     }
                 }
                 return 0;
             }
+
             mixin Serialize;
         }
 
-        static class Custom {
+        static class Custom
+        {
             string name;
             immutable(ubyte)[] bytes;
-            size_t guess_size() const pure nothrow {
-                return name.length+bytes.length+uint.sizeof*2;
+            size_t guess_size() const pure nothrow
+            {
+                return name.length + bytes.length + uint.sizeof * 2;
             }
 
-            this(const(ReaderCustom) s) {
-                name=s.name;
-                bytes=s.bytes;
+            this(const(ReaderCustom) s)
+            {
+                name = s.name;
+                bytes = s.bytes;
             }
+
             mixin Serialize;
         }
 
-        struct CustomList {
-            Custom[][EnumMembers!(Section).length+1] list;
-            void add(const size_t sec_index, const(ReaderCustom) s) {
-                list[sec_index]~=new Custom(s);
+        struct CustomList
+        {
+            Custom[][EnumMembers!(Section).length + 1] list;
+            void add(const size_t sec_index, const(ReaderCustom) s)
+            {
+                list[sec_index] ~= new Custom(s);
             }
 
         }
-//        alias Custom=CustomType[Section];
+        //        alias Custom=CustomType[Section];
 
-        struct FuncType {
+        struct FuncType
+        {
             Types type;
             immutable(Types)[] params;
             immutable(Types)[] results;
-            size_t guess_size() const pure nothrow {
-                return params.length+results.length+uint.sizeof*2+Types.sizeof;
+            size_t guess_size() const pure nothrow
+            {
+                return params.length + results.length + uint.sizeof * 2 + Types.sizeof;
             }
-            this(const Types type, immutable(Types)[] params, immutable(Types)[] results) {
-                this.type=type;
-                this.params=params;
-                this.results=results;
+
+            this(const Types type, immutable(Types)[] params, immutable(Types)[] results)
+            {
+                this.type = type;
+                this.params = params;
+                this.results = results;
             }
-            this(ref const(ReaderSecType!(Section.TYPE)) s) {
-                type=s.type;
-                params=s.params;
-                results=s.results;
+
+            this(ref const(ReaderSecType!(Section.TYPE)) s)
+            {
+                type = s.type;
+                params = s.params;
+                results = s.results;
             }
+
             mixin Serialize;
         }
 
-        alias Type=SectionT!(FuncType);
+        alias Type = SectionT!(FuncType);
 
-        struct ImportType {
+        struct ImportType
+        {
             string mod;
             string name;
             ImportDesc importdesc;
-            alias ReaderImportType=ReaderSecType!(Section.IMPORT);
-            alias ReaderImportDesc=ReaderImportType.ImportDesc;
-            size_t guess_size() const pure nothrow {
-                return mod.length+name.length+uint.sizeof*2+ImportDesc.sizeof;
+            alias ReaderImportType = ReaderSecType!(Section.IMPORT);
+            alias ReaderImportDesc = ReaderImportType.ImportDesc;
+            size_t guess_size() const pure nothrow
+            {
+                return mod.length + name.length + uint.sizeof * 2 + ImportDesc.sizeof;
             }
+
             mixin Serialize;
-            struct ImportDesc {
-                struct FuncDesc {
+            struct ImportDesc
+            {
+                struct FuncDesc
+                {
                     uint typeidx;
-                    this(const(ReaderImportDesc.FuncDesc) f) {
-                        typeidx=f.typeidx;
+                    this(const(ReaderImportDesc.FuncDesc) f)
+                    {
+                        typeidx = f.typeidx;
                     }
+
                     mixin Serialize;
                 }
-                struct TableDesc {
+
+                struct TableDesc
+                {
                     Types type;
                     Limit limit;
-                    this(const(ReaderImportDesc.TableDesc) t) {
-                        type=t.type;
-                        limit=t.limit;
+                    this(const(ReaderImportDesc.TableDesc) t)
+                    {
+                        type = t.type;
+                        limit = t.limit;
                     }
+
                     mixin Serialize;
                 }
-                struct MemoryDesc {
+
+                struct MemoryDesc
+                {
                     Limit limit;
-                    this(const(ReaderImportDesc.MemoryDesc) m) {
-                        limit=m.limit;
+                    this(const(ReaderImportDesc.MemoryDesc) m)
+                    {
+                        limit = m.limit;
                     }
+
                     mixin Serialize;
                 }
-                struct GlobalDesc {
-                    Types   type;
+
+                struct GlobalDesc
+                {
+                    Types type;
                     Mutable mut;
-                    this(const Types type, const Mutable mut=Mutable.CONST) {
-                        this.type=type;
-                        this.mut=mut;
+                    this(const Types type, const Mutable mut = Mutable.CONST)
+                    {
+                        this.type = type;
+                        this.mut = mut;
                     }
-                    this(const(ReaderImportDesc.GlobalDesc) g) {
-                        mut=g.mut;
-                        type=g.type;
+
+                    this(const(ReaderImportDesc.GlobalDesc) g)
+                    {
+                        mut = g.mut;
+                        type = g.type;
                     }
+
                     mixin Serialize;
                 }
-                protected union {
-                    @(IndexType.FUNC)  FuncDesc _funcdesc;
+
+                protected union
+                {
+                    @(IndexType.FUNC) FuncDesc _funcdesc;
                     @(IndexType.TABLE) TableDesc _tabledesc;
                     @(IndexType.MEMORY) MemoryDesc _memorydesc;
                     @(IndexType.GLOBAL) GlobalDesc _globaldesc;
                 }
 
                 protected IndexType _desc;
-                void serialize(ref OutBuffer bout) const {
-                    with(IndexType)
-                        bout.write(cast(ubyte)_desc);
-                        final switch(_desc) {
-                            foreach(E; EnumMembers!IndexType) {
-                            case E:
-                                get!E.serialize(bout);
-                                break;
-                            }
+                void serialize(ref OutBuffer bout) const
+                {
+                    with (IndexType)
+                        bout.write(cast(ubyte) _desc);
+                    final switch (_desc)
+                    {
+                        foreach (E; EnumMembers!IndexType)
+                        {
+                    case E:
+                            get!E.serialize(bout);
+                            break;
                         }
+                    }
                 }
 
-//                mixin Serialize;
+                //                mixin Serialize;
 
                 auto get(IndexType IType)() const pure
-                    in {
-                        assert(_desc is IType);
-                    }
-                do {
-                    static foreach(m; __traits(allMembers, ImportDesc)) {
+                in
+                {
+                    assert(_desc is IType);
+                }
+                do
+                {
+                    static foreach (m; __traits(allMembers, ImportDesc))
+                    {
                         {
-                            enum get_indextype_code=format(q{enum get_indextype=getUDAs!(%s, IndexType);}, m);
+                            enum get_indextype_code = format(q{enum get_indextype=getUDAs!(%s, IndexType);},
+                                        m);
                             mixin(get_indextype_code);
-                            static if (get_indextype.length is 1) {
-                                static if (IType is get_indextype[0]) {
-                                    enum return_code=format(q{auto result=%s;}, m);
+                            static if (get_indextype.length is 1)
+                            {
+                                static if (IType is get_indextype[0])
+                                {
+                                    enum return_code = format(q{auto result=%s;}, m);
                                     mixin(return_code);
                                     return result;
                                 }
@@ -498,259 +609,314 @@ class WasmWriter {
                     }
                 }
 
-                @property IndexType desc() const pure nothrow {
+                @property IndexType desc() const pure nothrow
+                {
                     return _desc;
                 }
 
-                version(none)
-                this(T)(ref const(T) desc) {
-                    static if (is(T:const(FuncDesc))) {
-                        _desc=FUNC;
-                        _funcdesc=desc;
+                version (none) this(T)(ref const(T) desc)
+                {
+                    static if (is(T : const(FuncDesc)))
+                    {
+                        _desc = FUNC;
+                        _funcdesc = desc;
                     }
-                    else static if (is(T:const(TableDesc))) {
-                        _desc=TABLE;
-                        _tabledesc=desc;
+                    else static if (is(T : const(TableDesc)))
+                    {
+                        _desc = TABLE;
+                        _tabledesc = desc;
                     }
-                    else static if (is(T:const(MemoryDesc))) {
-                        _desc=MEMORY;
-                        _memorydesc=desc;
+                    else static if (is(T : const(MemoryDesc)))
+                    {
+                        _desc = MEMORY;
+                        _memorydesc = desc;
                     }
-                    else static if (is(T:const(GlobalDesc))) {
-                        _desc=GLOBAL;
-                        _globaldesc=desc;
+                    else static if (is(T : const(GlobalDesc)))
+                    {
+                        _desc = GLOBAL;
+                        _globaldesc = desc;
                     }
-                    else {
+                    else
+                    {
                         static assert(0, format("Type %s is not supported", T.stringof));
                     }
                 }
 
-                this(ref const(ReaderImportDesc) importdesc) {
-                    with(IndexType) {
-                        final switch(importdesc.desc) {
+                this(ref const(ReaderImportDesc) importdesc)
+                {
+                    with (IndexType)
+                    {
+                        final switch (importdesc.desc)
+                        {
                         case FUNC:
-                            _funcdesc=FuncDesc(importdesc.get!(FUNC));
+                            _funcdesc = FuncDesc(importdesc.get!(FUNC));
                             break;
                         case TABLE:
-                            _tabledesc=TableDesc(importdesc.get!(TABLE));
+                            _tabledesc = TableDesc(importdesc.get!(TABLE));
                             break;
                         case MEMORY:
-                            _memorydesc=MemoryDesc(importdesc.get!(MEMORY));
+                            _memorydesc = MemoryDesc(importdesc.get!(MEMORY));
                             break;
                         case GLOBAL:
-                            _globaldesc=GlobalDesc(importdesc.get!(GLOBAL));
+                            _globaldesc = GlobalDesc(importdesc.get!(GLOBAL));
                             break;
                         }
                     }
                 }
             }
 
-
-            this(T)(string mod, string name, T desc) pure {
-                this.mod=mod;
-                this.name=name;
-                this.importdesc=ImportDesc(desc);
+            this(T)(string mod, string name, T desc) pure
+            {
+                this.mod = mod;
+                this.name = name;
+                this.importdesc = ImportDesc(desc);
             }
 
-            this(ref const(ReaderImportType) s) {
-                this.mod=s.mod;
-                this.name=s.name;
-                this.importdesc=ImportDesc(s.importdesc);
+            this(ref const(ReaderImportType) s)
+            {
+                this.mod = s.mod;
+                this.name = s.name;
+                this.importdesc = ImportDesc(s.importdesc);
             }
 
         }
 
-        alias Import=SectionT!(ImportType);
+        alias Import = SectionT!(ImportType);
 
-        struct Index {
+        struct Index
+        {
             uint idx;
-            this(const uint idx) {
-                this.idx=idx;
+            this(const uint idx)
+            {
+                this.idx = idx;
             }
-            this(ref const(ReaderSecType!(Section.FUNCTION)) f) {
-                idx=f.idx;
+
+            this(ref const(ReaderSecType!(Section.FUNCTION)) f)
+            {
+                idx = f.idx;
             }
+
             mixin Serialize;
         }
 
-        alias Function=SectionT!(Index);
+        alias Function = SectionT!(Index);
 
-        struct TableType {
+        struct TableType
+        {
             Types type;
             Limit limit;
-            this(ref const(ReaderSecType!(Section.TABLE)) t) {
-                type=t.type;
-                limit=Limit(t.limit);
+            this(ref const(ReaderSecType!(Section.TABLE)) t)
+            {
+                type = t.type;
+                limit = Limit(t.limit);
             }
+
             mixin Serialize;
         }
 
-        alias Table=SectionT!(TableType);
+        alias Table = SectionT!(TableType);
 
-        struct MemoryType {
+        struct MemoryType
+        {
             Limit limit;
-            this(ref const(ReaderSecType!(Section.MEMORY)) m) {
-                limit=Limit(m.limit);
+            this(ref const(ReaderSecType!(Section.MEMORY)) m)
+            {
+                limit = Limit(m.limit);
                 //writefln("MemoryType %s", this);
             }
+
             mixin Serialize;
         }
 
-        alias Memory=SectionT!(MemoryType);
+        alias Memory = SectionT!(MemoryType);
 
-        struct GlobalType {
-            alias GlobalDesc=ImportType.ImportDesc.GlobalDesc;
+        struct GlobalType
+        {
+            alias GlobalDesc = ImportType.ImportDesc.GlobalDesc;
             GlobalDesc global;
             @Section(Section.CODE) immutable(ubyte)[] expr;
-            this(const GlobalDesc global, immutable(ubyte)[] expr) {
-                this.global=global;
-                this.expr=expr;
+            this(const GlobalDesc global, immutable(ubyte)[] expr)
+            {
+                this.global = global;
+                this.expr = expr;
                 //writefln("GlobalDesc length=%d expr=%s", expr.length, expr);
             }
-            this(ref const(ReaderSecType!(Section.GLOBAL)) g) {
-                global=ImportType.ImportDesc.GlobalDesc(g.global);
-                expr=g.expr;
+
+            this(ref const(ReaderSecType!(Section.GLOBAL)) g)
+            {
+                global = ImportType.ImportDesc.GlobalDesc(g.global);
+                expr = g.expr;
                 //writefln("GlobalDesc length=%d expr=%s", expr.length, expr);
             }
+
             mixin Serialize;
         }
 
-        alias Global=SectionT!(GlobalType);
+        alias Global = SectionT!(GlobalType);
 
-        struct ExportType {
+        struct ExportType
+        {
             string name;
             IndexType desc;
             uint idx;
-            size_t guess_size() const pure nothrow {
-                return name.length+uint.sizeof+ImportType.ImportDesc.sizeof;
+            size_t guess_size() const pure nothrow
+            {
+                return name.length + uint.sizeof + ImportType.ImportDesc.sizeof;
             }
-            this(string name, const uint idx, const IndexType desc=IndexType.FUNC) {
-                this.name=name;
-                this.desc=desc;
-                this.idx=idx;
+
+            this(string name, const uint idx, const IndexType desc = IndexType.FUNC)
+            {
+                this.name = name;
+                this.desc = desc;
+                this.idx = idx;
             }
-            this(ref const(ReaderSecType!(Section.EXPORT)) e) {
-                name=e.name;
-                desc=IndexType(e.desc);
-                idx=e.idx;
+
+            this(ref const(ReaderSecType!(Section.EXPORT)) e)
+            {
+                name = e.name;
+                desc = IndexType(e.desc);
+                idx = e.idx;
             }
+
             mixin Serialize;
         }
 
-        alias Export=SectionT!(ExportType);
+        alias Export = SectionT!(ExportType);
 
-        static class Start {
+        static class Start
+        {
             uint idx;
-            alias ReaderStartType=ReaderSections[Section.START];
-            this(ref ConstOf!(ReaderStartType) s) {
-                idx=s.idx;
+            alias ReaderStartType = ReaderSections[Section.START];
+            this(ref ConstOf!(ReaderStartType) s)
+            {
+                idx = s.idx;
             }
+
             mixin Serialize;
         }
 
-        struct ElementType {
-            uint    tableidx;
+        struct ElementType
+        {
+            uint tableidx;
             @Section(Section.CODE) immutable(ubyte)[] expr;
-            immutable(uint)[]  funcs;
-            this(ref const(ReaderSecType!(Section.ELEMENT)) e) {
-                tableidx=e.tableidx;
-                expr=e.expr;
-                funcs=e.funcs;
+            immutable(uint)[] funcs;
+            this(ref const(ReaderSecType!(Section.ELEMENT)) e)
+            {
+                tableidx = e.tableidx;
+                expr = e.expr;
+                funcs = e.funcs;
             }
+
             mixin Serialize;
         }
 
-        alias Element=SectionT!(ElementType);
+        alias Element = SectionT!(ElementType);
 
-        struct CodeType {
+        struct CodeType
+        {
             Local[] locals;
             @Section(Section.CODE) immutable(ubyte)[] expr;
-            size_t guess_size() const pure nothrow {
-                return locals.length*Local.sizeof+expr.length+2*uint.sizeof;
+            size_t guess_size() const pure nothrow
+            {
+                return locals.length * Local.sizeof + expr.length + 2 * uint.sizeof;
             }
-            struct Local {
+
+            struct Local
+            {
                 uint count;
                 Types type;
                 mixin Serialize;
             }
-            this(Local[] locals, immutable(ubyte[]) expr) {
-                this.locals=locals;
-                this.expr=expr;
+
+            this(Local[] locals, immutable(ubyte[]) expr)
+            {
+                this.locals = locals;
+                this.expr = expr;
             }
-            @trusted
-            this(ref const(ReaderSecType!(Section.CODE)) c) {
-                locals=new Local[c.locals.length];
-                foreach(ref l, reader_l; lockstep(locals, c.locals)) {
-                    l.count=reader_l.count;
-                    l.type=reader_l.type;
+
+            @trusted this(ref const(ReaderSecType!(Section.CODE)) c)
+            {
+                locals = new Local[c.locals.length];
+                foreach (ref l, reader_l; lockstep(locals, c.locals))
+                {
+                    l.count = reader_l.count;
+                    l.type = reader_l.type;
                 }
-                expr=c[].data;
+                expr = c[].data;
             }
-            ExprRange opSlice() const {
+
+            ExprRange opSlice() const
+            {
                 return ExprRange(expr);
             }
-            void serialize(ref OutBuffer bout) const {
-                auto tmp_out=new OutBuffer;
+
+            void serialize(ref OutBuffer bout) const
+            {
+                auto tmp_out = new OutBuffer;
                 tmp_out.reserve(guess_size);
                 tmp_out.write(encode(locals.length));
-                locals.each!((l) => l.serialize(tmp_out));//.write(encode(e)));
+                locals.each!((l) => l.serialize(tmp_out)); //.write(encode(e)));
                 tmp_out.write(expr);
                 bout.write(encode(tmp_out.offset));
                 bout.write(tmp_out.toBytes);
             }
         }
 
-        alias Code=SectionT!(CodeType);
+        alias Code = SectionT!(CodeType);
 
-        struct DataType {
+        struct DataType
+        {
             uint idx;
             @Section(Section.CODE) immutable(ubyte)[] expr;
-            string  base;
-            this(ref const(ReaderSecType!(Section.DATA)) d) {
-                idx=d.idx;
-                expr=d.expr;
-                base=d.base;
+            string base;
+            this(ref const(ReaderSecType!(Section.DATA)) d)
+            {
+                idx = d.idx;
+                expr = d.expr;
+                base = d.base;
             }
+
             mixin Serialize;
         }
 
-        alias Data=SectionT!(DataType);
+        alias Data = SectionT!(DataType);
 
     }
 }
 
-version(none)
-unittest {
+version (none) unittest
+{
     import std.stdio;
     import std.file;
     import std.exception : assumeUnique;
     import tagion.wavm.Wast;
+
     //      import std.file : fread=read, fwrite=write;
 
+    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max)
+    {
+        import std.file : _read = read;
 
-    @trusted
-        static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file : _read=read;
-        auto data=cast(ubyte[])_read(name, upTo);
+        auto data = cast(ubyte[]) _read(name, upTo);
         // writefln("read data=%s", data);
         return assumeUnique(data);
     }
 
-//    string filename="../tests/wasm/func_1.wasm";
-    string filename="../tests/wasm/global_1.wasm";
-//    string filename="../tests/wasm/imports_1.wasm";
-//    string filename="../tests/wasm/table_copy_2.wasm";
-//    string filename="../tests/wasm/memory_2.wasm";
-//    string filename="../tests/wasm/start_4.wasm";
-//    string filename="../tests/wasm/address_1.wasm";
-//    string filename="../tests/wasm/data_4.wasm";
-//    string filename="../tests/web_gas_gauge.wasm";//wasm/imports_1.wasm";
-    immutable read_data=fread(filename);
-    auto wasm_reader=WasmReader(read_data);
+    //    string filename="../tests/wasm/func_1.wasm";
+    string filename = "../tests/wasm/global_1.wasm";
+    //    string filename="../tests/wasm/imports_1.wasm";
+    //    string filename="../tests/wasm/table_copy_2.wasm";
+    //    string filename="../tests/wasm/memory_2.wasm";
+    //    string filename="../tests/wasm/start_4.wasm";
+    //    string filename="../tests/wasm/address_1.wasm";
+    //    string filename="../tests/wasm/data_4.wasm";
+    //    string filename="../tests/web_gas_gauge.wasm";//wasm/imports_1.wasm";
+    immutable read_data = fread(filename);
+    auto wasm_reader = WasmReader(read_data);
     Wast(wasm_reader, stdout).serialize();
 
     writefln("wasm_reader.serialize=%s", wasm_reader.serialize);
-    auto wasm_writer=WasmWriter(wasm_reader);
+    auto wasm_writer = WasmWriter(wasm_reader);
 
     writeln("wasm_writer.serialize");
     writefln("wasm_writer.serialize=%s", wasm_writer.serialize);
