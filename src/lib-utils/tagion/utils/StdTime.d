@@ -2,7 +2,6 @@ module tagion.utils.StdTime;
 
 import std.datetime;
 import std.typecons : Typedef;
-import tagion.basic.Basic: nameOf;
 
 enum SDT = "SDT";
 
