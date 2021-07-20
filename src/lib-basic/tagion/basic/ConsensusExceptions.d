@@ -173,6 +173,7 @@ class SmartScriptException : ConsensusException {
 @trusted
 shared static this() {
     with (ConsensusFailCode) {
+        // dfmt off
         string[ConsensusFailCode] _consensus_error_messages=[
             NON                                         : "Non",
             NO_MOTHER                                   : "If an event has no mother it can not have a father",
@@ -247,6 +248,7 @@ shared static this() {
             SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account"
 
             ];
+        // dfmt on
         import std.exception : assumeUnique;
         consensus_error_messages = assumeUnique(_consensus_error_messages);
         assert(
