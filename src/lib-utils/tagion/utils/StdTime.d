@@ -7,6 +7,7 @@ enum SDT = "SDT";
 
 alias sdt_t = Typedef!(long, long.init, SDT);
 
-sdt_t currentTime() {
+sdt_t currentTime()
+{
     return sdt_t(Clock.currStdTime);
 }
