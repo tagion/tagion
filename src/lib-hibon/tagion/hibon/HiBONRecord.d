@@ -97,7 +97,7 @@ struct Filter {
  +/
 struct Inspect {
     string code; ///
-    enum Initialized=Filter(q{a !is a.init});
+    enum Initialized=Inspect(q{a !is a.init});
 }
 
 /++
