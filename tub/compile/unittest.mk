@@ -1,7 +1,7 @@
-include $(DIR_SELF)/unittest_setup.mk
+include $(DIR_MAKER)/unittest_setup.mk
 
-${info ${call log.info, $(DIR_SELF)}}
-${warning ${call log.info, $(DIR_SELF)}}
+${info ${call log.info, $(DIR_MAKER)}}
+${warning ${call log.info, $(DIR_MAKER)}}
 
 HELP+=help-unittest
 help-unittest:

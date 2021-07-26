@@ -1,15 +1,21 @@
+include $(DIR_SRC)/wraps/**/Makefile
+
 define find_d_files
-${shell find $(DIR_SRC)/lib_${strip $1} -name '*.d'}
+${shell find $(DIR_SRC)/${strip $1}/${strip $2} -name '*.d'}
 endef
 
-wrap/%:
-	@echo todo - simplified flow
+# TODO: Add ldc-build-runtime for building phobos and druntime for platforms
 
-bin/&:
+ways: 
+	$(PRECMD)mkdir -p $(DIR_BUILD)/wraps
+	$(PRECMD)mkdir -p $(DIR_BUILD)/libs
+	$(PRECMD)mkdir -p $(DIR_BUILD)/bins
+
+bin/%: ctx/bin/% ways
 	@echo todo - allow linking, and using libs
 
-lib/%: ctx/lib/%
-	$(call log.header, building lib/$(@F))
+lib/%: ctx/lib/% ways
+	$(call log.header, compiling lib/$(@F))
 
 	# @echo todo - collect all libs and wraps before looking for D Files
 
@@ -21,10 +27,11 @@ lib/%: ctx/lib/%
 	$(call log.line, All dependencies of lib/$(@F) are present)
 	$(call log.kvp, wraps, $(WRAPS))
 	$(call log.kvp, libs, $(LIBS))
-	${eval DFILES := ${foreach LIB, $(LIBS), ${call find_d_files, $(LIB)}}}
+	${eval DFILES := ${foreach LIB, $(LIBS), ${call find_d_files, libs, $(LIB)}}}
 	
 	$(call log.separator)
-	${eval COMPILE_CMD := $(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(LDCFLAGS) -c -of$(DIR_BUILD)/libs/lib_$(@F).a}
+	# TODO: Move this to a macro (depend on env macro)
+	${eval COMPILE_CMD := $(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(LDCFLAGS) -c -of$(DIR_BUILD)/libs/libtagion$(@F).a}
 	$(call log.kvp, Compiler, $(DC))
 	$(call log.kvp, DCFLAGS, $(DCFLAGS))
 	$(call log.kvp, LDCFLAGS, $(LDCFLAGS))
@@ -36,5 +43,5 @@ lib/%: ctx/lib/%
 
 	$(call log.line, Compiling...)
 	$(call log.space)
-	@$(COMPILE_CMD)
+	$(PRECMD)$(COMPILE_CMD)
 	$(call log.close)

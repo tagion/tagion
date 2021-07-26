@@ -1,4 +1,4 @@
-# include $(DIR_SELF)/unittest.mk
+# include $(DIR_MAKER)/unittest.mk
 
 # define TESTMACRO
 # ${eval ERR:=}
