@@ -5,19 +5,14 @@ OS ?= $(shell uname)
 PRECMD ?= @
 
 # Root project directory
-DIR_MAKER := ./
-DIR_SRC := ../src
-DIR_BUILD := ../build
+DIR_MAKER := ${realpath .}
+DIR_TAGIL := ${realpath ${DIR_MAKER}/../}
+DIR_SRC := ${realpath ${DIR_MAKER}/../src}
+DIR_BUILD := ${realpath ${DIR_MAKER}/../build}
 
 # Directory for libs and bins
 DIR_LIBS ?= $(DIR_SRC)/libs
 DIR_BINS ?= $(DIR_SRC)/bins
-
-# Directory for make scripts
-DIR_MAKER ?= ./
-
-# Pointer to current file directory
-DIR_MAKER = ${dir_self}
 
 MAKE_SHOW_ENV += show-env-dirs
 show-env-dirs:
