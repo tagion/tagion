@@ -1,7 +1,7 @@
 include $(DIR_TAGIL)/src/wraps/**/Makefile
 
 define find_d_files
-${shell find $(DIR_SRC)/${strip $1}/${strip $2} -name '*.d'}
+${shell find $(DIR_SRC)/${strip $1}/${strip $2} -name '*.d*'}
 endef
 
 define link_wrap
