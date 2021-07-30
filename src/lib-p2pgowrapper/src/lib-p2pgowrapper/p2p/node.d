@@ -1,6 +1,6 @@
 module p2p.node;
 
-import lib = p2p.cgo.libp2pgo;
+import lib = p2p.cgo.libp2p;
 import p2p.cgo.helper;
 import p2p.go_helper;
 import std.stdio;

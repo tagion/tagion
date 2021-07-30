@@ -2,7 +2,7 @@ module p2p.callback;
 
 import std.stdio;
 import std.concurrency;
-import p2p.cgo.libp2pgo;
+import p2p.cgo.libp2p;
 import p2p.cgo.helper;
 import p2p.node;
 

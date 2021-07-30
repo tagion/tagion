@@ -1,6 +1,6 @@
 module p2p.connection;
 
-import lib = p2p.cgo.libp2pgo;
+import lib = p2p.cgo.libp2p;
 import p2p.node;
 import core.time;
 import std.datetime;
