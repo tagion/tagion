@@ -1,0 +1,23 @@
+# Compiler binary files
+*.a
+*.o
+
+# Temporary dirs
+out
+
+# Emacs
+*~
+*#
+*.parked
+auto
+bin
+
+# D compiler
+dfiles.mk
+build
+modules.ddoc
+
+.touch
+
+c-out
+d-out
