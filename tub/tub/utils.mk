@@ -1,3 +1,3 @@
 define dir_self
-$(dir $(lastword $(MAKEFILE_LIST)))
+${dir ${lastword $(MAKEFILE_LIST)}}
 endef
