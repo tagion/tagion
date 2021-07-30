@@ -1,7 +1,7 @@
 module p2p.node;
 
-import lib = p2p.lib.libp2p;
-import p2p.lib.helper;
+import lib = p2p.cgo.libp2pgo;
+import p2p.cgo.helper;
 import p2p.go_helper;
 import std.stdio;
 import core.time;

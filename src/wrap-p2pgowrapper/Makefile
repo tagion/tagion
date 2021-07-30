@@ -1,26 +1,28 @@
-# Clone and make according to variables
-# Will add support for crossc compilation triplet and choose dest folder automatically.
+# Will add support for cross compilation triplet and choose dest folder automatically.
 
 NAME_P2P := libp2p
-PATH_SRC_GO_P2P := ${dir_self}/go-wrapper
-PATH_SRC_D_P2P := ${dir_self}/src/d/p2p
-PATH_OUT_C := ${dir_self}/c-out
-PATH_OUT_D := ${dir_self}/d-out
+PATH_P2P_SRC_GO := ${realpath ${dir_self}/go/p2p}
+PATH_P2P_SRC_D := ${realpath ${dir_self}/d/p2p}
+PATH_P2P_CGO := ${PATH_P2P_SRC_D}/cgo
+
+DFILES := ${PATH_P2P_SRC_D}/node ${PATH_P2P_SRC_D}/connection ${PATH_P2P_SRC_D}/go_helper ${PATH_P2P_SRC_D}/callback
+GOLIBFILES := $(PATH_P2P_CGO)/libp2pgo.di $(PATH_P2P_CGO)/helper.di $(PATH_P2P_CGO)/libp2pgo.a
+
+ifeq ($(OS),Darwin)
+LDCFLAGS += -L-framework -LCoreFoundation -L-framework -LSecurity
+endif
 
 check/p2p:
 	${call log.line, System check for libp2p is not implemented yet}
 
-wrap/p2p:
-	mkdir -p $(PATH_OUT_C)
-	mkdir -p $(PATH_OUT_D)
-	cp $(PATH_SRC_GO_P2P)/c_helper.h $(PATH_OUT_C)
-	cd $(PATH_SRC_GO_P2P); go build -buildmode=c-archive -o ../c-out/$(NAME_P2P).a
-	dstep $(PATH_OUT_C)/libp2p.h -o $(PATH_OUT_D)/libp2p.di --package p2p.lib --global-import p2p.lib.helper
-	dstep $(PATH_OUT_C)/c_helper.h -o $(PATH_OUT_D)/helper.di --package p2p.lib
-	mv $(PATH_OUT_C)/$(NAME_P2P).a $(PATH_OUT_D)/$(NAME_P2P).a
-	mkdir -p $(PATH_SRC_D_P2P)/lib
-	cp $(PATH_OUT_D)/* $(PATH_SRC_D_P2P)/lib
-	cd $(PATH_SRC_D_P2P); ldc2 -lib node connection go_helper callback lib/libp2p.di lib/helper.di lib/libp2p.a -L-framework -LCoreFoundation -L-framework -LSecurity -of ./libp2p.a
-	mv $(PATH_SRC_D_P2P)/libp2p.a $(DIR_BUILD)/wraps/libp2p.a
+wrap/p2p: $(PATH_P2P_CGO)/$(NAME_P2P)go.di
+	cd $(PATH_P2P_SRC_D); ldc2 -lib $(DFILES) $(GOLIBFILES) $(LDCFLAGS) -of $(DIR_BUILD)/wraps/$(NAME_P2P).a
 
-# $(DIR_BUILD)/wraps/$(NAME_P2P).a
+$(PATH_P2P_CGO)/$(NAME_P2P)go.di: $(PATH_P2P_CGO)/$(NAME_P2P)go.a
+	dstep $(PATH_P2P_CGO)/$(NAME_P2P)go.h -o $(PATH_P2P_CGO)/$(NAME_P2P)go.di --package p2p.cgo --global-import p2p.cgo.helper
+	dstep $(PATH_P2P_CGO)/c_helper.h -o $(PATH_P2P_CGO)/helper.di --package p2p.cgo
+
+$(PATH_P2P_CGO)/$(NAME_P2P)go.a:
+	mkdir -p $(PATH_P2P_CGO)
+	cp $(PATH_P2P_SRC_GO)/c_helper.h $(PATH_P2P_CGO)
+	cd $(PATH_P2P_SRC_GO); go build -buildmode=c-archive -o $(PATH_P2P_CGO)/$(NAME_P2P)go.a
