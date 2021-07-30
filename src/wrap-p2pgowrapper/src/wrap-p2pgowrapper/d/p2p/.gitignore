@@ -1,2 +1,3 @@
 cgo
 revision.di
+*.o
