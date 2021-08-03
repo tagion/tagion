@@ -1,2 +1,1 @@
-ctx/lib/utils: ctx/lib/basic
-	${eval LIBS += basic}
+ctx/lib/utils: ctx/lib/basic ctx/lib/p2p
