@@ -1,8 +1,8 @@
 include utils.mk
 include log.mk
+include help.mk
 include info.mk
 include env.mk
-include help.mk
 include map.mk
 include compile.mk
 
