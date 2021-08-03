@@ -23,6 +23,10 @@ define cmd_lib_compile_unittest
 ${call _cmd_lib_compile} $(DEBUG) -unittest -g -main -of$(DIR_BUILD)/tests/libtagion$(@F)
 endef
 
+define cmd_lib_compile_bin
+${call _cmd_lib_compile} -of$(DIR_BUILD)/bins/libtagion$(@F)
+endef
+
 define collect-dependencies
 ${eval LIBS += $(@F)}
 $(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
