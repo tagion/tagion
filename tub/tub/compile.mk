@@ -52,7 +52,7 @@ ${call log.kvp, D Files}
 ${call log.lines, $(DFILES)}
 
 ${call log.separator}
-${call log.kvp, Linkings}
+${call log.kvp, Links}
 ${call log.lines, $(WRAPS_TO_LINK)}
 endef
 
@@ -61,7 +61,6 @@ ${call log.separator}
 ${call log.line, Compiling...}
 ${call log.space}
 $(PRECMD)$($1)
-${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/libtagion$(@F).a}
 endef
 
 define run_unittest
@@ -72,25 +71,33 @@ $(PRECMD)$(DIR_BUILD)/tests/libtagion$(@F)
 endef
 
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
-# TODO: Add auto cloning wraps
 # TODO: Add revision
-# TODO: Add check for dependency wraps and libs
-# TODO: Add unit tests
+# TODO: Add local setup and unittest setup (context)
 
 # 
-# Compile targets to use
+# Target helpers
 # 
+ctx/lib/%:
+	${eval LIBS += $(@F)}
+
+ctx/wrap/%: wrap/%
+	${eval WRAPS += $(@F)}
+
 ways: 
 	$(PRECMD)$(MKDIR) -p $(DIR_BUILD)/wraps
 	$(PRECMD)$(MKDIR) -p $(DIR_BUILD)/libs
 	$(PRECMD)$(MKDIR) -p $(DIR_BUILD)/bins
 	$(PRECMD)$(MKDIR) -p $(DIR_BUILD)/tests
 
+# 
+# Compile targets to use
+# 
 bin/%: show-env-compiler ways ctx/bin/%
 	${call log.header, testing lib/$(@F)}
 	${call collect-dependencies}
 	${call show-compile-details}
 	${call compile, cmd_lib_compile_unittest}
+	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/$(@F)}
 	${call log.close}
 
 lib/%: show-env-compiler ways ctx/lib/%
@@ -98,11 +105,13 @@ lib/%: show-env-compiler ways ctx/lib/%
 	${call collect-dependencies}
 	${call show-compile-details}
 	${call compile, cmd_lib_compile_library}
+	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/libtagion$(@F).a}
 	${call log.close}
 
 test/lib/%: ways ctx/lib/%
 	${call log.header, testing lib/$(@F)}
 	${call collect-dependencies}
+	${call collect-dependencies-to-link}
 	${call show-compile-details}
 	${call compile, cmd_lib_compile_unittest}
 	${call log.space}
@@ -110,4 +119,4 @@ test/lib/%: ways ctx/lib/%
 	${call log.close}
 
 
-.PHONY: test/lib/%
+.PHONY: test/lib/% lib/% bin/%
