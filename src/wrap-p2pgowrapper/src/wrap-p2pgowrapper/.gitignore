@@ -1,5 +1,4 @@
 *~
 *#
 *.parked
-auto
-out
+cgo
