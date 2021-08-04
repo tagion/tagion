@@ -3,7 +3,7 @@
 
 NAME_SECP256K1 := secp256k1
 REPO_SECP256K1 ?= git@github.com:bitcoin-core/secp256k1.git
-PATH_SRC_SECP256K1 ?= ${dir_self}/$(NAME_SECP256K1)
+PATH_SRC_SECP256K1 ?= ${dir.self}/$(NAME_SECP256K1)
 
 check/secp256k1:
 	${call log.line, System check for secp256k1 is not implemented yet}
