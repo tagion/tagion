@@ -4,10 +4,10 @@ NAME_P2P := libp2p
 PATH_P2P_SRC := ${realpath ${dir.self}/src}
 PATH_P2P_CGO := ${dir.self}/cgo
 
-check/p2p:
+check/p2p-go-wrapper:
 	${call log.line, System check for libp2p is not implemented yet}
 
-wrap/p2p: $(DIR_BUILD)/wraps/$(NAME_P2P).a
+wrap/p2p-go-wrapper: $(DIR_BUILD)/wraps/$(NAME_P2P).a
 
 $(DIR_BUILD)/wraps/$(NAME_P2P).a: $(PATH_P2P_CGO)/$(NAME_P2P).di
 	$(PRECMD)cp $(PATH_P2P_CGO)/$(NAME_P2P).a $(DIR_BUILD)/wraps
