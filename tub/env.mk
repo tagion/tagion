@@ -14,9 +14,9 @@ DIR_BUILD := ${realpath ${DIR_MAKER}/../build}
 DIR_LIBS ?= $(DIR_SRC)/libs
 DIR_BINS ?= $(DIR_SRC)/bins
 
-MAKE_SHOW_ENV += show-env-dirs
-show-env-dirs:
-	$(call log.header, info :: env :: dirs)
+MAKE_SHOW_ENV += env-dirs
+env-dirs:
+	$(call log.header, env :: dirs)
 	$(call log.kvp, DIR_MAKER, $(DIR_MAKER))
 	$(call log.kvp, DIR_SRC, $(DIR_SRC))
 	$(call log.separator)
@@ -69,9 +69,9 @@ MV := mv
 LN := ln -s
 endif
 
-MAKE_SHOW_ENV += show-env-commands
-show-env-commands:
-	$(call log.header, info :: env :: commands ($(OS)))
+MAKE_SHOW_ENV += env-commands
+env-commands:
+	$(call log.header, env :: commands ($(OS)))
 	$(call log.kvp, RM, $(RM))
 	$(call log.kvp, RMDIR, $(RMDIR))
 	$(call log.kvp, MKDIR, $(MKDIR))
@@ -196,9 +196,9 @@ DCFLAGS  += -m32
 LDCFLAGS += -m32
 endif
 
-MAKE_SHOW_ENV += show-env-compiler
-show-env-compiler:
-	$(call log.header, info :: env :: compiler)
+MAKE_SHOW_ENV += env-compiler
+env-compiler:
+	$(call log.header, env :: compiler)
 	$(call log.kvp, DC, $(DC))
 	$(call log.kvp, COMPILER, $(COMPILER))
 	$(call log.separator)
@@ -228,4 +228,4 @@ show-env-compiler:
 	$(call log.kvp, DCFLAGS, $(DCFLAGS))
 	$(call log.close)
 
-show-env: $(MAKE_SHOW_ENV)
+env: $(MAKE_SHOW_ENV)
