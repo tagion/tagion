@@ -4,15 +4,12 @@ OS ?= $(shell uname)
 # PRECMD is used to add command before the compiliation commands
 PRECMD ?= @
 
-# Root project directory
-DIR_MAKER := ${realpath .}
+# Directories
 DIR_TAGIL := ${realpath ${DIR_MAKER}/../}
-DIR_SRC := ${realpath ${DIR_MAKER}/../src}
-DIR_BUILD := ${realpath ${DIR_MAKER}/../build}
-
-# Directory for libs and bins
-DIR_LIBS ?= $(DIR_SRC)/libs
-DIR_BINS ?= $(DIR_SRC)/bins
+DIR_BUILD := ${realpath ${DIR_TAGIL}/build}
+DIR_SRC := ${realpath ${DIR_TAGIL}/src}
+DIR_LIBS := $(DIR_SRC)/libs
+DIR_BINS := $(DIR_SRC)/bins
 
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
