@@ -1,5 +1,5 @@
-help:
-	$(call log.header, help)
+help: info
+	$(call log.header, make :: help)
 	$(call log.kvp, make help, Show this help)
 	$(call log.separator)
 	$(call log.kvp, make info, Show info about this tagion/maker repository)

@@ -3,7 +3,6 @@ include log.mk
 include help.mk
 include info.mk
 include env.mk
-include map.mk
 include compile.mk
 
 help: $(HELP)
