@@ -1,8 +1,8 @@
 # Will add support for cross compilation triplet and choose dest folder automatically.
 
 NAME_P2P := libp2p
-PATH_P2P_SRC := ${realpath ${dir_self}/src}
-PATH_P2P_CGO := ${dir_self}/cgo
+PATH_P2P_SRC := ${realpath ${dir.self}/src}
+PATH_P2P_CGO := ${dir.self}/cgo
 
 check/p2p:
 	${call log.line, System check for libp2p is not implemented yet}
