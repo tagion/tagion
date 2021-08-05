@@ -6,8 +6,8 @@
 # Include contexts and wrap Makefiles
 CONTEXTS := ${shell find $(DIR_SRC) -name '*context.mk'}
 
-include $(DIR_WRAPS)/**/Makefile
-include $(CONTEXTS)
+-include $(DIR_WRAPS)/**/Makefile
+-include $(CONTEXTS)
 
 # 
 # Helper macros
