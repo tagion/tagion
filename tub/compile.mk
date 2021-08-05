@@ -100,11 +100,11 @@ ways:
 # Source code add/remove
 # 
 add/lib/%:
-	@cd $(DIR_TAGIL); meta import project src/libs/$(@F) $(GIT_ROOT)/core-lib-$(@F) &> /dev/null
+	@cd $(DIR_TAGIL); meta project import src/libs/$(@F) $(GIT_ROOT)/core-lib-$(@F) &> /dev/null
 	@cd $(DIR_TAGIL); meta git update
 
 add/bin/%:
-	@cd $(DIR_TAGIL); meta import project src/bins/$(@F) $(GIT_ROOT)/core-bin-$(@F) &> /dev/null
+	@cd $(DIR_TAGIL); meta project import src/bins/$(@F) $(GIT_ROOT)/core-bin-$(@F) &> /dev/null
 	@cd $(DIR_TAGIL); meta git update
 
 add/wrap/%:
