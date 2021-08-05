@@ -10,6 +10,10 @@ DIR_BUILD := ${realpath ${DIR_TAGIL}/build}
 DIR_SRC := ${realpath ${DIR_TAGIL}/src}
 DIR_LIBS := $(DIR_SRC)/libs
 DIR_BINS := $(DIR_SRC)/bins
+DIR_WRAPS := $(DIR_TAGIL)/wraps
+
+# Git
+GIT_ROOT := git@github.com:tagion
 
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
