@@ -3,6 +3,6 @@
     "src/libs/basic": "git@github.com:tagion/core-lib-basic.git",
     "src/libs/utils": "git@github.com:tagion/core-lib-utils.git",
     "src/libs/hibon": "git@github.com:tagion/core-lib-hibon.git",
-    "src/libs/p2p-go-wrapper": "git@github.com:tagion/lib-p2p-go-wrapper.git"
+    "src/libs/p2p-go-wrapper": "git@github.com:tagion/core-lib-p2p-go-wrapper.git"
   }
 }
