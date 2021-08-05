@@ -13,7 +13,11 @@ CONTEXTS := ${shell find $(DIR_SRC) -name '*context.mk'}
 # Helper macros
 # 
 define locate.d.files
-${shell find ${strip $1} -name '*.d*'}
+${shell find ${strip $1} -name '*.d'}
+endef
+
+define locate.di.files
+${shell find ${strip $1} -name '*.di'}
 endef
 
 define link.dependency
@@ -21,7 +25,7 @@ $(LINKERFLAG)$(DIR_BUILD)/wraps/lib${strip $1}.a
 endef
 
 define cmd.lib.compile
-$(PRECMD)$(DC) $(DCFLAGS) $(INCFLAGS) $(DFILES) $(LINKFLAGS) $(LDCFLAGS)
+$(PRECMD)$(DC) $(DCFLAGS) $(DFILES) $(LINKFLAGS) $(LDCFLAGS)
 endef
 
 define cmd.lib.compile.library
@@ -41,7 +45,9 @@ $(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X
 $(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
 
 ${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TAGIL)/src/libs/$(LIB)}}}
+${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TAGIL)/src/libs/$(LIB)}}}
 ${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TAGIL)/wraps/$(WRAP)}}}
+${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TAGIL)/wraps/$(WRAP)}}}
 endef
 
 define collect.dependencies.to.link
@@ -55,10 +61,6 @@ ${call log.kvp, Wraps, $(WRAPS)}
 ${call log.separator}
 ${call log.kvp, D Files}
 ${call log.lines, $(DFILES)}
-
-${call log.separator}
-${call log.kvp, Includes}
-${call log.lines, $(INCFLAGS)}
 
 ${call log.separator}
 ${call log.kvp, Links}
