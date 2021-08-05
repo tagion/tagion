@@ -1,18 +1,19 @@
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
 # TODO: Add local setup and unittest setup (context)
 # TODO: Add revision.di
+# TODO: Remove self.dir
 
 # Include contexts and wrap Makefiles
 CONTEXTS := ${shell find $(DIR_SRC) -name '*context.mk'}
 
-include $(DIR_WRAPS)/**/Makefile
-include $(CONTEXTS)
+-include $(DIR_WRAPS)/**/Makefile
+-include $(CONTEXTS)
 
 # 
 # Helper macros
 # 
 define locate.d.files
-${shell find $(DIR_TAGIL)/${strip $1}/${strip $2} -name '*.d*'}
+${shell find ${strip $1} -name '*.d*'}
 endef
 
 define link.dependency
@@ -39,10 +40,8 @@ define collect.dependencies
 $(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
 $(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
 
-${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, src/libs, $(LIB)}}}
-${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, wraps, $(WRAP)}}}
-
-${call log.line, All specified dependencies are resolved}
+${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TAGIL)/src/libs/$(LIB)}}}
+${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TAGIL)/wraps/$(WRAP)}}}
 endef
 
 define collect.dependencies.to.link
@@ -50,7 +49,6 @@ ${eval LINKFLAGS += ${foreach WRAP, $(WRAPS), ${call link.dependency, $(WRAP)}}}
 endef
 
 define show.compile.details
-${call log.separator}
 ${call log.kvp, Libs, $(LIBS)}
 ${call log.kvp, Wraps, $(WRAPS)}
 
@@ -87,7 +85,7 @@ endef
 ctx/lib/%: $(DIR_SRC)/libs/%/context.mk
 	${eval LIBS += $(@F)}
 
-ctx/wrap/%: $(DIR_WRAPS)/%/Makefile
+ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
 	${eval WRAPS += $(@F)}
 
 ways: 
