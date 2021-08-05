@@ -1,1 +1,1 @@
-ctx/lib/utils: ctx/lib/basic ctx/lib/p2p
+ctx/lib/utils: ctx/lib/basic
