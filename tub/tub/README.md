@@ -10,13 +10,19 @@ Using [curl](https://curl.se/):
 
 ```bash
 # Install into current directory:
-curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh | sh
+sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
+
+# Install into current [project-name]:
+sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
 ```
 
 Using [wget](https://www.gnu.org/software/wget/):
 
 ```bash
-wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh | sh
+sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
+
+# Install into current [project-name]:
+sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
 ```
 
 ## Get Help
