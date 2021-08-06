@@ -2,26 +2,31 @@
 
 Tagil stands for **Tagi**on **l**ab, it's a build system for Tagion core libraries and binaries. Tagil is based on [GNU Make](https://www.gnu.org/software/make/).
 
-You can install [Tagil CLI](https://github.com/tagion/tagil-cli) for better developer experience.
+You can use [Tagil CLI](https://github.com/tagion/tagil-cli) for better developer experience.
 
 ## Initialize Tagil Project
 
-Using [curl](https://curl.se/):
+### Using [curl](https://curl.se/):
 
+Install into current directory:
 ```bash
-# Install into current directory:
 sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
+```
 
-# Install into current [project-name]:
+Install into [project-name]:
+```bash
 sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
 ```
 
-Using [wget](https://www.gnu.org/software/wget/):
+### Using [wget](https://www.gnu.org/software/wget/):
 
+Install into current directory:
 ```bash
 sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
+```
 
-# Install into current [project-name]:
+Install into [project-name]:
+```bash
 sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
 ```
 
