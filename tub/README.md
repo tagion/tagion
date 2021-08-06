@@ -44,14 +44,17 @@ You must have linux installed. The preferred distribution is Ubuntu 20.04.2.0 LT
 
 Make sure to install dependencies:
 
+- [ldc2](https://github.com/ldc-developers/ldc) as main D compiler
 - [libgmp3-dev](https://packages.ubuntu.com/bionic/libgmp3-dev)
-- [dh-autoreconf](https://packages.ubuntu.com/bionic/dh-autoreconf)
 - [libssl-dev](https://packages.ubuntu.com/bionic/libssl-dev)
-- [nodejs](https://packages.ubuntu.com/bionic/libgmp3-dev) for [meta-git](https://github.com/mateodelnorte/meta-git)
-- [dmd](https://dlang.org/dmd-osx.html)
-- [ldc2](https://github.com/ldc-developers/ldc)
-- [dstep](https://github.com/jacob-carlborg/dstep) for `lipp2p`
-- [golang](https://golang.org/doc/install#download) for `lipp2p`
+- [dstep](https://github.com/jacob-carlborg/dstep) for `core-wrap-p2p-go-wrapper`
+- [golang](https://golang.org/doc/install#download) for `core-wrap-p2p-go-wrapper`
+- [dh-autoreconf](https://packages.ubuntu.com/bionic/dh-autoreconf) for `core-wrap-secp256k1`
+
+If you plan contributing to the Tagion Origin:
+
+- [nodejs](https://packages.ubuntu.com/bionic/libgmp3-dev)
+- [meta-git](https://github.com/mateodelnorte/meta-git)
 
 ## Understand Tagion's Modular Structure
 
