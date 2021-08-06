@@ -38,9 +38,11 @@ Get list of available commands with:
 make help
 ```
 
-## Ensure Local Environment
+## Install Depencies
 
-You must have linux installed. The preferred distribution is Ubuntu 20.04.2.0 LTS (Focal Fossa), but you should be fine with any.
+Tagil, as a build system, works with Linux and macOS. The preferred distribution is Ubuntu 20.04.2.0 LTS (Focal Fossa).
+
+At the moment, there is no cross-compilation flow, meaning you can only compile to your host machine's architecture.
 
 Make sure to install dependencies:
 
