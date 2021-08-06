@@ -4,7 +4,6 @@
     "src/libs/utils": "git@github.com:tagion/core-lib-utils.git",
     "src/libs/hibon": "git@github.com:tagion/core-lib-hibon.git",
     "src/libs/p2p-go-wrapper": "git@github.com:tagion/core-lib-p2p-go-wrapper.git",
-    "src/libs/com": "git@github.com:tagion/core-lib-communitcation.git",
     "src/libs/crypto": "git@github.com:tagion/core-lib-crypto.git",
     "src/libs/dart": "git@github.com:tagion/core-lib-dart.git",
     "src/libs/foundation": "git@github.com:tagion/core-lib-foundation.git",
@@ -14,6 +13,7 @@
     "src/libs/network": "git@github.com:tagion/core-lib-network.git",
     "src/libs/services": "git@github.com:tagion/core-lib-services.git",
     "src/libs/wallet": "git@github.com:tagion/core-lib-wallet.git",
-    "src/libs/wasm": "git@github.com:tagion/core-lib-wasm.git"
+    "src/libs/wasm": "git@github.com:tagion/core-lib-wasm.git",
+    "src/libs/communication": "git@github.com:tagion/core-lib-communitcation.git"
   }
 }
