@@ -91,6 +91,7 @@ ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
 	${eval WRAPS += $(@F)}
 
 ways: 
+	@$(MKDIR) -p $(DIR_BUILD)
 	@$(MKDIR) -p $(DIR_BUILD)/wraps
 	@$(MKDIR) -p $(DIR_BUILD)/libs
 	@$(MKDIR) -p $(DIR_BUILD)/bins
@@ -139,5 +140,23 @@ test/lib/%: ways ctx/lib/%
 	${call run.unittest}
 	${call log.close}
 
-
 .PHONY: test/lib/% lib/% bin/%
+
+# 
+# Clean build directory
+# 
+clean:
+	${call log.header, cleaning builds}
+	${call log.line, Directory to clean:)}
+	${call log.line, ${DIR_BUILD})}
+	${call log.space}
+	${call log.line, Cleaning in 3...}
+	@sleep 1
+	${call log.line, Cleaning in 2...}
+	@sleep 1
+	${call log.line, Cleaning in 1...}
+	@sleep 1
+	${call log.space}
+	@rm -rf ${DIR_BUILD}/*
+	${call log.line, Build directory is clean!}
+	${call log.close}
