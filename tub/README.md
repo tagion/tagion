@@ -9,13 +9,14 @@ You can install [Tagil CLI](https://github.com/tagion/tagil-cli) for better deve
 Using [curl](https://curl.se/):
 
 ```bash
-curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh | bash
+# Install into current directory:
+curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh | sh
 ```
 
 Using [wget](https://www.gnu.org/software/wget/):
 
 ```bash
-wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh | bash
+wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh | sh
 ```
 
 ## Get Help

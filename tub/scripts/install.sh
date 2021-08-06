@@ -15,11 +15,13 @@ fi
 
 echo
 
+echo "------------------------------"
 git clone git@github.com:tagion/tagil.git 
 ln -s ./maker/Makefile ./
 mkdir -p build
 mkdir -p src
 mkdir -p wraps
+echo "------------------------------"
 
 echo
 echo "Your Tagion lab is successfully installed. "
