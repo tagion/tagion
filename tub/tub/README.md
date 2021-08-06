@@ -9,11 +9,13 @@ You can use [Tagil CLI](https://github.com/tagion/tagil-cli) for better develope
 ### Using [curl](https://curl.se/):
 
 Install into current directory:
+
 ```bash
 sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
 ```
 
 Install into [project-name]:
+
 ```bash
 sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
 ```
@@ -21,11 +23,13 @@ sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/insta
 ### Using [wget](https://www.gnu.org/software/wget/):
 
 Install into current directory:
+
 ```bash
 sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
 ```
 
 Install into [project-name]:
+
 ```bash
 sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
 ```
@@ -66,7 +70,40 @@ Tagion core is split into modules, that follow the naming convention:
 - `core-bin-[binary]`: binary module, compiles to `[binary]`
 - `core-wrap-[wrapper]`: external library wrapper module, compiles to `lib[wrapper].a`
 
-### Start With Predefined Module List
+## How to Compile Tagion Library
+
+### Add Modules
+
+```bash
+# make add/lib/[core lib name] adds library module
+# make add/bin/[core lib name] adds binary module
+# make add/wrap/[core lib name] adds external library wrapper module
+
+make add/lib/basic # Will add core-lib-basic to ./src/libs/basic
+make add/lib/utils # Will add core-lib-utils to ./src/libs/utils
+
+# utils depends on basic
+```
+
+### Compile `core-lib-utils`
+
+```bash
+make lib/utils
+```
+
+### Run Unit Tests
+
+```bash
+make test/lib/utils
+```
+
+## How to Use Meta Git
+
+> Will be replaced with Tagil CLI soon.
+
+Since Tagion core modules live in separate repositories, we recommend using [meta-git](https://github.com/mateodelnorte/meta-git) (CLI from NPM) to perform operations on multiple repositories at once:
+
+### Start With Predefined Modules
 
 ```bash
 # If you have access to private core repositories:
@@ -74,31 +111,28 @@ make meta/core
 # If you do not:
 make meta/public
 
-meta git update # Will update your ./src according to .meta
+meta git update # To clone the missing repositories
 ```
 
-### Add Specific Modules
+### Add Modules
 
 ```bash
-# make add/lib/[core lib name] Will add library module
-# make add/bin/[core lib name] Will add binary module
-# make add/wrap/[core lib name] Will add external library wrapper module
+meta project import src/[type]/[name] git@github.com:tagion/core-[type]-[name]
 
-make add/lib/hibon # Will ad core-lib-hibon to ./src/libs/hibon
+# For example:
+meta project import src/lib/basic git@github.com:tagion/core-lib-basic
 ```
 
-## Compile Tagion Library
+### Branch With Meta
+
+With meta-git you can checkout and branch all you repositories at once:
+
 ```bash
-make lib/hibon
+meta git checkout 1.1.alpha # Checkout desired alpha branch
+meta git branch 1.1.jd # Create your working branch
 ```
 
-If you don't have a required dependency, you will get an error "no rule to make target", read the solution in [Troubleshooting](#no-rule-to-make-target) section.
-
-
-## Run Unit Tests
-```bash
-make test/lib/hibon
-```
+---
 
 ## Versioning
 
@@ -119,23 +153,6 @@ Before you modify anything, you branch from a specific version and create a bran
 
 **Important!** You only branch from **stable** or **beta** branches to make a patch. All new features, or refactors must be initiated from **alpha** branches.
 
-### Using Meta Git
-
-Since Tagion core modules live in separate repositories, we recommend using [meta-git](https://github.com/mateodelnorte/meta-git) (CLI from NPM) to perform operations on multiple repositories at once:
-
-```bash
-meta git checkout 1.1.alpha # Checkout desired alpha branch
-meta git branch 1.1.jd # Create your working branch
-```
-
-## Roadmap
-
-- [x] Tagion module compilation script
-- [x] Introduction guide
-- [x] Tagil install script
-- [ ] Module dependency graph
-- [ ] Cross compilation flow
-
 ## Troubleshooting
 
 > To report a bug or request a feature, [create an issue](https://github.com/tagion/tagil/issues/new). As problems appear, we will add solutions to this section.
@@ -148,6 +165,15 @@ It means you don't have the required dependency.
 1. Do `make add/lib/[library]` or `make add/wrap/[wrapper]`
 
 Try to compile again.
+
+## Roadmap
+
+- [x] Tagion module compilation script
+- [x] Introduction guide
+- [x] Tagil install script
+- [ ] Module dependency graph
+- [ ] Cross compilation flow
+- [ ] Replace `meta-git` with `tagil` cli
 
 ## Maintainers
 
