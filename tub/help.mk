@@ -1,8 +1,8 @@
 help: info
 	$(call log.header, make :: help)
 	$(call log.kvp, make help, Show this help)
-	$(call log.separator)
 	$(call log.kvp, make info, Show info about tagil-maker repository)
+	$(call log.kvp, make env, Show current Make environment)
 	$(call log.separator)
 	$(call log.kvp, make lib/[specific], Compile [specific] lib for the host platform)
 	$(call log.kvp, make bin/[specific], Compile [specific] bin for the host platform)

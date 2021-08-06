@@ -1,7 +1,6 @@
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
 # TODO: Add local setup and unittest setup (context)
 # TODO: Add revision.di
-# TODO: Remove self.dir
 
 # Include contexts and wrap Makefiles
 CONTEXTS := ${shell find $(DIR_SRC) -name '*context.mk'}
@@ -44,10 +43,10 @@ define collect.dependencies
 $(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
 $(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
 
-${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TAGIL)/src/libs/$(LIB)}}}
-${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TAGIL)/src/libs/$(LIB)}}}
-${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TAGIL)/wraps/$(WRAP)}}}
-${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TAGIL)/wraps/$(WRAP)}}}
+${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TAGIL_ROOT)/src/libs/$(LIB)}}}
+${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TAGIL_ROOT)/src/libs/$(LIB)}}}
+${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TAGIL_ROOT)/wraps/$(WRAP)}}}
+${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TAGIL_ROOT)/wraps/$(WRAP)}}}
 endef
 
 define collect.dependencies.to.link
@@ -101,15 +100,15 @@ ways:
 # Source code add/remove
 # 
 add/lib/%:
-	@cd $(DIR_TAGIL); meta project import src/libs/$(@F) $(GIT_ROOT)/core-lib-$(@F) &> /dev/null
-	@cd $(DIR_TAGIL); meta git update
+	@cd $(DIR_TAGIL_ROOT); meta project import src/libs/$(@F) $(GIT_ORIGIN)/core-lib-$(@F) &> /dev/null
+	@cd $(DIR_TAGIL_ROOT); meta git update
 
 add/bin/%:
-	@cd $(DIR_TAGIL); meta project import src/bins/$(@F) $(GIT_ROOT)/core-bin-$(@F) &> /dev/null
-	@cd $(DIR_TAGIL); meta git update
+	@cd $(DIR_TAGIL_ROOT); meta project import src/bins/$(@F) $(GIT_ORIGIN)/core-bin-$(@F) &> /dev/null
+	@cd $(DIR_TAGIL_ROOT); meta git update
 
 add/wrap/%:
-	$(PRECMD)git clone $(GIT_ROOT)/core-wrap-$(@F) $(DIR_WRAPS)/$(@F)	
+	$(PRECMD)git clone $(GIT_ORIGIN)/core-wrap-$(@F) $(DIR_WRAPS)/$(@F)	
 
 # 
 # Compile targets to use
@@ -148,7 +147,7 @@ test/lib/%: ways ctx/lib/%
 clean:
 	${call log.header, cleaning builds}
 	${call log.line, Directory to clean:)}
-	${call log.line, ${DIR_BUILD})}
+	${call log.line, $(DIR_BUILD)}
 	${call log.space}
 	${call log.line, Cleaning in 3...}
 	@sleep 1
@@ -157,6 +156,6 @@ clean:
 	${call log.line, Cleaning in 1...}
 	@sleep 1
 	${call log.space}
-	@rm -rf ${DIR_BUILD}/*
+	@rm -rf $(DIR_BUILD)/*
 	${call log.line, Build directory is clean!}
 	${call log.close}
