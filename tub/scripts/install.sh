@@ -6,7 +6,7 @@ echo
 
 if [ -z "$DIR_INSTALL" ];
 then
-DIR_INSTALL=.
+DIR_INSTALL=./
 echo "Project path: $(pwd)/"
 else
 echo "Project path: $(pwd)/$DIR_INSTALL"
