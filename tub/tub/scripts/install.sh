@@ -17,7 +17,7 @@ echo
 
 echo "------------------------------"
 git clone git@github.com:tagion/tagil.git 
-ln -s ./maker/Makefile ./
+ln -s ./tagil/Makefile ./
 mkdir -p build
 mkdir -p src
 mkdir -p wraps
