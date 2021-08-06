@@ -15,7 +15,7 @@ make add/wrap/[core lib name] # Will add external library wrapper module
 
 ## Troubleshooting
 
-> Please, report bugs using GitHub Issues. As problems appear, we will add solutions in this section.
+> To report a bug or request a feature, [create an issue](https://github.com/tagion/tagil-maker/issues/new). As problems appear, we will add solutions to this section.
 
 ### No rule to make target
 It means you don't have the required dependency.
