@@ -87,6 +87,19 @@ meta git update # Will update your ./src according to .meta
 make add/lib/hibon # Will ad core-lib-hibon to ./src/libs/hibon
 ```
 
+## Compile Tagion Library
+```bash
+make lib/hibon
+```
+
+If you don't have a required dependency, you will get an error "no rule to make target", read the solution in [Troubleshooting](#no-rule-to-make-target) section.
+
+
+## Run Unit Tests
+```bash
+make test/lib/hibon
+```
+
 ## Versioning
 
 **Alpha** and **Beta** versions consist only of two digits: `1.0.alpha`, `1.5.beta` or `2.3.alpha`.
@@ -114,6 +127,14 @@ Since Tagion core modules live in separate repositories, we recommend using [met
 meta git checkout 1.1.alpha # Checkout desired alpha branch
 meta git branch 1.1.jd # Create your working branch
 ```
+
+## Roadmap
+
+- [x] Tagion module compilation script
+- [x] Introduction guide
+- [x] Tagil install script
+- [ ] Module dependency graph
+- [ ] Cross compilation flow
 
 ## Troubleshooting
 
