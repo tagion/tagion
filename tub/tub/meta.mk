@@ -1,2 +1,2 @@
 meta/%:
-	$(PRECMD)$(CP) $(DIR_MAKER)/metas/$(@F).meta $(DIR_TAGIL)/.meta
+	$(PRECMD)$(CP) $(DIR_TAGIL)/metas/$(@F).meta $(DIR_TAGIL_ROOT)/.meta

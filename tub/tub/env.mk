@@ -5,26 +5,28 @@ OS ?= $(shell uname)
 PRECMD ?= @
 
 # Directories
-DIR_TAGIL := ${realpath ${DIR_MAKER}/../}
-DIR_BUILD := ${realpath ${DIR_TAGIL}/build}
-DIR_SRC := ${realpath ${DIR_TAGIL}/src}
+DIR_TAGIL_ROOT := ${realpath ${DIR_TAGIL}/../}
+DIR_BUILD := ${realpath ${DIR_TAGIL_ROOT}}/build
+DIR_SRC := ${realpath ${DIR_TAGIL_ROOT}}/src
 DIR_LIBS := $(DIR_SRC)/libs
 DIR_BINS := $(DIR_SRC)/bins
-DIR_WRAPS := $(DIR_TAGIL)/wraps
+DIR_WRAPS := $(DIR_TAGIL_ROOT)/wraps
 
 # Git
-GIT_ROOT := git@github.com:tagion
+GIT_ORIGIN := git@github.com:tagion
 
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
 	$(call log.header, env :: dirs)
-	$(call log.kvp, DIR_MAKER, $(DIR_MAKER))
-	$(call log.kvp, DIR_SRC, $(DIR_SRC))
+	$(call log.kvp, DIR_TAGIL_ROOT, $(DIR_TAGIL_ROOT))
+	$(call log.kvp, DIR_TAGIL, $(DIR_TAGIL))
 	$(call log.separator)
-	$(call log.kvp, DIR_MAKER, $(DIR_MAKER))
+	$(call log.kvp, DIR_BUILD, $(DIR_BUILD))
+	$(call log.kvp, DIR_SRC, $(DIR_SRC))
 	$(call log.separator)
 	$(call log.kvp, DIR_LIBS, $(DIR_LIBS))
 	$(call log.kvp, DIR_BINS, $(DIR_BINS))
+	$(call log.kvp, DIR_WRAPS, $(DIR_WRAPS))
 	$(call log.close)
 
 
