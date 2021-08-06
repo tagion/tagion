@@ -97,15 +97,13 @@ ways:
 	@$(MKDIR) -p $(DIR_BUILD)/tests
 
 # 
-# Source code add/remove
+# Source code cloning
 # 
 add/lib/%:
-	@cd $(DIR_TAGIL_ROOT); meta project import src/libs/$(@F) $(GIT_ORIGIN)/core-lib-$(@F) &> /dev/null
-	@cd $(DIR_TAGIL_ROOT); meta git update
+	$(PRECMD)git clone $(GIT_ORIGIN)/core-lib-$(@F) $(DIR_LIBS)/$(@F)	
 
 add/bin/%:
-	@cd $(DIR_TAGIL_ROOT); meta project import src/bins/$(@F) $(GIT_ORIGIN)/core-bin-$(@F) &> /dev/null
-	@cd $(DIR_TAGIL_ROOT); meta git update
+	$(PRECMD)git clone $(GIT_ORIGIN)/core-bin-$(@F) $(DIR_BINS)/$(@F)	
 
 add/wrap/%:
 	$(PRECMD)git clone $(GIT_ORIGIN)/core-wrap-$(@F) $(DIR_WRAPS)/$(@F)	
