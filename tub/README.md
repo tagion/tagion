@@ -1,23 +1,23 @@
-# Tagil
+# Tub
 
-Tagil stands for **Tagi**on **l**ab, it's a build system for Tagion core libraries and binaries. Tagil is based on [GNU Make](https://www.gnu.org/software/make/).
+Tbu stands for **T**agion **u**nit **b**uilder, it's a build system for Tagion core libraries and binaries. Tub is based on [GNU Make](https://www.gnu.org/software/make/).
 
-You can use [Tagil CLI](https://github.com/tagion/tagil-cli) for better developer experience.
+You can use [Tagil](https://github.com/tagion/tagil) for better developer experience.
 
-## Initialize Tagil Project
+## Initialize Tub Project
 
 ### Using [curl](https://curl.se/):
 
 Install into current directory:
 
 ```bash
-sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
+sh <(curl -s https://raw.githubusercontent.com/tagion/tub/master/scripts/install.sh)
 ```
 
 Install into [project-name]:
 
 ```bash
-sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
+sh <(curl -s https://raw.githubusercontent.com/tagion/tub/master/scripts/install.sh) project-name
 ```
 
 ### Using [wget](https://www.gnu.org/software/wget/):
@@ -25,13 +25,13 @@ sh <(curl -s https://raw.githubusercontent.com/tagion/tagil/master/scripts/insta
 Install into current directory:
 
 ```bash
-sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh)
+sh <(wget -qO - https://raw.githubusercontent.com/tagion/tub/master/scripts/install.sh)
 ```
 
 Install into [project-name]:
 
 ```bash
-sh <(wget -qO - https://raw.githubusercontent.com/tagion/tagil/master/scripts/install.sh) project-name
+sh <(wget -qO - https://raw.githubusercontent.com/tagion/tub/master/scripts/install.sh) project-name
 ```
 
 ## Get Help
@@ -44,7 +44,7 @@ make help
 
 ## Install Depencies
 
-Tagil, as a build system, works with Linux and macOS. The preferred distribution is Ubuntu 20.04.2.0 LTS (Focal Fossa).
+Tub works with Linux and macOS. The preferred distribution is Ubuntu 20.04.2.0 LTS (Focal Fossa).
 
 At the moment, there is no cross-compilation flow, meaning you can only compile to your host machine's architecture.
 
@@ -99,7 +99,7 @@ make test/lib/utils
 
 ## How to Use Meta Git
 
-> Will be replaced with Tagil CLI soon.
+> Will be replaced with Tagil soon.
 
 Since Tagion core modules live in separate repositories, we recommend using [meta-git](https://github.com/mateodelnorte/meta-git) (CLI from NPM) to perform operations on multiple repositories at once:
 
@@ -155,7 +155,7 @@ Before you modify anything, you branch from a specific version and create a bran
 
 ## Troubleshooting
 
-> To report a bug or request a feature, [create an issue](https://github.com/tagion/tagil/issues/new). As problems appear, we will add solutions to this section.
+> To report a bug or request a feature, [create an issue](https://github.com/tagion/tub/issues/new). As problems appear, we will add solutions to this section.
 
 ### No rule to make target
 
@@ -170,7 +170,7 @@ Try to compile again.
 
 - [x] Tagion module compilation script
 - [x] Introduction guide
-- [x] Tagil install script
+- [x] Tub install script
 - [ ] Module dependency graph
 - [ ] Cross compilation flow
 - [ ] Replace `meta-git` with `tagil` cli
