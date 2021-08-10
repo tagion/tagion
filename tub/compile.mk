@@ -43,10 +43,10 @@ define collect.dependencies
 $(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
 $(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
 
-${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TAGIL_ROOT)/src/libs/$(LIB)}}}
-${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TAGIL_ROOT)/src/libs/$(LIB)}}}
-${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TAGIL_ROOT)/wraps/$(WRAP)}}}
-${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TAGIL_ROOT)/wraps/$(WRAP)}}}
+${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
+${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
+${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
+${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
 endef
 
 define collect.dependencies.to.link
