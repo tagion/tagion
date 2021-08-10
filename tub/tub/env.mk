@@ -5,12 +5,12 @@ OS ?= $(shell uname)
 PRECMD ?= @
 
 # Directories
-DIR_TAGIL_ROOT := ${realpath ${DIR_TAGIL}/../}
-DIR_BUILD := ${realpath ${DIR_TAGIL_ROOT}}/build
-DIR_SRC := ${realpath ${DIR_TAGIL_ROOT}}/src
+DIR_TUB_ROOT := ${realpath ${DIR_TUB}/../}
+DIR_BUILD := ${realpath ${DIR_TUB_ROOT}}/build
+DIR_SRC := ${realpath ${DIR_TUB_ROOT}}/src
 DIR_LIBS := $(DIR_SRC)/libs
 DIR_BINS := $(DIR_SRC)/bins
-DIR_WRAPS := $(DIR_TAGIL_ROOT)/wraps
+DIR_WRAPS := $(DIR_TUB_ROOT)/wraps
 
 # Git
 GIT_ORIGIN := git@github.com:tagion
@@ -18,8 +18,8 @@ GIT_ORIGIN := git@github.com:tagion
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
 	$(call log.header, env :: dirs)
-	$(call log.kvp, DIR_TAGIL_ROOT, $(DIR_TAGIL_ROOT))
-	$(call log.kvp, DIR_TAGIL, $(DIR_TAGIL))
+	$(call log.kvp, DIR_TUB_ROOT, $(DIR_TUB_ROOT))
+	$(call log.kvp, DIR_TUB, $(DIR_TUB))
 	$(call log.separator)
 	$(call log.kvp, DIR_BUILD, $(DIR_BUILD))
 	$(call log.kvp, DIR_SRC, $(DIR_SRC))
