@@ -117,10 +117,10 @@ meta git update # To clone the missing repositories
 ### Add Modules
 
 ```bash
-meta project import src/[type]/[name] git@github.com:tagion/core-[type]-[name]
+meta project import src/[type]/[name] https://github.com/tagion/core-[type]-[name]
 
 # For example:
-meta project import src/lib/basic git@github.com:tagion/core-lib-basic
+meta project import src/lib/basic https://github.com/tagion/core-lib-basic
 ```
 
 ### Branch With Meta
