@@ -1,4 +1,4 @@
-#!sh
+#!/bin/sh
 
 DIR_INSTALL=$1
 
@@ -16,7 +16,7 @@ fi
 echo
 
 echo "------------------------------"
-git clone git@github.com:tagion/tub.git 
+git clone https://github.com/tagion/tub.git 
 ln -s ./tub/Makefile ./
 mkdir -p build
 mkdir -p src
