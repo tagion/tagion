@@ -1263,7 +1263,9 @@ unittest {
             auto list=[-17, 117, 3, 17, 42];
             auto buffer=new ubyte[int.sizeof];
             foreach(i; list) {
-                buffer.binwrite(i,0);
+                (() @trusted {
+                    buffer.binwrite(i,0);
+                })();
                 tabel[Bytes(buffer.idup)]=i;
             }
 
@@ -1272,17 +1274,19 @@ unittest {
             const s_doc=s.toDoc;
             const result = StructBytes(s_doc);
 
-            assert(
-                equal(
-                    list
-                    .map!(i => {buffer.binwrite(i,0); return tuple(buffer.idup, i);})
-                    .map!(q{a()})
-                    .array
-                    .sort,
-                    s_doc["tabel"]
-                    .get!Document[]
-                    .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-                    ));
+            (() @trusted {
+                assert(
+                    equal(
+                        list
+                        .map!(i => {buffer.binwrite(i,0); return tuple(buffer.idup, i);})
+                        .map!(q{a()})
+                        .array
+                        .sort,
+                        s_doc["tabel"]
+                        .get!Document[]
+                        .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+                        ));
+            })();
 
             assert(s_doc == result.toDoc);
         }
