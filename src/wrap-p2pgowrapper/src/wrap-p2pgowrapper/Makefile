@@ -7,10 +7,9 @@ PATH_P2P_CGO := ${call dir.self, cgo}
 check/p2p-go-wrapper:
 	${call log.line, System check for libp2p is not implemented yet}
 
-wrap/p2p-go-wrapper: ways $(DIR_BUILD)/wraps/$(NAME_P2P).a $(PATH_P2P_CGO)/libp2p.di
-
-$(DIR_BUILD)/wraps/$(NAME_P2P).a: $(PATH_P2P_CGO)/libp2p.di
-	$(PRECMD)cp $(PATH_P2P_CGO)/$(NAME_P2P).a $(DIR_BUILD)/wraps
+wrap/p2p-go-wrapper: ways $(PATH_P2P_CGO)/libp2p.di
+	${eval WRAPS += p2p-go-wrapper}
+	${eval WRAPLIBS += $(PATH_P2P_CGO)/libp2p-go-wrapper.a}
 
 $(PATH_P2P_CGO)/libp2p.di: $(PATH_P2P_CGO)/$(NAME_P2P).a
 	$(PRECMD)dstep $(PATH_P2P_CGO)/$(NAME_P2P).h -o $(PATH_P2P_CGO)/libp2p.di --package p2p.cgo --global-import p2p.cgo.helper
