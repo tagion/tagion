@@ -10,10 +10,17 @@ check/openssl:
 	${call log.line, System check for OPENSSL is not implemented yet}
 
 wrap/openssl: ways ${DIR_BUILD}/wraps/libcrypto.a
+	${eval WRAPS += opensssl}
+	${eval WRAPLIBS += $(PATH_SRC_OPENSSL)/build/openssl/lib/libcrypto.a}
+	${eval WRAPLIBS += $(PATH_SRC_OPENSSL)/build/openssl/lib/libssl.a}
 
-${DIR_BUILD}/wraps/libcrypto.a: $(PATH_SRC_OPENSSL)/config
-	@echo $(DIR_BUILD)
-	$(PRECMD)cd $(PATH_SRC_OPENSSL); ./config --prefix=${DIR_BUILD}/wraps/openssl --openssldir=${PATH_SRC_OPENSSL}/ossl
+${DIR_BUILD}/wraps/libcrypto.a: ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a
+	$(PRECMD)cp ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a ${DIR_BUILD}/wraps
+	$(PRECMD)cp ${PATH_SRC_OPENSSL}/build/openssl/lib/libssl.a ${DIR_BUILD}/wraps
+
+${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a: $(PATH_SRC_OPENSSL)/config
+	$(PRECMD)mkdir -p ${PATH_SRC_OPENSSL}/build
+	$(PRECMD)cd $(PATH_SRC_OPENSSL); ./config --prefix=${PATH_SRC_OPENSSL}/build/openssl --openssldir=${PATH_SRC_OPENSSL}/build/openssl-extras
 	$(PRECMD)cd $(PATH_SRC_OPENSSL); make
 	$(PRECMD)cd $(PATH_SRC_OPENSSL); make install
 
