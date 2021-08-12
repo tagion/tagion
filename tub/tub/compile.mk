@@ -20,7 +20,7 @@ ${shell find ${strip $1} -name '*.di'}
 endef
 
 define link.dependency
-$(LINKERFLAG)$(DIR_BUILD)/wraps/lib${strip $1}.a
+$(LINKERFLAG)${strip $1}
 endef
 
 define cmd.lib.compile
@@ -50,7 +50,7 @@ ${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TUB_ROO
 endef
 
 define collect.dependencies.to.link
-${eval LINKFLAGS += ${foreach WRAP, $(WRAPS), ${call link.dependency, $(WRAP)}}}
+${eval LINKFLAGS += ${foreach WRAPLIB, $(WRAPLIBS), ${call link.dependency, $(WRAPLIB)}}}
 endef
 
 define show.compile.details
@@ -87,7 +87,7 @@ ctx/lib/%: $(DIR_SRC)/libs/%/context.mk
 	${eval LIBS += $(@F)}
 
 ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
-	${eval WRAPS += $(@F)}
+	${call log.line, Connecting $(%F) wrapper...}
 
 ways: 
 	@$(MKDIR) -p $(DIR_BUILD)
