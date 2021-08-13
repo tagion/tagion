@@ -19,4 +19,4 @@ include $(DIR_TUB)/compile.mk
 help: $(HELP)
 info: $(INFO)
 .PHONY: help info
-
+.SECONDARY:
