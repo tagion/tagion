@@ -14,6 +14,8 @@ import tagion.Options;
 import tagion.basic.Basic : Buffer;
 import tagion.basic.Logger;
 import tagion.basic.ConsensusExceptions;
+import tagion.services.LoggerService;
+import tagion.hashgraph.ConsensusExceptions;
 import LEB128=tagion.utils.LEB128;
 
 
@@ -393,17 +395,8 @@ class SSLFiberService {
                         return null;
                     }
                     buffer=new ubyte[leb128_len.size+leb128_len.value];
-                    buffer[0..size] = leb128_len_data[0..size];
-                    current = buffer[size..$];
-                }
-                for(;;){
-                    size = client.receive(current);
-                    if(size<0){
-                        checkTimeout;
-                        yield;
-                    }else{
-                        break;
-                    }
+                    buffer[0..leb128_len.size] = leb128_len_data[0..leb128_len.size];
+                    current = buffer[leb128_len.size..$];
                 }
                 current=current[size..$];
                 if (current.length == 0) {
