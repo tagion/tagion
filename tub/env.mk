@@ -13,7 +13,7 @@ DIR_BINS := $(DIR_SRC)/bins
 DIR_WRAPS := $(DIR_TUB_ROOT)/wraps
 
 # Git
-GIT_ORIGIN := git@github.com:tagion
+GIT_ORIGIN := "git@github.com:tagion"
 
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
