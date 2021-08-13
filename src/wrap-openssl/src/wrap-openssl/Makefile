@@ -9,14 +9,10 @@ BRANCH_OPENSSL_STABLE := OpenSSL_0_9_7-stable
 check/openssl:
 	${call log.line, System check for OPENSSL is not implemented yet}
 
-wrap/openssl: ways ${DIR_BUILD}/wraps/libcrypto.a
+wrap/openssl: ways ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a
 	${eval WRAPS += opensssl}
-	${eval WRAPLIBS += $(PATH_SRC_OPENSSL)/build/openssl/lib/libcrypto.a}
 	${eval WRAPLIBS += $(PATH_SRC_OPENSSL)/build/openssl/lib/libssl.a}
-
-${DIR_BUILD}/wraps/libcrypto.a: ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a
-	$(PRECMD)cp ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a ${DIR_BUILD}/wraps
-	$(PRECMD)cp ${PATH_SRC_OPENSSL}/build/openssl/lib/libssl.a ${DIR_BUILD}/wraps
+	${eval WRAPLIBS += $(PATH_SRC_OPENSSL)/build/openssl/lib/libcrypto.a}
 
 ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a: $(PATH_SRC_OPENSSL)/config
 	$(PRECMD)mkdir -p ${PATH_SRC_OPENSSL}/build
