@@ -15,7 +15,6 @@ import tagion.basic.Basic : Buffer;
 import tagion.basic.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.services.LoggerService;
-import tagion.hashgraph.ConsensusExceptions;
 import LEB128=tagion.utils.LEB128;
 
 
