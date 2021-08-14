@@ -1,1 +1,1 @@
-ctx/lib/gossip: ctx/lib/hibon ctx/lib/utils ctx/lib/crypto ctx/lib/hashgraph
+ctx/lib/gossip: ctx/lib/hibon ctx/lib/utils ctx/lib/crypto ctx/lib/hashgraph ctx/lib/dart ctx/lib/communication ctx/lib/p2p-go-wrapper
