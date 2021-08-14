@@ -11,12 +11,11 @@ check/openssl:
 
 wrap/openssl: ways ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a
 	${eval WRAPS += opensssl}
-	${eval WRAPLIBS += $(PATH_SRC_OPENSSL)/build/openssl/lib/libssl.a}
-	${eval WRAPLIBS += $(PATH_SRC_OPENSSL)/build/openssl/lib/libcrypto.a}
+	${eval LDCFLAGS += -L-L$(PATH_SRC_OPENSSL)/build/openssl/lib/}
 
 ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a: $(PATH_SRC_OPENSSL)/config
 	$(PRECMD)mkdir -p ${PATH_SRC_OPENSSL}/build
-	$(PRECMD)cd $(PATH_SRC_OPENSSL); ./config --prefix=${PATH_SRC_OPENSSL}/build/openssl --openssldir=${PATH_SRC_OPENSSL}/build/openssl-extras
+	$(PRECMD)cd $(PATH_SRC_OPENSSL); ./config --shared --prefix=${PATH_SRC_OPENSSL}/build/openssl --openssldir=${PATH_SRC_OPENSSL}/build/openssl-extras
 	$(PRECMD)cd $(PATH_SRC_OPENSSL); make
 	$(PRECMD)cd $(PATH_SRC_OPENSSL); make install
 
