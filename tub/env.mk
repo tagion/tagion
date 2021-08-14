@@ -159,9 +159,9 @@ DIP1000 := $(DIP)1000
 
 # Define relocation model for ldc or other
 ifeq ($(COMPILER),ldc)
-FPIC = -relocation-model=pic
+# FPIC = -relocation-model=pic
 else
-FPIC = -fPIC
+# FPIC = -fPIC
 endif
 
 # Add -ldl flag for linux

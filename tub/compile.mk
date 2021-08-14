@@ -12,19 +12,19 @@ CONTEXTS := ${shell find $(DIR_SRC) -name '*context.mk'}
 # Helper macros
 # 
 define locate.d.files
-${shell find ${strip $1} -name '*.d'}
+${shell find ${strip $1} $(SOURCEFLAGS) -name '*.d'}
 endef
 
 define locate.di.files
-${shell find ${strip $1} -name '*.di'}
+${shell find ${strip $1} $(SOURCEFLAGS) -name '*.di'}
 endef
 
 define link.dependency
-$(LINKERFLAG)${strip $1}
+${strip $1}
 endef
 
 define cmd.lib.compile
-$(PRECMD)$(DC) $(DCFLAGS) $(DFILES) $(LINKFLAGS) $(LDCFLAGS)
+$(PRECMD)$(DC) $(DCFLAGS) $(DFILES) ${LINKFLAGS} $(LDCFLAGS) $(OTHERFLAGS)
 endef
 
 define cmd.lib.compile.library
@@ -58,12 +58,24 @@ ${call log.kvp, Libs, $(LIBS)}
 ${call log.kvp, Wraps, $(WRAPS)}
 
 ${call log.separator}
-${call log.kvp, D Files}
+${call log.kvp, DFILES}
 ${call log.lines, $(DFILES)}
 
 ${call log.separator}
-${call log.kvp, Links}
+${call log.kvp, DCFLAGS}
+${call log.lines, $(DCFLAGS)}
+
+${call log.separator}
+${call log.kvp, LINKFLAGS}
 ${call log.lines, $(LINKFLAGS)}
+
+${call log.separator}
+${call log.kvp, LDCFLAGS}
+${call log.lines, $(LDCFLAGS)}
+
+${call log.separator}
+${call log.kvp, OTHERFLAGS}
+${call log.lines, $(OTHERFLAGS)}
 endef
 
 define compile
