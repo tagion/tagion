@@ -1,7 +1,7 @@
 ifndef TINY_AES
-SOURCEFLAGS+=-a -not -path "*/tiny_aes/*"
+SOURCEFLAGS+=-not -path "*/tiny_aes/*"
 else
-SOURCEFLAGS+=-a -not -path "*/openssl_aes/*"
+SOURCEFLAGS+=-not -path "*/openssl_aes/*"
 DCFLAGS+=$(DVERSION)=TINY_AES
 endif
 
