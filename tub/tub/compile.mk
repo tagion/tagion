@@ -76,6 +76,10 @@ ${call log.lines, $(LDCFLAGS)}
 ${call log.separator}
 ${call log.kvp, OTHERFLAGS}
 ${call log.lines, $(OTHERFLAGS)}
+
+${call log.separator}
+${call log.kvp, SOURCEFLAGS}
+${call log.lines, $(SOURCEFLAGS)}
 endef
 
 define compile
