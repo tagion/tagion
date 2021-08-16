@@ -4,7 +4,12 @@ OS ?= $(shell uname)
 # PRECMD is used to add command before the compiliation commands
 PRECMD ?= @
 
+# Git
+GIT_ORIGIN := "git@github.com:tagion"
+
+# 
 # Directories
+# 
 DIR_TUB_ROOT := ${realpath ${DIR_TUB}/../}
 DIR_BUILD := ${realpath ${DIR_TUB_ROOT}}/build
 DIR_SRC := ${realpath ${DIR_TUB_ROOT}}/src
@@ -12,11 +17,8 @@ DIR_LIBS := $(DIR_SRC)/libs
 DIR_BINS := $(DIR_SRC)/bins
 DIR_WRAPS := $(DIR_TUB_ROOT)/wraps
 
-# Git
-GIT_ORIGIN := "git@github.com:tagion"
-
-MAKE_SHOW_ENV += env-dirs
-env-dirs:
+MAKE_SHOW_ENV += env/dirs
+env/dirs:
 	$(call log.header, env :: dirs)
 	$(call log.kvp, DIR_TUB_ROOT, $(DIR_TUB_ROOT))
 	$(call log.kvp, DIR_TUB, $(DIR_TUB))
@@ -29,57 +31,18 @@ env-dirs:
 	$(call log.kvp, DIR_WRAPS, $(DIR_WRAPS))
 	$(call log.close)
 
-
 # 
-# Commands
+# Dependencies
 # 
+define dependency.version
+${if ${strip $1},${strip $1},Not on PATH --> ${strip $2}}
+endef
 
-# Define commands for copy, remove and create file/dir
-ifeq ($(OS),Windows)
-RM := del /Q
-RMDIR := del /Q
-CP := copy /Y
-MKDIR := mkdir
-MV := move
-LN := mklink
-else ifeq ($(OS),Linux)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-else ifeq ($(OS),FreeBSD)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-else ifeq ($(OS),Solaris)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-else ifeq ($(OS),Darwin)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-endif
-
-MAKE_SHOW_ENV += env-commands
-env-commands:
-	$(call log.header, env :: commands ($(OS)))
-	$(call log.kvp, RM, $(RM))
-	$(call log.kvp, RMDIR, $(RMDIR))
-	$(call log.kvp, MKDIR, $(MKDIR))
-	$(call log.kvp, MV, $(MV))
-	$(call log.kvp, LN, $(LN))
+MAKE_SHOW_ENV += env/dependencies
+env/dependencies: 
+	$(call log.header, env :: dependencies)
+	${call log.kvp, npm, ${call dependency.version, ${shell npm --version}, https://nodejs.org/en/}}
+	${call log.kvp, meta-git, ${call dependency.version, ${shell meta --version}, https://www.npmjs.com/package/meta-git}}
 	$(call log.close)
 
 # 
@@ -199,36 +162,84 @@ DCFLAGS  += -m32
 LDCFLAGS += -m32
 endif
 
-MAKE_SHOW_ENV += env-compiler
-env-compiler:
+MAKE_SHOW_ENV += env/compiler
+env/compiler:
 	$(call log.header, env :: compiler)
 	$(call log.kvp, DC, $(DC))
 	$(call log.kvp, COMPILER, $(COMPILER))
+	$(call log.kvp, ARCH, $(ARCH))
+	$(call log.kvp, MODEL, $(MODEL))
 	$(call log.separator)
-	$(call log.kvp, DCFLAGS, $(DCFLAGS))
-	$(call log.kvp, LINKERFLAG, $(LINKERFLAG))
+	$(call log.kvp, DCFLAGS (Complier), $(DCFLAGS))
+	$(call log.kvp, LDCFLAGS (Linker), $(LDCFLAGS))
+	$(call log.kvp, SOURCEFLAGS, $(SOURCEFLAGS))
+	$(call log.separator)
 	$(call log.kvp, OUTPUT, $(OUTPUT))
 	$(call log.kvp, HF, $(HF))
 	$(call log.kvp, DF, $(DF))
 	$(call log.kvp, NO_OBJ, $(NO_OBJ))
-	$(call log.kvp, DDOC_MACRO, $(DDOC_MACRO))
 	$(call log.separator)
-	$(call log.kvp, DVERSION, $(DVERSION))
 	$(call log.kvp, SONAME_FLAG, $(SONAME_FLAG))
+	$(call log.kvp, DVERSION, $(DVERSION))
 	$(call log.kvp, DEBUG, $(DEBUG))
-	$(call log.kvp, DIP, $(DIP))
 	$(call log.separator)
+	$(call log.kvp, DIP, $(DIP))
 	$(call log.kvp, DIP25, $(DIP25))
 	$(call log.kvp, DIP1000, $(DIP1000))
 	$(call log.separator)
 	$(call log.kvp, FPIC, $(FPIC))
-	$(call log.separator)
-	$(call log.kvp, ARCH, $(ARCH))
-	$(call log.separator)
-	$(call log.kvp, MODEL, $(MODEL))
-	$(call log.separator)
-	$(call log.kvp, LDCFLAGS, $(LDCFLAGS))
-	$(call log.kvp, DCFLAGS, $(DCFLAGS))
+	$(call log.close)
+
+# 
+# Commands
+# 
+
+# Define commands for copy, remove and create file/dir
+ifeq ($(OS),Windows)
+RM := del /Q
+RMDIR := del /Q
+CP := copy /Y
+MKDIR := mkdir
+MV := move
+LN := mklink
+else ifeq ($(OS),Linux)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+else ifeq ($(OS),FreeBSD)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+else ifeq ($(OS),Solaris)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+else ifeq ($(OS),Darwin)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+endif
+
+MAKE_SHOW_ENV += env/commands
+env/commands:
+	$(call log.header, env :: commands ($(OS)))
+	$(call log.kvp, RM, $(RM))
+	$(call log.kvp, RMDIR, $(RMDIR))
+	$(call log.kvp, MKDIR, $(MKDIR))
+	$(call log.kvp, MV, $(MV))
+	$(call log.kvp, LN, $(LN))
 	$(call log.close)
 
 env: $(MAKE_SHOW_ENV)
