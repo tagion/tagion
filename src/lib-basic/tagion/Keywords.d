@@ -116,14 +116,12 @@ mixin(EnumText!("NetworkMode", _network_modes));
 /++
  Check if the CTE string $(LREF word) belongs to $(LREF K) string enum
 +/
-template isValid(K, string word) if (is(K == enum))
-{
+template isValid(K, string word) if (is(K == enum)) {
     enum code = "K." ~ word;
     enum isValid = __traits(compiles, mixin(code));
 }
 
-static unittest
-{
+static unittest {
     import std.traits : EnumMembers;
 
     enum allkeys = EnumMembers!Keywords;

@@ -16,10 +16,8 @@ import tagion.basic.Logger : LoggerType;
 
 /++
 +/
-@safe class OptionException : TagionException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
-    {
+@safe class OptionException : TagionException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
 }
@@ -35,31 +33,24 @@ alias check = Check!OptionException;
 /++
  mixin for implememts a JSON interface for a struct
 +/
-mixin template JSONCommon()
-{
+mixin template JSONCommon() {
     /++
      Returns:
      JSON of the struct
      +/
-    JSON.JSONValue toJSON() const
-    {
+    JSON.JSONValue toJSON() const {
         JSON.JSONValue result;
-        foreach (i, m; this.tupleof)
-        {
+        foreach (i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
-            static if (is(type == struct))
-            {
+            static if (is(type == struct)) {
                 result[name] = m.toJSON;
             }
-            else
-            {
-                static if (is(type : immutable(ubyte[])))
-                {
+            else {
+                static if (is(type : immutable(ubyte[]))) {
                     result[name] = m.toHexString;
                 }
-                else
-                {
+                else {
                     result[name] = m;
                 }
             }
@@ -72,14 +63,11 @@ mixin template JSONCommon()
      Params:
      pretty = if true the return string is prettified else the string returned is compact
      +/
-    string stringify(bool pretty = true)() const
-    {
-        static if (pretty)
-        {
+    string stringify(bool pretty = true)() const {
+        static if (pretty) {
             return toJSON.toPrettyString;
         }
-        else
-        {
+        else {
             return toJSON.toString;
         }
     }
@@ -89,42 +77,32 @@ mixin template JSONCommon()
      Params:
      json_value = JSON used
      +/
-    private void parse(ref JSON.JSONValue json_value)
-    {
-        foreach (i, ref m; this.tupleof)
-        {
+    private void parse(ref JSON.JSONValue json_value) {
+        foreach (i, ref m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
-            static if (is(type == struct))
-            {
+            static if (is(type == struct)) {
                 m.parse(json_value[name]);
             }
-            else static if (is(type == enum))
-            {
+            else static if (is(type == enum)) {
             TypeCase:
-                switch (json_value[name].str)
-                {
-                    foreach (E; EnumMembers!type)
-                    {
+                switch (json_value[name].str) {
+                    foreach (E; EnumMembers!type) {
                         enum E_text = strip(E.stringof, `"`);
                 case E_text:
                         m = E;
                         break TypeCase;
                     }
                 default:
-                    string _EnumList()
-                    {
+                    string _EnumList() {
                         string[] enum_list;
-                        static foreach (i, E; EnumMembers!type)
-                        {
+                        static foreach (i, E; EnumMembers!type) {
                             enum_list ~= E.stringof;
                         }
-                        if (enum_list.length is 1)
-                        {
+                        if (enum_list.length is 1) {
                             return enum_list[0];
                         }
-                        else
-                        {
+                        else {
                             return format!("%s and %s")(enum_list[0 .. $ - 1].join(", "),
                                     enum_list[$ - 1]);
                         }
@@ -135,18 +113,14 @@ mixin template JSONCommon()
                             name, EnumList, json_value[name].str));
                 }
             }
-            else static if (is(type == string))
-            {
+            else static if (is(type == string)) {
                 m = json_value[name].str;
             }
-            else static if (isIntegral!type || isFloatingPoint!type)
-            {
-                static if (isIntegral!type)
-                {
+            else static if (isIntegral!type || isFloatingPoint!type) {
+                static if (isIntegral!type) {
                     auto value = json_value[name].integer;
                 }
-                else
-                {
+                else {
                     auto value = json_value[name].floating;
                 }
                 check((value >= type.min) && (value <= type.max),
@@ -155,16 +129,14 @@ mixin template JSONCommon()
                 m = cast(type) value;
 
             }
-            else static if (is(type == bool))
-            {
+            else static if (is(type == bool)) {
                 check((json_value[name].type == JSON.JSONType.true_)
                         || (json_value[name].type == JSON.JSONType.false_),
                         format("Type %s expected for %s but the json type is %s",
                             type.stringof, m.stringof, json_value[name].type));
                 m = json_value[name].type == JSON.JSONType.true_;
             }
-            else
-            {
+            else {
                 check(0, format("Unsupported type %s for %s member", type.stringof, m.stringof));
             }
         }
@@ -175,10 +147,8 @@ mixin template JSONCommon()
 /++
  Options for the network
 +/
-struct Options
-{
-    struct Host
-    {
+struct Options {
+    struct Host {
         ulong timeout;
         uint max_size;
         mixin JSONCommon;
@@ -220,8 +190,7 @@ struct Options
     string net_mode;
     mixin JSONCommon;
 
-    struct HostBootstrap
-    {
+    struct HostBootstrap {
         bool enabled;
         ulong check_timeout;
         string bootstrapNodes;
@@ -231,8 +200,7 @@ struct Options
 
     HostBootstrap hostbootrap;
 
-    struct ServerFileDiscovery
-    {
+    struct ServerFileDiscovery {
         string url;
         ulong delay_before_start;
         ulong update;
@@ -245,8 +213,7 @@ struct Options
 
     ServerFileDiscovery serverFileDiscovery;
 
-    struct Discovery
-    {
+    struct Discovery {
         string protocol_id;
         string task_name;
         Host host;
@@ -258,16 +225,14 @@ struct Options
 
     Discovery discovery;
 
-    struct Heatbeat
-    {
+    struct Heatbeat {
         string task_name; /// Name of the Heart task
         mixin JSONCommon;
     }
 
     Heatbeat heartbeat;
 
-    struct SSLService
-    {
+    struct SSLService {
         string task_name; /// Task name of the SSLService used
         string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
         string prefix;
@@ -301,8 +266,7 @@ struct Options
 
     //SSLService scripting_engine;
 
-    struct Transcript
-    {
+    struct Transcript {
         string task_name; /// Name of the transcript service
         // This maybe removed later used to make internal transaction test without TLS connection
         // bool enable;
@@ -317,8 +281,7 @@ struct Options
 
     Transcript transcript;
 
-    struct Monitor
-    {
+    struct Monitor {
         string task_name; /// Use for the montor task name
         string prefix;
         uint max; /++ Maximum number of monitor sockets open
@@ -336,8 +299,7 @@ struct Options
 
     Monitor monitor;
 
-    struct Transaction
-    {
+    struct Transaction {
         string protocol_id;
         string task_name; /// Transaction task name
         string net_task_name;
@@ -351,8 +313,7 @@ struct Options
 
     Transaction transaction;
 
-    struct DART
-    {
+    struct DART {
         string task_name; /// Name of the DART service
         string protocol_id;
         Host host;
@@ -372,8 +333,7 @@ struct Options
         ulong tick_timeout;
         bool master_from_port;
 
-        struct Synchronize
-        {
+        struct Synchronize {
             ulong maxSlaves;
             ulong maxMasters;
             ulong maxSlavePort;
@@ -395,8 +355,7 @@ struct Options
 
         Synchronize sync;
 
-        struct Subscribe
-        {
+        struct Subscribe {
             ulong master_port;
             Host host;
             string master_task_name;
@@ -408,8 +367,7 @@ struct Options
 
         Subscribe subs;
 
-        struct Commands
-        {
+        struct Commands {
             ulong read_timeout;
             mixin JSONCommon;
         }
@@ -421,8 +379,7 @@ struct Options
 
     DART dart;
 
-    struct Logger
-    {
+    struct Logger {
         string task_name; /// Name of the logger task
         string file_name; /// File used for the logger
         bool flush; /// Will automatic flush the logger file when a message has been received
@@ -433,8 +390,7 @@ struct Options
 
     Logger logger;
 
-    struct Message
-    {
+    struct Message {
         string language; /// Language used to print message
         bool update; /// Update the translation tabel
         enum default_lang = "en";
@@ -443,27 +399,22 @@ struct Options
 
     Message message;
 
-    void parseJSON(string json_text)
-    {
+    void parseJSON(string json_text) {
         auto json = JSON.parseJSON(json_text);
         parse(json);
     }
 
-    void load(string config_file)
-    {
-        if (config_file.exists)
-        {
+    void load(string config_file) {
+        if (config_file.exists) {
             auto json_text = readText(config_file);
             parseJSON(json_text);
         }
-        else
-        {
+        else {
             save(config_file);
         }
     }
 
-    void save(string config_file)
-    {
+    void save(string config_file) {
         config_file.write(stringify);
     }
 
@@ -472,8 +423,7 @@ struct Options
 protected static Options options_memory;
 static immutable(Options*) options;
 
-shared static this()
-{
+shared static this() {
     options = cast(immutable)(&options_memory);
 }
 
@@ -481,8 +431,7 @@ shared static this()
 /++
 +  Sets the thread global options opt
 +/
-@safe static void setOptions(ref const(Options) opt)
-{
+@safe static void setOptions(ref const(Options) opt) {
     options_memory = opt;
 }
 
@@ -490,14 +439,12 @@ shared static this()
 + Returns:
 +     a copy of the options
 +/
-static Options getOptions()
-{
+static Options getOptions() {
     Options result = options_memory;
     return result;
 }
 
-struct TransactionMiddlewareOptions
-{
+struct TransactionMiddlewareOptions {
     // port for the socket
     ushort port;
     // address for the socket
@@ -513,27 +460,22 @@ struct TransactionMiddlewareOptions
 
     mixin JSONCommon;
 
-    void parseJSON(string json_text)
-    {
+    void parseJSON(string json_text) {
         auto json = JSON.parseJSON(json_text);
         parse(json);
     }
 
-    void load(string config_file)
-    {
-        if (config_file.exists)
-        {
+    void load(string config_file) {
+        if (config_file.exists) {
             auto json_text = readText(config_file);
             parseJSON(json_text);
         }
-        else
-        {
+        else {
             save(config_file);
         }
     }
 
-    void save(string config_file)
-    {
+    void save(string config_file) {
         config_file.write(stringify);
     }
 
@@ -542,8 +484,7 @@ struct TransactionMiddlewareOptions
 //__gshared static TransactionMiddlewareOptions transaction_middleware_options;
 
 static ref auto all_getopt(ref string[] args, ref bool version_switch,
-        ref bool overwrite_switch, ref scope Options options)
-{
+        ref bool overwrite_switch, ref scope Options options) {
     import std.getopt;
     import std.algorithm;
     import std.conv;
@@ -611,12 +552,10 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
     );
 };
 
-static setDefaultOption(ref Options options)
-{
+static setDefaultOption(ref Options options) {
     // Main
 
-    with (options)
-    {
+    with (options) {
         nodeprefix = "Node";
         ip = "0.0.0.0";
         port = 4001;
@@ -640,25 +579,21 @@ static setDefaultOption(ref Options options)
         min_port = 6000;
         path_to_shared_info = "/tmp/info.hibon";
         p2plogs = false;
-        with (host)
-        {
+        with (host) {
             timeout = 3000;
             max_size = 1024 * 100;
         }
     }
 
-    with (options.heartbeat)
-    {
+    with (options.heartbeat) {
         task_name = "heartbeat";
     }
-    with (options.hostbootrap)
-    {
+    with (options.hostbootrap) {
         enabled = false;
         check_timeout = 1000;
         bootstrapNodes = "";
     }
-    with (options.serverFileDiscovery)
-    {
+    with (options.serverFileDiscovery) {
         url = "";
         delay_before_start = 60_000;
         update = 20_000;
@@ -667,24 +602,21 @@ static setDefaultOption(ref Options options)
         task_name = "server_file_discovery";
     }
     // Transcript
-    with (options.transcript)
-    {
+    with (options.transcript) {
         pause_from = 333;
         pause_to = 888;
         prefix = "transcript";
         task_name = prefix;
     }
     // Transaction
-    with (options.transaction)
-    {
+    with (options.transaction) {
         //        port=10800;
         max = 0;
         prefix = "transaction";
         task_name = prefix;
         net_task_name = "transaction_net";
         timeout = 250;
-        with (service)
-        {
+        with (service) {
             prefix = "transervice";
             task_name = prefix;
             response_task_name = "respose";
@@ -704,15 +636,13 @@ static setDefaultOption(ref Options options)
             private_key = "pem_files/domain.key.pem";
             task_name = "transaction.service";
         }
-        with (host)
-        {
+        with (host) {
             timeout = 3000;
             max_size = 1024 * 100;
         }
     }
     // Monitor
-    with (options.monitor)
-    {
+    with (options.monitor) {
         port = 10900;
         max = 0;
         prefix = "monitor";
@@ -721,8 +651,7 @@ static setDefaultOption(ref Options options)
         dataformat = DataFormat.json;
     }
     // Logger
-    with (options.logger)
-    {
+    with (options.logger) {
         task_name = "logger";
         file_name = "/tmp/tagion.log";
         flush = true;
@@ -730,27 +659,23 @@ static setDefaultOption(ref Options options)
         mask = LoggerType.ALL;
     }
     // Discovery
-    with (options.discovery)
-    {
+    with (options.discovery) {
         protocol_id = "tagion_dart_mdns_pid";
         task_name = "discovery";
         delay_before_start = 10_000;
         interval = 400;
         notify_enabled = false;
-        with (host)
-        {
+        with (host) {
             timeout = 3000;
             max_size = 1024 * 100;
         }
     }
 
     // DART
-    with (options.dart)
-    {
+    with (options.dart) {
         task_name = "tagion.dart";
         protocol_id = "tagion_dart_pid";
-        with (host)
-        {
+        with (host) {
             timeout = 3000;
             max_size = 1024 * 100;
         }
@@ -769,8 +694,7 @@ static setDefaultOption(ref Options options)
         angle_from_port = false;
         tick_timeout = 500;
         master_from_port = true;
-        with (sync)
-        {
+        with (sync) {
             maxMasters = 1;
             maxSlaves = 4;
             maxSlavePort = 4020;
@@ -787,61 +711,51 @@ static setDefaultOption(ref Options options)
 
             max_handlers = 20;
 
-            with (host)
-            {
+            with (host) {
                 timeout = 3_000;
                 max_size = 1024 * 100;
             }
         }
 
-        with (subs)
-        {
+        with (subs) {
             master_port = 4030;
             master_task_name = "tagion_dart_subs_master_tid";
             slave_task_name = "tagion_dart_subs_slave_tid";
             protocol_id = "tagion_dart_subs_pid";
             tick_timeout = 500;
-            with (host)
-            {
+            with (host) {
                 timeout = 3_000_000;
                 max_size = 1024 * 100;
             }
         }
 
-        with (commands)
-        {
+        with (commands) {
             read_timeout = 10_000;
         }
     }
-    if (options.net_mode.length == 0)
-    {
+    if (options.net_mode.length == 0) {
         options.net_mode = NetworkMode.internal;
     }
-    switch (options.net_mode)
-    {
-    case NetworkMode.internal:
-        {
+    switch (options.net_mode) {
+    case NetworkMode.internal: {
             options.dart.fast_load = true;
             options.dart.path = "./data/%dir%/dart.drt";
             break;
         }
-    case NetworkMode.local:
-        {
+    case NetworkMode.local: {
             options.dart.fast_load = true;
             options.dart.path = "./data/%dir%/dart.drt";
             options.path_to_shared_info = "./shared-data/info.hibon";
             break;
         }
-    case NetworkMode.pub:
-        {
+    case NetworkMode.pub: {
             options.dart.fast_load = true;
             options.dart.path = "./data/dart.drt";
             options.hostbootrap.enabled = true;
             options.dart.master_from_port = false;
             break;
         }
-    default:
-        {
+    default: {
             options.net_mode = NetworkMode.internal;
         }
     }
