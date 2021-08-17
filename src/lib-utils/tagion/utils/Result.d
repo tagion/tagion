@@ -4,7 +4,7 @@ import tagion.basic.TagionExceptions;
 
 @safe
 class UtilException : TagionException {
-    this( string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
 }
@@ -16,14 +16,16 @@ struct Result(V) {
     @disable this();
     @nogc
     this(V value) pure nothrow {
-        this.value=value;
-        e=null;
+        this.value = value;
+        e = null;
     }
-    this(V value, string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
-        this.value=value;
-        e=new UtilException(msg, file, line);
+
+    this(V value, string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
+        this.value = value;
+        e = new UtilException(msg, file, line);
     }
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
+
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         this(V.init, msg, file, line);
     }
 

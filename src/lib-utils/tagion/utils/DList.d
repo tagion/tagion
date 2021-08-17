@@ -10,36 +10,37 @@ class DList(E) {
         protected Element* next;
         protected Element* prev;
         this(E e) pure nothrow {
-            entry=e;
+            entry = e;
         }
     }
+
     private Element* _head;
     private Element* _tail;
     // Number of element in the DList
     private uint count;
     Element* unshift(E e) nothrow {
-        auto element=new Element(e);
-        if ( _head is null ) {
-            element.prev=null;
-            element.next=null;
-            _head = _tail =  element;
+        auto element = new Element(e);
+        if (_head is null) {
+            element.prev = null;
+            element.next = null;
+            _head = _tail = element;
         }
         else {
-            element.next=_head;
-            _head.prev=element;
+            element.next = _head;
+            _head.prev = element;
             _head = element;
-            _head.prev=null;
+            _head.prev = null;
         }
         count++;
         return element;
     }
 
     Result!E shift() nothrow {
-        if ( _head is null ) {
-            return Result!E(E.init, this.stringof~" is empty");
+        if (_head is null) {
+            return Result!E(E.init, this.stringof ~ " is empty");
         }
-        scope(success) {
-            _head=_head.next;
+        scope (success) {
+            _head = _head.next;
             _head.prev = null;
             count--;
         }
@@ -47,8 +48,8 @@ class DList(E) {
     }
 
     const(Element*) push(E e) nothrow {
-        auto element=new Element(e);
-        if ( _head is null ) {
+        auto element = new Element(e);
+        if (_head is null) {
             _head = _tail = element;
         }
         else {
@@ -62,14 +63,14 @@ class DList(E) {
 
     Result!E pop() nothrow {
         Element* result;
-        if ( _tail !is null ) {
+        if (_tail !is null) {
             result = _tail;
-            _tail=_tail.prev;
-            if ( _tail is null ) {
+            _tail = _tail.prev;
+            if (_tail is null) {
                 _head = null;
             }
             else {
-                _tail.next=null;
+                _tail.next = null;
             }
             count--;
             return Result!E(result.entry);
@@ -83,38 +84,38 @@ class DList(E) {
      */
     @nogc
     bool remove(Element* e) nothrow
-        in {
-            assert(e !is null);
-            if ( _head is null ) {
-                assert(count == 0);
-            }
-            if ( e.next is null ) {
-                assert(e is _tail);
-            }
-            if ( e.prev is null ) {
-                assert(e is _head);
-            }
+    in {
+        assert(e !is null);
+        if (_head is null) {
+            assert(count == 0);
         }
+        if (e.next is null) {
+            assert(e is _tail);
+        }
+        if (e.prev is null) {
+            assert(e is _head);
+        }
+    }
     do {
-        if ( _head is null ) {
+        if (_head is null) {
             return true;
-//            throw new UtilException("Remove from an empty list");
+            //            throw new UtilException("Remove from an empty list");
         }
-        if ( _head is e ) {
-            if ( _head.next is null ) {
-                _head = _tail =  null;
+        if (_head is e) {
+            if (_head.next is null) {
+                _head = _tail = null;
             }
             else {
                 _head = _head.next;
                 _head.prev = null;
-                if ( _head is _tail ) {
+                if (_head is _tail) {
                     _tail.prev = null;
                 }
             }
         }
-        else if ( _tail is e ) {
+        else if (_tail is e) {
             _tail = _tail.prev;
-            if ( _tail is null ) {
+            if (_tail is null) {
                 _head = null;
             }
             else {
@@ -131,40 +132,41 @@ class DList(E) {
 
     @nogc
     void moveToFront(Element* e) nothrow
-        in {
-            assert(e !is null);
-        }
+    in {
+        assert(e !is null);
+    }
     do {
-        if ( e !is _head ) {
-            if ( e == _tail ) {
-                _tail=_tail.prev;
-                _tail.next=null;
+        if (e !is _head) {
+            if (e == _tail) {
+                _tail = _tail.prev;
+                _tail.next = null;
             }
             else {
                 e.next.prev = e.prev;
                 e.prev.next = e.next;
             }
-            e.next=_head;
-            _head.prev=e;
-            _head=e;
-            _head.prev=null;
+            e.next = _head;
+            _head.prev = e;
+            _head = e;
+            _head.prev = null;
         }
     }
 
     @nogc
     uint length() pure const nothrow
-        out(result) {
-            uint internal_count(const(Element)* e, uint i=0) pure {
-                if ( e is null ) {
-                    return i;
-                }
-                else {
-                    return internal_count(e.next, i+1);
-                }
+    out (result) {
+        uint internal_count(const(Element)* e, uint i = 0) pure {
+            if (e is null) {
+                return i;
             }
-            immutable _count=internal_count(_head);
-            assert(result == _count);
+            else {
+                return internal_count(e.next, i + 1);
+            }
         }
+
+        immutable _count = internal_count(_head);
+        assert(result == _count);
+    }
     do {
         return count;
     }
@@ -206,7 +208,7 @@ class DList(E) {
         }
 
         void popFront() nothrow {
-            if ( cursor !is null) {
+            if (cursor !is null) {
                 static if (revert) {
                     cursor = cursor.prev;
                 }
@@ -241,24 +243,25 @@ class DList(E) {
     ~this() {
         // Assist the GC to clean the chain
         Element* clear(ref Element* e) {
-            if ( e !is null ) {
-                e.prev=null;
-                e=clear(e.next);
+            if (e !is null) {
+                e.prev = null;
+                e = clear(e.next);
             }
             return null;
         }
+
         clear(_head);
-        _tail=null;
+        _tail = null;
     }
 
     invariant {
-        if ( _head is null ) {
+        if (_head is null) {
             assert(_tail is null);
         }
         else {
             assert(_head.prev is null);
             assert(_tail.next is null);
-            if ( _head is _tail ) {
+            if (_head is _tail) {
                 assert(_head.next is null);
                 assert(_tail.prev is null);
             }
@@ -269,29 +272,29 @@ class DList(E) {
 
 unittest {
     { // Empty element test
-        auto l=new DList!int;
-//        auto e = l.shift;
-//        assert(e is null);
+        auto l = new DList!int;
+        //        auto e = l.shift;
+        //        assert(e is null);
         // bool flag;
         assert(l.length == 0);
         {
-            const r=l.pop;
+            const r = l.pop;
             assert(r.error);
         }
         assert(l.length == 0);
         {
-            const r=l.shift;
+            const r = l.shift;
             assert(r.error);
         }
         assert(l.length == 0);
     }
 
     { // One element test
-        auto l=new DList!int;
+        auto l = new DList!int;
         l.unshift(7);
         assert(l.length == 1);
-        auto first=l.first;
-        auto last =l.last;
+        auto first = l.first;
+        auto last = l.last;
         assert(first !is null);
         assert(last !is null);
         assert(first is last);
@@ -299,63 +302,65 @@ unittest {
         assert(l.length == 0);
     }
     { // two element test
-        auto l=new DList!int;
+        auto l = new DList!int;
         assert(l.length == 0);
         l.unshift(7);
         assert(l.length == 1);
         l.unshift(4);
         assert(l.length == 2);
-        auto first=l.first;
-        auto last=l.last;
+        auto first = l.first;
+        auto last = l.last;
         assert(first.entry == 4);
         assert(last.entry == 7);
         // moveToFront test
         l.moveToFront(last);
         assert(l.length == 2);
-        first=l.first;
-        last=l.last;
+        first = l.first;
+        last = l.last;
         assert(first.entry == 7);
         assert(last.entry == 4);
     }
     { // pop
-        import std.algorithm.comparison : equal;
+        import std.algorithm.comparison: equal;
         import std.array;
-        auto l=new DList!int;
-        enum amount=4;
+
+        auto l = new DList!int;
+        enum amount = 4;
         int[] test;
-        foreach(i;0..amount) {
+        foreach (i; 0 .. amount) {
             l.push(i);
-            test~=i;
+            test ~= i;
         }
-        auto I=l[];
+        auto I = l[];
         // This statement does not work anymore
         // assert(equal(I, test));
         assert(array(I) == test);
 
-        foreach_reverse(i;0..amount) {
+        foreach_reverse (i; 0 .. amount) {
             assert(l.pop.value == i);
             assert(l.length == i);
         }
     }
     { // More elements test
-        import std.algorithm.comparison : equal;
-        auto l=new DList!int;
-        enum amount=4;
-        foreach(i;0..amount) {
+        import std.algorithm.comparison: equal;
+
+        auto l = new DList!int;
+        enum amount = 4;
+        foreach (i; 0 .. amount) {
             l.push(i);
         }
         assert(l.length == amount);
 
         { // Forward iteration test
-            auto I=l[];
+            auto I = l[];
             uint i;
-            for(i=0; !I.empty; I.popFront, i++) {
+            for (i = 0; !I.empty; I.popFront, i++) {
                 assert(I.front == i);
             }
             assert(i == amount);
-            i=0;
-            I=l[];
-            foreach(entry; I) {
+            i = 0;
+            I = l[];
+            foreach (entry; I) {
                 assert(entry == i);
                 i++;
             }
@@ -365,19 +370,19 @@ unittest {
         assert(l.length == amount);
 
         import std.stdio;
-        import std.algorithm : map;
+        import std.algorithm: map;
 
-        {  // Backward iteration test
-            auto I=l.revert;
+        { // Backward iteration test
+            auto I = l.revert;
             uint i;
-            for(i=amount; !I.empty; I.popFront) {
+            for (i = amount; !I.empty; I.popFront) {
                 i--;
                 assert(I.front == i);
             }
             assert(i == 0);
-            i=amount;
+            i = amount;
 
-            foreach(entry; l.revert) {
+            foreach (entry; l.revert) {
                 i--;
                 assert(entry == i);
             }
@@ -388,29 +393,32 @@ unittest {
 
         {
             import std.array;
-            auto I=l[];
+
+            auto I = l[];
             I.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l[];
+            I = l[];
             // This statem does not work anymore
             // assert(equal(I, [1, 0, 2, 3]));
-            assert(array(I)== [1, 0, 2, 3]);
+            assert(array(I) == [1, 0, 2, 3]);
         }
 
         {
             import std.array;
-            auto I=l[];
-            I.popFront; I.popFront;
+
+            auto I = l[];
+            I.popFront;
+            I.popFront;
             auto current = I.current;
             l.moveToFront(current);
             assert(l.length == amount);
             // The element shoud now be ordred as
             // [1, 0, 2, 3]
-            I=l[];
+            I = l[];
             // This statem does not work anymore
             // assert(equal(I, [2, 1, 0, 3]));
             assert(array(I) == [2, 1, 0, 3]);

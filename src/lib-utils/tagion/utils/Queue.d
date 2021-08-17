@@ -9,16 +9,17 @@ class Queue(T) {
         Element _previous;
         private T data;
         this(T data) {
-            this.data=data;
+            this.data = data;
         }
+
         ~this() {
-            _next=_previous=null;
+            _next = _previous = null;
         }
     }
 
     void write(T data) nothrow {
-        auto element=new Element(data);
-        if ( _head ) {
+        auto element = new Element(data);
+        if (_head) {
             element._next = _head;
             _head._previous = element;
             _head = element;
@@ -30,22 +31,22 @@ class Queue(T) {
     }
 
     T read() nothrow
-        in {
-            assert(_tail, "Data queue is empty");
-        }
+    in {
+        assert(_tail, "Data queue is empty");
+    }
     do {
-        auto entry=_tail;
-        scope(exit) {
-            entry._previous=null;
-//            entry.destroy;
+        auto entry = _tail;
+        scope (exit) {
+            entry._previous = null;
+            //            entry.destroy;
         }
-        immutable result=entry.data;
-        if ( _tail is _head ) {
+        immutable result = entry.data;
+        if (_tail is _head) {
             _tail = _head = null;
         }
         else {
-            entry._previous._next=null;
-            _tail=entry._previous;
+            entry._previous._next = null;
+            _tail = entry._previous;
         }
         return result;
     }
@@ -53,29 +54,30 @@ class Queue(T) {
     ~this() {
         @safe
         void erase(Element e) {
-            if ( e ) {
+            if (e) {
                 erase(e._next);
-                e._next=null;
-                e._previous=null;
+                e._next = null;
+                e._previous = null;
             }
         }
+
         erase(_head);
-        _head=_tail=null;
+        _head = _tail = null;
     }
 
     void remove(Element entry) {
-        if ( entry ) {
-            if ( _head is entry ) {
-                _head=entry._next;
+        if (entry) {
+            if (_head is entry) {
+                _head = entry._next;
             }
-            if ( _tail is entry ) {
-                _tail=entry._previous;
+            if (_tail is entry) {
+                _tail = entry._previous;
             }
-            if ( entry._previous ) {
-                entry._previous._next=entry._next;
+            if (entry._previous) {
+                entry._previous._next = entry._next;
             }
-            if ( entry._next ) {
-                entry._next._previous=entry._previous;
+            if (entry._next) {
+                entry._next._previous = entry._previous;
             }
         }
     }
@@ -93,21 +95,21 @@ class Queue(T) {
         private Element entry;
         private Queue owner;
         this(Queue owner) pure nothrow {
-            this.owner=owner;
-            entry=owner._tail;
+            this.owner = owner;
+            entry = owner._tail;
         }
 
         pure nothrow {
-            bool empty() const  {
+            bool empty() const {
                 return entry is null;
             }
 
             void popFront() {
-                entry=entry._previous;
+                entry = entry._previous;
             }
-        // void popBack() {
-        //     entry=entry._previous;
-        // }
+            // void popBack() {
+            //     entry=entry._previous;
+            // }
             inout(T) front() inout {
                 return entry.data;
             }
@@ -115,8 +117,8 @@ class Queue(T) {
 
         Range save() nothrow {
             Range result;
-            result.owner=owner;
-            result.entry=entry;
+            result.owner = owner;
+            result.entry = entry;
             return result;
         }
 
@@ -126,9 +128,9 @@ class Queue(T) {
     }
 
     unittest { // One element
-        auto q=new Queue!string;
+        auto q = new Queue!string;
         assert(q.empty);
-        immutable elm1="1";
+        immutable elm1 = "1";
 
         q.write(elm1);
         assert(!q.empty);
@@ -137,9 +139,9 @@ class Queue(T) {
     }
 
     unittest { // two element
-        auto q=new Queue!string;
-        immutable elm1="A";
-        immutable elm2="B";
+        auto q = new Queue!string;
+        immutable elm1 = "A";
+        immutable elm2 = "B";
         assert(q.empty);
         q.write(elm1);
         assert(!q.empty);
@@ -152,10 +154,10 @@ class Queue(T) {
     }
 
     unittest { // More elements
-        immutable elm1="A";
-        immutable elm2="B";
-        immutable elm3="C";
-        auto q=new Queue!string;
+        immutable elm1 = "A";
+        immutable elm2 = "B";
+        immutable elm3 = "C";
+        auto q = new Queue!string;
 
         q.write(elm1);
         assert(!q.empty);
@@ -171,54 +173,54 @@ class Queue(T) {
     }
 
     unittest {
-        immutable elm=[
+        immutable elm = [
             "A",
             "B",
             "C"
-            ];
+        ];
         { // Iterator
-            auto q=new Queue!string;
-            foreach(ref e; elm) {
+            auto q = new Queue!string;
+            foreach (ref e; elm) {
                 q.write(e);
             }
 
-            uint i=0;
-            foreach(d; q[]) {
+            uint i = 0;
+            foreach (d; q[]) {
                 assert(elm[i] == d);
                 i++;
             }
         }
-        {  // Remove first
-            auto q=new Queue!string;
-            foreach(ref e; elm) {
+        { // Remove first
+            auto q = new Queue!string;
+            foreach (ref e; elm) {
                 q.write(e);
             }
 
-            auto iter=q[];
+            auto iter = q[];
 
             iter.remove;
             assert(q.read == elm[1]);
             assert(q.read == elm[2]);
         }
-        {  // Remove middel
-            auto q=new Queue!string;
-            foreach(ref e; elm) {
+        { // Remove middel
+            auto q = new Queue!string;
+            foreach (ref e; elm) {
                 q.write(e);
             }
 
-            auto iter=q[];
+            auto iter = q[];
             iter.popFront;
             iter.remove;
             assert(q.read == elm[0]);
             assert(q.read == elm[2]);
         }
-        {  // Remove last
-            auto q=new Queue!string;
-            foreach(ref e; elm) {
+        { // Remove last
+            auto q = new Queue!string;
+            foreach (ref e; elm) {
                 q.write(e);
             }
 
-            auto iter=q[];
+            auto iter = q[];
             iter.popFront;
             iter.popFront;
             iter.remove;
