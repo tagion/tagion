@@ -32,20 +32,6 @@ env/dirs:
 	$(call log.close)
 
 # 
-# Dependencies
-# 
-define dependency.version
-${if ${strip $1},${strip $1},Not on PATH --> ${strip $2}}
-endef
-
-MAKE_SHOW_ENV += env/dependencies
-env/dependencies: 
-	$(call log.header, env :: dependencies)
-	${call log.kvp, npm, ${call dependency.version, ${shell npm --version}, https://nodejs.org/en/}}
-	${call log.kvp, meta-git, ${call dependency.version, ${shell meta --version}, https://www.npmjs.com/package/meta-git}}
-	$(call log.close)
-
-# 
 # Compiler
 # 
 
