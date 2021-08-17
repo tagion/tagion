@@ -13,7 +13,6 @@ include $(DIR_TUB)/help.mk
 include $(DIR_TUB)/info.mk
 include $(DIR_TUB)/env.mk
 include $(DIR_TUB)/add.mk
-include $(DIR_TUB)/meta.mk
 include $(DIR_TUB)/blueprint.mk
 include $(DIR_TUB)/compile.mk
 

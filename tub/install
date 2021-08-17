@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 DIR_INSTALL=$1
 
@@ -16,8 +16,14 @@ fi
 echo
 
 echo "------------------------------"
+if [ -d "./tub" ]
+then
+echo "Found Tub locally..."
+else
 git clone git@github.com:tagion/tub.git 
+fi
 ln -s ./tub/Makefile ./
+ln -s ./tub/git ./
 mkdir -p build
 mkdir -p src
 mkdir -p wraps

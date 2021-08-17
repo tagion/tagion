@@ -36,14 +36,21 @@ Tub directory must have following structure:
 
 Use Tub `install.sh` script to install Tub in your local directory. You can specify a directory name, otherwise it will initialize in the current directory
 
+#### Install by cloning the tub
+```bash
+cd <project-dir>
+git clone git@github.com:tagion/tub.git
+./tub/install
+```
+
 #### Install using [curl](https://curl.se/):
 ```bash
-sh <(curl -s https://raw.githubusercontent.com/tagion/tub/master/scripts/install.sh) project
+sh <(curl -s https://raw.githubusercontent.com/tagion/tub/master/install) project
 ```
 
 #### Install Using [wget](https://www.gnu.org/software/wget/):
 ```bash
-sh <(wget -qO - https://raw.githubusercontent.com/tagion/tub/master/scripts/install.sh) project
+sh <(wget -qO - https://raw.githubusercontent.com/tagion/tub/master/install) project
 ```
 
 ### 2. Initialize from blueprint
