@@ -43,7 +43,7 @@ define collect.dependencies
 $(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
 $(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
 
-${eval DFILES := ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
+${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
 ${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
 ${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
 ${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
@@ -115,9 +115,10 @@ ways:
 bin/%: env/compiler ways ctx/bin/%
 	${eval TARGET := $(@F)}
 	${call log.header, testing lib/$(@F)}
+	${eval DFILES := ${call locate.d.files, $(DIR_TUB_ROOT)/src/bins/$(TARGET)}}
 	${call collect.dependencies}
 	${call show.compile.details}
-	${call compile, cmd.lib.compile.unittest}
+	${call compile, cmd.lib.compile.bin}
 	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/$(@F)}
 	${call log.close}
 
