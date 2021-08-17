@@ -42,7 +42,7 @@ import tagion.hibon.Document : Document;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-version (none) void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_net) {
+void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_net) {
     Options opts = args;
     opts.node_name = node_task_name(opts);
     log.register(opts.node_name);

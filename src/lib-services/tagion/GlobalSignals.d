@@ -1,4 +1,5 @@
 module tagion.GlobalSignals;
+
 import core.stdc.signal;
 import core.stdc.stdio;
 import core.stdc.stdlib : exit, system;
