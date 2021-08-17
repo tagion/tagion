@@ -54,6 +54,7 @@ ${eval LINKFLAGS += ${foreach WRAPLIB, $(WRAPLIBS), ${call link.dependency, $(WR
 endef
 
 define show.compile.details
+${call log.kvp, Target, $(TARGET)}
 ${call log.kvp, Libs, $(LIBS)}
 ${call log.kvp, Wraps, $(WRAPS)}
 
@@ -112,6 +113,7 @@ ways:
 # Compile targets to use
 # 
 bin/%: env/compiler ways ctx/bin/%
+	${eval TARGET := $(@F)}
 	${call log.header, testing lib/$(@F)}
 	${call collect.dependencies}
 	${call show.compile.details}
@@ -120,6 +122,7 @@ bin/%: env/compiler ways ctx/bin/%
 	${call log.close}
 
 lib/%: env/compiler ways ctx/lib/%
+	${eval TARGET := $(@F)}
 	${call log.header, compiling lib/$(@F)}
 	${call collect.dependencies}
 	${call show.compile.details}
@@ -128,6 +131,7 @@ lib/%: env/compiler ways ctx/lib/%
 	${call log.close}
 
 test/lib/%: env/compiler ways ctx/lib/%
+	${eval TARGET := $(@F)}
 	${call log.header, testing lib/$(@F)}
 	${call collect.dependencies}
 	${call collect.dependencies.to.link}
