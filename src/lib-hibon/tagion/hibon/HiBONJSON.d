@@ -3,10 +3,10 @@ module tagion.hibon.HiBONJSON;
 //import std.stdio;
 
 import std.json;
-import std.conv : to;
+import std.conv: to;
 import std.format;
-import std.traits : EnumMembers, Unqual, ReturnType, ForeachType;
-import std.range.primitives : isInputRange;
+import std.traits: EnumMembers, Unqual, ReturnType, ForeachType;
+import std.range.primitives: isInputRange;
 import std.base64;
 
 //import std.stdio;
@@ -14,17 +14,17 @@ import std.base64;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.Document: Document;
 import tagion.hibon.HiBONtoText;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONRecord: isHiBONRecord;
 
-import tagion.basic.Message : message;
+import tagion.basic.Message: message;
 
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.TagionExceptions: Check;
 import tagion.utils.StdTime;
 
 /**
@@ -113,7 +113,7 @@ enum {
 
 mixin template JSONString() {
     import std.format;
-    import std.conv : to;
+    import std.conv: to;
 
     @trusted void toString(scope void delegate(scope const(char)[]) @system sink,
             const FormatSpec!char fmt) const {
@@ -203,8 +203,9 @@ mixin template JSONString() {
                         }
                     }
                 default:
-                    .check(0, message("HiBON type %s not supported and can not be converted to JSON",
-                            e.type));
+                    
+                        .check(0, message("HiBON type %s not supported and can not be converted to JSON",
+                                e.type));
                 }
             }
         }
@@ -267,6 +268,7 @@ mixin template JSONString() {
         }
         else static if (is(UnqualT == uint)) {
             long x = jvalue.integer;
+            
             .check((x > 0) && (x <= uint.max), format("%s not a u32", jvalue));
             return cast(uint) x;
         }
@@ -346,6 +348,7 @@ mixin template JSONString() {
                 return false;
             }
             immutable label = jvalue.array[TYPE].str;
+            
             .check((label in labelMap) !is null, "HiBON type name '%s' is not valid", label);
             immutable type = labelMap[label];
 
@@ -362,7 +365,7 @@ mixin template JSONString() {
                             }
                             else {
                                 static if (E is BINARY) {
-                                    import std.uni : toLower;
+                                    import std.uni: toLower;
 
                                     sub_result[key] = HiBONdecode(value.str).idup; //str[HEX_PREFIX.length..$]);
                                 }
@@ -386,7 +389,8 @@ mixin template JSONString() {
             with (JSONType) {
                 final switch (jvalue.type) {
                 case null_:
-                    .check(0, "HiBON does not support null");
+                    
+                        .check(0, "HiBON does not support null");
                     break;
                 case string:
                     result[key] = jvalue.str;
@@ -427,6 +431,7 @@ mixin template JSONString() {
         else if (json.type is JSONType.OBJECT) {
             return JSON!string(json);
         }
+        
         .check(0, format("JSON_TYPE must be of %s or %s not %s",
                 JSONType.OBJECT, JSONType.ARRAY, json.type));
         assert(0);
@@ -437,8 +442,8 @@ mixin template JSONString() {
 
 @safe unittest {
     //    import std.stdio;
-    import tagion.hibon.HiBON : HiBON;
-    import std.typecons : Tuple;
+    import tagion.hibon.HiBON: HiBON;
+    import std.typecons: Tuple;
 
     alias Tabel = Tuple!(float, Type.FLOAT32.stringof, double,
             Type.FLOAT64.stringof, bool, Type.BOOLEAN.stringof, int,
@@ -458,9 +463,10 @@ mixin template JSONString() {
     test_tabel.TIME = sdt_t(1001);
 
     alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, string,
-            Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof,// Credential,          Type.CREDENTIAL.stringof,
+            Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
             // CryptDoc,            Type.CRYPTDOC.stringof,
-            );
+            
+    );
     TabelArray test_tabel_array;
     test_tabel_array.BINARY = [1, 2, 3];
     test_tabel_array.STRING = "Text";

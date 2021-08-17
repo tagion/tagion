@@ -5,27 +5,27 @@
 module tagion.hibon.Document;
 
 //import std.format;
-import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType,
+import std.meta: AliasSeq, Filter;
+import std.traits: isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType,
     isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
-import std.conv : to, emplace;
-import std.algorithm.iteration : map;
-import std.algorithm.searching : count;
-import std.range.primitives : walkLength;
-import std.range : lockstep;
-import std.array : join;
-import std.typecons : TypedefType;
-import core.exception : RangeError;
+import std.conv: to, emplace;
+import std.algorithm.iteration: map;
+import std.algorithm.searching: count;
+import std.range.primitives: walkLength;
+import std.range: lockstep;
+import std.array: join;
+import std.typecons: TypedefType;
+import core.exception: RangeError;
 
 //import std.stdio;
 
 import tagion.utils.StdTime;
-import tagion.basic.Basic : isOneOf, EnumContinuousSequency;
-import tagion.basic.Message : message;
+import tagion.basic.Basic: isOneOf, EnumContinuousSequency;
+import tagion.basic.Message: message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
-import tagion.hibon.HiBONException : check, HiBONException;
-import tagion.hibon.HiBONRecord : isHiBONRecord, isHiBONRecordArray;
+import tagion.hibon.HiBONException: check, HiBONException;
+import tagion.hibon.HiBONRecord: isHiBONRecord, isHiBONRecordArray;
 import LEB128 = tagion.utils.LEB128;
 
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
@@ -73,7 +73,7 @@ static assert(uint.sizeof == 4);
         this._data = doc._data;
     }
 
-    import tagion.hibon.HiBON : HiBON;
+    import tagion.hibon.HiBON: HiBON;
 
     this(const HiBON hibon) {
         if (hibon) {
@@ -171,7 +171,7 @@ static assert(uint.sizeof == 4);
     Element.ErrorCode valid(ErrorCallback error_callback = null) const nothrow {
         Element.ErrorCode inner_valid(const Document sub_doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.TagionExceptions : TagionException;
+            import tagion.basic.TagionExceptions: TagionException;
 
             auto previous = sub_doc[];
             bool not_first;
@@ -231,7 +231,7 @@ static assert(uint.sizeof == 4);
 
     Element.ErrorCode valid(Callback)(
             Callback error_callback) const nothrow @trusted if (isCallable!Callback) {
-        import std.functional : toDelegate;
+        import std.functional: toDelegate;
 
         auto dg = error_callback.toDelegate;
         return valid(dg);
@@ -370,8 +370,8 @@ static assert(uint.sizeof == 4);
         return Element();
     }
 
-    const(Element) opBinaryRight(string op, Index)(const Index key) const 
-            if ((op == "in") && (isIntegral!Index)) {
+    const(Element) opBinaryRight(string op, Index)(const Index key) const
+    if ((op == "in") && (isIntegral!Index)) {
         foreach (ref element; this[]) {
             if (element.isIndex && (element.index == key)) {
                 return element;
@@ -391,6 +391,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(in string key) const {
         auto result = key in this;
+        
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -404,6 +405,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         auto result = index in this;
+        
         .check(!result.isEod, message("Member index %d not found", index));
         return result;
     }
@@ -446,8 +448,8 @@ static assert(uint.sizeof == 4);
      Returns:
      The number of bytes taken up by the element
      +/
-    @nogc static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure 
-            if (is(Key : const(char[])) || is(Key == uint)) {
+    @nogc static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure
+    if (is(Key : const(char[])) || is(Key == uint)) {
         size_t size = sizeKey(key);
         static if (is(T : U[], U)) {
             const _size = x.length * U.sizeof;
@@ -515,8 +517,8 @@ static assert(uint.sizeof == 4);
      index = is offset index in side the buffer and index with be progressed
      +/
     @trusted static void build(T, Key)(ref ubyte[] buffer, Type type, Key key,
-            const(T) x, ref size_t index) pure 
-            if (is(Key : const(char[])) || is(Key == uint)) {
+            const(T) x, ref size_t index) pure
+    if (is(Key : const(char[])) || is(Key == uint)) {
         buildKey(buffer, type, key, index);
         alias BaseT = TypedefType!T;
         static if (is(T : U[], U) && (U.sizeof == ubyte.sizeof)) {
@@ -589,7 +591,7 @@ static assert(uint.sizeof == 4);
     }
 
     version (unittest) {
-        import std.typecons : Tuple, isTuple;
+        import std.typecons: Tuple, isTuple;
 
         static private size_t make(R)(ref ubyte[] buffer, R range, size_t count = size_t.max)
                 if (isTuple!R) {
@@ -618,7 +620,7 @@ static assert(uint.sizeof == 4);
     }
 
     unittest {
-        import std.algorithm.sorting : isSorted;
+        import std.algorithm.sorting: isSorted;
 
         auto buffer = new ubyte[0x200];
 
@@ -670,8 +672,7 @@ static assert(uint.sizeof == 4);
         test_tabel.BOOLEAN = true;
         test_tabel.TIME = 1001;
 
-        alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof,
-                // Credential,          Type.CREDENTIAL.stringof,
+        alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof,// Credential,          Type.CREDENTIAL.stringof,
                 // CryptDoc,            Type.CRYPTDOC.stringof,
                 DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
@@ -952,6 +953,7 @@ static assert(uint.sizeof == 4);
             default:
                 //empty
             }
+            
             .check(0, message("Invalid type %s", type));
             assert(0);
         }
@@ -964,7 +966,9 @@ static assert(uint.sizeof == 4);
              if the element does not contain the type E and HiBONException is thrown
              +/
             auto by(Type E)() {
-                .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+                
+                    .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+                
                 .check(E !is Type.NONE,
                         message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
@@ -992,7 +996,8 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
-                    .check(doc.isArray, "Document must be an array");
+                    
+                        .check(doc.isArray, "Document must be an array");
                     result.length = doc.length;
                     foreach (ref a, e; lockstep(result, doc[])) {
                         a = e.get!ElementT;
@@ -1007,7 +1012,7 @@ static assert(uint.sizeof == 4);
                 static if (EnumContinuousSequency!T) {
                     check((x >= T.min) && (x <= T.max),
                             message("The value %s is out side the range for %s enum type",
-                                x, T.stringof));
+                            x, T.stringof));
                 }
                 else {
                 EnumCase:
@@ -1024,8 +1029,8 @@ static assert(uint.sizeof == 4);
                 return cast(T) x;
             }
 
-            const(T) get(T)() const 
-                    if (!isHiBONRecord!T && !isHiBONRecordArray!T && !is(T == enum)) {
+            const(T) get(T)() const
+            if (!isHiBONRecord!T && !isHiBONRecordArray!T && !is(T == enum)) {
                 enum E = Value.asType!T;
                 import std.format;
 
@@ -1065,9 +1070,10 @@ static assert(uint.sizeof == 4);
              if the key is not an index an HiBONException is thrown
              +/
             uint index() pure {
-                .check(isIndex, [
-                        "Key '", key.to!string, "' is not an index", key
-                        ].join);
+                
+                    .check(isIndex, [
+                            "Key '", key.to!string, "' is not an index", key
+                            ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
 

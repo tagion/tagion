@@ -9,26 +9,26 @@
  */
 module tagion.hibon.HiBON;
 
-import std.container : RedBlackTree;
+import std.container: RedBlackTree;
 import std.format;
-import std.meta : staticIndexOf;
-import std.algorithm.iteration : map, fold, each, sum;
-import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType,
+import std.meta: staticIndexOf;
+import std.algorithm.iteration: map, fold, each, sum;
+import std.traits: EnumMembers, ForeachType, Unqual, isMutable, isBasicType,
     isIntegral, OriginalType, ReturnType, hasMember;
-import std.meta : AliasSeq;
+import std.meta: AliasSeq;
 
-import std.conv : to;
-import std.exception : assumeUnique;
-import std.typecons : TypedefType;
+import std.conv: to;
+import std.exception: assumeUnique;
+import std.typecons: TypedefType;
 
 import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONRecordArray;
+import tagion.hibon.HiBONRecord: isHiBON, isHiBONRecord, isHiBONRecordArray;
 
-import tagion.basic.Message : message;
-import tagion.basic.Basic : CastTo, Buffer;
+import tagion.basic.Message: message;
+import tagion.basic.Basic: CastTo, Buffer;
 import LEB128 = tagion.utils.LEB128;
 
 //import std.stdio;
@@ -232,8 +232,9 @@ static size_t size(U)(const(U[]) array) pure {
                     return T(doc);
                     break;
                 default:
-                    .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
-                            type, T.stringof));
+                    
+                        .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
+                                type, T.stringof));
                 }
             }
             assert(0);
@@ -241,6 +242,7 @@ static size_t size(U)(const(U[]) array) pure {
 
         const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T) {
             enum E = Value.asType!T;
+            
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)",
                     type, E, T.stringof));
             return value.by!E;
@@ -412,8 +414,10 @@ static size_t size(U)(const(U[]) array) pure {
 
     void opIndexAssign(T)(T x, const string key)
             if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T) {
-        .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
+        
+            .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member = new Member(x, key);
+        
         .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));
     }
 
@@ -425,10 +429,12 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     void opIndexAssign(T, INDEX)(T x, const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
-            .check(index <= uint.max, message("Index out of range (index=%d)", index));
+            
+                .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
-            .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
+            
+                .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
         const key = index.to!string;
         opIndexAssign(x, key);
@@ -446,6 +452,7 @@ static size_t size(U)(const(U[]) array) pure {
     const(Member) opIndex(const string key) const {
         scope search = new Member(key);
         auto range = _members.equalRange(search);
+        
         .check(!range.empty, message("Member '%s' does not exist", key));
         return range.front;
     }
@@ -462,10 +469,12 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     const(Member) opIndex(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
-            .check(index <= uint.max, message("Index out of range (index=%d)", index));
+            
+                .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
-            .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
+            
+                .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
         const key = index.to!string;
         return opIndex(key);
@@ -525,10 +534,12 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     @trusted void remove(INDEX)(const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
-            .check(index <= uint.max, message("Index out of range (index=%d)", index));
+            
+                .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
-            .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
+            
+                .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
         const key = index.to!string;
         scope search = new Member(key);
@@ -618,16 +629,17 @@ static size_t size(U)(const(U[]) array) pure {
 
     unittest {
         // import std.stdio;
-        import std.conv : to;
-        import std.typecons : Tuple, isTuple;
+        import std.conv: to;
+        import std.typecons: Tuple, isTuple;
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias Tabel = Tuple!(BigNumber, Type.BIGINT.stringof, bool, Type.BOOLEAN.stringof,
                 float, Type.FLOAT32.stringof, double, Type.FLOAT64.stringof,
                 int, Type.INT32.stringof, long, Type.INT64.stringof, uint,
-                Type.UINT32.stringof, ulong, Type.UINT64.stringof,//                utc_t,  Type.UTC.stringof
-                );
+                Type.UINT32.stringof, ulong, Type.UINT64.stringof, //                utc_t,  Type.UTC.stringof
+                
+        );
 
         Tabel test_tabel;
         test_tabel.FLOAT32 = 1.23;
@@ -641,8 +653,7 @@ static size_t size(U)(const(U[]) array) pure {
 
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
-        alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof,
-                // Credential,          Type.CREDENTIAL.stringof,
+        alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof,// Credential,          Type.CREDENTIAL.stringof,
                 // CryptDoc,            Type.CRYPTDOC.stringof,
                 DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
@@ -685,10 +696,10 @@ static size_t size(U)(const(U[]) array) pure {
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size = LEB128.calc_size(
                         14) // Size of the object in ubytes (uint(14))
-                 + Type.sizeof // The HiBON Type  (Type.FLOAT32)  1
-                 + ubyte.sizeof // Length of the key (ubyte(7))    2
-                 + Type.FLOAT32.stringof.length // The key text string ("FLOAT32") 9
-                 + float.sizeof // The data            (float(1.23)) 13
+                + Type.sizeof // The HiBON Type  (Type.FLOAT32)  1
+                + ubyte.sizeof // Length of the key (ubyte(7))    2
+                + Type.FLOAT32.stringof.length // The key text string ("FLOAT32") 9
+                + float.sizeof // The data            (float(1.23)) 13
                 //    + Type.sizeof                    // The HiBON object ends with a (Type.NONE) 14
                 ;
 
@@ -965,7 +976,7 @@ static size_t size(U)(const(U[]) array) pure {
     }
 
     unittest { // Override of a key is not allowed
-        import std.exception : assertThrown, assertNotThrown;
+        import std.exception: assertThrown, assertNotThrown;
 
         enum override_key = "okey";
         auto h = new HiBON;
@@ -982,7 +993,7 @@ static size_t size(U)(const(U[]) array) pure {
 
     unittest { // Test sdt_t
         import tagion.utils.StdTime;
-        import std.typecons : TypedefType;
+        import std.typecons: TypedefType;
 
         auto h = new HiBON;
         enum time = "$t";

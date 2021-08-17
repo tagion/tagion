@@ -4,16 +4,16 @@ import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file = std.file;
-import std.exception : assumeUnique;
-import std.typecons : Tuple;
-import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned;
+import std.exception: assumeUnique;
+import std.typecons: Tuple;
+import std.traits: hasMember, ReturnType, isArray, ForeachType, isUnsigned;
 
-import tagion.basic.Basic : basename, EnumContinuousSequency;
-import tagion.hibon.HiBONBase : ValueT;
+import tagion.basic.Basic: basename, EnumContinuousSequency;
+import tagion.hibon.HiBONBase: ValueT;
 
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.Document: Document;
+import tagion.hibon.HiBONException: HiBONRecordException;
 
 alias DocResult = Tuple!(Document.Element.ErrorCode, "error", string, "key");
 
@@ -42,8 +42,8 @@ bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document))) {
 }
 
 unittest {
-    import std.range : iota;
-    import std.array : array;
+    import std.range: iota;
+    import std.array: array;
 
     Document doc;
     { // Define stub
@@ -66,7 +66,7 @@ unittest {
 }
 
 template isSpecialKeyType(T) {
-    import std.traits : isAssociativeArray, isUnsigned, KeyType;
+    import std.traits: isAssociativeArray, isUnsigned, KeyType;
 
     static if (isAssociativeArray!T) {
         alias KeyT = KeyType!T;
@@ -121,7 +121,7 @@ struct RecordType {
  member = is the member alias
  +/
 template GetLabel(alias member) {
-    import std.traits : getUDAs, hasUDA;
+    import std.traits: getUDAs, hasUDA;
 
     static if (hasUDA!(member, Label)) {
         enum label = getUDAs!(member, Label)[0];
@@ -145,9 +145,9 @@ enum TYPENAME = HiBONPrefix.PARAM ~ "@";
 enum VOID = "*";
 
 mixin template HiBONRecordType() {
-    import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONRecord : TYPENAME;
-    import std.traits : getUDAs, hasUDA;
+    import tagion.hibon.Document: Document;
+    import tagion.hibon.HiBONRecord: TYPENAME;
+    import std.traits: getUDAs, hasUDA;
 
     alias ThisType = typeof(this);
     static if (hasUDA!(ThisType, RecordType)) {
@@ -197,29 +197,29 @@ mixin template HiBONRecordType() {
  +/
 mixin template HiBONRecord(string CTOR = "") {
 
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable,
+    import std.traits: getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable,
         EnumMembers, ForeachType, isArray, isAssociativeArray, KeyType, ValueType;
-    import std.typecons : TypedefType, Tuple;
+    import std.typecons: TypedefType, Tuple;
     import std.format;
-    import std.functional : unaryFun;
-    import std.range : iota, enumerate, lockstep;
-    import std.range.primitives : isInputRange;
-    import std.meta : staticMap, AliasSeq;
-    import std.array : join;
+    import std.functional: unaryFun;
+    import std.range: iota, enumerate, lockstep;
+    import std.range.primitives: isInputRange;
+    import std.meta: staticMap, AliasSeq;
+    import std.array: join;
 
-    import tagion.basic.Basic : basename, EnumContinuousSequency;
+    import tagion.basic.Basic: basename, EnumContinuousSequency;
 
     //    import tagion.hibon.HiBONException : check;
-    import tagion.basic.Message : message;
-    import tagion.basic.Basic : basename, CastTo;
-    import tagion.basic.TagionExceptions : Check;
-    import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
+    import tagion.basic.Message: message;
+    import tagion.basic.Basic: basename, CastTo;
+    import tagion.basic.TagionExceptions: Check;
+    import tagion.hibon.HiBONException: HiBONRecordException;
+    import tagion.hibon.HiBONRecord: isHiBON, isHiBONRecord, HiBONRecordType,
         Label, GetLabel, Filter, Default, Inspect, VOID;
 
     protected alias check = Check!(HiBONRecordException);
 
-    import tagion.hibon.HiBONJSON : JSONString;
+    import tagion.hibon.HiBONJSON: JSONString;
 
     mixin JSONString;
 
@@ -244,11 +244,11 @@ mixin template HiBONRecord(string CTOR = "") {
     @trusted final inout(HiBON) toHiBON() inout {
         auto hibon = new HiBON;
         static HiBON toList(L)(L list) {
-            import std.array : byPair, array;
-            import std.algorithm : sort;
-            import std.range : refRange;
-            import std.algorithm.iteration : map;
-            import std.typecons : tuple;
+            import std.array: byPair, array;
+            import std.algorithm: sort;
+            import std.range: refRange;
+            import std.algorithm.iteration: map;
+            import std.typecons: tuple;
 
             auto result = new HiBON;
             alias UnqualL = Unqual!L;
@@ -356,7 +356,7 @@ mixin template HiBONRecord(string CTOR = "") {
                             alias ElementT = ForeachType!UnqualT;
                             static assert((HiBON.Value.hasType!ElementT) || isHiBON!ElementT,
                                     format("The sub element '%s' of type %s is not supported",
-                                        name, BaseT.stringof));
+                                    name, BaseT.stringof));
 
                             hibon[name] = toList(cast(UnqualT) m);
                         }
@@ -527,7 +527,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 scope (exit) {
                     check(this.verify(doc),
                             format("Document verification faild for HiBONRecord %s",
-                                ThisType.stringof));
+                            ThisType.stringof));
                 }
             }
 
@@ -547,8 +547,8 @@ mixin template HiBONRecord(string CTOR = "") {
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
                                     format("Default %s is already definded to %s but is redefined for %s.%s",
-                                        TYPENAME, TYPE, ThisType.stringof,
-                                        basename!(this.tupleof[i])));
+                                    TYPENAME, TYPE, ThisType.stringof,
+                                    basename!(this.tupleof[i])));
                         }
                     }
                     else {
@@ -584,7 +584,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                         alias inspectFun = unaryFun!(F.code);
                                         check(inspectFun(m),
                                                 message("Member %s faild on inspection %s with %s",
-                                                    name, F.code, m));
+                                                name, F.code, m));
                                     }
                                 }
                             }
@@ -667,7 +667,7 @@ mixin template HiBONRecord(string CTOR = "") {
  The Document read from the file
  +/
 @trusted const(Document) fread(string filename) {
-    import tagion.hibon.HiBONException : check;
+    import tagion.hibon.HiBONException: check;
 
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
     const doc = Document(data);
@@ -676,7 +676,7 @@ mixin template HiBONRecord(string CTOR = "") {
 }
 
 const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
-    import tagion.hibon.HiBONException : check;
+    import tagion.hibon.HiBONException: check;
 
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
     const doc = Document(data);
@@ -687,12 +687,12 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
 @safe unittest {
     import std.stdio;
     import std.format;
-    import std.exception : assertThrown, assertNotThrown;
-    import std.traits : OriginalType, staticMap, Unqual;
-    import std.meta : AliasSeq;
-    import std.range : lockstep;
-    import std.algorithm.comparison : equal;
-    import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
+    import std.exception: assertThrown, assertNotThrown;
+    import std.traits: OriginalType, staticMap, Unqual;
+    import std.meta: AliasSeq;
+    import std.range: lockstep;
+    import std.algorithm.comparison: equal;
+    import tagion.hibon.HiBONException: HiBONException, HiBONRecordException;
 
     @RecordType("SIMPEL") static struct Simpel {
         int s;
@@ -1216,12 +1216,12 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         }
 
         { // Test of Typedef array
-            import std.typecons : Typedef;
+            import std.typecons: Typedef;
 
             alias Text = Typedef!(string, null, "Text");
 
             // Pubkey is a Typedef
-            import tagion.basic.Basic : Pubkey;
+            import tagion.basic.Basic: Pubkey;
 
             static struct TextArray {
                 Text[] texts;
@@ -1241,16 +1241,16 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
     }
 
     { // None standard Keys
-        import std.typecons : Typedef;
-        import std.algorithm : map, each;
-        import std.bitmanip : binwrite = write;
-        import std.algorithm : sort;
-        import std.array : array;
-        import std.typecons : tuple;
-        import std.algorithm.sorting : isStrictlyMonotonic;
+        import std.typecons: Typedef;
+        import std.algorithm: map, each;
+        import std.bitmanip: binwrite = write;
+        import std.algorithm: sort;
+        import std.array: array;
+        import std.typecons: tuple;
+        import std.algorithm.sorting: isStrictlyMonotonic;
         import std.stdio;
 
-        import tagion.basic.Basic : Buffer;
+        import tagion.basic.Basic: Buffer;
 
         { // Typedef on HiBON.type is used as key in an associative-array
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
@@ -1265,13 +1265,11 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             import std.outbuffer;
 
             Tabel tabel;
-            auto list=[-17, 117, 3, 17, 42];
-            auto buffer=new ubyte[int.sizeof];
-            foreach(i; list) {
-                (() @trusted {
-                    buffer.binwrite(i,0);
-                })();
-                tabel[Bytes(buffer.idup)]=i;
+            auto list = [-17, 117, 3, 17, 42];
+            auto buffer = new ubyte[int.sizeof];
+            foreach (i; list) {
+                (() @trusted { buffer.binwrite(i, 0); })();
+                tabel[Bytes(buffer.idup)] = i;
             }
 
             StructBytes s;
@@ -1282,15 +1280,18 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             (() @trusted {
                 assert(
                     equal(
-                        list
-                        .map!(i => {buffer.binwrite(i,0); return tuple(buffer.idup, i);})
-                        .map!(q{a()})
-                        .array
-                        .sort,
-                        s_doc["tabel"]
-                        .get!Document[]
-                        .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-                        ));
+                    list
+                    .map!(i => {
+                        buffer.binwrite(i, 0);
+                        return tuple(buffer.idup, i);
+                    })
+                    .map!(q{a()})
+                    .array
+                    .sort,
+                    s_doc["tabel"]
+                    .get!Document[]
+                    .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+                ));
             })();
 
             assert(s_doc == result.toDoc);

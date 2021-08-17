@@ -4,19 +4,19 @@ protected import std.bigint;
 
 //import std.bigint;
 import std.format;
-import std.internal.math.biguintnoasm : BigDigit;
+import std.internal.math.biguintnoasm: BigDigit;
 
 //import std.conv : emplace;
-import std.typecons : Tuple;
+import std.typecons: Tuple;
 import std.range.primitives;
 import std.traits;
-import std.system : Endian;
+import std.system: Endian;
 import std.base64;
-import std.exception : assumeUnique;
+import std.exception: assumeUnique;
 
 //import std.stdio;
 
-import tagion.hibon.HiBONException : check;
+import tagion.hibon.HiBONException: check;
 import tagion.hibon.BigNumber;
 
 /++
@@ -147,8 +147,8 @@ import tagion.hibon.BigNumber;
      Returns:
      the result of the unitary operation op
      +/
-    @trusted BigNumber opUnary(string op)() pure nothrow const 
-            if (op == "+" || op == "-" || op == "~") {
+    @trusted BigNumber opUnary(string op)() pure nothrow const
+    if (op == "+" || op == "-" || op == "~") {
         enum code = format(q{return BigNumber(%s this.x);}, op);
         mixin(code);
     }
@@ -236,11 +236,13 @@ import tagion.hibon.BigNumber;
      Converts to type T
      +/
     @trusted T convert(T)() const if (isIntegral!T) {
-        import std.conv : to;
+        import std.conv: to;
+
+        
 
         .check((x >= T.min) && (x <= T.max),
                 format("Coversion range violation for type %s, value %s is outside the [%d..%d]",
-                    T.stringof, x, T.min, T.max));
+                T.stringof, x, T.min, T.max));
         return x.to!T;
     }
 
@@ -282,8 +284,9 @@ import tagion.hibon.BigNumber;
 
     @trusted void check_minuz_zero() const pure {
         version (none)
-            .check(sign && (_data.length is 1) && (_data[0] is 0),
-                    "The number minus zero is not allowed");
+            
+                .check(sign && (_data.length is 1) && (_data[0] is 0),
+                        "The number minus zero is not allowed");
     }
 
     struct TwoComplementRange {
@@ -340,7 +343,7 @@ import tagion.hibon.BigNumber;
     }
 
     unittest { // Test of Two complement
-        import std.algorithm.comparison : equal;
+        import std.algorithm.comparison: equal;
 
         {
             const x = BigNumber(0);
@@ -567,7 +570,7 @@ import tagion.hibon.BigNumber;
 }
 
 unittest {
-    import std.algorithm.comparison : equal;
+    import std.algorithm.comparison: equal;
     import std.stdio;
     import LEB128 = tagion.utils.LEB128;
 
