@@ -2,48 +2,49 @@ module tagion.crypto.SecureNet;
 
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Basic : Buffer, Signature;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
+import tagion.basic.Basic: Buffer, Signature;
+import tagion.hibon.Document: Document;
+import tagion.hibon.HiBONRecord: HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
 
-void scramble(scope ref ubyte[] data, scope ubyte[] xor=null) @safe {
+void scramble(scope ref ubyte[] data, scope ubyte[] xor = null) @safe {
     import std.random;
+
     auto gen = Mt19937(unpredictableSeed);
-    foreach(ref s; data) { //, gen1, StoppingPolicy.shortest)) {
-        s=gen.front & ubyte.max;
+    foreach (ref s; data) { //, gen1, StoppingPolicy.shortest)) {
+        s = gen.front & ubyte.max;
         gen.popFront;
     }
-    foreach(i, x; xor) {
-        data[i]^=x;
+    foreach (i, x; xor) {
+        data[i] ^= x;
     }
 }
 
-private alias check=Check!SecurityConsensusException;
-
+private alias check = Check!SecurityConsensusException;
 
 @safe
 class StdHashNet : HashNet {
     import std.format;
-//    import std.stdio;
-    protected enum HASH_SIZE=32;
+
+    //    import std.stdio;
+    protected enum HASH_SIZE = 32;
     @nogc final uint hashSize() const pure nothrow {
         return HASH_SIZE;
     }
 
     final immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
-        import std.digest.sha : SHA256;
+        import std.digest.sha: SHA256;
         import std.digest;
+
         return digest!SHA256(data).idup;
     }
 
-
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
-    // in {
-    //     const doc=Document(data.idup);
-    //     assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
-    // }
-    // do {
+        // in {
+        //     const doc=Document(data.idup);
+        //     assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
+        // }
+        // do {
         //pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
         //const doc=Document(data.idup);
         // if (doc.isInorder) {
@@ -52,7 +53,7 @@ class StdHashNet : HashNet {
         //     writefln("data=%s", doc.data);
         //     writefln("doc=%s", doc.toPretty);
         // }
-        version(unittest) {
+        version (unittest) {
             assert(!Document(data.idup).isInorder, "calcHash should not be use on a Document use hashOf instead");
         }
         return rawCalcHash(data);
@@ -60,9 +61,10 @@ class StdHashNet : HashNet {
 
     @trusted
     final immutable(Buffer) HMAC(scope const(ubyte[]) data) const {
-        import std.exception : assumeUnique;
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC=HMAC;
+        import std.exception: assumeUnique;
+        import std.digest.sha: SHA256;
+        import std.digest.hmac: digestHMAC = HMAC;
+
         scope hmac = digestHMAC!SHA256(data);
         auto result = hmac.finish.dup;
         return assumeUnique(result);
@@ -71,11 +73,11 @@ class StdHashNet : HashNet {
     immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
     in {
         assert(h1.length is 0 || h1.length is HASH_SIZE,
-            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
+                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
         assert(h2.length is 0 || h2.length is HASH_SIZE,
-            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
+                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
     }
-    out(result) {
+    out (result) {
         if (h1.length is 0) {
             assert(h2 == result);
         }
@@ -86,16 +88,16 @@ class StdHashNet : HashNet {
     do {
         pragma(msg, "dlang: Pre and post condition does not work here");
         assert(h1.length is 0 || h1.length is HASH_SIZE,
-            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
+                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
         assert(h2.length is 0 || h2.length is HASH_SIZE,
-            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
+                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
         if (h1.length is 0) {
             return h2.idup;
         }
         if (h2.length is 0) {
             return h1.idup;
         }
-        return rawCalcHash(h1~h2);
+        return rawCalcHash(h1 ~ h2);
     }
 
     immutable(Buffer) hashOf(const(Document) doc) const {
@@ -103,26 +105,25 @@ class StdHashNet : HashNet {
             if (doc.keys.front == STUB) {
                 return doc[STUB].get!Buffer;
             }
-            auto first=doc[].front;
-            immutable value_data=first.data[first.dataPos..first.dataPos + first.dataSize];
+            auto first = doc[].front;
+            immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
             return rawCalcHash(value_data);
         }
         return rawCalcHash(doc.serialize);
     }
 }
 
-
 @safe
-class StdSecureNet : StdHashNet, SecureNet  {
+class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import tagion.basic.Basic : Pubkey;
+    import tagion.basic.Basic: Pubkey;
     import tagion.crypto.aes.AESCrypto;
-//    import tagion.gossip.GossipNet : scramble;
+
+    //    import tagion.gossip.GossipNet : scramble;
     import tagion.basic.ConsensusExceptions;
 
     import std.format;
-    import std.string : representation;
-
+    import std.string: representation;
 
     private Pubkey _pubkey;
     /**
@@ -146,18 +147,18 @@ class StdSecureNet : StdHashNet, SecureNet  {
     }
 
     final Buffer hmacPubkey() const {
-        return HMAC(cast(Buffer)_pubkey);
+        return HMAC(cast(Buffer) _pubkey);
     }
 
     final Pubkey derivePubkey(string tweak_word) const {
-        const tweak_code=HMAC(tweak_word.representation);
+        const tweak_code = HMAC(tweak_word.representation);
         return derivePubkey(tweak_code);
     }
 
     final Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
         Pubkey result;
-        const pkey=cast(const(ubyte[]))_pubkey;
-        result=_crypt.pubKeyTweakMul(pkey, tweak_code);
+        const pkey = cast(const(ubyte[])) _pubkey;
+        result = _crypt.pubKeyTweakMul(pkey, tweak_code);
         return result;
     }
 
@@ -169,17 +170,18 @@ class StdSecureNet : StdHashNet, SecureNet  {
     protected NativeSecp256k1 _crypt;
     bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
-            ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify(message, cast(Buffer)signature, cast(Buffer)pubkey);
+                ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+        return _crypt.verify(message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
     Signature sign(immutable(ubyte[]) message) const
-        in {
-            assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
-            assert(message.length == 32);
-        }
+    in {
+        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
+        assert(message.length == 32);
+    }
     do {
         import std.traits;
+
         assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
         return Signature(_secret.sign(message));
@@ -191,9 +193,9 @@ class StdSecureNet : StdHashNet, SecureNet  {
     }
 
     final void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
-        in {
-            assert(tweak_privkey.length >= 32);
-        }
+    in {
+        assert(tweak_privkey.length >= 32);
+    }
     do {
         _secret.tweakMul(tweak_code, tweak_privkey);
     }
@@ -204,48 +206,49 @@ class StdSecureNet : StdHashNet, SecureNet  {
 
     @trusted
     void derive(string tweak_word, shared(SecureNet) secure_net) {
-        const tweak_code=HMAC(tweak_word.representation);
+        const tweak_code = HMAC(tweak_word.representation);
         derive(tweak_code, secure_net);
     }
 
     @trusted
     void derive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
-        in {
-            assert(_secret);
-        }
+    in {
+        assert(_secret);
+    }
     do {
-        synchronized(secure_net) {
+        synchronized (secure_net) {
             ubyte[] tweak_privkey = tweak_code.dup;
-            auto unshared_secure_net = cast(SecureNet)secure_net;
+            auto unshared_secure_net = cast(SecureNet) secure_net;
             unshared_secure_net.derive(tweak_code, tweak_privkey);
             createKeyPair(tweak_privkey);
         }
     }
 
     final void createKeyPair(ref ubyte[] privkey)
-        in {
-            assert(_crypt.secKeyVerify(privkey));
-            assert(_secret is null);
-        }
+    in {
+        assert(_crypt.secKeyVerify(privkey));
+        assert(_secret is null);
+    }
     do {
-        import std.digest.sha : SHA256;
-        import std.string : representation;
-        alias AES=AESCrypto!256;
+        import std.digest.sha: SHA256;
+        import std.string: representation;
+
+        alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
         // Generate scramble key for the private key
         import std.random;
 
-        auto seed=new ubyte[32];
+        auto seed = new ubyte[32];
 
         scramble(seed);
         // CBR: Note AES need to be change to beable to handle const keys
-        auto aes_key=calcHash(seed).dup;
-//        ubyte[AES.BLOCK_SIZE] aes_iv;
+        auto aes_key = calcHash(seed).dup;
+        //        ubyte[AES.BLOCK_SIZE] aes_iv;
         scramble(seed);
-        auto aes_iv=calcHash(seed)[4..4+AES.BLOCK_SIZE].dup;
+        auto aes_iv = calcHash(seed)[4 .. 4 + AES.BLOCK_SIZE].dup;
 
         // Encrypt private key
-        auto encrypted_privkey=new ubyte[privkey.length];
+        auto encrypted_privkey = new ubyte[privkey.length];
         AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
 
         AES.encrypt(calcHash(seed), aes_iv, encrypted_privkey, privkey);
@@ -258,14 +261,14 @@ class StdSecureNet : StdHashNet, SecureNet  {
         AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
 
         @safe
-            void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
+        void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
             // for long period of time
-            auto privkey=new ubyte[encrypted_privkey.length];
-            scope(exit) {
-                auto seed=new ubyte[32];
+            auto privkey = new ubyte[encrypted_privkey.length];
+            scope (exit) {
+                auto seed = new ubyte[32];
                 scramble(seed, aes_key);
                 scramble(aes_key, seed);
                 scramble(aes_iv);
@@ -280,44 +283,51 @@ class StdSecureNet : StdHashNet, SecureNet  {
             immutable(ubyte[]) sign(immutable(ubyte[]) message) const {
                 immutable(ubyte)[] result;
                 do_secret_stuff((const(ubyte[]) privkey) {
-                        result = _crypt.sign(message, privkey);
-                    });
+                    result = _crypt.sign(message, privkey);
+                });
                 return result;
             }
+
             void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
-                    });
+                    _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
+                });
             }
+
             void tweakAdd(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
-                    });
+                    _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
+                });
             }
+
             Buffer mask(const(ubyte[]) _mask) const {
-                import std.algorithm.iteration : sum;
+                import std.algorithm.iteration: sum;
+
                 check(sum(_mask) != 0, ConsensusFailCode.SECURITY_MASK_VECTOR_IS_ZERO);
                 Buffer result;
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        import tagion.utils.Miscellaneous : xor;
-                        auto data = xor(privkey, _mask);
-                        result=calcHash(calcHash(data));
-                    });
+                    import tagion.utils.Miscellaneous: xor;
+
+                    auto data = xor(privkey, _mask);
+                    result = calcHash(calcHash(data));
+                });
                 return result;
             }
         }
+
         _secret = new LocalSecret;
     }
 
     final void generateKeyPair(string passphrase)
-        in {
-            assert(_secret is null);
-        }
+    in {
+        assert(_secret is null);
+    }
     do {
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC=HMAC;
-        import std.string : representation;
-        alias AES=AESCrypto!256;
+        import std.digest.sha: SHA256;
+        import std.digest.hmac: digestHMAC = HMAC;
+        import std.string: representation;
+
+        alias AES = AESCrypto!256;
 
         scope hmac = digestHMAC!SHA256(passphrase.representation);
         auto data = hmac.finish.dup;
@@ -325,7 +335,8 @@ class StdSecureNet : StdHashNet, SecureNet  {
         // Generate Key pair
         do {
             data = hmac.put(data).finish.dup;
-        } while (!_crypt.secKeyVerify(data));
+        }
+        while (!_crypt.secKeyVerify(data));
 
         createKeyPair(data);
     }
@@ -333,30 +344,31 @@ class StdSecureNet : StdHashNet, SecureNet  {
     this() {
         this._crypt = new NativeSecp256k1;
     }
+
     unittest { // StdSecureNet
         import tagion.hibon.HiBON;
-        import std.exception : assertThrown;
-        import tagion.basic.ConsensusExceptions : SecurityConsensusException;
+        import std.exception: assertThrown;
+        import tagion.basic.ConsensusExceptions: SecurityConsensusException;
 
-        SecureNet net=new StdSecureNet;
+        SecureNet net = new StdSecureNet;
         net.generateKeyPair("Secret password");
 
         Document doc;
         {
-            auto h=new HiBON;
-            h["message"]="Some message";
-            doc=Document(h);
+            auto h = new HiBON;
+            h["message"] = "Some message";
+            doc = Document(h);
         }
 
-        const doc_signed=net.sign(doc);
+        const doc_signed = net.sign(doc);
 
         assert(doc_signed.message == net.rawCalcHash(doc.serialize));
         assert(net.verify(doc, doc_signed.signature, net.pubkey));
 
         { // Hash key
-            auto h=new HiBON;
-            h["#message"]="Some message";
-            doc=Document(h);
+            auto h = new HiBON;
+            h["#message"] = "Some message";
+            doc = Document(h);
         }
 
         // A document containing a hash-ket can not be signed or verified
@@ -368,23 +380,24 @@ class StdSecureNet : StdHashNet, SecureNet  {
 
 unittest { // StdHashNet
     //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
-    import std.string : representation;
-    import std.exception : assertThrown;
-    import core.exception : AssertError;
+    import tagion.hibon.HiBONRecord: isStub, hasHashKey;
+    import std.string: representation;
+    import std.exception: assertThrown;
+    import core.exception: AssertError;
+
     // import std.stdio;
 
     import tagion.hibon.HiBON;
 
-    const net=new StdHashNet;
+    const net = new StdHashNet;
     Document doc; // This is the data which is filed in the DART
     {
-        auto hibon=new HiBON;
-        hibon["text"]="Some text";
-        doc=Document(hibon);
+        auto hibon = new HiBON;
+        hibon["text"] = "Some text";
+        doc = Document(hibon);
     }
 
-    immutable doc_fingerprint=net.rawCalcHash(doc.serialize);
+    immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
 
     { // calcHash should not be used on a Document hashOf should be used instead
         assertThrown!AssertError(net.calcHash(doc.serialize));
@@ -399,12 +412,12 @@ unittest { // StdHashNet
         assert(net.calcHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
-    immutable stub_fingerprint=net.calcHash(doc_fingerprint, doc_fingerprint);
+    immutable stub_fingerprint = net.calcHash(doc_fingerprint, doc_fingerprint);
     Document stub;
     {
-        auto hibon=new HiBON;
-        hibon[STUB]=stub_fingerprint;
-        stub=Document(hibon);
+        auto hibon = new HiBON;
+        hibon[STUB] = stub_fingerprint;
+        stub = Document(hibon);
     }
 
     { // calcHash should not be used on a Document hashOf should be used instead
@@ -416,22 +429,20 @@ unittest { // StdHashNet
 
     assert(net.hashOf(stub) == stub_fingerprint);
 
-
-    enum key_name="#name";
-    enum keytext="some_key_text";
-    immutable hashkey_fingerprint=net.calcHash(keytext.representation);
+    enum key_name = "#name";
+    enum keytext = "some_key_text";
+    immutable hashkey_fingerprint = net.calcHash(keytext.representation);
     Document hash_doc;
     {
-        auto hibon=new HiBON;
-        hibon[key_name]=keytext;
-        hash_doc=Document(hibon);
+        auto hibon = new HiBON;
+        hibon[key_name] = keytext;
+        hash_doc = Document(hibon);
     }
 
     assert(!isStub(hash_doc));
     assert(hasHashKey(hash_doc));
     assert(net.hashOf(hash_doc) == hashkey_fingerprint);
 }
-
 
 class BadSecureNet : StdSecureNet {
     this(string passphrase) {
@@ -440,7 +451,7 @@ class BadSecureNet : StdSecureNet {
     }
 
     override Signature sign(immutable(ubyte[]) message) const {
-        immutable false_message=super.rawCalcHash(message~message);
+        immutable false_message = super.rawCalcHash(message ~ message);
         return super.sign(false_message);
     }
 }

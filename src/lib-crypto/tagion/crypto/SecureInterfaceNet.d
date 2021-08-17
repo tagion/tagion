@@ -1,12 +1,12 @@
 module tagion.crypto.SecureInterfaceNet;
 
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
-import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
-import tagion.hibon.Document : Document;
+import tagion.basic.Basic: Buffer, Pubkey, Signature;
+import tagion.hibon.HiBONRecord: isHiBONRecord, HiBONPrefix;
+import tagion.hibon.Document: Document;
 
-import tagion.basic.ConsensusExceptions : Check, SecurityConsensusException, ConsensusFailCode;
+import tagion.basic.ConsensusExceptions: Check, SecurityConsensusException, ConsensusFailCode;
 
-alias check=Check!SecurityConsensusException;
+alias check = Check!SecurityConsensusException;
 
 @safe
 interface HashNet {
@@ -21,25 +21,30 @@ interface HashNet {
 
     immutable(Buffer) hashOf(const(Document) doc) const;
 
-    final immutable(Buffer) hashOf(T)(T value) const if(isHiBONRecord!T) {
+    final immutable(Buffer) hashOf(T)(T value) const if (isHiBONRecord!T) {
         return hashOf(value.toDoc);
     }
 }
 
-
-
 @safe
 interface SecureNet : HashNet {
-    import std.typecons : Tuple;
-    alias Signed=Tuple!(Signature, "signature", Buffer, "message");
+    import std.typecons: Tuple;
+
+    alias Signed = Tuple!(Signature, "signature", Buffer, "message");
     @nogc Pubkey pubkey() pure const nothrow;
     bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
-        .check(doc.keys.front[0] !is HiBONPrefix.HASH, ConsensusFailCode.SECURITY_MESSAGE_HASH_KEY);
-        immutable message=rawCalcHash(doc.serialize);
+
+        
+
+            .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
+                    .SECURITY_MESSAGE_HASH_KEY);
+        immutable message = rawCalcHash(doc.serialize);
         return verify(message, signature, pubkey);
     }
-    final bool verify(T)(T pack, const Signature signature, const Pubkey pubkey) const if(isHiBONRecord!T) {
+
+    final bool verify(T)(T pack, const Signature signature, const Pubkey pubkey) const
+            if (isHiBONRecord!T) {
         return verify(pack.toDoc, signature, pubkey);
     }
 
@@ -48,12 +53,16 @@ interface SecureNet : HashNet {
     Signature sign(immutable(ubyte[]) message) const;
 
     final Signed sign(const Document doc) const {
-        .check(doc.keys.front[0] !is HiBONPrefix.HASH, ConsensusFailCode.SECURITY_MESSAGE_HASH_KEY);
-        immutable fingerprint=rawCalcHash(doc.serialize);
+
+        
+
+            .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
+                    .SECURITY_MESSAGE_HASH_KEY);
+        immutable fingerprint = rawCalcHash(doc.serialize);
         return Signed(sign(fingerprint), fingerprint);
     }
 
-    final Signed sign(T)(T pack) const if(isHiBONRecord!T) {
+    final Signed sign(T)(T pack) const if (isHiBONRecord!T) {
         return sign(pack.toDoc);
     }
 

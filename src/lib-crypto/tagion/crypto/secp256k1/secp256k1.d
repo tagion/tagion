@@ -1,13 +1,12 @@
 module tagion.crypto.secp256k1.secp256k1;
 
-package extern(C) struct secp256k1_context;
+package extern (C) struct secp256k1_context;
 
-package extern(C) struct secp256k1_callback;
-
+package extern (C) struct secp256k1_callback;
 
 package extern (C) {
 
-/* These rules specify the order of arguments in API calls:
+    /* These rules specify the order of arguments in API calls:
  *
  * 1. Context pointers go first, followed by output arguments, combined
  *    output/input arguments, and finally input-only arguments.
@@ -26,7 +25,7 @@ package extern (C) {
     //     secp256k1_fe_storage y;
     // } secp256k1_ge_storage;
 
-//    alias secp256k1_ge_storage function() secp256k1_ge_storage_function;
+    //    alias secp256k1_ge_storage function() secp256k1_ge_storage_function;
     // alias int function() secp256k1_ge_storage_function;
     // struct secp256k1_ecmult_context {
     //     /* For accelerating the computation of a*P + b*G: */
@@ -38,7 +37,7 @@ package extern (C) {
     //      +/
     // };
 
-        /++
+    /++
          struct secp256k1_ecmult_gen_context {
          /* For accelerating the computation of a*G:
          * To harden against timing attacks, use the following mechanism:
@@ -63,7 +62,7 @@ package extern (C) {
         };
         +/
 
-/** Opaque data structure that holds context information (precomputed tables etc.).
+    /** Opaque data structure that holds context information (precomputed tables etc.).
  *
  *  The purpose of context structures is to cache large precomputed data tables
  *  that are expensive to construct, and also to maintain the randomization data
@@ -81,7 +80,7 @@ package extern (C) {
  *  Regarding randomization, either do it once at creation time (in which case
  *  you do not need any locking for the other calls), or use a read-write lock.
  */
-// typedef struct secp256k1_context_struct secp256k1_context;
+    // typedef struct secp256k1_context_struct secp256k1_context;
     // struct secp256k1_context {
     //     secp256k1_ecmult_context ecmult_ctx;
     //     secp256k1_ecmult_gen_context ecmult_gen_ctx;
@@ -89,8 +88,7 @@ package extern (C) {
     //     secp256k1_callback error_callback;
     // };
 
-
-/** Opaque data structure that holds rewriteable "scratch space"
+    /** Opaque data structure that holds rewriteable "scratch space"
  *
  *  The purpose of this structure is to replace dynamic memory allocations,
  *  because we target architectures where this may not be available. It is
@@ -101,9 +99,9 @@ package extern (C) {
  *  Unlike the context object, this cannot safely be shared between threads
  *  without additional synchronization logic.
  */
-//typedef struct secp256k1_scratch_space_struct secp256k1_scratch_space;
+    //typedef struct secp256k1_scratch_space_struct secp256k1_scratch_space;
 
-        struct secp256k1_scratch_space {
+    struct secp256k1_scratch_space {
         void* data;
         size_t offset;
         size_t init_size;
@@ -111,7 +109,7 @@ package extern (C) {
         const(secp256k1_callback)* error_callback;
     };
 
-/** Opaque data structure that holds a parsed and valid public key.
+    /** Opaque data structure that holds a parsed and valid public key.
  *
  *  The exact representation of data inside is implementation defined and not
  *  guaranteed to be portable between different platforms or versions. It is
@@ -124,7 +122,7 @@ package extern (C) {
 
     };
 
-/** Opaque data structured that holds a parsed ECDSA signature.
+    /** Opaque data structured that holds a parsed ECDSA signature.
  *
  *  The exact representation of data inside is implementation defined and not
  *  guaranteed to be portable between different platforms or versions. It is
@@ -137,7 +135,7 @@ package extern (C) {
         ubyte[64] data;
     };
 
-/** A pointer to a function to deterministically generate a nonce.
+    /** A pointer to a function to deterministically generate a nonce.
  *
  * Returns: 1 if a nonce was successfully generated. 0 will cause signing to fail.
  * Out:     nonce32:   pointer to a 32-byte array to be filled by the function.
@@ -154,15 +152,15 @@ package extern (C) {
  * the message, the algorithm, the key and the attempt.
  */
     alias int function(
-        ubyte* nonce32,
-        const(char)* msg32,
-        const(char)* key32,
-        const(char)* algo16,
-        void* data,
-        uint attempt
-        ) secp256k1_nonce_function;
+            ubyte* nonce32,
+            const(char)* msg32,
+            const(char)* key32,
+            const(char)* algo16,
+            void* data,
+            uint attempt
+    ) secp256k1_nonce_function;
 
-/++
+    /++
 # if !defined(SECP256K1_GNUC_PREREQ)
 #  if defined(__GNUC__)&&defined(__GNUC_MINOR__)
 #   define SECP256K1_GNUC_PREREQ(_maj,_min) \
@@ -173,7 +171,7 @@ package extern (C) {
 # endif
 +/
 
-/++
+    /++
 # if (!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L) )
 #  if SECP256K1_GNUC_PREREQ(2,7)
 #   define SECP256K1_INLINE __inline__
@@ -187,7 +185,7 @@ package extern (C) {
 # endif
 +/
 
-/++
+    /++
 #ifndef SECP256K1_API
 # if defined(_WIN32)
 #  ifdef SECP256K1_BUILD
@@ -203,10 +201,10 @@ package extern (C) {
 #endif
 +/
 
-/**Warning attributes
+    /**Warning attributes
   * NONNULL is not used if SECP256K1_BUILD is set to avoid the compiler optimizing out
   * some paranoid null checks. */
-/++++++++
+    /++++++++
 # if defined(__GNUC__) && SECP256K1_GNUC_PREREQ(3, 4)
 #  define SECP256K1_WARN_UNUSED_RESULT __attribute__ ((__warn_unused_result__))
 # else
@@ -219,26 +217,27 @@ package extern (C) {
 # endif
 +/
 
-/** All flags' lower 8 bits indicate what they're for. Do not use directly. */
+    /** All flags' lower 8 bits indicate what they're for. Do not use directly. */
     enum SECP256K1 : uint {
         FLAGS_TYPE_MASK = ((1 << 8) - 1),
         FLAGS_TYPE_CONTEXT = (1 << 0),
         FLAGS_TYPE_COMPRESSION = (1 << 1),
-/** The higher bits contain the actual data. Do not use directly. */
+        /** The higher bits contain the actual data. Do not use directly. */
         FLAGS_BIT_CONTEXT_VERIFY = (1 << 8),
         FLAGS_BIT_CONTEXT_SIGN = (1 << 9),
         FLAGS_BIT_COMPRESSION = (1 << 8),
 
-/** Flags to pass to secp256k1_context_create. */
+        /** Flags to pass to secp256k1_context_create. */
         CONTEXT_VERIFY = (FLAGS_TYPE_CONTEXT | FLAGS_BIT_CONTEXT_VERIFY),
         CONTEXT_SIGN = (FLAGS_TYPE_CONTEXT | FLAGS_BIT_CONTEXT_SIGN),
         CONTEXT_NONE = (FLAGS_TYPE_CONTEXT),
 
-/** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
+        /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
         EC_COMPRESSED = (FLAGS_TYPE_COMPRESSION | FLAGS_BIT_COMPRESSION),
-        EC_UNCOMPRESSED = (FLAGS_TYPE_COMPRESSION),
+        EC_UNCOMPRESSED = (
+                FLAGS_TYPE_COMPRESSION),
 
-/** Prefix byte used to tag various encoded curvepoints for specific purposes */
+        /** Prefix byte used to tag various encoded curvepoints for specific purposes */
         TAG_PUBKEY_EVEN = 0x02,
         TAG_PUBKEY_ODD = 0x03,
         TAG_PUBKEY_UNCOMPRESSED = 0x04,
@@ -246,7 +245,7 @@ package extern (C) {
         TAG_PUBKEY_HYBRID_ODD = 0x07
     };
 
-/** Create a secp256k1 context object.
+    /** Create a secp256k1 context object.
  *
  *  Returns: a newly created context object.
  *  In:      flags: which parts of the context to initialize.
@@ -255,25 +254,25 @@ package extern (C) {
  */
     secp256k1_context* secp256k1_context_create(uint flags);
 
-/** Copies a secp256k1 context object.
+    /** Copies a secp256k1 context object.
  *
  *  Returns: a newly created context object.
  *  Args:    ctx: an existing context to copy (cannot be NULL)
  */
     secp256k1_context* secp256k1_context_clone(
-        const(secp256k1_context)* ctx
-        );
+            const(secp256k1_context)* ctx
+    );
 
-/** Destroy a secp256k1 context object.
+    /** Destroy a secp256k1 context object.
  *
  *  The context pointer may not be used afterwards.
  *  Args:   ctx: an existing context to destroy (cannot be NULL)
  */
     void secp256k1_context_destroy(
-        secp256k1_context* ctx
-        );
+            secp256k1_context* ctx
+    );
 
-/** Set a callback function to be called when an illegal argument is passed to
+    /** Set a callback function to be called when an illegal argument is passed to
  *  an API call. It will only trigger for violations that are mentioned
  *  explicitly in the header.
  *
@@ -294,12 +293,12 @@ package extern (C) {
  *        data: the opaque pointer to pass to fun above.
  */
     void secp256k1_context_set_illegal_callback(
-        secp256k1_context* ctx,
-        void function(const char* message, void* data) fun,
-        const void* data
-        );
+            secp256k1_context* ctx,
+            void function(const char* message, void* data) fun,
+            const void* data
+    );
 
-/** Set a callback function to be called when an internal consistency check
+    /** Set a callback function to be called when an internal consistency check
  *  fails. The default is crashing.
  *
  *  This can only trigger in case of a hardware failure, miscompilation,
@@ -316,12 +315,12 @@ package extern (C) {
  *        data: the opaque pointer to pass to fun above.
  */
     void secp256k1_context_set_error_callback(
-        secp256k1_context* ctx,
-        void function(const(char)* message, void* data) fun,
-        const(void)* data
-        );
+            secp256k1_context* ctx,
+            void function(const(char)* message, void* data) fun,
+            const(void)* data
+    );
 
-/** Create a secp256k1 scratch space object.
+    /** Create a secp256k1 scratch space object.
  *
  *  Returns: a newly created scratch space.
  *  Args: ctx:  an existing context object (cannot be NULL)
@@ -329,21 +328,21 @@ package extern (C) {
  *        max_size: maximum amount of memory to allocate
  */
     secp256k1_scratch_space* secp256k1_scratch_space_create(
-        const secp256k1_context* ctx,
-        size_t init_size,
-        size_t max_size
-        );
+            const secp256k1_context* ctx,
+            size_t init_size,
+            size_t max_size
+    );
 
-/** Destroy a secp256k1 scratch space.
+    /** Destroy a secp256k1 scratch space.
  *
  *  The pointer may not be used afterwards.
  *  Args:   scratch: space to destroy
  */
     void secp256k1_scratch_space_destroy(
-        secp256k1_scratch_space* scratch
-        );
+            secp256k1_scratch_space* scratch
+    );
 
-/** Parse a variable-length public key into the pubkey object.
+    /** Parse a variable-length public key into the pubkey object.
  *
  *  Returns: 1 if the public key was fully valid.
  *           0 if the public key could not be parsed or is invalid.
@@ -358,13 +357,13 @@ package extern (C) {
  *  byte 0x06 or 0x07) format public keys.
  */
     int secp256k1_ec_pubkey_parse(
-        const(secp256k1_context)* ctx,
-        secp256k1_pubkey* pubkey,
-        const(ubyte)* input,
-        size_t inputlen
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_pubkey* pubkey,
+            const(ubyte)* input,
+            size_t inputlen
+    );
 
-/** Serialize a pubkey object into a serialized byte sequence.
+    /** Serialize a pubkey object into a serialized byte sequence.
  *
  *  Returns: 1 always.
  *  Args:   ctx:        a secp256k1 context object.
@@ -380,14 +379,14 @@ package extern (C) {
  *                      compressed format, otherwise SECP256K1_EC_UNCOMPRESSED.
  */
     int secp256k1_ec_pubkey_serialize(
-        const(secp256k1_context)* ctx,
-        ubyte* output,
-        size_t* outputlen,
-        const(secp256k1_pubkey)* pubkey,
-        uint flags
-        );
+            const(secp256k1_context)* ctx,
+            ubyte* output,
+            size_t* outputlen,
+            const(secp256k1_pubkey)* pubkey,
+            uint flags
+    );
 
-/** Parse an ECDSA signature in compact (64 bytes) format.
+    /** Parse an ECDSA signature in compact (64 bytes) format.
  *
  *  Returns: 1 when the signature could be parsed, 0 otherwise.
  *  Args: ctx:      a secp256k1 context object
@@ -403,12 +402,12 @@ package extern (C) {
  *  message and public key.
  */
     int secp256k1_ecdsa_signature_parse_compact(
-        const(secp256k1_context)* ctx,
-        secp256k1_ecdsa_signature* sig,
-        const(ubyte)* input64
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_ecdsa_signature* sig,
+            const(ubyte)* input64
+    );
 
-/** Parse a DER ECDSA signature.
+    /** Parse a DER ECDSA signature.
  *
  *  Returns: 1 when the signature could be parsed, 0 otherwise.
  *  Args: ctx:      a secp256k1 context object
@@ -424,13 +423,13 @@ package extern (C) {
  *  guaranteed to fail for every message and public key.
  */
     int secp256k1_ecdsa_signature_parse_der(
-        const(secp256k1_context)* ctx,
-        secp256k1_ecdsa_signature* sig,
-        const(ubyte)* input,
-        size_t inputlen
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_ecdsa_signature* sig,
+            const(ubyte)* input,
+            size_t inputlen
+    );
 
-/** Serialize an ECDSA signature in DER format.
+    /** Serialize an ECDSA signature in DER format.
  *
  *  Returns: 1 if enough space was available to serialize, 0 otherwise
  *  Args:   ctx:       a secp256k1 context object
@@ -442,14 +441,13 @@ package extern (C) {
  *  In:     sig:       a pointer to an initialized signature object
  */
     int secp256k1_ecdsa_signature_serialize_der(
-        const(secp256k1_context)* ctx,
-        ubyte* output,
-        size_t* outputlen,
-        const(secp256k1_ecdsa_signature)* sig
-        );
+            const(secp256k1_context)* ctx,
+            ubyte* output,
+            size_t* outputlen,
+            const(secp256k1_ecdsa_signature)* sig
+    );
 
-
-/** Serialize an ECDSA signature in compact (64 byte) format.
+    /** Serialize an ECDSA signature in compact (64 byte) format.
  *
  *  Returns: 1
  *  Args:   ctx:       a secp256k1 context object
@@ -459,12 +457,12 @@ package extern (C) {
  *  See secp256k1_ecdsa_signature_parse_compact for details about the encoding.
  */
     int secp256k1_ecdsa_signature_serialize_compact(
-        const(secp256k1_context)* ctx,
-        ubyte* output64,
-        const(secp256k1_ecdsa_signature)* sig
-        );
+            const(secp256k1_context)* ctx,
+            ubyte* output64,
+            const(secp256k1_ecdsa_signature)* sig
+    );
 
-/** Verify an ECDSA signature.
+    /** Verify an ECDSA signature.
  *
  *  Returns: 1: correct signature
  *           0: incorrect or unparseable signature
@@ -483,13 +481,13 @@ package extern (C) {
  * For details, see the comments for that function.
  */
     int secp256k1_ecdsa_verify(
-        const(secp256k1_context)* ctx,
-        const(secp256k1_ecdsa_signature)* sig,
-        const(ubyte)* msg32,
-        const(secp256k1_pubkey)* pubkey
-        );
+            const(secp256k1_context)* ctx,
+            const(secp256k1_ecdsa_signature)* sig,
+            const(ubyte)* msg32,
+            const(secp256k1_pubkey)* pubkey
+    );
 
-/** Convert a signature to a normalized lower-S form.
+    /** Convert a signature to a normalized lower-S form.
  *
  *  Returns: 1 if sigin was not normalized, 0 if it already was.
  *  Args: ctx:    a secp256k1 context object
@@ -532,21 +530,21 @@ package extern (C) {
  *  secp256k1_ecdsa_signature_normalize must be called before verification.
  */
     int secp256k1_ecdsa_signature_normalize(
-        const(secp256k1_context)* ctx,
-        secp256k1_ecdsa_signature* sigout,
-        const(secp256k1_ecdsa_signature)* sigin
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_ecdsa_signature* sigout,
+            const(secp256k1_ecdsa_signature)* sigin
+    );
 
-/** An implementation of RFC6979 (using HMAC-SHA256) as nonce generation function.
+    /** An implementation of RFC6979 (using HMAC-SHA256) as nonce generation function.
  * If a data pointer is passed, it is assumed to be a pointer to 32 bytes of
  * extra entropy.
  */
     extern const secp256k1_nonce_function secp256k1_nonce_function_rfc6979;
 
-/** A default safe nonce generation function (currently equal to secp256k1_nonce_function_rfc6979). */
+    /** A default safe nonce generation function (currently equal to secp256k1_nonce_function_rfc6979). */
     extern const secp256k1_nonce_function secp256k1_nonce_function_default;
 
-/** Create an ECDSA signature.
+    /** Create an ECDSA signature.
  *
  *  Returns: 1: signature created
  *           0: the nonce generation function failed, or the private key was invalid.
@@ -561,15 +559,15 @@ package extern (C) {
  * secp256k1_ecdsa_signature_normalize for more details.
  */
     int secp256k1_ecdsa_sign(
-        const(secp256k1_context)* ctx,
-        secp256k1_ecdsa_signature* sig,
-        const(ubyte)* msg32,
-        const(ubyte)* seckey,
-        secp256k1_nonce_function noncefp,
-        const void *ndata
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_ecdsa_signature* sig,
+            const(ubyte)* msg32,
+            const(ubyte)* seckey,
+            secp256k1_nonce_function noncefp,
+            const void* ndata
+    );
 
-/** Verify an ECDSA secret key.
+    /** Verify an ECDSA secret key.
  *
  *  Returns: 1: secret key is valid
  *           0: secret key is invalid
@@ -577,15 +575,15 @@ package extern (C) {
  *  In:      seckey: pointer to a 32-byte secret key (cannot be NULL)
  */
     int secp256k1_ec_seckey_verify(
-        const(secp256k1_context)* ctx,
-        const(ubyte)* seckey
-        );
-        // in {
-        //     assert(ctx);
-        //     assert(seckey);
-        // };
+            const(secp256k1_context)* ctx,
+            const(ubyte)* seckey
+    );
+    // in {
+    //     assert(ctx);
+    //     assert(seckey);
+    // };
 
-/** Compute the public key for a secret key.
+    /** Compute the public key for a secret key.
  *
  *  Returns: 1: secret was valid, public key stores
  *           0: secret was invalid, try again
@@ -594,34 +592,34 @@ package extern (C) {
  *  In:     seckey:     pointer to a 32-byte private key (cannot be NULL)
  */
     int secp256k1_ec_pubkey_create(
-        const(secp256k1_context)* ctx,
-        secp256k1_pubkey* pubkey,
-        const(ubyte)* seckey
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_pubkey* pubkey,
+            const(ubyte)* seckey
+    );
 
-/** Negates a private key in place.
+    /** Negates a private key in place.
  *
  *  Returns: 1 always
  *  Args:   ctx:        pointer to a context object
  *  In/Out: seckey:     pointer to the 32-byte private key to be negated (cannot be NULL)
  */
     int secp256k1_ec_privkey_negate(
-        const(secp256k1_context)* ctx,
-        ubyte* seckey
-        );
+            const(secp256k1_context)* ctx,
+            ubyte* seckey
+    );
 
-/** Negates a public key in place.
+    /** Negates a public key in place.
  *
  *  Returns: 1 always
  *  Args:   ctx:        pointer to a context object
  *  In/Out: pubkey:     pointer to the public key to be negated (cannot be NULL)
  */
     int secp256k1_ec_pubkey_negate(
-        const(secp256k1_context)* ctx,
-        secp256k1_pubkey* pubkey
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_pubkey* pubkey
+    );
 
-/** Tweak a private key by adding tweak to it.
+    /** Tweak a private key by adding tweak to it.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
  *          uniformly random 32-byte arrays, or if the resulting private key
  *          would be invalid (only when the tweak is the complement of the
@@ -631,12 +629,12 @@ package extern (C) {
  * In:      tweak:  pointer to a 32-byte tweak.
  */
     int secp256k1_ec_privkey_tweak_add(
-        const secp256k1_context* ctx,
-        ubyte* seckey,
-        const(ubyte)* tweak
-        );
+            const secp256k1_context* ctx,
+            ubyte* seckey,
+            const(ubyte)* tweak
+    );
 
-/** Tweak a public key by adding tweak times the generator to it.
+    /** Tweak a public key by adding tweak times the generator to it.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
  *          uniformly random 32-byte arrays, or if the resulting public key
  *          would be invalid (only when the tweak is the complement of the
@@ -647,12 +645,12 @@ package extern (C) {
  * In:      tweak:  pointer to a 32-byte tweak.
  */
     int secp256k1_ec_pubkey_tweak_add(
-        const(secp256k1_context)* ctx,
-        secp256k1_pubkey* pubkey,
-        const(ubyte)* tweak
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_pubkey* pubkey,
+            const(ubyte)* tweak
+    );
 
-/** Tweak a private key by multiplying it by a tweak.
+    /** Tweak a private key by multiplying it by a tweak.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
  *          uniformly random 32-byte arrays, or equal to zero. 1 otherwise.
  * Args:   ctx:    pointer to a context object (cannot be NULL).
@@ -660,12 +658,12 @@ package extern (C) {
  * In:     tweak:  pointer to a 32-byte tweak.
  */
     int secp256k1_ec_privkey_tweak_mul(
-        const(secp256k1_context)* ctx,
-        ubyte *seckey,
-        const(ubyte)* tweak
-        );
+            const(secp256k1_context)* ctx,
+            ubyte* seckey,
+            const(ubyte)* tweak
+    );
 
-/** Tweak a public key by multiplying it by a tweak value.
+    /** Tweak a public key by multiplying it by a tweak value.
  * Returns: 0 if the tweak was out of range (chance of around 1 in 2^128 for
  *          uniformly random 32-byte arrays, or equal to zero. 1 otherwise.
  * Args:    ctx:    pointer to a context object initialized for validation
@@ -674,13 +672,12 @@ package extern (C) {
  * In:      tweak:  pointer to a 32-byte tweak.
  */
     int secp256k1_ec_pubkey_tweak_mul(
-        const(secp256k1_context)* ctx,
-        secp256k1_pubkey* pubkey,
-        const(ubyte)* tweak
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_pubkey* pubkey,
+            const(ubyte)* tweak
+    );
 
-
-/** Updates the context randomization to protect against side-channel leakage.
+    /** Updates the context randomization to protect against side-channel leakage.
  *  Returns: 1: randomization successfully updated
  *           0: error
  *  Args:    ctx:       pointer to a context object (cannot be NULL)
@@ -700,11 +697,11 @@ package extern (C) {
  * secp256k1_context_clone, and may call this repeatedly afterwards.
  */
     int secp256k1_context_randomize(
-        secp256k1_context* ctx,
-        const(ubyte)* seed32
-        );
+            secp256k1_context* ctx,
+            const(ubyte)* seed32
+    );
 
-/** Add a number of public keys together.
+    /** Add a number of public keys together.
  *  Returns: 1: the sum of the public keys is valid.
  *           0: the sum of the public keys is not valid.
  *  Args:   ctx:        pointer to a context object
@@ -714,13 +711,13 @@ package extern (C) {
  *          n:          the number of public keys to add together (must be at least 1)
  */
     int secp256k1_ec_pubkey_combine(
-        const(secp256k1_context)* ctx,
-        secp256k1_pubkey* out_,
-        const(secp256k1_pubkey**) ins,
-        size_t n
-        );
+            const(secp256k1_context)* ctx,
+            secp256k1_pubkey* out_,
+            const(secp256k1_pubkey**) ins,
+            size_t n
+    );
 
-/** Compute an EC Diffie-Hellman secret in constant time
+    /** Compute an EC Diffie-Hellman secret in constant time
  *  Returns: 1: exponentiation was successful
  *           0: scalar was invalid (zero or overflow)
  *  Args:    ctx:        pointer to a context object (cannot be NULL)
@@ -731,9 +728,9 @@ package extern (C) {
  *           privkey:    a 32-byte scalar with which to multiply the point
  */
     int secp256k1_ecdh(
-        const(secp256k1_context)* ctx,
-        ubyte* result,
-        const(secp256k1_pubkey)* pubkey,
-        const(ubyte)* privkey
-        );
+            const(secp256k1_context)* ctx,
+            ubyte* result,
+            const(secp256k1_pubkey)* pubkey,
+            const(ubyte)* privkey
+    );
 }
