@@ -14,6 +14,7 @@
     "src/libs/wallet": "git@github.com:tagion/core-lib-wallet.git",
     "src/libs/wasm": "git@github.com:tagion/core-lib-wasm.git",
     "src/libs/communication": "git@github.com:tagion/core-lib-communication.git",
-    "src/libs/monitor": "git@github.com:tagion/core-lib-monitor.git"
+    "src/libs/monitor": "git@github.com:tagion/core-lib-monitor.git",
+    "src/bins/node": "git@github.com:tagion/core-bin-node.git"
   }
 }
