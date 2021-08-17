@@ -1,4 +1,4 @@
-ifndef TINY_AES
+ifdef OPENSSL_AES
 SOURCEFLAGS+=-not -path "*/tiny_aes/*"
 else
 SOURCEFLAGS+=-not -path "*/openssl_aes/*"
