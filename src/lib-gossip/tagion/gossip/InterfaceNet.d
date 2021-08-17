@@ -2,33 +2,31 @@ module tagion.gossip.InterfaceNet;
 
 //import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
-import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.HiBONRecord: isHiBONRecord;
+import tagion.hibon.Document: Document;
+
 //import tagion.utils.Queue;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Basic;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 
-import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+import tagion.crypto.SecureInterfaceNet: HashNet, SecureNet;
 import tagion.communication.HiRPC;
 
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
-
 //import tagion.hashgraph.HashGraphBasic : Tides;
 
-version(none)
 @safe
 interface NetCallbacks : EventMonitorCallbacks {
 
-//    void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides);
+    //    void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides);
 
     void receive(const(Document) doc);
     void send(const Pubkey channel, const(HiRPC.Sender) sender);
-
 
     void consensus_failure(const(ConsensusException) e);
 }
@@ -41,8 +39,8 @@ interface P2pNet {
 
 @safe
 interface GossipNet : P2pNet {
-    alias ChannelFilter=bool delegate(const(Pubkey) channel) @safe;
-    alias SenderCallBack=const(HiRPC.Sender) delegate() nothrow @safe;
+    alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
+    alias SenderCallBack = const(HiRPC.Sender) delegate() nothrow @safe;
     const(sdt_t) time() pure const nothrow;
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow;
@@ -55,6 +53,7 @@ interface GossipNet : P2pNet {
 @safe
 interface ScriptNet {
     import std.concurrency;
+
     @property void transcript_tid(Tid tid);
 
     @property Tid transcript_tid() pure nothrow;

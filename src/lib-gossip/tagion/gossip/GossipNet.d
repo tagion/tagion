@@ -2,24 +2,25 @@ module tagion.gossip.GossipNet;
 
 import std.concurrency;
 import std.format;
-import std.exception : assumeUnique;
-import std.string : representation;
-import core.time : MonoTime;
+import std.exception: assumeUnique;
+import std.string: representation;
+import core.time: MonoTime;
 
 //import tagion.Options;
-import tagion.basic.Basic : Pubkey;
+import tagion.basic.Basic: Pubkey;
+
 //import tagion.basic.ConsensusExceptions : convertEnum;
 //, consensusCheck, consensusCheckArguments;
 //import tagion.utils.Miscellaneous: cutHex;
 //import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-//import tagion.hibon.HiBONRecord : HiBONPrefix, STUB, isStub;
+import tagion.hibon.Document: Document;
 
+//import tagion.hibon.HiBONRecord : HiBONPrefix, STUB, isStub;
 
 // import tagion.utils.LRU;
 // import tagion.utils.Queue;
 
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet: StdSecureNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
@@ -37,7 +38,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     static private shared uint[immutable(Pubkey)] _node_id_pair;
 
     uint globalNodeId(immutable(Pubkey) channel) {
-        if ( channel in _node_id_pair ) {
+        if (channel in _node_id_pair) {
             return _node_id_pair[channel];
         }
         else {
@@ -48,6 +49,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     @trusted
     static private uint setGlobalNodeId(immutable(Pubkey) channel) {
         import core.atomic;
+
         auto result = _next_global_id;
         _node_id_pair[channel] = _next_global_id;
         atomicOp!"+="(_next_global_id, 1);
@@ -70,8 +72,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     //     _hashgraph=h;
     // }
 
-
-
     // override NetCallbacks callbacks() {
     //     return (cast(NetCallbacks)Event.callbacks);
     // }
@@ -88,21 +88,21 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 
     protected {
         ulong _current_time;
-//        HashGraphI _hashgraph;
+        //        HashGraphI _hashgraph;
     }
 
     // override void receive(const(Document) doc) {
     //     hashgraph.wavefront_machine(doc);
     // }
 
-
     protected Tid _transcript_tid;
     @property void transcript_tid(Tid tid)
-        @trusted in {
+    @trusted
+    in {
         assert(_transcript_tid != _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
     }
     do {
-        _transcript_tid=tid;
+        _transcript_tid = tid;
     }
 
     @property Tid transcript_tid() pure nothrow {
@@ -110,11 +110,13 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     }
 
     protected Tid _scripting_engine_tid;
-    @property void scripting_engine_tid(Tid tid) @trusted in {
-        assert(_scripting_engine_tid != _scripting_engine_tid.init, format("%s hash already been set", __FUNCTION__));
+    @property void scripting_engine_tid(Tid tid) @trusted
+    in {
+        assert(_scripting_engine_tid != _scripting_engine_tid.init, format(
+                "%s hash already been set", __FUNCTION__));
     }
     do {
-        _scripting_engine_tid=tid;
+        _scripting_engine_tid = tid;
     }
 
     @property Tid scripting_engine_tid() pure nothrow {
