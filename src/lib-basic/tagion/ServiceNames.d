@@ -1,11 +1,11 @@
 module tagion.ServiceNames;
 
-import tagion.Options : Options;
-import std.array : join;
-import std.conv : to;
+import tagion.Options: Options;
+import std.array: join;
+import std.conv: to;
 
 string get_node_name(ref const Options opts, immutable size_t i) pure nothrow {
-    import std.array : join;
+    import std.array: join;
 
     return [opts.nodeprefix, i.to!string].join(opts.separator);
 }

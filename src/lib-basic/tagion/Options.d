@@ -5,18 +5,19 @@ import std.format;
 import std.traits;
 import std.file;
 import std.getopt;
-import std.array : join;
-import std.string : strip;
+import std.array: join;
+import std.string: strip;
 
 //import stdio=std.stdio;
-import tagion.basic.Basic : basename, DataFormat;
+import tagion.basic.Basic: basename, DataFormat;
 import tagion.basic.TagionExceptions;
-import tagion.Keywords : NetworkMode, ValidNetwrokModes;
-import tagion.basic.Logger : LoggerType;
+import tagion.Keywords: NetworkMode, ValidNetwrokModes;
+import tagion.basic.Logger: LoggerType;
 
 /++
 +/
-@safe class OptionException : TagionException {
+@safe
+class OptionException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
@@ -125,7 +126,7 @@ mixin template JSONCommon() {
                 }
                 check((value >= type.min) && (value <= type.max),
                         format("Value %d out of range for type %s of %s",
-                            value, type.stringof, m.stringof));
+                        value, type.stringof, m.stringof));
                 m = cast(type) value;
 
             }
@@ -431,7 +432,8 @@ shared static this() {
 /++
 +  Sets the thread global options opt
 +/
-@safe static void setOptions(ref const(Options) opt) {
+@safe
+static void setOptions(ref const(Options) opt) {
     options_memory = opt;
 }
 
@@ -549,6 +551,9 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         "server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
+
+    
+
     );
 };
 

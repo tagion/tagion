@@ -2,14 +2,16 @@ module tagion.basic.TagionExceptions;
 
 import std.exception;
 
-@safe interface TagionExceptionInterface {
+@safe
+interface TagionExceptionInterface {
     // Empty
 }
 
 /++
  + Exception used as a base exception class for all exceptions use in tagion project
  +/
-@safe class TagionException : Exception, TagionExceptionInterface {
+@safe
+class TagionException : Exception, TagionExceptionInterface {
     //    string task_name; /// Contains the name of the task when the execption has throw
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
@@ -37,7 +39,8 @@ import std.exception;
 /++
  + Builds a check function out of a TagionExecption
  +/
-@safe void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) pure {
+@safe
+void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) pure {
     static assert(is(E : TagionExceptionInterface));
     if (!flag) {
         throw new E(msg, file, line);
@@ -56,7 +59,8 @@ struct TaskFailure {
  Returns:
  The immutable version of the Exception
  +/
-@trusted static immutable(TaskFailure) taskException(const(Throwable) e) nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+@trusted
+static immutable(TaskFailure) taskException(const(Throwable) e) nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
     import tagion.basic.Logger;
 
     return immutable(TaskFailure)(cast(immutable) e, log.task_name);
@@ -68,7 +72,8 @@ struct TaskFailure {
 //     ownerTid.send(task_e);
 // }
 
-@safe static void fatal(const(Throwable) e) nothrow {
+@safe
+static void fatal(const(Throwable) e) nothrow {
     import tagion.basic.Logger;
 
     immutable task_e = taskException(e);
@@ -81,7 +86,8 @@ struct TaskFailure {
     }
 }
 
-@trusted static void taskfailure(immutable(TaskFailure) t) {
+@trusted
+static void taskfailure(immutable(TaskFailure) t) {
     import std.concurrency;
 
     if (ownerTid != Tid.init) {

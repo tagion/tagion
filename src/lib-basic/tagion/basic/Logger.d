@@ -6,7 +6,7 @@ import core.sys.posix.pthread;
 import std.string;
 
 //import std.stdio : stderr;
-import tagion.basic.Basic : Control;
+import tagion.basic.Basic: Control;
 import tagion.basic.TagionExceptions;
 
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
@@ -24,7 +24,8 @@ enum LoggerType {
 
 private static Tid logger_tid;
 
-@safe static struct Logger {
+@safe
+static struct Logger {
     import std.format;
 
     protected {
@@ -37,11 +38,13 @@ private static Tid logger_tid;
 
     shared bool silent;
 
-    @trusted static setThreadName(string name) nothrow {
+    @trusted
+    static setThreadName(string name) nothrow {
         pthread_setname_np(pthread_self(), toStringz(name));
     }
 
-    @trusted void register(string task_name) nothrow
+    @trusted
+    void register(string task_name) nothrow
     in {
         assert(logger_tid == logger_tid.init);
     }
@@ -52,10 +55,13 @@ private static Tid logger_tid;
         }
         try {
             logger_tid = locate(logger_task_name);
+
+            
+
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);
-            import std.stdio : stderr;
+            import std.stdio: stderr;
 
             stderr.writefln("Register: %s logger\n", _task_name);
             log("Register: %s logger", _task_name);
@@ -65,7 +71,8 @@ private static Tid logger_tid;
         }
     }
 
-    @property @trusted void task_name(string task_name)
+    @property @trusted
+    void task_name(string task_name)
     in {
         assert(logger_tid == logger_tid.init);
     }
@@ -83,12 +90,14 @@ private static Tid logger_tid;
         this.logger_task_name = logger_task_name;
     }
 
-    @property @nogc string task_name() pure const nothrow {
+    @property @nogc
+    string task_name() pure const nothrow {
         return _task_name;
     }
 
-    @property @trusted bool isTask() const nothrow {
-        import std.exception : assumeWontThrow;
+    @property @trusted
+    bool isTask() const nothrow {
+        import std.exception: assumeWontThrow;
 
         return assumeWontThrow(logger_tid != logger_tid.init);
     }
@@ -97,7 +106,8 @@ private static Tid logger_tid;
         masks ~= mask;
     }
 
-    @nogc uint pop() nothrow {
+    @nogc
+    uint pop() nothrow {
         uint result = masks[$ - 1];
         if (masks.length > 1) {
             masks = masks[0 .. $ - 1];
@@ -105,10 +115,11 @@ private static Tid logger_tid;
         return result;
     }
 
-    @trusted void report(LoggerType type, lazy scope string text) const nothrow {
+    @trusted
+    void report(LoggerType type, lazy scope string text) const nothrow {
         if ((type & masks[$ - 1]) && !silent) {
-            import std.exception : assumeWontThrow;
-            import std.conv : to;
+            import std.exception: assumeWontThrow;
+            import std.conv: to;
 
             if (!isTask) {
                 import core.stdc.stdio;
@@ -139,7 +150,8 @@ private static Tid logger_tid;
         }
     }
 
-    @trusted void report(Args...)(LoggerType type, string fmt, lazy Args args) const nothrow {
+    @trusted
+    void report(Args...)(LoggerType type, string fmt, lazy Args args) const nothrow {
         report(type, format(fmt, args));
     }
 
@@ -163,7 +175,8 @@ private static Tid logger_tid;
         opCall(task_e.throwable);
     }
 
-    @trusted void opCall(lazy const(Throwable) t) const nothrow {
+    @trusted
+    void opCall(lazy const(Throwable) t) const nothrow {
         import std.exception;
 
         auto mt = assumeWontThrow(cast(Throwable) t);
@@ -232,9 +245,10 @@ private static Tid logger_tid;
         report(LoggerType.FATAL, fmt, args);
     }
 
-    @trusted void close() const nothrow {
+    @trusted
+    void close() const nothrow {
         if (isTask) {
-            import std.exception : assumeWontThrow;
+            import std.exception: assumeWontThrow;
 
             assumeWontThrow(logger_tid.send(Control.STOP));
         }

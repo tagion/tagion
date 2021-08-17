@@ -26,7 +26,8 @@ __gshared Language language;
  is generated and a json file is written, which then can be edited for other language support
 +/
 version (UPDATE_MESSAGE_TABEL) {
-    @safe synchronized struct Message {
+    @safe
+    synchronized struct Message {
         private static shared string[string] translation;
         static JSONValue toJSON() {
             //JSONValue language;
@@ -64,7 +65,8 @@ else {
  this function works like the std.format except if the language translation table is loaded
  the text is translated via this table
 +/
-@trusted string message(Args...)(string fmt, lazy Args args) {
+@trusted
+string message(Args...)(string fmt, lazy Args args) {
     if (language.name == "") {
         version (UPDATE_MESSAGE_TABEL) {
             if (!(fmt in translation)) {
