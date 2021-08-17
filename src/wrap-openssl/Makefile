@@ -12,7 +12,7 @@ check/openssl:
 wrap/openssl: ways ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a
 	${eval WRAPS += opensssl}
 	${eval LDCFLAGS += -L-L$(PATH_SRC_OPENSSL)/build/openssl/lib/}
-	@export LD_LIBRARY_PATH=$(PATH_SRC_OPENSSL)/build/openssl/lib/:$(LD_LIBRARY_PATH)
+	${eval export LD_LIBRARY_PATH=$(PATH_SRC_OPENSSL)/build/openssl/lib/:$(LD_LIBRARY_PATH)}
 
 ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a: $(PATH_SRC_OPENSSL)/config
 	$(PRECMD)mkdir -p ${PATH_SRC_OPENSSL}/build
