@@ -99,7 +99,7 @@ ctx/lib/%: $(DIR_SRC)/libs/%/context.mk
 	${eval LIBS += $(@F)}
 
 ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
-	${call log.line, Connecting $(%F) wrapper...}
+	@
 
 ways: 
 	@$(MKDIR) -p $(DIR_BUILD)
@@ -127,7 +127,7 @@ lib/%: env/compiler ways ctx/lib/%
 	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/libtagion$(@F).a}
 	${call log.close}
 
-test/lib/%: ways ctx/lib/%
+test/lib/%: env/compiler ways ctx/lib/%
 	${call log.header, testing lib/$(@F)}
 	${call collect.dependencies}
 	${call collect.dependencies.to.link}
