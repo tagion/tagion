@@ -8,9 +8,13 @@ PATH_SRC_SECP256K1 := ${dir.self}/$(NAME_SECP256K1)
 check/secp256k1:
 	${call log.line, System check for secp256k1 is not implemented yet}
 
-wrap/secp256k1: ways $(PATH_SRC_SECP256K1)/.libs/libsecp256k1.a
+wrap/secp256k1: WAYS += $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/
+wrap/secp256k1: ways $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/libsecp256k1.a
 	${eval WRAPS += secp256k1}
-	${eval WRAPLIBS += $(PATH_SRC_SECP256K1)/.libs/libsecp256k1.a}
+	${eval WRAPLIBS += $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/libsecp256k1.a}
+
+$(DIR_BUILD)/wraps/$(NAME_SECP256K1)/libsecp256k1.a: $(PATH_SRC_SECP256K1)/.libs/libsecp256k1.a
+	$(PRECMD)cp $(PATH_SRC_SECP256K1)/.libs/libsecp256k1.a $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/libsecp256k1.a
 
 $(PATH_SRC_SECP256K1)/autogen.sh:
 	$(PRECMD)git -C $(PATH_SRC_SECP256K1) pull || git clone $(REPO_SECP256K1) $(PATH_SRC_SECP256K1)
