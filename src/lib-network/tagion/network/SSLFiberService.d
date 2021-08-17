@@ -1,29 +1,28 @@
 module tagion.network.SSLFiberService;
 
-import std.string : format;
-import core.thread : Thread, Fiber;
-import core.time;// : dur, Duration, MonoTime;
-import std.socket : SocketSet, SocketException, Socket, AddressFamily;
+import std.string: format;
+import core.thread: Thread, Fiber;
+import core.time; // : dur, Duration, MonoTime;
+import std.socket: SocketSet, SocketException, Socket, AddressFamily;
 import std.exception;
-import std.socket : SocketShutdown;
+import std.socket: SocketShutdown;
 import std.concurrency;
 
 import tagion.network.SSLSocket;
 import tagion.basic.Message;
 import tagion.Options;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Basic: Buffer;
 import tagion.basic.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.services.LoggerService;
-import LEB128=tagion.utils.LEB128;
-
+import LEB128 = tagion.utils.LEB128;
 
 /++
  The exception used by the fiber service
 +/
 @safe
 class SSLSocketFiberException : SSLSocketException {
-    this( immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__ ) {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) {
         super(msg, SSLErrorCodes.SSL_ERROR_NONE, file, line);
     }
 }
@@ -34,7 +33,7 @@ class SSLSocketFiberException : SSLSocketException {
 @safe
 class SSLSocketTimeout : SSLSocketFiberException {
     const Duration timeout;
-    this(const Duration timeout, string file = __FILE__, size_t line = __LINE__ ) {
+    this(const Duration timeout, string file = __FILE__, size_t line = __LINE__) {
         this.timeout = timeout;
         super(format("Timeout %s", timeout).idup, file, line);
     }
@@ -59,7 +58,6 @@ interface SSLFiber {
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
 }
 
-
 /++
  SSL Service
 +/
@@ -69,7 +67,7 @@ class SSLFiberService {
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
         //    bool doActive(); ///
-//    SSLFiberService create(); //
+        //    SSLFiberService create(); //
     }
     //alias Relay = bool delegate(SSLRelay) @safe;
 
@@ -78,26 +76,26 @@ class SSLFiberService {
         this.ssl_options = opts;
         this.listener = listener;
         this.relay = relay;
-        handler=new Response;
+        handler = new Response;
     }
-
 
     protected {
         SSLSocketFiber[uint] active_fibers;
         SSLSocketFiber[] recycle_fibers;
         uint _fiber_id;
         Relay relay;
-//        const(HiRPC) hirpc;
+        //        const(HiRPC) hirpc;
         SSLSocket listener;
         uint next_fiber_id() {
             if (_fiber_id == 0) {
-                _fiber_id=1;
+                _fiber_id = 1;
             }
             else {
                 _fiber_id++;
             }
             return _fiber_id;
         }
+
         shared Response handler;
     }
 
@@ -112,8 +110,8 @@ class SSLFiberService {
          fiber_id = Id of the fiber which should handle this response
          response = Reponse buffer
          +/
-        void set(immutable uint fiber_id,  shared Buffer response) {
-            responses[fiber_id]=response;
+        void set(immutable uint fiber_id, shared Buffer response) {
+            responses[fiber_id] = response;
         }
 
         /++
@@ -123,8 +121,8 @@ class SSLFiberService {
          +/
         Buffer get(immutable uint fiber_id) {
             if (fiber_id in responses) {
-                auto result=responses[fiber_id];
-                scope(exit) {
+                auto result = responses[fiber_id];
+                scope (exit) {
                     responses.remove(fiber_id);
                 }
                 return assumeUnique(result);
@@ -149,7 +147,7 @@ class SSLFiberService {
     }
 
     void addSocketSet(ref SocketSet socket_set) {
-        foreach(fiber; active_fibers) {
+        foreach (fiber; active_fibers) {
             if (!fiber.locked) {
                 socket_set.add(fiber.client);
             }
@@ -160,7 +158,7 @@ class SSLFiberService {
      Close all the fiber services
      +/
     @trusted
-    void closeAll()  {
+    void closeAll() {
         recycle_fibers = null;
         while (active_fibers.length) {
             foreach (fiber_id, fiber; active_fibers) {
@@ -180,15 +178,15 @@ class SSLFiberService {
      +/
     SSLSocketFiber allocateFiber() {
         SSLSocketFiber result;
-        if ( active_fibers.length < ssl_options.max_connections ) {
-            const fiber_key=next_fiber_id;
+        if (active_fibers.length < ssl_options.max_connections) {
+            const fiber_key = next_fiber_id;
             if (recycle_fibers.length > 0) {
-                result=active_fibers[fiber_key]=recycle_fibers[$-1];
-                recycle_fibers=recycle_fibers[0..$-1];
+                result = active_fibers[fiber_key] = recycle_fibers[$ - 1];
+                recycle_fibers = recycle_fibers[0 .. $ - 1];
                 result.setId(fiber_key);
             }
             else {
-                result=active_fibers[fiber_key]=new SSLSocketFiber(fiber_key);
+                result = active_fibers[fiber_key] = new SSLSocketFiber(fiber_key);
             }
         }
         return result;
@@ -224,8 +222,9 @@ class SSLFiberService {
      +/
     @trusted
     void execute(ref SocketSet socket_set) {
-        import std.socket : SocketOSException;
-        foreach(key, ref fiber; active_fibers) {
+        import std.socket: SocketOSException;
+
+        foreach (key, ref fiber; active_fibers) {
             void removeFiber() {
                 fiber.shutdown;
                 fiber.reset;
@@ -233,6 +232,7 @@ class SSLFiberService {
                 active_fibers.remove(key);
                 handler.remove(key);
             }
+
             try {
                 if (fiber.client is null) {
                     fiber.call;
@@ -266,7 +266,7 @@ class SSLFiberService {
     class SSLSocketFiber : Fiber, SSLFiber {
         @trusted
         static uint buffer_to_uint(const ubyte[] buffer) pure {
-            return *cast(uint*)(buffer.ptr)[0..uint.sizeof];
+            return *cast(uint*)(buffer.ptr)[0 .. uint.sizeof];
         }
 
         protected {
@@ -276,7 +276,7 @@ class SSLFiberService {
             uint fiber_id;
         }
 
-        @property uint id(){
+        @property uint id() {
             return fiber_id;
         }
 
@@ -306,7 +306,7 @@ class SSLFiberService {
          +/
         void setId(const uint fiber_id) {
             handler.remove(fiber_id);
-            this.fiber_id=fiber_id;
+            this.fiber_id = fiber_id;
         }
 
         /++
@@ -353,15 +353,14 @@ class SSLFiberService {
             ubyte[] buffer;
             ubyte[] current;
             ptrdiff_t size;
-            for(;;) {
+            for (;;) {
                 if (buffer is null) {
                     // The length of the buffer is in leb128 format
-                    enum LEN_MAX=LEB128.calc_size(uint.max);
+                    enum LEN_MAX = LEB128.calc_size(uint.max);
                     auto leb128_len_data = new ubyte[LEN_MAX];
-                    current=leb128_len_data;
+                    current = leb128_len_data;
                     uint leb128_index;
-                leb128_loop:
-                    for(;;) {
+                    leb128_loop: for (;;) {
                         const rec_data_size = client.receive(current);
                         log("curr: %s", leb128_len_data);
                         if (rec_data_size < 0) {
@@ -373,31 +372,32 @@ class SSLFiberService {
                             return null;
                         }
                         else {
-                            size+=rec_data_size;
-                            while(leb128_index < size) {
-                                .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
+                            size += rec_data_size;
+                            while (leb128_index < size) {
+                                
+                                    .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                                 if ((leb128_len_data[leb128_index++] & 0x80) is 0) {
                                     // End of LEB128 size when bit 7 is 0
                                     break leb128_loop;
                                 }
                             }
-                            current=current[size..$];
+                            current = current[size .. $];
 
                             checkTimeout;
                             yield;
                         }
                     }
-                    const leb128_len=LEB128.decode!uint(leb128_len_data);
-                    const buffer_size=leb128_len.value;
+                    const leb128_len = LEB128.decode!uint(leb128_len_data);
+                    const buffer_size = leb128_len.value;
                     //const buffer_size=buffer_to_uint(len_data);
                     if (buffer_size > ssl_options.max_buffer_size) {
                         return null;
                     }
-                    buffer=new ubyte[leb128_len.size+leb128_len.value];
-                    buffer[0..leb128_len.size] = leb128_len_data[0..leb128_len.size];
-                    current = buffer[leb128_len.size..$];
+                    buffer = new ubyte[leb128_len.size + leb128_len.value];
+                    buffer[0 .. leb128_len.size] = leb128_len_data[0 .. leb128_len.size];
+                    current = buffer[leb128_len.size .. $];
                 }
-                current=current[size..$];
+                current = current[size .. $];
                 if (current.length == 0) {
                     return assumeUnique(buffer);
                 }
@@ -417,14 +417,15 @@ class SSLFiberService {
             bool done;
             do {
                 const ret = client.send(buffer);
-                if ( ret > 0 ) {
+                if (ret > 0) {
                     done = true;
                 }
                 else if (ret <= 0) {
                     yield;
                 }
                 checkTimeout;
-            } while (!done);
+            }
+            while (!done);
         }
 
         /++
@@ -434,14 +435,14 @@ class SSLFiberService {
         void run() {
             startTime;
             scope accept_client = listener.accept;
-            scope(exit) {
+            scope (exit) {
                 accept_client.shutdown(SocketShutdown.BOTH);
                 shutdown;
                 unlock;
             }
             assert(accept_client.isAlive);
 
-            while(!listener.acceptSSL(client, accept_client)) {
+            while (!listener.acceptSSL(client, accept_client)) {
                 checkTimeout;
                 yield;
             }
@@ -459,7 +460,8 @@ class SSLFiberService {
          shutdown the service socket
          +/
         void shutdown() {
-            import std.socket : SocketShutdown;
+            import std.socket: SocketShutdown;
+
             if (client) {
                 client.shutdown(SocketShutdown.BOTH);
                 client = null;
@@ -491,42 +493,43 @@ class SSLFiberService {
     @trusted
     static void responseService(immutable(string) task_name, shared Response handler) {
 
-        import tagion.basic.Basic : Control;
+        import tagion.basic.Basic: Control;
         import tagion.communication.HiRPC;
         import tagion.hibon.Document;
 
         log.register(task_name);
         ownerTid.send(Control.LIVE);
         bool stop;
-        scope(exit) {
+        scope (exit) {
             ownerTid.send(Control.END);
         }
 
-        void handleState (Control ts) {
-            with(Control) {
+        void handleState(Control ts) {
+            with (Control) {
                 switch (ts) {
                 case STOP:
-                    stop=true;
+                    stop = true;
                     break;
                 default:
                     log.error("Bad Control command %s", ts);
                 }
             }
         }
+
         HiRPC hirpc = HiRPC(null);
 
         void serviceResponse(Buffer data) {
-            const doc=Document(data);
+            const doc = Document(data);
             const hirpc_received = hirpc.receive(doc);
-            shared shared_data=cast(shared)data;
+            shared shared_data = cast(shared) data;
             handler.set(hirpc_received.response.id, shared_data);
         }
 
         while (!stop) {
             receive(
-                &handleState,
-                &serviceResponse
-                );
+                    &handleState,
+                    &serviceResponse
+            );
         }
 
     }
