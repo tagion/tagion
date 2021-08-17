@@ -1,10 +1,11 @@
 module tagion.services.ScriptCallbacks;
 
 import std.concurrency;
-import std.datetime;   // Date, DateTime
+import std.datetime; // Date, DateTime
 import std.exception : assumeUnique;
 
 import tagion.hashgraph.Event : Event;
+
 // import tagion.hashgraph.HashGraphBasic: EventScriptCallbacks;
 import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.basic.Basic : Buffer, Control;
@@ -17,7 +18,8 @@ import tagion.basic.Logger;
 // version(none)
 @safe class ScriptCallbacks {
     import std.datetime;
-    alias Time=MonoTimeImpl!(ClockType.normal);
+
+    alias Time = MonoTimeImpl!(ClockType.normal);
     private {
         Tid _event_script_tid;
         string transcript_task_name;
@@ -33,14 +35,15 @@ import tagion.basic.Logger;
     //     _event_script_tid=event_script_tid;
     // }
 
-    @trusted
-    this(void function(string task_name, string dart_task_name) nothrow transcript_task, string transcript_task_name, string dart_task_name, string epoch_debug_task_name=null) nothrow {
+    @trusted this(void function(string task_name, string dart_task_name) nothrow transcript_task,
+            string transcript_task_name, string dart_task_name, string epoch_debug_task_name = null) nothrow {
         try {
             import std.concurrency;
-            _event_script_tid=spawn(transcript_task, transcript_task_name, dart_task_name);
+
+            _event_script_tid = spawn(transcript_task, transcript_task_name, dart_task_name);
             this.transcript_task_name = transcript_task_name;
             this.epoch_debug_task_name = epoch_debug_task_name;
-            if ( receiveOnly!Control is Control.LIVE ) {
+            if (receiveOnly!Control is Control.LIVE) {
                 log("Transcript started");
             }
 
@@ -48,30 +51,30 @@ import tagion.basic.Logger;
         catch (Throwable t) {
             fatal(t);
         }
-        last_time=MonoTime.currTime;
+        last_time = MonoTime.currTime;
     }
 
-    @trusted
-    void epoch(const(Event[]) received_event, immutable long epoch_time) nothrow {
-        const current_time=MonoTime.currTime;
-        scope(exit) {
-            last_time=current_time;
+    @trusted void epoch(const(Event[]) received_event, immutable long epoch_time) nothrow {
+        const current_time = MonoTime.currTime;
+        scope (exit) {
+            last_time = current_time;
         }
         try {
-            log.trace("Epoch with %d events (Period %ssecs)", received_event.length, 1e-3*double((current_time-last_time).total!"msecs"));
+            log.trace("Epoch with %d events (Period %ssecs)", received_event.length,
+                    1e-3 * double((current_time - last_time).total!"msecs"));
             // auto hibon=new HiBON;
             // hibon[Keywords.time]=time;
             Document[] payloads;
 
-            foreach(i, e; received_event) {
+            foreach (i, e; received_event) {
                 if (e.eventbody.payload.length) {
                     log("\tepoch=%d %d", i, e.eventbody.payload.length);
                     // }
                     // if ( e.eventbody.payload ) {
-                    payloads~=e.eventbody.payload;
+                    payloads ~= e.eventbody.payload;
                 }
             }
-            if ( payloads ) {
+            if (payloads) {
                 // hibon[Keywords.epoch]=payloads;
                 // immutable data=hibon.serialize;
                 log("SEND Epoch with %d transactions", payloads.length);
@@ -83,36 +86,34 @@ import tagion.basic.Logger;
         }
     }
 
-   @trusted
-   void send(ref Document[] payloads, immutable long epoch_time) nothrow {
-       try {
-           immutable unique_payloads=assumeUnique(payloads);
-           log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
-           pragma(msg, "Scripts: " ,typeof(unique_payloads));
-           HiBON params = new HiBON;
-           pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
-           foreach(i, payload; unique_payloads){
-               params[i] = payload;
-           }
-           immutable data=params.serialize;
-           _event_script_tid.send(data);
-           if (epoch_debug_task_name !is null) {
-               HiBON epoch = new HiBON;
-               epoch["$time"] = epoch_time;
-               epoch["$params"] = Document(data);
-               scope epoch_debug_tid = locate(epoch_debug_task_name);
-               if (epoch_debug_tid !is epoch_debug_tid.init) {
-                   epoch_debug_tid.send(transcript_task_name, Document(epoch.serialize));
-               }
-           }
-       }
-       catch (Throwable t) {
-           fatal(t);
-       }
-   }
+    @trusted void send(ref Document[] payloads, immutable long epoch_time) nothrow {
+        try {
+            immutable unique_payloads = assumeUnique(payloads);
+            log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
+            pragma(msg, "Scripts: ", typeof(unique_payloads));
+            HiBON params = new HiBON;
+            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
+            foreach (i, payload; unique_payloads) {
+                params[i] = payload;
+            }
+            immutable data = params.serialize;
+            _event_script_tid.send(data);
+            if (epoch_debug_task_name !is null) {
+                HiBON epoch = new HiBON;
+                epoch["$time"] = epoch_time;
+                epoch["$params"] = Document(data);
+                scope epoch_debug_tid = locate(epoch_debug_task_name);
+                if (epoch_debug_tid !is epoch_debug_tid.init) {
+                    epoch_debug_tid.send(transcript_task_name, Document(epoch.serialize));
+                }
+            }
+        }
+        catch (Throwable t) {
+            fatal(t);
+        }
+    }
 
-    @trusted
-    void send(immutable(EventBody) ebody) nothrow {
+    @trusted void send(immutable(EventBody) ebody) nothrow {
         try {
             if (ebody.payload.length) {
                 log("ebody.payload=%d", ebody.payload.length);
@@ -124,13 +125,12 @@ import tagion.basic.Logger;
         }
     }
 
-    @trusted
-    bool stop() nothrow {
+    @trusted bool stop() nothrow {
         try {
             log("stop here");
             scope tid = locate(transcript_task_name);
-//        result= _event_script_tid != _event_script_tid.init;
-            if ( tid != tid.init ) {
+            //        result= _event_script_tid != _event_script_tid.init;
+            if (tid != tid.init) {
                 tid.send(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     return true;

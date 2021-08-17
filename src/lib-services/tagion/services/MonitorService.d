@@ -17,51 +17,47 @@ import tagion.basic.TagionExceptions;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceTask(immutable(Options) opts) nothrow {
-    scope(exit) {
+    scope (exit) {
         import std.exception : assumeWontThrow;
+
         log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
         assumeWontThrow(ownerTid.send(Control.END));
     }
-    try{
-    // Set thread global options
-    setOptions(opts);
-    immutable task_name=opts.monitor.task_name;
-    log.register(task_name);
-
+    try {
+        // Set thread global options
+        setOptions(opts);
+        immutable task_name = opts.monitor.task_name;
+        log.register(task_name);
 
         log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
 
-        auto listener_socket = ListenerSocket(
-            opts,
-            opts.url,
-            opts.monitor.port,
-            opts.monitor.timeout,
-            opts.monitor.task_name);
-        auto listener_socket_thread=listener_socket.start;
+        auto listener_socket = ListenerSocket(opts, opts.url,
+                opts.monitor.port, opts.monitor.timeout, opts.monitor.task_name);
+        auto listener_socket_thread = listener_socket.start;
 
-        scope(exit) {
+        scope (exit) {
             log("In exit of soc. port=%d th", opts.monitor.port);
             listener_socket.stop;
 
-            version(none)
-                if ( listener_socket_thread !is null ) {
+            version (none)
+                if (listener_socket_thread !is null) {
                     //  listener_socket.close;
                     listener_socket.stop;
 
                     log("Kill listener socket. %d", opts.monitor.port);
                     //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-//            if ( ldo.active ) {
-                    auto ping=new TcpSocket(new InternetAddress(opts.url, opts.monitor.port));
-//                receive( &handleClient);
+                    //            if ( ldo.active ) {
+                    auto ping = new TcpSocket(new InternetAddress(opts.url, opts.monitor.port));
+                    //                receive( &handleClient);
                     writefln("Pause for %d to close", opts.monitor.port);
                     Thread.sleep(500.msecs);
                     // run_listener = false;
                     log("run_listerner %s %s", listener_socket.active, opts.monitor.port);
-//            }
+                    //            }
                     writefln("Wait for %d to close", opts.monitor.port);
                     listener_socket_thread.join();
                     //          ping.close;
-//            listener_socket.close;
+                    //            listener_socket.close;
 
                     log("Thread joined %d", opts.monitor.port);
                 }
@@ -69,16 +65,16 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
 
         // try{
         bool stop;
-        void handleState (Control ts) {
-            with(Control) switch(ts) {
-                case STOP:
-                    log("Kill socket thread. %d", opts.monitor.port);
+        void handleState(Control ts) {
+            with (Control) switch (ts) {
+            case STOP:
+                log("Kill socket thread. %d", opts.monitor.port);
 
-                    stop = true;
-                    break;
-                default:
-                    log.error("Bad Control command %s", ts);
-                }
+                stop = true;
+                break;
+            default:
+                log.error("Bad Control command %s", ts);
+            }
         }
 
         void taskfailure(immutable(TaskFailure) t) {
@@ -86,43 +82,35 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
         }
 
         ownerTid.send(Control.LIVE);
-        while(!stop) {
-            receiveTimeout(500.msecs,
-                //Control the thread
-                &handleState,
-                (string json) {
-                    listener_socket.broadcast(json);
-                },
-                (immutable(ubyte)[] hibon_bytes) {
-                    listener_socket.broadcast(hibon_bytes);
-                },
-                (Document doc) {
-                    listener_socket.broadcast(doc);
-                },
-                &taskfailure
-                // (immutable(TagionException) e) {
-                //     // log.error(e.msg);
-                //     stop=true;
-                //     ownerTid.send(e);
-                //     //throw e;
-                // },
-                // (immutable(Exception) e) {
-                //     // log.fatal(e.msg);
-                //     stop=true;
-                //     ownerTid.send(e);
-                //     //throw e;
-                // },
-                // (immutable(Throwable) t) {
-                //     // log.fatal(t.msg);
-                //     stop=true;
-                //     ownerTid.send(t);
-                //     // throw t;
-                // }
-                );
-//        log("Running");
+        while (!stop) {
+            receiveTimeout(500.msecs,//Control the thread
+                    &handleState, (string json) {
+                listener_socket.broadcast(json);
+            }, (immutable(ubyte)[] hibon_bytes) {
+                listener_socket.broadcast(hibon_bytes);
+            }, (Document doc) { listener_socket.broadcast(doc); }, &taskfailure// (immutable(TagionException) e) {
+                    //     // log.error(e.msg);
+                    //     stop=true;
+                    //     ownerTid.send(e);
+                    //     //throw e;
+                    // },
+                    // (immutable(Exception) e) {
+                    //     // log.fatal(e.msg);
+                    //     stop=true;
+                    //     ownerTid.send(e);
+                    //     //throw e;
+                    // },
+                    // (immutable(Throwable) t) {
+                    //     // log.fatal(t.msg);
+                    //     stop=true;
+                    //     ownerTid.send(t);
+                    //     // throw t;
+                    // }
+            );
+            //        log("Running");
         }
     }
-    catch(Throwable t){
+    catch (Throwable t) {
         fatal(t);
     }
 }

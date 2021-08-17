@@ -5,6 +5,7 @@ import std.datetime;
 import tagion.Options;
 import std.typecons;
 import std.conv;
+
 // import tagion.services.LoggerService;
 import tagion.basic.Logger;
 import std.concurrency;
@@ -16,13 +17,14 @@ import tagion.services.MdnsDiscoveryService;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import std.file;
-import std.file: fwrite = write;
+import std.file : fwrite = write;
 import std.array;
-import tagion.services.ServerFileDiscoveryService: DiscoveryRequestCommand, DiscoveryState;
+import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 import tagion.gossip.P2pGossipNet;
 
-void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, immutable(Options) opts){  //TODO: for test
-    scope(exit){
+void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
+        immutable(Options) opts) { //TODO: for test
+    scope (exit) {
         log("exit");
         ownerTid.prioritySend(Control.END);
     }
@@ -34,7 +36,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
     NodeAddress[Pubkey] node_addresses;
 
     void recordOwnInfo() nothrow {
-        try{
+        try {
             log("record own info");
             auto params = new HiBON;
             params["pkey"] = pubkey;
@@ -42,40 +44,43 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
             shared_storage.append(params.serialize);
             shared_storage.append("/n");
         }
-        catch(Exception e){
+        catch (Exception e) {
             log.error("Exception: %s", e.msg);
             stop = true;
         }
     }
 
     void eraseOwnInfo() nothrow {
-        try{
+        try {
             log("erase");
             auto read_buff = cast(ubyte[]) shared_storage.read;
             auto splited_read_buff = read_buff.split("/n");
             log("%d", splited_read_buff.length);
-            foreach(node_info_buff; splited_read_buff){
-                if(node_info_buff.length>0){
-                    auto doc = Document(cast(immutable)node_info_buff);
-                    auto pkey_buff=doc["pkey"].get!Buffer;
-                    auto pkey = cast(Pubkey)pkey_buff;
-                    if(pkey == pubkey){
+            foreach (node_info_buff; splited_read_buff) {
+                if (node_info_buff.length > 0) {
+                    auto doc = Document(cast(immutable) node_info_buff);
+                    auto pkey_buff = doc["pkey"].get!Buffer;
+                    auto pkey = cast(Pubkey) pkey_buff;
+                    if (pkey == pubkey) {
                         log("found myself");
-                        shared_storage.fwrite(cast(string)read_buff.replace(node_info_buff, cast(ubyte[])""));
+                        shared_storage.fwrite(cast(string) read_buff.replace(node_info_buff,
+                                cast(ubyte[]) ""));
                         break;
                     }
                 }
             }
-        }catch(Exception e){
+        }
+        catch (Exception e) {
             log("Exception: %s", e.msg);
             stop = true;
         }
     }
 
-    bool checkTimestamp(SysTime time, Duration duration){
+    bool checkTimestamp(SysTime time, Duration duration) {
         return (Clock.currTime - time) > duration;
     }
-    void updateTimestamp(ref SysTime time){
+
+    void updateTimestamp(ref SysTime time) {
         time = Clock.currTime;
     }
 
@@ -84,42 +89,45 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
     updateTimestamp(mdns_start_timestamp);
     auto owner_notified = false;
 
-    void notifyReadyAfterDelay(){
-        if(!owner_notified){
-            const after_delay = checkTimestamp(mdns_start_timestamp, opts.discovery.delay_before_start.msecs);
-            if(after_delay && is_ready){
+    void notifyReadyAfterDelay() {
+        if (!owner_notified) {
+            const after_delay = checkTimestamp(mdns_start_timestamp,
+                    opts.discovery.delay_before_start.msecs);
+            if (after_delay && is_ready) {
                 ownerTid.send(DiscoveryState.ONLINE);
                 owner_notified = true;
             }
         }
     }
 
-    scope(exit){
+    scope (exit) {
         eraseOwnInfo();
     }
 
     void initialize() nothrow {
         log("initializing");
-        try{
+        try {
             auto read_buff = cast(ubyte[]) shared_storage.read;
             auto splited_read_buff = read_buff.split("/n");
-            foreach(node_info_buff; splited_read_buff){
-                if(node_info_buff.length>0){
-                    auto doc = Document(cast(immutable)node_info_buff);
+            foreach (node_info_buff; splited_read_buff) {
+                if (node_info_buff.length > 0) {
+                    auto doc = Document(cast(immutable) node_info_buff);
                     import tagion.hibon.HiBONJSON;
+
                     log("%s", doc.toJSON);
-                    auto pkey_buff=doc["pkey"].get!Buffer;
-                    auto pkey = cast(Pubkey)pkey_buff;
+                    auto pkey_buff = doc["pkey"].get!Buffer;
+                    auto pkey = cast(Pubkey) pkey_buff;
                     auto addr = doc["address"].get!string;
                     import tagion.utils.Miscellaneous : toHexString, cutHex;
+
                     auto node_addr = NodeAddress(addr, opts);
-                    node_addresses[pkey]= node_addr;
+                    node_addresses[pkey] = node_addr;
                     log("added %s", pkey);
                 }
             }
             log("initialized %d", node_addresses.length);
         }
-        catch(Exception e){
+        catch (Exception e) {
             //logwriteln("Er:", e.msg);
             log.fatal(e.msg);
         }
@@ -128,50 +136,45 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name, 
     ownerTid.send(Control.LIVE);
     ownerTid.send(DiscoveryState.READY);
 
-    try{
-        while(!stop){
-            receiveTimeout(
-                500.msecs,
-                (immutable(Pubkey) key, Tid tid){
-                    log("looking for key: %s", key);
-                    tid.send(node_addresses[key]);
-                },
-                (Control control){
-                    if(control == Control.STOP){
-                        log("stop");
-                        stop = true;
-                    }
-                },
-                (DiscoveryRequestCommand request){
-                    switch(request){
-                        case DiscoveryRequestCommand.BecomeOnline: {
-                            log("Becoming online..");
-                            recordOwnInfo();
-                            is_ready = true;
-                            break;
-                        }
-                        case DiscoveryRequestCommand.RequestTable: {
-                            initialize();
-                            auto address_book = new ActiveNodeAddressBook(node_addresses);
-                            ownerTid.send(address_book);
-                            break;
-                        }
-                        case DiscoveryRequestCommand.BecomeOffline: {
-                            eraseOwnInfo();
-                            break;
-                        }
-                        default:
-                            pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
-                    }
+    try {
+        while (!stop) {
+            receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
+                log("looking for key: %s", key);
+                tid.send(node_addresses[key]);
+            }, (Control control) {
+                if (control == Control.STOP) {
+                    log("stop");
+                    stop = true;
                 }
-            );
+            }, (DiscoveryRequestCommand request) {
+                switch (request) {
+                case DiscoveryRequestCommand.BecomeOnline: {
+                        log("Becoming online..");
+                        recordOwnInfo();
+                        is_ready = true;
+                        break;
+                    }
+                case DiscoveryRequestCommand.RequestTable: {
+                        initialize();
+                        auto address_book = new ActiveNodeAddressBook(node_addresses);
+                        ownerTid.send(address_book);
+                        break;
+                    }
+                case DiscoveryRequestCommand.BecomeOffline: {
+                        eraseOwnInfo();
+                        break;
+                    }
+                default:
+                    pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                }
+            });
             notifyReadyAfterDelay();
         }
     }
-    catch(TagionException e){
+    catch (TagionException e) {
         ownerTid.send(e.taskException);
     }
-    catch(Throwable t){
+    catch (Throwable t) {
         ownerTid.send(t.taskException);
     }
 }

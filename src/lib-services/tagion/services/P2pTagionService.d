@@ -3,13 +3,14 @@ module tagion.services.P2pTagionService;
 import core.thread;
 import std.concurrency;
 
-import std.datetime: Clock;
+import std.datetime : Clock;
 import tagion.utils.StdTime;
 
 import std.conv;
-import std.algorithm.searching: canFind;
+import std.algorithm.searching : canFind;
 
 import p2plib = p2p.node;
+
 //import p2p.connection;
 import p2p.callback;
 import p2p.cgo.helper;
@@ -46,7 +47,8 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.communication.HiRPC;
 
-import tagion.utils.Miscellaneous: cutHex;
+import tagion.utils.Miscellaneous : cutHex;
+
 // import tagion.hashgraph.Event;
 // import tagion.hashgraph.HashGraph;
 import tagion.basic.ConsensusExceptions;
@@ -56,9 +58,10 @@ import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
 import tagion.services.ServerFileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
+
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DartService;
-import tagion.Keywords: NetworkMode;
+import tagion.Keywords : NetworkMode;
 
 import std.stdio;
 import std.array : replace, split;
@@ -66,26 +69,21 @@ import std.string : indexOf;
 import std.file : mkdir, exists;
 import std.format;
 
-shared(p2plib.Node) initialize_node(immutable Options opts){
+shared(p2plib.Node) initialize_node(immutable Options opts) {
     auto p2pnode = new shared(p2plib.Node)(format("/ip4/%s/tcp/%s", opts.ip,
-        to!string(opts.port)), 0);
-    if (opts.p2plogs)
-    {
+            to!string(opts.port)), 0);
+    if (opts.p2plogs) {
         p2plib.EnableLogger();
     }
-    if (opts.hostbootrap.enabled)
-    {
-        if (opts.hostbootrap.bootstrapNodes.length)
-        {
+    if (opts.hostbootrap.enabled) {
+        if (opts.hostbootrap.bootstrapNodes.length) {
             auto bootsraps = opts.hostbootrap.bootstrapNodes.split("\n");
-            foreach (bootsrap; bootsraps)
-            {
+            foreach (bootsrap; bootsraps) {
                 log("Connection to %s", bootsrap);
                 p2pnode.connect(bootsrap);
             }
         }
-        else
-        {
+        else {
             throw new OptionException("Bootstrap nodes list is empty");
         }
     }
@@ -93,37 +91,36 @@ shared(p2plib.Node) initialize_node(immutable Options opts){
 }
 
 void tagionService(NetworkMode net_mode)(Options opts)
-    in
-    {
-        import std.algorithm : canFind;
-        assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
-    }
-do
-{
+in {
+    import std.algorithm : canFind;
+
+    assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
+}
+do {
     setOptions(opts);
 
     log.register(opts.node_name);
-    scope (exit)
-    {
+    scope (exit) {
         log("----- Stop all tasks -----");
         log.close;
         ownerTid.prioritySend(Control.END);
     }
 
-
-    static if(net_mode == NetworkMode.internal){
-        immutable passpharse=format("Secret_word_%s",opts.node_name).idup;
-    }else{
+    static if (net_mode == NetworkMode.internal) {
+        immutable passpharse = format("Secret_word_%s", opts.node_name).idup;
+    }
+    else {
         immutable passpharse = format("Secret_word_%d", opts.port).idup;
     }
 
     bool force_stop = false;
 
     import std.format;
+
     auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
     shared(p2plib.Node) p2pnode;
     // string passpharse;
-      
+
     auto master_net = new StdSecureNet;
     StdSecureNet net = new StdSecureNet;
     GossipNet gossip_net;
@@ -137,15 +134,15 @@ do
     Tid transaction_socket_tid;
     Tid transcript_tid;
     Pubkey[] pkeys;
-    void update_pkeys(Pubkey[] pubkeys){
-        if(net_mode != NetworkMode.internal){
+    void update_pkeys(Pubkey[] pubkeys) {
+        if (net_mode != NetworkMode.internal) {
             pkeys = pubkeys;
-            foreach(p; pkeys) gossip_net.add_channel(p);
+            foreach (p; pkeys)
+                gossip_net.add_channel(p);
         }
     }
-      
-    synchronized (master_net)
-    {
+
+    synchronized (master_net) {
         import std.format;
 
         immutable secret = passpharse.idup;
@@ -155,75 +152,77 @@ do
         log("opts.node_name = %s", opts.node_name);
         net.derive(opts.node_name, shared_net);
         p2pnode = initialize_node(opts);
-        static if(net_mode == NetworkMode.internal){
+        static if (net_mode == NetworkMode.internal) {
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             ownerTid.send(net.pubkey);
             Pubkey[] received_pkeys;
-            foreach(i;0..opts.nodes) {
-                received_pkeys~=receiveOnly!(Pubkey);
+            foreach (i; 0 .. opts.nodes) {
+                received_pkeys ~= receiveOnly!(Pubkey);
                 log.trace("Receive %d %s", i, received_pkeys[i].cutHex);
             }
-            import std.exception: assumeUnique;
-            pkeys=received_pkeys.dup;
-            foreach(p; pkeys) gossip_net.add_channel(p);
+            import std.exception : assumeUnique;
+
+            pkeys = received_pkeys.dup;
+            foreach (p; pkeys)
+                gossip_net.add_channel(p);
             ownerTid.send(Control.LIVE);
-        }else if([NetworkMode.local, NetworkMode.pub].canFind(net_mode)){
+        }
+        else if ([NetworkMode.local, NetworkMode.pub].canFind(net_mode)) {
             // immutable task_name = "p2ptagion";
             // opts.node_name = task_name;
-            gossip_net = new P2pGossipNet(net.pubkey, opts.node_name, opts.discovery.task_name, opts.host, p2pnode);
-        }else{
+            gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
+                    opts.discovery.task_name, opts.host, p2pnode);
+        }
+        else {
             throw new OptionException("Unknown network mode");
         }
         // gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
-        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted{
+        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
             import std.algorithm;
             import std.array : array;
             import tagion.hibon.HiBONJSON;
+
             HiBON params = new HiBON;
             pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
-            foreach(i, payload; events.map!((e) => e.event_body.payload).array){
+            foreach (i, payload; events.map!((e) => e.event_body.payload).array) {
                 params[i] = payload;
             }
             log("Send to transcript: %s", Document(params).toJSON);
             transcript_tid.send(params.serialize);
         }
-        hashgraph=new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
+
+        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
         // hashgraph.print_flag = true;
-        hashgraph.scrap_depth=opts.scrap_depth;
+        hashgraph.scrap_depth = opts.scrap_depth;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
-        
-        discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey, p2pnode, opts.discovery.task_name, opts);
+        discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey,
+                p2pnode, opts.discovery.task_name, opts);
         auto ctrl = receiveOnly!Control;
         assert(ctrl == Control.LIVE);
 
-        receive((DiscoveryState state){
-            assert(state == DiscoveryState.READY);
-        });
+        receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         receive((ActiveNodeAddressBook address_book) {
-                update_pkeys(address_book.data.keys);
-                dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
-                    opts, p2pnode, shared_net, sector_range);
-                // receiveOnly!Control;
-                dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
-                    shared_net, sector_range);
-                log("address_book len: %d", address_book.data.length);
-                send(dart_sync_tid, cast(immutable) address_book);
-            }, (Control ctrl) {
-                if (ctrl is Control.STOP)
-                {
-                    force_stop = true;
-                }
+            update_pkeys(address_book.data.keys);
+            dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
+                opts, p2pnode, shared_net, sector_range);
+            // receiveOnly!Control;
+            dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
+                shared_net, sector_range);
+            log("address_book len: %d", address_book.data.length);
+            send(dart_sync_tid, cast(immutable) address_book);
+        }, (Control ctrl) {
+            if (ctrl is Control.STOP) {
+                force_stop = true;
+            }
 
-                if (ctrl is Control.END)
-                {
-                    force_stop = true;
-                }
-            });
+            if (ctrl is Control.END) {
+                force_stop = true;
+            }
+        });
     }
-    scope (exit)
-    {
+    scope (exit) {
         log("Closing net");
         gossip_net.close();
     }
@@ -233,24 +232,20 @@ do
 
     bool ready = false;
     int ready_counter = 0;
-    do
-    {
+    do {
         receive((Control ctrl) {
-                log("Received ctrl: %s", ctrl);
-                if (ctrl is Control.LIVE)
-                {
-                    ready_counter++;
-                }
-                else if (ctrl is Control.STOP)
-                {
-                    force_stop = true;
-                }
-            }, (DartSynchronizeState state) {
-                if (state == DartSynchronizeState.READY)
-                {
-                    ready = true;
-                }
-            });
+            log("Received ctrl: %s", ctrl);
+            if (ctrl is Control.LIVE) {
+                ready_counter++;
+            }
+            else if (ctrl is Control.STOP) {
+                force_stop = true;
+            }
+        }, (DartSynchronizeState state) {
+            if (state == DartSynchronizeState.READY) {
+                ready = true;
+            }
+        });
         if (force_stop)
             return;
     }
@@ -259,63 +254,51 @@ do
     log("Ready: %s", ready);
 
     discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
-    scope(exit){
+    scope (exit) {
         discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
     }
-    receive((DiscoveryState state){
-            assert(state == DiscoveryState.ONLINE);
-        });
+    receive((DiscoveryState state) { assert(state == DiscoveryState.ONLINE); });
 
     discovery_tid.send(DiscoveryRequestCommand.RequestTable);
     receive((ActiveNodeAddressBook address_book) {
         update_pkeys(address_book.data.keys);
     });
 
-    scope (exit)
-    {
+    scope (exit) {
         log("close listener");
         p2pnode.closeListener(opts.transaction.protocol_id);
     }
-    scope (exit)
-    {
+    scope (exit) {
         log("!!!==========!!!!!! Existing %s", opts.node_name);
 
-        if (transcript_tid != transcript_tid.init)
-        {
+        if (transcript_tid != transcript_tid.init) {
             log("Send stop to %s", opts.transcript.task_name);
             transcript_tid.prioritySend(Control.STOP);
-            if (receiveOnly!Control is Control.END)
-            {
+            if (receiveOnly!Control is Control.END) {
                 log("Scripting api end!!");
             }
         }
 
-        if (discovery_tid != Tid.init)
-        {
+        if (discovery_tid != Tid.init) {
             log("Send stop to %s", opts.discovery.task_name);
             discovery_tid.prioritySend(Control.STOP);
-            if (receiveOnly!Control is Control.END)
-            {
+            if (receiveOnly!Control is Control.END) {
                 log("Discovery service stoped");
             }
         }
 
-        if (dart_sync_tid != Tid.init)
-        {
+        if (dart_sync_tid != Tid.init) {
             log("Send stop to %s", opts.dart.sync.task_name);
             dart_sync_tid.prioritySend(Control.STOP);
-            if (receiveOnly!Control is Control.END)
-            {
+            if (receiveOnly!Control is Control.END) {
                 log("Dart synchronization service stoped");
             }
         }
         log("DART TID: %s", dart_tid);
-        if (dart_tid != Tid.init)
-        {
+        if (dart_tid != Tid.init) {
             log("Send stop to %s", opts.dart.task_name);
             dart_tid.prioritySend(Control.STOP);
-            if (receiveOnly!Control is Control.END)
-            {
+            if (receiveOnly!Control is Control.END) {
                 log("Dart service stoped");
             }
         }
@@ -333,14 +316,12 @@ do
         // }
 
         // version(none)
-        if (transaction_socket_tid != transaction_socket_tid.init)
-        {
+        if (transaction_socket_tid != transaction_socket_tid.init) {
             log("send stop to %s", opts.transaction.task_name);
             transaction_socket_tid.prioritySend(Control.STOP);
             auto control = receiveOnly!Control;
             log("Control %s", control);
-            if (control is Control.END)
-            {
+            if (control is Control.END) {
                 log("Closed transaction");
             }
             // else if (control is Control.FAIL)
@@ -349,22 +330,20 @@ do
             // }
         }
 
-        if (monitor_socket_tid != monitor_socket_tid.init)
-        {
+        if (monitor_socket_tid != monitor_socket_tid.init) {
             log("send stop to %s", opts.monitor.task_name);
             //            try {
             monitor_socket_tid.prioritySend(Control.STOP);
 
             receive((Control ctrl) {
-                    if (ctrl is Control.END)
-                    {
-                        log("Closed monitor");
-                    }
-                    // else if (ctrl is Control.FAIL)
-                    // {
-                    //     log.error("Closed monitor with failure");
-                    // }
-                }, (immutable Exception e) { ownerTid.prioritySend(e); });
+                if (ctrl is Control.END) {
+                    log("Closed monitor");
+                }
+                // else if (ctrl is Control.FAIL)
+                // {
+                //     log.error("Closed monitor with failure");
+                // }
+            }, (immutable Exception e) { ownerTid.prioritySend(e); });
         }
 
         log("End");
@@ -384,35 +363,31 @@ do
     //     Thread.sleep(10.seconds);
     //     log("after DELAY");
 
-    try
-    {
+    try {
         monitor_socket_tid = spawn(&monitorServiceTask, opts);
         // Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id,
         //         net.globalNodeId(net.pubkey), opts.monitor.dataformat);
         stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
-        if (receiveOnly!Control is Control.LIVE)
-        {
+        if (receiveOnly!Control is Control.LIVE) {
             log("Monitor started");
         }
         transaction_socket_tid = spawn(&transactionServiceTask, opts);
-        if (receiveOnly!Control is Control.LIVE)
-        {
+        if (receiveOnly!Control is Control.LIVE) {
             log("Transaction started port %d", opts.transaction.service.port);
         }
-        else
-        {
+        else {
             log("bad command");
         }
     }
-    catch (Exception e)
-    {
+    catch (Exception e) {
         log("ERROR: %s", e.msg);
         force_stop = true;
     }
     if (force_stop)
         return;
-    transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name, opts.dart.sync.task_name);
+    transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name,
+            opts.dart.sync.task_name);
     // scriptcallbacks=new ScriptCallbacks(&transcriptServiceTask, opts.transcript.task_name, opts.dart.task_name);
     // scope(exit) {
     //     scriptcallbacks.stop;
@@ -439,17 +414,16 @@ do
     //         net_random.random.seed(cast(uint)(Clock.currTime.toUnixTime!int));
     //     }
     // }
-//    const empty_payload=Document();
+    //    const empty_payload=Document();
     // Document empty_payload_func(){
     //     return empty_payload;
     // }
     immutable(ubyte)[] data;
 
-
     {
-        immutable buf=cast(Buffer)hashgraph.channel;
-        const nonce=net.calcHash(buf);
-        auto eva_event=hashgraph.createEvaEvent(gossip_net.time, nonce);
+        immutable buf = cast(Buffer) hashgraph.channel;
+        const nonce = net.calcHash(buf);
+        auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 
         if (eva_event is null) {
             log.error("The channel of this oner is not valid");
@@ -457,8 +431,7 @@ do
         }
     }
 
-
-    alias PayloadQueue=Queue!Document;
+    alias PayloadQueue = Queue!Document;
     PayloadQueue payload_queue = new PayloadQueue();
     void receive_payload(Document pload, bool flag) { //TODO: remove flag. Maybe try switch(doc.type)
         log.trace("payload.size=%d", pload.size);
@@ -491,34 +464,28 @@ do
     }
 
     void receive_wavefront(const Document doc) {
-        timeout_count=0;
-        log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name, opts.node_id, doc.data.length);
+        timeout_count = 0;
+        log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name,
+                opts.node_id, doc.data.length);
         const receiver = HiRPC.Receiver(doc);
-        hashgraph.wavefront(
-            receiver,
-            gossip_net.time,
-            (const(HiRPC.Sender) return_wavefront) @safe {
-                gossip_net.send(receiver.pubkey, return_wavefront);
-            },
-            &payload
-            );
+        hashgraph.wavefront(receiver, gossip_net.time,
+                (const(HiRPC.Sender) return_wavefront) @safe {
+            gossip_net.send(receiver.pubkey, return_wavefront);
+        }, &payload);
     }
 
-    version(none) {
-        void tagionexception(immutable(TagionException) e)
-        {
+    version (none) {
+        void tagionexception(immutable(TagionException) e) {
             log("Exception: %s", e.msg);
             ownerTid.send(e);
         }
 
-        void exception(immutable(Exception) e)
-        {
+        void exception(immutable(Exception) e) {
             log("Exception: %s", e.msg);
             ownerTid.send(e);
         }
 
-        void throwable(immutable(Throwable) t)
-        {
+        void throwable(immutable(Throwable) t) {
             log("Throwable: %s", t.msg);
             ownerTid.send(t);
         }
@@ -542,33 +509,30 @@ do
     // }
 
     import tagion.utils.Random;
+
     Random!size_t random;
     random.seed(123456789);
     // ownerTid.send(Control.LIVE);
     // auto iteration = 0;
     while (!stop && !abort) {
         try {
-            immutable message_received = receiveTimeout(opts.timeout.msecs,
-                &receive_payload,
-                &controller,
-                &receive_wavefront,
-                &taskfailure,
-                (ActiveNodeAddressBook address_book) {
-                    log("Update address book");
-                    update_pkeys(address_book.data.keys);
-                    if (dart_sync_tid!=Tid.init){
-                        send(dart_sync_tid, address_book);
-                    }
-                    else {
-                        log("Dart sync not found");
-                    }
-                });
+            immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,
+                    &receive_wavefront, &taskfailure, (ActiveNodeAddressBook address_book) {
+                log("Update address book");
+                update_pkeys(address_book.data.keys);
+                if (dart_sync_tid != Tid.init) {
+                    send(dart_sync_tid, address_book);
+                }
+                else {
+                    log("Dart sync not found");
+                }
+            });
             log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
-            if (!message_received || !hashgraph.areWeInGraph ) {
+            if (!message_received || !hashgraph.areWeInGraph) {
                 // const onLine=hashgraph.areWeOnline;
                 pragma(msg, "Replace with a realy random");
-                const init_tide=random.value(0,2) is 1;
-                    // log("online: %s init?: %s", onLine, init_tide);
+                const init_tide = random.value(0, 2) is 1;
+                // log("online: %s init?: %s", onLine, init_tide);
                 if (init_tide) {
                     log("init_tide");
                     hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
