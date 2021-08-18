@@ -4,7 +4,12 @@
 
 # Include contexts and wrap Makefiles
 -include $(DIR_WRAPS)/**/Makefile
+
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
+
+
+LIBDIRS := ${shell ls -d src/libs/*/}
+INCFLAGS += ${foreach LIBDIR, $(LIBDIRS), -I$(DIR_TUB_ROOT)/$(LIBDIR)}
 
 # 
 # Helper macros
@@ -88,6 +93,8 @@ ways:
 # ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
 # 	@
 
+.PHONY: ctx/%
+
 ctx/%:
 	${eval OBJS += $(*)}
 
@@ -103,8 +110,6 @@ $(DIR_BUILD)/libs/%.a: | ways o/%
 	${call log.kvp, Compiled, $(@D)/libtagion$(*).a}
 
 $(DIR_BUILD)/libs/.obj/%.o: ways
-	${eval INCFLAGS += ${foreach OBJ, $(OBJS), -I${DIR_SRC}/libs/$(OBJ)/}}
-	${eval INCFLAGS += ${foreach WRAP, $(WRAPS), -I${DIR_WRAPS}/$(WRAP)/}}
 	${eval INFILES := ${call find.files, $(DIR_TUB_ROOT)/src/libs/$(*), *.d}}
 	${call cmd.compile, -c -of$(DIR_BUILD)/libs/.obj/$(*).o}
 	${call log.kvp, Compiled, $(DIR_BUILD)/libs/.obj/$(*).o}
