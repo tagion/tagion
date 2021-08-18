@@ -1,4 +1,4 @@
-module tagion.basic.Logger;
+module tagion.logger.Logger;
 
 import std.concurrency;
 import core.sys.posix.pthread;
