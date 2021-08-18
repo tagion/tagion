@@ -13,7 +13,7 @@ wrap/p2p-go-wrapper: ways $(DIR_BUILD)/wraps/$(NAME_P2P)/lib$(NAME_P2P).a
 	${eval WRAPLIBS += $(DIR_BUILD)/wraps/$(NAME_P2P)/lib$(NAME_P2P).a}
 
 $(DIR_BUILD)/wraps/$(NAME_P2P)/libp2p-go-wrapper.a: $(PATH_P2P_CGO)/libp2p.di
-	$(PRECMD)cp $(PATH_P2P_CGO)/* $(DIR_BUILD)/wraps/$(NAME_P2P)/
+	$(PRECMD)cp -r $(PATH_P2P_CGO)/ $(DIR_BUILD)/wraps/$(NAME_P2P)/
 
 $(PATH_P2P_CGO)/libp2p.di: $(PATH_P2P_CGO)/lib$(NAME_P2P).a
 	$(PRECMD)dstep $(PATH_P2P_CGO)/lib$(NAME_P2P).h -o $(PATH_P2P_CGO)/libp2p.di --package p2p.cgo --global-import p2p.cgo.helper
