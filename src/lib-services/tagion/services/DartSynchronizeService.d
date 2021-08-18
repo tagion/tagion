@@ -307,12 +307,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
             }, (ActiveNodeAddressBook update) {
                 node_addrses = cast(NodeAddress[Pubkey]) update.data;
                 // log("node addresses %s", node_addrses);
-            }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },// (immutable(Throwable) t) {
+            }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
                     //     //log.fatal(t.msg);
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
-            );
+                    );
             try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {

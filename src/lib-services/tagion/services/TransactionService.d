@@ -251,7 +251,7 @@ void transactionServiceTask(immutable(Options) opts) {
 
         ownerTid.send(Control.LIVE);
         while (!stop) {
-            receiveTimeout(500.msecs,//Control the thread
+            receiveTimeout(500.msecs, //Control the thread
                     &handleState, (immutable(TagionException) e) {
                 log.fatal(e.msg);
                 ownerTid.send(e);

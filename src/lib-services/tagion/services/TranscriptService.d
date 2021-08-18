@@ -210,10 +210,10 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
             //    immutable delay=rand.value(opts.transcript.pause_from, opts.transcript.pause_to);
             //  log("delay=%s", delay);
 
-            receive(&receive_epoch, &controller, &taskfailure,// &tagionexception,
+            receive(&receive_epoch, &controller, &taskfailure, // &tagionexception,
                     // &exception,
                     // &throwable,
-            );
+                    );
         }
     }
     catch (Throwable t) {

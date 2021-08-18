@@ -248,7 +248,7 @@ do {
                 if (state == DartSynchronizeState.READY) {
                     ready_counter--;
                 }
-            }, (immutable(TaskFailure) t) { ownerTid.send(t); }// (immutable(Exception) e) {
+            }, (immutable(TaskFailure) t) { ownerTid.send(t); } // (immutable(Exception) e) {
             //     ownerTid.send(e);
             //     // force_stop = true;
             // },
@@ -383,7 +383,7 @@ do {
                             log.error("Control %s unexpected", ctrl);
                         }
                     }
-                }, &taskfailure// (immutable(
+                }, &taskfailure // (immutable(
                         //     stop=true;
                         //     log(e);
                         //     // const print_e=e;

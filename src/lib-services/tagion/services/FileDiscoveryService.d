@@ -134,7 +134,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
     }
 
     ownerTid.send(Control.LIVE);
-    ownerTid.send(DiscoveryState.READY);
+    // ownerTid.send(DiscoveryState.READY);
 
     try {
         while (!stop) {

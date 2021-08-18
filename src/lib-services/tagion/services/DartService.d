@@ -270,11 +270,11 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                 else if (method == DART.Quries.dartModify) {
                     modifyDart();
                 }
-            }, (NodeAddress[string] update) { node_addrses = update; },// (immutable(TagionException) e) {
+            }, (NodeAddress[string] update) { node_addrses = update; }, // (immutable(TagionException) e) {
                     //     stop=true;
                     //     ownerTid.send(e);
                     // },
-                    (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },// (immutable(Exception) e) {
+                    (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Exception) e) {
                     //     //log.fatal(e.msg);
                     //     stop=true;
                     //     ownerTid.send(e);
@@ -284,7 +284,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
-            );
+                    );
             requestPool.tick();
         }
     }
