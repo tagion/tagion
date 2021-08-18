@@ -96,6 +96,9 @@ endef
 # 
 # Target helpers
 # 
+ctx/bin/%: $(DIR_SRC)/bins/%/context.mk
+	@
+
 ctx/lib/%: $(DIR_SRC)/libs/%/context.mk
 	${eval LIBS += $(@F)}
 
@@ -109,17 +112,18 @@ ways:
 # 
 # Compile targets to use
 # 
-bin/%: env/compiler ways ctx/bin/%
+bin/%: | env/compiler ways ctx/bin/%
 	${eval TARGET := $(@F)}
 	${call log.header, testing lib/$(@F)}
 	${eval DFILES := ${call locate.d.files, $(DIR_TUB_ROOT)/src/bins/$(TARGET)}}
 	${call collect.dependencies}
+	${call collect.dependencies.to.link}
 	${call show.compile.details}
 	${call compile, cmd.lib.compile.bin}
 	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/$(@F)}
 	${call log.close}
 
-lib/%: env/compiler ways ctx/lib/%
+lib/%: | env/compiler ways ctx/lib/%
 	${eval TARGET := $(@F)}
 	${call log.header, compiling lib/$(@F)}
 	${call collect.dependencies}
