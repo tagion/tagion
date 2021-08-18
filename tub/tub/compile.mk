@@ -36,7 +36,7 @@ ${call cmd.lib.compile} $(DEBUG) -unittest -g -main -of$(DIR_BUILD)/tests/libtag
 endef
 
 define cmd.lib.compile.bin
-${call cmd.lib.compile} -of$(DIR_BUILD)/bins/libtagion$(@F)
+${call cmd.lib.compile} -of$(DIR_BUILD)/bins/$(@F)
 endef
 
 define collect.dependencies
