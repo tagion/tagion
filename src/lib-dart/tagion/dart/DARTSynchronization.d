@@ -166,7 +166,7 @@ unittest{
     }
 }
 
-import tagion.gossip.GossipNet;
+// import tagion.gossip.GossipNet;
 
 import core.thread;
 class ReplayPool(T){
