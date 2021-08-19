@@ -1,12 +1,13 @@
-# TODO: Add ldc-build-runtime for building phobos and druntime for platforms
-# TODO: Add local setup and unittest setup (context)
-# TODO: Add revision.di
-
 # Include contexts and wrap Makefiles
 -include $(DIR_WRAPS)/**/Makefile
-
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
+# TODO: Add revision.di
+
+# TODO: Add local setup and unittest setup (context)
+# -include ${shell find $(DIR_SRC) -name '*local.mk'}
+
+# TODO: Add ldc-build-runtime for building phobos and druntime for platforms
 
 LIBDIRS := ${shell ls -d src/libs/*/}
 INCFLAGS += ${foreach LIBDIR, $(LIBDIRS), -I$(DIR_TUB_ROOT)/$(LIBDIR)}
@@ -16,20 +17,6 @@ INCFLAGS += ${foreach LIBDIR, $(LIBDIRS), -I$(DIR_TUB_ROOT)/$(LIBDIR)}
 # 
 define find.files
 ${shell find ${strip $1} -not -path "$(SOURCE_FIND_EXCLUDE)" -name '${strip $2}'}
-endef
-
-define cmd.compile
-$(PRECMD)$(DC) $(DCFLAGS) $(strip $1) ${INCFLAGS} $(INFILES) $(LDCFLAGS) $(LATEFLAGS)
-endef
-
-define collect.dependencies
-$(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
-$(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
-
-${eval INFILES += ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
-${eval INFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
-${eval INFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
-${eval INFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
 endef
 
 define collect.dependencies.to.link
@@ -81,7 +68,7 @@ endef
 # 
 # Creating required directories
 # 
-ways: WAYS += $(DIR_BUILD)/libs $(DIR_BUILD)/bins $(DIR_BUILD)/libs/.obj
+ways: WAYS += $(DIR_BUILD)/libs/static $(DIR_BUILD)/libs/o $(DIR_BUILD)/bins
 ways: 
 	${foreach WAY, $(WAYS), ${shell mkdir -p $(WAY)}}
 
@@ -93,45 +80,27 @@ ways:
 # ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
 # 	@
 
-.PHONY: ctx/%
-
-ctx/%:
+%.o: | %.ctx $(DIR_BUILD)/libs/o/%.o
 	${eval OBJS += $(*)}
 
-o/%: | ctx/% $(DIR_BUILD)/libs/.obj/%.o
+%.a: $(DIR_BUILD)/libs/static/%.a
 	@
 
-lib/%: $(DIR_BUILD)/libs/%.a
-	@
+$(DIR_BUILD)/libs/static/%.a: | ways %.o
+	$(PRECMD)ar cr $(DIR_BUILD)/libs/static/libtagion$(*).a ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}
+	${call log.kvp, Archived, $(@D)/libtagion$(*).a}
 
-$(DIR_BUILD)/libs/%.a: | ways o/%
-	${eval ARCHIVE_OBJS := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/.obj/$(OBJ).o}}
-	$(PRECMD)ar cr $(DIR_BUILD)/libs/libtagion$(*).a $(ARCHIVE_OBJS)
-	${call log.kvp, Compiled, $(@D)/libtagion$(*).a}
-
-$(DIR_BUILD)/libs/.obj/%.o: ways
-	${eval INFILES := ${call find.files, $(DIR_TUB_ROOT)/src/libs/$(*), *.d}}
-	${call cmd.compile, -c -of$(DIR_BUILD)/libs/.obj/$(*).o}
-	${call log.kvp, Compiled, $(DIR_BUILD)/libs/.obj/$(*).o}
-
-# lib/%: ctx/lib/%
-# 	${call log.header, compiling lib $(*)}
-# 	${eval ARCHIVE_OBJS := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/.obj/$(OBJ).o}}
-# 	$(PRECMD)ar cr $(DIR_BUILD)/libs/libtagion$(*).a $(ARCHIVE_OBJS)
-# 	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/libtagion$(@F).a}
-# 	${call log.close}
-
-# test/lib/%: env/compiler ways ctx/lib/%
-# 	${eval TARGET := $(@F)}
-# 	${call log.header, testing lib/$(@F)}
-# 	${call collect.dependencies}
-# 	${call collect.dependencies.to.link}
-# 	${call show.compile.details}
-# 	${call compile, cmd.compile.unittest}
-# 	${call log.space}
-# 	${call run}
-# 	${call log.close}
-
+$(DIR_BUILD)/libs/o/%.o: ways
+	${eval CMD := $(PRECMD)}
+	${eval CMD += $(DC)}
+	${eval CMD += $(DCFLAGS)}
+	${eval CMD += -c}
+	${eval CMD += -of$(DIR_BUILD)/libs/o/$(*).o}
+	${eval CMD += $(INCFLAGS)}
+	${eval CMD += ${call find.files, $(DIR_TUB_ROOT)/src/libs/$(*), *.d}}
+	${eval CMD += $(LDCFLAGS)}
+	$(CMD)
+	${call log.kvp, Compiled, $(DIR_BUILD)/libs/o/$(*).o}
 
 # 
 # Clean build directory
