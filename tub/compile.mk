@@ -105,6 +105,9 @@ ctx/lib/%: $(DIR_SRC)/libs/%/context.mk
 ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
 	@
 
+way/%: 
+	@mkdir -p $(*)
+
 ways: WAYS += $(DIR_BUILD)/wraps $(DIR_BUILD)/libs $(DIR_BUILD)/bins $(DIR_BUILD)/tests
 ways: 
 	${foreach WAY, $(WAYS), ${shell mkdir -p $(WAY)}}
