@@ -70,8 +70,15 @@ import std.file : mkdir, exists;
 import std.format;
 
 shared(p2plib.Node) initialize_node(immutable Options opts) {
-    auto p2pnode = new shared(p2plib.Node)(format("/ip4/%s/tcp/%s", opts.ip,
-            to!string(opts.port)), 0);
+    auto p2pnode = new shared(p2plib.Node)(
+        format("/ip4/%s/tcp/%s",
+            opts.ip,
+            opts.port), 0);
+    log("initialize_node");
+    scope(exit) {
+    log("END initialize_node");
+
+    }
     if (opts.p2plogs) {
         p2plib.EnableLogger();
     }
