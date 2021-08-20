@@ -9,8 +9,55 @@
 
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
 
+
+# We include all libs for imports
 LIBDIRS := ${shell ls -d src/libs/*/}
+# WRAPDIRS := ${shell ls -d src/wraps/*/}
 INCFLAGS += ${foreach LIBDIR, $(LIBDIRS), -I$(DIR_TUB_ROOT)/$(LIBDIR)}
+
+# 
+# Creating required directories
+# 
+%/.touch:
+	$(PRECMD)mkdir -p $(*)
+	$(PRECMD)touch $(*)/.touch
+
+# 
+# Target helpers
+# 
+# ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
+# 	@
+
+lib/%: $(DIR_BUILD)/libs/static/%.a
+	@
+
+%.o: | %.ctx $(DIR_BUILD)/libs/o/%.o
+	${eval OBJS += $(*)}
+
+$(DIR_BUILD)/libs/static/%.a: | $(DIR_BUILD)/libs/static/.touch %.o
+	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
+	${if $(PARALLEL), , ${call show.compile.details}}
+	$(PRECMD)ar cr $(DIR_BUILD)/libs/static/libtagion$(*).a ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}
+	${call log.kvp, Archived, $(@D)/libtagion$(*).a}
+
+$(DIR_BUILD)/libs/o/%.o: $(DIR_BUILD)/libs/o/.touch
+	${eval COMPILE := $(PRECMD)}
+	${eval COMPILE += $(DC)}
+	${eval COMPILE += $(DCFLAGS)}
+	${eval COMPILE += -c}
+	${eval COMPILE += -of$(DIR_BUILD)/libs/o/$(*).o}
+	${eval COMPILE += $(INCFLAGS)}
+	${eval COMPILE += ${call find.files, $(DIR_TUB_ROOT)/src/libs/$(*), *.d}}
+	${eval COMPILE += $(LDCFLAGS)}
+	$(COMPILE)
+	${call log.kvp, Compiled, $(DIR_BUILD)/libs/o/$(*).o}
+
+# 
+# Clean build directory
+# 
+clean:
+	${call log.lin, cleaning ./builds}
+	@rm -rf $(DIR_BUILD)/*
 
 # 
 # Helper macros
@@ -50,61 +97,3 @@ ${call log.separator}
 ${call log.kvp, LATEFLAGS}
 ${call log.lines, $(LATEFLAGS)}
 endef
-
-define compile
-${call log.separator}
-${call log.line, Compiling...}
-${call log.space}
-$(PRECMD)${call cmd.compile, $1}
-endef
-
-define run
-${call log.separator}
-${call log.line, Running...}
-${call log.space}
-$(PRECMD)$(DIR_BUILD)/${strip $1}
-endef
-
-# 
-# Creating required directories
-# 
-ways: WAYS += $(DIR_BUILD)/libs/static $(DIR_BUILD)/libs/o $(DIR_BUILD)/bins
-ways: 
-	${foreach WAY, $(WAYS), ${shell mkdir -p $(WAY)}}
-
-# 
-# Target helpers
-# 
-# ctx/lib/%: $(DIR_SRC)/libs/%/context.mk
-
-# ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
-# 	@
-
-%.o: | %.ctx $(DIR_BUILD)/libs/o/%.o
-	${eval OBJS += $(*)}
-
-%.a: $(DIR_BUILD)/libs/static/%.a
-	@
-
-$(DIR_BUILD)/libs/static/%.a: | ways %.o
-	$(PRECMD)ar cr $(DIR_BUILD)/libs/static/libtagion$(*).a ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}
-	${call log.kvp, Archived, $(@D)/libtagion$(*).a}
-
-$(DIR_BUILD)/libs/o/%.o: ways
-	${eval CMD := $(PRECMD)}
-	${eval CMD += $(DC)}
-	${eval CMD += $(DCFLAGS)}
-	${eval CMD += -c}
-	${eval CMD += -of$(DIR_BUILD)/libs/o/$(*).o}
-	${eval CMD += $(INCFLAGS)}
-	${eval CMD += ${call find.files, $(DIR_TUB_ROOT)/src/libs/$(*), *.d}}
-	${eval CMD += $(LDCFLAGS)}
-	$(CMD)
-	${call log.kvp, Compiled, $(DIR_BUILD)/libs/o/$(*).o}
-
-# 
-# Clean build directory
-# 
-clean:
-	${call log.lin, cleaning ./builds}
-	@rm -rf $(DIR_BUILD)/*
