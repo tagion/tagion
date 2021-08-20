@@ -23,7 +23,7 @@ else
 git clone git@github.com:tagion/tub.git 
 fi
 ln -s ./tub/Makefile ./
-ln -s ./tub/git ./
+ln -s ./tub/tub ./
 mkdir -p build
 mkdir -p src
 mkdir -p wraps
