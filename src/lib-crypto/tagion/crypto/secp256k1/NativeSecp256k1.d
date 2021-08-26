@@ -404,7 +404,7 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trustedversion (none) immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(
+    @trusted version (none) immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(
             ubyte[]) pubkey) const
     in {
         assert(seckey.length <= SECKEY_SIZE);

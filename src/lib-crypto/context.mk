@@ -1,8 +1,8 @@
-ifdef OPENSSL_AES
-SOURCEFLAGS+=-not -path "*/tiny_aes/*"
-else
-SOURCEFLAGS+=-not -path "*/openssl_aes/*"
+ifdef TINY_AES
+SOURCE_FIND_EXCLUDE+="*/openssl_aes/*"
 DCFLAGS+=$(DVERSION)=TINY_AES
+else
+SOURCE_FIND_EXCLUDE+="*/tiny_aes/*"
 endif
 
-ctx/lib/crypto: ctx/lib/hibon ctx/wrap/secp256k1
+crypto.ctx: hibon.o wrap/secp256k1
