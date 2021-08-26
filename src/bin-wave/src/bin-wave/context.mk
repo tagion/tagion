@@ -1,1 +1,1 @@
-ctx/bin/node: ctx/lib/crypto ctx/lib/p2p-go-wrapper ctx/lib/gossip
+bin/node.ctx: crypto.o p2p-go-wrapper.o gossip.o
