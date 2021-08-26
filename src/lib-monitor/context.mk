@@ -1,1 +1,1 @@
-ctx/lib/monitor: ctx/lib/basic ctx/lib/hashgraph ctx/lib/hibon ctx/lib/crypto ctx/lib/communication ctx/lib/gossip ctx/lib/p2p-go-wrapper ctx/lib/dart ctx/lib/network ctx/lib/funnel
+monitor.ctx: basic.o hashgraph.o hibon.o crypto.o communication.o gossip.o dart.o network.o funnel.o p2p-go-wrapper.o
