@@ -170,7 +170,7 @@ version (none) unittest {
     }
 }
 
-import tagion.gossip.GossipNet;
+// import tagion.gossip.GossipNet;
 
 import core.thread;
 
