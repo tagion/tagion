@@ -8,7 +8,7 @@ PATH_SRC_SECP256K1 := ${dir.self}/$(NAME_SECP256K1)
 check/secp256k1:
 	${call log.line, System check for secp256k1 is not implemented yet}
 
-wrap/secp256k1: | $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/.touch $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/libsecp256k1.a
+wrap/secp256k1: | way/$(DIR_BUILD)/wraps/$(NAME_SECP256K1) $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/libsecp256k1.a
 	${eval WRAPS += secp256k1}
 	${eval WRAPLIBS += $(DIR_BUILD)/wraps/$(NAME_SECP256K1)/libsecp256k1.a}
 
