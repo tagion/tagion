@@ -1,1 +1,1 @@
-ctx/lib/hibon: ctx/lib/utils ctx/lib/basic
+hibon.ctx: utils.o basic.o
