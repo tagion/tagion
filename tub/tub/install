@@ -1,36 +1,40 @@
 #!/usr/bin/env bash
 
 DIR_INSTALL=$1
+PWD=$(pwd)
 
 echo
 
 if [ -z "$DIR_INSTALL" ];
 then
 DIR_INSTALL=./
-echo "Project path: $(pwd)/"
+echo "Project path: $PWD/"
 else
-echo "Project path: $(pwd)/$DIR_INSTALL"
+echo "Project path: $PWD/$DIR_INSTALL"
 mkdir -p $DIR_INSTALL && cd $DIR_INSTALL
 fi
 
 echo
 
-echo -e "\033[1mInstalling...\033[0m"
+echo -e "\033[1mInstalling\033[0m"
 if [ -d "./tub" ]
 then
-echo "Found Tub locally..."
+echo "Found tub repository, skipping git clone..."
 else
 git clone git@github.com:tagion/tub.git 
 fi
-ln -s ./tub/Makefile ./
-ln -s ./tub/tub ./
+ln -s $PWD/tub/Makefile .
+ln -s $PWD/tub/tub /usr/local/bin
 mkdir -p build
 mkdir -p src
 mkdir -p wraps
 touch tubroot
 
-export PATH=$(pwd)/tub:$PATH
-
 echo
-echo "Your tub is successfully installed at $(pwd)"
+echo "Your tub is successfully installed at $PWD"
+echo "Tub script was symlinked to /usr/local/bin/tub"
+echo
+echo -e "\033[1mHow to use\033[0m"
+echo "tub <cmd>: to run commands on all projects inside ./src"
+echo "make update: to force update the tub itself"
 echo
