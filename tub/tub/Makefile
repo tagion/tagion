@@ -20,3 +20,9 @@ help: $(HELP)
 info: $(INFO)
 .PHONY: help info
 .SECONDARY:
+
+install:
+	@$(DIR_TUB)/install
+
+update:
+	@git pull origin --force

@@ -2,6 +2,13 @@
 -include $(DIR_WRAPS)/**/Makefile
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
+# TODO: Restore wraps support
+# TODO: Restore unittests support (compile and run separately)
+# TODO: Restore binary building
+# TODO: Simplify dir structure (lib-* bin-*)
+# TODO: Add arch to build folder based on env variables
+
+# TODO: Add conditional logger to clean up the logging
 # TODO: Add revision.di
 
 # TODO: Add local setup and unittest setup (context)
