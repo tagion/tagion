@@ -1,1 +1,1 @@
-ctx/lib/dart: ctx/lib/crypto ctx/lib/communication ctx/lib/services ctx/lib/gossip
+dart.ctx: crypto.o communication.o services.o gossip.o
