@@ -20,10 +20,10 @@ echo
 echo "You are in project: $ORIGIN_PATH"
 echo
 
-for DIR in $(ls src/libs); do
+for DIR in $(ls src); do
     echo -e "\033[1m$DIR\033[0m"
     
-    cd "$ORIGIN_PATH/src/libs/$DIR/"
+    cd "$ORIGIN_PATH/src/$DIR/"
     $@ 
 
     echo 
