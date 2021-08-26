@@ -1,1 +1,1 @@
-ctx/lib/network: ctx/lib/hibon ctx/lib/communication ctx/lib/services ctx/lib/hashgraph
+network.ctx: hibon.o communication.o services.o hashgraph.o
