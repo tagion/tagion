@@ -22,9 +22,12 @@
 # 
 # Creating required directories
 # 
+WAYS += $(DIR_BUILD)/.way
+
 %/.way:
 	$(PRECMD)mkdir -p $(*)
 	$(PRECMD)touch $(*)/.way
+	$(PRECMD)rm $(*)/.way
 
 ways: $(WAYS)
 
@@ -74,13 +77,11 @@ $(DIR_BUILD)/libs/o/%.o: $(DIR_BUILD)/libs/o/.touch
 # Clean build directory
 # 
 clean:
-	${call log.space}
-	$(PRECMD)rm -rf $(DIR_BUILD)/*
-	$(PRECMD)${foreach WAY, $(WAYS), rm -rf ${realpath $(WAY)};}
-	${call log.kvp, Removed}
-	${call log.line, $(DIR_BUILD)}
-	${call log.lines, $(WAYS)}
-	${call log.space}
+	${call log.header, cleaning}
+	${eval CLEAN_DIRS := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
+	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
+	${call log.lines, $(CLEAN_DIRS)}
+	${call log.close}
 
 # 
 # Helper macros
