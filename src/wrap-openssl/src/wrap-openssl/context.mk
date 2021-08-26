@@ -4,8 +4,8 @@ DIR_OPENSSL_SRC := ${call dir.self, openssl}
 DIR_BUILD_OPENSSL := $(DIR_BUILD)/wraps/openssl
 DIR_BUILD_OPENSSL_EXTRA := $(DIR_BUILD)/wraps/openssl/extra
 
-WAYS += $(DIR_BUILD_OPENSSL)/.way 
-WAYS += $(DIR_BUILD_OPENSSL_EXTRA)/.way
+WAYS_PERSISTENT += $(DIR_BUILD_OPENSSL)/.way 
+WAYS_PERSISTENT += $(DIR_BUILD_OPENSSL_EXTRA)/.way
 
 wrap/openssl: | ways $(DIR_BUILD_OPENSSL)/lib/libcrypto.a
 	${eval WRAPS += opensssl}
