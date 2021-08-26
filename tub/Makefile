@@ -10,7 +10,7 @@ endif
 include $(DIR_TUB)/utils.mk
 include $(DIR_TUB)/log.mk
 include $(DIR_TUB)/help.mk
-include $(DIR_TUB)/info.mk
+include $(DIR_TUB)/revision.mk
 include $(DIR_TUB)/env.mk
 include $(DIR_TUB)/add.mk
 include $(DIR_TUB)/compile.mk
