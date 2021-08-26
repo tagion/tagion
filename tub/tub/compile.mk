@@ -1,5 +1,4 @@
 # Include contexts and wrap Makefiles
--include $(DIR_WRAPS)/**/Makefile
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
 # TODO: Restore wraps support
@@ -23,9 +22,11 @@
 # 
 # Creating required directories
 # 
-%/.touch:
+%/.way:
 	$(PRECMD)mkdir -p $(*)
-	$(PRECMD)touch $(*)/.touch
+	$(PRECMD)touch $(*)/.way
+
+ways: $(WAYS)
 
 # 
 # Target helpers
@@ -74,8 +75,11 @@ $(DIR_BUILD)/libs/o/%.o: $(DIR_BUILD)/libs/o/.touch
 # 
 clean:
 	${call log.space}
-	@rm -rf $(DIR_BUILD)/*
-	${call log.line, $(DIR_BUILD) is removed}
+	$(PRECMD)rm -rf $(DIR_BUILD)/*
+	$(PRECMD)${foreach WAY, $(WAYS), rm -rf ${realpath $(WAY)};}
+	${call log.kvp, Removed}
+	${call log.line, $(DIR_BUILD)}
+	${call log.lines, $(WAYS)}
 	${call log.space}
 
 # 
