@@ -1,1 +1,1 @@
-ctx/lib/wallet: ctx/lib/basic ctx/lib/crypto ctx/lib/funnel
+wallet.ctx: basic.o crypto.o funnel.o
