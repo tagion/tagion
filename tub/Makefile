@@ -25,4 +25,5 @@ install:
 	@$(DIR_TUB)/install
 
 update:
-	@git pull origin --force
+	@cd $(DIR_TUB); git checkout .
+	@cd $(DIR_TUB); git pull origin --force
