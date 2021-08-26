@@ -1,1 +1,1 @@
-ctx/lib/logger: ctx/lib/basic
+logger.ctx: basic.o
