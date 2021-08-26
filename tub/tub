@@ -16,7 +16,9 @@ echo "Make sure you have tubroot file on the same level as 'src' of your project
 exit
 fi
 
+echo
 echo "You are in project: $ORIGIN_PATH"
+echo
 
 for DIR in $(ls src/libs); do
     echo -e "\033[1m$DIR\033[0m"
