@@ -1,62 +1,57 @@
 # Include contexts and wrap Makefiles
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
-# TODO: Restore wraps support
 # TODO: Restore unittests support (compile and run separately)
 # TODO: Restore binary building
-# TODO: Simplify dir structure (lib-* bin-*)
-# TODO: Add arch to build folder based on env variables
 
-# TODO: Add conditional logger to clean up the logging
 # TODO: Add revision.di
 
 # TODO: Add local setup and unittest setup (context)
-# -include ${shell find $(DIR_SRC) -name '*local.mk'}
 
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
-
-
-# We include all libs for imports
-
 
 # 
 # Creating required directories
 # 
-WAYS += $(DIR_BUILD)/.way
-
+WAYS_PERSISTENT += $(DIR_BUILD)/.way
+WAYS += $(DIR_BUILD)/libs/static/.way
+WAYS += $(DIR_BUILD)/libs/o/.way
 %/.way:
 	$(PRECMD)mkdir -p $(*)
 	$(PRECMD)touch $(*)/.way
 	$(PRECMD)rm $(*)/.way
 
-ways: $(WAYS)
+ways: $(WAYS) $(WAYS_PERSISTENT)
 
 # 
 # Target helpers
 # 
-# ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
-# 	@
-
 lib/%: $(DIR_BUILD)/libs/static/%.a
 	@
 
 %.o: | %.ctx $(DIR_BUILD)/libs/o/%.o
 	${eval OBJS += $(*)}
 
-$(DIR_BUILD)/libs/static/%.a: | $(DIR_BUILD)/libs/static/.touch %.o
+# 
+# Archiving static library
+# 
+$(DIR_BUILD)/libs/static/%.a: | ways %.o
 	${eval ARCHIVE := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval ARCHIVE := ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
 	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
 	${if $(PARALLEL), , ${call log.header, archiving $(*).a}}
 	${if $(PARALLEL), , ${call show.archive.details}}
 	$(PRECMD)ar cr $(DIR_BUILD)/libs/static/libtagion$(*).a $(ARCHIVE)
-	${if $(PARALLEL), , ${call log.separator}}
 	${call log.kvp, Archived, $(@D)/libtagion$(*).a}
 	${if $(PARALLEL), , ${call log.close}}
 
-$(DIR_BUILD)/libs/o/%.o: $(DIR_BUILD)/libs/o/.touch
-	${eval LIBDIRS := ${shell ls -d src/libs/*/ | grep -v $(*)}}
-	${eval INCFLAGS += ${foreach LIBDIR, $(LIBDIRS), -I$(DIR_TUB_ROOT)/$(LIBDIR)}}
-	${eval INFILES := ${call find.files, ${DIR_LIBS}/$(*), *.d}}
+# 
+# Compiling .o
+# 
+$(DIR_BUILD)/libs/o/%.o: | ways
+	${eval LIBDIRS := ${shell ls -d src/*/ | grep -v $(*) | grep -v wrap- | grep -v bin-}}
+	${eval INCFLAGS := ${foreach LIBDIR, $(LIBDIRS), -I$(DIR_TUB_ROOT)/$(LIBDIR)}}
+	${eval INFILES := ${call find.files, ${DIR_SRC}/lib-$(*), *.d}}
 	${eval OUTPUTFLAGS := -c}
 	${eval OUTPUTFLAGS += -of$(DIR_BUILD)/libs/o/$(*).o}
 	${eval COMPILE := $(PRECMD)}
@@ -77,8 +72,16 @@ $(DIR_BUILD)/libs/o/%.o: $(DIR_BUILD)/libs/o/.touch
 # Clean build directory
 # 
 clean:
-	${call log.header, cleaning}
+	${call log.header, cleaning WAYS}
 	${eval CLEAN_DIRS := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
+	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
+	${call log.lines, $(CLEAN_DIRS)}
+	${call log.close}
+
+clean/all:
+	${call log.header, cleaning WAYS and WAYS_PERSISTENT}
+	${eval CLEAN_DIRS := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
+	${eval CLEAN_DIRS += ${foreach WAY, $(WAYS_PERSISTENT), ${dir $(WAY)}}}
 	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
 	${call log.lines, $(CLEAN_DIRS)}
 	${call log.close}
@@ -116,13 +119,11 @@ ${call log.lines, $(LDCFLAGS)}
 ${call log.separator}
 ${call log.kvp, LATEFLAGS}
 ${call log.lines, $(LATEFLAGS)}
+${call log.separator}
 endef
 
 define show.archive.details
 ${call log.kvp, Including}
 ${call log.lines, $(ARCHIVE)}
-
 ${call log.separator}
-${call log.kvp, Linking}
-${call log.lines, $(WRAPS)}
 endef
