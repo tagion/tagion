@@ -166,8 +166,8 @@ alias check = Check!WastException;
                 {
                 case FUNC:
                     const _funcdesc = imp.importdesc.get!FUNC;
-                    return format("(%s (;%d;) (type %d))", indexName(desc),
-                            index, _funcdesc.typeidx);
+                    return format("(%s (;%d;) (func %d))", indexName(desc),
+                            index, _funcdesc.funcidx);
                 case TABLE:
                     const _tabledesc = imp.importdesc.get!TABLE;
                     return format("(%s (;%d;) %s %s)", indexName(desc), index,
@@ -346,6 +346,9 @@ alias check = Check!WastException;
                 final switch (instr.irtype)
                 {
                 case CODE:
+                    output.writefln("%s%s", indent, instr.name);
+                    break;
+                case PREFIX:
                     output.writefln("%s%s", indent, instr.name);
                     break;
                 case BLOCK:

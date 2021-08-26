@@ -142,7 +142,8 @@ enum IRType
     MEMORY, /// Memory instruction
     MEMOP, /// Memory management instruction
     CONST, /// Constant argument
-    END /// Block end instruction
+    END, /// Block end instruction
+    PREFIX, /// Prefix for two byte extension
 }
 
 struct Instr
@@ -151,6 +152,8 @@ struct Instr
     uint cost;
     IRType irtype;
     uint pops; // Number of pops from the stack
+    uint push; // Number of valus pushed
+    bool extend; // Extended
 }
 
 enum ubyte[] magic = [0x00, 0x61, 0x73, 0x6D];
@@ -327,6 +330,11 @@ enum IR : ubyte
         I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
         I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
         I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
+        I32_EXTEND8_S       = 0xC0, ///  i32.extend8_s
+        I32_EXTEND16_S      = 0xC1, ///  i32.extend16_s
+        I64_EXTEND8_S       = 0xC2, ///  i64.extend8_s
+        I64_EXTEND16_S      = 0xC3, ///  i64.extend16_s
+         I64_EXTEND32_S     = 0xC4, ///  i64.extend32_s
         I64_TRUNC_F32_S     = 0xAE, ///  i64.trunc_f32_s
         I64_TRUNC_F32_U     = 0xAF, ///  i64.trunc_f32_u
         I64_TRUNC_F64_S     = 0xB0, ///  i64.trunc_f64_s
@@ -345,6 +353,7 @@ enum IR : ubyte
         I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
         F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
         F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
+            TRUNC_SAT       = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
         // dfmt on
 
 }
@@ -361,191 +370,228 @@ shared static this()
             NOP                 : Instr("nop", 1, IRType.CODE),
             BLOCK               : Instr("block", 0, IRType.BLOCK),
             LOOP                : Instr("loop", 0, IRType.BLOCK),
-            IF                  : Instr("if", 1, IRType.BLOCK),
+            IF                  : Instr("if", 1, IRType.BLOCK, 1),
 
             ELSE                : Instr("else", 0, IRType.END),
             END                 : Instr("end", 0, IRType.END),
             BR                  : Instr("br", 1, IRType.BRANCH),
-            BR_IF               : Instr("br_if", 1, IRType.BRANCH),
-            BR_TABLE            : Instr("br_table", 1, IRType.BRANCH_TABLE),
+            BR_IF               : Instr("br_if", 1, IRType.BRANCH, 1),
+            BR_TABLE            : Instr("br_table", 1, IRType.BRANCH_TABLE, 1),
             RETURN              : Instr("return", 1, IRType.CODE),
             CALL                : Instr("call", 1, IRType.CALL),
-            CALL_INDIRECT       : Instr("call_indirect", 1, IRType.CALL_INDIRECT),
-            DROP                : Instr("drop", 1, IRType.CODE),
-            SELECT              : Instr("select", 1, IRType.CODE),
-            LOCAL_GET           : Instr("local.get", 1, IRType.LOCAL),
-            LOCAL_SET           : Instr("local.set", 1, IRType.LOCAL),
-            LOCAL_TEE           : Instr("local.tee", 1, IRType.LOCAL),
-            GLOBAL_GET          : Instr("global.get", 1, IRType.GLOBAL),
-            GLOBAL_SET          : Instr("global.set", 1, IRType.GLOBAL),
+            CALL_INDIRECT       : Instr("call_indirect", 1, IRType.CALL_INDIRECT, 1),
+            DROP                : Instr("drop", 1, IRType.CODE, 1),
+            SELECT              : Instr("select", 1, IRType.CODE, 3, 1),
+            LOCAL_GET           : Instr("local.get", 1, IRType.LOCAL, 0, 1),
+            LOCAL_SET           : Instr("local.set", 1, IRType.LOCAL, 1),
+            LOCAL_TEE           : Instr("local.tee", 1, IRType.LOCAL, 1, 1),
+            GLOBAL_GET          : Instr("global.get", 1, IRType.GLOBAL, 1, 0),
+            GLOBAL_SET          : Instr("global.set", 1, IRType.GLOBAL, 0, 1),
             /// memarg a                     :u32 o:u32 ⇒ {align a, offset o}
-            I32_LOAD            : Instr("i32.load", 2, IRType.MEMORY),
-            I64_LOAD            : Instr("i64.load", 2, IRType.MEMORY),
-            F32_LOAD            : Instr("f32.load", 2, IRType.MEMORY),
-            F64_LOAD            : Instr("f64.load", 2, IRType.MEMORY),
-            I32_LOAD8_S         : Instr("i32.load8_s", 2, IRType.MEMORY),
-            I32_LOAD8_U         : Instr("i32.load8_u", 2, IRType.MEMORY),
-            I32_LOAD16_S        : Instr("i32.load16_s", 2, IRType.MEMORY),
-            I32_LOAD16_U        : Instr("i32.load16_u", 2, IRType.MEMORY),
-            I64_LOAD8_S         : Instr("i64.load8_s", 2, IRType.MEMORY),
-            I64_LOAD8_U         : Instr("i64.load8_u", 2, IRType.MEMORY),
-            I64_LOAD16_S        : Instr("i64.load16_s", 2, IRType.MEMORY),
-            I64_LOAD16_U        : Instr("i64.load16_u", 2, IRType.MEMORY),
-            I64_LOAD32_S        : Instr("i64.load32_s", 2, IRType.MEMORY),
-            I64_LOAD32_U        : Instr("i64.load32_u", 2, IRType.MEMORY),
-            I32_STORE           : Instr("i32.store", 2, IRType.MEMORY),
-            I64_STORE           : Instr("i64.store", 2, IRType.MEMORY),
-            F32_STORE           : Instr("f32.store", 2, IRType.MEMORY),
-            F64_STORE           : Instr("f64.store", 2, IRType.MEMORY),
-            I32_STORE8          : Instr("i32.store8", 2, IRType.MEMORY),
-            I32_STORE16         : Instr("i32.store16", 2, IRType.MEMORY),
-            I64_STORE8          : Instr("i64.store8", 2, IRType.MEMORY),
-            I64_STORE16         : Instr("i64.store16", 2, IRType.MEMORY),
-            I64_STORE32         : Instr("i64.store32", 2, IRType.MEMORY),
-            MEMORY_SIZE         : Instr("memory.size", 7, IRType.MEMOP),
-            MEMORY_GROW         : Instr("memory.grow", 7, IRType.MEMOP),
+            I32_LOAD            : Instr("i32.load", 2, IRType.MEMORY, 1, 1),
+            I64_LOAD            : Instr("i64.load", 2, IRType.MEMORY, 1, 1),
+            F32_LOAD            : Instr("f32.load", 2, IRType.MEMORY, 1, 1),
+            F64_LOAD            : Instr("f64.load", 2, IRType.MEMORY, 1, 1),
+            I32_LOAD8_S         : Instr("i32.load8_s", 2, IRType.MEMORY, 1, 1),
+            I32_LOAD8_U         : Instr("i32.load8_u", 2, IRType.MEMORY, 1, 1),
+            I32_LOAD16_S        : Instr("i32.load16_s", 2, IRType.MEMORY, 1, 1),
+            I32_LOAD16_U        : Instr("i32.load16_u", 2, IRType.MEMORY, 1, 1),
+            I64_LOAD8_S         : Instr("i64.load8_s", 2, IRType.MEMORY, 1, 1),
+            I64_LOAD8_U         : Instr("i64.load8_u", 2, IRType.MEMORY, 1, 1),
+            I64_LOAD16_S        : Instr("i64.load16_s", 2, IRType.MEMORY, 1, 1),
+            I64_LOAD16_U        : Instr("i64.load16_u", 2, IRType.MEMORY, 1, 1),
+            I64_LOAD32_S        : Instr("i64.load32_s", 2, IRType.MEMORY, 1, 1),
+            I64_LOAD32_U        : Instr("i64.load32_u", 2, IRType.MEMORY, 1, 1),
+            I32_STORE           : Instr("i32.store", 2, IRType.MEMORY, 1),
+            I64_STORE           : Instr("i64.store", 2, IRType.MEMORY, 1),
+            F32_STORE           : Instr("f32.store", 2, IRType.MEMORY, 1),
+            F64_STORE           : Instr("f64.store", 2, IRType.MEMORY, 1),
+            I32_STORE8          : Instr("i32.store8", 2, IRType.MEMORY, 1),
+            I32_STORE16         : Instr("i32.store16", 2, IRType.MEMORY, 1),
+            I64_STORE8          : Instr("i64.store8", 2, IRType.MEMORY, 1),
+            I64_STORE16         : Instr("i64.store16", 2, IRType.MEMORY, 1),
+            I64_STORE32         : Instr("i64.store32", 2, IRType.MEMORY, 1),
+            MEMORY_SIZE         : Instr("memory.size", 7, IRType.MEMOP, 0, 1),
+            MEMORY_GROW         : Instr("memory.grow", 7, IRType.MEMOP, 1, 1),
             // Const instructions
-            I32_CONST           : Instr("i32.const", 1, IRType.CONST),
-            I64_CONST           : Instr("i64.const", 1, IRType.CONST),
-            F32_CONST           : Instr("f32.const", 1, IRType.CONST),
-            F64_CONST           : Instr("f64.const", 1, IRType.CONST),
+            I32_CONST           : Instr("i32.const", 1, IRType.CONST, 0, 1),
+            I64_CONST           : Instr("i64.const", 1, IRType.CONST, 0, 1),
+            F32_CONST           : Instr("f32.const", 1, IRType.CONST, 0, 1),
+            F64_CONST           : Instr("f64.const", 1, IRType.CONST, 0, 1),
             // Compare instructions
             I32_EQZ             : Instr("i32.eqz", 1, IRType.CODE, 1),
             I32_EQ              : Instr("i32.eq", 1, IRType.CODE, 1),
             I32_NE              : Instr("i32.ne", 1, IRType.CODE, 1),
-            I32_LT_S            : Instr("i32.lt_s", 1, IRType.CODE, 2),
-            I32_LT_U            : Instr("i32.lt_u", 1, IRType.CODE, 2),
-            I32_GT_S            : Instr("i32.gt_s", 1, IRType.CODE, 2),
-            I32_GT_U            : Instr("i32.gt_u", 1, IRType.CODE, 2),
-            I32_LE_S            : Instr("i32.le_s", 1, IRType.CODE, 2),
-            I32_LE_U            : Instr("i32.le_u", 1, IRType.CODE, 2),
-            I32_GE_S            : Instr("i32.ge_s", 1, IRType.CODE, 2),
-            I32_GE_U            : Instr("i32.ge_u", 1, IRType.CODE, 2),
+            I32_LT_S            : Instr("i32.lt_s", 1, IRType.CODE, 2, 1),
+            I32_LT_U            : Instr("i32.lt_u", 1, IRType.CODE, 2, 1),
+            I32_GT_S            : Instr("i32.gt_s", 1, IRType.CODE, 2, 1),
+            I32_GT_U            : Instr("i32.gt_u", 1, IRType.CODE, 2, 1),
+            I32_LE_S            : Instr("i32.le_s", 1, IRType.CODE, 2, 1),
+            I32_LE_U            : Instr("i32.le_u", 1, IRType.CODE, 2, 1),
+            I32_GE_S            : Instr("i32.ge_s", 1, IRType.CODE, 2, 1),
+            I32_GE_U            : Instr("i32.ge_u", 1, IRType.CODE, 2, 1),
 
-            I64_EQZ             : Instr("i64.eqz", 1, IRType.CODE, 1),
-            I64_EQ              : Instr("i64.eq", 1, IRType.CODE, 1),
-            I64_NE              : Instr("i64.ne", 1, IRType.CODE, 1),
+            I64_EQZ             : Instr("i64.eqz", 1, IRType.CODE, 1, 1),
+            I64_EQ              : Instr("i64.eq", 1, IRType.CODE, 1, 1),
+            I64_NE              : Instr("i64.ne", 1, IRType.CODE, 1, 1),
             I64_LT_S            : Instr("i64.lt_s", 1, IRType.CODE),
 
-            I64_LT_U            : Instr("i64.lt_u", 1, IRType.CODE),
-            I64_GT_S            : Instr("i64.gt_s", 1, IRType.CODE),
-            I64_GT_U            : Instr("i64.gt_u", 1, IRType.CODE),
-            I64_LE_S            : Instr("i64.le_s", 1, IRType.CODE),
-            I64_LE_U            : Instr("i64.le_u", 1, IRType.CODE),
-            I64_GE_S            : Instr("i64.ge_s", 1, IRType.CODE),
-            I64_GE_U            : Instr("i64.ge_u", 1, IRType.CODE),
+            I64_LT_U            : Instr("i64.lt_u", 1, IRType.CODE, 2, 1),
+            I64_GT_S            : Instr("i64.gt_s", 1, IRType.CODE, 2, 1),
+            I64_GT_U            : Instr("i64.gt_u", 1, IRType.CODE, 2, 1),
+            I64_LE_S            : Instr("i64.le_s", 1, IRType.CODE, 2, 1),
+            I64_LE_U            : Instr("i64.le_u", 1, IRType.CODE, 2, 1),
+            I64_GE_S            : Instr("i64.ge_s", 1, IRType.CODE, 2, 1),
+            I64_GE_U            : Instr("i64.ge_u", 1, IRType.CODE, 2, 1),
 
-            F32_EQ              : Instr("f32.eq", 1, IRType.CODE),
-            F32_NE              : Instr("f32.ne", 1, IRType.CODE),
-            F32_LT              : Instr("f32.lt", 1, IRType.CODE),
-            F32_GT              : Instr("f32.gt", 1, IRType.CODE),
-            F32_LE              : Instr("f32.le", 1, IRType.CODE),
-            F32_GE              : Instr("f32.ge", 1, IRType.CODE),
+            F32_EQ              : Instr("f32.eq", 1, IRType.CODE, 1),
+            F32_NE              : Instr("f32.ne", 1, IRType.CODE, 1),
+            F32_LT              : Instr("f32.lt", 1, IRType.CODE, 1),
+            F32_GT              : Instr("f32.gt", 1, IRType.CODE, 1),
+            F32_LE              : Instr("f32.le", 1, IRType.CODE, 1),
+            F32_GE              : Instr("f32.ge", 1, IRType.CODE, 1),
 
-            F64_EQ              : Instr("f64.eq", 1, IRType.CODE),
-            F64_NE              : Instr("f64.ne", 1, IRType.CODE),
-            F64_LT              : Instr("f64.lt", 1, IRType.CODE),
-            F64_GT              : Instr("f64.gt", 1, IRType.CODE),
-            F64_LE              : Instr("f64.le", 1, IRType.CODE),
-            F64_GE              : Instr("f64.ge", 1, IRType.CODE),
+            F64_EQ              : Instr("f64.eq", 1, IRType.CODE, 1),
+            F64_NE              : Instr("f64.ne", 1, IRType.CODE, 1),
+            F64_LT              : Instr("f64.lt", 1, IRType.CODE, 1),
+            F64_GT              : Instr("f64.gt", 1, IRType.CODE, 1),
+            F64_LE              : Instr("f64.le", 1, IRType.CODE, 1),
+            F64_GE              : Instr("f64.ge", 1, IRType.CODE, 1),
 
             /// Operator                      instructions
-            I32_CLZ             : Instr("i32.clz", 1, IRType.CODE),
-            I32_CTZ             : Instr("i32.ctz", 1, IRType.CODE),
-            I32_POPCNT          : Instr("i32.popcnt", 1, IRType.CODE),
-            I32_ADD             : Instr("i32.add", 1, IRType.CODE),
-            I32_SUB             : Instr("i32.sub", 1, IRType.CODE),
-            I32_MUL             : Instr("i32.mul", 1, IRType.CODE),
-            I32_DIV_S           : Instr("i32.div_s", 1, IRType.CODE),
-            I32_DIV_U           : Instr("i32.div_u", 1, IRType.CODE),
-            I32_REM_S           : Instr("i32.rem_s", 1, IRType.CODE),
-            I32_REM_U           : Instr("i32.rem_u", 1, IRType.CODE),
-            I32_AND             : Instr("i32.and", 1, IRType.CODE),
-            I32_OR              : Instr("i32.or", 1, IRType.CODE),
-            I32_XOR             : Instr("i32.xor", 1, IRType.CODE),
-            I32_SHL             : Instr("i32.shl", 1, IRType.CODE),
-            I32_SHR_S           : Instr("i32.shr_s", 1, IRType.CODE),
-            I32_SHR_U           : Instr("i32.shr_u", 1, IRType.CODE),
-            I32_ROTL            : Instr("i32.rotl", 1, IRType.CODE),
-            I32_ROTR            : Instr("i32.rotr", 1, IRType.CODE),
+            I32_CLZ             : Instr("i32.clz", 1, IRType.CODE, 1, 1),
+            I32_CTZ             : Instr("i32.ctz", 1, IRType.CODE, 1, 1),
+            I32_POPCNT          : Instr("i32.popcnt", 1, IRType.CODE, 1, 1),
+            I32_ADD             : Instr("i32.add", 1, IRType.CODE, 2, 1),
+            I32_SUB             : Instr("i32.sub", 1, IRType.CODE, 2, 1),
+            I32_MUL             : Instr("i32.mul", 1, IRType.CODE, 2, 1),
+            I32_DIV_S           : Instr("i32.div_s", 1, IRType.CODE, 2, 1),
+            I32_DIV_U           : Instr("i32.div_u", 1, IRType.CODE, 2, 1),
+            I32_REM_S           : Instr("i32.rem_s", 1, IRType.CODE, 2, 1),
+            I32_REM_U           : Instr("i32.rem_u", 1, IRType.CODE, 2, 1),
+            I32_AND             : Instr("i32.and", 1, IRType.CODE, 2, 1),
+            I32_OR              : Instr("i32.or", 1, IRType.CODE, 2, 1),
+            I32_XOR             : Instr("i32.xor", 1, IRType.CODE, 2, 1),
+            I32_SHL             : Instr("i32.shl", 1, IRType.CODE, 2, 1),
+            I32_SHR_S           : Instr("i32.shr_s", 1, IRType.CODE, 2, 1),
+            I32_SHR_U           : Instr("i32.shr_u", 1, IRType.CODE, 2, 1),
+            I32_ROTL            : Instr("i32.rotl", 1, IRType.CODE, 2, 1),
+            I32_ROTR            : Instr("i32.rotr", 1, IRType.CODE, 2, 1),
 
-            I64_CLZ             : Instr("i64.clz", 1, IRType.CODE),
-            I64_CTZ             : Instr("i64.ctz", 1, IRType.CODE),
-            I64_POPCNT          : Instr("i64.popcnt", 1, IRType.CODE),
-            I64_ADD             : Instr("i64.add", 1, IRType.CODE),
-            I64_SUB             : Instr("i64.sub", 1, IRType.CODE),
-            I64_MUL             : Instr("i64.mul", 1, IRType.CODE),
-            I64_DIV_S           : Instr("i64.div_s", 1, IRType.CODE),
-            I64_DIV_U           : Instr("i64.div_u", 1, IRType.CODE),
-            I64_REM_S           : Instr("i64.rem_s", 1, IRType.CODE),
-            I64_REM_U           : Instr("i64.rem_u", 1, IRType.CODE),
-            I64_AND             : Instr("i64.and", 1, IRType.CODE),
-            I64_OR              : Instr("i64.or", 1, IRType.CODE),
-            I64_XOR             : Instr("i64.xor", 1, IRType.CODE),
-            I64_SHL             : Instr("i64.shl", 1, IRType.CODE),
-            I64_SHR_S           : Instr("i64.shr_s", 1, IRType.CODE),
-            I64_SHR_U           : Instr("i64.shr_u", 1, IRType.CODE),
-            I64_ROTL            : Instr("i64.rotl", 1, IRType.CODE),
-            I64_ROTR            : Instr("i64.rotr", 1, IRType.CODE),
+            I64_CLZ             : Instr("i64.clz", 1, IRType.CODE, 1, 1),
+            I64_CTZ             : Instr("i64.ctz", 1, IRType.CODE, 1, 1),
+            I64_POPCNT          : Instr("i64.popcnt", 1, IRType.CODE, 1, 1),
+            I64_ADD             : Instr("i64.add", 1, IRType.CODE, 2, 1),
+            I64_SUB             : Instr("i64.sub", 1, IRType.CODE, 2, 1),
+            I64_MUL             : Instr("i64.mul", 1, IRType.CODE, 2, 1),
+            I64_DIV_S           : Instr("i64.div_s", 1, IRType.CODE, 2, 1),
+            I64_DIV_U           : Instr("i64.div_u", 1, IRType.CODE, 2, 1),
+            I64_REM_S           : Instr("i64.rem_s", 1, IRType.CODE, 2, 1),
+            I64_REM_U           : Instr("i64.rem_u", 1, IRType.CODE, 2, 1),
+            I64_AND             : Instr("i64.and", 1, IRType.CODE, 2, 1),
+            I64_OR              : Instr("i64.or", 1, IRType.CODE, 2, 1),
+            I64_XOR             : Instr("i64.xor", 1, IRType.CODE, 2, 1),
+            I64_SHL             : Instr("i64.shl", 1, IRType.CODE, 2, 1),
+            I64_SHR_S           : Instr("i64.shr_s", 1, IRType.CODE, 2, 1),
+            I64_SHR_U           : Instr("i64.shr_u", 1, IRType.CODE, 2, 1),
+            I64_ROTL            : Instr("i64.rotl", 1, IRType.CODE, 2, 1),
+            I64_ROTR            : Instr("i64.rotr", 1, IRType.CODE, 2, 1),
 
-            F32_ABS             : Instr("f32.abs", 1, IRType.CODE),
-            F32_NEG             : Instr("f32.neg", 1, IRType.CODE),
-            F32_CEIL            : Instr("f32.ceil", 1, IRType.CODE),
-            F32_FLOOR           : Instr("f32.floor", 1, IRType.CODE),
-            F32_TRUNC           : Instr("f32.trunc", 1, IRType.CODE),
-            F32_NEAREST         : Instr("f32.nearest", 1, IRType.CODE),
-            F32_SQRT            : Instr("f32.sqrt", 3, IRType.CODE),
-            F32_ADD             : Instr("f32.add", 3, IRType.CODE),
-            F32_SUB             : Instr("f32.sub", 3, IRType.CODE),
-            F32_MUL             : Instr("f32.mul", 3, IRType.CODE),
-            F32_DIV             : Instr("f32.div", 3, IRType.CODE),
-            F32_MIN             : Instr("f32.min", 1, IRType.CODE),
-            F32_MAX             : Instr("f32.max", 1, IRType.CODE),
-            F32_COPYSIGN        : Instr("f32.copysign", 1, IRType.CODE),
+            F32_ABS             : Instr("f32.abs", 1, IRType.CODE, 1, 1),
+            F32_NEG             : Instr("f32.neg", 1, IRType.CODE, 1, 1),
+            F32_CEIL            : Instr("f32.ceil", 1, IRType.CODE, 1, 1),
+            F32_FLOOR           : Instr("f32.floor", 1, IRType.CODE, 1, 1),
+            F32_TRUNC           : Instr("f32.trunc", 1, IRType.CODE, 1, 1),
+            F32_NEAREST         : Instr("f32.nearest", 1, IRType.CODE, 1, 1),
+            F32_SQRT            : Instr("f32.sqrt", 3, IRType.CODE, 1, 1),
+            F32_ADD             : Instr("f32.add", 3, IRType.CODE, 1, 1),
+            F32_SUB             : Instr("f32.sub", 3, IRType.CODE, 1, 1),
+            F32_MUL             : Instr("f32.mul", 3, IRType.CODE, 1, 1),
+            F32_DIV             : Instr("f32.div", 3, IRType.CODE, 1, 1),
+            F32_MIN             : Instr("f32.min", 1, IRType.CODE, 1, 1),
+            F32_MAX             : Instr("f32.max", 1, IRType.CODE, 1, 1),
+            F32_COPYSIGN        : Instr("f32.copysign", 1, IRType.CODE, 2, 1),
 
-            F64_ABS             : Instr("f64.abs", 1, IRType.CODE),
-            F64_NEG             : Instr("f64.neg", 1, IRType.CODE),
-            F64_CEIL            : Instr("f64.ceil", 1, IRType.CODE),
-            F64_FLOOR           : Instr("f64.floor", 1, IRType.CODE),
-            F64_TRUNC           : Instr("f64.trunc", 1, IRType.CODE),
-            F64_NEAREST         : Instr("f64.nearest", 1, IRType.CODE),
-            F64_SQRT            : Instr("f64.sqrt", 3, IRType.CODE),
-            F64_ADD             : Instr("f64.add", 3, IRType.CODE),
-            F64_SUB             : Instr("f64.sub", 3, IRType.CODE),
-            F64_MUL             : Instr("f64.mul", 3, IRType.CODE),
-            F64_DIV             : Instr("f64.div", 3, IRType.CODE),
-            F64_MIN             : Instr("f64.min", 1, IRType.CODE),
-            F64_MAX             : Instr("f64.max", 1, IRType.CODE),
-            F64_COPYSIGN        : Instr("f64.copysign", 1, IRType.CODE),
+            F64_ABS             : Instr("f64.abs", 1, IRType.CODE, 1, 1),
+            F64_NEG             : Instr("f64.neg", 1, IRType.CODE, 1, 1),
+            F64_CEIL            : Instr("f64.ceil", 1, IRType.CODE, 1, 1),
+            F64_FLOOR           : Instr("f64.floor", 1, IRType.CODE, 1, 1),
+            F64_TRUNC           : Instr("f64.trunc", 1, IRType.CODE, 1, 1),
+            F64_NEAREST         : Instr("f64.nearest", 1, IRType.CODE, 1, 1),
+            F64_SQRT            : Instr("f64.sqrt", 3, IRType.CODE, 1, 1),
+            F64_ADD             : Instr("f64.add", 3, IRType.CODE, 1, 1),
+            F64_SUB             : Instr("f64.sub", 3, IRType.CODE, 1, 1),
+            F64_MUL             : Instr("f64.mul", 3, IRType.CODE, 1, 1),
+            F64_DIV             : Instr("f64.div", 3, IRType.CODE, 1, 1),
+            F64_MIN             : Instr("f64.min", 1, IRType.CODE, 1, 1),
+            F64_MAX             : Instr("f64.max", 1, IRType.CODE, 1, 1),
+            F64_COPYSIGN        : Instr("f64.copysign", 1, IRType.CODE, 2, 1),
             /// Convert instructions
-            I32_WRAP_I64        : Instr("i32.wrap_i64", 1, IRType.CODE),
-            I32_TRUNC_F32_S     : Instr("i32.trunc_f32_s", 1, IRType.CODE),
-            I32_TRUNC_F32_U     : Instr("i32.trunc_f32_u", 1, IRType.CODE),
-            I32_TRUNC_F64_S     : Instr("i32.trunc_f64_s", 1, IRType.CODE),
-            I32_TRUNC_F64_U     : Instr("i32.trunc_f64_u", 1, IRType.CODE),
-            I64_EXTEND_I32_S    : Instr("i64.extend_i32_s", 1, IRType.CODE),
-            I64_EXTEND_I32_U    : Instr("i64.extend_i32_u", 1, IRType.CODE),
-            I64_TRUNC_F32_S     : Instr("i64.trunc_f32_s", 1, IRType.CODE),
-            I64_TRUNC_F32_U     : Instr("i64.trunc_f32_u", 1, IRType.CODE),
-            I64_TRUNC_F64_S     : Instr("i64.trunc_f64_s", 1, IRType.CODE),
-            I64_TRUNC_F64_U     : Instr("i64.trunc_f64_u", 1, IRType.CODE),
-            F32_CONVERT_I32_S   : Instr("f32.convert_i32_s", 1, IRType.CODE),
-            F32_CONVERT_I32_U   : Instr("f32.convert_i32_u", 1, IRType.CODE),
-            F32_CONVERT_I64_S   : Instr("f32.convert_i64_s", 1, IRType.CODE),
-            F32_CONVERT_I64_U   : Instr("f32.convert_i64_u", 1, IRType.CODE),
-            F32_DEMOTE_F64      : Instr("f32.demote_f64", 1, IRType.CODE),
-            F64_CONVERT_I32_S   : Instr("f64.convert_i32_s", 1, IRType.CODE),
-            F64_CONVERT_I32_U   : Instr("f64.convert_i32_u", 1, IRType.CODE),
-            F64_CONVERT_I64_S   : Instr("f64.convert_i64_s", 1, IRType.CODE),
-            F64_CONVERT_I64_U   : Instr("f64.convert_i64_u", 1, IRType.CODE),
-            F64_PROMOTE_F32     : Instr("f64.promote_f32", 1, IRType.CODE),
-            I32_REINTERPRET_F32 : Instr("i32.reinterpret_f32", 1, IRType.CODE),
-            I64_REINTERPRET_F64 : Instr("i64.reinterpret_f64", 1, IRType.CODE),
-            F32_REINTERPRET_I32 : Instr("f32.reinterpret_i32", 1, IRType.CODE),
-            F64_REINTERPRET_I64 : Instr("f64.reinterpret_i64", 1, IRType.CODE),
+            I32_WRAP_I64        : Instr("i32.wrap_i64", 1, IRType.CODE, 1, 1),
+            I32_TRUNC_F32_S     : Instr("i32.trunc_f32_s", 1, IRType.CODE, 1, 1),
+            I32_TRUNC_F32_U     : Instr("i32.trunc_f32_u", 1, IRType.CODE, 1, 1),
+            I32_TRUNC_F64_S     : Instr("i32.trunc_f64_s", 1, IRType.CODE, 1, 1),
+            I32_TRUNC_F64_U     : Instr("i32.trunc_f64_u", 1, IRType.CODE, 1, 1),
+            I64_EXTEND_I32_S    : Instr("i64.extend_i32_s", 1, IRType.CODE, 1, 1),
+            I64_EXTEND_I32_U    : Instr("i64.extend_i32_u", 1, IRType.CODE, 1, 1),
+            I32_EXTEND8_S       : Instr("i32.extend8_s", 1, IRType.CODE, 1, 1),
+            I32_EXTEND16_S      : Instr("i32.extend16_s", 1, IRType.CODE, 1, 1),
+            I64_EXTEND8_S       : Instr("i64.extend8_s", 1, IRType.CODE, 1, 1),
+            I64_EXTEND16_S      : Instr("i64.extend16_s", 1, IRType.CODE, 1, 1),
+            I64_EXTEND32_S      : Instr("i64.extend32_s", 1, IRType.CODE, 1, 1),
 
+            I64_TRUNC_F32_S     : Instr("i64.trunc_f32_s", 1, IRType.CODE, 1, 1),
+            I64_TRUNC_F32_U     : Instr("i64.trunc_f32_u", 1, IRType.CODE, 1, 1),
+            I64_TRUNC_F64_S     : Instr("i64.trunc_f64_s", 1, IRType.CODE, 1, 1),
+            I64_TRUNC_F64_U     : Instr("i64.trunc_f64_u", 1, IRType.CODE, 1, 1),
+            F32_CONVERT_I32_S   : Instr("f32.convert_i32_s", 1, IRType.CODE, 1, 1),
+            F32_CONVERT_I32_U   : Instr("f32.convert_i32_u", 1, IRType.CODE, 1, 1),
+            F32_CONVERT_I64_S   : Instr("f32.convert_i64_s", 1, IRType.CODE, 1, 1),
+            F32_CONVERT_I64_U   : Instr("f32.convert_i64_u", 1, IRType.CODE, 1, 1),
+            F32_DEMOTE_F64      : Instr("f32.demote_f64", 1, IRType.CODE, 1, 1),
+            F64_CONVERT_I32_S   : Instr("f64.convert_i32_s", 1, IRType.CODE, 1, 1),
+            F64_CONVERT_I32_U   : Instr("f64.convert_i32_u", 1, IRType.CODE, 1, 1),
+            F64_CONVERT_I64_S   : Instr("f64.convert_i64_s", 1, IRType.CODE, 1, 1),
+            F64_CONVERT_I64_U   : Instr("f64.convert_i64_u", 1, IRType.CODE, 1, 1),
+            F64_PROMOTE_F32     : Instr("f64.promote_f32", 1, IRType.CODE, 1, 1),
+            I32_REINTERPRET_F32 : Instr("i32.reinterpret_f32", 1, IRType.CODE, 1, 1),
+            I64_REINTERPRET_F64 : Instr("i64.reinterpret_f64", 1, IRType.CODE, 1, 1),
+            F32_REINTERPRET_I32 : Instr("f32.reinterpret_i32", 1, IRType.CODE, 1, 1),
+            F64_REINTERPRET_I64 : Instr("f64.reinterpret_i64", 1, IRType.CODE, 1, 1),
+
+            TRUNC_SAT           : Instr("truct_sat", 1, IRType.CODE, 1, 1, true),
             // dfmt on
         ];
+    }
+}
+
+enum IR_TRUNC_SAT : ubyte {
+    I32_F32_S,
+    I32_F32_U,
+    I32_F64_S,
+    I32_F64_U,
+    I64_F32_S,
+    I64_F32_U,
+    I64_F64_S,
+    I64_F64_U,
+}
+
+shared static immutable(string[IR_TRUNC_SAT]) trunc_sat_mnemonic;
+
+shared static this()
+{
+    with (IR)
+    {
+        trunc_sat_mnemonic = [
+            I32_F32_S : "i32.trunc_sat_f32_s",
+            I32_F32_U : "i32.trunc_sat_f32_u",
+            I32_F64_S : "i32.trunc_sat_f64_s",
+            I32_F64_U : "i32.trunc_sat_f64_u",
+            I64_F32_S : "i64.trunc_sat_f32_s",
+            I64_F32_U : "i64.trunc_sat_f32_u",
+            I64_F64_S : "i64.trunc_sat_f64_s",
+            I64_F64_U : "i64.trunc_sat_f64_u",
+            ];
     }
 }
 
@@ -776,15 +822,12 @@ static assert(isInputRange!ExprRange);
             const(Types)[] _types;
         }
 
-        static IRElement unreachable() nothrow
-        {
-            IRElement elm;
-            elm.code = IR.UNREACHABLE;
-            elm._warg = WasmArg.undefine;
-            elm._wargs = null;
-            elm._types = null;
-            return elm;
-        }
+        static immutable(IRElement) unreachable;
+
+        shared static this() {
+            unreachable.code = IR.UNREACHABLE;
+            unreachable._warg = WasmArg.undefine;
+        };
 
         const(WasmArg) warg() const pure nothrow
         {
@@ -803,7 +846,7 @@ static assert(isInputRange!ExprRange);
 
     }
 
-    this(immutable(ubyte[]) data)
+    this(immutable(ubyte[]) data) pure nothrow
     {
         this.data = data;
         set_front(current, _index);
@@ -834,15 +877,6 @@ static assert(isInputRange!ExprRange);
                 }
             }
         }
-        // if (test) {
-        //     //writefln("::\tindex=%d data.length=%d empty=%s", index, data.length, empty);
-        //     if (index == data.length) {
-        //         index++;
-        //     }
-        //     if (index >= data.length) {
-        //         return;
-        //     }
-        // }
 
         if (index < data.length)
         {
@@ -855,6 +889,10 @@ static assert(isInputRange!ExprRange);
                 final switch (instr.irtype)
                 {
                 case CODE:
+                    break;
+                case PREFIX:
+                    _warg = int(data[index]); // Extened insruction
+                    index+=ubyte.sizeof;
                     break;
                 case BLOCK:
                     elm._types = [cast(Types) data[index]];
@@ -937,26 +975,27 @@ static assert(isInputRange!ExprRange);
         }
     }
 
-    @property
-    {
-        const(size_t) index() const pure nothrow
+    @property pure nothrow {
+        const(size_t) index() const
         {
             return _index;
         }
 
-        const(IRElement) front() const pure nothrow
+        const(IRElement) front() const
         {
             return current;
         }
 
-        bool empty() const pure nothrow
+        bool empty() const
         {
             return _index > data.length;
         }
 
-        void popFront()
+    }
+
+    void popFront()
         {
             set_front(current, _index);
         }
-    }
+
 }

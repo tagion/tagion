@@ -9,7 +9,7 @@ import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget, ForeachType;
 
 import std.bitmanip : binread = read, binwrite = write, peek, Endian;
 
-import std.range.primitives : isInputRange;
+import std.range.primitives : isInputRange, isForwardRange, isRandomAccessRange;
 
 import std.conv : to, emplace;
 import std.uni : toLower;
@@ -131,6 +131,8 @@ import std.format;
     }
 
     static assert(isInputRange!WasmRange);
+    static assert(isForwardRange!WasmRange);
+    //static assert(isRandomAccessRange!WasmRange);
 
     @safe struct WasmRange
     {
@@ -148,27 +150,49 @@ import std.format;
             _index = 2 * uint.sizeof;
         }
 
-        @property bool empty() const pure nothrow
+        @nogc pure nothrow {
+            bool empty() const
         {
             return _index >= data.length;
         }
 
-        @property WasmSection front() const pure
-        {
-            return WasmSection(data[_index .. $]);
-        }
+            WasmSection front() const
+            {
+                return WasmSection(data[_index .. $]);
+            }
 
-        @property void popFront() pure
+            void popFront()
         {
-            size_t u32_size;
             _index += Section.sizeof;
             const size = u32(data, _index);
             _index += size;
         }
 
-        @property size_t index() const pure nothrow
+
+            WasmRange save() {
+                WasmRange result = this;
+                return result;
+            }
+
+            WasmSection opIndex(const size_t index)
+            in {
+                assert(index < EnumMembers!(Section).length);
+            }
+            do {
+                scope index_range = WasmRange(data);
+                foreach(i; 0..EnumMembers!(Section).length) {
+                    if (i is index) {
+                        return index_range.front;
+                    }
+                    index_range.popFront;
+                }
+                assert(0);
+            }
+
+            size_t index() const
         {
             return _index;
+        }
         }
 
         struct WasmSection
@@ -195,30 +219,50 @@ import std.format;
                 return new T(data);
             }
 
+            @nogc
             struct VectorRange(ModuleSection, Element)
             {
                 const ModuleSection owner;
                 protected size_t pos;
                 protected uint index;
-                this(const ModuleSection owner)
+                this(const ModuleSection owner) pure nothrow
                 {
                     this.owner = owner;
                 }
 
-                @property Element front() const
-                {
-                    return Element(owner.data[pos .. $]);
-                }
 
-                @property bool empty() const pure nothrow
-                {
-                    return index >= owner.length;
-                }
+                pure nothrow {
+                    Element front() const
+                    {
+                        return Element(owner.data[pos .. $]);
+                    }
 
-                @property void popFront()
-                {
-                    pos += front.size;
-                    index++;
+                    bool empty() const
+                    {
+                        return index >= owner.length;
+                    }
+
+                    void popFront()
+                    {
+                        pos += front.size;
+                        index++;
+                    }
+
+                    VectorRange save() {
+                        VectorRange result = this;
+                        return result;
+                    }
+
+
+                }
+                const(Element) opIndex(const size_t index) pure const {
+                    auto range = VectorRange(owner);
+                    foreach(i, ref e; range.enumerate) {
+                        if (i is index) {
+                            return e;
+                        }
+                    }
+                    throw new WasmException(format!"Index %d out of range"(index));
                 }
             }
 
@@ -234,8 +278,8 @@ import std.format;
                 }
 
                 static assert(isInputRange!SecRange);
+                static assert(isForwardRange!SecRange);
                 alias SecRange = VectorRange!(SectionT, SecType);
-
                 SecRange opSlice() const
                 {
                     return SecRange(this);
@@ -272,7 +316,7 @@ import std.format;
                 immutable(Types[]) params;
                 immutable(Types[]) results;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     type = cast(Types) data[0];
                     size_t index = Types.sizeof;
@@ -294,10 +338,10 @@ import std.format;
                 {
                     struct FuncDesc
                     {
-                        uint typeidx;
-                        this(immutable(ubyte[]) data, ref size_t index)
+                        uint funcidx;
+                        this(immutable(ubyte[]) data, ref size_t index) pure nothrow
                         {
-                            typeidx = u32(data, index);
+                            funcidx = u32(data, index);
                         }
                     }
 
@@ -305,7 +349,7 @@ import std.format;
                     {
                         Types type;
                         Limit limit;
-                        this(immutable(ubyte[]) data, ref size_t index)
+                        this(immutable(ubyte[]) data, ref size_t index) pure nothrow
                         {
                             type = cast(Types) data[index];
                             index += Types.sizeof;
@@ -316,7 +360,7 @@ import std.format;
                     struct MemoryDesc
                     {
                         Limit limit;
-                        this(immutable(ubyte[]) data, ref size_t index)
+                        this(immutable(ubyte[]) data, ref size_t index) pure  nothrow
                         {
                             limit = Limit(data, index);
                         }
@@ -326,7 +370,7 @@ import std.format;
                     {
                         Types type;
                         Mutable mut;
-                        this(immutable(ubyte[]) data, ref size_t index)
+                        this(immutable(ubyte[]) data, ref size_t index) pure nothrow
                         {
                             type = cast(Types) data[index];
                             index += Types.sizeof;
@@ -367,7 +411,7 @@ import std.format;
                         return _desc;
                     }
 
-                    this(immutable(ubyte[]) data, ref size_t index)
+                    this(immutable(ubyte[]) data, ref size_t index) pure nothrow
                     {
                         _desc = cast(IndexType) data[index];
                         index += IndexType.sizeof;
@@ -393,7 +437,7 @@ import std.format;
 
                 }
 
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     mod = Vector!char(data, index);
@@ -410,7 +454,7 @@ import std.format;
             {
                 immutable(uint) idx;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     idx = u32(data, index);
@@ -425,7 +469,7 @@ import std.format;
                 immutable(Types) type;
                 immutable(Limit) limit;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     type = cast(Types) data[0];
                     size_t index = Types.sizeof;
@@ -441,7 +485,7 @@ import std.format;
             {
                 immutable(Limit) limit;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     limit = Limit(data, index);
@@ -456,7 +500,7 @@ import std.format;
                 immutable(ImportType.ImportDesc.GlobalDesc) global;
                 immutable(ubyte[]) expr;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     global = ImportType.ImportDesc.GlobalDesc(data, index);
@@ -489,7 +533,7 @@ import std.format;
                 immutable(IndexType) desc;
                 immutable(uint) idx;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     name = Vector!char(data, index);
@@ -534,7 +578,7 @@ import std.format;
                     assert(0);
                 }
 
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     tableidx = u32(data, index);
@@ -556,7 +600,7 @@ import std.format;
             {
                 immutable size_t size;
                 immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data, ref size_t index)
+                this(immutable(ubyte[]) data, ref size_t index) pure nothrow
                 {
                     size = u32(data, index);
                     this.data = data[index .. index + size];
@@ -566,7 +610,7 @@ import std.format;
                 {
                     uint count;
                     Types type;
-                    this(immutable(ubyte[]) data, ref size_t index) pure
+                    this(immutable(ubyte[]) data, ref size_t index) pure nothrow
                     {
                         count = u32(data, index);
                         type = cast(Types) data[index];
@@ -574,7 +618,7 @@ import std.format;
                     }
                 }
 
-                LocalRange locals() const
+                LocalRange locals() const pure nothrow
                 {
                     return LocalRange(data);
                 }
@@ -591,14 +635,14 @@ import std.format;
                     }
 
                     protected Local _local;
-                    this(immutable(ubyte[]) data)
+                    this(immutable(ubyte[]) data) pure nothrow
                     {
                         length = u32(data, index);
                         this.data = data;
                         popFront;
                     }
 
-                    protected void set_front(ref size_t local_index)
+                    protected void set_front(ref size_t local_index) pure nothrow
                     {
                         _local = Local(data, local_index);
                     }
@@ -615,7 +659,7 @@ import std.format;
                             return (j > length);
                         }
 
-                        void popFront()
+                        void popFront() pure nothrow
                         {
                             if (j < length)
                             {
@@ -636,7 +680,7 @@ import std.format;
                     return ExprRange(data[range.index .. $]);
                 }
 
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     auto byte_size = u32(data, index);
@@ -656,7 +700,7 @@ import std.format;
                 immutable(char[]) base; // init value
                 immutable(size_t) size;
 
-                this(immutable(ubyte[]) data)
+                this(immutable(ubyte[]) data) pure nothrow
                 {
                     size_t index;
                     idx = u32(data, index);

@@ -43,33 +43,6 @@ import tagion.wasm.WasmException;
 
     alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
 
-    // alias X=Sections[
-    // protected static string GenerateModules(T...)() {
-    //     string[] results;
-    //     results~="alix1as Modules=Tuple!(";
-    //     foreach(i, E; EnumMembers!Section) {
-    //         static if (E is Section.CUSTOM) {
-    //             results~=q{WasmSection.CustomList,};
-    //         }
-    //         else {
-
-    //             results~=format(q{WasmSection.%s,}, T[i].stringof);
-    //         }
-    //     }
-    //     results~=");";
-    //     return results.join("\n");
-    // }
-
-    //    enum code=GenerateModules!Sections;
-    // pragma(msg, code);
-    // mixin(code);
-    // Tuple!(
-    //     WasmSection.CustomList
-    //     // Sections[Section.TYPE],
-    //     // Sections[Section.IMPORT],
-    //     // Sections[Section.IMPORT],
-    //     );
-
     Modules mod;
     this(ref const(WasmReader) reader)
     {
@@ -202,10 +175,10 @@ import tagion.wasm.WasmException;
         {
             //static if (E is Section.CUSTOM) {
             //            if (mod[Section.CUSTOM][previous_sec]e.length) {
-            writefln("mod[Section.CUSTOM] %s ", mod[Section.CUSTOM]);
-            writefln("mod[Section.CUSTOM].list=%s", mod[Section.CUSTOM].list);
-            writefln("mod[Section.CUSTOM].list %s", typeof(mod[Section.CUSTOM].list).stringof);
-            writefln("mod[Section.CUSTOM].list[0] %s", typeof(mod[Section.CUSTOM].list[0]).stringof);
+            // writefln("mod[Section.CUSTOM] %s ", mod[Section.CUSTOM]);
+            // writefln("mod[Section.CUSTOM].list=%s", mod[Section.CUSTOM].list);
+            // writefln("mod[Section.CUSTOM].list %s", typeof(mod[Section.CUSTOM].list).stringof);
+            // writefln("mod[Section.CUSTOM].list[0] %s", typeof(mod[Section.CUSTOM].list[0]).stringof);
             foreach (const sec; mod[Section.CUSTOM].list[previous_sec])
             {
                 // }
@@ -260,42 +233,6 @@ import tagion.wasm.WasmException;
         }
         append_buffer(custom_buffers[$ - 1], Section.CUSTOM);
         return output.toBytes.idup;
-    }
-
-    version (none) @trusted void opCall(InterfaceModule reader)
-    {
-        //if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
-        //scope Module mod;
-        Section previous_sec;
-        //        writefln("WasmWriter opCall");
-        foreach (a; reader[])
-        {
-            //            writefln("a=%s", a);
-            with (Section)
-            {
-                check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
-                previous_sec = a.section;
-                final switch (a.section)
-                {
-                    foreach (E; EnumMembers!(Section))
-                    {
-                case E:
-                        const sec = a.sec!E;
-                        mod[E] = &sec;
-                        static if (is(T == ModuleIterator))
-                        {
-                            iter(a.section, mod);
-                        }
-                        else
-                        {
-                            enum code = format(q{reader.%s(mod);}, secname(E));
-                            mixin(code);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     struct WasmSection
