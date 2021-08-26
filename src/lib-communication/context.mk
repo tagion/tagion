@@ -1,1 +1,1 @@
-ctx/lib/communication: ctx/lib/hibon ctx/lib/crypto
+communication.ctx: hibon.o crypto.o
