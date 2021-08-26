@@ -1,4 +1,4 @@
-# Include contexts and wrap Makefiles
+-include $(DIR_TUB_ROOT)/local.mk
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
 # TODO: Restore unittests support (compile and run separately)
@@ -37,10 +37,11 @@ lib/%: $(DIR_BUILD)/libs/static/%.a
 # 
 $(DIR_BUILD)/libs/static/%.a: | ways %.o
 	${eval ARCHIVE := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
-	${eval ARCHIVE := ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
+	${eval ARCHIVE += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
 	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
 	${if $(PARALLEL), , ${call log.header, archiving $(*).a}}
 	${if $(PARALLEL), , ${call show.archive.details}}
+	${if $(PARALLEL), , ${call log.space}}
 	$(PRECMD)ar cr $(DIR_BUILD)/libs/static/libtagion$(*).a $(ARCHIVE)
 	${call log.kvp, Archived, $(@D)/libtagion$(*).a}
 	${if $(PARALLEL), , ${call log.close}}
@@ -64,6 +65,9 @@ $(DIR_BUILD)/libs/o/%.o: | ways
 	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
 	${if $(PARALLEL), , ${call log.header, compiling $(*).o}}
 	${if $(PARALLEL), , ${call show.compile.details}}
+	${if $(PARALLEL), , ${call log.space}}
+	${if $(PARALLEL), , ${call log.line, Compiling $(*).o...}}
+	${if $(PARALLEL), , ${call log.space}}
 	$(COMPILE)
 	${call log.kvp, Compiled, $(DIR_BUILD)/libs/o/$(*).o}
 	${if $(PARALLEL), , ${call log.close}}
@@ -96,34 +100,26 @@ endef
 define show.compile.details
 ${call log.kvp, DC, $(DC)}
 
-${call log.separator}
 ${call log.kvp, DCFLAGS}
 ${call log.lines, $(DCFLAGS)}
 
-${call log.separator}
 ${call log.kvp, OUTPUTFLAGS}
 ${call log.lines, $(OUTPUTFLAGS)}
 
-${call log.separator}
-${call log.kvp, INCFLAGS}
-${call log.lines, $(INCFLAGS)}
+${if $(SHOW_INCFLAGS),${call log.kvp, INCFLAGS},}
+${if $(SHOW_INCFLAGS),${call log.lines, $(INCFLAGS)},}
 
-${call log.separator}
 ${call log.kvp, INFILES}
 ${call log.lines, $(INFILES)}
 
-${call log.separator}
 ${call log.kvp, LDCFLAGS}
 ${call log.lines, $(LDCFLAGS)}
 
-${call log.separator}
-${call log.kvp, LATEFLAGS}
-${call log.lines, $(LATEFLAGS)}
-${call log.separator}
+${if $(LATEFLAGS),${call log.kvp, LATEFLAGS}}
+${if $(LATEFLAGS),${call log.lines, $(LATEFLAGS)}}
 endef
 
 define show.archive.details
 ${call log.kvp, Including}
 ${call log.lines, $(ARCHIVE)}
-${call log.separator}
 endef
