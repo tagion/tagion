@@ -2,9 +2,9 @@ REPO_SECP256K1 ?= https://github.com/bitcoin-core/secp256k1.git
 DIR_SECP256K1_SRC := ${call dir.self, secp256k1}
 DIR_SECP256K1_BUILD := $(DIR_BUILD)/wraps/secp256k1
 
-WAYS += $(DIR_SECP256K1_BUILD)/.way
-WAYS += $(DIR_SECP256K1_BUILD)/lib/.way
-WAYS += $(DIR_SECP256K1_SRC)/.libs/.way
+WAYS_PERSISTENT += $(DIR_SECP256K1_BUILD)/.way
+WAYS_PERSISTENT += $(DIR_SECP256K1_BUILD)/lib/.way
+WAYS_PERSISTENT += $(DIR_SECP256K1_SRC)/.libs/.way
 
 wrap/secp256k1: | ways wrap/openssl $(DIR_SECP256K1_BUILD)/lib/libsecp256k1.a
 	${eval WRAPS += secp256k1}
