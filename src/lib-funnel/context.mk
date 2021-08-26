@@ -1,1 +1,1 @@
-ctx/lib/funnel: ctx/lib/hibon ctx/lib/crypto ctx/lib/wallet ctx/lib/communication
+funnel.ctx: hibon.o crypto.o wallet.o communication.o
