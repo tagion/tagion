@@ -1,1 +1,1 @@
-ctx/lib/hashgraph: ctx/lib/basic ctx/lib/hibon
+hashgraph.ctx: basic.o hibon.o
