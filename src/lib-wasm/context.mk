@@ -1,1 +1,1 @@
-ctx/lib/wasm: ctx/lib/utils
+wasm.ctx: utils.o
