@@ -15,14 +15,14 @@ include $(DIR_TUB)/env.mk
 include $(DIR_TUB)/add.mk
 include $(DIR_TUB)/compile.mk
 
-help: $(HELP)
-info: $(INFO)
-.PHONY: help info
-.SECONDARY:
-
 install:
 	@$(DIR_TUB)/install
 
 update:
 	@cd $(DIR_TUB); git checkout .
 	@cd $(DIR_TUB); git pull origin --force
+
+help: $(HELP)
+info: $(INFO)
+.PHONY: help info
+.SECONDARY:

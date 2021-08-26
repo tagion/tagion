@@ -8,30 +8,6 @@ PRECMD ?= @
 GIT_ORIGIN := "git@github.com:tagion"
 
 # 
-# Directories
-# 
-DIR_TUB_ROOT := ${realpath ${DIR_TUB}/../}
-DIR_BUILD := ${realpath ${DIR_TUB_ROOT}}/build
-DIR_SRC := ${realpath ${DIR_TUB_ROOT}}/src
-DIR_LIBS := $(DIR_SRC)/libs
-DIR_BINS := $(DIR_SRC)/bins
-DIR_WRAPS := $(DIR_TUB_ROOT)/wraps
-
-MAKE_SHOW_ENV += env/dirs
-env/dirs:
-	$(call log.header, env :: dirs)
-	$(call log.kvp, DIR_TUB_ROOT, $(DIR_TUB_ROOT))
-	$(call log.kvp, DIR_TUB, $(DIR_TUB))
-	$(call log.separator)
-	$(call log.kvp, DIR_BUILD, $(DIR_BUILD))
-	$(call log.kvp, DIR_SRC, $(DIR_SRC))
-	$(call log.separator)
-	$(call log.kvp, DIR_LIBS, $(DIR_LIBS))
-	$(call log.kvp, DIR_BINS, $(DIR_BINS))
-	$(call log.kvp, DIR_WRAPS, $(DIR_WRAPS))
-	$(call log.close)
-
-# 
 # Compiler
 # 
 
@@ -217,6 +193,23 @@ MKDIR := mkdir -p
 MV := mv
 LN := ln -s
 endif
+
+# 
+# Directories
+# 
+DIR_TUB_ROOT := ${realpath ${DIR_TUB}/../}
+DIR_BUILD := ${realpath ${DIR_TUB_ROOT}}/build/$(ARCH)
+DIR_SRC := ${realpath ${DIR_TUB_ROOT}}/src
+
+MAKE_SHOW_ENV += env/dirs
+env/dirs:
+	$(call log.header, env :: dirs)
+	$(call log.kvp, DIR_TUB_ROOT, $(DIR_TUB_ROOT))
+	$(call log.kvp, DIR_TUB, $(DIR_TUB))
+	$(call log.separator)
+	$(call log.kvp, DIR_BUILD, $(DIR_BUILD))
+	$(call log.kvp, DIR_SRC, $(DIR_SRC))
+	$(call log.close)
 
 MAKE_SHOW_ENV += env/commands
 env/commands:
