@@ -3,7 +3,6 @@ module tagion.utils.Term;
 import std.format;
 private import core.stdc.stdio;
 private import core.sys.posix.termios;
-
 //import std.algorithm.sorting : sort;
 import std.exception: assumeUnique;
 import std.meta: AliasSeq, staticSort;
