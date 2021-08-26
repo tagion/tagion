@@ -1,1 +1,1 @@
-ctx/lib/utils: ctx/lib/basic
+utils.ctx: basic.o
