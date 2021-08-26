@@ -23,8 +23,13 @@ echo
 for DIR in $(ls src); do
     echo -e "\033[1m$DIR\033[0m"
     
-    cd "$ORIGIN_PATH/src/$DIR/"
-    $@ 
+    cd "$ORIGIN_PATH/src/$DIR/";
+    C=''
+    for i in "$@"; do 
+        i="${i//\\/\\\\}"
+        C="$C \"${i//\"/\\\"}\""
+    done
+    bash -c "$C"
 
     echo 
 done
