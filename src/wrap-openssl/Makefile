@@ -6,9 +6,6 @@ REPO_OPENSSL ?= https://github.com/openssl/openssl.git
 PATH_SRC_OPENSSL := ${dir.self}/$(NAME_OPENSSL)
 BRANCH_OPENSSL_STABLE := OpenSSL_0_9_7-stable
 
-check/openssl:
-	${call log.line, System check for OPENSSL is not implemented yet}
-
 wrap/openssl: ways ${PATH_SRC_OPENSSL}/build/openssl/lib/libcrypto.a
 	${eval WRAPS += opensssl}
 	${eval LDCFLAGS += -L-L$(PATH_SRC_OPENSSL)/build/openssl/lib/}
