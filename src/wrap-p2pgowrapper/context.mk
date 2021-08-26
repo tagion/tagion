@@ -5,6 +5,7 @@ DIR_P2P_BUILD := $(DIR_BUILD)/wraps/p2p-go-wrapper
 WAYS += $(DIR_P2P_BUILD)/lib/.way
 WAYS += $(DIR_P2P_BUILD)/include/.way
 WAYS += $(DIR_P2P_CGO)/.way
+
 wrap/p2p-go-wrapper: $(DIR_P2P_BUILD)/lib/libp2p-go-wrapper.a $(DIR_P2P_BUILD)/include/libp2p.di
 	${eval WRAPS += p2p-go-wrapper}
 	${eval WRAPS_STATIC += $(DIR_P2P_BUILD)/libp2p-go-wrapper.a}
