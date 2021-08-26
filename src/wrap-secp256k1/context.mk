@@ -5,6 +5,7 @@ DIR_SECP256K1_BUILD := $(DIR_BUILD)/wraps/secp256k1
 WAYS += $(DIR_SECP256K1_BUILD)/.way
 WAYS += $(DIR_SECP256K1_BUILD)/lib/.way
 WAYS += $(DIR_SECP256K1_SRC)/.libs/.way
+
 wrap/secp256k1: | ways wrap/openssl $(DIR_SECP256K1_BUILD)/lib/libsecp256k1.a
 	${eval WRAPS += secp256k1}
 	${eval WRAPS_STATIC += $(DIR_SECP256K1_BUILD)/libsecp256k1.a}
