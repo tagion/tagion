@@ -1,1 +1,2 @@
-services.ctx: utils.o hashgraph.o hibon.o crypto.o communication.o gossip.o p2p-go-wrapper.o dart.o monitor.o
+libtagionservices.ctx: libtagionutils.o libtagionhashgraph.o libtagionhibon.o libtagioncrypto.o libtagioncommunication.o libtagiongossip.o libtagionp2p-go-wrapper.o libtagiondart.o libtagionmonitor.o
+	@
