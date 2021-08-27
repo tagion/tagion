@@ -1,1 +1,1 @@
-ctx/lib/services: ctx/lib/utils ctx/lib/hashgraph ctx/lib/hibon ctx/lib/crypto ctx/lib/communication ctx/lib/gossip ctx/lib/p2p-go-wrapper ctx/lib/dart ctx/lib/monitor
+services.ctx: utils.o hashgraph.o hibon.o crypto.o communication.o gossip.o p2p-go-wrapper.o dart.o monitor.o
