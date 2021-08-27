@@ -1,2 +1,2 @@
-libtagionhashgraph.ctx: libtagionbasic.o libtagionhibon.o
+libtagionhashgraph.ctx: libtagionbasic.o libtagionhibon.o libtagioncrypto.o libtagioncommunication.o
 	@
