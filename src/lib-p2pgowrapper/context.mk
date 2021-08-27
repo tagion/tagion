@@ -5,4 +5,4 @@ ifeq ($(OS),Darwin)
 LDCFLAGS += -L-framework -LCoreFoundation -L-framework -LSecurity
 endif
 
-p2p-go-wrapper.ctx: wrap/p2p-go-wrapper
+p2p-go-wrapper.ctx: wrap-p2p-go-wrapper
