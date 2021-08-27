@@ -1,6 +1,6 @@
 module tagion.gossip.InterfaceNet;
 
-//import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBON: HiBON;
 import tagion.hibon.HiBONRecord: isHiBONRecord;
@@ -19,7 +19,7 @@ alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 //import tagion.hashgraph.HashGraphBasic : Tides;
-
+version(none)
 @safe
 interface NetCallbacks : EventMonitorCallbacks {
 
