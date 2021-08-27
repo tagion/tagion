@@ -21,9 +21,6 @@ class SSLSocketException : SocketException {
     }
 }
 
-pragma(lib, "crypto");
-pragma(lib, "ssl");
-
 extern (C) {
     enum SSL_VERIFY_NONE = 0;
     enum SSL_FILETYPE_PEM = 1;
