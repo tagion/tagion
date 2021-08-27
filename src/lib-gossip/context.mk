@@ -1,1 +1,2 @@
-gossip.ctx: hibon.o utils.o crypto.o hashgraph.o dart.o communication.o p2p-go-wrapper.o
+libtagiongossip.ctx: libtagionhibon.o libtagionutils.o libtagioncrypto.o libtagionhashgraph.o libtagiondart.o libtagioncommunication.o libtagionp2p-go-wrapper.o
+	@
