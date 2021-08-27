@@ -5,4 +5,4 @@ else
 SOURCE_FIND_EXCLUDE+="*/tiny_aes/*"
 endif
 
-crypto.ctx: hibon.o wrap/secp256k1
+crypto.ctx: hibon.o wrap-secp256k1
