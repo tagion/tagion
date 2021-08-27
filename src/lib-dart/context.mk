@@ -1,1 +1,2 @@
-dart.ctx: crypto.o communication.o services.o gossip.o
+libtagiondart.ctx: libtagioncrypto.o libtagioncommunication.o libtagionservices.o libtagiongossip.o libtagionp2p-go-wrapper.o
+	@
