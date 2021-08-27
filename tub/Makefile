@@ -6,6 +6,13 @@ ifneq ($(shell test -e $(DIR_MAKEFILE)/env.mk && echo yes),yes)
 DIR_TUB := $(DIR_MAKEFILE)/tub
 endif
 
+DIR_TUB_ROOT := ${realpath ${DIR_TUB}/../}
+
+${info $(DIR_TUB_ROOT)}
+
+# Inlclude local setup
+-include $(DIR_TUB_ROOT)/local.mk
+
 # Including according to anchor directory
 include $(DIR_TUB)/utils.mk
 include $(DIR_TUB)/log.mk

@@ -1,14 +1,14 @@
--include $(DIR_TUB_ROOT)/local.mk
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
 # TODO: Restore unittests support (compile and run separately)
 # TODO: Restore binary building
+# TODO: Try only include modules from .ctx declarations
+# TODO: Improve ways handling
 
 # TODO: Add revision.di
-
-# TODO: Add local setup and unittest setup (context)
-
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
+
+DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
 
 # 
 # Creating required directories
@@ -16,6 +16,8 @@
 WAYS_PERSISTENT += $(DIR_BUILD)/.way
 WAYS += $(DIR_BUILD)/libs/static/.way
 WAYS += $(DIR_BUILD)/libs/o/.way
+WAYS += $(DIR_BUILD)/tests/.way
+WAYS += $(DIR_BUILD)/bins/.way
 %/.way:
 	$(PRECMD)mkdir -p $(*)
 	$(PRECMD)touch $(*)/.way
@@ -24,56 +26,84 @@ WAYS += $(DIR_BUILD)/libs/o/.way
 ways: $(WAYS) $(WAYS_PERSISTENT)
 
 # 
-# Target helpers
+# Target shortcuts
 # 
-lib/%: $(DIR_BUILD)/libs/static/%.a
-	@
-
 %.o: | %.ctx $(DIR_BUILD)/libs/o/%.o
 	${eval OBJS += $(*)}
 
+lib-%: $(DIR_BUILD)/libs/static/%.a
+	@
+
+bin-%: | bin/%.ctx $(DIR_BUILD)/bins/%
+	@
+
+testlib-%: | $(DIR_BUILD)/tests/%
+	$(PRECMD)$(DIR_BUILD)/tests/$(*)
+	${call log.close}
+
 # 
-# Archiving static library
+# Targets
 # 
 $(DIR_BUILD)/libs/static/%.a: | ways %.o
-	${eval ARCHIVE := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
-	${eval ARCHIVE += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
-	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
-	${if $(PARALLEL), , ${call log.header, archiving $(*).a}}
-	${if $(PARALLEL), , ${call show.archive.details}}
-	${if $(PARALLEL), , ${call log.space}}
-	$(PRECMD)ar cr $(DIR_BUILD)/libs/static/libtagion$(*).a $(ARCHIVE)
-	${call log.kvp, Archived, $(@D)/libtagion$(*).a}
-	${if $(PARALLEL), , ${call log.close}}
+	${call define.parallel}
 
-# 
-# Compiling .o
-# 
+	${eval _ARCHIVES := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval _ARCHIVES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
+	
+	${eval _TARGET := $(@D)/libtagion$(*).a}
+
+	${call execute.ifnot.parallel, ${call show.archive.details, archive - $(*)}}
+
+	$(PRECMD)ar cr $(_TARGET) $(_ARCHIVES)
+	${call log.kvp, Archived, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
 $(DIR_BUILD)/libs/o/%.o: | ways
-	${eval LIBDIRS := ${shell ls -d src/*/ | grep -v $(*) | grep -v wrap- | grep -v bin-}}
-	${eval INCFLAGS := ${foreach LIBDIR, $(LIBDIRS), -I$(DIR_TUB_ROOT)/$(LIBDIR)}}
+	${call define.parallel}
+
+	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, ${DIR_SRC}/lib-$(*), *.d}}
-	${eval OUTPUTFLAGS := -c}
-	${eval OUTPUTFLAGS += -of$(DIR_BUILD)/libs/o/$(*).o}
-	${eval COMPILE := $(PRECMD)}
-	${eval COMPILE += $(DC)}
-	${eval COMPILE += $(DCFLAGS)}
-	${eval COMPILE += $(OUTPUTFLAGS)}
-	${eval COMPILE += $(INFILES)}
-	${eval COMPILE += $(INCFLAGS)}
-	${eval COMPILE += $(LDCFLAGS)}
-	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
-	${if $(PARALLEL), , ${call log.header, compiling $(*).o}}
-	${if $(PARALLEL), , ${call show.compile.details}}
-	${if $(PARALLEL), , ${call log.space}}
-	${if $(PARALLEL), , ${call log.line, Compiling $(*).o...}}
-	${if $(PARALLEL), , ${call log.space}}
-	$(COMPILE)
-	${call log.kvp, Compiled, $(DIR_BUILD)/libs/o/$(*).o}
-	${if $(PARALLEL), , ${call log.close}}
+	
+	${eval _TARGET := $(@)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -c}
+	${eval _DCFLAGS += -of$(_TARGET)}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	
+	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(*)}}
+
+	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
+$(DIR_BUILD)/tests/%: | ways %.ctx
+	${call define.parallel}
+
+	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+	${eval INFILES := ${call find.files, $(DIR_SRC)/lib-$(*), *.d}}
+	${eval INFILES += ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	
+	${eval _TARGET := $(@)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -unittest}
+	${eval _DCFLAGS += -main}
+	${eval _DCFLAGS += -g}
+	${eval _DCFLAGS += -of$(_TARGET)}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	${eval _LDCFLAGS += ${foreach WRAP_STATIC, $(WRAPS_STATIC), -L$(WRAP_STATIC)}}
+	
+	${call execute.ifnot.parallel, ${call show.compile.details, test - $(*)}}
+
+	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
 
 # 
-# Clean build directory
+# Clean
 # 
 clean:
 	${call log.header, cleaning WAYS}
@@ -97,29 +127,46 @@ define find.files
 ${shell find ${strip $1} -not -path "$(SOURCE_FIND_EXCLUDE)" -name '${strip $2}'}
 endef
 
+define define.parallel
+${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
+endef
+
+define execute.ifnot.parallel
+${if $(PARALLEL),,$1}
+endef
+
+define execute.if.parallel
+${if $(PARALLEL),$1,}
+endef
+
+
 define show.compile.details
+${call log.header, ${strip $1}}
+
+${if $(WRAPS_STATIC),${call log.kvp, WRAPS_STATIC}}
+${if $(WRAPS_STATIC),${call log.lines, $(WRAPS_STATIC)}}
+
+${if $(OBJS),${call log.kvp, OBJS, $(OBJS)}}
+
 ${call log.kvp, DC, $(DC)}
+${call log.kvp, DCFLAGS, $(_DCFLAGS)}
 
-${call log.kvp, DCFLAGS}
-${call log.lines, $(DCFLAGS)}
-
-${call log.kvp, OUTPUTFLAGS}
-${call log.lines, $(OUTPUTFLAGS)}
-
-${if $(SHOW_INCFLAGS),${call log.kvp, INCFLAGS},}
-${if $(SHOW_INCFLAGS),${call log.lines, $(INCFLAGS)},}
+${call log.kvp, INCFLAGS}
+${call log.lines, $(INCFLAGS)}
 
 ${call log.kvp, INFILES}
 ${call log.lines, $(INFILES)}
 
-${call log.kvp, LDCFLAGS}
-${call log.lines, $(LDCFLAGS)}
+${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}
+${if $(LATEFLAGS),${call log.kvp, LATEFLAGS, $(LATEFLAGS)},}
 
-${if $(LATEFLAGS),${call log.kvp, LATEFLAGS}}
-${if $(LATEFLAGS),${call log.lines, $(LATEFLAGS)}}
+${call log.space}
 endef
 
 define show.archive.details
+${call log.header, ${strip $1}}
 ${call log.kvp, Including}
-${call log.lines, $(ARCHIVE)}
+${call log.lines, $(_ARCHIVES)}
+
+${call log.space}
 endef
