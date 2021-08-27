@@ -1,1 +1,2 @@
-hashgraph.ctx: basic.o hibon.o
+libtagionhashgraph.ctx: libtagionbasic.o libtagionhibon.o
+	@
