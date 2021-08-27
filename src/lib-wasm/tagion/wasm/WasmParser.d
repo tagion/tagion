@@ -9,48 +9,38 @@ import tagion.utils.LEB128;
 
 //import tagion.Message : message;
 
-@safe
-struct Token
-{
+@safe struct Token {
     string name;
     uint line;
     uint pos;
-    string toText() pure const
-    {
-        if (line is 0)
-        {
+    string toText() pure const {
+        if (line is 0) {
             return name;
         }
-        else
-        {
+        else {
             return format("%s:%s:%s", line, pos, name);
         }
     }
 }
 
-@safe struct Tokenizer
-{
+@safe struct Tokenizer {
     immutable(string) source;
     immutable(string) file;
-    this(string source, string file = null)
-    {
+    this(string source, string file = null) {
         this.source = source;
         this.file = file;
     }
 
-    Range opSlice() const
-    {
+    Range opSlice() const {
         return Range(source);
     }
 
     static assert(isInputRange!Range);
     static assert(isForwardRange!Range);
 
-    @nogc @safe struct Range
-    {
+    @nogc @safe struct Range {
         immutable(string) source;
-        protected
-        {
+        protected {
             size_t _begin_pos; /// Begin position of a token
             size_t _end_pos; /// End position of a token
             uint _line; /// Line number
@@ -59,8 +49,7 @@ struct Token
             size_t _current_pos; /// Position of the token in the current line
             bool _eos; /// Markes end of stream
         }
-        this(string source) pure nothrow
-        {
+        this(string source) pure nothrow {
             _line = 1;
             this.source = source;
             //            trim;
@@ -70,130 +59,102 @@ struct Token
         this(ref return scope const Range rhs) @nogc pure nothrow {
         }
 
-        @property const pure nothrow
-        {
-            uint line()
-            {
+        @property const pure nothrow {
+            uint line() {
                 return _current_line;
             }
 
-            uint pos()
-            {
+            uint pos() {
                 return cast(uint)(_begin_pos - _current_pos);
             }
 
-            immutable(string) front()
-            {
+            immutable(string) front() {
                 return source[_begin_pos .. _end_pos];
             }
 
-            bool empty()
-            {
+            bool empty() {
                 return _eos;
             }
 
-            size_t begin_pos()
-            {
+            size_t begin_pos() {
                 return _begin_pos;
             }
 
-            size_t end_pos()
-            {
+            size_t end_pos() {
                 return _end_pos;
             }
 
             immutable(string) grap(const size_t begin, const size_t end)
-            in
-            {
+            in {
                 assert(begin <= end);
             }
-            do
-            {
+            do {
                 return source[begin .. end];
             }
 
         }
 
-        @property void popFront() pure nothrow
-        {
+        @property void popFront() pure nothrow {
             _eos = (_end_pos == source.length);
             trim;
             _end_pos = _begin_pos;
             _current_line = _line;
             _current_pos = _line_pos;
-            if (_end_pos < source.length)
-            {
-                if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == "(;"))
-                {
+            if (_end_pos < source.length) {
+                if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == "(;")) {
                     _end_pos += 2;
                     uint level = 1;
-                    while (_end_pos + 1 < source.length)
-                    {
+                    while (_end_pos + 1 < source.length) {
                         const eol = is_newline(source[_end_pos .. $]);
-                        if (eol)
-                        {
+                        if (eol) {
                             _end_pos += eol;
                             _line_pos = _end_pos;
                             _line++;
                         }
-                        else if (source[_end_pos .. _end_pos + 2] == ";)")
-                        {
+                        else if (source[_end_pos .. _end_pos + 2] == ";)") {
                             _end_pos += 2;
                             level--;
-                            if (level == 0)
-                            {
+                            if (level == 0) {
                                 break;
                             }
                         }
-                        else if (source[_end_pos .. _end_pos + 2] == "(;")
-                        {
+                        else if (source[_end_pos .. _end_pos + 2] == "(;") {
                             _end_pos += 2;
                             level++;
                         }
-                        else
-                        {
+                        else {
                             _end_pos++;
                         }
                     }
                 }
-                else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;"))
-                {
+                else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;")) {
                     _end_pos += 2;
-                    while ((_end_pos < source.length) && (!is_newline(source[_end_pos .. $])))
-                    {
+                    while ((_end_pos < source.length) && (!is_newline(source[_end_pos .. $]))) {
                         _end_pos++;
                     }
                 }
-                else if ((source[_end_pos] is '(') || (source[_end_pos] is ')'))
-                {
+                else if ((source[_end_pos] is '(') || (source[_end_pos] is ')')) {
                     _end_pos++;
                 }
-                else if (source[_end_pos] is '"' || source[_end_pos] is '\'')
-                {
+                else if (source[_end_pos] is '"' || source[_end_pos] is '\'') {
                     const quote = source[_begin_pos];
                     _end_pos++;
                     bool escape;
-                    while (_end_pos < source.length)
-                    {
+                    while (_end_pos < source.length) {
                         const eol = is_newline(source[_end_pos .. $]);
-                        if (eol)
-                        {
+                        if (eol) {
                             _end_pos += eol;
                             _line_pos = _end_pos;
                             _line++;
                         }
-                        else
-                        {
-                            if (!escape)
-                            {
+                        else {
+                            if (!escape) {
                                 escape = source[_end_pos] is '\\';
                             }
-                            else
-                            {
+                            else {
                                 escape = false;
                             }
-                            if (!escape && (source[_end_pos] is quote))
-                            {
+                            if (!escape && (source[_end_pos] is quote)) {
                                 _end_pos++;
                                 break;
                             }
@@ -201,17 +162,14 @@ struct Token
                         }
                     }
                 }
-                else
-                {
+                else {
                     while ((_end_pos < source.length)
-                            && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')'))
-                    {
+                            && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')')) {
                         _end_pos++;
                     }
                 }
             }
-            if (_end_pos is _begin_pos)
-            {
+            if (_end_pos is _begin_pos) {
                 _eos = true;
             }
         }
@@ -220,46 +178,36 @@ struct Token
             return Range(this);
         }
 
-        protected void trim() pure nothrow
-        {
+        protected void trim() pure nothrow {
             scope size_t eol;
             _begin_pos = _end_pos;
-            while (_begin_pos < source.length)
-            {
-                if (is_white_space(source[_begin_pos]))
-                {
+            while (_begin_pos < source.length) {
+                if (is_white_space(source[_begin_pos])) {
                     _begin_pos++;
                 }
-                else if ((eol = is_newline(source[_begin_pos .. $])) !is 0)
-                {
+                else if ((eol = is_newline(source[_begin_pos .. $])) !is 0) {
                     _begin_pos += eol;
                     _line_pos = _begin_pos;
                     _line++;
                 }
-                else
-                {
+                else {
                     break;
                 }
             }
         }
     }
 
-    static bool is_white_space(immutable char c) @safe pure nothrow
-    {
+    static bool is_white_space(immutable char c) @safe pure nothrow {
         return ((c is ' ') || (c is '\t'));
     }
 
-    static bool is_none_white(immutable char c) @safe pure nothrow
-    {
+    static bool is_none_white(immutable char c) @safe pure nothrow {
         return (c !is ' ') && (c !is '\t') && (c !is '\n') && (c !is '\r');
     }
 
-    static size_t is_newline(string str) pure nothrow
-    {
-        if ((str.length > 0) && (str[0] == '\n'))
-        {
-            if ((str.length > 1) && ((str[0 .. 2] == "\n\r") || (str[0 .. 2] == "\r\n")))
-            {
+    static size_t is_newline(string str) pure nothrow {
+        if ((str.length > 0) && (str[0] == '\n')) {
+            if ((str.length > 1) && ((str[0 .. 2] == "\n\r") || (str[0 .. 2] == "\r\n"))) {
                 return 2;
             }
             return 1;
@@ -269,8 +217,7 @@ struct Token
 
 }
 
-unittest
-{
+unittest {
     import std.string : join;
 
     immutable src = [
@@ -327,8 +274,7 @@ unittest
 
     // ;
 
-    struct Token
-    {
+    struct Token {
         uint line;
         size_t pos;
         string token;
@@ -486,8 +432,7 @@ unittest
     //         range_1.popFront;
     //     }
     auto range = parser[];
-    foreach (t; tokens)
-    {
+    foreach (t; tokens) {
         assert(range.line is t.line);
         assert(range.pos is t.pos);
         assert(range.front == t.token);
@@ -497,8 +442,7 @@ unittest
     assert(range.empty);
 }
 
-struct WasmWord
-{
+struct WasmWord {
 }
 
 enum WASMKeywords = [
@@ -693,114 +637,90 @@ enum WASMKeywords = [
 
 // mixin(EnumText!("ScriptType", _scripttype));
 
-@safe static struct Lexer
-{
+@safe static struct Lexer {
     // protected enum ctLabelMap=generateLabelMap(keywordMap);
     import std.regex;
 
-    static Regex!char regex_number()
-    {
+    static Regex!char regex_number() {
         enum _regex_number = regex("^[-+]?[0-9][0-9_]*$");
         return _regex_number;
     }
 
-    static Regex!char regex_word()
-    {
+    static Regex!char regex_word() {
         enum _regex_word = regex(`^[^"]+$`);
         return _regex_word;
     }
 
-    static Regex!char regex_hex()
-    {
+    static Regex!char regex_hex() {
         enum _regex_hex = regex("^[-+]?0[xX][0-9a-fA-F_][0-9a-fA-F_]*$");
         return _regex_hex;
     }
 
-    static Regex!char regex_text()
-    {
+    static Regex!char regex_text() {
         enum _regex_text = regex(`^"[^"]*"$`);
         return _regex_text;
     }
 
-    static Regex!char regex_put()
-    {
+    static Regex!char regex_put() {
         enum _regex_put = regex(r"^[+-/\*><%\^\&\|]*!@?$");
         return _regex_put;
     }
 
-    static Regex!char regex_comment()
-    {
+    static Regex!char regex_comment() {
         enum _regeax_comment = regex(r"^\([^\)]+\)$");
         return _regeax_comment;
     }
 
-    static Regex!char regex_bound()
-    {
+    static Regex!char regex_bound() {
         enum _regex_bound = regex(
                     r"^\w+(\[(0x[0-9a-f][0-9a-f_]*|\d+)\.\.(0x[0-9a-f][0-9a-f_]*|\d+)\])?$");
         return _regex_bound;
     }
 
-    static Regex!char regex_reserved_var()
-    {
+    static Regex!char regex_reserved_var() {
         enum _regex_reserved_var = regex(r"^(I|TO)\d{0,2}$");
         return _regex_reserved_var;
     }
 
-    version (none) static ScriptType getScriptType(string word)
-    {
-        static foreach (TYPE; EnumMembers!ScriptType)
-        {
-            static if (TYPE is ScriptType.NUM)
-            {
+    version (none) static ScriptType getScriptType(string word) {
+        static foreach (TYPE; EnumMembers!ScriptType) {
+            static if (TYPE is ScriptType.NUM) {
                 if ((word.length >= TYPE.length)
-                        && (word[0 .. TYPE.length] == TYPE) && (word.match(regex_bound)))
-                {
+                        && (word[0 .. TYPE.length] == TYPE) && (word.match(regex_bound))) {
                     return TYPE;
                 }
             }
-            else if (word == TYPE)
-            {
+            else if (word == TYPE) {
                 return TYPE;
             }
         }
         return ScriptType.NONE;
     }
 
-    version (none) static ScriptKeyword get(string word)
-    {
+    version (none) static ScriptKeyword get(string word) {
         ScriptKeyword result;
-        with (ScriptKeyword)
-        {
+        with (ScriptKeyword) {
             result = ctLabelMap.get(word, NONE);
-            if (result is NONE)
-            {
-                if (word.match(regex_number))
-                {
+            if (result is NONE) {
+                if (word.match(regex_number)) {
                     result = NUMBER;
                 }
-                else if (word.match(regex_hex))
-                {
+                else if (word.match(regex_hex)) {
                     result = HEX;
                 }
-                else if (word.match(regex_text))
-                {
+                else if (word.match(regex_text)) {
                     result = TEXT;
                 }
-                else if (word.match(regex_put))
-                {
+                else if (word.match(regex_put)) {
                     result = PUT;
                 }
-                else if (word.match(regex_comment))
-                {
+                else if (word.match(regex_comment)) {
                     result = COMMENT;
                 }
-                else if (Lexer.getScriptType(word) !is ScriptType.NONE)
-                {
+                else if (Lexer.getScriptType(word) !is ScriptType.NONE) {
                     result = VAR;
                 }
-                else if (word.match(regex_word))
-                {
+                else if (word.match(regex_word)) {
                     result = WORD;
                 }
             }
@@ -808,10 +728,8 @@ enum WASMKeywords = [
         return result;
     }
 
-    version (none) unittest
-    {
-        with (ScriptKeyword)
-        {
+    version (none) unittest {
+        with (ScriptKeyword) {
             assert(get("REPEAT") == REPEAT);
             assert(get(`"`) == NONE);
             assert(get("someword") == WORD);
@@ -820,8 +738,7 @@ enum WASMKeywords = [
         }
     }
 
-    enum
-    {
+    enum {
         SPACE = char(0x20),
         QUATE = char(39),
         DOUBLE_QUATE = '"',
@@ -830,25 +747,19 @@ enum WASMKeywords = [
         DEL = char(127)
     }
 
-    static bool is_name_valid(string str) pure
-    {
-        foreach (c; str)
-        {
+    static bool is_name_valid(string str) pure {
+        foreach (c; str) {
             if ((c <= SPACE) || (c >= DEL) || (c is QUATE) || (c is DOUBLE_QUATE)
-                    || (c is BACK_QUATE) || (c is LOCAL_SEPARATOR))
-            {
+                    || (c is BACK_QUATE) || (c is LOCAL_SEPARATOR)) {
                 return false;
             }
         }
         return true;
     }
 
-    version (none) static bool isDeclaration(ScriptKeyword type) pure nothrow
-    {
-        with (ScriptKeyword)
-        {
-            switch (type)
-            {
+    version (none) static bool isDeclaration(ScriptKeyword type) pure nothrow {
+        with (ScriptKeyword) {
+            switch (type) {
             case VAR:
                 return true;
             default:

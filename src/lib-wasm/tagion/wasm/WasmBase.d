@@ -16,75 +16,57 @@ import tagion.wasm.WasmException;
 
 import LEB128 = tagion.utils.LEB128;
 
-enum VerboseMode
-{
+enum VerboseMode {
     NONE,
     STANDARD
 }
 
-@safe struct Verbose
-{
+@safe struct Verbose {
     VerboseMode mode;
     string indent;
     File fout;
     enum INDENT = "  ";
     enum WIDTH = 16;
 
-    void opCall(Args...)(string fmt, lazy Args args)
-    {
-        if (mode !is VerboseMode.NONE)
-        {
+    void opCall(Args...)(string fmt, lazy Args args) {
+        if (mode !is VerboseMode.NONE) {
             fout.write(indent);
             fout.writefln(fmt, args);
         }
     }
 
-    void print(Args...)(string fmt, lazy Args args)
-    {
-        if (mode !is VerboseMode.NONE)
-        {
+    void print(Args...)(string fmt, lazy Args args) {
+        if (mode !is VerboseMode.NONE) {
             fout.writef(fmt, args);
         }
     }
 
-    void println(Args...)(string fmt, lazy Args args)
-    {
-        if (mode !is VerboseMode.NONE)
-        {
+    void println(Args...)(string fmt, lazy Args args) {
+        if (mode !is VerboseMode.NONE) {
             fout.writefln(fmt, args);
         }
     }
 
-    void down() nothrow
-    {
-        if (mode !is VerboseMode.NONE)
-        {
+    void down() nothrow {
+        if (mode !is VerboseMode.NONE) {
             indent ~= INDENT;
         }
     }
 
-    void up() nothrow
-    {
-        if (mode !is VerboseMode.NONE)
-        {
-            if (indent.length >= INDENT.length)
-            {
+    void up() nothrow {
+        if (mode !is VerboseMode.NONE) {
+            if (indent.length >= INDENT.length) {
                 indent.length -= INDENT.length;
             }
         }
     }
 
-    void hex(const size_t index, const(ubyte[]) data)
-    {
-        if (mode !is VerboseMode.NONE)
-        {
+    void hex(const size_t index, const(ubyte[]) data) {
+        if (mode !is VerboseMode.NONE) {
             size_t _index = index;
-            foreach (const i, d; data)
-            {
-                if (i % WIDTH is 0)
-                {
-                    if (i !is 0)
-                    {
+            foreach (const i, d; data) {
+                if (i % WIDTH is 0) {
+                    if (i !is 0) {
                         fout.writeln("");
                     }
                     fout.writef("%s%06X", indent, _index);
@@ -96,10 +78,8 @@ enum VerboseMode
         }
     }
 
-    void ln()
-    {
-        if (mode !is VerboseMode.NONE)
-        {
+    void ln() {
+        if (mode !is VerboseMode.NONE) {
             fout.writeln("");
         }
     }
@@ -108,13 +88,11 @@ enum VerboseMode
 
 static Verbose verbose;
 
-static this()
-{
+static this() {
     verbose.fout = stdout;
 }
 
-enum Section : ubyte
-{
+enum Section : ubyte {
     CUSTOM = 0,
     TYPE = 1,
     IMPORT = 2,
@@ -129,9 +107,7 @@ enum Section : ubyte
     DATA = 11,
 }
 
-
-enum IRType
-{
+enum IRType {
     CODE, /// Simple instruction with no argument
     BLOCK, /// Block instruction
     //    BLOCK_IF,      /// Block for [IF] ELSE END
@@ -149,8 +125,7 @@ enum IRType
     PREFIX, /// Prefix for two byte extension
 }
 
-struct Instr
-{
+struct Instr {
     string name;
     uint cost;
     IRType irtype;
@@ -161,8 +136,7 @@ struct Instr
 
 enum ubyte[] magic = [0x00, 0x61, 0x73, 0x6D];
 enum ubyte[] wasm_version = [0x01, 0x00, 0x00, 0x00];
-enum IR : ubyte
-{
+enum IR : ubyte {
     // dfmt off
         UNREACHABLE         = 0x00, ///  unreachable
         NOP                 = 0x01, ///  nop
@@ -363,10 +337,8 @@ enum IR : ubyte
 
 shared static immutable(Instr[IR]) instrTable;
 
-shared static this()
-{
-    with (IR)
-    {
+shared static this() {
+    with (IR) {
         instrTable = [
             // dfmt off
             UNREACHABLE         : Instr("unreachable", 1, IRType.CODE),
@@ -581,48 +553,41 @@ enum IR_TRUNC_SAT : ubyte {
 
 shared static immutable(string[IR_TRUNC_SAT]) trunc_sat_mnemonic;
 
-shared static this()
-{
-    with (IR_TRUNC_SAT)
-    {
+shared static this() {
+    with (IR_TRUNC_SAT) {
         trunc_sat_mnemonic = [
-            I32_F32_S : "i32.trunc_sat_f32_s",
-            I32_F32_U : "i32.trunc_sat_f32_u",
-            I32_F64_S : "i32.trunc_sat_f64_s",
-            I32_F64_U : "i32.trunc_sat_f64_u",
-            I64_F32_S : "i64.trunc_sat_f32_s",
-            I64_F32_U : "i64.trunc_sat_f32_u",
-            I64_F64_S : "i64.trunc_sat_f64_s",
-            I64_F64_U : "i64.trunc_sat_f64_u",
-            ];
+            I32_F32_S: "i32.trunc_sat_f32_s",
+            I32_F32_U: "i32.trunc_sat_f32_u",
+            I32_F64_S: "i32.trunc_sat_f64_s",
+            I32_F64_U: "i32.trunc_sat_f64_u",
+            I64_F32_S: "i64.trunc_sat_f32_s",
+            I64_F32_U: "i64.trunc_sat_f32_u",
+            I64_F64_S: "i64.trunc_sat_f64_s",
+            I64_F64_U: "i64.trunc_sat_f64_u",
+        ];
     }
 }
 
-unittest
-{
+unittest {
     size_t i;
-    foreach (E; EnumMembers!IR)
-    {
+    foreach (E; EnumMembers!IR) {
         assert(E in instrTable);
         i++;
     }
     assert(i == instrTable.length);
 }
 
-enum Limits : ubyte
-{
+enum Limits : ubyte {
     INFINITE = 0x00, ///  n:u32       ⇒ {min n, max ε}
     RANGE = 0x01, /// n:u32 m:u32  ⇒ {min n, max m}
 }
 
-enum Mutable : ubyte
-{
+enum Mutable : ubyte {
     CONST = 0x00,
     VAR = 0x01,
 }
 
-enum Types : ubyte
-{
+enum Types : ubyte {
     EMPTY = 0x40, /// Empty block
     FUNC = 0x60, /// functype
     FUNCREF = 0x70, /// funcref
@@ -632,50 +597,41 @@ enum Types : ubyte
     F64 = 0x7C, /// f64 valtype
 }
 
-@safe static string typesName(const Types type) pure
-{
+@safe static string typesName(const Types type) pure {
     import std.uni : toLower;
     import std.conv : to;
 
-    final switch (type)
-    {
-        foreach (E; EnumMembers!Types)
-        {
+    final switch (type) {
+        foreach (E; EnumMembers!Types) {
     case E:
             return toLower(E.to!string);
         }
     }
 }
 
-enum IndexType : ubyte
-{
+enum IndexType : ubyte {
     FUNC = 0x00, /// func x:typeidx
     TABLE = 0x01, /// func  tt:tabletype
     MEMORY = 0x02, /// mem mt:memtype
     GLOBAL = 0x03, /// global gt:globaltype
 }
 
-@safe static string indexName(const IndexType idx) pure
-{
+@safe static string indexName(const IndexType idx) pure {
     import std.uni : toLower;
     import std.conv : to;
 
-    final switch (idx)
-    {
-        foreach (E; EnumMembers!IndexType)
-        {
+    final switch (idx) {
+        foreach (E; EnumMembers!IndexType) {
     case E:
             return toLower(E.to!string);
         }
     }
 }
 
-T decode(T)(immutable(ubyte[]) data, ref size_t index) pure
-{
+T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
     size_t byte_size;
     const leb128_index = LEB128.decode!T(data[index .. $]);
-    scope (exit)
-    {
+    scope (exit) {
         index += leb128_index.size;
     }
     return leb128_index.value;
@@ -686,8 +642,7 @@ alias u64 = decode!ulong;
 alias i32 = decode!int;
 alias i64 = decode!long;
 
-static string secname(immutable Section s)
-{
+static string secname(immutable Section s) {
     import std.exception : assumeUnique;
 
     return assumeUnique(format("%s_sec", toLower(s.to!string)));
@@ -698,32 +653,26 @@ alias SectionsT(SectionType) = AliasSeq!(SectionType.Custom, SectionType.Type,
         SectionType.Table, SectionType.Memory, SectionType.Global, SectionType.Export,
         SectionType.Start, SectionType.Element, SectionType.Code, SectionType.Data,);
 
-protected string GenerateInterfaceModule(T...)()
-{
+protected string GenerateInterfaceModule(T...)() {
     import std.array : join;
 
     string[] result;
-    foreach (i, E; EnumMembers!Section)
-    {
+    foreach (i, E; EnumMembers!Section) {
         result ~= format(q{alias SecType_%s=T[Section.%s];}, i, E);
         result ~= format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
     }
     return result.join("\n");
 }
 
-interface InterfaceModuleT(T...)
-{
+interface InterfaceModuleT(T...) {
     enum code = GenerateInterfaceModule!(T)();
     mixin(code);
 }
 
-@safe struct WasmArg
-{
-    protected
-    {
+@safe struct WasmArg {
+    protected {
         Types _type;
-        union
-        {
+        union {
             @(Types.I32) int i32;
             @(Types.I64) long i64;
             @(Types.F32) float f32;
@@ -731,85 +680,69 @@ interface InterfaceModuleT(T...)
         }
     }
 
-    static WasmArg undefine() pure nothrow
-    {
+    static WasmArg undefine() pure nothrow {
         WasmArg result;
         result._type = Types.EMPTY;
         return result;
     }
 
-    void opAssign(T)(T x) nothrow
-    {
+    void opAssign(T)(T x) nothrow {
         alias BaseT = Unqual!T;
-        static if (is(BaseT == int) || is(BaseT == uint))
-        {
+        static if (is(BaseT == int) || is(BaseT == uint)) {
             _type = Types.I32;
             i32 = cast(int) x;
         }
-        else static if (is(BaseT == long) || is(BaseT == ulong))
-        {
+        else static if (is(BaseT == long) || is(BaseT == ulong)) {
             _type = Types.I64;
             i64 = cast(long) x;
         }
-        else static if (is(BaseT == float))
-        {
+        else static if (is(BaseT == float)) {
             _type = Types.F32;
             f32 = x;
         }
-        else static if (is(BaseT == double))
-        {
+        else static if (is(BaseT == double)) {
             _type = Types.F64;
             f64 = x;
         }
-        else static if (is(BaseT == WasmArg))
-        {
+        else static if (is(BaseT == WasmArg)) {
             emplace!WasmArg(&this, x);
         }
-        else
-        {
+        else {
             static assert(0, format("Type %s is not supported by WasmArg", T.stringof));
         }
     }
 
-    T get(T)() const
-    {
+    T get(T)() const {
         alias BaseT = Unqual!T;
-        static if (is(BaseT == int) || is(BaseT == uint))
-        {
+        static if (is(BaseT == int) || is(BaseT == uint)) {
             check(_type is Types.I32, format("Wrong to type %s execpted %s", _type, Types.I32));
             return cast(T) i32;
         }
-        else static if (is(BaseT == long) || is(BaseT == ulong))
-        {
+        else static if (is(BaseT == long) || is(BaseT == ulong)) {
             check(_type is Types.I64, format("Wrong to type %s execpted %s", _type, Types.I64));
             return cast(T) i64;
         }
-        else static if (is(BaseT == float))
-        {
+        else static if (is(BaseT == float)) {
             check(_type is Types.F32, format("Wrong to type %s execpted %s", _type, Types.F32));
             return f32;
         }
-        else static if (is(BaseT == double))
-        {
+        else static if (is(BaseT == double)) {
             check(_type is Types.F64, format("Wrong to type %s execpted %s", _type, Types.F64));
             return f64;
         }
     }
 
-    @property Types type() const pure nothrow
-    {
+    @property Types type() const pure nothrow {
         return _type;
     }
 
 }
 
 static assert(isInputRange!ExprRange);
-@safe struct ExprRange
-{
+@safe struct ExprRange {
     immutable(ubyte[]) data;
 
-    protected
-    {
+    protected {
         size_t _index;
         int _level;
         IRElement current;
@@ -820,21 +753,16 @@ static assert(isInputRange!ExprRange);
         return wasm_exception;
     }
 
-    struct IRElement
-    {
+    struct IRElement {
         IR code;
         int level;
-        private
-        {
+        private {
             WasmArg _warg;
             WasmArg[] _wargs;
             const(Types)[] _types;
         }
 
-        enum unreachable   =
-            IRElement(
-                IR.UNREACHABLE
-                );
+        enum unreachable = IRElement(IR.UNREACHABLE);
         //static const(IRElement) unreachable;
 
         // void unreachable() nothorw {
@@ -842,37 +770,29 @@ static assert(isInputRange!ExprRange);
         //     unreachable._warg = WasmArg.undefine;
         // };
 
-        const(WasmArg) warg() const pure nothrow
-        {
+        const(WasmArg) warg() const pure nothrow {
             return _warg;
         }
 
-        const(WasmArg[]) wargs() const pure nothrow
-        {
+        const(WasmArg[]) wargs() const pure nothrow {
             return _wargs;
         }
 
-        const(Types[]) types() const pure nothrow
-        {
+        const(Types[]) types() const pure nothrow {
             return _types;
         }
 
     }
 
-    this(immutable(ubyte[]) data) pure nothrow
-    {
+    this(immutable(ubyte[]) data) pure nothrow {
         this.data = data;
         set_front(current, _index);
     }
 
-    @safe protected void set_front(ref scope IRElement elm, ref size_t index) pure nothrow
-    {
-        @trusted void set(ref WasmArg warg, const Types type) pure nothrow
-        {
-            with (Types)
-            {
-                switch (type)
-                {
+    @safe protected void set_front(ref scope IRElement elm, ref size_t index) pure nothrow {
+        @trusted void set(ref WasmArg warg, const Types type) pure nothrow {
+            with (Types) {
+                switch (type) {
                 case I32:
                     warg = i32(data, index);
                     break;
@@ -887,27 +807,25 @@ static assert(isInputRange!ExprRange);
                     break;
                 default:
                     assumeWontThrow({
-                            wasm_exception = new WasmException(format("Assembler argument type not vaild as an argument %s", type));
-                        });
+                        wasm_exception = new WasmException(format(
+                            "Assembler argument type not vaild as an argument %s", type));
+                    });
                 }
             }
         }
 
-        if (index < data.length)
-        {
+        if (index < data.length) {
             elm.code = cast(IR) data[index];
             elm._types = null;
             const instr = instrTable[elm.code];
             index += IR.sizeof;
-            with (IRType)
-            {
-                final switch (instr.irtype)
-                {
+            with (IRType) {
+                final switch (instr.irtype) {
                 case CODE:
                     break;
                 case PREFIX:
                     elm._warg = int(data[index]); // Extened insruction
-                    index+=ubyte.sizeof;
+                    index += ubyte.sizeof;
                     break;
                 case BLOCK:
                     elm._types = [cast(Types) data[index]];
@@ -923,8 +841,7 @@ static assert(isInputRange!ExprRange);
                     //size_t vec_size;
                     const len = u32(data, index) + 1;
                     elm._wargs = new WasmArg[len];
-                    foreach (ref a; elm._wargs)
-                    {
+                    foreach (ref a; elm._wargs) {
                         a = u32(data, index);
                     }
                     break;
@@ -936,7 +853,7 @@ static assert(isInputRange!ExprRange);
                     // typeidx
                     set(elm._warg, Types.I32);
                     if (!(data[index] == 0x00)) {
-                        wasm_exception = new WasmException( "call_indirect should end with 0x00");
+                        wasm_exception = new WasmException("call_indirect should end with 0x00");
                     }
                     index += ubyte.sizeof;
                     break;
@@ -955,10 +872,8 @@ static assert(isInputRange!ExprRange);
                     index++;
                     break;
                 case CONST:
-                    with (IR)
-                    {
-                        switch (elm.code)
-                        {
+                    with (IR) {
+                        switch (elm.code) {
                         case I32_CONST:
                             set(elm._warg, Types.I32);
                             break;
@@ -982,10 +897,8 @@ static assert(isInputRange!ExprRange);
                 }
             }
         }
-        else
-        {
-            if (index == data.length)
-            {
+        else {
+            if (index == data.length) {
                 index++;
             }
             elm.code = IR.UNREACHABLE;
@@ -993,25 +906,19 @@ static assert(isInputRange!ExprRange);
     }
 
     @property pure nothrow {
-        const(size_t) index() const
-        {
+        const(size_t) index() const {
             return _index;
         }
 
-        const(IRElement) front() const
-        {
+        const(IRElement) front() const {
             return current;
         }
 
-        bool empty() const
-        {
+        bool empty() const {
             return _index > data.length || (wasm_exception !is null);
         }
 
-
-
-        void popFront()
-        {
+        void popFront() {
             set_front(current, _index);
         }
     }
