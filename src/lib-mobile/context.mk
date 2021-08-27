@@ -1,1 +1,2 @@
-wallet.ctx: basic.o crypto.o funnel.o
+libtagionwallet.ctx: libtagionbasic.o libtagioncrypto.o libtagionfunnel.o
+	@
