@@ -12,7 +12,7 @@ help:
 	${call log.separator}
 	${call log.kvp, make lib/<specific>, Compile <specific> lib}
 	${call log.kvp, make bin/<specific>, Compile <specific> bin}
-	${call log.kvp, make wrap/<specific>, Compile <specific> wrapper}
+	${call log.kvp, make wrap-<specific>, Compile <specific> wrapper}
 	${call log.separator}
 	${call log.kvp, make libtest/<specific>, Compile and run <specific> lib test}
 	${call log.separator}
