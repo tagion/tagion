@@ -44,6 +44,10 @@ clean-test_libtagion%:
 	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/tests/test_libtagion$(*).a}
 	${call clean.ways, test_libtagion$(*)}
 
+clean-wrap-%:
+	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/wraps/$(*)}
+	${call clean.ways, tagion$(*)}
+
 # 
 # Macros
 # 

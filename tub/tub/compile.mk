@@ -1,10 +1,6 @@
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
-# TODO: Rename targets to libtagion and tagion and libtagion_unittest
-# TODO: Try only include modules from .ctx declarations (OBJS definition in patallel mode)
-# TODO: Improve ways handling
 # TODO: Add revision.di
-
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
 
 DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
@@ -12,15 +8,17 @@ DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
 # 
 # Creating required directories
 # 
+
+%/.way:
+	$(PRECMD)mkdir -p $(*)
+	$(PRECMD)touch $(*)/.way
+	$(PRECMD)rm $(*)/.way
+
 WAYS_PERSISTENT += $(DIR_BUILD)/.way
 WAYS += $(DIR_BUILD)/libs/static/.way
 WAYS += $(DIR_BUILD)/libs/o/.way
 WAYS += $(DIR_BUILD)/tests/.way
 WAYS += $(DIR_BUILD)/bins/.way
-%/.way:
-	$(PRECMD)mkdir -p $(*)
-	$(PRECMD)touch $(*)/.way
-	$(PRECMD)rm $(*)/.way
 
 ways: $(WAYS) $(WAYS_PERSISTENT)
 
@@ -30,7 +28,7 @@ ways: $(WAYS) $(WAYS_PERSISTENT)
 tagion%: $(DIR_BUILD)/bins/tagion%
 	@
 
-libtagion%.o: $(DIR_BUILD)/libs/o/libtagion%.o
+libtagion%.o: | libtagion%.ctx $(DIR_BUILD)/libs/o/libtagion%.o
 	${eval OBJS += $(*)}
 
 libtagion%.a: $(DIR_BUILD)/libs/static/libtagion%.a
@@ -43,6 +41,7 @@ test_libtagion%: $(DIR_BUILD)/tests/test_libtagion%
 	@
 
 runtest_libtagion%: test_libtagion%
+	${call log.header, run test_libtagion$(*)}
 	$(PRECMD)$(DIR_BUILD)/tests/test_libtagion$(*)
 	${call log.close}
 
