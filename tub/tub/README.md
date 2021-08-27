@@ -19,37 +19,23 @@ Make sure to install dependencies:
 - [dstep](https://github.com/jacob-carlborg/dstep) for `p2p-go-wrapper`
 - [golang](https://golang.org/doc/install#download) for `p2p-go-wrapper`
 - [dh-autoreconf](https://packages.ubuntu.com/bionic/dh-autoreconf) for `secp256k1`
-- [nodejs](https://packages.ubuntu.com/bionic/libgmp3-dev) for meta-git
-- [meta-git](https://github.com/mateodelnorte/meta-git) for git flow
-- [curl](https://curl.se/) or [wget](https://www.gnu.org/software/wget/) for tub install script
 
 ### 1. Install Tub
-Tub directory must have following structure:
-```bash
-./build # Compiled binaries and libraries
-./src
-    ./libs # Source code for Tagion libraries
-    ./bins # Source code for Tagion binaries
-./tub # Collection of Make files
-./wraps # Wrappers for external static libraries
-```
 
-Use Tub `install.sh` script to install Tub in your local directory. You can specify a directory name, otherwise it will initialize in the current directory
+Use tub `install` script to install Tub in your local directory.
 
-#### Install by cloning the tub
 ```bash
 cd <project-dir>
 git clone git@github.com:tagion/tub.git
 ./tub/install
 ```
 
-#### Install using [curl](https://curl.se/):
+#### Install using [curl](https://curl.se/) or [wget](https://www.gnu.org/software/wget/):
+
+You can copy one of the commands below to install tub in your directory:
+
 ```bash
 sh <(curl -s https://raw.githubusercontent.com/tagion/tub/master/install) project
-```
-
-#### Install Using [wget](https://www.gnu.org/software/wget/):
-```bash
 sh <(wget -qO - https://raw.githubusercontent.com/tagion/tub/master/install) project
 ```
 
@@ -58,46 +44,41 @@ sh <(wget -qO - https://raw.githubusercontent.com/tagion/tub/master/install) pro
 Once you have a clean tub, you have to choose which modules to work with. You can have very minimal local setup with few specific modules. But to make onboarding easier, we have prepared two blueprints. If you have access to private core modules, use:
 
 ```bash
-make blueprint/core
+make add/core
 ```
 
 If you are an external contributor, use:
 
 ```bash
-make blueprint/public
+make add/public
 ```
 
 ### 3. Compile and test any available module
 
-We use `make` for compilation. 
-
-You can compile any tagion module, for example:
+We use `make` for compilation. Here is you compile any tagion module:
 
 ```bash
-make lib/utils # Will compile a static library
-
-make bin/node # Will compile an executable
-
-make wrap-p2p-go-wrapper # Will compile an external library
+make libtagionutils # Will compile a static library from core-lib-utils module
+make tagionwave # Will compile an executable from core-bin-wave module
+make wrap-secp256k1 # Will compile an external library from core-wrap-secp256k1
 ```
-
 
 ## Tagion's Modular Structure
 
 Tagion core is split into modules, that follow the naming convention:
 
 - `core-lib-[library]`: library module, compiles to `libtagion[library].a`
-- `core-bin-[binary]`: binary module, compiles to `[binary]`
-- `core-wrap-[wrapper]`: external library wrapper module, compiles to `lib[wrapper].a`
+- `core-bin-[binary]`: binary module, compiles to `tagion[binary]`
+- `core-wrap-[wrapper]`: wrapper for external libraries
 
-## Meta Git
+## Tub script
 
-With meta-git you can checkout and branch all you repositories at once:
+Once you install `tub`, you will have `tub` script on your `PATH`, it will execute any command on each module in you `src` directory.
 
 ```bash
-meta git checkout alpha # Checkout latest alpha branch
-meta git checkout 0.1.alpha # Checkout specific alpha branch
-meta git branch 0.1.jd # Create your working branch, if you are John Dorian
+tub git checkout 0.1.alpha # Checkout specific alpha branch
+tub git branch 0.1.jd # Create your working branch, if you are John Dorian
+tub ls # List files and directories in every module
 ```
 
 ---
@@ -130,7 +111,7 @@ Before you modify anything, you must branch from a specific alpha version and na
 It means you don't have the required dependency.
 
 1. Define the type of dependency: `lib` or `wrap`
-1. Do `make add/lib/[library]` or `make add/wrap-[wrapper]`
+1. Do `make add/lib-[library]` or `make add/wrap-[wrapper]`
 
 Try to compile again.
 
@@ -141,7 +122,7 @@ Try to compile again.
 - [x] Tub install script
 - [ ] Module dependency graph
 - [ ] Cross compilation flow
-- [ ] Replace `meta-git` with `tagil` cli
+- [x] Replace `meta-git` with `tub`
 
 ## Maintainers
 
