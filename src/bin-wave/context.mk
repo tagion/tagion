@@ -1,1 +1,2 @@
-tagionnode.ctx: crypto.o p2p-go-wrapper.o gossip.o
+tagionnode.ctx: libtagioncrypto.o libtagionp2p-go-wrapper.o libtagiongossip.o
+	@
