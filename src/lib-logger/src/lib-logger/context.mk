@@ -1,1 +1,2 @@
-logger.ctx: basic.o
+libtagionlogger.ctx: libtagionbasic.o
+	@
