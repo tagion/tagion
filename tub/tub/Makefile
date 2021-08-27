@@ -21,6 +21,7 @@ include $(DIR_TUB)/revision.mk
 include $(DIR_TUB)/env.mk
 include $(DIR_TUB)/add.mk
 include $(DIR_TUB)/compile.mk
+include $(DIR_TUB)/clean.mk
 
 install:
 	@$(DIR_TUB)/install
