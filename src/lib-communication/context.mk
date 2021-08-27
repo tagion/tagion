@@ -1,1 +1,2 @@
-communication.ctx: hibon.o crypto.o
+libtagioncommunication.ctx: libtagionhibon.o libtagioncrypto.o
+	@
