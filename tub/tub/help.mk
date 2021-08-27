@@ -1,15 +1,20 @@
-help: info
-	$(call log.header, make :: help)
-	$(call log.kvp, make help, Show this help)
-	$(call log.kvp, make info, Show info about tagil-maker repository)
-	$(call log.kvp, make env, Show current Make environment)
-	$(call log.separator)
-	$(call log.kvp, make lib/[specific], Compile [specific] lib for the host platform)
-	$(call log.kvp, make bin/[specific], Compile [specific] bin for the host platform)
-	$(call log.kvp, make wrap/[specific], Compile [specific] wrapper for the host platform)
-	$(call log.separator)
-	$(call log.kvp, make test/lib/[specific], Test [specific] lib for the host platform)
-	$(call log.kvp, make test/bin/[specific], Test [specific] bin for the host platform)
-	$(call log.separator)
-	$(call log.kvp, make clean, Clean build directory)
-	$(call log.close)
+help:
+	${eval TUB_VERSION := ${shell cd $(DIR_TUB_ROOT)/tub; git rev-parse --short HEAD}}
+	${call log.header, tub version $(TUB_VERSION) :: help }
+	${call log.kvp, make help, Show this help}
+	${call log.kvp, make env, Show current Make environment}
+	${call log.kvp, make update, Force update the tub itself}
+	${call log.kvp, make install, Ensure correct local setup of the tub}
+	${call log.separator}
+	${call log.kvp, make add/<specific>, Add source code of <speficic> module}
+	${call log.kvp, make add/public, Add all open-sourced modules}
+	${call log.kvp, make add/core, Add all core modules}
+	${call log.separator}
+	${call log.kvp, make lib/<specific>, Compile <specific> lib}
+	${call log.kvp, make bin/<specific>, Compile <specific> bin}
+	${call log.kvp, make wrap-<specific>, Compile <specific> wrapper}
+	${call log.separator}
+	${call log.kvp, make libtest/<specific>, Compile and run <specific> lib test}
+	${call log.separator}
+	${call log.kvp, make clean, Clean build directory}
+	${call log.close}

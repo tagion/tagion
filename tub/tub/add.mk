@@ -1,20 +1,38 @@
 # 
 # Source code cloning
 # 
-add/lib/%: $(DIR_LIBS)/%/context.mk
+add/%: $(DIR_SRC)/%/context.mk
 	@
 
-$(DIR_LIBS)/%/context.mk:
-	$(PRECMD)git clone $(GIT_ORIGIN)/core-lib-$(*) $(DIR_LIBS)/$(*)	
+$(DIR_SRC)/%/context.mk:
+	$(PRECMD)git clone $(GIT_ORIGIN)/core-$(*) $(DIR_SRC)/$(*)	
 
-add/bin/%: $(DIR_BINS)/%/context.mk
+add/core: add/lib-basic\
+			  add/lib-utils\
+			  add/lib-hibon\
+			  add/lib-p2p-go-wrapper\
+			  add/lib-crypto\
+			  add/lib-dart\
+			  add/lib-funnel\
+			  add/lib-gossip\
+			  add/lib-hashgraph\
+			  add/lib-network\
+			  add/lib-services\
+			  add/lib-wallet\
+			  add/lib-wasm\
+			  add/lib-communication\
+			  add/lib-monitor\
+			  add/lib-logger\
+			  add/lib-options\
+			  add/bin-node\
+			  add/wrap-secp256k1\
+			  add/wrap-openssl\
+			  add/wrap-p2p-go-wrapper
 	@
 
-$(DIR_BINS)/%/context.mk:	
-	$(PRECMD)git clone $(GIT_ORIGIN)/core-bin-$(*) $(DIR_BINS)/$(*)
-
-add/wrap/%: $(DIR_WRAPS)/%/Makefile
+add/public: add/lib-basic\
+				add/lib-utils\
+				add/lib-hibon\
+				add/lib-p2p-go-wrapper\
+				add/wrap-p2p-go-wrapper
 	@
-
-$(DIR_WRAPS)/%/Makefile:
-	$(PRECMD)git clone $(GIT_ORIGIN)/core-wrap-$(*) $(DIR_WRAPS)/$(*)

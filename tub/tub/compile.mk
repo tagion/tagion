@@ -1,168 +1,192 @@
-# TODO: Add ldc-build-runtime for building phobos and druntime for platforms
-# TODO: Add local setup and unittest setup (context)
+-include ${shell find $(DIR_SRC) -name '*context.mk'}
+
 # TODO: Add revision.di
+# TODO: Add ldc-build-runtime for building phobos and druntime for platforms
 
-# Include contexts and wrap Makefiles
-CONTEXTS := ${shell find $(DIR_SRC) -name '*context.mk'}
-
--include $(DIR_WRAPS)/**/Makefile
--include $(CONTEXTS)
+DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
 
 # 
-# Helper macros
+# Creating required directories
 # 
-define locate.d.files
-${shell find ${strip $1} $(SOURCEFLAGS) -name '*.d'}
+
+%/.way:
+	$(PRECMD)mkdir -p $(*)
+	$(PRECMD)touch $(*)/.way
+	$(PRECMD)rm $(*)/.way
+
+WAYS_PERSISTENT += $(DIR_BUILD)/.way
+WAYS += $(DIR_BUILD)/libs/static/.way
+WAYS += $(DIR_BUILD)/libs/o/.way
+WAYS += $(DIR_BUILD)/tests/.way
+WAYS += $(DIR_BUILD)/bins/.way
+
+ways: $(WAYS) $(WAYS_PERSISTENT)
+
+# 
+# Target shortcuts
+# 
+tagion%: $(DIR_BUILD)/bins/tagion%
+	@
+
+libtagion%.o: | libtagion%.ctx $(DIR_BUILD)/libs/o/libtagion%.o
+	${eval OBJS += $(*)}
+
+libtagion%.a: $(DIR_BUILD)/libs/static/libtagion%.a
+	@
+
+libtagion%: libtagion%.a
+	@
+
+test_libtagion%: $(DIR_BUILD)/tests/test_libtagion%
+	@
+
+runtest_libtagion%: test_libtagion%
+	${call log.header, run test_libtagion$(*)}
+	$(PRECMD)$(DIR_BUILD)/tests/test_libtagion$(*)
+	${call log.close}
+
+# 
+# Targets
+# 
+$(DIR_BUILD)/libs/static/libtagion%.a: | ways libtagion%.o
+	${call define.parallel}
+
+	${eval _ARCHIVES := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
+	${eval _ARCHIVES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
+	
+	${eval _TARGET := $(@)}
+
+	${call execute.ifnot.parallel, ${call show.archive.details, archive - $(@F)}}
+
+	$(PRECMD)ar cr $(_TARGET) $(_ARCHIVES)
+	${call log.kvp, Archived, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
+$(DIR_BUILD)/libs/o/libtagion%.o: | ways libtagion%.ctx
+	${call define.parallel}
+
+	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+	${eval INFILES := ${call find.files, ${DIR_SRC}/lib-$(*), *.d}}
+	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
+	
+	${eval _TARGET := $(@)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -c}
+	${eval _DCFLAGS += -of$(_TARGET)}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	
+	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(@F)}}
+
+	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
+$(DIR_BUILD)/tests/test_libtagion%: | ways libtagion%.ctx
+	${call define.parallel}
+
+	${eval _OBJS := ${subst $(*),,$(OBJS)}}
+	${eval _WRAPS := $(WRAPS)}
+	
+	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+	${eval INFILES := ${call find.files, $(DIR_SRC)/lib-$(*), *.d}}
+	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
+	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
+	${eval INFILES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
+	
+	${eval _TARGET := $(@)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -unittest}
+	${eval _DCFLAGS += -main}
+	${eval _DCFLAGS += -g}
+	${eval _DCFLAGS += -of$(_TARGET)}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	
+	${call execute.ifnot.parallel, ${call show.compile.details, test - $(@F)}}
+
+	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
+$(DIR_BUILD)/bins/tagion%: | ways tagion%.ctx
+	${call define.parallel}
+
+	${eval _OBJS := ${subst $(*),,$(OBJS)}}
+	${eval _WRAPS := $(WRAPS)}
+	
+	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+	${eval INFILES := ${call find.files, $(DIR_SRC)/bin-$(*), *.d}}
+	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
+	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
+	${eval INFILES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
+	
+	${eval _TARGET := $(@)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -of$(_TARGET)}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	
+	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(@F)}}
+
+	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
+# 
+# Macros
+# 
+define find.files
+${shell find ${strip $1} -not -path "$(SOURCE_FIND_EXCLUDE)" -name '${strip $2}'}
 endef
 
-define locate.di.files
-${shell find ${strip $1} $(SOURCEFLAGS) -name '*.di'}
+define define.parallel
+${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
 endef
 
-define link.dependency
-${strip $1}
+define execute.ifnot.parallel
+${if $(PARALLEL),,$1}
 endef
 
-define cmd.lib.compile
-$(PRECMD)$(DC) $(DCFLAGS) $(DFILES) ${LINKFLAGS} $(LDCFLAGS) $(OTHERFLAGS)
+define execute.if.parallel
+${if $(PARALLEL),$1,}
 endef
 
-define cmd.lib.compile.library
-${call cmd.lib.compile} -c -of$(DIR_BUILD)/libs/libtagion$(@F).a
-endef
-
-define cmd.lib.compile.unittest
-${call cmd.lib.compile} $(DEBUG) -unittest -g -main -of$(DIR_BUILD)/tests/libtagion$(@F)
-endef
-
-define cmd.lib.compile.bin
-${call cmd.lib.compile} -of$(DIR_BUILD)/bins/$(@F)
-endef
-
-define collect.dependencies
-$(eval LIBS := $(foreach X, $(LIBS), $(eval LIBS := $(filter-out $X, $(LIBS)) $X))$(LIBS))
-$(eval WRAPS := $(foreach X, $(WRAPS), $(eval WRAPS := $(filter-out $X, $(WRAPS)) $X))$(WRAPS))
-
-${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.d.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
-${eval DFILES += ${foreach LIB, $(LIBS), ${call locate.di.files, $(DIR_TUB_ROOT)/src/libs/$(LIB)}}}
-${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.d.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
-${eval DFILES += ${foreach WRAP, $(WRAPS), ${call locate.di.files, $(DIR_TUB_ROOT)/wraps/$(WRAP)}}}
-endef
-
-define collect.dependencies.to.link
-${eval LINKFLAGS += ${foreach WRAPLIB, $(WRAPLIBS), ${call link.dependency, $(WRAPLIB)}}}
-endef
 
 define show.compile.details
-${call log.kvp, Target, $(TARGET)}
-${call log.kvp, Libs, $(LIBS)}
-${call log.kvp, Wraps, $(WRAPS)}
+${call log.header, ${strip $1}}
 
-${call log.separator}
-${call log.kvp, DFILES}
-${call log.lines, $(DFILES)}
+${if $(WRAPS_STATIC),${call log.kvp, WRAPS_STATIC}}
+${if $(WRAPS_STATIC),${call log.lines, $(WRAPS_STATIC)}}
 
-${call log.separator}
-${call log.kvp, DCFLAGS}
-${call log.lines, $(DCFLAGS)}
+${if $(_OBJS),${call log.kvp, OBJS, $(_OBJS)}}
+${if $(_WRAPS),${call log.kvp, WRAPS, $(_WRAPS)}}
 
-${call log.separator}
-${call log.kvp, LINKFLAGS}
-${call log.lines, $(LINKFLAGS)}
+${eval METALOGS := $(WRAPS_STATIC) $(_OBJS)}
+${if $(METALOGS),${call log.separator},}
 
-${call log.separator}
-${call log.kvp, LDCFLAGS}
-${call log.lines, $(LDCFLAGS)}
+${call log.kvp, DC, $(DC)}
+${call log.kvp, DCFLAGS, $(_DCFLAGS)}
 
-${call log.separator}
-${call log.kvp, OTHERFLAGS}
-${call log.lines, $(OTHERFLAGS)}
-endef
+${call log.kvp, INCFLAGS}
+${call log.lines, $(INCFLAGS)}
 
-define compile
-${call log.separator}
-${call log.line, Compiling...}
+${call log.kvp, INFILES}
+${call log.lines, $(INFILES)}
+
+${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}
+${if $(LATEFLAGS),${call log.kvp, LATEFLAGS, $(LATEFLAGS)},}
+
 ${call log.space}
-$(PRECMD)${call $1}
 endef
 
-define run.unittest
-${call log.separator}
-${call log.line, Testing...}
+define show.archive.details
+${call log.header, ${strip $1}}
+${call log.kvp, Including}
+${call log.lines, $(_ARCHIVES)}
+
 ${call log.space}
-$(PRECMD)$(DIR_BUILD)/tests/libtagion$(@F)
 endef
-
-# 
-# Target helpers
-# 
-ctx/bin/%: $(DIR_SRC)/bins/%/context.mk
-	@
-
-ctx/lib/%: $(DIR_SRC)/libs/%/context.mk
-	${eval LIBS += $(@F)}
-
-ctx/wrap/%: $(DIR_WRAPS)/%/Makefile wrap/%
-	@
-
-way/%: 
-	@mkdir -p $(*)
-
-ways: WAYS += $(DIR_BUILD)/wraps $(DIR_BUILD)/libs $(DIR_BUILD)/bins $(DIR_BUILD)/tests
-ways: 
-	${foreach WAY, $(WAYS), ${shell mkdir -p $(WAY)}}
-
-# 
-# Compile targets to use
-# 
-bin/%: | env/compiler ways ctx/bin/%
-	${eval TARGET := $(@F)}
-	${call log.header, testing lib/$(@F)}
-	${eval DFILES := ${call locate.d.files, $(DIR_TUB_ROOT)/src/bins/$(TARGET)}}
-	${call collect.dependencies}
-	${call collect.dependencies.to.link}
-	${call show.compile.details}
-	${call compile, cmd.lib.compile.bin}
-	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/$(@F)}
-	${call log.close}
-
-lib/%: | env/compiler ways ctx/lib/%
-	${eval TARGET := $(@F)}
-	${call log.header, compiling lib/$(@F)}
-	${call collect.dependencies}
-	${call show.compile.details}
-	${call compile, cmd.lib.compile.library}
-	${call log.kvp, Compiled, $(DIR_BUILD)/$(@D)s/libtagion$(@F).a}
-	${call log.close}
-
-test/lib/%: env/compiler ways ctx/lib/%
-	${eval TARGET := $(@F)}
-	${call log.header, testing lib/$(@F)}
-	${call collect.dependencies}
-	${call collect.dependencies.to.link}
-	${call show.compile.details}
-	${call compile, cmd.lib.compile.unittest}
-	${call log.space}
-	${call run.unittest}
-	${call log.close}
-
-.PHONY: test/lib/% lib/% bin/%
-
-# 
-# Clean build directory
-# 
-clean:
-	${call log.header, cleaning builds}
-	${call log.line, Directory to clean:)}
-	${call log.line, $(DIR_BUILD)}
-	${call log.space}
-	${call log.line, Cleaning in 3...}
-	@sleep 1
-	${call log.line, Cleaning in 2...}
-	@sleep 1
-	${call log.line, Cleaning in 1...}
-	@sleep 1
-	${call log.space}
-	@rm -rf $(DIR_BUILD)/*
-	${call log.line, Build directory is clean!}
-	${call log.close}

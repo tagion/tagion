@@ -78,7 +78,7 @@ make lib/utils # Will compile a static library
 
 make bin/node # Will compile an executable
 
-make wrap/p2p-go-wrapper # Will compile an external library
+make wrap-p2p-go-wrapper # Will compile an external library
 ```
 
 
@@ -130,7 +130,7 @@ Before you modify anything, you must branch from a specific alpha version and na
 It means you don't have the required dependency.
 
 1. Define the type of dependency: `lib` or `wrap`
-1. Do `make add/lib/[library]` or `make add/wrap/[wrapper]`
+1. Do `make add/lib/[library]` or `make add/wrap-[wrapper]`
 
 Try to compile again.
 
