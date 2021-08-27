@@ -7,10 +7,7 @@ add/%: $(DIR_SRC)/%/context.mk
 $(DIR_SRC)/%/context.mk:
 	$(PRECMD)git clone $(GIT_ORIGIN)/core-$(*) $(DIR_SRC)/$(*)	
 
-# 
-# Blueprints
-# 
-_sources/core: add/lib-basic\
+add/core: add/lib-basic\
 			  add/lib-utils\
 			  add/lib-hibon\
 			  add/lib-p2p-go-wrapper\
@@ -27,17 +24,15 @@ _sources/core: add/lib-basic\
 			  add/lib-monitor\
 			  add/lib-logger\
 			  add/lib-options\
-			  add/bin-node
+			  add/bin-node\
+			  add/wrap-secp256k1\
+			  add/wrap-openssl\
+			  add/wrap-p2p-go-wrapper
 	@
 
-_sources/public: add/lib-basic\
+add/public: add/lib-basic\
 				add/lib-utils\
 				add/lib-hibon\
-				add/lib-p2p-go-wrapper
+				add/lib-p2p-go-wrapper\
+				add/wrap-p2p-go-wrapper
 	@
-
-add/core: add/wrap-secp256k1 add/wrap-openssl add/wrap-p2p-go-wrapper _sources/core
-	$(PRECMD)./tub git checkout alpha
-
-add/public: add/wrap-p2p-go-wrapper _sources/public
-	$(PRECMD)./tub git update

@@ -27,37 +27,43 @@ ways: $(WAYS) $(WAYS_PERSISTENT)
 # 
 # Target shortcuts
 # 
-%.o: | %.ctx $(DIR_BUILD)/libs/o/%.o
+tagion%: $(DIR_BUILD)/bins/tagion%
+	@
+
+libtagion%.o: $(DIR_BUILD)/libs/o/libtagion%.o
 	${eval OBJS += $(*)}
 
-lib-%: $(DIR_BUILD)/libs/static/%.a
+libtagion%.a: $(DIR_BUILD)/libs/static/libtagion%.a
 	@
 
-tagion%: | tagion%.ctx $(DIR_BUILD)/bins/%
+libtagion%: libtagion%.a
 	@
 
-testlib-%: | $(DIR_BUILD)/tests/%
-	$(PRECMD)$(DIR_BUILD)/tests/$(*)
+test_libtagion%: $(DIR_BUILD)/tests/test_libtagion%
+	@
+
+runtest_libtagion%: test_libtagion%
+	$(PRECMD)$(DIR_BUILD)/tests/test_libtagion$(*)
 	${call log.close}
 
 # 
 # Targets
 # 
-$(DIR_BUILD)/libs/static/%.a: | ways %.o
+$(DIR_BUILD)/libs/static/libtagion%.a: | ways libtagion%.o
 	${call define.parallel}
 
-	${eval _ARCHIVES := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval _ARCHIVES := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
 	${eval _ARCHIVES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
 	
-	${eval _TARGET := $(@D)/libtagion$(*).a}
+	${eval _TARGET := $(@)}
 
-	${call execute.ifnot.parallel, ${call show.archive.details, archive - $(*)}}
+	${call execute.ifnot.parallel, ${call show.archive.details, archive - $(@F)}}
 
 	$(PRECMD)ar cr $(_TARGET) $(_ARCHIVES)
 	${call log.kvp, Archived, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
-$(DIR_BUILD)/libs/o/%.o: | ways
+$(DIR_BUILD)/libs/o/libtagion%.o: | ways libtagion%.ctx
 	${call define.parallel}
 
 	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
@@ -72,20 +78,21 @@ $(DIR_BUILD)/libs/o/%.o: | ways
 
 	${eval _LDCFLAGS := $(LDCFLAGS)}
 	
-	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(*)}}
+	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(@F)}}
 
 	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
-$(DIR_BUILD)/tests/%: | ways %.ctx
+$(DIR_BUILD)/tests/test_libtagion%: | ways libtagion%.ctx
 	${call define.parallel}
 
 	${eval _OBJS := ${subst $(*),,$(OBJS)}}
+	${eval _WRAPS := $(WRAPS)}
 	
 	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, $(DIR_SRC)/lib-$(*), *.d}}
-	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
 	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
 	${eval INFILES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
 	
@@ -99,20 +106,21 @@ $(DIR_BUILD)/tests/%: | ways %.ctx
 
 	${eval _LDCFLAGS := $(LDCFLAGS)}
 	
-	${call execute.ifnot.parallel, ${call show.compile.details, test - $(*)}}
+	${call execute.ifnot.parallel, ${call show.compile.details, test - $(@F)}}
 
 	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
-$(DIR_BUILD)/bins/%: | ways tagion%.ctx
+$(DIR_BUILD)/bins/tagion%: | ways tagion%.ctx
 	${call define.parallel}
 
 	${eval _OBJS := ${subst $(*),,$(OBJS)}}
+	${eval _WRAPS := $(WRAPS)}
 	
 	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, $(DIR_SRC)/bin-$(*), *.d}}
-	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
 	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
 	${eval INFILES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
 	
@@ -123,14 +131,14 @@ $(DIR_BUILD)/bins/%: | ways tagion%.ctx
 
 	${eval _LDCFLAGS := $(LDCFLAGS)}
 	
-	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(*)}}
+	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(@F)}}
 
 	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
 # 
-# Helper macros
+# Macros
 # 
 define find.files
 ${shell find ${strip $1} -not -path "$(SOURCE_FIND_EXCLUDE)" -name '${strip $2}'}
@@ -155,9 +163,10 @@ ${call log.header, ${strip $1}}
 ${if $(WRAPS_STATIC),${call log.kvp, WRAPS_STATIC}}
 ${if $(WRAPS_STATIC),${call log.lines, $(WRAPS_STATIC)}}
 
-${if $(OBJS),${call log.kvp, OBJS, $(OBJS)}}
+${if $(_OBJS),${call log.kvp, OBJS, $(_OBJS)}}
+${if $(_WRAPS),${call log.kvp, WRAPS, $(_WRAPS)}}
 
-${eval METALOGS := $(WRAPS_STATIC) $(OBJS)}
+${eval METALOGS := $(WRAPS_STATIC) $(_OBJS)}
 ${if $(METALOGS),${call log.separator},}
 
 ${call log.kvp, DC, $(DC)}
