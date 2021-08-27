@@ -18,7 +18,7 @@ wrap-openssl: | ways $(DIR_BUILD_OPENSSL)/lib/libcrypto.a
 $(DIR_BUILD_OPENSSL)/lib/libcrypto.a: $(DIR_OPENSSL_SRC)/config
 	$(PRECMD)cd $(DIR_OPENSSL_SRC); ./config --shared --prefix=$(DIR_BUILD_OPENSSL) --openssldir=$(DIR_BUILD_OPENSSL_EXTRA)
 	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
-	${if $(PARALLEL), PARALLEL :=, ${eval PARALLEL := -j8}}
+	${if $(PARALLEL), ${eval PARALLEL := -j8}, ${eval PARALLEL :=}}
 	$(PRECMD)cd $(DIR_OPENSSL_SRC); make $(PARALLEL)
 	$(PRECMD)cd $(DIR_OPENSSL_SRC); make install
 
