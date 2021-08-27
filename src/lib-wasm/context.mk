@@ -1,1 +1,2 @@
-wasm.ctx: utils.o
+libtagionwasm.ctx: libtagionutils.o
+	@
