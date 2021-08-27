@@ -2,7 +2,7 @@
 
 # TODO: Restore unittests support (compile and run separately)
 # TODO: Restore binary building
-# TODO: Try only include modules from .ctx declarations
+# TODO: Try only include modules from .ctx declarations (OBJS definition in patallel mode)
 # TODO: Improve ways handling
 
 # TODO: Add revision.di
@@ -34,7 +34,7 @@ ways: $(WAYS) $(WAYS_PERSISTENT)
 lib-%: $(DIR_BUILD)/libs/static/%.a
 	@
 
-bin-%: | bin/%.ctx $(DIR_BUILD)/bins/%
+tagion%: | tagion%.ctx $(DIR_BUILD)/bins/%
 	@
 
 testlib-%: | $(DIR_BUILD)/tests/%
@@ -63,6 +63,7 @@ $(DIR_BUILD)/libs/o/%.o: | ways
 
 	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, ${DIR_SRC}/lib-$(*), *.d}}
+	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
 	
 	${eval _TARGET := $(@)}
 
@@ -81,9 +82,13 @@ $(DIR_BUILD)/libs/o/%.o: | ways
 $(DIR_BUILD)/tests/%: | ways %.ctx
 	${call define.parallel}
 
+	${eval _OBJS := ${subst $(*),,$(OBJS)}}
+	
 	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, $(DIR_SRC)/lib-$(*), *.d}}
-	${eval INFILES += ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
+	${eval INFILES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
 	
 	${eval _TARGET := $(@)}
 
@@ -94,9 +99,32 @@ $(DIR_BUILD)/tests/%: | ways %.ctx
 	${eval _DCFLAGS += -of$(_TARGET)}
 
 	${eval _LDCFLAGS := $(LDCFLAGS)}
-	${eval _LDCFLAGS += ${foreach WRAP_STATIC, $(WRAPS_STATIC), -L$(WRAP_STATIC)}}
 	
 	${call execute.ifnot.parallel, ${call show.compile.details, test - $(*)}}
+
+	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
+$(DIR_BUILD)/bins/%: | ways tagion%.ctx
+	${call define.parallel}
+
+	${eval _OBJS := ${subst $(*),,$(OBJS)}}
+	
+	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+	${eval INFILES := ${call find.files, $(DIR_SRC)/bin-$(*), *.d}}
+	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/$(OBJ).o}}
+	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
+	${eval INFILES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
+	
+	${eval _TARGET := $(@)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -of$(_TARGET)}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	
+	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(*)}}
 
 	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(_TARGET)}
@@ -108,6 +136,27 @@ $(DIR_BUILD)/tests/%: | ways %.ctx
 clean:
 	${call log.header, cleaning WAYS}
 	${eval CLEAN_DIRS := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
+	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
+	${call log.lines, $(CLEAN_DIRS)}
+	${call log.close}
+
+clean/tests:
+	${call log.header, cleaning WAYS}
+	${eval CLEAN_DIRS := $(DIR_BUILD)/tests}
+	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
+	${call log.lines, $(CLEAN_DIRS)}
+	${call log.close}
+
+clean/bins:
+	${call log.header, cleaning WAYS}
+	${eval CLEAN_DIRS := $(DIR_BUILD)/bins}
+	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
+	${call log.lines, $(CLEAN_DIRS)}
+	${call log.close}
+
+clean/libs:
+	${call log.header, cleaning WAYS}
+	${eval CLEAN_DIRS := $(DIR_BUILD)/libs}
 	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
 	${call log.lines, $(CLEAN_DIRS)}
 	${call log.close}
@@ -147,6 +196,9 @@ ${if $(WRAPS_STATIC),${call log.kvp, WRAPS_STATIC}}
 ${if $(WRAPS_STATIC),${call log.lines, $(WRAPS_STATIC)}}
 
 ${if $(OBJS),${call log.kvp, OBJS, $(OBJS)}}
+
+${eval METALOGS := $(WRAPS_STATIC) $(OBJS)}
+${if $(METALOGS),${call log.separator},}
 
 ${call log.kvp, DC, $(DC)}
 ${call log.kvp, DCFLAGS, $(_DCFLAGS)}
