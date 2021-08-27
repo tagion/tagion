@@ -8,7 +8,9 @@ WAYS_PERSISTENT += $(DIR_P2P_CGO)/.way
 
 wrap/p2p-go-wrapper: $(DIR_P2P_BUILD)/lib/libp2p-go-wrapper.a $(DIR_P2P_BUILD)/include/libp2p.di
 	${eval WRAPS += p2p-go-wrapper}
-	${eval WRAPS_STATIC += $(DIR_P2P_BUILD)/libp2p-go-wrapper.a}
+	${eval WRAPS_STATIC += $(DIR_P2P_BUILD)/lib/libp2p-go-wrapper.a}
+	${eval WRAPS_HEADERS += $(DIR_P2P_BUILD)/include/helper.di}
+	${eval WRAPS_HEADERS += $(DIR_P2P_BUILD)/include/libp2p.di}
 
 $(DIR_P2P_BUILD)/lib/libp2p-go-wrapper.a: | ways $(DIR_P2P_CGO)/libp2p-go-wrapper.a
 	$(PRECMD)cp -r $(DIR_P2P_CGO)/*.a $(DIR_P2P_BUILD)/lib
