@@ -1,38 +1,55 @@
 # 
-# Clean
+# Only tagion modules
 # 
 clean:
-	${call log.header, cleaning WAYS}
-	${eval CLEAN_DIRS := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
-	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
-	${call log.lines, $(CLEAN_DIRS)}
-	${call log.close}
+	${eval WAYS_TO_CLEAN := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
+	${call clean.ways, WAYS}
 
-clean/tests:
-	${call log.header, cleaning WAYS}
-	${eval CLEAN_DIRS := $(DIR_BUILD)/tests}
-	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
-	${call log.lines, $(CLEAN_DIRS)}
-	${call log.close}
+# 
+# Tagion modules and wraps
+# 
+clean-all:
+	${eval WAYS_TO_CLEAN := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
+	${eval WAYS_TO_CLEAN += ${foreach WAY, $(WAYS_PERSISTENT), ${dir $(WAY)}}}
+	${call clean.ways, WAYS and WAYS_PERSISTENT}
 
-clean/bins:
-	${call log.header, cleaning WAYS}
-	${eval CLEAN_DIRS := $(DIR_BUILD)/bins}
-	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
-	${call log.lines, $(CLEAN_DIRS)}
-	${call log.close}
+# 
+# Grouped targets
+# 
+clean-tests:
+	${eval WAYS_TO_CLEAN := $(DIR_BUILD)/tests}
+	${call clean.ways, WAYS}
 
-clean/libs:
-	${call log.header, cleaning WAYS}
-	${eval CLEAN_DIRS := $(DIR_BUILD)/libs}
-	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
-	${call log.lines, $(CLEAN_DIRS)}
-	${call log.close}
+clean-bins:
+	${eval WAYS_TO_CLEAN := $(DIR_BUILD)/bins}
+	${call clean.ways, WAYS}
 
-clean/all:
-	${call log.header, cleaning WAYS and WAYS_PERSISTENT}
-	${eval CLEAN_DIRS := ${foreach WAY, $(WAYS), ${dir $(WAY)}}}
-	${eval CLEAN_DIRS += ${foreach WAY, $(WAYS_PERSISTENT), ${dir $(WAY)}}}
-	$(PRECMD)${foreach CLEAN_DIR, $(CLEAN_DIRS), rm -rf $(CLEAN_DIR);}
-	${call log.lines, $(CLEAN_DIRS)}
-	${call log.close}
+clean-libs:
+	${eval WAYS_TO_CLEAN := $(DIR_BUILD)/libs}
+	${call clean.ways, libtagion$(*)}
+
+# 
+# Specific targets
+# 
+clean-libtagion%:
+	${eval WAYS_TO_CLEAN := $(DIR_BUILD)/libs/o/libtagion$(*).o}
+	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/libs/static/libtagion$(*).a}
+	${call clean.ways, libtagion$(*)}
+
+clean-tagion%:
+	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/bins/tagion$(*).a}
+	${call clean.ways, tagion$(*)}
+
+clean-test_libtagion%:
+	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/tests/test_libtagion$(*).a}
+	${call clean.ways, test_libtagion$(*)}
+
+# 
+# Macros
+# 
+define clean.ways
+${call log.header, cleaning ${strip $1}}
+$(PRECMD)${foreach CLEAN_DIR, $(WAYS_TO_CLEAN), rm -rf $(CLEAN_DIR);}
+${call log.lines, $(WAYS_TO_CLEAN)}
+${call log.close}
+endef
