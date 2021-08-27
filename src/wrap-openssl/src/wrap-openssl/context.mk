@@ -7,6 +7,7 @@ DIR_BUILD_OPENSSL_EXTRA := $(DIR_BUILD)/wraps/openssl/extra
 WAYS_PERSISTENT += $(DIR_BUILD_OPENSSL)/.way 
 WAYS_PERSISTENT += $(DIR_BUILD_OPENSSL_EXTRA)/.way
 
+.PHONY: wrap-openssl
 wrap-openssl: | ways $(DIR_BUILD_OPENSSL)/lib/libcrypto.a
 	${eval WRAPS += opensssl}
 	${eval WRAPS_STATIC += $(DIR_BUILD_OPENSSL)/lib/libcrypto.a}
