@@ -3,17 +3,19 @@ module tagion.wasm.WasmParser;
 import std.uni : toUpper;
 import std.traits : EnumMembers;
 import std.format;
+import std.range.primitives : isInputRange, isForwardRange;
 
 import tagion.utils.LEB128;
 
 //import tagion.Message : message;
 
+@safe
 struct Token
 {
     string name;
     uint line;
     uint pos;
-    string toText() @safe pure const
+    string toText() pure const
     {
         if (line is 0)
         {
@@ -21,7 +23,6 @@ struct Token
         }
         else
         {
-            //            return message("%s:%s:%s",  line, pos, name);
             return format("%s:%s:%s", line, pos, name);
         }
     }
@@ -42,7 +43,10 @@ struct Token
         return Range(source);
     }
 
-    struct Range
+    static assert(isInputRange!Range);
+    static assert(isForwardRange!Range);
+
+    @nogc @safe struct Range
     {
         immutable(string) source;
         protected
@@ -55,12 +59,15 @@ struct Token
             size_t _current_pos; /// Position of the token in the current line
             bool _eos; /// Markes end of stream
         }
-        this(string source)
+        this(string source) pure nothrow
         {
             _line = 1;
             this.source = source;
             //            trim;
             popFront;
+        }
+
+        this(ref return scope const Range rhs) @nogc pure nothrow {
         }
 
         @property const pure nothrow
@@ -107,7 +114,7 @@ struct Token
 
         }
 
-        @property void popFront()
+        @property void popFront() pure nothrow
         {
             _eos = (_end_pos == source.length);
             trim;
@@ -209,7 +216,11 @@ struct Token
             }
         }
 
-        protected void trim()
+        Range save() pure const nothrow @nogc {
+            return Range(this);
+        }
+
+        protected void trim() pure nothrow
         {
             scope size_t eol;
             _begin_pos = _end_pos;
@@ -243,7 +254,7 @@ struct Token
         return (c !is ' ') && (c !is '\t') && (c !is '\n') && (c !is '\r');
     }
 
-    static size_t is_newline(string str) pure
+    static size_t is_newline(string str) pure nothrow
     {
         if ((str.length > 0) && (str[0] == '\n'))
         {

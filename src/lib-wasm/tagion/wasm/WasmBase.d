@@ -9,6 +9,8 @@ import std.conv : to, emplace;
 import std.range.primitives : isInputRange;
 import std.bitmanip : binread = read, binwrite = write, binpeek = peek, Endian;
 
+import std.exception : assumeWontThrow;
+
 import std.stdio;
 import tagion.wasm.WasmException;
 
@@ -126,6 +128,7 @@ enum Section : ubyte
     CODE = 10,
     DATA = 11,
 }
+
 
 enum IRType
 {
@@ -580,7 +583,7 @@ shared static immutable(string[IR_TRUNC_SAT]) trunc_sat_mnemonic;
 
 shared static this()
 {
-    with (IR)
+    with (IR_TRUNC_SAT)
     {
         trunc_sat_mnemonic = [
             I32_F32_S : "i32.trunc_sat_f32_s",
@@ -804,11 +807,17 @@ static assert(isInputRange!ExprRange);
 @safe struct ExprRange
 {
     immutable(ubyte[]) data;
+
     protected
     {
         size_t _index;
         int _level;
         IRElement current;
+        WasmException wasm_exception;
+    }
+
+    const(WasmException) exception() const pure nothrow @nogc {
+        return wasm_exception;
     }
 
     struct IRElement
@@ -822,12 +831,16 @@ static assert(isInputRange!ExprRange);
             const(Types)[] _types;
         }
 
-        static immutable(IRElement) unreachable;
+        enum unreachable   =
+            IRElement(
+                IR.UNREACHABLE
+                );
+        //static const(IRElement) unreachable;
 
-        shared static this() {
-            unreachable.code = IR.UNREACHABLE;
-            unreachable._warg = WasmArg.undefine;
-        };
+        // void unreachable() nothorw {
+        //     unreachable.code = IR.UNREACHABLE;
+        //     unreachable._warg = WasmArg.undefine;
+        // };
 
         const(WasmArg) warg() const pure nothrow
         {
@@ -852,9 +865,9 @@ static assert(isInputRange!ExprRange);
         set_front(current, _index);
     }
 
-    @safe protected void set_front(ref scope IRElement elm, ref size_t index)
+    @safe protected void set_front(ref scope IRElement elm, ref size_t index) pure nothrow
     {
-        @trusted void set(ref WasmArg warg, const Types type)
+        @trusted void set(ref WasmArg warg, const Types type) pure nothrow
         {
             with (Types)
             {
@@ -873,7 +886,9 @@ static assert(isInputRange!ExprRange);
                     warg = data.binpeek!(double, Endian.littleEndian)(&index);
                     break;
                 default:
-                    check(0, format("Assembler argument type not vaild as an argument %s", type));
+                    assumeWontThrow({
+                            wasm_exception = new WasmException(format("Assembler argument type not vaild as an argument %s", type));
+                        });
                 }
             }
         }
@@ -891,7 +906,7 @@ static assert(isInputRange!ExprRange);
                 case CODE:
                     break;
                 case PREFIX:
-                    _warg = int(data[index]); // Extened insruction
+                    elm._warg = int(data[index]); // Extened insruction
                     index+=ubyte.sizeof;
                     break;
                 case BLOCK:
@@ -920,7 +935,9 @@ static assert(isInputRange!ExprRange);
                 case CALL_INDIRECT:
                     // typeidx
                     set(elm._warg, Types.I32);
-                    check(data[index] == 0x00, "call_indirect should end with 0x00");
+                    if (!(data[index] == 0x00)) {
+                        wasm_exception = new WasmException( "call_indirect should end with 0x00");
+                    }
                     index += ubyte.sizeof;
                     break;
                 case LOCAL, GLOBAL:
@@ -971,7 +988,7 @@ static assert(isInputRange!ExprRange);
             {
                 index++;
             }
-            elm = IRElement.unreachable;
+            elm.code = IR.UNREACHABLE;
         }
     }
 
@@ -988,14 +1005,15 @@ static assert(isInputRange!ExprRange);
 
         bool empty() const
         {
-            return _index > data.length;
+            return _index > data.length || (wasm_exception !is null);
         }
 
-    }
 
-    void popFront()
+
+        void popFront()
         {
             set_front(current, _index);
         }
+    }
 
 }

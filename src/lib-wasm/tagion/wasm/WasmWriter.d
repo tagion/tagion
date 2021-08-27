@@ -442,10 +442,10 @@ import tagion.wasm.WasmException;
             {
                 struct FuncDesc
                 {
-                    uint typeidx;
+                    uint funcidx;
                     this(const(ReaderImportDesc.FuncDesc) f)
                     {
-                        typeidx = f.typeidx;
+                        funcidx = f.funcidx;
                     }
 
                     mixin Serialize;

@@ -82,6 +82,7 @@ struct WasmGas
                 {
                     final switch (instr.irtype)
                     {
+                    case PREFIX:
                     case CODE:
                         wasmexpr(elm.code);
                         break;

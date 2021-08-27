@@ -26,6 +26,7 @@ struct WasmExpr
         {
             final switch (irtype)
             {
+            case PREFIX:
             case CODE:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
