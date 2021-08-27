@@ -6,7 +6,7 @@ WAYS_PERSISTENT += $(DIR_SECP256K1_BUILD)/.way
 WAYS_PERSISTENT += $(DIR_SECP256K1_BUILD)/lib/.way
 WAYS_PERSISTENT += $(DIR_SECP256K1_SRC)/.libs/.way
 
-wrap/secp256k1: | ways wrap/openssl $(DIR_SECP256K1_BUILD)/lib/libsecp256k1.a
+wrap-secp256k1: | ways wrap-openssl $(DIR_SECP256K1_BUILD)/lib/libsecp256k1.a
 	${eval WRAPS += secp256k1}
 	${eval WRAPS_STATIC += $(DIR_SECP256K1_BUILD)/lib/libsecp256k1.a}
 
