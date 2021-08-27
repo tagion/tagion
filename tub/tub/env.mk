@@ -82,6 +82,12 @@ endif
 DIP25 := $(DIP)25
 DIP1000 := $(DIP)1000
 
+# Define D Improvement Proposals
+ifeq ($(COMPILER),ldc)
+DCFLAGS += $(DIP25)
+DCFLAGS += $(DIP1000)
+endif
+
 # Define relocation model for ldc or other
 ifeq ($(COMPILER),ldc)
 # FPIC = -relocation-model=pic
@@ -197,7 +203,6 @@ endif
 # 
 # Directories
 # 
-DIR_TUB_ROOT := ${realpath ${DIR_TUB}/../}
 DIR_BUILD := ${realpath ${DIR_TUB_ROOT}}/build/$(ARCH)
 DIR_SRC := ${realpath ${DIR_TUB_ROOT}}/src
 
