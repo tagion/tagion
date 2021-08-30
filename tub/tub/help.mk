@@ -10,11 +10,12 @@ help:
 	${call log.kvp, make add/public, Add all open-sourced modules}
 	${call log.kvp, make add/core, Add all core modules}
 	${call log.separator}
-	${call log.kvp, make lib/<specific>, Compile <specific> lib}
-	${call log.kvp, make bin/<specific>, Compile <specific> bin}
+	${call log.kvp, make libtagion<specific>, Compile <specific> lib}
+	${call log.kvp, make tagion<specific>, Compile <specific> bin}
 	${call log.kvp, make wrap-<specific>, Compile <specific> wrapper}
 	${call log.separator}
-	${call log.kvp, make libtest/<specific>, Compile and run <specific> lib test}
+	${call log.kvp, make runtest_libtagion<specific>, Compile and run <specific> lib test}
 	${call log.separator}
 	${call log.kvp, make clean, Clean build directory}
+	${call log.kvp, make clean-all, Clean build directory}
 	${call log.close}
