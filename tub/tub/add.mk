@@ -24,7 +24,7 @@ add/core: add/lib-basic\
 			  add/lib-monitor\
 			  add/lib-logger\
 			  add/lib-options\
-			  add/bin-node\
+			  add/bin-origin\
 			  add/bin-wasmutil\
 			  add/wrap-secp256k1\
 			  add/wrap-openssl\
