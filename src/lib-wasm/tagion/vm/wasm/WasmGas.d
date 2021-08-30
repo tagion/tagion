@@ -1,17 +1,17 @@
-module tagion.vm.wasm.WasmGas;
+module tagion.wasm.WasmGas;
 
-import tagion.vm.wasm.WasmWriter;
-import tagion.vm.wasm.WasmBase;
-import tagion.vm.wasm.WasmExpr;
+import tagion.wasm.WasmWriter;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmExpr;
 import tagion.utils.LEB128;
 
-import std.traits: Unqual, TemplateArgsOf, PointerTarget, EnumMembers;
-import std.meta: staticMap;
+import std.traits : Unqual, TemplateArgsOf, PointerTarget, EnumMembers;
+import std.meta : staticMap;
 import std.outbuffer;
-import std.typecons: Tuple;
-import std.algorithm.comparison: max;
-import std.algorithm.iteration: map;
-import std.array: array;
+import std.typecons : Tuple;
+import std.algorithm.comparison : max;
+import std.algorithm.iteration : map;
+import std.array : array;
 import std.format;
 
 // import std.stdio;
@@ -72,6 +72,7 @@ struct WasmGas {
                 expr.popFront;
                 with (IRType) {
                     final switch (instr.irtype) {
+                    case PREFIX:
                     case CODE:
                         wasmexpr(elm.code);
                         break;
@@ -190,10 +191,22 @@ struct WasmGas {
             CodeType code_type;
             {
                 scope out_expr = new OutBuffer;
-                WasmExpr(out_expr)(IR.LOCAL_SET, 0)(IR.GLOBAL_GET, global_idx)(IR.I32_CONST, 0)(
-                        IR.I32_GT_S)(IR.IF, Types.EMPTY)(IR.GLOBAL_GET, global_idx)(IR.LOCAL_GET, 0)(
-                        IR.I32_SUB)(IR.GLOBAL_SET, global_idx)(IR.ELSE)(IR.UNREACHABLE)(IR.END)(
-                        IR.END);
+                // dfmt off
+                WasmExpr(out_expr)
+                    (IR.LOCAL_SET, 0)
+                    (IR.GLOBAL_GET, global_idx)
+                    (IR.I32_CONST, 0)
+                    (IR.I32_GT_S)
+                    (IR.IF, Types.EMPTY)
+                    (IR.GLOBAL_GET, global_idx)
+                    (IR.LOCAL_GET, 0)
+                    (IR.I32_SUB)
+                    (IR.GLOBAL_SET, global_idx)
+                    (IR.ELSE)
+                    (IR.UNREACHABLE)
+                    (IR.END)
+                    (IR.END);
+                // dfmt on
                 immutable expr = out_expr.toBytes.idup;
                 code_type = CodeType([CodeType.Local(1, Types.I32)], expr);
             }
@@ -216,33 +229,45 @@ struct WasmGas {
             CodeType code_type;
             {
                 scope out_expr = new OutBuffer;
-                WasmExpr(out_expr) // void $set_gas_gauge(i32 $gas)
-                        //   if ( $gas_gauge != 0) {
-                        (IR.GLOBAL_GET, global_idx)(IR.I32_EQZ)(IR.IF, Types.EMPTY) //       exit;
-                        (IR.UNREACHABLE) //   } else {
-                        (IR.ELSE) //     $gas_gauge=$gas;
-                        (IR.GLOBAL_SET, global_idx) //   }
-                        (IR.END) //}
-                        (IR.END);
-                immutable expr = out_expr.toBytes.idup;
-                code_type = CodeType([CodeType.Local(1, Types.I32)], expr);
+                // dfmt off
+                WasmExpr(out_expr)
+                    // void $set_gas_gauge(i32 $gas)
+                    //   if ( $gas_gauge != 0) {
+                    (IR.GLOBAL_GET, global_idx)(IR.I32_EQZ)(IR.IF, Types.EMPTY)
+                    //       exit;
+                    (IR.UNREACHABLE)
+                    //   } else {
+                    (IR.ELSE)
+                    //     $gas_gauge=$gas;
+                    (IR.GLOBAL_SET, global_idx)
+                    //   }
+                    (IR.END)
+                    //}
+                    (IR.END);
+                // dfmt off
+                immutable expr=out_expr.toBytes.idup;
+                code_type=CodeType([CodeType.Local(1, Types.I32)] , expr);
             }
-            const code_idx = inject(code_type);
+            const code_idx=inject(code_type);
 
-            ExportType export_type = ExportType(set_gas_gauge, func_idx);
-            const export_idx = inject(export_type);
+            ExportType export_type=ExportType(set_gas_gauge, func_idx);
+            const export_idx=inject(export_type);
         }
         { // read_gas_gauge
-            FuncType func_type = FuncType(Types.FUNC, null, [Types.I32]);
-            const type_idx = inject(func_type);
+            FuncType func_type=FuncType(Types.FUNC, null, [Types.I32]);
+            const type_idx=inject(func_type);
 
-            Index func_index = Index(type_idx); //Types.FUNC, [Types.I32], null);
-            const func_idx = inject(func_index);
+            Index func_index=Index(type_idx); //Types.FUNC, [Types.I32], null);
+            const func_idx=inject(func_index);
 
             CodeType code_type;
             {
-                scope out_expr = new OutBuffer;
-                WasmExpr(out_expr)(IR.GLOBAL_GET, global_idx)(IR.END);
+                scope out_expr=new OutBuffer;
+                // dfmt off
+                WasmExpr(out_expr)
+                    (IR.GLOBAL_GET, global_idx)
+                    (IR.END);
+                // dfmt on
                 immutable expr = out_expr.toBytes.idup;
                 code_type = CodeType(null, expr);
             }
@@ -257,15 +282,14 @@ struct WasmGas {
 version (none) unittest {
     import std.stdio;
     import std.file;
-    import std.exception: assumeUnique;
-    import tagion.vm.wasm.Wast;
-    import tagion.vm.wasm.WasmReader;
+    import std.exception : assumeUnique;
+    import tagion.wasm.Wast;
+    import tagion.wasm.WasmReader;
 
     //      import std.file : fread=read, fwrite=write;
 
-    @trusted
-    static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file: _read = read;
+    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
+        import std.file : _read = read;
 
         auto data = cast(ubyte[]) _read(name, upTo);
         // writefln("read data=%s", data);

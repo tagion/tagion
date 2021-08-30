@@ -1,35 +1,32 @@
-module tagion.vm.wasm.Wast;
+module tagion.wasm.Wast;
 
 import std.format;
 import std.stdio;
-import std.traits: EnumMembers, PointerTarget, ConstOf, ForeachType;
-import std.typecons: Tuple;
-import std.uni: toLower;
-import std.conv: to;
-import std.range.primitives: isOutputRange;
-import std.range: StoppingPolicy, lockstep, enumerate;
+import std.traits : EnumMembers, PointerTarget, ConstOf, ForeachType;
+import std.typecons : Tuple;
+import std.uni : toLower;
+import std.conv : to;
+import std.range.primitives : isOutputRange;
+import std.range : StoppingPolicy, lockstep, enumerate;
 
-import tagion.vm.wasm.WasmReader;
-import tagion.vm.wasm.WasmBase;
-import tagion.vm.wasm.WasmException;
+import tagion.wasm.WasmReader;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmException;
 import tagion.basic.TagionExceptions;
 
-@safe
-class WastException : WasmException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+@safe class WastException : WasmException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
 }
 
 alias check = Check!WastException;
 
-@safe
-WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) {
+@safe WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) {
     return new WastT!(Output)(wasmreader, output);
 }
 
-@safe
-class WastT(Output) : WasmReader.InterfaceModule {
+@safe class WastT(Output) : WasmReader.InterfaceModule {
     alias Sections = WasmReader.Sections;
     //alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     //alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
@@ -140,28 +137,28 @@ class WastT(Output) : WasmReader.InterfaceModule {
                 final switch (desc) {
                 case FUNC:
                     const _funcdesc = imp.importdesc.get!FUNC;
-                    return format("(%s (;%d;) (type %d))", indexName(desc), index, _funcdesc
-                            .typeidx);
+                    return format("(%s (;%d;) (func %d))", indexName(desc),
+                            index, _funcdesc.funcidx);
                 case TABLE:
                     const _tabledesc = imp.importdesc.get!TABLE;
-                    return format("(%s (;%d;) %s %s)", indexName(desc), index, limitToString(
-                            _tabledesc.limit), typesName(_tabledesc.type));
+                    return format("(%s (;%d;) %s %s)", indexName(desc), index,
+                            limitToString(_tabledesc.limit), typesName(_tabledesc.type));
                 case MEMORY:
                     const _memorydesc = imp.importdesc.get!MEMORY;
-                    return format("(%s(;%d;)  %s %s)", indexName(desc), index, limitToString(
-                            _memorydesc.limit));
+                    return format("(%s(;%d;)  %s %s)", indexName(desc), index,
+                            limitToString(_memorydesc.limit));
                 case GLOBAL:
                     const _globaldesc = imp.importdesc.get!GLOBAL;
-                    return format("(%s (;%d;) %s)", indexName(desc), index, globalToString(
-                            _globaldesc));
+                    return format("(%s (;%d;) %s)", indexName(desc), index,
+                            globalToString(_globaldesc));
                 }
             }
         }
 
         foreach (i, imp; _import[].enumerate) {
             //            output.writefln("imp=%s", imp);
-            output.writefln(`%s(import "%s" "%s" %s)`,
-                    indent, imp.mod, imp.name, importdesc(imp, i));
+            output.writefln(`%s(import "%s" "%s" %s)`, indent, imp.mod,
+                    imp.name, importdesc(imp, i));
         }
     }
 
@@ -177,8 +174,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
     void table_sec(ref const(Table) _table) {
         //        auto _table=*mod[Section.TABLE];
         foreach (i, t; _table[].enumerate) {
-            output.writefln("%s(table (;%d;) %s %s)", indent, i, limitToString(t.limit), typesName(
-                    t.type));
+            output.writefln("%s(table (;%d;) %s %s)", indent, i,
+                    limitToString(t.limit), typesName(t.type));
         }
     }
 
@@ -205,8 +202,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
     void export_sec(ref const(Export) _export) {
         //        auto _export=*mod[Section.EXPORT];
         foreach (exp; _export[]) {
-            output.writefln(`%s(export "%s" (%s %d))`, indent, exp.name, indexName(exp.desc), exp
-                    .idx);
+            output.writefln(`%s(export "%s" (%s %d))`, indent, exp.name,
+                    indexName(exp.desc), exp.idx);
         }
 
     }
@@ -233,8 +230,7 @@ class WastT(Output) : WasmReader.InterfaceModule {
     }
 
     alias Code = Sections[Section.CODE];
-    @trusted
-    void code_sec(ref const(Code) _code) {
+    @trusted void code_sec(ref const(Code) _code) {
         foreach (f, c; lockstep(_function[], _code[], StoppingPolicy.requireSameLength)) {
             auto expr = c[];
             output.writefln("%s(func (type %d)", indent, f.idx);
@@ -266,7 +262,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
         }
     }
 
-    private const(ExprRange.IRElement) block(ref ExprRange expr, const(string) indent, const uint level = 0) {
+    private const(ExprRange.IRElement) block(ref ExprRange expr,
+            const(string) indent, const uint level = 0) {
         //        immutable indent=base_indent~spacer;
         string block_comment;
         uint block_count;
@@ -294,10 +291,14 @@ class WastT(Output) : WasmReader.InterfaceModule {
                 case CODE:
                     output.writefln("%s%s", indent, instr.name);
                     break;
+                case PREFIX:
+                    output.writefln("%s%s", indent, instr.name);
+                    break;
                 case BLOCK:
                     block_comment = format(";; block %d", block_count);
                     block_count++;
-                    output.writefln("%s%s%s %s", indent, instr.name, block_result_type(elm.types[0]), block_comment);
+                    output.writefln("%s%s%s %s", indent, instr.name,
+                            block_result_type(elm.types[0]), block_comment);
                     const end_elm = block(expr, indent ~ spacer, level + 1);
                     const end_instr = instrTable[end_elm.code];
                     output.writefln("%s%s", indent, end_instr.name);
@@ -307,7 +308,8 @@ class WastT(Output) : WasmReader.InterfaceModule {
                     if (end_elm.code is IR.ELSE) {
                         const endif_elm = block(expr, indent ~ spacer, level + 1);
                         const endif_instr = instrTable[endif_elm.code];
-                        output.writefln("%s%s %s count=%d", indent, endif_instr.name, block_comment, count);
+                        output.writefln("%s%s %s count=%d", indent,
+                                endif_instr.name, block_comment, count);
                     }
                     break;
                 case BRANCH:
@@ -389,13 +391,12 @@ class WastT(Output) : WasmReader.InterfaceModule {
 version (none) unittest {
     import std.stdio;
     import std.file;
-    import std.exception: assumeUnique;
+    import std.exception : assumeUnique;
 
     //      import std.file : fread=read, fwrite=write;
 
-    @trusted
-    static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file: _read = read;
+    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
+        import std.file : _read = read;
 
         auto data = cast(ubyte[]) _read(name, upTo);
         // writefln("read data=%s", data);

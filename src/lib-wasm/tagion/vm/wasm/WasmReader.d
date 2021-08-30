@@ -1,26 +1,24 @@
-module tagion.vm.wasm.WasmReader;
+module tagion.wasm.WasmReader;
 
 import std.format;
-import tagion.vm.wasm.WasmException;
-import tagion.vm.wasm.WasmBase;
+import tagion.wasm.WasmException;
+import tagion.wasm.WasmBase;
 
-//import std.stdio;
-import std.meta: AliasSeq;
-import std.traits: EnumMembers, getUDAs, Unqual, PointerTarget, ForeachType;
+import std.meta : AliasSeq;
+import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget, ForeachType;
 
-import std.bitmanip: binread = read, binwrite = write, peek, Endian;
+import std.bitmanip : binread = read, binwrite = write, peek, Endian;
 
-import std.range.primitives: isInputRange;
+import std.range.primitives : isInputRange, isForwardRange, isRandomAccessRange;
 
-import std.conv: to, emplace;
-import std.uni: toLower;
-import std.exception: assumeUnique;
-import std.array: join;
-import std.range: enumerate;
+import std.conv : to, emplace;
+import std.uni : toLower;
+import std.exception : assumeUnique;
+import std.array : join;
+import std.range : enumerate;
 import std.format;
 
-@safe
-struct WasmReader {
+@safe struct WasmReader {
     protected {
         immutable(ubyte)[] _data;
     }
@@ -39,8 +37,7 @@ struct WasmReader {
 
     alias InterfaceModule = InterfaceModuleT!(Sections);
 
-    @trusted
-    void opCall(InterfaceModule iter) const {
+    @trusted void opCall(InterfaceModule iter) const {
         auto range = opSlice;
         verbose("WASM '%s'", range.magic);
         verbose("VERSION %d", range.vernum);
@@ -52,7 +49,6 @@ struct WasmReader {
                 final switch (a.section) {
                     foreach (E; EnumMembers!(Section)) {
                 case E:
-                        //                        verbose("E=%s a=%s", E, a);
                         const sec = a.sec!E;
                         verbose("Begin(%d)", range.index);
                         verbose.down;
@@ -75,7 +71,7 @@ struct WasmReader {
         Limits lim;
         uint from;
         uint to;
-        this(immutable(ubyte[]) data, ref size_t index) {
+        this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
             lim = cast(Limits) data[index];
             index += Limits.sizeof;
             from = u32(data, index);
@@ -94,8 +90,7 @@ struct WasmReader {
         }
     }
 
-    @trusted
-    static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
+    @trusted static immutable(T[]) Vector(T)(immutable(ubyte[]) data, ref size_t index) {
         immutable len = u32(data, index);
         static if (T.sizeof is ubyte.sizeof) {
             immutable vec_mem = data[index .. index + len * T.sizeof];
@@ -117,13 +112,15 @@ struct WasmReader {
     }
 
     static assert(isInputRange!WasmRange);
+    static assert(isForwardRange!WasmRange);
+    //static assert(isRandomAccessRange!WasmRange);
 
-    struct WasmRange {
+    @safe struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
         immutable(string) magic;
         immutable(uint) vernum;
-        this(immutable(ubyte[]) data) {
+        this(immutable(ubyte[]) data) pure nothrow @nogc @trusted {
             this.data = data;
             magic = cast(string)(data[0 .. uint.sizeof]);
             _index = uint.sizeof;
@@ -132,36 +129,55 @@ struct WasmReader {
             _index = 2 * uint.sizeof;
         }
 
-        @property bool empty() const pure nothrow {
-            return _index >= data.length;
+        @nogc pure nothrow {
+            bool empty() const {
+                return _index >= data.length;
+            }
+
+            WasmSection front() const {
+                return WasmSection(data[_index .. $]);
+            }
+
+            void popFront() {
+                _index += Section.sizeof;
+                const size = u32(data, _index);
+                _index += size;
+            }
+
+            WasmRange save() {
+                WasmRange result = this;
+                return result;
+            }
+
+            WasmSection opIndex(const size_t index) const
+            in {
+                assert(index < EnumMembers!(Section).length);
+            }
+            do {
+                auto index_range = WasmRange(data);
+                foreach (i; 0 .. EnumMembers!(Section).length) {
+                    if (i is index) {
+                        return index_range.front;
+                    }
+                    index_range.popFront;
+                }
+                assert(0);
+            }
+
+            size_t index() const {
+                return _index;
+            }
         }
 
-        @property WasmSection front() const pure {
-            return WasmSection(data[_index .. $]);
-        }
-
-        @property void popFront() {
-            size_t u32_size;
-            _index += Section.sizeof;
-            const size = u32(data, _index);
-            _index += size;
-        }
-
-        @property size_t index() const pure nothrow {
-            return _index;
-        }
-
-        struct WasmSection {
+        @nogc struct WasmSection {
             immutable(ubyte[]) data;
             immutable(Section) section;
 
-            this(immutable(ubyte[]) data) pure {
+            this(immutable(ubyte[]) data) @nogc pure nothrow {
                 section = cast(Section) data[0];
                 size_t index = Section.sizeof;
                 const size = u32(data, index);
                 this.data = data[index .. index + size];
-
-                //                debug writefln("section=%s %s", section, data[0..index+size]);
             }
 
             auto sec(Section S)()
@@ -170,54 +186,65 @@ struct WasmReader {
             }
             do {
                 alias T = Sections[S];
-                // static if (S is Section.CUSTOM) {
-                //     return new ForeachType!(T)(data);
-                // }
-                // else {
                 return new T(data);
-                // }
             }
 
-            struct VectorRange(ModuleSection, Element) {
+            @nogc struct VectorRange(ModuleSection, Element) {
                 const ModuleSection owner;
                 protected size_t pos;
                 protected uint index;
-                this(const ModuleSection owner) {
+                this(const ModuleSection owner) pure nothrow {
                     this.owner = owner;
                 }
 
-                @property Element front() const {
-                    return Element(owner.data[pos .. $]);
-                }
+                pure nothrow {
+                    Element front() const {
+                        return Element(owner.data[pos .. $]);
+                    }
 
-                @property bool empty() const pure nothrow {
-                    return index >= owner.length;
-                }
+                    bool empty() const {
+                        return index >= owner.length;
+                    }
 
-                @property void popFront() {
-                    pos += front.size;
-                    index++;
+                    void popFront() {
+                        pos += front.size;
+                        index++;
+                    }
+
+                    VectorRange save() {
+                        VectorRange result = this;
+                        return result;
+                    }
+
+                }
+                const(Element) opIndex(const size_t index) pure const {
+                    auto range = VectorRange(owner);
+                    foreach (i, ref e; range.enumerate) {
+                        if (i is index) {
+                            return e;
+                        }
+                    }
+                    throw new WasmException(format!"Index %d out of range"(index));
                 }
             }
 
             static class SectionT(SecType) {
                 immutable uint length;
                 immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) @nogc pure nothrow {
                     size_t index;
                     length = u32(data, index);
                     this.data = data[index .. $];
                 }
 
-                static assert(isInputRange!SecRange);
+                // static assert(isInputRange!SecRange);
+                // static assert(isForwardRange!SecRange);
                 alias SecRange = VectorRange!(SectionT, SecType);
-
                 SecRange opSlice() const {
                     return SecRange(this);
                 }
 
-                @trusted
-                override string toString() const {
+                @trusted override string toString() const {
                     string[] result;
                     foreach (i, sec; opSlice.enumerate) {
                         result ~= format("\t%3d %s", i, sec).idup;
@@ -243,7 +270,7 @@ struct WasmReader {
                 immutable(Types[]) params;
                 immutable(Types[]) results;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     type = cast(Types) data[0];
                     size_t index = Types.sizeof;
                     params = Vector!Types(data, index);
@@ -261,16 +288,16 @@ struct WasmReader {
                 immutable(size_t) size;
                 struct ImportDesc {
                     struct FuncDesc {
-                        uint typeidx;
-                        this(immutable(ubyte[]) data, ref size_t index) {
-                            typeidx = u32(data, index);
+                        uint funcidx;
+                        this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
+                            funcidx = u32(data, index);
                         }
                     }
 
                     struct TableDesc {
                         Types type;
                         Limit limit;
-                        this(immutable(ubyte[]) data, ref size_t index) {
+                        this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
                             type = cast(Types) data[index];
                             index += Types.sizeof;
                             limit = Limit(data, index);
@@ -279,7 +306,7 @@ struct WasmReader {
 
                     struct MemoryDesc {
                         Limit limit;
-                        this(immutable(ubyte[]) data, ref size_t index) {
+                        this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
                             limit = Limit(data, index);
                         }
                     }
@@ -287,7 +314,7 @@ struct WasmReader {
                     struct GlobalDesc {
                         Types type;
                         Mutable mut;
-                        this(immutable(ubyte[]) data, ref size_t index) {
+                        this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
                             type = cast(Types) data[index];
                             index += Types.sizeof;
                             mut = cast(Mutable) data[index];
@@ -321,7 +348,7 @@ struct WasmReader {
                         return _desc;
                     }
 
-                    this(immutable(ubyte[]) data, ref size_t index) {
+                    this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
                         _desc = cast(IndexType) data[index];
                         index += IndexType.sizeof;
                         with (IndexType) {
@@ -344,7 +371,7 @@ struct WasmReader {
 
                 }
 
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     mod = Vector!char(data, index);
                     name = Vector!char(data, index);
@@ -359,7 +386,7 @@ struct WasmReader {
             struct Index {
                 immutable(uint) idx;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     idx = u32(data, index);
                     size = index;
@@ -372,7 +399,7 @@ struct WasmReader {
                 immutable(Types) type;
                 immutable(Limit) limit;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     type = cast(Types) data[0];
                     size_t index = Types.sizeof;
                     limit = Limit(data, index);
@@ -386,7 +413,7 @@ struct WasmReader {
             struct MemoryType {
                 immutable(Limit) limit;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     limit = Limit(data, index);
                     size = index;
@@ -399,14 +426,13 @@ struct WasmReader {
                 immutable(ImportType.ImportDesc.GlobalDesc) global;
                 immutable(ubyte[]) expr;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     global = ImportType.ImportDesc.GlobalDesc(data, index);
                     auto range = ExprRange(data[index .. $]);
                     while (!range.empty) {
                         const elm = range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            //   range.popFront;
                             break;
                         }
                         range.popFront;
@@ -428,7 +454,7 @@ struct WasmReader {
                 immutable(IndexType) desc;
                 immutable(uint) idx;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     name = Vector!char(data, index);
                     desc = cast(IndexType) data[index];
@@ -453,21 +479,20 @@ struct WasmReader {
                 immutable(ubyte[]) expr;
                 immutable(uint[]) funcs;
                 immutable(size_t) size;
-                static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data) {
+                static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data) pure nothrow {
                     auto range = ExprRange(data);
                     while (!range.empty) {
                         const elm = range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            //range.popFront;
                             return data[0 .. range.index];
                         }
                         range.popFront;
                     }
-                    check(0, format("Expression in Element section expected an end code"));
+                    //check(0, format("Expression in Element section expected an end code"));
                     assert(0);
                 }
 
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     tableidx = u32(data, index);
                     expr = exprBlock(data[index .. $]);
@@ -486,7 +511,7 @@ struct WasmReader {
             struct CodeType {
                 immutable size_t size;
                 immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data, ref size_t index) {
+                this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
                     size = u32(data, index);
                     this.data = data[index .. index + size];
                 }
@@ -494,15 +519,14 @@ struct WasmReader {
                 struct Local {
                     uint count;
                     Types type;
-                    this(immutable(ubyte[]) data, ref size_t index) pure {
-                        // debug writefln("index=%d data=%s", index, data[index..$]);
+                    this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
                         count = u32(data, index);
                         type = cast(Types) data[index];
                         index += Types.sizeof;
                     }
                 }
 
-                LocalRange locals() const {
+                LocalRange locals() const pure nothrow {
                     return LocalRange(data);
                 }
 
@@ -516,13 +540,13 @@ struct WasmReader {
                     }
 
                     protected Local _local;
-                    this(immutable(ubyte[]) data) {
+                    this(immutable(ubyte[]) data) pure nothrow {
                         length = u32(data, index);
                         this.data = data;
                         popFront;
                     }
 
-                    protected void set_front(ref size_t local_index) {
+                    protected void set_front(ref size_t local_index) pure nothrow {
                         _local = Local(data, local_index);
                     }
 
@@ -535,7 +559,7 @@ struct WasmReader {
                             return (j > length);
                         }
 
-                        void popFront() {
+                        void popFront() pure nothrow {
                             if (j < length) {
                                 set_front(index);
                             }
@@ -552,7 +576,7 @@ struct WasmReader {
                     return ExprRange(data[range.index .. $]);
                 }
 
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     auto byte_size = u32(data, index);
                     this.data = data[index .. index + byte_size];
@@ -570,14 +594,13 @@ struct WasmReader {
                 immutable(char[]) base; // init value
                 immutable(size_t) size;
 
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     idx = u32(data, index);
                     auto range = ExprRange(data[index .. $]);
                     while (!range.empty) {
                         const elm = range.front;
                         if ((elm.code is IR.END) && (elm.level == 0)) {
-                            // range.popFront;
                             break;
                         }
                         range.popFront;
@@ -601,35 +624,17 @@ struct WasmReader {
     version (none) unittest {
         import std.stdio;
         import std.file;
-        import std.exception: assumeUnique;
+        import std.exception : assumeUnique;
 
-        //      import std.file : fread=read, fwrite=write;
-
-        @trusted
-        static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-            import std.file: _read = read;
+        @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
+            import std.file : _read = read;
 
             auto data = cast(ubyte[]) _read(name, upTo);
-            // writefln("read data=%s", data);
             return assumeUnique(data);
         }
 
         writeln("WAVM Started");
         {
-            //string filename="../tests/simple/simple.wasm";
-            //string filename="../tests/wasm/custom_1.wasm";
-            //string filename="../tests/wasm/func_2.wasm";
-            //string filename="../tests/wasm/table_copy_2.wasm"; //../tests/wasm/func_2.wasm";
-            //            string filename="../tests/wasm/memory_4.wasm"; //../tests/wasm/func_2.wasm";
-            //string filename="../tests/wasm/global_1.wasm";
-            //            string filename="../tests/wasm/start_4.wasm";
-            //            string filename="../tests/wasm/memory_1.wasm";
-            //string filename="../tests/wasm/memory_9.wasm";
-            //            string filename="../tests/wasm/global_1.wasm";
-            //            string filename="../tests/wasm/imports_2.wasm";
-            //string filename="../tests/wasm/table_copy_2.wasm";
-            string filename = "../tests/wasm/func_1.wasm";
-
             immutable code = fread(filename);
             auto wasm = Wasm(code);
             auto range = wasm[];
@@ -639,142 +644,58 @@ struct WasmReader {
                 writefln("%s length=%d data=%s", a.section, a.data.length, a.data);
                 if (a.section == Section.TYPE) {
                     auto _type = a.sec!(Section.TYPE);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Type types length %d %s", _type.length, _type[]);
                 }
                 else if (a.section == Section.IMPORT) {
                     auto _import = a.sec!(Section.IMPORT);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Import types length %d %s", _import.length, _import[]);
                 }
                 else if (a.section == Section.EXPORT) {
                     auto _export = a.sec!(Section.EXPORT);
-                    //                    writefln("Function types %s", _type.func_types);
-                    //                    writefln("export %s", _export.data);
                     writefln("Export types length %d %s", _export.length, _export[]);
                 }
                 else if (a.section == Section.FUNCTION) {
                     auto _function = a.sec!(Section.FUNCTION);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Function types length %d %s", _function.length, _function[]);
                 }
                 else if (a.section == Section.TABLE) {
                     auto _table = a.sec!(Section.TABLE);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Table types length %d %s", _table.length, _table[]);
-                    //                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.MEMORY) {
                     auto _memory = a.sec!(Section.MEMORY);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Memory types length %d %s", _memory.length, _memory[]);
-                    //                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.GLOBAL) {
                     auto _global = a.sec!(Section.GLOBAL);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Global types length %d %s", _global.length, _global[]);
-                    //                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.START) {
                     auto _start = a.sec!(Section.START);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Start types %s", _start);
-                    //                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.ELEMENT) {
                     auto _element = a.sec!(Section.ELEMENT);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Element types %s", _element);
-                    //                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.CODE) {
                     auto _code = a.sec!(Section.CODE);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Code types length=%s", _code.length);
                     foreach (c; _code[]) {
-                        writefln("c.size=%d c.data.length=%d c.locals=%s c[]=%s", c.size, c.data.length, c.locals, c[]);
+                        writefln("c.size=%d c.data.length=%d c.locals=%s c[]=%s",
+                                c.size, c.data.length, c.locals, c[]);
                     }
-                    //                    writefln("Table types %s", _table);
                 }
                 else if (a.section == Section.DATA) {
                     auto _data = a.sec!(Section.DATA);
-                    //                    writefln("Function types %s", _type.func_types);
                     writefln("Data types length=%s", _data.length);
                     foreach (d; _data[]) {
-                        writefln("d.size=%d d.data.length=%d d.lodals=%s d[]=%s", d.size, d.init.length, d.init, d[]);
+                        writefln("d.size=%d d.data.length=%d d.lodals=%s d[]=%s",
+                                d.size, d.init.length, d.init, d[]);
                     }
-                    //                    writefln("Table types %s", _table);
                 }
             }
 
         }
     }
 }
-/+
-
-param-len
-|  return-len
-| i32 |
-|  |  |
-00000000  00 61 73 6d 01 00 00 00  01 08 02 60 01 7f 00 60  |.asm.......`...`|
-|  |     |          |
-magic       version   typesec|   func        func
-pack-len
-
-import
-|      len i  m   p  o  qq t  s len i  m
-00000010  00 00|02 19 01 07 69 6d  70 6f 72 74 73 0d 69 6d  |......imports.im|
-len |
-25 num-imports
-typeidx
-| end-19
-p  o  r  t  e  d  _  f  u   n  c     | |
-00000020  70 6f 72 74 65 64 5f 66  75 6e 63|00 00|03 02 01  |ported_func.....|
-|  funcsec
-import-type-func
-
-len-export
-|   len e  x  p   o  r  t  e  d  _  f  u
-00000030  01 07 11 01 0d 65 78 70  6f 72 74 65 64 5f 66 75  |.....exported_fu|
-|
-export
-
-export-end             42   $i end
-n  c       |                    |    |  |
-00000040  6e 63 00 01|0a 08 01 06  00 41 2a 10 00 0b|       |nc.......A*...|
-|   |           |   call      |
-code  |       i32.const         |
-code-len                 code-end
-
-+/
-
-/+
- 00000000  00 61 73 6d 01 00 00 00  01 0d 03 60 00 01 7f 60  |.asm.......`...`|
- 00000010  00 00 60 01 7f 01 7f 02  29 05 01 61 03 65 66 30  |..`.....)..a.ef0|
- 00000020  00 00 01 61 03 65 66 31  00 00 01 61 03 65 66 32  |...a.ef1...a.ef2|
- 00000030  00 00 01 61 03 65 66 33  00 00 01 61 03 65 66 34  |...a.ef3...a.ef4|
- 00000040  00 00 03 08 07 00 00 00  00 00 01 02 04 05 01 70  |...............p|
- 00000050  01 1e 1e 07 10 02 04 74  65 73 74 00 0a 05 63 68  |.......test...ch|
- 00000060  65 63 6b 00 0b 09 23 04  00 41 02 0b 04 03 01 04  |eck...#..A......|
- 00000070  01 01 00 04 02 07 01 08  00 41 0c 0b 05 07 05 02  |.........A......|
- 00000080  03 06 01 00 05 05 09 02  07 06 0a 26 07 04 00 41  |...........&...A|
- 00000090  05 0b 04 00 41 06 0b 04  00 41 07 0b 04 00 41 08  |....A....A....A.|
- 000000a0  0b 04 00 41 09 0b 03 00  01 0b 07 00 20 00 11 00  |...A........ ...|
- 000000b0  00 0b                                             |..|
- 000000b2
- +/
-
-/++     i32.const                                       end           n:32               bytesize    u:32
- bytesize |        n32   from to    n:32   i32.store8  |   len-locals|    from to    end  |    call |     u:32   u:32
- len  |      |         |      |   |     |        |        |      |      |      |  |      |   |      |  |      |      |
- [3, 15, 0, 65, 0, 65, 0, 45, 0, 0, 65, 1, 106, 58, 0, 0, 11, 8, 0, 65, 0, 45, 0, 0, 15, 11, 8, 0, 16, 0, 16, 0, 16, 0, 11]
- |    n:32  |     |         |       |       |  |      |      |      |         |         |          |     |     end
- |          |  i32.load8_u  |   i32.add   from to   bytesize |      |       return   len-local   call   call
- len-locals    |           i32.const                        i32.const  |
- i32.const                                                  i32.load8_u
- +/
-
-/+
- Type types length 14 [(type (func)), (type (func)), (type (func(param i32))), (type (func(param i32))), (type (func (results i32))), (type (func(param i32) (results i32))), (type (func(param i32) (results i32))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64))), (type (func(param f32 f64 i32 f64 i32 i32))), (type (func(param f32 f64 i32)))]
- +/

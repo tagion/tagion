@@ -1,30 +1,30 @@
-module tagion.vm.wasm.WasmWriter;
+module tagion.wasm.WasmWriter;
 
 import std.outbuffer;
-import std.bitmanip: nativeToLittleEndian;
-import std.traits: isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual, TemplateArgsOf, PointerTarget, getUDAs, hasUDA, isPointer, ConstOf, ForeachType;
-import std.typecons: Tuple;
+import std.bitmanip : nativeToLittleEndian;
+import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
+    TemplateArgsOf, PointerTarget, getUDAs, hasUDA, isPointer, ConstOf, ForeachType;
+import std.typecons : Tuple;
 import std.format;
-import std.algorithm.iteration: each, map, sum, fold, filter;
-import std.range.primitives: isInputRange;
+import std.algorithm.iteration : each, map, sum, fold, filter;
+import std.range.primitives : isInputRange;
 
 //import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
-import std.meta: staticMap, Replace;
-import std.exception: assumeUnique;
-import std.range: lockstep;
-import std.array: join;
+import std.meta : staticMap, Replace;
+import std.exception : assumeUnique;
+import std.range : lockstep;
+import std.array : join;
 
 import std.stdio;
 
-import tagion.utils.LEB128: encode;
-import tagion.vm.wasm.WasmBase;
-import tagion.vm.wasm.WasmReader;
-import tagion.vm.wasm.WasmException;
+import tagion.utils.LEB128 : encode;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmReader;
+import tagion.wasm.WasmException;
 
 //import wavm.Wdisasm;
 
-@safe
-class WasmWriter {
+@safe class WasmWriter {
 
     alias ReaderSections = WasmReader.Sections;
 
@@ -41,33 +41,6 @@ class WasmWriter {
     alias InterfaceModule = InterfaceModuleT!(Sections);
 
     alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
-
-    // alias X=Sections[
-    // protected static string GenerateModules(T...)() {
-    //     string[] results;
-    //     results~="alix1as Modules=Tuple!(";
-    //     foreach(i, E; EnumMembers!Section) {
-    //         static if (E is Section.CUSTOM) {
-    //             results~=q{WasmSection.CustomList,};
-    //         }
-    //         else {
-
-    //             results~=format(q{WasmSection.%s,}, T[i].stringof);
-    //         }
-    //     }
-    //     results~=");";
-    //     return results.join("\n");
-    // }
-
-    //    enum code=GenerateModules!Sections;
-    // pragma(msg, code);
-    // mixin(code);
-    // Tuple!(
-    //     WasmSection.CustomList
-    //     // Sections[Section.TYPE],
-    //     // Sections[Section.IMPORT],
-    //     // Sections[Section.IMPORT],
-    //     );
 
     Modules mod;
     this(ref const(WasmReader) reader) {
@@ -103,8 +76,7 @@ class WasmWriter {
     // alias getType(Section sec)=WasmSection.Sections.Types[sec];
 
     mixin template loadSec(Section sec_type) {
-        enum code = format(
-                    q{
+        enum code = format(q{
                 final void %s(ref ConstOf!(ReaderSections[Section.%s]) sec) {
                     enum sec_type=Section.%s;
                     previous_sec=sec_type;
@@ -182,10 +154,10 @@ class WasmWriter {
         foreach (E; EnumMembers!Section) {
             //static if (E is Section.CUSTOM) {
             //            if (mod[Section.CUSTOM][previous_sec]e.length) {
-            writefln("mod[Section.CUSTOM] %s ", mod[Section.CUSTOM]);
-            writefln("mod[Section.CUSTOM].list=%s", mod[Section.CUSTOM].list);
-            writefln("mod[Section.CUSTOM].list %s", typeof(mod[Section.CUSTOM].list).stringof);
-            writefln("mod[Section.CUSTOM].list[0] %s", typeof(mod[Section.CUSTOM].list[0]).stringof);
+            // writefln("mod[Section.CUSTOM] %s ", mod[Section.CUSTOM]);
+            // writefln("mod[Section.CUSTOM].list=%s", mod[Section.CUSTOM].list);
+            // writefln("mod[Section.CUSTOM].list %s", typeof(mod[Section.CUSTOM].list).stringof);
+            // writefln("mod[Section.CUSTOM].list[0] %s", typeof(mod[Section.CUSTOM].list[0]).stringof);
             foreach (const sec; mod[Section.CUSTOM].list[previous_sec]) {
                 // }
                 output_custom(sec);
@@ -234,36 +206,6 @@ class WasmWriter {
         return output.toBytes.idup;
     }
 
-    version (none) @trusted
-    void opCall(InterfaceModule reader) {
-        //if (is(T==ModuleIterator) || is(T:InterfaceModule)) {
-        //scope Module mod;
-        Section previous_sec;
-        //        writefln("WasmWriter opCall");
-        foreach (a; reader[]) {
-            //            writefln("a=%s", a);
-            with (Section) {
-                check((a.section !is CUSTOM) && (previous_sec < a.section), "Bad order");
-                previous_sec = a.section;
-                final switch (a.section) {
-                    foreach (E; EnumMembers!(Section)) {
-                case E:
-                        const sec = a.sec!E;
-                        mod[E] = &sec;
-                        static if (is(T == ModuleIterator)) {
-                            iter(a.section, mod);
-                        }
-                        else {
-                            enum code = format(q{reader.%s(mod);}, secname(E));
-                            mixin(code);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     struct WasmSection {
         mixin template Serialize() {
             final void serialize(ref OutBuffer bout) const {
@@ -307,8 +249,8 @@ class WasmWriter {
                                 //writefln("bout=%s", bout.toBytes);
                             }
                             else {
-                                static assert(0, format("Array type %s is not supported", T
-                                        .stringof));
+                                static assert(0,
+                                        format("Array type %s is not supported", T.stringof));
                             }
                         }
                         else {
@@ -429,9 +371,9 @@ class WasmWriter {
             mixin Serialize;
             struct ImportDesc {
                 struct FuncDesc {
-                    uint typeidx;
+                    uint funcidx;
                     this(const(ReaderImportDesc.FuncDesc) f) {
-                        typeidx = f.typeidx;
+                        funcidx = f.funcidx;
                     }
 
                     mixin Serialize;
@@ -502,7 +444,8 @@ class WasmWriter {
                 do {
                     static foreach (m; __traits(allMembers, ImportDesc)) {
                         {
-                            enum get_indextype_code = format(q{enum get_indextype=getUDAs!(%s, IndexType);}, m);
+                            enum get_indextype_code = format(q{enum get_indextype=getUDAs!(%s, IndexType);},
+                                        m);
                             mixin(get_indextype_code);
                             static if (get_indextype.length is 1) {
                                 static if (IType is get_indextype[0]) {
@@ -706,8 +649,7 @@ class WasmWriter {
                 this.expr = expr;
             }
 
-            @trusted
-            this(ref const(ReaderSecType!(Section.CODE)) c) {
+            @trusted this(ref const(ReaderSecType!(Section.CODE)) c) {
                 locals = new Local[c.locals.length];
                 foreach (ref l, reader_l; lockstep(locals, c.locals)) {
                     l.count = reader_l.count;
@@ -754,14 +696,13 @@ class WasmWriter {
 version (none) unittest {
     import std.stdio;
     import std.file;
-    import std.exception: assumeUnique;
-    import tagion.vm.wavm.Wast;
+    import std.exception : assumeUnique;
+    import tagion.wavm.Wast;
 
     //      import std.file : fread=read, fwrite=write;
 
-    @trusted
-    static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
-        import std.file: _read = read;
+    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
+        import std.file : _read = read;
 
         auto data = cast(ubyte[]) _read(name, upTo);
         // writefln("read data=%s", data);
@@ -787,19 +728,4 @@ version (none) unittest {
     writeln("wasm_writer.serialize");
     writefln("wasm_writer.serialize=%s", wasm_writer.serialize);
     assert(wasm_reader.serialize == wasm_writer.serialize);
-    //auto dasm=Wdisasm(wasm_reader);
-    //auto wasm_writer=WasmWriter(wasm_reader);
-    // immutable writer_data=wasm_writer.serialize;
-
-    // auto dasm_writer=Wdisasm(writer_data);
-    //    Wast(wasm_writer, stdout).serialize();
-    //    auto output=Wast
-
 }
-/+
- [0, 97, 115, 109, 1, 0, 0, 0, 1, 30, 7, 96, 0, 0, 96, 1, 127, 0, 96, 1, 125, 0, 96, 0, 1, 127, 96, 0, 1, 125, 96, 1, 127, 1, 127, 96, 1, 126, 1, 126, 3, 8, 7, 0, 1, 2, 3, 4, 5, 6, 4, 4, 1, 112, 0, 10, 5, 3, 1, 0,
- 2, 6, 14, 2, 127, 0, 65, 55, 11, 125, 0, 67, 0, 0, 48, 66, 11, 7, 142, 1, 11, 4, 102, 117, 110, 99, 0, 0, 8, 102, 117, 110, 99, 45, 105, 51, 50, 0, 1, 8, 102, 117, 110, 99, 45, 102, 51, 50, 0, 2, 9, 102, 117, 110, 99, 45, 62, 105, 51, 50, 0, 3, 9, 102, 117, 110, 99, 45, 62, 102, 51, 50, 0, 4, 13, 102, 117, 110, 99, 45, 105, 51, 50, 45, 62, 105, 51, 50, 0, 5, 13, 102, 117, 110, 99, 45, 105, 54, 52, 45, 62, 105, 54, 52, 0, 6, 10, 103, 108, 111, 98, 97, 108, 45, 105, 51, 50, 3, 0, 10, 103, 108, 111, 98, 97, 108, 45, 102, 51, 50, 3, 1, 12, 116, 97, 98, 108, 101, 45, 49, 48, 45, 105, 110, 102, 1, 0, 12, 109, 101, 109, 111, 114, 121, 45, 50, 45, 105, 110, 102, 2, 0, 10, 33, 7, 2, 0, 11, 2, 0, 11, 2, 0, 11, 4, 0, 65, 22, 11, 7, 0, 67, 0, 0, 48, 65, 11, 4, 0, 32, 0, 11, 4, 0, 32, 0, 11]
-
- [0, 97, 115, 109, 1, 0, 0, 0, 1, 30, 7, 96, 0, 0, 96, 1, 127, 0, 96, 1, 125, 0, 96, 0, 1, 127, 96, 0, 1, 125, 96, 1, 127, 1, 127, 96, 1, 126, 1, 126, 3, 8, 7, 0, 1, 2, 3, 4, 5, 6, 4, 4, 1, 112, 0, 10, 5, 3, 1, 0,
- 2, 6, 5, 2, 0, 127, 0, 125, 7, 142, 1, 11, 4, 102, 117, 110, 99, 0, 0, 8, 102, 117, 110, 99, 45, 105, 51, 50, 0, 1, 8, 102, 117, 110, 99, 45, 102, 51, 50, 0, 2, 9, 102, 117, 110, 99, 45, 62, 105, 51, 50, 0, 3, 9, 102, 117, 110, 99, 45, 62, 102, 51, 50, 0, 4, 13, 102, 117, 110, 99, 45, 105, 51, 50, 45, 62, 105, 51, 50, 0, 5, 13, 102, 117, 110, 99, 45, 105, 54, 52, 45, 62, 105, 54, 52, 0, 6, 10, 103, 108, 111, 98, 97, 108, 45, 105, 51, 50, 3, 0, 10, 103, 108, 111, 98, 97, 108, 45, 102, 51, 50, 3, 1, 12, 116, 97, 98, 108, 101, 45, 49, 48, 45, 105, 110, 102, 1, 0, 12, 109, 101, 109, 111, 114, 121, 45, 50, 45, 105, 110, 102, 2, 0, 10, 26, 7, 0, 11, 0, 11, 0, 11, 0, 65, 22, 11, 0, 67, 0, 0, 48, 65, 11, 0, 32, 0, 11, 0, 32, 0, 11]
- +/

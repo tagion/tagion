@@ -1,30 +1,29 @@
-module tagion.vm.wasm.WasmParser;
+module tagion.wasm.WasmParser;
 
-import std.uni: toUpper;
-import std.traits: EnumMembers;
+import std.uni : toUpper;
+import std.traits : EnumMembers;
 import std.format;
+import std.range.primitives : isInputRange, isForwardRange;
 
 import tagion.utils.LEB128;
 
 //import tagion.Message : message;
 
-struct Token {
+@safe struct Token {
     string name;
     uint line;
     uint pos;
-    string toText() @safe pure const {
+    string toText() pure const {
         if (line is 0) {
             return name;
         }
         else {
-            //            return message("%s:%s:%s",  line, pos, name);
             return format("%s:%s:%s", line, pos, name);
         }
     }
 }
 
-@safe
-struct Tokenizer {
+@safe struct Tokenizer {
     immutable(string) source;
     immutable(string) file;
     this(string source, string file = null) {
@@ -36,7 +35,10 @@ struct Tokenizer {
         return Range(source);
     }
 
-    struct Range {
+    static assert(isInputRange!Range);
+    static assert(isForwardRange!Range);
+
+    @nogc @safe struct Range {
         immutable(string) source;
         protected {
             size_t _begin_pos; /// Begin position of a token
@@ -47,11 +49,14 @@ struct Tokenizer {
             size_t _current_pos; /// Position of the token in the current line
             bool _eos; /// Markes end of stream
         }
-        this(string source) {
+        this(string source) pure nothrow {
             _line = 1;
             this.source = source;
             //            trim;
             popFront;
+        }
+
+        this(ref return scope const Range rhs) @nogc pure nothrow {
         }
 
         @property const pure nothrow {
@@ -89,7 +94,7 @@ struct Tokenizer {
 
         }
 
-        @property void popFront() {
+        @property void popFront() pure nothrow {
             _eos = (_end_pos == source.length);
             trim;
             _end_pos = _begin_pos;
@@ -158,8 +163,8 @@ struct Tokenizer {
                     }
                 }
                 else {
-                    while ((_end_pos < source.length) && is_none_white(source[_end_pos]) && (
-                            source[_end_pos]!is ')')) {
+                    while ((_end_pos < source.length)
+                            && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')')) {
                         _end_pos++;
                     }
                 }
@@ -169,7 +174,11 @@ struct Tokenizer {
             }
         }
 
-        protected void trim() {
+        Range save() pure const nothrow @nogc {
+            return Range(this);
+        }
+
+        protected void trim() pure nothrow {
             scope size_t eol;
             _begin_pos = _end_pos;
             while (_begin_pos < source.length) {
@@ -196,7 +205,7 @@ struct Tokenizer {
         return (c !is ' ') && (c !is '\t') && (c !is '\n') && (c !is '\r');
     }
 
-    static size_t is_newline(string str) pure {
+    static size_t is_newline(string str) pure nothrow {
         if ((str.length > 0) && (str[0] == '\n')) {
             if ((str.length > 1) && ((str[0 .. 2] == "\n\r") || (str[0 .. 2] == "\r\n"))) {
                 return 2;
@@ -209,82 +218,34 @@ struct Tokenizer {
 }
 
 unittest {
-    import std.string: join;
+    import std.string : join;
 
     immutable src = [
-        "(module",
-        "(type $0 (func (param f64 f64) (result f64)))",
-        "(type $1 (func (param i32 i32) (result i32)))",
-        "(type $2 (func))",
-        "(memory $4  2)",
-        "(table $3  1 1 funcref)",
+        "(module", "(type $0 (func (param f64 f64) (result f64)))",
+        "(type $1 (func (param i32 i32) (result i32)))", "(type $2 (func))",
+        "(memory $4  2)", "(table $3  1 1 funcref)",
         "(global $5  (mut i32) (i32.const 66560))",
-        `(export "memory" (memory $4))`,
-        `(export "add" (func $add))`,
+        `(export "memory" (memory $4))`, `(export "add" (func $add))`,
         `(export "while_loop" (func $while_loop))`,
-        `(export "_start" (func $_start))`,
-        "",
-        "(func $add (type $0)",
-        "  (param $0 f64)",
-        "  (param $1 f64)",
-        "  (result f64)",
-        "  local.get $0",
-        "  local.get $1",
-        "  f64.add",
-        "  )",
-        "",
-        "(func $while_loop (type $1)",
-        "  (param $0 i32)",
-        "  (param $1 i32)",
-        "  (result i32)",
-        "  (local $2 i32)",
-        "  block $block",
-        "    local.get $0",
-        "    i32.const 1",
-        "    i32.lt_s",
-        "    br_if $block",
-        "    loop $loop",
-        "      local.get $0",
-        "      i32.const -1",
-        "      i32.add",
-        "      local.set $2",
-        "      local.get $0",
-        "      local.get $1",
-        "      i32.mul",
-        "      local.set $0",
-        "      i32.const 34",
-        "      local.set $1",
-        "      block $block_0",
-        "        local.get $0",
-        "        i32.const 17",
-        "        i32.eq",
-        "        br_if $block_0",
-        "        local.get $0",
-        "        i32.const 2",
-        "        i32.div_s",
-        "        i32.const 1",
-        "        i32.add",
-        "        local.set $1",
-        "      end ;; $block_0",
-        "      local.get $2",
-        "      local.set $0",
-        "      local.get $2",
-        "      i32.const 0",
-        "      i32.gt_s",
-        "      br_if $loop",
-        "    end ;; $loop",
-        "  end ;; $block",
-        "  local.get $1",
-        "  )",
-        "",
-        "(func $_start (type $2)",
-        "  )",
-        "",
-        `;;(custom_section "producers"`,
-        ";;  (after code)",
-        `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`,
-        "",
-        ")"
+        `(export "_start" (func $_start))`, "", "(func $add (type $0)",
+        "  (param $0 f64)", "  (param $1 f64)", "  (result f64)", "  local.get $0",
+        "  local.get $1", "  f64.add", "  )", "", "(func $while_loop (type $1)",
+        "  (param $0 i32)", "  (param $1 i32)", "  (result i32)",
+        "  (local $2 i32)", "  block $block", "    local.get $0",
+        "    i32.const 1", "    i32.lt_s", "    br_if $block",
+        "    loop $loop", "      local.get $0", "      i32.const -1",
+        "      i32.add", "      local.set $2", "      local.get $0",
+        "      local.get $1", "      i32.mul", "      local.set $0",
+        "      i32.const 34", "      local.set $1", "      block $block_0",
+        "        local.get $0", "        i32.const 17", "        i32.eq",
+        "        br_if $block_0", "        local.get $0",
+        "        i32.const 2", "        i32.div_s", "        i32.const 1",
+        "        i32.add", "        local.set $1", "      end ;; $block_0",
+        "      local.get $2", "      local.set $0", "      local.get $2",
+        "      i32.const 0", "      i32.gt_s", "      br_if $loop",
+        "    end ;; $loop", "  end ;; $block", "  local.get $1", "  )", "",
+        "(func $_start (type $2)", "  )", "", `;;(custom_section "producers"`,
+        ";;  (after code)", `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`, "", ")"
     ].join("\n");
     // ": test_comment ( a b -- )", // 1
     // "+ ( some comment ) ><>A ",  // 2
@@ -319,241 +280,144 @@ unittest {
         string token;
     }
 
-    immutable(Token[]) tokens =
-        [
-            {line: 1, pos: 0, token: "("},
-            {line: 1, pos: 1, token: "module"},
-            {line: 2, pos: 0, token: "("},
-            {line: 2, pos: 1, token: "type"},
-            {line: 2, pos: 6, token: "$0"},
-            {line: 2, pos: 9, token: "("},
-            {line: 2, pos: 10, token: "func"},
-            {line: 2, pos: 15, token: "("},
-            {line: 2, pos: 16, token: "param"},
-            {line: 2, pos: 22, token: "f64"},
-            {line: 2, pos: 26, token: "f64"},
-            {line: 2, pos: 29, token: ")"},
-            {line: 2, pos: 31, token: "("},
-            {line: 2, pos: 32, token: "result"},
-            {line: 2, pos: 39, token: "f64"},
-            {line: 2, pos: 42, token: ")"},
-            {line: 2, pos: 43, token: ")"},
-            {line: 2, pos: 44, token: ")"},
-            {line: 3, pos: 0, token: "("},
-            {line: 3, pos: 1, token: "type"},
-            {line: 3, pos: 6, token: "$1"},
-            {line: 3, pos: 9, token: "("},
-            {line: 3, pos: 10, token: "func"},
-            {line: 3, pos: 15, token: "("},
-            {line: 3, pos: 16, token: "param"},
-            {line: 3, pos: 22, token: "i32"},
-            {line: 3, pos: 26, token: "i32"},
-            {line: 3, pos: 29, token: ")"},
-            {line: 3, pos: 31, token: "("},
-            {line: 3, pos: 32, token: "result"},
-            {line: 3, pos: 39, token: "i32"},
-            {line: 3, pos: 42, token: ")"},
-            {line: 3, pos: 43, token: ")"},
-            {line: 3, pos: 44, token: ")"},
-            {line: 4, pos: 0, token: "("},
-            {line: 4, pos: 1, token: "type"},
-            {line: 4, pos: 6, token: "$2"},
-            {line: 4, pos: 9, token: "("},
-            {line: 4, pos: 10, token: "func"},
-            {line: 4, pos: 14, token: ")"},
-            {line: 4, pos: 15, token: ")"},
-            {line: 5, pos: 0, token: "("},
-            {line: 5, pos: 1, token: "memory"},
-            {line: 5, pos: 8, token: "$4"},
-            {line: 5, pos: 12, token: "2"},
-            {line: 5, pos: 13, token: ")"},
-            {line: 6, pos: 0, token: "("},
-            {line: 6, pos: 1, token: "table"},
-            {line: 6, pos: 7, token: "$3"},
-            {line: 6, pos: 11, token: "1"},
-            {line: 6, pos: 13, token: "1"},
-            {line: 6, pos: 15, token: "funcref"},
-            {line: 6, pos: 22, token: ")"},
-            {line: 7, pos: 0, token: "("},
-            {line: 7, pos: 1, token: "global"},
-            {line: 7, pos: 8, token: "$5"},
-            {line: 7, pos: 12, token: "("},
-            {line: 7, pos: 13, token: "mut"},
-            {line: 7, pos: 17, token: "i32"},
-            {line: 7, pos: 20, token: ")"},
-            {line: 7, pos: 22, token: "("},
-            {line: 7, pos: 23, token: "i32.const"},
-            {line: 7, pos: 33, token: "66560"},
-            {line: 7, pos: 38, token: ")"},
-            {line: 7, pos: 39, token: ")"},
-            {line: 8, pos: 0, token: "("},
-            {line: 8, pos: 1, token: "export"},
-            {line: 8, pos: 8, token: `"memory"`},
-            {line: 8, pos: 17, token: "("},
-            {line: 8, pos: 18, token: "memory"},
-            {line: 8, pos: 25, token: "$4"},
-            {line: 8, pos: 27, token: ")"},
-            {line: 8, pos: 28, token: ")"},
-            {line: 9, pos: 0, token: "("},
-            {line: 9, pos: 1, token: "export"},
-            {line: 9, pos: 8, token: `"add"`},
-            {line: 9, pos: 14, token: "("},
-            {line: 9, pos: 15, token: "func"},
-            {line: 9, pos: 20, token: "$add"},
-            {line: 9, pos: 24, token: ")"},
-            {line: 9, pos: 25, token: ")"},
-            {line: 10, pos: 0, token: "("},
-            {line: 10, pos: 1, token: "export"},
-            {line: 10, pos: 8, token: `"while_loop"`},
-            {line: 10, pos: 21, token: "("},
-            {line: 10, pos: 22, token: "func"},
-            {line: 10, pos: 27, token: "$while_loop"},
-            {line: 10, pos: 38, token: ")"},
-            {line: 10, pos: 39, token: ")"},
-            {line: 11, pos: 0, token: "("},
-            {line: 11, pos: 1, token: "export"},
-            {line: 11, pos: 8, token: `"_start"`},
-            {line: 11, pos: 17, token: "("},
-            {line: 11, pos: 18, token: "func"},
-            {line: 11, pos: 23, token: "$_start"},
-            {line: 11, pos: 30, token: ")"},
-            {line: 11, pos: 31, token: ")"},
-            {line: 13, pos: 0, token: "("},
-            {line: 13, pos: 1, token: "func"},
-            {line: 13, pos: 6, token: "$add"},
-            {line: 13, pos: 11, token: "("},
-            {line: 13, pos: 12, token: "type"},
-            {line: 13, pos: 17, token: "$0"},
-            {line: 13, pos: 19, token: ")"},
-            {line: 14, pos: 2, token: "("},
-            {line: 14, pos: 3, token: "param"},
-            {line: 14, pos: 9, token: "$0"},
-            {line: 14, pos: 12, token: "f64"},
-            {line: 14, pos: 15, token: ")"},
-            {line: 15, pos: 2, token: "("},
-            {line: 15, pos: 3, token: "param"},
-            {line: 15, pos: 9, token: "$1"},
-            {line: 15, pos: 12, token: "f64"},
-            {line: 15, pos: 15, token: ")"},
-            {line: 16, pos: 2, token: "("},
-            {line: 16, pos: 3, token: "result"},
-            {line: 16, pos: 10, token: "f64"},
-            {line: 16, pos: 13, token: ")"},
-            {line: 17, pos: 2, token: "local.get"},
-            {line: 17, pos: 12, token: "$0"},
-            {line: 18, pos: 2, token: "local.get"},
-            {line: 18, pos: 12, token: "$1"},
-            {line: 19, pos: 2, token: "f64.add"},
-            {line: 20, pos: 2, token: ")"},
-            {line: 22, pos: 0, token: "("},
-            {line: 22, pos: 1, token: "func"},
-            {line: 22, pos: 6, token: "$while_loop"},
-            {line: 22, pos: 18, token: "("},
-            {line: 22, pos: 19, token: "type"},
-            {line: 22, pos: 24, token: "$1"},
-            {line: 22, pos: 26, token: ")"},
-            {line: 23, pos: 2, token: "("},
-            {line: 23, pos: 3, token: "param"},
-            {line: 23, pos: 9, token: "$0"},
-            {line: 23, pos: 12, token: "i32"},
-            {line: 23, pos: 15, token: ")"},
-            {line: 24, pos: 2, token: "("},
-            {line: 24, pos: 3, token: "param"},
-            {line: 24, pos: 9, token: "$1"},
-            {line: 24, pos: 12, token: "i32"},
-            {line: 24, pos: 15, token: ")"},
-            {line: 25, pos: 2, token: "("},
-            {line: 25, pos: 3, token: "result"},
-            {line: 25, pos: 10, token: "i32"},
-            {line: 25, pos: 13, token: ")"},
-            {line: 26, pos: 2, token: "("},
-            {line: 26, pos: 3, token: "local"},
-            {line: 26, pos: 9, token: "$2"},
-            {line: 26, pos: 12, token: "i32"},
-            {line: 26, pos: 15, token: ")"},
-            {line: 27, pos: 2, token: "block"},
-            {line: 27, pos: 8, token: "$block"},
-            {line: 28, pos: 4, token: "local.get"},
-            {line: 28, pos: 14, token: "$0"},
-            {line: 29, pos: 4, token: "i32.const"},
-            {line: 29, pos: 14, token: "1"},
-            {line: 30, pos: 4, token: "i32.lt_s"},
-            {line: 31, pos: 4, token: "br_if"},
-            {line: 31, pos: 10, token: "$block"},
-            {line: 32, pos: 4, token: "loop"},
-            {line: 32, pos: 9, token: "$loop"},
-            {line: 33, pos: 6, token: "local.get"},
-            {line: 33, pos: 16, token: "$0"},
-            {line: 34, pos: 6, token: "i32.const"},
-            {line: 34, pos: 16, token: "-1"},
-            {line: 35, pos: 6, token: "i32.add"},
-            {line: 36, pos: 6, token: "local.set"},
-            {line: 36, pos: 16, token: "$2"},
-            {line: 37, pos: 6, token: "local.get"},
-            {line: 37, pos: 16, token: "$0"},
-            {line: 38, pos: 6, token: "local.get"},
-            {line: 38, pos: 16, token: "$1"},
-            {line: 39, pos: 6, token: "i32.mul"},
-            {line: 40, pos: 6, token: "local.set"},
-            {line: 40, pos: 16, token: "$0"},
-            {line: 41, pos: 6, token: "i32.const"},
-            {line: 41, pos: 16, token: "34"},
-            {line: 42, pos: 6, token: "local.set"},
-            {line: 42, pos: 16, token: "$1"},
-            {line: 43, pos: 6, token: "block"},
-            {line: 43, pos: 12, token: "$block_0"},
-            {line: 44, pos: 8, token: "local.get"},
-            {line: 44, pos: 18, token: "$0"},
-            {line: 45, pos: 8, token: "i32.const"},
-            {line: 45, pos: 18, token: "17"},
-            {line: 46, pos: 8, token: "i32.eq"},
-            {line: 47, pos: 8, token: "br_if"},
-            {line: 47, pos: 14, token: "$block_0"},
-            {line: 48, pos: 8, token: "local.get"},
-            {line: 48, pos: 18, token: "$0"},
-            {line: 49, pos: 8, token: "i32.const"},
-            {line: 49, pos: 18, token: "2"},
-            {line: 50, pos: 8, token: "i32.div_s"},
-            {line: 51, pos: 8, token: "i32.const"},
-            {line: 51, pos: 18, token: "1"},
-            {line: 52, pos: 8, token: "i32.add"},
-            {line: 53, pos: 8, token: "local.set"},
-            {line: 53, pos: 18, token: "$1"},
-            {line: 54, pos: 6, token: "end"},
-            {line: 54, pos: 10, token: ";; $block_0"},
-            {line: 55, pos: 6, token: "local.get"},
-            {line: 55, pos: 16, token: "$2"},
-            {line: 56, pos: 6, token: "local.set"},
-            {line: 56, pos: 16, token: "$0"},
-            {line: 57, pos: 6, token: "local.get"},
-            {line: 57, pos: 16, token: "$2"},
-            {line: 58, pos: 6, token: "i32.const"},
-            {line: 58, pos: 16, token: "0"},
-            {line: 59, pos: 6, token: "i32.gt_s"},
-            {line: 60, pos: 6, token: "br_if"},
-            {line: 60, pos: 12, token: "$loop"},
-            {line: 61, pos: 4, token: "end"},
-            {line: 61, pos: 8, token: ";; $loop"},
-            {line: 62, pos: 2, token: "end"},
-            {line: 62, pos: 6, token: ";; $block"},
-            {line: 63, pos: 2, token: "local.get"},
-            {line: 63, pos: 12, token: "$1"},
-            {line: 64, pos: 2, token: ")"},
-            {line: 66, pos: 0, token: "("},
-            {line: 66, pos: 1, token: "func"},
-            {line: 66, pos: 6, token: "$_start"},
-            {line: 66, pos: 14, token: "("},
-            {line: 66, pos: 15, token: "type"},
-            {line: 66, pos: 20, token: "$2"},
-            {line: 66, pos: 22, token: ")"},
-            {line: 67, pos: 2, token: ")"},
-            {line: 69, pos: 0, token: `;;(custom_section "producers"`},
-            {line: 70, pos: 0, token: ";;  (after code)"},
-            {
-                line: 71, pos: 0, token: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`
-            },
-            {line: 73, pos: 0, token: ")"},
-        ];
+    immutable(Token[]) tokens = [
+        {line: 1, pos: 0, token: "("}, {line: 1, pos: 1, token: "module"},
+        {line: 2, pos: 0, token: "("}, {line: 2, pos: 1, token: "type"},
+        {line: 2, pos: 6, token: "$0"}, {line: 2, pos: 9, token: "("},
+        {line: 2, pos: 10, token: "func"}, {line: 2, pos: 15, token: "("},
+        {line: 2, pos: 16, token: "param"}, {line: 2, pos: 22, token: "f64"},
+        {line: 2, pos: 26, token: "f64"}, {line: 2, pos: 29, token: ")"},
+        {line: 2, pos: 31, token: "("}, {line: 2, pos: 32, token: "result"},
+        {line: 2, pos: 39, token: "f64"}, {line: 2, pos: 42, token: ")"},
+        {line: 2, pos: 43, token: ")"}, {line: 2, pos: 44, token: ")"},
+        {line: 3, pos: 0, token: "("}, {line: 3, pos: 1, token: "type"},
+        {line: 3, pos: 6, token: "$1"}, {line: 3, pos: 9, token: "("},
+        {line: 3, pos: 10, token: "func"}, {line: 3, pos: 15, token: "("},
+        {line: 3, pos: 16, token: "param"}, {line: 3, pos: 22, token: "i32"},
+        {line: 3, pos: 26, token: "i32"}, {line: 3, pos: 29, token: ")"},
+        {line: 3, pos: 31, token: "("}, {line: 3, pos: 32, token: "result"},
+        {line: 3, pos: 39, token: "i32"}, {line: 3, pos: 42, token: ")"},
+        {line: 3, pos: 43, token: ")"}, {line: 3, pos: 44, token: ")"},
+        {line: 4, pos: 0, token: "("}, {line: 4, pos: 1, token: "type"},
+        {line: 4, pos: 6, token: "$2"}, {line: 4, pos: 9, token: "("},
+        {line: 4, pos: 10, token: "func"}, {line: 4, pos: 14, token: ")"},
+        {line: 4, pos: 15, token: ")"}, {line: 5, pos: 0, token: "("},
+        {line: 5, pos: 1, token: "memory"}, {line: 5, pos: 8, token: "$4"},
+        {line: 5, pos: 12, token: "2"}, {line: 5, pos: 13, token: ")"},
+        {line: 6, pos: 0, token: "("}, {line: 6, pos: 1, token: "table"},
+        {line: 6, pos: 7, token: "$3"}, {line: 6, pos: 11, token: "1"},
+        {line: 6, pos: 13, token: "1"}, {line: 6, pos: 15, token: "funcref"},
+        {line: 6, pos: 22, token: ")"}, {line: 7, pos: 0, token: "("},
+        {line: 7, pos: 1, token: "global"}, {line: 7, pos: 8, token: "$5"},
+        {line: 7, pos: 12, token: "("}, {line: 7, pos: 13, token: "mut"},
+        {line: 7, pos: 17, token: "i32"}, {line: 7, pos: 20, token: ")"},
+        {line: 7, pos: 22, token: "("}, {line: 7, pos: 23, token: "i32.const"},
+        {line: 7, pos: 33, token: "66560"}, {line: 7, pos: 38, token: ")"},
+        {line: 7, pos: 39, token: ")"}, {line: 8, pos: 0, token: "("},
+        {line: 8, pos: 1, token: "export"}, {line: 8, pos: 8, token: `"memory"`},
+        {line: 8, pos: 17, token: "("}, {line: 8, pos: 18, token: "memory"},
+        {line: 8, pos: 25, token: "$4"}, {line: 8, pos: 27, token: ")"},
+        {line: 8, pos: 28, token: ")"}, {line: 9, pos: 0, token: "("},
+        {line: 9, pos: 1, token: "export"}, {line: 9, pos: 8, token: `"add"`},
+        {line: 9, pos: 14, token: "("}, {line: 9, pos: 15, token: "func"},
+        {line: 9, pos: 20, token: "$add"}, {line: 9, pos: 24, token: ")"},
+        {line: 9, pos: 25, token: ")"}, {line: 10, pos: 0, token: "("},
+        {line: 10, pos: 1, token: "export"},
+        {line: 10, pos: 8, token: `"while_loop"`}, {
+            line: 10, pos: 21, token: "("
+        },
+        {line: 10, pos: 22, token: "func"},
+        {line: 10, pos: 27, token: "$while_loop"}, {
+            line: 10, pos: 38, token: ")"
+        }, {
+            line: 10, pos: 39, token: ")"
+        }, {
+            line: 11, pos: 0, token: "("
+        },
+        {line: 11, pos: 1, token: "export"}, {
+            line: 11, pos: 8, token: `"_start"`
+        },
+        {line: 11, pos: 17, token: "("}, {line: 11, pos: 18, token: "func"},
+        {line: 11, pos: 23, token: "$_start"}, {line: 11, pos: 30, token: ")"},
+        {line: 11, pos: 31, token: ")"}, {line: 13, pos: 0, token: "("},
+        {line: 13, pos: 1, token: "func"}, {line: 13, pos: 6, token: "$add"},
+        {line: 13, pos: 11, token: "("}, {line: 13, pos: 12, token: "type"},
+        {line: 13, pos: 17, token: "$0"}, {line: 13, pos: 19, token: ")"},
+        {line: 14, pos: 2, token: "("}, {line: 14, pos: 3, token: "param"},
+        {line: 14, pos: 9, token: "$0"}, {line: 14, pos: 12, token: "f64"},
+        {line: 14, pos: 15, token: ")"}, {line: 15, pos: 2, token: "("},
+        {line: 15, pos: 3, token: "param"}, {line: 15, pos: 9, token: "$1"},
+        {line: 15, pos: 12, token: "f64"}, {line: 15, pos: 15, token: ")"},
+        {line: 16, pos: 2, token: "("}, {line: 16, pos: 3, token: "result"},
+        {line: 16, pos: 10, token: "f64"}, {line: 16, pos: 13, token: ")"},
+        {line: 17, pos: 2, token: "local.get"}, {line: 17, pos: 12, token: "$0"},
+        {line: 18, pos: 2, token: "local.get"}, {line: 18, pos: 12, token: "$1"},
+        {line: 19, pos: 2, token: "f64.add"}, {line: 20, pos: 2, token: ")"},
+        {line: 22, pos: 0, token: "("}, {line: 22, pos: 1, token: "func"},
+        {line: 22, pos: 6, token: "$while_loop"}, {line: 22, pos: 18, token: "("},
+        {line: 22, pos: 19, token: "type"}, {line: 22, pos: 24, token: "$1"},
+        {line: 22, pos: 26, token: ")"}, {line: 23, pos: 2, token: "("},
+        {line: 23, pos: 3, token: "param"}, {line: 23, pos: 9, token: "$0"},
+        {line: 23, pos: 12, token: "i32"}, {line: 23, pos: 15, token: ")"},
+        {line: 24, pos: 2, token: "("}, {line: 24, pos: 3, token: "param"},
+        {line: 24, pos: 9, token: "$1"}, {line: 24, pos: 12, token: "i32"},
+        {line: 24, pos: 15, token: ")"}, {line: 25, pos: 2, token: "("},
+        {line: 25, pos: 3, token: "result"}, {line: 25, pos: 10, token: "i32"},
+        {line: 25, pos: 13, token: ")"}, {line: 26, pos: 2, token: "("},
+        {line: 26, pos: 3, token: "local"}, {line: 26, pos: 9, token: "$2"},
+        {line: 26, pos: 12, token: "i32"}, {line: 26, pos: 15, token: ")"},
+        {line: 27, pos: 2, token: "block"}, {line: 27, pos: 8, token: "$block"},
+        {line: 28, pos: 4, token: "local.get"}, {line: 28, pos: 14, token: "$0"},
+        {line: 29, pos: 4, token: "i32.const"}, {line: 29, pos: 14, token: "1"},
+        {line: 30, pos: 4, token: "i32.lt_s"}, {line: 31, pos: 4, token: "br_if"},
+        {line: 31, pos: 10, token: "$block"}, {line: 32, pos: 4, token: "loop"},
+        {line: 32, pos: 9, token: "$loop"}, {
+            line: 33, pos: 6, token: "local.get"
+        },
+        {line: 33, pos: 16, token: "$0"}, {line: 34, pos: 6, token: "i32.const"},
+        {line: 34, pos: 16, token: "-1"}, {line: 35, pos: 6, token: "i32.add"},
+        {line: 36, pos: 6, token: "local.set"}, {line: 36, pos: 16, token: "$2"},
+        {line: 37, pos: 6, token: "local.get"}, {line: 37, pos: 16, token: "$0"},
+        {line: 38, pos: 6, token: "local.get"}, {line: 38, pos: 16, token: "$1"},
+        {line: 39, pos: 6, token: "i32.mul"},
+        {line: 40, pos: 6, token: "local.set"}, {line: 40, pos: 16, token: "$0"},
+        {line: 41, pos: 6, token: "i32.const"}, {line: 41, pos: 16, token: "34"},
+        {line: 42, pos: 6, token: "local.set"}, {line: 42, pos: 16, token: "$1"},
+        {line: 43, pos: 6, token: "block"}, {
+            line: 43, pos: 12, token: "$block_0"
+        },
+        {line: 44, pos: 8, token: "local.get"}, {line: 44, pos: 18, token: "$0"},
+        {line: 45, pos: 8, token: "i32.const"}, {line: 45, pos: 18, token: "17"},
+        {line: 46, pos: 8, token: "i32.eq"}, {line: 47, pos: 8, token: "br_if"},
+        {line: 47, pos: 14, token: "$block_0"},
+        {line: 48, pos: 8, token: "local.get"}, {line: 48, pos: 18, token: "$0"},
+        {line: 49, pos: 8, token: "i32.const"}, {line: 49, pos: 18, token: "2"},
+        {line: 50, pos: 8, token: "i32.div_s"},
+        {line: 51, pos: 8, token: "i32.const"}, {line: 51, pos: 18, token: "1"},
+        {line: 52, pos: 8, token: "i32.add"},
+        {line: 53, pos: 8, token: "local.set"}, {line: 53, pos: 18, token: "$1"},
+        {line: 54, pos: 6, token: "end"}, {
+            line: 54, pos: 10, token: ";; $block_0"
+        },
+        {line: 55, pos: 6, token: "local.get"}, {line: 55, pos: 16, token: "$2"},
+        {line: 56, pos: 6, token: "local.set"}, {line: 56, pos: 16, token: "$0"},
+        {line: 57, pos: 6, token: "local.get"}, {line: 57, pos: 16, token: "$2"},
+        {line: 58, pos: 6, token: "i32.const"}, {line: 58, pos: 16, token: "0"},
+        {line: 59, pos: 6, token: "i32.gt_s"}, {line: 60, pos: 6, token: "br_if"},
+        {line: 60, pos: 12, token: "$loop"}, {line: 61, pos: 4, token: "end"},
+        {line: 61, pos: 8, token: ";; $loop"}, {line: 62, pos: 2, token: "end"},
+        {line: 62, pos: 6, token: ";; $block"},
+        {line: 63, pos: 2, token: "local.get"}, {line: 63, pos: 12, token: "$1"},
+        {line: 64, pos: 2, token: ")"}, {line: 66, pos: 0, token: "("},
+        {line: 66, pos: 1, token: "func"}, {line: 66, pos: 6, token: "$_start"},
+        {line: 66, pos: 14, token: "("}, {line: 66, pos: 15, token: "type"},
+        {line: 66, pos: 20, token: "$2"}, {line: 66, pos: 22, token: ")"},
+        {line: 67, pos: 2, token: ")"},
+        {line: 69, pos: 0, token: `;;(custom_section "producers"`},
+        {line: 70, pos: 0, token: ";;  (after code)"},
+        {line: 71, pos: 0, token: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`},
+        {line: 73, pos: 0, token: ")"},
+    ];
 
     const parser = Tokenizer(src);
     //    uint count;
@@ -582,195 +446,62 @@ struct WasmWord {
 }
 
 enum WASMKeywords = [
-        "module",
-        "type",
-        "memory",
-        "table",
-        "global",
-        "export",
-        "func",
-        "result",
-        "param",
+        "module", "type", "memory", "table", "global", "export", "func", "result",
+        "param", "local.get", "local.set", "local.tee", "local", "global.get",
+        "global.set", "block", "loop", "br", "br_if", "br_table", "end", "return",
 
-        "local.get",
-        "local.set",
-        "local.tee",
-        "local",
+        "if", "then", "else", "call", "call_indirect", "unreachable", "nop",
 
-        "global.get",
-        "global.set",
+        "drop", "select", "memory.size", "memory.grow",
 
-        "block",
-        "loop",
-        "br",
-        "br_if",
-        "br_table",
-        "end",
-        "return",
+        // i32
+        "i32.const", "i32.load", "i32.load8_s", "i32.load16_s", "i32.load8_u",
+        "i32.load16_u", "i32.store", "i32.store8", "i32.store16", "i32.clz",
+        "i32.ctz", "i32.popcnt", "i32.add", "i32.sub", "i32.div_s", "i32.div_u",
+        "i32.rem_u", "i32.and", "i32.or", "i32.xor", "i32.shr_s", "i32.shr_u",
+        "i32.rotl", "i32.rotr",
+        // i32 compare
+        "i32.eqz", "i32.eq", "i32.ne", "i32.lt_s", "i32.lt_u", "i32.gt_s",
+        "i32.gt_u", "i32.le_s", "i32.le_u", "i32.ge_s", "i32.ge_u",
+        // i32 comversion
+        "i32.wrap_i64", "i32.trunc_f32_s", "i32.trunc_f32_u", "i32.trunc_f64_s",
+        "i32.trunc_f64_u", "i32.reinterpret_f32",
 
-        "if",
-        "then",
-        "else",
+        // i64
+        "i64.const", "i64.load", "i64.load8_s", "i64.load16_s",
+        "i64.load32_s", "i64.load8_u", "i64.load16_u", "i64.load32_u",
 
-        "call",
-        "call_indirect",
+        "i64.store", "i64.store8", "i64.store16", "i64.store32", "i64.clz",
+        "i64.ctz", "i64.popcnt", "i64.add", "i64.sub", "i64.div_s", "i64.div_u",
+        "i64.rem_u", "i64.and", "i64.or", "i64.xor", "i64.shr_s", "i64.shr_u",
+        "i64.rotl", "i64.rotr",
+        // i64 compare
+        "i64.eqz", "i64.eq", "i64.ne", "i64.lt_s", "i64.lt_u", "i64.gt_s",
+        "i64.gt_u", "i64.le_s", "i64.le_u", "i64.ge_s", "i64.ge_u",
+        // i32 comversion
+        "i64.extend_i32_s", "i64.extend_i32_u", "i64.trunc_f32_s",
+        "i64.trunc_f32_u", "i64.trunc_f64_s", "i64.trunc_f64_u",
+        "i64.reinterpret_f64",
 
-        "unreachable",
-        "nop",
+        // f32
+        "f32.load", "f32.store", "f32.abs", "f32.neg", "f32.ceil", "f32.floor",
+        "f32.trunc", "f32.nearest", "f32.sqrt", "f32.add", "f32.sub", "f32.mul",
+        "f32.mul", "f32.min", "f32.max", "f32.copysign",
+        // f32 compare
+        "f32.eq", "f32.ne", "f32.lt", "f32.gt", "f32.le", "f32.ge",
+        // f32 comvert
+        "f32.convert_i32_s", "f32.convert_i32_u", "f32.convert_i64_s",
+        "f32.convert_i64_u", "f32.demote_f64", "f32.reinterpret_i32",
 
-        "drop",
-        "select",
-
-        "memory.size",
-        "memory.grow",// i32
-        "i32.const",
-        "i32.load",
-        "i32.load8_s",
-        "i32.load16_s",
-        "i32.load8_u",
-        "i32.load16_u",
-
-        "i32.store",
-        "i32.store8",
-        "i32.store16",
-
-        "i32.clz",
-        "i32.ctz",
-        "i32.popcnt",
-        "i32.add",
-        "i32.sub",
-        "i32.div_s",
-        "i32.div_u",
-        "i32.rem_u",
-        "i32.and",
-        "i32.or",
-        "i32.xor",
-        "i32.shr_s",
-        "i32.shr_u",
-        "i32.rotl",
-        "i32.rotr",// i32 compare
-        "i32.eqz",
-        "i32.eq",
-        "i32.ne",
-        "i32.lt_s",
-        "i32.lt_u",
-        "i32.gt_s",
-        "i32.gt_u",
-        "i32.le_s",
-        "i32.le_u",
-        "i32.ge_s",
-        "i32.ge_u",// i32 comversion
-        "i32.wrap_i64",
-        "i32.trunc_f32_s",
-        "i32.trunc_f32_u",
-        "i32.trunc_f64_s",
-        "i32.trunc_f64_u",
-        "i32.reinterpret_f32",// i64
-        "i64.const",
-        "i64.load",
-        "i64.load8_s",
-        "i64.load16_s",
-        "i64.load32_s",
-        "i64.load8_u",
-        "i64.load16_u",
-        "i64.load32_u",
-
-        "i64.store",
-        "i64.store8",
-        "i64.store16",
-        "i64.store32",
-
-        "i64.clz",
-        "i64.ctz",
-        "i64.popcnt",
-        "i64.add",
-        "i64.sub",
-        "i64.div_s",
-        "i64.div_u",
-        "i64.rem_u",
-        "i64.and",
-        "i64.or",
-        "i64.xor",
-        "i64.shr_s",
-        "i64.shr_u",
-        "i64.rotl",
-        "i64.rotr",// i64 compare
-        "i64.eqz",
-        "i64.eq",
-        "i64.ne",
-        "i64.lt_s",
-        "i64.lt_u",
-        "i64.gt_s",
-        "i64.gt_u",
-        "i64.le_s",
-        "i64.le_u",
-        "i64.ge_s",
-        "i64.ge_u",// i32 comversion
-        "i64.extend_i32_s",
-        "i64.extend_i32_u",
-        "i64.trunc_f32_s",
-        "i64.trunc_f32_u",
-        "i64.trunc_f64_s",
-        "i64.trunc_f64_u",
-        "i64.reinterpret_f64",// f32
-        "f32.load",
-        "f32.store",
-
-        "f32.abs",
-        "f32.neg",
-        "f32.ceil",
-        "f32.floor",
-        "f32.trunc",
-        "f32.nearest",
-        "f32.sqrt",
-        "f32.add",
-        "f32.sub",
-        "f32.mul",
-        "f32.mul",
-        "f32.min",
-        "f32.max",
-        "f32.copysign",// f32 compare
-        "f32.eq",
-        "f32.ne",
-        "f32.lt",
-        "f32.gt",
-        "f32.le",
-        "f32.ge",// f32 comvert
-        "f32.convert_i32_s",
-        "f32.convert_i32_u",
-        "f32.convert_i64_s",
-        "f32.convert_i64_u",
-        "f32.demote_f64",
-        "f32.reinterpret_i32",// f64
-        "f64.load",
-        "f64.store",
-
-        "f64.abs",
-        "f64.neg",
-        "f64.ceil",
-        "f64.floor",
-        "f64.trunc",
-        "f64.nearest",
-        "f64.sqrt",
-        "f64.add",
-        "f64.sub",
-        "f64.mul",
-        "f64.mul",
-        "f64.min",
-        "f64.max",
-        "f64.copysign",// f64 compare
-        "f64.eq",
-        "f64.ne",
-        "f64.lt",
-        "f64.gt",
-        "f64.le",
-        "f64.ge",// f64 comvert
-        "f64.convert_i32_s",
-        "f64.convert_i32_u",
-        "f64.convert_i64_s",
-        "f64.convert_i64_u",
-        "f64.promote_f32",
-        "f64.reinterpret_i64"
+        // f64
+        "f64.load", "f64.store", "f64.abs", "f64.neg", "f64.ceil", "f64.floor",
+        "f64.trunc", "f64.nearest", "f64.sqrt", "f64.add", "f64.sub", "f64.mul",
+        "f64.mul", "f64.min", "f64.max", "f64.copysign",
+        // f64 compare
+        "f64.eq", "f64.ne", "f64.lt", "f64.gt", "f64.le", "f64.ge",
+        // f64 comvert
+        "f64.convert_i32_s", "f64.convert_i32_u", "f64.convert_i64_s",
+        "f64.convert_i64_u", "f64.promote_f32", "f64.reinterpret_i64"
 
     ];
 
@@ -906,8 +637,7 @@ enum WASMKeywords = [
 
 // mixin(EnumText!("ScriptType", _scripttype));
 
-@safe
-static struct Lexer {
+@safe static struct Lexer {
     // protected enum ctLabelMap=generateLabelMap(keywordMap);
     import std.regex;
 
@@ -955,9 +685,8 @@ static struct Lexer {
     version (none) static ScriptType getScriptType(string word) {
         static foreach (TYPE; EnumMembers!ScriptType) {
             static if (TYPE is ScriptType.NUM) {
-                if ((word.length >= TYPE.length) &&
-                        (word[0 .. TYPE.length] == TYPE) &&
-                        (word.match(regex_bound))) {
+                if ((word.length >= TYPE.length)
+                        && (word[0 .. TYPE.length] == TYPE) && (word.match(regex_bound))) {
                     return TYPE;
                 }
             }
@@ -1020,9 +749,8 @@ static struct Lexer {
 
     static bool is_name_valid(string str) pure {
         foreach (c; str) {
-            if ((c <= SPACE) || (c >= DEL) || (c is QUATE) ||
-                    (c is DOUBLE_QUATE) || (c is BACK_QUATE) ||
-                    (c is LOCAL_SEPARATOR)) {
+            if ((c <= SPACE) || (c >= DEL) || (c is QUATE) || (c is DOUBLE_QUATE)
+                    || (c is BACK_QUATE) || (c is LOCAL_SEPARATOR)) {
                 return false;
             }
         }
