@@ -25,6 +25,9 @@ add/core: add/lib-basic\
 			  add/lib-logger\
 			  add/lib-options\
 			  add/bin-origin\
+			  add/bin-hibonutil\
+			  add/bin-dartutil\
+			  add/bin-clientutil\
 			  add/bin-wasmutil\
 			  add/wrap-secp256k1\
 			  add/wrap-openssl\
