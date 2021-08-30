@@ -9,5 +9,6 @@ embedder_example
 revision.d
 bin
 build
+tagion/vm/wasm/revision.di
 *.parked
 *.di
