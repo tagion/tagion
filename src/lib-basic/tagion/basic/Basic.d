@@ -466,3 +466,18 @@ template doFront(Range) if (isInputRange!Range)
         return r.front;
     }
 }
+
+
+enum isEqual(T1, T2) = is(T1 == T2);
+//enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
+
+unittest {
+    import std.traits : Unqual;
+    import std.meta : ApplyLeft, ApplyRight;
+    static assert(isEqual!(int, int));
+    static assert(!isEqual!(int, long));
+    alias U = immutable(int);
+    static assert(!isEqual!(int, Unqual!U));
+    alias Left = ApplyLeft!(isEqual, int);
+    static assert(Left!(UnqualT));
+}
