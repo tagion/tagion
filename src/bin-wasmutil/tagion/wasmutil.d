@@ -1,3 +1,5 @@
+module tagion.wasmutil;
+
 import std.getopt;
 import std.stdio;
 import std.file: fread = read, fwrite = write, exists;
