@@ -10,7 +10,7 @@ $(DIR_SRC)/%/context.mk:
 add/core: add/lib-basic\
 			  add/lib-utils\
 			  add/lib-hibon\
-			  add/lib-p2p-go-wrapper\
+			  add/lib-p2pgowrapper\
 			  add/lib-crypto\
 			  add/lib-dart\
 			  add/lib-funnel\
@@ -28,12 +28,12 @@ add/core: add/lib-basic\
 			  add/bin-wasmutil\
 			  add/wrap-secp256k1\
 			  add/wrap-openssl\
-			  add/wrap-p2p-go-wrapper
+			  add/wrap-p2pgowrapper
 	@
 
 add/public: add/lib-basic\
 				add/lib-utils\
 				add/lib-hibon\
-				add/lib-p2p-go-wrapper\
-				add/wrap-p2p-go-wrapper
+				add/lib-p2pgowrapper\
+				add/wrap-p2pgowrapper
 	@
