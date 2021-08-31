@@ -1,20 +1,19 @@
 module tagion.basic.Basic;
 
-private import std.string : format, join, strip;
+private import std.string: format, join, strip;
 private import std.traits;
-private import std.exception : assumeUnique;
-import std.bitmanip : BitArray;
-import std.meta : AliasSeq;
-import std.range.primitives : isInputRange;
+private import std.exception: assumeUnique;
+import std.bitmanip: BitArray;
+import std.meta: AliasSeq;
+import std.range.primitives: isInputRange;
 
 enum this_dot = "this.";
 
 import std.conv;
 
-import std.typecons : Typedef, TypedefType;
+import std.typecons: Typedef, TypedefType;
 
-enum BufferType
-{
+enum BufferType {
     PUBKEY, /// Public key buffer type
     PRIVKEY, /// Private key buffer type
     SIGNATURE, /// Signature buffer type
@@ -23,8 +22,7 @@ enum BufferType
     PAYLOAD /// Payload buffer type
 }
 
-enum BillType
-{
+enum BillType {
     NON_USABLE,
     TAGIONS,
     CONTRACTS
@@ -36,8 +34,7 @@ alias Signature = Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
 alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 
 alias Payload = Typedef!(Buffer, null, BufferType.PAYLOAD.stringof); // Buffer used fo the event payload
-version (none)
-{
+version (none) {
     alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
     alias HashPointer = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 }
@@ -48,15 +45,13 @@ version (none)
 +/
 enum isBufferType(T) = is(T : const(ubyte[])) || is(TypedefType!T : const(ubyte[]));
 
-static unittest
-{
+static unittest {
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
     static assert(isBufferType!(Pubkey));
 }
 
-unittest
-{
+unittest {
     immutable buf = cast(Buffer) "Hello";
     immutable pkey = Pubkey(buf);
 }
@@ -65,8 +60,7 @@ unittest
  Returns:
  a immuatble do
 +/
-immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer)
-{
+immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
     return cast(BUF)(buffer.idup);
 }
 
@@ -74,21 +68,17 @@ immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer)
    Returns:
    The position of first '.' in string and
  +/
-template find_dot(string str, size_t index = 0)
-{
-    static if (index >= str.length)
-    {
+template find_dot(string str, size_t index = 0) {
+    static if (index >= str.length) {
         enum zero_index = 0;
         alias zero_index find_dot;
     }
-    else static if (str[index] == '.')
-    {
+    else static if (str[index] == '.') {
         enum index_plus_one = index + 1;
         static assert(index_plus_one < str.length, "Static name ends with a dot");
         alias index_plus_one find_dot;
     }
-    else
-    {
+    else {
         alias find_dot!(str, index + 1) find_dot;
     }
 }
@@ -97,21 +87,18 @@ enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
 /++
  Creates a new clean bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow
-{
+deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length = length;
 }
 
 /++
  Change the size of the bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted
-{
+deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     bits.length = length;
 }
 
-unittest
-{
+unittest {
     {
         BitArray test;
         immutable uint size = 7;
@@ -133,13 +120,10 @@ unittest
 /++
  Countes the number of bits set in mask
 +/
-uint countVotes(ref const(BitArray) mask) @trusted
-{
+uint countVotes(ref const(BitArray) mask) @trusted {
     uint votes;
-    foreach (vote; mask)
-    {
-        if (vote)
-        {
+    foreach (vote; mask) {
+        if (vote) {
             votes++;
         }
     }
@@ -149,23 +133,18 @@ uint countVotes(ref const(BitArray) mask) @trusted
 /++
  Wraps a safe version of to!string for a BitArray
  +/
-string toText(const(BitArray) bits) @trusted
-{
+string toText(const(BitArray) bits) @trusted {
     return bits.to!string;
 }
 
-template suffix(string name, size_t index)
-{
-    static if (index is 0)
-    {
+template suffix(string name, size_t index) {
+    static if (index is 0) {
         alias suffix = name;
     }
-    else static if (name[index - 1]!is '.')
-    {
+    else static if (name[index - 1]!is '.') {
         alias suffix = suffix!(name, index - 1);
     }
-    else
-    {
+    else {
         enum cut_name = name[index .. $];
         alias suffix = cut_name;
     }
@@ -174,14 +153,11 @@ template suffix(string name, size_t index)
 /++
  Template function returns the suffux name after the last '.'
  +/
-template basename(alias K)
-{
-    static if (is(K == string))
-    {
+template basename(alias K) {
+    static if (is(K == string)) {
         enum name = K;
     }
-    else
-    {
+    else {
         enum name = K.stringof;
     }
     enum basename = suffix!(name, name.length);
@@ -193,21 +169,17 @@ enum nameOf(alias nameType) = __traits(identifier, nameType);
  Returns:
  function name of the current function
 +/
-mixin template FUNCTION_NAME()
-{
-    import tagion.basic.Basic : basename;
+mixin template FUNCTION_NAME() {
+    import tagion.basic.Basic: basename;
 
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }
 
-unittest
-{
+unittest {
     enum name_another = "another";
-    struct Something
-    {
+    struct Something {
         mixin("int " ~ name_another ~ ";");
-        void check()
-        {
+        void check() {
             assert(find_dot!(this.another.stringof) == this_dot.length);
             assert(basename!(this.another) == name_another);
         }
@@ -222,29 +194,24 @@ unittest
 /++
  Builds and enum string out of a string array
 +/
-template EnumText(string name, string[] list, bool first = true)
-{
-    static if (first)
-    {
+template EnumText(string name, string[] list, bool first = true) {
+    static if (first) {
         enum begin = "enum " ~ name ~ "{";
         alias EnumText!(begin, list, false) EnumText;
     }
-    else static if (list.length > 0)
-    {
+    else static if (list.length > 0) {
         enum k = list[0];
         enum code = name ~ k ~ " = " ~ '"' ~ k ~ '"' ~ ',';
         alias EnumText!(code, list[1 .. $], false) EnumText;
     }
-    else
-    {
+    else {
         enum code = name ~ "}";
         alias code EnumText;
     }
 }
 
 ///
-unittest
-{
+unittest {
     enum list = ["red", "green", "blue"];
     mixin(EnumText!("Colour", list));
     static assert(Colour.red == list[0]);
@@ -256,8 +223,7 @@ unittest
 /++
  Genera signal
 +/
-enum Control
-{
+enum Control {
     LIVE = 1, /// Send to the ownerTid when the task has been started
     STOP, /// Send when the child task to stop task
     //    FAIL,   /// This if a something failed other than an exception
@@ -269,20 +235,17 @@ enum Control
  Returns:
  log2(n)
  +/
-@trusted int log2(ulong n)
-{
-    if (n == 0)
-    {
+@trusted int log2(ulong n) {
+    if (n == 0) {
         return -1;
     }
-    import core.bitop : bsr;
+    import core.bitop: bsr;
 
     return bsr(n);
 }
 
 ///
-unittest
-{
+unittest {
     // Undefined value returns -1
     assert(log2(0) == -1);
     assert(log2(17) == 4);
@@ -294,9 +257,8 @@ unittest
 /++
  Generate a temporary file name
 +/
-string tempfile()
-{
-    import std.file : deleteme;
+string tempfile() {
+    import std.file: deleteme;
 
     int dummy;
     return deleteme ~ (&dummy).to!string;
@@ -306,25 +268,20 @@ string tempfile()
  Returns:
  true if the type T is one of types in the list TList
 +/
-template isOneOf(T, TList...)
-{
-    static if (TList.length == 0)
-    {
+template isOneOf(T, TList...) {
+    static if (TList.length == 0) {
         enum isOneOf = false;
     }
-    else static if (is(T == TList[0]))
-    {
+    else static if (is(T == TList[0])) {
         enum isOneOf = true;
     }
-    else
-    {
+    else {
         alias isOneOf = isOneOf!(T, TList[1 .. $]);
     }
 }
 
 ///
-static unittest
-{
+static unittest {
     import std.meta;
 
     alias Seq = AliasSeq!(long, int, ubyte);
@@ -337,29 +294,23 @@ static unittest
    Returns:
    void if not type is found
  +/
-template CastTo(T, TList...)
-{
-    static if (TList.length is 0)
-    {
+template CastTo(T, TList...) {
+    static if (TList.length is 0) {
         alias CastTo = void;
     }
-    else
-    {
+    else {
         alias castT = TList[0];
-        static if (is(T : castT))
-        {
+        static if (is(T : castT)) {
             alias CastTo = castT;
         }
-        else
-        {
+        else {
             alias CastTo = CastTo!(T, TList[1 .. $]);
         }
     }
 }
 
 ///
-static unittest
-{
+static unittest {
     static assert(is(void == CastTo!(string, AliasSeq!(int, long, double))));
     static assert(is(double == CastTo!(float, AliasSeq!(int, long, double))));
     static assert(is(string == CastTo!(string, AliasSeq!(uint, string))));
@@ -368,8 +319,7 @@ static unittest
     static assert(is(const(uint) == CastTo!(inout(uint), AliasSeq!(const(uint), const(string)))));
 }
 
-enum DataFormat
-{
+enum DataFormat {
     json = "json", // JSON File format
     hibon = "hibon", // HiBON file format
     wasm = "wasm", // WebAssembler binary format
@@ -377,15 +327,14 @@ enum DataFormat
     dartdb = "drt", // DART data-base
 }
 
-import std.typecons : Tuple;
+import std.typecons: Tuple;
 
 alias FileNames = Tuple!(string, "tempdir", string, "filename", string, "fullpath");
-const(FileNames) fileId(T)(string ext, string prefix = null) @safe
-{
-    import std.process : environment, thisProcessID;
+const(FileNames) fileId(T)(string ext, string prefix = null) @safe {
+    import std.process: environment, thisProcessID;
     import std.file;
     import std.path;
-    import std.array : join;
+    import std.array: join;
 
     //import std.traits;
     FileNames names;
@@ -396,20 +345,15 @@ const(FileNames) fileId(T)(string ext, string prefix = null) @safe
     return names;
 }
 
-template EnumContinuousSequency(Enum) if (is(Enum == enum))
-{
-    template Sequency(EList...)
-    {
-        static if (EList.length is 1)
-        {
+template EnumContinuousSequency(Enum) if (is(Enum == enum)) {
+    template Sequency(EList...) {
+        static if (EList.length is 1) {
             enum Sequency = true;
         }
-        else static if (EList[0] + 1 is EList[1])
-        {
+        else static if (EList[0] + 1 is EList[1]) {
             enum Sequency = Sequency!(EList[1 .. $]);
         }
-        else
-        {
+        else {
             enum Sequency = false;
         }
     }
@@ -417,10 +361,8 @@ template EnumContinuousSequency(Enum) if (is(Enum == enum))
     enum EnumContinuousSequency = Sequency!(EnumMembers!Enum);
 }
 
-static unittest
-{
-    enum Count
-    {
+static unittest {
+    enum Count {
         zero,
         one,
         two,
@@ -429,8 +371,7 @@ static unittest
 
     static assert(EnumContinuousSequency!Count);
 
-    enum NoCount
-    {
+    enum NoCount {
         zero,
         one,
         three = 3
@@ -438,8 +379,7 @@ static unittest
 
     static assert(!EnumContinuousSequency!NoCount);
 
-    enum OffsetCount
-    {
+    enum OffsetCount {
         one = 1,
         two,
         three
@@ -454,13 +394,10 @@ static unittest
  else the .init value of the range element type is return
  The first element is returned
 */
-template doFront(Range) if (isInputRange!Range)
-{
+template doFront(Range) if (isInputRange!Range) {
     alias T = ForeachType!Range;
-    T doFront(Range r)
-    {
-        if (r.empty)
-        {
+    T doFront(Range r) {
+        if (r.empty) {
             return T.init;
         }
         return r.front;
@@ -477,7 +414,7 @@ unittest {
     static assert(isEqual!(int, int));
     static assert(!isEqual!(int, long));
     alias U = immutable(int);
-    static assert(!isEqual!(int, Unqual!U));
+    static assert(isEqual!(int, Unqual!U));
     alias Left = ApplyLeft!(isEqual, int);
-    static assert(Left!(UnqualT));
+    static assert(Left!(Unqual!U));
 }

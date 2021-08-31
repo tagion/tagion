@@ -1,9 +1,10 @@
 module tagion.basic.ConsensusExceptions;
 
-import std.format : format;
-import tagion.basic.TagionExceptions : TagionException;
+import std.format: format;
+import tagion.basic.TagionExceptions: TagionException;
 
-@safe void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
+@safe
+void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
         if (is(E : ConsensusException)) {
     if (!flag) {
         throw new E(code, file, line);
@@ -87,7 +88,8 @@ enum ConsensusFailCode {
     SMARTSCRIPT_NOT_ENOUGH_MONEY,
 };
 
-@safe class ConsensusException : TagionException {
+@safe
+class ConsensusException : TagionException {
     immutable ConsensusFailCode code;
     this(string msg, ConsensusFailCode code = ConsensusFailCode.NON,
             string file = __FILE__, size_t line = __LINE__) pure {
@@ -101,19 +103,22 @@ enum ConsensusFailCode {
     }
 }
 
-@safe class EventConsensusException : GossipConsensusException {
+@safe
+class EventConsensusException : GossipConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe class SecurityConsensusException : ConsensusException {
+@safe
+class SecurityConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe class GossipConsensusException : ConsensusException {
+@safe
+class GossipConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
@@ -123,37 +128,43 @@ enum ConsensusFailCode {
     }
 }
 
-@safe class HashGraphConsensusException : EventConsensusException {
+@safe
+class HashGraphConsensusException : EventConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe class DARTConsensusException : ConsensusException {
+@safe
+class DARTConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe class ScriptingEngineConsensusException : ConsensusException {
+@safe
+class ScriptingEngineConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe class SSLSocketFiberConsensusException : ConsensusException {
+@safe
+class SSLSocketFiberConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe class SocketFiberConsensusException : ConsensusException {
+@safe
+class SocketFiberConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe class SmartScriptException : ConsensusException {
+@safe
+class SmartScriptException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
@@ -237,7 +248,7 @@ enum ConsensusFailCode {
 
             ];
         // dfmt on
-        import std.exception : assumeUnique;
+        import std.exception: assumeUnique;
 
         consensus_error_messages = assumeUnique(_consensus_error_messages);
         assert(ConsensusFailCode.max + 1 == consensus_error_messages.length,
