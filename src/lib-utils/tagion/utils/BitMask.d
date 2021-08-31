@@ -4,28 +4,25 @@ module tagion.utils.BitMask;
 
 enum WORD_SIZE = size_t(size_t.sizeof * 8);
 
-size_t bitsize(const size_t[] mask) pure nothrow @nogc @safe
-{
+size_t bitsize(const size_t[] mask) pure nothrow @nogc @safe {
     return mask.length * WORD_SIZE;
 }
 
-size_t wordindex(const size_t i) pure nothrow @nogc @safe
-{
+size_t wordindex(const size_t i) pure nothrow @nogc @safe {
     return i / WORD_SIZE;
 }
 
-size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
-{
+size_t word_bitindex(const size_t i) pure nothrow @nogc @safe {
     return i % WORD_SIZE;
 }
 
-@safe struct BitMask
-{
+@safe
+struct BitMask {
     import std.format;
-    import std.algorithm : filter, each, max;
-    import std.range : enumerate;
-    import std.range.primitives : isInputRange;
-    import std.traits : isSomeString;
+    import std.algorithm: filter, each, max;
+    import std.range: enumerate;
+    import std.range.primitives: isInputRange;
+    import std.traits: isSomeString;
 
     enum absolute_mask = 0x1000;
     private size_t[] mask;
@@ -34,8 +31,7 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
     //     mask=bits.mask;
     // }
 
-    void opAssign(const BitMask rhs) pure nothrow
-    {
+    void opAssign(const BitMask rhs) pure nothrow {
         mask = rhs.mask.dup;
     }
 
@@ -45,84 +41,70 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
     /++
      This set the mask as bit stream with LSB first
      +/
-    this(T)(T bitstring) if (isSomeString!T)
-    {
+    this(T)(T bitstring) if (isSomeString!T) {
         //mask.length=wordindex(bitsting)+1;
         auto bitrange = bitstring.filter!((c) => (c == '0' || c == '1')).enumerate;
-        foreach (i, c; bitrange)
-        {
-            if (c == '1')
-            {
+        foreach (i, c; bitrange) {
+            if (c == '1') {
                 this[i] = true;
             }
         }
     }
 
-    this(R)(R range) pure nothrow if ((isInputRange!R) && !isSomeString!R)
-    {
+    this(R)(R range) pure nothrow if ((isInputRange!R) && !isSomeString!R) {
         range.each!((n) => this[n] = true);
     }
 
-    BitMask dup() const pure nothrow
-    {
+    BitMask dup() const pure nothrow {
         BitMask result;
         result.mask = mask.dup;
         return result;
     }
 
-    void clear() pure nothrow
-    {
+    void clear() pure nothrow {
         mask[] = 0;
     }
 
-    version (none) @nogc bool opEquals(const BitMask rhs) const pure nothrow
-    {
+    version (none) @nogc
+    bool opEquals(const BitMask rhs) const pure nothrow {
         return mask == rhs.mask;
     }
 
-    @trusted void toString(scope void delegate(scope const(char)[]) @trusted sink,
-            const FormatSpec!char fmt) const
-    {
+    @trusted
+    void toString(scope void delegate(scope const(char)[]) @trusted sink,
+            const FormatSpec!char fmt) const {
         enum separator = '_';
         import std.stdio;
 
-        @nogc @safe struct BitRange
-        {
+        @nogc @safe struct BitRange {
             size_t index;
             const size_t width;
             const(size_t[]) mask;
-            this(const BitMask bitmask, const size_t width)
-            {
+            this(const BitMask bitmask, const size_t width) {
                 mask = bitmask.mask;
                 this.width = (width is 0) ? mask.bitsize : width;
             }
 
-            pure nothrow
-            {
-                char front() const
-                {
+            pure nothrow {
+                char front() const {
                     const word_index = index.wordindex;
-                    if (word_index < mask.length)
-                    {
+                    if (word_index < mask.length) {
                         return (mask[word_index] & (size_t(1) << (index.word_bitindex))) ? '1' : '0';
                     }
                     return '0';
                 }
 
-                bool empty() const
-                {
+                bool empty() const {
                     return index >= width;
                 }
 
-                void popFront()
-                {
+                void popFront() {
                     index++;
                 }
             }
         }
 
-        switch (fmt.spec)
-        {
+        switch (fmt.spec) {
             // case 'j':
             //     // Normal stringefied JSON
             //     sink(doc.toJSON.toString);
@@ -140,15 +122,12 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
             str.length = max_size;
             size_t index;
             size_t sep_count;
-            while (!bit_range.empty)
-            {
+            while (!bit_range.empty) {
                 str[index++] = bit_range.front;
                 bit_range.popFront;
-                if (fmt.precision !is 0 && !bit_range.empty)
-                {
+                if (fmt.precision !is 0 && !bit_range.empty) {
                     sep_count++;
-                    if ((sep_count % fmt.precision) is 0)
-                    {
+                    if ((sep_count % fmt.precision) is 0) {
                         str[index++] = separator;
                     }
                 }
@@ -161,94 +140,74 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
     }
 
     bool opIndex(size_t i) const pure nothrow @nogc
-    in
-    {
+    in {
         assert(i < absolute_mask);
     }
-    do
-    {
-        if (i < mask.bitsize)
-        {
+    do {
+        if (i < mask.bitsize) {
             return (mask[i.wordindex] & (size_t(1) << i.word_bitindex)) != 0;
         }
         return false;
     }
 
     bool opIndexAssign(bool b, size_t i) pure nothrow
-    in
-    {
+    in {
         assert(i < absolute_mask);
     }
-    do
-    {
-        if (i >= mask.bitsize)
-        {
+    do {
+        if (i >= mask.bitsize) {
             mask.length = i.wordindex + 1;
         }
-        if (b)
-        {
+        if (b) {
             mask[i.wordindex] |= size_t(1) << i.word_bitindex;
         }
-        else
-        {
+        else {
             mask[i.wordindex] &= ~(size_t(1) << i.word_bitindex);
         }
         return b;
     }
 
-    BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow 
-            if (op == "-" || op == "&" || op == "|" || op == "^")
-    {
-        if (mask.length > rhs.mask.length)
-        {
-            static if (op == "&")
-            {
+    BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
+    if (op == "-" || op == "&" || op == "|" || op == "^") {
+        if (mask.length > rhs.mask.length) {
+            static if (op == "&") {
                 mask[rhs.mask.length .. $] = 0;
             }
         }
-        else if (mask.length < rhs.mask.length)
-        {
+        else if (mask.length < rhs.mask.length) {
             mask.length = rhs.mask.length;
         }
         //            foreach(i, ref m; mask[0..rhs.mask.length]) {
-        static if (op == "-")
-        {
+        static if (op == "-") {
             mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
         }
-        else
-        {
+        else {
             enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
             mixin(code);
         }
         return this;
     }
 
-    BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow 
-            if (op == "-" || op == "&" || op == "|" || op == "^")
-    {
-        import std.algorithm.comparison : max, min;
+    BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
+    if (op == "-" || op == "&" || op == "|" || op == "^") {
+        import std.algorithm.comparison: max, min;
 
         BitMask result;
         const max_length = max(mask.length, rhs.mask.length);
         result.mask = new size_t[max_length];
         const min_length = min(mask.length, rhs.mask.length);
-        static if (op == "-")
-        {
+        static if (op == "-") {
             result.mask[0 .. min_length] = mask[0 .. min_length] & ~rhs.mask[0 .. min_length];
         }
-        else
-        {
+        else {
             {
-                enum code = format(q{result.mask[0..min_length] = mask[0..min_length] %s rhs.mask[0..min_length];},
-                            op);
+                enum code = format(q{result.mask[0..min_length] = mask[0..min_length] %s rhs.mask[0..min_length];}, op);
                 mixin(code);
             }
         }
-        if (mask.length !is rhs.mask.length)
-        {
+        if (mask.length !is rhs.mask.length) {
             auto rest = (mask.length > rhs.mask.length) ? mask : rhs.mask;
-            static if (op == "|" || op == "^")
-            {
+            static if (op == "|" || op == "^") {
                 enum code = format(q{result.mask[min_length..$] %s= rest[min_length..$];}, op);
                 pragma(msg, code);
                 mixin(code);
@@ -257,44 +216,36 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
         return result;
     }
 
-    BitMask opBinary(string op)(const size_t index) const pure nothrow 
-            if ((op == "-" || op == "+"))
-    {
+    BitMask opBinary(string op)(const size_t index) const pure nothrow
+    if ((op == "-" || op == "+")) {
         BitMask result = dup;
         result[index] = (op == "+");
         return result;
     }
 
-    BitMask opUnary(string op)() const pure nothrow if (op == "~")
-    {
+    BitMask opUnary(string op)() const pure nothrow
+    if (op == "~") {
         BitMask result;
         result.mask = new size_t[mask.length];
         result.mask[] = ~mask[];
         return result;
     }
 
-    void chunk(size_t bit_len) nothrow
-    {
+    void chunk(size_t bit_len) nothrow {
         const new_size = bit_len.wordindex + 1;
-        if (new_size < mask.length)
-        {
+        if (new_size < mask.length) {
             mask.length = new_size;
         }
         mask[$ - 1] &= (1 << bit_len.word_bitindex) - 1;
     }
 
-    size_t count() const pure nothrow @nogc
-    {
-        static size_t local_count(size_t BIT_SIZE)(const size_t x) pure nothrow
-        {
-            static if (BIT_SIZE is 1)
-            {
+    size_t count() const pure nothrow @nogc {
+        static size_t local_count(size_t BIT_SIZE)(const size_t x) pure nothrow {
+            static if (BIT_SIZE is 1) {
                 return x & 1;
             }
-            else
-            {
-                if (x is 0)
-                {
+            else {
+                if (x is 0) {
                     return 0;
                 }
                 enum HALF_SIZE = BIT_SIZE >> 1;
@@ -305,66 +256,57 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
         }
 
         size_t result;
-        foreach (m; mask)
-        {
+        foreach (m; mask) {
             result += local_count!(WORD_SIZE)(m);
         }
         return result;
     }
 
-    Range opSlice() const pure nothrow
-    {
+    Range opSlice() const pure nothrow {
         return Range(mask);
     }
 
-    @nogc struct Range
-    {
-        private
-        {
+    @nogc
+    struct Range {
+        private {
             const(size_t[]) mask;
             size_t index;
             size_t bit_pos;
         }
 
-        private this(const(size_t[]) mask, size_t index, size_t bit_pos) pure nothrow
-        {
+        private this(
+                const(size_t[]) mask,
+                size_t index,
+                size_t bit_pos) pure nothrow {
             this.mask = mask;
             this.index = index;
             this.bit_pos = bit_pos;
         }
 
-        this(const size_t[] mask) pure nothrow
-        {
+        this(const size_t[] mask) pure nothrow {
             this.mask = mask;
-            if (mask.length && (mask[0] & 0x1) is 0)
-            {
+            if (mask.length && (mask[0] & 0x1) is 0) {
                 popFront;
             }
         }
 
-        static size_t pos(size_t BIT_SIZE = WORD_SIZE)(const size_t x, const size_t index = 0) pure nothrow
-        {
-            static if (BIT_SIZE is 1)
-            {
+        static size_t pos(size_t BIT_SIZE = WORD_SIZE)(const size_t x, const size_t index = 0) pure nothrow {
+            static if (BIT_SIZE is 1) {
                 return (x) ? index : WORD_SIZE;
             }
-            else
-            {
+            else {
                 enum HALF_SIZE = BIT_SIZE >> 1;
                 enum MASK = (size_t(1) << HALF_SIZE) - size_t(1);
-                if (x & MASK)
-                {
+                if (x & MASK) {
                     return pos!HALF_SIZE(x & MASK, index);
                 }
-                else
-                {
+                else {
                     return pos!HALF_SIZE(x >> HALF_SIZE, index + HALF_SIZE);
                 }
             }
         }
 
-        static unittest
-        {
+        static unittest {
             assert(pos(0b1) is 0);
             assert(pos(0b10) is 1);
             assert(pos(0b1000_0000_0000) is 11);
@@ -376,57 +318,48 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
             assert(pos(small_val | larger_val) is small_pos);
         }
 
-        pure nothrow
-        {
-            const
-            {
-                size_t rest()
-                {
+        pure nothrow {
+            const {
+                size_t rest() {
                     return (bit_pos < WORD_SIZE - 1) ? (
                             mask[index] & ~((size_t(1) << (bit_pos + 1)) - 1)) : 0;
                 }
 
-                bool empty()
-                {
+                bool empty() {
                     return index >= mask.length;
                 }
 
-                size_t front()
-                {
+                size_t front() {
                     return index * WORD_SIZE + bit_pos;
                 }
             }
-            void popFront()
-            {
-                if (!empty)
-                {
+            void popFront() {
+                if (!empty) {
                     bit_pos = pos(rest);
-                    if (bit_pos >= WORD_SIZE)
-                    {
+                    if (bit_pos >= WORD_SIZE) {
                         bit_pos = 0;
                         index++;
-                        if (index < mask.length && ((mask[index] & 0x1) is 0))
-                        {
+                        if (index < mask.length && ((mask[index] & 0x1) is 0)) {
                             popFront;
                         }
                     }
                 }
             }
 
-            Range save()
-            {
+            Range save() {
                 return Range(mask, index, bit_pos);
             }
         }
         //}
     }
 
-    @trusted unittest
-    {
-        import std.algorithm : equal;
-        import std.algorithm.sorting : merge, sort;
-        import std.algorithm.iteration : uniq, fold;
+    @trusted
+    unittest {
+        import std.algorithm: equal;
+        import std.algorithm.sorting: merge, sort;
+        import std.algorithm.iteration: uniq, fold;
         import std.stdio;
+
         { // Bit assign
             BitMask a;
             assert(!a[42]);
@@ -510,11 +443,13 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
         {
             BitMask bits;
             bits[64] = true;
-            assert(format("%.16s", bits) == "0000000000000000_0000000000000000_0000000000000000_0000000000000000_1000000000000000_0000000000000000_0000000000000000_0000000000000000");
+            assert(format("%.16s", bits) ==
+                    "0000000000000000_0000000000000000_0000000000000000_0000000000000000_1000000000000000_0000000000000000_0000000000000000_0000000000000000");
             bits[17] = true;
             bits[78] = true;
             bits[64] = false;
-            assert(format("%.16s", bits) == "0000000000000000_0100000000000000_0000000000000000_0000000000000000_0000000000000010_0000000000000000_0000000000000000_0000000000000000");
+            assert(format("%.16s", bits) ==
+                    "0000000000000000_0100000000000000_0000000000000000_0000000000000000_0000000000000010_0000000000000000_0000000000000000_0000000000000000");
         }
 
         {
@@ -583,20 +518,15 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
             }
         }
 
-        void and_filter(ref BitMask result, Range a, Range b)
-        {
-            if (a.front < b.front)
-            {
+        void and_filter(ref BitMask result, Range a, Range b) {
+            if (a.front < b.front) {
                 a.popFront;
             }
-            else if (a.front > b.front)
-            {
+            else if (a.front > b.front) {
                 b.popFront;
             }
-            else
-            {
-                if (a.empty)
-                {
+            else {
+                if (a.empty) {
                     return;
                 }
                 result[b.front] = true;
@@ -606,22 +536,17 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe
             and_filter(result, a, b);
         }
 
-        void xor_filter(ref BitMask result, Range a, Range b)
-        {
-            if (a.front < b.front)
-            {
+        void xor_filter(ref BitMask result, Range a, Range b) {
+            if (a.front < b.front) {
                 result[a.front] = true;
                 a.popFront;
             }
-            else if (a.front > b.front)
-            {
+            else if (a.front > b.front) {
                 result[b.front] = true;
                 b.popFront;
             }
-            else
-            {
-                if (a.empty)
-                {
+            else {
+                if (a.empty) {
                     return;
                 }
                 //result[b.front]=true;

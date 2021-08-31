@@ -2,15 +2,12 @@ module tagion.utils.DList;
 
 import tagion.utils.Result;
 
-@safe class DList(E)
-{
-    @nogc struct Element
-    {
+@safe class DList(E) {
+    @nogc struct Element {
         E entry;
         protected Element* next;
         protected Element* prev;
-        this(E e) pure nothrow
-        {
+        this(E e) pure nothrow {
             entry = e;
         }
     }
@@ -19,17 +16,14 @@ import tagion.utils.Result;
     private Element* _tail;
     // Number of element in the DList
     private uint count;
-    Element* unshift(E e) nothrow
-    {
+    Element* unshift(E e) nothrow {
         auto element = new Element(e);
-        if (_head is null)
-        {
+        if (_head is null) {
             element.prev = null;
             element.next = null;
             _head = _tail = element;
         }
-        else
-        {
+        else {
             element.next = _head;
             _head.prev = element;
             _head = element;
@@ -39,14 +33,11 @@ import tagion.utils.Result;
         return element;
     }
 
-    Result!E shift() nothrow
-    {
-        if (_head is null)
-        {
+    Result!E shift() nothrow {
+        if (_head is null) {
             return Result!E(E.init, this.stringof ~ " is empty");
         }
-        scope (success)
-        {
+        scope (success) {
             _head = _head.next;
             _head.prev = null;
             count--;
@@ -54,15 +45,12 @@ import tagion.utils.Result;
         return Result!E(_head.entry);
     }
 
-    const(Element*) push(E e) nothrow
-    {
+    const(Element*) push(E e) nothrow {
         auto element = new Element(e);
-        if (_head is null)
-        {
+        if (_head is null) {
             _head = _tail = element;
         }
-        else
-        {
+        else {
             _tail.next = element;
             element.prev = _tail;
             _tail = element;
@@ -71,19 +59,15 @@ import tagion.utils.Result;
         return element;
     }
 
-    Result!E pop() nothrow
-    {
+    Result!E pop() nothrow {
         Element* result;
-        if (_tail !is null)
-        {
+        if (_tail !is null) {
             result = _tail;
             _tail = _tail.prev;
-            if (_tail is null)
-            {
+            if (_tail is null) {
                 _head = null;
             }
-            else
-            {
+            else {
                 _tail.next = null;
             }
             count--;
@@ -97,59 +81,45 @@ import tagion.utils.Result;
        Returns; true if the element was not found
      */
     @nogc bool remove(Element* e) nothrow
-    in
-    {
+    in {
         assert(e !is null);
-        if (_head is null)
-        {
+        if (_head is null) {
             assert(count == 0);
         }
-        if (e.next is null)
-        {
+        if (e.next is null) {
             assert(e is _tail);
         }
-        if (e.prev is null)
-        {
+        if (e.prev is null) {
             assert(e is _head);
         }
     }
-    do
-    {
-        if (_head is null)
-        {
+    do {
+        if (_head is null) {
             return true;
             //            throw new UtilException("Remove from an empty list");
         }
-        if (_head is e)
-        {
-            if (_head.next is null)
-            {
+        if (_head is e) {
+            if (_head.next is null) {
                 _head = _tail = null;
             }
-            else
-            {
+            else {
                 _head = _head.next;
                 _head.prev = null;
-                if (_head is _tail)
-                {
+                if (_head is _tail) {
                     _tail.prev = null;
                 }
             }
         }
-        else if (_tail is e)
-        {
+        else if (_tail is e) {
             _tail = _tail.prev;
-            if (_tail is null)
-            {
+            if (_tail is null) {
                 _head = null;
             }
-            else
-            {
+            else {
                 _tail.next = null;
             }
         }
-        else
-        {
+        else {
             e.next.prev = e.prev;
             e.prev.next = e.next;
         }
@@ -158,21 +128,16 @@ import tagion.utils.Result;
     }
 
     @nogc void moveToFront(Element* e) nothrow
-    in
-    {
+    in {
         assert(e !is null);
     }
-    do
-    {
-        if (e !is _head)
-        {
-            if (e == _tail)
-            {
+    do {
+        if (e !is _head) {
+            if (e == _tail) {
                 _tail = _tail.prev;
                 _tail.next = null;
             }
-            else
-            {
+            else {
                 e.next.prev = e.prev;
                 e.prev.next = e.next;
             }
@@ -184,16 +149,12 @@ import tagion.utils.Result;
     }
 
     @nogc uint length() pure const nothrow
-    out (result)
-    {
-        uint internal_count(const(Element)* e, uint i = 0) pure
-        {
-            if (e is null)
-            {
+    out (result) {
+        uint internal_count(const(Element)* e, uint i = 0) pure {
+            if (e is null) {
                 return i;
             }
-            else
-            {
+            else {
                 return internal_count(e.next, i + 1);
             }
         }
@@ -201,61 +162,47 @@ import tagion.utils.Result;
         immutable _count = internal_count(_head);
         assert(result == _count);
     }
-    do
-    {
+    do {
         return count;
     }
 
-    @nogc inout(Element*) first() inout pure nothrow
-    {
+    @nogc inout(Element*) first() inout pure nothrow {
         return _head;
     }
 
-    @nogc inout(Element*) last() inout pure nothrow
-    {
+    @nogc inout(Element*) last() inout pure nothrow {
         return _tail;
     }
 
-    @nogc Range!false opSlice() pure nothrow
-    {
+    @nogc Range!false opSlice() pure nothrow {
         return Range!false(this);
     }
 
-    @nogc Range!true revert() pure nothrow
-    {
+    @nogc Range!true revert() pure nothrow {
         return Range!true(this);
     }
 
-    @nogc struct Range(bool revert)
-    {
+    @nogc struct Range(bool revert) {
         private Element* cursor;
-        this(DList l) pure nothrow
-        {
-            static if (revert)
-            {
+        this(DList l) pure nothrow {
+            static if (revert) {
                 cursor = l._tail;
             }
-            else
-            {
+            else {
                 cursor = l._head;
             }
         }
 
-        bool empty() const pure nothrow
-        {
+        bool empty() const pure nothrow {
             return cursor is null;
         }
 
-        void popFront() nothrow
-        {
-            if (cursor !is null)
-            {
-                static if (revert)
-                {
+        void popFront() nothrow {
+            if (cursor !is null) {
+                static if (revert) {
                     cursor = cursor.prev;
                 }
-                else
-                {
+                else {
                     cursor = cursor.next;
                 }
             }
@@ -272,26 +219,21 @@ import tagion.utils.Result;
         //     }
         // }
 
-        E front() pure nothrow
-        {
+        E front() pure nothrow {
             return cursor.entry;
         }
 
         // alias back=front;
 
-        inout(Element*) current() inout pure nothrow
-        {
+        inout(Element*) current() inout pure nothrow {
             return cursor;
         }
     }
 
-    ~this()
-    {
+    ~this() {
         // Assist the GC to clean the chain
-        Element* clear(ref Element* e)
-        {
-            if (e !is null)
-            {
+        Element* clear(ref Element* e) {
+            if (e !is null) {
                 e.prev = null;
                 e = clear(e.next);
             }
@@ -302,18 +244,14 @@ import tagion.utils.Result;
         _tail = null;
     }
 
-    invariant
-    {
-        if (_head is null)
-        {
+    invariant {
+        if (_head is null) {
             assert(_tail is null);
         }
-        else
-        {
+        else {
             assert(_head.prev is null);
             assert(_tail.next is null);
-            if (_head is _tail)
-            {
+            if (_head is _tail) {
                 assert(_head.next is null);
                 assert(_tail.prev is null);
             }
@@ -322,8 +260,7 @@ import tagion.utils.Result;
     }
 }
 
-unittest
-{
+unittest {
     { // Empty element test
         auto l = new DList!int;
         //        auto e = l.shift;
@@ -380,8 +317,7 @@ unittest
         auto l = new DList!int;
         enum amount = 4;
         int[] test;
-        foreach (i; 0 .. amount)
-        {
+        foreach (i; 0 .. amount) {
             l.push(i);
             test ~= i;
         }
@@ -390,8 +326,7 @@ unittest
         // assert(equal(I, test));
         assert(array(I) == test);
 
-        foreach_reverse (i; 0 .. amount)
-        {
+        foreach_reverse (i; 0 .. amount) {
             assert(l.pop.value == i);
             assert(l.length == i);
         }
@@ -401,8 +336,7 @@ unittest
 
         auto l = new DList!int;
         enum amount = 4;
-        foreach (i; 0 .. amount)
-        {
+        foreach (i; 0 .. amount) {
             l.push(i);
         }
         assert(l.length == amount);
@@ -410,15 +344,13 @@ unittest
         { // Forward iteration test
             auto I = l[];
             uint i;
-            for (i = 0; !I.empty; I.popFront, i++)
-            {
+            for (i = 0; !I.empty; I.popFront, i++) {
                 assert(I.front == i);
             }
             assert(i == amount);
             i = 0;
             I = l[];
-            foreach (entry; I)
-            {
+            foreach (entry; I) {
                 assert(entry == i);
                 i++;
             }
@@ -433,16 +365,14 @@ unittest
         { // Backward iteration test
             auto I = l.revert;
             uint i;
-            for (i = amount; !I.empty; I.popFront)
-            {
+            for (i = amount; !I.empty; I.popFront) {
                 i--;
                 assert(I.front == i);
             }
             assert(i == 0);
             i = amount;
 
-            foreach (entry; l.revert)
-            {
+            foreach (entry; l.revert) {
                 i--;
                 assert(entry == i);
             }
