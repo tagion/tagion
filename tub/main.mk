@@ -1,4 +1,4 @@
-# Choosing anchor directory between root of the lab and tagil
+# Choosing root directory
 DIR_MAKEFILE := ${realpath .}
 DIR_TUB := $(DIR_MAKEFILE)
 
@@ -8,7 +8,9 @@ endif
 
 DIR_TUB_ROOT := ${realpath ${DIR_TUB}/../}
 
-${info $(DIR_TUB_ROOT)}
+ifneq ($(shell test -e $(DIR_TUB_ROOT)/.tubroot && echo yes),yes)
+DIR_TUB_ROOT := $(DIR_MAKEFILE)/tub
+endif
 
 # Inlclude local setup
 -include $(DIR_TUB_ROOT)/local.mk
@@ -32,5 +34,6 @@ update:
 
 help: $(HELP)
 info: $(INFO)
+
 .PHONY: help info
 .SECONDARY:

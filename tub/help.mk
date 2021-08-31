@@ -19,3 +19,5 @@ help:
 	${call log.kvp, make clean, Clean build directory}
 	${call log.kvp, make clean-all, Clean build directory}
 	${call log.close}
+	${call log.line, Read more on GitHub: https://github.com/tagion/tub}
+	${call log.close}
