@@ -203,8 +203,8 @@ endif
 # 
 # Directories
 # 
-DIR_BUILD := ${realpath ${DIR_TUB_ROOT}}/build/$(ARCH)
-DIR_SRC := ${realpath ${DIR_TUB_ROOT}}/src
+DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(ARCH)
+DIR_SRC := ${abspath ${DIR_TUB_ROOT}}/src
 
 MAKE_SHOW_ENV += env/dirs
 env/dirs:
