@@ -19,11 +19,10 @@ endif
 include $(DIR_TUB)/utils.mk
 include $(DIR_TUB)/log.mk
 include $(DIR_TUB)/help.mk
-include $(DIR_TUB)/revision.mk
 include $(DIR_TUB)/env.mk
-include $(DIR_TUB)/add.mk
-include $(DIR_TUB)/compile.mk
-include $(DIR_TUB)/clean.mk
+
+main: help
+help: $(HELP)
 
 install:
 	@$(DIR_TUB)/install
@@ -32,8 +31,10 @@ update:
 	@cd $(DIR_TUB); git checkout .
 	@cd $(DIR_TUB); git pull origin --force
 
-help: $(HELP)
-info: $(INFO)
+include $(DIR_TUB)/add.mk
+include $(DIR_TUB)/revision.mk
+include $(DIR_TUB)/compile.mk
+include $(DIR_TUB)/clean.mk
 
 .PHONY: help info
 .SECONDARY:
