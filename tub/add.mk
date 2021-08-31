@@ -24,6 +24,7 @@ add/core: add/lib-basic\
 			  add/lib-monitor\
 			  add/lib-logger\
 			  add/lib-options\
+			  add/lib-client\
 			  add/bin-origin\
 			  add/bin-hibonutil\
 			  add/bin-dartutil\
