@@ -11,7 +11,8 @@ echo "Manually remove Makefile and try again."
 echo
 else
 ln -fs $PWD/tub/main.mk Makefile
-touch .tubroot
+cp $PWD/tub/run run
+touch tubroot
 
 make help
 
