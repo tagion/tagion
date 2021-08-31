@@ -1,2 +1,2 @@
-tagionorigin.ctx: libtagioncrypto.o llibtagionp2pgowrapper.o libtagiongossip.o
+tagionwave.ctx: libtagioncrypto.o libtagionp2pgowrapper.o libtagiongossip.o
 	@
