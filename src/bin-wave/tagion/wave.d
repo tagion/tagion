@@ -1,4 +1,4 @@
-module tagion.origin;
+module bin-wave.tagion.wave;
 
 import std.stdio;
 import core.thread;
