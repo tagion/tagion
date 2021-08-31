@@ -1,13 +1,13 @@
 # 
 # Source code cloning
 # 
-add/%: $(DIR_SRC)/%/context.mk
+add-%: $(DIR_SRC)/%/context.mk
 	@
 
 $(DIR_SRC)/%/context.mk:
 	$(PRECMD)git clone $(GIT_ORIGIN)/core-$(*) $(DIR_SRC)/$(*)	
 
-add/core: add/lib-basic\
+add-core: add/lib-basic\
 			  add/lib-utils\
 			  add/lib-hibon\
 			  add/lib-p2pgowrapper\
@@ -33,11 +33,4 @@ add/core: add/lib-basic\
 			  add/wrap-secp256k1\
 			  add/wrap-openssl\
 			  add/wrap-p2pgowrapper
-	@
-
-add/public: add/lib-basic\
-				add/lib-utils\
-				add/lib-hibon\
-				add/lib-p2pgowrapper\
-				add/wrap-p2pgowrapper
 	@

@@ -4,11 +4,12 @@ help:
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show current Make environment}
 	${call log.kvp, make update, Force update the tub itself}
-	${call log.kvp, make install, Ensure correct local setup of the tub}
+	${call log.kvp, make checkout/<branch-or-commit>, Switch tub to specific branch or commit}
+	${call log.kvp, make run, Create recursive 'run' script}
+	${call log.kvp, make derun, Remove recursive 'run' script}
 	${call log.separator}
-	${call log.kvp, make add/<specific>, Add source code of <speficic> module}
-	${call log.kvp, make add/public, Add all open-sourced modules}
-	${call log.kvp, make add/core, Add all core modules}
+	${call log.kvp, make add-<specific>, Add source code of <speficic> module}
+	${call log.kvp, make add-core, Add all core modules}
 	${call log.separator}
 	${call log.kvp, make libtagion<specific>, Compile <specific> lib}
 	${call log.kvp, make tagion<specific>, Compile <specific> bin}

@@ -1,29 +1,19 @@
 #!/usr/bin/env bash
 
-while [[ $(pwd) != / ]] ; do
-    TUBROOT=$(find "$(pwd)"/ -maxdepth 1 -name "tubroot")
-    if [[ -z "$TUBROOT" ]] ; then
-    cd ..
-    else
-    ORIGIN_PATH=$(pwd)
-    break
-    fi
-done
+PWD=$(pwd)
 
-if [[ -z "$ORIGIN_PATH" ]] ; then
-echo "No tubroot found in parent directories."
-echo "Make sure you have tubroot file on the same level as 'src' of your project."
-exit
+if [ -d $PWD/src ]; then
+    SRC=$PWD/src
+else
+    SRC=$PWD/tub/src
 fi
 
-echo
-echo "You are in project: $ORIGIN_PATH"
-echo
+echo "Running command in $SRC"
 
-for DIR in $(ls src); do
+for DIR in $(ls $SRC); do
     echo -e "\033[1m$DIR\033[0m"
     
-    cd "$ORIGIN_PATH/src/$DIR/";
+    cd "$SRC/$DIR/";
     C=''
     for i in "$@"; do 
         i="${i//\\/\\\\}"
