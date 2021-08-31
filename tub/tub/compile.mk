@@ -1,4 +1,4 @@
--include ${shell find $(DIR_SRC) -name '*context.mk'}
+# -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
 # TODO: Add revision.di
 # TODO: Add ldc-build-runtime for building phobos and druntime for platforms
@@ -28,7 +28,7 @@ ways: $(WAYS) $(WAYS_PERSISTENT)
 tagion%: $(DIR_BUILD)/bins/tagion%
 	@
 
-libtagion%.o: | libtagion%.ctx $(DIR_BUILD)/libs/o/libtagion%.o
+libtagion%.o: $(DIR_BUILD)/libs/o/libtagion%.o
 	${eval OBJS += $(*)}
 
 libtagion%.a: $(DIR_BUILD)/libs/static/libtagion%.a
@@ -62,7 +62,7 @@ $(DIR_BUILD)/libs/static/libtagion%.a: | ways libtagion%.o
 	${call log.kvp, Archived, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
-$(DIR_BUILD)/libs/o/libtagion%.o: | ways libtagion%.ctx
+$(DIR_BUILD)/libs/o/libtagion%.o: | ways
 	${call define.parallel}
 
 	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
@@ -83,7 +83,7 @@ $(DIR_BUILD)/libs/o/libtagion%.o: | ways libtagion%.ctx
 	${call log.kvp, Compiled, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
-$(DIR_BUILD)/tests/test_libtagion%: | ways libtagion%.ctx
+$(DIR_BUILD)/tests/test_libtagion%: | ways
 	${call define.parallel}
 
 	${eval _OBJS := ${subst $(*),,$(OBJS)}}
@@ -111,7 +111,7 @@ $(DIR_BUILD)/tests/test_libtagion%: | ways libtagion%.ctx
 	${call log.kvp, Compiled, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
-$(DIR_BUILD)/bins/tagion%: | ways tagion%.ctx
+$(DIR_BUILD)/bins/tagion%: | ways
 	${call define.parallel}
 
 	${eval _OBJS := ${subst $(*),,$(OBJS)}}
