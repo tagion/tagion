@@ -597,6 +597,53 @@ enum Types : ubyte {
     F64 = 0x7C, /// f64 valtype
 }
 
+template toWasmType(T) {
+    static if (is(T == int)) {
+        enum toWasmType = Types.I32;
+    }
+    else static if (is(T == long)) {
+        enum toWasmType = Types.I64;
+    }
+    else static if (is(T == float)) {
+        enum toWasmType = Types.F32;
+    }
+    else static if (is(T == double)) {
+        enum toWasmType = Types.F64;
+    }
+    else static if (isFunctionPointer!T) {
+        enum toWasmType = Types.FUNCREF;
+    }
+    else {
+        enum toWasmType = Types.EMPTY;
+    }
+}
+
+unittest {
+    static assert(toWasmType!int is Types.I32);
+    static assert(toWasmType!void is Types.EMPTY);
+}
+
+template toDType(Types t) {
+    static if (t is Types.I32) {
+        alias toDType = int;
+    }
+    else static if (t is Types.I64) {
+        alias toDType = long;
+    }
+    else static if (t is Types.F32) {
+        alias toDType = float;
+    }
+    else static if (t is Types.F64) {
+        alias toDType = double;
+    }
+    else static if (t is Types.FUNCREF) {
+        alias toDType = void*;
+    }
+    else {
+        alias toDType = void;
+    }
+}
+
 @safe static string typesName(const Types type) pure {
     import std.uni : toLower;
     import std.conv : to;

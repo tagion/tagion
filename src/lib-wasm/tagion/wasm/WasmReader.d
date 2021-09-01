@@ -115,6 +115,13 @@ import std.format;
     static assert(isForwardRange!WasmRange);
     //static assert(isRandomAccessRange!WasmRange);
 
+    auto get(Section S)() {
+        alias T = Sections[S];
+        auto range = opSlice;
+        auto sec = range[S];
+        return T(sec.data);
+    }
+
     @safe struct WasmRange {
         immutable(ubyte[]) data;
         protected size_t _index;
@@ -167,6 +174,7 @@ import std.format;
             size_t index() const {
                 return _index;
             }
+
         }
 
         @nogc struct WasmSection {
