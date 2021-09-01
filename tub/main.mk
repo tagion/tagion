@@ -43,8 +43,19 @@ derun:
 
 include $(DIR_TUB)/add.mk
 include $(DIR_TUB)/revision.mk
-include $(DIR_TUB)/compile.mk
+include $(DIR_TUB)/unit.mk
+# include $(DIR_TUB)/compile.mk
 include $(DIR_TUB)/clean.mk
+
+ifeq ($(TUB_MODE_ISOLATED),1)
+# Include context of current unit in isolate mode
+include $(DIR_ROOT)/context.mk
+else
+COMPILE_TARGETS := $(MAKECMDGOALS)
+COMPILE_TARGETS_DIRS := ${foreach COMPILE_TARGET, $(COMPILE_TARGETS), $(subst libtagion,lib-,$(COMPILE_TARGET))}
+COMPILE_TARGETS_DIRS := ${foreach COMPILE_TARGET, $(COMPILE_TARGETS_DIRS), $(subst tagion,bin-,$(COMPILE_TARGET))}
+${foreach COMPILE_TARGETS_DIR, $(COMPILE_TARGETS_DIRS), ${eval include $(DIR_SRC)/$(COMPILE_TARGETS_DIR)/context.mk}}
+endif
 
 .PHONY: help info
 .SECONDARY:
