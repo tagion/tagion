@@ -1,3 +1,11 @@
+# TODO: Finish macros for target
+# Add wrapper support
+# Add bin support
+# Add unit test run support
+# Test in isolated mode
+# Test auto adding dependencies (ensure correct branching as well)
+# Add revision
+
 UNITS_DEFINED := _
 UNIT_PREFIX_LIB := lib-
 UNIT_PREFIX_BIN := bin-
@@ -95,13 +103,43 @@ ${if $(UNIT_DEFINED_BLOCK), , ${eval ${call _unit.end}}}
 endef
 
 define _unit.target.dep
-$(UNIT_PREFIX_TARGET)$(UNIT):
-	@echo "This is $(UNIT), it depends on $(UNIT_DEPS_PREFIXED_TARGETS)"
+$(DIR_BUILD)/o/$(UNIT_PREFIX_TARGET)$(UNIT).o: $(UNIT_D_FILES)
+	${eval _INCFLAGS := -I$(DIR_SRC)/$(UNIT_PREFIX)$(UNIT)}
+	${eval _INCFLAGS += ${foreach UNIT_DEP_PREFIXED, $(UNIT_DEPS_PREFIXED), -I$(DIR_SRC)/$(UNIT_DEP_PREFIXED)}}
+
+	${eval _TARGET := $(DIR_BUILD)/o/$(UNIT_PREFIX_TARGET)$(UNIT).o}
+	
+	${eval _INFILES := $(UNIT_D_FILES)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -c}
+	${eval _DCFLAGS += -of$(_TARGET)}
+	
+	$${call log.compile.details}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
 endef
 
 define _unit.target.compile
-$(UNIT_PREFIX_TARGET)$(UNIT): $(UNIT_DEPS_PREFIXED_TARGETS)
-	@echo "This is $(UNIT), it depends on $(UNIT_DEPS_PREFIXED_TARGETS)"
+$(UNIT_PREFIX_TARGET)$(UNIT): ${addprefix $(DIR_BUILD)/o/, $(UNIT_DEPS_PREFIXED_TARGETS:=.o)} $(UNIT_D_FILES)
+	${eval _INCFLAGS := -I$(DIR_SRC)/$(UNIT_PREFIX)$(UNIT)}
+	${eval _INCFLAGS += ${foreach UNIT_DEP_PREFIXED, $(UNIT_DEPS_PREFIXED), -I$(DIR_SRC)/$(UNIT_DEP_PREFIXED)}}
+
+	${eval _TARGET := $(DIR_BUILD)/o/$(UNIT_PREFIX_TARGET)$(UNIT).o}
+	
+	${eval _INFILES := $(UNIT_D_FILES)}
+
+	${eval _DCFLAGS := $(DCFLAGS)}
+	${eval _DCFLAGS += -c}
+	${eval _DCFLAGS += -of$(_TARGET)}
+	
+	$${call log.compile.details}
+
+	${eval _LDCFLAGS := $(LDCFLAGS)}
+	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCFLAGS) $(_LDCFLAGS)
+	${call log.kvp, Compiled, $(_TARGET)}
 endef
 
 define _unit.end
@@ -110,6 +148,7 @@ ${info -> $(UNIT) defined, deps: $(UNIT_DEPS)}
 ${eval UNITS_DEFINED += $(UNIT_PREFIX)$(UNIT)}
 ${eval UNIT_IS_COMPILE_TARGET := ${findstring $(UNIT_PREFIX)$(UNIT), $(COMPILE_TARGETS_DIRS)}}
 
+${eval UNIT_D_FILES := ${call find.files, ${DIR_SRC}/$(UNIT_PREFIX)$(UNIT), *.d}}
 ${if $(UNIT_IS_COMPILE_TARGET), ${eval ${call _unit.target.compile}}, ${eval ${call _unit.target.dep}}}
 
 # Remove dependencies that were already included:
@@ -118,3 +157,42 @@ ${foreach UNIT_DEFINED, $(UNITS_DEFINED), ${eval UNIT_DEPS_PREFIXED := ${patsubs
 ${foreach UNIT_DEP_PREFIXED, $(UNIT_DEPS_PREFIXED), ${eval include $(DIR_SRC)/$(UNIT_DEP_PREFIXED)/context.mk}}
 endef
 
+
+
+# 
+# Helpers
+# 
+# 
+# Compilation
+# 
+define find.files
+${shell find ${strip $1} -not -path "$(SOURCE_FIND_EXCLUDE)" -name '${strip $2}'}
+endef
+
+define execute.ifnot.parallel
+${if $${shell [[ "$$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1},,$1}
+endef
+
+define execute.if.parallel
+${if $${shell [[ "$$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1},$1,}
+endef
+
+define log.compile.details
+${call log.header, ${strip $1}}
+${call log.kvp, DC, $(DC)}
+${call log.kvp, DCFLAGS, $(_DCFLAGS)}
+${call log.kvp, INCFLAGS}
+${call log.lines, $(_INCFLAGS)}
+${call log.kvp, INFILES}
+${call log.lines, $(_INFILES)}
+${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}
+${call log.kvp, LATEFLAGS, $(LATEFLAGS)}
+${call log.space}
+endef
+
+define log.archive.details
+${call log.header, ${strip $1}}
+${call log.kvp, Including}
+${call log.lines, $(_ARCHIVES)}
+${call log.space}
+endef
