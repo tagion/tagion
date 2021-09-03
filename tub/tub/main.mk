@@ -50,6 +50,7 @@ disable-run:
 
 # include $(DIR_TUB)/add.mk
 include $(DIR_TUB)/ways.mk
+include $(DIR_TUB)/generate.mk
 include $(DIR_TUB)/unit.mk
 include $(DIR_TUB)/clean.mk
 
