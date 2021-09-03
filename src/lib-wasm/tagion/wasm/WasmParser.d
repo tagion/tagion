@@ -10,15 +10,23 @@ import tagion.utils.LEB128;
 //import tagion.Message : message;
 
 @safe struct Token {
-    string name;
+    enum Type {
+        NONE,
+        COMMENT,
+        WORD,
+        BRACKET,
+        TEXT
+    }
+    string symbol;
     uint line;
     uint pos;
+    Type type;
     string toText() pure const {
         if (line is 0) {
-            return name;
+            return symbol;
         }
         else {
-            return format("%s:%s:%s", line, pos, name);
+            return format("%s:%s:%s", line, pos, symbol);
         }
     }
 }
@@ -48,6 +56,7 @@ import tagion.utils.LEB128;
             uint _current_line; /// Line number of the current token
             size_t _current_pos; /// Position of the token in the current line
             bool _eos; /// Markes end of stream
+            Token.Type type;
         }
         this(string source) pure nothrow {
             _line = 1;
@@ -68,8 +77,12 @@ import tagion.utils.LEB128;
                 return cast(uint)(_begin_pos - _current_pos);
             }
 
-            immutable(string) front() {
+            immutable(string) symbol() {
                 return source[_begin_pos .. _end_pos];
+            }
+
+            immutable(Token) front() {
+                return Token(symbol, line, pos, type);
             }
 
             bool empty() {
@@ -102,6 +115,7 @@ import tagion.utils.LEB128;
             _current_pos = _line_pos;
             if (_end_pos < source.length) {
                 if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == "(;")) {
+                    type = Token.Type.COMMENT;
                     _end_pos += 2;
                     uint level = 1;
                     while (_end_pos + 1 < source.length) {
@@ -128,15 +142,18 @@ import tagion.utils.LEB128;
                     }
                 }
                 else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;")) {
+                    type = Token.Type.COMMENT;
                     _end_pos += 2;
                     while ((_end_pos < source.length) && (!is_newline(source[_end_pos .. $]))) {
                         _end_pos++;
                     }
                 }
                 else if ((source[_end_pos] is '(') || (source[_end_pos] is ')')) {
+                    type = Token.Type.BRACKET;
                     _end_pos++;
                 }
                 else if (source[_end_pos] is '"' || source[_end_pos] is '\'') {
+                    type = Token.Type.TEXT;
                     const quote = source[_begin_pos];
                     _end_pos++;
                     bool escape;
@@ -167,6 +184,7 @@ import tagion.utils.LEB128;
                             && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')')) {
                         _end_pos++;
                     }
+                    type = Token.Type.WORD;
                 }
             }
             if (_end_pos is _begin_pos) {
@@ -175,7 +193,9 @@ import tagion.utils.LEB128;
         }
 
         Range save() pure const nothrow @nogc {
-            return Range(this);
+            auto result = Range(this);
+            //assert(result is this);
+            return result;
         }
 
         protected void trim() pure nothrow {
