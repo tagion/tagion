@@ -11,13 +11,14 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.hibon.HiBONJSON;
-import tagion.vm.wasm.Wast;
-import tagion.vm.wasm.WasmReader;
-import tagion.vm.wasm.WasmWriter;
-import tagion.vm.wasm.WasmBase;
-import tagion.vm.wasm.WasmGas;
+import tagion.wasm.Wast;
+import tagion.wasm.WasmReader;
+import tagion.wasm.WasmWriter;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmGas;
 //import tagion.script.StandardRecords;
 import std.array : join;
+import tagion.wasm.WasmParser;
 
 // import tagion.vm.wasm.revision;
 
@@ -30,7 +31,78 @@ enum fileextensions {
 };
 
 
+// (func (func (param $1 xx)
+
+enum TokenState {
+    START,
+    MODULE,
+    FUNCS,
+    PARAMS,
+    RETURNS,
+    CODE,
+    NONE
+}
+
+
+void compile(ref Tokenizer tokenizer) {
+    writeln("START");
+    auto range = tokenizer[];
+    void parser(ref Tokenizer.Range range, const TokenState token_state, const uint level = 0) {
+        while (!range.empty) {
+            string symbol = range.front.symbol;
+            //writeln(symbol, "   ",level);
+            range.popFront;
+            
+            switch (symbol) {
+                case "(":
+                    parser(range, TokenState.NONE, level+1);
+                    break;
+
+                case "module":
+                    parser(range, TokenState.MODULE, level);
+                    break;
+
+                case "func":
+                    parser(range, TokenState.FUNCS, level);
+                    break;
+
+                case "param":
+                    parser(range, TokenState.PARAMS, level);
+                    break;
+                
+                case "result":
+                    parser(range, TokenState.RETURNS, level);
+                    break;
+
+                case ")":
+                    parser(range, TokenState.NONE, level-1);
+                    break;
+
+                default:
+                break;
+            }
+        }
+    }
+    
+    parser(range, TokenState.START);
+}
+
+int main(){
+    writeln("test");
+    import std.file : fread = read;
+    immutable file_name = "../temp/i32test.wast";
+    immutable text = cast(string) file_name.fread;
+
+    Tokenizer tokenizer = Tokenizer(text);
+
+ 
+    compile(tokenizer);
+
+    return 0;
+}
+/*
 int main(string[] args) {
+    pragma(msg, "START");
     immutable program=args[0];
     bool version_switch;
 
@@ -109,14 +181,18 @@ int main(string[] args) {
     if ( args.length > 3) {
         stderr.writefln("Only one output file name allowed (given %s)", args[1..$]);
         help;
+        pragma(msg, "1");
         return 3;
     }
     if (args.length > 2) {
         outputfilename=args[2];
-//        writefln("outputfilename%s", outputfilename);
+        pragma(msg, "2");
+        writefln("outputfilename%s", outputfilename);
     }
     if (args.length > 1) {
+        pragma(msg, "3");
         inputfilename=args[1];
+        writefln("inputfilename%s", inputfilename);
     }
     else {
         stderr.writefln("Input file missing");
@@ -145,19 +221,19 @@ int main(string[] args) {
         verbose.hex(0, read_data);
 //        writefln("reader\n%s", read_data);
         break;
-        /*
-    case fileextensions.JSON:
-        const data=cast(char[])fread(inputfilename);
-        auto parse=data.parseJSON;
-        auto hibon=parse.toHiBON;
-        if (standard_output) {
-            write(hibon.serialize);
-        }
-        else {
-            outputfilename.fwrite(hibon.serialize);
-        }
-        break;
-        */
+        
+    // case fileextensions.JSON:
+    //     const data=cast(char[])fread(inputfilename);
+    //     auto parse=data.parseJSON;
+    //     auto hibon=parse.toHiBON;
+    //     if (standard_output) {
+    //         write(hibon.serialize);
+    //     }
+    //     else {
+    //         outputfilename.fwrite(hibon.serialize);
+    //     }
+    //     break;
+        
     default:
         stderr.writefln("File extensions %s not valid for input file (only %s)",
             input_extension, [EnumMembers!fileextensions]);
@@ -246,3 +322,4 @@ int main(string[] args) {
     }
     return 0;
 }
+*/
