@@ -13,9 +13,8 @@ DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
 	$(PRECMD)rm $(*)/.way
 
 WAYS_PERSISTENT += $(DIR_BUILD)/.way
-WAYS += $(DIR_BUILD)/o/.way
-WAYS += $(DIR_BUILD)/libs/static/.way
-WAYS += $(DIR_BUILD)/tests/.way
+WAYS += $(DIR_BUILD_TEMP)/o/.way
+WAYS += $(DIR_BUILD)/libs/.way
 WAYS += $(DIR_BUILD)/bins/.way
 
 ways: $(WAYS) $(WAYS_PERSISTENT)
