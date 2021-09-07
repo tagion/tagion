@@ -1,6 +1,6 @@
 module tagion.wasm.WasmBase;
 
-import std.traits : EnumMembers, Unqual, isAssociativeArray, ForeachType, ConstOf;
+import std.traits : EnumMembers, Unqual, isAssociativeArray, ForeachType, ConstOf, isFunctionPointer;
 import std.meta : AliasSeq;
 import std.typecons : Tuple;
 import std.format;
