@@ -1,5 +1,8 @@
 main: help
 
+# Tub protocol version that modules must explicitly support
+TUB := 5
+
 # Choosing root directory
 DIR_MAKEFILE := ${realpath .}
 DIR_TUB := $(DIR_MAKEFILE)
