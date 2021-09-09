@@ -56,8 +56,12 @@ import tagion.utils.LEB128;
             popFront;
         }
 
-        this(ref return scope const Range rhs) @nogc pure nothrow {
-        }
+        // this(ref return scope const Range rhs) @nogc pure nothrow
+        // out{
+        //     assert(rhs is this);
+        // }
+        //  do    {
+        //  }
 
         @property const pure nothrow {
             uint line() {
@@ -175,7 +179,8 @@ import tagion.utils.LEB128;
         }
 
         Range save() pure const nothrow @nogc {
-            return Range(this);
+            auto result = this;
+            return result;
         }
 
         protected void trim() pure nothrow {
@@ -421,25 +426,45 @@ unittest {
 
     const parser = Tokenizer(src);
     //    uint count;
-    auto range_1 = parser[];
+    //auto range_1 = parser[];
 
     import std.stdio;
 
-    //     while (!range_1.empty) {
-    // //    foreach(t; parser[]) {
-    // //        const x=t.token;
-    //         writefln("{line : %d, pos : %d, token : \"%s\"},", range_1.line, range_1.pos, range_1.front);
-    //         range_1.popFront;
-    //     }
-    auto range = parser[];
-    foreach (t; tokens) {
-        assert(range.line is t.line);
-        assert(range.pos is t.pos);
-        assert(range.front == t.token);
-        assert(!range.empty);
-        range.popFront;
+    {
+        auto range = parser[];
+        foreach (t; tokens) {
+            assert(range.line is t.line);
+            assert(range.pos is t.pos);
+            assert(range.front == t.token);
+            assert(!range.empty);
+            range.popFront;
+        }
+        assert(range.empty);
     }
-    assert(range.empty);
+
+    {
+        auto range = parser[];
+        writefln("range %s %d %d", range.front, range.pos, range.line);
+        auto saved_range = range.save;
+        range.popFront;
+        writefln("range %s %d %d", range.front, range.pos, range.line);
+        // range.popFront;
+        // range.popFront;
+        // range.popFront;
+        // range.popFront;
+        // range.popFront;
+        // range.popFront;
+        range.popFront;
+        writefln("range %s %d %d", range.front, range.pos, range.line);
+        range.popFront;
+        writefln("range %s %d %d", range.front, range.pos, range.line);
+//        writefln("range %s %d", range.front, range.pos);
+        writefln("save_range %s %d %d", save_range.front, save_range.pos, save_range.line);
+        writefln("save_range %s", saved_range.front);
+        writefln("save_range %s", saved_range.front);
+
+    }
+
 }
 
 struct WasmWord {
@@ -637,6 +662,7 @@ enum WASMKeywords = [
 
 // mixin(EnumText!("ScriptType", _scripttype));
 
+version(none)
 @safe static struct Lexer {
     // protected enum ctLabelMap=generateLabelMap(keywordMap);
     import std.regex;
