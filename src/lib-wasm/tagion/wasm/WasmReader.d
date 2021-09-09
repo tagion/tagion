@@ -162,12 +162,16 @@ import std.format;
             }
             do {
                 auto index_range = WasmRange(data);
+//                (() @trusted {
                 foreach (i; 0 .. EnumMembers!(Section).length) {
                     if (i is index) {
                         return index_range.front;
                     }
                     index_range.popFront;
                 }
+//                })();
+
+
                 assert(0);
             }
 
@@ -225,14 +229,20 @@ import std.format;
                     }
 
                 }
-                const(Element) opIndex(const size_t index) pure const {
+                const(Element) opIndex(const size_t index) const pure {
                     auto range = VectorRange(owner);
-                    foreach (i, ref e; range.enumerate) {
+                    pragma(msg, typeof(range));
+                    size_t i;
+                    while(!range.empty) {
+//                    foreach (i, ref e; range.enumerate) {
                         if (i is index) {
-                            return e;
+                            return range.front;
                         }
+                        range.popFront;
+                        i++;
                     }
                     throw new WasmException(format!"Index %d out of range"(index));
+                    assert(0);
                 }
             }
 
