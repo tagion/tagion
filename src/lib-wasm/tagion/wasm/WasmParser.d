@@ -65,9 +65,6 @@ import tagion.utils.LEB128;
             popFront;
         }
 
-        this(ref return scope const Range rhs) @nogc pure nothrow {
-        }
-
         @property const pure nothrow {
             uint line() {
                 return _current_line;
@@ -193,7 +190,7 @@ import tagion.utils.LEB128;
         }
 
         Range save() pure const nothrow @nogc {
-            auto result = Range(this);
+            auto result = this;
             //assert(result is this);
             return result;
         }
@@ -434,32 +431,39 @@ unittest {
     ];
 
     const parser = Tokenizer(src);
-    //    uint count;
-    auto range_1 = parser[];
 
     import std.stdio;
-
-    //     while (!range_1.empty) {
-    // //    foreach(t; parser[]) {
-    // //        const x=t.token;
-    //         writefln("{line : %d, pos : %d, token : \"%s\", type: Token.Type.WORD},", range_1.line, range_1.pos, range_1.front);
-    //         range_1.popFront;
-    //     }
-    auto range = parser[];
-    foreach (t; tokens) {
-        assert(range.line is t.line);
-        assert(range.pos is t.pos);
-        assert(range.front.symbol == t.symbol);
-        if (range.front.type !is t.type) {
-            writefln("range.front = %s", range.front);
-            writefln("       type = %s", t.type);
-            assert(0);
+    {
+        auto range = parser[];
+        foreach (t; tokens) {
+            assert(range.line is t.line);
+            assert(range.pos is t.pos);
+            assert(range.front.symbol == t.symbol);
+            assert(range.front.type is t.type);
+            assert(range.front == t);
+            assert(!range.empty);
+            range.popFront;
         }
-        assert(range.front.type is t.type);
-        assert(!range.empty);
-        range.popFront;
+        assert(range.empty);
     }
-    assert(range.empty);
+
+    { // Test ForwardRange
+        auto range = parser[];
+        // writefln("%s", range.front);
+        range.popFront;
+        auto saved_range = range.save;
+        immutable before_token_1 = range.front;
+
+        // writefln("%s", range.front);
+        range.popFront;
+        assert(before_token_1 != range.front);
+        // writefln("save %s", saved_range.front);
+        assert(before_token_1 == saved_range.front);
+        saved_range.popFront;
+        assert(range.front == saved_range.front);
+
+//        range.popFront;
+    }
 }
 
 struct WasmWord {
@@ -657,6 +661,7 @@ enum WASMKeywords = [
 
 // mixin(EnumText!("ScriptType", _scripttype));
 
+version(none)
 @safe static struct Lexer {
     // protected enum ctLabelMap=generateLabelMap(keywordMap);
     import std.regex;
