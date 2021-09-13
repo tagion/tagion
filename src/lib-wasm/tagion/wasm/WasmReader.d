@@ -107,7 +107,7 @@ import std.format;
         }
     }
 
-    WasmRange opSlice() const {
+    WasmRange opSlice() const nothrow {
         return WasmRange(data);
     }
 
@@ -115,12 +115,13 @@ import std.format;
     static assert(isForwardRange!WasmRange);
     //static assert(isRandomAccessRange!WasmRange);
 
-    auto get(Section S)() {
+    auto get(Section S)() const nothrow {
         alias T = Sections[S];
         auto range = opSlice;
         auto sec = range[S];
-        return T(sec.data);
+        return new T(sec.data);
     }
+
 
     @safe struct WasmRange {
         immutable(ubyte[]) data;
@@ -258,8 +259,12 @@ import std.format;
                 // static assert(isInputRange!SecRange);
                 // static assert(isForwardRange!SecRange);
                 alias SecRange = VectorRange!(SectionT, SecType);
-                SecRange opSlice() const {
+                SecRange opSlice() const pure nothrow {
                     return SecRange(this);
+                }
+
+                SecType opIndex(const size_t index) const pure {
+                    return SecRange(this).opIndex(index);
                 }
 
                 @trusted override string toString() const {
