@@ -520,10 +520,10 @@ import tagion.wasm.WasmException;
 
         alias Import = SectionT!(ImportType);
 
-        struct Index {
+        struct TypeIndex {
             uint idx;
-            this(const uint idx) {
-                this.idx = idx;
+            this(const uint typeidx) {
+                this.idx = typeidx;
             }
 
             this(ref const(ReaderSecType!(Section.FUNCTION)) f) {
@@ -533,7 +533,7 @@ import tagion.wasm.WasmException;
             mixin Serialize;
         }
 
-        alias Function = SectionT!(Index);
+        alias Function = SectionT!(TypeIndex);
 
         struct TableType {
             Types type;

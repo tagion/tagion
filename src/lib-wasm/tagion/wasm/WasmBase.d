@@ -336,6 +336,7 @@ enum IR : ubyte {
 }
 
 shared static immutable(Instr[IR]) instrTable;
+shared static immutable(IR[string]) instrLookupTable;
 
 shared static this() {
     with (IR) {
@@ -538,6 +539,15 @@ shared static this() {
             // dfmt on
         ];
     }
+    import std.exception : assumeUnique;
+    immutable(IR[string]) generateLookupTable() {
+        IR[string] result;
+        foreach(ir, ref instr; instrTable) {
+            result[instr.name] = ir;
+        }
+        return assumeUnique(result);
+    }
+    instrLookupTable = generateLookupTable;
 }
 
 enum IR_TRUNC_SAT : ubyte {
