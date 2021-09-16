@@ -6,6 +6,8 @@ import std.path : extension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique;
 import std.json;
+import std.string: isNumeric;
+import std.conv;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -20,6 +22,9 @@ import tagion.wasm.WasmGas;
 import std.array : join;
 import tagion.wasm.WasmParser;
 
+
+import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
+    TemplateArgsOf, PointerTarget, getUDAs, hasUDA, isPointer, ConstOf, ForeachType;
 // import tagion.vm.wasm.revision;
 
 enum fileextensions {
@@ -29,9 +34,6 @@ enum fileextensions {
 
     json  = ".json"
 };
-
-
-// (func (func (param $1 xx)
 
 enum TokenState {
     START,
@@ -43,49 +45,467 @@ enum TokenState {
     NONE
 }
 
+alias LimitReader = WasmReader.Limit;
+alias Limit = WasmWriter.WasmSection.Limit;
+alias SectionT = WasmWriter.WasmSection.SectionT;
+alias Custom = WasmWriter.WasmSection.Custom; // 7.4 may be ignored by an implementation.
+alias CustomList = WasmWriter.WasmSection.CustomList; // same
+alias FuncType = WasmWriter.WasmSection.FuncType;
+alias ImportType = WasmWriter.WasmSection.ImportType;
+alias TableType = WasmWriter.WasmSection.TableType;
+alias MemoryType = WasmWriter.WasmSection.MemoryType;
+alias GlobalType = WasmWriter.WasmSection.GlobalType;
+alias ExportType = WasmWriter.WasmSection.ExportType;
+alias Start = WasmWriter.WasmSection.Start;
+alias ElementType = WasmWriter.WasmSection.ElementType;
+alias codeType = WasmWriter.WasmSection.CodeType;
+alias DataType = WasmWriter.WasmSection.DataType;
+
+Types getType(string s) {
+    switch(s) {
+        case("i32"):
+            return Types.I32;
+        case("i64"):
+            return Types.I64;
+        case("f32"):
+            return Types.F32;
+        case("f64"):
+            return Types.F64;
+        default:
+            writeln("Unsupported symbol");
+            assert(0);
+    }
+}
+
+
+// @safe class WasmCompilerExpection : WasmException {
+//     const Token token;
+//     this(string msg, const Token token=Token.init,  string file = __FILE__, size_t line = __LINE__) pure nothrow {
+//         super(msg, file, line);
+//         this.token = token;
+//     }
+// }
+
+// alias check = Check!WasmCompilerException;
 
 void compile(ref Tokenizer tokenizer) {
+    
+    uint lvl = 0;
+    // 
+    
     writeln("START");
     auto range = tokenizer[];
-    void parser(ref Tokenizer.Range range, const TokenState token_state, const uint level = 0) {
-        while (!range.empty) {
-            string symbol = range.front.symbol;
-            //writeln(symbol, "   ",level);
+
+    void parseModule(ref Tokenizer.Range range) {
+        FuncType[] func_types;
+        ExportType[] exp_types;
+        ImportType[] imp_types;
+        TableType[] tab_types;
+
+        uint[string] index_func;
+        uint[string] index_table;
+        uint[string] index_memory;
+        uint[string] index_global;
+
+        ImportType parseImport(ref Tokenizer.Range range, ref ImportType[] imp_types) 
+        in {
+            assert(range.front.symbol == "import");
+        }
+        do {
+            ImportType imp_type;
+            imp_type.mod = range.front.symbol;
             range.popFront;
-            
-            switch (symbol) {
-                case "(":
-                    parser(range, TokenState.NONE, level+1);
-                    break;
 
-                case "module":
-                    parser(range, TokenState.MODULE, level);
-                    break;
+            imp_type.name = range.front.symbol;
+            range.popFront;
+           
+            //check(range.front.symbol == ")", "Symbol should be -> )");
 
+            range.popFront; // del "("
+            const s = range.front.symbol;
+            range.popFront;
+            switch(s) {
                 case "func":
-                    parser(range, TokenState.FUNCS, level);
-                    break;
-
-                case "param":
-                    parser(range, TokenState.PARAMS, level);
-                    break;
+                    ImportType.ReaderImportDesc.FuncDesc func_desc;
+                    if(isNumeric(range.front.symbol)){
+                        func_desc.funcidx = to!int(range.front.symbol);
+                    } 
+                    else {
+                        func_desc.funcidx = index_func[range.front.symbol];
+                    }
+                    range.popFront;
+                    auto fun_d = ImportType.ImportDesc.FuncDesc(func_desc);
+                    auto imp_desc = ImportType.ImportDesc(fun_d);
+                    imp_type.importdesc = imp_desc;
+                    imp_types ~= imp_type;  
+                    
+                    while(range.front.symbol != ")") range.popFront;
+                    range.popFront;
+                    
+                    return imp_type;
                 
-                case "result":
-                    parser(range, TokenState.RETURNS, level);
+                case("table"):
+                    ImportType.ReaderImportDesc.TableDesc table_desc;
+
+                    const min_ = to!int(range.front.symbol);
+                    int max_;
+                    range.popFront;
+                    
+                    if(isNumeric(range.front.symbol)) {
+                        max_ = to!int(range.front.symbol);
+                        range.popFront;
+                        LimitReader lim_range;
+                        lim_range.lim = Limits.RANGE;
+                        lim_range.from =  min_;
+                        lim_range.to = max_;
+
+                        table_desc.limit = lim_range;
+                    }
+                    else {
+                        Limit lim_infinite;
+                        lim_infinite.lim = Limits.INFINITE;
+                        lim_infinite.from = min_;
+
+                        table_desc.limit = lim_infinite;
+                    }
+                                          
+                    const s_type = range.front.symbol;
+                    range.popFront;
+
+                    table_desc.type = getType(s_type);
+
+                    auto table_d = ImportType.ImportDesc.TableDesc(table_desc);
+                    auto imp_desc = ImportType.ImportDesc(table_d);
+
+                    imp_type.importdesc = imp_desc;
+                    imp_types ~= imp_type;
+                    
+                    if(range.front.symbol == ")") {
+                        range.popFront;
+                        return imp_type;
+                    }
+                    else {
+                        assert(0, "Current symbol should be -> )");
+                    }   
+
+                case("global"):
+                    ImportType.ReaderImportDesc.GlobalDesc global_desc;
+                    string s_type = range.front.symbol;
+                    range.popFront;
+
+                    global_desc.type = getType(s_type);
+
+                    if(range.front.symbol == ")") {
+                        global_desc.mut = Mutable.CONST;
+                    }
+                    else {
+                        global_desc.mut = Mutable.VAR;
+                    }
+                    range.popFront;
+
+                    auto global_d = ImportType.ImportDesc.GlobalDesc(global_desc);
+                    auto imp_desc = ImportType.ImportDesc(global_d);
+                    
+                    imp_type.importdesc = imp_desc;
+                    imp_types ~= imp_type;
+
+                    if(range.front.symbol == ")") {
+                        range.popFront;
+                        return imp_type;
+                    }
+                    else {
+                        assert(0, "Current symbol should be -> )");
+                    }   
+
                     break;
 
-                case ")":
-                    parser(range, TokenState.NONE, level-1);
-                    break;
+                case("memory"):
+                    ImportType.ImportDesc.MemoryDesc memory_desc;
+                    uint min_ = to!int(range.front.symbol);
+                    uint max_;
+                    range.popFront;
+
+                    if(range.front.symbol != ")") {
+                        max_ = to!int(range.front.symbol);
+                        range.popFront;
+                        Limit lim_range;
+                        lim_range.lim = Limits.RANGE;
+                        lim_range.from =  min_;
+                        lim_range.to = max_;
+                        
+                        memory_desc.limit = lim_range;
+                    }
+                    else {
+                        Limit lim_infinite;
+                        lim_infinite.from = min_;
+
+                        memory_desc.limit = lim_infinite;
+                    }
+
+                    auto memory_d = ImportType.ImportDesc.MemoryDesc(memory_desc);
+                    auto imp_desc = ImportType.ImportDesc(memory_d);
+                    imp_type.importdesc = imp_desc;
+                    
+                    if(range.front.symbol == ")") {
+                        range.popFront;
+                        return imp_type;
+                    }
+                    else {
+                        assert(0, "Current symbol should be -> )");
+                    }
 
                 default:
-                break;
+                    writeln("Error, current symbol should be one of {func, table, global, memory}");
+                    break;
             }
+            assert(0);
+        }
+
+        ExportType parseExport(ref Tokenizer.Range range, ref ExportType[] exp_types) 
+        in {
+            assert(range.front.symbol == "export");
+        }
+        do {
+            range.popFront;
+            ExportType exp_type;
+            exp_type.name = range.front.symbol;
+            range.popFront;
+
+            if(range.front.symbol == ")") {
+                range.popFront;
+                exp_types ~= exp_type;
+                return exp_type;    
+            }
+            else if(range.front.symbol == "(") {
+                range.popFront;
+                string s_ind_type = range.front.symbol;
+                range.popFront;
+                switch(s_ind_type) {
+                    case "func":
+                        exp_type.desc = IndexType.FUNC;
+                        range.popFront;
+
+                        if(range.front.symbol !in index_func) {
+                            exp_type.idx = to!int(range.front.symbol);
+                            range.popFront;
+                        }
+                        else {
+                            exp_type.idx = index_func[range.front.symbol];
+                            range.popFront;
+                        }    
+                        exp_types ~= exp_type; 
+
+                        if(range.front.symbol == ")") {
+                            range.popFront;
+                            if(range.front.symbol == ")") {
+                                range.popFront;
+                            }
+                            else {
+                                assert(0, "Current symbol should be -> )");
+                            }
+                        }
+                        break;
+                    
+                    case "table":
+                        exp_type.desc = IndexType.TABLE;
+                        range.popFront;
+                        
+                        if(range.front.symbol !in index_table) {
+                            exp_type.idx = to!int(range.front.symbol);
+                            range.popFront;
+                        }
+                        else {
+                            exp_type.idx = index_table[range.front.symbol];
+                            range.popFront;
+                        }    
+                        
+                        exp_types ~= exp_type;
+
+                        if(range.front.symbol == ")") {
+                            range.popFront;
+                            if(range.front.symbol == ")") {
+                                range.popFront;
+                            }
+                            else {
+                                assert(0, "Current symbol should be -> )");
+                            }
+                        }
+                        break;
+                    
+                    case "memory":
+                        exp_type.desc = IndexType.MEMORY;
+                        range.popFront;
+                        
+                        if(range.front.symbol !in index_memory) {
+                            exp_type.idx = to!int(range.front.symbol);
+                            range.popFront;
+                        }
+                        else {
+                            exp_type.idx = index_memory[range.front.symbol];
+                            range.popFront;
+                        }    
+                        
+                        exp_types ~= exp_type;
+
+                        if(range.front.symbol == ")") {
+                            range.popFront;
+                            if(range.front.symbol == ")") {
+                                range.popFront;
+                            }
+                            else {
+                                assert(0, "Current symbol should be -> )");
+                            }
+                        }
+                        break;
+                    case "global":
+                        exp_type.desc = IndexType.GLOBAL;
+                        range.popFront;
+                        
+                        if(range.front.symbol !in index_global) {
+                            exp_type.idx = to!int(range.front.symbol);
+                            range.popFront;
+                        }
+                        else {
+                            exp_type.idx = index_global[range.front.symbol];
+                            range.popFront;
+                        }    
+                        
+                        exp_types ~= exp_type;
+
+                        if(range.front.symbol == ")") {
+                            range.popFront;
+                            if(range.front.symbol == ")") {
+                                range.popFront;
+                            }
+                            else {
+                                assert(0, "Current symbol should be -> )");
+                            }
+                        }                        
+                        break;
+                    
+                    default:
+                        break;
+                }
+            }
+            else {
+                assert(0, "Current symbol should be ( or )");
+            }
+  
+            return exp_type;
+        }
+        
+        FuncType parseFunction(ref Tokenizer.Range range, ref FuncType[] func_types) 
+        in { 
+            assert(range.front.symbol == "func");
+        }
+            // Types[] params;
+            
+        do {
+            uint[string] param_index;
+            uint counter = 0;
+            FuncType func_type;
+            uint in_lvl = 1;
+
+            range.popFront;
+           // bool got_export;
+            
+            assert(range.front.symbol == "(", "current symbol should be (");
+            
+            while(in_lvl) {
+                const current = range.front;
+            
+                range.popFront;
+                switch(current.symbol) {
+                    case("("):
+                        in_lvl++;
+                        break;
+
+                    case("export"):
+                    //check(!got_export, current, "More the one export");
+                    //got_export = true;
+                        parseExport(range, exp_types);
+                        break; // TODO
+
+                    case("param"):
+                        string s = range.front.symbol;
+                        while(s != "i32" || s != "i64" || s != "f32" || s!= "f64") { 
+                            range.popFront; // Use the param_index when it is labeled
+                            param_index[s] = counter;
+                            counter++;
+                        }
+                        string s_type = range.front.symbol;
+                        func_type.params ~= getType(s_type);
+                        break;
+                        
+                    case("result"):
+                        string s_type = range.front.symbol;
+                        func_type.results ~= getType(s_type);
+                        break;
+
+                    case ("import"):
+                        parseImport(range, imp_types);
+                        break;
+
+                    case(")"):
+                        in_lvl--;
+                        break;
+
+                    default:
+                        break;
+                    //TODO code part        
+                }
+            }
+            func_type.type = Types.FUNC;
+            func_types ~= func_type;
+            return func_type;
+        }
+
+        TableType parseTable(ref Tokennizer.Range range, ref TableType[] table_types) {
+
+        }
+
+        switch(range.front.symbol) {
+            case "func":
+                parseFunction(range, func_types);
+                break;
+            case "import":
+                parseImport(range, imp_types);
+                break;
+            case "export":
+                parseExport(range, exp_types);
+            case "table":
+                parseTable(range, tab_types);
+            default:
+                break;
+        }
+
+    }
+
+
+    while (!range.empty) {
+        string symbol = range.front.symbol;
+        range.popFront;
+
+        switch(symbol) {
+            case("("):
+                lvl++;
+                break;
+
+            case(")"):
+                lvl--;
+                break;
+
+            case("module"):
+                parseModule(range);
+                break;
+            default:
+                break;
         }
     }
-    
-    parser(range, TokenState.START);
+    assert(!lvl);
 }
+
+
 
 int main(){
     writeln("test");
@@ -97,6 +517,11 @@ int main(){
 
  
     compile(tokenizer);
+
+    
+//    Types in type is FyncType
+  //  FuncType[]
+
 
     return 0;
 }
