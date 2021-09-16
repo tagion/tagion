@@ -76,7 +76,7 @@ import std.format;
         this(immutable(ubyte[]) data, ref size_t index) pure nothrow {
             lim = cast(Limits) data[index];
             index += Limits.sizeof;
-            from = u32(data, index);
+            from = u32(data, index); // LEB128 -> uint.max
             const uint get_to(const uint lim) {
                 with (Limits) {
                     final switch (lim) {
@@ -518,7 +518,7 @@ import std.format;
             alias Export = SectionT!(ExportType);
 
             static class Start {
-                immutable(uint) idx;
+                immutable(uint) idx; // Function index
                 this(immutable(ubyte[]) data) pure nothrow {
                     size_t u32_size;
                     idx = u32(data, u32_size);
