@@ -414,7 +414,7 @@ import tagion.wasm.WasmException;
 
                     mixin Serialize;
                 }
-
+              
                 protected union {
                     @(IndexType.FUNC) FuncDesc _funcdesc;
                     @(IndexType.TABLE) TableDesc _tabledesc;
@@ -462,25 +462,27 @@ import tagion.wasm.WasmException;
                     return _desc;
                 }
 
-                version (none) this(T)(ref const(T) desc) {
-                    static if (is(T : const(FuncDesc))) {
-                        _desc = FUNC;
-                        _funcdesc = desc;
-                    }
-                    else static if (is(T : const(TableDesc))) {
-                        _desc = TABLE;
-                        _tabledesc = desc;
-                    }
-                    else static if (is(T : const(MemoryDesc))) {
-                        _desc = MEMORY;
-                        _memorydesc = desc;
-                    }
-                    else static if (is(T : const(GlobalDesc))) {
-                        _desc = GLOBAL;
-                        _globaldesc = desc;
-                    }
-                    else {
-                        static assert(0, format("Type %s is not supported", T.stringof));
+                this(T)(ref const(T) desc) {
+                    with(IndexType) {
+                        static if (is(T : const(FuncDesc))) {
+                            _desc = FUNC;
+                            _funcdesc = desc;
+                        }
+                        else static if (is(T : const(TableDesc))) {
+                            _desc = TABLE;
+                            _tabledesc = desc;
+                        }
+                        else static if (is(T : const(MemoryDesc))) {
+                            _desc = MEMORY;
+                            _memorydesc = desc;
+                        }
+                        else static if (is(T : const(GlobalDesc))) {
+                            _desc = GLOBAL;
+                            _globaldesc = desc;
+                        }
+                        else {
+                            static assert(0, format("Type %s is not supported", T.stringof));
+                        }
                     }
                 }
 
