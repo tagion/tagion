@@ -12,12 +12,14 @@ import std.conv;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Basic : basename, Buffer, Pubkey;
+import tagion.basic.TagionExceptions: Check;
 import tagion.hibon.HiBONJSON;
 import tagion.wasm.Wast;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmWriter;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmGas;
+import tagion.wasm.WasmException: WasmException;
 //import tagion.script.StandardRecords;
 import std.array : join;
 import tagion.wasm.WasmParser;
@@ -62,45 +64,65 @@ alias codeType = WasmWriter.WasmSection.CodeType;
 alias DataType = WasmWriter.WasmSection.DataType;
 
 Types getType(string s) {
-    switch(s) {
-        case("i32"):
-            return Types.I32;
-        case("i64"):
-            return Types.I64;
-        case("f32"):
-            return Types.F32;
-        case("f64"):
-            return Types.F64;
-        default:
-            writeln("Unsupported symbol");
-            assert(0);
+    with(Types){
+        switch(s) {
+            case "i32":
+                return I32;
+            case "i64":
+                return I64;
+            case "f32":
+                return F32;
+            case "f64":
+                return F64;
+            case "funcref":
+                return FUNCREF;
+            default:
+                writeln("Unsupported symbol");
+                assert(0);
+        }
     }
 }
 
 
-// @safe class WasmCompilerExpection : WasmException {
-//     const Token token;
-//     this(string msg, const Token token=Token.init,  string file = __FILE__, size_t line = __LINE__) pure nothrow {
-//         super(msg, file, line);
-//         this.token = token;
-//     }
-// }
+@safe class WasmCompilerException : WasmException {
+    const Token token;
+    this(string msg, const Token token=Token.init,  string file = __FILE__, size_t line = __LINE__) pure nothrow {
+        super(msg, file, line);
+        this.token = token;
+    }
+}
 
-// alias check = Check!WasmCompilerException;
+/++
+ + Builds a check function out of a TagionExecption
+ +/
+@safe
+void check(bool flag, lazy string msg, const Token token=Token.init, string file = __FILE__, size_t line = __LINE__) pure {
+   // static assert(is(E : TagionExceptionInterface));
+    if (!flag) {
+        throw new WasmCompilerException(msg, token, file, line);
+    }
+}
+
+//alias check = Check!WasmCompilerException;
 
 void compile(ref Tokenizer tokenizer) {
     
+
     uint lvl = 0;
     // 
     
     writeln("START");
     auto range = tokenizer[];
 
-    void parseModule(ref Tokenizer.Range range) {
+    void parseModule(ref Tokenizer.Range range, uint lvl) {
+        writeln("Parsing module...");
+        range.popFront;
+
         FuncType[] func_types;
         ExportType[] exp_types;
         ImportType[] imp_types;
         TableType[] tab_types;
+        GlobalType[] global_types;
 
         uint[string] index_func;
         uint[string] index_table;
@@ -109,19 +131,16 @@ void compile(ref Tokenizer tokenizer) {
 
         uint count_tabs;
 
-        ImportType parseImport(ref Tokenizer.Range range, ref ImportType[] imp_types) 
-        in {
-            assert(range.front.symbol == "import");
-        }
-        do {
+        ImportType parseImport(ref Tokenizer.Range range, ref ImportType[] imp_types) {
+            writeln("Parsing import...");
             ImportType imp_type;
-            imp_type.mod = range.front.symbol;
             range.popFront;
+            imp_type.mod = range.front.symbol;
 
+            range.popFront;
             imp_type.name = range.front.symbol;
             range.popFront;
-           
-            //check(range.front.symbol == ")", "Symbol should be -> )");
+            // check(range.front.symbol == "(", "Symbol should be -> (");
 
             range.popFront; // del "("
             const s = range.front.symbol;
@@ -133,7 +152,12 @@ void compile(ref Tokenizer tokenizer) {
                         func_desc.funcidx = to!int(range.front.symbol);
                     } 
                     else {
-                        func_desc.funcidx = index_func[range.front.symbol];
+                        if(range.front.symbol in index_func) {
+                            func_desc.funcidx = index_func[range.front.symbol];
+                        }
+                        else {
+                            writeln("Not func with index");
+                        }
                     }
                     range.popFront;
                     const fun_d = ImportType.ImportDesc.FuncDesc(func_desc);
@@ -263,16 +287,12 @@ void compile(ref Tokenizer tokenizer) {
             assert(0);
         }
 
-        ExportType parseExport(ref Tokenizer.Range range, ref ExportType[] exp_types) 
-        in {
-            assert(range.front.symbol == "export");
-        }
-        do {
-            range.popFront;
+        ExportType parseExport(ref Tokenizer.Range range, ref ExportType[] exp_types) {
+            writeln("Parsing export...");
+
             ExportType exp_type;
             exp_type.name = range.front.symbol;
             range.popFront;
-
             if(range.front.symbol == ")") {
                 range.popFront;
                 exp_types ~= exp_type;
@@ -396,13 +416,8 @@ void compile(ref Tokenizer tokenizer) {
             return exp_type;
         }
         
-        FuncType parseFunction(ref Tokenizer.Range range, ref FuncType[] func_types) 
-        in { 
-            assert(range.front.symbol == "func");
-        }
-            // Types[] params;
-            
-        do {
+        FuncType parseFunction(ref Tokenizer.Range range, ref FuncType[] func_types) {
+            writeln("Parsing func...");
             uint[string] param_index;
             uint counter = 0;
             FuncType func_type;
@@ -417,6 +432,8 @@ void compile(ref Tokenizer tokenizer) {
                 const current = range.front;
             
                 range.popFront;
+
+                
                 switch(current.symbol) {
                     case("("):
                         in_lvl++;
@@ -425,18 +442,21 @@ void compile(ref Tokenizer tokenizer) {
                     case("export"):
                     //check(!got_export, current, "More the one export");
                     //got_export = true;
-                        parseExport(range, exp_types);
+                        ExportType e = parseExport(range, exp_types);
+                        writeln(e);
+                        in_lvl--;
                         break; // TODO
 
                     case("param"):
                         string s = range.front.symbol;
-                        while(s != "i32" || s != "i64" || s != "f32" || s!= "f64") { 
+                        if (s != "i32" || s != "i64" || s != "f32" || s!= "f64") { 
                             range.popFront; // Use the param_index when it is labeled
                             param_index[s] = counter;
                             counter++;
                         }
                         string s_type = range.front.symbol;
                         func_type.params ~= getType(s_type);
+                        range.popFront;
                         break;
                         
                     case("result"):
@@ -445,7 +465,8 @@ void compile(ref Tokenizer tokenizer) {
                         break;
 
                     case ("import"):
-                        parseImport(range, imp_types);
+                        ImportType i = parseImport(range, imp_types);
+                        writeln(i);
                         break;
 
                     case(")"):
@@ -456,17 +477,14 @@ void compile(ref Tokenizer tokenizer) {
                         break;
                     //TODO code part        
                 }
-            }
-            func_type.type = Types.FUNC;
+                        func_type.type = Types.FUNC;
             func_types ~= func_type;
+            }
             return func_type;
         }
 
-        TableType parseTable(ref Tokenizer.Range range, ref TableType[] table_types)
-        in {
-            assert(range.front.symbol == "table");
-        }           
-        do {
+        TableType parseTable(ref Tokenizer.Range range, ref TableType[] table_types) {
+            writeln("Parsing table...");
             TableType table_type;
             uint min_;
             uint max_;
@@ -512,31 +530,91 @@ void compile(ref Tokenizer tokenizer) {
             return table_type;
         }
 
-        switch(range.front.symbol) {
-            case "func":
-                parseFunction(range, func_types);
-                break;
-            case "import":
-                parseImport(range, imp_types);
-                break;
-            case "export":
-                parseExport(range, exp_types);
-                break;
-            case "table":
-                parseTable(range, tab_types);
-                break;
-            default:
-                break;
+        // GlobalType parseGlobal(ref Tokenizer.Range rangem, ref GlobalType[] global_types) {
+        //     GlobalType global_type;
+        //     ImportType.ReaderImportDesc.GlobalDesc global_desc;
+        //     string s_type = range.front.symbol;
+        //             range.popFront;
+
+        //             global_desc.type = getType(s_type);
+
+        //             if(range.front.symbol == ")") {
+        //                 global_desc.mut = Mutable.CONST;
+        //             }
+        //             else {
+        //                 global_desc.mut = Mutable.VAR;
+        //             }
+        //             range.popFront;
+
+        //             auto global_d = ImportType.ImportDesc.GlobalDesc(global_desc);
+        //             auto imp_desc = ImportType.ImportDesc(global_d);
+                    
+        //             imp_type.importdesc = imp_desc;
+        //             imp_types ~= imp_type;
+
+        //             if(range.front.symbol == ")") {
+        //                 range.popFront;
+        //                 return imp_type;
+        //             }
+        //             else {
+        //                 assert(0, "Current symbol should be -> )");
+        //             }   
+
+        //             break;
+            
+
+
+        // }
+
+        while(lvl) {
+            // import core.thread: Thread;
+            //     import time = core.time;
+
+            //     Thread.sleep(time.msecs(500));
+            switch(range.front.symbol) {
+                case "func":
+                    FuncType f = parseFunction(range, func_types);
+                    writeln(f);
+                    break;
+                case "import":
+                    ImportType i = parseImport(range, imp_types);
+                    writeln(i);
+                    break;
+                case "export":
+                    ExportType e = parseExport(range, exp_types);
+                    writeln(e);
+                    break;
+                case "table":
+                    TableType t = parseTable(range, tab_types);
+                    writeln(t);
+                    break;
+                case "global":
+                  // parseGlobal(range, global_types);
+                    break;
+                case ")":
+                    lvl--;
+                    range.popFront;
+                    break;
+                case "(":
+                    lvl++;
+                    range.popFront;
+                    break;
+                default:
+                writeln(lvl);
+                lvl --;
+                    break;
+            }
         }
+
 
     }
 
 
     while (!range.empty) {
-        string symbol = range.front.symbol;
+        const token = range.front;
         range.popFront;
 
-        switch(symbol) {
+        switch(token.symbol) {
             case("("):
                 lvl++;
                 break;
@@ -546,13 +624,20 @@ void compile(ref Tokenizer tokenizer) {
                 break;
 
             case("module"):
-                parseModule(range);
+                parseModule(range, lvl);
                 break;
             default:
+            check(0, format("Umexpected symbol %s", token.symbol), token);
                 break;
         }
     }
+
+    writeln("Why ", lvl);
+    lvl--;
     assert(!lvl);
+
+
+
 }
 
 
