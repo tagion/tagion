@@ -1,6 +1,6 @@
 define _unit.target.o
 ${eval _UNIT_TARGET := $(UNIT_TARGET)}
-${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET)-logs}
+${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET).o-logs}
 ${eval _TARGET := $(DIR_BUILD_O)/$(_UNIT_TARGET).o}
 
 ${call debug, ------- [_unit.target.o] [$(_UNIT_TARGET)]}
@@ -18,6 +18,9 @@ ${eval _DFILES := ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_
 ${eval _DFILES += ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.di'}}
 
 ${eval _INFILES := $(_DFILES)}
+
+${call gen.line, # Object File - $(UNIT_TARGET)}
+${call gen.line, # $(_TARGET)}
 
 ${call gen.line, $(_UNIT_TARGET_LOGS):}
 ${call gen.linetab, \$${call log.header, $(_UNIT_TARGET).o}}
@@ -41,7 +44,7 @@ endef
 
 define _unit.target.o-test
 ${eval _UNIT_TARGET := test-$(UNIT_TARGET)}
-${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET)-logs}
+${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET).o-test-logs}
 ${eval _TARGET := $(DIR_BUILD_O)/$(_UNIT_TARGET).o}
 
 ${call debug, ------- [_unit.target.o] [$(_UNIT_TARGET)]}
@@ -61,6 +64,9 @@ ${eval _DFILES := ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_
 ${eval _DFILES += ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.di'}}
 
 ${eval _INFILES := $(_DFILES)}
+
+${call gen.line, # Test Object File - $(UNIT_TARGET)}
+${call gen.line, # $(_TARGET)}
 
 ${call gen.line, $(_UNIT_TARGET_LOGS):}
 ${call gen.linetab, \$${call log.header, $(_UNIT_TARGET).o}}
