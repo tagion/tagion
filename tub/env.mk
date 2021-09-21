@@ -203,6 +203,7 @@ endif
 # 
 # Directories
 # 
+DIR_TRASH := ${abspath ${DIR_TUB_ROOT}}/.trash
 DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(ARCH)
 DIR_BUILD_TEMP := ${abspath ${DIR_TUB_ROOT}}/build/$(ARCH)/.tmp
 DIR_BUILD_O := $(DIR_BUILD_TEMP)/o
@@ -214,6 +215,7 @@ DIR_SRC := ${abspath ${DIR_TUB_ROOT}}/src
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
 	$(call log.header, env :: dirs)
+	$(call log.kvp, DIR_TRASH, $(DIR_TRASH))
 	$(call log.kvp, DIR_TUB_ROOT, $(DIR_TUB_ROOT))
 	$(call log.kvp, DIR_TUB, $(DIR_TUB))
 	$(call log.separator)
@@ -222,12 +224,18 @@ env-dirs:
 	$(call log.close)
 
 #
-# Mode
+# Modes
 #
+# TODO: Inherit parallel value from current make
+MAKE_PARALLEL := -j16
+MAKE_DEBUG := 
+
 MAKE_SHOW_ENV += env-mode
 env-mode:
 	$(call log.header, env :: tub mode)
 	$(call log.kvp, TUB_MODE, $(TUB_MODE))
+	$(call log.kvp, MAKE_PARALLEL, $(MAKE_PARALLEL))
+	$(call log.kvp, MAKE_DEBUG, $(MAKE_DEBUG))
 	$(call log.close)
 
 MAKE_SHOW_ENV += env-commands
