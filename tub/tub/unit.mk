@@ -1,5 +1,4 @@
 # Add bin support
-# Add unit test run support
 # Test in isolated mode
 # Test auto adding dependencies (ensure correct branching as well)
 # Add revision
@@ -18,27 +17,7 @@ UNIT_PREFIX_DIR_WRAP_TARGET := wrap-
 
 include $(DIR_TUB)/targets/o.mk
 include $(DIR_TUB)/targets/lib.mk
-
-# 
-# Target shortcuts
-# 
-tagion%: $(DIR_BUILD)/bins/tagion%
-	@
-
-libtagion%.o: $(DIR_BUILD_O)/libtagion%.o
-	@
-
-libtagion%.a: $(DIR_BUILD)/libs/libtagion%.a
-	@
-
-libtagion%: libtagion%.a
-	@
-
-testall-libtagion%: $(DIR_BUILD)/bins/testall-libtagion%
-	@
-
-testscope-libtagion%: $(DIR_BUILD)/bins/testscope-libtagion%
-	@
+include $(DIR_TUB)/targets/bin.mk
 
 # 
 # Interface for context.mk files in Tagion units
@@ -49,11 +28,11 @@ ${eval ${call _unit.lib, $1}}
 endef
 
 define unit.bin
-${eval ${call _unit.lib, $1}}
+${eval ${call _unit.bin, $1}}
 endef
 
 define unit.wrap
-${eval ${call _unit.lib, $1}}
+${eval ${call _unit.wrap, $1}}
 endef
 
 # Unit declaration of dependencies
@@ -62,7 +41,7 @@ ${eval ${call _unit.dep.lib, $1}}
 endef
 
 define unit.dep.wrap
-${eval ${call _unit.dep.lib, $1}}
+${eval ${call _unit.dep.wrap, $1}}
 endef
 
 # Unit declaration ending
@@ -202,11 +181,22 @@ ${call _unit.target.lib-testscope}
 endef
 
 define include.bin
-${call debug, including bin is not yet supported}
-endef
+${call debug, ----- [include.bin] [${strip $1}]}
 
-define include.wrap
-${call debug, including wrap is not yet supported}
+${call unit.vars.reset, ${strip $1}}
+
+${eval UNIT_MAIN_TARGET := ${strip $1}}
+${eval UNIT_MAIN_DIR := ${strip $1}}
+${eval UNIT_MAIN_DIR := ${subst tagion, bin-, $(UNIT_MAIN_DIR)}}
+
+# Debug log test mode for the bin
+${call debug, [include.bin] [${strip $1}] UNIT_MAIN_DIR = $(UNIT_MAIN_DIR)}
+
+# Include context to resolve all dependencies and generate .o targets
+${eval include $(DIR_SRC)/$(UNIT_MAIN_DIR)/context.mk}
+
+# Generate desired target for the bin
+${call _unit.target.bin}
 endef
 
 # 
