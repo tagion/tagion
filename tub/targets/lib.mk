@@ -37,8 +37,9 @@ ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
 
+${call gen.line, .PHONY:  $(_UNIT_TARGET_FULL)}
 ${call gen.line, $(_UNIT_TARGET_FULL): $(_TARGET)}
-${call gen.linetab, @}
+${call gen.linetab, $(PRECMD)$(_TARGET)}
 ${call gen.space}
 
 ${call gen.line, $(_TARGET): $(_OFILES) $(_UNIT_TARGET_LOGS)}
@@ -86,8 +87,9 @@ ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
 
+${call gen.line, .PHONY:  $(_UNIT_TARGET_FULL)}
 ${call gen.line, $(_UNIT_TARGET_FULL): $(_TARGET)}
-${call gen.linetab, @}
+${call gen.linetab, $(PRECMD)$(_TARGET)}
 ${call gen.space}
 
 ${call gen.line, $(_TARGET): $(_OFILES) $(_TARGET).way $(_UNIT_TARGET_LOGS)}

@@ -9,4 +9,4 @@ local.mk
 # Generated directories
 src
 build
-generated.mk
+__generated*
