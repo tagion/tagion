@@ -1,10 +1,9 @@
-# TODO: Finish macros for target
-# Add wrapper support
 # Add bin support
 # Add unit test run support
 # Test in isolated mode
 # Test auto adding dependencies (ensure correct branching as well)
 # Add revision
+# Add tub version compat testing
 
 # Variable that allows to skip duplicate ${eval include ...}
 UNITS_DEFINED :=
@@ -75,7 +74,7 @@ endef
 # Implementation
 # 
 define unit.vars.reset
-${call debug, [unit.vars.reset]}
+${call debug, ----- [unit.vars.reset] [${strip $1}]}
 
 ${eval UNIT_PREFIX_DIR :=}
 ${eval UNIT_PREFIX_TARGET :=}
@@ -89,8 +88,8 @@ ${eval UNIT_DEPS_TARGET :=}
 endef
 
 define _unit.lib
-${call debug, [_unit.lib] [${strip $1}]}
-${call unit.vars.reset}
+${call debug, ----- [_unit.lib] [${strip $1}]}
+${call unit.vars.reset, ${strip $1}}
 
 ${eval UNIT_PREFIX_DIR := $(UNIT_PREFIX_DIR_LIB)}
 ${eval UNIT_PREFIX_TARGET := $(UNIT_PREFIX_DIR_LIB_TARGET)}
@@ -101,8 +100,8 @@ ${eval UNIT_TARGET := $(UNIT_PREFIX_TARGET)$(UNIT)}
 endef
 
 define _unit.bin
-${call debug, [_unit.bin] [${strip $1}]}
-${call unit.vars.reset}
+${call debug, ----- [_unit.bin] [${strip $1}]}
+${call unit.vars.reset, ${strip $1}}
 
 ${eval UNIT_PREFIX_DIR := $(UNIT_PREFIX_DIR_BIN)}
 ${eval UNIT_PREFIX_TARGET := $(UNIT_PREFIX_DIR_BIN_TARGET)}
@@ -114,7 +113,7 @@ endef
 
 # Unit declaration of dependencies
 define _unit.dep.lib
-${call debug, [_unit.dep.lib] [${strip $1}]}
+${call debug, ----- [_unit.dep.lib] [${strip $1}]}
 
 # Add to current unit definition dependencies if not added yet
 ${if ${findstring ${strip $1}, $(UNIT_DEPS)},,${eval UNIT_DEPS += ${strip $1}}}
@@ -136,18 +135,18 @@ endef
 # Unit declaration ending
 # Will not execute twice (need in rare cases with circular dependencies):
 define _unit.end.safe
-${call debug, [_unit.end.safe] [$(UNIT_DIR)]}
+${call debug, ----- [_unit.end.safe] [$(UNIT_DIR)]}
 ${eval UNIT_DEFINED_BLOCKER := ${findstring $(UNIT_DIR), $(UNITS_DEFINED)}}
 ${if $(UNIT_DEFINED_BLOCKER), , ${eval ${call _unit.end}}}
 endef
 
 define _unit.end
-${call debug, [_unit.end] [$(UNIT_DIR)]}
+${call debug, ----- [_unit.end] [$(UNIT_DIR)]}
 
 ${eval UNITS_DEFINED += $(UNIT_DIR)}
 
-${call debug, [_unit.end] [$(UNIT_DIR)] defined $(UNITS_DEFINED)}
-${call debug, [_unit.end] [$(UNIT_DIR)] depends $(UNIT_DEPS_TARGET)}
+${call debug, [_unit.end] [$(UNIT_DIR)] defined: $(UNITS_DEFINED)}
+${call debug, [_unit.end] [$(UNIT_DIR)] dependencies: $(UNIT_DEPS_TARGET)}
 
 # Define .o targets
 ${call _unit.target.o}
@@ -173,9 +172,9 @@ endef
 # Including contexts and defining targets
 # 
 define include.lib
-${call debug, [include.lib] [${strip $1}] ------>}
+${call debug, ----- [include.lib] [${strip $1}]}
 
-${call unit.vars.reset}
+${call unit.vars.reset, ${strip $1}}
 
 ${eval UNIT_MAIN_TEST_ALL := ${if ${findstring testall-, ${strip $1}}, 1,}}
 ${eval UNIT_MAIN_TEST_SCOPE := ${if ${findstring testscope-, ${strip $1}}, 1,}}
@@ -228,9 +227,9 @@ COMPILE_UNIT_BIN_TARGETS := ${filter-out testscope-libtagion%, $(COMPILE_UNIT_BI
 
 COMPILE_UNIT_WRAP_TARGETS := ${filter wrap-%, $(COMPILE_UNIT_PREFIX_TARGETS)}
 
-${call debug, [target.defined] [lib] $(COMPILE_UNIT_LIB_TARGETS)}
-${call debug, [target.defined] [bin] $(COMPILE_UNIT_BIN_TARGETS)}
-${call debug, [target.defined] [wrap] $(COMPILE_UNIT_WRAP_TARGETS)}
+${call debug, [compile.target.defined] lib: $(COMPILE_UNIT_LIB_TARGETS)}
+${call debug, [compile.target.defined] bin: $(COMPILE_UNIT_BIN_TARGETS)}
+${call debug, [compile.target.defined] wrap: $(COMPILE_UNIT_WRAP_TARGETS)}
 
 ${foreach COMPILE_UNIT_PREFIX_TARGET, $(COMPILE_UNIT_LIB_TARGETS), ${eval ${call include.lib, $(COMPILE_UNIT_PREFIX_TARGET)}}}
 ${foreach COMPILE_UNIT_PREFIX_TARGET, $(COMPILE_UNIT_BIN_TARGETS), ${eval ${call include.bin, $(COMPILE_UNIT_PREFIX_TARGET)}}}

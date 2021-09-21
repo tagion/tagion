@@ -3,7 +3,7 @@ ${eval _UNIT_TARGET := $(UNIT_TARGET)}
 ${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET)-logs}
 ${eval _TARGET := $(DIR_BUILD_O)/$(_UNIT_TARGET).o}
 
-${call debug, [_unit.target.o] [$(_UNIT_TARGET)]}
+${call debug, ------- [_unit.target.o] [$(_UNIT_TARGET)]}
 
 ${eval _DCFLAGS := $(DCFLAGS)}
 ${eval _DCFLAGS += -c}
@@ -33,7 +33,7 @@ ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
 
-${call gen.line, $(_TARGET): $(_DFILES) | ways $(_UNIT_TARGET_LOGS)}
+${call gen.line, $(_TARGET): $(_DFILES) | $(_TARGET).way $(_UNIT_TARGET_LOGS)}
 ${call gen.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) $(_INCFLAGS) $(_LDCFLAGS)}
 ${call gen.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
 ${call gen.space}
@@ -44,7 +44,7 @@ ${eval _UNIT_TARGET := test-$(UNIT_TARGET)}
 ${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET)-logs}
 ${eval _TARGET := $(DIR_BUILD_O)/$(_UNIT_TARGET).o}
 
-${call debug, [_unit.target.o] [$(_UNIT_TARGET)]}
+${call debug, ------- [_unit.target.o] [$(_UNIT_TARGET)]}
 
 ${eval _DCFLAGS := $(DCFLAGS)}
 ${eval _DCFLAGS += -unittest}
@@ -76,7 +76,7 @@ ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
 
-${call gen.line, $(_TARGET): $(_DFILES) | ways $(_UNIT_TARGET_LOGS)}
+${call gen.line, $(_TARGET): $(_DFILES) | $(_TARGET).way $(_UNIT_TARGET_LOGS)}
 ${call gen.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) $(_INCFLAGS) $(_LDCFLAGS)}
 ${call gen.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
 ${call gen.space}

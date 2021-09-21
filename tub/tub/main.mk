@@ -51,11 +51,14 @@ enable-run:
 disable-run:
 	@rm $(DIR_ROOT)/run
 
-# include $(DIR_TUB)/add.mk
+include $(DIR_TUB)/add.mk
 include $(DIR_TUB)/ways.mk
 include $(DIR_TUB)/generate.mk
 include $(DIR_TUB)/unit.mk
 include $(DIR_TUB)/clean.mk
+
+# Include wraps
+-include ${shell find $(DIR_SRC)/wrap-* -name '*context.mk'}
 
 .PHONY: help info
 .SECONDARY:
