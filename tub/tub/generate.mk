@@ -1,4 +1,4 @@
-MAKE_GENERATED := $(DIR_TUB)/generated.mk
+MAKE_GENERATED := $(DIR_TUB)/__generated-targets.mk
 
 define gen.reset
 ${shell echo "# This file is generated." > $(MAKE_GENERATED)}
