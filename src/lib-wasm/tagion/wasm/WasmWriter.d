@@ -369,7 +369,12 @@ import tagion.wasm.WasmException;
             }
 
             mixin Serialize;
+
             struct ImportDesc {
+                this(FuncDesc func_desc) {
+                    _funcdesc = func_desc;
+                }
+
                 struct FuncDesc {
                     uint funcidx;
                     this(const(ReaderImportDesc.FuncDesc) f) {
@@ -462,7 +467,8 @@ import tagion.wasm.WasmException;
                     return _desc;
                 }
 
-                version (none) this(T)(ref const(T) desc) {
+                this(T)(ref const(T) desc) {
+                    with(IndexType) {
                     static if (is(T : const(FuncDesc))) {
                         _desc = FUNC;
                         _funcdesc = desc;
@@ -481,6 +487,7 @@ import tagion.wasm.WasmException;
                     }
                     else {
                         static assert(0, format("Type %s is not supported", T.stringof));
+                    }
                     }
                 }
 
