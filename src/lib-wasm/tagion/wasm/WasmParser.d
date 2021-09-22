@@ -65,9 +65,6 @@ import tagion.utils.LEB128;
             popFront;
         }
 
-        this(ref return scope const Range rhs) @nogc pure nothrow {
-        }
-
         @property const pure nothrow {
             uint line() {
                 return _current_line;
@@ -193,7 +190,7 @@ import tagion.utils.LEB128;
         }
 
         Range save() pure const nothrow @nogc {
-            auto result = Range(this);
+            auto result = this;
             //assert(result is this);
             return result;
         }
@@ -294,172 +291,179 @@ unittest {
 
     // ;
 
-    struct Token {
-        uint line;
-        size_t pos;
-        string token;
-    }
+    // struct Token {
+    //     uint line;
+    //     size_t pos;
+    //     string token;
+    // }
 
     immutable(Token[]) tokens = [
-        {line: 1, pos: 0, token: "("}, {line: 1, pos: 1, token: "module"},
-        {line: 2, pos: 0, token: "("}, {line: 2, pos: 1, token: "type"},
-        {line: 2, pos: 6, token: "$0"}, {line: 2, pos: 9, token: "("},
-        {line: 2, pos: 10, token: "func"}, {line: 2, pos: 15, token: "("},
-        {line: 2, pos: 16, token: "param"}, {line: 2, pos: 22, token: "f64"},
-        {line: 2, pos: 26, token: "f64"}, {line: 2, pos: 29, token: ")"},
-        {line: 2, pos: 31, token: "("}, {line: 2, pos: 32, token: "result"},
-        {line: 2, pos: 39, token: "f64"}, {line: 2, pos: 42, token: ")"},
-        {line: 2, pos: 43, token: ")"}, {line: 2, pos: 44, token: ")"},
-        {line: 3, pos: 0, token: "("}, {line: 3, pos: 1, token: "type"},
-        {line: 3, pos: 6, token: "$1"}, {line: 3, pos: 9, token: "("},
-        {line: 3, pos: 10, token: "func"}, {line: 3, pos: 15, token: "("},
-        {line: 3, pos: 16, token: "param"}, {line: 3, pos: 22, token: "i32"},
-        {line: 3, pos: 26, token: "i32"}, {line: 3, pos: 29, token: ")"},
-        {line: 3, pos: 31, token: "("}, {line: 3, pos: 32, token: "result"},
-        {line: 3, pos: 39, token: "i32"}, {line: 3, pos: 42, token: ")"},
-        {line: 3, pos: 43, token: ")"}, {line: 3, pos: 44, token: ")"},
-        {line: 4, pos: 0, token: "("}, {line: 4, pos: 1, token: "type"},
-        {line: 4, pos: 6, token: "$2"}, {line: 4, pos: 9, token: "("},
-        {line: 4, pos: 10, token: "func"}, {line: 4, pos: 14, token: ")"},
-        {line: 4, pos: 15, token: ")"}, {line: 5, pos: 0, token: "("},
-        {line: 5, pos: 1, token: "memory"}, {line: 5, pos: 8, token: "$4"},
-        {line: 5, pos: 12, token: "2"}, {line: 5, pos: 13, token: ")"},
-        {line: 6, pos: 0, token: "("}, {line: 6, pos: 1, token: "table"},
-        {line: 6, pos: 7, token: "$3"}, {line: 6, pos: 11, token: "1"},
-        {line: 6, pos: 13, token: "1"}, {line: 6, pos: 15, token: "funcref"},
-        {line: 6, pos: 22, token: ")"}, {line: 7, pos: 0, token: "("},
-        {line: 7, pos: 1, token: "global"}, {line: 7, pos: 8, token: "$5"},
-        {line: 7, pos: 12, token: "("}, {line: 7, pos: 13, token: "mut"},
-        {line: 7, pos: 17, token: "i32"}, {line: 7, pos: 20, token: ")"},
-        {line: 7, pos: 22, token: "("}, {line: 7, pos: 23, token: "i32.const"},
-        {line: 7, pos: 33, token: "66560"}, {line: 7, pos: 38, token: ")"},
-        {line: 7, pos: 39, token: ")"}, {line: 8, pos: 0, token: "("},
-        {line: 8, pos: 1, token: "export"}, {line: 8, pos: 8, token: `"memory"`},
-        {line: 8, pos: 17, token: "("}, {line: 8, pos: 18, token: "memory"},
-        {line: 8, pos: 25, token: "$4"}, {line: 8, pos: 27, token: ")"},
-        {line: 8, pos: 28, token: ")"}, {line: 9, pos: 0, token: "("},
-        {line: 9, pos: 1, token: "export"}, {line: 9, pos: 8, token: `"add"`},
-        {line: 9, pos: 14, token: "("}, {line: 9, pos: 15, token: "func"},
-        {line: 9, pos: 20, token: "$add"}, {line: 9, pos: 24, token: ")"},
-        {line: 9, pos: 25, token: ")"}, {line: 10, pos: 0, token: "("},
-        {line: 10, pos: 1, token: "export"},
-        {line: 10, pos: 8, token: `"while_loop"`}, {
-            line: 10, pos: 21, token: "("
-        },
-        {line: 10, pos: 22, token: "func"},
-        {line: 10, pos: 27, token: "$while_loop"}, {
-            line: 10, pos: 38, token: ")"
-        }, {
-            line: 10, pos: 39, token: ")"
-        }, {
-            line: 11, pos: 0, token: "("
-        },
-        {line: 11, pos: 1, token: "export"}, {
-            line: 11, pos: 8, token: `"_start"`
-        },
-        {line: 11, pos: 17, token: "("}, {line: 11, pos: 18, token: "func"},
-        {line: 11, pos: 23, token: "$_start"}, {line: 11, pos: 30, token: ")"},
-        {line: 11, pos: 31, token: ")"}, {line: 13, pos: 0, token: "("},
-        {line: 13, pos: 1, token: "func"}, {line: 13, pos: 6, token: "$add"},
-        {line: 13, pos: 11, token: "("}, {line: 13, pos: 12, token: "type"},
-        {line: 13, pos: 17, token: "$0"}, {line: 13, pos: 19, token: ")"},
-        {line: 14, pos: 2, token: "("}, {line: 14, pos: 3, token: "param"},
-        {line: 14, pos: 9, token: "$0"}, {line: 14, pos: 12, token: "f64"},
-        {line: 14, pos: 15, token: ")"}, {line: 15, pos: 2, token: "("},
-        {line: 15, pos: 3, token: "param"}, {line: 15, pos: 9, token: "$1"},
-        {line: 15, pos: 12, token: "f64"}, {line: 15, pos: 15, token: ")"},
-        {line: 16, pos: 2, token: "("}, {line: 16, pos: 3, token: "result"},
-        {line: 16, pos: 10, token: "f64"}, {line: 16, pos: 13, token: ")"},
-        {line: 17, pos: 2, token: "local.get"}, {line: 17, pos: 12, token: "$0"},
-        {line: 18, pos: 2, token: "local.get"}, {line: 18, pos: 12, token: "$1"},
-        {line: 19, pos: 2, token: "f64.add"}, {line: 20, pos: 2, token: ")"},
-        {line: 22, pos: 0, token: "("}, {line: 22, pos: 1, token: "func"},
-        {line: 22, pos: 6, token: "$while_loop"}, {line: 22, pos: 18, token: "("},
-        {line: 22, pos: 19, token: "type"}, {line: 22, pos: 24, token: "$1"},
-        {line: 22, pos: 26, token: ")"}, {line: 23, pos: 2, token: "("},
-        {line: 23, pos: 3, token: "param"}, {line: 23, pos: 9, token: "$0"},
-        {line: 23, pos: 12, token: "i32"}, {line: 23, pos: 15, token: ")"},
-        {line: 24, pos: 2, token: "("}, {line: 24, pos: 3, token: "param"},
-        {line: 24, pos: 9, token: "$1"}, {line: 24, pos: 12, token: "i32"},
-        {line: 24, pos: 15, token: ")"}, {line: 25, pos: 2, token: "("},
-        {line: 25, pos: 3, token: "result"}, {line: 25, pos: 10, token: "i32"},
-        {line: 25, pos: 13, token: ")"}, {line: 26, pos: 2, token: "("},
-        {line: 26, pos: 3, token: "local"}, {line: 26, pos: 9, token: "$2"},
-        {line: 26, pos: 12, token: "i32"}, {line: 26, pos: 15, token: ")"},
-        {line: 27, pos: 2, token: "block"}, {line: 27, pos: 8, token: "$block"},
-        {line: 28, pos: 4, token: "local.get"}, {line: 28, pos: 14, token: "$0"},
-        {line: 29, pos: 4, token: "i32.const"}, {line: 29, pos: 14, token: "1"},
-        {line: 30, pos: 4, token: "i32.lt_s"}, {line: 31, pos: 4, token: "br_if"},
-        {line: 31, pos: 10, token: "$block"}, {line: 32, pos: 4, token: "loop"},
-        {line: 32, pos: 9, token: "$loop"}, {
-            line: 33, pos: 6, token: "local.get"
-        },
-        {line: 33, pos: 16, token: "$0"}, {line: 34, pos: 6, token: "i32.const"},
-        {line: 34, pos: 16, token: "-1"}, {line: 35, pos: 6, token: "i32.add"},
-        {line: 36, pos: 6, token: "local.set"}, {line: 36, pos: 16, token: "$2"},
-        {line: 37, pos: 6, token: "local.get"}, {line: 37, pos: 16, token: "$0"},
-        {line: 38, pos: 6, token: "local.get"}, {line: 38, pos: 16, token: "$1"},
-        {line: 39, pos: 6, token: "i32.mul"},
-        {line: 40, pos: 6, token: "local.set"}, {line: 40, pos: 16, token: "$0"},
-        {line: 41, pos: 6, token: "i32.const"}, {line: 41, pos: 16, token: "34"},
-        {line: 42, pos: 6, token: "local.set"}, {line: 42, pos: 16, token: "$1"},
-        {line: 43, pos: 6, token: "block"}, {
-            line: 43, pos: 12, token: "$block_0"
-        },
-        {line: 44, pos: 8, token: "local.get"}, {line: 44, pos: 18, token: "$0"},
-        {line: 45, pos: 8, token: "i32.const"}, {line: 45, pos: 18, token: "17"},
-        {line: 46, pos: 8, token: "i32.eq"}, {line: 47, pos: 8, token: "br_if"},
-        {line: 47, pos: 14, token: "$block_0"},
-        {line: 48, pos: 8, token: "local.get"}, {line: 48, pos: 18, token: "$0"},
-        {line: 49, pos: 8, token: "i32.const"}, {line: 49, pos: 18, token: "2"},
-        {line: 50, pos: 8, token: "i32.div_s"},
-        {line: 51, pos: 8, token: "i32.const"}, {line: 51, pos: 18, token: "1"},
-        {line: 52, pos: 8, token: "i32.add"},
-        {line: 53, pos: 8, token: "local.set"}, {line: 53, pos: 18, token: "$1"},
-        {line: 54, pos: 6, token: "end"}, {
-            line: 54, pos: 10, token: ";; $block_0"
-        },
-        {line: 55, pos: 6, token: "local.get"}, {line: 55, pos: 16, token: "$2"},
-        {line: 56, pos: 6, token: "local.set"}, {line: 56, pos: 16, token: "$0"},
-        {line: 57, pos: 6, token: "local.get"}, {line: 57, pos: 16, token: "$2"},
-        {line: 58, pos: 6, token: "i32.const"}, {line: 58, pos: 16, token: "0"},
-        {line: 59, pos: 6, token: "i32.gt_s"}, {line: 60, pos: 6, token: "br_if"},
-        {line: 60, pos: 12, token: "$loop"}, {line: 61, pos: 4, token: "end"},
-        {line: 61, pos: 8, token: ";; $loop"}, {line: 62, pos: 2, token: "end"},
-        {line: 62, pos: 6, token: ";; $block"},
-        {line: 63, pos: 2, token: "local.get"}, {line: 63, pos: 12, token: "$1"},
-        {line: 64, pos: 2, token: ")"}, {line: 66, pos: 0, token: "("},
-        {line: 66, pos: 1, token: "func"}, {line: 66, pos: 6, token: "$_start"},
-        {line: 66, pos: 14, token: "("}, {line: 66, pos: 15, token: "type"},
-        {line: 66, pos: 20, token: "$2"}, {line: 66, pos: 22, token: ")"},
-        {line: 67, pos: 2, token: ")"},
-        {line: 69, pos: 0, token: `;;(custom_section "producers"`},
-        {line: 70, pos: 0, token: ";;  (after code)"},
-        {line: 71, pos: 0, token: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`},
-        {line: 73, pos: 0, token: ")"},
+        {line: 1, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {line: 1, pos: 1, symbol: "module", type: Token.Type.WORD},
+        {line: 2, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {line: 2, pos: 1, symbol: "type", type: Token.Type.WORD},
+        {line: 2, pos: 6, symbol: "$0", type: Token.Type.WORD}, {line: 2, pos: 9, symbol: "(", type: Token.Type.BRACKET},
+        {line: 2, pos: 10, symbol: "func", type: Token.Type.WORD}, {line: 2, pos: 15, symbol: "(", type: Token.Type.BRACKET},
+        {line: 2, pos: 16, symbol: "param", type: Token.Type.WORD}, {line: 2, pos: 22, symbol: "f64", type: Token.Type.WORD},
+        {line: 2, pos: 26, symbol: "f64", type: Token.Type.WORD}, {line: 2, pos: 29, symbol: ")", type: Token.Type.BRACKET},
+        {line: 2, pos: 31, symbol: "(", type: Token.Type.BRACKET}, {line: 2, pos: 32, symbol: "result", type: Token.Type.WORD},
+        {line: 2, pos: 39, symbol: "f64", type: Token.Type.WORD}, {line: 2, pos: 42, symbol: ")", type: Token.Type.BRACKET},
+        {line: 2, pos: 43, symbol: ")", type: Token.Type.BRACKET}, {line: 2, pos: 44, symbol: ")", type: Token.Type.BRACKET},
+        {line: 3, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {line: 3, pos: 1, symbol: "type", type: Token.Type.WORD},
+        {line: 3, pos: 6, symbol: "$1", type: Token.Type.WORD}, {line: 3, pos: 9, symbol: "(", type: Token.Type.BRACKET},
+        {line: 3, pos: 10, symbol: "func", type: Token.Type.WORD}, {line: 3, pos: 15, symbol: "(", type: Token.Type.BRACKET},
+        {line: 3, pos: 16, symbol: "param", type: Token.Type.WORD}, {line: 3, pos: 22, symbol: "i32", type: Token.Type.WORD},
+        {line: 3, pos: 26, symbol: "i32", type: Token.Type.WORD}, {line: 3, pos: 29, symbol: ")", type: Token.Type.BRACKET},
+        {line: 3, pos: 31, symbol: "(", type: Token.Type.BRACKET}, {line: 3, pos: 32, symbol: "result", type: Token.Type.WORD},
+        {line: 3, pos: 39, symbol: "i32", type: Token.Type.WORD}, {line: 3, pos: 42, symbol: ")", type: Token.Type.BRACKET},
+        {line: 3, pos: 43, symbol: ")", type: Token.Type.BRACKET}, {line: 3, pos: 44, symbol: ")", type: Token.Type.BRACKET},
+        {line: 4, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {line: 4, pos: 1, symbol: "type", type: Token.Type.WORD},
+        {line: 4, pos: 6, symbol: "$2", type: Token.Type.WORD}, {line: 4, pos: 9, symbol: "(", type: Token.Type.BRACKET},
+        {line: 4, pos: 10, symbol: "func", type: Token.Type.WORD}, {line: 4, pos: 14, symbol: ")", type: Token.Type.BRACKET},
+        {line: 4, pos: 15, symbol: ")", type: Token.Type.BRACKET}, {line: 5, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 5, pos: 1, symbol: "memory", type: Token.Type.WORD}, {line: 5, pos: 8, symbol: "$4", type: Token.Type.WORD},
+        {line: 5, pos: 12, symbol: "2", type: Token.Type.WORD}, {line: 5, pos: 13, symbol: ")", type: Token.Type.BRACKET},
+        {line: 6, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {line: 6, pos: 1, symbol: "table", type: Token.Type.WORD},
+        {line: 6, pos: 7, symbol: "$3", type: Token.Type.WORD}, {line: 6, pos: 11, symbol: "1", type: Token.Type.WORD},
+        {line: 6, pos: 13, symbol: "1", type: Token.Type.WORD}, {line: 6, pos: 15, symbol: "funcref", type: Token.Type.WORD},
+        {line: 6, pos: 22, symbol: ")", type: Token.Type.BRACKET}, {line: 7, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 7, pos: 1, symbol: "global", type: Token.Type.WORD}, {line: 7, pos: 8, symbol: "$5", type: Token.Type.WORD},
+        {line: 7, pos: 12, symbol: "(", type: Token.Type.BRACKET}, {line: 7, pos: 13, symbol: "mut", type: Token.Type.WORD},
+        {line: 7, pos: 17, symbol: "i32", type: Token.Type.WORD}, {line: 7, pos: 20, symbol: ")", type: Token.Type.BRACKET},
+        {line: 7, pos: 22, symbol: "(", type: Token.Type.BRACKET}, {line: 7, pos: 23, symbol: "i32.const", type: Token.Type.WORD},
+        {line: 7, pos: 33, symbol: "66560", type: Token.Type.WORD}, {line: 7, pos: 38, symbol: ")", type: Token.Type.BRACKET},
+        {line: 7, pos: 39, symbol: ")", type: Token.Type.BRACKET}, {line: 8, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 8, pos: 1, symbol: "export", type: Token.Type.WORD}, {line: 8, pos: 8, symbol: `"memory"`, type: Token.Type.TEXT},
+        {line: 8, pos: 17, symbol: "(", type: Token.Type.BRACKET}, {line: 8, pos: 18, symbol: "memory", type: Token.Type.WORD},
+        {line: 8, pos: 25, symbol: "$4", type: Token.Type.WORD}, {line: 8, pos: 27, symbol: ")", type: Token.Type.BRACKET},
+        {line: 8, pos: 28, symbol: ")", type: Token.Type.BRACKET}, {line: 9, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 9, pos: 1, symbol: "export", type: Token.Type.WORD}, {line: 9, pos: 8, symbol: `"add"`, type: Token.Type.TEXT},
+        {line: 9, pos: 14, symbol: "(", type: Token.Type.BRACKET}, {line: 9, pos: 15, symbol: "func", type: Token.Type.WORD},
+        {line: 9, pos: 20, symbol: "$add", type: Token.Type.WORD}, {line: 9, pos: 24, symbol: ")", type: Token.Type.BRACKET},
+        {line: 9, pos: 25, symbol: ")", type: Token.Type.BRACKET}, {line: 10, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 10, pos: 1, symbol: "export", type: Token.Type.WORD},
+        {line: 10, pos: 8, symbol: `"while_loop"`, type: Token.Type.TEXT}, {
+            line: 10, pos: 21, symbol: "(", type: Token.Type.BRACKET},
+        {line: 10, pos: 22, symbol: "func", type: Token.Type.WORD},
+        {line: 10, pos: 27, symbol: "$while_loop", type: Token.Type.WORD}, {
+            line: 10, pos: 38, symbol: ")", type: Token.Type.BRACKET}, {
+            line: 10, pos: 39, symbol: ")", type: Token.Type.BRACKET}, {
+            line: 11, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 11, pos: 1, symbol: "export", type: Token.Type.WORD}, {
+            line: 11, pos: 8, symbol: `"_start"`, type: Token.Type.TEXT},
+        {line: 11, pos: 17, symbol: "(", type: Token.Type.BRACKET}, {line: 11, pos: 18, symbol: "func", type: Token.Type.WORD},
+        {line: 11, pos: 23, symbol: "$_start", type: Token.Type.WORD}, {line: 11, pos: 30, symbol: ")", type: Token.Type.BRACKET},
+        {line: 11, pos: 31, symbol: ")", type: Token.Type.BRACKET}, {line: 13, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 13, pos: 1, symbol: "func", type: Token.Type.WORD}, {line: 13, pos: 6, symbol: "$add", type: Token.Type.WORD},
+        {line: 13, pos: 11, symbol: "(", type: Token.Type.BRACKET}, {line: 13, pos: 12, symbol: "type", type: Token.Type.WORD},
+        {line: 13, pos: 17, symbol: "$0", type: Token.Type.WORD}, {line: 13, pos: 19, symbol: ")", type: Token.Type.BRACKET},
+        {line: 14, pos: 2, symbol: "(", type: Token.Type.BRACKET}, {line: 14, pos: 3, symbol: "param", type: Token.Type.WORD},
+        {line: 14, pos: 9, symbol: "$0", type: Token.Type.WORD}, {line: 14, pos: 12, symbol: "f64", type: Token.Type.WORD},
+        {line: 14, pos: 15, symbol: ")", type: Token.Type.BRACKET}, {line: 15, pos: 2, symbol: "(", type: Token.Type.BRACKET},
+        {line: 15, pos: 3, symbol: "param", type: Token.Type.WORD}, {line: 15, pos: 9, symbol: "$1", type: Token.Type.WORD},
+        {line: 15, pos: 12, symbol: "f64", type: Token.Type.WORD}, {line: 15, pos: 15, symbol: ")", type: Token.Type.BRACKET},
+        {line: 16, pos: 2, symbol: "(", type: Token.Type.BRACKET}, {line: 16, pos: 3, symbol: "result", type: Token.Type.WORD},
+        {line: 16, pos: 10, symbol: "f64", type: Token.Type.WORD}, {line: 16, pos: 13, symbol: ")", type: Token.Type.BRACKET},
+        {line: 17, pos: 2, symbol: "local.get", type: Token.Type.WORD}, {line: 17, pos: 12, symbol: "$0", type: Token.Type.WORD},
+        {line: 18, pos: 2, symbol: "local.get", type: Token.Type.WORD}, {line: 18, pos: 12, symbol: "$1", type: Token.Type.WORD},
+        {line: 19, pos: 2, symbol: "f64.add", type: Token.Type.WORD}, {line: 20, pos: 2, symbol: ")", type: Token.Type.BRACKET},
+        {line: 22, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {line: 22, pos: 1, symbol: "func", type: Token.Type.WORD},
+        {line: 22, pos: 6, symbol: "$while_loop", type: Token.Type.WORD}, {line: 22, pos: 18, symbol: "(", type: Token.Type.BRACKET},
+        {line: 22, pos: 19, symbol: "type", type: Token.Type.WORD}, {line: 22, pos: 24, symbol: "$1", type: Token.Type.WORD},
+        {line: 22, pos: 26, symbol: ")", type: Token.Type.BRACKET}, {line: 23, pos: 2, symbol: "(", type: Token.Type.BRACKET},
+        {line: 23, pos: 3, symbol: "param", type: Token.Type.WORD}, {line: 23, pos: 9, symbol: "$0", type: Token.Type.WORD},
+        {line: 23, pos: 12, symbol: "i32", type: Token.Type.WORD}, {line: 23, pos: 15, symbol: ")", type: Token.Type.BRACKET},
+        {line: 24, pos: 2, symbol: "(", type: Token.Type.BRACKET}, {line: 24, pos: 3, symbol: "param", type: Token.Type.WORD},
+        {line: 24, pos: 9, symbol: "$1", type: Token.Type.WORD}, {line: 24, pos: 12, symbol: "i32", type: Token.Type.WORD},
+        {line: 24, pos: 15, symbol: ")", type: Token.Type.BRACKET}, {line: 25, pos: 2, symbol: "(", type: Token.Type.BRACKET},
+        {line: 25, pos: 3, symbol: "result", type: Token.Type.WORD}, {line: 25, pos: 10, symbol: "i32", type: Token.Type.WORD},
+        {line: 25, pos: 13, symbol: ")", type: Token.Type.BRACKET}, {line: 26, pos: 2, symbol: "(", type: Token.Type.BRACKET},
+        {line: 26, pos: 3, symbol: "local", type: Token.Type.WORD}, {line: 26, pos: 9, symbol: "$2", type: Token.Type.WORD},
+        {line: 26, pos: 12, symbol: "i32", type: Token.Type.WORD}, {line: 26, pos: 15, symbol: ")", type: Token.Type.BRACKET},
+        {line: 27, pos: 2, symbol: "block", type: Token.Type.WORD}, {line: 27, pos: 8, symbol: "$block", type: Token.Type.WORD},
+        {line: 28, pos: 4, symbol: "local.get", type: Token.Type.WORD}, {line: 28, pos: 14, symbol: "$0", type: Token.Type.WORD},
+        {line: 29, pos: 4, symbol: "i32.const", type: Token.Type.WORD}, {line: 29, pos: 14, symbol: "1", type: Token.Type.WORD},
+        {line: 30, pos: 4, symbol: "i32.lt_s", type: Token.Type.WORD}, {line: 31, pos: 4, symbol: "br_if", type: Token.Type.WORD},
+        {line: 31, pos: 10, symbol: "$block", type: Token.Type.WORD}, {line: 32, pos: 4, symbol: "loop", type: Token.Type.WORD},
+        {line: 32, pos: 9, symbol: "$loop", type: Token.Type.WORD}, {
+            line: 33, pos: 6, symbol: "local.get"
+        , type: Token.Type.WORD},
+        {line: 33, pos: 16, symbol: "$0", type: Token.Type.WORD}, {line: 34, pos: 6, symbol: "i32.const", type: Token.Type.WORD},
+        {line: 34, pos: 16, symbol: "-1", type: Token.Type.WORD}, {line: 35, pos: 6, symbol: "i32.add", type: Token.Type.WORD},
+        {line: 36, pos: 6, symbol: "local.set", type: Token.Type.WORD}, {line: 36, pos: 16, symbol: "$2", type: Token.Type.WORD},
+        {line: 37, pos: 6, symbol: "local.get", type: Token.Type.WORD}, {line: 37, pos: 16, symbol: "$0", type: Token.Type.WORD},
+        {line: 38, pos: 6, symbol: "local.get", type: Token.Type.WORD}, {line: 38, pos: 16, symbol: "$1", type: Token.Type.WORD},
+        {line: 39, pos: 6, symbol: "i32.mul", type: Token.Type.WORD},
+        {line: 40, pos: 6, symbol: "local.set", type: Token.Type.WORD}, {line: 40, pos: 16, symbol: "$0", type: Token.Type.WORD},
+        {line: 41, pos: 6, symbol: "i32.const", type: Token.Type.WORD}, {line: 41, pos: 16, symbol: "34", type: Token.Type.WORD},
+        {line: 42, pos: 6, symbol: "local.set", type: Token.Type.WORD}, {line: 42, pos: 16, symbol: "$1", type: Token.Type.WORD},
+        {line: 43, pos: 6, symbol: "block", type: Token.Type.WORD}, {
+            line: 43, pos: 12, symbol: "$block_0"
+        , type: Token.Type.WORD},
+        {line: 44, pos: 8, symbol: "local.get", type: Token.Type.WORD}, {line: 44, pos: 18, symbol: "$0", type: Token.Type.WORD},
+        {line: 45, pos: 8, symbol: "i32.const", type: Token.Type.WORD}, {line: 45, pos: 18, symbol: "17", type: Token.Type.WORD},
+        {line: 46, pos: 8, symbol: "i32.eq", type: Token.Type.WORD}, {line: 47, pos: 8, symbol: "br_if", type: Token.Type.WORD},
+        {line: 47, pos: 14, symbol: "$block_0", type: Token.Type.WORD},
+        {line: 48, pos: 8, symbol: "local.get", type: Token.Type.WORD}, {line: 48, pos: 18, symbol: "$0", type: Token.Type.WORD},
+        {line: 49, pos: 8, symbol: "i32.const", type: Token.Type.WORD}, {line: 49, pos: 18, symbol: "2", type: Token.Type.WORD},
+        {line: 50, pos: 8, symbol: "i32.div_s", type: Token.Type.WORD},
+        {line: 51, pos: 8, symbol: "i32.const", type: Token.Type.WORD}, {line: 51, pos: 18, symbol: "1", type: Token.Type.WORD},
+        {line: 52, pos: 8, symbol: "i32.add", type: Token.Type.WORD},
+        {line: 53, pos: 8, symbol: "local.set", type: Token.Type.WORD}, {line: 53, pos: 18, symbol: "$1", type: Token.Type.WORD},
+        {line: 54, pos: 6, symbol: "end", type: Token.Type.WORD}, {
+            line: 54, pos: 10, symbol: ";; $block_0", type: Token.Type.COMMENT},
+        {line: 55, pos: 6, symbol: "local.get", type: Token.Type.WORD}, {line: 55, pos: 16, symbol: "$2", type: Token.Type.WORD},
+        {line: 56, pos: 6, symbol: "local.set", type: Token.Type.WORD}, {line: 56, pos: 16, symbol: "$0", type: Token.Type.WORD},
+        {line: 57, pos: 6, symbol: "local.get", type: Token.Type.WORD}, {line: 57, pos: 16, symbol: "$2", type: Token.Type.WORD},
+        {line: 58, pos: 6, symbol: "i32.const", type: Token.Type.WORD}, {line: 58, pos: 16, symbol: "0", type: Token.Type.WORD},
+        {line: 59, pos: 6, symbol: "i32.gt_s", type: Token.Type.WORD}, {line: 60, pos: 6, symbol: "br_if", type: Token.Type.WORD},
+        {line: 60, pos: 12, symbol: "$loop", type: Token.Type.WORD}, {line: 61, pos: 4, symbol: "end", type: Token.Type.WORD},
+        {line: 61, pos: 8, symbol: ";; $loop", type: Token.Type.COMMENT}, {line: 62, pos: 2, symbol: "end", type: Token.Type.WORD},
+        {line: 62, pos: 6, symbol: ";; $block", type: Token.Type.COMMENT},
+        {line: 63, pos: 2, symbol: "local.get", type: Token.Type.WORD}, {line: 63, pos: 12, symbol: "$1", type: Token.Type.WORD},
+        {line: 64, pos: 2, symbol: ")", type: Token.Type.BRACKET}, {line: 66, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 66, pos: 1, symbol: "func", type: Token.Type.WORD}, {line: 66, pos: 6, symbol: "$_start", type: Token.Type.WORD},
+        {line: 66, pos: 14, symbol: "(", type: Token.Type.BRACKET}, {line: 66, pos: 15, symbol: "type", type: Token.Type.WORD},
+        {line: 66, pos: 20, symbol: "$2", type: Token.Type.WORD}, {line: 66, pos: 22, symbol: ")", type: Token.Type.BRACKET},
+        {line: 67, pos: 2, symbol: ")", type: Token.Type.BRACKET},
+        {line: 69, pos: 0, symbol: `;;(custom_section "producers"`, type: Token.Type.COMMENT},
+        {line: 70, pos: 0, symbol: ";;  (after code)", type: Token.Type.COMMENT},
+        {line: 71, pos: 0, symbol: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`, type: Token.Type.COMMENT},
+        {line: 73, pos: 0, symbol: ")", type: Token.Type.BRACKET},
     ];
 
     const parser = Tokenizer(src);
-    //    uint count;
-    auto range_1 = parser[];
 
     import std.stdio;
-
-    //     while (!range_1.empty) {
-    // //    foreach(t; parser[]) {
-    // //        const x=t.token;
-    //         writefln("{line : %d, pos : %d, token : \"%s\"},", range_1.line, range_1.pos, range_1.front);
-    //         range_1.popFront;
-    //     }
-    auto range = parser[];
-    foreach (t; tokens) {
-        assert(range.line is t.line);
-        assert(range.pos is t.pos);
-        assert(range.front == t.token);
-        assert(!range.empty);
-        range.popFront;
+    {
+        auto range = parser[];
+        foreach (t; tokens) {
+            assert(range.line is t.line);
+            assert(range.pos is t.pos);
+            assert(range.front.symbol == t.symbol);
+            assert(range.front.type is t.type);
+            assert(range.front == t);
+            assert(!range.empty);
+            range.popFront;
+        }
+        assert(range.empty);
     }
-    assert(range.empty);
+
+    { // Test ForwardRange
+        auto range = parser[];
+        // writefln("%s", range.front);
+        range.popFront;
+        auto saved_range = range.save;
+        immutable before_token_1 = range.front;
+
+        // writefln("%s", range.front);
+        range.popFront;
+        assert(before_token_1 != range.front);
+        // writefln("save %s", saved_range.front);
+        assert(before_token_1 == saved_range.front);
+        saved_range.popFront;
+        assert(range.front == saved_range.front);
+
+//        range.popFront;
+    }
 }
 
 struct WasmWord {
@@ -524,268 +528,3 @@ enum WASMKeywords = [
         "f64.convert_i64_u", "f64.promote_f32", "f64.reinterpret_i64"
 
     ];
-
-// enum WAVMKeyword {
-//     NONE,
-//     MODULE,
-//     TYPE,
-//     MEMORY,
-//     TABLE,
-//     GLOBAL,
-//     EXPORT,
-//     FUNC,
-//     PARAM,
-//     RESULT,
-
-//     LOCAL_GET,
-//     LOCAL_SET,
-//     LOCAL,
-//     BLOCK,
-
-//     // I32
-//     I32_CONST,
-//     I32
-//     I32_CLZ,
-//     I32_CTZ,
-//     I32_POPCNT,
-//     I32_ADD,
-//     I32_SUB,
-//     I32_DIV_S,
-//     I32_DIV_U,
-//     I32_REM_U,
-//     I32_AND,
-//     I32_OR,
-//     I32_XOR,
-//     I32_SHR_S,
-//     I32_SHR_U,
-//     I32_ROTL,
-//     I32_ROTR,
-
-//     AND
-//     F64_ADD,
-
-//     DO,
-//     LOOP,
-//     ADDLOOP,
-//     BEGIN,
-//     REPEAT,
-//     UNTIL,
-//     WHILE,
-//     LEAVE,
-//     AGAIN,
-//     EXIT,
-//     IF,
-//     ELSE,
-//     ENDIF,
-//     THEN,
-//     FUNC,
-//     ENDFUNC,
-
-//     I,
-//     GET,
-//     COMMENT,
-//     // Regex tokens
-//     VAR,
-//     NUMBER,
-//     HEX,
-//     WORD,
-//     TEXT,
-//     PUT,
-// }
-
-// enum keywordMap = [
-//     ScriptKeyword.DO            : ScriptKeyword.DO.stringof.tolower,
-//     ScriptKeyword.LOOP          : ScriptKeyword.LOOP.stringof,
-//     ScriptKeyword.ADDLOOP       : "+LOOP",
-//     ScriptKeyword.BEGIN         : ScriptKeyword.BEGIN.stringof,
-//     ScriptKeyword.UNTIL         : ScriptKeyword.UNTIL.stringof,
-//     ScriptKeyword.WHILE         : ScriptKeyword.WHILE.stringof,
-//     ScriptKeyword.REPEAT        : ScriptKeyword.REPEAT.stringof,
-//     ScriptKeyword.LEAVE         : ScriptKeyword.LEAVE.stringof,
-//     ScriptKeyword.AGAIN         : ScriptKeyword.AGAIN.stringof,
-//     ScriptKeyword.EXIT          : ScriptKeyword.EXIT.stringof,
-//     ScriptKeyword.IF            : ScriptKeyword.IF.stringof,
-//     ScriptKeyword.ELSE          : ScriptKeyword.ELSE.stringof,
-//     ScriptKeyword.ENDIF         : ScriptKeyword.ENDIF.stringof,
-//     ScriptKeyword.THEN          : ScriptKeyword.THEN.stringof,
-//     ScriptKeyword.LOOP          : ScriptKeyword.LOOP.stringof,
-//     ScriptKeyword.I             : ScriptKeyword.I.stringof,
-//     ScriptKeyword.BEGIN         : ScriptKeyword.BEGIN.stringof,
-
-//     ScriptKeyword.FUNC          : ":",
-//     ScriptKeyword.ENDFUNC       : ";",
-//     ScriptKeyword.GET           : "@",
-//     ];
-
-// static ScriptKeyword[string] generateLabelMap(const(string[ScriptKeyword]) typemap) {
-//     ScriptKeyword[string] result;
-//     foreach(e, label; typemap) {
-//         if ( label.length !is 0 ){
-//             result[label]=e;
-//         }
-//     }
-//     return result;
-// }
-
-// unittest {
-//     static foreach(E; EnumMembers!ScriptKeyword) {
-//         with(ScriptKeyword) {
-//             switch(E) {
-//             case NONE, NUMBER, HEX, WORD, TEXT, VAR, PUT, COMMENT:
-//                 break;
-//             default:
-//                 import std.format;
-//                 assert(E in keywordMap, format("TypeMap %s is not defined", E));
-//             }
-//         }
-//     }
-// }
-
-// protected enum _scripttype =[
-//     "NONE",
-//     "NUM",
-//     "I32",
-//     "U32",
-//     "I64",
-//     "U64",
-//     "STRING",
-//     "DOC",
-//     "HIBON"
-//     ];
-
-// private import tagion.Base : EnumText;
-
-// mixin(EnumText!("ScriptType", _scripttype));
-
-@safe static struct Lexer {
-    // protected enum ctLabelMap=generateLabelMap(keywordMap);
-    import std.regex;
-
-    static Regex!char regex_number() {
-        enum _regex_number = regex("^[-+]?[0-9][0-9_]*$");
-        return _regex_number;
-    }
-
-    static Regex!char regex_word() {
-        enum _regex_word = regex(`^[^"]+$`);
-        return _regex_word;
-    }
-
-    static Regex!char regex_hex() {
-        enum _regex_hex = regex("^[-+]?0[xX][0-9a-fA-F_][0-9a-fA-F_]*$");
-        return _regex_hex;
-    }
-
-    static Regex!char regex_text() {
-        enum _regex_text = regex(`^"[^"]*"$`);
-        return _regex_text;
-    }
-
-    static Regex!char regex_put() {
-        enum _regex_put = regex(r"^[+-/\*><%\^\&\|]*!@?$");
-        return _regex_put;
-    }
-
-    static Regex!char regex_comment() {
-        enum _regeax_comment = regex(r"^\([^\)]+\)$");
-        return _regeax_comment;
-    }
-
-    static Regex!char regex_bound() {
-        enum _regex_bound = regex(
-                    r"^\w+(\[(0x[0-9a-f][0-9a-f_]*|\d+)\.\.(0x[0-9a-f][0-9a-f_]*|\d+)\])?$");
-        return _regex_bound;
-    }
-
-    static Regex!char regex_reserved_var() {
-        enum _regex_reserved_var = regex(r"^(I|TO)\d{0,2}$");
-        return _regex_reserved_var;
-    }
-
-    version (none) static ScriptType getScriptType(string word) {
-        static foreach (TYPE; EnumMembers!ScriptType) {
-            static if (TYPE is ScriptType.NUM) {
-                if ((word.length >= TYPE.length)
-                        && (word[0 .. TYPE.length] == TYPE) && (word.match(regex_bound))) {
-                    return TYPE;
-                }
-            }
-            else if (word == TYPE) {
-                return TYPE;
-            }
-        }
-        return ScriptType.NONE;
-    }
-
-    version (none) static ScriptKeyword get(string word) {
-        ScriptKeyword result;
-        with (ScriptKeyword) {
-            result = ctLabelMap.get(word, NONE);
-            if (result is NONE) {
-                if (word.match(regex_number)) {
-                    result = NUMBER;
-                }
-                else if (word.match(regex_hex)) {
-                    result = HEX;
-                }
-                else if (word.match(regex_text)) {
-                    result = TEXT;
-                }
-                else if (word.match(regex_put)) {
-                    result = PUT;
-                }
-                else if (word.match(regex_comment)) {
-                    result = COMMENT;
-                }
-                else if (Lexer.getScriptType(word) !is ScriptType.NONE) {
-                    result = VAR;
-                }
-                else if (word.match(regex_word)) {
-                    result = WORD;
-                }
-            }
-        }
-        return result;
-    }
-
-    version (none) unittest {
-        with (ScriptKeyword) {
-            assert(get("REPEAT") == REPEAT);
-            assert(get(`"`) == NONE);
-            assert(get("someword") == WORD);
-            assert(get("-123_444") == NUMBER);
-            assert(get("0x42") == HEX);
-        }
-    }
-
-    enum {
-        SPACE = char(0x20),
-        QUATE = char(39),
-        DOUBLE_QUATE = '"',
-        BACK_QUATE = '`',
-        LOCAL_SEPARATOR = ':',
-        DEL = char(127)
-    }
-
-    static bool is_name_valid(string str) pure {
-        foreach (c; str) {
-            if ((c <= SPACE) || (c >= DEL) || (c is QUATE) || (c is DOUBLE_QUATE)
-                    || (c is BACK_QUATE) || (c is LOCAL_SEPARATOR)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    version (none) static bool isDeclaration(ScriptKeyword type) pure nothrow {
-        with (ScriptKeyword) {
-            switch (type) {
-            case VAR:
-                return true;
-            default:
-                return false;
-            }
-        }
-        assert(0);
-    }
-}

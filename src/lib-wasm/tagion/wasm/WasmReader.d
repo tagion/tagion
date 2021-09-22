@@ -1,5 +1,7 @@
 module tagion.wasm.WasmReader;
 
+import std.stdio;
+
 import std.format;
 import tagion.wasm.WasmException;
 import tagion.wasm.WasmBase;
@@ -107,13 +109,27 @@ import std.format;
         }
     }
 
-    WasmRange opSlice() const {
+    WasmRange opSlice() const pure nothrow {
         return WasmRange(data);
     }
 
     static assert(isInputRange!WasmRange);
     static assert(isForwardRange!WasmRange);
     //static assert(isRandomAccessRange!WasmRange);
+
+    auto get(Section S)() const nothrow {
+        alias T = Sections[S];
+        auto range = opSlice;
+        auto sec = range[S];
+        debug {
+            assumeWontThrow(
+                {writefln("sec.data=%s", sec.data);}
+                );
+        }
+
+        return new T(sec.data);
+    }
+
 
     @safe struct WasmRange {
         immutable(ubyte[]) data;
@@ -149,33 +165,54 @@ import std.format;
                 return result;
             }
 
-            WasmSection opIndex(const size_t index) const
+            WasmSection opIndex(const Section index) const
             in {
                 assert(index < EnumMembers!(Section).length);
             }
             do {
                 auto index_range = WasmRange(data);
 //                (() @trusted {
-                foreach (i; 0 .. EnumMembers!(Section).length) {
-                    if (i is index) {
-                        return index_range.front;
+                foreach(ref sec; index_range) {
+                    if (index == sec.section) {
+                        return sec;
                     }
-                    index_range.popFront;
+                    else if (index < sec.section) {
+                        break;
+                    }
                 }
-//                })();
-
-
-                assert(0);
+                return WasmSection.emptySection(index);
             }
+
+//                 while(!index_range.empty) {
+//                     auto section
+//                     if (index == index_range.front.section) {
+//                     }
+//                 foreach (i; 0 .. EnumMembers!(Section).length) {
+//                     if (i is index) {
+//                         return index_range.front;
+//                     }
+//                     index_range.popFront;
+//                 }
+// //                })();
+
+
+//                 assert(0);
+//             }
 
             size_t index() const {
                 return _index;
             }
+
         }
 
         @nogc struct WasmSection {
             immutable(ubyte[]) data;
             immutable(Section) section;
+
+            static WasmSection emptySection(const Section sectype) @nogc pure nothrow {
+                immutable(ubyte[2]) data = [sectype, 0];
+                return WasmSection(data);
+            }
 
             this(immutable(ubyte[]) data) @nogc pure nothrow {
                 section = cast(Section) data[0];
@@ -184,7 +221,7 @@ import std.format;
                 this.data = data[index .. index + size];
             }
 
-            auto sec(Section S)()
+            auto sec(Section S)() pure
             in {
                 assert(S is section);
             }
@@ -250,8 +287,12 @@ import std.format;
                 // static assert(isInputRange!SecRange);
                 // static assert(isForwardRange!SecRange);
                 alias SecRange = VectorRange!(SectionT, SecType);
-                SecRange opSlice() const {
+                SecRange opSlice() const pure nothrow {
                     return SecRange(this);
+                }
+
+                SecType opIndex(const size_t index) const pure {
+                    return SecRange(this).opIndex(index);
                 }
 
                 @trusted override string toString() const {
@@ -267,7 +308,7 @@ import std.format;
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     name = Vector!char(data, index);
                     bytes = data[index .. $];
@@ -393,7 +434,7 @@ import std.format;
 
             alias Import = SectionT!(ImportType);
 
-            struct Index {
+            struct TypeIndex {
                 immutable(uint) idx;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) pure nothrow {
@@ -403,7 +444,7 @@ import std.format;
                 }
             }
 
-            alias Function = SectionT!(Index);
+            alias Function = SectionT!(TypeIndex);
 
             struct TableType {
                 immutable(Types) type;
@@ -478,7 +519,7 @@ import std.format;
 
             static class Start {
                 immutable(uint) idx;
-                this(immutable(ubyte[]) data) {
+                this(immutable(ubyte[]) data) pure nothrow {
                     size_t u32_size;
                     idx = u32(data, u32_size);
                 }
@@ -578,7 +619,7 @@ import std.format;
                     }
                 }
 
-                ExprRange opSlice() const {
+                ExprRange opSlice() pure const {
                     auto range = LocalRange(data);
                     while (!range.empty) {
                         range.popFront;
