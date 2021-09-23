@@ -9,7 +9,8 @@ string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
     static if (UCASE) {
         enum hexdigits = "0123456789ABCDEF";
     }
-    else {
+    else
+    {
         enum hexdigits = "0123456789abcdef";
     }
     uint i = 0;
@@ -24,7 +25,8 @@ string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
 
 alias hex = toHexString;
 
-unittest {
+unittest
+{
     {
         enum value = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90";
         auto buf = decode(value);
@@ -40,9 +42,9 @@ unittest {
 
 }
 
-@safe
-immutable(ubyte[]) decode(const(char[]) hex) pure nothrow
-in {
+@safe immutable(ubyte[]) decode(const(char[]) hex) pure nothrow
+in
+{
     assert(hex.length % 2 == 0);
 }
 do {

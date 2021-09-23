@@ -2,10 +2,8 @@ module tagion.utils.DList;
 
 import tagion.utils.Result;
 
-@safe
-class DList(E) {
-    @nogc
-    struct Element {
+@safe class DList(E) {
+    @nogc struct Element {
         E entry;
         protected Element* next;
         protected Element* prev;
@@ -171,28 +169,23 @@ class DList(E) {
         return count;
     }
 
-    @nogc
-    inout(Element*) first() inout pure nothrow {
+    @nogc inout(Element*) first() inout pure nothrow {
         return _head;
     }
 
-    @nogc
-    inout(Element*) last() inout pure nothrow {
+    @nogc inout(Element*) last() inout pure nothrow {
         return _tail;
     }
 
-    @nogc
-    Range!false opSlice() pure nothrow {
+    @nogc Range!false opSlice() pure nothrow {
         return Range!false(this);
     }
 
-    @nogc
-    Range!true revert() pure nothrow {
+    @nogc Range!true revert() pure nothrow {
         return Range!true(this);
     }
 
-    @nogc
-    struct Range(bool revert) {
+    @nogc struct Range(bool revert) {
         private Element* cursor;
         this(DList l) pure nothrow {
             static if (revert) {

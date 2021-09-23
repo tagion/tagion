@@ -21,8 +21,8 @@ uint gene_count(const size_t bitstring) pure nothrow {
     return count_ones(bitstring);
 }
 
-@nogc @safe
-uint gene_count(scope const(ulong[]) bitstream) pure nothrow {
+@nogc @safe uint gene_count(scope const(ulong[]) bitstream) pure nothrow
+{
     uint result;
     foreach (x; cast(const(size_t[])) bitstream) {
         result += gene_count(x);

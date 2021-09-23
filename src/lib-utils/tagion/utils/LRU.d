@@ -25,8 +25,8 @@ class LRU(K, V) {
                 "%s must have a static member named 'undefined'", V.stringof));
     }
 
-    @safe @nogc
-    struct Entry {
+    @safe @nogc struct Entry
+    {
         K key;
         V value;
         this(K key, ref V value) pure nothrow {
@@ -81,7 +81,8 @@ class LRU(K, V) {
 
         bool evict = (size != 0) && (evictList.length > size);
         // Verify size not exceeded
-        if (evict) {
+        if (evict)
+        {
             // Remove the oldest element
             removeOldest;
         }
@@ -106,13 +107,16 @@ class LRU(K, V) {
         }
     }
 
-    V opIndex(scope const(K) key) {
-        static if (does_not_have_immutable_members) {
+    V opIndex(scope const(K) key)
+    {
+        static if (does_not_have_immutable_members)
+        {
             V value;
             get(key, value);
             return value;
         }
-        else {
+        else
+        {
             auto ent = key in items;
             if (ent !is null) {
                 auto element = *ent;
@@ -123,7 +127,8 @@ class LRU(K, V) {
         }
     }
 
-    void opIndexAssign(ref V value, scope const(K) key) {
+    void opIndexAssign(ref V value, scope const(K) key)
+    {
         add(key, value);
     }
 
@@ -149,13 +154,16 @@ class LRU(K, V) {
         }
     }
 
-    V peek(const(K) key) {
-        static if (does_not_have_immutable_members) {
+    V peek(const(K) key)
+    {
+        static if (does_not_have_immutable_members)
+        {
             V value;
             peek(key, value);
             return value;
         }
-        else {
+        else
+        {
             auto ent = key in items;
             if (ent !is null) {
                 return (*ent).entry.value;
@@ -192,7 +200,8 @@ class LRU(K, V) {
         if (!e.error) {
             auto element = items[e.value.key];
             items.remove(e.value.key);
-            if (onEvict !is null) {
+            if (onEvict !is null)
+            {
                 onEvict(e.value.key, element);
             }
         }
@@ -206,7 +215,8 @@ class LRU(K, V) {
         if (last) {
             return evictList.last.entry;
         }
-        else {
+        else
+        {
             return null;
         }
     }
@@ -223,12 +233,13 @@ class LRU(K, V) {
         return evictList.length;
     }
 
-    @nogc
-    EvictList.Range!false opSlice() nothrow {
+    @nogc EvictList.Range!false opSlice() nothrow
+    {
         return evictList[];
     }
 
-    invariant {
+    invariant
+    {
         assert(items.length == evictList.length);
     }
 }
@@ -265,7 +276,8 @@ unittest {
         if (i < amount) {
             assert(i + 1 == l.length);
         }
-        else {
+        else
+        {
             assert(amount == l.length);
         }
     }
@@ -416,11 +428,13 @@ unittest {
     assert(!l.contains(1), "should not have updated recent-ness of 1");
 }
 
-unittest { // Test undefined
-    @safe
-    struct E {
+unittest
+{ // Test undefined
+    @safe struct E
+    {
         immutable(char[]) x;
-        static E undefined() {
+        static E undefined()
+        {
             return E("Not found");
         }
     }

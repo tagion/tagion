@@ -34,7 +34,8 @@ struct Statistic(T) {
     }
 }
 
-unittest {
+unittest
+{
     Statistic!uint s;
     foreach (size; [10, 15, 17, 6, 8, 12, 18]) {
         s(size);

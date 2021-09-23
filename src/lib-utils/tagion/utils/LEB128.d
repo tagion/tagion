@@ -67,7 +67,8 @@ size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     // T nv=-v;
 
     ubyte d;
-    do {
+    do
+    {
         d = value & 0x7f;
         result++;
         value >>= 7;

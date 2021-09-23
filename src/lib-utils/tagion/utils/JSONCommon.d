@@ -35,7 +35,8 @@ mixin template JSONCommon() {
      Returns:
      JSON of the struct
      +/
-    JSON.JSONValue toJSON() const {
+    JSON.JSONValue toJSON() const
+    {
         JSON.JSONValue result;
         foreach (i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
@@ -64,7 +65,8 @@ mixin template JSONCommon() {
         static if (pretty) {
             return toJSON.toPrettyString;
         }
-        else {
+        else
+        {
             return toJSON.toString;
         }
     }
@@ -96,7 +98,8 @@ mixin template JSONCommon() {
                         static foreach (i, E; EnumMembers!type) {
                             enum_list ~= E.stringof;
                         }
-                        if (enum_list.length is 1) {
+                        if (enum_list.length is 1)
+                        {
                             return enum_list[0];
                         }
                         else {
@@ -131,7 +134,8 @@ mixin template JSONCommon() {
                         .type));
                 m = json_value[name].type == JSON.JSONType.true_;
             }
-            else {
+            else
+            {
                 check(0, format("Unsupported type %s for %s member", type.stringof, m.stringof));
             }
         }
@@ -153,12 +157,14 @@ mixin template JSONConfig() {
             auto json_text = readText(config_file);
             parseJSON(json_text);
         }
-        else {
+        else
+        {
             save(config_file);
         }
     }
 
-    void save(string config_file) {
+    void save(string config_file)
+    {
         config_file.write(stringify);
     }
 }
