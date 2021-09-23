@@ -135,4 +135,8 @@ struct WasmExpr {
         }
         return this;
     }
+
+    immutable(ubyte[]) serialize() const pure nothrow {
+        return bout.toBytes.idup;
+    }
 }
