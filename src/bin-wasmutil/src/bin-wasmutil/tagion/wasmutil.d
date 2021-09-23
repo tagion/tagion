@@ -122,6 +122,7 @@ void compile(ref Tokenizer tokenizer) {
         ExportType[] exp_types;
         ImportType[] imp_types;
         TableType[] tab_types;
+        MemoryType[] mem_types;
         GlobalType[] global_types;
 
         uint[string] index_func;
@@ -130,6 +131,46 @@ void compile(ref Tokenizer tokenizer) {
         uint[string] index_global;
 
         uint count_tabs;
+        uint count_mem;
+
+        void parseCode(ref Tokenizer.Range range, string token) {
+            writeln("Parsing code...");
+            uint in_lvl = 1;
+            //parseCodeToken(ref Tokenizer.Range range) {
+            string[] array;
+            array ~= token;
+            while(in_lvl > 0) {
+
+                import core.thread: Thread;
+                import time = core.time;
+                Thread.sleep(time.msecs(500));
+
+                string current = range.front.symbol;
+                writeln(current);
+                if(current == "(") in_lvl++;
+                if(current == ")") in_lvl--;
+                writeln("lll ", in_lvl);
+                array ~= current;
+                range.popFront;
+            }   
+            writeln("999999999999999999");
+            writeln(array);
+            
+            
+            
+
+            //}
+            // while(in_lvl) {
+            //     import core.thread: Thread;
+            //     import time = core.time;
+
+            //     Thread.sleep(time.msecs(500));
+            //     writeln(range.front.symbol);
+            //     if(range.front.symbol == "(") in_lvl++;
+            //     if(range.front.symbol == ")") in_lvl--;
+            //     range.popFront;
+            // }
+        }
 
         ImportType parseImport(ref Tokenizer.Range range, ref ImportType[] imp_types) {
             writeln("Parsing import...");
@@ -296,6 +337,7 @@ void compile(ref Tokenizer tokenizer) {
             if(range.front.symbol == ")") {
                 range.popFront;
                 exp_types ~= exp_type;
+                writeln("----");
                 return exp_type;    
             }
             else if(range.front.symbol == "(") {
@@ -406,6 +448,7 @@ void compile(ref Tokenizer tokenizer) {
                         break;
                     
                     default:
+                        writeln("EXP: ", range.front.symbol);
                         break;
                 }
             }
@@ -430,9 +473,9 @@ void compile(ref Tokenizer tokenizer) {
             
             while(in_lvl) {
                 const current = range.front;
-            
-                range.popFront;
+             //   writeln(" Func: ", range.front.symbol, "  lvl->>>>> ", in_lvl);
 
+                range.popFront;
                 
                 switch(current.symbol) {
                     case("("):
@@ -442,12 +485,13 @@ void compile(ref Tokenizer tokenizer) {
                     case("export"):
                     //check(!got_export, current, "More the one export");
                     //got_export = true;
+                        writeln("EXP: ", range.front.symbol);
                         ExportType e = parseExport(range, exp_types);
                         writeln(e);
-                        in_lvl--;
                         break; // TODO
 
                     case("param"):
+                        writeln("PARAM: ", range.front.symbol);
                         string s = range.front.symbol;
                         if (s != "i32" || s != "i64" || s != "f32" || s!= "f64") { 
                             range.popFront; // Use the param_index when it is labeled
@@ -460,11 +504,14 @@ void compile(ref Tokenizer tokenizer) {
                         break;
                         
                     case("result"):
+                        writeln("Result-> ", range.front.symbol);
                         string s_type = range.front.symbol;
                         func_type.results ~= getType(s_type);
+                        range.popFront;
                         break;
 
                     case ("import"):
+                    writeln("IMPORT: ", current.symbol);
                         ImportType i = parseImport(range, imp_types);
                         writeln(i);
                         break;
@@ -474,10 +521,12 @@ void compile(ref Tokenizer tokenizer) {
                         break;
 
                     default:
+                        writeln("DEF Func: ->>>>>>>>>> ", current.symbol);
+                        parseCode(range, current.symbol);
                         break;
                     //TODO code part        
                 }
-                        func_type.type = Types.FUNC;
+            func_type.type = Types.FUNC;
             func_types ~= func_type;
             }
             return func_type;
@@ -530,6 +579,53 @@ void compile(ref Tokenizer tokenizer) {
             return table_type;
         }
 
+        MemoryType parseMemory(ref Tokenizer.Range range, ref MemoryType[] mem_types) {
+            writeln("Parsing memory...");
+            MemoryType memory_type;
+            uint min_;
+            uint max_;
+            range.popFront;
+
+            if(!isNumeric(range.front.symbol)) {
+                index_memory[range.front.symbol] = count_mem;
+                count_mem ++;
+                range.popFront;
+            }
+
+            if(isNumeric(range.front.symbol)) {
+                Limit lim_;
+                min_ = to!int(range.front.symbol);
+                lim_.from =  min_;
+                range.popFront;
+
+                if(!isNumeric(range.front.symbol)) {
+                    lim_.lim = Limits.INFINITE;
+                }
+                else {
+                    lim_.lim = Limits.RANGE;
+                    max_ = to!int(range.front.symbol);
+                    lim_.to = max_;
+                    range.popFront;
+                }
+                memory_type.limit = lim_;
+            }
+            else {
+                assert(0, "Current symbol should be numeric");
+            }
+
+            mem_types ~= memory_type;
+            
+            if(range.front.symbol == ")") {
+                range.popFront;
+            }
+            else {
+                assert(0, "Current symbol should be -> )");
+            }
+
+            return memory_type;
+        }
+
+
         // GlobalType parseGlobal(ref Tokenizer.Range rangem, ref GlobalType[] global_types) {
         //     GlobalType global_type;
         //     ImportType.ReaderImportDesc.GlobalDesc global_desc;
@@ -567,10 +663,6 @@ void compile(ref Tokenizer tokenizer) {
         // }
 
         while(lvl) {
-            // import core.thread: Thread;
-            //     import time = core.time;
-
-            //     Thread.sleep(time.msecs(500));
             switch(range.front.symbol) {
                 case "func":
                     FuncType f = parseFunction(range, func_types);
@@ -591,6 +683,10 @@ void compile(ref Tokenizer tokenizer) {
                 case "global":
                   // parseGlobal(range, global_types);
                     break;
+                case "memory":
+                    MemoryType m = parseMemory(range, mem_types);
+                    writeln(m);
+                    break;
                 case ")":
                     lvl--;
                     range.popFront;
@@ -600,8 +696,9 @@ void compile(ref Tokenizer tokenizer) {
                     range.popFront;
                     break;
                 default:
-                writeln(lvl);
-                lvl --;
+                   // parseCode(range);
+                    writeln("code ");
+                    lvl --;
                     break;
             }
         }
@@ -613,7 +710,7 @@ void compile(ref Tokenizer tokenizer) {
     while (!range.empty) {
         const token = range.front;
         range.popFront;
-
+        writeln("base: ", range.front.symbol);
         switch(token.symbol) {
             case("("):
                 lvl++;
