@@ -107,17 +107,17 @@ void check(bool flag, lazy string msg, const Token token=Token.init, string file
 
 void compile(ref Tokenizer tokenizer) {
     
-
-    uint lvl = 0;
-    // 
-    
     writeln("START");
     auto range = tokenizer[];
 
-    void parseModule(ref Tokenizer.Range range, uint lvl) {
+    void parseModule(ref Tokenizer.Range range) {
         writeln("Parsing module...");
+        
+        check(range.front.symbol == "(", " symbol \"(\" expected");
         range.popFront;
-
+        check(range.front.symbol == "module", " symbol \"module\" expected");
+        range.popFront;
+        
         FuncType[] func_types;
         ExportType[] exp_types;
         ImportType[] imp_types;
@@ -133,9 +133,27 @@ void compile(ref Tokenizer tokenizer) {
         uint count_tabs;
         uint count_mem;
 
+        void parseCode_1(ref Tokenizer.Range range) {
+            
+            writeln(__FUNCTION__, range.front.symbol);
+            check(range.front.symbol == "(", "Bracket //");
+            range.popFront;
+            Token[] tokens;
+            while(!range.empty && (range.front.symbol != ")")) {
+                tokens ~= range.front;
+                range.popFront;
+                if (range.front.symbol == "(") {
+                    parseCode_1(range);
+                }
+            } 
+            range.popFront; // pop )
+            writeln(tokens);
+
+        }
+
         void parseCode(ref Tokenizer.Range range, string token) {
             writeln("Parsing code...");
-            uint in_lvl = 1;
+            uint in_lvl = 2;
             //parseCodeToken(ref Tokenizer.Range range) {
             string[] array;
             array ~= token;
@@ -155,21 +173,7 @@ void compile(ref Tokenizer tokenizer) {
             }   
             writeln("999999999999999999");
             writeln(array);
-            
-            
-            
 
-            //}
-            // while(in_lvl) {
-            //     import core.thread: Thread;
-            //     import time = core.time;
-
-            //     Thread.sleep(time.msecs(500));
-            //     writeln(range.front.symbol);
-            //     if(range.front.symbol == "(") in_lvl++;
-            //     if(range.front.symbol == ")") in_lvl--;
-            //     range.popFront;
-            // }
         }
 
         ImportType parseImport(ref Tokenizer.Range range, ref ImportType[] imp_types) {
@@ -331,16 +335,24 @@ void compile(ref Tokenizer tokenizer) {
         ExportType parseExport(ref Tokenizer.Range range, ref ExportType[] exp_types) {
             writeln("Parsing export...");
 
+            check(range.front.symbol == "(", " symbol \"(\" expected");
+            range.popFront;
+            writeln("Error-> ", range.front.symbol);
+            check(range.front.symbol == "export", " symbol \"export\" expected");
+            range.popFront;
+
             ExportType exp_type;
             exp_type.name = range.front.symbol;
             range.popFront;
+
             if(range.front.symbol == ")") {
                 range.popFront;
                 exp_types ~= exp_type;
-                writeln("----");
+                writeln("export with 1 param");
                 return exp_type;    
             }
-            else if(range.front.symbol == "(") {
+
+            if(range.front.symbol == "(") {
                 range.popFront;
                 string s_ind_type = range.front.symbol;
                 range.popFront;
@@ -349,111 +361,113 @@ void compile(ref Tokenizer tokenizer) {
                         exp_type.desc = IndexType.FUNC;
                         range.popFront;
 
-                        if(range.front.symbol !in index_func) {
+                        if(isNumeric(range.front.symbol)) {
                             exp_type.idx = to!int(range.front.symbol);
                             range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
                         }
                         else {
                             exp_type.idx = index_func[range.front.symbol];
                             range.popFront;
-                        }    
-                        exp_types ~= exp_type; 
-
-                        if(range.front.symbol == ")") {
+                            check(range.front.symbol == ")", " symbol \")\" expected");
                             range.popFront;
-                            if(range.front.symbol == ")") {
-                                range.popFront;
-                            }
-                            else {
-                                assert(0, "Current symbol should be -> )");
-                            }
-                        }
-                        break;
-                    
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
+                        }    
+                        assert(0);
+
                     case "table":
                         exp_type.desc = IndexType.TABLE;
                         range.popFront;
                         
-                        if(range.front.symbol !in index_table) {
+                        if(isNumeric(range.front.symbol)) {
                             exp_type.idx = to!int(range.front.symbol);
                             range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
                         }
                         else {
                             exp_type.idx = index_table[range.front.symbol];
                             range.popFront;
-                        }    
-                        
-                        exp_types ~= exp_type;
-
-                        if(range.front.symbol == ")") {
+                            check(range.front.symbol == ")", " symbol \")\" expected");
                             range.popFront;
-                            if(range.front.symbol == ")") {
-                                range.popFront;
-                            }
-                            else {
-                                assert(0, "Current symbol should be -> )");
-                            }
-                        }
-                        break;
-                    
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
+                        }     
+                        assert(0);
                     case "memory":
                         exp_type.desc = IndexType.MEMORY;
                         range.popFront;
                         
-                        if(range.front.symbol !in index_memory) {
+                        if(isNumeric(range.front.symbol)) {
                             exp_type.idx = to!int(range.front.symbol);
                             range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
                         }
                         else {
                             exp_type.idx = index_memory[range.front.symbol];
                             range.popFront;
-                        }    
-                        
-                        exp_types ~= exp_type;
-
-                        if(range.front.symbol == ")") {
+                            check(range.front.symbol == ")", " symbol \")\" expected");
                             range.popFront;
-                            if(range.front.symbol == ")") {
-                                range.popFront;
-                            }
-                            else {
-                                assert(0, "Current symbol should be -> )");
-                            }
-                        }
-                        break;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
+                        }     
+                        assert(0);
                     case "global":
                         exp_type.desc = IndexType.GLOBAL;
                         range.popFront;
                         
-                        if(range.front.symbol !in index_global) {
+                        if(isNumeric(range.front.symbol)) {
                             exp_type.idx = to!int(range.front.symbol);
                             range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
                         }
                         else {
                             exp_type.idx = index_global[range.front.symbol];
                             range.popFront;
-                        }    
-                        
-                        exp_types ~= exp_type;
-
-                        if(range.front.symbol == ")") {
+                            check(range.front.symbol == ")", " symbol \")\" expected");
                             range.popFront;
-                            if(range.front.symbol == ")") {
-                                range.popFront;
-                            }
-                            else {
-                                assert(0, "Current symbol should be -> )");
-                            }
-                        }                        
-                        break;
+                            check(range.front.symbol == ")", " symbol \")\" expected");
+                            range.popFront;
+                            exp_types ~= exp_type; 
+                            return exp_type;
+                        }     
+                        assert(0);
                     
                     default:
-                        writeln("EXP: ", range.front.symbol);
+                        check(0, "Unsuported symbol in export");
+                        writeln(range.front.symbol);
                         break;
                 }
             }
             else {
-                assert(0, "Current symbol should be ( or )");
+                writeln(range.front.symbol);
+                assert(0, "Current symbol should be ( or ) -> ");
             }
   
             return exp_type;
@@ -461,34 +475,37 @@ void compile(ref Tokenizer tokenizer) {
         
         FuncType parseFunction(ref Tokenizer.Range range, ref FuncType[] func_types) {
             writeln("Parsing func...");
+            
+            check(range.front.symbol == "(", " symbol \"(\" expected");
+            range.popFront;
+            check(range.front.symbol == "func", " symbol \"func\" expected");
+            range.popFront;
+
             uint[string] param_index;
             uint counter = 0;
             FuncType func_type;
-            uint in_lvl = 1;
 
-            range.popFront;
-           // bool got_export;
-            
-            assert(range.front.symbol == "(", "current symbol should be (");
-            
-            while(in_lvl) {
-                const current = range.front;
-             //   writeln(" Func: ", range.front.symbol, "  lvl->>>>> ", in_lvl);
+            auto range_save = range.save;
 
+
+            bool f = false;
+            
+            while(range.symbol != ")") {
+                check(range.front.symbol == "(", " symbol \"(\" expected");
                 range.popFront;
                 
+                const current = range.front;
                 switch(current.symbol) {
-                    case("("):
-                        in_lvl++;
-                        break;
-
                     case("export"):
-                    //check(!got_export, current, "More the one export");
-                    //got_export = true;
-                        writeln("EXP: ", range.front.symbol);
-                        ExportType e = parseExport(range, exp_types);
+                        ExportType e = parseExport(range_save, exp_types);
                         writeln(e);
-                        break; // TODO
+                        uint lvl = 1;
+                        while(lvl > 0) {
+                            if(range.front.symbol == "(") lvl ++;
+                            if(range.front.symbol == ")") lvl --;
+                            range.popFront;
+                        }
+                        break;
 
                     case("param"):
                         writeln("PARAM: ", range.front.symbol);
@@ -501,13 +518,17 @@ void compile(ref Tokenizer tokenizer) {
                         string s_type = range.front.symbol;
                         func_type.params ~= getType(s_type);
                         range.popFront;
+                        check(range.front.symbol == ")", " symbol \")\" expected");
+                        range.popFront;
                         break;
                         
                     case("result"):
                         writeln("Result-> ", range.front.symbol);
+                        range.popFront;
                         string s_type = range.front.symbol;
                         func_type.results ~= getType(s_type);
                         range.popFront;
+                        check(range.front.symbol == ")", " symbol \")\" expected");
                         break;
 
                     case ("import"):
@@ -515,14 +536,17 @@ void compile(ref Tokenizer tokenizer) {
                         ImportType i = parseImport(range, imp_types);
                         writeln(i);
                         break;
-
-                    case(")"):
-                        in_lvl--;
-                        break;
-
                     default:
+
+                import core.thread: Thread;
+                import time = core.time;
+                Thread.sleep(time.msecs(500));
                         writeln("DEF Func: ->>>>>>>>>> ", current.symbol);
-                        parseCode(range, current.symbol);
+                        if (!f) {
+                            parseCode_1(range_save);
+                            //parseCode(range, current.symbol);
+                            f = true;
+                        } 
                         break;
                     //TODO code part        
                 }
@@ -625,115 +649,67 @@ void compile(ref Tokenizer tokenizer) {
             return memory_type;
         }
 
+        while(range.front.symbol != ")") {
+            auto range_save = range.save;
+            check(range.front.symbol == "(", " symbol \"(\" expected");
+            range.popFront;
+            const token = range.front;
 
-        // GlobalType parseGlobal(ref Tokenizer.Range rangem, ref GlobalType[] global_types) {
-        //     GlobalType global_type;
-        //     ImportType.ReaderImportDesc.GlobalDesc global_desc;
-        //     string s_type = range.front.symbol;
-        //             range.popFront;
-
-        //             global_desc.type = getType(s_type);
-
-        //             if(range.front.symbol == ")") {
-        //                 global_desc.mut = Mutable.CONST;
-        //             }
-        //             else {
-        //                 global_desc.mut = Mutable.VAR;
-        //             }
-        //             range.popFront;
-
-        //             auto global_d = ImportType.ImportDesc.GlobalDesc(global_desc);
-        //             auto imp_desc = ImportType.ImportDesc(global_d);
-                    
-        //             imp_type.importdesc = imp_desc;
-        //             imp_types ~= imp_type;
-
-        //             if(range.front.symbol == ")") {
-        //                 range.popFront;
-        //                 return imp_type;
-        //             }
-        //             else {
-        //                 assert(0, "Current symbol should be -> )");
-        //             }   
-
-        //             break;
-            
-
-
-        // }
-
-        while(lvl) {
-            switch(range.front.symbol) {
+            switch(token.symbol) {
                 case "func":
-                    FuncType f = parseFunction(range, func_types);
+                    auto f = parseFunction(range_save, func_types);
                     writeln(f);
+                    uint lvl = 1;
+                    while(lvl > 0) {
+                        if(range.front.symbol == "(") lvl ++;
+                        if(range.front.symbol == ")") lvl --;
+                        range.popFront;
+                    }
                     break;
                 case "import":
-                    ImportType i = parseImport(range, imp_types);
-                    writeln(i);
+
                     break;
                 case "export":
-                    ExportType e = parseExport(range, exp_types);
-                    writeln(e);
+
                     break;
                 case "table":
-                    TableType t = parseTable(range, tab_types);
-                    writeln(t);
-                    break;
-                case "global":
-                  // parseGlobal(range, global_types);
+
                     break;
                 case "memory":
-                    MemoryType m = parseMemory(range, mem_types);
-                    writeln(m);
+
                     break;
-                case ")":
-                    lvl--;
-                    range.popFront;
-                    break;
-                case "(":
-                    lvl++;
-                    range.popFront;
+                case "local":
+
                     break;
                 default:
-                   // parseCode(range);
-                    writeln("code ");
-                    lvl --;
+                    writeln("def module ", range.front.symbol);
                     break;
             }
         }
-
-
     }
 
 
     while (!range.empty) {
-        const token = range.front;
+        auto range_save = range.save;
+        check(range.front.symbol == "(", " symbol \"(\" expected");
         range.popFront;
-        writeln("base: ", range.front.symbol);
+        const token = range.front;
+        
         switch(token.symbol) {
-            case("("):
-                lvl++;
-                break;
-
-            case(")"):
-                lvl--;
-                break;
-
             case("module"):
-                parseModule(range, lvl);
+                parseModule(range_save);
+                uint lvl = 1;
+                while(lvl > 0) {
+                    if(range.front.symbol == "(") lvl ++;
+                    if(range.front.symbol == ")") lvl --;
+                    range.popFront;
+                }
                 break;
             default:
-            check(0, format("Umexpected symbol %s", token.symbol), token);
+                check(0, format("Unexpected symbol %s", token.symbol), token);
                 break;
         }
     }
-
-    writeln("Why ", lvl);
-    lvl--;
-    assert(!lvl);
-
-
 
 }
 
