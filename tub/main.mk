@@ -57,8 +57,5 @@ include $(DIR_TUB)/generate.mk
 include $(DIR_TUB)/unit.mk
 include $(DIR_TUB)/clean.mk
 
-# Include wraps
--include ${shell find $(DIR_SRC)/wrap-* -name '*context.mk'}
-
 .PHONY: help info
 .SECONDARY:

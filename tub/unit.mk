@@ -1,8 +1,8 @@
-# Add bin support
-# Test in isolated mode
-# Test auto adding dependencies (ensure correct branching as well)
-# Add revision
-# Add tub version compat testing
+# TODO: Test in isolated mode
+# TODO: Test auto adding dependencies (ensure correct branching as well)
+# TODO: Add revision
+# TODO: Add tub version compat testing
+# TODO: Add support to all repos under 0.7
 
 # Variable that allows to skip duplicate ${eval include ...}
 UNITS_DEFINED :=
@@ -18,6 +18,9 @@ UNIT_PREFIX_DIR_WRAP_TARGET := wrap-
 include $(DIR_TUB)/targets/o.mk
 include $(DIR_TUB)/targets/lib.mk
 include $(DIR_TUB)/targets/bin.mk
+
+LIB_DIRS_WORKSPACE := ${shell ls -d $(DIR_SRC)/*/ | grep -v wrap- | grep -v bin-}
+LIB_DIRS_WORKSPACE := $(patsubst %/, %, $(LIB_DIRS_WORKSPACE))
 
 # 
 # Interface for context.mk files in Tagion units
@@ -108,7 +111,20 @@ endef
 define _unit.dep.wrap
 ${call debug, [_unit.dep.wrap] [${strip $1}]}
 
-${eval UNIT_DEPS += ${strip $1}}
+${eval WRAP_DEP_DIR := ${strip $1}}
+
+
+${call debug, ============= [_unit.dep.wrap] Before: $(WRAP_DEP_DIR)}
+# Exclude dependencies that were already included from WRAP_DEP_DIR:
+${foreach WRAP_DEFINED, $(WRAPS_DEFINED), ${eval WRAP_DEP_DIR := ${patsubst $(WRAP_DEFINED),,$(WRAP_DEP_DIR)}}}
+
+${call debug, ============= [_unit.dep.wrap] After: $(WRAP_DEP_DIR)}
+
+${if $(WRAP_DEP_DIR), ${eval include $(DIR_SRC)/wrap-$(WRAP_DEP_DIR)/context.mk}}
+
+${eval WRAPS_DEFINED += ${strip $1}}
+
+${call unit.dep.wrap-${strip $1}}
 endef
 
 # Unit declaration ending
@@ -223,7 +239,6 @@ ${call debug, [compile.target.defined] wrap: $(COMPILE_UNIT_WRAP_TARGETS)}
 
 ${foreach COMPILE_UNIT_PREFIX_TARGET, $(COMPILE_UNIT_LIB_TARGETS), ${eval ${call include.lib, $(COMPILE_UNIT_PREFIX_TARGET)}}}
 ${foreach COMPILE_UNIT_PREFIX_TARGET, $(COMPILE_UNIT_BIN_TARGETS), ${eval ${call include.bin, $(COMPILE_UNIT_PREFIX_TARGET)}}}
-${foreach COMPILE_UNIT_PREFIX_TARGET, $(COMPILE_UNIT_WRAP_TARGETS), ${eval ${call include.wrap, $(COMPILE_UNIT_PREFIX_TARGET)}}}
 
 ${call gen.include}
 endif

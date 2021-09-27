@@ -106,7 +106,7 @@ ${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET)-logs}
 
 ${call debug, ------- [_unit.target.lib] [$(UNIT_MAIN_TARGET)]}
 
-${eval _TARGET := $(DIR_BUILD)/bins/$(_UNIT_TARGET)}
+${eval _TARGET := $(DIR_BUILD)/libs/$(_UNIT_TARGET).a}
 
 ${eval _DCFLAGS := $(DCFLAGS)}
 ${eval _DCFLAGS += -main}
