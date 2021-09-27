@@ -16,6 +16,7 @@ ${eval _INCFLAGS += ${addprefix -I$(DIR_SRC)/, $(UNIT_DEPS_DIR)}}
 
 ${eval _DFILES := ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.d'}}
 ${eval _DFILES += ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.di'}}
+${eval _DFILES += $(WRAP_INFILES)}
 
 ${eval _INFILES := $(_DFILES)}
 
@@ -36,7 +37,7 @@ ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
 
-${call gen.line, $(_TARGET): $(_DFILES) | $(_TARGET).way $(_UNIT_TARGET_LOGS)}
+${call gen.line, $(_TARGET): $(_DFILES) $(UNIT_WRAPS_TARGETS) | $(_TARGET).way $(_UNIT_TARGET_LOGS)}
 ${call gen.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) $(_INCFLAGS) $(_LDCFLAGS)}
 ${call gen.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
 ${call gen.space}
@@ -62,6 +63,7 @@ ${eval _INCFLAGS += ${addprefix -I$(DIR_SRC)/, $(UNIT_DEPS_DIR)}}
 
 ${eval _DFILES := ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.d'}}
 ${eval _DFILES += ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.di'}}
+${eval _DFILES += $(WRAP_INFILES)}
 
 ${eval _INFILES := $(_DFILES)}
 
@@ -77,12 +79,13 @@ ${call gen.linetab, \$${call log.kvp, DCFLAGS, $(_DCFLAGS)}}
 ${call gen.linetab, \$${call log.kvp, INFILES}}
 ${call gen.linetab, \$${call log.lines, $(_INFILES)}}
 ${call gen.linetab, \$${call log.kvp, INCFLAGS}}
+${call gen.linetab, \$${call log.lines, $(INCFLAGS)}}
 ${call gen.linetab, \$${call log.lines, $(_INCFLAGS)}}
 ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
 
-${call gen.line, $(_TARGET): $(_DFILES) | $(_TARGET).way $(_UNIT_TARGET_LOGS)}
+${call gen.line, $(_TARGET): $(_DFILES) $(UNIT_WRAPS_TARGETS) | $(_TARGET).way $(_UNIT_TARGET_LOGS)}
 ${call gen.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) $(_INCFLAGS) $(_LDCFLAGS)}
 ${call gen.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
 ${call gen.space}
