@@ -60,7 +60,7 @@ alias GlobalType = WasmWriter.WasmSection.GlobalType;
 alias ExportType = WasmWriter.WasmSection.ExportType;
 alias Start = WasmWriter.WasmSection.Start;
 alias ElementType = WasmWriter.WasmSection.ElementType;
-alias codeType = WasmWriter.WasmSection.CodeType;
+alias CodeType = WasmWriter.WasmSection.CodeType;
 alias DataType = WasmWriter.WasmSection.DataType;
 
 Types getType(string s) {
@@ -122,9 +122,9 @@ void compile(ref Tokenizer tokenizer) {
     void parseModule(ref Tokenizer.Range range) {
         writeln("Parsing module...");
         
-        check(range.front.symbol == "(", " symbol \"(\" expected");
+        check(range.front.symbol == "(", ` symbol "(" expected`);
         range.popFront;
-        check(range.front.symbol == "module", " symbol \"module\" expected");
+        check(range.front.symbol == "module", ` symbol "module" expected`);
         range.popFront;
         
         FuncType[] func_types;
@@ -142,23 +142,66 @@ void compile(ref Tokenizer tokenizer) {
         uint count_tabs;
         uint count_mem;
 
-        void parseCode(ref Tokenizer.Range range) {
-            
-            check(range.front.symbol == "(", "Bracket //");
-            range.popFront;
-            Token[] tokens;
-            while(!range.empty && (range.front.symbol != ")")) {
-                tokens ~= range.front;
-                range.popFront;
-                if (range.front.symbol == "(") {
-                    parseCode(range);
-                }
-            } 
-            while(range.front.symbol == ")") {
-                range.popFront; // pop )
-            }
-            writeln(tokens);
+        void parseCode(ref Tokenizer.Range range, uint count_locals) {
+            check(range.front.symbol == "(", ` symbol "(" expected`);
 
+            void parseCodePart() { // return void
+                check(range.front.symbol == "(", ` symbol "(" expected`);
+                range.popFront;
+                auto range_save = range.save; // -> range
+                Token[] tokens;
+
+                while(!range_save.empty && range_save.front.symbol != ")") {
+                    tokens ~= range_save.front;
+                    range_save.popFront;
+                    if (range_save.front.symbol == "(") {
+                        parseCode(range_save, count_locals);
+                    }
+                } 
+                check(range_save.front.symbol == ")", ` symbol ")" expected`);
+                range_save.popFront; // pop )
+            }
+
+            CodeType.Local[] locals;
+
+            bool parseLocalPart() {
+                auto range_save = range.save;
+
+                check(range.front.symbol == "(", ` symbol "(" expected`);
+                range.popFront;
+                               // auto range_save = range.save;
+
+
+                check(range.front.symbol == "local", ` symbol "local" expected`);
+                range_save.popFront;
+
+                if(range.front.symbol == "local") {
+                    while(!range_save.empty && range_save.front.symbol != ")") {
+                        CodeType.Local local;
+                        local.type = getType(range_save.front.symbol);
+                        range_save.popFront;
+                        local.count = count_locals;
+                        count_locals++;
+                        locals ~= local;
+                    }
+                    check(range_save.front.symbol == ")", ` symbol ")" expected`);
+                    range_save.popFront; // pop )
+                    return true;
+                }
+                return false;
+            }
+
+            while(parseLocalPart) {
+                // empty
+            }
+
+            
+            if (range.front.symbol == "local") {
+                writeln(parseLocalPart);
+            }
+            else {
+                writeln(parseCodePart);
+            }
         }
 
         ImportType parseImport(ref Tokenizer.Range range, ref ImportType[] imp_types) {
@@ -305,10 +348,9 @@ void compile(ref Tokenizer tokenizer) {
         ExportType parseExport(ref Tokenizer.Range range, ref ExportType[] exp_types) {
             writeln("Parsing export...");
 
-            check(range.front.symbol == "(", " symbol \"(\" expected");
+            check(range.front.symbol == "(", `symbol "(" expected`);
             range.popFront;
-            writeln("Error-> ", range.front.symbol);
-            check(range.front.symbol == "export", " symbol \"export\" expected");
+            check(range.front.symbol == "export", `symbol "export" expected`);
             range.popFront;
 
             ExportType exp_type;
@@ -446,22 +488,18 @@ void compile(ref Tokenizer tokenizer) {
         FuncType parseFunction(ref Tokenizer.Range range, ref FuncType[] func_types) {
             writeln("Parsing func...");
             
-            check(range.front.symbol == "(", " symbol \"(\" expected");
+            uint count_locals;
+            check(range.front.symbol == "(", ` symbol "(" expected`);
             range.popFront;
-            check(range.front.symbol == "func", " symbol \"func\" expected");
+            check(range.front.symbol == "func", ` symbol "func" expected`);
             range.popFront;
 
             uint[string] param_index;
             uint counter = 0;
             FuncType func_type;
-
-            auto range_save = range.save;
-
-
-            bool f = false;
             
             while(range.symbol != ")") {
-                writeln("Error: ", range.front.symbol);
+                auto range_save = range.save;
                 check(range.front.symbol == "(", " symbol \"(\" expected");
                 range.popFront;
                 
@@ -508,10 +546,7 @@ void compile(ref Tokenizer tokenizer) {
                         import core.thread: Thread;
                         import time = core.time;
                         Thread.sleep(time.msecs(500));
-                        if (!f) {
-                            parseCode(range_save);
-                            f = true;
-                        } 
+                        parseCode(range_save, count_locals);
                         delTokens(range);
                         break;
                     //TODO code part        
