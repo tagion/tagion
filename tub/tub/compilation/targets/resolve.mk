@@ -1,4 +1,4 @@
-
+# Declaration start
 define _unit.lib
 ${call debug, ----- [_unit.lib] [${strip $1}]}
 ${call unit.vars.reset, ${strip $1}}
@@ -23,7 +23,7 @@ ${eval UNIT_DIR := $(UNIT_PREFIX_DIR)$(UNIT)}
 ${eval UNIT_TARGET := $(UNIT_PREFIX_TARGET)$(UNIT)}
 endef
 
-# Unit declaration of dependencies
+# Declaration of dependencies
 define _unit.dep.lib
 ${call debug, ----- [_unit.dep.lib] [${strip $1}]}
 
@@ -44,8 +44,9 @@ ${call debug, [_unit.dep.wrap] [${strip $1}]}
 ${call unit.dep.wrap-${strip $1}}
 endef
 
-# Unit declaration ending
-# Will not execute twice (need in rare cases with circular dependencies):
+# Unit declaration end
+# Safe wrapper ensures not to execute twice
+# (need in rare cases with circular dependencies):
 define _unit.end.safe
 ${call debug, ----- [_unit.end.safe] [$(UNIT_DIR)]}
 ${eval UNIT_DEFINED_BLOCKER := ${findstring $(UNIT_DIR), $(UNITS_DEFINED)}}

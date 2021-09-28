@@ -9,19 +9,17 @@ main: help
 # Tub protocol version that modules must explicitly support
 TUB_PROTOCOL := 5
 
+# Define absolute Root and Tub directories
+DIR_MAKEFILE := ${realpath .}
+DIR_TUB := $(DIR_MAKEFILE)/tub
+DIR_ROOT := ${abspath ${DIR_TUB}/../}
+
 # Tub can run in Rooted and Isolated modes
 # 	Rooted - flat unit structure. Used for development
 # 	Isolated - modules treated as dependencies, installed in sub-folder. Used in CI pipelines
 TUB_MODE := Rooted
 
-# Define absolute Root and Tub directories
-DIR_MAKEFILE := ${realpath .}
-DIR_TUB := $(DIR_MAKEFILE)
-ifneq ($(shell test -e $(DIR_MAKEFILE)/main.mk && echo yes),yes)
-DIR_TUB := $(DIR_MAKEFILE)/tub
-endif
-
-DIR_ROOT := ${abspath ${DIR_TUB}/../}
+# Define directory to resolve /src and /build against
 DIR_TUB_ROOT := $(DIR_ROOT)
 
 ifneq ($(shell test -e $(DIR_TUB_ROOT)/tubroot && echo yes),yes)
