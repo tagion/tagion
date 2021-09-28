@@ -369,12 +369,7 @@ import tagion.wasm.WasmException;
             }
 
             mixin Serialize;
-
             struct ImportDesc {
-                this(FuncDesc func_desc) {
-                    _funcdesc = func_desc;
-                }
-
                 struct FuncDesc {
                     uint funcidx;
                     this(const(ReaderImportDesc.FuncDesc) f) {
@@ -419,7 +414,7 @@ import tagion.wasm.WasmException;
 
                     mixin Serialize;
                 }
-
+              
                 protected union {
                     @(IndexType.FUNC) FuncDesc _funcdesc;
                     @(IndexType.TABLE) TableDesc _tabledesc;
@@ -469,25 +464,25 @@ import tagion.wasm.WasmException;
 
                 this(T)(ref const(T) desc) {
                     with(IndexType) {
-                    static if (is(T : const(FuncDesc))) {
-                        _desc = FUNC;
-                        _funcdesc = desc;
-                    }
-                    else static if (is(T : const(TableDesc))) {
-                        _desc = TABLE;
-                        _tabledesc = desc;
-                    }
-                    else static if (is(T : const(MemoryDesc))) {
-                        _desc = MEMORY;
-                        _memorydesc = desc;
-                    }
-                    else static if (is(T : const(GlobalDesc))) {
-                        _desc = GLOBAL;
-                        _globaldesc = desc;
-                    }
-                    else {
-                        static assert(0, format("Type %s is not supported", T.stringof));
-                    }
+                        static if (is(T : const(FuncDesc))) {
+                            _desc = FUNC;
+                            _funcdesc = desc;
+                        }
+                        else static if (is(T : const(TableDesc))) {
+                            _desc = TABLE;
+                            _tabledesc = desc;
+                        }
+                        else static if (is(T : const(MemoryDesc))) {
+                            _desc = MEMORY;
+                            _memorydesc = desc;
+                        }
+                        else static if (is(T : const(GlobalDesc))) {
+                            _desc = GLOBAL;
+                            _globaldesc = desc;
+                        }
+                        else {
+                            static assert(0, format("Type %s is not supported", T.stringof));
+                        }
                     }
                 }
 
