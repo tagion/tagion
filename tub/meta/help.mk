@@ -1,6 +1,7 @@
+.PHONY: help
 help:
 	${eval TUB_VERSION := ${shell cd $(DIR_TUB_ROOT)/tub; git rev-parse --short HEAD}}
-	${call log.header, tub version $(TUB_VERSION) :: help }
+	${call log.header, tub (version $(TUB_VERSION)) :: help }
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show current Make environment}
 	${call log.kvp, make update, Force update the tub itself}

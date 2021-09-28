@@ -1,6 +1,4 @@
-# 
 # Source code cloning
-# 
 add-%: $(DIR_SRC)/%/context.mk
 	@
 

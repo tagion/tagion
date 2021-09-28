@@ -11,8 +11,8 @@ ${eval _DCFLAGS += -of$(_TARGET)}
 
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 
-${eval _INCFLAGS := -I$(DIR_SRC)/$(UNIT_DIR)}
-${eval _INCFLAGS += ${addprefix -I$(DIR_SRC)/, $(UNIT_DEPS_DIR)}}
+${eval _INCFLAGS := ${addprefix -I, $(LIB_DIRS_WORKSPACE)}}
+${eval _INCFLAGS += $(WRAP_INCFLAGS)}
 
 ${eval _DFILES := ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.d'}}
 ${eval _DFILES += ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.di'}}
@@ -24,6 +24,7 @@ ${call gen.line, # Object File - $(UNIT_TARGET)}
 ${call gen.line, # $(_TARGET)}
 
 ${call gen.line, $(_UNIT_TARGET_LOGS):}
+${call gen.linetab, \$${eval DYNAMIC_INCFLAGS += -I$(DIR_SRC)/$(UNIT_DIR)}}
 ${call gen.linetab, \$${call log.header, $(_UNIT_TARGET).o}}
 ${call gen.linetab, \$${call log.kvp, Command, DC DCFLAGS INFILES INCFLAGS LDCFLAGS}}
 ${call gen.linetab, \$${call log.separator}}
@@ -33,6 +34,8 @@ ${call gen.linetab, \$${call log.kvp, INFILES}}
 ${call gen.linetab, \$${call log.lines, $(_INFILES)}}
 ${call gen.linetab, \$${call log.kvp, INCFLAGS}}
 ${call gen.linetab, \$${call log.lines, $(_INCFLAGS)}}
+${call gen.linetab, \$${call log.separator}}
+${call gen.linetab, \$${call log.lines, $(DYNAMIC_INCFLAGS)}}
 ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
@@ -58,8 +61,8 @@ ${eval _DCFLAGS += -of$(_TARGET)}
 
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 
-${eval _INCFLAGS := -I$(DIR_SRC)/$(UNIT_DIR)}
-${eval _INCFLAGS += ${addprefix -I$(DIR_SRC)/, $(UNIT_DEPS_DIR)}}
+${eval _INCFLAGS := ${addprefix -I, $(LIB_DIRS_WORKSPACE)}}
+${eval _INCFLAGS += $(WRAP_INCFLAGS)}
 
 ${eval _DFILES := ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.d'}}
 ${eval _DFILES += ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND_EXCLUDE)" -name '*.di'}}
@@ -71,6 +74,7 @@ ${call gen.line, # Test Object File - $(UNIT_TARGET)}
 ${call gen.line, # $(_TARGET)}
 
 ${call gen.line, $(_UNIT_TARGET_LOGS):}
+${call gen.linetab, \$${eval DYNAMIC_INCFLAGS += -I$(DIR_SRC)/$(UNIT_DIR)}}
 ${call gen.linetab, \$${call log.header, $(_UNIT_TARGET).o}}
 ${call gen.linetab, \$${call log.kvp, Command, DC DCFLAGS INFILES INCFLAGS LDCFLAGS}}
 ${call gen.linetab, \$${call log.separator}}
@@ -81,6 +85,8 @@ ${call gen.linetab, \$${call log.lines, $(_INFILES)}}
 ${call gen.linetab, \$${call log.kvp, INCFLAGS}}
 ${call gen.linetab, \$${call log.lines, $(INCFLAGS)}}
 ${call gen.linetab, \$${call log.lines, $(_INCFLAGS)}}
+${call gen.linetab, \$${call log.separator}}
+${call gen.linetab, \$${call log.lines, $(DYNAMIC_INCFLAGS)}}
 ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
