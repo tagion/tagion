@@ -1,14 +1,23 @@
+# TODO: Test in isolated mode
+# TODO: Test auto adding dependencies (ensure correct branching as well)
+# TODO: Add revision
+# TODO: Add tub version compat testing
+# TODO: Add support to all repos under 0.7
+
 main: help
 
 # Tub protocol version that modules must explicitly support
-TUB := 5
+TUB_PROTOCOL := 5
 
-# Choosing root directory
-DIR_MAKEFILE := ${realpath .}
-DIR_TUB := $(DIR_MAKEFILE)
+# Tub can run in Rooted and Isolated modes
+# 	Rooted - flat unit structure. Used for development
+# 	Isolated - modules treated as dependencies, installed in sub-folder. Used in CI pipelines
 TUB_MODE := Rooted
 
-ifneq ($(shell test -e $(DIR_MAKEFILE)/env.mk && echo yes),yes)
+# Define absolute Root and Tub directories
+DIR_MAKEFILE := ${realpath .}
+DIR_TUB := $(DIR_MAKEFILE)
+ifneq ($(shell test -e $(DIR_MAKEFILE)/main.mk && echo yes),yes)
 DIR_TUB := $(DIR_MAKEFILE)/tub
 endif
 
@@ -17,6 +26,7 @@ DIR_TUB_ROOT := $(DIR_ROOT)
 
 ifneq ($(shell test -e $(DIR_TUB_ROOT)/tubroot && echo yes),yes)
 DIR_TUB_ROOT := $(DIR_MAKEFILE)/tub
+
 TUB_MODE := Isolated
 TUB_MODE_ISOLATED := 1
 endif
@@ -24,38 +34,9 @@ endif
 # Inlclude local setup
 -include $(DIR_ROOT)/local.mk
 
-# Including according to anchor directory
-include $(DIR_TUB)/list.mk
-include $(DIR_TUB)/utils.mk
-include $(DIR_TUB)/log.mk
-include $(DIR_TUB)/debug.mk
-include $(DIR_TUB)/help.mk
-include $(DIR_TUB)/env.mk
+# Include supporting Tub functionality
+include $(DIR_TUB)/common/__root.mk
+include $(DIR_TUB)/meta/__root.mk
+include $(DIR_TUB)/compilation/__root.mk
 
-help: $(HELP)
-
-update:
-	@cd $(DIR_TUB); git checkout .
-	@cd $(DIR_TUB); git pull origin --force
-
-checkout/%: 
-	@cd $(DIR_TUB); git checkout $(*)
-	@cd $(DIR_TUB); git pull origin --force
-
-# 
-# Switches for extra features
-# 
-enable-run:
-	@cp $(DIR_TUB)/run $(DIR_ROOT)/run
-
-disable-run:
-	@rm $(DIR_ROOT)/run
-
-include $(DIR_TUB)/add.mk
-include $(DIR_TUB)/ways.mk
-include $(DIR_TUB)/generate.mk
-include $(DIR_TUB)/unit.mk
-include $(DIR_TUB)/clean.mk
-
-.PHONY: help info
 .SECONDARY:
