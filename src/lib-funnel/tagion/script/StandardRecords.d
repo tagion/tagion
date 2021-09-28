@@ -86,8 +86,7 @@ import tagion.script.ScriptBase: Number;
         @Label("$in") Buffer[] input; /// Hash pointer to input (DART)
         @Label("$read", true) Buffer[] read; /// Hash pointer to read-only input (DART)
         @Label("$out") Buffer[] output; // pubkey of the output
-        @Label("$script") string script;
-        //    @Label("$params", true)  Document params;
+        @Label("$run") Buffer script; // Wasm binary
         mixin HiBONRecord;
         bool valid() {
             return (input.length > 0) ||
