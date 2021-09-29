@@ -4,7 +4,7 @@ ${eval _UNIT_DEPS_TARGET := $(UNIT_MAIN_DEPS_TARGET)}
 ${eval _UNIT_TARGET := ${subst bin-, tagion, $(_UNIT_DIR)}}
 ${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET)-logs}
 
-${call debug, ------- [_unit.target.bin] [$(UNIT_MAIN_TARGET)]}
+${call debug.open, GENERATION (bin) $(_UNIT_TARGET)}
 
 ${eval _TARGET := $(DIR_BUILD)/bins/$(_UNIT_TARGET)}
 
@@ -33,12 +33,20 @@ ${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.linetab, \$${call log.close}}
 ${call gen.space}
 
+${call debug, Generated target: $(_UNIT_TARGET_LOGS)}
+
 ${call gen.line, $(_UNIT_TARGET): $(_TARGET)}
 ${call gen.linetab, @}
 ${call gen.space}
+
+${call debug, Generated target: $(_UNIT_TARGET)}
 
 ${call gen.line, $(_TARGET): $(_OFILES) $(_TARGET).way $(_UNIT_TARGET_LOGS)}
 ${call gen.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)}
 ${call gen.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
 ${call gen.space}
+
+${call debug, Generated target: $(_TARGET)}
+
+${call debug.close, GENERATION (bin) $(_UNIT_TARGET)}
 endef

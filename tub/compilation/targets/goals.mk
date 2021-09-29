@@ -18,9 +18,10 @@ COMPILE_UNIT_BIN_TARGETS := ${filter-out testscope-libtagion%, $(COMPILE_UNIT_BI
 
 COMPILE_UNIT_WRAP_TARGETS := ${filter wrap-%, $(COMPILE_UNIT_PREFIX_TARGETS)}
 
-${call debug, [compile.target.defined] lib: $(COMPILE_UNIT_LIB_TARGETS)}
-${call debug, [compile.target.defined] bin: $(COMPILE_UNIT_BIN_TARGETS)}
-${call debug, [compile.target.defined] wrap: $(COMPILE_UNIT_WRAP_TARGETS)}
+${eval ${call debug.open, GOALS}}
+${eval ${call debug, Defined MAKECMDGOALS: $(COMPILE_UNIT_LIB_TARGETS) $(COMPILE_UNIT_BIN_TARGETS) $(COMPILE_UNIT_WRAP_TARGETS)}}
+${eval ${call debug.close, GOALS}}
+${call debug.space}
 
 ${foreach COMPILE_UNIT_PREFIX_TARGET, $(COMPILE_UNIT_LIB_TARGETS), ${eval ${call include.lib, $(COMPILE_UNIT_PREFIX_TARGET)}}}
 ${foreach COMPILE_UNIT_PREFIX_TARGET, $(COMPILE_UNIT_BIN_TARGETS), ${eval ${call include.bin, $(COMPILE_UNIT_PREFIX_TARGET)}}}
