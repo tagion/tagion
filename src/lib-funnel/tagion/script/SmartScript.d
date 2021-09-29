@@ -6,7 +6,7 @@ import std.format;
 
 import tagion.crypto.SecureInterfaceNet: SecureNet;
 import tagion.basic.ConsensusExceptions: SmartScriptException, ConsensusFailCode, Check;
-import tagion.script.StandardRecords: SignedContract, StandardBill;
+import tagion.script.StandardRecords: SignedContract, StandardBill, PayContract;
 import tagion.basic.Basic: Pubkey;
 import tagion.script.Script: Script, ScriptContext;
 import tagion.script.ScriptParser: ScriptParser;
@@ -46,26 +46,26 @@ class SmartScript {
         assert(net);
     }
     do {
-        
+
             .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
         const message = net.hashOf(signed_contract.contract.toDoc);
-        
+
         .check(signed_contract.signs.length >= signed_contract.input.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE);
-        
+
         .check(signed_contract.contract.input.length == signed_contract.input.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
-
-        foreach (i, print, input, signature; lockstep(signed_contract.contract.input, signed_contract.input, signed_contract
+        const payment = PayContract(signed_contract.input);
+        foreach (i, print, input, signature; lockstep(signed_contract.contract.input, payment.bills, signed_contract
                 .signs)) {
             import tagion.utils.Miscellaneous: toHexString;
 
             immutable fingerprint = net.hashOf(input.toDoc);
-            
+
             .check(print == fingerprint, ConsensusFailCode
                     .SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
             Pubkey pkey = input.owner;
-            
+
             .check(net.verify(message, signature, pkey),
                     ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
 
@@ -90,7 +90,8 @@ class SmartScript {
         auto sc = new ScriptContext(10, 10, 10, 100);
         script.execute(transactions_name, sc);
 
-        const total_input = calcTotal(signed_contract.input);
+        const payment = PayContract(signed_contract.input);
+        const total_input = calcTotal(payment.bills);
         ulong total_output;
         foreach (pkey; signed_contract.contract.output) {
             StandardBill bill;
@@ -104,7 +105,7 @@ class SmartScript {
             bill.bill_type = "TGN";
             _output_bills ~= bill;
         }
-        
+
         .check(total_output <= total_input, ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
     }
 }

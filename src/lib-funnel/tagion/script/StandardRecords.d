@@ -96,6 +96,7 @@ import tagion.script.ScriptBase: Number;
 
     @RecordType("PAY") struct PayContract {
         @Label("$in", true) StandardBill[] bills; /// The actual inputs
+        mixin HiBONRecord;
     }
 
     @RecordType("SSC") struct SignedContract {
