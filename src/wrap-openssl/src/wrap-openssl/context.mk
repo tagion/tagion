@@ -11,8 +11,8 @@ WAYS_PERSISTENT += $(DIR_BUILD_OPENSSL_EXTRA)/.way
 .PHONY: wrap-openssl
 wrap-openssl: | ways $(DIR_BUILD_OPENSSL)/lib/libcrypto.a
 	${eval WRAPS += opensssl}
-	${eval WRAPS_STATIC += $(DIR_BUILD_OPENSSL)/lib/libcrypto.a}
 	${eval WRAPS_STATIC += $(DIR_BUILD_OPENSSL)/lib/libssl.a}
+	${eval WRAPS_STATIC += $(DIR_BUILD_OPENSSL)/lib/libcrypto.a}
 	$(PRECMD)export LD_LIBRARY_PATH=$(DIR_BUILD_OPENSSL)/lib/:$(LD_LIBRARY_PATH)
 	$(PRECMD)export DYLD_LIBRARY_PATH=$(DIR_BUILD_OPENSSL)/lib/:$(DYLD_LIBRARY_PATH)
 
