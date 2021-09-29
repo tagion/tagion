@@ -58,3 +58,5 @@ This License and any dispute, controversy proceedings or claim of whatever natur
 Any dispute arising out of or in connection with this License including any use of and access to The Software and New Versions, including any disputes regarding the existence, validity or termination thereof, shall be settled before the Courts of the State of the Licensor, who shall have exclusive Jurisdiction of the dispute.  
 Version 1.0 June 2020
 
+#### Test push
+
