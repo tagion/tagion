@@ -194,7 +194,8 @@ struct WalletWrapper {
             if (_total_input >= topay) {
                 const _rest = _total_input - topay;
                 count++;
-                result.contract.script = assumeUnique(format("%s %s %d pay", source, _rest, count));
+                pragma(msg, "fixme(cbr): Should be change to wasm-binary");
+                result.contract.script = cast(Buffer)assumeUnique(format("%s %s %d pay", source, _rest, count));
                 // output
                 Invoice money_back;
                 money_back.amount = _rest;
