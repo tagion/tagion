@@ -17,7 +17,7 @@ import tagion.basic.Basic : Control, Buffer;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
-import tagion.script.StandardRecords : Contract, SignedContract;
+import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.script.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
 
@@ -149,12 +149,14 @@ void transactionServiceTask(immutable(Options) opts) {
                                 import tagion.script.StandardRecords : StandardBill;
 
                                 // writefln("input loaded %d", foreign_recoder.archive);
-                                signed_contract.input = [];
+                                PayContract payment;
+
+                                //signed_contract.input.bills = [];
                                 foreach (archive; foreign_recorder[]) {
                                     auto std_bill = StandardBill(archive.filed);
-                                    signed_contract.input ~= std_bill;
+                                    payment.bills ~= std_bill;
                                 }
-
+                                signed_contract.input = payment.toDoc;
                                 // Send the contract as payload to the HashGraph
                                 // The data inside HashGraph is pure payload not an HiRPC
                                 SmartScript.check(hirpc.net, signed_contract);

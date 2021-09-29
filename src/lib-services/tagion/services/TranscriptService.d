@@ -17,7 +17,7 @@ import tagion.basic.Logger;
 //import tagion.utils.Random;
 import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
-import tagion.script.StandardRecords : Contract, SignedContract;
+import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
@@ -150,7 +150,8 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                         const added = to_smart_script(signed_contract);
                         if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];
-                            foreach (bill; smart_script.signed_contract.input) {
+                            const payment = PayContract(smart_script.signed_contract.input);
+                            foreach (bill; payment.bills) {
                                 const bill_doc = bill.toDoc;
                                 recorder.remove(bill_doc);
                             }
