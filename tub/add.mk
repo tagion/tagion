@@ -11,6 +11,9 @@ add/core: add/lib-basic\
 			  add/lib-utils\
 			  add/lib-hibon\
 			  add/lib-p2pgowrapper\
+			  add/lib-tvm\
+			  add/lib-wasm\
+			  add/lib-foundation\
 			  add/lib-crypto\
 			  add/lib-dart\
 			  add/lib-funnel\

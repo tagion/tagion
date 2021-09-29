@@ -140,7 +140,7 @@ $(DIR_BUILD)/bins/tagion%: | ways tagion%.ctx
 # Macros
 # 
 define find.files
-${shell find ${strip $1} -not -path "$(SOURCE_FIND_EXCLUDE)" -name '${strip $2}'}
+${shell find ${strip $1} ${foreach _EXCLUDE, $(SOURCE_FIND_EXCLUDE), -not -path "$(_EXCLUDE)"} -name '${strip $2}'}
 endef
 
 define define.parallel
