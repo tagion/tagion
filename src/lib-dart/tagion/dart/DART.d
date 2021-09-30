@@ -196,12 +196,16 @@ class DART : DARTFile { //, HiRPC.Supports {
         static immutable root = Rims(root_rim);
         ushort sector() const pure nothrow
         in {
-            assert(rims.length >= ushort.sizeof || rims is root_rim,
+            //log("%s %s %b",rims, root_rim, rims is root_rim);
+
+            pragma(msg, "fixme(vp) have to be check: rims is root_rim");
+
+            assert(rims.length >= ushort.sizeof || rims.length == 0,
                     format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
                     .length));
         }
         do {
-            if (rims is root_rim)
+            if (rims.length == 0)
                 return ushort.init;
             ushort result = ushort(rims[0]) + ushort(rims[1] << ubyte.sizeof * 8);
             return result;
