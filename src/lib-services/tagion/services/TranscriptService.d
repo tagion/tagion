@@ -26,9 +26,7 @@ import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 
-//import tagion.gossip.EmulatorGossipNet;
-
-// This function is just to perform a test on the scripting-api input
+// This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
     scope (exit) {
         import std.exception : assumeWontThrow;
@@ -38,18 +36,9 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
     }
 
     try {
-        //        setOptions(opts);
-        //        immutable task_name=opts.transcript.task_name;
         log.register(task_name);
-        // assert(opts.transcript.enable, "Scripting-Api test is not enabled");
-        // assert(opts.transcript.pause_from < opts.transcript.pause_to);
 
         uint current_epoch;
-        // Random!uint rand;
-        // rand.seed(seed);
-        //    immutable name=[opts.node_name, options.transcript.name].join;
-        // log("Scripting-Api script test %s started", task_name);
-        // Tid node_tid=locate(opts.node_name);
 
         auto net = new StdSecureNet;
         auto rec_factory = RecordFactory(net);
@@ -173,8 +162,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                     log("Sending to dart len: %d", recorder.length);
                     recorder.dump;
                     modifyDART(recorder);
-                    // import tagion.utils.Miscellaneous: cutHex;
-                    // log("Bullseye %s", bullseye.cutHex);
                 }
                 else {
                     log("Empty epoch");
@@ -189,31 +176,10 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
         }
 
-        // void taskfailure(immutable(TaskFailure) t) {
-        //     ownerTid.send(t);
-        // }
-
-        // void tagionexception(immutable(TagionException) e) {
-        //     ownerTid.send(e);
-        // }
-
-        // void exception(immutable(Exception) e) {
-        //     ownerTid.send(e);
-        // }
-
-        // void throwable(immutable(Throwable) t) {
-        //     ownerTid.send(t);
-        // }
-
         uint counter;
         ownerTid.send(Control.LIVE);
         while (!stop) {
-            //    immutable delay=rand.value(opts.transcript.pause_from, opts.transcript.pause_to);
-            //  log("delay=%s", delay);
-
-            receive(&receive_epoch, &controller, &taskfailure, // &tagionexception,
-                    // &exception,
-                    // &throwable,
+            receive(&receive_epoch, &controller, &taskfailure,
                     );
         }
     }

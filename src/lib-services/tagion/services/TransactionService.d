@@ -13,7 +13,6 @@ import tagion.basic.Logger;
 import tagion.Options : Options, setOptions, options;
 import tagion.basic.Basic : Control, Buffer;
 
-//import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
@@ -37,13 +36,11 @@ import tagion.dart.Recorder : RecordFactory;
     }
 }
 
-void transactionServiceTask(immutable(Options) opts) {
+void transactionServiceTask(immutable(Options) opts) nothrow {
     try {
         // Set thread global options
         setOptions(opts);
         immutable task_name = opts.transaction.task_name;
-        writefln("opts.transaction.task_name=%s", opts.transaction.task_name);
-        writefln("opts.transaction.service.task_name=%s", opts.transaction.service.task_name);
 
         log.register(task_name);
 
@@ -52,6 +49,7 @@ void transactionServiceTask(immutable(Options) opts) {
         import std.conv;
 
         HiRPC internal_hirpc = HiRPC(null);
+        pragma(msg, "fixme(cbr): passphrase but set some how");
         immutable passphrase = "Very secret password for the server";
         auto hirpc = HiRPC(new HiRPCNet(passphrase));
         auto rec_factory = RecordFactory(hirpc.net);
@@ -67,10 +65,6 @@ void transactionServiceTask(immutable(Options) opts) {
             auto sender = DART.dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
             send(dart_sync_tid, opts.transaction.service.response_task_name, tosend);
-            // Buffer response = receiveOnly!Buffer;
-            // auto received = internal_hirpc.receive(Document(response));
-            // auto recorder = DARTFile.Recorder(hirpc.net, received.params);
-            // return recorder;
         }
 
         @trusted void search(Document doc, uint id) {
@@ -81,8 +75,6 @@ void transactionServiceTask(immutable(Options) opts) {
             auto sender = internal_hirpc.search(n_params, id);
             auto tosend = sender.toDoc.serialize;
             send(dart_sync_tid, opts.transaction.service.response_task_name, tosend);
-            /// Buffer response = receiveOnly!Buffer;
-            // return response;
         }
 
         @safe class TransactionRelay : SSLFiberService.Relay {
@@ -90,7 +82,7 @@ void transactionServiceTask(immutable(Options) opts) {
                 import tagion.hibon.HiBONJSON;
 
                 Document doc;
-                @trusted void receivessl() {
+                @trusted void receivessl() nothrow {
                     try {
                         immutable buffer = ssl_relay.receive;
                         log(cast(string) buffer);
@@ -100,11 +92,11 @@ void transactionServiceTask(immutable(Options) opts) {
                         doc = Document(buffer);
                     }
                     catch (Exception e) {
-                        log("ERROR: %s", e.msg);
+                        log.error("%s", e.msg);
                         throw e;
                     }
                     catch (Throwable t) {
-                        log("T: %s %d", t.msg, t.line);
+                        log.error("%s", t.msg);
                     }
                 }
 
@@ -140,7 +132,7 @@ void transactionServiceTask(immutable(Options) opts) {
                                 //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                 const response = ssl_relay.response;
                                 const received = internal_hirpc.receive(Document(response));
-                                log("%s", Document(response).toJSON);
+                                //log("%s", Document(response).toJSON);
                                 const foreign_recorder = rec_factory.recorder(
                                         received.response.result);
                                 //return recorder;
@@ -160,14 +152,14 @@ void transactionServiceTask(immutable(Options) opts) {
                                 // Send the contract as payload to the HashGraph
                                 // The data inside HashGraph is pure payload not an HiRPC
                                 SmartScript.check(hirpc.net, signed_contract);
-                                log("checked");
+                                //log("checked");
                                 const payload = Document(signed_contract.toHiBON.serialize);
                                 {
                                     immutable data = signed_contract.toHiBON.serialize;
                                     const json_doc = Document(data);
                                     auto json = json_doc.toJSON;
 
-                                    log("Contract:\n%s", json.toPrettyString);
+                                    //log("Contract:\n%s", json.toPrettyString);
                                 }
                                 log("before send payload");
                                 sendPayload(payload);
@@ -194,14 +186,9 @@ void transactionServiceTask(immutable(Options) opts) {
                         return true;
                         break;
                     case "search":
-                        // log("search request received");
-                        // auto response =
                         search(params, ssl_relay.id); //epoch number?
                         yield; /// Expects a response from the DART service
                         const response = ssl_relay.response;
-                        // log(response)
-                        // auto doc1 = Document(response);
-                        // log("Response: %s", doc1.toJSON);
                         ssl_relay.send(response);
                         break;
                     default:
@@ -217,20 +204,8 @@ void transactionServiceTask(immutable(Options) opts) {
         SSLServiceAPI script_api = SSLServiceAPI(opts.transaction.service, relay);
         auto script_thread = script_api.start;
         scope (success) {
-            writefln("EXIT %d END %s", opts.transaction.service.port, script_thread.isRunning);
-            //        script_thread.join;
             ownerTid.send(Control.END);
-            writeln("After Control.END");
         }
-
-        //         scope(failure) {
-        //             writefln("EXIT %d Failed %s", opts.transaction.service.port, script_thread.isRunning);
-        // //        script_thread.join;
-        //             ownerTid.send(Control.FAIL);
-        //             writeln("After Control.FAIL");
-        //         }
-
-        // Thread script_thread;
 
         bool stop;
         void handleState(Control ts) {
@@ -266,6 +241,5 @@ void transactionServiceTask(immutable(Options) opts) {
     }
     catch (Throwable t) {
         fatal(t);
-        //        log.fatal(e.msg);
     }
 }
