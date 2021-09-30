@@ -82,7 +82,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 import tagion.hibon.HiBONJSON;
 
                 Document doc;
-                @trusted void receivessl() nothrow {
+                @trusted void receivessl() {
                     try {
                         immutable buffer = ssl_relay.receive;
                         log(cast(string) buffer);
@@ -91,10 +91,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         }
                         doc = Document(buffer);
                     }
-                    catch (Exception e) {
-                        log.error("%s", e.msg);
-                        throw e;
-                    }
+                    // catch (Exception e) {
+                    //     log.error("%s", e.msg);
+                    //     throw e;
+                    // }
                     catch (Throwable t) {
                         log.error("%s", t.msg);
                     }
