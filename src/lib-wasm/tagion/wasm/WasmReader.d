@@ -145,22 +145,22 @@ import std.format;
             _index = 2 * uint.sizeof;
         }
 
-        @nogc pure nothrow {
-            bool empty() const {
+        pure nothrow {
+            bool empty() const @nogc {
                 return _index >= data.length;
             }
 
-            WasmSection front() const {
+            WasmSection front() const @nogc {
                 return WasmSection(data[_index .. $]);
             }
 
-            void popFront() {
+            void popFront() @nogc {
                 _index += Section.sizeof;
                 const size = u32(data, _index);
                 _index += size;
             }
 
-            WasmRange save() {
+            WasmRange save() @nogc {
                 WasmRange result = this;
                 return result;
             }
@@ -183,23 +183,7 @@ import std.format;
                 return WasmSection.emptySection(index);
             }
 
-//                 while(!index_range.empty) {
-//                     auto section
-//                     if (index == index_range.front.section) {
-//                     }
-//                 foreach (i; 0 .. EnumMembers!(Section).length) {
-//                     if (i is index) {
-//                         return index_range.front;
-//                     }
-//                     index_range.popFront;
-//                 }
-// //                })();
-
-
-//                 assert(0);
-//             }
-
-            size_t index() const {
+            size_t index() const @nogc {
                 return _index;
             }
 
@@ -209,8 +193,8 @@ import std.format;
             immutable(ubyte[]) data;
             immutable(Section) section;
 
-            static WasmSection emptySection(const Section sectype) @nogc pure nothrow {
-                immutable(ubyte[2]) data = [sectype, 0];
+            static WasmSection emptySection(const Section sectype) pure nothrow {
+                immutable(ubyte[]) data = [sectype, 0];
                 return WasmSection(data);
             }
 
