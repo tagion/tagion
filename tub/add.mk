@@ -28,6 +28,7 @@ add/core: add/lib-basic\
 			  add/lib-logger\
 			  add/lib-options\
 			  add/lib-client\
+			  add/bin-tvm\
 			  add/bin-wave\
 			  add/bin-hibonutil\
 			  add/bin-dartutil\
