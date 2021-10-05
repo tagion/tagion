@@ -1,5 +1,6 @@
 
 DESTROOT:=tagion/crypto/secp256k1/c/
+PACKAGE:=tagion.crypto.secp256k1.c
 
 DSTEPINC+=../wrap-secp256k1/secp256k1/include/
 

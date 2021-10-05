@@ -12,7 +12,8 @@ info:
 
 $(DESTROOT)%.di: $(DSTEPINC)/%.h
 	@echo "$< <- $@"
-	$(DSTEP) $(DSTEPFLAGS) $< -o $@
+	@echo "$*"
+	$(DSTEP) $(DSTEPFLAGS) --package "$(PACKAGE)" $< -o $@
 
 $(DESTROOT):
 	mkdir -p $@
