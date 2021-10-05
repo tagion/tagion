@@ -1,13 +1,13 @@
 
 include dstep_setup.mk
 
-info:
-	@echo "HFILES=$(HFILES)"
-	@echo "DESTROOT=$(DESTROOT)"
-	@echo "DIFILES=$(DIFILES)"
-	@echo "DSTEPFLAGS=$(DSTEPFLAGS)"
-
 all: $(DESTROOT) $(DIFILES)
+
+info:
+	@echo "HFILES    =$(HFILES)"
+	@echo "DESTROOT  =$(DESTROOT)"
+	@echo "DIFILES   =$(DIFILES)"
+	@echo "DSTEPFLAGS=$(DSTEPFLAGS)"
 
 
 $(DESTROOT)%.di: $(DSTEPINC)/%.h
