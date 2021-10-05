@@ -67,6 +67,8 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT,
     SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
 
+    SECURITY_EDCH_FAULT,
+
     SECURITY_MASK_VECTOR_IS_ZERO,
     SECURITY_MESSAGE_HASH_KEY,
 
@@ -221,6 +223,8 @@ class SmartScriptException : ConsensusException {
 
             SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT     : "Wrong size of compressed Public key",
             SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT   : "Wrong size of uncompressed Public key",
+
+            SECURITY_EDCH_FAULT                         : "EDCH failed",
 
             SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT        : "Failed to tweak add private key",
             SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT       : "Failed to tweak mult private key",
