@@ -16,3 +16,5 @@ DIFILES:=${addprefix $(DESTROOT),$(DINOTDIR)}
 DSTEPFLAGS+=${addprefix -I,$(DSTEPINC)}
 
 DSTEP:=dstep
+
+$(DESTROOT)secp256k1_ecdh.di: DSTEPFLAGS+=--global-import=$(PACKAGE).secp256k1

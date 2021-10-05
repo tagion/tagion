@@ -17,6 +17,7 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  +/
 
 private import tagion.crypto.secp256k1.c.secp256k1;
+private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 
 import std.exception: assumeUnique;
 import tagion.basic.ConsensusExceptions;
@@ -430,7 +431,7 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted version (none) immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(
+    @trusted immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(
             ubyte[]) pubkey) const
     in {
         assert(seckey.length <= SECKEY_SIZE);
@@ -443,18 +444,18 @@ class NativeSecp256k1 {
         size_t publen = pubkey.length;
 
         secp256k1_pubkey pubkey_result;
-        ubyte[32] nonce_res_array;
-        ubyte* nonce_res = nonce_res_array.ptr;
+        ubyte[32] result;
+        ubyte* _result = result.ptr;
 
         int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
         check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
         if (ret) {
-            ret = secp256k1_ecdh(_ctx, nonce_res, &pubkey_result, secdata);
+            ret = secp256k1_ecdh(_ctx, _result, &pubkey_result, secdata, null, null);
         }
+        check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
 
-        immutable(ubyte[]) result = nonce_res_array.idup;
-        return result;
+        return result.idup;
     }
 
     /++
@@ -820,11 +821,13 @@ unittest {
     }
 
     //Test ECDH
-    version (none) {
+    {
+        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
+
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
 
-        auto resultArr = Crypt.createECDHSecret(sec, pub);
+        auto resultArr = crypt.createECDHSecret(sec, pub);
         auto ecdhString = resultArr.toHexString;
         assert(ecdhString == "2A2A67007A926E6594AF3EB564FC74005B37A9C8AEF2033C4552051B5C87F043");
     }
