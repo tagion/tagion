@@ -4,4 +4,4 @@
 .#*
 *.parked
 *.bak
-tagion/crypto/secp256k1
+tagion/crypto/secp256k1/c/
