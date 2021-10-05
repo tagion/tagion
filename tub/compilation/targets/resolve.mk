@@ -1,6 +1,6 @@
 # Declaration start
 define _unit.lib
-${call debug.open, RESOLVE_LIB ${strip $1}}
+${call debug.open, RESOLVE lib-${strip $1}}
 
 ${call unit.vars.reset, ${strip $1}}
 
@@ -13,7 +13,7 @@ ${eval UNIT_TARGET := $(UNIT_PREFIX_TARGET)$(UNIT)}
 endef
 
 define _unit.bin
-${call debug.open, bin [${strip $1}]}
+${call debug.open, RESOLVE bin-${strip $1}}
 ${call unit.vars.reset, ${strip $1}}
 
 ${eval UNIT_PREFIX_DIR := $(UNIT_PREFIX_DIR_BIN)}
@@ -49,14 +49,14 @@ endef
 # Unit declaration end
 # Safe wrapper ensures not to execute twice
 # (need in rare cases with circular dependencies):
-define _unit.end.safe
+define _unit.end
 ${eval UNIT_DEFINED_BLOCKER := ${findstring $(UNIT_DIR), $(UNITS_DEFINED)}}
-${if $(UNIT_DEFINED_BLOCKER), , ${eval ${call _unit.end}}}
+${if $(UNIT_DEFINED_BLOCKER), , ${eval ${call _unit.end.unsafe}}}
 
-${call debug.close, RESOLVE_LIB}
+${call debug.close, RESOLVE}
 endef
 
-define _unit.end
+define _unit.end.unsafe
 ${eval UNITS_DEFINED += $(UNIT_DIR)}
 # Why RESOLVE_LIB p2pgowrapper called so often?
 ${call debug, Calling wrap macros dependencies: $(UNIT_DEPS_MACROS)}
@@ -66,14 +66,13 @@ ${call debug, Generating target: $(UNIT_DIR)}
 
 # Define .o targets
 ${call _unit.target.o}
-${call _unit.target.o-test}
 
-${call debug, List of defined units: $(UNITS_DEFINED)}
+${call debug, List of already defined units: $(UNITS_DEFINED)}
 ${call debug, Dependencies of $(UNIT_DIR): $(UNIT_DEPS_DIR)}
 
 # Exclude dependencies that were already included from UNIT_DEPS_DIR:
 ${foreach UNIT_DEFINED, $(UNITS_DEFINED), ${eval UNIT_DEPS_DIR := ${patsubst $(UNIT_DEFINED),,$(UNIT_DEPS_DIR)}}}
 # Include dependencies:
-${call debug, Including dependencies of $(UNIT_DIR): $(UNIT_DEPS_DIR) ...}
+${if $(UNIT_DEPS_DIR), ${call debug, Including not yet defined dependencies of $(UNIT_DIR): $(UNIT_DEPS_DIR)}, ${call debug, Nothing left to include...}}
 ${foreach UNIT_DEP_DIR, $(UNIT_DEPS_DIR), ${eval include $(DIR_SRC)/$(UNIT_DEP_DIR)/context.mk}}
 endef

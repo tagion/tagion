@@ -18,33 +18,33 @@ ${eval _OFILES += ${addprefix $(DIR_BUILD_O)/, $(_UNIT_TARGET:=.o)}}
 
 ${eval _INFILES := $(_OFILES)}
 
-${call gen.line, # Bin Target - $(UNIT_TARGET)}
-${call gen.line, # $(_TARGET)}
+${call gen.bin.line, # Bin Target - $(UNIT_TARGET)}
+${call gen.bin.line, # $(_TARGET)}
 
-${call gen.line, $(_UNIT_TARGET_LOGS):}
-${call gen.linetab, \$${call log.header, $(_UNIT_TARGET)}}
-${call gen.linetab, \$${call log.kvp, Command, DC DCFLAGS INFILES LDCFLAGS}}
-${call gen.linetab, \$${call log.separator}}
-${call gen.linetab, \$${call log.kvp, DC, $(DC)}}
-${call gen.linetab, \$${call log.kvp, DCFLAGS, $(_DCFLAGS)}}
-${call gen.linetab, \$${call log.kvp, INFILES}}
-${call gen.linetab, \$${call log.lines, $(_INFILES)}}
-${call gen.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
-${call gen.linetab, \$${call log.close}}
-${call gen.space}
+${call gen.bin.line, $(_UNIT_TARGET_LOGS):}
+${call gen.bin.linetab, \$${call log.header, $(_UNIT_TARGET)}}
+${call gen.bin.linetab, \$${call log.kvp, Command, DC DCFLAGS INFILES LDCFLAGS}}
+${call gen.bin.linetab, \$${call log.separator}}
+${call gen.bin.linetab, \$${call log.kvp, DC, $(DC)}}
+${call gen.bin.linetab, \$${call log.kvp, DCFLAGS, $(_DCFLAGS)}}
+${call gen.bin.linetab, \$${call log.kvp, INFILES}}
+${call gen.bin.linetab, \$${call log.lines, $(_INFILES)}}
+${call gen.bin.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
+${call gen.bin.linetab, \$${call log.close}}
+${call gen.bin.line,}
 
 ${call debug, Generated target: $(_UNIT_TARGET_LOGS)}
 
-${call gen.line, $(_UNIT_TARGET): $(_TARGET)}
-${call gen.linetab, @}
-${call gen.space}
+${call gen.bin.line, $(_UNIT_TARGET): $(_TARGET)}
+${call gen.bin.linetab, @}
+${call gen.bin.line,}
 
 ${call debug, Generated target: $(_UNIT_TARGET)}
 
-${call gen.line, $(_TARGET): $(_OFILES) $(_TARGET).way $(_UNIT_TARGET_LOGS)}
-${call gen.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)}
-${call gen.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
-${call gen.space}
+${call gen.bin.line, $(_TARGET): $(_OFILES) $(_TARGET).way $(_UNIT_TARGET_LOGS)}
+${call gen.bin.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)}
+${call gen.bin.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
+${call gen.bin.line,}
 
 ${call debug, Generated target: $(_TARGET)}
 
