@@ -435,7 +435,7 @@ class NativeSecp256k1 {
             ubyte[]) pubkey) const
     in {
         assert(seckey.length <= SECKEY_SIZE);
-        assert(pubkey.length <= COMPRESSED_PUBKEY_SIZE);
+        assert(pubkey.length <= UNCOMPRESSED_PUBKEY_SIZE);
     }
     do {
         //        auto ctx=getContext();
@@ -828,7 +828,7 @@ unittest {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
 
         auto resultArr = crypt.createECDHSecret(sec, pub);
-        auto ecdhString = resultArr.toHexString;
+        auto ecdhString = resultArr.toHexString!true;
         assert(ecdhString == "2A2A67007A926E6594AF3EB564FC74005B37A9C8AEF2033C4552051B5C87F043");
     }
 
