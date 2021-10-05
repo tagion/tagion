@@ -17,8 +17,6 @@ ${eval include $(DIR_SRC)/$(UNIT_MAIN_DIR)/context.mk}
 
 # Generate desired target for the lib
 ${call _unit.target.lib}
-${call _unit.target.lib-testall}
-${call _unit.target.lib-testscope}
 
 ${call debug.close, INCLUDE_LIB ${strip $1}}
 ${call debug.space}

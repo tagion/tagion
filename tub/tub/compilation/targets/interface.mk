@@ -24,5 +24,5 @@ endef
 
 # Declaration end
 define unit.end
-${eval ${call _unit.end.safe}}
+${eval ${call _unit.end}}
 endef
