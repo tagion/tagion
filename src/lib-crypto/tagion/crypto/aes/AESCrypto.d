@@ -23,8 +23,6 @@ struct AESCrypto(int KEY_LENGTH) {
         alias AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
         enum BLOCK_SIZE = AES.BLOCK_SIZE;
         enum KEY_SIZE = AES.KEY_SIZE;
-        //        alias enclength=enclengthT!BLOCK_SIZE;
-        //        enum BLOCK_SIZE=16;
         static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data)
         in {
             assert(data);
@@ -175,10 +173,6 @@ struct AESCrypto(int KEY_LENGTH) {
 
             ubyte[] enc_output;
             AESCrypto.encrypt(key, iv, indata, enc_output);
-            // writefln("outdata   =%s", outdata);
-            // writefln("enc_output=%s", enc_output);
-            // assert(enc_output == outdata);
-            // writeln();
         }
 
         { // Decrypt
@@ -230,48 +224,9 @@ struct AESCrypto(int KEY_LENGTH) {
             ubyte[] dec_output;
             auto temp_iv = iv;
             AESCrypto.decrypt(key, temp_iv, indata, dec_output);
-            // writefln("output     =%s", outdata);
-            // writefln("dec_output =%s", dec_output);
-            // import tagion.crypto.aes.tiny_aes.tiny_aes;
-            // auto tiny_indata=indata.dup;
-            // auto tiny_temp_iv=iv;
-            // auto aes=Tiny_AES!KEY_LENGTH(key, tiny_temp_iv);
-            // writefln("tiny_indata=%s", tiny_indata);
-            // aes.decrypt(tiny_indata);
-            // writefln("tiny_indata=%s", tiny_indata);
-            // writefln("    outdata=%s", outdata);
-
             assert(dec_output == outdata);
         }
 
-        //         {
-        //             Random!uint random;
-        //             random.seed(1234);
-        //             immutable(ubyte[]) gen_key() {
-        //                 ubyte[KEY_SIZE] result;
-        //                 foreach(ref a; result) {
-        //                     result=cast(ubyte)random.value(ubyte.sizeof+1);
-        //                 }
-        //                 return result.idup;
-        //             }
-        //             auto iv=iota(16).map!(a => cast(ubyte)a).array;
-        //             immutable aes_key=gen_key;
-        //             string text="Some very secret message!!!!!";
-        //             auto input=cast(immutable(ubyte[]))text;
-        //             ubyte[] enc_output;
-        //             AESCrypto.encrypt(aes_key, iv, input, enc_output);
-        //             writefln("input     (%3d)=%s", input.length, input);
-        //             writefln("enc_output(%3d)=%s", enc_output.length, enc_output);
-        // //        writefln("input          =%s", input.length, input[0..16]);
-        //             writefln("enc_output     =%s", enc_output[0..16]);
-
-        //             assert(input != enc_output[0..input.length]);
-        //             ubyte[] dec_output;
-        //             AESCrypto.decrypt(aes_key, iv, enc_output, dec_output);
-        //             writefln("dec_output(%3d)=%s", dec_output.length, dec_output);
-        //             writefln("dec_output     =%s", dec_output[0..16]);
-        //             assert(input == dec_output);
-        //         }
     }
 }
 

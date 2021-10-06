@@ -110,7 +110,7 @@ class NativeSecp256k1 {
      +       pub            =  The public key which did the signing
      +/
     @trusted
-    bool verify(immutable(ubyte[]) data, immutable(ubyte[]) signature, const(ubyte[]) pub) const
+    bool verify(const(ubyte[]) data, const(ubyte[]) signature, const(ubyte[]) pub) const
     in {
         assert(data.length == 32);
         assert(signature.length <= 520);
@@ -118,10 +118,10 @@ class NativeSecp256k1 {
     }
     do {
         int ret;
-        immutable(ubyte)* sigdata = signature.ptr;
+        const sigdata = signature.ptr;
         auto siglen = signature.length;
-        const(ubyte)* pubdata = pub.ptr;
-        immutable(ubyte)* msgdata = data.ptr;
+        const pubdata = pub.ptr;
+        const msgdata = data.ptr;
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
@@ -170,14 +170,14 @@ class NativeSecp256k1 {
      + @param sig byte array of signature
      +/
     @trusted
-    immutable(ubyte[]) sign(immutable(ubyte[]) data, const(ubyte[]) sec) const
+        immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
     in {
         assert(data.length == 32);
         assert(sec.length <= 32);
     }
     do {
-        immutable(ubyte*) msgdata = data.ptr;
-        const(ubyte*) secKey = sec.ptr;
+        const msgdata = data.ptr;
+        const secKey = sec.ptr;
         secp256k1_ecdsa_signature sig_array;
         secp256k1_ecdsa_signature* sig = &sig_array;
 
@@ -431,7 +431,7 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(
+    @trusted immutable(ubyte[]) createECDHSecret(const(ubyte[]) seckey, const(
             ubyte[]) pubkey) const
     in {
         assert(seckey.length <= SECKEY_SIZE);
@@ -439,8 +439,8 @@ class NativeSecp256k1 {
     }
     do {
         //        auto ctx=getContext();
-        immutable(ubyte*) secdata = seckey.ptr;
-        immutable(ubyte*) pubdata = pubkey.ptr;
+        const secdata = seckey.ptr;
+        const pubdata = pubkey.ptr;
         size_t publen = pubkey.length;
 
         secp256k1_pubkey pubkey_result;

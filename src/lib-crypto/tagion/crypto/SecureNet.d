@@ -40,19 +40,6 @@ class StdHashNet : HashNet {
     }
 
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
-        // in {
-        //     const doc=Document(data.idup);
-        //     assert(!doc.isInorder, "calcHash should not be use on a Document buffer use hashOf instead");
-        // }
-        // do {
-        //pragma(msg, "dlang: For some weird reason the precondition does not work here, so it is placed inside the function body");
-        //const doc=Document(data.idup);
-        // if (doc.isInorder) {
-        //     import std.stdio;
-        //     import tagion.hibon.HiBONJSON;
-        //     writefln("data=%s", doc.data);
-        //     writefln("doc=%s", doc.toPretty);
-        // }
         version (unittest) {
             assert(!Document(data.idup).isInorder, "calcHash should not be use on a Document use hashOf instead");
         }
@@ -60,7 +47,7 @@ class StdHashNet : HashNet {
     }
 
     @trusted
-    final immutable(Buffer) HMAC(scope const(ubyte[]) data) const {
+    final immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure {
         import std.exception: assumeUnique;
         import std.digest.sha: SHA256;
         import std.digest.hmac: digestHMAC = HMAC;
@@ -134,9 +121,10 @@ class StdSecureNet : StdHashNet, SecureNet {
     */
     @safe
     interface SecretMethods {
-        immutable(ubyte[]) sign(immutable(ubyte[]) message) const;
+        immutable(ubyte[]) sign(const(ubyte[]) message) const;
         void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
+        immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const;
         Buffer mask(const(ubyte[]) _mask) const;
     }
 
@@ -162,19 +150,15 @@ class StdSecureNet : StdHashNet, SecureNet {
         return result;
     }
 
-    // final bool verify(T)(T pack,  signature, Pubkey pubkey) const if ( __traits(compiles, pack.serialize) ) {
-    //     auto message=calcHash(pack.serialize);
-    //     return verify(message, signature, pubkey);
-    // }
-
     protected NativeSecp256k1 _crypt;
-    bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
+
+    bool verify(const(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         return _crypt.verify(message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
-    Signature sign(immutable(ubyte[]) message) const
+    Signature sign(const(ubyte[]) message) const
     in {
         assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
         assert(message.length == 32);
@@ -280,7 +264,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
 
         @safe class LocalSecret : SecretMethods {
-            immutable(ubyte[]) sign(immutable(ubyte[]) message) const {
+            immutable(ubyte[]) sign(const(ubyte[]) message) const {
                 immutable(ubyte)[] result;
                 do_secret_stuff((const(ubyte[]) privkey) {
                     result = _crypt.sign(message, privkey);
@@ -298,6 +282,14 @@ class StdSecureNet : StdHashNet, SecureNet {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                     _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
                 });
+            }
+
+            immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const {
+                Buffer result;
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                        result = _crypt.createECDHSecret(privkey, cast(Buffer)pubkey);
+                });
+                return result;
             }
 
             Buffer mask(const(ubyte[]) _mask) const {
@@ -341,6 +333,19 @@ class StdSecureNet : StdHashNet, SecureNet {
         createKeyPair(data);
     }
 
+    immutable(ubyte[]) ECDHSecret(const(ubyte[]) seckey, const(
+            Pubkey) pubkey) const {
+        return _crypt.createECDHSecret(seckey, cast(Buffer)pubkey);
+    }
+
+    immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const {
+        return _secret.ECDHSecret(pubkey);
+    }
+
+    Pubkey computePubkey(const(ubyte[]) seckey, immutable bool compress = true) const {
+        return Pubkey(_crypt.computePubkey(seckey, compress));
+    }
+
     this() {
         this._crypt = new NativeSecp256k1;
     }
@@ -376,6 +381,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
 
     }
+
 }
 
 unittest { // StdHashNet
@@ -450,7 +456,7 @@ class BadSecureNet : StdSecureNet {
         generateKeyPair(passphrase);
     }
 
-    override Signature sign(immutable(ubyte[]) message) const {
+    override Signature sign(const(ubyte[]) message) const {
         immutable false_message = super.rawCalcHash(message ~ message);
         return super.sign(false_message);
     }

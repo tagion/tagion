@@ -13,7 +13,7 @@ interface HashNet {
     uint hashSize() const pure nothrow;
     protected immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
-    immutable(Buffer) HMAC(scope const(ubyte[]) data) const;
+    immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
     /++
      Hash used for Merkle tree
      +/
@@ -35,7 +35,7 @@ interface SecureNet : HashNet {
     bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
 
-        
+
 
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
                     .SECURITY_MESSAGE_HASH_KEY);
@@ -53,11 +53,8 @@ interface SecureNet : HashNet {
     Signature sign(immutable(ubyte[]) message) const;
 
     final Signed sign(const Document doc) const {
-
-        
-
-            .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-                    .SECURITY_MESSAGE_HASH_KEY);
+        .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
+            .SECURITY_MESSAGE_HASH_KEY);
         immutable fingerprint = rawCalcHash(doc.serialize);
         return Signed(sign(fingerprint), fingerprint);
     }
@@ -68,6 +65,13 @@ interface SecureNet : HashNet {
 
     void createKeyPair(ref ubyte[] privkey);
     void generateKeyPair(string passphrase);
+    immutable(ubyte[]) ECDHSecret(
+        const(ubyte[]) seckey, const(Pubkey) pubkey) const;
+
+    immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const;
+
+    Pubkey computePubkey(const(ubyte[]) seckey, immutable bool compress = true) const;
+
     void derive(string tweak_word, shared(SecureNet) secure_net);
     void derive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net);
     void derive(string tweak_word, ref ubyte[] tweak_privkey);
