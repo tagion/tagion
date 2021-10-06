@@ -74,14 +74,12 @@ ${call debug, Generated target: $(_TARGET)}
 # Logs:
 ${call gen.logs.line, $(_UNIT_TARGET_LOGS):}
 ${call gen.logs.linetab, \$${call log.header, $(_UNIT_TARGET_FULL)}}
-${call gen.logs.linetab, \$${call log.kvp, Command, DC DCFLAGS INFILES INCFLAGS LDCFLAGS}}
+${call gen.logs.linetab, \$${call log.kvp, Command, DC DCFLAGS INFILES LDCFLAGS}}
 ${call gen.logs.linetab, \$${call log.separator}}
 ${call gen.logs.linetab, \$${call log.kvp, DC, $(DC)}}
 ${call gen.logs.linetab, \$${call log.kvp, DCFLAGS, $(_DCFLAGS)}}
 ${call gen.logs.linetab, \$${call log.kvp, INFILES}}
 ${call gen.logs.linetab, \$${call log.lines, $(_INFILES)}}
-${call gen.logs.linetab, \$${call log.kvp, INCFLAGS}}
-${call gen.logs.linetab, \$${call log.lines, $(_INCFLAGS)}}
 ${call gen.logs.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.logs.linetab, \$${call log.close}}
 ${call gen.logs.line,}
