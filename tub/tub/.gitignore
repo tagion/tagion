@@ -2,3 +2,11 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Local files
+local.mk
+
+# Generated directories
+src
+build
+__generated*
