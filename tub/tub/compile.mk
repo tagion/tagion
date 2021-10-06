@@ -1,8 +1,5 @@
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
-# TODO: Add revision.di
-# TODO: Add ldc-build-runtime for building phobos and druntime for platforms
-
 DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
 
 # 
