@@ -21,8 +21,8 @@ ${eval _INFILES += ${shell find $(DIR_SRC)/$(UNIT_DIR) -not -path "$(SOURCE_FIND
 ${eval _INFILES += $(WRAP_INFILES)}
 
 ${call gen.o.line, # ${notdir $(_TARGET)}}
-${call gen.o.line, # Files: ${notdir $(_INFILES)} ${notdir $(UNIT_WRAPS_TARGETS)}}
-${call gen.o.line, $(_TARGET): $(_INFILES) $(UNIT_WRAPS_TARGETS) $(_TARGET).way $(_UNIT_TARGET_LOGS)}
+${call gen.o.line, # Files: ${notdir $(_INFILES)}}
+${call gen.o.line, $(_TARGET): $(_INFILES) $(_TARGET).way $(_UNIT_TARGET_LOGS)}
 ${call gen.o.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS) $(_INFILES) \$$(_UNIT_WRAPS_INCFLAGS) $(_INCFLAGS) $(_LDCFLAGS)}
 ${call gen.o.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
 ${call gen.o.line,}
@@ -58,14 +58,14 @@ ${eval _UNIT_TARGET_LOGS := $(_UNIT_TARGET).o-test-logs}
 ${eval _TARGET := $(DIR_BUILD_O)/$(_UNIT_TARGET).o}
 
 ${call gen.o.line, # ${notdir $(_TARGET)}}
-${call gen.o.line, $(_TARGET): $(_INFILES) $(UNIT_WRAPS_TARGETS) | $(_TARGET).way $(_UNIT_TARGET_LOGS)}
+${call gen.o.line, $(_TARGET): $(_INFILES) $(_TARGET).way $(_UNIT_TARGET_LOGS)}
 ${call gen.o.linetab, \$$(PRECMD)\$$(DC) $(_DCFLAGS_TEST) $(_DCFLAGS) $(_INFILES) $(_INCFLAGS) $(_LDCFLAGS)}
 ${call gen.o.linetab, \$${call log.kvp, Compiled, $(_TARGET)}}
 ${call gen.o.line,}
 
 ${call debug, Generated target: $(_TARGET)}
 
-${call gen.logs.line, $(_UNIT_TARGET_LOGS):}
+${call gen.logs.line, $(_UNIT_TARGET_LOGS): | reset-wrap-context $(UNIT_TARGET)-context}
 ${call gen.logs.linetab, \$${call log.header, $(_UNIT_TARGET).o}}
 ${call gen.logs.linetab, \$${call log.kvp, Command, DC DCFLAGS INFILES INCFLAGS LDCFLAGS}}
 ${call gen.logs.linetab, \$${call log.separator}}
@@ -75,6 +75,7 @@ ${call gen.logs.linetab, \$${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}}
 ${call gen.logs.linetab, \$${call log.kvp, INFILES}}
 ${call gen.logs.linetab, \$${call log.lines, $(_INFILES)}}
 ${call gen.logs.linetab, \$${call log.kvp, INCFLAGS}}
+${call gen.logs.linetab, \$${call log.lines, \$$(_UNIT_WRAPS_INCFLAGS)}}
 ${call gen.logs.linetab, \$${call log.lines, $(_INCFLAGS)}}
 ${call gen.logs.linetab, \$${call log.close}}
 ${call gen.logs.line,}
