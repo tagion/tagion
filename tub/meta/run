@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+PWD=$(pwd)
+
+if [ -d $PWD/src ]; then
+    SRC=$PWD/src
+else
+    SRC=$PWD/tub/src
+fi
+
+echo "Running command in $SRC"
+
+for DIR in $(ls $SRC); do
+    echo -e "\033[1m$DIR\033[0m"
+    
+    cd "$SRC/$DIR/";
+    C=''
+    for i in "$@"; do 
+        i="${i//\\/\\\\}"
+        C="$C \"${i//\"/\\\"}\""
+    done
+    bash -c "$C"
+
+    echo 
+done
