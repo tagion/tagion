@@ -37,7 +37,7 @@ UNIT_LIST_WRAP += wrap-p2pgowrapper
 # All
 UNIT_LIST := $(UNIT_LIST_LIB) $(UNIT_LIST_BIN) $(UNIT_LIST_WRAP)
 
-list:
+map:
 	${call log.header, available units}
 	${call log.kvp, Libs}
 	${call log.lines, $(UNIT_LIST_LIB)}
