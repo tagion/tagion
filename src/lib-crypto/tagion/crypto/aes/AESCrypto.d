@@ -11,14 +11,7 @@ struct AESCrypto(int KEY_LENGTH) {
     static assert((KEY_LENGTH is 128) || (KEY_LENGTH is 192) || (KEY_LENGTH is 256),
             format("The KEYLENGTH of the %s must be 128, 196 or 256 not %d", AESCrypto.stringof, KEY_LENGTH));
 
-    // const(ubyte[BLOCK_SIZE]) Iv;
     @disable this();
-    // this(const(ubyte[]) iv) in {
-    //     assert(iv.length is BLOCK_SIZE, format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv.length));
-    // }
-    // do {
-    //     Iv=iv[0..BLOCK_SIZE];
-    // }
 
     static size_t enclength(const size_t inputlength) {
         return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;

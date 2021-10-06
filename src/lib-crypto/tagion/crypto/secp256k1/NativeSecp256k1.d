@@ -831,21 +831,12 @@ unittest {
         const bobSecretKey  = decode("2f402cd0753d3afca00bd3f7661ca2f882176ae4135b415efae0e9c616b4a63e");
         const bobPublicKey = crypt.computePubkey(bobSecretKey, false);
 
-        // writefln("alicePublicKey %s", alicePublicKey.toHexString);
-//        writefln("alicePublicKey    0x51958fb5c78264dc67edec62ad7cb0722ca7468e9781c1aebc0c05c5e8be05da   0xa916301e6267fed2a662c9d727da9c3ffa4eab9f76dd848f60ef44d2917cf7ee");
-
         assert(alicePublicKey.toHexString == "0451958fb5c78264dc67edec62ad7cb0722ca7468e9781c1aebc0c05c5e8be05daa916301e6267fed2a662c9d727da9c3ffa4eab9f76dd848f60ef44d2917cf7ee");
-//        writefln("  bobPublicKey %s", bobPublicKey.toHexString);
-//        writefln("  bobPublicKey   0x89685350631b9fee83158aa55980af0969305f698ebe3b9475a36340d0b19967   0x19e1f6b4c21cffdadc158e5b07e71b70d7b87b7ad1c3e6df8f78ad419de767a6");
         assert(bobPublicKey.toHexString == "0489685350631b9fee83158aa55980af0969305f698ebe3b9475a36340d0b1996719e1f6b4c21cffdadc158e5b07e71b70d7b87b7ad1c3e6df8f78ad419de767a6");
 
         const aliceResult = crypt.createECDHSecret(aliceSecretKey, bobPublicKey);
         const bobResult = crypt.createECDHSecret(bobSecretKey, alicePublicKey);
 
-        // writefln("aliceResult %s", aliceResult.toHexString);
-        // writefln("bobResult %s",   bobResult.toHexString);
-
-        // Check that Alice and Bobs result key is the same
         assert(aliceResult == bobResult);
     }
 
