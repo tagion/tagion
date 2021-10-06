@@ -38,3 +38,8 @@ include $(DIR_TUB)/meta/__root.mk
 include $(DIR_TUB)/compilation/__root.mk
 
 .SECONDARY:
+
+reset-wrap-context: 
+	${eval UNIT_WRAPS_TARGETS := }
+	${eval UNIT_WRAPS_INCFLAGS := }
+	${eval UNIT_WRAPS_LINKFILES := }

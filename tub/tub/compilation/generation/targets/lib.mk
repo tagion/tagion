@@ -71,8 +71,6 @@ ${call gen.test.line,}
 
 ${call debug, Generated target: $(_TARGET)}
 
-${call debug.close, GENERATION (lib-testscope) $(UNIT_MAIN_TARGET)}
-
 # Logs:
 ${call gen.logs.line, $(_UNIT_TARGET_LOGS):}
 ${call gen.logs.linetab, \$${call log.header, $(_UNIT_TARGET_FULL)}}
