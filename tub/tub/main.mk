@@ -9,7 +9,7 @@ main: help
 # Tub protocol version that modules must explicitly support
 TUB_PROTOCOL := 5
 
-# Define absolute Root and Tub directories
+# Defining absolute Root and Tub directories
 DIR_MAKEFILE := ${realpath .}
 DIR_TUB := $(DIR_MAKEFILE)/tub
 DIR_ROOT := ${abspath ${DIR_TUB}/../}
@@ -29,17 +29,7 @@ TUB_MODE := Isolated
 TUB_MODE_ISOLATED := 1
 endif
 
-# Inlclude local setup
--include $(DIR_ROOT)/local.mk
+include $(DIR_TUB)/_.mk
 
-# Include supporting Tub functionality
-include $(DIR_TUB)/common/__root.mk
-include $(DIR_TUB)/meta/__root.mk
-include $(DIR_TUB)/compilation/__root.mk
-
+# Disabling removal of intermidiate targets
 .SECONDARY:
-
-reset-wrap-context: 
-	${eval UNIT_WRAPS_TARGETS := }
-	${eval UNIT_WRAPS_INCFLAGS := }
-	${eval UNIT_WRAPS_LINKFILES := }
