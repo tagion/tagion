@@ -12,7 +12,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.script.StandardRecords : Invoice;
 import tagion.dart.DARTFile;
 
-import tagion.revision;
+//import tagion.revision;
 import std.array : join;
 
 class HiRPCNet : StdSecureNet {
@@ -49,6 +49,8 @@ HiBON generateBills(Document doc) {
     return archives;
 }
 
+enum REVNO=0;
+enum HASH="xxx";
 int main(string[] args) {
     immutable program=args[0];
     bool version_switch;
