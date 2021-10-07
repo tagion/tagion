@@ -30,29 +30,6 @@ struct Cipher {
         mixin HiBONRecord;
     }
 
-    static const(CipherDocument) encrypt(const(SecureNet) net, const(Document) msg) {
-        scope ubyte[32] secret_seed_alloc;
-        scope ubyte[] secret_seed=secret_seed_alloc;
-        scramble(secret_seed);
-        scope secret_key = net.HMAC(secret_seed);
-        scramble(secret_seed);
-        CipherDocument result;
-        result.cipherPubkey = net.computePubkey(secret_key);
-        scope ubyte[AES.BLOCK_SIZE] nonce_alloc;
-        scope ubyte[] nonce = nonce_alloc;
-        scramble(nonce);
-        result.nonce = nonce.idup;
-        auto ciphermsg = new ubyte[msg.data.length];
-        scope sharedECCKey = net.ECDHSecret(secret_key, result.cipherPubkey);
-
-        AES.encrypt(sharedECCKey, result.nonce, msg.data, ciphermsg);
-        Buffer get_ciphermsg() @trusted {
-            return assumeUnique(ciphermsg);
-        }
-        result.ciphermsg = get_ciphermsg;
-        return result;
-    }
-
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
         scope ubyte[32] secret_seed_alloc;
         scope ubyte[] secret_seed=secret_seed_alloc;
@@ -82,6 +59,10 @@ struct Cipher {
         }
         result.ciphermsg = get_ciphermsg;
         return result;
+    }
+
+    static const(CipherDocument) encrypt(const(SecureNet) net, const(Document) msg) {
+        return encrypt(net, net.pubkey, msg);
     }
 
 
@@ -117,64 +98,31 @@ struct Cipher {
         const secret_doc = Document(hibon);
 
         { // Encrypt and Decrypt secrte message
-            const secret_cipher_doc = Cipher.encrypt(net, net.pubkey, secret_doc);
-
-            // writefln("secret_doc %s", secret_cipher_doc.toJSON);
-
+            auto dummy_net = new StdSecureNet;
+            const secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc);
             const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
-            // writefln("clear_doc.size %d", encrypted_doc.size);
-            // writefln("clear_doc.data %s", encrypted_doc.data);
-            // writefln("clear_doc.keys %s", encrypted_doc.keys);
-
-            // writefln("clear_doc %s", encrypted_doc.toJSON);
-
             assert(encrypted_doc["text"].get!string == some_secret_message);
             assert(secret_doc.data == encrypted_doc.data);
         }
 
-//        version(none)
-        {
-            auto bad_net = new StdSecureNet;
-            immutable bad_passphrase = "bad word";
-            bad_net.generateKeyPair(bad_passphrase);
-            const secret_cipher_doc = Cipher.encrypt(net, bad_net.pubkey, secret_doc);
+        { // You of the wrong privat-key
+            auto dummy_net = new StdSecureNet;
+            auto wrong_net = new StdSecureNet;
+            immutable wrong_passphrase = "wrong word";
+            wrong_net.generateKeyPair(wrong_passphrase);
+            const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
             const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
-            // writefln("clear_doc.isInorder %s", encrypted_doc.isInorder);
             assert(!encrypted_doc.isInorder);
             assert(encrypted_doc.full_size != secret_doc.full_size);
-
-            // writefln("clear_doc.size %d", encrypted_doc.size);
-            // writefln("clear_doc.data %s", encrypted_doc.data);
-            // writefln("clear_doc.keys %s", encrypted_doc.keys);
-
-            // writefln("clear_doc %s", encrypted_doc.toJSON);
-
         }
 
-//        writefln("secret_doc %J", secret_cipher_doc);
+        { // Encrypt and Decrypt secrte message with owner privat-key
+            const secret_cipher_doc = Cipher.encrypt(net, secret_doc);
+            const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
+            assert(encrypted_doc["text"].get!string == some_secret_message);
+            assert(secret_doc.data == encrypted_doc.data);
+        }
 
     }
 
-//     version(none)
-//     unittest {
-//         import std.stdio;
-//         import tagion.utils.Miscellaneous: toHexString, decode;
-//         auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
-//         const PrivKey = decode("039c28258a97c779c88212a0e37a74ec90898c63b60df60a7d05d0424f6f6780");
-//         const PublicKey = crypt.computePubkey(PrivKey, false);
-
-//         // Random
-//         const ciphertextPrivKey = decode("f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
-//         const ciphertextPublicKey = crypt.computePubkey(ciphertextPrivKey, false);
-
-//         const sharedECCKey = crypt.createECDHSecret(ciphertextPrivKey, PublicKey);
-//         const sharedECCKey_2 = crypt.createECDHSecret(PrivKey, ciphertextPublicKey);
-
-//         writefln("sharedECCKey   %s", sharedECCKey.toHexString);
-//         writefln("sharedECCKey_2 %s", sharedECCKey_2.toHexString);
-
-// //        const secretKey = crypt.createECDHSecret(ciphertextPrivKey, bobPublicKey);
-
-
-//     }
 }

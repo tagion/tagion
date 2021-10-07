@@ -234,7 +234,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         auto encrypted_privkey = new ubyte[privkey.length];
         AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
 
-        AES.encrypt(calcHash(seed), aes_iv, encrypted_privkey, privkey);
+        AES.encrypt(rawCalcHash(seed), aes_iv, encrypted_privkey, privkey);
         scramble(seed);
 
         AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
@@ -256,7 +256,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                 scramble(aes_key, seed);
                 scramble(aes_iv);
                 AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
-                AES.encrypt(calcHash(seed), aes_iv, encrypted_privkey, privkey);
+                AES.encrypt(rawCalcHash(seed), aes_iv, encrypted_privkey, privkey);
             }
             AES.decrypt(aes_key, aes_iv, encrypted_privkey, privkey);
             dg(privkey);
