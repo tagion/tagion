@@ -139,11 +139,15 @@ struct Cipher {
             bad_net.generateKeyPair(bad_passphrase);
             const secret_cipher_doc = Cipher.encrypt(net, bad_net.pubkey, secret_doc);
             const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
+            writefln("clear_doc.isInorder %s", encrypted_doc.isInorder);
+            assert(!encrypted_doc.isInorder);
+            assert(encrypted_doc.full_size != secret_doc.full_size);
+
             writefln("clear_doc.size %d", encrypted_doc.size);
             writefln("clear_doc.data %s", encrypted_doc.data);
-            writefln("clear_doc.keys %s", encrypted_doc.keys);
+            // writefln("clear_doc.keys %s", encrypted_doc.keys);
 
-            writefln("clear_doc %s", encrypted_doc.toJSON);
+            // writefln("clear_doc %s", encrypted_doc.toJSON);
 
         }
 
