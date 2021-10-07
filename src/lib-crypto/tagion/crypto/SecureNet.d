@@ -226,10 +226,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         scramble(seed);
         // CBR: Note AES need to be change to beable to handle const keys
-        import std.stdio;
-        writefln("Document(seed.idup).isInorder %s", Document(seed.idup).isInorder);
         auto aes_key = rawCalcHash(seed).dup;
-        //        ubyte[AES.BLOCK_SIZE] aes_iv;
         scramble(seed);
         auto aes_iv = rawCalcHash(seed)[4 .. 4 + AES.BLOCK_SIZE].dup;
 
@@ -353,7 +350,6 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     unittest { // StdSecureNet
-        import std.stdio;
         import tagion.hibon.HiBONJSON;
 
         import tagion.hibon.HiBON;
@@ -370,7 +366,6 @@ class StdSecureNet : StdHashNet, SecureNet {
             doc = Document(h);
         }
 
-        writefln("doc %s", doc.toJSON);
         const doc_signed = net.sign(doc);
 
         assert(doc_signed.message == net.rawCalcHash(doc.serialize));
