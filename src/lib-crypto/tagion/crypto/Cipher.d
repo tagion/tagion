@@ -5,9 +5,9 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import std.exception : assumeUnique;
 
-import tagion.utils.Miscellaneous: toHexString, decode;
-import tagion.hibon.HiBONJSON;
-//@
+// import tagion.utils.Miscellaneous: toHexString, decode;
+// import tagion.hibon.HiBONJSON;
+@safe
 struct Cipher {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import tagion.crypto.SecureNet : scramble;
