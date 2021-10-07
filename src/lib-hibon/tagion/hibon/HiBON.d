@@ -232,7 +232,7 @@ static size_t size(U)(const(U[]) array) pure {
                     return T(doc);
                     break;
                 default:
-                    
+
                         .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
                                 type, T.stringof));
                 }
@@ -242,7 +242,7 @@ static size_t size(U)(const(U[]) array) pure {
 
         const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T) {
             enum E = Value.asType!T;
-            
+
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)",
                     type, E, T.stringof));
             return value.by!E;
@@ -414,10 +414,10 @@ static size_t size(U)(const(U[]) array) pure {
 
     void opIndexAssign(T)(T x, const string key)
             if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T) {
-        
+
             .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member = new Member(x, key);
-        
+
         .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));
     }
 
@@ -429,11 +429,11 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     void opIndexAssign(T, INDEX)(T x, const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
-            
+
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
-            
+
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
         const key = index.to!string;
@@ -452,7 +452,7 @@ static size_t size(U)(const(U[]) array) pure {
     const(Member) opIndex(const string key) const {
         scope search = new Member(key);
         auto range = _members.equalRange(search);
-        
+
         .check(!range.empty, message("Member '%s' does not exist", key));
         return range.front;
     }
@@ -469,11 +469,11 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     const(Member) opIndex(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
-            
+
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
-            
+
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
         const key = index.to!string;
@@ -534,11 +534,11 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     @trusted void remove(INDEX)(const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
-            
+
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
-            
+
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
         const key = index.to!string;
@@ -638,7 +638,7 @@ static size_t size(U)(const(U[]) array) pure {
                 float, Type.FLOAT32.stringof, double, Type.FLOAT64.stringof,
                 int, Type.INT32.stringof, long, Type.INT64.stringof, uint,
                 Type.UINT32.stringof, ulong, Type.UINT64.stringof, //                utc_t,  Type.UTC.stringof
-                
+
         );
 
         Tabel test_tabel;

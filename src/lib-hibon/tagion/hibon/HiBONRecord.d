@@ -220,6 +220,7 @@ mixin template HiBONRecord(string CTOR = "") {
     protected alias check = Check!(HiBONRecordException);
 
     import tagion.hibon.HiBONJSON: JSONString;
+    import tagion.hibon.HiBON : HiBON;
 
     mixin JSONString;
 

@@ -98,16 +98,6 @@ static assert(uint.sizeof == 4);
         }
         return 0;
     }
-    // /++
-    //  Makes a copy of $(PARAM doc)
-    //  Returns:
-    //  Document copy
-    //  +/
-    // @trusted
-    // void copy(ref const Document doc) {
-    //     emplace(&this, doc);
-    // }
-
     @property @nogc const pure nothrow {
         @safe bool empty() {
             return _data.length <= ubyte.sizeof;
@@ -116,6 +106,14 @@ static assert(uint.sizeof == 4);
         @trusted uint size() {
             if (_data.length) {
                 return LEB128.decode!uint(_data).value;
+            }
+            return 0;
+        }
+
+        size_t full_size() @nogc {
+            if (_data.length) {
+                const len = LEB128.decode!uint(_data);
+                return len.size + len.value;
             }
             return 0;
         }
@@ -145,6 +143,20 @@ static assert(uint.sizeof == 4);
             assert(doc.length is 0);
             assert(doc[].empty);
         }
+    }
+
+    unittest { // Document with residual data
+        import tagion.hibon.HiBON;
+        import std.algorithm.comparison : equal;
+        auto h = new HiBON;
+        h["test"] = 42;
+        immutable(ubyte[]) residual = [42, 14, 217];
+        immutable data = h.serialize ~ residual;
+        const doc = Document(data);
+        assert(doc.full_size == h.serialize.length);
+        assert(doc.length == 1);
+        assert(equal(doc.keys, ["test"]));
+
     }
     /++
      Counts the number of members in a Document
@@ -176,8 +188,8 @@ static assert(uint.sizeof == 4);
             auto previous = sub_doc[];
             bool not_first;
             Element.ErrorCode error_code;
-            const doc_size = LEB128.decode!uint(_data);
-            if (doc_size.size + doc_size.value > _data.length) {
+            const doc_size = sub_doc.full_size; //LEB128.decode!uint(_data);
+            if (doc_size > _data.length) {
                 error_code = Element.ErrorCode.DOCUMENT_OVERFLOW;
                 if (!error_callback || error_callback(this, error_code,
                         Element(), sub_doc.opSlice.front)) {
@@ -305,6 +317,9 @@ static assert(uint.sizeof == 4);
      A range of Element's
      +/
     @nogc Range opSlice() const pure nothrow {
+        if (full_size < _data.length) {
+            return Range(_data[0..full_size]);
+        }
         return Range(_data);
     }
 
@@ -391,7 +406,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(in string key) const {
         auto result = key in this;
-        
+
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -405,7 +420,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         auto result = index in this;
-        
+
         .check(!result.isEod, message("Member index %d not found", index));
         return result;
     }
@@ -953,7 +968,7 @@ static assert(uint.sizeof == 4);
             default:
                 //empty
             }
-            
+
             .check(0, message("Invalid type %s", type));
             assert(0);
         }
@@ -966,9 +981,9 @@ static assert(uint.sizeof == 4);
              if the element does not contain the type E and HiBONException is thrown
              +/
             auto by(Type E)() {
-                
+
                     .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
-                
+
                 .check(E !is Type.NONE,
                         message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
@@ -996,7 +1011,7 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
-                    
+
                         .check(doc.isArray, "Document must be an array");
                     result.length = doc.length;
                     foreach (ref a, e; lockstep(result, doc[])) {
@@ -1070,7 +1085,7 @@ static assert(uint.sizeof == 4);
              if the key is not an index an HiBONException is thrown
              +/
             uint index() pure {
-                
+
                     .check(isIndex, [
                             "Key '", key.to!string, "' is not an index", key
                             ].join);
@@ -1355,19 +1370,4 @@ unittest { // Bugfix (Fails in isInorder);
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
-    // writefln("isInorder=%s", doc.isInorder);
-    // writefln("doc.size=%s", doc.size);
-    // writefln("doc.data.length=%s", doc.data.length);
-    // writefln("doc.keys=%s", doc.keys);
-    // writefln("doc.valid=%s", doc.valid);
-
-    // foreach(e; doc[]) {
-    //     writefln("e.key=%s", e.key);
-    //     writefln("e.type=%s", e.type);
-    //     writefln("e.keyLen=%s", e.keyLen);
-    //     writefln("e.size=%s e.data.length=%d", e.size, e.data.length);
-    //     writefln("e.is_key_valid=%s", e.key.is_key_valid);
-    // }
-    // //   writefln("doc.type=%s", doc.type);
-
 }
