@@ -50,7 +50,7 @@ static assert(uint.sizeof == 4);
     //    @nogc
     immutable(ubyte[]) data() const pure nothrow {
         if (_data.length) {
-            return _data;
+            return _data[0..full_size];
         }
         immutable(ubyte[]) empty_doc = [0];
         return empty_doc;
