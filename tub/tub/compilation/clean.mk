@@ -1,7 +1,10 @@
 # Only tagion modules
-# TODO: Restore clean logic
+.PHONY: clean
 clean:
-	@
+	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/libs}
+	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/bins}
+	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/.tmp}
+	${call clean.ways, compiled files}
 
 # 
 # Macros

@@ -1,7 +1,7 @@
 -include ${shell find $(DIR_SRC) -name '*local.mk'}
 -include ${shell find $(DIR_SRC) -name '*context.mk'}
 
-DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
+INCLFLAGS_SRC := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
 
 # 
 # Target shortcuts
@@ -9,68 +9,62 @@ DIRS_LIBS := ${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}
 tagion%: $(DIR_BUILD)/bins/tagion%
 	@
 
-libtagion%.o: | libtagion%.ctx $(DIR_BUILD)/libs/o/libtagion%.o
-	${eval OBJS += $(*)}
+libtagion%.o: | libtagion% env-libtagion%.o log-libtagion%.o $(DIR_BUILD)/libs/o/libtagion%.o
+	@echo --- $(*)
 
 libtagion%.a: $(DIR_BUILD)/libs/static/libtagion%.a
 	@
 
-libtagion%: libtagion%.a
+testall-libtagion%: $(DIR_BUILD)/tests/test_libtagion%
 	@
 
-test_libtagion%: $(DIR_BUILD)/tests/test_libtagion%
+testscope-libtagion%: test_libtagion%
 	@
 
-runtest_libtagion%: test_libtagion%
-	${call log.header, run test_libtagion$(*)}
-	$(PRECMD)$(DIR_BUILD)/tests/test_libtagion$(*)
-	${call log.close}
+slibtagion%: 
+	export SOME=${MAKE} -C libtagion$(*) 2> /dev/null | tail -1
+	${call log.info, $(SOME)}
 
-# 
-# Targets
-# 
-$(DIR_BUILD)/libs/static/libtagion%.a: | ways libtagion%.o
-	${call define.parallel}
+libtagion%:
+	${eval UNITS += $(*)}
+	@echo $(UNITS)
 
-	${eval _ARCHIVES := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
-	${eval _ARCHIVES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
-	
-	${eval _TARGET := $(@)}
+var-libtagion%: var-libtagion%.o
+	@
 
-	${call execute.ifnot.parallel, ${call show.archive.details, archive - $(@F)}}
-
-	$(PRECMD)ar cr $(_TARGET) $(_ARCHIVES)
-	${call log.kvp, Archived, $(_TARGET)}
-	${call execute.ifnot.parallel, ${call log.close}}
-
-$(DIR_BUILD)/libs/o/libtagion%.o: | ways libtagion%.ctx
-	${call define.parallel}
-
-	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+var-libtagion%.o: libtagion%
+	${eval INCFLAGS := ${foreach DIR_LIB, $(INCLFLAGS_SRC), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, ${DIR_SRC}/lib-$(*), *.d}}
 	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
-	
-	${eval _TARGET := $(@)}
-
 	${eval _DCFLAGS := $(DCFLAGS)}
 	${eval _DCFLAGS += -c}
-	${eval _DCFLAGS += -of$(_TARGET)}
-
 	${eval _LDCFLAGS := $(LDCFLAGS)}
-	
-	${call execute.ifnot.parallel, ${call show.compile.details, compile - $(@F)}}
 
+log-libtagion%.o:
+	${call log.header, $(*)}
+	${call log.kvp, DC, $(DC)}
+	${call log.kvp, DCFLAGS, $(_DCFLAGS)}
+	${call log.kvp, INCFLAGS}
+	${call log.lines, $(INCFLAGS1)}
+	${call log.kvp, INFILES}
+	${call log.lines, $(INFILES)}
+	${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}
+	${if $(LATEFLAGS),${call log.kvp, LATEFLAGS, $(LATEFLAGS)},}
+	${call log.space}
+
+$(DIR_BUILD)/libs/o/libtagion%.o: $(DIR_BUILD)/libs/o/.way
+	${eval _TARGET := $(@)}
+	${eval _DCFLAGS += -of$(_TARGET)}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(_TARGET)}
-	${call execute.ifnot.parallel, ${call log.close}}
 
-$(DIR_BUILD)/tests/test_libtagion%: | ways libtagion%.ctx
+$(DIR_BUILD)/tests/testscope-libtagion%: | ways libtagion%.ctx
 	${call define.parallel}
 
 	${eval _OBJS := ${subst $(*),,$(OBJS)}}
 	${eval _WRAPS := $(WRAPS)}
 	
-	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+	${eval INCFLAGS := ${foreach DIR_LIB, $(INCLFLAGS_SRC), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, $(DIR_SRC)/lib-$(*), *.d}}
 	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
 	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
@@ -98,7 +92,7 @@ $(DIR_BUILD)/bins/tagion%: | ways tagion%.ctx
 	${eval _OBJS := ${subst $(*),,$(OBJS)}}
 	${eval _WRAPS := $(WRAPS)}
 	
-	${eval INCFLAGS := ${foreach DIR_LIB, $(DIRS_LIBS), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
+	${eval INCFLAGS := ${foreach DIR_LIB, $(INCLFLAGS_SRC), -I$(DIR_TUB_ROOT)/$(DIR_LIB)}}
 	${eval INFILES := ${call find.files, $(DIR_SRC)/bin-$(*), *.d}}
 	${eval INFILES += ${foreach OBJ, $(_OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
 	${eval INFILES += ${foreach WRAP_HEADER, $(WRAPS_HEADERS), $(WRAP_HEADER)}}
@@ -115,6 +109,20 @@ $(DIR_BUILD)/bins/tagion%: | ways tagion%.ctx
 
 	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(_TARGET)}
+	${call execute.ifnot.parallel, ${call log.close}}
+
+$(DIR_BUILD)/libs/static/libtagion%.a: | libtagion%.o
+	${call define.parallel}
+
+	${eval _ARCHIVES := ${foreach OBJ, $(OBJS), $(DIR_BUILD)/libs/o/libtagion$(OBJ).o}}
+	${eval _ARCHIVES += ${foreach WRAP_STATIC, $(WRAPS_STATIC), $(WRAP_STATIC)}}
+	
+	${eval _TARGET := $(@)}
+
+	${call execute.ifnot.parallel, ${call show.archive.details, archive - $(@F)}}
+
+	$(PRECMD)ar cr $(_TARGET) $(_ARCHIVES)
+	${call log.kvp, Archived, $(_TARGET)}
 	${call execute.ifnot.parallel, ${call log.close}}
 
 # 
