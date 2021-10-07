@@ -31,7 +31,7 @@ import tagion.communication.HiRPC;
 import tagion.network.SSLSocket;
 import tagion.Keywords;
 
-import tagion.revision;
+//import tagion.revision;
 
 enum LINE="------------------------------------------------------";
 
@@ -671,6 +671,9 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
     }
     return null;
 }
+
+enum REVNO=0;
+enum HASH="xxx";
 
 int main(string[] args) {
     immutable program=args[0];
