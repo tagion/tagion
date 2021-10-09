@@ -7,7 +7,7 @@ import tagion.hibon.Document: Document;
 import tagion.hibon.HiBONRecord: HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
 
-void scramble(scope ref ubyte[] data, scope ubyte[] xor = null) @safe {
+void scramble(scope ref ubyte[] data, scope const(ubyte[]) xor = null) @safe {
     import std.random;
 
     auto gen = Mt19937(unpredictableSeed);
@@ -206,6 +206,10 @@ class StdSecureNet : StdHashNet, SecureNet {
             unshared_secure_net.derive(tweak_code, tweak_privkey);
             createKeyPair(tweak_privkey);
         }
+    }
+
+    final bool secKeyVerify(const(ubyte[]) privkey) const {
+        return _crypt.secKeyVerify(privkey);
     }
 
     final void createKeyPair(ref ubyte[] privkey)

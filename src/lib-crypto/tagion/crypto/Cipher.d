@@ -31,11 +31,18 @@ struct Cipher {
     }
 
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
-        scope ubyte[32] secret_seed_alloc;
-        scope ubyte[] secret_seed=secret_seed_alloc;
-        scramble(secret_seed);
-        scope secret_key = net.HMAC(secret_seed);
-        scramble(secret_seed);
+
+//        immutable(ubyte[]) create_secret_key() {
+        scope ubyte[32] secret_key_alloc;
+        scope ubyte[] secret_key=secret_key_alloc;
+        scope(exit) {
+            scramble(secret_key);
+        }
+        do {
+            scramble(secret_key);
+            scramble(secret_key, net.HMAC(secret_key));
+        }
+        while (!net.secKeyVerify(secret_key));
         CipherDocument result;
         result.cipherPubkey = net.computePubkey(secret_key);
         scope ubyte[AES.BLOCK_SIZE] nonce_alloc;
