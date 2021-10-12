@@ -20,7 +20,7 @@ void scramble(scope ref ubyte[] data, scope const(ubyte[]) xor = null) @safe {
     }
 }
 
-private alias check = Check!SecurityConsensusException;
+package alias check = Check!SecurityConsensusException;
 
 @safe
 class StdHashNet : HashNet {
