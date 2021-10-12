@@ -5,7 +5,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import std.exception : assumeUnique;
 
-import std.stdio;
+//import std.stdio;
 // import tagion.utils.Miscellaneous: toHexString, decode;
 // import tagion.hibon.HiBONJSON;
 @safe
@@ -63,7 +63,7 @@ struct Cipher {
         scramble(last_block);
         ciphermsg[0..msg.data.length] = msg.data;
         const crc = msg.data.crc32Of;
-        writefln("crc %s", crc);
+//        writefln("crc %s", crc);
         ciphermsg[msg.data.length..msg.data.length+CRC_SIZE] = crc;
 
         scope sharedECCKey = net.ECDHSecret(secret_key, pubkey);
@@ -96,14 +96,14 @@ struct Cipher {
         immutable data = get_clearmsg;
         const result = Document(data);
         immutable full_size = result.full_size;
-        writefln("full_size=%d data.length=%d", full_size, data.length);
+//        writefln("full_size=%d data.length=%d", full_size, data.length);
         check(full_size+CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode.CIPHER_DECRYPT_ERROR);
 
         const crc = data[0..full_size].crc32Of;
-        writefln("crc calc   %s", crc);
-        writefln("crc result %s", data[full_size..full_size+CRC_SIZE]);
+        // writefln("crc calc   %s", crc);
+        // writefln("crc result %s", data[full_size..full_size+CRC_SIZE]);
 
-//        check(data[0..full_size].crc32Of == data[full_size..full_size+CRC_SIZE], ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
+        check(data[0..full_size].crc32Of == crc, ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
 
         // writefln("data size %d",  LEB128.decode!uint(data).value);
         return result;
@@ -126,7 +126,7 @@ struct Cipher {
         const secret_doc = Document(hibon);
 
         { // Encrypt and Decrypt secrte message
-            writeln("Good");
+//            writeln("Good");
             auto dummy_net = new StdSecureNet;
             const secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc);
             const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
@@ -135,7 +135,7 @@ struct Cipher {
         }
 
         { // You of the wrong privat-key
-            writeln("Bad");
+//            writeln("Bad");
             auto dummy_net = new StdSecureNet;
             auto wrong_net = new StdSecureNet;
             immutable wrong_passphrase = "wrong word";
@@ -145,7 +145,7 @@ struct Cipher {
             try {
             const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
                 const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
-                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
+//                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
                 passed[0] = true;
                 assert(!encrypted_doc.isInorder);
                 passed[1] = true;
@@ -156,7 +156,7 @@ struct Cipher {
                 passed[2] = true;
 //                passed = true;
             }
-            writefln("any %s ", passed); //(a => !a));
+//            writefln("any %s ", passed); //(a => !a));
 //            writefln("any %s ", passed[].any!(a => !a));
             } while (passed[].any!q{!a});
 
@@ -164,7 +164,7 @@ struct Cipher {
         }
 
         { // Encrypt and Decrypt secrte message with owner privat-key
-            writeln("Good 2");
+//            writeln("Good 2");
             const secret_cipher_doc = Cipher.encrypt(net, secret_doc);
             const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
             assert(encrypted_doc["text"].get!string == some_secret_message);
