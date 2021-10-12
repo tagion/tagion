@@ -807,7 +807,7 @@ int main(string[] args) {
         } while (rec_size < 0);
         auto resp_doc = Document(cast(Buffer)rec_buf[0..rec_size]);
         auto received = hirpc.receive(resp_doc);
-        if(!received.error.hasMethod(Keywords.code)){
+        if(!received.error.hasElement(Keywords.code)){
             foreach(bill; received.params[]){
                 auto std_bill = StandardBill(bill.get!Document);
                 new_bills ~= std_bill;
