@@ -72,6 +72,9 @@ enum ConsensusFailCode {
     SECURITY_MASK_VECTOR_IS_ZERO,
     SECURITY_MESSAGE_HASH_KEY,
 
+    CIPHER_DECRYPT_CRC_ERROR,
+    CIPHER_DECRYPT_ERROR,
+
     DART_ARCHIVE_ALREADY_ADDED,
     DART_ARCHIVE_DOES_NOT_EXIST,
     DART_ARCHIVE_SECTOR_NOT_FOUND,
@@ -233,6 +236,9 @@ class SmartScriptException : ConsensusException {
 
             SECURITY_MASK_VECTOR_IS_ZERO                : "Mask vector must be different from zero",
             SECURITY_MESSAGE_HASH_KEY                   : "A message containg a hash-kye can not be signed",
+
+            CIPHER_DECRYPT_CRC_ERROR                    : "Decrypt CRC checksum failure",
+            CIPHER_DECRYPT_ERROR                        : "Decrypt failure",
 
             DART_ARCHIVE_ALREADY_ADDED                  : "DART Failed archive is already added",
             DART_ARCHIVE_DOES_NOT_EXIST                 : "DART Failed archive does not exist",
