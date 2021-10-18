@@ -31,5 +31,8 @@ endif
 
 include $(DIR_TUB)/_.mk
 
+resolve-%:
+	@rdmd $(DIR_TUB)/resolve.d -t $(DIR_TUB) -s $(DIR_SRC) -u $(*)
+
 # Disabling removal of intermidiate targets
 .SECONDARY:

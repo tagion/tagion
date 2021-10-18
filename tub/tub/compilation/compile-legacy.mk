@@ -21,13 +21,13 @@ testall-libtagion%: $(DIR_BUILD)/tests/test_libtagion%
 testscope-libtagion%: test_libtagion%
 	@
 
-slibtagion%: 
-	export SOME=${MAKE} -C libtagion$(*) 2> /dev/null | tail -1
-	${call log.info, $(SOME)}
+# slibtagion%: 
+# 	export SOME=${MAKE} -C libtagion$(*) 2> /dev/null | tail -1
+# 	${call log.info, $(SOME)}
 
-libtagion%:
-	${eval UNITS += $(*)}
-	@echo $(UNITS)
+# libtagion%:
+# 	${eval UNITS += $(*)}
+# 	@echo $(UNITS)
 
 var-libtagion%: var-libtagion%.o
 	@
@@ -54,6 +54,7 @@ log-libtagion%.o:
 
 $(DIR_BUILD)/libs/o/libtagion%.o: $(DIR_BUILD)/libs/o/.way
 	${eval _TARGET := $(@)}
+	${eval _DCFLAGS += --deps}
 	${eval _DCFLAGS += -of$(_TARGET)}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(INFILES) $(INCFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(_TARGET)}
