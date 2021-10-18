@@ -65,14 +65,14 @@ interface SecureNet : HashNet {
 
     void createKeyPair(ref ubyte[] privkey);
     void generateKeyPair(string passphrase);
-    bool secKeyVerify(const(ubyte[]) privkey) const;
+    bool secKeyVerify(scope const(ubyte[]) privkey) const;
 
     immutable(ubyte[]) ECDHSecret(
-        const(ubyte[]) seckey, const(Pubkey) pubkey) const;
+        scope const(ubyte[]) seckey, scope const(Pubkey) pubkey) const;
 
-    immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const;
+    immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
 
-    Pubkey computePubkey(const(ubyte[]) seckey, immutable bool compress = true) const;
+    Pubkey computePubkey(scope const(ubyte[]) seckey, immutable bool compress = true) const;
 
     void derive(string tweak_word, shared(SecureNet) secure_net);
     void derive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net);

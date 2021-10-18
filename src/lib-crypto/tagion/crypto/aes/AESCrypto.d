@@ -41,7 +41,7 @@ struct AESCrypto(int KEY_LENGTH) {
             }
         }
 
-        static void crypt(bool ENCRYPT = true)(const(ubyte[]) key, const(ubyte[]) iv, const(ubyte[]) indata, ref ubyte[] outdata) pure nothrow
+        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(ubyte[]) indata, ref ubyte[] outdata) pure nothrow
         in {
             if (outdata !is null) {
                 assert(enclength(indata.length) == outdata.length, format(
@@ -80,7 +80,7 @@ struct AESCrypto(int KEY_LENGTH) {
 
         enum KEY_SIZE = KEY_LENGTH / 8;
         enum BLOCK_SIZE = AES_BLOCK_SIZE;
-        static void crypt(bool ENCRYPT = true)(const(ubyte[]) key, const(ubyte[]) iv, const(ubyte[]) indata, ref ubyte[] outdata) @trusted
+        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(ubyte[]) indata, ref ubyte[] outdata) @trusted
         in {
             assert(indata);
             if (outdata !is null) {

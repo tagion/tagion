@@ -214,7 +214,7 @@ class NativeSecp256k1 {
      + @param seckey ECDSA Secret key, 32 bytes
      +/
     @trusted
-    bool secKeyVerify(const(ubyte[]) seckey) const
+    bool secKeyVerify(scope const(ubyte[]) seckey) const
     in {
         assert(seckey.length == 32);
     }
@@ -236,7 +236,7 @@ class NativeSecp256k1 {
     enum COMPRESSED_PUBKEY_SIZE = 33;
     enum SECKEY_SIZE = 32;
     @trusted
-    immutable(ubyte[]) computePubkey(const(ubyte[]) seckey, immutable bool compress = true) const
+    immutable(ubyte[]) computePubkey(scope const(ubyte[]) seckey, immutable bool compress = true) const
     in {
         assert(seckey.length == SECKEY_SIZE);
     }
@@ -431,7 +431,7 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted immutable(ubyte[]) createECDHSecret(const(ubyte[]) seckey, const(
+    @trusted immutable(ubyte[]) createECDHSecret(scope const(ubyte[]) seckey, const(
             ubyte[]) pubkey) const
     in {
         assert(seckey.length <= SECKEY_SIZE);

@@ -124,7 +124,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         immutable(ubyte[]) sign(const(ubyte[]) message) const;
         void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
-        immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const;
+        immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         Buffer mask(const(ubyte[]) _mask) const;
     }
 
@@ -208,7 +208,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
     }
 
-    final bool secKeyVerify(const(ubyte[]) privkey) const {
+    final bool secKeyVerify(scope const(ubyte[]) privkey) const {
         return _crypt.secKeyVerify(privkey);
     }
 
@@ -287,7 +287,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                 });
             }
 
-            immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const {
+            immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
                 Buffer result;
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                         result = _crypt.createECDHSecret(privkey, cast(Buffer)pubkey);
@@ -336,16 +336,16 @@ class StdSecureNet : StdHashNet, SecureNet {
         createKeyPair(data);
     }
 
-    immutable(ubyte[]) ECDHSecret(const(ubyte[]) seckey, const(
+    immutable(ubyte[]) ECDHSecret(scope const(ubyte[]) seckey, scope const(
             Pubkey) pubkey) const {
         return _crypt.createECDHSecret(seckey, cast(Buffer)pubkey);
     }
 
-    immutable(ubyte[]) ECDHSecret(const(Pubkey) pubkey) const {
+    immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
         return _secret.ECDHSecret(pubkey);
     }
 
-    Pubkey computePubkey(const(ubyte[]) seckey, immutable bool compress = true) const {
+    Pubkey computePubkey(scope const(ubyte[]) seckey, immutable bool compress = true) const {
         return Pubkey(_crypt.computePubkey(seckey, compress));
     }
 
