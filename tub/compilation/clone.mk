@@ -6,7 +6,7 @@ clone-%: $(DIR_SRC)/%/context.mk
 # TODO: In isolated mode clone only --depth
 $(DIR_SRC)/%/context.mk:
 	${call log.header, Cloning $(*)...}
-	$(PRECMD)git clone $(GIT_ORIGIN)/core-$(*) $(DIR_SRC)/$(*) || true
+	$(PRECMD)git clone $(GIT_ORIGIN)/core-$(*) $(DIR_SRC)/$(*)
 	${call log.close}
 
 # Shortcut for Tagion Core developers
