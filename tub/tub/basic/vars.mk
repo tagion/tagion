@@ -205,9 +205,9 @@ endif
 # 
 DIR_TRASH := ${abspath ${DIR_TUB_ROOT}}/.trash
 DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(ARCH)
-DIR_BUILD_TEMP := ${abspath ${DIR_TUB_ROOT}}/build/$(ARCH)/.tmp
+DIR_BUILD_TEMP := ${abspath ${DIR_BUILD}}/.tmp
 DIR_BUILD_O := $(DIR_BUILD_TEMP)/o
-DIR_BUILD_LIBS := $(DIR_BUILD)/libs
+DIR_BUILD_LIBS_STATIC := $(DIR_BUILD)/libs/static
 DIR_BUILD_BINS := $(DIR_BUILD)/bins
 DIR_BUILD_WRAPS := $(DIR_BUILD)/wraps
 DIR_SRC := ${abspath ${DIR_TUB_ROOT}}/src
