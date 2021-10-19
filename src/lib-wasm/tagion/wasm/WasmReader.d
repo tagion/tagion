@@ -121,6 +121,7 @@ import std.format;
         alias T = Sections[S];
         auto range = opSlice;
         auto sec = range[S];
+        import std.exception;
         debug {
             assumeWontThrow(
                 {writefln("sec.data=%s", sec.data);}
