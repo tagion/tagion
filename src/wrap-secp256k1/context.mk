@@ -5,7 +5,11 @@ DIR_SECP256K1_BUILD := $(DIR_BUILD)/wraps/secp256k1
 WAYS_PERSISTENT += $(DIR_SECP256K1_BUILD)/.way
 WAYS_PERSISTENT += $(DIR_SECP256K1_BUILD)/lib/.way
 
-CONFIGUREFLAGS+=enable_module_ecdh=yes
+CONFIGUREFLAGS+=--enable-module-ecdh
+CONFIGUREFLAGS+=--enable-experimental
+CONFIGUREFLAGS+=--enable-module-recovery
+CONFIGUREFLAGS+=--enable-module-schnorrsig
+
 
 .PHONY: wrap-secp256k1
 wrap-secp256k1: | ways wrap-openssl $(DIR_SECP256K1_BUILD)/lib/libsecp256k1.a
