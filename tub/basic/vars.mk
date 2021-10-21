@@ -249,3 +249,11 @@ env-commands:
 	$(call log.close)
 
 env: $(MAKE_SHOW_ENV)
+
+# 
+# Utility Variables
+# 
+RANDOM_SEED ?= ${strip ${shell echo $$RANDOM$$RANDOM}}
+GENERATED_PREFIX := gen
+
+FILENAME_SOURCE_MK := $(GENERATED_PREFIX).source.mk

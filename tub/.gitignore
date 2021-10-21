@@ -10,3 +10,4 @@ local.mk
 src
 build
 __generated*
+*.log
