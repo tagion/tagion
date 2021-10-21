@@ -30,13 +30,10 @@ size_t calc_size(const(ubyte[]) data) pure nothrow {
             if (i > ulong.sizeof + 1) {
                 return 0;
             }
-            //            check(i <= ulong.sizeof+1, "LEB128 overflow");
             return i + 1;
         }
     }
-    return 0;
-    // check(0, "LEB128 bad format");
-    // assert(0);
+    return data.length;
 }
 
 @safe @nogc
@@ -127,7 +124,7 @@ enum ErrorValue(T) = DecodeLEB128!T(T.init, 0);
  In case of an error this size is set to zero
 +/
 @safe @nogc
-DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) pure nothrow 
+DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) pure nothrow
         if (isUnsigned!T) {
     alias BaseT = TypedefType!T;
     ulong result;
