@@ -29,7 +29,6 @@ TUB_MODE := Isolated
 TUB_MODE_ISOLATED := 1
 endif
 
-
 # Disabling removal of intermidiate targets
 .SECONDARY:
 include $(DIR_TUB)/_.mk
