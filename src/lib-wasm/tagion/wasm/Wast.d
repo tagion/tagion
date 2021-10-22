@@ -64,14 +64,15 @@ alias check = Check!WastException;
         assert(0);
     }
 
-    static string offsetAlignToString(const(WasmArg[]) wargs)
-    in {
-        assert(wargs.length == 2);
-    }
-    do {
+    static string offsetAlignToString(ExprRange.IRElement.WasmRange!(Types.I32) params) {
+    // in {
+    //     assert(wargs.length == 2);
+    // }
+    // do {
         string result;
-        const _offset = wargs[1].get!uint;
-        const _align = wargs[0].get!uint;
+        const _offset = params.front.get!uint;
+        params.popFront;
+        const _align = params.front.get!uint;
 
         if (_offset > 0) {
             result ~= format(" offset=%d", _offset);
@@ -339,7 +340,7 @@ alias check = Check!WastException;
                     output.writefln("%s%s %d", indent, instr.name, elm.warg.get!uint);
                     break;
                 case MEMORY:
-                    output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.wargs));
+                    output.writefln("%s%s%s", indent, instr.name, offsetAlignToString(elm.params!(Types.I32)(2)));
                     break;
                 case MEMOP:
                     output.writefln("%s%s", indent, instr.name);
@@ -374,7 +375,7 @@ alias check = Check!WastException;
                 }
             }
         }
-        return ExprRange.IRElement(IR.END, level);
+        return ExprRange.IRElement([IR.END], level);
     }
 
     Output serialize() {
