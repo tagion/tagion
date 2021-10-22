@@ -645,7 +645,9 @@ static assert(isInputRange!ExprRange);
     }
 
     struct IRElement {
-        IR code;
+        immutable(ubyte)[] data;
+
+        //IR code;
         int level;
         private {
             WasmArg _warg;
@@ -653,13 +655,11 @@ static assert(isInputRange!ExprRange);
             const(Types)[] _types;
         }
 
-        enum unreachable = IRElement(IR.UNREACHABLE);
-        //static const(IRElement) unreachable;
+        enum unreachable = IRElement([IR.UNREACHABLE]);
 
-        // void unreachable() nothorw {
-        //     unreachable.code = IR.UNREACHABLE;
-        //     unreachable._warg = WasmArg.undefine;
-        // };
+        const(IR) code() const pure nothrow {
+            return cast(IR)(data[0]);
+        }
 
         const(WasmArg) warg() const pure nothrow {
             return _warg;
@@ -706,7 +706,8 @@ static assert(isInputRange!ExprRange);
         }
 
         if (index < data.length) {
-            elm.code = cast(IR) data[index];
+            //elm.code = cast(IR) data[index];
+            elm.data = data[index..$]; //cast(IR) data[index];
             elm._types = null;
             const instr = instrTable[elm.code];
             index += IR.sizeof;
@@ -792,9 +793,10 @@ static assert(isInputRange!ExprRange);
             if (index == data.length) {
                 index++;
             }
-            elm.code = IR.UNREACHABLE;
+            elm.data = [IR.UNREACHABLE];
         }
     }
+
 
     @property pure nothrow {
         const(size_t) index() const {
@@ -811,6 +813,11 @@ static assert(isInputRange!ExprRange);
 
         void popFront() {
             set_front(current, _index);
+        }
+
+        immutable(ubyte[]) leb128() const {
+            const size=LEB128.calc_size(data);
+            return data[_index.._index+size];
         }
     }
 
