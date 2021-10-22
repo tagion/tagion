@@ -251,9 +251,7 @@ env-commands:
 env: $(MAKE_SHOW_ENV)
 
 # 
-# Utility Variables
+# Utility variables
 # 
-RANDOM_SEED ?= ${strip ${shell echo $$RANDOM$$RANDOM}}
 GENERATED_PREFIX := gen
-
 FILENAME_SOURCE_MK := $(GENERATED_PREFIX).source.mk
