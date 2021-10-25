@@ -11,7 +11,10 @@ import std.typecons;
 
 // import tagion.gossip.revision;
 // import tagion.gossip.GossipNet;
-import tagion.Options;
+pragma(msg, "fixme(cbr): Eliminated dependency of Services Options");
+import tagion.services.Options;
+import tagion.options.HostOptions;
+
 import tagion.basic.Basic: EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
@@ -347,7 +350,7 @@ class StdP2pNet : P2pNet {
     protected string owner_task_name;
     protected string internal_task_name;
 
-    this(string owner_task_name, string discovery_task_name, const(Options.Host) host, shared p2plib
+    this(string owner_task_name, string discovery_task_name, const(HostOptions) host, shared p2plib
             .Node node) {
         //        super(hashgraph);
         this.owner_task_name = owner_task_name;
@@ -411,7 +414,7 @@ class StdP2pNet : P2pNet {
     }
 }
 
-static void async_send(string task_name, string discovery_task_name, const(Options.Host) host, shared p2plib
+static void async_send(string task_name, string discovery_task_name, const(HostOptions) host, shared p2plib
         .Node node) {
     scope (exit) {
         // log("SENDER CLOSED!!");
@@ -553,7 +556,7 @@ static void async_send(string task_name, string discovery_task_name, const(Optio
     }
     Random random;
 
-    this(Pubkey pk, string owner_task_name, string discovery_task_name, const(Options.Host) host, shared p2plib
+    this(Pubkey pk, string owner_task_name, string discovery_task_name, const(HostOptions) host, shared p2plib
             .Node node) {
         super(owner_task_name, discovery_task_name, host, node);
         this.random = Random(unpredictableSeed);

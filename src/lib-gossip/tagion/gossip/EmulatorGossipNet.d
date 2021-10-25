@@ -7,7 +7,7 @@ import std.array: join;
 import std.conv: to;
 
 // import tagion.revision;
-import tagion.Options;
+import tagion.services.Options;
 import tagion.basic.Basic: EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
