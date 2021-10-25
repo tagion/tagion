@@ -15,7 +15,7 @@ import p2plib = p2p.node;
 import p2p.callback;
 import p2p.cgo.helper;
 
-import tagion.Options : Options, setOptions, options, OptionException;
+import tagion.services.Options : Options, setOptions, options, OptionException;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;

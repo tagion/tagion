@@ -2,12 +2,12 @@ module tagion.services.FileDiscoveryService;
 
 import core.time;
 import std.datetime;
-import tagion.Options;
 import std.typecons;
 import std.conv;
 import std.format;
 
 // import tagion.services.LoggerService;
+import tagion.services.Options;
 import tagion.basic.Logger;
 import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;

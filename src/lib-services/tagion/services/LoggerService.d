@@ -12,7 +12,7 @@ import std.string;
 import tagion.basic.Basic : Control;
 import tagion.basic.Logger;
 
-import tagion.Options : Options, setOptions, options;
+import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
 

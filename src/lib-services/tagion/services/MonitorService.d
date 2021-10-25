@@ -7,7 +7,7 @@ import core.thread;
 import std.concurrency;
 
 import tagion.basic.Logger;
-import tagion.Options : Options, setOptions, options;
+import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.Basic : Control, basename, Pubkey;
 import tagion.basic.TagionExceptions : TagionException;
 

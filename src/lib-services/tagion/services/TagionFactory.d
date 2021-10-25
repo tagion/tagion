@@ -4,7 +4,7 @@ import core.thread;
 import std.concurrency;
 import std.range : lockstep;
 
-import tagion.Options;
+import tagion.services.Options;
 
 import tagion.utils.Random;
 

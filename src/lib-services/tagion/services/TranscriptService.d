@@ -6,7 +6,7 @@ import core.thread;
 import std.array : join;
 import std.exception : assumeUnique;
 
-import tagion.Options;
+import tagion.services.Options;
 import tagion.basic.Basic : Control, Buffer;
 import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.hibon.HiBON;

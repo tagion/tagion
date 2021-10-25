@@ -3,7 +3,7 @@ module tagion.services.DartSynchronizeService;
 import core.thread;
 import std.concurrency;
 
-import tagion.Options;
+import tagion.services.Options;
 
 import p2plib = p2p.node;
 
@@ -149,10 +149,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(
                 opts.dart.sync.host.timeout.msecs);
-        auto sync_factory = new P2pSynchronizationFactory(dart, node,
-                connectionPool, opts, net.pubkey);
+        auto sync_factory = new P2pSynchronizationFactory(dart, opts.port, node,
+                connectionPool, opts.dart, net.pubkey);
         auto syncPool = new DartSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
-                journalReplayFiber, opts);
+                journalReplayFiber, opts.dart);
         bool request_handling = false;
         // auto discoveryTid = spawn(&mdnsDiscoveryService, node, opts);
         // receiveOnly!Control;

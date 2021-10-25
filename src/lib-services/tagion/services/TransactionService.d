@@ -5,12 +5,12 @@ import std.format;
 import std.socket;
 import core.thread;
 import std.concurrency;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.network.SSLServiceAPI;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 import tagion.basic.Logger;
-import tagion.Options : Options, setOptions, options;
+import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.Basic : Control, Buffer;
 
 import tagion.hibon.Document;
@@ -20,7 +20,7 @@ import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.script.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
 
-import tagion.basic.TagionExceptions : fatal, TagionException;
+import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 
 //import tagion.dart.DARTFile;
 import tagion.dart.DART;
@@ -81,26 +81,31 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                Document doc;
-                @trusted void receivessl() {
+                //Document doc;
+                @trusted const(Document) receivessl() {
                     try {
                         immutable buffer = ssl_relay.receive;
-                        log(cast(string) buffer);
-                        if (!buffer) {
-                            return;
+                        //log(cast(string) buffer);
+                        const result = Document(buffer);
+                        if (result.isInorder) {
+                            return result;
                         }
-                        doc = Document(buffer);
+                        // if (buffer) {
+                        //     return Do;
+                        // }
+                        // return Document(buffer);
                     }
                     // catch (Exception e) {
                     //     log.error("%s", e.msg);
                     //     throw e;
                     // }
-                    catch (Throwable t) {
-                        log.error("%s", t.msg);
+                    catch (Exception t) {
+                        log.warning("%s", t.msg);
                     }
+                    return Document();
                 }
 
-                receivessl();
+                const doc=receivessl();
                 log("%s", doc.toJSON);
                 const hirpc_received = hirpc.receive(doc);
                 {
@@ -226,17 +231,41 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             }
         }
 
+        // void reportTagionExceptionFromChild(immutable(TagionException) e) nothrow {
+        //     log.error(e.msg);
+        //     assumeWontThrow(ownerTid.send(e));
+        // }
+
+        // void reportExceptionFromChild(immutable(Exception) e) {
+        //     log.fatal(e.msg);
+        //     assumeWontThrow(ownerTid.send(e));
+        // }
+
+        // void (immutable(Exception) e) { log.fatal(e.msg); ownerTid.send(e); },
+        //             (immutable(Throwable) t) {
+        //         log.fatal(t.msg);
+        //         ownerTid.send(t);
+        //     }
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
-                    &handleState, (immutable(TagionException) e) {
-                log.fatal(e.msg);
-                ownerTid.send(e);
-            }, (immutable(Exception) e) { log.fatal(e.msg); ownerTid.send(e); },
-                    (immutable(Throwable) t) {
-                log.fatal(t.msg);
-                ownerTid.send(t);
-            });
+                &handleState,
+                &taskfailure,
+                // &reportTagionExceptionFromChild,
+                // &reportExceptionFromChild
+// //                &reportException,
+//                 &reportExceptionFromChild
+//                 );
+            //     (immutable(TagionException) e) {
+            //     log.fatal(e.msg);
+            //     ownerTid.send(e);
+            // },
+            //     (immutable(Exception) e) { log.fatal(e.msg); ownerTid.send(e); },
+            //         (immutable(Throwable) t) {
+            //     log.fatal(t.msg);
+            //     ownerTid.send(t);
+            // }
+                );
         }
     }
     catch (Throwable t) {
