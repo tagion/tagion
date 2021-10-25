@@ -1,6 +1,7 @@
 module tagion.ServiceNames;
 
-import tagion.Options: Options;
+pragma(msg, "fixme(cbr): This modules should be eliminated and moved into the services package");
+import tagion.services.Options : Options;
 import std.array: join;
 import std.conv: to;
 

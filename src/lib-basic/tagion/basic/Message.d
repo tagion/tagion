@@ -3,7 +3,6 @@ module tagion.basic.Message;
 import std.format;
 import std.json;
 
-//import tagion.Options;
 /++
  Controls the language used by the message function
 +/
