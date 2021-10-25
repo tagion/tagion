@@ -519,7 +519,7 @@ enum IndexType : ubyte {
     }
 }
 
-T decode(T)(const(ubyte[]) data, ref size_t index) pure {
+T decode(T)(immutable(ubyte[]) data, ref size_t index) pure {
     size_t byte_size;
     const leb128_index = LEB128.decode!T(data[index .. $]);
     scope (exit) {
@@ -571,9 +571,6 @@ interface InterfaceModuleT(T...) {
         }
     }
 
-    this(T)(T x) {
-        this = x;
-    }
     static WasmArg undefine() pure nothrow {
         WasmArg result;
         result._type = Types.EMPTY;
@@ -648,165 +645,34 @@ static assert(isInputRange!ExprRange);
     }
 
     struct IRElement {
-        immutable(ubyte)[] data;
-
-        //IR code;
+        IR code;
         int level;
         private {
-//            WasmArg _warg;
+            WasmArg _warg;
             WasmArg[] _wargs;
             const(Types)[] _types;
         }
 
-        enum unreachable = IRElement([IR.UNREACHABLE]);
+        enum unreachable = IRElement(IR.UNREACHABLE);
+        //static const(IRElement) unreachable;
 
-        const(IR) code() const pure nothrow {
-            return cast(IR)(data[0]);
-        }
-
-        @trusted static const(WasmArg) warg(const(ubyte[]) _data, const Types type) pure nothrow {
-            with (Types) {
-                switch (type) {
-                case I32:
-                    return WasmArg(LEB128.decode!int(_data).value);
-                case I64:
-                    return WasmArg(LEB128.decode!long(_data).value);
-                case F32:
-                    size_t index;
-                    return WasmArg(_data.binpeek!(float, Endian.littleEndian)(&index));
-                case F64:
-                    size_t index;
-                    return WasmArg(_data.binpeek!(double, Endian.littleEndian)(&index));
-                default:
-                    assert(0);
-                }
-            }
-        }
-
+        // void unreachable() nothorw {
+        //     unreachable.code = IR.UNREACHABLE;
+        //     unreachable._warg = WasmArg.undefine;
+        // };
 
         const(WasmArg) warg() const pure nothrow {
-            // size_t index = 1;
-//            WasmArg result;
-            with (IRType) {
-                final switch (instr.irtype) {
-                case CODE:
-                case BLOCK:
-                case MEMOP:
-                case END:
-                    break;
-                case PREFIX:
-                    return WasmArg(int(data[IR.sizeof])); // Extened insruction
-                case BRANCH:
-                    return warg(data[IR.sizeof..$], Types.I32);
-                case BRANCH_TABLE:
-                    assert(0, "Wasm argument must be an array");
-                    //size_t vec_size;
-                    // const len = u32(data, index) + 1;
-                    // elm._wargs = new WasmArg[len];
-                    // foreach (ref a; elm._wargs) {
-                    //     a = u32(data, index);
-                    // }
-                    // break;
-                case CALL:
-                case CALL_INDIRECT:
-                case LOCAL:
-                case GLOBAL:
-                    // idx
-                    return warg(data[IR.sizeof..$], Types.I32);
-                case MEMORY:
-                    assert(0);
-                    // // offset
-                    // elm._wargs = new WasmArg[2];
-                    // set(elm._wargs[0], Types.I32);
-                    // // align
-                    // set(elm._wargs[1], Types.I32);
-                    // break;
-                    // index++;
-                    // break;
-                case CONST:
-                    with (IR) {
-                        switch (code) {
-                        case I32_CONST:
-                            return warg(data[IR.sizeof..$], Types.I32);
-                        case I64_CONST:
-                            return warg(data[IR.sizeof..$], Types.I64);
-                        case F32_CONST:
-                            return warg(data[IR.sizeof..$], Types.F32);
-                        case F64_CONST:
-                            return warg(data[IR.sizeof..$], Types.F64);
-                        default:
-                            assert(0, format("Instruction %s is not a const", code));
-                        }
-                    }
-                    break;
-                }
-            }
-            assert(0, format("The instruction %s has no argument", code));
+            return _warg;
         }
 
         const(WasmArg[]) wargs() const pure nothrow {
             return _wargs;
         }
 
-        template params(Types T) {
-            WasmRange!T params(const size_t size) const pure nothrow {
-                return WasmRange!T(data[IR.sizeof..$], size);
-            }
-        }
-
         const(Types[]) types() const pure nothrow {
             return _types;
         }
 
-        const(Instr) instr() const pure nothrow {
-            return instrTable[code];
-        }
-
-        struct WasmRange(Types type)  {
-            const(ubyte)[] data;
-            size_t count;
-            //Types type;
-            //size_t index;
-            this(const(ubyte[]) data, const size_t size) pure nothrow {
-                this.data = data;
-                // this.type = type;
-                count = size;
-            }
-
-            @property pure nothrow {
-                bool empty() const {
-                    return count == 0;
-                }
-
-                const(WasmArg) front() const {
-                    //auto _index = index;
-                    return warg(data, type);
-                }
-
-                void popFront() {
-                    size_t step;
-                    with(Types) {
-                        switch(type) {
-                        case I32:
-                        case I64:
-                            step = LEB128.calc_size(data);
-                            break;
-                        case F32:
-                            step = float.sizeof;
-                            break;
-                        case F64:
-                            step = double.sizeof;
-                            break;
-                        default:
-                            assert(0);
-                        }
-                    }
-                    data = data[step..$];
-                    count--;
-                }
-            }
-
-        }
     }
 
     this(immutable(ubyte[]) data) pure nothrow {
@@ -840,8 +706,7 @@ static assert(isInputRange!ExprRange);
         }
 
         if (index < data.length) {
-            //elm.code = cast(IR) data[index];
-            elm.data = data[index..$]; //cast(IR) data[index];
+            elm.code = cast(IR) data[index];
             elm._types = null;
             const instr = instrTable[elm.code];
             index += IR.sizeof;
@@ -850,6 +715,7 @@ static assert(isInputRange!ExprRange);
                 case CODE:
                     break;
                 case PREFIX:
+                    elm._warg = int(data[index]); // Extened insruction
                     index += ubyte.sizeof;
                     break;
                 case BLOCK:
@@ -859,8 +725,7 @@ static assert(isInputRange!ExprRange);
                     break;
                 case BRANCH:
                     // branchidx
-                    //set(elm._warg, Types.I32);
-                    index += LEB128.calc_size(data[index..$]);
+                    set(elm._warg, Types.I32);
                     _level++;
                     break;
                 case BRANCH_TABLE:
@@ -872,23 +737,27 @@ static assert(isInputRange!ExprRange);
                     }
                     break;
                 case CALL:
-                case LOCAL, GLOBAL:
-                    // idx
-                    index += LEB128.calc_size(data[index..$]);
+                    // callidx
+                    set(elm._warg, Types.I32);
                     break;
                 case CALL_INDIRECT:
                     // typeidx
-                    index += LEB128.calc_size(data[index..$]);
+                    set(elm._warg, Types.I32);
                     if (!(data[index] == 0x00)) {
                         wasm_exception = new WasmException("call_indirect should end with 0x00");
                     }
                     index += ubyte.sizeof;
                     break;
+                case LOCAL, GLOBAL:
+                    // localidx globalidx
+                    set(elm._warg, Types.I32);
+                    break;
                 case MEMORY:
                     // offset
-                    index += LEB128.calc_size(data[index..$]);
+                    elm._wargs = new WasmArg[2];
+                    set(elm._wargs[0], Types.I32);
                     // align
-                    index += LEB128.calc_size(data[index..$]);
+                    set(elm._wargs[1], Types.I32);
                     break;
                 case MEMOP:
                     index++;
@@ -897,14 +766,16 @@ static assert(isInputRange!ExprRange);
                     with (IR) {
                         switch (elm.code) {
                         case I32_CONST:
+                            set(elm._warg, Types.I32);
+                            break;
                         case I64_CONST:
-                            index += LEB128.calc_size(data[index..$]);
+                            set(elm._warg, Types.I64);
                             break;
                         case F32_CONST:
-                            index += float.sizeof;
+                            set(elm._warg, Types.F32);
                             break;
                         case F64_CONST:
-                            index += double.sizeof;
+                            set(elm._warg, Types.F64);
                             break;
                         default:
                             assert(0, format("Instruction %s is not a const", elm.code));
@@ -921,10 +792,9 @@ static assert(isInputRange!ExprRange);
             if (index == data.length) {
                 index++;
             }
-            elm.data = [IR.UNREACHABLE];
+            elm.code = IR.UNREACHABLE;
         }
     }
-
 
     @property pure nothrow {
         const(size_t) index() const {
@@ -941,11 +811,6 @@ static assert(isInputRange!ExprRange);
 
         void popFront() {
             set_front(current, _index);
-        }
-
-        immutable(ubyte[]) leb128() const {
-            const size=LEB128.calc_size(data);
-            return data[_index.._index+size];
         }
     }
 
