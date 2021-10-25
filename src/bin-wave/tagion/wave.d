@@ -8,7 +8,7 @@ import std.concurrency;
 import std.array : join;
 
 import tagion.basic.Basic : Control;
-import tagion.Options;
+import tagion.services.Options;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.services.HeartBeatService;
 import tagion.services.P2pTagionService;
@@ -128,7 +128,7 @@ int main(string[] args) {
 
 //    Control response;
     Tid tagion_service_tid = spawn(&tagionServiceWrapper, service_options);
-    
+
 
     scope(exit){
         tagion_service_tid.send(Control.STOP);
