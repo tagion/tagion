@@ -10,10 +10,11 @@ import std.concurrency;
 
 import tagion.network.SSLSocket;
 import tagion.basic.Message;
-import tagion.Options;
+import tagion.services.Options;
 import tagion.basic.Basic: Buffer;
 import tagion.basic.Logger;
 import tagion.basic.ConsensusExceptions;
+import tagion.basic.TagionExceptions : taskfailure, fatal;
 import tagion.services.LoggerService;
 import LEB128 = tagion.utils.LEB128;
 
@@ -374,7 +375,7 @@ class SSLFiberService {
                         else {
                             size += rec_data_size;
                             while (leb128_index < size) {
-                                
+
                                     .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                                 if ((leb128_len_data[leb128_index++] & 0x80) is 0) {
                                     // End of LEB128 size when bit 7 is 0
@@ -491,8 +492,8 @@ class SSLFiberService {
      Standard concurrency routine to handle service response
      +/
     @trusted
-    static void responseService(immutable(string) task_name, shared Response handler) {
-
+    static void responseService(immutable(string) task_name, shared Response handler) nothrow {
+        try {
         import tagion.basic.Basic: Control;
         import tagion.communication.HiRPC;
         import tagion.hibon.Document;
@@ -528,10 +529,13 @@ class SSLFiberService {
         while (!stop) {
             receive(
                     &handleState,
-                    &serviceResponse
+                    &serviceResponse,
+                    &taskfailure
             );
         }
-
+        }
+        catch (Throwable t) {
+            fatal(t);
+        }
     }
-
 }

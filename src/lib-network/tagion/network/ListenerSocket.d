@@ -10,7 +10,7 @@ import std.conv: to;
 
 import tagion.basic.Basic: Buffer;
 import tagion.basic.TagionExceptions: TagionException, Check, taskException;
-import tagion.Options: Options, setOptions, options;
+import tagion.services.Options: Options, setOptions, options;
 import tagion.hibon.Document;
 import tagion.basic.Logger;
 import std.bitmanip: binwrite = write;
