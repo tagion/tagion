@@ -27,6 +27,7 @@ alias check = Check!OptionException;
 +/
 mixin template JSONCommon() {
     import tagion.basic.Basic: basename;
+    import tagion.utils.JSONCommon : check;
     import JSON = std.json;
     import std.traits;
     import std.format;
@@ -76,7 +77,7 @@ mixin template JSONCommon() {
      Params:
      json_value = JSON used
      +/
-    private void parse(ref JSON.JSONValue json_value) {
+    void parse(ref JSON.JSONValue json_value) {
         foreach (i, ref m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
