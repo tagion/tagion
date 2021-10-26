@@ -108,11 +108,11 @@ protected enum _keywords = [
 // Generated the Keywords and enum string list
 mixin(EnumText!("Keywords", _keywords));
 
-protected enum _network_modes = ["internal", "local", "pub"];
+// protected enum _network_modes = ["internal", "local", "pub"];
 import std.array : join;
 
-enum ValidNetwrokModes = join(_network_modes, ",");
-mixin(EnumText!("NetworkMode", _network_modes));
+// enum ValidNetwrokModes = join(_network_modes, ",");
+// mixin(EnumText!("NetworkMode", _network_modes));
 /++
  Check if the CTE string $(LREF word) belongs to $(LREF K) string enum
 +/
