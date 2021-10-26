@@ -503,7 +503,7 @@ template toDType(Types t) {
 enum IndexType : ubyte {
     @string("func")    FUNC = 0x00, /// func x:typeidx
         @string("table") TABLE = 0x01, /// func  tt:tabletype
-        @string("memoty") MEMORY = 0x02, /// mem mt:memtype
+        @string("memory") MEMORY = 0x02, /// mem mt:memtype
         @string("global") GLOBAL = 0x03, /// global gt:globaltype
 }
 
