@@ -15,7 +15,7 @@ import p2plib = p2p.node;
 import p2p.callback;
 import p2p.cgo.helper;
 
-import tagion.services.Options : Options, setOptions, options, OptionException;
+import tagion.services.Options : Options, setOptions, options, OptionException, NetworkMode;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
@@ -59,7 +59,7 @@ import tagion.services.NetworkRecordDiscoveryService;
 
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DartService;
-import tagion.Keywords : NetworkMode;
+//import tagion.Keywords : NetworkMode;
 
 import std.stdio;
 import std.array : replace, split;
@@ -95,19 +95,18 @@ shared(p2plib.Node) initialize_node(immutable Options opts) {
     return p2pnode;
 }
 
-void tagionService(NetworkMode net_mode)(Options opts) nothrow
-    in {
-        import std.algorithm : canFind;
+void tagionService(NetworkMode net_mode)(Options opts) nothrow {
+//     in {
+//         import std.algorithm : canFind;
 
-        assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
-    }
-do {
+//         assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
+//     }
+// do {
     try {
         setOptions(opts);
 
         log.register(opts.node_name);
-        scope (exit) {
-            log("----- Stop all tasks -----");
+        scope (success) {
             log.close;
             ownerTid.prioritySend(Control.END);
         }

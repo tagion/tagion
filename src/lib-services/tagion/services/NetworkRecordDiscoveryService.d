@@ -30,7 +30,7 @@ import tagion.services.FileDiscoveryService;
 import tagion.services.MdnsDiscoveryService;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hibon.HiBONJSON;
-import tagion.Keywords : NetworkMode;
+//import tagion.Keywords : NetworkMode;
 import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 import tagion.crypto.SecureNet;
 

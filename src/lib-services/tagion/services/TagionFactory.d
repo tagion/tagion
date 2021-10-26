@@ -3,6 +3,8 @@ module tagion.services.TagionFactory;
 import core.thread;
 import std.concurrency;
 import std.range : lockstep;
+import std.conv;
+import std.algorithm.searching : canFind;
 
 import tagion.services.Options;
 
@@ -22,14 +24,12 @@ import tagion.services.DartService;
 import tagion.services.DartSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
-import std.conv;
 
 import tagion.services.P2pTagionService;
 import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.services.MdnsDiscoveryService;
-import std.algorithm.searching : canFind;
 
-import tagion.Keywords : NetworkMode;
+//import tagion.Keywords : NetworkMode;
 
 void tagionServiceWrapper(Options opts) {
     setOptions(opts);
@@ -37,7 +37,10 @@ void tagionServiceWrapper(Options opts) {
     log.register(tast_name);
     Tid[] tids;
 
-    if (opts.net_mode == NetworkMode.internal) {
+    with(NetworkMode) {
+        final switch(opts.net_mode) {
+        case internal:
+//    if (opts.net_mode == NetworkMode.internal) {
         Options[] node_opts;
         log("in ineternal");
         import std.array : replace;
@@ -115,16 +118,21 @@ void tagionServiceWrapper(Options opts) {
             }
             assert(receiveOnly!Control == Control.LIVE);
         }
+        break;
+        case local:
+    // }
+    // else if (opts.net_mode == NetworkMode.local) {
+            opts.node_name = "local-tagion";
+            tids ~= spawn(&tagionService!(NetworkMode.local), opts);
+            break;
+        case pub:
+    // }
+    // else if (opts.net_mode == NetworkMode.pub) {
+            opts.node_name = "public-tagion";
+            tids ~= spawn(&tagionService!(NetworkMode.pub), opts);
+            break;
+        }
     }
-    else if (opts.net_mode == NetworkMode.local) {
-        opts.node_name = "local-tagion";
-        tids ~= spawn(&tagionService!(NetworkMode.local), opts);
-    }
-    else if (opts.net_mode == NetworkMode.pub) {
-        opts.node_name = "public-tagion";
-        tids ~= spawn(&tagionService!(NetworkMode.pub), opts);
-    }
-
     scope (exit) {
         foreach (tid; tids) {
             tid.send(Control.STOP);
