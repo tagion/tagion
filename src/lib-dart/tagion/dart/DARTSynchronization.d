@@ -17,7 +17,6 @@ import tagion.dart.Recorder;
 
 import core.time;
 import std.datetime;
-//import tagion.Options;
 import tagion.dart.DARTOptions : DARTOptions;
 import std.typecons;
 import tagion.basic.Basic;
