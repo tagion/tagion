@@ -1,14 +1,6 @@
 module tagion.utils.JSONCommon;
 
-// import JSON=std.json;
-// import std.format;
-// import std.traits;
-// import std.file;
-// import std.getopt;
-// import std.array : join;
-// import std.string : strip;
 
-import tagion.basic.Basic: basename, DataFormat;
 import tagion.basic.TagionExceptions;
 
 /++
@@ -31,6 +23,7 @@ mixin template JSONCommon() {
     import JSON = std.json;
     import std.traits;
     import std.format;
+    import std.conv : to;
 
     /++
      Returns:
@@ -46,7 +39,10 @@ mixin template JSONCommon() {
                 result[name] = m.toJSON;
             }
             else {
-                static if (is(type : immutable(ubyte[]))) {
+                static if (is(type == enum)) {
+                    result[name] = m.to!string;
+                }
+                else static if (is(type : immutable(ubyte[]))) {
                     result[name] = m.toHexString;
                 }
                 else {
@@ -78,6 +74,7 @@ mixin template JSONCommon() {
      json_value = JSON used
      +/
     void parse(ref JSON.JSONValue json_value) {
+    ParseLoop:
         foreach (i, ref m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
@@ -85,33 +82,35 @@ mixin template JSONCommon() {
                 m.parse(json_value[name]);
             }
             else static if (is(type == enum)) {
-            TypeCase:
-                switch (json_value[name].str) {
-                    foreach (E; EnumMembers!type) {
-                        enum E_text = strip(E.stringof, `"`);
-                case E_text:
-                        m = E;
-                        break TypeCase;
+                if (json_value[name].type is JSON.JSONType.string) {
+                    switch (json_value[name].str) {
+                        foreach (E; EnumMembers!type) {
+                        case E.to!string:
+                            m = E;
+                            continue ParseLoop;
+                        }
+                    default:
+                        check(0, format("Illegal value of %s only %s supported not %s", name, [EnumMembers!type], json_value[name]
+                                .str));
                     }
-                default:
-                    string _EnumList() {
-                        string[] enum_list;
-                        static foreach (i, E; EnumMembers!type) {
-                            enum_list ~= E.stringof;
-                        }
-                        if (enum_list.length is 1)
-                        {
-                            return enum_list[0];
-                        }
-                        else {
-                            return format!("%s and %s")(enum_list[0 .. $ - 1].join(", "), enum_list[$ - 1]);
-                        }
-                    }
-
-                    enum EnumList = _EnumList;
-                    check(0, format("Illegal value of %s only %s supported not %s", name, EnumList, json_value[name]
-                            .str));
                 }
+                else static if (isIntegral!(BuiltinTypeOf!type)) {
+                    if (json_value[name].type is JSON.JSONType.integer) {
+                        const value = json_value[name].integer;
+                        switch (value) {
+                            foreach (E; EnumMembers!type) {
+                            case E:
+                                m = E;
+                                continue ParseLoop;
+                            }
+                        default:
+                            // Fail;
+
+                        }
+                    }
+                    check(0, format("Illegal value of %s only %s supported not %s", name, [EnumMembers!type], json_value[name].uinteger));
+                }
+                check(0, format("Illegal value of %s", name));
             }
             else static if (is(type == string)) {
                 m = json_value[name].str;
