@@ -28,14 +28,10 @@ import tagion.hibon.HiBONJSON;
 
 // This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
-    scope (exit) {
-        import std.exception : assumeWontThrow;
-
-        log("Scripting-Api script test stopped");
-        assumeWontThrow(ownerTid.send(Control.END));
-    }
-
     try {
+        scope (success) {
+            ownerTid.prioritySend(Control.END);
+        }
         log.register(task_name);
 
         uint current_epoch;

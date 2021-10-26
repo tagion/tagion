@@ -49,22 +49,16 @@ alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node,
         shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
     try {
+        scope (success) {
+            ownerTid.prioritySend(Control.END);
+        }
+
         setOptions(opts);
         immutable task_name = opts.dart.task_name;
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
         log("-----Start Dart service-----");
-        scope (success) {
-            log("------Stop Dart service-----");
-            ownerTid.prioritySend(Control.END);
-        }
-
-        scope (failure) {
-            log.fatal("------Error Stop Dart service-----");
-            ownerTid.prioritySend(Control.END);
-        }
-
         bool stop = false;
         void handleControl(Control ts) {
             with (Control) switch (ts) {

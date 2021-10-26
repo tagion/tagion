@@ -5,14 +5,14 @@ import std.datetime;
 import std.typecons;
 import std.conv;
 import std.format;
+import std.concurrency;
+import std.stdio;
 
 // import tagion.services.LoggerService;
 import tagion.services.Options;
 import tagion.basic.Logger;
-import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import tagion.basic.TagionExceptions : TagionException, taskException, fatal;
-import std.stdio;
 import tagion.services.MdnsDiscoveryService;
 
 import tagion.hibon.HiBON : HiBON;
@@ -26,9 +26,7 @@ import tagion.gossip.P2pGossipNet;
 void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
         immutable(Options) opts) nothrow { //TODO: for test
     try {
-        log("fileDiscoveryService");
-        scope (exit) {
-            log("exit");
+        scope (success) {
             ownerTid.prioritySend(Control.END);
         }
         string shared_storage = opts.path_to_shared_info;
@@ -123,7 +121,7 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
                         auto addr = doc["address"].get!string;
                         import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                        auto node_addr = NodeAddress(addr, opts);
+                        auto node_addr = NodeAddress(addr, opts.dart, opts.port_base);
                         node_addresses[pkey] = node_addr;
                         log("added %s", pkey);
                     }
@@ -175,6 +173,5 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
     }
     catch (Throwable t) {
         fatal(t);
-        //        ownerTid.send(t.taskException);
     }
 }

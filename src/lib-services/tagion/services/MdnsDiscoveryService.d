@@ -23,15 +23,14 @@ import tagion.gossip.P2pGossipNet;
 
 void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(Options) opts) nothrow { //TODO: for test
     try {
-        scope (exit) {
-            log("exit mdns discovery service");
+        scope (success) {
             ownerTid.prioritySend(Control.END);
         }
+        log.register(task_name);
 
         bool is_ready = false;
 
         p2plib.MdnsService discovery = node.startMdns("tagion_mdns", opts.discovery.interval.msecs);
-        log.register(task_name);
 
         log("Run mdns service");
         p2plib.MdnsNotifee notifee;
@@ -73,7 +72,7 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
         }
 
         void addOwnInfo() {
-            NodeAddress node_address = NodeAddress(node.LlistenAddress, opts);
+            NodeAddress node_address = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
             immutable pk = cast(immutable(ubyte)[])(node_address.id);
             node_addrses[cast(Pubkey) pk] = node_address;
         }
@@ -84,7 +83,7 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
             pragma(msg, "fixme(alex); 500.msecs shoud be an option parameter");
             receiveTimeout(500.msecs, (Response!(ControlCode.Control_PeerDiscovered) response) {
                 string address = cast(string) response.data;
-                NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts);
+                NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
                 immutable pk = cast(immutable(ubyte)[])(node_address.id);
                 node_addrses[cast(Pubkey) pk] = node_address;
                 // log("RECEIVED PEER %d", node_addrses.length);

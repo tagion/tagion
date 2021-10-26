@@ -112,7 +112,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                         auto addr = doc["address"].get!string;
                         import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                        auto node_addr = NodeAddress(addr, opts, true);
+                        auto node_addr = NodeAddress(addr, opts.dart, opts.port_base, true);
                         node_addresses[pkey] = node_addr;
                     }
                 }

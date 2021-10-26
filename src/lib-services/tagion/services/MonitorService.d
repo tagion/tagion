@@ -17,13 +17,11 @@ import tagion.basic.TagionExceptions;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceTask(immutable(Options) opts) nothrow {
-    scope (exit) {
-        import std.exception : assumeWontThrow;
-
-        log("In success of soc. port=%d th., flag %s:", opts.monitor.port, Control.END);
-        assumeWontThrow(ownerTid.send(Control.END));
-    }
     try {
+        scope (success) {
+            ownerTid.prioritySend(Control.END);
+        }
+
         // Set thread global options
         setOptions(opts);
         immutable task_name = opts.monitor.task_name;

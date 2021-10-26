@@ -37,6 +37,9 @@ in {
 }
 do {
     try {
+        scope (success) {
+            ownerTid.prioritySend(Control.END);
+        }
         setOptions(opts);
 
         immutable tast_name = opts.heartbeat.task_name;
@@ -76,7 +79,6 @@ do {
             }
             log("----- Stop send to all -----");
             log.close;
-            ownerTid.prioritySend(Control.END);
         }
 
         stderr.writeln("@@@@@ Before node loop");

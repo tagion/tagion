@@ -3,7 +3,6 @@ module tagion.services.TagionService;
 import std.concurrency;
 import std.exception : assumeUnique;
 
-//import std.stdio;
 import std.conv : to;
 import std.traits : hasMember;
 import core.thread;
@@ -27,10 +26,7 @@ import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 
-//import tagion.services.ScriptingEngineService;
 import tagion.basic.Logger;
-
-//import tagion.basic.TagionExceptions;
 
 import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.Basic : Pubkey, Buffer, Control;
@@ -42,115 +38,117 @@ import tagion.hibon.Document : Document;
 //     immutable uint N,
 //     string monitor_ip_address,
 //     const ushort monitor_port)  {
-void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_net) {
-    Options opts = args;
-    opts.node_name = node_task_name(opts);
-    log.register(opts.node_name);
-    opts.monitor.task_name = monitor_task_name(opts);
-    opts.transaction.task_name = transaction_task_name(opts);
-    opts.transcript.task_name = transcript_task_name(opts);
-    opts.transaction.service.task_name = transervice_task_name(opts);
-    setOptions(opts);
-
-    log("task_name=%s options.mode_name=%s", opts.node_task_name, options.node_name);
-
-    //    HRPC hrpc;
-    import std.datetime.systime;
-
-    Net net;
-    //    net=new Net(hashgraph);
-    net.derive("tagion_service", master_net);
-    //    hashgraph.gossip_net=net;
-    // Create hash-graph
-    auto hashgraph = new HashGraph(opts.nodes);
-
-    log("\n\n\n\n\n##### Received %s #####", opts.node_name);
-
-    Tid monitor_socket_tid;
-    Tid transaction_socket_tid;
-
-    scope (exit) {
-        log("!!!==========!!!!!! Existing %s", opts.node_name);
-
-        if (net.transcript_tid != net.transcript_tid.init) {
-            log("Send stop to %s", opts.transcript.task_name);
-            net.transcript_tid.send(Control.STOP);
-            receive((Control ctrl) {
-                if (ctrl is Control.END) {
-                    log("Closed monitor");
-                }
-                else {
-                    log.warning("Unexpected control code %s", ctrl);
-                }
-
-            }, (immutable(TaskFailure) t) { ownerTid.send(t); });
-        }
-
-        if (net.callbacks) {
-            net.callbacks.exiting(net.pubkey, hashgraph);
-        }
-
-        if (transaction_socket_tid != transaction_socket_tid.init) {
-            log("send stop to %s", opts.transaction.task_name);
-
-            transaction_socket_tid.send(Control.STOP);
-            receive((Control ctrl) {
-                if (ctrl is Control.END) {
-                    log("Closed monitor");
-                }
-                else {
-                    log.warning("Unexpected control code %s", ctrl);
-                }
-            }, (immutable(TaskFailure) t) { ownerTid.send(t); });
-        }
-
-        if (monitor_socket_tid != monitor_socket_tid.init) {
-            log("send stop to %s", opts.monitor.task_name);
-            monitor_socket_tid.send(Control.STOP);
-
-            receive((Control ctrl) {
-                if (ctrl is Control.END) {
-                    log("Closed monitor");
-                }
-                else {
-                    log.warning("Unexpected control code %s", ctrl);
-                }
-            }, (immutable(TaskFailure) t) { ownerTid.send(t); });
-        }
-
-        log("End");
-        ownerTid.send(Control.END);
-    }
-
-    // Pseudo passpharse
-    // immutable passphrase=opts.node_name;
-    // net.generateKeyPair(passphrase);
-
-    ownerTid.send(net.pubkey);
-    Pubkey[] received_pkeys;
-    foreach (i; 0 .. opts.nodes) {
-        received_pkeys ~= receiveOnly!(Pubkey);
-        log.trace("Receive %d %s", i, received_pkeys[i].cutHex);
-    }
-    immutable pkeys = assumeUnique(received_pkeys);
-
-    hashgraph.createNode(net.pubkey);
-    log("Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
-    //    stderr.writefln("@@@@ Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
-    foreach (i, p; pkeys) {
-        if ((p != net.pubkey) && hashgraph.createNode(p)) {
-            log("Create %d %s", i, p.cutHex);
-        }
-    }
+void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_net) nothrow {
     try {
+        scope (success) {
+            ownerTid.prioritySend(Control.END);
+        }
+
+        Options opts = args;
+        opts.node_name = node_task_name(opts);
+        log.register(opts.node_name);
+        opts.monitor.task_name = monitor_task_name(opts);
+        opts.transaction.task_name = transaction_task_name(opts);
+        opts.transcript.task_name = transcript_task_name(opts);
+        opts.transaction.service.task_name = transervice_task_name(opts);
+        setOptions(opts);
+
+        log("task_name=%s options.mode_name=%s", opts.node_task_name, options.node_name);
+
+        //    HRPC hrpc;
+        import std.datetime.systime;
+
+        Net net;
+        //    net=new Net(hashgraph);
+        net.derive("tagion_service", master_net);
+        //    hashgraph.gossip_net=net;
+        // Create hash-graph
+        auto hashgraph = new HashGraph(opts.nodes);
+
+        log("\n\n\n\n\n##### Received %s #####", opts.node_name);
+
+        Tid monitor_socket_tid;
+        Tid transaction_socket_tid;
+
+        scope (exit) {
+            log("!!!==========!!!!!! Existing %s", opts.node_name);
+
+            if (net.transcript_tid != net.transcript_tid.init) {
+                log("Send stop to %s", opts.transcript.task_name);
+                net.transcript_tid.send(Control.STOP);
+                receive((Control ctrl) {
+                        if (ctrl is Control.END) {
+                            log("Closed monitor");
+                        }
+                        else {
+                            log.warning("Unexpected control code %s", ctrl);
+                        }
+
+                    }, (immutable(TaskFailure) t) { ownerTid.send(t); });
+            }
+
+            if (net.callbacks) {
+                net.callbacks.exiting(net.pubkey, hashgraph);
+            }
+
+            if (transaction_socket_tid != transaction_socket_tid.init) {
+                log("send stop to %s", opts.transaction.task_name);
+
+                transaction_socket_tid.send(Control.STOP);
+                receive((Control ctrl) {
+                        if (ctrl is Control.END) {
+                            log("Closed monitor");
+                        }
+                        else {
+                            log.warning("Unexpected control code %s", ctrl);
+                        }
+                    }, (immutable(TaskFailure) t) { ownerTid.send(t); });
+            }
+
+            if (monitor_socket_tid != monitor_socket_tid.init) {
+                log("send stop to %s", opts.monitor.task_name);
+                monitor_socket_tid.send(Control.STOP);
+
+                receive((Control ctrl) {
+                        if (ctrl is Control.END) {
+                            log("Closed monitor");
+                        }
+                        else {
+                            log.warning("Unexpected control code %s", ctrl);
+                        }
+                    }, (immutable(TaskFailure) t) { ownerTid.send(t); });
+            }
+
+        }
+
+        // Pseudo passpharse
+        // immutable passphrase=opts.node_name;
+        // net.generateKeyPair(passphrase);
+
+        ownerTid.send(net.pubkey);
+        Pubkey[] received_pkeys;
+        foreach (i; 0 .. opts.nodes) {
+            received_pkeys ~= receiveOnly!(Pubkey);
+            log.trace("Receive %d %s", i, received_pkeys[i].cutHex);
+        }
+        immutable pkeys = assumeUnique(received_pkeys);
+
+        hashgraph.createNode(net.pubkey);
+        log("Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
+        //    stderr.writefln("@@@@ Ownkey %s num=%d", net.pubkey.cutHex, pkeys.length);
+        foreach (i, p; pkeys) {
+            if ((p != net.pubkey) && hashgraph.createNode(p)) {
+                log("Create %d %s", i, p.cutHex);
+            }
+        }
         // scope tids=new Tid[N];
         // getTids(tids);
         net.set(pkeys);
         if (((opts.node_id < opts.monitor.max) || (opts.monitor.max == 0))
-                && (opts.monitor.port >= opts.min_port)) {
+            && (opts.monitor.port >= opts.min_port)) {
             monitor_socket_tid = spawn(&monitorServiceTask, opts);
             Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id,
-                    net.globalNodeId(net.pubkey), opts.monitor.dataformat);
+                net.globalNodeId(net.pubkey), opts.monitor.dataformat);
 
             if (receiveOnly!Control is Control.LIVE) {
                 log("Monitor started");
@@ -189,7 +187,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         }
 
         Event.scriptcallbacks = new ScriptCallbacks(&transcriptServiceTask,
-                opts.transcript.task_name, opts.dart.task_name);
+            opts.transcript.task_name, opts.dart.task_name);
         scope (exit) {
             Event.scriptcallbacks.stop;
         }
@@ -225,7 +223,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             timeout_count = 0;
             net.time = net.time + 100;
             log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name,
-                    opts.node_id, doc.data.length);
+                opts.node_id, doc.data.length);
             net.receive(doc);
         }
 
@@ -244,7 +242,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     auto mother = own_node.event;
                     immutable mother_hash = mother.fingerprint;
                     immutable ebody = immutable(EventBody)(payload,
-                            mother_hash, null, net.time, mother.altitude + 1);
+                        mother_hash, null, net.time, mother.altitude + 1);
                     immutable epack = buildEventPackage(net, ebody);
                     event = hashgraph.registerEvent(epack);
                 }
@@ -277,13 +275,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
         void controller(Control ctrl) {
             with (Control) switch (ctrl) {
-            case STOP:
-                stop = true;
-                log("##### Stop %s", opts.node_name);
-                break;
-            default:
-                log.error("Unsupported control %s", ctrl);
-            }
+                case STOP:
+                    stop = true;
+                    log("##### Stop %s", opts.node_name);
+                    break;
+                default:
+                    log.error("Unsupported control %s", ctrl);
+                }
         }
 
         void _taskfailure(immutable(TaskFailure) t) {
@@ -295,9 +293,9 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
         static if (has_random_seed) {
             void sequential(uint time, uint random)
-            in {
-                assert(opts.sequential);
-            }
+                in {
+                    assert(opts.sequential);
+                }
             do {
                 net_random.random.seed(random);
                 net_random.time = time;
@@ -311,7 +309,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         while (!stop) {
             if (opts.sequential) {
                 immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload,
-                        &controller, &sequential, &receive_buffer, &_taskfailure,);
+                    &controller, &sequential, &receive_buffer, &_taskfailure,);
                 if (!message_received) {
                     log("TIME OUT");
                     timeout_count++;
@@ -322,7 +320,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
             else {
                 immutable message_received = receiveTimeout(opts.timeout.msecs,
-                        &receive_payload, &controller, &receive_buffer, &_taskfailure,);
+                    &receive_payload, &controller, &receive_buffer, &_taskfailure,);
                 if (!message_received) {
                     log("TIME OUT");
                     timeout_count++;

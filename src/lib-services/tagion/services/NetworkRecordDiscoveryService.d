@@ -7,6 +7,7 @@ import std.conv;
 import std.concurrency;
 import std.stdio;
 import std.array;
+import std.algorithm.iteration;
 
 import tagion.services.Options;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
@@ -30,12 +31,13 @@ import tagion.services.MdnsDiscoveryService;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hibon.HiBONJSON;
 import tagion.Keywords : NetworkMode;
-import tagion.basic.TagionExceptions : fatal, TagionException;
-import std.algorithm.iteration;
+import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 import tagion.crypto.SecureNet;
 
 void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
-        string task_name, immutable(Options) opts) {
+        string task_name, immutable(Options) opts) nothrow {
+    try {
+
     scope (exit) {
         log("exit");
         ownerTid.prioritySend(Control.END);
@@ -95,7 +97,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             foreach (archive; addresses_recorder[]) {
                 auto nnr = NetworkNodeRecord(archive.filed);
                 if (nnr.state == NetworkNodeRecord.State.ACTIVE) {
-                    auto node_addr = NodeAddress(nnr.address, opts, true);
+                    auto node_addr = NodeAddress(nnr.address, opts.dart, opts.port_base, true);
                     auto pk = cast(Pubkey) nnr.node;
                     node_addresses[pk] = node_addr;
                 }
@@ -278,4 +280,8 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         });
     }
     while (!stop);
+    }
+    catch (Throwable t) {
+        fatal(t);
+    }
 }

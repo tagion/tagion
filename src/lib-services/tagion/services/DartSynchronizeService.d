@@ -75,22 +75,17 @@ struct ServiceState(T) {
 }
 
 void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
-        shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) {
+        shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
     try {
+        scope (success) {
+            ownerTid.prioritySend(Control.END);
+        }
         const task_name = opts.dart.sync.task_name;
         log.register(task_name);
 
         auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING);
         auto pid = opts.dart.sync.protocol_id;
         log("-----Start Dart Sync service-----");
-        scope (success) {
-            log("------Stop Dart Sync service-----");
-            ownerTid.prioritySend(Control.END);
-        }
-        scope (failure) {
-            log.fatal("------Error Stop Dart Sync service-----");
-            ownerTid.prioritySend(Control.END);
-        }
         version (unittest) {
             immutable filename = opts.dart.path.length == 0
                 ? fileId!(DART)(opts.dart.name).fullpath : opts.dart.path;

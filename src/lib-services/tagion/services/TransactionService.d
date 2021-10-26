@@ -38,6 +38,10 @@ import tagion.dart.Recorder : RecordFactory;
 
 void transactionServiceTask(immutable(Options) opts) nothrow {
     try {
+        scope (success) {
+            ownerTid.prioritySend(Control.END);
+        }
+
         // Set thread global options
         setOptions(opts);
         immutable task_name = opts.transaction.task_name;
@@ -208,9 +212,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         auto relay = new TransactionRelay;
         SSLServiceAPI script_api = SSLServiceAPI(opts.transaction.service, relay);
         auto script_thread = script_api.start;
-        scope (success) {
-            ownerTid.send(Control.END);
-        }
 
         bool stop;
         void handleState(Control ts) {
