@@ -12,8 +12,9 @@ import std.typecons;
 // import tagion.gossip.revision;
 // import tagion.gossip.GossipNet;
 pragma(msg, "fixme(cbr): Eliminated dependency of Services Options");
-import tagion.services.Options;
+//import tagion.services.Options;
 import tagion.options.HostOptions;
+import tagion.dart.DARTOptions;
 
 import tagion.basic.Basic: EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control;
 
@@ -270,7 +271,7 @@ struct NodeAddress {
     string id;
     uint port;
     DART.SectorRange sector;
-    this(string address, immutable Options opts, bool marshal = false) {
+    this(string address, immutable(DARTOptions) dart_opts, const ulong port_base,  bool marshal = false) {
         import std.string;
 
         try {
@@ -281,14 +282,14 @@ struct NodeAddress {
                 auto tcpIndex = address.indexOf(tcp_token) + tcp_token.length;
                 this.port = to!uint(address[tcpIndex .. tcpIndex + 4]);
 
-                const node_number = this.port - opts.port_base;
-                if (this.port >= opts.dart.sync.maxSlavePort) {
-                    sector = DART.SectorRange(opts.dart.sync.netFromAng, opts.dart.sync.netToAng);
+                const node_number = this.port - port_base;
+                if (this.port >= dart_opts.sync.maxSlavePort) {
+                    sector = DART.SectorRange(dart_opts.sync.netFromAng, dart_opts.sync.netToAng);
                 }
                 else {
-                    const max_sync_node_count = opts.dart.sync.master_angle_from_port
-                        ? opts.dart.sync.maxSlaves : opts.dart.sync.maxMasters;
-                    auto ang_range = calcAngleRange(opts, node_number, max_sync_node_count);
+                    const max_sync_node_count = dart_opts.sync.master_angle_from_port
+                        ? dart_opts.sync.maxSlaves : dart_opts.sync.maxMasters;
+                    auto ang_range = calcAngleRange(dart_opts, node_number, max_sync_node_count);
 
                     sector = DART.SectorRange(ang_range[0], ang_range[1]);
                 }
@@ -309,12 +310,12 @@ struct NodeAddress {
         }
     }
 
-    static Tuple!(ushort, ushort) calcAngleRange(immutable(Options) opts, const ulong node_number, const ulong max_nodes) {
+    static Tuple!(ushort, ushort) calcAngleRange(immutable(DARTOptions) dart_opts, const ulong node_number, const ulong max_nodes) {
         import std.math: ceil, floor;
 
-        float delta = (cast(float)(opts.dart.sync.netToAng - opts.dart.sync.netFromAng)) / max_nodes;
-        auto from_ang = to!ushort(opts.dart.from_ang + floor(node_number * delta));
-        auto to_ang = to!ushort(opts.dart.from_ang + floor((node_number + 1) * delta));
+        float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
+        auto from_ang = to!ushort(dart_opts.from_ang + floor(node_number * delta));
+        auto to_ang = to!ushort(dart_opts.from_ang + floor((node_number + 1) * delta));
         return tuple(from_ang, to_ang);
     }
 

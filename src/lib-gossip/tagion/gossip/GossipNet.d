@@ -6,7 +6,6 @@ import std.exception: assumeUnique;
 import std.string: representation;
 import core.time: MonoTime;
 
-//import tagion.Options;
 import tagion.basic.Basic: Pubkey;
 
 //import tagion.basic.ConsensusExceptions : convertEnum;
