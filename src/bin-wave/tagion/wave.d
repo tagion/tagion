@@ -10,12 +10,12 @@ import std.array : join;
 import tagion.basic.Basic : Control;
 import tagion.services.Options;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.services.HeartBeatService;
+//import tagion.services.HeartBeatService;
 import tagion.services.P2pTagionService;
 import tagion.services.LoggerService;
 import tagion.basic.Logger;
 import tagion.GlobalSignals;
-import tagion.Keywords: NetworkMode, ValidNetwrokModes;
+//import tagion.Keywords: NetworkMode, ValidNetwrokModes;
 import tagion.services.TagionFactory;
 pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
 // import tagion.revision;
@@ -128,8 +128,6 @@ int main(string[] args) {
 
 //    Control response;
     Tid tagion_service_tid = spawn(&tagionServiceWrapper, service_options);
-
-
     scope(exit){
         tagion_service_tid.send(Control.STOP);
         auto respond_control = receiveOnly!Control;
