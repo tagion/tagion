@@ -24,94 +24,28 @@ enum main_task="tagionwave";
 
 /// Creates ssl certificate if it doesn't exist
 void create_ssl(const(Options.OpenSSL) openssl) {
-    import std.algorithm.iteration :each, cache, map;
-    import std.range : only, chain;
+    import std.algorithm.iteration :each;
     import std.file : exists, mkdirRecurse ;
-    import std.stdio : File;
-    import std.process : execute, Config, pipeProcess, wait, Redirect;
-    import std.array : array, join;
+    import std.process : pipeProcess, wait, Redirect;
+    import std.array : array;
     import std.path : dirName;
-    // writefln(" tmpfile =%s", deleteme);
-    // writefln(" tmpfile =%s", deleteme);
     if (!openssl.certificate.exists || !openssl.private_key.exists) {
-        // auto fout = deleteme.File("w");
-        // scope(exit) {
-        //     fout.close;
-        // }
-        // scope(exit) {
-        //     deleteme.remove;
-        // }
-
-//        openssl.config.each!(a => fout.writeln(a)); //.cache.each!(write);
-//        writefln("config %s", openssl.config);
-        openssl.command.each!(writeln);
-        writefln("%s", openssl.command);
-        // sendmail expects to read from stdin
-        // auto pipes = pipeProcess([
-        //         "openssl", "req", "-newkey",
-        //         "rsa:2048", "-nodes", "-keyout", "key.pem", "-x509", "-days",  "365", "-out", "certificate.pem"]);
-//        writefln("path %s", openssl.certificate.dirName);
         openssl.certificate.dirName.mkdirRecurse;
         openssl.private_key.dirName.mkdirRecurse;
-        //      try {
         auto pipes = pipeProcess(openssl.command.array);
-                // "openssl", "req", "-newkey",
-                // "rsa:2048", "-nodes", "-keyout", "key.pem", "-x509", "-days",  "365", "-out", "certificate.pem"]);
-//            openssl.command.cache);
-        ///bin/locate", "openssl"]);
-//        auto pipes = pipeProcess(openssl.command.join(" "));
         scope(exit) {
             wait(pipes.pid);
         }
         openssl.config.each!(a => pipes.stdin.writeln(a));
-        // foreach(s; openssl.config) {
-        //     pipes.stdin.writeln(s);
-        // }
         pipes.stdin.writeln(".");
-
-
         pipes.stdin.flush;
-        bool error;
-
         foreach(s; pipes.stderr.byLine) {
             stderr.writeln(s);
-            error = true;
         }
         foreach(s; pipes.stdout.byLine) {
             writeln(s);
         }
         assert (openssl.certificate.exists && openssl.private_key.exists);
-        // }
-        // catch (Exception e) {
-        //     writeln(e);
-        //     writeln("####### - ########");
-        //     assert(0);
-        // }
-        // pragma(msg, typeof(pipes.stderr.byLine));
-        // if (!pipes.stderr.byLine.length) {
-        //     assert(0);
-//        }
-        //openssl.config.each!(pipes.stdin.writeln);
-        // pipes.stdin.writeln("To: you");
-        // pipes.stdin.writeln("From: me");
-        // pipes.stdin.writeln("Subject: dlang");
-        // pipes.stdin.writeln("");
-        // pipes.stdin.writeln(message);
-        /+
-        scope openssl_log=execute(
-            chain(
-                openssl.command,
-                only(
-                ).array,
-            null, Config.none, uint.max,
-            tempDir);
-        openssl_log.writeln;
-        +/
-//        writefln("config %s", openssl.command);
-
-        //openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
-        //openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
-//        assert(!error);
     }
 }
 
