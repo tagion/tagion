@@ -118,6 +118,49 @@ struct Options {
 
     Heatbeat heartbeat;
 
+
+    struct OpenSSL {
+        string certificate; /// Certificate file name
+        string private_key; /// Private key
+        uint key_size;      /// Key size (RSA 1024,2048,4096)
+        uint days;          /// Number of days the certificate is valid
+        string country;     /// Country Name two letters
+        string state;       /// State or Province Name (full name)
+        string city;        /// Locality Name (eg, city)
+        string organisation; /// Organization Name (eg, company)
+        string unit;        /// Organizational Unit Name (eg, section)
+        string name;        /// Common Name (e.g. server FQDN or YOUR name)
+        string email;       /// Email Address
+        import std.range : zip, repeat, only;
+        auto config() const pure nothrow @nogc {
+            return only(
+                country,
+                state,
+                city,
+                organisation,
+                name,
+                email);
+//                "\n".repeat);
+
+        }
+        auto command() const pure {
+            return only(
+                "openssl",
+                "req",
+                "-newkey",
+                format!"rsa:%d"(key_size),
+                "-nodes",
+                "-keyout",
+                private_key,
+                "-x509",
+                "-days",
+                days.to!string,
+                "-out",
+                certificate);
+        }
+        mixin JSONCommon;
+    }
+
     struct SSLService {
         string task_name; /// Task name of the SSLService used
         string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
@@ -129,24 +172,11 @@ struct Options {
 
         uint max_connections; /// Max simultanious connections for the scripting engine
 
-        //        uint   max_number_of_accept_fibers;        /// Max simultanious fibers for accepting incomming SSL connections.
-
-        //        uint   min_duration_full_fibers_cycle_ms; /// Min duration between a full call cycle for all fibers in milliseconds;
-
-        //        uint   max_number_of_fiber_reuse;   /// Number of times to reuse a fiber
-
-        //        uint min_number_of_fibers;
-        //        uint min_duration_for_accept_ms;
         uint select_timeout; /// Select timeout in ms
-        string certificate; /// Certificate file name
-        string private_key; /// Private key
+        // string certificate; /// Certificate file name
+        // string private_key; /// Private key
         uint client_timeout; /// Client timeout
-        // string name;
-        // uint max_accept_call_tries() const pure {
-        //     const tries = min_duration_for_accept_ms / min_duration_full_fibers_cycle_ms;
-        //     return tries > 1 ? tries : 2;
-        // }
-
+        OpenSSL openssl;     ///
         mixin JSONCommon;
     }
 
@@ -459,8 +489,12 @@ static setDefaultOption(ref Options options) {
             //            max_number_of_fiber_reuse = 1000;
             //            min_number_of_fibers = 10;
             //            min_duration_for_accept_ms = 3000;
-            certificate = "pem_files/domain.pem";
-            private_key = "pem_files/domain.key.pem";
+            with(openssl) {
+                certificate = "pem_files/domain.pem";
+                private_key = "pem_files/domain.key.pem";
+                days = 365;
+                key_size = 4096;
+            }
             task_name = "transaction.service";
         }
         with (host) {
