@@ -50,9 +50,9 @@ struct SSLServiceAPI {
             log.register(ssl_options.task_name);
             auto _listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
             assert(_listener.isAlive);
-            log("certificate=%s, ssl_options.private_key=%s", ssl_options.certificate, ssl_options
+            log("certificate=%s, ssl_options.private_key=%s", ssl_options.openssl.certificate, ssl_options.openssl
                     .private_key);
-            _listener.configureContext(ssl_options.certificate, ssl_options.private_key);
+            _listener.configureContext(ssl_options.openssl.certificate, ssl_options.openssl.private_key);
             //_listener.configureContext(ssl_options.certificate, ssl_options.private_key);
             _listener.blocking = false;
             _listener.bind(new InternetAddress(ssl_options.address, ssl_options.port));
