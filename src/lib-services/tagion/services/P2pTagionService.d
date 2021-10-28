@@ -30,7 +30,7 @@ import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.ServiceNames : get_node_name;
+import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import tagion.services.DartSynchronizeService;
 import tagion.dart.DARTSynchronization;
@@ -418,7 +418,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         void receive_wavefront(const Document doc) {
             timeout_count = 0;
             log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name,
-                opts.node_id, doc.data.length);
+                opts.common.node_id, doc.data.length);
             const receiver = HiRPC.Receiver(doc);
             hashgraph.wavefront(receiver, gossip_net.time,
                 (const(HiRPC.Sender) return_wavefront) @safe {

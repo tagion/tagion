@@ -21,7 +21,7 @@ import tagion.services.EpochDebugService;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 import tagion.monitor.Monitor;
-import tagion.ServiceNames;
+import tagion.options.ServiceNames;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
@@ -47,10 +47,10 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         Options opts = args;
         opts.node_name = node_task_name(opts);
         log.register(opts.node_name);
-        opts.monitor.task_name = monitor_task_name(opts);
-        opts.transaction.task_name = transaction_task_name(opts);
-        opts.transcript.task_name = transcript_task_name(opts);
-        opts.transaction.service.task_name = transervice_task_name(opts);
+        opts.monitor.task_name = task_name(opts.monitor.task_name, opts);
+        opts.transaction.task_name = task_name(opts.transaction.task_name, opts);
+        opts.transcript.task_name = task_name(opts.transcript.task_name, opts);
+        opts.transaction.service.task_name = task_name(opts.transaction.service.task_name, opts);
         setOptions(opts);
 
         log("task_name=%s options.mode_name=%s", opts.node_task_name, options.node_name);

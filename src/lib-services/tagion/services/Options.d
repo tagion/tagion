@@ -59,11 +59,8 @@ struct Options {
 
     //bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
 
-    string separator; /// Name separator
-    string nodeprefix; /// Node name prefix used in emulator mode to set the node name and generate keypairs
     string logext; /// logfile extension
     string path_arg; /// Search path
-    uint node_id; /// This is use to set the node_id in emulator mode in normal node this is allways 0
     string node_name; /// Name of the node
     string ip;
     ulong port;
@@ -74,7 +71,12 @@ struct Options {
     uint scrap_depth;
 
     NetworkMode net_mode;
+    import tagion.options.CommonOptions;
+    CommonOptions common;
+
     mixin JSONCommon;
+
+
 
     struct HostBootstrap {
         bool enabled;
@@ -195,7 +197,9 @@ struct Options {
         mixin JSONCommon;
     }
 
-    Transcript transcript;
+    import tagion.script.TranscriptOptions;
+
+    TranscriptOptions transcript;
 
     struct Monitor {
         string task_name; /// Use for the montor task name
@@ -349,7 +353,6 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         std.getopt.config.bundling,
         "version",   "display the version",     &version_switch,
         "overwrite|O", "Overwrite the config file", &overwrite_switch,
-//        "transcript-enable|T", format("Transcript test enable: default: %s", options.transcript.enable), &(options.transcript.enable),
         "transaction-max|D",    format("Transaction max = 0 means all nodes: default %d", options.transaction.max),  &(options.transaction.max),
         "ip", "Host ip", &(options.ip),
         "port", "Host port", &(options.port),
@@ -413,7 +416,6 @@ static setDefaultOption(ref Options options) {
     // Main
 
     with (options) {
-        nodeprefix = "Node";
         ip = "0.0.0.0";
         port = 4001;
         port_base = 4000;
@@ -430,7 +432,6 @@ static setDefaultOption(ref Options options) {
         //disable_sockets=false;
         tmp = "/tmp/";
         stdout = "/dev/tty";
-        separator = "_";
         //  s.network_socket_port =11900;
         //        sequential=false;
         min_port = 6000;
@@ -439,6 +440,10 @@ static setDefaultOption(ref Options options) {
         with (host) {
             timeout = 3000;
             max_size = 1024 * 100;
+        }
+        with (common) {
+            nodeprefix = "Node";
+            separator = "_";
         }
     }
 
@@ -462,8 +467,7 @@ static setDefaultOption(ref Options options) {
     with (options.transcript) {
         pause_from = 333;
         pause_to = 888;
-        prefix = "transcript";
-        task_name = prefix;
+        task_name = "transcript";
     }
     // Transaction
     with (options.transaction) {

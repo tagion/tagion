@@ -17,7 +17,7 @@ import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.ServiceNames : get_node_name;
+import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
 import tagion.services.DartService;
@@ -51,7 +51,7 @@ void tagionServiceWrapper(Options opts) {
             const is_master_node = i == 0;
             Options service_options = opts;
 
-            service_options.node_id = cast(uint) i;
+            service_options.common.node_id = cast(uint) i;
             auto local_port = opts.port_base + i;
             service_options.dart.initialize = true;
             if (is_master_node) {
@@ -101,7 +101,7 @@ void tagionServiceWrapper(Options opts) {
                 service_options.transaction.service.port = cast(ushort)(
                         opts.transaction.service.port + i);
             }
-            service_options.node_name = get_node_name(service_options, i);
+            service_options.node_name = get_node_name(service_options.common, i);
             node_opts ~= service_options;
         }
         log("options configurated");
