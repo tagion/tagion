@@ -29,7 +29,7 @@ import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
-import tagion.ServiceNames: get_node_name;
+import tagion.services.ServiceNames: get_node_name;
 
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;

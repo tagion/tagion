@@ -36,7 +36,6 @@ import tagion.hashgraph.HashGraphBasic: convertState, ExchangeState;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
-import tagion.ServiceNames: get_node_name;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 //import tagion.services.MdnsDiscoveryService;
