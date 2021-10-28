@@ -45,7 +45,7 @@ struct ListenerSocket {
         if (task_name) {
             masterTid = locate(task_name);
         }
-        listen_task_name = [task_name, port.to!string].join(opts.separator);
+        listen_task_name = [task_name, port.to!string].join(opts.common.separator);
 
         //        log.label(task_name);
         //        log.register(task_name);
