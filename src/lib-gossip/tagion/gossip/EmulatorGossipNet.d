@@ -29,7 +29,7 @@ import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
-import tagion.services.ServiceNames: get_node_name;
+import tagion.options.ServiceNames: get_node_name;
 
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
@@ -45,7 +45,7 @@ static uint getTids(Tid[] tids) {
     uint result = uint.max;
     foreach (i, ref tid; tids) {
         immutable uint_i = cast(uint) i;
-        immutable taskname = get_node_name(*options, uint_i);
+        immutable taskname = get_node_name(options.common, uint_i);
         tid = locate(taskname);
         if (tid == thisTid) {
             result = uint_i;
@@ -59,8 +59,8 @@ class EmulatorGossipNet : GossipNet {
     private uint node_counter = 0;
     private Duration duration;
     @trusted
-    static Tid getTidByNodeNumber(uint i) {
-        immutable taskname = get_node_name(*options, i);
+    static Tid getTidByNodeNumber(const uint i) {
+        immutable taskname = get_node_name(options.common, i);
         log("trying to locate: %s", taskname);
         auto tid = locate(taskname);
         return tid;
