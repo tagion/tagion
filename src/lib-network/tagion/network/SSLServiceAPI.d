@@ -6,16 +6,18 @@ import std.stdio: writeln, writefln, stdout;
 import std.socket: InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
 import std.concurrency;
 
-import tagion.services.Options;
+//import tagion.services.Options;
 import tagion.network.SSLSocket;
 import tagion.network.SSLFiberService;
+import tagion.network.SSLOptions;
+
 import tagion.basic.Logger;
 import tagion.basic.Basic: Control;
 import tagion.basic.TagionExceptions: TagionException, fatal;
 
 @safe
 struct SSLServiceAPI {
-    immutable(Options.SSLService) ssl_options;
+    immutable(SSLOption) ssl_options;
     protected {
         Thread service_task;
         SSLFiberService.Relay relay;
@@ -24,7 +26,7 @@ struct SSLServiceAPI {
 
     @disable this();
 
-    this(immutable(Options.SSLService) opts, SSLFiberService.Relay relay) nothrow pure @trusted {
+    this(immutable(SSLOption) opts, SSLFiberService.Relay relay) nothrow pure @trusted {
         this.ssl_options = opts;
         this.relay = relay;
     }
@@ -39,10 +41,6 @@ struct SSLServiceAPI {
     final void stop() nothrow {
         stop_service = true;
     }
-
-    // SSLFiberService fiberService(immutable(Options.SSLService) opts, SSLSocket listener, const HiRPC hirpc) {
-    //     return new SSLFiberService(opts, listener, hirpc);
-    // }
 
     @system
     void run() nothrow {

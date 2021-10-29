@@ -7,22 +7,14 @@ import std.format;
 import core.thread;
 import std.array: join;
 import std.conv: to;
+import std.bitmanip: binwrite = write;
 
 import tagion.basic.Basic: Buffer;
-import tagion.basic.TagionExceptions: TagionException, Check, taskException;
 import tagion.services.Options: Options, setOptions, options;
 import tagion.hibon.Document;
 import tagion.basic.Logger;
-import std.bitmanip: binwrite = write;
-
-@safe
-class SocketMaxDataSize : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
-
-alias check = Check!SocketMaxDataSize;
+import tagion.network.NetworkExceptions;
+import tagion.basic.TagionExceptions: TagionException, taskException;
 
 struct ListenerSocket {
     immutable ushort port;
