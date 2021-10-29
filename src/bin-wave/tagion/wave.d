@@ -8,22 +8,23 @@ import std.concurrency;
 import std.array : join;
 
 import tagion.basic.Basic : Control;
+import tagion.basic.Logger;
 import tagion.services.Options;
-import tagion.gossip.EmulatorGossipNet;
 //import tagion.services.HeartBeatService;
 import tagion.services.P2pTagionService;
 import tagion.services.LoggerService;
-import tagion.basic.Logger;
-import tagion.GlobalSignals;
-//import tagion.Keywords: NetworkMode, ValidNetwrokModes;
 import tagion.services.TagionFactory;
+import tagion.GlobalSignals;
+import tagion.network.SSLOptions;
+import tagion.gossip.EmulatorGossipNet;
+//import tagion.Keywords: NetworkMode, ValidNetwrokModes;
 pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
 // import tagion.revision;
 
 enum main_task="tagionwave";
 
 /// Creates ssl certificate if it doesn't exist
-void create_ssl(const(Options.OpenSSL) openssl) {
+void create_ssl(const(OpenSSL) openssl) {
     import std.algorithm.iteration :each;
     import std.file : exists, mkdirRecurse ;
     import std.process : pipeProcess, wait, Redirect;
