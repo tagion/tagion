@@ -1,4 +1,4 @@
-module tagion.services.DartService;
+module tagion.services.DARTService;
 
 import core.thread;
 import std.concurrency;
@@ -37,7 +37,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HandlerPool;
 
 import tagion.communication.HiRPC;
-import tagion.services.DartSynchronizeService;
+import tagion.services.DARTSynchronizeService;
 
 //import tagion.services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
@@ -58,7 +58,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
-        log("-----Start Dart service-----");
+        log("-----Start DART service-----");
         bool stop = false;
         void handleControl(Control ts) {
             with (Control) switch (ts) {
@@ -157,7 +157,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     send(dstid, task_name, request_data); //TODO: => handle for the bullseye from dart
                 }
                 else {
-                    log("Cannot locate Dart synchronize service");
+                    log("Cannot locate DART synchronize service");
                 }
             }, (Buffer data, bool flag) {
                 auto doc = Document(data);
@@ -181,7 +181,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
 
                 const method = message_doc[Keywords.method].get!string;
 
-                void readDart() {
+                void readDART() {
                     scope doc_fingerprints = receiver.method.params[DARTFile.Params.fingerprints].get!(
                         Document);
                     scope fingerprints = doc_fingerprints.range!(Buffer[]);
@@ -250,7 +250,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     }
                 }
 
-                void modifyDart() { //TODO: not implemented yet
+                void modifyDART() { //TODO: not implemented yet
                     //HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
                     auto mrh = cast(ResponseHandler)(new ModifyRequestHandler(hirpc,
                         taskName, receiver));
@@ -259,10 +259,10 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                 }
 
                 if (method == DART.Quries.dartRead) {
-                    readDart();
+                    readDART();
                 }
                 else if (method == DART.Quries.dartModify) {
-                    modifyDart();
+                    modifyDART();
                 }
             }, (NodeAddress[string] update) { node_addrses = update; }, // (immutable(TagionException) e) {
                     //     stop=true;

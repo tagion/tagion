@@ -56,7 +56,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                 dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
             }
             else {
-                log.error("Cannot locate Dart service");
+                log.error("Cannot locate DART service");
                 stop = true;
             }
         }

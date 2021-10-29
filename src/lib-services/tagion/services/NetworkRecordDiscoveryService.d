@@ -51,7 +51,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
     auto rec_factory = RecordFactory(net);
     log("net created");
-    RecordFactory.Recorder loadFromDart(Buffer[] fp) {
+    RecordFactory.Recorder loadFromDART(Buffer[] fp) {
         try {
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if (dart_sync_tid != Tid.init) {
@@ -83,16 +83,16 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
     immutable(NodeAddress[Pubkey]) request_addr_table() {
         log("start: request_addr_table");
         const addr_table_fp = net.calcHash(cast(Buffer) ADDR_TABLE);
-        auto addr_table_recorder = loadFromDart([addr_table_fp]);
+        auto addr_table_recorder = loadFromDART([addr_table_fp]);
         if (addr_table_recorder.length > 0) {
             assert(addr_table_recorder.length == 1);
             auto ncl = NetworkNameCard(addr_table_recorder[].front.filed);
-            auto ncr_recorder = loadFromDart([ncl.record]);
+            auto ncr_recorder = loadFromDART([ncl.record]);
             assert(ncr_recorder.length == 1);
             const prev_ncr = NetworkNameRecord(ncr_recorder[].front.filed);
             auto range = prev_ncr.payload[];
             auto active_pubkeys = range.map!(a => cast(Buffer) net.calcHash(a.get!Buffer));
-            const addresses_recorder = loadFromDart(active_pubkeys.array);
+            const addresses_recorder = loadFromDART(active_pubkeys.array);
             NodeAddress[Pubkey] node_addresses;
             foreach (archive; addresses_recorder[]) {
                 auto nnr = NetworkNodeRecord(archive.filed);
@@ -131,7 +131,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
         const addr_table_fp = net.calcHash(cast(Buffer) ADDR_TABLE);
 
-        auto addr_table_recorder = loadFromDart([addr_table_fp]);
+        auto addr_table_recorder = loadFromDART([addr_table_fp]);
 
         auto insert_recorder = rec_factory.recorder;
         auto remove_recorder = rec_factory.recorder;
@@ -147,7 +147,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             assert(addr_table_recorder.length == 1);
             ncl = NetworkNameCard(addr_table_recorder[].front.filed);
             remove_recorder.remove(Document(ncl.toHiBON.serialize));
-            auto ncr_recorder = loadFromDart([ncl.record]);
+            auto ncr_recorder = loadFromDART([ncl.record]);
             if (ncr_recorder.length != 0) {
                 assert(ncr_recorder.length == 1);
                 const prev_ncr = NetworkNameRecord(ncr_recorder[].front.filed);
@@ -163,7 +163,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         /// Removing previous node addresses
         pragma(msg,
                 "fixme(Alex) Why not just use the maps range instead of copying the keys to an array");
-        const prev_addresses_recorder = loadFromDart(node_addresses.keys.map!(
+        const prev_addresses_recorder = loadFromDART(node_addresses.keys.map!(
                 a => cast(Buffer) net.calcHash(cast(Buffer) a)).array);
         if (prev_addresses_recorder.length > 0) {
             foreach (archive; prev_addresses_recorder[]) {
@@ -185,7 +185,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         }
         insert_recorder.add(Document(ncr.toHiBON.serialize));
         insert_recorder.add(Document(ncl.toHiBON.serialize));
-        void updateDart(RecordFactory.Recorder recorder) {
+        void updateDART(RecordFactory.Recorder recorder) {
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if (dart_sync_tid != Tid.init) {
                 log("modifying dart with: %d archives", recorder.length);
@@ -202,8 +202,8 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             }
         }
 
-        updateDart(remove_recorder);
-        updateDart(insert_recorder);
+        updateDART(remove_recorder);
+        updateDART(insert_recorder);
     }
 
     auto is_ready = false;

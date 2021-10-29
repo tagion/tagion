@@ -20,8 +20,8 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
-import tagion.services.DartService;
-import tagion.services.DartSynchronizeService;
+import tagion.services.DARTService;
+import tagion.services.DARTSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 

@@ -1,4 +1,4 @@
-module tagion.services.DartSynchronizeService;
+module tagion.services.DARTSynchronizeService;
 
 import core.thread;
 import std.concurrency;
@@ -44,7 +44,7 @@ import tagion.basic.TagionExceptions;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-enum DartSynchronizeState {
+enum DARTSynchronizeState {
     WAITING = 1,
     SYNCHRONIZING = 2,
     REPLAYING_JOURNALS = 3,
@@ -83,9 +83,9 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
         const task_name = opts.dart.sync.task_name;
         log.register(task_name);
 
-        auto state = ServiceState!DartSynchronizeState(DartSynchronizeState.WAITING);
+        auto state = ServiceState!DARTSynchronizeState(DARTSynchronizeState.WAITING);
         auto pid = opts.dart.sync.protocol_id;
-        log("-----Start Dart Sync service-----");
+        log("-----Start DART Sync service-----");
         version (unittest) {
             immutable filename = opts.dart.path.length == 0
                 ? fileId!(DART)(opts.dart.name).fullpath : opts.dart.path;
@@ -97,7 +97,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
             enum BLOCK_SIZE = 0x80;
             BlockFile.create(filename, DARTFile.stringof, BLOCK_SIZE);
         }
-        log("Dart file created with filename: %s", filename);
+        log("DART file created with filename: %s", filename);
 
         auto net = new Net();
         net.derive(task_name, master_net);
@@ -146,7 +146,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
                 opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, opts.port, node,
                 connectionPool, opts.dart, net.pubkey);
-        auto syncPool = new DartSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
+        auto syncPool = new DARTSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
                 journalReplayFiber, opts.dart);
         bool request_handling = false;
         // auto discoveryTid = spawn(&mdnsDiscoveryService, node, opts);
@@ -159,10 +159,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
         }
         log("SYNC: %s", opts.dart.synchronize);
         if (opts.dart.synchronize) {
-            state.setState(DartSynchronizeState.WAITING);
+            state.setState(DARTSynchronizeState.WAITING);
         }
         else {
-            state.setState(DartSynchronizeState.READY);
+            state.setState(DARTSynchronizeState.READY);
         }
 
         auto hrpc = HiRPC(net);
@@ -173,8 +173,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
         log("send live");
         ownerTid.send(Control.LIVE);
         while (!stop) {
-            const tick_timeout = state.checkState(DartSynchronizeState.REPLAYING_JOURNALS,
-                    DartSynchronizeState.REPLAYING_RECORDERS)
+            const tick_timeout = state.checkState(DARTSynchronizeState.REPLAYING_JOURNALS,
+                    DARTSynchronizeState.REPLAYING_RECORDERS)
                 ? opts.dart.sync.replay_tick_timeout.msecs : opts.dart.sync.tick_timeout.msecs;
             receiveTimeout(tick_timeout, &handleControl,
                     (immutable(RecordFactory.Recorder) recorder) {
@@ -215,10 +215,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
                     // log("DSS: Sended response to connection: %s", resp.key);
                 }
 
-                if (received.isMethod && state.checkState(DartSynchronizeState.READY)) { //TODO: to switch
+                if (received.isMethod && state.checkState(DARTSynchronizeState.READY)) { //TODO: to switch
                     serverHandler();
                 }
-                else if (!received.isMethod && state.checkState(DartSynchronizeState.SYNCHRONIZING)) {
+                else if (!received.isMethod && state.checkState(DARTSynchronizeState.SYNCHRONIZING)) {
                     syncPool.setResponse(resp);
                 }
                 else {
@@ -315,21 +315,21 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
                     if (node_addrses.length > 0 && syncPool.isReady) {
                         sync_factory.setNodeTable(node_addrses);
                         syncPool.start(sync_factory);
-                        state.setState(DartSynchronizeState.SYNCHRONIZING);
+                        state.setState(DARTSynchronizeState.SYNCHRONIZING);
                     }
                     if (syncPool.isOver) {
                         syncPool.stop;
                         // log("Start replay journals with: %d journals", journalReplayFiber.count);
-                        state.setState(DartSynchronizeState.REPLAYING_JOURNALS);
+                        state.setState(DARTSynchronizeState.REPLAYING_JOURNALS);
                     }
                     if (syncPool.isError) {
                         log("Error handling");
                         sync_factory.setNodeTable(node_addrses);
                         syncPool.start(sync_factory);
-                        state.setState(DartSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
+                        state.setState(DARTSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
                     }
                 }
-                if (state.checkState(DartSynchronizeState.REPLAYING_JOURNALS)) {
+                if (state.checkState(DARTSynchronizeState.REPLAYING_JOURNALS)) {
                     if (!journalReplayFiber.isOver) {
                         journalReplayFiber.execute;
                     }
@@ -337,10 +337,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
                         journalReplayFiber.clear();
                         // log("Start replay recorders with: %d recorders", recorders.length);
                         connectionPool.closeAll();
-                        state.setState(DartSynchronizeState.REPLAYING_RECORDERS);
+                        state.setState(DARTSynchronizeState.REPLAYING_RECORDERS);
                     }
                 }
-                if (state.checkState(DartSynchronizeState.REPLAYING_RECORDERS)) {
+                if (state.checkState(DARTSynchronizeState.REPLAYING_RECORDERS)) {
                     if (!recorderReplayFiber.isOver) {
                         recorderReplayFiber.execute;
                     }
@@ -349,10 +349,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
                         recorderReplayFiber.clear();
                         dart.dump(true);
                         log("DART generated: bullseye: %s", dart.fingerprint.toHexString);
-                        state.setState(DartSynchronizeState.READY);
+                        state.setState(DARTSynchronizeState.READY);
                     }
                 }
-                if (state.checkState(DartSynchronizeState.READY) && !request_handling) {
+                if (state.checkState(DARTSynchronizeState.READY) && !request_handling) {
                     node.listen(pid, &StdHandlerCallback, cast(string) task_name,
                             opts.dart.sync.host.timeout.msecs,
                             cast(uint) opts.dart.sync.host.max_size);

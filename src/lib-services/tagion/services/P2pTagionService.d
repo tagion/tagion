@@ -32,7 +32,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
-import tagion.services.DartSynchronizeService;
+import tagion.services.DARTSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import tagion.gossip.P2pGossipNet;
@@ -58,7 +58,7 @@ import tagion.services.ServerFileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
 
 //mport tagion.gossip.P2pGossipNet: AddressBook;
-import tagion.services.DartService;
+import tagion.services.DARTService;
 //import tagion.Keywords : NetworkMode;
 
 import std.stdio;
@@ -246,8 +246,8 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                     else if (ctrl is Control.STOP) {
                         force_stop = true;
                     }
-                }, (DartSynchronizeState state) {
-                    if (state == DartSynchronizeState.READY) {
+                }, (DARTSynchronizeState state) {
+                    if (state == DARTSynchronizeState.READY) {
                         ready = true;
                     }
                 });
@@ -296,7 +296,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 log("Send stop to %s", opts.dart.sync.task_name);
                 dart_sync_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
-                    log("Dart synchronization service stoped");
+                    log("DART synchronization service stoped");
                 }
             }
             log("DART TID: %s", dart_tid);
@@ -304,7 +304,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 log("Send stop to %s", opts.dart.task_name);
                 dart_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
-                    log("Dart service stoped");
+                    log("DART service stoped");
                 }
             }
 
@@ -439,7 +439,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                         send(dart_sync_tid, address_book);
                     }
                     else {
-                        log("Dart sync not found");
+                        log("DART sync not found");
                     }
                 });
             log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
