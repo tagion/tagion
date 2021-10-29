@@ -525,7 +525,7 @@ version (none) unittest {
     THandlerPool - handler pool type
     fast_load - load full dart
 +/
-class DartSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber { //TODO: move fiber inside as a field
+class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber { //TODO: move fiber inside as a field
     enum root = DART.Rims.root;
     bool fast_load;
     protected enum State {
@@ -772,8 +772,8 @@ unittest {
     auto journal_replay = new ReplayPool!string(&emptyFunc);
     dart_opts.fast_load = false;
 
-    { //DartSynchronizationPool: reconect on synchronizer failed after fiber finish
-        auto pool = new DartSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
+    { //DARTSynchronizationPool: reconect on synchronizer failed after fiber finish
+        auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
                 DART.SectorRange(0, 5), journal_replay, opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
@@ -797,8 +797,8 @@ unittest {
         assert(!pool.isError);
     }
 
-    { //DartSynchronizationPool: reconect on synchronizer failed before fiber finish
-        auto pool = new DartSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
+    { //DARTSynchronizationPool: reconect on synchronizer failed before fiber finish
+        auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
                 DART.SectorRange(0, 5), journal_replay, opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
@@ -823,8 +823,8 @@ unittest {
         assert(!pool.isError);
     }
 
-    { //DartSynchronizationPool: synchronization over
-        auto pool = new DartSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
+    { //DARTSynchronizationPool: synchronization over
+        auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
                 DART.SectorRange(0, 5), journal_replay, opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());

@@ -516,7 +516,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum indexName = GetLabel!(index).name;
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
-            
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;
@@ -1009,7 +1009,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             }
 
             { // Synchronization of an empty DART
-                // from Dart A against Dart B when Dart A is empty
+                // from DART A against DART B when DART A is empty
                 // writefln("Test 1");
 
                 DARTFile.create_dart(filename_A);
@@ -1065,7 +1065,7 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             }
 
-            { // Synchronization of a Dart A which is a subset of Dart B
+            { // Synchronization of a DART A which is a subset of DART B
                 // writefln("Test 2");
                 create_dart(filename_A);
                 create_dart(filename_B);
