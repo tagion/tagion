@@ -18,8 +18,8 @@ TagionCurrency TGN(T)(T x) if (isNumeric!T) {
 
 @safe
 struct TagionCurrency {
-    enum long AXION_UNIT = 1_000;
-    enum long AXION_MAX = 10_000 * AXION_UNIT;
+    enum long AXION_UNIT = 1_000_000_000;
+    enum long AXION_MAX = 1_000_000_000 * AXION_UNIT;
     enum UNIT = "TGN";
 
     protected {
