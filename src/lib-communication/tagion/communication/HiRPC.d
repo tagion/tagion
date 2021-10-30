@@ -106,7 +106,7 @@ struct HiRPC {
         @Label("*", true) @(Filter.Initialized) string message;
         @Label("*", true) @(Filter.Initialized) int code;
 
-        bool verify(const Document doc) {
+        static bool valid(const Document doc) {
             enum codeName = GetLabel!(code).name;
             enum messageName = GetLabel!(message).name;
             enum dataName = GetLabel!(data).name;
@@ -458,7 +458,7 @@ struct HiRPC {
         return sender;
     }
 
-    const(Sender) result(T)(ref const(Receiver) receiver, T params) const 
+    const(Sender) result(T)(ref const(Receiver) receiver, T params) const
             if (isHiBONRecord!T) {
         return result(receiver, params.toDoc);
     }
@@ -497,6 +497,8 @@ struct HiRPC {
     }
 }
 
+
+///
 unittest {
     import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet: StdSecureNet, BadSecureNet;
