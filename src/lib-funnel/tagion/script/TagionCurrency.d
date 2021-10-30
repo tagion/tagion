@@ -8,8 +8,6 @@ import std.range : only;
 import std.array : join;
 import std.conv : to;
 
-import std.stdio;
-
 import tagion.script.ScriptException : check;
 
 @safe
@@ -174,7 +172,7 @@ struct TagionCurrency {
 
     ///
     unittest {
-        import std.stdio;
+        //import std.stdio;
         import std.exception : assertThrown;
         // Checks for illegal opBinary operators
         static foreach(op; ["*", "/"]) {{
@@ -214,26 +212,19 @@ struct TagionCurrency {
         { // test of opEqual, opBinary, opBinaryRight, opUnary, opCmp
             const x = 11.TGN;
             const y = 31.TGN;
-            writefln("x=%s", x);
             assert(x == 11 * AXION_UNIT);
             assert(x + y == 42.TGN);
             const z =x.opBinary!"+"(31 * AXION_UNIT);
-            pragma(msg, "z ", typeof(z));
             assert(x + (31 * AXION_UNIT) == 42.TGN);
             assert(x * 4  == 44.TGN);
-            writefln("x / 4 =%s %s", x / 4, 2.75.TGN);
             assert(x / 4  == 2.75.TGN);
-            writefln("x - y =%s", x - y);
             assert(y - x  == 20.TGN);
             assert(x - y  == -20.TGN); // Check opUnary
             assert(y - x * 2  == 9.TGN);
             assert( (x + 0.1.TGN) % 0.25.TGN == 0.1.TGN);
             // check opBinaryRight
-            writefln("4 * x = %s", 4 * x);
             assert(4 * x == 44.TGN);
-            writefln(" 4 * AXION_UNIT + x = %s", 4 * AXION_UNIT + x);
             assert(4 * AXION_UNIT + x == 15.TGN);
-            writefln(" 4 * AXION_UNIT + x = %s", 4 * AXION_UNIT - x);
             assert(4 * AXION_UNIT - x == -7.TGN);
             // test opCmp
             assert(x < y);
@@ -262,14 +253,12 @@ struct TagionCurrency {
             assert(x == 11.TGN);
             x += 0.1.TGN;
             x %= 0.25.TGN;
-            writefln("x=%s", x);
             assert(x == 0.1.TGN);
 
         }
 
         { // Check over and underflow
             import tagion.script.ScriptException : ScriptException;
-            writefln("AXION_MAX - AXION_UNIT =%s", AXION_MAX - AXION_UNIT);
             const very_rich = (AXION_MAX / AXION_UNIT -1).TGN;
             assertThrown!ScriptException(very_rich + 2.TGN);
             const very_poor = (-AXION_MAX / AXION_UNIT +1).TGN;
