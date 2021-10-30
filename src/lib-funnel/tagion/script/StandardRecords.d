@@ -13,7 +13,7 @@ import tagion.script.ScriptBase: Number;
     @RecordType("BIL") struct StandardBill {
         @Label("$V") ulong value; // Bill type
         @Label("$k") uint epoch; // Epoch number
-        @Label("$T") string bill_type; // Bill type
+        @Label("$T", true) string bill_type; // Bill type
         @Label("$Y") Buffer owner; // Double hashed owner key
         mixin HiBONRecord;
     }
@@ -86,10 +86,10 @@ import tagion.script.ScriptBase: Number;
         @Label("$in") Buffer[] input; /// Hash pointer to input (DART)
         @Label("$read", true) Buffer[] read; /// Hash pointer to read-only input (DART)
         @Label("$out") Buffer[] output; // pubkey of the output
-        @Label("$run") Buffer script; // Wasm binary
+        @Label("$run") Script script; // TVM-links / Wasm binary
         mixin HiBONRecord;
-        bool valid() {
-            return (input.length > 0) ||
+        bool verify() {
+            return (input.length > 0) &&
                 (output.length > 0);
         }
     }
@@ -104,11 +104,17 @@ import tagion.script.ScriptBase: Number;
         @Label("$contract") Contract contract; /// The contract must signed by all inputs
         @Label("$in", true) Document input; /// The actual inputs
         mixin HiBONRecord;
-        bool valid() {
-            return contract.valid;
-        }
     }
 
+    struct Script {
+        @Label("$tvm", true) Buffer wasm;
+        @Label("$link", true) Document link;
+        mixin HiBONRecord;
+        bool verify() {
+            return (wasm.length is 0) ^ (link.empty);
+        }
+
+    }
     alias ListOfRecords = AliasSeq!(
             StandardBill,
             NetworkNameCard,
