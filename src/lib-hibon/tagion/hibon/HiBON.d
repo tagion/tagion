@@ -14,12 +14,13 @@ import std.format;
 import std.meta: staticIndexOf;
 import std.algorithm.iteration: map, fold, each, sum;
 import std.traits: EnumMembers, ForeachType, Unqual, isMutable, isBasicType,
-    isIntegral, OriginalType, ReturnType, hasMember;
+isIntegral, OriginalType, ReturnType, hasMember, isAssociativeArray;
 import std.meta: AliasSeq;
 
 import std.conv: to;
 import std.exception: assumeUnique;
 import std.typecons: TypedefType;
+import std.range : isInputRange, enumerate;
 
 import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
@@ -394,6 +395,11 @@ static size_t size(U)(const(U[]) array) pure {
         return _members[];
     }
 
+    void opAssign(T)(T r) if ( (isInputRange!T) && !isAssociativeArray!T)  {
+        foreach(i, a; r.enumerate) {
+            opIndexAssign(a, i);
+        }
+    }
     /++
      Assign and member x with the key
      Params:

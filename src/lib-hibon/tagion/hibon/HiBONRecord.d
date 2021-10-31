@@ -872,7 +872,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
                     @Label("*", true) int x;
                     @Label("*", true) int y;
                 }
-                bool verify(const Document doc) {
+                bool valid(const Document doc) {
                     return doc.hasMember("x") ^ doc.hasMember("y");
                 }
 
@@ -1135,6 +1135,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
                 }
             }
         }
+
         { // Jagged Array
             @safe static struct Jagged {
                 Simpel[][] y;
@@ -1306,6 +1307,23 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
 
             assert(s_doc == result.toDoc);
         }
+
+        // {
+        //     alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
+        //     alias Tabel = Document[Bytes];
+        //     static struct StructDocument {
+        //         Tabel tabel;
+        //         mixin HiBONRecord;
+        //     }
+
+        //     static assert(isSpecialKeyType!Tabel)
+
+        //     StructDocument s;
+        //     {
+
+        //     }
+
+        // }
 
         { // Typedef of a HiBONRecord is used as key in an associative-array
             static struct KeyStruct {
