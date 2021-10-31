@@ -23,10 +23,12 @@ import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
 import tagion.wallet.KeyRecover;
+import tagion.wallet.WalletRecords : Invoice, Wallet;
+import tagion.wallet.WalletWrapper;
 import tagion.utils.Term;
 import tagion.basic.Message;
 import tagion.utils.Miscellaneous;
-import tagion.script.StandardRecords : Invoice;
+//import tagion.script.StandardRecords : Invoice;
 import tagion.communication.HiRPC;
 import tagion.network.SSLSocket;
 import tagion.Keywords;
@@ -37,9 +39,12 @@ enum LINE = "------------------------------------------------------";
 
 StdSecureNet net;
 
-enum ulong AXION_UNIT = 1_000_000;
-enum ulong AXION_MAX = 1_000_000 * AXION_UNIT;
+version(none) {
+    enum ulong AXION_UNIT = 1_000_000;
+    enum ulong AXION_MAX = 1_000_000 * AXION_UNIT;
+}
 
+version(none)
 ulong toAxion(const double amount) pure {
     auto result = AXION_UNIT * amount;
     if (result > AXION_MAX) {
@@ -48,10 +53,12 @@ ulong toAxion(const double amount) pure {
     return cast(ulong) result;
 }
 
+version(none)
 double toTagion(const ulong amount) pure {
     return (cast(real) amount) / AXION_UNIT;
 }
 
+version(none)
 string TGN(const ulong amount) pure {
     const ulong tagions = amount / AXION_UNIT;
     const ulong axions = amount % AXION_UNIT;
@@ -98,6 +105,7 @@ Buffer[Pubkey] readAccounts(string file) {
     return accounts;
 }
 
+version(none)
 ulong calcTotal(const(StandardBill[]) bills) {
     ulong result;
     foreach (b; bills) {
@@ -106,6 +114,7 @@ ulong calcTotal(const(StandardBill[]) bills) {
     return result;
 }
 
+version(none)
 ulong calcTotal(const(Invoice[]) invoices) {
     ulong result;
     foreach (b; invoices) {
@@ -114,6 +123,7 @@ ulong calcTotal(const(Invoice[]) invoices) {
     return result;
 }
 
+version(none)
 void updateBills(string file, StandardBill[] bills) {
     import tagion.dart.DARTFile;
 
@@ -172,6 +182,7 @@ Invoice[] readInvoices(string file) {
 }
 
 //alias ContractT=Contract!(ContractType.INTERNAL);
+version(none)
 bool payment(const(Invoice[]) orders, const(StandardBill[]) bills, ref SignedContract result) {
     if (net) {
         const topay = calcTotal(orders);
