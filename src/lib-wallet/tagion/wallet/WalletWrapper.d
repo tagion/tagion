@@ -2,7 +2,8 @@ module tagion.wallet.WalletWrapper;
 
 import std.format;
 import std.string: representation;
-import std.algorithm: map, max, min;
+import std.algorithm: map, max, min, sum, until, each, filter, cache;
+import std.range : tee;
 import std.array;
 import std.exception: assumeUnique;
 import core.time: MonoTime;
@@ -11,6 +12,7 @@ import tagion.hibon.HiBON: HiBON;
 import tagion.hibon.Document: Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONException : HiBONRecordException;
 
 import tagion.basic.Basic: basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
@@ -18,14 +20,16 @@ import tagion.crypto.SecureNet: StdSecureNet, StdHashNet, scramble;
 
 // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
 import tagion.wallet.KeyRecover;
+import tagion.wallet.WalletRecords : Invoice, Wallet;
 import tagion.basic.Message;
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
 
-//@safe
-struct WalletData {
+
+@safe
+struct WalletDetails {
     @Label("$wallet") Wallet wallet;
     @Label("$account") Buffer[Pubkey] account;
     @Label("$bills") StandardBill[] bills;
@@ -42,21 +46,22 @@ struct WalletData {
             }
     );
 }
-// @safe
+
+@safe
 struct WalletWrapper {
-    protected WalletData data;
+    protected WalletDetails details;
     protected StdSecureNet net;
 
     this(ref Wallet wallet, Buffer[Pubkey] account = null, Buffer drive_state = null, StandardBill[] bills = null) {
-        data = WalletData(wallet, account, drive_state, bills);
+        details = WalletDetails(wallet, account, drive_state, bills);
     }
 
-    this(ref WalletData data) {
-        this.data = data;
+    this(ref WalletDetails details) {
+        this.details = details;
     }
 
     @trusted final inout(HiBON) toHiBON() inout {
-        return data.toHiBON();
+        return details.toHiBON();
     }
 
     static WalletWrapper createWallet(const(string[]) questions, const(string[]) answers, uint confidence, Buffer pincode)
@@ -106,11 +111,11 @@ struct WalletWrapper {
 
     bool login(string pincode) {
         auto hashnet = new StdHashNet;
-        auto recover = new KeyRecover(hashnet);
+        auto recover = KeyRecover(hashnet);
         auto pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
-        xor(R, data.wallet.Y, pinhash);
-        if (data.wallet.check == recover.checkHash(R)) {
+        xor(R, details.wallet.Y, pinhash);
+        if (details.wallet.check == recover.checkHash(R)) {
             net = new StdSecureNet;
             net.createKeyPair(R);
             return true;
@@ -118,8 +123,8 @@ struct WalletWrapper {
         return false;
     }
 
-    ulong total() nothrow {
-        return WalletWrapper.calcTotal(data.bills);
+    TagionCurrency total() const pure  {
+        return WalletWrapper.calcTotal(details.bills);
     }
 
     void registerInvoice(ref Invoice invoice)
@@ -130,19 +135,17 @@ struct WalletWrapper {
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
-        data.drive_state = net.calcHash(seed ~ data.drive_state ~ current_time.representation);
+        details.drive_state = net.calcHash(seed ~ details.drive_state ~ current_time.representation);
         scramble(seed);
-        const pkey = net.derivePubkey(data.drive_state);
+        const pkey = net.derivePubkey(details.drive_state);
         invoice.pkey = cast(Buffer) pkey;
-        data.account[pkey] = data.drive_state;
+        details.account[pkey] = details.drive_state;
     }
 
-    static Invoice createInvoice(string label, TagionCurrency tagions = TagionCurrency.init) {
+    static Invoice createInvoice(string label, TagionCurrency amount = TagionCurrency.init) {
         Invoice new_invoice;
         new_invoice.name = label;
-        if (tagions != TagionCurrency.init) {
-            new_invoice.amount = tagions.axios();
-        }
+        new_invoice.amount = amount;
         return new_invoice;
     }
 
@@ -151,47 +154,71 @@ struct WalletWrapper {
         checkLogin;
     }
     do {
-        ulong calcTotal(const(Invoice[]) invoices) {
-            ulong result;
-            foreach (b; invoices) {
-                result += b.amount;
-            }
-            return result;
-        }
+        // TagionCurrency calcTotal(const(Invoice[]) invoices) {
+        //     return invoices.map!(b => b.amount).sum;
+        // }
 
-        const topay = calcTotal(orders);
+        const topay = orders.map!(b => b.amount).sum;
 
-        StandardBill[] contract_bills;
+//        StandardBill[] contract_bills;
         if (topay > 0) {
+            const size_in_bytes = 500;
+            pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
+            const fees = globals.fees(topay, size_in_bytes);
+            const total = topay + fees;
             string source;
-            uint count;
+            //uint count;
             foreach (o; orders) {
                 source = assumeUnique(format("%s %s", o.amount, source));
-                count++;
+                //              count++;
             }
 
             // Input
-            ulong amount = topay;
-
-            foreach (b; data.bills) {
-                amount -= min(amount, b.value);
-                contract_bills ~= b;
-                if (amount == 0) {
-                    break;
-                }
+            TagionCurrency amount;
+            const contract_bills = details.bills
+                .tee!(b => amount+=b.value)
+                .until!(b => amount >= total)
+                .array;
+            if (amount >= total) {
+                pragma(msg, "isHiBONRecord ",isHiBONRecord!(typeof(result.contract.input[0])));
+                pragma(msg, "isHiBONRecord ",typeof(contract_bills));
+                result.contract.input = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
+                const rest = amount - total;
+                Invoice money_back;
+                money_back.amount = rest;
+                registerInvoice(money_back);
+                result.contract.output[money_back.pkey] = rest.toDoc;
+                pragma(msg, "orders[] ", typeof(orders[0].amount.toDoc), " ", typeof(orders[0].pkey) );
+                orders.each!(o => {result.contract.output[o.pkey] = o.amount.toDoc;});
+                result.contract.script = Script("pay");
             }
-            if (amount != 0) {
+            else {
+                // Not enough money
                 return false;
             }
+
+
+            // foreach (b; details.bills) {
+            //     amount -= min(amount, b.value);
+            //     contract_bills ~= b;
+            //     if (amount == 0) {
+            //         break;
+            //     }
+            // }
+            // if (amount != 0) {
+            //     return false;
+            // }
             //        result.input=contract_bills; // Input _bills
             //        Buffer[] inputs;
+
+            /*
             foreach (b; contract_bills) {
                 result.contract.input ~= net.hashOf(b.toDoc);
             }
             const _total_input = WalletWrapper.calcTotal(contract_bills);
             if (_total_input >= topay) {
                 const _rest = _total_input - topay;
-                count++;
+//                count++;
                 pragma(msg, "fixme(cbr): Should be change to wasm-binary");
                 result.contract.script = Script.init; //cast(Buffer)assumeUnique(format("%s %s %d pay", source, _rest, count));
 
@@ -208,25 +235,46 @@ struct WalletWrapper {
             else {
                 return false;
             }
+            */
+            immutable message = net.hashOf(result.contract.toDoc);
+            auto shared_net = (() @trusted {return cast(shared) net;})();
+            auto bill_net = new StdSecureNet;
+            pragma(msg, "contract_bills " , typeof(contract_bills
+                    .filter!(b => b.owner in details.account)
+                    .map!(b => {
+                            immutable tweak_code = details.account[b.owner];
+                            bill_net.derive(tweak_code, shared_net);
+                            return bill_net.sign(message);
+                        }())
+                    .array));
+            result.signs = contract_bills
+                .filter!(b => b.owner in details.account)
+                .map!(b => {
+                        immutable tweak_code = details.account[b.owner];
+                        bill_net.derive(tweak_code, shared_net);
+                        return bill_net.sign(message);
+                    }())
+                .array;
+            return true;
+
         }
 
         // Sign all inputs
-        immutable message = net.hashOf(result.contract.toDoc);
-        shared shared_net = cast(shared) net;
-        foreach (i, b; contract_bills) {
-            Pubkey pkey = b.owner;
-            if (pkey in data.account) {
-                immutable tweak_code = data.account[pkey];
-                auto bill_net = new StdSecureNet;
-                bill_net.derive(tweak_code, shared_net);
-                immutable signature = bill_net.sign(message);
-                result.signs ~= signature;
-            }
-        }
+        // foreach (i, b; contract_bills) {
+        //     Pubkey pkey = b.owner;
+        //     if (pkey in details.account) {
+        //         immutable tweak_code = details.account[pkey];
+        //         auto bill_net = new StdSecureNet;
+        //         bill_net.derive(tweak_code, shared_net);
+        //         immutable signature = bill_net.sign(message);
+        //         result.signs ~= signature;
+        //     }
+        // }
 
-        return true;
+        return false;
     }
 
+    version(none)
     Document get_request_update_wallet() {
         HiRPC hirpc;
         Buffer prepareSearch(Buffer[] owners) {
@@ -240,13 +288,22 @@ struct WalletWrapper {
         }
 
         Buffer[] pkeys;
-        foreach (pkey, dkey; data.account) {
+        foreach (pkey, dkey; details.account) {
             pkeys ~= cast(Buffer) pkey;
         }
 
         return Document(prepareSearch(pkeys));
     }
 
+    const(HiRPC.Sender) get_request_update_wallet() const {
+        HiRPC hirpc;
+        auto h = new HiBON;
+        h=details.account.byKey.map!(p => cast(Buffer)p);
+        return hirpc.opDispatch!"search"(h);
+//        return hirpc.search(details.account.byKey.map!(p => cast(Buffer)p).array);
+    }
+
+    version(none)
     bool set_response_update_wallet(Document response_doc) {
         HiRPC hirpc;
         StandardBill[] new_bills;
@@ -256,7 +313,7 @@ struct WalletWrapper {
                 auto std_bill = StandardBill(bill.get!Document);
                 new_bills ~= std_bill;
             }
-            data.bills = new_bills;
+            details.bills = new_bills;
             // writeln("Wallet updated");
             return true;
         }
@@ -266,18 +323,24 @@ struct WalletWrapper {
         }
     }
 
-    ulong get_balance() {
-        const balance = calcTotal(data.bills);
-        return balance;
+    bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
+        if (receiver.isResponse) {
+            try {
+                details.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document)).array;
+                return true;
+            }
+            catch (Exception e) {
+                // Ingore
+            }
+        }
+        return false;
     }
 
-    static protected {
-        ulong calcTotal(const(StandardBill[]) bills) nothrow {
-            ulong result;
-            foreach (b; bills) {
-                result += b.value;
-            }
-            return result;
-        }
+    TagionCurrency get_balance() const pure {
+        return calcTotal(details.bills);
+    }
+
+    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
+        return bills.map!(b => b.value).sum;
     }
 }
