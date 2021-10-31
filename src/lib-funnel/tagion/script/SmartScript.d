@@ -3,11 +3,13 @@ module tagion.script.SmartScript;
 import std.exception: assumeUnique;
 import std.range: lockstep;
 import std.format;
+import std.algorithm.iteration : sum, map;
 
 import tagion.crypto.SecureInterfaceNet: SecureNet;
 import tagion.basic.ConsensusExceptions: SmartScriptException, ConsensusFailCode, Check;
 import tagion.script.StandardRecords: SignedContract, StandardBill, PayContract;
 import tagion.basic.Basic: Pubkey;
+import tagion.script.TagionCurrency;
 import tagion.script.Script: Script, ScriptContext;
 import tagion.script.ScriptParser: ScriptParser;
 import tagion.script.ScriptBuilder: ScriptBuilder;
@@ -21,12 +23,8 @@ import tagion.script.ScriptCrypto;
 alias check = Check!SmartScriptException;
 
 @safe
-ulong calcTotal(const(StandardBill[]) bills) {
-    ulong result;
-    foreach (b; bills) {
-        result += b.value;
-    }
-    return result;
+const(TagionCurrency) calcTotal(const(StandardBill[]) bills) pure {
+    return bills.map!(b => b.value).sum;
 }
 
 @safe
@@ -95,17 +93,17 @@ class SmartScript {
 
         const payment = PayContract(signed_contract.input);
         const total_input = calcTotal(payment.bills);
-        ulong total_output;
-        foreach (pkey; signed_contract.contract.output) {
+        TagionCurrency total_output;
+        foreach (pkey, doc; signed_contract.contract.output) {
             StandardBill bill;
             bill.epoch = epoch;
             const num = sc.pop.get!Number;
             pragma(msg, "fixme(cbr): Check for overflow");
-            const amount = cast(ulong) num;
+            const amount = TagionCurrency(cast(long)num);
             total_output += amount;
             bill.value = amount;
             bill.owner = pkey;
-            bill.bill_type = "TGN";
+//            bill.bill_type = "TGN";
             _output_bills ~= bill;
         }
 

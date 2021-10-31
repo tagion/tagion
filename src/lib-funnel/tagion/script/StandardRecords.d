@@ -8,13 +8,14 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
 import tagion.script.ScriptBase: Number;
-
+import tagion.script.TagionCurrency;
 @safe {
     @RecordType("BIL") struct StandardBill {
-        @Label("$V") ulong value; // Bill type
+        @Label("$V") TagionCurrency value; // Bill type
         @Label("$k") uint epoch; // Epoch number
-        @Label("$T", true) string bill_type; // Bill type
-        @Label("$Y") Buffer owner; // Double hashed owner key
+//        @Label("$T", true) string bill_type; // Bill type
+        @Label("$Y") Pubkey owner; // Double hashed owner key
+        @Label("$G") Buffer gene; // Bill gene
         mixin HiBONRecord;
     }
 
@@ -67,8 +68,17 @@ import tagion.script.ScriptBase: Number;
         @Label("$epoch") uint epoch; /// Epoch number
         @Label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
         @Label("$recorder") Buffer recoder; /// Fingerprint of the recorder
-        @Label("$global") Document global; /// Gloal nerwork paremeters
+        @Label("$global") Globals global; /// Gloal nerwork paremeters
         @Label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
+        mixin HiBONRecord;
+    }
+
+    struct Globals {
+        @Label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
+        @Label("$mem") TagionCurrency storage_fee; /// Fees per byte
+        TagionCurrency fees(const TagionCurrency topay, const size_t size) pure const {
+            return fixed_fees + size * storage_fee;
+        }
         mixin HiBONRecord;
     }
 
@@ -85,7 +95,7 @@ import tagion.script.ScriptBase: Number;
     @RecordType("SMC") struct Contract {
         @Label("$in") Buffer[] input; /// Hash pointer to input (DART)
         @Label("$read", true) Buffer[] read; /// Hash pointer to read-only input (DART)
-        @Label("$out") Buffer[] output; // pubkey of the output
+        @Label("$out") Document[Pubkey] output; // pubkey of the output
         @Label("$run") Script script; // TVM-links / Wasm binary
         mixin HiBONRecord;
         bool verify() {
@@ -107,12 +117,18 @@ import tagion.script.ScriptBase: Number;
     }
 
     struct Script {
-        @Label("$tvm", true) Buffer wasm;
-        @Label("$link", true) Document link;
-        mixin HiBONRecord;
-        bool verify() {
-            return (wasm.length is 0) ^ (link.empty);
-        }
+        @Label("$name") string name;
+        @Label("$env", true) Buffer link; // Hash pointer to smart contract object;
+        mixin HiBONRecord!(
+            q{
+                this(string name, Buffer link=null) {
+                    this.name = name;
+                    this.link = link;
+                }
+            });
+        // bool verify() {
+        //     return (wasm.length is 0) ^ (link.empty);
+        // }
 
     }
     alias ListOfRecords = AliasSeq!(
@@ -124,23 +140,11 @@ import tagion.script.ScriptBase: Number;
             SignedContract
     );
 
-    /++
+}
 
-     +/
-    @RecordType("Wallet") struct Wallet {
-        import tagion.wallet.KeyRecover: KeyRecover;
+static Globals globals;
 
-        KeyRecover.RecoverSeed seed;
-        Pubkey pubkey;
-        Buffer Y;
-        Buffer check;
-        mixin HiBONRecord;
-    }
-
-    @RecordType("Invoice") struct Invoice {
-        string name;
-        ulong amount;
-        Buffer pkey;
-        mixin HiBONRecord;
-    }
+static this() {
+    globals.fixed_fees = 50.TGN; // Fixed fee
+    globals.storage_fee = 1.TGN / 200; // Fee per stored byte
 }

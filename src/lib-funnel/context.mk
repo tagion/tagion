@@ -1,2 +1,2 @@
-libtagionfunnel.ctx: libtagionhibon.o libtagioncrypto.o libtagionwallet.o libtagioncommunication.o
+libtagionfunnel.ctx: libtagionhibon.o libtagioncrypto.o libtagioncommunication.o
 	@
