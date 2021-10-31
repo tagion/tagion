@@ -87,7 +87,7 @@ class StdHashNet : HashNet {
         return rawCalcHash(h1 ~ h2);
     }
 
-    immutable(Buffer) hashOf(const(Document) doc) const {
+    Buffer hashOf(const(Document) doc) const {
         if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
             if (doc.keys.front == STUB) {
                 return doc[STUB].get!Buffer;

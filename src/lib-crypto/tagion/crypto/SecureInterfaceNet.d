@@ -19,9 +19,9 @@ interface HashNet {
      +/
     immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
-    immutable(Buffer) hashOf(const(Document) doc) const;
+    Buffer hashOf(const(Document) doc) const;
 
-    final immutable(Buffer) hashOf(T)(T value) const if (isHiBONRecord!T) {
+    final Buffer hashOf(T)(T value) const if (isHiBONRecord!T) {
         return hashOf(value.toDoc);
     }
 }
