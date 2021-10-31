@@ -409,7 +409,7 @@ struct HiRPC {
     alias check = Check!HiRPCException;
     const SecureNet net;
 
-    const(uint) generateId() {
+    const(uint) generateId() const {
         uint id = 0;
         import tagion.utils.Random;
         import stdrnd = std.random;
@@ -422,12 +422,11 @@ struct HiRPC {
         return id;
     }
 
-    const(Sender) opDispatch(string method, T)(const T params, const uint id = uint.max) {
-        pragma(msg, "method=", method, " T=", T);
+    const(Sender) opDispatch(string method, T)(const T params, const uint id = uint.max) const {
         return action(method, params, id);
     }
 
-    const(Sender) action(string method, const Document params, const uint id = uint.max) {
+    const(Sender) action(string method, const Document params, const uint id = uint.max) const {
         Method message;
         message.id = (id is uint.max) ? generateId : id;
         if (!params.empty) {
@@ -439,12 +438,12 @@ struct HiRPC {
         return sender;
     }
 
-    const(Sender) action(T)(string method, T params, const uint id = uint.max)
+    const(Sender) action(T)(string method, T params, const uint id = uint.max) const
             if (isHiBONRecord!T) {
         return action(method, params.toDoc, id);
     }
 
-    const(Sender) action(string method, const(HiBON) params = null, const uint id = uint.max) {
+    const(Sender) action(string method, const(HiBON) params = null, const uint id = uint.max) const {
         const doc = Document(params);
         return action(method, doc, id);
     }
