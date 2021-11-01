@@ -349,8 +349,12 @@ class StdSecureNet : StdHashNet, SecureNet {
         return Pubkey(_crypt.computePubkey(seckey, compress));
     }
 
-    this() {
-        this._crypt = new NativeSecp256k1;
+    this() nothrow {
+        _crypt = new NativeSecp256k1;
+    }
+
+    void eraseKey() pure nothrow {
+        _crypt = null;
     }
 
     unittest { // StdSecureNet

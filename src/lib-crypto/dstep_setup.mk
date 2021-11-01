@@ -14,7 +14,10 @@ DIFILES2:=${addprefix $(DESTROOT),$(DINOTDIR)}
 DIFILES:=${addprefix $(DESTROOT),$(DINOTDIR)}
 
 DSTEPFLAGS+=${addprefix -I,$(DSTEPINC)}
+DSTEPFLAGS+=--global-attribute=nothrow
+DSTEPFLAGS+=--global-attribute=@nogc
 
 DSTEP:=dstep
+
 
 $(DESTROOT)secp256k1_ecdh.di: DSTEPFLAGS+=--global-import=$(PACKAGE).secp256k1

@@ -87,7 +87,7 @@ class NativeSecp256k1 {
     @trusted
     this(const Format format_verify = Format.COMPACT,
             const Format format_sign = Format.COMPACT,
-            const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY)
+        const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow
     in {
         with (Format) {
             assert((format_sign is DER) || (format_sign is COMPACT) || (format_sign is RAW),

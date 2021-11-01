@@ -66,6 +66,7 @@ interface SecureNet : HashNet {
     void createKeyPair(ref ubyte[] privkey);
     void generateKeyPair(string passphrase);
     bool secKeyVerify(scope const(ubyte[]) privkey) const;
+    void eraseKey() pure nothrow;
 
     immutable(ubyte[]) ECDHSecret(
         scope const(ubyte[]) seckey, scope const(Pubkey) pubkey) const;
