@@ -35,7 +35,7 @@ alias check = Check!KeyRecorverException;
 struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
-    struct RecoverSeed {
+    struct RecoverGenerator {
         Buffer[] Y; /// Recorvery seed
         Buffer S; /// Check value S=H(H(R))
         @Label("N") uint confidence;
@@ -43,20 +43,20 @@ struct KeyRecover {
     }
 
     const HashNet net;
-    protected RecoverSeed seed;
+    protected RecoverGenerator generator;
 
     @nogc
-    this(HashNet net) pure nothrow {
+    this(const HashNet net) pure nothrow {
         this.net = net;
     }
 
-    this(HashNet net, Document doc) {
+    this(const HashNet net, Document doc) {
         this.net = net;
-        seed = RecoverSeed(doc);
+        generator = RecoverGenerator(doc);
     }
 
     inout(HiBON) toHiBON() inout {
-        return seed.toHiBON;
+        return generator.toHiBON;
     }
 
     /++
@@ -143,32 +143,32 @@ struct KeyRecover {
      +/
     void quizSeed(scope ref const(ubyte[]) R, Buffer[] A, const uint confidence) {
         scope (success) {
-            seed.confidence = confidence;
-            seed.S = checkHash(R);
+            generator.confidence = confidence;
+            generator.S = checkHash(R);
         }
         scope (failure) {
-            seed.Y = null;
-            seed.S = null;
-            seed.confidence = 0;
+            generator.Y = null;
+            generator.S = null;
+            generator.confidence = 0;
         }
-        
+
         .check(A.length > 1, message("Number of questions must be more than one"));
-        
+
         .check(confidence <= A.length, message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
-        
+
         .check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
-        
+
         .check(seeds <= MAX_SEEDS, message("Number quiz-seeds is %d which exceed that max value of %d",
                 seeds, MAX_SEEDS));
-        seed.Y = new Buffer[seeds];
+        generator.Y = new Buffer[seeds];
         uint count;
         bool calculate_this_seeds(scope const(uint[]) indices) {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            seed.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
+            generator.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
             count++;
             return false;
         }
@@ -181,24 +181,24 @@ struct KeyRecover {
     }
 
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
-        
+
             .check(A.length > 1, message("Number of questions must be more than one"));
-        
-        .check(seed.confidence <= A.length,
+
+        .check(generator.confidence <= A.length,
                 message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
-                A.length, seed.confidence));
+                A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
-        const seeds = numberOfSeeds(number_of_questions, seed.confidence);
-        
-        .check(seed.Y.length == seeds, message(
+        const seeds = numberOfSeeds(number_of_questions, generator.confidence);
+
+        .check(generator.Y.length == seeds, message(
                 "Number of answers does not match the number of quiz seeds"));
         bool result;
         bool search_for_the_secret(scope const(uint[]) indices) {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
             const guess = xor(list_of_selected_answers_and_the_secret);
-            foreach (y; seed.Y) {
+            foreach (y; generator.Y) {
                 xor(R, y, guess);
-                if (seed.S == checkHash(R)) {
+                if (generator.S == checkHash(R)) {
                     result = true;
                     return true;
                 }
@@ -206,7 +206,7 @@ struct KeyRecover {
             return false;
         }
 
-        iterateSeeds(number_of_questions, seed.confidence, &search_for_the_secret);
+        iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
         return result;
     }
 }
@@ -256,7 +256,7 @@ unittest {
         "Pizza",
         "Maputo"
     ];
-    auto net = new StdHashNet;
+    const net = new StdHashNet;
     auto recover = KeyRecover(net);
     recover.createKey(selected_questions, answers, 3);
 
