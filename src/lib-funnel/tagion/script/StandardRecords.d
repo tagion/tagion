@@ -140,6 +140,20 @@ import tagion.script.TagionCurrency;
             SignedContract
     );
 
+    @RecordType("Invoice") struct Invoice {
+        string name;
+        TagionCurrency amount;
+        Pubkey pkey;
+        mixin HiBONRecord;
+    }
+
+    struct AccountDetails {
+        @Label("$account") Buffer[Pubkey] account;
+        @Label("$bills") StandardBill[] bills;
+        @Label("$drive_state") Buffer drive_state;
+
+        mixin HiBONRecord;
+    }
 }
 
 static Globals globals;
