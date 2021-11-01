@@ -55,6 +55,11 @@ struct KeyRecover {
         generator = RecoverGenerator(doc);
     }
 
+    this(const HashNet net, RecoverGenerator generator) {
+        this.net = net;
+        this.generator = generator;
+    }
+
     inout(HiBON) toHiBON() inout {
         return generator.toHiBON;
     }

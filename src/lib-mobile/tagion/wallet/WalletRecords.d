@@ -12,7 +12,7 @@ import tagion.script.StandardRecords : StandardBill;
 +/
     @RecordType("Wallet") struct Wallet {
         KeyRecover.RecoverGenerator generator;
-        Pubkey pubkey; // Reduntant
+//        Pubkey pubkey; // Reduntant
         Buffer Y;
         Buffer check;
         mixin HiBONRecord;
