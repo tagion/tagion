@@ -20,13 +20,14 @@ import tagion.crypto.SecureNet: scramble;
 import tagion.crypto.SecureInterfaceNet: SecureNet;
 
 // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
-import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : Wallet;
 import tagion.basic.Message;
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
+import tagion.wallet.KeyRecover;
+import tagion.wallet.WalletRecords : Wallet;
+import tagion.wallet.WalletException : check;
 
 
 //alias StdSecureWallet = SecureWallet!StdSecureNet;
@@ -46,19 +47,10 @@ struct SecureWallet(Net) {
 //        net = new Net;
     }
 
-//     this(WalletDetails details) nothrow {
-//         this.details = details;
-// //        net = new Net;
-//     }
-
     this(const Document doc) {
         auto wallet = Wallet(doc);
         this(wallet);
     }
-
-    // invariant {
-    //     assert(net !is null);
-    // }
 
     final Document toDoc() const {
         return wallet.toDoc;
@@ -96,7 +88,7 @@ struct SecureWallet(Net) {
             wallet.check = recover.checkHash(R);
             net.createKeyPair(R);
             pragma(msg, "fixme(cbr): wallet.pubkey is redundant");
-            wallet.pubkey = net.pubkey;
+//            wallet.pubkey = net.pubkey;
 
             const seed_data = recover.toHiBON.serialize;
             const seed_doc = Document(seed_data);
@@ -105,39 +97,72 @@ struct SecureWallet(Net) {
         return SecureWallet(wallet);
     }
 
-    bool isLogedin() {
+    protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R, const(ubyte[]) pinhash) {
+        wallet.Y = xor(R, pinhash);
+        wallet.check = recover.checkHash(R);
+    }
+
+    bool recover(const(string[]) questions, const(string[]) answers, string pincode) {
+        import std.string : representation;
+        net = new Net;
+        auto recover = KeyRecover(net, wallet.generator);
+        auto R = new ubyte[net.hashSize];
+        const result = recover.findSecret(R, questions, answers);
+        if (result) {
+            auto pinhash = recover.checkHash(pincode.representation);
+            set_pincode(recover, R, pinhash);
+            net.createKeyPair(R);
+            return true;
+        }
+        net = null;
+        return false;
+    }
+
+    @nogc
+    bool isLoggedin() pure const nothrow {
         return net !is null;
     }
 
-    void checkLogin() {
-        assert(isLogedin(), "Need login first");
+    protected void checkLogin() pure const {
+        check(isLoggedin(), "Need login first");
     }
 
     bool login(string pincode) {
-//        auto hashnet = new StdHashNet;
-        auto recover = KeyRecover(net);
+        logout;
+        auto hashnet = new Net;
+        auto recover = KeyRecover(hashnet);
         auto pinhash = recover.checkHash(pincode.representation);
-        auto R = new ubyte[net.hashSize];
+        auto R = new ubyte[hashnet.hashSize];
         xor(R, wallet.Y, pinhash);
-        net =new Net;
         if (wallet.check == recover.checkHash(R)) {
-//            net.eraseKey;
-            //net = new StdSecureNet;
+            net =new Net;
             net.createKeyPair(R);
             return true;
         }
         return false;
     }
 
-    TagionCurrency total() const pure  {
-        return SecureWallet.calcTotal(details.bills);
+    void logout() pure nothrow {
+        net = null;
     }
 
-    void registerInvoice(ref Invoice invoice)
-    in {
-        checkLogin;
+    bool change_pincode(string pincode, string new_pincode) {
+        const hashnet = new Net;
+        auto recover = KeyRecover(hashnet);
+        const pinhash = recover.checkHash(pincode.representation);
+        auto R = new ubyte[hashnet.hashSize];
+        xor(R, wallet.Y, pinhash);
+        if (wallet.check == recover.checkHash(R)) {
+            const new_pinhash = recover.checkHash(new_pincode.representation);
+            set_pincode(recover, R, new_pinhash);
+            logout;
+            return true;
+        }
+        return false;
     }
-    do {
+
+    void registerInvoice(ref Invoice invoice) {
+        checkLogin;
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
@@ -155,11 +180,8 @@ struct SecureWallet(Net) {
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result)
-    in {
+    bool payment(const(Invoice[]) orders, ref SignedContract result) {
         checkLogin;
-    }
-    do {
         const topay = orders.map!(b => b.amount).sum;
 
         if (topay > 0) {
@@ -197,45 +219,6 @@ struct SecureWallet(Net) {
                 return false;
             }
 
-
-            // foreach (b; details.bills) {
-            //     amount -= min(amount, b.value);
-            //     contract_bills ~= b;
-            //     if (amount == 0) {
-            //         break;
-            //     }
-            // }
-            // if (amount != 0) {
-            //     return false;
-            // }
-            //        result.input=contract_bills; // Input _bills
-            //        Buffer[] inputs;
-
-            /*
-            foreach (b; contract_bills) {
-                result.contract.input ~= net.hashOf(b.toDoc);
-            }
-            const _total_input = WalletWrapper.calcTotal(contract_bills);
-            if (_total_input >= topay) {
-                const _rest = _total_input - topay;
-//                count++;
-                pragma(msg, "fixme(cbr): Should be change to wasm-binary");
-                result.contract.script = Script.init; //cast(Buffer)assumeUnique(format("%s %s %d pay", source, _rest, count));
-
-//                                result.contract.script = cast(Buffer)assumeUnique(format("%s %s %d pay", source, _rest, count));
-// output
-                Invoice money_back;
-                money_back.amount = _rest;
-                registerInvoice(money_back);
-                result.contract.output ~= money_back.pkey;
-                foreach (o; orders) {
-                    result.contract.output ~= o.pkey;
-                }
-            }
-            else {
-                return false;
-            }
-            */
             immutable message = net.hashOf(result.contract.toDoc);
             auto shared_net = (() @trusted {return cast(shared) net;})();
             auto bill_net = new Net;
@@ -258,18 +241,6 @@ struct SecureWallet(Net) {
             return true;
 
         }
-
-        // Sign all inputs
-        // foreach (i, b; contract_bills) {
-        //     Pubkey pkey = b.owner;
-        //     if (pkey in details.account) {
-        //         immutable tweak_code = details.account[pkey];
-        //         auto bill_net = new StdSecureNet;
-        //         bill_net.derive(tweak_code, shared_net);
-        //         immutable signature = bill_net.sign(message);
-        //         result.signs ~= signature;
-        //     }
-        // }
 
         return false;
     }
@@ -300,8 +271,6 @@ struct SecureWallet(Net) {
         auto h = new HiBON;
         h=details.account.byKey.map!(p => cast(Buffer)p);
         return hirpc.search(h);
-        // return hirpc.opDispatch!"search"(h);
-//        return hirpc.search(details.account.byKey.map!(p => cast(Buffer)p).array);
     }
 
     version(none)
@@ -347,22 +316,83 @@ struct SecureWallet(Net) {
 }
 
 unittest {
+    import std.stdio;
+
     import tagion.crypto.SecureNet;
     import std.range : iota;
     import std.format;
     alias StdSecureWallet = SecureWallet!StdSecureNet;
     // Create recovery
-    const hashnet = new StdHashNet;
+    //   const hashnet = new StdHashNet;
 //    auto recover = KeyRecovery(hashnet);
+    const pin_code = "1234";
+
+//    Document create_secure_wallet_doc() {
+    // Create a new Wallet
     enum {
         num_of_questions = 5,
         confidence = 3
     }
-    const dummey_question = num_of_questions.iota.map!(i => format("What %s", i)).array;
+    const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
     const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
-    const pin_code = "1234";
-    auto secure_wallet = StdSecureWallet.createWallet(dummey_question, dummey_amswers, confidence, pin_code);
+    const wallet_doc = StdSecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).toDoc;
+//    }
 
-//    recover.createKey(dummey_question, dummey_amswers, confidence);
+//    const wallet_doc = create_secure_wallet_doc;
+
+    auto secure_wallet = StdSecureWallet(wallet_doc);
+    const pin_code_2 = "3434";
+    { // Login test
+        assert(!secure_wallet.isLoggedin);
+        secure_wallet.login(pin_code);
+        assert(secure_wallet.isLoggedin);
+        secure_wallet.logout;
+        assert(!secure_wallet.isLoggedin);
+        secure_wallet.login(pin_code_2);
+        assert(!secure_wallet.isLoggedin);
+    }
+
+    { // Key Recover faild
+        auto test_answers = dummey_amswers.dup;
+        test_answers[0] = "Bad answer 0";
+        test_answers[3] = "Bad answer 1";
+        test_answers[4] = "Bad answer 2";
+
+        const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
+        assert(!result);
+        assert(!secure_wallet.isLoggedin);
+    }
+
+    { // Key Recover test
+        auto test_answers = dummey_amswers.dup;
+        test_answers[2] = "Bad answer 0";
+        test_answers[4] = "Bad answer 1";
+
+        const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
+        assert(result);
+        assert(secure_wallet.isLoggedin);
+    }
+
+    { // Re-login
+        secure_wallet.logout;
+        assert(!secure_wallet.isLoggedin);
+        secure_wallet.login(pin_code_2);
+        assert(secure_wallet.isLoggedin);
+    }
+
+    const new_pincode = "7851";
+    { // Fail to change pin-code
+        const result=secure_wallet.change_pincode(new_pincode, pin_code_2);
+        assert(!result);
+        assert(secure_wallet.isLoggedin);
+    }
+
+    { // Change pincode
+        const result = secure_wallet.change_pincode(pin_code_2, new_pincode);
+        assert(result);
+        assert(!secure_wallet.isLoggedin);
+        secure_wallet.login(new_pincode);
+        assert(secure_wallet.isLoggedin);
+    }
 
 }
