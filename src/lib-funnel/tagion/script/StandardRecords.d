@@ -148,10 +148,10 @@ import tagion.script.TagionCurrency;
     }
 
     struct AccountDetails {
-        @Label("$account") Buffer[Pubkey] account;
+        @Label("$drives") Buffer[Pubkey] derives;
         @Label("$bills") StandardBill[] bills;
-        @Label("$drive_state") Buffer drive_state;
-
+        @Label("$state") Buffer derive_state;
+        @Label("$active") bool[Pubkey] active;  /// Actived bills
         mixin HiBONRecord;
     }
 }
