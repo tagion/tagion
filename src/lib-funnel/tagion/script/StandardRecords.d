@@ -16,7 +16,15 @@ import tagion.script.TagionCurrency;
 //        @Label("$T", true) string bill_type; // Bill type
         @Label("$Y") Pubkey owner; // Double hashed owner key
         @Label("$G") Buffer gene; // Bill gene
-        mixin HiBONRecord;
+        mixin HiBONRecord!(
+            q{
+                this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
+                    this.value = value;
+                    this.epoch = epoch;
+                    this.owner = owner;
+                    this.gene = gene;
+                }
+            });
     }
 
     @RecordType("NNC") struct NetworkNameCard {
@@ -144,6 +152,7 @@ import tagion.script.TagionCurrency;
         string name;
         TagionCurrency amount;
         Pubkey pkey;
+        @Label("*", true) Document info;
         mixin HiBONRecord;
     }
 
@@ -151,7 +160,37 @@ import tagion.script.TagionCurrency;
         @Label("$drives") Buffer[Pubkey] derives;
         @Label("$bills") StandardBill[] bills;
         @Label("$state") Buffer derive_state;
-        @Label("$active") bool[Pubkey] active;  /// Actived bills
+        @Label("$active") bool[Pubkey] activated;  /// Actived bills
+        import std.algorithm:  map, sum, filter;
+        /++
+         Returns:
+         The available balance
+         +/
+        TagionCurrency available() const pure {
+            return bills
+                .filter!(b => !(b.owner in activated))
+                .map!(b => b.value)
+                .sum;
+        }
+        /++
+         Returns:
+         The total active amount
+         +/
+        TagionCurrency active() const pure {
+            return bills
+                .filter!(b => b.owner in activated)
+                .map!(b => b.value)
+                .sum;
+        }
+        /++
+         Returns:
+         The total balance including the active bills
+         +/
+        TagionCurrency total() const pure {
+            return bills
+                .map!(b => b.value)
+                .sum;
+        }
         mixin HiBONRecord;
     }
 }
