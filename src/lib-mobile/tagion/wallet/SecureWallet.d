@@ -36,14 +36,14 @@ import tagion.wallet.WalletException : check;
 struct SecureWallet(Net) {
     static assert(is(Net : SecureNet));
     protected Wallet wallet;
-    protected AccountDetails details;
+    protected AccountDetails account;
     protected SecureNet net;
 
     @disable this();
 
-    this(Wallet wallet, AccountDetails details=AccountDetails.init) nothrow {
+    this(Wallet wallet, AccountDetails account=AccountDetails.init) nothrow {
         this.wallet = wallet;
-        this.details = details;
+        this.account = account;
 //        net = new Net;
     }
 
@@ -57,10 +57,10 @@ struct SecureWallet(Net) {
     }
 
     static SecureWallet createWallet(const(string[]) questions, const(string[]) answers, uint confidence, string pincode)
-    in {
-        assert(questions.length > 3, "Minimal amount of answers is 3");
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-    }
+        in {
+            assert(questions.length > 3, "Minimal amount of answers is 3");
+            assert(questions.length is answers.length, "Amount of questions should be same as answers");
+        }
     do {
         auto net = new Net;
 //        auto hashnet = new StdHashNet;
@@ -159,11 +159,11 @@ struct SecureWallet(Net) {
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
-        details.derive_state = net.calcHash(seed ~ details.derive_state ~ current_time.representation);
+        account.derive_state = net.calcHash(seed ~ account.derive_state ~ current_time.representation);
         scramble(seed);
-        auto pkey = net.derivePubkey(details.derive_state);
+        auto pkey = net.derivePubkey(account.derive_state);
         invoice.pkey = pkey;
-        details.derives[pkey] = details.derive_state;
+        account.derives[pkey] = account.derive_state;
     }
 
     static Invoice createInvoice(string label, TagionCurrency amount = TagionCurrency.init) {
@@ -191,7 +191,7 @@ struct SecureWallet(Net) {
 
             // Input
             TagionCurrency amount;
-            const contract_bills = details.bills
+            const contract_bills = account.bills
                 .tee!(b => amount+=b.value)
                 .until!(b => amount >= total)
                 .array;
@@ -212,9 +212,9 @@ struct SecureWallet(Net) {
                 auto shared_net = (() @trusted {return cast(shared) net;})();
                 auto bill_net = new Net;
                 result.signs = contract_bills
-                    .filter!(b => b.owner in details.derives)
+                    .filter!(b => b.owner in account.derives)
                     .map!(b => {
-                            immutable tweak_code = details.derives[b.owner];
+                            immutable tweak_code = account.derives[b.owner];
                             bill_net.derive(tweak_code, shared_net);
                             return bill_net.sign(message);
                         }())
@@ -242,7 +242,7 @@ struct SecureWallet(Net) {
         }
 
         Buffer[] pkeys;
-        foreach (pkey, dkey; details.account) {
+        foreach (pkey, dkey; account.account) {
             pkeys ~= cast(Buffer) pkey;
         }
 
@@ -252,7 +252,7 @@ struct SecureWallet(Net) {
     const(HiRPC.Sender) get_request_update_wallet() const {
         HiRPC hirpc;
         auto h = new HiBON;
-        h=details.derives.byKey.map!(p => cast(Buffer)p);
+        h=account.derives.byKey.map!(p => cast(Buffer)p);
         return hirpc.search(h);
     }
 
@@ -261,13 +261,13 @@ struct SecureWallet(Net) {
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
 
-        if (!details.bills.isSorted!"a.value > b.value") {
-            details.bills.sort!"a.value > b.value";
+        if (!account.bills.isSorted!"a.value > b.value") {
+            account.bills.sort!"a.value > b.value";
         }
 
         // Select all bills not in use
-        auto none_active = details.bills
-            .filter!(b => !(b.owner in details.active));
+        auto none_active = account.bills
+            .filter!(b => !(b.owner in account.active));
 
         // Check if we have enough money
         const enought = !none_active
@@ -281,16 +281,16 @@ struct SecureWallet(Net) {
             active_bills = none_active
                 .filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
-                .tee!(b => {rest -= b.value; details.active[b.owner] = true;})
+                .tee!(b => {rest -= b.value; account.active[b.owner] = true;})
                 .array;
             if (rest > 0) {
                 // Take an extra larger bill if not enough
                 StandardBill extra_bill;
                 none_active
                     .each!(b => extra_bill=b);
-                    // .retro
-                    // .takeOne;
-                details.active[extra_bill.owner] = true;
+                // .retro
+                // .takeOne;
+                account.active[extra_bill.owner] = true;
                 active_bills ~= extra_bill;
             }
             assert(rest > 0);
@@ -309,7 +309,7 @@ struct SecureWallet(Net) {
                 auto std_bill = StandardBill(bill.get!Document);
                 new_bills ~= std_bill;
             }
-            details.bills = new_bills;
+            account.bills = new_bills;
             // writeln("Wallet updated");
             return true;
         }
@@ -322,7 +322,7 @@ struct SecureWallet(Net) {
     bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
         if (receiver.isResponse) {
             try {
-                details.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document)).array;
+                account.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document)).array;
                 return true;
             }
             catch (Exception e) {
@@ -333,177 +333,100 @@ struct SecureWallet(Net) {
     }
 
     TagionCurrency get_balance() const pure {
-        return calcTotal(details.bills);
+        return calcTotal(account.bills);
     }
 
     static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
         return bills.map!(b => b.value).sum;
     }
-unittest {
-    import std.stdio;
-
-    import std.range : iota;
-    import std.format;
-    // alias StdSecureWallet = SecureWallet!StdSecureNet;
-    // Create recovery
-    //   const hashnet = new StdHashNet;
-//    auto recover = KeyRecovery(hashnet);
-    const pin_code = "1234";
-
-//    Document create_secure_wallet_doc() {
-    // Create a new Wallet
-    enum {
-        num_of_questions = 5,
-        confidence = 3
-    }
-    const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
-    const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
-    const wallet_doc = SecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).toDoc;
-//    }
-
-//    const wallet_doc = create_secure_wallet_doc;
-
-    auto secure_wallet = SecureWallet(wallet_doc);
-    const pin_code_2 = "3434";
-    { // Login test
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(pin_code);
-        assert(secure_wallet.isLoggedin);
-        secure_wallet.logout;
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(pin_code_2);
-        assert(!secure_wallet.isLoggedin);
-    }
-
-    { // Key Recover faild
-        auto test_answers = dummey_amswers.dup;
-        test_answers[0] = "Bad answer 0";
-        test_answers[3] = "Bad answer 1";
-        test_answers[4] = "Bad answer 2";
-
-        const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
-        assert(!result);
-        assert(!secure_wallet.isLoggedin);
-    }
-
-    { // Key Recover test
-        auto test_answers = dummey_amswers.dup;
-        test_answers[2] = "Bad answer 0";
-        test_answers[4] = "Bad answer 1";
-
-        const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
-        assert(result);
-        assert(secure_wallet.isLoggedin);
-    }
-
-    { // Re-login
-        secure_wallet.logout;
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(pin_code_2);
-        assert(secure_wallet.isLoggedin);
-    }
-
-    const new_pincode = "7851";
-    { // Fail to change pin-code
-        const result=secure_wallet.change_pincode(new_pincode, pin_code_2);
-        assert(!result);
-        assert(secure_wallet.isLoggedin);
-    }
-
-    { // Change pincode
-        const result = secure_wallet.change_pincode(pin_code_2, new_pincode);
-        assert(result);
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(new_pincode);
-        assert(secure_wallet.isLoggedin);
-    }
-}
-}
     unittest {
-        import tagion.crypto.SecureNet;
-        alias StdSecureWallet = SecureWallet!StdSecureNet;
+        import std.stdio;
 
-    }
-
-    version(none)
-unittest {
-    import std.stdio;
-
-    import std.range : iota;
-    import std.format;
-    alias StdSecureWallet = SecureWallet!StdSecureNet;
-    // Create recovery
-    //   const hashnet = new StdHashNet;
+        import std.range : iota;
+        import std.format;
+        // alias StdSecureWallet = SecureWallet!StdSecureNet;
+        // Create recovery
+        //   const hashnet = new StdHashNet;
 //    auto recover = KeyRecovery(hashnet);
-    const pin_code = "1234";
+        const pin_code = "1234";
 
 //    Document create_secure_wallet_doc() {
-    // Create a new Wallet
-    enum {
-        num_of_questions = 5,
-        confidence = 3
-    }
-    const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
-    const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
-    const wallet_doc = StdSecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).toDoc;
+        // Create a new Wallet
+        enum {
+            num_of_questions = 5,
+            confidence = 3
+        }
+        const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
+        const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
+        const wallet_doc = SecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).toDoc;
 //    }
 
 //    const wallet_doc = create_secure_wallet_doc;
 
-    auto secure_wallet = StdSecureWallet(wallet_doc);
-    const pin_code_2 = "3434";
-    { // Login test
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(pin_code);
-        assert(secure_wallet.isLoggedin);
-        secure_wallet.logout;
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(pin_code_2);
-        assert(!secure_wallet.isLoggedin);
+        auto secure_wallet = SecureWallet(wallet_doc);
+        const pin_code_2 = "3434";
+        { // Login test
+            assert(!secure_wallet.isLoggedin);
+            secure_wallet.login(pin_code);
+            assert(secure_wallet.isLoggedin);
+            secure_wallet.logout;
+            assert(!secure_wallet.isLoggedin);
+            secure_wallet.login(pin_code_2);
+            assert(!secure_wallet.isLoggedin);
+        }
+
+        { // Key Recover faild
+            auto test_answers = dummey_amswers.dup;
+            test_answers[0] = "Bad answer 0";
+            test_answers[3] = "Bad answer 1";
+            test_answers[4] = "Bad answer 2";
+
+            const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
+            assert(!result);
+            assert(!secure_wallet.isLoggedin);
+        }
+
+        { // Key Recover test
+            auto test_answers = dummey_amswers.dup;
+            test_answers[2] = "Bad answer 0";
+            test_answers[4] = "Bad answer 1";
+
+            const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
+            assert(result);
+            assert(secure_wallet.isLoggedin);
+        }
+
+        { // Re-login
+            secure_wallet.logout;
+            assert(!secure_wallet.isLoggedin);
+            secure_wallet.login(pin_code_2);
+            assert(secure_wallet.isLoggedin);
+        }
+
+        const new_pincode = "7851";
+        { // Fail to change pin-code
+            const result=secure_wallet.change_pincode(new_pincode, pin_code_2);
+            assert(!result);
+            assert(secure_wallet.isLoggedin);
+        }
+
+        { // Change pincode
+            const result = secure_wallet.change_pincode(pin_code_2, new_pincode);
+            assert(result);
+            assert(!secure_wallet.isLoggedin);
+            secure_wallet.login(new_pincode);
+            assert(secure_wallet.isLoggedin);
+        }
+
+        writeln("END unittest");
     }
 
-    { // Key Recover faild
-        auto test_answers = dummey_amswers.dup;
-        test_answers[0] = "Bad answer 0";
-        test_answers[3] = "Bad answer 1";
-        test_answers[4] = "Bad answer 2";
-
-        const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
-        assert(!result);
-        assert(!secure_wallet.isLoggedin);
+    unittest {
     }
+}
 
-    { // Key Recover test
-        auto test_answers = dummey_amswers.dup;
-        test_answers[2] = "Bad answer 0";
-        test_answers[4] = "Bad answer 1";
-
-        const result = secure_wallet.recover(dummey_questions, test_answers, pin_code_2);
-        assert(result);
-        assert(secure_wallet.isLoggedin);
-    }
-
-    { // Re-login
-        secure_wallet.logout;
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(pin_code_2);
-        assert(secure_wallet.isLoggedin);
-    }
-
-    const new_pincode = "7851";
-    { // Fail to change pin-code
-        const result=secure_wallet.change_pincode(new_pincode, pin_code_2);
-        assert(!result);
-        assert(secure_wallet.isLoggedin);
-    }
-
-    { // Change pincode
-        const result = secure_wallet.change_pincode(pin_code_2, new_pincode);
-        assert(result);
-        assert(!secure_wallet.isLoggedin);
-        secure_wallet.login(new_pincode);
-        assert(secure_wallet.isLoggedin);
-    }
-
+unittest {
+    import tagion.crypto.SecureNet;
+    alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 }
