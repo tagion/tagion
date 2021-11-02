@@ -166,10 +166,11 @@ struct SecureWallet(Net) {
         account.derives[pkey] = account.derive_state;
     }
 
-    static Invoice createInvoice(string label, TagionCurrency amount = TagionCurrency.init) {
+    static Invoice createInvoice(string label, TagionCurrency amount = TagionCurrency.init, Document info = Document.init) {
         Invoice new_invoice;
         new_invoice.name = label;
         new_invoice.amount = amount;
+        new_invoice.info = info;
         return new_invoice;
     }
 
@@ -228,6 +229,18 @@ struct SecureWallet(Net) {
         return false;
     }
 
+    TagionCurrency available_balance() const pure {
+        return account.available;
+    }
+
+    TagionCurrency active_balance() const pure {
+        return account.active;
+    }
+
+    TagionCurrency total_balance() const pure {
+        return account.total;
+    }
+
     version(none)
     Document get_request_update_wallet() {
         HiRPC hirpc;
@@ -267,7 +280,7 @@ struct SecureWallet(Net) {
 
         // Select all bills not in use
         auto none_active = account.bills
-            .filter!(b => !(b.owner in account.active));
+            .filter!(b => !(b.owner in account.activated));
 
         // Check if we have enough money
         const enought = !none_active
@@ -281,7 +294,7 @@ struct SecureWallet(Net) {
             active_bills = none_active
                 .filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
-                .tee!(b => {rest -= b.value; account.active[b.owner] = true;})
+                .tee!(b => {rest -= b.value; account.activated[b.owner] = true;})
                 .array;
             if (rest > 0) {
                 // Take an extra larger bill if not enough
@@ -290,7 +303,7 @@ struct SecureWallet(Net) {
                     .each!(b => extra_bill=b);
                 // .retro
                 // .takeOne;
-                account.active[extra_bill.owner] = true;
+                account.activated[extra_bill.owner] = true;
                 active_bills ~= extra_bill;
             }
             assert(rest > 0);
@@ -332,25 +345,21 @@ struct SecureWallet(Net) {
         return false;
     }
 
-    TagionCurrency get_balance() const pure {
-        return calcTotal(account.bills);
-    }
+    // TagionCurrency get_balance() const pure {
+    //     return calcTotal(account.bills);
+    // }
 
     static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
         return bills.map!(b => b.value).sum;
     }
+
     unittest {
         import std.stdio;
 
         import std.range : iota;
         import std.format;
-        // alias StdSecureWallet = SecureWallet!StdSecureNet;
-        // Create recovery
-        //   const hashnet = new StdHashNet;
-//    auto recover = KeyRecovery(hashnet);
         const pin_code = "1234";
 
-//    Document create_secure_wallet_doc() {
         // Create a new Wallet
         enum {
             num_of_questions = 5,
@@ -359,9 +368,6 @@ struct SecureWallet(Net) {
         const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
         const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
         const wallet_doc = SecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).toDoc;
-//    }
-
-//    const wallet_doc = create_secure_wallet_doc;
 
         auto secure_wallet = SecureWallet(wallet_doc);
         const pin_code_2 = "3434";
@@ -421,7 +427,58 @@ struct SecureWallet(Net) {
         writeln("END unittest");
     }
 
-    unittest {
+    unittest { // Test for account
+        import std.stdio;
+        import std.range : zip;
+        auto sender_wallet = SecureWallet(Wallet.init);
+        auto net = new Net;
+
+        { // Add SecureNet to the wallet
+            immutable very_securet = "Very Secret password";
+            net.generateKeyPair(very_securet);
+            sender_wallet.net = net;
+        }
+
+        { // Create a number of bills in the seneder_wallet
+            auto bill_amounts = [ 4, 1, 100, 40, 956, 42, 354,  7, 102355].map!(a => a.TGN);
+            auto gene = net.calcHash("gene".representation);
+            const uint epoch = 42;
+
+            const label = "some_name";
+            auto list_of_invoices = bill_amounts
+                .map!(a => createInvoice(label, a))
+                .each!(invoice => sender_wallet.registerInvoice(invoice))();
+
+            import tagion.utils.Miscellaneous : hex;
+            // Add the bulls to the account with the derive keys
+            with(sender_wallet.account) {
+                bills = zip(bill_amounts, derives.byKey)
+                     .map!(bill_derive => StandardBill(bill_derive[0], epoch, bill_derive[1], gene))
+                     .array;
+            }
+
+            assert(sender_wallet.available_balance == bill_amounts.sum);
+            assert(sender_wallet.total_balance == bill_amounts.sum);
+            assert(sender_wallet.active_balance == 0.TGN);
+        }
+
+        auto receiver_wallet = SecureWallet(Wallet.init);
+        { // Add securety to the receiver_wallet
+            auto receiver_net = new Net;
+            immutable very_securet = "Very Secret password for the receriver";
+            receiver_net.generateKeyPair(very_securet);
+            receiver_wallet.net = receiver_net;
+        }
+
+        SignedContract contract_1;
+        { // The receiver_wallet creates an invoice to the sender_wallet
+            auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
+            receiver_wallet.registerInvoice(invoice);
+            // Give the invoice to the sender_wallet and create payment
+            sender_wallet.payment([invoice], contract_1);
+
+            writefln("contract_1=%J", contract_1);
+        }
     }
 }
 
