@@ -16,8 +16,6 @@ ${foreach DEP,$(DEPS),\
 	${eval DEPS_RESOLVED += $(DEP)}\
 }
 
-$(DIR_SRC)/%/$(FILENAME_SOURCE_PROD_MK):
-
 DEPS := ${sort $(DEPS)}
 DEPS_UNRESOLVED := ${filter-out ${sort $(DEPS_RESOLVED)}, $(DEPS)}
 
@@ -27,18 +25,18 @@ ${call debug, Deps unresolved: $(DEPS_UNRESOLVED)}
 
 ifdef DEPS_UNRESOLVED
 ${call debug, Not all deps resolved - calling recursive make...}
+
 libtagion% tagion% test-libtagion%:
-	${call log.kvp, Recursive Make, ${addprefix resolve-,$(DEPS_UNRESOLVED)} $(MAKECMDGOALS)}
 	@$(MAKE) ${addprefix resolve-,$(DEPS_UNRESOLVED)} $(MAKECMDGOALS)
 
 resolve-%:
-	@
+	${call log.line,}
 
 else
 ${call debug, All deps successfully resolved}
 
 resolve-%: 
-	${call log.kvp, Ensured, $(*)}
+	${call log.line,}
 
 # 
 # Generate and include gen.<mode>.source.mk
@@ -64,7 +62,7 @@ source-%:
 	${eval _DEPS_O_$* := ${filter lib-%,$(_DEPS_O_$*)}}
 	${eval _DEPS_O_$* := ${subst .dir,,$(_DEPS_O_$*)}}
 	${eval _DEPS_O_$* := ${sort $(_DEPS_O_$*)}}
-	@echo $(DIR_BUILD_LIBS_STATIC)/$(subst lib-,libtagion,$(*)).a: $(foreach _DEP_O,$(_DEPS_O_$*),$(DIR_BUILD_O)/$(subst lib-,test-libtagion,$(_DEP_O)).o ) >> $(DIR_SRC)/$(*)/$(FILENAME_SOURCE_PROD_MK)
+	@echo $(DIR_BUILD_LIBS_STATIC)/$(subst lib-,libtagion,$(*)).a: $(foreach _DEP_O,$(_DEPS_O_$*),$(DIR_BUILD_O)/$(subst lib-,libtagion,$(_DEP_O)).o ) >> $(DIR_SRC)/$(*)/$(FILENAME_SOURCE_PROD_MK)
 	
 	@ldc2 ${foreach DEP,$(DEPS),-I$(DIR_SRC)/$(DEP)} --makedeps ${foreach _LTEST,$(LOOKUP) $(LOOKUP_TEST),$(DIR_SRC)/$(*)/$(_LTEST)} -o- -of=$(DIR_BUILD_O)/$(subst lib-,test-libtagion,$(*)).o > $(DIR_SRC)/$(*)/$(FILENAME_SOURCE_TEST_MK)
 	@echo "" >> $(DIR_SRC)/$(*)/$(FILENAME_SOURCE_PROD_MK)

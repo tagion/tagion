@@ -13,7 +13,6 @@ libtagion%: $(DIR_BUILD_LIBS_STATIC)/libtagion%.a
 
 test-libtagion%: $(DIR_BUILD_BINS)/test-libtagion%
 	@$(DIR_BUILD_BINS)/test-libtagion$(*)
-endif
 
 # 
 # Targets
@@ -42,7 +41,7 @@ $(DIR_BUILD_BINS)/test-libtagion%: $(DIR_BUILD_BINS)/.way
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
-
+endif
 
 define details.compile
 ${call log.header, Compile $(@F)}
