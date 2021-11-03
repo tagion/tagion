@@ -1,3 +1,5 @@
+# Filter out other modeules and include O files when lonking from all moduels (based on deps.mk)
+
 ${eval ${call debug.open, MAKE COMPILE - $(MAKECMDGOALS)}}
 
 INCLFLAGS := ${addprefix -I$(DIR_ROOT)/,${shell ls -d src/*/ | grep -v wrap- | grep -v bin-}}
@@ -10,31 +12,32 @@ libtagion%: $(DIR_BUILD_LIBS_STATIC)/libtagion%.a
 	@
 
 test-libtagion%: $(DIR_BUILD_BINS)/test-libtagion%
-	@
+	@$(DIR_BUILD_BINS)/test-libtagion$(*)
 endif
 
 # 
 # Targets
 # 
-$(DIR_BUILD_LIBS_STATIC)/libtagion%.a: $(DIR_BUILD_LIBS_STATIC)/.way $(DIR_BUILD_O)/libtagion%.o
-	${call redefine.vars.a}
-	${if $(LOGS), ${call details.archive}}
-	$(PRECMD)ar cr $(@) $(_ARCHIVES)
-	${call log.kvp, Archived, $(@)}
-
 $(DIR_BUILD_O)/libtagion%.o: $(DIR_BUILD_O)/.way 
-	${call redefine.vars.o}
+	${call redefine.vars.o, lib}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
 $(DIR_BUILD_O)/test-libtagion%.o: $(DIR_BUILD_O)/.way 
-	${call redefine.vars.o.test}
+	${call redefine.vars.o.test, lib}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-$(DIR_BUILD_BINS)/test-libtagion%: $(DIR_BUILD_BINS)/.way $(DIR_BUILD_O)/test-libtagion%.o
+
+$(DIR_BUILD_LIBS_STATIC)/libtagion%.a: $(DIR_BUILD_LIBS_STATIC)/.way
+	${call redefine.vars.a}
+	${if $(LOGS), ${call details.archive}}
+	$(PRECMD)ar cr $(@) $(_ARCHIVES)
+	${call log.kvp, Archived, $(@)}
+
+$(DIR_BUILD_BINS)/test-libtagion%: $(DIR_BUILD_BINS)/.way
 	${call redefine.vars.test}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)
@@ -60,28 +63,24 @@ ${call log.lines, $(_ARCHIVES)}
 ${call log.close}
 endef
 
-define redefine.vars.common
+define redefine.vars.o.common
 ${eval _DCFLAGS := $(DCFLAGS)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := $(INCLFLAGS)}
-${eval _INFILES := ${filter $(DIR_SRC)/lib-%.d,$(^)}}
-${eval _INFILES += ${filter $(DIR_SRC)/bin-%.d,$(^)}}
-${eval _INFILES += ${filter $(DIR_SRC)/wrap-%.d,$(^)}}
-${eval _INFILES += ${filter $(DIR_SRC)/lib-%.di,$(^)}}
-${eval _INFILES += ${filter $(DIR_SRC)/bin-%.di,$(^)}}
-${eval _INFILES += ${filter $(DIR_SRC)/wrap-%.di,$(^)}}
+${eval _INFILES := ${filter $(DIR_SRC)/${strip $1}-$(*)/%.d,$(^)}}
+${eval _INFILES += ${filter $(DIR_SRC)/${strip $1}-$(*)/%.di,$(^)}}
 ${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.d,$(^)}}
 ${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.di,$(^)}}
 endef
 
 define redefine.vars.o
-${call redefine.vars.common}
+${call redefine.vars.o.common, $1}
 ${eval _DCFLAGS += -c}
 ${eval _DCFLAGS += -of $(@)}
 endef
 
 define redefine.vars.o.test
-${call redefine.vars.common}
+${call redefine.vars.o.common, $1}
 ${eval _DCFLAGS += -unittest}
 ${eval _DCFLAGS += -g}
 ${eval _DCFLAGS += -c}
@@ -99,6 +98,10 @@ endef
 
 define redefine.vars.a
 ${eval _ARCHIVES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+endef
+
+define find.files
+${shell find ${strip $1} -name '${strip $2}'}
 endef
 
 
