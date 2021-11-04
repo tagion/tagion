@@ -68,7 +68,7 @@ struct KeyRecover {
      Generates the quiz hash of the from a list of questions and answers
      +/
     @trusted
-    Buffer[] quiz(const(string[]) questions, const(string[]) answers) const
+    Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const
     in {
         assert(questions.length is answers.length);
     }
@@ -76,10 +76,11 @@ struct KeyRecover {
         auto results = new Buffer[questions.length];
         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
                 .requireSameLength)) {
+            const strip_down = cast(const(ubyte[]))answer.strip_down;
             result = net.calcHash(
-                    net.calcHash(answer.strip_down.representation) ~
-                    net.calcHash(
-                        question.strip_down.representation));
+                net.calcHash(strip_down) ~
+                net.calcHash(strip_down)
+                );
         }
         return results;
     }
@@ -130,7 +131,7 @@ struct KeyRecover {
         local_search(cast(int) include.length - 1, M - 1);
     }
 
-    void createKey(const(string[]) questions, const(string[]) answers, const uint confidence) {
+    void createKey(scope const(string[]) questions, scope const(char[][]) answers, const uint confidence) {
         createKey(quiz(questions, answers), confidence);
     }
 
@@ -181,7 +182,7 @@ struct KeyRecover {
         iterateSeeds(number_of_questions, confidence, &calculate_this_seeds);
     }
 
-    bool findSecret(scope ref ubyte[] R, const(string[]) questions, const(string[]) answers) const {
+    bool findSecret(scope ref ubyte[] R, scope const(string[]) questions, scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 
@@ -216,7 +217,7 @@ struct KeyRecover {
     }
 }
 
-string strip_down(string text) pure
+string strip_down(const(char[]) text) pure
 out (result) {
     assert(result.length > 0);
 }

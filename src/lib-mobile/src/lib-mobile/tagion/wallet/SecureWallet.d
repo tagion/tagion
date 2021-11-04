@@ -8,6 +8,7 @@ import std.array;
 import std.exception: assumeUnique;
 import core.time: MonoTime;
 
+import std.stdio;
 import tagion.hibon.HiBON: HiBON;
 import tagion.hibon.Document: Document;
 import tagion.hibon.HiBONRecord;
@@ -36,10 +37,10 @@ import tagion.wallet.WalletException : check;
 struct SecureWallet(Net) {
     static assert(is(Net : SecureNet));
     protected Wallet wallet;
-    protected AccountDetails account;
+    AccountDetails account;
     protected SecureNet net;
 
-    @disable this();
+//    @disable this();
 
     this(Wallet wallet, AccountDetails account=AccountDetails.init) nothrow {
         this.wallet = wallet;
@@ -52,11 +53,15 @@ struct SecureWallet(Net) {
         this(wallet);
     }
 
+    // this() {
+    //     this.wallet = Wallet.init;
+    // }
+
     final Document toDoc() const {
         return wallet.toDoc;
     }
 
-    static SecureWallet createWallet(const(string[]) questions, const(string[]) answers, uint confidence, string pincode)
+    static SecureWallet createWallet(scope const(string[]) questions, scope const(char[][]) answers, uint confidence, const(char[]) pincode)
         in {
             assert(questions.length > 3, "Minimal amount of answers is 3");
             assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -91,12 +96,20 @@ struct SecureWallet(Net) {
         return SecureWallet(wallet);
     }
 
+    // void load(AccountDetails account) nothrow pure {
+    //     this.account = account;
+    // }
+
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R, const(ubyte[]) pinhash) {
         wallet.Y = xor(R, pinhash);
         wallet.check = recover.checkHash(R);
     }
 
-    bool recover(const(string[]) questions, const(string[]) answers, string pincode) {
+    bool recover(const(string[]) questions, const(char[][]) answers, string pincode)
+        in {
+        assert(questions.length is answers.length, "Amount of questions should be same as answers");
+        }
+    do {
         net = new Net;
         auto recover = KeyRecover(net, wallet.generator);
         auto R = new ubyte[net.hashSize];
@@ -113,6 +126,7 @@ struct SecureWallet(Net) {
 
     @nogc
     bool isLoggedin() pure const nothrow {
+        pragma(msg, "fixme(cbr): Yam the net");
         return net !is null;
     }
 
@@ -120,7 +134,7 @@ struct SecureWallet(Net) {
         check(isLoggedin(), "Need login first");
     }
 
-    bool login(string pincode) {
+    bool login(const(char[]) pincode) {
         logout;
         auto hashnet = new Net;
         auto recover = KeyRecover(hashnet);
@@ -182,36 +196,57 @@ struct SecureWallet(Net) {
             const size_in_bytes = 500;
             pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
             const fees = globals.fees(topay, size_in_bytes);
-            const total = topay + fees;
-            string source;
+            const amount = topay + fees;
+            //string source;
             //uint count;
-            foreach (o; orders) {
-                source = assumeUnique(format("%s %s", o.amount, source));
-                //              count++;
-            }
+            // foreach (o; orders) {
+            //     source = assumeUnique(format("%s %s", o.amount, source));
+            //     //              count++;
+            // }
 
             // Input
-            TagionCurrency amount;
-            const contract_bills = account.bills
-                .tee!(b => amount+=b.value)
-                .until!(b => amount >= total)
-                .array;
-            if (amount >= total) {
-                pragma(msg, "isHiBONRecord ",isHiBONRecord!(typeof(result.contract.input[0])));
-                pragma(msg, "isHiBONRecord ",typeof(contract_bills));
+            // TagionCurrency amount;
+            // const contract_bills = account.bills
+            //     .tee!(b => amount+=b.value)
+            //     .until!(b => amount >= total)
+            //     .array;
+            StandardBill[] contract_bills;
+            const enough = collect_bills(amount, contract_bills);
+            if (enough) {
+                const total = contract_bills.map!(b => b.value).sum;
+                // pragma(msg, "isHiBONRecord ",isHiBONRecord!(typeof(result.contract.input[0])));
+                // pragma(msg, "isHiBONRecord ",typeof(contract_bills));
+
                 result.contract.input = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
-                const rest = amount - total;
-                Invoice money_back;
-                money_back.amount = rest;
-                registerInvoice(money_back);
-                result.contract.output[money_back.pkey] = rest.toDoc;
-                pragma(msg, "orders[] ", typeof(orders[0].amount.toDoc), " ", typeof(orders[0].pkey) );
-                orders.each!(o => {result.contract.output[o.pkey] = o.amount.toDoc;});
+                const rest = total - amount;
+                if (rest > 0) {
+                    Invoice money_back;
+                    money_back.amount = rest;
+                    registerInvoice(money_back);
+                    result.contract.output[money_back.pkey] = rest.toDoc;
+                }
+                writefln("rest A = %s",result.contract.output.byKey.map!(p => p.hex));
+//                pragma(msg, "orders[] ", typeof(orders[0].amount.toDoc), " ", typeof(orders[0].pkey) );
+                // Add all the orders to the output
+                //size_t yes;
+//                orders.each!(o => {result.contract.output[o.pkey] = o.amount.toDoc; yes++;});
+                orders.each!((o) {result.contract.output[o.pkey] = o.amount.toDoc;});
+                //writefln("orders.amounts =%s", orders.map!(o => o.amount.toPretty)); //.each!(writeln);
+                //writefln("rest B = %s",result.contract.output.byKey.map!(p => p.hex));
+                //writefln("orders = %s", orders.map!(o => o.pkey.hex));
+
+                // const oo = orders[0];
+                // result.contract.output[oo.pkey] = oo.amount.toDoc;
+                writefln("rest C = %s",result.contract.output.byKey.map!(p => p.hex));
+                //writefln("yes = %s", orders.length);
+//                writefln("orders =%s", orders);
+                // Payment script function
                 result.contract.script = Script("pay");
 
                 immutable message = net.hashOf(result.contract.toDoc);
                 auto shared_net = (() @trusted {return cast(shared) net;})();
                 auto bill_net = new Net;
+                // Sign all inputs
                 result.signs = contract_bills
                     .filter!(b => b.owner in account.derives)
                     .map!(b => {
@@ -220,6 +255,7 @@ struct SecureWallet(Net) {
                             return bill_net.sign(message);
                         }())
                     .array;
+                writefln("p = %s",result.contract.output.byKey.map!(p => p.hex));
                 return true;
             }
             result = result.init;
@@ -283,13 +319,13 @@ struct SecureWallet(Net) {
             .filter!(b => !(b.owner in account.activated));
 
         // Check if we have enough money
-        const enought = !none_active
+        const enough = !none_active
             .map!(b => b.value)
             .cumulativeFold!((a, b) => a + b)
             .filter!(a => a >= amount)
             .takeOne
             .empty;
-        if (enought) {
+        if (enough) {
             TagionCurrency rest = amount;
             active_bills = none_active
                 .filter!(b => b.value <= rest)
@@ -355,7 +391,7 @@ struct SecureWallet(Net) {
 
     unittest {
         import std.stdio;
-
+        import tagion.hibon.HiBONJSON;
         import std.range : iota;
         import std.format;
         const pin_code = "1234";
@@ -470,6 +506,7 @@ struct SecureWallet(Net) {
             receiver_wallet.net = receiver_net;
         }
 
+        pragma(msg, "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
         SignedContract contract_1;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
@@ -477,9 +514,19 @@ struct SecureWallet(Net) {
             // Give the invoice to the sender_wallet and create payment
             sender_wallet.payment([invoice], contract_1);
 
-            writefln("contract_1=%J", contract_1);
+            //writefln("contract_1=%s", contract_1.toPretty);
         }
-    }
+
+        SignedContract contract_2;
+        { // The receiver_wallet creates an invoice to the sender_wallet
+            auto invoice = SecureWallet.createInvoice("To sender 2", 53.TGN);
+            receiver_wallet.registerInvoice(invoice);
+            // Give the invoice to the sender_wallet and create payment
+            sender_wallet.payment([invoice], contract_2);
+
+            //writefln("contract_2=%s", contract_2.toPretty);
+        }
+}
 }
 
 unittest {
