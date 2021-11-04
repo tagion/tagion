@@ -417,8 +417,8 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
 
         void receive_wavefront(const Document doc) {
             timeout_count = 0;
-            log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name,
-                opts.common.node_id, doc.data.length);
+            log("\n*\n*\n*\n******* receive %s %s", opts.node_name,
+                doc.data.length);
             const receiver = HiRPC.Receiver(doc);
             hashgraph.wavefront(receiver, gossip_net.time,
                 (const(HiRPC.Sender) return_wavefront) @safe {

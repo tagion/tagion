@@ -51,8 +51,8 @@ struct Options {
     uint loops; /// Number of heart-beats until the program stops (Test mode)
 
     bool infinity; /// Runs forever
+    uint node_id; /// This is use to set the node_id in emulator mode in normal node this is allways 0
 
-    string url; /// URL to be used for the sockets
     bool trace_gossip; /// Enable the package dump for the transeived packagies
     string tmp; /// Directory for the trace files etc.
     string stdout; /// Overwrites the standard output
@@ -303,7 +303,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
         "delay|d",   format("Sets delay: default: %d (ms)", options.delay), &(options.delay),
         "loops",     format("Sets the loop count (loops=0 runs forever): default %d", options.loops), &(options.loops),
-        "url",       format("Sets the url: default %s", options.url), &(options.url),
+        "url",       format("Sets the url: default %s", options.common.url), &(options.common.url),
 //        "noserv|n",  format("Disable monitor sockets: default %s", options.monitor.disable), &(options.monitor.disable),
         "sockets|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
@@ -367,7 +367,6 @@ static setDefaultOption(ref Options options) {
         nodes = 4;
         loops = 30;
         infinity = false;
-        url = "127.0.0.1";
         //port=10900;
         //disable_sockets=false;
         tmp = "/tmp/";
@@ -384,6 +383,7 @@ static setDefaultOption(ref Options options) {
         with (common) {
             nodeprefix = "Node";
             separator = "_";
+            url = "127.0.0.1";
         }
     }
 

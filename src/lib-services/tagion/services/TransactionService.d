@@ -11,6 +11,7 @@ import tagion.network.SSLServiceAPI;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 import tagion.basic.Logger;
 import tagion.services.Options : Options, setOptions, options;
+import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Basic : Control, Buffer;
 
 import tagion.hibon.Document;
@@ -48,7 +49,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
         log.register(task_name);
 
-        log("SockectThread port=%d addresss=%s", opts.transaction.service.port, opts.url);
+        log("SockectThread port=%d addresss=%s", opts.transaction.service.port, commonOptions.url);
 
         import std.conv;
 

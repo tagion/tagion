@@ -51,7 +51,7 @@ void tagionServiceWrapper(Options opts) {
             const is_master_node = i == 0;
             Options service_options = opts;
 
-            service_options.common.node_id = cast(uint) i;
+            service_options.node_id = cast(uint) i;
             auto local_port = opts.port_base + i;
             service_options.dart.initialize = true;
             if (is_master_node) {

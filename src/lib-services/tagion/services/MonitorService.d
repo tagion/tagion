@@ -8,6 +8,7 @@ import std.concurrency;
 
 import tagion.basic.Logger;
 import tagion.services.Options : Options, setOptions, options;
+import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Basic : Control, basename, Pubkey;
 import tagion.basic.TagionExceptions : TagionException;
 
@@ -27,9 +28,9 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
         immutable task_name = opts.monitor.task_name;
         log.register(task_name);
 
-        log("SockectThread port=%d addresss=%s", opts.monitor.port, opts.url);
+        log("SockectThread port=%d addresss=%s", opts.monitor.port, commonOptions.url);
 
-        auto listener_socket = ListenerSocket(opts, opts.url,
+        auto listener_socket = ListenerSocket(commonOptions.url,
                 opts.monitor.port, opts.monitor.timeout, opts.monitor.task_name);
         auto listener_socket_thread = listener_socket.start;
 
