@@ -101,7 +101,7 @@ void tagionServiceWrapper(Options opts) {
                 service_options.transaction.service.port = cast(ushort)(
                         opts.transaction.service.port + i);
             }
-            service_options.node_name = get_node_name(service_options.common, i);
+            service_options.node_name = i.get_node_name;
             node_opts ~= service_options;
         }
         log("options configurated");

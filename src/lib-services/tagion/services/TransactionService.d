@@ -130,7 +130,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         // Should be EXTERNAL
                         try {
                             auto signed_contract = SignedContract(params);
-                            if (signed_contract.valid) {
+//                            if (signed_contract.valid) {
                                 //
                                 // Load inputs to the contract from the DART
                                 //
@@ -177,7 +177,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                         empty_params);
                                 log("before send");
                                 ssl_relay.send(empty_response.toDoc.serialize);
-                            }
+                                //  }
                         }
                         catch (TagionException e) {
                             log.error("Bad contract: %s", e.msg);
