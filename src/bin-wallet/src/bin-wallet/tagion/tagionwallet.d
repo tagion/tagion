@@ -323,6 +323,7 @@ void accounting() {
         LINE.writeln;
         writefln("                                 total %s", TGN(_total));
         LINE.writeln;
+
         if (invoices) {
             foreach (i, a; invoices) {
                 string select_code;
@@ -543,16 +544,15 @@ enum FKEY = YELLOW;
 HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
     auto answers = new char[][questions.length];
     auto translated_questions = questions.map!(s => message(s));
-    int ch;
     CLEARSCREEN.write;
     scope (success) {
         CLEARSCREEN.write;
     }
-
+    int ch;
+    KeyStroke key;
+    uint select_index = 0;
+    uint confidence;
     while (ch != 'q') {
-        uint select_index = 0;
-        uint confidence;
-        KeyStroke key;
         //    import core.stdc.stdio : getc, stdin;
         HOME.write;
         warning();
@@ -570,15 +570,17 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
                 chosen_code = GREEN;
                 number_of_answers++;
             }
-            writefln("%2d %s%s%s %s%s%s", i, select_code, chosen_code, question, CLEAREOL, answer, RESET);
+            writefln("%2d %s%s%s%s %s%s", i, select_code, chosen_code, question, RESET, answer.trim, CLEAREOL);
         }
         confidence = min(confidence, number_of_answers);
         writefln("Confidence %d", confidence);
 
         LINE.writefln;
-        writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sLeft/Right%2$s:confidence %1$sc%2$s:create%3$s",
+        writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sLeft/Right%2$s:confidence %1$sc%2$s:create%2$s",
             FKEY, RESET, CLEARDOWN);
         const keycode = key.getKey(ch);
+        writefln("%s %s", keycode, ch);
+//        version(none)
         with (KeyStroke.KeyCode) {
             switch (keycode) {
             case UP:
@@ -600,22 +602,35 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
                 char[] answer;
                 answer.length = MAX_PINCODE_SIZE;
                 readln(answer);
+                //answer.word_strip;
                 answers[select_index] = answer;
                 confidence++;
                 break;
             case NONE:
                 switch (ch) {
                 case 'c': // Create Wallet
+                    //writefln("CREATE ");
                     scope(exit) {
-                        answers.each!((ref a) =>  scramble(a));
+                        // Erase the answer from memory
+                        answers.each!((ref a) =>  {scramble(a); a=null;});
                     }
-                    scope string[] selected_questions;
-                    scope char[][] selected_answers;
+                    // scope string[] selected_questions;
+                    // scope char[][] selected_answers;
                     zip(questions, answers)
-                        .filter!(q => q[1].length != 0)
-                        .each!(q => {selected_questions~=q[0]; selected_answers~=q[1];});
+                        .filter!(q => q[1].length >0)
+                        .each!(q => writefln("%s : %d", q[1], q[1].length));
+                    import std.typecons : No, Yes;
+                    auto quiz_list =zip(questions, answers)
+                        .filter!(q => q[1].length > 0);
+//                    selected_answers
+//                        .each!(q => selected_answers~=q[1]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
+                    const selected_questions  = quiz_list.map!(q => q[0]).array;
+                    const selected_answers = quiz_list.map!(q => q[1]).array;
+//                        .each!(q => selected_questions~=q[0]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
+                    writefln("selected_answers %s", selected_answers);
+                    writefln("selected_questions %s", selected_questions);
                     if (selected_answers.length < 3) {
-                        writefln("Answers must be more than %d%s", selected_answers.length, CLEAREOL);
+                        writefln("%1$sThen number of answers must be more than %4$d%2$s%3$s", RED, RESET, CLEAREOL, selected_answers.length);
                     }
                     else {
                         auto hashnet = new StdHashNet;
@@ -637,13 +652,16 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
                             }
                             writefln("Pincode:%s", CLEARDOWN);
                             readln(pincode1);
+                            pincode1.word_strip;
                             writefln("Repeate:");
                             readln(pincode2);
+                            pincode2.word_strip;
+
                             if (pincode1 != pincode2) {
                                 writefln("%sPincode is not the same%s", RED, RESET);
                             }
-                            else if (pincode1.length > 4) {
-                                writefln("%sPincode must be more than 4 chars%s", RED, RESET);
+                            else if (pincode1.length < 4) {
+                                writefln("%sPincode must be at least 4 chars%s", RED, RESET);
                             }
                             else if (pincode1.length > MAX_PINCODE_SIZE) {
                                 writefln("%1$sPincode must be less than %3$d chars%2$s", RED, RESET, pincode1.length);
@@ -652,6 +670,7 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
                                 writefln("%1$sWallet created%2$s", GREEN, RESET);
                                 writefln("Press %1$sEnter%2$s", YELLOW, RESET);
                                 secure_wallet.createWallet(selected_questions, selected_answers, confidence, pincode1);
+                                secure_wallet.login(pincode1);
                             }
                         }
                         while (!secure_wallet.isLoggedin);
@@ -660,6 +679,7 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
                     }
                     break;
                 default:
+                    writefln("Ignore %s '%s'", keycode, cast(char)ch);
                     // ignore
                 }
                 break;
@@ -675,6 +695,17 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
 
 enum REVNO = 0;
 enum HASH = "xxx";
+
+const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc {
+    import std.ascii : isWhite;
+    while (word.length && word[0].isWhite) {
+        word=word[1..$];
+    }
+    while (word.length && word[$-1].isWhite) {
+        word=word[0..$-1];
+    }
+    return word;
+}
 
 void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
     import std.ascii : isWhite;
@@ -755,6 +786,16 @@ int main(string[] args) {
             wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(doc);
             //            state=State.WAIT_LOGIN;
         }
+    }
+    else {
+        wallet_ui = true;
+        // KeyStroke key;
+        // int ch;
+        // while(true) {
+        //     const code = key.getKey(ch);
+        //     writefln("%s ch=%s ", code, ch);
+        // }
+
     }
 
     if ( wallet_interface.secure_wallet != WalletInterface.StdSecureWallet.init && pincode) {
