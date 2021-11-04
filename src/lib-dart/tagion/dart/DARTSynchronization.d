@@ -761,8 +761,8 @@ unittest {
         }
     }
 
-    Options opts;
-    setDefaultOption(opts);
+    DARTOptions dart_opts;
+//    setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
     dart_opts.sync.master_angle_from_port = false;
     void emptyFunc(string jf) {
@@ -774,7 +774,7 @@ unittest {
 
     { //DARTSynchronizationPool: reconect on synchronizer failed after fiber finish
         auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
-                DART.SectorRange(0, 5), journal_replay, opts);
+            DART.SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
@@ -798,8 +798,9 @@ unittest {
     }
 
     { //DARTSynchronizationPool: reconect on synchronizer failed before fiber finish
-        auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
-                DART.SectorRange(0, 5), journal_replay, opts);
+        auto pool = new DARTSynchronizationPool!(
+            FakeHandlerPool!(ResponseHandler, uint))
+            (DART.SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
@@ -825,7 +826,7 @@ unittest {
 
     { //DARTSynchronizationPool: synchronization over
         auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
-                DART.SectorRange(0, 5), journal_replay, opts);
+                DART.SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
