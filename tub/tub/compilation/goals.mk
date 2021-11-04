@@ -21,6 +21,7 @@ DEPS += ${filter resolve-%, $(COMPILE_UNIT_PREFIX_TARGETS)}
 DEPS := $(subst resolve-,,$(DEPS))
 DEPS += $(COMPILE_UNIT_LIB_DIRS)
 DEPS += $(COMPILE_UNIT_BIN_DIRS)
+DEPS += $(COMPILE_UNIT_WRAP_TARGETS)
 DEPS := $(sort $(DEPS))
 
 ${eval ${call debug.open, GOALS}}

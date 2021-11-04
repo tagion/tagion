@@ -2,8 +2,6 @@
 
 ${eval ${call debug.open, MAKE COMPILE - $(MAKECMDGOALS)}}
 
-INCLFLAGS := ${addprefix -I$(DIR_ROOT)/,${shell ls -d src/*/ | grep -v wrap-}}
-
 ifndef DEPS_UNRESOLVED
 tagion%: $(DIR_BUILD)/bins/tagion%
 	@
