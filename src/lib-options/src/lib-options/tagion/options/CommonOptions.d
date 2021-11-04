@@ -9,3 +9,33 @@ struct CommonOptions {
 
     mixin JSONCommon;
 }
+
+protected static shared {
+    CommonOptions _common_options;
+    bool _common_options_set;
+}
+
+
+/++
++  Sets the thread global options opt
++/
+@safe @nogc
+static void setCommonOptions(const(CommonOptions) opt)
+in {
+    assert(!_common_options_set, "Common options already set");
+}
+do {
+    _common_options_set =true;
+    _common_options = opt;
+}
+
+@safe @nogc
+immutable(CommonOptions) commonOptions() nothrow
+in {
+    assert(_common_options_set, "Common options has not been set");
+}
+do {
+    return (() @trusted {
+        return cast(immutable)_common_options;
+        })();
+}
