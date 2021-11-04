@@ -1,44 +1,17 @@
 ${eval ${call debug.open, MAKE COMPILE - $(MAKECMDGOALS)}}
 
-# Bin
-define bin
-$(DIR_BUILD_BINS)/tagion${strip $1}
-endef
-
-define bin.o
-$(DIR_BUILD_O)/tagion${strip $1}.o
-endef
-
-# Lib
-define lib.static
-$(DIR_BUILD_LIBS_STATIC)/libtagion${strip $1}.a
-endef
-
-define lib.static.o
-$(DIR_BUILD_O)/libtagion${strip $1}.o
-endef
-
-# Lib.Test
-define lib.test
-$(DIR_BUILD_BINS)/test-libtagion${strip $1}
-endef
-
-define lib.test.o
-$(DIR_BUILD_O)/test-libtagion${strip $1}.o
-endef
-
 ifndef DEPS_UNRESOLVED
 # Binaries
 tagion%: ${call bin,%}
 	@
 
-${call bin.o,%}: ${call bin.o,.way}
+${call bin.o,%}: ${call bin.o}.way
 	${call redefine.vars.o, bin}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-${call bin,%}: ${call bin,.way} ${call bin.o,%}
+${call bin,%}: ${call bin}.way ${call bin.o,%}
 	${call redefine.vars.bin}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)
@@ -48,33 +21,33 @@ ${call bin,%}: ${call bin,.way} ${call bin.o,%}
 ifdef TEST
 ${eval ${call debug, Compiling tests...}}
 
-libtagion%: ${call lib.static,%}
-	@
+libtagion%: ${call lib,%}
+	@${call lib,$*}
 
-${call lib.test.o,%}: ${call lib.test.o}.way
+${call lib.o,%}: ${call lib.o}.way
 	${call redefine.vars.o.test, lib}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-${call lib.test,%}: ${call lib.test}.way ${call lib.test.o,%}
-	${call redefine.vars.lib.test}
+${call lib,%}: ${call lib}.way ${call lib.o,%}
+	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 else
 ${eval ${call debug, Compiling library...}}
 
-libtagion%: ${call lib.static,%}
+libtagion%: ${call lib,%}
 	@
 
-${call lib.static.o,%}: ${call lib.static.o}.way
+${call lib.o,%}: ${call lib.o}.way
 	${call redefine.vars.o, lib}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-${call lib.static,%}: ${call lib.static}.way ${call lib.static.o,%}
+${call lib,%}: ${call lib}.way ${call lib.o,%}
 	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.archive}}
 	$(PRECMD)ar cr $(@) $(_INFILES)
@@ -113,22 +86,27 @@ ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
 ${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
-endef
-
-define redefine.vars.lib
-${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
 ${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
 endef
 
-define redefine.vars.lib.test
+ifdef TEST
+define redefine.vars.lib
 ${eval _DCFLAGS := $(DCFLAGS)}
 ${eval _DCFLAGS += -main}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
-${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES := $(INFILES)}
+${eval _INFILES += ${filter $(DIR_BUILD_O)/%.o,$(^)}}
 ${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
 endef
+else
+define redefine.vars.lib
+${eval _INFILES := $(INFILES)}
+${eval _INFILES += ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
+endef
+endif
 
 # Logs
 define details.compile

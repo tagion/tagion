@@ -253,8 +253,7 @@ env: $(MAKE_SHOW_ENV)
 # 
 # Utility variables
 # 
-GENERATED_PREFIX := gen
-FILENAME_SOURCE_PROD_MK := $(GENERATED_PREFIX).prod.source.mk
-FILENAME_SOURCE_TEST_MK := $(GENERATED_PREFIX).test.source.mk
-
 FILENAME_CONTEXT_MK := context.mk
+
+GENERATED_PREFIX := gen
+FILENAME_DEPS_MK := $(GENERATED_PREFIX).deps.mk
