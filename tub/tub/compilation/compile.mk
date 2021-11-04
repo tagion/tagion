@@ -43,7 +43,7 @@ $(DIR_BUILD_BINS)/tagion%: $(DIR_BUILD_BINS)/.way $(DIR_BUILD_O)/tagion%.o
 $(DIR_BUILD_LIBS_STATIC)/libtagion%.a: $(DIR_BUILD_LIBS_STATIC)/.way
 	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.archive}}
-	$(PRECMD)ar cr $(@) $(_ARCHIVES)
+	$(PRECMD)ar cr $(@) $(_INFILES)
 	${call log.kvp, Archived, $(@)}
 
 $(DIR_BUILD_BINS)/test-libtagion%: $(DIR_BUILD_BINS)/.way
@@ -67,8 +67,8 @@ endef
 
 define details.archive
 ${call log.header, Archive $(@F)}
-${call log.kvp, ARCHIVES}
-${call log.lines, $(_ARCHIVES)}
+${call log.kvp, INFLILES}
+${call log.lines, $(_INFILES)}
 ${call log.close}
 endef
 
@@ -103,6 +103,7 @@ ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
 ${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
 endef
 
 define redefine.vars.bin
@@ -114,7 +115,8 @@ ${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
 endef
 
 define redefine.vars.lib
-${eval _ARCHIVES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
 endef
 
 ${eval ${call debug.close, MAKE COMPILE - $(MAKECMDGOALS)}}

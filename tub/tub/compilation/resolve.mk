@@ -75,11 +75,11 @@ $(DIR_SRC)/lib-%/$(FILENAME_SOURCE_TEST_MK) $(DIR_SRC)/lib-%/$(FILENAME_SOURCE_P
 
 # TODO: Refactor and optimize source-* targets
 source-bin-%:
-	${call generate.target.dependencies,$(LOOKUP) $(LOOKUP_ONLY_PROD),bin-$(*),$(LOOKUP_WRAP) $(LOOKUP_WRAP_ONLY_PROD),prod,tagion}
+	${call generate.target.dependencies,$(LOOKUP) $(LOOKUP_ONLY_PROD),bin-$(*),$(LOOKUP_WRAP) $(LOOKUP_WRAP_ONLY_PROD),prod,tagion,$(DIR_BUILD_BINS)}
 
 source-lib-%:
-	${call generate.target.dependencies,$(LOOKUP) $(LOOKUP_ONLY_PROD),lib-$(*),$(LOOKUP_WRAP) $(LOOKUP_WRAP_ONLY_PROD),prod,libtagion$(*).a,libtagion}
-	${call generate.target.dependencies,$(LOOKUP) $(LOOKUP_ONLY_TEST),lib-$(*),$(LOOKUP_WRAP) $(LOOKUP_WRAP_ONLY_TEST),test,test-libtagion$(*),test-libtagion}
+	${call generate.target.dependencies,$(LOOKUP) $(LOOKUP_ONLY_PROD),lib-$(*),$(LOOKUP_WRAP) $(LOOKUP_WRAP_ONLY_PROD),prod,libtagion$(*).a,libtagion,$(DIR_BUILD_LIBS_STATIC)}
+	${call generate.target.dependencies,$(LOOKUP) $(LOOKUP_ONLY_TEST),lib-$(*),$(LOOKUP_WRAP) $(LOOKUP_WRAP_ONLY_TEST),test,test-libtagion$(*),test-libtagion,$(DIR_BUILD_BINS)}
 	
 endif
 
@@ -94,11 +94,11 @@ ${eval TARGET_DEPS_$* := ${filter lib-%,$(TARGET_DEPS_$*)}}
 ${eval TARGET_DEPS_$* := ${subst .dir,,$(TARGET_DEPS_$*)}}
 ${eval TARGET_DEPS_$* := ${sort $(TARGET_DEPS_$*)}}
 $(PRECMD)echo "" >> ${call filename.source,$(*),$4}
-$(PRECMD)echo $(DIR_BUILD_BINS)/${strip $5}: ${foreach _,$(TARGET_DEPS_$*),${subst lib-,${strip $6},$(DIR_BUILD_O)/$(_).o}} >> ${call filename.source,$(*),$4}
+$(PRECMD)echo ${strip $7}/${strip $5}: ${foreach _,$(LINKS),$(DIR_BUILD_WRAPS)/$(_)} ${foreach _,$(TARGET_DEPS_$*),${subst lib-,${strip $6},$(DIR_BUILD_O)/$(_).o}} >> ${call filename.source,$(*),$4}
 endef
 
 define lookup
-${addprefix $(DIR_SRC)/${strip $2}/,$1} ${addprefix $(DIR_BUILD_WRAPS)/,${strip $3}}
+${addprefix $(DIR_SRC)/${strip $2}/,$1}
 endef
 
 define filename.source
