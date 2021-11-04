@@ -7,7 +7,7 @@ import std.array: join;
 import std.conv: to;
 
 // import tagion.revision;
-import tagion.services.Options;
+//import tagion.services.Options;
 import tagion.basic.Basic: EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
@@ -30,6 +30,7 @@ import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
 import tagion.options.ServiceNames: get_node_name;
+import tagion.options.CommonOptions: CommonOptions;
 
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
@@ -45,7 +46,7 @@ static uint getTids(Tid[] tids) {
     uint result = uint.max;
     foreach (i, ref tid; tids) {
         immutable uint_i = cast(uint) i;
-        immutable taskname = get_node_name(options.common, uint_i);
+        immutable taskname = uint_i.get_node_name;
         tid = locate(taskname);
         if (tid == thisTid) {
             result = uint_i;
@@ -60,7 +61,7 @@ class EmulatorGossipNet : GossipNet {
     private Duration duration;
     @trusted
     static Tid getTidByNodeNumber(const uint i) {
-        immutable taskname = get_node_name(options.common, i);
+        immutable taskname = i.get_node_name;
         log("trying to locate: %s", taskname);
         auto tid = locate(taskname);
         return tid;
