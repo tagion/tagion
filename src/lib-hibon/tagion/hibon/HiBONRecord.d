@@ -666,7 +666,7 @@ mixin template HiBONRecord(string CTOR = "") {
 }
 
 @safe void fwrite(T)(string filename, const T rec) if (isHiBONRecord!T) {
-    file.write(filename, rec.toDoc);
+    fwrite(filename, rec.toDoc);
 }
 
 /++
