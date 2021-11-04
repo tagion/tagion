@@ -1,2 +1,2 @@
-tagionwallet.ctx: libtagioncrypto.o
+tagionwallet.ctx: libtagionwallet.o libtagioncommunication.o libtagionnetwork.o
 	@
