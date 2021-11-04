@@ -161,12 +161,34 @@ import tagion.script.TagionCurrency;
         @Label("$bills") StandardBill[] bills;
         @Label("$state") Buffer derive_state;
         @Label("$active") bool[Pubkey] activated;  /// Actived bills
-        import std.algorithm:  map, sum, filter;
+        import std.algorithm:  map, sum, filter, any, each;
+        /++
+         Clear up the Account
+         Remove used bills
+         +/
+        void clearup() pure {
+            bills
+                .filter!(b => b.owner in derives)
+                .each!(b => derives.remove(b.owner));
+            bills
+                .filter!(b => b.owner in activated)
+                .each!(b => activated.remove(b.owner));
+        }
+
+        const pure {
+        /++
+         Returns:
+         true if the all transaction has been registered as processed
+         +/
+        bool processed() nothrow {
+            return bills
+                .any!(b => (b.owner in activated));
+        }
         /++
          Returns:
          The available balance
          +/
-        TagionCurrency available() const pure {
+        TagionCurrency available() {
             return bills
                 .filter!(b => !(b.owner in activated))
                 .map!(b => b.value)
@@ -176,7 +198,7 @@ import tagion.script.TagionCurrency;
          Returns:
          The total active amount
          +/
-        TagionCurrency active() const pure {
+        TagionCurrency active() {
             return bills
                 .filter!(b => b.owner in activated)
                 .map!(b => b.value)
@@ -186,10 +208,11 @@ import tagion.script.TagionCurrency;
          Returns:
          The total balance including the active bills
          +/
-        TagionCurrency total() const pure {
+        TagionCurrency total()  {
             return bills
                 .map!(b => b.value)
                 .sum;
+        }
         }
         mixin HiBONRecord;
     }
