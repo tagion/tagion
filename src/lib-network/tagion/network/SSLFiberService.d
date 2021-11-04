@@ -16,7 +16,7 @@ import tagion.basic.Basic: Buffer;
 import tagion.basic.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
-import tagion.services.LoggerService;
+//import tagion.services.LoggerService;
 import LEB128 = tagion.utils.LEB128;
 
 /++

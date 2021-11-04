@@ -10,7 +10,8 @@ import std.conv: to;
 import std.bitmanip: binwrite = write;
 
 import tagion.basic.Basic: Buffer;
-import tagion.services.Options: Options, setOptions, options;
+//import tagion.services.Options: Options, setOptions, options;
+import tagion.options.CommonOptions : commonOptions;
 import tagion.hibon.Document;
 import tagion.basic.Logger;
 import tagion.network.NetworkExceptions;
@@ -21,15 +22,14 @@ struct ListenerSocket {
     immutable(string) address;
     immutable uint timeout;
     immutable(string) listen_task_name;
-    immutable(Options) opts;
+//    immutable(Options) opts;
     protected {
         shared(bool) stop_listener;
         Tid masterTid;
         Socket[uint] clients;
     }
 
-    this(immutable(Options) opts, string address, const ushort port, const uint timeout, string task_name) {
-        this.opts = opts;
+    this(string address, const ushort port, const uint timeout, string task_name) {
         log("Socker port %d", port);
         this.port = port;
         this.address = address;
@@ -37,7 +37,7 @@ struct ListenerSocket {
         if (task_name) {
             masterTid = locate(task_name);
         }
-        listen_task_name = [task_name, port.to!string].join(opts.common.separator);
+        listen_task_name = [task_name, port.to!string].join(commonOptions.separator);
 
         //        log.label(task_name);
         //        log.register(task_name);
@@ -51,11 +51,11 @@ struct ListenerSocket {
             if (listerner_thread !is null) {
                 log("STOP listener socket. %d", port);
                 //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-                auto ping = new TcpSocket(new InternetAddress(opts.url, port));
+                auto ping = new TcpSocket(new InternetAddress(commonOptions.url, port));
                 ping.close;
                 log("Wait for %d to close", port);
                 listerner_thread.join();
-                log("Thread joined %d", opts.monitor.port);
+                log("Thread joined %d", port);
             }
 
         }
@@ -240,7 +240,7 @@ struct ListenerSocket {
     protected shared(SharedClients) shared_clients;
 
     void run() {
-        setOptions(opts);
+//        setOptions(opts);
         // log.push(LoggerType.ALL);
         // scope(exit) {
         //     log.pop;
