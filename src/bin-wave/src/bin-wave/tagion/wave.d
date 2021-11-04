@@ -10,6 +10,7 @@ import std.array : join;
 import tagion.basic.Basic : Control;
 import tagion.basic.Logger;
 import tagion.services.Options;
+import tagion.options.CommonOptions : setCommonOptions;
 //import tagion.services.HeartBeatService;
 import tagion.services.P2pTagionService;
 import tagion.services.LoggerService;
@@ -135,6 +136,8 @@ int main(string[] args) {
 
     writeln("----- Start tagion service task -----");
     immutable service_options=getOptions();
+    // Set the shared common options for all services
+    setCommonOptions(service_options.common);
 
 
     // with (service_options.transaction.service) { // Check ssl certificate
