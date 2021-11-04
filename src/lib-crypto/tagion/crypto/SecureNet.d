@@ -7,7 +7,7 @@ import tagion.hibon.Document: Document;
 import tagion.hibon.HiBONRecord: HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
 
-void scramble(scope ref ubyte[] data, scope const(ubyte[]) xor = null) @safe {
+void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (T.sizeof is 1) {
     import std.random;
 
     auto gen = Mt19937(unpredictableSeed);
