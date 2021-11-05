@@ -24,7 +24,7 @@ import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
 import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : Wallet;
+import tagion.wallet.WalletRecords : Wallet, Quiz;
 import tagion.wallet.SecureWallet;
 import tagion.utils.Term;
 import tagion.basic.Message;
@@ -159,6 +159,7 @@ string accountfile = "account.hibon";
 Buffer[Pubkey] accounts;
 
 string walletfile = "tagionwallet.hibon";
+string quizfile = "quiz.hibon";
 
 void warning() {
     writefln("%sWARNING%s: This wallet should only be used for the Tagion Dev-net%s", RED, BLUE, RESET);
@@ -301,10 +302,10 @@ void accounting() {
                  scramble(seed);
 //                invoice.drive=drive_state;
 
-                const pkey=net.drivePubkey(drive_state);
-                invoice.pkey=cast(Buffer)pkey;
-                accounts[pkey]=drive_state;
-                +/
+const pkey=net.drivePubkey(drive_state);
+invoice.pkey=cast(Buffer)pkey;
+accounts[pkey]=drive_state;
++/
                 createInvoice(invoice);
                 hibon[index] = invoice.toHiBON;
             }
@@ -418,6 +419,7 @@ enum MAX_PINCODE_SIZE = 128;
 struct WalletInterface {
     alias StdSecureWallet = SecureWallet!StdSecureNet;
     StdSecureWallet secure_wallet;
+    Quiz quiz;
     // static WalletInterface opCall() {
     //     import tagion.wallet.WalletRecords : Wallet;
     //     auto secure_wallet      = StdSecureWallet(Wallet.init);
@@ -427,275 +429,296 @@ struct WalletInterface {
     this(StdSecureWallet secure_wallet) {
         this.secure_wallet=secure_wallet;
     }
+
+    bool loginPincode() {
+        CLEARSCREEN.write;
+        foreach(i;0..3) {
+            HOME.write;
+            writefln("%1$sAccess code required%2$s", GREEN, RESET);
+            writefln("pincode:");
+            char[] pincode;
+            scope(exit) {
+                scramble(pincode);
+            }
+            readln(pincode);
+            pincode.word_strip;
+            secure_wallet.login(pincode);
+            if (secure_wallet.isLoggedin) {
+                return true;
+            }
+            writefln("%1$sWrong pincode%2$s", RED, RESET);
+        }
+        CLEARSCREEN.write;
+        return false;
+    }
     //    @disable this();
     // this() {
     //     secure_wallet = StdSecureWallet.init;
     // }
-void accountView() {
+    void accountView() {
 
-    enum State {
-        CREATE_ACCOUNT,
-        WAIT_LOGIN,
-        LOGGEDIN
-    }
+        enum State {
+            CREATE_ACCOUNT,
+            WAIT_LOGIN,
+            LOGGEDIN
+        }
 
-    State state;
+        State state;
 
-    version (none)
-        if (walletfile.exists) {
-            immutable data = assumeUnique(cast(ubyte[]) walletfile.fread);
-            const doc = Document(data);
-            if (doc.isInorder) {
-                auto hashnet = new StdHashNet;
-                wallet = new Wallet(doc);
-                state = State.WAIT_LOGIN;
+        version (none)
+            if (walletfile.exists) {
+                immutable data = assumeUnique(cast(ubyte[]) walletfile.fread);
+                const doc = Document(data);
+                if (doc.isInorder) {
+                    auto hashnet = new StdHashNet;
+                    wallet = new Wallet(doc);
+                    state = State.WAIT_LOGIN;
+                }
             }
-        }
 
-    version(none)
-    if (wallet !is null) {
-        if (net is null) {
-            state = State.WAIT_LOGIN;
-        }
-        else {
-            state = State.LOGGEDIN;
-        }
-    }
+        version(none)
+            if (wallet !is null) {
+                if (net is null) {
+                    state = State.WAIT_LOGIN;
+                }
+                else {
+                    state = State.LOGGEDIN;
+                }
+            }
 
-    int ch;
-    KeyStroke key;
-    CLEARSCREEN.write;
-    while (ch != 'q') {
-        HOME.write;
-        warning();
+        int ch;
+        KeyStroke key;
+        CLEARSCREEN.write;
+        while (ch != 'q') {
+            HOME.write;
+            warning();
 
 //        const _total = calcTotal(bills);
-        writefln(" Account overview ");
+            writefln(" Account overview ");
 
-        LINE.writeln;
-        const processed = secure_wallet.account.processed;
-        if (!processed) {
-            writefln("                                 available %s", secure_wallet.account.available);
-            writefln("                                    active %s", secure_wallet.account.active);
-        }
-        (processed?GREEN:RED).write;
-        writefln("                                 total %s", secure_wallet.account.total);
-        RESET.write;
-        LINE.writeln;
-        with (State) final switch (state) {
-        case CREATE_ACCOUNT:
-            writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sc%2$s:create%3$s", FKEY, RESET, CLEARDOWN);
-            break;
-        case WAIT_LOGIN:
-            writefln("Pincode:%s", CLEARDOWN);
-            //char[MAX_PINCODE_SIZE] stack_pincode;
-            char[] pincode;
-            pincode.length = MAX_PINCODE_SIZE;
-            readln(pincode);
-            //pincode = pincode[0..size];
-            word_strip(pincode);
-            scope(exit) {
-                //pincode = stack_pincode;
-                scramble(pincode);
+            LINE.writeln;
+            const processed = secure_wallet.account.processed;
+            if (!processed) {
+                writefln("                                 available %s", secure_wallet.account.available);
+                writefln("                                    active %s", secure_wallet.account.active);
             }
-            secure_wallet.login(pincode);
-            if (secure_wallet.isLoggedin) {
-                state = LOGGEDIN;
-                continue;
-            }
-            else {
-                writefln("%sWrong pin%s", RED, RESET);
-                writefln("Press %sEnter%s", YELLOW, RESET);
-            }
-            break;
-        case LOGGEDIN:
-            writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sr%2$s:recover%3$s", FKEY, RESET, CLEARDOWN);
-            break;
-        }
-        CLEARDOWN.writeln;
-        const keycode = key.getKey(ch);
-        switch (ch) {
-        case 'a':
-            if (walletfile.exists) {
-                version(none)
-                accounting;
-            }
-            else {
-                writeln("Account doesn't exists");
-                Thread.sleep(1.seconds);
-            }
-            break;
-        case 'c':
-            generateSeed(standard_questions.idup, false);
-            break;
-            version (none) {
-        case 'r':
-                generateSeed(standard_questions.idup, true);
-                break;
-            }
-        default:
-            // ignore
-        }
-    }
-}
-
-enum FKEY = YELLOW;
-
-void generateSeed(const(string[]) questions, const bool recover_flag) {
-    auto answers = new char[][questions.length];
-    auto translated_questions = questions.map!(s => message(s));
-    CLEARSCREEN.write;
-    scope (success) {
-        CLEARSCREEN.write;
-    }
-    int ch;
-    KeyStroke key;
-    uint select_index = 0;
-    uint confidence;
-    while (ch != 'q') {
-        //    import core.stdc.stdio : getc, stdin;
-        HOME.write;
-        warning();
-        writefln("Create a new account");
-        writefln("Answers two to more of the questions below");
-        LINE.writeln;
-        uint number_of_answers;
-        foreach (i, question, answer; lockstep(translated_questions, answers)) {
-            string select_code;
-            string chosen_code;
-            if (select_index == i) {
-                select_code = BLUE ~ BACKGOUND_WHITE;
-            }
-            if (answer.length) {
-                chosen_code = GREEN;
-                number_of_answers++;
-            }
-            writefln("%2d %s%s%s%s %s%s", i, select_code, chosen_code, question, RESET, answer.trim, CLEAREOL);
-        }
-        confidence = min(confidence, number_of_answers);
-        writefln("Confidence %d", confidence);
-
-        LINE.writefln;
-        writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sLeft/Right%2$s:confidence %1$sc%2$s:create%2$s",
-            FKEY, RESET, CLEARDOWN);
-        const keycode = key.getKey(ch);
-        writefln("%s %s", keycode, ch);
-//        version(none)
-        with (KeyStroke.KeyCode) {
-            switch (keycode) {
-            case UP:
-                select_index = (select_index - 1) % questions.length;
-                break;
-            case DOWN:
-                select_index = (select_index + 1) % questions.length;
-                break;
-            case LEFT:
-                if (confidence > 2) {
-                    confidence--;
-                }
-                break;
-            case RIGHT:
-                confidence = max(confidence + 1, number_of_answers);
-                break;
-            case ENTER:
-                writefln("%s%s%s", questions[select_index], CLEAREOL, CLEARDOWN);
-                char[] answer;
-                answer.length = MAX_PINCODE_SIZE;
-                readln(answer);
-                //answer.word_strip;
-                answers[select_index] = answer;
-                confidence++;
-                break;
-            case NONE:
-                switch (ch) {
-                case 'c': // Create Wallet
-                    //writefln("CREATE ");
+            (processed?GREEN:RED).write;
+            writefln("                                 total %s", secure_wallet.account.total);
+            RESET.write;
+            LINE.writeln;
+            with (State) final switch (state) {
+                case CREATE_ACCOUNT:
+                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sc%2$s:create%3$s", FKEY, RESET, CLEARDOWN);
+                    break;
+                case WAIT_LOGIN:
+                    writefln("Pincode:%s", CLEARDOWN);
+                    //char[MAX_PINCODE_SIZE] stack_pincode;
+                    char[] pincode;
+                    pincode.length = MAX_PINCODE_SIZE;
+                    readln(pincode);
+                    //pincode = pincode[0..size];
+                    word_strip(pincode);
                     scope(exit) {
-                        // Erase the answer from memory
-                        answers.each!((ref a) =>  {scramble(a); a=null;});
+                        //pincode = stack_pincode;
+                        scramble(pincode);
                     }
-                    // scope string[] selected_questions;
-                    // scope char[][] selected_answers;
-                    zip(questions, answers)
-                        .filter!(q => q[1].length >0)
-                        .each!(q => writefln("%s : %d", q[1], q[1].length));
-                    import std.typecons : No, Yes;
-                    auto quiz_list =zip(questions, answers)
-                        .filter!(q => q[1].length > 0);
-//                    selected_answers
-//                        .each!(q => selected_answers~=q[1]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
-                    const selected_questions  = quiz_list.map!(q => q[0]).array;
-                    const selected_answers = quiz_list.map!(q => q[1]).array;
-//                        .each!(q => selected_questions~=q[0]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
-                    writefln("selected_answers %s", selected_answers);
-                    writefln("selected_questions %s", selected_questions);
-                    if (selected_answers.length < 3) {
-                        writefln("%1$sThen number of answers must be more than %4$d%2$s%3$s", RED, RESET, CLEAREOL, selected_answers.length);
+                    secure_wallet.login(pincode);
+                    if (secure_wallet.isLoggedin) {
+                        state = LOGGEDIN;
+                        continue;
                     }
                     else {
-                        auto hashnet = new StdHashNet;
-                        auto recover = KeyRecover(hashnet);
-
-                        if (confidence == selected_answers.length) {
-                            // Due to some bug in KeyRecover
-                            confidence--;
-                        }
-
-                        do {
-                            char[] pincode1; // = stack_pincode1;
-                            pincode1.length  = MAX_PINCODE_SIZE;
-                            char[] pincode2;
-                            pincode2.length  = MAX_PINCODE_SIZE;
-                            scope(exit) {
-                                scramble(pincode1);
-                                scramble(pincode1);
-                            }
-                            writefln("Pincode:%s", CLEARDOWN);
-                            readln(pincode1);
-                            pincode1.word_strip;
-                            writefln("Repeate:");
-                            readln(pincode2);
-                            pincode2.word_strip;
-
-                            if (pincode1 != pincode2) {
-                                writefln("%sPincode is not the same%s", RED, RESET);
-                            }
-                            else if (pincode1.length < 4) {
-                                writefln("%sPincode must be at least 4 chars%s", RED, RESET);
-                            }
-                            else if (pincode1.length > MAX_PINCODE_SIZE) {
-                                writefln("%1$sPincode must be less than %3$d chars%2$s", RED, RESET, pincode1.length);
-                            }
-                            else {
-                                writefln("%1$sWallet created%2$s", GREEN, RESET);
-                                writefln("Press %1$sEnter%2$s", YELLOW, RESET);
-                                secure_wallet=StdSecureWallet.createWallet(selected_questions, selected_answers, confidence, pincode1);
-                                secure_wallet.dump;
-                                writefln("pincode1=%s", pincode1);
-                                //writefln("secure_wallet.wallet
-                                secure_wallet.login(pincode1);
-                                secure_wallet.dump;
-                                writefln("loggedin=%s", secure_wallet.isLoggedin);
-                            }
-                        }
-                        while (!secure_wallet.isLoggedin);
-                        walletfile.fwrite(secure_wallet);
-                        readln;
+                        writefln("%sWrong pin%s", RED, RESET);
+                        writefln("Press %sEnter%s", YELLOW, RESET);
                     }
                     break;
-                default:
-                    writefln("Ignore %s '%s'", keycode, cast(char)ch);
-                    // ignore
+                case LOGGEDIN:
+                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sr%2$s:recover%3$s", FKEY, RESET, CLEARDOWN);
+                    break;
+                }
+            CLEARDOWN.writeln;
+            const keycode = key.getKey(ch);
+            switch (ch) {
+            case 'a':
+                if (walletfile.exists) {
+                    version(none)
+                        accounting;
+                }
+                else {
+                    writeln("Account doesn't exists");
+                    Thread.sleep(1.seconds);
                 }
                 break;
+            case 'c':
+                generateSeed(standard_questions.idup, false);
+                break;
+                version (none) {
+                    case 'r':
+                        generateSeed(standard_questions.idup, true);
+                        break;
+                }
             default:
                 // ignore
             }
         }
-
     }
+
+    enum FKEY = YELLOW;
+
+    void generateSeed(const(string[]) questions, const bool recover_flag) {
+        auto answers = new char[][questions.length];
+        auto translated_questions = questions.map!(s => message(s));
+        CLEARSCREEN.write;
+        scope (success) {
+            CLEARSCREEN.write;
+        }
+        int ch;
+        KeyStroke key;
+        uint select_index = 0;
+        uint confidence;
+        while (ch != 'q') {
+            //    import core.stdc.stdio : getc, stdin;
+            HOME.write;
+            warning();
+            writefln("Create a new account");
+            writefln("Answers two to more of the questions below");
+            LINE.writeln;
+            uint number_of_answers;
+            foreach (i, question, answer; lockstep(translated_questions, answers)) {
+                string select_code;
+                string chosen_code;
+                if (select_index == i) {
+                    select_code = BLUE ~ BACKGOUND_WHITE;
+                }
+                if (answer.length) {
+                    chosen_code = GREEN;
+                    number_of_answers++;
+                }
+                writefln("%2d %s%s%s%s %s%s", i, select_code, chosen_code, question, RESET, answer.trim, CLEAREOL);
+            }
+            confidence = min(confidence, number_of_answers);
+            writefln("Confidence %d", confidence);
+
+            LINE.writefln;
+            writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sLeft/Right%2$s:confidence %1$sc%2$s:create%2$s",
+                FKEY, RESET, CLEARDOWN);
+            const keycode = key.getKey(ch);
+            // writefln("%s %s", keycode, ch);
+//        version(none)
+            with (KeyStroke.KeyCode) {
+                switch (keycode) {
+                case UP:
+                    select_index = (select_index - 1) % questions.length;
+                    break;
+                case DOWN:
+                    select_index = (select_index + 1) % questions.length;
+                    break;
+                case LEFT:
+                    if (confidence > 2) {
+                        confidence--;
+                    }
+                    break;
+                case RIGHT:
+                    confidence = max(confidence + 1, number_of_answers);
+                    break;
+                case ENTER:
+                    writefln("%s%s%s", questions[select_index], CLEAREOL, CLEARDOWN);
+                    char[] answer;
+                    answer.length = MAX_PINCODE_SIZE;
+                    readln(answer);
+                    //answer.word_strip;
+                    answers[select_index] = answer;
+                    confidence++;
+                    break;
+                case NONE:
+                    switch (ch) {
+                    case 'c': // Create Wallet
+                        //writefln("CREATE ");
+                        scope(exit) {
+                            // Erase the answer from memory
+                            answers.each!((ref a) =>  {scramble(a); a=null;});
+                        }
+                        // scope string[] selected_questions;
+                        // scope char[][] selected_answers;
+                        zip(questions, answers)
+                            .filter!(q => q[1].length >0)
+                            .each!(q => writefln("%s : %d", q[1], q[1].length));
+                        import std.typecons : No, Yes;
+                        auto quiz_list =zip(questions, answers)
+                            .filter!(q => q[1].length > 0);
+//                    selected_answers
+//                        .each!(q => selected_answers~=q[1]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
+                        quiz.questions  = quiz_list.map!(q => q[0]).array.dup;
+                        const selected_answers = quiz_list.map!(q => q[1]).array;
+//                        .each!(q => selected_questions~=q[0]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
+                        // writefln("selected_answers %s", selected_answers);
+                        // writefln("selected_questions %s", quiz.questions);
+                        if (selected_answers.length < 3) {
+                            writefln("%1$sThen number of answers must be more than %4$d%2$s%3$s", RED, RESET, CLEAREOL, selected_answers.length);
+                        }
+                        else {
+                            auto hashnet = new StdHashNet;
+                            auto recover = KeyRecover(hashnet);
+
+                            if (confidence == selected_answers.length) {
+                                // Due to some bug in KeyRecover
+                                confidence--;
+                            }
+
+                            do {
+                                char[] pincode1; // = stack_pincode1;
+                                pincode1.length  = MAX_PINCODE_SIZE;
+                                char[] pincode2;
+                                pincode2.length  = MAX_PINCODE_SIZE;
+                                scope(exit) {
+                                    scramble(pincode1);
+                                    scramble(pincode1);
+                                }
+                                writefln("Pincode:%s", CLEARDOWN);
+                                readln(pincode1);
+                                pincode1.word_strip;
+                                writefln("Repeate:");
+                                readln(pincode2);
+                                pincode2.word_strip;
+
+                                if (pincode1 != pincode2) {
+                                    writefln("%sPincode is not the same%s", RED, RESET);
+                                }
+                                else if (pincode1.length < 4) {
+                                    writefln("%sPincode must be at least 4 chars%s", RED, RESET);
+                                }
+                                else if (pincode1.length > MAX_PINCODE_SIZE) {
+                                    writefln("%1$sPincode must be less than %3$d chars%2$s", RED, RESET, pincode1.length);
+                                }
+                                else {
+                                    writefln("%1$sWallet created%2$s", GREEN, RESET);
+                                    writefln("Press %1$sEnter%2$s", YELLOW, RESET);
+                                    secure_wallet=StdSecureWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
+                                    writefln("pincode1=%s", pincode1);
+                                    //writefln("secure_wallet.wallet
+                                    secure_wallet.login(pincode1);
+                                    writefln("loggedin=%s", secure_wallet.isLoggedin);
+                                }
+                            }
+                            while (!secure_wallet.isLoggedin);
+                            walletfile.fwrite(secure_wallet);
+                            quizfile.fwrite(quiz);
+                            readln;
+                        }
+                        break;
+                    default:
+                        writefln("Ignore %s '%s'", keycode, cast(char)ch);
+                        // ignore
+                    }
+                    break;
+                default:
+                    // ignore
+                }
+            }
+
+        }
 //    return null;
-}
+    }
 }
 
 enum REVNO = 0;
@@ -763,21 +786,22 @@ int main(string[] args) {
     WalletInterface wallet_interface;
     //   pragma(msg, "bill_type ", GetLabel!(StandardBill.bill_type));
     auto main_args = getopt(args, std.getopt.config.caseSensitive,
-            std.getopt.config.bundling, "version",
-            "display the version", &version_switch,
-            "wallet|w", format("Walletfile : default %s", walletfile), &walletfile,
-            "invoice|c", format("Invoicefile : default %s", invoicefile), &invoicefile,
-            "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
-            "contract|t", format("Contractfile : default %s", contractfile), &contractfile,
-            "send|s", "Send contract to the network", &send_flag,
-            "amount", "Display the wallet amount", &print_amount,
-            "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
-            "update|U", "Update your wallet", &update_wallet, "item|m",
-            "Invoice item select from the invoice file", &item,
-            "pin|x", "Pincode", &pincode,
-            "port|p", format("Tagion network port : default %d", port), &port,
-            "url|u", format("Tagion url : default %s", addr), &addr,
-            "visual|g", "Visual user interface", &wallet_ui,);
+        std.getopt.config.bundling, "version",
+        "display the version", &version_switch,
+        "wallet|w", format("Wallet file : default %s", walletfile), &walletfile,
+        "quiz|q", format("Quiz file : default %s", quizfile), &quizfile,
+        "invoice|c", format("Invoice file : default %s", invoicefile), &invoicefile,
+        "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
+        "contract|t", format("Contractfile : default %s", contractfile), &contractfile,
+        "send|s", "Send contract to the network", &send_flag,
+        "amount", "Display the wallet amount", &print_amount,
+        "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
+        "update|U", "Update your wallet", &update_wallet, "item|m",
+        "Invoice item select from the invoice file", &item,
+        "pin|x", "Pincode", &pincode,
+        "port|p", format("Tagion network port : default %d", port), &port,
+        "url|u", format("Tagion url : default %s", addr), &addr,
+        "visual|g", "Visual user interface", &wallet_ui,);
     if (version_switch) {
         writefln("version %s", REVNO);
         writefln("Git handle %s", HASH);
@@ -791,23 +815,29 @@ int main(string[] args) {
             wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(doc);
             //            state=State.WAIT_LOGIN;
         }
+        if (quizfile.exists) {
+            const quiz_doc = walletfile.fread;
+            if (quiz_doc.isInorder) {
+                wallet_interface.quiz = Quiz(quiz_doc);
+            }
+        }
     }
     else {
         wallet_ui = true;
-        // KeyStroke key;
-        // int ch;
-        // while(true) {
-        //     const code = key.getKey(ch);
-        //     writefln("%s ch=%s ", code, ch);
-        // }
+        wallet_interface.quiz.questions = standard_questions.dup;
 
     }
 
-    if ( wallet_interface.secure_wallet != WalletInterface.StdSecureWallet.init && pincode) {
-        const flag = wallet_interface.secure_wallet.login(pincode);
-        if (!flag) {
-            stderr.writefln("%sWrong pincode%s", RED, RESET);
-            return 3;
+    if ( wallet_interface.secure_wallet != WalletInterface.StdSecureWallet.init) {
+        if (pincode) {
+            const flag = wallet_interface.secure_wallet.login(pincode);
+            if (!flag) {
+                stderr.writefln("%sWrong pincode%s", RED, RESET);
+                return 3;
+            }
+        }
+        else if (!wallet_interface.loginPincode) {
+            return 4;
         }
     }
 
@@ -829,71 +859,71 @@ int main(string[] args) {
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter([
-            format("%s version %s", program, REVNO), "Documentation: https://tagion.org/", "", "Usage:",
-            format("%s [<option>...]", program), "",
-            // "Where:",
-            // format("<file>           hibon outfile (Default %s", outputfilename),
-            // "",
+                format("%s version %s", program, REVNO), "Documentation: https://tagion.org/", "", "Usage:",
+                format("%s [<option>...]", program), "",
+                // "Where:",
+                // format("<file>           hibon outfile (Default %s", outputfilename),
+                // "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"), main_args.options);
+                ].join("\n"), main_args.options);
         return 0;
     }
 
     version(none)
-    if (update_wallet) {
-        HiRPC hirpc;
-        Buffer prepareSearch(Buffer[] owners) {
-            HiBON params = new HiBON;
-            foreach (i, owner; owners) {
-                params[i] = owner;
+        if (update_wallet) {
+            HiRPC hirpc;
+            Buffer prepareSearch(Buffer[] owners) {
+                HiBON params = new HiBON;
+                foreach (i, owner; owners) {
+                    params[i] = owner;
+                }
+                const sender = hirpc.action("search", params);
+                immutable data = sender.toDoc.serialize;
+                return data;
             }
-            const sender = hirpc.action("search", params);
-            immutable data = sender.toDoc.serialize;
-            return data;
-        }
 
-        // writeln(accounts.length);
-        StandardBill[] new_bills;
-        Buffer[] pkeys;
-        foreach (pkey, dkey; accounts) {
-            pkeys ~= cast(Buffer) pkey;
-        }
-        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        client.connect(new InternetAddress(addr, port));
-        scope (exit) {
-            client.close;
-        }
-        client.blocking = true;
-        // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
-        auto to_send = prepareSearch(pkeys);
-        client.send(to_send);
-
-        auto rec_buf = new void[4000];
-        ptrdiff_t rec_size;
-
-        do {
-            rec_size = client.receive(rec_buf); //, current_max_size);
-            // writefln("read rec_size=%d", rec_size);
-            Thread.sleep(400.msecs);
-        }
-        while (rec_size < 0);
-        auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-        auto received = hirpc.receive(resp_doc);
-        if (!received.error.hasMember(Keywords.code)) {
-            foreach (bill; received.params[]) {
-                auto std_bill = StandardBill(bill.get!Document);
-                new_bills ~= std_bill;
+            // writeln(accounts.length);
+            StandardBill[] new_bills;
+            Buffer[] pkeys;
+            foreach (pkey, dkey; accounts) {
+                pkeys ~= cast(Buffer) pkey;
             }
-            billsfile.updateBills(new_bills);
-            bills = new_bills;
-            writeln("Wallet updated");
+            auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+            client.connect(new InternetAddress(addr, port));
+            scope (exit) {
+                client.close;
+            }
+            client.blocking = true;
+            // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
+            auto to_send = prepareSearch(pkeys);
+            client.send(to_send);
+
+            auto rec_buf = new void[4000];
+            ptrdiff_t rec_size;
+
+            do {
+                rec_size = client.receive(rec_buf); //, current_max_size);
+                // writefln("read rec_size=%d", rec_size);
+                Thread.sleep(400.msecs);
+            }
+            while (rec_size < 0);
+            auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+            auto received = hirpc.receive(resp_doc);
+            if (!received.error.hasMember(Keywords.code)) {
+                foreach (bill; received.params[]) {
+                    auto std_bill = StandardBill(bill.get!Document);
+                    new_bills ~= std_bill;
+                }
+                billsfile.updateBills(new_bills);
+                bills = new_bills;
+                writeln("Wallet updated");
+            }
+            else {
+                writeln("Wallet update failed");
+            }
         }
-        else {
-            writeln("Wallet update failed");
-        }
-    }
     if (wallet_ui) {
         wallet_interface.accountView;
     }
@@ -904,66 +934,66 @@ int main(string[] args) {
             // writeln(TGN(total_input));
         }
         version(none)
-        if (create_invoice_command.length) {
-            auto invoice_args = create_invoice_command.split(':');
-            bool invalid = false;
-            if (invoice_args.length == 2) {
+            if (create_invoice_command.length) {
+                auto invoice_args = create_invoice_command.split(':');
+                bool invalid = false;
+                if (invoice_args.length == 2) {
 
-                scope (success) {
-                    if (invoices.length && !invalid) {
-                        auto hibon = new HiBON;
-                        foreach (i, ref invoice; invoices) {
-                            const index = cast(uint) i;
-                            createInvoice(invoice);
-                            hibon[index] = invoice.toHiBON;
+                    scope (success) {
+                        if (invoices.length && !invalid) {
+                            auto hibon = new HiBON;
+                            foreach (i, ref invoice; invoices) {
+                                const index = cast(uint) i;
+                                createInvoice(invoice);
+                                hibon[index] = invoice.toHiBON;
+                            }
+                            invoicefile.fwrite(hibon);
+                            accountfile.writeAccounts(accounts);
                         }
-                        invoicefile.fwrite(hibon);
-                        accountfile.writeAccounts(accounts);
                     }
-                }
 
-                auto invoice_name = invoice_args[0];
-                auto invoice_price = invoice_args[1];
-                Invoice new_invoice;
-                new_invoice.name = invoice_name;
-                if (new_invoice.name.length == 0 || invoice_price.length == 0) {
-                    invalid = true;
-                }
-                else {
-                    new_invoice.amount = toAxion(invoice_price.to!double);
-                    if (new_invoice.amount) {
-                        invoices ~= new_invoice;
-                    }
-                    else {
+                    auto invoice_name = invoice_args[0];
+                    auto invoice_price = invoice_args[1];
+                    Invoice new_invoice;
+                    new_invoice.name = invoice_name;
+                    if (new_invoice.name.length == 0 || invoice_price.length == 0) {
                         invalid = true;
                     }
+                    else {
+                        new_invoice.amount = toAxion(invoice_price.to!double);
+                        if (new_invoice.amount) {
+                            invoices ~= new_invoice;
+                        }
+                        else {
+                            invalid = true;
+                        }
+                    }
+                }
+                else {
+                    invalid = true;
+                }
+                if (invalid) {
+                    writeln("Bad command");
                 }
             }
-            else {
-                invalid = true;
-            }
-            if (invalid) {
-                writeln("Bad command");
-            }
-        }
-        else if (orders) {
-            SignedContract signed_contract;
-            const flag = payment(orders, bills, signed_contract);
-            // writefln("signed_contract.contarct.output.length=%d", signed_contract.contract.output.length);
-            if (flag) {
-                //contractfile.fwrite(signed_contract.toHiBON.serialize);
-                HiRPC hirpc;
-                const sender = hirpc.action("transaction", signed_contract.toHiBON);
-                immutable data = sender.toDoc.serialize;
-                const test = Document(data);
+            else if (orders) {
+                SignedContract signed_contract;
+                const flag = payment(orders, bills, signed_contract);
+                // writefln("signed_contract.contarct.output.length=%d", signed_contract.contract.output.length);
+                if (flag) {
+                    //contractfile.fwrite(signed_contract.toHiBON.serialize);
+                    HiRPC hirpc;
+                    const sender = hirpc.action("transaction", signed_contract.toHiBON);
+                    immutable data = sender.toDoc.serialize;
+                    const test = Document(data);
 
-                const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
-                //writefln("%s", Document(scontract.toHiBON.serialize).toJSON.toPrettyString);
-                // writefln("scontract.contarct.output.length=%d", scontract.contract.output.length);
-                // writefln("scontract.contarct.output=%s", scontract.contract);
-                contractfile.fwrite(sender.toDoc);
+                    const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
+                    //writefln("%s", Document(scontract.toHiBON.serialize).toJSON.toPrettyString);
+                    // writefln("scontract.contarct.output.length=%d", scontract.contract.output.length);
+                    // writefln("scontract.contarct.output=%s", scontract.contract);
+                    contractfile.fwrite(sender.toDoc);
+                }
             }
-        }
         if (send_flag) {
             if (contractfile.exists) {
                 immutable data = contractfile.fread();
@@ -997,13 +1027,13 @@ int main(string[] args) {
                 auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
                 auto received = hirpc.receive(resp_doc);
                 version(none)
-                if (received.params.hasMember(Keywords.code) && received.error[Keywords.code].get!int != 0) {
-                    writeln(received.error[Keywords.message].get!string);
-                }
-                else {
-                    accountfile.writeAccounts(accounts);
-                    writeln("Successfuly sended");
-                }
+                    if (received.params.hasMember(Keywords.code) && received.error[Keywords.code].get!int != 0) {
+                        writeln(received.error[Keywords.message].get!string);
+                    }
+                    else {
+                        accountfile.writeAccounts(accounts);
+                        writeln("Successfuly sended");
+                    }
 
                 Thread.sleep(200.msecs);
             }
