@@ -235,7 +235,7 @@ do {
             .array);
 }
 
-static shared string[] standard_questions;
+static immutable(string[]) standard_questions;
 
 shared static this() {
     standard_questions = [

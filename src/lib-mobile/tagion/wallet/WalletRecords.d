@@ -7,6 +7,11 @@ import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill;
 
 @safe {
+    struct Quiz {
+        @Label("$Q") string[] questions;
+        mixin HiBONRecord;
+    }
+
 /++
 
 +/

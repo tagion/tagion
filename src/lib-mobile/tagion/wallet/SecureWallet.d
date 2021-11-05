@@ -8,7 +8,7 @@ import std.array;
 import std.exception: assumeUnique;
 import core.time: MonoTime;
 
-import std.stdio;
+//import std.stdio;
 import tagion.hibon.HiBON: HiBON;
 import tagion.hibon.Document: Document;
 import tagion.hibon.HiBONRecord;
@@ -45,9 +45,6 @@ struct SecureWallet(Net) {
     this(Wallet wallet, AccountDetails account=AccountDetails.init) { //nothrow {
         this.wallet = wallet;
         this.account = account;
-        writefln("this.wallet.Y=%s", this.wallet.Y.hex);
-
-//        net = new Net;
     }
 
     this(const Document doc) {
@@ -55,18 +52,8 @@ struct SecureWallet(Net) {
         this(_wallet);
     }
 
-    // this() {
-    //     this.wallet = Wallet.init;
-    // }
-
     final Document toDoc() const {
         return wallet.toDoc;
-    }
-
-    void dump() {
-        writefln("DUMP      Y=%s", wallet.Y.hex);
-        writefln("DUMP  check=%s", wallet.check.hex);
-
     }
 
     static SecureWallet createWallet(scope const(string[]) questions, scope const(char[][]) answers, uint confidence, const(char[]) pincode)
@@ -93,15 +80,9 @@ struct SecureWallet(Net) {
 
             recover.findSecret(R, questions, answers);
             auto pinhash = recover.checkHash(pincode.representation);
-            writefln("pinhash=%s", pinhash.hex);
-            writefln("      R=%s", R.hex);
             wallet.Y = xor(R, pinhash);
-            writefln("      Y=%s", wallet.Y.hex);
             wallet.check = recover.checkHash(R);
             net.createKeyPair(R);
-
-            // const seed_data = recover.toHiBON.serialize;
-            // const seed_doc = Document(seed_data);
             wallet.generator = KeyRecover.RecoverGenerator(recover.toDoc);
         }
         return SecureWallet(wallet);
@@ -146,18 +127,13 @@ struct SecureWallet(Net) {
     }
 
     bool login(const(char[]) pincode) {
-        writefln("login wallet.Y=%s", wallet.Y.hex);
         if (wallet.Y) {
         logout;
         auto hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         auto pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
-        writefln("wallet.Y=%s", wallet.Y.hex);
         xor(R, wallet.Y, pinhash);
-        writefln("       R=%s", R.hex);
-        writefln("       check=%s", wallet.check.hex) ;
-
         if (wallet.check == recover.checkHash(R)) {
             net =new Net;
             net.createKeyPair(R);
@@ -243,22 +219,7 @@ struct SecureWallet(Net) {
                     registerInvoice(money_back);
                     result.contract.output[money_back.pkey] = rest.toDoc;
                 }
-                writefln("rest A = %s",result.contract.output.byKey.map!(p => p.hex));
-//                pragma(msg, "orders[] ", typeof(orders[0].amount.toDoc), " ", typeof(orders[0].pkey) );
-                // Add all the orders to the output
-                //size_t yes;
-//                orders.each!(o => {result.contract.output[o.pkey] = o.amount.toDoc; yes++;});
                 orders.each!((o) {result.contract.output[o.pkey] = o.amount.toDoc;});
-                //writefln("orders.amounts =%s", orders.map!(o => o.amount.toPretty)); //.each!(writeln);
-                //writefln("rest B = %s",result.contract.output.byKey.map!(p => p.hex));
-                //writefln("orders = %s", orders.map!(o => o.pkey.hex));
-
-                // const oo = orders[0];
-                // result.contract.output[oo.pkey] = oo.amount.toDoc;
-                writefln("rest C = %s",result.contract.output.byKey.map!(p => p.hex));
-                //writefln("yes = %s", orders.length);
-//                writefln("orders =%s", orders);
-                // Payment script function
                 result.contract.script = Script("pay");
 
                 immutable message = net.hashOf(result.contract.toDoc);
@@ -273,7 +234,6 @@ struct SecureWallet(Net) {
                             return bill_net.sign(message);
                         }())
                     .array;
-                writefln("p = %s",result.contract.output.byKey.map!(p => p.hex));
                 return true;
             }
             result = result.init;
