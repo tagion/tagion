@@ -22,6 +22,7 @@ ifdef TEST
 ${eval ${call debug, Compiling tests...}}
 
 libtagion%: ${call lib,%}
+	@echo Calling test for $(*) from level $(MAKELEVEL)
 	@${call lib,$*}
 
 ${call lib.o,%}: ${call lib.o}.way
@@ -86,7 +87,7 @@ ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
 ${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
-${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
+${eval _INFILES += $(INFILES)}
 endef
 
 ifdef TEST
@@ -96,15 +97,13 @@ ${eval _DCFLAGS += -main}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
-${eval _INFILES := $(INFILES)}
-${eval _INFILES += ${filter $(DIR_BUILD_O)/%.o,$(^)}}
-${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
+${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES += $(INFILES)}
 endef
 else
 define redefine.vars.lib
-${eval _INFILES := $(INFILES)}
-${eval _INFILES += ${filter $(DIR_BUILD_O)/%.o,$(^)}}
-${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.a,$(^)}}
+${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES += $(INFILES)}
 endef
 endif
 

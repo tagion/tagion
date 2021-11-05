@@ -206,6 +206,7 @@ endif
 DIR_TRASH := ${abspath ${DIR_TUB_ROOT}}/.trash
 DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(ARCH)
 DIR_BUILD_TEMP := ${abspath ${DIR_BUILD}}/.tmp
+DIR_BUILD_FLAGS := ${abspath ${DIR_BUILD}}/.tmp/flags
 DIR_BUILD_O := $(DIR_BUILD_TEMP)/o
 DIR_BUILD_LIBS_STATIC := $(DIR_BUILD)/libs/static
 DIR_BUILD_BINS := $(DIR_BUILD)/bins
@@ -257,3 +258,7 @@ FILENAME_CONTEXT_MK := context.mk
 
 GENERATED_PREFIX := gen
 FILENAME_DEPS_MK := $(GENERATED_PREFIX).deps.mk
+
+ifdef TEST
+FILENAME_DEPS_MK := $(GENERATED_PREFIX).test.deps.mk
+endif

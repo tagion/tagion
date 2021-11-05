@@ -4,6 +4,16 @@ Tbu stands for **T**agion **u**nit **b**uilder, it's a build system for Tagion c
 
 <!-- You can use [Tagil](https://github.com/tagion/tagil) for better developer experience. -->
 
+## Config
+
+```
+- DEPSREGEN=1 (dafault=1)
+- LOGS=1 (dafault=0)
+- MK_DEBUG=1 (dafault=0)
+- TEST=1 (dafault=0)
+- -j for parallel
+```
+
 ## Getting Started
 
 ### Install Dependencies
