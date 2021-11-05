@@ -42,15 +42,17 @@ struct SecureWallet(Net) {
 
 //    @disable this();
 
-    this(Wallet wallet, AccountDetails account=AccountDetails.init) nothrow {
+    this(Wallet wallet, AccountDetails account=AccountDetails.init) { //nothrow {
         this.wallet = wallet;
         this.account = account;
+        writefln("this.wallet.Y=%s", this.wallet.Y.hex);
+
 //        net = new Net;
     }
 
     this(const Document doc) {
-        auto wallet = Wallet(doc);
-        this(wallet);
+        auto _wallet = Wallet(doc);
+        this(_wallet);
     }
 
     // this() {
@@ -59,6 +61,12 @@ struct SecureWallet(Net) {
 
     final Document toDoc() const {
         return wallet.toDoc;
+    }
+
+    void dump() {
+        writefln("DUMP      Y=%s", wallet.Y.hex);
+        writefln("DUMP  check=%s", wallet.check.hex);
+
     }
 
     static SecureWallet createWallet(scope const(string[]) questions, scope const(char[][]) answers, uint confidence, const(char[]) pincode)
@@ -85,13 +93,16 @@ struct SecureWallet(Net) {
 
             recover.findSecret(R, questions, answers);
             auto pinhash = recover.checkHash(pincode.representation);
+            writefln("pinhash=%s", pinhash.hex);
+            writefln("      R=%s", R.hex);
             wallet.Y = xor(R, pinhash);
+            writefln("      Y=%s", wallet.Y.hex);
             wallet.check = recover.checkHash(R);
             net.createKeyPair(R);
 
-            const seed_data = recover.toHiBON.serialize;
-            const seed_doc = Document(seed_data);
-            wallet.generator = KeyRecover.RecoverGenerator(seed_doc);
+            // const seed_data = recover.toHiBON.serialize;
+            // const seed_doc = Document(seed_data);
+            wallet.generator = KeyRecover.RecoverGenerator(recover.toDoc);
         }
         return SecureWallet(wallet);
     }
@@ -135,16 +146,23 @@ struct SecureWallet(Net) {
     }
 
     bool login(const(char[]) pincode) {
+        writefln("login wallet.Y=%s", wallet.Y.hex);
+        if (wallet.Y) {
         logout;
         auto hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         auto pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
+        writefln("wallet.Y=%s", wallet.Y.hex);
         xor(R, wallet.Y, pinhash);
+        writefln("       R=%s", R.hex);
+        writefln("       check=%s", wallet.check.hex) ;
+
         if (wallet.check == recover.checkHash(R)) {
             net =new Net;
             net.createKeyPair(R);
             return true;
+        }
         }
         return false;
     }
