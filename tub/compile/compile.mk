@@ -14,7 +14,7 @@ ${call bin.o,%}: ${call bin.o}.way
 ${call bin,%}: ${call bin}.way ${call bin.o,%}
 	${call redefine.vars.bin}
 	${if $(LOGS), ${call details.compile}}
-	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)
+	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LINKFILES) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
 # Libraries
@@ -22,19 +22,20 @@ ifdef TEST
 ${eval ${call debug, Compiling tests...}}
 
 libtagion%: ${call lib,%}
-	@echo Calling test for $(*) from level $(MAKELEVEL)
+	${call log.header, Running tests lib-$(*) (Make level $(MAKELEVEL))}
 	@${call lib,$*}
+	${call log.close}
 
-${call lib.o,%}: ${call lib.o}.way
+${call lib.o,%}: ${call lib.o}.way 
 	${call redefine.vars.o.test, lib}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-${call lib,%}: ${call lib}.way ${call lib.o,%}
+${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
 	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.compile}}
-	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LDCFLAGS)
+	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LINKFILES) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 else
 ${eval ${call debug, Compiling library...}}
@@ -96,6 +97,7 @@ ${eval _DCFLAGS := $(DCFLAGS)}
 ${eval _DCFLAGS += -main}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
+${eval _LINKFILES := ${addprefix -L,$(LINKFILES)}}
 ${eval _INCLFLAGS := }
 ${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
 ${eval _INFILES += $(INFILES)}
@@ -115,6 +117,8 @@ ${call log.kvp, DCFLAGS, $(_DCFLAGS)}
 ${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}
 ${if $(_INCLFLAGS),${call log.kvp, INCLFLAGS}}
 ${if $(_INCLFLAGS),${call log.lines, $(_INCLFLAGS)}}
+${if $(_LINKFILES),${call log.kvp, LINKFILES}}
+${if $(_LINKFILES),${call log.lines, $(_LINKFILES)}}
 ${call log.kvp, INFILES}
 ${call log.lines, $(_INFILES)}
 ${call log.close}

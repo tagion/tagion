@@ -91,14 +91,6 @@ endif
 # of dependencies to compile targets
 define generate.target.dependencies
 $(PRECMD)ldc2 $(INCLFLAGS) --makedeps ${call lookup,$1,$2} -o- -of=${call filepath.o,${strip $3}} > $(DIR_SRC)/${strip $2}/$(FILENAME_DEPS_MK)
-${eval TARGET_DEPS_$* := ${shell ldc2 $(INCLFLAGS) --makedeps ${call lookup,$1,$2} -o- -of=${call filepath.o,${strip $3}$(*)}}}
-${eval TARGET_DEPS_$* := ${subst $(DIR_SRC)/,,$(TARGET_DEPS_$*)}}
-${eval TARGET_DEPS_$* := ${subst /,.dir ,$(TARGET_DEPS_$*)}}
-${eval TARGET_DEPS_$* := ${filter lib-%,$(TARGET_DEPS_$*)}}
-${eval TARGET_DEPS_$* := ${subst .dir,,$(TARGET_DEPS_$*)}}
-${eval TARGET_DEPS_$* := ${sort $(TARGET_DEPS_$*)}}
-$(PRECMD)echo "" >> $(DIR_SRC)/${strip $2}/$(FILENAME_DEPS_MK)
-$(PRECMD)echo ${strip $5}: ${foreach _,$(LINKS),$(DIR_BUILD_WRAPS)/$(_)} ${foreach _,$(TARGET_DEPS_$*),${subst lib-,${strip $4},$(DIR_BUILD_O)/$(_).o}} >> $(DIR_SRC)/${strip $2}/$(FILENAME_DEPS_MK)
 endef
 
 define lookup
