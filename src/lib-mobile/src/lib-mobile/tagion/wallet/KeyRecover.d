@@ -64,6 +64,10 @@ struct KeyRecover {
         return generator.toHiBON;
     }
 
+    const(Document) toDoc() const {
+        return generator.toDoc;
+    }
+
     /++
      Generates the quiz hash of the from a list of questions and answers
      +/
