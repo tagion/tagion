@@ -541,7 +541,7 @@ void accountView() {
 
 enum FKEY = YELLOW;
 
-HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
+void generateSeed(const(string[]) questions, const bool recover_flag) {
     auto answers = new char[][questions.length];
     auto translated_questions = questions.map!(s => message(s));
     CLEARSCREEN.write;
@@ -669,8 +669,13 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
                             else {
                                 writefln("%1$sWallet created%2$s", GREEN, RESET);
                                 writefln("Press %1$sEnter%2$s", YELLOW, RESET);
-                                secure_wallet.createWallet(selected_questions, selected_answers, confidence, pincode1);
+                                secure_wallet=StdSecureWallet.createWallet(selected_questions, selected_answers, confidence, pincode1);
+                                secure_wallet.dump;
+                                writefln("pincode1=%s", pincode1);
+                                //writefln("secure_wallet.wallet
                                 secure_wallet.login(pincode1);
+                                secure_wallet.dump;
+                                writefln("loggedin=%s", secure_wallet.isLoggedin);
                             }
                         }
                         while (!secure_wallet.isLoggedin);
@@ -689,7 +694,7 @@ HiBON generateSeed(const(string[]) questions, const bool recover_flag) {
         }
 
     }
-    return null;
+//    return null;
 }
 }
 
