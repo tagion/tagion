@@ -11,7 +11,7 @@ ${call bin.o,%}: ${call bin.o}.way
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-${call bin,%}: ${call bin}.way ${call bin.o,%}
+${call bin,%}: ${call bin}.way ${call bin.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
 	${call redefine.vars.bin}
 	${if $(LOGS), ${call details.compile}}
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LINKFILES) $(_LDCFLAGS)
@@ -49,7 +49,7 @@ ${call lib.o,%}: ${call lib.o}.way
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-${call lib,%}: ${call lib}.way ${call lib.o,%}
+${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
 	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.archive}}
 	$(PRECMD)ar cr $(@) $(_INFILES)
