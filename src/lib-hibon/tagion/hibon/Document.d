@@ -241,14 +241,6 @@ static assert(uint.sizeof == 4);
         return inner_valid(this, error_callback);
     }
 
-    Element.ErrorCode valid(Callback)(
-            Callback error_callback) const nothrow @trusted if (isCallable!Callback) {
-        import std.functional: toDelegate;
-
-        auto dg = error_callback.toDelegate;
-        return valid(dg);
-    }
-
     /++
      Check if a Document format is the correct HiBON format.
      Uses the valid function
