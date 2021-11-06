@@ -71,8 +71,7 @@ struct KeyRecover {
     /++
      Generates the quiz hash of the from a list of questions and answers
      +/
-    @trusted
-    Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const
+    Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
     in {
         assert(questions.length is answers.length);
     }
@@ -80,11 +79,12 @@ struct KeyRecover {
         auto results = new Buffer[questions.length];
         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
                 .requireSameLength)) {
-            const strip_down = cast(const(ubyte[]))answer.strip_down;
-            result = net.calcHash(
-                net.calcHash(strip_down) ~
-                net.calcHash(strip_down)
-                );
+            scope strip_down = cast(ubyte[])answer.strip_down;
+            scope(exit) {
+                strip_down.scramble;
+            }
+            const hash =net.calcHash(strip_down);
+            result = net.calcHash(hash ~ hash);
         }
         return results;
     }
@@ -200,8 +200,8 @@ struct KeyRecover {
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
 
-        .check(generator.Y.length == seeds, message(
-                "Number of answers does not match the number of quiz seeds"));
+        // .check(generator.Y.length == seeds, message(
+        //         "Number of answers does not match the number of quiz seeds"));
         bool result;
         bool search_for_the_secret(scope const(uint[]) indices) {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
@@ -217,22 +217,22 @@ struct KeyRecover {
         }
 
         iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
+//        writefln("Checked secret %s %d", generator.S == checkHash(R), generator.S.length);
         return result;
     }
 }
 
-string strip_down(const(char[]) text) pure
+char[] strip_down(const(char[]) text) pure @safe
 out (result) {
     assert(result.length > 0);
 }
 do {
     import std.ascii: toLower, isAlphaNum;
 
-    return assumeUnique(
-            text
-            .map!(c => cast(char) toLower(c))
-            .filter!(c => isAlphaNum(c))
-            .array);
+    return text
+        .map!(c => cast(char) toLower(c))
+        .filter!(c => isAlphaNum(c))
+        .array;
 }
 
 static immutable(string[]) standard_questions;
