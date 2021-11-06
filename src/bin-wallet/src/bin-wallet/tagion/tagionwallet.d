@@ -430,11 +430,13 @@ struct WalletInterface {
         this.secure_wallet=secure_wallet;
     }
 
+
     bool loginPincode() {
         CLEARSCREEN.write;
         foreach(i;0..3) {
             HOME.write;
             writefln("%1$sAccess code required%2$s", GREEN, RESET);
+            writefln("%1$sEnter empty pincode to proceed recovery%2$s", YELLOW, RESET);
             writefln("pincode:");
             char[] pincode;
             scope(exit) {
@@ -442,19 +444,25 @@ struct WalletInterface {
             }
             readln(pincode);
             pincode.word_strip;
-            secure_wallet.login(pincode);
-            if (secure_wallet.isLoggedin) {
-                return true;
+            writefln("pincode.length=%d", pincode.length);
+            if (pincode.length) {
+                secure_wallet.login(pincode);
+                if (secure_wallet.isLoggedin) {
+                    return true;
+                }
+                writefln("%1$sWrong pincode%2$s", RED, RESET);
             }
-            writefln("%1$sWrong pincode%2$s", RED, RESET);
+            else {
+
+//                writefln("quiz.questions=%s", quiz.questions);
+                generateSeed(quiz.questions, true);
+                return secure_wallet.isLoggedin;
+            }
         }
         CLEARSCREEN.write;
         return false;
     }
-    //    @disable this();
-    // this() {
-    //     secure_wallet = StdSecureWallet.init;
-    // }
+
     void accountView() {
 
         enum State {
@@ -576,12 +584,21 @@ struct WalletInterface {
         KeyStroke key;
         uint select_index = 0;
         uint confidence;
+        if (recover_flag) {
+            confidence=secure_wallet.confidence;
+        }
         while (ch != 'q') {
             //    import core.stdc.stdio : getc, stdin;
             HOME.write;
             warning();
-            writefln("Create a new account");
-            writefln("Answers two to more of the questions below");
+            if (recover_flag) {
+                writefln("Recover account");
+                writefln("Answers %d to more of the questions below", confidence);
+            }
+            else {
+                writefln("Create a new account");
+                writefln("Answers two to more of the questions below");
+            }
             LINE.writeln;
             uint number_of_answers;
             foreach (i, question, answer; lockstep(translated_questions, answers)) {
@@ -596,13 +613,24 @@ struct WalletInterface {
                 }
                 writefln("%2d %s%s%s%s %s%s", i, select_code, chosen_code, question, RESET, answer.trim, CLEAREOL);
             }
-            confidence = min(confidence, number_of_answers);
+            writefln("recover_flag=%s", recover_flag);
+            if (!recover_flag) {
+                confidence = min(confidence, number_of_answers);
+            }
             writefln("Confidence %d", confidence);
 
             LINE.writefln;
-            writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sLeft/Right%2$s:confidence %1$sc%2$s:create%2$s",
-                FKEY, RESET, CLEARDOWN);
+//            const info = (recover_flag)?"recover":"create";
+            if (recover_flag) {
+                writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sc%2$s:recover%3$s",
+                    FKEY, RESET, CLEARDOWN);
+            }
+            else {
+                writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sLeft/Right%2$s:confidence %1$sc%2$s:create%3$s",
+                    FKEY, RESET, CLEARDOWN);
+            }
             const keycode = key.getKey(ch);
+//            if (keycode = KeyStroke.KeyCode.NONE) {
             // writefln("%s %s", keycode, ch);
 //        version(none)
             with (KeyStroke.KeyCode) {
@@ -614,12 +642,14 @@ struct WalletInterface {
                     select_index = (select_index + 1) % questions.length;
                     break;
                 case LEFT:
-                    if (confidence > 2) {
+                    if (!recover_flag && confidence > 2) {
                         confidence--;
                     }
                     break;
                 case RIGHT:
-                    confidence = max(confidence + 1, number_of_answers);
+                    if (!recover_flag) {
+                        confidence = max(confidence + 1, number_of_answers);
+                    }
                     break;
                 case ENTER:
                     writefln("%s%s%s", questions[select_index], CLEAREOL, CLEARDOWN);
@@ -628,42 +658,49 @@ struct WalletInterface {
                     readln(answer);
                     //answer.word_strip;
                     answers[select_index] = answer;
-                    confidence++;
+                    if(!recover_flag) {
+                        confidence++;
+                    }
                     break;
                 case NONE:
                     switch (ch) {
                     case 'c': // Create Wallet
-                        //writefln("CREATE ");
+                        writefln("Wallet C ");
                         scope(exit) {
                             // Erase the answer from memory
                             answers.each!((ref a) =>  {scramble(a); a=null;});
+                            writefln("Press %1$sEnter%2$s", YELLOW, RESET);
+                            readln;
                         }
-                        // scope string[] selected_questions;
-                        // scope char[][] selected_answers;
-                        zip(questions, answers)
-                            .filter!(q => q[1].length >0)
-                            .each!(q => writefln("%s : %d", q[1], q[1].length));
-                        import std.typecons : No, Yes;
                         auto quiz_list =zip(questions, answers)
                             .filter!(q => q[1].length > 0);
-//                    selected_answers
-//                        .each!(q => selected_answers~=q[1]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
                         quiz.questions  = quiz_list.map!(q => q[0]).array.dup;
-                        const selected_answers = quiz_list.map!(q => q[1]).array;
-//                        .each!(q => selected_questions~=q[0]); //{selected_questions~=q[0]; selected_answers~=q[1]; return Yes.each;});
-                        // writefln("selected_answers %s", selected_answers);
-                        // writefln("selected_questions %s", quiz.questions);
+                        auto selected_answers = quiz_list.map!(q => q[1]).array;
                         if (selected_answers.length < 3) {
                             writefln("%1$sThen number of answers must be more than %4$d%2$s%3$s", RED, RESET, CLEAREOL, selected_answers.length);
                         }
                         else {
-                            auto hashnet = new StdHashNet;
-                            auto recover = KeyRecover(hashnet);
-
-                            if (confidence == selected_answers.length) {
-                                // Due to some bug in KeyRecover
-                                confidence--;
+                            if (recover_flag) {
+                                writefln("RECOVER_FLAG");
+                                stdout.flush;
+                                const ok = secure_wallet.correct(quiz.questions, selected_answers);
+                                writefln("RECOVER %s", ok);
+                                if (ok) {
+                                    writefln("%1$s%3$d or more answers was correct%2$s", GREEN, RESET, confidence);
+                                }
+                                else {
+                                    writefln("%1$sSome wrong answers. The account has not been recovered%2$s", RED, RESET);
+                                    secure_wallet.logout;
+                                    continue;
+                                }
                             }
+                            // auto hashnet = new StdHashNet;
+                            // auto recover = KeyRecover(hashnet);
+
+                            // if (confidence == selected_answers.length) {
+                            //     // Due to some bug in KeyRecover
+                            //     confidence--;
+                            // }
 
                             do {
                                 char[] pincode1; // = stack_pincode1;
@@ -691,19 +728,31 @@ struct WalletInterface {
                                     writefln("%1$sPincode must be less than %3$d chars%2$s", RED, RESET, pincode1.length);
                                 }
                                 else {
-                                    writefln("%1$sWallet created%2$s", GREEN, RESET);
-                                    writefln("Press %1$sEnter%2$s", YELLOW, RESET);
-                                    secure_wallet=StdSecureWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
-                                    writefln("pincode1=%s", pincode1);
+                                    if (recover_flag) {
+                                        const ok=secure_wallet.recover(quiz.questions, selected_answers, pincode1);
+                                        if (ok) {
+                                            writefln("%1$sWallet recovered%2$s", GREEN, RESET);
+                                        }
+                                        else {
+                                            writefln("%1$sWallet NOT recovered%2$s", RED, RESET);
+                                        }
+                                        walletfile.fwrite(secure_wallet);
+                                    }
+                                    else {
+                                        secure_wallet=StdSecureWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
+                                    // writefln("pincode1=%s", pincode1);
                                     //writefln("secure_wallet.wallet
-                                    secure_wallet.login(pincode1);
-                                    writefln("loggedin=%s", secure_wallet.isLoggedin);
+                                        secure_wallet.login(pincode1);
+                                        walletfile.fwrite(secure_wallet);
+                                        quizfile.fwrite(quiz);
+                                        writefln("%1$sWallet created%2$s", GREEN, RESET);
+
+                                    }
+                                    // writefln("loggedin=%s", secure_wallet.isLoggedin);
                                 }
                             }
                             while (!secure_wallet.isLoggedin);
-                            walletfile.fwrite(secure_wallet);
-                            quizfile.fwrite(quiz);
-                            readln;
+                            return;
                         }
                         break;
                     default:
@@ -739,7 +788,7 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
     import std.ascii : isWhite;
     scope not_change = word_strip;
     scope(exit) {
-        assert(&not_change[0] is &word_strip[0], "The pincode should not be reallocated");
+        assert((word_strip.length is 0) ||(&not_change[0] is &word_strip[0]), "The pincode should not be reallocated");
     }
     size_t current_i;
     foreach(c; word_strip) {
@@ -811,12 +860,10 @@ int main(string[] args) {
     if (walletfile.exists) {
         const doc = walletfile.fread;
         if (doc.isInorder) {
-            //auto hashnet = new StdHashNet;
             wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(doc);
-            //            state=State.WAIT_LOGIN;
         }
         if (quizfile.exists) {
-            const quiz_doc = walletfile.fread;
+            const quiz_doc = quizfile.fread;
             if (quiz_doc.isInorder) {
                 wallet_interface.quiz = Quiz(quiz_doc);
             }
@@ -847,8 +894,6 @@ int main(string[] args) {
 
     if (billsfile.exists) {
         const bills_data = billsfile.fread;
-        // Read AccountDetails
-//        wallet_inte
     }
 
     if (payfile.exists) {
