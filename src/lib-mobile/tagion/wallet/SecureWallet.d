@@ -56,6 +56,11 @@ struct SecureWallet(Net) {
         return wallet.toDoc;
     }
 
+    @nogc
+    uint confidence() pure const nothrow {
+        return wallet.generator.confidence;
+    }
+
     static SecureWallet createWallet(scope const(string[]) questions, scope const(char[][]) answers, uint confidence, const(char[]) pincode)
         in {
             assert(questions.length > 3, "Minimal amount of answers is 3");
@@ -97,7 +102,18 @@ struct SecureWallet(Net) {
         wallet.check = recover.checkHash(R);
     }
 
-    bool recover(const(string[]) questions, const(char[][]) answers, string pincode)
+    bool correct(const(string[]) questions, const(char[][]) answers)
+        in {
+        assert(questions.length is answers.length, "Amount of questions should be same as answers");
+        }
+    do {
+        net = new Net;
+        auto recover = KeyRecover(net, wallet.generator);
+        scope R = new ubyte[net.hashSize];
+        return recover.findSecret(R, questions, answers);
+    }
+
+    bool recover(const(string[]) questions, const(char[][]) answers, const(char[]) pincode)
         in {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
         }
