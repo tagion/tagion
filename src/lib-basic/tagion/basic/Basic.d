@@ -418,3 +418,10 @@ unittest {
     alias Left = ApplyLeft!(isEqual, int);
     static assert(Left!(Unqual!U));
 }
+
+auto eatOne(R)(ref R r) if (isInputRange!R) {
+    scope(exit) {
+        r.popFront;
+    }
+    return r.front;
+}
