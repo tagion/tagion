@@ -180,7 +180,16 @@ struct SecureWallet(Net) {
         net = null;
     }
 
-    bool change_pincode(string pincode, string new_pincode) {
+    bool check_pincode(const(char[]) pincode) {
+        const hashnet = new Net;
+        auto recover = KeyRecover(hashnet);
+        const pinhash = recover.checkHash(pincode.representation);
+        auto R = new ubyte[hashnet.hashSize];
+        xor(R, _pin.Y, pinhash);
+        return _pin.check == recover.checkHash(R);
+    }
+
+    bool change_pincode(const(char[]) pincode, const(char[]) new_pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation);
@@ -422,10 +431,13 @@ struct SecureWallet(Net) {
         { // Login test
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code);
+            assert(secure_wallet.check_pin(pin_code));
             assert(secure_wallet.isLoggedin);
             secure_wallet.logout;
+            assert(secure_wallet.check_pin(pin_code));
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code_2);
+            assert(secure_wallet.check_pin(pin_code));
             assert(!secure_wallet.isLoggedin);
         }
 
@@ -452,6 +464,7 @@ struct SecureWallet(Net) {
 
         { // Re-login
             secure_wallet.logout;
+            assert(secure_wallet.check_pin(pin_code_2));
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code_2);
             assert(secure_wallet.isLoggedin);
