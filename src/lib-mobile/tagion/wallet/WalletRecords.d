@@ -1,7 +1,7 @@
 module tagion.wallet.WalletRecords;
 
 import tagion.hibon.HiBONRecord;
-import tagion.wallet.KeyRecover: KeyRecover;
+import tagion.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Basic : Buffer, Pubkey;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill;
@@ -13,7 +13,7 @@ import tagion.script.StandardRecords : StandardBill;
         mixin HiBONRecord;
     }
 
-/++
+    /++
 
 +/
     @RecordType("PIN")
@@ -22,7 +22,6 @@ import tagion.script.StandardRecords : StandardBill;
         Buffer check;
         mixin HiBONRecord;
     }
-
 
     // @RecordType("Wallet") struct Wallet {
     //     KeyRecover.RecoverGenerator generator;
@@ -36,6 +35,5 @@ import tagion.script.StandardRecords : StandardBill;
         @Label("N") uint confidence;
         mixin HiBONRecord;
     }
-
 
 }
