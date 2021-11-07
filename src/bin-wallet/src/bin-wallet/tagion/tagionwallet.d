@@ -2,13 +2,13 @@ import std.getopt;
 import std.stdio;
 import std.file : exists;
 import std.format;
-import std.algorithm : map, max, min, filter, each;
-import std.range : lockstep, zip;
+import std.algorithm : map, max, min, filter, each, splitter;
+import std.range : lockstep, zip, takeExactly;
 import std.array;
 import std.string : strip, toLower;
 import std.conv : to;
 import std.array : join;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, assumeWontThrow;
 import std.string : representation;
 import core.time : MonoTime;
 import std.socket : InternetAddress, AddressFamily;
@@ -73,6 +73,7 @@ version (none) string TGN(const ulong amount) pure {
 //
 
 Buffer drive_state;
+version(none)
 void writeAccounts(string file, Buffer[Pubkey] accounts) {
     if (accounts.length) {
         auto hibon_accounts = new HiBON;
@@ -86,6 +87,7 @@ void writeAccounts(string file, Buffer[Pubkey] accounts) {
     }
 }
 
+version(none)
 Buffer[Pubkey] readAccounts(string file) {
     Buffer[Pubkey] accounts;
     if (file.exists) {
@@ -161,6 +163,7 @@ void warning() {
     writefln("%sWARNING%s: This wallet should only be used for the Tagion Dev-net%s", RED, BLUE, RESET);
 }
 
+version(none)
 Invoice[] readInvoices(string file) {
     Invoice[] result;
     if (file.exists) {
@@ -173,6 +176,12 @@ Invoice[] readInvoices(string file) {
         }
     }
     return result;
+}
+
+//@Recorder("Invoices")
+struct Invoices {
+    Invoice[] list;
+    mixin HiBONRecord;
 }
 
 //alias ContractT=Contract!(ContractType.INTERNAL);
@@ -267,8 +276,8 @@ void createInvoice(ref Invoice invoice) {
 // string billsfile = "bills.hibon";
 // string invoicefile = "invoice.hibon";
 // string devicefileb = "device.hibon";
-Invoice[] invoices;
-Invoice[] orders;
+//Invoice[] invoices;
+//Invoice[] orders;
 StandardBill[] bills;
 
 version(none)
@@ -419,6 +428,9 @@ struct WalletOptions {
     string contractfile;
     string billsfile;
     string invoicefile;
+    string addr;
+    ushort port;
+
     void setDefault() pure nothrow {
         accountfile = "account.hibon";
         walletfile = "tagionwallet.hibon";
@@ -427,6 +439,8 @@ struct WalletOptions {
         billsfile = "bills.hibon";
         invoicefile = "invoice.hibon";
         devicefile = "device.hibon";
+        addr = "localhost";
+        port = 10800;
     }
     mixin JSONCommon;
     mixin JSONConfig;
@@ -438,6 +452,7 @@ struct WalletInterface {
     const(WalletOptions) options;
     alias StdSecureWallet = SecureWallet!StdSecureNet;
     StdSecureWallet secure_wallet;
+    Invoices invoices;
     Quiz quiz;
     this(const WalletOptions options) {
         //this.secure_wallet=secure_wallet;
@@ -919,8 +934,6 @@ int main(string[] args) {
     bool generate_wallet;
     string item;
     string pincode;
-    string addr = "localhost";
-    ushort port = 10800;
     bool send_flag;
     string create_invoice_command;
     bool print_amount;
@@ -948,11 +961,11 @@ int main(string[] args) {
         "send|s", "Send contract to the network", &send_flag,
         "amount", "Display the wallet amount", &print_amount,
         "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
-        "update|U", "Update your wallet", &update_wallet, "item|m",
-        "Invoice item select from the invoice file", &item,
+        "update|U", "Update your wallet", &update_wallet,
+        "item|m", "Invoice item select from the invoice file", &item,
         "pin|x", "Pincode", &pincode,
-        "port|p", format("Tagion network port : default %d", port), &port,
-        "url|u", format("Tagion url : default %s", addr), &addr,
+        "port|p", format("Tagion network port : default %d", options.port), &options.port,
+        "url|u", format("Tagion url : default %s", options.addr), &options.addr,
         "visual|g", "Visual user interface", &wallet_ui,);
     if (version_switch) {
         writefln("version %s", REVNO);
@@ -975,7 +988,8 @@ int main(string[] args) {
     }
 
     if (!config_file.exists || overwrite_switch) {
-        options.save(config_file);}
+        options.save(config_file);
+    }
 
     auto wallet_interface=WalletInterface(options);
 
@@ -1012,15 +1026,27 @@ int main(string[] args) {
     }
 
     if (options.accountfile.exists) {
-        accounts = options.accountfile.readAccounts;
+        const account_doc = options.accountfile.fread;
+        if (!account_doc.isInorder) {
+            writefln("%1$sAccount file '%3$s' is bad%2$s",  RED, RESET, options.accountfile);
+            return 7;
+        }
+        wallet_interface.secure_wallet.account = AccountDetails(account_doc);
     }
 
     if (options.billsfile.exists) {
         const bills_data = options.billsfile.fread;
     }
 
+    Invoices orders;
+
     if (payfile.exists) {
-        orders = payfile.readInvoices;
+        const order_doc = payfile.fread;
+        if (!order_doc.isInorder) {
+            writefln("%1$sThe order file '%3$s' is not formated correctly%2$s", RED, RESET, payfile);
+            return 8;
+        }
+        orders = Invoices(order_doc);
         // const contract=payment(orders, bills);
         // contractfile.fwrite(contract.toHiBON.serialize);
     }
@@ -1089,50 +1115,91 @@ int main(string[] args) {
             // const total_input = calcTotal(bills);
             // writeln(TGN(total_input));
         }
-        version(none)
+//        version(none)
             if (create_invoice_command.length) {
-                auto invoice_args = create_invoice_command.split(':');
-                bool invalid = false;
-                if (invoice_args.length == 2) {
-
-                    scope (success) {
-                        if (invoices.length && !invalid) {
-                            auto hibon = new HiBON;
-                            foreach (i, ref invoice; invoices) {
-                                const index = cast(uint) i;
-                                createInvoice(invoice);
-                                hibon[index] = invoice.toHiBON;
-                            }
-                            options.invoicefile.fwrite(hibon);
+                Invoice[] execute_invoice(const(string) command) nothrow {
+                    try {
+                        version(none)
+                            scope (success) {
+                                if (invoices.length) {
+                                    auto hibon = new HiBON;
+                                    foreach (i, ref invoice; invoices) {
+                                        const index = cast(uint) i;
+                                        createInvoice(invoice);
+                                        hibon[index] = invoice.toHiBON;
+                                    }
+                                    options.invoicefile.fwrite(hibon);
                             options.accountfile.writeAccounts(accounts);
-                        }
-                    }
+                                }
+                            }
+                        Invoice[] result;
+                        // Split the strin in pairs id name:10.0,name2:42 into [["name","10.0"],["name2","42"]]
+                        foreach(invoice_args;
+                            command
+                            .splitter(",")
+                            .map!(pair => pair.splitter(":"))) {
+                            // if (invoice_arg.length != 2) {
+                            //     writefln("Bad formated invoice command %s : %s", invoice_arg, command);
+                            //     return null;
+                            //     // throw new Exception(format("Bad formated invoice command %s : %s", invoice_arg, command));
+                            // }
+//                bool invalid = false;
+                            // if (invoice_args.length % 2 == 0) {
 
-                    auto invoice_name = invoice_args[0];
-                    auto invoice_price = invoice_args[1];
-                    Invoice new_invoice;
-                    new_invoice.name = invoice_name;
-                    if (new_invoice.name.length == 0 || invoice_price.length == 0) {
-                        invalid = true;
-                    }
-                    else {
-                        new_invoice.amount = toAxion(invoice_price.to!double);
-                        if (new_invoice.amount) {
-                            invoices ~= new_invoice;
+
+                            // auto invoice_name = invoice_args[0];
+                            // auto invoice_price = invoice_args[1];
+                            // Invoice new_invoice;
+                            // new_invoice.name = invoice_args[0];
+                            // new_invoice.amount =invoice_args[1].to!double.TGN;
+                            //pragma(msg, typeof(invoice_arg.takeExactly(2)));
+//                            pragma(msg, typeof(invoice_arg.takeExactly(2)[0]));
+                            import tagion.basic.Basic : eatOne;
+                            auto new_invoice = WalletInterface.StdSecureWallet.createInvoice(invoice_args.eatOne, invoice_args.eatOne.to!double.TGN);
+
+                            if (new_invoice.name && new_invoice.amount > 0 && invoice_args.empty) {
+                                result ~= new_invoice;
+                            }
+                            else {
+                                return null;
+                            }
+                            // if (new_invoice.name.length != 0 && invoice_price.length != 0) {
+                            // //     return false;
+                            // //     invalid = true;
+                            // // }
+                            // // else {
+                            //     new_invoice.amount = toAxion(invoice_price.to!double);
+                            //     if (new_invoice.amount) {
+                            //         invoices ~= new_invoice;
+
+                    //     }
+                    //     else {
+                    //         invalid = true;
+                    //     }
+                    // }
                         }
-                        else {
-                            invalid = true;
-                        }
+                        return result;
                     }
+                    catch (Exception e) {
+                        assumeWontThrow(writefln("Error %s", e.msg));
+                    }
+                    return null;
                 }
-                else {
-                    invalid = true;
+                auto new_invoices = execute_invoice(create_invoice_command);
+                if (!new_invoices) {
+                    writefln("Bad command %s",create_invoice_command);
+                    return 10;
                 }
-                if (invalid) {
-                    writeln("Bad command");
-                }
+                // Create invoices to the wallet (Request to pay)
+                wallet_interface.secure_wallet.registerInvoices(new_invoices);
+                options.accountfile.fwrite(wallet_interface.secure_wallet.account);
+                //
+                wallet_interface.invoices.list~=new_invoices;
+                options.invoicefile.fwrite(wallet_interface.invoices);
+
             }
-            else if (orders) {
+            else if (orders !is orders.init) {
+                version(none) {
                 SignedContract signed_contract;
                 const flag = payment(orders, bills, signed_contract);
                 // writefln("signed_contract.contarct.output.length=%d", signed_contract.contract.output.length);
@@ -1149,6 +1216,7 @@ int main(string[] args) {
                     // writefln("scontract.contarct.output=%s", scontract.contract);
                     options.contractfile.fwrite(sender.toDoc);
                 }
+                }
             }
         if (send_flag) {
             if (options.contractfile.exists) {
@@ -1161,7 +1229,7 @@ int main(string[] args) {
 
                 writeln(LEB128.calc_size(doc1.serialize));
                 auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-                client.connect(new InternetAddress(addr, port));
+                client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
                 scope (exit) {
                     client.close;
                 }
