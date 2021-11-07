@@ -1,23 +1,23 @@
 module tagion.wallet.KeyRecover;
 
-import tagion.crypto.SecureInterfaceNet: HashNet;
-import tagion.crypto.SecureNet: scramble, StdSecureNet;
-import tagion.utils.Miscellaneous: xor;
-import tagion.basic.Basic: Buffer;
+import tagion.crypto.SecureInterfaceNet : HashNet;
+import tagion.crypto.SecureNet : scramble, StdSecureNet;
+import tagion.utils.Miscellaneous : xor;
+import tagion.basic.Basic : Buffer;
 import tagion.basic.Message;
 
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 
-import std.exception: assumeUnique;
-import std.string: representation;
-import std.range: lockstep, StoppingPolicy, indexed, iota;
-import std.algorithm.mutation: copy;
-import std.algorithm.iteration: map, filter;
-import std.array: array;
+import std.exception : assumeUnique;
+import std.string : representation;
+import std.range : lockstep, StoppingPolicy, indexed, iota;
+import std.algorithm.mutation : copy;
+import std.algorithm.iteration : map, filter;
+import std.array : array;
 
-import tagion.basic.TagionExceptions: Check, TagionException;
+import tagion.basic.TagionExceptions : Check, TagionException;
 import tagion.wallet.WalletRecords : RecoverGenerator;
 
 /++
@@ -73,11 +73,11 @@ struct KeyRecover {
         auto results = new Buffer[questions.length];
         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
                 .requireSameLength)) {
-            scope strip_down = cast(ubyte[])answer.strip_down;
-            scope(exit) {
+            scope strip_down = cast(ubyte[]) answer.strip_down;
+            scope (exit) {
                 strip_down.scramble;
             }
-            const hash =net.calcHash(strip_down);
+            const hash = net.calcHash(strip_down);
             result = net.calcHash(hash ~ hash);
         }
         return results;
@@ -156,15 +156,23 @@ struct KeyRecover {
             generator.confidence = 0;
         }
 
+        
+
         .check(A.length > 1, message("Number of questions must be more than one"));
+
+        
 
         .check(confidence <= A.length, message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
+
+        
 
         .check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
+
+        
 
         .check(seeds <= MAX_SEEDS, message("Number quiz-seeds is %d which exceed that max value of %d",
                 seeds, MAX_SEEDS));
@@ -186,7 +194,11 @@ struct KeyRecover {
 
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
 
+        
+
             .check(A.length > 1, message("Number of questions must be more than one"));
+
+        
 
         .check(generator.confidence <= A.length,
                 message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
@@ -211,7 +223,7 @@ struct KeyRecover {
         }
 
         iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
-//        writefln("Checked secret %s %d", generator.S == checkHash(R), generator.S.length);
+        //        writefln("Checked secret %s %d", generator.S == checkHash(R), generator.S.length);
         return result;
     }
 }
@@ -221,7 +233,7 @@ out (result) {
     assert(result.length > 0);
 }
 do {
-    import std.ascii: toLower, isAlphaNum;
+    import std.ascii : toLower, isAlphaNum;
 
     return text
         .map!(c => cast(char) toLower(c))
@@ -247,8 +259,8 @@ shared static this() {
 }
 
 unittest {
-    import tagion.crypto.SecureNet: StdHashNet;
-    import std.array: join;
+    import tagion.crypto.SecureNet : StdHashNet;
+    import std.array : join;
 
     auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
     //pragma(msg, typeof(selected_questions));
