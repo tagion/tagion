@@ -24,7 +24,7 @@ import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
 import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : Wallet, Quiz;
+import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz;
 import tagion.wallet.SecureWallet;
 import tagion.utils.Term;
 import tagion.basic.Message;
@@ -270,6 +270,7 @@ void createInvoice(ref Invoice invoice) {
 string contractfile = "contract.hibon";
 string billsfile = "bills.hibon";
 string invoicefile = "invoice.hibon";
+string devicefile = "device.hibon";
 Invoice[] invoices;
 Invoice[] orders;
 StandardBill[] bills;
@@ -420,12 +421,6 @@ struct WalletInterface {
     alias StdSecureWallet = SecureWallet!StdSecureNet;
     StdSecureWallet secure_wallet;
     Quiz quiz;
-    // static WalletInterface opCall() {
-    //     import tagion.wallet.WalletRecords : Wallet;
-    //     auto secure_wallet      = StdSecureWallet(Wallet.init);
-    //     auto result = WalletInterface(secure_wallet);
-    //     return result;
-    // }
     this(StdSecureWallet secure_wallet) {
         this.secure_wallet=secure_wallet;
     }
@@ -500,8 +495,6 @@ struct WalletInterface {
         while (ch != 'q') {
             HOME.write;
             warning();
-
-//        const _total = calcTotal(bills);
             writefln(" Account overview ");
 
             LINE.writeln;
@@ -511,12 +504,17 @@ struct WalletInterface {
                 writefln("                                    active %s", secure_wallet.account.active);
             }
             (processed?GREEN:RED).write;
-            writefln("                                 total %s", secure_wallet.account.total);
+            writefln("                                     total %s", secure_wallet.account.total);
             RESET.write;
             LINE.writeln;
             with (State) final switch (state) {
                 case CREATE_ACCOUNT:
-                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sc%2$s:create%3$s", FKEY, RESET, CLEARDOWN);
+                    if (secure_wallet.isLoggedin) {
+                        writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sp%2$s:change pin%3$s", FKEY, RESET, CLEARDOWN);
+                    }
+                    else {
+                        writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sc%2$s:create%3$s", FKEY, RESET, CLEARDOWN);
+                    }
                     break;
                 case WAIT_LOGIN:
                     writefln("Pincode:%s", CLEARDOWN);
@@ -558,13 +556,13 @@ struct WalletInterface {
                 }
                 break;
             case 'c':
-                generateSeed(standard_questions.idup, false);
-                break;
-                version (none) {
-                    case 'r':
-                        generateSeed(standard_questions.idup, true);
-                        break;
+                if (!secure_wallet.isLoggedin) {
+                    generateSeed(standard_questions.idup, false);
                 }
+                break;
+            case 'p':
+                changePin;
+                break;
             default:
                 // ignore
             }
@@ -572,6 +570,72 @@ struct WalletInterface {
     }
 
     enum FKEY = YELLOW;
+
+    void pressKey() {
+        writefln("Press %1$sEnter%2$s", YELLOW, RESET);
+        readln;
+    }
+
+    void changePin() {
+        CLEARSCREEN.write;
+        if (secure_wallet.isLoggedin) {
+            foreach(i; 0..3) {
+                HOME.write;
+        CLEARSCREEN.write;
+        scope (success) {
+            CLEARSCREEN.write;
+        }
+        writeln("Change you pin code");
+        LINE.writeln;
+        if (secure_wallet.pin.Y) {
+            char[] old_pincode;
+            char[] new_pincode1;
+            char[] new_pincode2;
+            scope(exit) {
+                // Scramble the code to prevent memory leaks
+                old_pincode.scramble;
+                new_pincode1.scramble;
+                new_pincode2.scramble;
+            }
+            writeln("Current pincode:");
+            readln(old_pincode);
+            old_pincode.word_strip;
+//            secure_wallet.login(old_pincode);
+            if (secure_wallet.check_pincode(old_pincode)) {
+                writefln("%1$sCorrect pin%2$s", GREEN, RESET);
+                bool ok;
+                do {
+                    writefln("New pincode:%s", CLEARDOWN);
+                    readln(new_pincode1);
+                    new_pincode1.word_strip;
+                    writefln("Repeate:");
+                    readln(new_pincode2);
+                    new_pincode2.word_strip;
+                    ok=(new_pincode1.length >= 4);
+                    if (ok && (ok = (new_pincode1 == new_pincode2)) is true) {
+                        secure_wallet.change_pincode(old_pincode, new_pincode1);
+                        secure_wallet.login(new_pincode1);
+                        devicefile.fwrite(secure_wallet.pin);
+                        return;
+                    }
+                    else {
+                        writefln("%1$sPincode to short or does not match%2$s", RED, RESET);
+                    }
+                }
+                while(!ok);
+                // if (new_pincode1
+                // if (
+            }
+            else {
+                writefln("%1$sWrong pin%2$s", GREEN, RESET);
+                pressKey;
+            }
+            return;
+        }
+                    writefln("%1$sPin code is missing. You need to recover you keys%2$s", RED, RESET);
+        }
+        }
+    }
 
     void generateSeed(const(string[]) questions, const bool recover_flag) {
         auto answers = new char[][questions.length];
@@ -669,8 +733,7 @@ struct WalletInterface {
                         scope(exit) {
                             // Erase the answer from memory
                             answers.each!((ref a) =>  {scramble(a); a=null;});
-                            writefln("Press %1$sEnter%2$s", YELLOW, RESET);
-                            readln;
+                            pressKey;
                         }
                         auto quiz_list =zip(questions, answers)
                             .filter!(q => q[1].length > 0);
@@ -736,14 +799,16 @@ struct WalletInterface {
                                         else {
                                             writefln("%1$sWallet NOT recovered%2$s", RED, RESET);
                                         }
-                                        walletfile.fwrite(secure_wallet);
+                                        walletfile.fwrite(secure_wallet.wallet);
+                                        devicefile.fwrite(secure_wallet.pin);
                                     }
                                     else {
                                         secure_wallet=StdSecureWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
                                     // writefln("pincode1=%s", pincode1);
                                     //writefln("secure_wallet.wallet
                                         secure_wallet.login(pincode1);
-                                        walletfile.fwrite(secure_wallet);
+                                        walletfile.fwrite(secure_wallet.wallet);
+                                        devicefile.fwrite(secure_wallet.pin);
                                         quizfile.fwrite(quiz);
                                         writefln("%1$sWallet created%2$s", GREEN, RESET);
 
@@ -837,8 +902,9 @@ int main(string[] args) {
     auto main_args = getopt(args, std.getopt.config.caseSensitive,
         std.getopt.config.bundling, "version",
         "display the version", &version_switch,
-        "wallet|w", format("Wallet file : default %s", walletfile), &walletfile,
-        "quiz|q", format("Quiz file : default %s", quizfile), &quizfile,
+        "wallet", format("Wallet file : default %s", walletfile), &walletfile,
+        "device", format("Device file : default %s", devicefile), &devicefile,
+        "quiz", format("Quiz file : default %s", quizfile), &quizfile,
         "invoice|c", format("Invoice file : default %s", invoicefile), &invoicefile,
         "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
         "contract|t", format("Contractfile : default %s", contractfile), &contractfile,
@@ -858,9 +924,10 @@ int main(string[] args) {
     }
 
     if (walletfile.exists) {
-        const doc = walletfile.fread;
-        if (doc.isInorder) {
-            wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(doc);
+        const wallet_doc = walletfile.fread;
+        const pin_doc = devicefile.exists?devicefile.fread:Document.init;
+        if (wallet_doc.isInorder && pin_doc.isInorder) {
+            wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
         }
         if (quizfile.exists) {
             const quiz_doc = quizfile.fread;
@@ -872,7 +939,6 @@ int main(string[] args) {
     else {
         wallet_ui = true;
         wallet_interface.quiz.questions = standard_questions.dup;
-
     }
 
     if ( wallet_interface.secure_wallet != WalletInterface.StdSecureWallet.init) {
@@ -886,6 +952,7 @@ int main(string[] args) {
         else if (!wallet_interface.loginPincode) {
             return 4;
         }
+        wallet_ui = true;
     }
 
     if (accountfile.exists) {
@@ -969,7 +1036,9 @@ int main(string[] args) {
                 writeln("Wallet update failed");
             }
         }
+
     if (wallet_ui) {
+        writefln("Wallet UI");
         wallet_interface.accountView;
     }
     else {
