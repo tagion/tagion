@@ -27,7 +27,7 @@ import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : Wallet;
+import tagion.wallet.WalletRecords :  RecoverGenerator, DevicePIN;
 import tagion.wallet.WalletException : check;
 
 
@@ -36,29 +36,45 @@ import tagion.wallet.WalletException : check;
 @safe
 struct SecureWallet(Net) {
     static assert(is(Net : SecureNet));
-    protected Wallet wallet;
+    protected RecoverGenerator _wallet;
+    protected DevicePIN _pin;
+
     AccountDetails account;
     protected SecureNet net;
 
 //    @disable this();
 
-    this(Wallet wallet, AccountDetails account=AccountDetails.init) { //nothrow {
-        this.wallet = wallet;
+    this(RecoverGenerator wallet, DevicePIN pin, AccountDetails account=AccountDetails.init) { //nothrow {
+        _wallet = wallet;
+        _pin = pin;
         this.account = account;
     }
 
-    this(const Document doc) {
-        auto _wallet = Wallet(doc);
-        this(_wallet);
-    }
-
-    final Document toDoc() const {
-        return wallet.toDoc;
+    this(const Document wallet_doc, const Document pin_doc=Document.init) {
+        auto __wallet = RecoverGenerator(wallet_doc);
+        DevicePIN __pin;
+        if (!pin_doc.empty) {
+            __pin = DevicePIN(pin_doc);
+        }
+        this(__wallet, __pin);
     }
 
     @nogc
+    const(RecoverGenerator) wallet() pure const nothrow {
+        return _wallet;
+    }
+
+    @nogc
+    const(DevicePIN) pin() pure const nothrow {
+        return _pin;
+    }
+// final Document toDoc() const {
+    //     return wallet.toDoc;
+    // }
+
+    @nogc
     uint confidence() pure const nothrow {
-        return wallet.generator.confidence;
+        return _wallet.confidence;
     }
 
     static SecureWallet createWallet(scope const(string[]) questions, scope const(char[][]) answers, uint confidence, const(char[]) pincode)
@@ -79,18 +95,19 @@ struct SecureWallet(Net) {
 
         recover.createKey(questions, answers, confidence);
 //        StdSecureNet net;
-        Wallet wallet;
+        RecoverGenerator wallet;
+        DevicePIN pin;
         {
             auto R = new ubyte[net.hashSize];
 
             recover.findSecret(R, questions, answers);
             auto pinhash = recover.checkHash(pincode.representation);
-            wallet.Y = xor(R, pinhash);
-            wallet.check = recover.checkHash(R);
+            pin.Y = xor(R, pinhash);
+            pin.check = recover.checkHash(R);
             net.createKeyPair(R);
-            wallet.generator = KeyRecover.RecoverGenerator(recover.toDoc);
+            wallet = RecoverGenerator(recover.toDoc);
         }
-        return SecureWallet(wallet);
+        return SecureWallet(wallet, pin);
     }
 
     // void load(AccountDetails account) nothrow pure {
@@ -98,8 +115,8 @@ struct SecureWallet(Net) {
     // }
 
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R, const(ubyte[]) pinhash) {
-        wallet.Y = xor(R, pinhash);
-        wallet.check = recover.checkHash(R);
+        _pin.Y = xor(R, pinhash);
+        _pin.check = recover.checkHash(R);
     }
 
     bool correct(const(string[]) questions, const(char[][]) answers)
@@ -108,7 +125,7 @@ struct SecureWallet(Net) {
         }
     do {
         net = new Net;
-        auto recover = KeyRecover(net, wallet.generator);
+        auto recover = KeyRecover(net, _wallet);
         scope R = new ubyte[net.hashSize];
         return recover.findSecret(R, questions, answers);
     }
@@ -119,7 +136,7 @@ struct SecureWallet(Net) {
         }
     do {
         net = new Net;
-        auto recover = KeyRecover(net, wallet.generator);
+        auto recover = KeyRecover(net, _wallet);
         auto R = new ubyte[net.hashSize];
         const result = recover.findSecret(R, questions, answers);
         if (result) {
@@ -143,14 +160,14 @@ struct SecureWallet(Net) {
     }
 
     bool login(const(char[]) pincode) {
-        if (wallet.Y) {
+        if (_pin.Y) {
         logout;
         auto hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         auto pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
-        xor(R, wallet.Y, pinhash);
-        if (wallet.check == recover.checkHash(R)) {
+        xor(R, _pin.Y, pinhash);
+        if (_pin.check == recover.checkHash(R)) {
             net =new Net;
             net.createKeyPair(R);
             return true;
@@ -168,8 +185,8 @@ struct SecureWallet(Net) {
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
-        xor(R, wallet.Y, pinhash);
-        if (wallet.check == recover.checkHash(R)) {
+        xor(R, _pin.Y, pinhash);
+        if (_pin.check == recover.checkHash(R)) {
             const new_pinhash = recover.checkHash(new_pincode.representation);
             set_pincode(recover, R, new_pinhash);
             logout;
@@ -397,9 +414,11 @@ struct SecureWallet(Net) {
         }
         const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
         const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
-        const wallet_doc = SecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).toDoc;
+        const wallet_doc = SecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).wallet.toDoc;
 
-        auto secure_wallet = SecureWallet(wallet_doc);
+        const pin_doc = SecureWallet.createWallet(dummey_questions, dummey_amswers, confidence, pin_code).pin.toDoc;
+
+        auto secure_wallet = SecureWallet(wallet_doc, pin_doc);
         const pin_code_2 = "3434";
         { // Login test
             assert(!secure_wallet.isLoggedin);
@@ -460,7 +479,7 @@ struct SecureWallet(Net) {
     unittest { // Test for account
         import std.stdio;
         import std.range : zip;
-        auto sender_wallet = SecureWallet(Wallet.init);
+        auto sender_wallet = SecureWallet(RecoverGenerator.init, DevicePIN.init);
         auto net = new Net;
 
         { // Add SecureNet to the wallet
@@ -492,7 +511,8 @@ struct SecureWallet(Net) {
             assert(sender_wallet.active_balance == 0.TGN);
         }
 
-        auto receiver_wallet = SecureWallet(Wallet.init);
+
+        auto receiver_wallet =  SecureWallet(RecoverGenerator.init, DevicePIN.init);
         { // Add securety to the receiver_wallet
             auto receiver_net = new Net;
             immutable very_securet = "Very Secret password for the receriver";
