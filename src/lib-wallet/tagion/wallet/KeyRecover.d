@@ -18,6 +18,7 @@ import std.algorithm.iteration: map, filter;
 import std.array: array;
 
 import tagion.basic.TagionExceptions: Check, TagionException;
+import tagion.wallet.WalletRecords : RecoverGenerator;
 
 /++
  + Exception type used by for key-recovery module
@@ -35,13 +36,6 @@ alias check = Check!KeyRecorverException;
 struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
-    struct RecoverGenerator {
-        Buffer[] Y; /// Recorvery seed
-        Buffer S; /// Check value S=H(H(R))
-        @Label("N") uint confidence;
-        mixin HiBONRecord;
-    }
-
     const HashNet net;
     protected RecoverGenerator generator;
 
