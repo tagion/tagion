@@ -13,6 +13,7 @@ ifeq ($(MAKELEVEL),0)
 ${shell rm -f $(DIR_SRC)/**/$(FILENAME_DEPS_MK) || true}
 endif
 endif
+${shell find $(DIR_SRC) -name $(FILENAME_DEPS_MK) -size 0 -delete}
 
 # Remove duplicates
 DEPS := ${sort $(DEPS)}
