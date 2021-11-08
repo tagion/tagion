@@ -6,18 +6,12 @@ DIR_P2PGOWRAPPER := $(DIR_BUILD_WRAPS)/p2pgowrapper
 DIR_P2PGOWRAPPER_PREFIX := $(DIR_P2PGOWRAPPER)/lib
 DIR_P2PGOWRAPPER_SRC := $(DIR_P2PGOWRAPPER)/src
 
-define unit.dep.wrap-p2pgowrapper
-${eval UNIT_WRAPS_TARGETS += wrap-p2pgowrapper}
-${eval UNIT_WRAPS_INCFLAGS += -I$(DIR_P2PGOWRAPPER_PREFIX)}
-${eval UNIT_WRAPS_LINKFILES += $(DIR_P2PGOWRAPPER_PREFIX)/libp2pgowrapper.a}
-endef
-
-wrap-p2pgowrapper: $(DIR_P2PGOWRAPPER_PREFIX)/p2p/cgo/libp2p.di $(DIR_P2PGOWRAPPER_PREFIX)/p2p/cgo/libp2pgowrapper.di $(DIR_P2PGOWRAPPER_PREFIX)/libp2pgowrapper.a
+wrap-p2pgowrapper: $(DIR_P2PGOWRAPPER_PREFIX)/p2p/cgo/libp2p.di $(DIR_P2PGOWRAPPER_PREFIX)/p2p/cgo/libp2p.di $(DIR_P2PGOWRAPPER_PREFIX)/libp2pgowrapper.a
 	@
 
 clean-wrap-p2pgowrapper:
 	${call unit.dep.wrap-p2pgowrapper}
-	${call rm.dir, $(DIR_BUILD_WRAPS)}
+	${call rm.dir, $(DIR_P2PGOWRAPPER)}
 
 $(DIR_P2PGOWRAPPER_PREFIX)/%: $(DIR_P2PGOWRAPPER_PREFIX)/.way $(DIR_P2PGOWRAPPER_PREFIX)/p2p/cgo/.way
 	$(PRECMD)git clone --depth 1 $(REPO_P2PGOWRAPPER) $(DIR_P2PGOWRAPPER_SRC) 2> /dev/null || true
