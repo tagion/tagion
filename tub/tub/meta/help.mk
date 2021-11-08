@@ -8,7 +8,7 @@ help:
 	${call log.kvp, make version-<version>, Switch tub to specific branch or commit}
 	${call log.separator}
 	${call log.kvp, make clone-<specific>, Add source code of <speficic> module}
-	${call log.kvp, make clone-core, Add all core modules}
+	${call log.kvp, make clone-all, Add all core modules}
 	${call log.subheader, library compilation}
 	${call log.kvp, make libtagion<specific>, Compile <specific> lib}
 	${call log.kvp, make libtagion<specific> TEST=1, Run unit tests for <specific> lib}
