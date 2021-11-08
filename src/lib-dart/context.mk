@@ -1,2 +1,7 @@
-libtagiondart.ctx: libtagioncrypto.o libtagioncommunication.o libtagiongossip.o libtagionp2pgowrapper.o libtagionoptions.o
-	@
+DEPS += lib-crypto
+DEPS += lib-communication
+DEPS += lib-services
+DEPS += lib-gossip
+DEPS += lib-p2pgowrapper
+
+${call config.lib, dart}: LOOKUP := tagion/**/*.d
