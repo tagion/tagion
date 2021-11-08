@@ -1,13 +1,10 @@
-core
 *.o
 *#
 .#*
 *~
-dfiles.mk
+*.parked
+local.mk
+gen.*
+
 wavm.di
 embedder_example
-revision.d
-bin
-build
-*.parked
-*.di

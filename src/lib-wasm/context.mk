@@ -1,3 +1,5 @@
-${call unit.lib, wasm}
-${call unit.dep.lib, utils}
-${call unit.end}
+DEPS += lib-utils
+
+${call config.lib, wasm}: LOOKUP := tagion/vm/wasm/*.d
+
+# TODO: fix compilation
