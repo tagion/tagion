@@ -216,9 +216,9 @@ struct SecureWallet(Net) {
         account.derives[pkey] = account.derive_state;
     }
 
-    void registerInvoices(ref Invoice[] invoices) {
-        invoices.each!((ref invoice) => registerInvoice(invoice));
-    }
+    // void registerInvoices(ref Invoice[] invoices) {
+    //     invoices.each!((ref invoice) => registerInvoice(invoice));
+    // }
 
     static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
         Invoice new_invoice;
