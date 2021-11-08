@@ -14,7 +14,7 @@ ln -fs $PWD/tub/main.mk Makefile
 touch tubroot
 
 if [ -n "$1" ]; then
-make version-$1
+make branch-$1
 fi
 
 make help
