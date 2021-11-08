@@ -1,9 +1,7 @@
-core
 *.o
 *#
 .#*
 *~
-dfiles.mk
-revision.di
-bin
 *.parked
+local.mk
+gen.*
