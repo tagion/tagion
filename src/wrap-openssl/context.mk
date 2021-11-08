@@ -1,27 +1,26 @@
-REPO_OPENSSL ?= https://github.com/openssl/openssl.git
-BRANCH_OPENSSL_STABLE := OpenSSL_1_1_1-stable
-DIR_OPENSSL_SRC := ${call dir.self, openssl}
-DIR_BUILD_OPENSSL := $(DIR_BUILD)/wraps/openssl
-DIR_BUILD_OPENSSL_EXTRA := $(DIR_BUILD)/wraps/openssl/extra
+REPO_OPENSSL ?= git@github.com:tagion/fork-openssl.git
+VERSION_OPENSSL := 2e5cdbc18a1a26bfc817070a52689886fa0669c2 # OpenSSL_1_1_1-stable as of 09.09.2021
 
-WAYS_PERSISTENT += $(DIR_OPENSSL_SRC)/
-WAYS_PERSISTENT += $(DIR_BUILD_OPENSSL)/.way 
-WAYS_PERSISTENT += $(DIR_BUILD_OPENSSL_EXTRA)/.way
+DIR_OPENSSL := $(DIR_BUILD_WRAPS)/openssl
 
-.PHONY: wrap-openssl
-wrap-openssl: | ways $(DIR_BUILD_OPENSSL)/lib/libcrypto.a
-	${eval WRAPS += opensssl}
-	${eval WRAPS_STATIC += $(DIR_BUILD_OPENSSL)/lib/libcrypto.a}
-	${eval WRAPS_STATIC += $(DIR_BUILD_OPENSSL)/lib/libssl.a}
-	$(PRECMD)export LD_LIBRARY_PATH=$(DIR_BUILD_OPENSSL)/lib/:$(LD_LIBRARY_PATH)
-	$(PRECMD)export DYLD_LIBRARY_PATH=$(DIR_BUILD_OPENSSL)/lib/:$(DYLD_LIBRARY_PATH)
+DIR_OPENSSL_PREFIX := $(DIR_OPENSSL)/lib
+DIR_OPENSSL_EXTRA := $(DIR_OPENSSL)/extra
+DIR_OPENSSL_SRC := $(DIR_OPENSSL)/src
 
-$(DIR_BUILD_OPENSSL)/lib/libcrypto.a: $(DIR_OPENSSL_SRC)/config
-	$(PRECMD)cd $(DIR_OPENSSL_SRC); ./config --shared --prefix=$(DIR_BUILD_OPENSSL) --openssldir=$(DIR_BUILD_OPENSSL_EXTRA)
-	${eval PARALLEL := ${shell [[ "$(MAKEFLAGS)" =~ "jobserver-fds" ]] && echo 1}}
-	${if $(PARALLEL), ${eval PARALLEL := -j8}, ${eval PARALLEL :=}}
-	$(PRECMD)cd $(DIR_OPENSSL_SRC); make $(PARALLEL)
+wrap-openssl: $(DIR_OPENSSL_PREFIX)/libcrypto.a $(DIR_OPENSSL_PREFIX)/libssl.a
+	@
+
+clean-wrap-openssl:
+	${call unit.dep.wrap-openssl}
+	${call rm.dir, $(DIR_OPENSSL)}
+
+$(DIR_OPENSSL_PREFIX)/%.a: $(DIR_OPENSSL)/.way
+	$(PRECMD)git clone --depth 1 $(REPO_OPENSSL) $(DIR_OPENSSL_SRC) 2> /dev/null || true
+	$(PRECMD)git -C $(DIR_OPENSSL_SRC) fetch --depth 1 $(DIR_OPENSSL_SRC) $(VERSION_OPENSSL) &> /dev/null || true
+	$(PRECMD)cd $(DIR_OPENSSL_SRC); ./config --shared --prefix=$(DIR_OPENSSL) --openssldir=$(DIR_OPENSSL_EXTRA)
+	$(PRECMD)cd $(DIR_OPENSSL_SRC); make $(MAKE_PARALLEL)
 	$(PRECMD)cd $(DIR_OPENSSL_SRC); make install
 
-$(DIR_OPENSSL_SRC)/config:
-	$(PRECMD)git clone --depth 1 -b $(BRANCH_OPENSSL_STABLE) $(REPO_OPENSSL) $(DIR_OPENSSL_SRC) || git -C $(DIR_OPENSSL_SRC) pull
+# NOTE: Might need to export, but not sure. Will try without since we static link:
+# $(PRECMD)export LD_LIBRARY_PATH=$(DIR_OPENSSL_PREFIX)/:$(LD_LIBRARY_PATH)
+# $(PRECMD)export DYLD_LIBRARY_PATH=$(DIR_OPENSSL_PREFIX)/:$(DYLD_LIBRARY_PATH)
