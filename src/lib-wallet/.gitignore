@@ -1,10 +1,7 @@
-*~
 *.o
 *#
 .#*
+*~
 *.parked
-bin/
-*.bak
-build
-dfiles.mk
-revision.di
+local.mk
+gen.*
