@@ -11,8 +11,11 @@ echo "Manually remove Makefile and try again."
 echo
 else
 ln -fs $PWD/tub/main.mk Makefile
-cp $PWD/tub/run run
 touch tubroot
+
+if [ -n "$1" ]; then
+make version-$1
+fi
 
 make help
 
