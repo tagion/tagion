@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+PWD=$(pwd)
+
+if [ -f $PWD/Makefile ]; then
+echo
+echo -e "\033[1mError:\033[0m"
+echo "Illegal to tubroot into a directory with Makefile."
+echo
+echo "Manually remove Makefile and try again."
+echo
+else
+ln -fs $PWD/tub/main.mk Makefile
+cp $PWD/tub/run run
+touch tubroot
+
+make help
+
+echo "Tub is successfully rooted in $PWD"
+echo
+fi
