@@ -1,4 +1,5 @@
 # Local setup, ignored by git
+-include $(DIR_ROOT)/local.*.mk
 -include $(DIR_ROOT)/local.mk
 
 # Core tub functionality
