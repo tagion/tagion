@@ -4,8 +4,8 @@ help:
 	${call log.header, tub (version $(TUB_VERSION)) :: help }
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show current Make environment}
-	${call log.kvp, make update, Force update the tub itself}
-	${call log.kvp, make checkout/<branch-or-commit>, Switch tub to specific branch or commit}
+	${call log.kvp, make version-latest, Force update the tub itself}
+	${call log.kvp, make version-<version>, Switch tub to specific branch or commit}
 	${call log.separator}
 	${call log.kvp, make clone-<specific>, Add source code of <speficic> module}
 	${call log.kvp, make clone-core, Add all core modules}
