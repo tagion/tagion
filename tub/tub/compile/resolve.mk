@@ -5,7 +5,7 @@ ${eval ${call debug.open, MAKE RESOLVE LEVEL $(MAKELEVEL) - $(MAKECMDGOALS)}}
 INCLFLAGS := ${addprefix -I$(DIR_ROOT)/,${shell ls -d src/*/ | grep -v wrap-}}
 INCLFLAGS += ${addprefix -I,${shell ls -d $(DIR_BUILD_WRAPS)/*/lib}}
 
-DEPSREGEN ?= 1
+DEPSREGEN :=
 
 ifdef DEPSREGEN
 # Quitely removing generated files before proceeding with dependency resolvement
