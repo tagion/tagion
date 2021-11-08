@@ -1,12 +1,12 @@
 # Only tagion modules
 .PHONY: clean proper clean-shared
-clean:
+clean: clean-shared
 	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/libs}
 	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/bins}
 	${eval WAYS_TO_CLEAN += $(DIR_BUILD)/.tmp}
 	${call clean.ways, compiled files}
 
-proper:
+proper: clean-shared
 	${eval WAYS_TO_CLEAN += $(DIR_BUILD)}
 	${call clean.ways, compiled files}
 
