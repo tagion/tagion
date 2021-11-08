@@ -22,7 +22,8 @@ DEPS := ${sort $(DEPS)}
 # now, or use recursive make to resolve further
 ${foreach DEP,$(DEPS),\
 	${call debug, Including $(DEP) context...}\
-	${eval include $(DIR_SRC)/$(DEP)/context.mk}\
+	${eval -include $(DIR_SRC)/$(DEP)/context.mk}\
+	${eval -include $(DIR_SRC)/$(DEP)/local.mk}\
 	${eval DEPS_RESOLVED += $(DEP)}\
 }
 
