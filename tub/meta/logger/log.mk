@@ -9,7 +9,7 @@ define log.header
 endef
 
 define log.subheader
-@echo ":: $(strip $1) ::"
+@echo "$(LOG_SEPARATOR) \033[4m$(strip $1)\033[0m"
 endef
 
 define log.space
