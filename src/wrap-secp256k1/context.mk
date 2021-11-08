@@ -6,12 +6,6 @@ DIR_SECP256K1 := $(DIR_BUILD_WRAPS)/secp256k1
 DIR_SECP256K1_PREFIX := $(DIR_SECP256K1)/src/.libs
 DIR_SECP256K1_SRC := $(DIR_SECP256K1)/src
 
-define unit.dep.wrap-secp256k1
-${eval UNIT_WRAPS_TARGETS += wrap-secp256k1}
-${eval UNIT_WRAPS_LINKFILES += $(DIR_SECP256K1_PREFIX)/libsecp256k1.a}
-${if ${findstring openssl, $(WRAPS_DEFINED)},,${eval include $(DIR_SRC)/wrap-openssl/context.mk}}
-endef
-
 wrap-secp256k1: $(DIR_SECP256K1_PREFIX)/libsecp256k1.a
 	@
 
