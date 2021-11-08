@@ -157,7 +157,7 @@ import tagion.script.TagionCurrency;
     }
 
     struct AccountDetails {
-        @Label("$drives") Buffer[Pubkey] derives;
+        @Label("$derives") Buffer[Pubkey] derives;
         @Label("$bills") StandardBill[] bills;
         @Label("$state") Buffer derive_state;
         @Label("$active") bool[Pubkey] activated;  /// Actived bills
