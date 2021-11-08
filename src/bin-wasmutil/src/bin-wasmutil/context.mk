@@ -1,2 +1,5 @@
-tagionwasmutil.ctx: libtagionwasm.o libtagionbasic.o libtagionhibon.o
-	@
+DEPS += lib-basic
+DEPS += lib-wasm
+DEPS += lib-hibon
+
+${call config.bin, wasmutil}: LOOKUP := tagion/*.d
