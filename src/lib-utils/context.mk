@@ -1,2 +1,3 @@
-libtagionutils.ctx: libtagionbasic.o
-	@
+DEPS += lib-basic
+
+${call config.lib, utils}: LOOKUP := tagion/**/*.d
