@@ -5,5 +5,8 @@ ifeq ($(OS),Darwin)
 LDCFLAGS += -L-framework -LCoreFoundation -L-framework -LSecurity
 endif
 
-libtagionp2pgowrapper.ctx: wrap-p2p-go-wrapper
-	@
+DEPS += wrap-p2pgowrapper
+
+${call config.lib, p2pgowrapper}: wrap-p2pgowrapper
+${call config.lib, p2pgowrapper}: LOOKUP := p2p/*.d
+${call lib, p2pgowrapper}: LINKFILES := $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
