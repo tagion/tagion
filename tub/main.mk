@@ -1,9 +1,3 @@
-# TODO: Test in isolated mode
-# TODO: Test auto adding dependencies (ensure correct branching as well)
-# TODO: Add revision
-# TODO: Add tub version compat testing
-# TODO: Add support to all repos under 0.7
-
 main: help
 
 # Tub protocol version that modules must explicitly support
