@@ -2,6 +2,8 @@
 *.o
 *#
 .#*
+*~
 *.parked
-*.bak
-tagion/crypto/secp256k1/c/
+local.mk
+gen.*
+tagion/crypto/aes/tiny_aes/tiny_aes

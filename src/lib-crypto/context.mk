@@ -1,9 +1,24 @@
+DEPS += lib-hibon
+DEPS += wrap-secp256k1
+
+${call config.lib, crypto}: wrap-secp256k1
+
+${call config.lib, crypto}: LOOKUP := tagion/crypto/*.d
+${call config.lib, crypto}: LOOKUP += tagion/crypto/secp256k1/*.d
+
+${call lib, crypto}: INFILES += $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
+
 ifdef TINY_AES
-SOURCE_FIND_EXCLUDE+="*/openssl_aes/*"
+${call config.lib, crypto}: LOOKUP += tagion/crypto/aes/tiny_aes/*.d
 DCFLAGS+=$(DVERSION)=TINY_AES
 else
-SOURCE_FIND_EXCLUDE+="*/tiny_aes/*"
+DEPS += wrap-openssl
+
+${call config.lib, crypto}: wrap-openssl
+
+${call config.lib, crypto}: LOOKUP += tagion/crypto/aes/openssl_aes/*.d
+
+${call lib, crypto}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
+${call lib, crypto}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
 endif
 
-libtagioncrypto.ctx: libtagionhibon.o wrap-secp256k1
-	@
