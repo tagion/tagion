@@ -22,23 +22,23 @@ Make sure to install dependencies:
 
 ### Install Tub
 
-Use tub `install` script to install Tub in your local directory.
-
 ```bash
 cd <project-dir>
 git clone git@github.com:tagion/tub.git
-./tub/install
 
-make help
+./tub/root
+make init version-<version> # e.g. version-0.8.alpha
 ```
+
+> Keep in mind, that **make scripts** in **tub** are meant to run from your root project directory, and not from `./tub` directory.
 
 ### Compile Units
 
-You can get familiar with available units in [Tagion GitHub organization](https://github.com/tagion?q=core-&type=&language=&sort=). Everything that starts with `core-` is a unit.
+Once you have `tubroot` and `local.branch.mk` (from install step), you can start compiling and testing core units available to you in [Tagion GitHub organization page](https://github.com/tagion?q=core-&type=&language=&sort=).
 
 #### Compile Library
 
-- All tagion library repositories are named as `core-lib-<name>`;
+- All tagion library repos are named as `core-lib-<name>`;
 - When compiling, you must specify `libtagion` prefix;
 
 For this example, we will compile `core-lib-hibon`:
@@ -50,7 +50,7 @@ make libtagionhibon TEST=1 # Will compile and run unit tests
 
 ### Compile Executable
 
-- All tagion executable repositories are named as `core-bin-<name>`;
+- All tagion executable repos are named as `core-bin-<name>`;
 - When you compile a tagion executable, you must specify `tagion` prefix;
 - Unit tests are not supported for executable, since an executable must not contain any business logic and serve only as an interface into library.
 
