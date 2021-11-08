@@ -2,7 +2,7 @@ ${eval ${call debug.open, MAKE RESOLVE LEVEL $(MAKELEVEL) - $(MAKECMDGOALS)}}
 
 # By default, INCLFLAGS contain all directories inside current ./src
 # TODO: Use DIR_SRC instead, to support ISOLATED mode
-INCLFLAGS := ${addprefix -I$(DIR_ROOT)/,${shell ls -d src/*/ | grep -v wrap-}}
+INCLFLAGS := ${addprefix -I,${shell ls -d $(DIR_SRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 INCLFLAGS += ${addprefix -I,${shell ls -d $(DIR_BUILD_WRAPS)/*/lib 2> /dev/null || true}}
 
 DEPSREGEN ?= 1
@@ -13,7 +13,7 @@ ifeq ($(MAKELEVEL),0)
 ${shell rm -f $(DIR_SRC)/**/$(FILENAME_DEPS_MK) || true}
 endif
 endif
-${shell find $(DIR_SRC) -name $(FILENAME_DEPS_MK) -size 0 -delete}
+${shell find $(DIR_SRC) -name $(FILENAME_DEPS_MK) -size 0 -delete 2> /dev/null  || true}
 
 # Remove duplicates
 DEPS := ${sort $(DEPS)}
