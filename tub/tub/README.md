@@ -27,9 +27,7 @@ Use tub `install` script to install Tub in your local directory.
 ```bash
 cd <project-dir>
 git clone git@github.com:tagion/tub.git
-./tub/install
-
-make help
+./tub/root
 ```
 
 ### Compile Units
