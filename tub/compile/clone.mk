@@ -9,5 +9,5 @@ $(DIR_SRC)/%/context.mk:
 
 # Shortcut for Tagion Core developers
 # It will not work if you don't have access to private repositories
-clone-all: ${addprefix add-, $(UNIT_LIST)}
+clone-all: ${addprefix clone-, $(UNIT_LIST)}
 	@
