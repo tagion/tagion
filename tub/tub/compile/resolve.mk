@@ -1,7 +1,6 @@
 ${eval ${call debug.open, MAKE RESOLVE LEVEL $(MAKELEVEL) - $(MAKECMDGOALS)}}
 
 # By default, INCLFLAGS contain all directories inside current ./src
-# TODO: Use DIR_SRC instead, to support ISOLATED mode
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DIR_SRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 INCLFLAGS += ${addprefix -I,${shell ls -d $(DIR_BUILD_WRAPS)/*/lib 2> /dev/null || true}}
 
