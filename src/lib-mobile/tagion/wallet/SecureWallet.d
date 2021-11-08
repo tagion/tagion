@@ -435,13 +435,13 @@ struct SecureWallet(Net) {
         { // Login test
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code);
-            assert(secure_wallet.check_pin(pin_code));
+            assert(secure_wallet.check_pincode(pin_code));
             assert(secure_wallet.isLoggedin);
             secure_wallet.logout;
-            assert(secure_wallet.check_pin(pin_code));
+            assert(secure_wallet.check_pincode(pin_code));
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code_2);
-            assert(secure_wallet.check_pin(pin_code));
+            assert(secure_wallet.check_pincode(pin_code));
             assert(!secure_wallet.isLoggedin);
         }
 
@@ -468,7 +468,7 @@ struct SecureWallet(Net) {
 
         { // Re-login
             secure_wallet.logout;
-            assert(secure_wallet.check_pin(pin_code_2));
+            assert(secure_wallet.check_pincode(pin_code_2));
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code_2);
             assert(secure_wallet.isLoggedin);
