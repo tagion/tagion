@@ -11,7 +11,7 @@ alias check = Check!SecurityConsensusException;
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
-    protected immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
     /++

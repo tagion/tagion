@@ -32,7 +32,7 @@ class StdHashNet : HashNet {
         return HASH_SIZE;
     }
 
-    final immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
         import std.digest.sha: SHA256;
         import std.digest;
 
