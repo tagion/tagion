@@ -27,7 +27,7 @@ cd <project-dir>
 git clone git@github.com:tagion/tub.git
 
 ./tub/root
-make init version-<version> # e.g. version-0.8.alpha
+make branch-<branch> # e.g. make branch-0.8.alpha
 ```
 
 > Keep in mind, that **make scripts** in **tub** are meant to run from your root project directory, and not from `./tub` directory.
@@ -77,8 +77,6 @@ make libtagionhibon MK_DEBUG=1
 
 - Tub only meant to compile one target at a time, `make libtagionhibon tagionhibonutil` is not supported.
   
----
-
 ## Actions
 
 - 🐞 [Report a bug](https://github.com/tagion/tub/issues/new)
