@@ -209,7 +209,7 @@ struct SecureWallet(Net) {
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
-        account.derive_state = net.calcHash(seed ~ account.derive_state ~ current_time.representation);
+        account.derive_state = net.rawCalcHash(seed ~ account.derive_state ~ current_time.representation);
         scramble(seed);
         auto pkey = net.derivePubkey(account.derive_state);
         invoice.pkey = pkey;
