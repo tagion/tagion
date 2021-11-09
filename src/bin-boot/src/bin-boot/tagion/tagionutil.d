@@ -1,6 +1,6 @@
 import std.getopt;
 import std.stdio;
-import std.file: fread = read, fwrite = write, exists;
+import std.file: exists;
 import std.format;
 import std.exception : assumeUnique;
 
@@ -11,10 +11,12 @@ import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.script.StandardRecords : Invoice;
 import tagion.dart.DARTFile;
+import tagion.hibon.HiBONRecord;
 
 //import tagion.revision;
 import std.array : join;
 
+version(none)
 class HiRPCNet : StdSecureNet {
     this(string passphrase) {
         super();
@@ -22,8 +24,8 @@ class HiRPCNet : StdSecureNet {
     }
 }
 
-
 Invoice[] invoices;
+version(none)
 HiBON generateBills(Document doc) {
     foreach(d; doc[]) {
         invoices~=Invoice(d.get!Document);
@@ -90,7 +92,7 @@ int main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s [<option>...] <file>", program),
+                format("%s [<option>...] <invoice-file0> <invoice-file0>...", program),
                 "",
                 "Where:",
                 format("<file>           hibon outfile (Default %s)", outputfilename),
@@ -102,6 +104,7 @@ int main(string[] args) {
             main_args.options);
         return 0;
     }
+    writefln("args=%s", args);
 
     if ( args.length > 2) {
         stderr.writefln("Only one output file name allowed (given %s)", args[1..$]);
@@ -111,10 +114,15 @@ int main(string[] args) {
     }
 
     if (invoicefile.exists) {
-        immutable data=assumeUnique(cast(ubyte[])invoicefile.fread);
-        const doc=Document(data);
-        auto hibon=generateBills(doc);
-        fwrite(outputfilename, hibon.serialize);
+        const invoice_doc = invoicefile.fread;
+        if (!invoice_doc.isInorder) {
+            writefln("Invoice file %s is not a HiBON file", invoicefile);
+            return 1;
+        }
+        // immutable data=assumeUnique(cast(ubyte[])invoicefile.fread);
+        // const doc=Document(data);
+        // auto hibon=generateBills(doc);
+        // fwrite(outputfilename, hibon.serialize);
     }
 
 //    writefln("args=%s", args);

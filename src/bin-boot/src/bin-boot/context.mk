@@ -1,2 +1,2 @@
-tagionutil.ctx: libtagionutils.o
+tagionutil.ctx: libtagiondart.o
 	@
