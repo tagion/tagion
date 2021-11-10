@@ -203,7 +203,7 @@ mixin template JSONString() {
                         }
                     }
                 default:
-                    
+
                         .check(0, message("HiBON type %s not supported and can not be converted to JSON",
                                 e.type));
                 }
@@ -268,7 +268,7 @@ mixin template JSONString() {
         }
         else static if (is(UnqualT == uint)) {
             long x = jvalue.integer;
-            
+
             .check((x > 0) && (x <= uint.max), format("%s not a u32", jvalue));
             return cast(uint) x;
         }
@@ -348,7 +348,7 @@ mixin template JSONString() {
                 return false;
             }
             immutable label = jvalue.array[TYPE].str;
-            
+
             .check((label in labelMap) !is null, "HiBON type name '%s' is not valid", label);
             immutable type = labelMap[label];
 
@@ -389,7 +389,7 @@ mixin template JSONString() {
             with (JSONType) {
                 final switch (jvalue.type) {
                 case null_:
-                    
+
                         .check(0, "HiBON does not support null");
                     break;
                 case string:
@@ -431,7 +431,7 @@ mixin template JSONString() {
         else if (json.type is JSONType.OBJECT) {
             return JSON!string(json);
         }
-        
+
         .check(0, format("JSON_TYPE must be of %s or %s not %s",
                 JSONType.OBJECT, JSONType.ARRAY, json.type));
         assert(0);
@@ -465,7 +465,7 @@ mixin template JSONString() {
     alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, string,
             Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
             // CryptDoc,            Type.CRYPTDOC.stringof,
-            
+
     );
     TabelArray test_tabel_array;
     test_tabel_array.BINARY = [1, 2, 3];
@@ -510,8 +510,8 @@ mixin template JSONString() {
 
         const parse_doc = Document(h);
 
-        pragma(msg,
-                "fixme(cbr): For some unknown reason toString (mixin JSONString) is not @safe for Document and HiBON");
+        pragma(msg, "fixme(cbr): For some unknown reason toString (mixin JSONString)",
+            " is not @safe for Document and HiBON");
 
         // (() @trusted {
         //         // assert(doc.toJSON.toString == format("%j", doc));

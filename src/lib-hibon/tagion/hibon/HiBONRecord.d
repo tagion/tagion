@@ -623,8 +623,6 @@ mixin template HiBONRecord(string CTOR = "") {
                             m = toList!BaseT(sub_doc);
                         }
                         else {
-                            pragma(msg, "is(BaseT == enum)=", is(BaseT == enum),
-                                    " is(MemberT == enum)=", is(MemberT == enum));
                             static assert(0, format("Convering for member '%s' of type %s is not supported by default",
                                     name, MemberT.stringof));
 
