@@ -1,4 +1,10 @@
 DEPS += lib-dart
-DEPS += lib-gossip
+DEPS += lib-crypto
+PROGRAM:=dartutil
 
-${call config.bin, dartutil}: LOOKUP := tagion/*.d
+${call config.bin, $(PROGRAM)}: LOOKUP := tagion/*.d
+
+${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
+${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
+${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
+${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
