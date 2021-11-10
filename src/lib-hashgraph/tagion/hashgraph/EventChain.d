@@ -113,7 +113,6 @@ struct HashGraphRecorver {
                 const ebody_compact = epoch_chunk.epacks[event_id];
                 Buffer mother_fingerprint;
                 Pubkey channel;
-                pragma(msg, typeof(ebody_compact.ebody.channel));
                 if (ebody_compact.ebody.mother_fingerprint) {
                     mother_fingerprint = ebody_compact.ebody.mother_fingerprint;
                     channel = Pubkey(ebody_compact.ebody.channel);

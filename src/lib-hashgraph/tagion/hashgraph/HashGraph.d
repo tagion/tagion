@@ -1165,7 +1165,6 @@ class HashGraph {
             .sort
             .array;
 
-        pragma(msg, typeof(names));
         HashGraph[string] hashgraphs;
         foreach (net; network.networks) {
             hashgraphs[net._hashgraph.name] = net._hashgraph;

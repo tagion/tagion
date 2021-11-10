@@ -379,7 +379,6 @@ class Round {
             }
 
             // Collect and sort all events
-            pragma(msg, "event_filter ", typeof(event_filter));
             sdt_t[] times;
             auto event_collection = event_filter
                 .tee!((e) => times ~= e.event_body.time)
@@ -387,21 +386,9 @@ class Round {
                 .array
                 .sort!((a, b) => order_less(a, b))
                 .release;
-            // const times_1=event_filter
-            //     .map!((e) => e.event_body.time)
-            //     .array.dup;
-
-            // const times=event_filter
-            //     .map!((e) => e.event_body.time)
-            //     .array.dup
-            //     .sort!((a,b) => (a - b) < 0)
-            //     .release;
             times.sort;
             const mid = times.length / 2 + (times.length % 1);
-
             hashgraph.epoch(event_collection, times[mid], r);
-
-            //            return event_collection;
         }
 
         void check_decided_round(HashGraph hashgraph) @trusted {
