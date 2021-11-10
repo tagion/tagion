@@ -55,6 +55,7 @@ enum REVNO=0;
 enum HASH="xxx";
 int main(string[] args) {
     immutable program=args[0];
+    writefln("BOOT ", program);
     bool version_switch;
 
     string invoicefile;
@@ -92,7 +93,7 @@ int main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s [<option>...] <invoice-file0> <invoice-file0>...", program),
+                format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
                 "",
                 "Where:",
                 format("<file>           hibon outfile (Default %s)", outputfilename),
