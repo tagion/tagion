@@ -1,6 +1,7 @@
 import std.getopt;
 import std.stdio;
 import std.file : exists;
+import std.path;
 import std.format;
 import std.algorithm : map, max, min, filter, each, splitter;
 import std.range : lockstep, zip, takeExactly, only;
@@ -939,6 +940,7 @@ int main(string[] args) {
     bool send_flag;
     string create_invoice_command;
     bool print_amount;
+    string path;
 
     WalletOptions options;
     if (config_file.exists) {
@@ -953,7 +955,7 @@ int main(string[] args) {
         std.getopt.config.bundling, "version",
         "display the version", &version_switch,
         "overwrite|O", "Overwrite the config file", &overwrite_switch,
-
+        "path", "Set the path for the wallet files", &path,
         "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
         "device", format("Device file : default %s", options.devicefile), &options.devicefile,
         "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
@@ -989,6 +991,14 @@ int main(string[] args) {
         return 0;
     }
 
+    if (path) {
+        foreach(ref file; [options.walletfile, options.devicefile, options.devicefile, options.invoicefile]) {
+            file = buildPath(path, file);
+            writefln("file=%s", file);
+        }
+        [options.walletfile, options.devicefile, options.devicefile, options.invoicefile].each!writeln;
+        return 10;
+    }
     if (!config_file.exists || overwrite_switch) {
         options.save(config_file);
     }
