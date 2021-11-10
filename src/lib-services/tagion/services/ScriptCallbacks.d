@@ -15,7 +15,6 @@ import tagion.Keywords;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.basic.Logger;
 
-// version(none)
 @safe class ScriptCallbacks {
     import std.datetime;
 
@@ -27,13 +26,6 @@ import tagion.basic.Logger;
         Time last_time;
         //   string dart_task_name;
     }
-    // @trusted
-    // this(ref Tid event_script_tid) nothrow pure {
-    //     _event_script_tid=event_script_tid;
-    // }
-    // this(ref Tid event_script_tid) nothrow pure {
-    //     _event_script_tid=event_script_tid;
-    // }
 
     @trusted this(void function(string task_name, string dart_task_name) nothrow transcript_task,
             string transcript_task_name, string dart_task_name, string epoch_debug_task_name = null) nothrow {
@@ -90,7 +82,6 @@ import tagion.basic.Logger;
         try {
             immutable unique_payloads = assumeUnique(payloads);
             log("send data(%s)=%d", _event_script_tid, unique_payloads.length);
-            pragma(msg, "Scripts: ", typeof(unique_payloads));
             HiBON params = new HiBON;
             pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
             foreach (i, payload; unique_payloads) {

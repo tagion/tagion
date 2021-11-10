@@ -161,8 +161,8 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         ncl.record = net.hashOf(ncr.toDoc);
 
         /// Removing previous node addresses
-        pragma(msg,
-                "fixme(Alex) Why not just use the maps range instead of copying the keys to an array");
+        pragma(msg, "fixme(Alex): Why not just use the maps range instead",
+            " of copying the keys to an array");
         const prev_addresses_recorder = loadFromDART(node_addresses.keys.map!(
                 a => cast(Buffer) net.calcHash(cast(Buffer) a)).array);
         if (prev_addresses_recorder.length > 0) {

@@ -444,10 +444,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 });
             log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
             if (!message_received || !hashgraph.areWeInGraph) {
-                // const onLine=hashgraph.areWeOnline;
-                pragma(msg, "Replace with a realy random");
                 const init_tide = random.value(0, 2) is 1;
-                // log("online: %s init?: %s", onLine, init_tide);
                 if (init_tide) {
                     log("init_tide");
                     hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);

@@ -243,16 +243,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
 
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                // auto message_doc = doc[Keywords.message].get!Document;
-                // const method=receiver.method;
-                pragma(msg, "############# receiver=", typeof(receiver));
-                // pragma(msg, "############# method=", typeof(method));
-                // pragma(msg, "############# method.name=", typeof(method.name));
-
-                // // HiRPC.Method m;
-                // // m.name="name";
-                // // const supports_1=DART.supports(m);
-                //const supports=receiver.supports!DART;
                 if (receiver.supports!DART) {
                     log("receiver: %s", receiver.toDoc.toJSON);
                     const request = dart(receiver, false);
@@ -457,7 +447,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
             log("exit handleSubscription");
             // ownerTid.prioritySend(Control.END);
         }
-        pragma(msg, "Why is fake net used here?");
+        pragma(msg, "fixme(cbr):Why is fake net used here?");
         //        auto net = new MyFakeNet();
         auto net = new Net;
         log.register(taskName);
