@@ -198,7 +198,7 @@ struct BitMask {
             auto rest = (mask.length > rhs.mask.length) ? mask : rhs.mask;
             static if (op == "|" || op == "^") {
                 enum code = format(q{result.mask[min_length..$] %s= rest[min_length..$];}, op);
-                pragma(msg, code);
+                //pragma(msg, code);
                 mixin(code);
             }
         }
