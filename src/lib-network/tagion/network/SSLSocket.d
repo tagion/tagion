@@ -45,7 +45,6 @@ extern (C) {
         SSL_CTX* SSL_CTX_new(const SSL_METHOD* method);
         void SSL_CTX_free(SSL_CTX* ctx);
 
-        pragma(msg, "fixme(vp): ensure we use correct TLS version here");
         SSL_METHOD* TLSv1_client_method();
         SSL_METHOD* TLSv1_server_method();
 
@@ -86,7 +85,7 @@ enum SSLErrorCodes {
 class SSLSocket : Socket {
     protected {
         debug {
-            pragma(msg, "Compiles SSLSocket in debug mode");
+            pragma(msg, "DEBUG: SSLSocket compiled in debug mode");
             enum in_debugging_mode = true;
 
             import std.stdio: writeln;
