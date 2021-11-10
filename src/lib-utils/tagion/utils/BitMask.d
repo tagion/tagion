@@ -1,7 +1,5 @@
 module tagion.utils.BitMask;
 
-//import std.stdio;
-
 enum WORD_SIZE = size_t(size_t.sizeof * 8);
 
 size_t bitsize(const size_t[] mask) pure nothrow @nogc @safe {
@@ -27,17 +25,10 @@ struct BitMask {
     enum absolute_mask = 0x1000;
     private size_t[] mask;
 
-    // this(const BitMask bits) pure nothrow {
-    //     mask=bits.mask;
-    // }
-
     void opAssign(const BitMask rhs) pure nothrow {
         mask = rhs.mask.dup;
     }
 
-    // void opAssign(const BitMask rhs) pure nothrow {
-    //     mask=rhs.mask.dup;
-    // }
     /++
      This set the mask as bit stream with LSB first
      +/
@@ -74,7 +65,6 @@ struct BitMask {
     void toString(scope void delegate(scope const(char)[]) @trusted sink,
             const FormatSpec!char fmt) const {
         enum separator = '_';
-        import std.stdio;
 
         @nogc @safe struct BitRange {
             size_t index;
@@ -117,7 +107,6 @@ struct BitMask {
         case 's':
             auto bit_range = BitRange(this, fmt.width);
             scope char[] str;
-            //auto max_size=mask.length*(8*size_t.sizeof+((fmt.precision is )?0:(size_t.sizeof/fmt.precision+1)));
             auto max_size = bit_range.width + (bit_range.width) / fmt.precision + 1;
             str.length = max_size;
             size_t index;
@@ -358,7 +347,6 @@ struct BitMask {
         import std.algorithm: equal;
         import std.algorithm.sorting: merge, sort;
         import std.algorithm.iteration: uniq, fold;
-        import std.stdio;
 
         { // Bit assign
             BitMask a;
@@ -422,13 +410,11 @@ struct BitMask {
                 BitMask a;
                 a[63] = true;
                 a[64] = true;
-                writefln("a[]=%s", a[]);
                 assert(equal(a[], [63, 64]));
             }
 
             { // Simple range test
                 auto a = BitMask(bit_list);
-                writefln("a[]=%s", a[]);
                 assert(equal(a[], bit_list.dup.sort));
             }
         }
@@ -594,7 +580,6 @@ struct BitMask {
             { // Empty Or=
                 BitMask y;
                 y |= a;
-                writefln("%.16s", y);
                 assert(y == a);
                 assert(a.count is y.count);
             }
