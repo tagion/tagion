@@ -245,7 +245,6 @@ import std.format;
                 }
                 const(Element) opIndex(const size_t index) const pure {
                     auto range = VectorRange(owner);
-                    pragma(msg, typeof(range));
                     size_t i;
                     while(!range.empty) {
 //                    foreach (i, ref e; range.enumerate) {
