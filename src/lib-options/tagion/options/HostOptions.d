@@ -7,5 +7,3 @@ struct HostOptions {
     uint max_size;
     mixin JSONCommon;
 }
-
-pragma(msg, "HostOptions ", typeof(HostOptions.parse));
