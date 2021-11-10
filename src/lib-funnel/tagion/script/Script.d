@@ -159,7 +159,7 @@ class ScriptContext {
     }
 
     Value pop() {
-        
+
             .check(_stack_index > 0, "Data stack empty");
         _stack_index--;
         scope (failure) {
@@ -169,7 +169,7 @@ class ScriptContext {
     }
 
     void push(T)(T v) {
-        
+
             .check(_stack_index < data_stack.length, message(
                     "Stack overflow (Data stack size=%d)", data_stack.length));
         scope (exit) {
@@ -193,7 +193,7 @@ class ScriptContext {
     }
 
     inout(Value) peek(const uint i = 0) inout {
-        
+
             .check(_stack_index > i,
                     message("Stack peek overflow, stack pointer is %d and access pointer is %d",
                     _stack_index, i));
@@ -201,7 +201,7 @@ class ScriptContext {
     }
 
     void poke(const uint i, Value value) {
-        
+
             .check(_stack_index > i,
                     message("Stack poke overflow, stack pointer is %d and access pointer is %d",
                     _stack_index, i));
@@ -325,11 +325,11 @@ abstract class ScriptElement {
         assert(s !is null);
     }
     do {
-        
+
             .check(runlevel <= s.runlevel,
                     message("Opcode %s is only allowed in runlevel %d but the current runlevel is %d",
                     toText, runlevel, s.runlevel));
-        
+
         .check(sc.fuel >= cost,
                 message("At opcode %s the script runs out of fuel",
                 toText));
@@ -1145,7 +1145,7 @@ class ScriptStackOp(string O) : ScriptElement {
     mixin ScriptElementTemplate!(O, 0);
     enum op = O;
     static if (O == "2SWAP") {
-        pragma(msg, "FIX ME: Some of the stack operations can be optimized using array.opSlice operations");
+        pragma(msg, "fixme(cbr): Some of the stack operations can be optimized using array.opSlice operations");
     }
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         static if (op == "DUP") { // a -- a a
@@ -1410,7 +1410,6 @@ enum TraceType = [
 @safe
 class ScriptTrace(string O = TraceType[0]) : ScriptElement {
     enum op = O;
-    pragma(msg, O);
     mixin ScriptElementTemplate!(O, 0);
 
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
@@ -1435,7 +1434,6 @@ static this() {
     static foreach (op; TraceType) {
         {
             alias ScriptType = ScriptTrace!op;
-            pragma(msg, ScriptType);
         }
     }
 }
@@ -1541,7 +1539,7 @@ class ScriptPutHiBON : ScriptElement {
             auto hibon_key = sc.pop.by!(FunnelType.TEXT);
             auto hibon = sc.pop.by!(FunnelType.HIBON);
 
-            
+
 
             .check(hibon_key.length !is 0, "The hibon field name cannot be empty");
 
@@ -2046,7 +2044,7 @@ class Script {
     package ScriptFunc[string] functions;
 
     void defineFunc(string func_name, ScriptFunc call) {
-        
+
             .check((func_name in functions) is null, message("Function %s already defined", func_name));
         functions[func_name] = call;
     }
@@ -2061,7 +2059,7 @@ class Script {
 
     package void setFunc(string name, const(ScriptElement) next, const(FunctionBlock) block) {
         auto def = functions.get(name, null);
-        
+
         .check(def !is null, message("Function %s has not been defined", name));
         def.define(next, block);
     }
@@ -2074,7 +2072,7 @@ class Script {
     }
 
     void defineVar(ref Variable var) {
-        
+
             .check(!existVar(var.name), message("Multiple declaration of variable '%s'", var.name));
         var.index = variable_count;
         variables[var.name] = var;
@@ -2099,7 +2097,7 @@ class Script {
 
     uint opCall(string var_name) const {
         const var_toUpper = var_name.toUpper;
-        
+
         .check(existVar(var_toUpper), message("Variable '%s' is not defined", var_name));
         return getVar(var_toUpper).index;
     }
