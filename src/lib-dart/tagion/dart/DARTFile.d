@@ -236,7 +236,7 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-            
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new uint[KEY_SPAN];
@@ -322,7 +322,7 @@ alias check = Check!DARTException;
                 foreach (key, index; _indices) {
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
-                        
+
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
@@ -424,7 +424,7 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
-                        
+
                             .check((index in index_used) is null, format(
                                     "The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
@@ -792,7 +792,7 @@ alias check = Check!DARTException;
                         scope data = blockfile.load(branch_index);
                         scope doc = Document(data);
                         branches = Branches(doc);
-                        
+
                         .check(branches.hasIndices, "DART failure within the sector rims the DART should contain a branch");
                     }
 
@@ -822,7 +822,7 @@ alias check = Check!DARTException;
                         scope data = blockfile.load(branch_index);
                         scope doc = Document(data);
 
-                        
+
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
@@ -1234,7 +1234,6 @@ alias check = Check!DARTException;
                     import std.bitmanip;
 
                     immutable fp = nativeToBigEndian(t).idup;
-                    pragma(msg, "typeof(fp)=", typeof(fp));
                     rec.stub(fp);
                 }
                 return rec;

@@ -8,9 +8,7 @@ struct DARTOptions {
     import tagion.options.HostOptions;
     string task_name; /// Name of the DART service
     string protocol_id;
-    pragma(msg, "Before HostOptions");
     HostOptions host;
-    pragma(msg, "After HostOptions");
     string name;
     string prefix;
     string path;

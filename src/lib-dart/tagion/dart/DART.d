@@ -520,7 +520,6 @@ class DART : DARTFile { //, HiRPC.Supports {
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;
-            pragma(msg, typeof(recorder_doc));
             recorder = manufactor.recorder(recorder_doc);
         }
 
