@@ -9,10 +9,7 @@ import std.file;
 import std.file: fwrite = write;
 import std.typecons;
 
-// import tagion.gossip.revision;
-// import tagion.gossip.GossipNet;
 pragma(msg, "fixme(cbr): Eliminated dependency of Services Options");
-//import tagion.services.Options;
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
@@ -389,8 +386,6 @@ class StdP2pNet : P2pNet {
             counter++;
             log("sending to sender %s", internal_sender);
             auto t = sender.toDoc;
-            pragma(msg, "\n\n\n\n\n\n");
-            pragma(msg, typeof(t));
             tsend(internal_sender, channel, sender.toDoc, counter);
         }
         else {
