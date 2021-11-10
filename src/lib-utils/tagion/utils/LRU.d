@@ -146,7 +146,6 @@ class LRU(K, V) {
         bool peek(const(K) key, ref V value) pure nothrow {
             auto ent = key in items;
             if (ent !is null) {
-                pragma(msg, "(*ent).entry.value ", typeof((*ent).entry.value));
                 value = (*ent).entry.value;
                 return true;
             }
