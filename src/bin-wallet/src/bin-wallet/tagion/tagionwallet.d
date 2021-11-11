@@ -1,6 +1,6 @@
 import std.getopt;
 import std.stdio;
-import std.file : exists;
+import std.file : exists, mkdir;
 import std.path;
 import std.format;
 import std.algorithm : map, max, min, filter, each, splitter;
@@ -904,6 +904,11 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
     word_strip=word_strip[0..current_i];
 }
 
+@safe
+static void set_path(ref string file, string path) {
+    writefln("xx=%s",file.baseName);
+    file = buildPath(path, file.baseName);
+}
 
 @safe
 unittest {
@@ -991,15 +996,35 @@ int main(string[] args) {
         return 0;
     }
 
+    const new_config =(!config_file.exists || overwrite_switch);
+
     if (path) {
-        foreach(ref file; [options.walletfile, options.devicefile, options.devicefile, options.invoicefile]) {
-            file = buildPath(path, file);
-            writefln("file=%s", file);
+        if (!new_config) {
+            writefln("To change the path you need to use the overwrite switch -O");
+            return 10;
         }
+        options.walletfile.set_path(path);
+        options.quizfile.set_path(path);
+        options.devicefile.set_path(path);
+        options.accountfile.set_path(path);
+        options.billsfile.set_path(path);
+        const dir = options.walletfile.dirName;
+        if (!dir.exists) {
+            dir.mkdir;
+        }
+        // [
+        //     options.walletfile,
+        //     options.devicefile,
+        //     options.devicefile,
+        //     options.invoicefile]
+        //     .each!(ref file => {file = buildPath(path, file);});
+        //     // file = buildPath(path, file);
+        //     // writefln("file=%s", file);
+        // //}
         [options.walletfile, options.devicefile, options.devicefile, options.invoicefile].each!writeln;
-        return 10;
+//        return 11;
     }
-    if (!config_file.exists || overwrite_switch) {
+    if (new_config) {
         options.save(config_file);
     }
 
