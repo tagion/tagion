@@ -476,7 +476,7 @@ struct WalletInterface {
             }
             readln(pincode);
             pincode.word_strip;
-            writefln("pincode.length=%d", pincode.length);
+            //writefln("pincode.length=%d", pincode.length);
             if (pincode.length) {
                 secure_wallet.login(pincode);
                 if (secure_wallet.isLoggedin) {
@@ -766,7 +766,6 @@ struct WalletInterface {
                 case NONE:
                     switch (ch) {
                     case 'c': // Create Wallet
-                        writefln("Wallet C ");
                         scope(exit) {
                             // Erase the answer from memory
                             answers.each!((ref a) =>  {scramble(a); a=null;});
@@ -844,13 +843,13 @@ struct WalletInterface {
                                         // writefln("pincode1=%s", pincode1);
                                         //writefln("secure_wallet.wallet
                                         secure_wallet.login(pincode1);
-                                        writefln("options.walletfile=%s", options.walletfile);
+                                        // writefln("options.walletfile=%s", options.walletfile);
                                         options.walletfile.fwrite(secure_wallet.wallet);
-                                        writefln("options.devicefile=%s", options.devicefile);
-                                        writefln("secure_wallet.pin=%J", secure_wallet.pin); //options.devicefile);
+                                        // writefln("options.devicefile=%s", options.devicefile);
+                                        // writefln("secure_wallet.pin=%J", secure_wallet.pin); //options.devicefile);
                                         options.devicefile.fwrite(secure_wallet.pin);
                                         options.quizfile.fwrite(quiz);
-                                        writefln("%1$sWallet created%2$s", GREEN, RESET);
+                                        // writefln("%1$sWallet created%2$s", GREEN, RESET);
 
                                     }
                                     // writefln("loggedin=%s", secure_wallet.isLoggedin);
@@ -927,6 +926,10 @@ unittest {
 import tagion.utils.JSONCommon;
 
 
+enum fileextensions {
+    HIBON = ".hibon",
+    JSON = ".json"
+};
 
 int main(string[] args) {
     immutable program = args[0];
@@ -982,14 +985,29 @@ int main(string[] args) {
         return 0;
     }
 
+    if (args.length == 2) {
+        config_file = args[1];
+        options.load(config_file);
+    }
+
     if (main_args.helpWanted) {
         defaultGetoptPrinter([
-                format("%s version %s", program, REVNO), "Documentation: https://tagion.org/", "", "Usage:",
-                format("%s [<option>...]", program), "",
+                format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                format("%1$s %2$s [--path <some-path>] # Uses the %2$s instead of the default %3$s",
+                    program, "<config.json>", config_file),
+                "",
                 // "Where:",
                 // format("<file>           hibon outfile (Default %s", outputfilename),
                 // "",
-
+                "Examples:",
+                "# To create an additional wallet in a different work-director and save the configuations",
+                format("%s --path wallet1 tagionwallet1.json -O", program),
+                "",
                 "<option>:",
 
                 ].join("\n"), main_args.options);
@@ -1012,16 +1030,7 @@ int main(string[] args) {
         if (!dir.exists) {
             dir.mkdir;
         }
-        // [
-        //     options.walletfile,
-        //     options.devicefile,
-        //     options.devicefile,
-        //     options.invoicefile]
-        //     .each!(ref file => {file = buildPath(path, file);});
-        //     // file = buildPath(path, file);
-        //     // writefln("file=%s", file);
-        // //}
-        [options.walletfile, options.devicefile, options.devicefile, options.invoicefile].each!writeln;
+        // [options.walletfile, options.devicefile, options.devicefile, options.invoicefile].each!writeln;
 //        return 11;
     }
     if (new_config) {
