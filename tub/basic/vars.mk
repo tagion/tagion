@@ -80,19 +80,29 @@ CROSS_VENDOR := ${word 2, $(TRIPLET_SPACED)}
 CROSS_OS := ${word 3, $(TRIPLET_SPACED)}
 endif
 
+CROSS_COMPILE := 1
+
 # If same as host - reset vars not to trigger
 # cross-compilation logic
 ifeq ($(CROSS_ARCH),$(ARCH))
 ifeq ($(CROSS_OS),$(OS))
-CROSS_OS :=
-CROSS_VENDOR :=
 CROSS_ARCH :=
+CROSS_VENDOR :=
+CROSS_OS :=
+CROSS_COMPILE :=
 endif
+endif
+
+MTRIPLE := $(CROSS_ARCH)-$(CROSS_VENDOR)-$(CROSS_OS)
+ifeq ($(MTRIPLE),--)
+MTRIPLE := $(TRIPLET)
 endif
 
 MAKE_SHOW_ENV += env-cross
 env-cross:
 	$(call log.header, env :: cross)
+	$(call log.kvp, MTRIPLE, $(MTRIPLE))
+	$(call log.kvp, CROSS_COMPILE, $(CROSS_COMPILE))
 	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
 	$(call log.kvp, CROSS_VENDOR, $(CROSS_VENDOR))
 	$(call log.kvp, CROSS_OS, $(CROSS_OS))
@@ -243,7 +253,7 @@ env-compiler:
 # Directories
 # 
 DIR_TRASH := ${abspath ${DIR_TUB_ROOT}}/.trash
-DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(TRIPLET)
+DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(MTRIPLE)
 DIR_BUILD_TEMP := ${abspath ${DIR_BUILD}}/.tmp
 DIR_BUILD_FLAGS := ${abspath ${DIR_BUILD}}/.tmp/flags
 DIR_BUILD_O := $(DIR_BUILD_TEMP)/o
@@ -267,7 +277,7 @@ env-dirs:
 # Modes
 #
 # TODO: Inherit parallel value from current make
-MAKE_PARALLEL := -j16
+MAKE_PARALLEL := -j
 MAKE_DEBUG := 
 
 MAKE_SHOW_ENV += env-mode
