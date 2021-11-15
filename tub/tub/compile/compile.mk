@@ -52,7 +52,7 @@ ${call lib.o,%}: ${call lib.o}.way
 ${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
 	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.archive}}
-	$(PRECMD)ar cr $(@) $(_INFILES)
+	${if $(TRIPLET),$(PRECMD)ldc2 -mtriple=$(TRIPLET) -lib $(_INFILES) -of$(@),$(PRECMD)ar cr $(@) $(_INFILES)}
 	${call log.kvp, Archived, $(@)}
 endif
 endif
@@ -85,6 +85,7 @@ endef
 
 define redefine.vars.bin
 ${eval _DCFLAGS := $(DCFLAGS)}
+${if $(TRIPLET), ${eval _DCFLAGS += -mtriple=$(TRIPLET)}}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
@@ -95,6 +96,7 @@ endef
 ifdef TEST
 define redefine.vars.lib
 ${eval _DCFLAGS := $(DCFLAGS)}
+${if $(TRIPLET), ${eval _DCFLAGS += -mtriple=$(TRIPLET)}}
 ${eval _DCFLAGS += -main}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
