@@ -1,7 +1,7 @@
 # Parse command line arguments of make and initiate
 # on-demand generation of targets:
 
-COMPILE_UNIT_PREFIX_TARGETS := ${filter libtagion% tagion% wrap-% resolve-%, $(MAKECMDGOALS)}
+COMPILE_UNIT_PREFIX_TARGETS := ${filter resolve-%, $(MAKECMDGOALS)}
 
 ifdef COMPILE_UNIT_PREFIX_TARGETS
 COMPILE_UNIT_LIB_TARGETS := ${filter libtagion%, $(COMPILE_UNIT_PREFIX_TARGETS)}

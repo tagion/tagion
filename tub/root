@@ -14,7 +14,7 @@ ln -fs $PWD/tub/main.mk Makefile
 touch tubroot
 
 if [ -n "$1" ]; then
-make branch-$1
+make checkout-$1
 fi
 
 make help
