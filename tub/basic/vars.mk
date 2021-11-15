@@ -1,5 +1,5 @@
 # OS
-OS ?= $(shell uname)
+OS ?= $(shell uname | tr A-Z a-z)
 
 # PRECMD is used to add command before the compiliation commands
 PRECMD ?= @
@@ -96,13 +96,13 @@ else
 endif
 
 # Add -ldl flag for linux
-ifeq ($(OS),"Linux")
+ifeq ($(OS),"linux")
 LDCFLAGS += $(LINKERFLAG)-ldl
 endif
 
 # Define architecture, if not defined explicitly
 ifndef ARCH
-ifeq ($(OS),"Windows")
+ifeq ($(OS),"windows")
 ifeq ($(PROCESSOR_ARCHITECTURE), x86)
 ARCH = x86
 else
@@ -163,35 +163,35 @@ env-compiler:
 # 
 
 # Define commands for copy, remove and create file/dir
-ifeq ($(OS),Windows)
+ifeq ($(OS),windows)
 RM := del /Q
 RMDIR := del /Q
 CP := copy /Y
 MKDIR := mkdir
 MV := move
 LN := mklink
-else ifeq ($(OS),Linux)
+else ifeq ($(OS),linux)
 RM := rm -f
 RMDIR := rm -rf
 CP := cp -fr
 MKDIR := mkdir -p
 MV := mv
 LN := ln -s
-else ifeq ($(OS),FreeBSD)
+else ifeq ($(OS),freebsd)
 RM := rm -f
 RMDIR := rm -rf
 CP := cp -fr
 MKDIR := mkdir -p
 MV := mv
 LN := ln -s
-else ifeq ($(OS),Solaris)
+else ifeq ($(OS),solaris)
 RM := rm -f
 RMDIR := rm -rf
 CP := cp -fr
 MKDIR := mkdir -p
 MV := mv
 LN := ln -s
-else ifeq ($(OS),Darwin)
+else ifeq ($(OS),darwin)
 RM := rm -f
 RMDIR := rm -rf
 CP := cp -fr
@@ -201,10 +201,48 @@ LN := ln -s
 endif
 
 # 
+# Cross compilation
+# 
+# machine-vendor-operatingsystem
+TRIPLET ?= $(ARCH)-unknown-$(OS)
+
+TRIPLET_SPACED := ${subst -, ,$(TRIPLET)}
+
+# If TRIPLET specified with 2 words
+# fill the VENDOR as unknown
+CROSS_ARCH := ${word 1, $(TRIPLET_SPACED)}
+ifeq (${words $(TRIPLET_SPACED)},2)
+CROSS_VENDOR := unknown
+CROSS_OS := ${word 2, $(TRIPLET_SPACED)}
+else
+CROSS_VENDOR := ${word 2, $(TRIPLET_SPACED)}
+CROSS_OS := ${word 3, $(TRIPLET_SPACED)}
+endif
+
+# If same as host - reset vars not to trigger
+# cross-compilation logic
+ifeq ($(CROSS_ARCH),$(ARCH))
+ifeq ($(CROSS_OS),$(OS))
+CROSS_OS :=
+CROSS_VENDOR :=
+CROSS_ARCH :=
+endif
+endif
+
+
+MAKE_SHOW_ENV += env-cross
+env-cross:
+	$(call log.header, env :: cross)
+	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
+	$(call log.kvp, CROSS_VENDOR, $(CROSS_VENDOR))
+	$(call log.kvp, CROSS_OS, $(CROSS_OS))
+	$(call log.close)
+
+# 
 # Directories
 # 
 DIR_TRASH := ${abspath ${DIR_TUB_ROOT}}/.trash
-DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(ARCH)
+DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(TRIPLET)
 DIR_BUILD_TEMP := ${abspath ${DIR_BUILD}}/.tmp
 DIR_BUILD_FLAGS := ${abspath ${DIR_BUILD}}/.tmp/flags
 DIR_BUILD_O := $(DIR_BUILD_TEMP)/o
