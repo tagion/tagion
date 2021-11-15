@@ -1,11 +1,102 @@
-# OS
+# OS & ATCH
 OS ?= $(shell uname | tr A-Z a-z)
+
+ifndef ARCH
+ifeq ($(OS),"windows")
+ifeq ($(PROCESSOR_ARCHITECTURE), x86)
+ARCH = x86
+else
+ARCH = x86_64
+endif
+else
+ARCH = $(shell uname -m)
+endif
+endif
 
 # PRECMD is used to add command before the compiliation commands
 PRECMD ?= @
 
 # Git
 GIT_ORIGIN := "git@github.com:tagion"
+
+# 
+# Commands
+# 
+
+# Define commands for copy, remove and create file/dir
+ifeq ($(OS),windows)
+RM := del /Q
+RMDIR := del /Q
+CP := copy /Y
+MKDIR := mkdir
+MV := move
+LN := mklink
+else ifeq ($(OS),linux)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+else ifeq ($(OS),freebsd)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+else ifeq ($(OS),solaris)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+else ifeq ($(OS),darwin)
+RM := rm -f
+RMDIR := rm -rf
+CP := cp -fr
+MKDIR := mkdir -p
+MV := mv
+LN := ln -s
+endif
+
+# 
+# Cross compilation
+# 
+# machine-vendor-operatingsystem
+TRIPLET ?= $(ARCH)-unknown-$(OS)
+
+TRIPLET_SPACED := ${subst -, ,$(TRIPLET)}
+
+# If TRIPLET specified with 2 words
+# fill the VENDOR as unknown
+CROSS_ARCH := ${word 1, $(TRIPLET_SPACED)}
+ifeq (${words $(TRIPLET_SPACED)},2)
+CROSS_VENDOR := unknown
+CROSS_OS := ${word 2, $(TRIPLET_SPACED)}
+else
+CROSS_VENDOR := ${word 2, $(TRIPLET_SPACED)}
+CROSS_OS := ${word 3, $(TRIPLET_SPACED)}
+endif
+
+# If same as host - reset vars not to trigger
+# cross-compilation logic
+ifeq ($(CROSS_ARCH),$(ARCH))
+ifeq ($(CROSS_OS),$(OS))
+CROSS_OS :=
+CROSS_VENDOR :=
+CROSS_ARCH :=
+endif
+endif
+
+MAKE_SHOW_ENV += env-cross
+env-cross:
+	$(call log.header, env :: cross)
+	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
+	$(call log.kvp, CROSS_VENDOR, $(CROSS_VENDOR))
+	$(call log.kvp, CROSS_OS, $(CROSS_OS))
+	$(call log.close)
 
 # 
 # Compiler
@@ -100,19 +191,6 @@ ifeq ($(OS),"linux")
 LDCFLAGS += $(LINKERFLAG)-ldl
 endif
 
-# Define architecture, if not defined explicitly
-ifndef ARCH
-ifeq ($(OS),"windows")
-ifeq ($(PROCESSOR_ARCHITECTURE), x86)
-ARCH = x86
-else
-ARCH = x86_64
-endif
-else
-ARCH = $(shell uname -m)
-endif
-endif
-
 # Define model if not defined
 ifndef MODEL
 ifeq ($(ARCH), $(filter $(ARCH), x86_64 arm64))
@@ -122,12 +200,15 @@ MODEL = 32
 endif
 endif
 
+# -m32 and -m64 switches cannot be used together with -march and -mtriple switches
+ifndef CROSS_OS
 ifeq ($(MODEL), 64)
 DCFLAGS  += -m64
 LDCFLAGS += -m64
 else
 DCFLAGS  += -m32
 LDCFLAGS += -m32
+endif
 endif
 
 MAKE_SHOW_ENV += env-compiler
@@ -156,86 +237,6 @@ env-compiler:
 	$(call log.kvp, DIP1000, $(DIP1000))
 	$(call log.separator)
 	$(call log.kvp, FPIC, $(FPIC))
-	$(call log.close)
-
-# 
-# Commands
-# 
-
-# Define commands for copy, remove and create file/dir
-ifeq ($(OS),windows)
-RM := del /Q
-RMDIR := del /Q
-CP := copy /Y
-MKDIR := mkdir
-MV := move
-LN := mklink
-else ifeq ($(OS),linux)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-else ifeq ($(OS),freebsd)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-else ifeq ($(OS),solaris)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-else ifeq ($(OS),darwin)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
-endif
-
-# 
-# Cross compilation
-# 
-# machine-vendor-operatingsystem
-TRIPLET ?= $(ARCH)-unknown-$(OS)
-
-TRIPLET_SPACED := ${subst -, ,$(TRIPLET)}
-
-# If TRIPLET specified with 2 words
-# fill the VENDOR as unknown
-CROSS_ARCH := ${word 1, $(TRIPLET_SPACED)}
-ifeq (${words $(TRIPLET_SPACED)},2)
-CROSS_VENDOR := unknown
-CROSS_OS := ${word 2, $(TRIPLET_SPACED)}
-else
-CROSS_VENDOR := ${word 2, $(TRIPLET_SPACED)}
-CROSS_OS := ${word 3, $(TRIPLET_SPACED)}
-endif
-
-# If same as host - reset vars not to trigger
-# cross-compilation logic
-ifeq ($(CROSS_ARCH),$(ARCH))
-ifeq ($(CROSS_OS),$(OS))
-CROSS_OS :=
-CROSS_VENDOR :=
-CROSS_ARCH :=
-endif
-endif
-
-
-MAKE_SHOW_ENV += env-cross
-env-cross:
-	$(call log.header, env :: cross)
-	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
-	$(call log.kvp, CROSS_VENDOR, $(CROSS_VENDOR))
-	$(call log.kvp, CROSS_OS, $(CROSS_OS))
 	$(call log.close)
 
 # 
