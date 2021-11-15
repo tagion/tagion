@@ -19,7 +19,7 @@ ${call bin,%}: ${call bin}.way ${call bin.o,%} ${foreach _,${filter lib-%,$(DEPS
 
 # Libraries
 ifdef TEST
-${eval ${call debug, Compiling tests...}}
+${eval ${call debug, Test mode}}
 
 libtagion%: ${call lib,%}
 	${call log.header, Running tests lib-$(*) (Make level $(MAKELEVEL))}
@@ -38,7 +38,7 @@ ${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS
 	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LINKFILES) $(_LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 else
-${eval ${call debug, Compiling library...}}
+${eval ${call debug, Static library mode}}
 
 libtagion%: ${call lib,%}
 	@

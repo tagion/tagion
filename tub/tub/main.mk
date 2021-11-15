@@ -25,8 +25,8 @@ include $(DIR_TUB)/help.mk
 
 ifdef BRANCH
 # Core tub functionality
-include $(DIR_TUB)/resolve/module.mk
-include $(DIR_TUB)/compile/module.mk
+include $(DIR_TUB)/resolve/_.mk
+include $(DIR_TUB)/compile/_.mk
 else
 $(call print, Compilation module disabled, Why: BRANCH is not defined, Fix: make checkout-<branch> OR make branch-<branch>, Example: make checkout-peppa)
 endif

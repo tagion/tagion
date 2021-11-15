@@ -11,3 +11,4 @@ src
 build
 __generated*
 *.log
+rex

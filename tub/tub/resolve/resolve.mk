@@ -4,15 +4,11 @@ ${eval ${call debug.open, MAKE RESOLVE LEVEL $(MAKELEVEL) - $(MAKECMDGOALS)}}
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DIR_SRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 INCLFLAGS += ${addprefix -I,${shell ls -d $(DIR_BUILD_WRAPS)/*/lib 2> /dev/null || true}}
 
-DEPSREGEN ?= 1
-
-ifdef DEPSREGEN
-# Quitely removing generated files before proceeding with dependency resolvement
-ifeq ($(MAKELEVEL),0)
-${shell rm -f $(DIR_SRC)/**/$(FILENAME_DEPS_MK) || true}
+# Show warning on empty deps files
+EMPTY_DEPS := ${shell find $(DIR_SRC) -name $(FILENAME_DEPS_MK) -size 0}
+ifdef EMPTY_DEPS
+$(call print, Expected failed compilation, Why: Found empty $(FILENAME_DEPS_MK), Fix: make clean THEN make resolve-<target>)
 endif
-endif
-${shell find $(DIR_SRC) -name $(FILENAME_DEPS_MK) -size 0 -delete 2> /dev/null  || true}
 
 # Remove duplicates
 DEPS := ${sort $(DEPS)}
