@@ -1,6 +1,5 @@
 include $(DIR_TUB)/compile/map.mk
 include $(DIR_TUB)/compile/ways.mk
-include $(DIR_TUB)/compile/branch.mk
 include $(DIR_TUB)/compile/clean.mk
 include $(DIR_TUB)/compile/clone.mk
 include $(DIR_TUB)/compile/goals.mk

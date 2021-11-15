@@ -1,11 +1,10 @@
 .PHONY: help
 help:
-	${eval TUB_VERSION := ${shell cd $(DIR_TUB_ROOT)/tub; git rev-parse --short HEAD}}
-	${call log.header, tub (version $(TUB_VERSION)) :: help }
+	${eval TUB_COMMIT := ${shell cd $(DIR_TUB_ROOT)/tub; git rev-parse --short HEAD}}
+	${eval TUB_BRANCH := ${shell cd $(DIR_TUB_ROOT)/tub; git rev-parse --abbrev-ref HEAD}}
+	${call log.header, tub :: $(TUB_BRANCH) ($(TUB_COMMIT)) :: help }
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show current Make environment}
-	${call log.kvp, make version-latest, Force update the tub itself}
-	${call log.kvp, make version-<version>, Switch tub to specific branch or commit}
 	${call log.separator}
 	${call log.kvp, make clone-<specific>, Add source code of <speficic> module}
 	${call log.kvp, make clone-all, Add all core modules}
