@@ -20,6 +20,10 @@ $(DIR_OPENSSL_PREFIX)/%.a: $(DIR_OPENSSL)/.way
 	$(PRECMD)cd $(DIR_OPENSSL_SRC); ./config --shared --prefix=$(DIR_OPENSSL) --openssldir=$(DIR_OPENSSL_EXTRA)
 	$(PRECMD)cd $(DIR_OPENSSL_SRC); make $(MAKE_PARALLEL)
 	$(PRECMD)cd $(DIR_OPENSSL_SRC); make install
+	$(PRECMD)[ -d "$(DIR_OPENSSL)/lib64" ] && ln -s $(DIR_OPENSSL)/lib64 $(DIR_OPENSSL)/lib
+
+wrap-openssllink:
+	$(PRECMD)ln -s $(DIR_OPENSSL)/lib64 $(DIR_OPENSSL)/lib
 
 # NOTE: Might need to export, but not sure. Will try without since we static link:
 # $(PRECMD)export LD_LIBRARY_PATH=$(DIR_OPENSSL_PREFIX)/:$(LD_LIBRARY_PATH)
