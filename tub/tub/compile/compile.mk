@@ -60,6 +60,7 @@ endif
 # Vars definitions
 define redefine.vars.o.common
 ${eval _DCFLAGS := $(DCFLAGS)}
+${if $(TRIPLET), ${eval _DCFLAGS += -mtriple=$(TRIPLET)}}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := $(INCLFLAGS)}
 ${eval _INFILES := ${filter $(DIR_SRC)/${strip $1}-$(*)/%.d,$(^)}}
