@@ -252,21 +252,21 @@ env-compiler:
 # 
 # Directories
 # 
-DIR_TRASH := ${abspath ${DIR_TUB_ROOT}}/.trash
-DIR_BUILD := ${abspath ${DIR_TUB_ROOT}}/build/$(MTRIPLE)
+DIR_TRASH := ${abspath ${DIR_ROOT}}/.trash
+DIR_BUILD := ${abspath ${DIR_ROOT}}/build/$(MTRIPLE)
 DIR_BUILD_TEMP := ${abspath ${DIR_BUILD}}/.tmp
 DIR_BUILD_FLAGS := ${abspath ${DIR_BUILD}}/.tmp/flags
 DIR_BUILD_O := $(DIR_BUILD_TEMP)/o
 DIR_BUILD_LIBS_STATIC := $(DIR_BUILD)/libs/static
 DIR_BUILD_BINS := $(DIR_BUILD)/bins
 DIR_BUILD_WRAPS := $(DIR_BUILD)/wraps
-DIR_SRC := ${abspath ${DIR_TUB_ROOT}}/src
+DIR_SRC := ${abspath ${DIR_ROOT}}/src
 
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
 	$(call log.header, env :: dirs)
 	$(call log.kvp, DIR_TRASH, $(DIR_TRASH))
-	$(call log.kvp, DIR_TUB_ROOT, $(DIR_TUB_ROOT))
+	$(call log.kvp, DIR_ROOT, $(DIR_ROOT))
 	$(call log.kvp, DIR_TUB, $(DIR_TUB))
 	$(call log.separator)
 	$(call log.kvp, DIR_BUILD, $(DIR_BUILD))
@@ -283,7 +283,6 @@ MAKE_DEBUG :=
 MAKE_SHOW_ENV += env-mode
 env-mode:
 	$(call log.header, env :: tub mode)
-	$(call log.kvp, TUB_MODE, $(TUB_MODE))
 	$(call log.kvp, MAKE_PARALLEL, $(MAKE_PARALLEL))
 	$(call log.kvp, MAKE_DEBUG, $(MAKE_DEBUG))
 	$(call log.close)
