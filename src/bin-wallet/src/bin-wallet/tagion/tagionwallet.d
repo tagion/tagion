@@ -273,12 +273,6 @@ void createInvoice(ref Invoice invoice) {
     accounts[pkey] = drive_state;
 }
 
-// string contractfile = "contract.hibon";
-// string billsfile = "bills.hibon";
-// string invoicefile = "invoice.hibon";
-// string devicefileb = "device.hibon";
-//Invoice[] invoices;
-//Invoice[] orders;
 StandardBill[] bills;
 
 version(none)
@@ -301,22 +295,10 @@ void accounting() {
             auto hibon = new HiBON;
             foreach (i, ref invoice; invoices) {
                 const index = cast(uint) i;
-                /++
-                 string current_time=MonoTime.currTime.toString;
-                 scope seed=new ubyte[net.hashSize];
-                 scramble(seed);
-                 drive_state=net.calcHash(seed~drive_state~current_time.representation);
-                 scramble(seed);
-//                invoice.drive=drive_state;
-
-const pkey=net.drivePubkey(drive_state);
-invoice.pkey=cast(Buffer)pkey;
-accounts[pkey]=drive_state;
-+/
                 createInvoice(invoice);
                 hibon[index] = invoice.toHiBON;
             }
-            options.invoicefile.fwrite(hibon);
+            invoicefile.fwrite(hibon);
             options.accountfile.writeAccounts(accounts);
         }
     }
@@ -428,7 +410,7 @@ struct WalletOptions {
     string devicefile;
     string contractfile;
     string billsfile;
-    string invoicefile;
+//    string invoicefile;
     string paymentrequestsfile;
     string addr;
     ushort port;
@@ -439,7 +421,7 @@ struct WalletOptions {
         quizfile = "quiz.hibon";
         contractfile = "contract.hibon";
         billsfile = "bills.hibon";
-        invoicefile = "invoice.hibon";
+//        invoicefile = "invoice.hibon";
         paymentrequestsfile = "paymentrequests.hibon";
         devicefile = "device.hibon";
         addr = "localhost";
@@ -608,7 +590,7 @@ struct WalletInterface {
 
     enum FKEY = YELLOW;
 
-    void pressKey() {
+    static void pressKey() {
         writefln("Press %1$sEnter%2$s", YELLOW, RESET);
         readln;
     }
@@ -905,7 +887,6 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
 
 @safe
 static void set_path(ref string file, string path) {
-    writefln("xx=%s",file.baseName);
     file = buildPath(path, file.baseName);
 }
 
@@ -949,6 +930,7 @@ int main(string[] args) {
     string create_invoice_command;
     bool print_amount;
     string path;
+    string invoicefile = "invoice_file.hibon";
 
     WalletOptions options;
     if (config_file.exists) {
@@ -962,13 +944,13 @@ int main(string[] args) {
     auto main_args = getopt(args, std.getopt.config.caseSensitive,
         std.getopt.config.bundling, "version",
         "display the version", &version_switch,
-        "overwrite|O", "Overwrite the config file", &overwrite_switch,
+        "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
         "path", "Set the path for the wallet files", &path,
         "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
         "device", format("Device file : default %s", options.devicefile), &options.devicefile,
         "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
-        "invoice|c", format("Invoice file : default %s", options.invoicefile), &options.invoicefile,
-        "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
+        "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
+        "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
         "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
         "send|s", "Send contract to the network", &send_flag,
         "amount", "Display the wallet amount", &print_amount,
@@ -988,6 +970,7 @@ int main(string[] args) {
     if (args.length == 2) {
         config_file = args[1];
         options.load(config_file);
+        writefln("Using %s", config_file);
     }
 
     if (main_args.helpWanted) {
@@ -1026,15 +1009,17 @@ int main(string[] args) {
         options.devicefile.set_path(path);
         options.accountfile.set_path(path);
         options.billsfile.set_path(path);
+        options.paymentrequestsfile.set_path(path);
         const dir = options.walletfile.dirName;
         if (!dir.exists) {
             dir.mkdir;
         }
-        // [options.walletfile, options.devicefile, options.devicefile, options.invoicefile].each!writeln;
-//        return 11;
     }
     if (new_config) {
         options.save(config_file);
+        if (overwrite_switch) {
+            return 0;
+        }
     }
 
     auto wallet_interface=WalletInterface(options);
@@ -1054,6 +1039,8 @@ int main(string[] args) {
     }
     else {
         wallet_ui = true;
+        writefln("Wallet dont't exists");
+        WalletInterface.pressKey;
         wallet_interface.quiz.questions = standard_questions.dup;
     }
 
@@ -1068,6 +1055,9 @@ int main(string[] args) {
         }
         else if (!wallet_interface.loginPincode) {
             wallet_ui = true;
+            writefln("Wallet not loggedin");
+            WalletInterface.pressKey;
+
             return 4;
         }
     }
@@ -1160,7 +1150,6 @@ int main(string[] args) {
         }
 
     if (wallet_ui) {
-        writefln("Wallet UI");
         wallet_interface.accountView;
     }
     else {
@@ -1168,7 +1157,6 @@ int main(string[] args) {
             writefln("%s", wallet_interface.secure_wallet.account.total);
         }
         if (create_invoice_command.length) {
-            // Split the strin in pairs id name:10.0,name2:42 into [["name","10.0"],["name2","42"]]
             scope invoice_args = create_invoice_command.splitter(":");
             import tagion.basic.Basic : eatOne;
             auto new_invoice = WalletInterface.StdSecureWallet.createInvoice(invoice_args.eatOne, invoice_args.eatOne.to!double.TGN);
@@ -1183,24 +1171,20 @@ int main(string[] args) {
             wallet_interface.payment_requests.list~=new_invoice;
             options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
             // Writes the invoice-file to a file named <name>_<invoicefile>
-            only(new_invoice.name,options.invoicefile).join("_").fwrite(new_invoice);
+            writefln("invoicefile=%s", invoicefile);
+            invoicefile.fwrite(new_invoice);
         }
         else if (orders !is orders.init) {
             version(none) {
                 SignedContract signed_contract;
                 const flag = payment(orders, bills, signed_contract);
-                // writefln("signed_contract.contarct.output.length=%d", signed_contract.contract.output.length);
                 if (flag) {
-                    //contractfile.fwrite(signed_contract.toHiBON.serialize);
                     HiRPC hirpc;
                     const sender = hirpc.action("transaction", signed_contract.toHiBON);
                     immutable data = sender.toDoc.serialize;
                     const test = Document(data);
 
                     const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
-                    //writefln("%s", Document(scontract.toHiBON.serialize).toJSON.toPrettyString);
-                    // writefln("scontract.contarct.output.length=%d", scontract.contract.output.length);
-                    // writefln("scontract.contarct.output=%s", scontract.contract);
                     options.contractfile.fwrite(sender.toDoc);
                 }
             }
