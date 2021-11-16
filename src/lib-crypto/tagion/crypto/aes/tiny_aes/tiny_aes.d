@@ -34,12 +34,17 @@ module tagion.crypto.aes.tiny_aes.tiny_aes;
 
 //version = PRINT;
 
+/+
+The different modes is explained in
+https://www.highgo.ca/2019/08/08/the-difference-in-five-modes-in-the-aes-encryption-algorithm/
++/
 enum Mode {
     ECB, /// mode: Electronic Code Book mode
     CBC, /// mode: Cipher Block Chaining mode
     CFB, /// mode: Cipher FeedBack mode
     //    OFB, /// mode: Output FeedBack mode
     CTR /// mode: Counter mode
+
 }
 
 @safe @nogc

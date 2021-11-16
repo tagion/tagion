@@ -16,12 +16,39 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  + limitations under the License.
  +/
 
-private import tagion.crypto.secp256k1.secp256k1;
+private import tagion.crypto.secp256k1.c.secp256k1;
+private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 
 import std.exception: assumeUnique;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.utils.Miscellaneous: toHexString;
+
+enum SECP256K1 : uint {
+    FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
+        FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
+        FLAGS_TYPE_COMPRESSION =  SECP256K1_FLAGS_TYPE_COMPRESSION,
+        /** The higher bits contain the actual data. Do not use directly. */
+        FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
+        FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
+        FLAGS_BIT_COMPRESSION =  FLAGS_BIT_CONTEXT_SIGN,
+
+        /** Flags to pass to secp256k1_context_create. */
+        CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
+        CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
+        CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
+
+        /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
+        EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
+        EC_UNCOMPRESSED =  SECP256K1_EC_UNCOMPRESSED,
+
+        /** Prefix byte used to tag various encoded curvepoints for specific purposes */
+        TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
+        TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
+        TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
+        TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
+        TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
+    };
 
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
@@ -60,7 +87,7 @@ class NativeSecp256k1 {
     @trusted
     this(const Format format_verify = Format.COMPACT,
             const Format format_sign = Format.COMPACT,
-            const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY)
+        const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow
     in {
         with (Format) {
             assert((format_sign is DER) || (format_sign is COMPACT) || (format_sign is RAW),
@@ -83,7 +110,7 @@ class NativeSecp256k1 {
      +       pub            =  The public key which did the signing
      +/
     @trusted
-    bool verify(immutable(ubyte[]) data, immutable(ubyte[]) signature, const(ubyte[]) pub) const
+    bool verify(const(ubyte[]) data, const(ubyte[]) signature, const(ubyte[]) pub) const
     in {
         assert(data.length == 32);
         assert(signature.length <= 520);
@@ -91,10 +118,10 @@ class NativeSecp256k1 {
     }
     do {
         int ret;
-        immutable(ubyte)* sigdata = signature.ptr;
+        const sigdata = signature.ptr;
         auto siglen = signature.length;
-        const(ubyte)* pubdata = pub.ptr;
-        immutable(ubyte)* msgdata = data.ptr;
+        const pubdata = pub.ptr;
+        const msgdata = data.ptr;
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
@@ -143,14 +170,14 @@ class NativeSecp256k1 {
      + @param sig byte array of signature
      +/
     @trusted
-    immutable(ubyte[]) sign(immutable(ubyte[]) data, const(ubyte[]) sec) const
+        immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
     in {
         assert(data.length == 32);
         assert(sec.length <= 32);
     }
     do {
-        immutable(ubyte)* msgdata = data.ptr;
-        const(ubyte)* secKey = sec.ptr;
+        const msgdata = data.ptr;
+        const secKey = sec.ptr;
         secp256k1_ecdsa_signature sig_array;
         secp256k1_ecdsa_signature* sig = &sig_array;
 
@@ -187,7 +214,7 @@ class NativeSecp256k1 {
      + @param seckey ECDSA Secret key, 32 bytes
      +/
     @trusted
-    bool secKeyVerify(const(ubyte[]) seckey) const
+    bool secKeyVerify(scope const(ubyte[]) seckey) const
     in {
         assert(seckey.length == 32);
     }
@@ -209,7 +236,7 @@ class NativeSecp256k1 {
     enum COMPRESSED_PUBKEY_SIZE = 33;
     enum SECKEY_SIZE = 32;
     @trusted
-    immutable(ubyte[]) computePubkey(const(ubyte[]) seckey, immutable bool compress = true) const
+    immutable(ubyte[]) computePubkey(scope const(ubyte[]) seckey, immutable bool compress = true) const
     in {
         assert(seckey.length == SECKEY_SIZE);
     }
@@ -404,31 +431,31 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted version (none) immutable(ubyte[]) createECDHSecret(immutable(ubyte[]) seckey, immutable(
+    @trusted immutable(ubyte[]) createECDHSecret(scope const(ubyte[]) seckey, const(
             ubyte[]) pubkey) const
     in {
         assert(seckey.length <= SECKEY_SIZE);
-        assert(pubkey.length <= COMPRESSED_PUBKEY_SIZE);
+        assert(pubkey.length <= UNCOMPRESSED_PUBKEY_SIZE);
     }
     do {
         //        auto ctx=getContext();
-        immutable(ubyte)* secdata = seckey.ptr;
-        immutable(ubyte)* pubdata = pubkey.ptr;
+        const secdata = seckey.ptr;
+        const pubdata = pubkey.ptr;
         size_t publen = pubkey.length;
 
         secp256k1_pubkey pubkey_result;
-        ubyte[32] nonce_res_array;
-        ubyte* nonce_res = nonce_res_array.ptr;
+        ubyte[32] result;
+        ubyte* _result = result.ptr;
 
         int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
         check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
-        if (ret) {
-            ret = secp256k1_ecdh(_ctx, nonce_res, &pubkey_result, secdata);
-        }
+        //if (ret) {
+        ret = secp256k1_ecdh(_ctx, _result, &pubkey_result, secdata, null, null);
+        //}
+        check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
 
-        immutable(ubyte[]) result = nonce_res_array.idup;
-        return result;
+        return result.idup;
     }
 
     /++
@@ -449,7 +476,7 @@ class NativeSecp256k1 {
 
 }
 
-@safe
+//@safe
 unittest {
     import tagion.utils.Miscellaneous: toHexString, decode;
     import std.traits;
@@ -776,7 +803,6 @@ unittest {
 
     }
 
-    //  version(none) // Fixme: CBR this does not pass
     {
         auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
@@ -794,13 +820,61 @@ unittest {
     }
 
     //Test ECDH
-    version (none) {
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
+    {
+        import std.stdio;
 
-        auto resultArr = Crypt.createECDHSecret(sec, pub);
-        auto ecdhString = resultArr.toHexString;
-        assert(ecdhString == "2A2A67007A926E6594AF3EB564FC74005B37A9C8AEF2033C4552051B5C87F043");
+        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
+
+        const aliceSecretKey  = decode("37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4");
+        const alicePublicKey = crypt.computePubkey(aliceSecretKey, false);
+
+        const bobSecretKey  = decode("2f402cd0753d3afca00bd3f7661ca2f882176ae4135b415efae0e9c616b4a63e");
+        const bobPublicKey = crypt.computePubkey(bobSecretKey, false);
+
+        assert(alicePublicKey.toHexString == "0451958fb5c78264dc67edec62ad7cb0722ca7468e9781c1aebc0c05c5e8be05daa916301e6267fed2a662c9d727da9c3ffa4eab9f76dd848f60ef44d2917cf7ee");
+        assert(bobPublicKey.toHexString == "0489685350631b9fee83158aa55980af0969305f698ebe3b9475a36340d0b1996719e1f6b4c21cffdadc158e5b07e71b70d7b87b7ad1c3e6df8f78ad419de767a6");
+
+        const aliceResult = crypt.createECDHSecret(aliceSecretKey, bobPublicKey);
+        const bobResult = crypt.createECDHSecret(bobSecretKey, alicePublicKey);
+
+        assert(aliceResult == bobResult);
     }
 
+
+
+    version(none)
+    { // Test 1 ECDH
+        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
+        import std.stdio;
+        //writefln("%d", "039c28258a97c779c88212a0e37a74ec90898c63b60df60a7d05d0424f6f6780".length);
+        const privKey = decode("039c28258a97c779c88212a0e37a74ec90898c63b60df60a7d05d0424f6f6780");
+
+//        writefln(
+        const pubKey = crypt.computePubkey(privKey, false);
+        writefln("privKey=%s", privKey.toHexString!true);
+        writefln("privKey=%s", pubKey.toHexString!true);
+        writefln("       =%s", "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB9   7735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
+        assert(pubKey.toHexString!true == "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB97735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
+
+
+        const ciphertextPrivKey = decode("f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
+
+        ubyte[] sharedECCKey;
+
+        //const sharedECCKey = crypt.computePubkey(ciphertextPrivKey, false);
+        crypt.privKeyTweakMul(ciphertextPrivKey, pubKey, sharedECCKey);
+        //crypt.privKeyTweakMul(ciphertextPrivKey, pubKey, sharedECCKey);
+        writefln("ciphertextPrivKey %s", ciphertextPrivKey.toHexString!true);
+        writefln("sharedECCKey %s", sharedECCKey.toHexString!true);
+        writefln("             %s", "46defe934a709bf55328ad593b62884079f908d6a6ebbc2bdbc93b77e3506181   6e287b5665a9b5f0fdb08a1f3f63557849525df1e4ece2c717fd0de1e0a7330f");
+
+        secp256k1_pubkey sharedECCKey1;
+//        ubyte[] sharedECCKey1;
+        auto sharedECCKey1_ptr=&sharedECCKey1; //sharedECCKey1[0];
+        const(ubyte*) ciphertextPrivKey_ptr = &ciphertextPrivKey[0];
+        int ret = secp256k1_ec_pubkey_create(crypt._ctx, sharedECCKey1_ptr , ciphertextPrivKey_ptr);
+        writefln("sharedECCKey1 %s", sharedECCKey1.data.toHexString!true);
+
+            //  "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
+    }
 }
