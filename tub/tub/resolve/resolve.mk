@@ -53,44 +53,49 @@ ${call debug, Not all deps resolved - calling recursive make...}
 
 # TODO: Fix for situations with multiple targets
 RECURSIVE_CALLED := 
-config-%: $(DIR_BUILD_FLAGS)/.way
+configure-%: $(DIR_BUILD_FLAGS)/.way
 	@touch $(DIR_BUILD_FLAGS)/$(*).resolved
-	${if $(RECURSIVE_CALLED),@touch $(DIR_BUILD_FLAGS)/$(*).called,@$(MAKE) ${addprefix config-,$(DEPS_UNRESOLVED)} $(MAKECMDGOALS)}
+	${if $(RECURSIVE_CALLED),@touch $(DIR_BUILD_FLAGS)/$(*).called,@$(MAKE) ${addprefix configure-,$(DEPS_UNRESOLVED)} $(MAKECMDGOALS)}
 	${eval RECURSIVE_CALLED := 1}
 
 else
 ${call debug, All deps successfully resolved!}
 
--include $(DEPS_MK)
-
-# Targets to generate compile target dependencies
-# $(DIR_SRC)/bin-%/$(FILENAME_CURRENT_DEPS_MK): ${call config.bin,%}
-# 	@
-
-# $(DIR_SRC)/lib-%/$(FILENAME_CURRENT_DEPS_MK): ${call config.lib,%}
-# 	@
+# Bin
+configure-lib-%: ${call config.bin,%}
+	${eval $*_DEPFILES := ${shell cat $(DIR_SRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DIR_SRC)}}
+	${eval $*_DEPFILES := ${subst $(DIR_SRC)/,,$($*_DEPFILES)}}
+	${eval $*_DEPFILES := ${foreach _,$($*_DEPFILES),${firstword ${subst /, ,$_}}}}
+	${eval $*_DEPFILES := ${sort $($*_DEPFILES)}}
+	${eval $*_DEPFILES := ${filter-out ${firstword $($*_DEPFILES)}, $($*_DEPFILES)}}
+	$(PRECMD)echo $(DIR_BUILD_BINS)/tagion$*: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/libtagion,$(DEP)}.o} >> $(DIR_SRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
 
 ${call config.bin,%}: $(DIR_BUILD_FLAGS)/.way 
 	${call generate.target.dependencies,$(LOOKUP),bin-$(*),tagion$(*),libtagion,${call bin,$(*)}}
 
+# Lib
 ifdef TEST
-${call config.lib,%}:
-	${call generate.target.dependencies,$(LOOKUP),lib-$(*),test-libtagion$(*),test-libtagion,${call lib,$(*)}}
+configure-lib-%: ${call config.lib,%}
 	${eval $*_DEPFILES := ${shell cat $(DIR_SRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DIR_SRC)}}
 	${eval $*_DEPFILES := ${subst $(DIR_SRC)/,,$($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${foreach _,$($*_DEPFILES),${firstword ${subst /, ,$_}}}}
 	${eval $*_DEPFILES := ${sort $($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${filter-out ${firstword $($*_DEPFILES)}, $($*_DEPFILES)}}
 	$(PRECMD)echo $(DIR_BUILD_BINS)/test-libtagion$*: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/test-libtagion,$(DEP)}.o} >> $(DIR_SRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
-else
+
 ${call config.lib,%}:
-	${call generate.target.dependencies,$(LOOKUP),lib-$(*),libtagion$(*),libtagion,${call lib,$(*)}}
+	${call generate.target.dependencies,$(LOOKUP),lib-$(*),test-libtagion$(*),test-libtagion,${call lib,$(*)}}
+else
+configure-lib-%: ${call config.lib,%}
 	${eval $*_DEPFILES := ${shell cat $(DIR_SRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DIR_SRC)}}
 	${eval $*_DEPFILES := ${subst $(DIR_SRC)/,,$($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${foreach _,$($*_DEPFILES),${firstword ${subst /, ,$_}}}}
 	${eval $*_DEPFILES := ${sort $($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${filter-out ${firstword $($*_DEPFILES)}, $($*_DEPFILES)}}
 	$(PRECMD)echo $(DIR_BUILD_LIBS_STATIC)/libtagion$*.a: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/libtagion,$(DEP)}.o} >> $(DIR_SRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
+
+${call config.lib,%}:
+	${call generate.target.dependencies,$(LOOKUP),lib-$(*),libtagion$(*),libtagion,${call lib,$(*)}}
 endif
 endif
 
