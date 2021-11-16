@@ -3,7 +3,7 @@ clone-%: $(DIR_SRC)/%/resolve.mk
 	@
 
 $(DIR_SRC)/%/resolve.mk:
-	${call log.header, Cloning $(*), branch $(BRANCH)}
+	${call log.header, Cloning $(*) ($(BRANCH))}
 	$(PRECMD)git clone ${if $(BRANCH),-b $(BRANCH) --single-branch} $(GIT_ORIGIN)/core-$(*) $(DIR_SRC)/$(*)
 	${call log.close}
 

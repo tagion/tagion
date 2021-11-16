@@ -302,11 +302,3 @@ env: $(MAKE_SHOW_ENV)
 # 
 # Utility variables
 # 
-FILENAME_CONTEXT_MK := context.mk
-
-GENERATED_PREFIX := gen
-FILENAME_DEPS_MK := $(GENERATED_PREFIX).deps.mk
-
-ifdef TEST
-FILENAME_DEPS_MK := $(GENERATED_PREFIX).test.deps.mk
-endif
