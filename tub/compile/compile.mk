@@ -1,5 +1,17 @@
 ${eval ${call debug.open, MAKE COMPILE - $(MAKECMDGOALS)}}
 
+# Show warning on empty deps files
+EMPTY_DEPS := ${shell find $(DIR_SRC) -name $(FILENAME_DEPS_MK) -size 0}
+ifdef EMPTY_DEPS
+${call print, Expected failed compilation, Why: Found empty $(FILENAME_DEPS_MK), Fix: make resolve-<target>}
+endif
+
+ifdef TEST
+include $(DIR_SRC)/**/gen.test.deps.mk
+else
+include $(DIR_SRC)/**/gen.deps.mk
+endif
+
 ifndef DEPS_UNRESOLVED
 # Binaries
 tagion%: ${call bin,%}
