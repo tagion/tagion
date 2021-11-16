@@ -1,6 +1,6 @@
 ${eval ${call debug.open, MAKE RESOLVE LEVEL $(MAKELEVEL) - $(MAKECMDGOALS)}}
 
-FILENAME_DEPS_MK := get.deps.mk
+FILENAME_DEPS_MK := gen.deps.mk
 ifdef TEST
 FILENAME_DEPS_MK := $(GENERATED_PREFIX).test.deps.mk
 endif
@@ -29,7 +29,7 @@ DEPS := ${sort $(DEPS)}
 ${foreach DEP,$(DEPS),\
 	${call debug, Including $(DEP)...}\
 	${eval RESOLVING_UNIT := $(DEP)}\
-	${eval -include $(DIR_SRC)/$(DEP)/resolve.mk}\
+	${eval -include $(DIR_SRC)/$(DEP)/context.mk}\
 	${eval -include $(DIR_SRC)/$(DEP)/local.mk}\
 	${eval DEPS_RESOLVED += $(DEP)}\
 }
@@ -62,9 +62,12 @@ ${call debug, All deps successfully resolved!}
 # Generate and include compile target dependencies, so that make knows
 # when to recompile
 DEPS_MK := ${addsuffix /$(FILENAME_DEPS_MK),${addprefix $(DIR_SRC)/,${filter-out wrap-%,${DEPS}}}}
+CONFIG_MK := ${addsuffix /config.mk,${addprefix $(DIR_SRC)/,${filter-out wrap-%,${DEPS}}}}
 
-${call debug, Including generated compile target dependencies:}
-${call debug.lines, $(DEPS_MK)}
+${call debug, Including configs:}
+${call debug.lines, $(CONFIG_MK)}
+# ${call debug, Including generated compile target dependencies:}
+# ${call debug.lines, $(DEPS_MK)}
 
 -include $(DEPS_MK)
 
