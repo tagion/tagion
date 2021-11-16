@@ -6,6 +6,12 @@ DIR_SECP256K1 := $(DIR_BUILD_WRAPS)/secp256k1
 DIR_SECP256K1_PREFIX := $(DIR_SECP256K1)/lib
 DIR_SECP256K1_SRC := $(DIR_SECP256K1)/src
 
+CONFIGUREFLAGS+=--enable-module-ecdh
+CONFIGUREFLAGS+=--enable-experimental
+CONFIGUREFLAGS+=--enable-module-recovery
+CONFIGUREFLAGS+=--enable-module-schnorrsig
+
+
 wrap-secp256k1: $(DIR_SECP256K1_PREFIX)/libsecp256k1.a
 	@
 
@@ -26,7 +32,7 @@ $(DIR_SECP256K1_PREFIX)/%.a: $(DIR_SECP256K1)/.way
 	$(PRECMD)git clone --depth 1 $(REPO_SECP256K1) $(DIR_SECP256K1_SRC) 2> /dev/null || true
 	$(PRECMD)git -C $(DIR_SECP256K1_SRC) fetch --depth 1 $(DIR_SECP256K1_SRC) $(VERSION_SECP256k1) &> /dev/null || true
 	$(PRECMD)cd $(DIR_SECP256K1_SRC); ./autogen.sh
-	$(PRECMD)cd $(DIR_SECP256K1_SRC); ./configure ${if $(CROSS_COMPILE),--host=$(MTRIPLE) --target=$(MTRIPLE) --with-sysroot=$(CROSS_SYSROOT)} --enable-shared=no CRYPTO_LIBS=$(DIR_OPENSSL)/lib/ CRYPTO_CFLAGS=$(DIR_OPENSSL)/include/ ${if $(CROSS_COMPILE),CC=/usr/bin/clang CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"}
+	$(PRECMD)cd $(DIR_SECP256K1_SRC); ./configure ${if $(CROSS_COMPILE),--host=$(MTRIPLE) --target=$(MTRIPLE) --with-sysroot=$(CROSS_SYSROOT)} --enable-shared=no CRYPTO_LIBS=$(DIR_OPENSSL)/lib/ CRYPTO_CFLAGS=$(DIR_OPENSSL)/include/ ${if $(CROSS_COMPILE),CC=/usr/bin/clang CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"} $(CONFIGUREFLAGS)
 	$(PRECMD)cd $(DIR_SECP256K1_SRC); make clean
 	$(PRECMD)cd $(DIR_SECP256K1_SRC); make $(MAKE_PARALLEL)
 	$(PRECMD)cd $(DIR_SECP256K1_SRC); mv .libs ../lib
