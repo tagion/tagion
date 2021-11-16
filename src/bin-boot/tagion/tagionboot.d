@@ -3,15 +3,21 @@ import std.stdio;
 import std.file: exists;
 import std.format;
 import std.exception : assumeUnique;
+import std.algorithm.iteration : map;
+import std.range : iota;
+import std.array : array;
+
+
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdHashNet;
 import tagion.script.StandardRecords : Invoice;
-import tagion.dart.DARTFile;
-import tagion.hibon.HiBONRecord;
+//import tagion.dart.DARTFile;
+import tagion.dart.Recorder;
+import tagion.hibon.HiBONRecord : fread, fwrite;
 
 //import tagion.revision;
 import std.array : join;
@@ -56,23 +62,19 @@ enum HASH="xxx";
 int main(string[] args) {
     immutable program=args[0];
     writefln("BOOT ", program);
+    immutable initial_gene = iota(256/8).map!(i => immutable(ubyte)(0b10101010)).array;
     bool version_switch;
 
     string invoicefile;
-    string outputfilename;
+    string outputfile = "dart.hibon";
 //    StandardBill bill;
     uint number_of_bills;
-//    string passphrase="verysecret";
-//    ulong value=1000_000_000;
-
-//    bill.toHiBON;
-
-    //   pragma(msg, "bill_type ", GetLabel!(StandardBill.bill_type));
     auto main_args = getopt(args,
         std.getopt.config.caseSensitive,
         std.getopt.config.bundling,
         "version",   "display the version",     &version_switch,
-        "invoice|i","Sets the HiBON input file name", &invoicefile,
+//        "invoice|i","Sets the HiBON input file name", &invoicefile,
+        "output|o", format("Output filename : Default %s", outputfile), &outputfile,
 // //        "outputfile|o", format("Sets the output file name: default : %s", outputfilename), &outputfilename,
 //         "bills|b", "Generate bills", &number_of_bills,
         // "value|V", format("Bill value : default: %d", value), &value,
@@ -96,7 +98,7 @@ int main(string[] args) {
                 format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
                 "",
                 "Where:",
-                format("<file>           hibon outfile (Default %s)", outputfilename),
+                format("<file>           hibon outfile (Default %s)", outputfile),
                 "",
 
                 "<option>:",
@@ -105,27 +107,41 @@ int main(string[] args) {
             main_args.options);
         return 0;
     }
+    //writefln("args=%s", args);
+
+    // if ( args.length > 2) {
+    //     stderr.writefln("Only one output file name allowed (given %s)", args[1..$]);
+    // }
+    // else if (args.length > 1) {
+    //     outputfilename=args[1];
+    // }
     writefln("args=%s", args);
-
-    if ( args.length > 2) {
-        stderr.writefln("Only one output file name allowed (given %s)", args[1..$]);
-    }
-    else if (args.length > 1) {
-        outputfilename=args[1];
-    }
-
-    if (invoicefile.exists) {
-        const invoice_doc = invoicefile.fread;
+    const net = new StdHashNet;
+    auto factory = RecordFactory(net);
+    auto recorder = factory.recorder;
+    foreach(file; args[1..$]) {
+        if (!file.exists) {
+            writefln("Error: File %s does not exists", file);
+            return 3;
+        }
+        const invoice_doc = file.fread;
         if (!invoice_doc.isInorder) {
-            writefln("Invoice file %s is not a HiBON file", invoicefile);
+            writefln("Invoice file %s is not a HiBON file", file);
             return 1;
         }
-        // immutable data=assumeUnique(cast(ubyte[])invoicefile.fread);
-        // const doc=Document(data);
-        // auto hibon=generateBills(doc);
-        // fwrite(outputfilename, hibon.serialize);
+
+        const invoice = Invoice(invoice_doc);
+
+        const bill=StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+
+        // Add the bill to the DART recorder
+        recorder.add(bill);
     }
 
-//    writefln("args=%s", args);
+    if (recorder.empty) {
+        writefln("Error: Nothing has been added to the recorder");
+    }
+
+    outputfile.fwrite(recorder);
     return 0;
 }
