@@ -2,10 +2,10 @@
 # on-demand generation of targets:
 
 
-RESOLVE_UNIT_TARGETS := ${filter config-%, $(MAKECMDGOALS)}
+RESOLVE_UNIT_TARGETS := ${filter configure-%, $(MAKECMDGOALS)}
 
 ifdef RESOLVE_UNIT_TARGETS
-ALL_DEPS := $(subst config-,,$(RESOLVE_UNIT_TARGETS))
+ALL_DEPS := $(subst configure-,,$(RESOLVE_UNIT_TARGETS))
 ALL_DEPS := $(sort $(ALL_DEPS))
 
 ${eval ${call debug.open, RESOLVE GOALS (LEVEL: $(MAKELEVEL))}}
