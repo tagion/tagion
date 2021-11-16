@@ -1,7 +1,10 @@
 DEPS += lib-hibon
+
+ifdef TEST
 DEPS += wrap-secp256k1
 
 ${call config.lib, crypto}: wrap-secp256k1
+endif
 
 ${call config.lib, crypto}: LOOKUP := tagion/crypto/*.d
 ${call config.lib, crypto}: LOOKUP += tagion/crypto/secp256k1/*.d
@@ -12,9 +15,11 @@ ifdef TINY_AES
 ${call config.lib, crypto}: LOOKUP += tagion/crypto/aes/tiny_aes/*.d
 DCFLAGS+=$(DVERSION)=TINY_AES
 else
-DEPS += wrap-openssl
 
+ifdef TEST
+DEPS += wrap-openssl
 ${call config.lib, crypto}: wrap-openssl
+endif
 
 ${call config.lib, crypto}: LOOKUP += tagion/crypto/aes/openssl_aes/*.d
 
