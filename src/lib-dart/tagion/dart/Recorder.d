@@ -107,7 +107,7 @@ class RecordFactory {
 
         private this(Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
@@ -177,14 +177,15 @@ class RecordFactory {
             archives.clear;
         }
 
-        void insert(const Document doc, const Archive.Type type = Archive.Type.NONE) {
-            auto a = new Archive(net, doc, type);
-            archives.insert(a);
+        const(Archive) insert(const Document doc, const Archive.Type type = Archive.Type.NONE) {
+            auto archive = new Archive(net, doc, type);
+            archives.insert(archive);
+            return archive;
         }
 
-        void insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
+        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
                 if (isHiBONRecord!T) {
-            insert(pack.toDoc, type);
+            return insert(pack.toDoc, type);
         }
 
         void insert(Archive archive, const Archive.Type type = Archive.Type.NONE) {
@@ -196,17 +197,31 @@ class RecordFactory {
             }
         }
 
-        const(Archive) add(const(Document) doc) {
-            auto archive = new Archive(net, doc, Archive.Type.ADD);
-            archives.insert(archive);
-            return archive;
+        const(Archive) add(T)(T pack) {
+            return insert(pack, Archive.Type.ADD);
         }
 
-        const(Archive) remove(const(Document) doc) {
-            auto archive = new Archive(net, doc, Archive.Type.REMOVE);
-            archives.insert(archive);
-            return archive;
+        const(Archive) remove(T)(T pack) {
+            return insert(pack, Archive.Type.REMOVE);
         }
+//        alias add(T) = insert!T(
+        // const(Archive) add(const(Document) doc) {
+        //     auto archive = new Archive(net, doc, Archive.Type.ADD);
+        //     archives.insert(archive);
+        //     return archive;
+        // }
+
+        // const(Archive) add(T)(T pack) if (isHiBONRecord!T) {
+        //     auto archive = new Archive(net, doc, Archive.Type.ADD);
+        //     archives.insert(archive);
+        //     return archive;
+        // }
+
+        // const(Archive) remove(const(Document) doc) {
+        //     auto archive = new Archive(net, doc, Archive.Type.REMOVE);
+        //     archives.insert(archive);
+        //     return archive;
+        // }
 
         void remove(immutable(Buffer) fingerprint)
         in {
