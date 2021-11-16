@@ -13,6 +13,7 @@ proper: clean-shared
 clean-shared:
 	${call log.header, cleaning ${strip $1}}
 	$(PRECMD)rm -f $(DIR_SRC)/**/$(FILENAME_DEPS_MK) || true
+	$(PRECMD)rm -f $(DIR_SRC)/**/$(FILENAME_TEST_DEPS_MK) || true
 	${call log.line, Cleaned generated files}
 
 # 

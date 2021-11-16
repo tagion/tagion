@@ -22,6 +22,7 @@ include $(DIR_TUB)/vars.mk
 include $(DIR_TUB)/debug.mk
 include $(DIR_TUB)/log.mk
 include $(DIR_TUB)/help.mk
+include $(DIR_TUB)/common.mk
 
 ifdef BRANCH
 # Core tub functionality
