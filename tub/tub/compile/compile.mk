@@ -7,9 +7,9 @@ ${call print, Expected failed compilation, Why: Found empty $(FILENAME_DEPS_MK),
 endif
 
 ifdef TEST
-include $(DIR_SRC)/**/gen.test.deps.mk
+-include $(DIR_SRC)/**/gen.test.deps.mk
 else
-include $(DIR_SRC)/**/gen.deps.mk
+-include $(DIR_SRC)/**/gen.deps.mk
 endif
 
 ifndef DEPS_UNRESOLVED
