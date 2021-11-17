@@ -666,6 +666,9 @@ alias check = Check!DARTException;
         protected Archive[] current;
         @disable this();
         this(Range)(scope ref Range range, const uint rim) @trusted {
+            pragma(msg, "RimKeyRange Range ", Range);
+            pragma(msg, "RimKeyRange  ", RimKeyRange);
+            pragma(msg, "Foreach(Range)  ", RimKeyRange);
             if (!range.empty) {
                 Archive[] list;
                 immutable key = range.front.fingerprint.rim_key(rim);
@@ -688,10 +691,11 @@ alias check = Check!DARTException;
                 else {
                     void build(ref Range range, const uint no = 0) {
                         if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                            pragma(msg, "build range ", typeof(range), " a ", typeof(range.front), " Elem ", Range.Elem);
                             auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
-                            list[no] = a;
+                            list[no] = cast(Archive)a;
                         }
                         else {
                             list = new Archive[no];
@@ -736,7 +740,7 @@ alias check = Check!DARTException;
             }
         }
 
-        Archive front() {
+        inout(Archive) front() inout {
             if (empty) {
                 return null;
             }
@@ -774,11 +778,12 @@ alias check = Check!DARTException;
      + If the function executes succesfully then the DART is update or else it does not affect the DART
      + The function return the bulleye of the dart
      +/
-    Buffer modify(RecordFactory.Recorder modify_records) {
+    Buffer modify(const(RecordFactory.Recorder) modify_records) {
         Leave traverse_dart(R)(
                 scope ref R range,
                 const uint branch_index,
                 immutable uint rim = 0) @trusted {
+            pragma(msg, "traverse_dart R ", R);
             if (!range.empty) {
                 auto archive = range.front;
                 uint erase_block_index;
@@ -975,6 +980,7 @@ alias check = Check!DARTException;
         }
         else {
             scope range = modify_records.archives[];
+            pragma(msg, "scope range ", typeof(range));
             immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
             scope (success) {

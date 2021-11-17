@@ -28,13 +28,14 @@ import tagion.dart.DARTException: BlockFileException;
 // version(unittest) {
 import std.math: rint;
 
+@safe
 version (unittest) {
     import Basic = tagion.basic.Basic;
 
     const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
         import basic = tagion.basic.Basic;
 
-        return basic.fileId!T("dbdart", prefix);
+        return basic.fileId!T("drt", prefix);
     }
 }
 
@@ -1244,7 +1245,7 @@ class BlockFile {
 
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
-        
+
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {
             const sub_doc = a.get!Document;

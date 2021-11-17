@@ -35,10 +35,12 @@ alias hex = toHexString;
 //import tagion.Debug;
 
 enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
+@safe
 uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothrow {
     return to_sector + ((from_sector >= to_sector) ? SECTOR_MAX_SIZE : 0);
 }
 
+@safe
 uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow {
     immutable from = from_sector;
     immutable to = calc_to_value(from_sector, to_sector);
@@ -48,16 +50,16 @@ uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure not
 /++
  some text
  +/
-
+@safe
 class DART : DARTFile { //, HiRPC.Supports {
     immutable ushort from_sector;
     immutable ushort to_sector;
     HiRPC hirpc;
-    this(SecureNet net, string filename, const ushort from_sector = 0, const ushort to_sector = 0) {
+    this(const SecureNet net, string filename, const ushort from_sector = 0, const ushort to_sector = 0) {
         super(net, filename);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
-        this.hirpc.net = net;
+        this.hirpc = HiRPC(net);
     }
 
     bool inRange(const ushort sector) pure nothrow {
@@ -640,7 +642,7 @@ class DART : DARTFile { //, HiRPC.Supports {
 
         immutable(Rims) root_rims;
 
-        this(const Rims root_rims, Synchronizer sync) {
+        this(const Rims root_rims, Synchronizer sync) @trusted {
             this.root_rims = root_rims;
             this.sync = sync;
             sync.set(that, this, that.hirpc);
@@ -824,7 +826,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                 }
 
                 immutable foreign_doc = request.toDoc;
-                fiber.yield;
+                (() @trusted {
+                    fiber.yield;
+                })();
                 // Here a yield loop should be implement to poll for response from the foriegn DART
                 // A timeout should also be implemented in this poll loop
                 const response_doc = send_request_to_foreign_dart(foreign_doc);
@@ -931,7 +935,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            dart_A_synchronizer.call;
+                            (() @trusted {
+                                dart_A_synchronizer.call;
+                            })();
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
@@ -993,7 +999,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        dart_A_synchronizer.call;
+                        (() @trusted {
+                            dart_A_synchronizer.call;
+                        })();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1049,7 +1057,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        dart_A_synchronizer.call;
+                        (() @trusted {
+                            dart_A_synchronizer.call;
+                        })();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1100,7 +1110,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        dart_A_synchronizer.call;
+                        (() @trusted {
+                            dart_A_synchronizer.call;
+                        })();
                     }
                 }
 
@@ -1153,7 +1165,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        dart_A_synchronizer.call;
+                        (() @trusted {
+                            dart_A_synchronizer.call;
+                        })();
                     }
                 }
 
@@ -1207,7 +1221,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        dart_A_synchronizer.call;
+                        (() @trusted {
+                            dart_A_synchronizer.call;
+                        })();
                     }
                 }
 
@@ -1261,7 +1277,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        dart_A_synchronizer.call;
+                        (() @trusted {
+                            dart_A_synchronizer.call;
+                        })();
                     }
                 }
 
@@ -1314,7 +1332,9 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        dart_A_synchronizer.call;
+                        (() @trusted {
+                            dart_A_synchronizer.call;
+                        })();
                     }
                 }
 
