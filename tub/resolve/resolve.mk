@@ -34,9 +34,6 @@ ${foreach DEP,$(ALL_DEPS),\
 ALL_DEPS += $(DEPSCACHE)
 ALL_DEPS := ${sort $(ALL_DEPS)}
 
-# Dependency of my dependency is my dependency...
-# ${foreach _,$(ALL_DEPS),${eval $($__DEPS) += }}
-
 DEPS_UNRESOLVED := ${filter-out ${sort $(DEPS_RESOLVED)}, $(ALL_DEPS)}
 
 ${call debug, All known deps:}

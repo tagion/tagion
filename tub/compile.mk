@@ -12,7 +12,6 @@ else
 -include $(DIR_SRC)/**/gen.deps.mk
 endif
 
-ifndef DEPS_UNRESOLVED
 # Binaries
 tagion%: ${call bin,%}
 	@
@@ -66,7 +65,6 @@ ${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS
 	${if $(LOGS), ${call details.archive}}
 	${if $(CROSS_COMPILE),$(PRECMD)ldc2 -mtriple=$(MTRIPLE) -lib $(_INFILES) -of$(@),$(PRECMD)ar cr $(@) $(_INFILES)}
 	${call log.kvp, Archived, $(@)}
-endif
 endif
 
 # Vars definitions
