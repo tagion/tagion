@@ -1,4 +1,6 @@
-# OS & ATCH
+FCONFIGURE := gen.configure.mk
+
+# OS & ARCH
 OS ?= $(shell uname | tr A-Z a-z)
 
 ifndef ARCH
@@ -13,7 +15,7 @@ ARCH = $(shell uname -m)
 endif
 endif
 
-# PRECMD is used to add command before the compiliation commands
+# Override PRECMD= to see output all commands
 PRECMD ?= @
 
 # Git
@@ -61,6 +63,16 @@ MV := mv
 LN := ln -s
 endif
 
+MAKE_SHOW_ENV += env-commands
+env-commands:
+	$(call log.header, env :: commands ($(OS)))
+	$(call log.kvp, RM, $(RM))
+	$(call log.kvp, RMDIR, $(RMDIR))
+	$(call log.kvp, MKDIR, $(MKDIR))
+	$(call log.kvp, MV, $(MV))
+	$(call log.kvp, LN, $(LN))
+	$(call log.close)
+
 # 
 # Cross compilation
 # 
@@ -80,7 +92,7 @@ CROSS_VENDOR := ${word 2, $(TRIPLET_SPACED)}
 CROSS_OS := ${word 3, $(TRIPLET_SPACED)}
 endif
 
-CROSS_COMPILE := 1
+CROSS_ENABLED := 1
 
 # If same as host - reset vars not to trigger
 # cross-compilation logic
@@ -89,7 +101,7 @@ ifeq ($(CROSS_OS),$(OS))
 CROSS_ARCH :=
 CROSS_VENDOR :=
 CROSS_OS :=
-CROSS_COMPILE :=
+CROSS_ENABLED :=
 endif
 endif
 
@@ -102,7 +114,7 @@ MAKE_SHOW_ENV += env-cross
 env-cross:
 	$(call log.header, env :: cross)
 	$(call log.kvp, MTRIPLE, $(MTRIPLE))
-	$(call log.kvp, CROSS_COMPILE, $(CROSS_COMPILE))
+	$(call log.kvp, CROSS_ENABLED, $(CROSS_ENABLED))
 	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
 	$(call log.kvp, CROSS_VENDOR, $(CROSS_VENDOR))
 	$(call log.kvp, CROSS_OS, $(CROSS_OS))
@@ -229,10 +241,6 @@ env-compiler:
 	$(call log.kvp, ARCH, $(ARCH))
 	$(call log.kvp, MODEL, $(MODEL))
 	$(call log.separator)
-	$(call log.kvp, DCFLAGS (Complier), $(DCFLAGS))
-	$(call log.kvp, LDCFLAGS (Linker), $(LDCFLAGS))
-	$(call log.kvp, SOURCEFLAGS, $(SOURCEFLAGS))
-	$(call log.separator)
 	$(call log.kvp, OUTPUT, $(OUTPUT))
 	$(call log.kvp, HF, $(HF))
 	$(call log.kvp, DF, $(DF))
@@ -247,34 +255,32 @@ env-compiler:
 	$(call log.kvp, DIP1000, $(DIP1000))
 	$(call log.separator)
 	$(call log.kvp, FPIC, $(FPIC))
+	$(call log.separator)
+	$(call log.kvp, DCFLAGS (Complier), $(DCFLAGS))
+	$(call log.kvp, LDCFLAGS (Linker), $(LDCFLAGS))
+	$(call log.kvp, SOURCEFLAGS, $(SOURCEFLAGS))
 	$(call log.close)
 
 # 
 # Directories
 # 
-DIR_TRASH := ${abspath ${DIR_ROOT}}/.trash
 DIR_BUILD := ${abspath ${DIR_ROOT}}/build/$(MTRIPLE)
-DIR_BUILD_TEMP := ${abspath ${DIR_BUILD}}/.tmp
-DIR_BUILD_FLAGS := ${abspath ${DIR_BUILD}}/.tmp/flags
-DIR_BUILD_O := $(DIR_BUILD_TEMP)/o
-DIR_BUILD_LIBS_STATIC := $(DIR_BUILD)/libs/static
-DIR_BUILD_BINS := $(DIR_BUILD)/bins
-DIR_BUILD_WRAPS := $(DIR_BUILD)/wraps
-DIR_SRC := ${abspath ${DIR_ROOT}}/src
 
 # New simplified flow directories
 DBIN := $(DIR_BUILD)/bin
 DTMP := $(DIR_BUILD)/tmp
+DSRC := ${abspath ${DIR_ROOT}}/src
 
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
 	$(call log.header, env :: dirs)
-	$(call log.kvp, DIR_TRASH, $(DIR_TRASH))
 	$(call log.kvp, DIR_ROOT, $(DIR_ROOT))
 	$(call log.kvp, DIR_TUB, $(DIR_TUB))
-	$(call log.separator)
 	$(call log.kvp, DIR_BUILD, $(DIR_BUILD))
-	$(call log.kvp, DIR_SRC, $(DIR_SRC))
+	$(call log.separator)
+	$(call log.kvp, DBIN, $(DBIN))
+	$(call log.kvp, DTMP, $(DTMP))
+	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.close)
 
 #
@@ -282,23 +288,11 @@ env-dirs:
 #
 # TODO: Inherit parallel value from current make
 MAKE_PARALLEL := -j
-MAKE_DEBUG := 
 
 MAKE_SHOW_ENV += env-mode
 env-mode:
 	$(call log.header, env :: tub mode)
 	$(call log.kvp, MAKE_PARALLEL, $(MAKE_PARALLEL))
-	$(call log.kvp, MAKE_DEBUG, $(MAKE_DEBUG))
-	$(call log.close)
-
-MAKE_SHOW_ENV += env-commands
-env-commands:
-	$(call log.header, env :: commands ($(OS)))
-	$(call log.kvp, RM, $(RM))
-	$(call log.kvp, RMDIR, $(RMDIR))
-	$(call log.kvp, MKDIR, $(MKDIR))
-	$(call log.kvp, MV, $(MV))
-	$(call log.kvp, LN, $(LN))
 	$(call log.close)
 
 env: $(MAKE_SHOW_ENV)
@@ -306,4 +300,3 @@ env: $(MAKE_SHOW_ENV)
 # 
 # Utility variables
 # 
-FCONFIGURE := gen.configure.mk
