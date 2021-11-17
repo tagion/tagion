@@ -53,7 +53,7 @@ int main(string[] args) {
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
-            "dartfilename|dart", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+            "dartfilename|drt", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
             "initialize", "Create a dart file", &initialize,
             "inputfile|i", "Sets the HiBON input file name", &inputfilename,
             "outputfile|o", "Sets the output file name", &outputfilename,
@@ -62,9 +62,9 @@ int main(string[] args) {
             "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full"
             : toAngle.to!string), &toAngle,
             "useFakeNet|fn", format("Enables fake hash test-mode: default %s", useFakeNet), &useFakeNet,
-            "read", format("Excutes a DART read sequency: default %s", dartread), &dartread,
+            "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread,
             "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
-            "modify", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
+            "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
             "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
             "generate", "Generate a fake test dart (recomended to use with --useFakeNet)", &generate,
             "dump", "Dumps all the arcvives with in the given angle", &dump,
@@ -99,19 +99,22 @@ int main(string[] args) {
         return 0;
     }
 
-    SecureNet net;
-    if (useFakeNet) {
-        import tagion.dart.DARTFakeNet;
-
-        net = new DARTFakeNet;
+    SecureNet createNet() {
+        SecureNet result;
+        if (useFakeNet) {
+            import tagion.dart.DARTFakeNet;
+            result = new DARTFakeNet;
+        }
+        else {
+            result = new StdSecureNet;
+        }
+        result.generateKeyPair(passphrase);
+        return result;
     }
-    else {
-        net = new StdSecureNet;
-    }
-    net.generateKeyPair(passphrase);
+    const net = createNet;
     // else net = new StdSecureNet(crypt);
-    auto hirpc = HiRPC(net);
-    DART db;
+    const hirpc = HiRPC(net);
+    // DART db;
 
     void writeResponse(Buffer data) {
         // if(dump) db.dump(true);
@@ -127,7 +130,8 @@ int main(string[] args) {
         enum BLOCK_SIZE = 0x80;
         BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
     }
-    db = new DART(net, dartfilename, fromAngle, toAngle);
+
+    auto db = new DART(net, dartfilename, fromAngle, toAngle);
     if (generate) {
         import tagion.dart.DARTFakeNet : SetInitialDataSet;
 
@@ -141,7 +145,12 @@ int main(string[] args) {
 
     if (onehot > 1) {
         stderr.writeln("Only one of the dartrpc, dartread, dartrim and dartmodify switched alowed");
+        return 1;
     }
+    if (!inputfilename.exists) {
+        stderr.writefln("No input file '%s'", inputfilename);
+    }
+
     if (dartrpc) {
         if (!inputfilename.exists) {
             writeln("No input file");
