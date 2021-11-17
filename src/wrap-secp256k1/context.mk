@@ -11,7 +11,9 @@ CONFIGUREFLAGS+=--enable-experimental
 CONFIGUREFLAGS+=--enable-module-recovery
 CONFIGUREFLAGS+=--enable-module-schnorrsig
 
-
+configure-wrap-secp256k1: wrap-secp256k1
+	@
+	
 wrap-secp256k1: $(DIR_SECP256K1_PREFIX)/libsecp256k1.a
 	@
 
