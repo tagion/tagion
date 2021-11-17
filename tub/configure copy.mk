@@ -30,7 +30,7 @@ FILENAME_CURRENT_DEPS_MK := $(FILENAME_TEST_DEPS_MK)
 endif
 
 # By default, INCLFLAGS contain all directories inside current ./src
-INCLFLAGS := ${addprefix -I,${shell ls -d $(DIR_SRC)/*/ 2> /dev/null || true | grep -v wrap-}}
+INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 INCLFLAGS += ${addprefix -I,${shell ls -d $(DIR_BUILD_WRAPS)/*/lib 2> /dev/null || true}}
 
 # Remove duplicates
@@ -42,8 +42,8 @@ ALL_DEPS := ${sort $(ALL_DEPS)}
 ${foreach DEP,$(ALL_DEPS),\
 	${call debug, Including $(DEP)...}\
 	${eval RESOLVING_UNIT := $(DEP)}\
-	${eval -include $(DIR_SRC)/$(DEP)/context.mk}\
-	${eval -include $(DIR_SRC)/$(DEP)/local.mk}\
+	${eval -include $(DSRC)/$(DEP)/context.mk}\
+	${eval -include $(DSRC)/$(DEP)/local.mk}\
 	${eval $(RESOLVING_UNIT)_DEPS := $(DEPS)}\
 	${eval DEPSCACHE += $(DEPS)}\
 	${eval DEPS := }\
@@ -81,12 +81,12 @@ ${call debug, All deps successfully resolved!}
 
 # Bin
 configure-lib-%: ${call config.bin,%}
-	${eval $*_DEPFILES := ${shell cat $(DIR_SRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DIR_SRC)}}
-	${eval $*_DEPFILES := ${subst $(DIR_SRC)/,,$($*_DEPFILES)}}
+	${eval $*_DEPFILES := ${shell cat $(DSRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DSRC)}}
+	${eval $*_DEPFILES := ${subst $(DSRC)/,,$($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${foreach _,$($*_DEPFILES),${firstword ${subst /, ,$_}}}}
 	${eval $*_DEPFILES := ${sort $($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${filter-out ${firstword $($*_DEPFILES)}, $($*_DEPFILES)}}
-	$(PRECMD)echo $(DIR_BUILD_BINS)/tagion$*: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/libtagion,$(DEP)}.o} >> $(DIR_SRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
+	$(PRECMD)echo $(DIR_BUILD_BINS)/tagion$*: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/libtagion,$(DEP)}.o} >> $(DSRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
 
 ${call config.bin,%}: $(DIR_BUILD_FLAGS)/.way 
 	${call generate.target.dependencies,$(LOOKUP),bin-$(*),tagion$(*),libtagion,${call bin,$(*)}}
@@ -94,23 +94,23 @@ ${call config.bin,%}: $(DIR_BUILD_FLAGS)/.way
 # Lib
 ifdef TEST
 configure-lib-%: ${call config.lib,%}
-	${eval $*_DEPFILES := ${shell cat $(DIR_SRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DIR_SRC)}}
-	${eval $*_DEPFILES := ${subst $(DIR_SRC)/,,$($*_DEPFILES)}}
+	${eval $*_DEPFILES := ${shell cat $(DSRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DSRC)}}
+	${eval $*_DEPFILES := ${subst $(DSRC)/,,$($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${foreach _,$($*_DEPFILES),${firstword ${subst /, ,$_}}}}
 	${eval $*_DEPFILES := ${sort $($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${filter-out ${firstword $($*_DEPFILES)}, $($*_DEPFILES)}}
-	$(PRECMD)echo $(DIR_BUILD_BINS)/test-libtagion$*: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/test-libtagion,$(DEP)}.o} >> $(DIR_SRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
+	$(PRECMD)echo $(DIR_BUILD_BINS)/test-libtagion$*: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/test-libtagion,$(DEP)}.o} >> $(DSRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
 
 ${call config.lib,%}:
 	${call generate.target.dependencies,$(LOOKUP),lib-$(*),test-libtagion$(*),test-libtagion,${call lib,$(*)}}
 else
 configure-lib-%: ${call config.lib,%}
-	${eval $*_DEPFILES := ${shell cat $(DIR_SRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DIR_SRC)}}
-	${eval $*_DEPFILES := ${subst $(DIR_SRC)/,,$($*_DEPFILES)}}
+	${eval $*_DEPFILES := ${shell cat $(DSRC)/lib-$*/$(FILENAME_CURRENT_DEPS_MK) | grep $(DSRC)}}
+	${eval $*_DEPFILES := ${subst $(DSRC)/,,$($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${foreach _,$($*_DEPFILES),${firstword ${subst /, ,$_}}}}
 	${eval $*_DEPFILES := ${sort $($*_DEPFILES)}}
 	${eval $*_DEPFILES := ${filter-out ${firstword $($*_DEPFILES)}, $($*_DEPFILES)}}
-	$(PRECMD)echo $(DIR_BUILD_LIBS_STATIC)/libtagion$*.a: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/libtagion,$(DEP)}.o} >> $(DIR_SRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
+	$(PRECMD)echo $(DIR_BUILD_LIBS_STATIC)/libtagion$*.a: ${foreach DEP,$($*_DEPFILES),${subst lib-,$(DIR_BUILD_O)/libtagion,$(DEP)}.o} >> $(DSRC)/lib-$(*)/$(FILENAME_CURRENT_DEPS_MK)
 
 ${call config.lib,%}:
 	${call generate.target.dependencies,$(LOOKUP),lib-$(*),libtagion$(*),libtagion,${call lib,$(*)}}
@@ -120,11 +120,11 @@ endif
 # Using ldc2 --makedeps to generate .mk file that adds list
 # of dependencies to compile targets
 define generate.target.dependencies
-$(PRECMD)ldc2 $(INCLFLAGS) --makedeps ${call lookup,$1,$2} -o- -of=${call filepath.o,${strip $3}} > $(DIR_SRC)/${strip $2}/$(FILENAME_CURRENT_DEPS_MK)
+$(PRECMD)ldc2 $(INCLFLAGS) --makedeps ${call lookup,$1,$2} -o- -of=${call filepath.o,${strip $3}} > $(DSRC)/${strip $2}/$(FILENAME_CURRENT_DEPS_MK)
 endef
 
 define lookup
-${addprefix $(DIR_SRC)/${strip $2}/,$1}
+${addprefix $(DSRC)/${strip $2}/,$1}
 endef
 
 define filepath.o

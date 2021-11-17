@@ -1,2 +1,2 @@
 %.way:
-	$(PRECMD)mkdir -p $(@D)
+	$(PRECMD)$(MKDIR) $(@D)

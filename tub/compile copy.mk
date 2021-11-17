@@ -29,17 +29,17 @@ ${call lib.o,%}: ${call lib.o}.way
 ${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
 	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.archive}}
-	${if $(CROSS_COMPILE),$(PRECMD)ldc2 -mtriple=$(MTRIPLE) -lib $(_INFILES) -of$(@),$(PRECMD)ar cr $(@) $(_INFILES)}
+	${if $(CROSS_ENABLED),$(PRECMD)ldc2 -mtriple=$(MTRIPLE) -lib $(_INFILES) -of$(@),$(PRECMD)ar cr $(@) $(_INFILES)}
 	${call log.kvp, Archived, $(@)}
 
 # Vars definitions
 define redefine.vars.o.common
 ${eval _DCFLAGS := $(DCFLAGS)}
-${if $(CROSS_COMPILE), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
+${if $(CROSS_ENABLED), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := $(INCLFLAGS)}
-${eval _INFILES := ${filter $(DIR_SRC)/${strip $1}-$(*)/%.d,$(^)}}
-${eval _INFILES += ${filter $(DIR_SRC)/${strip $1}-$(*)/%.di,$(^)}}
+${eval _INFILES := ${filter $(DSRC)/${strip $1}-$(*)/%.d,$(^)}}
+${eval _INFILES += ${filter $(DSRC)/${strip $1}-$(*)/%.di,$(^)}}
 ${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.d,$(^)}}
 ${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.di,$(^)}}
 endef
@@ -60,7 +60,7 @@ endef
 
 define redefine.vars.bin
 ${eval _DCFLAGS := $(DCFLAGS)}
-${if $(CROSS_COMPILE), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
+${if $(CROSS_ENABLED), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
@@ -71,7 +71,7 @@ endef
 ifdef TEST
 define redefine.vars.lib
 ${eval _DCFLAGS := $(DCFLAGS)}
-${if $(CROSS_COMPILE), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
+${if $(CROSS_ENABLED), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
 ${eval _DCFLAGS += -main}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
