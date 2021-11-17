@@ -134,8 +134,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
             }
         }
 
-        void recorderReplayFunc(immutable(RecordFactory.Recorder) recorder) {
-            dart.modify(cast(RecordFactory.Recorder) recorder);
+        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe  {
+            dart.modify(recorder);
         }
 
         auto journalReplayFiber = new ReplayPool!string((string journal) => dart.replay(journal));
