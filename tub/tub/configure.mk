@@ -5,7 +5,7 @@ configure: ${subst lib-,$(DBIN)/test,$(UNITS_LIB)}
 configure:
 	@
 
-$(DBIN)/test%: | makedeps-libtest-%
+$(DBIN)/test%: | makedeps-libtest-% filterdeps-libtest-%
 	${call log.kvp, Configured test target, lib-$*}
 
 $(DBIN)/lib%.a: | makedeps-lib-% filterdeps-lib-%
@@ -22,10 +22,14 @@ makedeps-lib-%:
 	$(DSRC)/lib-$*/$(FCONFIGURE)
 	$(PRECMD)echo >> $(DSRC)/lib-$*/$(FCONFIGURE)
 
+filterdeps-libtest-%:
+	${call filter.lib.o}
+	$(PRECMD)echo $(DBIN)/test$*: ${foreach DEP,$($*_DEPF),${subst lib-,$(DTMP)/test,$(DEP)}.o} >> $(DSRC)/lib-$(*)/$(FCONFIGURETEST)
+
 makedeps-libtest-%:
 	$(PRECMD)ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
-	-of=$(DBIN)/test$* > \
+	-of=$(DTMP)/test$*.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURETEST)
 	$(PRECMD)echo >> $(DSRC)/lib-$*/$(FCONFIGURETEST)
 
