@@ -6,9 +6,8 @@ DIR_TUB := $(DIR_MAKEFILE)/tub
 DIR_ROOT := ${abspath ${DIR_TUB}/../}
 
 # Disabling removal of intermidiate targets
-.SECONDARY:
+# .SECONDARY:
 
-include $(DIR_TUB)/configure.mk
 include $(DIR_TUB)/rex.mk
 include $(DIR_TUB)/git.mk
 
@@ -25,13 +24,17 @@ include $(DIR_TUB)/help.mk
 include $(DIR_TUB)/common.mk
 include $(DIR_TUB)/clean.mk
 
+# Unit make files
+include $(DIR_SRC)/**/*.mk
+
 # Core tub functionality
 ifdef BRANCH
-include $(DIR_TUB)/resolve/_.mk
+include $(DIR_TUB)/clone.mk
 else
-$(call print, Compilation module disabled, Why: BRANCH is not defined, Fix: make checkout-<branch> OR make branch-<branch>, Example: make checkout-peppa)
+$(call warning, Can not clone when BRANCH is not defined, make branch-<branch>)
 endif
 
+include $(DIR_TUB)/configure.mk
 include $(DIR_TUB)/compile.mk
 
 

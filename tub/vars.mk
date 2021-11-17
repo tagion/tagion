@@ -262,6 +262,10 @@ DIR_BUILD_BINS := $(DIR_BUILD)/bins
 DIR_BUILD_WRAPS := $(DIR_BUILD)/wraps
 DIR_SRC := ${abspath ${DIR_ROOT}}/src
 
+# New simplified flow directories
+DBIN := $(DIR_BUILD)/bin
+DTMP := $(DIR_BUILD)/tmp
+
 MAKE_SHOW_ENV += env-dirs
 env-dirs:
 	$(call log.header, env :: dirs)

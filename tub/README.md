@@ -28,6 +28,9 @@ git clone git@github.com:tagion/tub.git
 
 ./tub/root
 make branch-<branch> # e.g. make branch-0.8.alpha
+make clone-lib-basic
+make configure # Will ensure all dependencies
+make libtagionbasic.a
 ```
 
 > Keep in mind, that **make scripts** in **tub** are meant to run from your root project directory, and not from `./tub` directory.
