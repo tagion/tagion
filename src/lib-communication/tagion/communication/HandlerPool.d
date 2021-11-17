@@ -5,21 +5,41 @@ import std.datetime;
 import std.stdio;
 import tagion.basic.Basic: Buffer;
 
+@safe
 interface ResponseHandler {
     void setResponse(Buffer response);
     bool alive();
     void close();
 
+    @safe
     struct Response(TKey) {
         immutable(TKey) key;
         Buffer data;
-        this(const TKey key, Buffer data) {
-            this.key = cast(immutable) key;
+        this(const TKey key, Buffer data) inout {
+            import std.traits : isBasicType, isArray;
+            static if (isBasicType!TKey) {
+                this.key = key;
+            }
+            else if(isArray!TKey) {
+                static if (is(ForeachType!Tkey == immutable)) {
+                    this.key = key;
+                }
+                else {
+                    this.key = key.idup;
+                }
+            }
+            else if(is(key == immutable)) {
+                this.key = key;
+            }
+            else {
+                static assert(0, "TKey "~TKey.stringof~" not supported");
+            }
             this.data = data;
         }
     }
 }
 
+@safe
 interface HandlerPool(TValue : ResponseHandler, TKey) {
     protected final class ActiveHandler {
         protected TValue handler; //TODO: try immutable/const
@@ -58,6 +78,7 @@ interface HandlerPool(TValue : ResponseHandler, TKey) {
     void tick();
 }
 
+@safe
 class StdHandlerPool(TValue : ResponseHandler, TKey) : HandlerPool!(TValue, TKey) {
     protected ActiveHandler[TKey] handlers; //TODO: should be threadsafe?
     protected immutable Duration timeout;
@@ -134,9 +155,11 @@ class StdHandlerPool(TValue : ResponseHandler, TKey) : HandlerPool!(TValue, TKey
     }
 }
 
+@safe
 unittest {
     import core.thread;
 
+    @safe
     class FakeResponseHandler : ResponseHandler {
         bool setResponseCalled = false;
         bool alived = true;
@@ -197,7 +220,7 @@ unittest {
         assert(!handler_pool.empty);
 
         fakeResponseHandler.alived = false;
-        immutable response = ResponseHandler.Response!uint(0, cast(Buffer)[]);
+        immutable response = immutable(ResponseHandler.Response!uint)(0, null);
         handler_pool.setResponse(response);
         assert(fakeResponseHandler.closed);
         assert(fakeResponseHandler.setResponseCalled);
