@@ -306,3 +306,4 @@ env: $(MAKE_SHOW_ENV)
 # 
 # Utility variables
 # 
+FCONFIGURE := gen.configure.mk

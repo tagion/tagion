@@ -1,27 +1,27 @@
 # Bin
 define bin
-$(DIR_BUILD_BINS)/tagion${strip $1}
+$(DBIN)/tagion${strip $1}
 endef
 
 define bin.o
-$(DIR_BUILD_O)/tagion${strip $1}.o
+$(DTMP)/tagion${strip $1}.o
 endef
 
 ifdef TEST
 define lib
-$(DIR_BUILD_BINS)/test-libtagion${strip $1}
+$(DBIN)/test-libtagion${strip $1}
 endef
 
 define lib.o
-$(DIR_BUILD_O)/test-libtagion${strip $1}.o
+$(DTMP)/test-libtagion${strip $1}.o
 endef
 else
 define lib
-$(DIR_BUILD_LIBS_STATIC)/libtagion${strip $1}.a
+$(DBIN)/libtagion${strip $1}.a
 endef
 
 define lib.o
-$(DIR_BUILD_O)/libtagion${strip $1}.o
+$(DTMP)/libtagion${strip $1}.o
 endef
 endif
 
