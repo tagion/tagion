@@ -1,5 +1,3 @@
-FCONFIGURE := gen.configure.mk
-
 # OS & ARCH
 OS ?= $(shell uname | tr A-Z a-z)
 
@@ -297,6 +295,3 @@ env-mode:
 
 env: $(MAKE_SHOW_ENV)
 
-# 
-# Utility variables
-# 

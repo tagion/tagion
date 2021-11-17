@@ -1,25 +1,33 @@
-${eval ${call debug.open, MAKE RESOLVE LEVEL $(MAKELEVEL) - $(MAKECMDGOALS)}}
-
-UNITS_BIN := ${shell ls $(DSRC) | grep bin-}
-UNITS_LIB := ${shell ls $(DSRC) | grep lib-}
-UNITS_WRAP := ${shell ls $(DSRC) | grep wrap-}
-
+# Configure libs
 configure: ${addsuffix .a,${subst lib-,$(DBIN)/lib,$(UNITS_LIB)}}
+configure: ${subst lib-,$(DBIN)/test,$(UNITS_LIB)}
+
+configure:
 	@
 
-$(DBIN)/lib%.a: | configure-lib-o-% configure-lib-a-%
-	${call log.kvp, Configured, lib-$*}
+$(DBIN)/test%: | makedeps-libtest-%
+	${call log.kvp, Configured test target, lib-$*}
 
-configure-lib-a-%:
+$(DBIN)/lib%.a: | makedeps-lib-% filterdeps-lib-%
+	${call log.kvp, Configured target, lib-$*}
+
+filterdeps-lib-%:
 	${call filter.lib.o}
 	$(PRECMD)echo $(DBIN)/lib$*.a: ${foreach DEP,$($*_DEPF),${subst lib-,$(DTMP)/lib,$(DEP)}.o} >> $(DSRC)/lib-$(*)/$(FCONFIGURE)
 
-configure-lib-o-%:
+makedeps-lib-%:
 	$(PRECMD)ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURE)
-	@echo >> $(DSRC)/lib-$*/$(FCONFIGURE)
+	$(PRECMD)echo >> $(DSRC)/lib-$*/$(FCONFIGURE)
+
+makedeps-libtest-%:
+	$(PRECMD)ldc2 $(INCLFLAGS) \
+	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
+	-of=$(DBIN)/test$* > \
+	$(DSRC)/lib-$*/$(FCONFIGURETEST)
+	$(PRECMD)echo >> $(DSRC)/lib-$*/$(FCONFIGURETEST)
 
 define filter.lib.o
 ${eval $*_DEPF := ${shell cat $(DSRC)/lib-$*/$(FCONFIGURE) | grep $(DSRC)}}
@@ -28,5 +36,3 @@ ${eval $*_DEPF := ${foreach _,$($*_DEPF),${firstword ${subst /, ,$_}}}}
 ${eval $*_DEPF := ${sort $($*_DEPF)}}
 ${eval $*_DEPF := ${filter-out ${firstword $($*_DEPF)}, $($*_DEPF)}}
 endef
-
-${eval ${call debug.close, MAKE RESOLVE LEVEL $(MAKELEVEL) - $(MAKECMDGOALS)}}
