@@ -257,6 +257,7 @@ unittest {
 /++
  Generate a temporary file name
 +/
+@trusted
 string tempfile() {
     import std.file: deleteme;
 
