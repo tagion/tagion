@@ -7,6 +7,9 @@ DIR_OPENSSL_PREFIX := $(DIR_OPENSSL)/lib
 DIR_OPENSSL_EXTRA := $(DIR_OPENSSL)/extra
 DIR_OPENSSL_SRC := $(DIR_OPENSSL)/src
 
+configure-wrap-openssl: wrap-openssl
+	@
+	
 wrap-openssl: $(DIR_OPENSSL_PREFIX)/libcrypto.a $(DIR_OPENSSL_PREFIX)/libssl.a
 	@
 
