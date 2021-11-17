@@ -1,7 +1,7 @@
 
 include dstep_setup.mk
 
-all: $(DESTROOT) $(DIFILES)
+dodi: $(DESTROOT) $(DIFILES)
 
 info:
 	@echo "HFILES    =$(HFILES)"
