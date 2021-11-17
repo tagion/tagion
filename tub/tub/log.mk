@@ -60,3 +60,7 @@ PRINT_SEPARATOR=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 define print
 ${info }${info $(PRINT_SEPARATOR) ${strip $1}}${if $2,${info ${strip $2}}}${if $3,${info ${strip $3}}}${if $4,${info ${strip $4}}}${if $5,${info ${strip $5}}}${info $(PRINT_SEPARATOR)}${info }
 endef
+
+define warning
+${info }${info $(PRINT_SEPARATOR) Warning}${info Problem: }${info ${strip $1}}${info Fix: }${info ${strip $2}}${info $(PRINT_SEPARATOR)}${info }
+endef
