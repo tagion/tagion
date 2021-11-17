@@ -251,14 +251,24 @@ class ConnectionPoolBridge {
 
 alias ActiveNodeAddressBook = immutable(AddressBook!Pubkey);
 
+@safe
 immutable class AddressBook(TKey) {
-    this(NodeAddress[TKey] addrs) {
+    this(const(NodeAddress[TKey]) addrs) @trusted {
+        // import std.algorithm.iteration : each;
+        // NodeAddress[TKey] duplicate;
+        // auto x=addrs.byKeyValue;
+        // pragma(msg, "x.front.key ", typeof(x.front.key));
+        // pragma(msg, "x.front.value ", typeof(x.front.value));
+        // duplicate[x.front.key] = x.front.value;
+        // addrs.byKeyValue.each!(n => duplicate[n.key] = n.value);
+
         this.data = cast(immutable) addrs.dup;
     }
 
     immutable(NodeAddress[TKey]) data;
 }
 
+@safe
 struct NodeAddress {
     enum tcp_token = "/tcp/";
     enum p2p_token = "/p2p/";
@@ -267,6 +277,14 @@ struct NodeAddress {
     string id;
     uint port;
     DART.SectorRange sector;
+    version(none)
+    this(ref return scope const(NodeAddress) node_address) inout {
+        address = node_address.address;
+        is_marshal = is_marshal;
+        id = node_address.id;
+        port = node_address.port;
+        sector = node_address.sector;
+    }
     this(string address, immutable(DARTOptions) dart_opts, const ulong port_base,  bool marshal = false) {
         import std.string;
 
@@ -295,7 +313,7 @@ struct NodeAddress {
 
                 auto json = parseJSON(address);
                 this.id = json["ID"].str;
-                auto addr = json["Addrs"].array()[0].str();
+                auto addr = (() @trusted => json["Addrs"].array()[0].str())();
                 auto tcpIndex = addr.indexOf(tcp_token) + tcp_token.length;
                 this.port = to!uint(addr[tcpIndex .. tcpIndex + 4]);
             }
