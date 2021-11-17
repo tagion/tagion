@@ -1,13 +1,11 @@
-# Source code cloning
-clone: ${addprefix clone-,$(DEPS)}
-	@
-
+# Cloning and resolving dependencies
 clone-%: $(DIR_SRC)/%/context.mk
-	@
+	${eval include $(DIR_SRC)/$*/context.mk}
+	${eval DEPSR := ${shell ls $(DIR_SRC)}}
+	${eval DEPSN := ${sort ${filter-out $(DEPSR),$(DEPS)}}}
+	${if $(DEPSN),$(PRECMD)$(MAKE) ${addprefix clone-,$(DEPSN)},${call log.line, Done!}}
 
 $(DIR_SRC)/%/context.mk:
 	${call log.header, Cloning $* ($(BRANCH))}
-	$(PRECMD)git clone ${if $(BRANCH),-b $(BRANCH) --single-branch} $(GIT_ORIGIN)/core-$* $(DIR_SRC)/$*
+	$(PRECMD)git clone ${if $(BRANCH),-b $(BRANCH)} $(GIT_ORIGIN)/core-$* $(DIR_SRC)/$*
 	${call log.close}
-	$(PRECMD)${eval include $@}
-	$(PRECMD)$(MAKE) ${addprefix clone-,$(DEPS)}

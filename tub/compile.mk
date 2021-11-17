@@ -1,82 +1,27 @@
 ${eval ${call debug.open, MAKE COMPILE - $(MAKECMDGOALS)}}
 
-# Show warning on empty deps files
-# EMPTY_DEPS := ${shell find $(DIR_SRC) -name $(FILENAME_CURRENT_DEPS_MK) -size 0}
-# ifdef EMPTY_DEPS
-# ${call print, Expected failed compilation, Why: Found empty $(FILENAME_CURRENT_DEPS_MK), Fix: make resolve-<target>}
-# endif
-
-ifdef TEST
--include $(DIR_SRC)/**/gen.test.deps.mk
-else
--include $(DIR_SRC)/**/gen.deps.mk
-endif
-
-# Binaries
-tagion%: ${call bin,%}
+lib%.a: $(DBIN)/lib%.a
 	@
 
-${call bin.o,%}: ${call bin.o}.way
-	${call redefine.vars.o, bin}
-	${if $(LOGS), ${call details.compile}}
-	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
-	${call log.kvp, Compiled, $(@)}
-
-${call bin,%}: ${call bin}.way ${call bin.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
-	${call redefine.vars.bin}
-	${if $(LOGS), ${call details.compile}}
-	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LINKFILES) $(_LDCFLAGS)
-	${call log.kvp, Compiled, $(@)}
-
-# Libraries
-ifdef TEST
-${eval ${call debug, Test mode}}
-
-libtagion%: ${call lib,%}
-	${call log.header, Running tests lib-$(*) (Make level $(MAKELEVEL))}
-	@${call lib,$*}
-	${call log.close}
-
-${call lib.o,%}: ${call lib.o}.way 
-	${call redefine.vars.o.test, lib}
-	${if $(LOGS), ${call details.compile}}
-	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
-	${call log.kvp, Compiled, $(@)}
-
-${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
-	${call redefine.vars.lib}
-	${if $(LOGS), ${call details.compile}}
-	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_LINKFILES) $(_LDCFLAGS)
-	${call log.kvp, Compiled, $(@)}
-else
-${eval ${call debug, Static library mode}}
-
-libtagion%: ${call lib,%}
-	@
-
-${call lib.o,%}: ${call lib.o}.way
+$(DTMP)/lib%.o: $(DTMP)/lib%.way
 	${call redefine.vars.o, lib}
-	${if $(LOGS), ${call details.compile}}
-	$(PRECMD)$(DC) $(_DCFLAGS) $(_INFILES) $(_INCLFLAGS) $(_LDCFLAGS)
+	${eval $*INFILES := ${filter $(DIR_SRC)/lib-$*/%.d,$^}}
+	${eval $*INFILES += ${filter $(DIR_SRC)/lib-$*/%.di,$^}}
+	$(PRECMD)$(DC) $(DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $(@)}
 
-${call lib,%}: ${call lib}.way ${call lib.o,%} ${foreach _,${filter lib-%,$(DEPS)},${call lib.o,${subst lib-,,$(_)}}}
+$(DBIN)/lib%.a: $(DBIN)/lib%.way
 	${call redefine.vars.lib}
 	${if $(LOGS), ${call details.archive}}
-	${if $(CROSS_COMPILE),$(PRECMD)ldc2 -mtriple=$(MTRIPLE) -lib $(_INFILES) -of$(@),$(PRECMD)ar cr $(@) $(_INFILES)}
+	$(PRECMD)ldc2 ${if $(MTRIPLE),-mtriple=$(MTRIPLE)} -lib $(_INFILES) -of$(@)
 	${call log.kvp, Archived, $(@)}
-endif
 
 # Vars definitions
 define redefine.vars.o.common
 ${eval _DCFLAGS := $(DCFLAGS)}
 ${if $(CROSS_COMPILE), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
-${eval _LDCFLAGS := $(LDCFLAGS)}
-${eval _INCLFLAGS := $(INCLFLAGS)}
-${eval _INFILES := ${filter $(DIR_SRC)/${strip $1}-$(*)/%.d,$(^)}}
-${eval _INFILES += ${filter $(DIR_SRC)/${strip $1}-$(*)/%.di,$(^)}}
-${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.d,$(^)}}
-${eval _INFILES += ${filter $(DIR_BUILD_WRAPS)/%.di,$(^)}}
+${eval _INFILES := ${filter $(DIR_SRC)/${strip $1}-$(*)/%.d,$^}}
+${eval _INFILES += ${filter $(DIR_SRC)/${strip $1}-$(*)/%.di,$^}}
 endef
 
 define redefine.vars.o
@@ -99,7 +44,7 @@ ${if $(CROSS_COMPILE), ${eval _DCFLAGS += -mtriple=$(MTRIPLE)}}
 ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _INCLFLAGS := }
-${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$^}}
 ${eval _INFILES += $(INFILES)}
 endef
 
@@ -112,12 +57,12 @@ ${eval _DCFLAGS += -of$(@)}
 ${eval _LDCFLAGS := $(LDCFLAGS)}
 ${eval _LINKFILES := ${addprefix -L,$(LINKFILES)}}
 ${eval _INCLFLAGS := }
-${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$^}}
 ${eval _INFILES += $(INFILES)}
 endef
 else
 define redefine.vars.lib
-${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$(^)}}
+${eval _INFILES := ${filter $(DIR_BUILD_O)/%.o,$^}}
 ${eval _INFILES += $(INFILES)}
 endef
 endif
@@ -126,21 +71,22 @@ endif
 define details.compile
 ${call log.header, Compile $(@F)}
 ${call log.kvp, DC, $(DC)}
-${call log.kvp, DCFLAGS, $(_DCFLAGS)}
-${call log.kvp, LDCFLAGS, $(_LDCFLAGS)}
-${if $(_INCLFLAGS),${call log.kvp, INCLFLAGS}}
-${if $(_INCLFLAGS),${call log.lines, $(_INCLFLAGS)}}
-${if $(_LINKFILES),${call log.kvp, LINKFILES}}
-${if $(_LINKFILES),${call log.lines, $(_LINKFILES)}}
+${call log.kvp, DCFLAGS, $_DCFLAGS)}
+${call log.kvp, LDCFLAGS, $(LDCFLAGS)}
+${if $(INCLFLAGS),${call log.kvp, INCLFLAGS}}
+${if $(INCLFLAGS),${call log.lines, $(INCLFLAGS)}}
+${if $(LINKFILES),${call log.kvp, LINKFILES}}
+${if $(LINKFILES),${call log.lines, $(LINKFILES)}}
 ${call log.kvp, INFILES}
-${call log.lines, $(_INFILES)}
+${call log.lines, $($*INFILES)}
+${call log.lines, $(INFILES)}
 ${call log.close}
 endef
 
 define details.archive
 ${call log.header, Archive $(@F)}
 ${call log.kvp, INFLILES}
-${call log.lines, $(_INFILES)}
+${call log.lines, $(INFILES)}
 ${call log.close}
 endef
 
