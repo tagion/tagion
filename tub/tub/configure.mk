@@ -28,12 +28,12 @@ lib%.test.configure: makedeps.lib%.test.2
 
 makedeps.lib%.test.2: makedeps.lib%.test.1
 	${call filter.lib.o, $(FCONFIGURETEST)}
-	$(PRECMD)echo $(DBIN)/test$*: ${foreach DEP,$($*_DEPF),${subst lib-,$(DTMP)/test,$(DEP)}.o} >> $(DSRC)/lib-$(*)/$(FCONFIGURETEST)
+	$(PRECMD)echo $(DBIN)/lib$*.test: ${foreach DEP,$($*_DEPF),${subst lib-,$(DTMP)/lib,$(DEP)}.test.o} >> $(DSRC)/lib-$(*)/$(FCONFIGURETEST)
 
 makedeps.lib%.test.1:
 	$(PRECMD)ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
-	-of=$(DTMP)/test$*.o > \
+	-of=$(DTMP)/lib$*.test.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURETEST)
 	$(PRECMD)echo >> $(DSRC)/lib-$*/$(FCONFIGURETEST)
 
