@@ -1,10 +1,10 @@
-test%.o: $(DTMP)/test%.o
+lib%.test.o: $(DTMP)/lib%.test.o
 	@
 
-test%: $(DBIN)/test%
-	$(PRECMD)$(DBIN)/test$*
+lib%.test: $(DBIN)/lib%.test
+	$(DBIN)/lib$*.test
 
-$(DTMP)/test%.o: $(DTMP)/lib%.way
+$(DTMP)/lib%.test.o: $(DTMP)/lib%.way
 	${eval $*DCFLAGS := -c -unittest -g -of$@}
 	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
 	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
@@ -12,7 +12,7 @@ $(DTMP)/test%.o: $(DTMP)/lib%.way
 	$(PRECMD)$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
-$(DBIN)/test%: $(DBIN)/test%.way
+$(DBIN)/lib%.test: $(DBIN)/lib%.test.way
 	${eval $*DCFLAGS := -main -of$@}
 	${eval $*INFILES := ${filter %.o,$^}}
 	${if $(LOGS),${call details.compile}}
