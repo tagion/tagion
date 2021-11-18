@@ -1,2 +1,8 @@
-openssl
-local
+*.o
+*#
+.#*
+*~
+*.parked
+gen.*
+local.*
+src
