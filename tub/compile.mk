@@ -8,18 +8,21 @@ $(DTMP)/test%.o: $(DTMP)/lib%.way
 	${eval $*DCFLAGS := -c -unittest -g -of$@}
 	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
 	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
-	${call details.compile}
+	${if $(LOGS),${call details.compile}}
 	$(PRECMD)$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 $(DBIN)/test%: $(DBIN)/test%.way
 	${eval $*DCFLAGS := -main -of$@}
 	${eval $*INFILES := ${filter %.o,$^}}
-	${call details.compile}
+	${if $(LOGS),${call details.compile}}
 	$(PRECMD)$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 lib%.o: $(DTMP)/lib%.o
+	@
+
+lib%: $(DBIN)/lib%.a
 	@
 
 lib%.a: $(DBIN)/lib%.a
@@ -30,13 +33,13 @@ $(DTMP)/lib%.o: DCFLAGS += -of$@
 $(DTMP)/lib%.o: $(DTMP)/lib%.way
 	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
 	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
-	${call details.compile}
+	${if $(LOGS),${call details.compile}}
 	$(PRECMD)$(DC) $(DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 $(DBIN)/lib%.a: $(DBIN)/lib%.way
 	${eval $*INFILES := ${filter %.o,$^}}
-	${if $(LOGS), ${call details.archive}}
+	${if $(LOGS),${call details.archive}}
 	$(PRECMD)ldc2 ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
 	${call log.kvp, Archived, $@}
 

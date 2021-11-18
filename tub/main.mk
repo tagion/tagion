@@ -7,6 +7,7 @@ DIR_ROOT := ${abspath ${DIR_TUB}/../}
 
 include $(DIR_TUB)/rex.mk
 include $(DIR_TUB)/git.mk
+include $(DIR_TUB)/utils.mk
 
 # Local setup, ignored by git
 -include $(DIR_ROOT)/local.*.mk
@@ -27,11 +28,8 @@ UNITS_BIN := ${shell ls $(DSRC) | grep bin-}
 UNITS_LIB := ${shell ls $(DSRC) | grep lib-}
 UNITS_WRAP := ${shell ls $(DSRC) | grep wrap-}
 
-# Basic clean config
-TOCLEAN += $(DTMP)
-TOCLEAN += $(DBIN)
-
 # Enable cloning, if BRANCH is known
+ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
 ifdef BRANCH
 include $(DSRC)/**/context.mk
 
@@ -39,17 +37,21 @@ include $(DIR_TUB)/clone.mk
 else
 $(call warning, Can not clone when BRANCH is not defined, make branch-<branch>)
 endif
+else
+
+# Include all unit make files
+include $(DSRC)/wrap-*/context.mk
+include $(DSRC)/lib-*/context.mk
+include $(DSRC)/bin-*/context.mk
 
 # Enable configuration compilation
-ifeq ($(MAKECMDGOALS),configure)
-include $(DSRC)/**/context.mk
-
+ifeq ($(findstring configure,$(MAKECMDGOALS)),configure)
 include $(DIR_TUB)/configure.mk
 else
-# Include all unit make files
-include $(DSRC)/**/*.mk
-
+-include $(DSRC)/lib-*/gen.*.mk
+-include $(DSRC)/bin-*/gen.*.mk
 include $(DIR_TUB)/compile.mk
+endif
 endif
 
 # Enable cleaning
@@ -57,3 +59,5 @@ include $(DIR_TUB)/clean.mk
 
 # Disabling removal of intermidiate targets
 .SECONDARY:
+
+env: $(MAKE_SHOW_ENV)

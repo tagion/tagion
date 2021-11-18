@@ -220,6 +220,10 @@ MODEL = 32
 endif
 endif
 
+# D step
+# TODO: Clone local dstep
+DSTEP:=dstep
+
 # -m32 and -m64 switches cannot be used together with -march and -mtriple switches
 ifndef CROSS_OS
 ifeq ($(MODEL), 64)
@@ -292,6 +296,4 @@ env-mode:
 	$(call log.header, env :: tub mode)
 	$(call log.kvp, MAKE_PARALLEL, $(MAKE_PARALLEL))
 	$(call log.close)
-
-env: $(MAKE_SHOW_ENV)
 
