@@ -8,7 +8,8 @@ libcrypto.preconfigure: $(LCRYPTO_DIFILES)
 
 libcrypto.configure: SOURCE := tagion/crypto/*.d tagion/crypto/secp256k1/*.d
 
-libcrypto.test.configure: INFILES += $(DTMP)/secp256k1/lib/libsecp256k1.a
+$(DBIN)/libcrypto.test: secp256k1
+$(DBIN)/libcrypto.test: INFILES += $(DTMP)/libsecp256k1.a
 
 ifdef TINY_AES
 libcrypto.configure: SOURCE += tagion/crypto/aes/tiny_aes/*.d
@@ -18,7 +19,8 @@ DEPS += wrap-openssl
 
 libcrypto.configure: SOURCE += tagion/crypto/aes/openssl_aes/*.d
 
-libcrypto.test.configure: INFILES += $(DTMP)/openssl/lib/libssl.a
-libcrypto.test.configure: INFILES += $(DTMP)/openssl/lib/libcrypto.a
+$(DBIN)/libcrypto.test: openssl
+$(DBIN)/libcrypto.test: INFILES += $(DTMP)/libssl.a
+$(DBIN)/libcrypto.test: INFILES += $(DTMP)/libcrypto.a
 endif
 
