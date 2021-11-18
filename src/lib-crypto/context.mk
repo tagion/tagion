@@ -1,33 +1,24 @@
-include dstep.mk
+include ${call dir.resolve, dstep.mk}
 
 DEPS += lib-hibon
 DEPS += wrap-secp256k1
 
-${call config.lib, crypto}: wrap-secp256k1
+# Normal unit config
+libcrypto.preconfigure: $(LCRYPTO_DIFILES)
 
-ifdef TEST
-${call lib, crypto}: INFILES += $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
-endif
-${call lib.o, crypto}: INCLFLAGS += $(DIR_BUILD_WRAPS)/secp256k1/src
+libcrypto.configure: SOURCE := tagion/crypto/*.d tagion/crypto/secp256k1/*.d
 
-${call config.lib, crypto}: LOOKUP := tagion/crypto/*.d
-${call config.lib, crypto}: LOOKUP += tagion/crypto/secp256k1/*.d
-
+libcrypto.test.configure: INFILES += $(DTMP)/secp256k1/lib/libsecp256k1.a
 
 ifdef TINY_AES
-${call config.lib, crypto}: LOOKUP += tagion/crypto/aes/tiny_aes/*.d
+libcrypto.configure: SOURCE += tagion/crypto/aes/tiny_aes/*.d
 DCFLAGS+=$(DVERSION)=TINY_AES
 else
 DEPS += wrap-openssl
 
-${call config.lib, crypto}: wrap-openssl
+libcrypto.configure: SOURCE += tagion/crypto/aes/openssl_aes/*.d
 
-ifdef TEST
-${call lib, crypto}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
-${call lib, crypto}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
-endif
-
-${call config.lib, crypto}: LOOKUP += tagion/crypto/aes/openssl_aes/*.d
-
+libcrypto.test.configure: INFILES += $(DTMP)/openssl/lib/libssl.a
+libcrypto.test.configure: INFILES += $(DTMP)/openssl/lib/libcrypto.a
 endif
 
