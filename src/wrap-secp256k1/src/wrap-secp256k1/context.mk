@@ -1,40 +1,32 @@
 REPO_SECP256K1 ?= git@github.com:tagion/fork-secp256k1.git
 VERSION_SECP256k1 := ea5e8a9c47f1d435e8f66913eb7f1293b85b43f9
 
-DIR_SECP256K1 := $(DIR_BUILD_WRAPS)/secp256k1
-
-DIR_SECP256K1_PREFIX := $(DIR_SECP256K1)/lib
-DIR_SECP256K1_SRC := $(DIR_SECP256K1)/src
+DSRC_SECP256K1 := ${call dir.resolve, src}
+DIR_SECP256K1 := $(DTMP)/secp256k1
 
 CONFIGUREFLAGS+=--enable-module-ecdh
 CONFIGUREFLAGS+=--enable-experimental
 CONFIGUREFLAGS+=--enable-module-recovery
 CONFIGUREFLAGS+=--enable-module-schnorrsig
+CONFIGUREFLAGS+=--enable-shared=no
+CONFIGUREFLAGS+= CRYPTO_LIBS=$(DIR_OPENSSL)/lib/ CRYPTO_CFLAGS=$(DIR_OPENSSL)/include/
 
-configure-wrap-secp256k1: wrap-secp256k1
+secp256k1.preconfigure: $(DSRC_SECP256K1)/.src
+secp256k1: $(DTMP)/libsecp256k1.a
 	@
-	
-wrap-secp256k1: $(DIR_SECP256K1_PREFIX)/libsecp256k1.a
-	@
 
-clean-wrap-secp256k1:
-	${call unit.dep.wrap-secp256k1}
-	${call rm.dir, $(DIR_SECP256K1_SRC)}
+clean-secp256k1:
+	$(PRECMD)$(RMDIR) $(DTMP)/libsecp256k1.a
+	$(PRECMD)$(RMDIR) $(DSRC_SECP256K1)
 
-# TRY Specifying toolchain
+$(DTMP)/%.a: $(DIR_SECP256K1)/.src
+	$(PRECMD)cd $(DIR_SECP256K1); ./autogen.sh
+	$(PRECMD)cd $(DIR_SECP256K1); ./configure $(CONFIGUREFLAGS)
+	$(PRECMD)cd $(DIR_SECP256K1); make clean
+	$(PRECMD)cd $(DIR_SECP256K1); make $(MAKE_PARALLEL)
+	$(PRECMD)cd $(DIR_SECP256K1); mv .libs/libsecp256k1.a $@
 
-XCODE_ROOT := ${shell xcode-select -print-path}
-
-XCODE_SIMULATOR_SDK = $(XCODE_ROOT)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(IPHONE_SDKVERSION).sdk
-XCODE_DEVICE_SDK = $(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(IPHONE_SDKVERSION).sdk
-
-CROSS_SYSROOT=$(XCODE_SIMULATOR_SDK)
-
-$(DIR_SECP256K1_PREFIX)/%.a: $(DIR_SECP256K1)/.way
-	$(PRECMD)git clone --depth 1 $(REPO_SECP256K1) $(DIR_SECP256K1_SRC) 2> /dev/null || true
-	$(PRECMD)git -C $(DIR_SECP256K1_SRC) fetch --depth 1 $(DIR_SECP256K1_SRC) $(VERSION_SECP256k1) &> /dev/null || true
-	$(PRECMD)cd $(DIR_SECP256K1_SRC); ./autogen.sh
-	$(PRECMD)cd $(DIR_SECP256K1_SRC); ./configure ${if $(CROSS_COMPILE),--host=$(MTRIPLE) --target=$(MTRIPLE) --with-sysroot=$(CROSS_SYSROOT)} --enable-shared=no CRYPTO_LIBS=$(DIR_OPENSSL)/lib/ CRYPTO_CFLAGS=$(DIR_OPENSSL)/include/ ${if $(CROSS_COMPILE),CC=/usr/bin/clang CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"} $(CONFIGUREFLAGS)
-	$(PRECMD)cd $(DIR_SECP256K1_SRC); make clean
-	$(PRECMD)cd $(DIR_SECP256K1_SRC); make $(MAKE_PARALLEL)
-	$(PRECMD)cd $(DIR_SECP256K1_SRC); mv .libs ../lib
+$(DSRC_SECP256K1)/.src:
+	$(PRECMD)git clone --depth 1 $(REPO_SECP256K1) $(DSRC_SECP256K1) 2> /dev/null || true
+	$(PRECMD)git -C $(DSRC_SECP256K1) fetch --depth 1 $(DSRC_SECP256K1) $(VERSION_SECP256k1) &> /dev/null || true
+	$(PRECMD)touch $@
