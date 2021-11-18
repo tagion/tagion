@@ -1,1 +1,8 @@
-secp256k1
+*.o
+*#
+.#*
+*~
+*.parked
+gen.*
+local.*
+src
