@@ -31,7 +31,7 @@ UNITS_WRAP := ${shell ls $(DSRC) | grep wrap-}
 # Enable cloning, if BRANCH is known
 ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
 ifdef BRANCH
-include $(DSRC)/**/context.mk
+-include $(DSRC)/**/context.mk
 
 include $(DIR_TUB)/clone.mk
 else
