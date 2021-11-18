@@ -35,13 +35,13 @@ $(DTMP)/lib%.o: $(DTMP)/lib%.way
 	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
 	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
 	${if $(LOGS),${call details.compile}}
-	$(PRECMD)$(DC) $(DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
+	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 $(DBIN)/lib%.a: $(DBIN)/lib%.way
 	${eval $*INFILES := ${filter %.o,$^}}
 	${if $(LOGS),${call details.archive}}
-	$(PRECMD)ldc2 ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
+	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
 	${call log.kvp, Archived, $@}
 
 # Logs
