@@ -15,6 +15,7 @@ $(DTMP)/lib%.test.o: $(DTMP)/lib%.way
 $(DBIN)/lib%.test: $(DBIN)/lib%.test.way
 	${eval $*DCFLAGS := -main -of$@}
 	${eval $*INFILES := ${filter %.o,$^}}
+	${eval $*INFILES += ${filter %.a,$^}}
 	${if $(LOGS),${call details.compile}}
 	$(PRECMD)$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
