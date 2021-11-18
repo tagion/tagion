@@ -22,12 +22,6 @@ include $(DIR_TUB)/help.mk
 FCONFIGURE := gen.configure.mk
 FCONFIGURETEST := gen.configure.test.mk
 
-INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
-
-UNITS_BIN := ${shell ls $(DSRC) | grep bin-}
-UNITS_LIB := ${shell ls $(DSRC) | grep lib-}
-UNITS_WRAP := ${shell ls $(DSRC) | grep wrap-}
-
 # Enable cloning, if BRANCH is known
 ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
 ifdef BRANCH
@@ -38,6 +32,13 @@ else
 $(call warning, Can not clone when BRANCH is not defined, make branch-<branch>)
 endif
 else
+${shell $(MKDIR) $(DIR_ROOT)/src}
+
+INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
+
+UNITS_BIN := ${shell ls $(DSRC) | grep bin-}
+UNITS_LIB := ${shell ls $(DSRC) | grep lib-}
+UNITS_WRAP := ${shell ls $(DSRC) | grep wrap-}
 
 # Include all unit make files
 include $(DSRC)/wrap-*/context.mk
