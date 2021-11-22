@@ -21,5 +21,6 @@ clone-%: $(DSRC)/%/context.mk
 
 $(DSRC)/%/context.mk:
 	${call log.header, Cloning $* ($(BRANCH))}
-	$(PRECMD)git clone ${if $(BRANCH),-b $(BRANCH)} $(GIT_ORIGIN)/core-$* $(DSRC)/$*
+	$(PRECMD)git clone $(GIT_ORIGIN)/core-$* $(DSRC)/$*
+	${if $(BRANCH),$(PRECMD)cd $(DSRC)/$*; git fetch origin; git checkout $(BRANCH)} 
 	${call log.close}

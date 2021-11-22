@@ -1,5 +1,13 @@
 main: help
 
+# Common variables
+# Override PRECMD= to see output all commands
+PRECMD ?= @
+SUBMAKE_PARALLEL := -j
+
+# Git
+GIT_ORIGIN := "git@github.com:tagion"
+
 # Defining absolute Root and Tub directories
 DIR_MAKEFILE := ${realpath .}
 DIR_TUB := $(DIR_MAKEFILE)/tub
@@ -15,7 +23,11 @@ include $(DIR_TUB)/utils.mk
 
 # Secondary tub functionality
 include $(DIR_TUB)/ways.mk
-include $(DIR_TUB)/vars.mk
+include $(DIR_TUB)/host.mk
+include $(DIR_TUB)/commands.mk
+include $(DIR_TUB)/cross.mk
+include $(DIR_TUB)/dirs.mk
+include $(DIR_TUB)/compiler.mk
 include $(DIR_TUB)/log.mk
 include $(DIR_TUB)/help.mk
 
@@ -61,4 +73,4 @@ include $(DIR_TUB)/clean.mk
 # Disabling removal of intermidiate targets
 .SECONDARY:
 
-env: $(MAKE_SHOW_ENV)
+env: $(MAKE_ENV)

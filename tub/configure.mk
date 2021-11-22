@@ -9,16 +9,18 @@
 
 preconfigure: | \
 	${addsuffix .preconfigure,${subst wrap-,,$(UNITS_WRAP)}} \
-	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}}
+	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}} \
+	${addsuffix .preconfigure,${subst bin-,,$(UNITS_BIN)}}
 preconfigure:
 	@
 
 configure:
 	$(PRECMD)$(MAKE) preconfigure
-	$(PRECMD)$(MAKE) _configure $(MAKE_PARALLEL)
+	$(PRECMD)$(MAKE) _configure $(SUBMAKE_PARALLEL)
 
 _configure: | \
-	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}}
+	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}} \
+	${addsuffix .configure,${subst bin-,bin,$(UNITS_BIN)}}
 _configure:
 	@
 

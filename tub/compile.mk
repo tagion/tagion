@@ -44,6 +44,10 @@ $(DBIN)/lib%.a: $(DBIN)/lib%.way
 	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
 	${call log.kvp, Archived, $@}
 
+${subst bin-,,$(UNITS_BIN)}:
+	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
+	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
+
 # Logs
 define details.compile
 ${call log.header, Compile $(@F)}
