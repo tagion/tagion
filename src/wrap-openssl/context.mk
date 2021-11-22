@@ -29,21 +29,22 @@ clean-openssl: clean
 $(DTMP_OPENSSL)/.configured: $(DTMP)/.way $(DSRC_OPENSSL)/.src
 	$(PRECMD)$(CP) $(DSRC_OPENSSL) $(DTMP_OPENSSL)
 	$(PRECMD)cd $(DTMP_OPENSSL); ./config $(CONFIGUREFLAGS_OPENSSL)
-	$(PRECMD)cd $(DTMP_OPENSSL); make build_generated $(MAKE_PARALLEL)
+	$(PRECMD)cd $(DTMP_OPENSSL); make build_generated $(SUBMAKE_PARALLEL)
 	$(PRECMD)touch $@
 
 $(DTMP)/libcrypto.a: $(DTMP_OPENSSL)/.configured
-	$(PRECMD)cd $(DTMP_OPENSSL); make libcrypto.a $(MAKE_PARALLEL)
+	$(PRECMD)cd $(DTMP_OPENSSL); make libcrypto.a $(SUBMAKE_PARALLEL)
 	$(PRECMD)cp $(DTMP_OPENSSL)/libcrypto.a $(DTMP)/libcrypto.a
 
 
 $(DTMP)/libssl.a: $(DTMP_OPENSSL)/.configured
-	$(PRECMD)cd $(DTMP_OPENSSL); make libssl.a $(MAKE_PARALLEL)
+	$(PRECMD)cd $(DTMP_OPENSSL); make libssl.a $(SUBMAKE_PARALLEL)
 	$(PRECMD)cp $(DTMP_OPENSSL)/libssl.a $(DTMP)/libssl.a
 
 $(DSRC_OPENSSL)/.src:
-	$(PRECMD)git clone --depth 1 $(REPO_OPENSSL) $(DSRC_OPENSSL) 2> /dev/null || true
-	$(PRECMD)git -C $(DSRC_OPENSSL) fetch --depth 1 $(DSRC_OPENSSL) $(VERSION_OPENSSL) &> /dev/null || true
+	${call log.line, Cloning $(REPO_OPENSSL)...}
+	$(PRECMD)git clone --depth 1 $(REPO_OPENSSL) $(DSRC_OPENSSL)
+	$(PRECMD)git -C $(DSRC_OPENSSL) fetch --depth 1 $(DSRC_OPENSSL) $(VERSION_OPENSSL)
 	$(PRECMD)touch $@
 
 # NOTE: Might need to export, but not sure. Will try without since we static link:
