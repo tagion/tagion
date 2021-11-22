@@ -32,10 +32,11 @@ $(DTMP)/libsecp256k1.a: $(DTMP)/.way $(DSRC_SECP256K1)/.src
 	$(PRECMD)cd $(DTMP_SECP256K1); ./autogen.sh
 	$(PRECMD)cd $(DTMP_SECP256K1); ./configure $(CONFIGUREFLAGS_SECP256K1)
 	$(PRECMD)cd $(DTMP_SECP256K1); make clean
-	$(PRECMD)cd $(DTMP_SECP256K1); make $(MAKE_PARALLEL)
+	$(PRECMD)cd $(DTMP_SECP256K1); make $(SUBMAKE_PARALLEL)
 	$(PRECMD)cd $(DTMP_SECP256K1); mv .libs/libsecp256k1.a $@
 
 $(DSRC_SECP256K1)/.src:
-	$(PRECMD)git clone --depth 1 $(REPO_SECP256K1) $(DSRC_SECP256K1) 2> /dev/null || true
-	$(PRECMD)git -C $(DSRC_SECP256K1) fetch --depth 1 $(DSRC_SECP256K1) $(VERSION_SECP256k1) &> /dev/null || true
+	${call log.line, Cloning $(REPO_SECP256K1)...}
+	$(PRECMD)git clone --depth 1 $(REPO_SECP256K1) $(DSRC_SECP256K1)
+	$(PRECMD)git -C $(DSRC_SECP256K1) fetch --depth 1 $(DSRC_SECP256K1) $(VERSION_SECP256k1)
 	$(PRECMD)touch $@
