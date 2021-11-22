@@ -53,9 +53,9 @@ UNITS_LIB := ${shell ls $(DSRC) | grep lib-}
 UNITS_WRAP := ${shell ls $(DSRC) | grep wrap-}
 
 # Include all unit make files
-include $(DSRC)/wrap-*/context.mk
-include $(DSRC)/lib-*/context.mk
-include $(DSRC)/bin-*/context.mk
+-include $(DSRC)/wrap-*/context.mk
+-include $(DSRC)/lib-*/context.mk
+-include $(DSRC)/bin-*/context.mk
 
 # Enable configuration compilation
 ifeq ($(findstring configure,$(MAKECMDGOALS)),configure)
