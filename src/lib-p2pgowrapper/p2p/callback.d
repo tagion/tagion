@@ -2,8 +2,8 @@ module p2p.callback;
 
 import std.stdio;
 import std.concurrency;
-import p2p.cgo.libp2p;
-import p2p.cgo.helper;
+import p2p.cgo.libp2pgowrapper;
+import p2p.cgo.c_helper;
 import p2p.node;
 
 struct CopyCallback {

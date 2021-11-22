@@ -1,7 +1,7 @@
 module p2p.go_helper;
 
-import p2p.cgo.helper;
-import p2p.cgo.libp2p;
+import p2p.cgo.c_helper;
+import p2p.cgo.libp2pgowrapper;
 import std.conv;
 
 DBuffer ToDString(ref string str) {
