@@ -6,7 +6,7 @@ import std.file : fread = read, fwrite = write, exists;
 import std.format;
 import std.path : extension;
 import std.traits : EnumMembers;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
 
 import tagion.hibon.HiBON : HiBON;
@@ -16,8 +16,8 @@ import tagion.hibon.HiBONJSON;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
-
-// import tagion.revision;
+ 
+// import tagion.revision; 
 
 enum fileextensions {
     HIBON = ".hibon",
@@ -48,7 +48,7 @@ int main(string[] args) {
             "bin|b", "Use HiBON or else use JSON", &binary,
             "value|V", format("Bill value : default: %d", value), &value,
             "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,//        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-    
+
     );
 
     if (version_switch) {
@@ -110,10 +110,15 @@ int main(string[] args) {
         //        pragma(msg, typeof(data));
         const doc = Document(data);
         //        version(none) {
-        const error_code = doc.valid((scope const(Document.Element) current, scope const(
-                Document.Element) previous) {
-            //                writefln("%s", current);
-        });
+        const error_code = doc.valid(
+            (
+                const(Document) sub_doc,
+                const Document.Element.ErrorCode error_code,
+                const(Document.Element) current, const(
+                    Document.Element) previous) nothrow {
+                assumeWontThrow(writefln("%s", current));
+                return true;
+            });
         if (error_code !is Document.Element.ErrorCode.NONE) {
             writefln("Errorcode %s", error_code);
             return 1;
