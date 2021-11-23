@@ -19,8 +19,16 @@ _clone-%: $(DSRC)/%/context.mk
 clone-%: $(DSRC)/%/context.mk
 	$(PRECMD)$(MAKE) clone
 
+ifdef GIT_SUBMODULES
+$(DSRC)/%/context.mk:
+	${call log.header, Cloning $* ($(BRANCH))}
+	$(PRECMD)cd $(DROOT); git submodule add $(GIT_ORIGIN)/core-$* src/$*
+	${if $(BRANCH),$(PRECMD)cd $(DSRC)/$*; git fetch origin; git checkout $(BRANCH)} 
+	${call log.close}
+else
 $(DSRC)/%/context.mk:
 	${call log.header, Cloning $* ($(BRANCH))}
 	$(PRECMD)git clone $(GIT_ORIGIN)/core-$* $(DSRC)/$*
 	${if $(BRANCH),$(PRECMD)cd $(DSRC)/$*; git fetch origin; git checkout $(BRANCH)} 
 	${call log.close}
+endif
