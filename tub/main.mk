@@ -7,29 +7,33 @@ SUBMAKE_PARALLEL := -j
 
 # Git
 GIT_ORIGIN := "git@github.com:tagion"
+GIT_SUBMODULES := 
 
 # Defining absolute Root and Tub directories
-DIR_MAKEFILE := ${realpath .}
-DIR_TUB := $(DIR_MAKEFILE)/tub
-DIR_ROOT := ${abspath ${DIR_TUB}/../}
+DMAKEFILE := ${realpath .}
+DTUB := $(DMAKEFILE)/tub
+DROOT := ${abspath ${DTUB}/../}
 
-include $(DIR_TUB)/rex.mk
-include $(DIR_TUB)/git.mk
-include $(DIR_TUB)/utils.mk
+include $(DTUB)/rex.mk
+include $(DTUB)/git.mk
+include $(DTUB)/utils.mk
+
+# Root setup
+-include $(DROOT)/tubroot.mk
 
 # Local setup, ignored by git
--include $(DIR_ROOT)/local.*.mk
--include $(DIR_ROOT)/local.mk
+-include $(DROOT)/local.*.mk
+-include $(DROOT)/local.mk
 
 # Secondary tub functionality
-include $(DIR_TUB)/ways.mk
-include $(DIR_TUB)/host.mk
-include $(DIR_TUB)/commands.mk
-include $(DIR_TUB)/cross.mk
-include $(DIR_TUB)/dirs.mk
-include $(DIR_TUB)/compiler.mk
-include $(DIR_TUB)/log.mk
-include $(DIR_TUB)/help.mk
+include $(DTUB)/ways.mk
+include $(DTUB)/host.mk
+include $(DTUB)/commands.mk
+include $(DTUB)/cross.mk
+include $(DTUB)/dirs.mk
+include $(DTUB)/compiler.mk
+include $(DTUB)/log.mk
+include $(DTUB)/help.mk
 
 FCONFIGURE := gen.configure.mk
 FCONFIGURETEST := gen.configure.test.mk
@@ -39,12 +43,12 @@ ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
 ifdef BRANCH
 -include $(DSRC)/**/context.mk
 
-include $(DIR_TUB)/clone.mk
+include $(DTUB)/clone.mk
 else
 $(call warning, Can not clone when BRANCH is not defined, make branch-<branch>)
 endif
 else
-${shell $(MKDIR) $(DIR_ROOT)/src}
+${shell $(MKDIR) $(DROOT)/src}
 
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
@@ -59,16 +63,16 @@ UNITS_WRAP := ${shell ls $(DSRC) | grep wrap-}
 
 # Enable configuration compilation
 ifeq ($(findstring configure,$(MAKECMDGOALS)),configure)
-include $(DIR_TUB)/configure.mk
+include $(DTUB)/configure.mk
 else
 -include $(DSRC)/lib-*/gen.*.mk
 -include $(DSRC)/bin-*/gen.*.mk
-include $(DIR_TUB)/compile.mk
+include $(DTUB)/compile.mk
 endif
 endif
 
 # Enable cleaning
-include $(DIR_TUB)/clean.mk
+include $(DTUB)/clean.mk
 
 # Disabling removal of intermidiate targets
 .SECONDARY:

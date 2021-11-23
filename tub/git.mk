@@ -1,8 +1,8 @@
 checkout-%:
 	$(PRECMD)$(REX) git checkout $*
-	$(PRECMD)echo "BRANCH := $*" > $(DIR_ROOT)/local.branch.mk
+	$(PRECMD)echo "BRANCH := $*" > $(DROOT)/local.branch.mk
 
 branch-%:
-	${eval _BRANCH_SUFFIX := ${shell sh $(DIR_TUB)/random.sh}}
+	${eval _BRANCH_SUFFIX := ${shell sh $(DTUB)/random.sh}}
 	$(PRECMD)$(REX) git checkout -b $*.$(_BRANCH_SUFFIX)
-	$(PRECMD)echo "BRANCH := $*.$(_BRANCH_SUFFIX)" > $(DIR_ROOT)/local.branch.mk
+	$(PRECMD)echo "BRANCH := $*.$(_BRANCH_SUFFIX)" > $(DROOT)/local.branch.mk
