@@ -1,7 +1,7 @@
 DEPS += wrap-openssl
 
 REPO_SECP256K1 ?= git@github.com:tagion/fork-secp256k1.git
-VERSION_SECP256k1 := ea5e8a9c47f1d435e8f66913eb7f1293b85b43f9
+VERSION_SECP256k1 := cd07f5a72243a8f343679aa81ed0d0cb662ba90e
 
 DSRC_SECP256K1 := ${call dir.resolve, src}
 DTMP_SECP256K1 := $(DTMP)/secp256k1
