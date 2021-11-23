@@ -1,4 +1,4 @@
-main: help
+main: | submodules help
 
 # Common variables
 # Override PRECMD= to see output all commands
@@ -78,3 +78,9 @@ include $(DTUB)/clean.mk
 .SECONDARY:
 
 env: $(MAKE_ENV)
+
+submodules: $(DROOT)/submodule.init
+	$(PRECMD)git submodule init
+
+$(DROOT)/submodule.init:
+	$(PRECMD)git submodule init
