@@ -8,7 +8,7 @@ $(LP2PGOWRAPPER_DIROOT)/libp2pgowrapper.di: $(LP2PGOWRAPPER_DSTEPINC)/libp2pgowr
 	${call log.kvp, $(@F)}
 	${call log.lines, $<}
 	${call log.lines, $@}
-	$(PRECMD)$(DSTEP) $(LP2PGOWRAPPER) --package "$(LP2PGOWRAPPER_PACKAGE)" --global-import p2p.cgo.helper $< -o $@
+	$(PRECMD)$(DSTEP) $(LP2PGOWRAPPER) --package "$(LP2PGOWRAPPER_PACKAGE)" --global-import p2p.cgo.c_helper $< -o $@
 
 $(LP2PGOWRAPPER_DIROOT)/c_helper.di: $(LP2PGOWRAPPER_DSTEPINC)/c_helper.h $(LP2PGOWRAPPER_DIROOT)/%.way
 	${call log.kvp, $@(F)}
