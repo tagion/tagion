@@ -1,7 +1,7 @@
 REPO_DSTEP ?= git@github.com:tagion/fork-dstep.git
 VERSION_DSTEP := bc5cda92a97f44c333c493cda4e4cf686b7244f5
 
-DSRC_DSTEP := $(DIR_TUB)/dstep
+DSRC_DSTEP := $(DTUB)/dstep
 
 
 

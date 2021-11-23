@@ -1,7 +1,7 @@
 .PHONY: help
 help:
-	${eval TUB_COMMIT := ${shell cd $(DIR_ROOT)/tub; git rev-parse --short HEAD}}
-	${eval TUB_BRANCH := ${shell cd $(DIR_ROOT)/tub; git rev-parse --abbrev-ref HEAD}}
+	${eval TUB_COMMIT := ${shell cd $(DROOT)/tub; git rev-parse --short HEAD}}
+	${eval TUB_BRANCH := ${shell cd $(DROOT)/tub; git rev-parse --abbrev-ref HEAD}}
 	${call log.header, tub :: $(TUB_BRANCH) ($(TUB_COMMIT)) :: help }
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show current Make environment}
