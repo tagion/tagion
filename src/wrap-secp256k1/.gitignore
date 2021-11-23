@@ -5,4 +5,5 @@
 *.parked
 gen.*
 local.*
-src
+src/
+.src
