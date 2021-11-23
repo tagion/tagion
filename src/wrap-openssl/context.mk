@@ -44,7 +44,7 @@ $(DTMP)/libssl.a: $(DTMP_OPENSSL)/.configured
 $(DSRC_OPENSSL)/.src:
 	${call log.line, Cloning $(REPO_OPENSSL)...}
 	$(PRECMD)git clone --depth 1 $(REPO_OPENSSL) $(DSRC_OPENSSL)
-	$(PRECMD)git -C $(DSRC_OPENSSL) fetch --depth 1 $(DSRC_OPENSSL) $(VERSION_OPENSSL)
+	$(PRECMD)git -C $(DSRC_OPENSSL) fetch $(VERSION_OPENSSL)
 	$(PRECMD)touch $@
 
 # NOTE: Might need to export, but not sure. Will try without since we static link:
