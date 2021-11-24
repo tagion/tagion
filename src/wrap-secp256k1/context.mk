@@ -13,6 +13,12 @@ CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
 CONFIGUREFLAGS_SECP256K1 += --enable-shared=no
 CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/include/
 
+ifdef CROSS_ENABLED
+ifeq ($(findstring ios,$(CROSS_OS)),ios)
+include ${call dir.resolve, cross.ios.mk}
+endif
+endif
+
 secp256k1: $(DTMP)/libsecp256k1.a
 	@
 
