@@ -38,3 +38,10 @@ $(DTMP)/libsecp256k1.a: $(DTMP)/.way
 	$(PRECMD)cd $(DTMP_SECP256K1); make clean
 	$(PRECMD)cd $(DTMP_SECP256K1); make $(SUBMAKE_PARALLEL)
 	$(PRECMD)cd $(DTMP_SECP256K1); mv .libs/libsecp256k1.a $@
+
+MAKE_ENV += env-secp256k1
+env-secp256k1:
+	$(call log.header, env :: secp256k1)
+	$(call log.kvp, CONFIGUREFLAGS_SECP256K1)
+	$(call log.lines, $(CONFIGUREFLAGS_SECP256K1))
+	$(call log.close)
