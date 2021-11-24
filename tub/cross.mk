@@ -37,7 +37,12 @@ ifeq ($(OS),darwin)
 XCODE_ROOT := ${shell xcode-select -print-path}
 XCODE_SIMULATOR_SDK = $(XCODE_ROOT)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(IPHONE_SDKVERSION).sdk
 XCODE_DEVICE_SDK = $(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(IPHONE_SDKVERSION).sdk
+
+ifeq ($(CROSS_ARCH),arm64)
+CROSS_SYSROOT=$(XCODE_DEVICE_SDK)
+else
 CROSS_SYSROOT=$(XCODE_SIMULATOR_SDK)
+endif
 endif
 
 MAKE_ENV += env-cross
