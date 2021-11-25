@@ -20,7 +20,7 @@ clean-p2pgowrapper: clean
 	@
 
 $(DTMP)/libp2pgowrapper.a: $(DTMP_P2PGOWRAPPER)/.way
-	$(PRECMD)$(CP) -r $(DSRC_P2PGOWRAPPER)/ $(DTMP_P2PGOWRAPPER)
+	$(PRECMD)$(CP) $(DSRC_P2PGOWRAPPER)/* $(DTMP_P2PGOWRAPPER)
 	$(PRECMD)cd $(DTMP_P2PGOWRAPPER); go build -buildmode=c-archive -o $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a
 	$(PRECMD)cd $(DTMP_P2PGOWRAPPER); $(MV) $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a $(DTMP)/libp2pgowrapper.a
 
