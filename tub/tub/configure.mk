@@ -10,7 +10,7 @@
 preconfigure: | \
 	${addsuffix .preconfigure,${subst wrap-,,$(UNITS_WRAP)}} \
 	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}} \
-	${addsuffix .preconfigure,${subst bin-,,$(UNITS_BIN)}}
+	${addsuffix .preconfigure,${subst bin-,tagion,$(UNITS_BIN)}}
 preconfigure:
 	@
 
@@ -20,7 +20,7 @@ configure:
 
 _configure: | \
 	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}} \
-	${addsuffix .configure,${subst bin-,bin,$(UNITS_BIN)}}
+	${addsuffix .configure,${subst bin-,tagion,$(UNITS_BIN)}}
 _configure:
 	@
 
@@ -52,6 +52,28 @@ makedeps.lib%.1:
 	-of=$(DTMP)/lib$*.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURE)
 	$(PRECMD)echo >> $(DSRC)/lib-$*/$(FCONFIGURE)
+
+tagion%.configure: makedeps.tagion%.2
+	${call log.kvp, Configured, tagion$*}
+
+makedeps.tagion%.2: makedeps.tagion%.1
+	${call filter.bin.o, $(FCONFIGURE)}
+	$(PRECMD)echo $(DBIN)/tagion$*: ${foreach DEP,${filter bin-%,$($*_DEPF)},${subst bin-,$(DTMP)/tagion,$(DEP)}.o} ${foreach DEP,${filter lib-%,$($*_DEPF)},${subst lib-,$(DTMP)/lib,$(DEP)}.o} >> $(DSRC)/bin-$(*)/$(FCONFIGURE)
+
+makedeps.tagion%.1: 
+	$(PRECMD)ldc2 $(INCLFLAGS) \
+	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- \
+	-of=$(DTMP)/tagion$*.o > \
+	$(DSRC)/bin-$*/$(FCONFIGURE)
+	$(PRECMD)echo >> $(DSRC)/bin-$*/$(FCONFIGURE)
+
+define filter.bin.o
+${eval $*_DEPF := ${shell cat $(DSRC)/bin-$*/${strip $1} | grep $(DSRC)}}
+${eval $*_DEPF := ${subst $(DSRC)/,,$($*_DEPF)}}
+${eval $*_DEPF := ${foreach _,$($*_DEPF),${firstword ${subst /, ,$_}}}}
+${eval $*_DEPF := ${sort $($*_DEPF)}}
+${eval $*_DEPF := ${filter-out ${firstword $($*_DEPF)}, $($*_DEPF)}}
+endef
 
 define filter.lib.o
 ${eval $*_DEPF := ${shell cat $(DSRC)/lib-$*/${strip $1} | grep $(DSRC)}}
