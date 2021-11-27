@@ -1,4 +1,4 @@
+DEPS += lib-utils
 DEPS += lib-logger
-DEPS += lib-hibon
 
-${call config.bin, hibonutil}: LOOKUP := tagion/*.d
+tagionhibonutil.configure: SOURCE := tagion/*.d
