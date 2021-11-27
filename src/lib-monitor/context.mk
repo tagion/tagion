@@ -9,9 +9,9 @@ DEPS += lib-network
 DEPS += lib-funnel
 DEPS += lib-p2pgowrapper
 
-${call config.lib, monitor}: LOOKUP := tagion/**/*.d
+libmonitor.configure: SOURCE := tagion/**/*.d
 
-${call lib, monitor}: INFILES += $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
-${call lib, monitor}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
-${call lib, monitor}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
-${call lib, monitor}: INFILES += $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
+$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
+$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
+$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
+$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
