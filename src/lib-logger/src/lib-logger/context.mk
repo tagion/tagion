@@ -1,4 +1,3 @@
 DEPS += lib-basic
-DEPS += lib-options
 
-${call config.lib, logger}: LOOKUP := tagion/**/*.d
+liblogger.configure: SOURCE := tagion/**/*.d
