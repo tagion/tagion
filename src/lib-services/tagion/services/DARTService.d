@@ -6,7 +6,7 @@ import std.concurrency;
 import p2plib = p2p.node;
 import p2p.connection;
 import p2p.callback;
-import p2p.cgo.helper;
+import p2p.cgo.c_helper;
 import std.getopt;
 import std.stdio;
 import std.conv;

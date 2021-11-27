@@ -2,7 +2,7 @@ module tagion.services.MdnsDiscoveryService;
 
 import p2plib = p2p.node;
 import p2p.callback;
-import p2p.cgo.helper;
+import p2p.cgo.c_helper;
 import tagion.communication.HandlerPool;
 
 //import tagion.dart.DART;
