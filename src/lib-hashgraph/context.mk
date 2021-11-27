@@ -5,9 +5,9 @@ DEPS += lib-crypto
 DEPS += lib-communication
 DEPS += lib-gossip
 
-${call config.lib, hashgraph}: LOOKUP := tagion/**/*.d
+libhashgraph.configure: SOURCE := tagion/**/*.d
 
-${call lib, hashgraph}: LINKFILES := $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
-${call lib, hashgraph}: LINKFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
-${call lib, hashgraph}: LINKFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
-${call lib, hashgraph}: LINKFILES += $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
+$(DBIN)/libhashgraph.test: $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
+$(DBIN)/libhashgraph.test: $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
+$(DBIN)/libhashgraph.test: $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
+$(DBIN)/libhashgraph.test: $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
