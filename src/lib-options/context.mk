@@ -1,3 +1,3 @@
 DEPS += lib-basic
 
-${call config.lib, options}: LOOKUP := tagion/**/*.d
+liboptions.configure: SOURCE := tagion/**/*.d
