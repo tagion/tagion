@@ -3,9 +3,9 @@ DEPS += lib-crypto
 DEPS += lib-wallet
 DEPS += lib-communication
 
-${call config.lib, funnel}: LOOKUP := tagion/**/*.d
+libfunnel.configure: SOURCE := tagion/**/*.d
 
-${call lib, funnel}: LINKFILES := $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
-${call lib, funnel}: LINKFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
-${call lib, funnel}: LINKFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
-${call lib, funnel}: LINKFILES += $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
+$(DBIN)/libfunnel.test: $(DTMP)/libsecp256k1.a
+$(DBIN)/libfunnel.test: $(DTMP)/libssl.a
+$(DBIN)/libfunnel.test: $(DTMP)/libcrypto.a
+$(DBIN)/libfunnel.test: $(DTMP)/libp2pgowrapper.a
