@@ -14,8 +14,12 @@ CONFIGUREFLAGS_SECP256K1 += --enable-shared=no
 CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/include/
 
 ifdef CROSS_ENABLED
+include ${call dir.resolve, cross.mk}
 ifeq ($(findstring ios,$(CROSS_OS)),ios)
 include ${call dir.resolve, cross.ios.mk}
+endif
+ifeq ($(findstring android,$(CROSS_OS)),android)
+include ${call dir.resolve, cross.android.mk}
 endif
 endif
 
