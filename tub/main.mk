@@ -80,7 +80,7 @@ include $(DTUB)/clean.mk
 env: $(MAKE_ENV)
 
 submodules: $(DROOT)/submodule.init
-	$(PRECMD)git submodule init
+	$(PRECMD)git submodule update
 
 $(DROOT)/submodule.init:
 	$(PRECMD)git submodule init
