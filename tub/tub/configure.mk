@@ -16,7 +16,7 @@ preconfigure:
 
 configure:
 	$(PRECMD)$(MAKE) preconfigure
-	$(PRECMD)$(MAKE) _configure $(SUBMAKE_PARALLEL)
+	$(PRECMD)$(MAKE) _configure $(SUBMAKE_PARALLEL) -k
 
 _configure: | \
 	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}} \
