@@ -1,11 +1,12 @@
 DEPS += lib-dart
 DEPS += lib-crypto
 DEPS += lib-logger
-PROGRAM:=boot
 
-${call config.bin, $(PROGRAM)}: LOOKUP := tagion/*.d
+PROGRAM:=tagionboot
 
-${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
-${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
-${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
-${call bin, $(PROGRAM)}: INFILES += $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
+$(PROGRAM).configure: SOURCE := tagion/*.d
+
+$(DBIN)/$(PROGRAM): $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM): $(DTMP)/libssl.a
+$(DBIN)/$(PROGRAM): $(DTMP)/libcrypto.a
+$(DBIN)/$(PROGRAM): $(DTMP)/libp2pgowrapper.a
