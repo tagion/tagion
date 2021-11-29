@@ -7,7 +7,7 @@ SUBMAKE_PARALLEL := -j
 
 # Git
 GIT_ORIGIN := "git@github.com:tagion"
-GIT_SUBMODULES := 
+GIT_SUBMODULES :=
 
 # Defining absolute Root and Tub directories
 DMAKEFILE := ${realpath .}
@@ -16,6 +16,7 @@ DROOT := ${abspath ${DTUB}/../}
 
 include $(DTUB)/rex.mk
 include $(DTUB)/git.mk
+include $(DTUB)/gitconfig.mk
 include $(DTUB)/utils.mk
 
 # Root setup
