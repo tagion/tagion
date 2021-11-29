@@ -1,1 +1,3 @@
-ctx/lib/wasm: ctx/lib/utils
+DEPS += lib-utils
+
+libwasm.configure: SOURCE := tagion/vm/wasm/*.d
