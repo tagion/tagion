@@ -1,4 +1,6 @@
 DEPS += lib-utils
 DEPS += lib-logger
 
-tagionhibonutil.configure: SOURCE := tagion/*.d
+PROGRAM := tagionhibonutil
+
+$(PROGRAM).configure: SOURCE := tagion/*.d
