@@ -32,8 +32,12 @@ ifeq ($(MTRIPLE),--)
 MTRIPLE := $(TRIPLET)
 endif
 
+# Only care about iOS compilation if on macOS
+ifdef CROSS_ENABLED
+# ---
+# iOS
+ifeq ($(CROSS_OS),ios)
 ifeq ($(OS),darwin)
-# IOS
 XCODE_ROOT := ${shell xcode-select -print-path}
 XCODE_SIMULATOR_SDK = $(XCODE_ROOT)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(IPHONE_SDKVERSION).sdk
 XCODE_DEVICE_SDK = $(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(IPHONE_SDKVERSION).sdk
@@ -44,6 +48,34 @@ else
 CROSS_SYSROOT=$(XCODE_SIMULATOR_SDK)
 endif
 endif
+endif
+
+# ---
+# Android
+# arm    => "arm-linux-androideabi",
+# arm64  => "aarch64-linux-android",
+# mips   => "mipsel-linux-android",
+# mips64 => "mips64el-linux-android",
+# x86    => "i686-linux-android",
+# x86_64 => "x86_64-linux-android",
+# Will match android and androideabi
+IS_ANDROID := ${findstring android,$(CROSS_OS)}
+ifeq ($(IS_ANDROID),android)
+
+ifeq ($(OS),darwin)
+ANDROID_NDK_HOST_TAG = darwin-x86_64
+else 
+ANDROID_NDK_HOST_TAG = linux-x86_64
+endif
+
+CROSS_ANDROID_API = 31
+
+TOOLCHAIN=$(ANDROID_NDK)/toolchains/$(ANDROID_NDK_HOST_TAG)/bin
+CROSS_SYSROOT=$(ANDROID_NDK)/toolchains/$(ANDROID_NDK_HOST_TAG)/bin
+endif
+endif
+
+
 
 MAKE_ENV += env-cross
 env-cross:
@@ -60,6 +92,4 @@ env-cross:
 	$(call log.kvp, ANDROID_NDK, $(ANDROID_NDK))
 	$(call log.subheader, ios)
 	$(call log.kvp, XCODE_ROOT, $(XCODE_ROOT))
-	$(call log.kvp, XCODE_SIMULATOR_SDK, $(XCODE_SIMULATOR_SDK))
-	$(call log.kvp, XCODE_DEVICE_SDK, $(XCODE_DEVICE_SDK))
 	$(call log.close)
