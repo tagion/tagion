@@ -16,7 +16,7 @@ DROOT := ${abspath ${DTUB}/../}
 
 include $(DTUB)/rex.mk
 include $(DTUB)/git.mk
-include $(DTUB)/gitconfig.mk
+# include $(DTUB)/gitconfig.mk
 include $(DTUB)/utils.mk
 
 # Root setup
