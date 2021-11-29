@@ -5,3 +5,4 @@
 # Backup
 *.parked
 *.bak
+gen.*
