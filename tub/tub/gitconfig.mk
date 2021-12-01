@@ -13,7 +13,7 @@ export GITCONFIG=$(DMAKEFILE)/.gitconfig
 
 .ONESHELL:
 
-export define GITWRAPPER
+define GITWRAPPER
 #!${shell which bash}
 usage() { echo "$0 usage:" && grep " .)\ #" $$0; exit 0; }
 [ $$# -eq 0 ] && usage

@@ -68,10 +68,10 @@ else
 ANDROID_NDK_HOST_TAG = linux-x86_64
 endif
 
-CROSS_ANDROID_API = 31
+CROSS_ANDROID_API = 27
 
-TOOLCHAIN=$(ANDROID_NDK)/toolchains/$(ANDROID_NDK_HOST_TAG)/bin
-CROSS_SYSROOT=$(ANDROID_NDK)/toolchains/$(ANDROID_NDK_HOST_TAG)/bin
+TOOLCHAIN=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(ANDROID_NDK_HOST_TAG)
+CROSS_SYSROOT=$(ANDROID_HOME)/platforms/android-27
 endif
 endif
 
