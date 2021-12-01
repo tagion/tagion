@@ -8,9 +8,11 @@ DEPS += lib-p2pgowrapper
 DEPS += lib-dart
 DEPS += lib-monitor
 
-libservices.configure: SOURCE := tagion/**/*.d tagion/*.d
+PROGRAM := libservices
 
-$(DBIN)/libservices.test: $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
-$(DBIN)/libservices.test: $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
-$(DBIN)/libservices.test: $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
-$(DBIN)/libservices.test: $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
+$(PROGRAM).configure: SOURCE := tagion/services/*.d tagion/*.d
+
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libp2pgowrapper.a
