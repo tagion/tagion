@@ -1,3 +1,5 @@
 DEPS += lib-basic
 
-liblogger.configure: SOURCE := tagion/**/*.d
+PROGRAM := liblogger
+
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
