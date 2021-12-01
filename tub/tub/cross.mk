@@ -32,12 +32,12 @@ ifeq ($(MTRIPLE),--)
 MTRIPLE := $(TRIPLET)
 endif
 
-# Only care about iOS compilation if on macOS
 ifdef CROSS_ENABLED
 # ---
 # iOS
-ifeq ($(CROSS_OS),ios)
+# Only care about iOS compilation if on macOS
 ifeq ($(OS),darwin)
+ifeq ($(CROSS_OS),ios)
 XCODE_ROOT := ${shell xcode-select -print-path}
 XCODE_SIMULATOR_SDK = $(XCODE_ROOT)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(IPHONE_SDKVERSION).sdk
 XCODE_DEVICE_SDK = $(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(IPHONE_SDKVERSION).sdk
@@ -68,10 +68,11 @@ else
 ANDROID_NDK_HOST_TAG = linux-x86_64
 endif
 
-CROSS_ANDROID_API = 27
+CROSS_ANDROID_API = 30
 
-TOOLCHAIN=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(ANDROID_NDK_HOST_TAG)
-CROSS_SYSROOT=$(ANDROID_HOME)/platforms/android-27
+CROSS_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(ANDROID_NDK_HOST_TAG)
+CROSS_TOOLCHAIN=$(CROSS_ROOT)/bin
+CROSS_SYSROOT=$(CROSS_ROOT)/sysroot
 endif
 endif
 
