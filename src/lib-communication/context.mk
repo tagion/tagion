@@ -1,4 +1,6 @@
 DEPS += lib-hibon
 DEPS += lib-crypto
 
-libcommunication.configure: SOURCE := tagion/**/*.d
+PROGRAM := libcommunication
+
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
