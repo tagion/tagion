@@ -9,9 +9,11 @@ DEPS += lib-network
 DEPS += lib-funnel
 DEPS += lib-p2pgowrapper
 
-libmonitor.configure: SOURCE := tagion/**/*.d
+PROGRAM := libmonitor
 
-$(DBIN)/libmonitor.test: $(DTMP)/libsecp256k1.a
-$(DBIN)/libmonitor.test: $(DTMP)/libssl.a
-$(DBIN)/libmonitor.test: $(DTMP)/libcrypto.a
-$(DBIN)/libmonitor.test: $(DTMP)/libp2pgowrapper.a
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
+
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libp2pgowrapper.a
