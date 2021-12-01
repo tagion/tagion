@@ -11,7 +11,7 @@ DEPS += lib-p2pgowrapper
 
 libmonitor.configure: SOURCE := tagion/**/*.d
 
-$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/secp256k1/lib/libsecp256k1.a
-$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/openssl/lib/libssl.a
-$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/openssl/lib/libcrypto.a
-$(DBIN)/libmonitor.test: $(DIR_BUILD_WRAPS)/p2pgowrapper/lib/libp2pgowrapper.a
+$(DBIN)/libmonitor.test: $(DTMP)/libsecp256k1.a
+$(DBIN)/libmonitor.test: $(DTMP)/libssl.a
+$(DBIN)/libmonitor.test: $(DTMP)/libcrypto.a
+$(DBIN)/libmonitor.test: $(DTMP)/libp2pgowrapper.a
