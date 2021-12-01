@@ -5,9 +5,11 @@ DEPS += lib-crypto
 DEPS += lib-communication
 DEPS += lib-gossip
 
-libhashgraph.configure: SOURCE := tagion/**/*.d
+PROGRAM := libhashgraph
 
-$(DBIN)/libhashgraph.test: $(DTMP)/libsecp256k1.a
-$(DBIN)/libhashgraph.test: $(DTMP)/libssl.a
-$(DBIN)/libhashgraph.test: $(DTMP)/libcrypto.a
-$(DBIN)/libhashgraph.test: $(DTMP)/libp2pgowrapper.a
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
+
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libp2pgowrapper.a
