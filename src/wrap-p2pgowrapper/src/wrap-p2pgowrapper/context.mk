@@ -1,11 +1,9 @@
-REPO_P2PGOWRAPPER ?= git@github.com:tagion/p2pgowrapper.git
-VERSION_P2PGOWRAPPER := dfc77c04e0395e09652c0daa25f9f19b77c2b1d6
-
 DSRC_P2PGOWRAPPER := ${call dir.resolve, src}
 DTMP_P2PGOWRAPPER := $(DTMP)/p2pgowrapper
 
-DIR_P2PGOWRAPPER_PREFIX := $(DIR_P2PGOWRAPPER)/lib
-DIR_P2PGOWRAPPER_SRC := $(DIR_P2PGOWRAPPER)/src
+CONFIGUREFLAGS_P2PGOWRAPPER :=
+
+include ${call dir.resolve, cross.mk}
 
 p2pgowrapper: $(DTMP)/libp2pgowrapper.a
 	@
