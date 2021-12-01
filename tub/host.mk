@@ -16,6 +16,6 @@ endif
 MAKE_ENV += env-host
 env-host:
 	$(call log.header, env :: host)
-	$(call log.kvp, ARCH, $(ARCH))
 	$(call log.kvp, OS, $(OS))
+	$(call log.kvp, ARCH, $(ARCH))
 	$(call log.close)
