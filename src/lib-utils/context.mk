@@ -1,3 +1,5 @@
 DEPS += lib-basic
 
-libutils.configure: SOURCE := tagion/**/*.d
+PROGRAM := libutils
+
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
