@@ -1,3 +1,5 @@
 DEPS += lib-basic
 
-liboptions.configure: SOURCE := tagion/**/*.d
+PROGRAM := liboptions
+
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
