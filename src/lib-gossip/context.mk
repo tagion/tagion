@@ -6,9 +6,11 @@ DEPS += lib-dart
 DEPS += lib-communication
 DEPS += lib-p2pgowrapper
 
-libgossip.configure: SOURCE := tagion/**/*.d
+PROGRAM := libgossip
 
-$(DBIN)/libgossip.test: $(DTMP)/libsecp256k1.a
-$(DBIN)/libgossip.test: $(DTMP)/libssl.a
-$(DBIN)/libgossip.test: $(DTMP)/libcrypto.a
-$(DBIN)/libgossip.test: $(DTMP)/libp2pgowrapper.a
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
+
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libp2pgowrapper.a
