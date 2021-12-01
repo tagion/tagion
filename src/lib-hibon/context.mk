@@ -2,4 +2,6 @@ DEPS += lib-basic
 DEPS += lib-utils
 DEPS += lib-logger
 
-libhibon.configure: SOURCE := tagion/**/*.d
+PROGRAM := libhibon
+
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
