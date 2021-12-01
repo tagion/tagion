@@ -1,6 +1,3 @@
-REPO_OPENSSL ?= git@github.com:tagion/fork-openssl.git
-VERSION_OPENSSL := 2e5cdbc18a1a26bfc817070a52689886fa0669c2 # OpenSSL_1_1_1-stable as of 09.09.2021
-
 DSRC_OPENSSL := ${call dir.resolve, src}
 DTMP_OPENSSL := $(DTMP)/openssl
 
@@ -10,6 +7,8 @@ DEXTRA_OPENSSL := $(DTMP_OPENSSL)/install-extra
 CONFIGUREFLAGS_OPENSSL += -static 
 CONFIGUREFLAGS_OPENSSL += --prefix=$(DPREFIX_OPENSSL)
 CONFIGUREFLAGS_OPENSSL += --openssldir=$(DEXTRA_OPENSSL)
+
+include ${call dir.resolve, cross.mk}
 
 openssl: $(DTMP)/libssl.a $(DTMP)/libcrypto.a
 	@
