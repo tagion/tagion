@@ -1,3 +1,5 @@
 DEPS += lib-utils
 
-libwasm.configure: SOURCE := tagion/vm/wasm/*.d
+PROGRAM := libwasm
+
+$(PROGRAM).configure: SOURCE := tagion/vm/wasm/*.d
