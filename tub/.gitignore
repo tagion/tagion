@@ -12,3 +12,7 @@ build
 __generated*
 *.log
 rex
+
+# Emacs
+*~
+*#
