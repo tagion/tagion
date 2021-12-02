@@ -8,19 +8,21 @@
 	${call log.kvp, Preconfigured, $*}
 
 preconfigure: | \
-	${addsuffix .preconfigure,${subst wrap-,,$(UNITS_WRAP)}} \
-	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}} \
+	${addsuffix .preconfigure,${subst wrap-,,$(UNITS_WRAP)}};
+	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}};
 	${addsuffix .preconfigure,${subst bin-,tagion,$(UNITS_BIN)}}
+
 preconfigure:
 	@
 
 configure:
-	$(PRECMD)$(MAKE) preconfigure
+	$(PRECMD)$(MAKE) preconfigure;
 	$(PRECMD)$(MAKE) _configure $(SUBMAKE_PARALLEL)
 
 _configure: | \
-	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}} \
+	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}}
 	${addsuffix .configure,${subst bin-,tagion,$(UNITS_BIN)}}
+
 _configure:
 	@
 
@@ -46,7 +48,7 @@ makedeps.lib%.2: makedeps.lib%.1
 	${call filter.lib.o, $(FCONFIGURE)}
 	$(PRECMD)echo $(DBIN)/lib$*.a: ${foreach DEP,$($*_DEPF),${subst lib-,$(DTMP)/lib,$(DEP)}.o} >> $(DSRC)/lib-$(*)/$(FCONFIGURE)
 
-makedeps.lib%.1: 
+makedeps.lib%.1:
 	$(PRECMD)ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.o > \
@@ -60,7 +62,7 @@ makedeps.tagion%.2: makedeps.tagion%.1
 	${call filter.bin.o, $(FCONFIGURE)}
 	$(PRECMD)echo $(DBIN)/tagion$*: ${foreach DEP,${filter bin-%,$($*_DEPF)},${subst bin-,$(DTMP)/tagion,$(DEP)}.o} ${foreach DEP,${filter lib-%,$($*_DEPF)},${subst lib-,$(DTMP)/lib,$(DEP)}.o} >> $(DSRC)/bin-$(*)/$(FCONFIGURE)
 
-makedeps.tagion%.1: 
+makedeps.tagion%.1:
 	$(PRECMD)ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- \
 	-of=$(DTMP)/tagion$*.o > \

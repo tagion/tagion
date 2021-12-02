@@ -9,13 +9,19 @@ export GITWRAPPER_MK=$(DMAKEFILE)/gitwrapper.mk
 
 GITS:="${subst $(NEWLINE),;,$(GITDEF)}"
 
+export ALL_GIT_COMMANDS:=${shell git help | egrep "^   " | awk '{print $$1}' | egrep '^[a-z]+'}
+#ALL_GIT_COMMANDS:=${shell git help}
+
 export GITCONFIG=$(DMAKEFILE)/.gitconfig
+
+all-gits:
+	@echo "$(ALL_GIT_COMMANDS)"
 
 .ONESHELL:
 
 export define GITWRAPPER
 #!${shell which bash}
-usage() { echo "$0 usage:" && grep " .)\ #" $$0; exit 0; }
+usage() { echo " usage:" && grep " .)\ #" $$0; exit 0; }
 [ $$# -eq 0 ] && usage
 while getopts ":hs:ac" arg; do
   case $$arg in
@@ -25,12 +31,10 @@ while getopts ":hs:ac" arg; do
     c) # Only not commited.
        c="ok"
       ;;
-    s) # Specify strength, either 45 or 90.
-      strength=$${OPTARG}
-      # [ $strength -eq 45 -o $strength -eq 90 ] \
-      #   && echo "Strength is $$strength." \
-      #   || echo "Strength needs to be either 45 or 90, $strength found instead."
-      ;;
+#    s) # Specify strength, either 45 or 90.
+#      strength=$${OPTARG}
+      # [ trength -eq 45 -o trength -eq 90 ] #   && echo "Strength is $strength." #   || echo "Strength needs to be either 45 or 90, trength found instead."
+#      ;;
     h | *) # Display help.
       usage
       exit 0
@@ -57,17 +61,46 @@ fi
 
 GIT_ALIAS=$$(git --no-pager config --file /home/carsten/work/regression/.gitconfig --get alias.$$1)
 if [ -z "$$GIT_ALIAS" ]; then
-cd $$PWD; git $$@
-else
-shift;
-cd $$PWD; git $$GIT_ALIAS $$@
+    GIT_ALIAS=$$(git --no-pager config --get alias.$$1)
 fi
-endef
+
+if [ -z "$$GIT_ALIAS" ]; then
+    GIT_ALIAS=$$@
+else
+    GIT_COMMAND=1
+    [[ "$$GIT_ALIAS" =~ '^!.*' ]] && echo match
+    shift;
+    GIT_ALIAS=$$(echo $$GIT_ALIAS | sed "s/^!//") $$@
+fi
+
+#COMMAND = $$(echo "$$GIT_ALIAS" x) # | awk '{print $$1}')
+#echo GIT_ALIAS $$GIT_ALIAS
+#echo COMMAND "$$COMMAND"
+#if [[ "$WORD" =~ ^($$ALL_GIT_COMMAND)$ ]]; then
+COMMAND=$$(echo "$$GIT_ALIAS" | awk '{print $$1}')
+echo GIT_ALIAS $GIT_ALIAS
+echo COMMAND "$$COMMAND"
+if [[ "$$COMMAND" =~ ^($ALL_GIT_COMMAND) ]]; then
+    echo "$$COMMAND is a git command"
+fi
+
+if [ -n "$$GIT_COMMAND" ] || [[ "$$COMMAND" =~ ^($$ALL_GIT_COMMAND) ]]; then
+    # Add a git if it is an git alias or and git command
+    [[ "$$GIT_ALIAS " =~ (^git.*) ]] || GIT_ALIAS="git $$GIT_ALIAS"
+fi
+
+
+#if ! [ -x "$$(which $$GIT_ALIAS)" ]; then
+#    GIT_ALIAS="git $$GIT_ALIAS"
+#fi
+echo "$$GIT_ALIAS";
+cd $$PWD; $$GIT_ALIAS;
+endef # GITWRAPPER
 
 define COPY_GITCONFIG
 export UUID=${shell uuidgen}
 export GITSCRIPT=/tmp/git_$$UUID.sh
-export GITHELP=/tmp/git_$$UUID.sh
+export GITHELP=/tmp/help_$$UUID.sh
 export TMPFILE=/tmp/$$UUID.tmp
 git --no-pager config --file $$GITCONFIG --list > $$TMPFILE
 echo $$TMPFILE
@@ -90,8 +123,8 @@ git config alias.all '!git submodule foreach --recursive $$GITSCRIPT '
 exit 0
 EOF
 
-echo DUMP
-cat $$SHFILE
+#echo DUMP
+#cat $$SHFILE
 chmod 750 $$SHFILE
 $$SHFILE
 git submodule foreach --recursive $$SHFILE
@@ -109,9 +142,9 @@ EOF
 
 endef
 
-GITLIST=git --no-pager config --file $(GITCONFIG) --list
-GITALIAS=$(GITLIST) | perl -pe 's/=.+//'
-GETALIAS=${addprefix git config --file $(GITCONFIG) --get ,${shell $(GITALIAS)}}
+#GITLIST=git --no-pager config --file $(GITCONFIG) --list
+#GITALIAS=$(GITLIST) | perl -pe 's/=.+//'
+#GETALIAS=${addprefix git config --file $(GITCONFIG) --get ,${shell $(GITALIAS)}}
 
 #|xargs git config --file $(GITCONFIG)
 #GITSETS=$(GITALIAS) | xargs git config --file $(GITCONFIG) --get
@@ -120,7 +153,9 @@ gits:
 	$(PRECMD)$(GITLIST)
 	$(PRECMD)$(GITALIAS)
 	$(PRECMD)echo $(GETALIAS)
-	echo GITWRAPPER_MK $(GITWRAPPER_MK)
+	$(PRECMD)echo GITWRAPPER_MK $(GITWRAPPER_MK)
+
+-include $(GITWRAPPER_MK)
 
 gitconfig: $(GITWRAPPER_MK)
 
