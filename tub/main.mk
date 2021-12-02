@@ -1,4 +1,6 @@
-main: | submodules help
+.ONESHELL:
+
+main: | gitconfig help
 
 # Common variables
 # Override PRECMD= to see output all commands
