@@ -10,7 +10,6 @@ export GITWRAPPER_MK=$(DMAKEFILE)/gitwrapper.mk
 GITS:="${subst $(NEWLINE),;,$(GITDEF)}"
 
 export ALL_GIT_COMMANDS:=${shell git help | egrep "^   " | awk '{print $$1}' | egrep '^[a-z]+'}
-#ALL_GIT_COMMANDS:=${shell git help}
 
 export GITCONFIG=$(DMAKEFILE)/.gitconfig
 
@@ -73,27 +72,14 @@ else
     GIT_ALIAS=$$(echo $$GIT_ALIAS | sed "s/^!//") $$@
 fi
 
-#COMMAND = $$(echo "$$GIT_ALIAS" x) # | awk '{print $$1}')
-#echo GIT_ALIAS $$GIT_ALIAS
-#echo COMMAND "$$COMMAND"
-#if [[ "$WORD" =~ ^($$ALL_GIT_COMMAND)$ ]]; then
 COMMAND=$$(echo "$$GIT_ALIAS" | awk '{print $$1}')
-echo GIT_ALIAS $GIT_ALIAS
-echo COMMAND "$$COMMAND"
-if [[ "$$COMMAND" =~ ^($ALL_GIT_COMMAND) ]]; then
-    echo "$$COMMAND is a git command"
-fi
 
 if [ -n "$$GIT_COMMAND" ] || [[ "$$COMMAND" =~ ^($$ALL_GIT_COMMAND) ]]; then
     # Add a git if it is an git alias or and git command
     [[ "$$GIT_ALIAS " =~ (^git.*) ]] || GIT_ALIAS="git $$GIT_ALIAS"
 fi
 
-
-#if ! [ -x "$$(which $$GIT_ALIAS)" ]; then
-#    GIT_ALIAS="git $$GIT_ALIAS"
-#fi
-echo "$$GIT_ALIAS";
+#echo "$$GIT_ALIAS";
 cd $$PWD; $$GIT_ALIAS;
 endef # GITWRAPPER
 
