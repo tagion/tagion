@@ -14,6 +14,7 @@ Tub was tested on **Ubuntu 20.04.2.0 LTS** (Focal Fossa) and **macOS Catalina**.
 
 Make sure to install dependencies:
 
+- GNU MAKE > 3.82
 - [ldc2 1.26.0](https://github.com/ldc-developers/ldc/releases/tag/v1.26.0) as main D compiler
 - [libgmp3-dev](https://packages.ubuntu.com/bionic/libgmp3-dev)
 - [dstep](https://github.com/jacob-carlborg/dstep) for `p2p-go-wrapper`

@@ -43,6 +43,9 @@ $(DBIN)/lib%.a: $(DBIN)/lib%.way
 	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
 	${call log.kvp, Archived, $@}
 
+tagion%.o: $(DTMP)/tagion%.o
+	@
+
 tagion%: $(DBIN)/tagion%
 	@
 

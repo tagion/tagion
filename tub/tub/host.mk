@@ -13,6 +13,17 @@ ARCH = $(shell uname -m)
 endif
 endif
 
+# Version 3.81 is installed by default on macOS, but doesn't support ONESHELL
+OLDVERSION := 3.81
+MAKEVERSION := ${shell make -v}
+MAKEVERSION_MATCH := ${findstring $(OLDVERSION),$(MAKEVERSION)}
+ifeq ($(MAKEVERSION_MATCH),$(OLDVERSION))
+${info ERROR}
+${info Your Make version is tool old ($(MAKEVERSION_MATCH))}
+${info Install newer version: http://ftp.gnu.org/gnu/make/}
+${error Unsupported GNU Make version}
+endif
+
 MAKE_ENV += env-host
 env-host:
 	$(call log.header, env :: host)
