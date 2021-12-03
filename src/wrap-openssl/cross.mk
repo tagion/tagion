@@ -1,8 +1,8 @@
+ifdef CROSS_ENABLED
+
 CONFIGUREFLAGS_OPENSSL += --host=$(MTRIPLE)
 CONFIGUREFLAGS_OPENSSL += --target=$(MTRIPLE)
 CONFIGUREFLAGS_OPENSSL += --with-sysroot=$(CROSS_SYSROOT)
-
-ifdef CROSS_ENABLED
 
 ifeq ($(findstring ios,$(CROSS_OS)),ios)
 include ${call dir.resolve, cross.ios.mk}
