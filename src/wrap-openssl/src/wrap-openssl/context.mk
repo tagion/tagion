@@ -17,8 +17,6 @@ TOCLEAN_OPENSSL += $(DTMP)/libssl.a
 TOCLEAN_OPENSSL += $(DTMP)/libcrypto.a
 TOCLEAN_OPENSSL += $(DTMP_OPENSSL)
 
-TOCLEAN += $(TOCLEAN_OPENSSL)
-
 clean-openssl: TOCLEAN := $(TOCLEAN_OPENSSL)
 clean-openssl: clean
 	@
