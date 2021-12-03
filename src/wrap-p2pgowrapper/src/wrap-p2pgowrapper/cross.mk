@@ -1,9 +1,9 @@
+ifdef CROSS_ENABLED
+
 # TODO
 # CONFIGUREFLAGS_P2PGOWRAPPER += --host=$(MTRIPLE)
 # CONFIGUREFLAGS_P2PGOWRAPPER += --target=$(MTRIPLE)
 # CONFIGUREFLAGS_P2PGOWRAPPER += --with-sysroot=$(CROSS_SYSROOT)
-
-ifdef CROSS_ENABLED
 
 ifeq ($(findstring ios,$(CROSS_OS)),ios)
 include ${call dir.resolve, cross.ios.mk}
