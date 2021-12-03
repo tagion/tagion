@@ -8,9 +8,10 @@
 	${call log.kvp, Preconfigured, $*}
 
 preconfigure: | \
-	${addsuffix .preconfigure,${subst wrap-,,$(UNITS_WRAP)}} \
-	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}} \
+	${addsuffix .preconfigure,${subst wrap-,,$(UNITS_WRAP)}};
+	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}};
 	${addsuffix .preconfigure,${subst bin-,tagion,$(UNITS_BIN)}}
+
 preconfigure:
 	@
 
@@ -19,8 +20,9 @@ configure:
 	$(PRECMD)$(MAKE) _configure $(SUBMAKE_PARALLEL) -kij
 
 _configure: | \
-	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}} \
+	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}}
 	${addsuffix .configure,${subst bin-,tagion,$(UNITS_BIN)}}
+
 _configure:
 	@
 
