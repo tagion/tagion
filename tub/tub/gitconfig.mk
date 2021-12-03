@@ -4,7 +4,7 @@ define NEWLINE
 $(BLANK)
 endef
 
-export GITWRAPPER_MK=$(DMAKEFILE)/gitwrapper.mk
+export GITWRAPPER_MK=$(DMAKEFILE)/local.gitwrapper.mk
 -include $(GITWRAPPER_MK)
 
 GITS:="${subst $(NEWLINE),;,$(GITDEF)}"
