@@ -11,8 +11,6 @@ p2pgowrapper: $(DTMP)/libp2pgowrapper.a
 TOCLEAN_P2PGOWRAPPER += $(DTMP)/libp2pgowrapper.a
 TOCLEAN_P2PGOWRAPPER += $(DTMP_P2PGOWRAPPER)
 
-TOCLEAN += $(TOCLEAN_P2PGOWRAPPER)
-
 clean-p2pgowrapper: TOCLEAN := $(TOCLEAN_P2PGOWRAPPER)
 clean-p2pgowrapper: clean
 	@
