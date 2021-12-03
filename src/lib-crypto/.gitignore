@@ -7,3 +7,4 @@
 local.mk
 gen.*
 tagion/crypto/aes/tiny_aes/tiny_aes
+**/*.di
