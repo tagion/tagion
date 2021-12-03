@@ -18,8 +18,6 @@ secp256k1: $(DTMP)/libsecp256k1.a
 TOCLEAN_SECP256K1 += $(DTMP)/libsecp256k1.a
 TOCLEAN_SECP256K1 += $(DTMP_SECP256K1)
 
-TOCLEAN += $(TOCLEAN_SECP256K1)
-
 clean-secp256k1: TOCLEAN := $(TOCLEAN_SECP256K1)
 clean-secp256k1: clean
 	@
