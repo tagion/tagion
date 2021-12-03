@@ -1,8 +1,14 @@
+HELPER+=main_help
+
 .PHONY: help
-help:
-	${eval TUB_COMMIT := ${shell cd $(DROOT)/tub; git rev-parse --short HEAD}}
-	${eval TUB_BRANCH := ${shell cd $(DROOT)/tub; git rev-parse --abbrev-ref HEAD}}
-	${call log.header, tub :: $(TUB_BRANCH) ($(TUB_COMMIT)) :: help }
+
+help: $(HELPER)
+
+TUB_COMMIT = ${shell cd $(DROOT)/tub; git rev-parse --short HEAD}
+TUB_BRANCH = ${shell cd $(DROOT)/tub; git rev-parse --abbrev-ref HEAD}
+
+main_help:
+	@${call log.header, tub :: $(TUB_BRANCH) ($(TUB_COMMIT)) :: help }
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show Make variables}
 	${call log.kvp, make clone-* BRANCH=<branch>, Clone specific unit}
