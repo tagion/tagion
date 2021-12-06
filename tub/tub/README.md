@@ -14,7 +14,7 @@ Tub was tested on **Ubuntu 20.04.2.0 LTS** (Focal Fossa) and **macOS Catalina**.
 
 Make sure to install dependencies:
 
-- GNU MAKE > 3.82
+- GNU Make > 3.82
 - [ldc2 1.26.0](https://github.com/ldc-developers/ldc/releases/tag/v1.26.0) as main D compiler
 - [libgmp3-dev](https://packages.ubuntu.com/bionic/libgmp3-dev)
 - [dstep](https://github.com/jacob-carlborg/dstep) for `p2p-go-wrapper`
@@ -28,59 +28,74 @@ cd <project-dir>
 git clone git@github.com:tagion/tub.git
 
 ./tub/root
-make branch-<branch> # e.g. make branch-0.8.alpha
-make clone-lib-basic
-make configure # Will ensure all dependencies
-make libtagionbasic.a
 ```
 
 > Keep in mind, that **make scripts** in **tub** are meant to run from your root project directory, and not from `./tub` directory.
 
-### Compile Units
+### Compile
 
-Once you have `tubroot` and `local.branch.mk` (from install step), you can start compiling and testing core units available to you in [Tagion GitHub organization page](https://github.com/tagion?q=core-&type=&language=&sort=).
+Before compiling, you must run `make configure`. Every time you create, rename or delete a file, you must run `make configure`.
 
-#### Compile Library
+---
 
-- All tagion library repos are named as `core-lib-<name>`;
-- When compiling, you must specify `libtagion` prefix;
-
-For this example, we will compile `core-lib-hibon`:
+To comile `core-lib-basic`:
 
 ```bash
-make libtagionhibon # Will compile a static library
-make libtagionhibon TEST=1 # Will compile and run unit tests
+make clone-lib-basic BRANCH=master
+make configure
+make libbasic
 ```
 
-### Compile Executable
-
-- All tagion executable repos are named as `core-bin-<name>`;
-- When you compile a tagion executable, you must specify `tagion` prefix;
-- Unit tests are not supported for executable, since an executable must not contain any business logic and serve only as an interface into library.
-
-For this example, we will compile `core-bin-hibonutil`:
+To comile `core-bin-hibonutil`:
 
 ```bash
-make tagionhibonutil # Will compile an executable
+make clone-bin-hibonutil BRANCH=master
+make configure
+make tagionhibonutil
 ```
 
-### Compilation Configuration
+## Create New Unit
 
-We have multiple useful variable that control how the target is compiled:
+If you want to create another executable or a new library, you must ensure tub-compatible structure.
 
-```bash
-# To regenerate dependency files, needed
-# when you create or delete .d files:
-make libtagionhibon DEPSREGEN=1
+### Types of Units
 
-# To show tub debug information
-make libtagionhibon MK_DEBUG=1
+|                 | Executables | Libraries | Wrappers    |
+| --------------- | ----------- | --------- | ----------- |
+| Prefix          | `bin-`      | `lib-`    | `wrap-`     |
+| Unit tests      | not allowed | allowed   | not allowed |
+| Business logic  | not allowed | allowed   | not allowed |
+| Interface logic | CLI         | `export`  | not allowed |
+
+### Structure
+
+All units must have `context.mk` with structure similar to the following:
+
+```make
+# lib-dart unit
+
+# Units that must be present for this unit to compile
+DEPS += lib-crypto
+DEPS += lib-communication
+
+PROGRAM := libdart
+
+DARD_DIFILES := ${call dir.resolve, tagion/c/secp256k1_ecdh.di}
+
+# Depend on header files on preconfigure step
+$(PROGRAM).preconfigure: $(DARD_DIFILES)
+
+# Define SOURCE - where to look for sources
+# Keep in mind, if no .d files found in the specified dirs,
+# Make will throw an error.
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
+
+# Specify external libraries to link for
+# unit test binary:
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
 ```
 
-### Compilation Limitations
-
-- Tub only meant to compile one target at a time, `make libtagionhibon tagionhibonutil` is not supported.
-  
 ## Actions
 
 - 🐞 [Report a bug](https://github.com/tagion/tub/issues/new)
