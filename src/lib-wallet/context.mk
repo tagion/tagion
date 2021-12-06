@@ -4,8 +4,10 @@ DEPS += lib-crypto
 DEPS += lib-funnel
 DEPS += lib-communication
 
-libwallet.configure: SOURCE := tagion/**/*.d
+PROGRAM := libwallet
 
-$(DBIN)/libwallet.test: $(DTMP)/libsecp256k1.a
-$(DBIN)/libwallet.test: $(DTMP)/libssl.a
-$(DBIN)/libwallet.test: $(DTMP)/libcrypto.a
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
+
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
