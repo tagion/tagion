@@ -32,6 +32,7 @@ $(DTMP)/libsecp256k1.a: $(DTMP)/.way
 
 MAKE_ENV += env-secp256k1
 env-secp256k1:
+	$(PRECMD)
 	$(call log.header, env :: secp256k1)
 	$(call log.kvp, CONFIGUREFLAGS_SECP256K1)
 	$(call log.lines, $(CONFIGUREFLAGS_SECP256K1))
