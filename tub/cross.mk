@@ -80,17 +80,15 @@ endif
 
 MAKE_ENV += env-cross
 env-cross:
+	$(PRECMD)
 	$(call log.header, env :: cross)
 	$(call log.kvp, MTRIPLE, $(MTRIPLE))
 	$(call log.kvp, CROSS_ENABLED, $(CROSS_ENABLED))
 	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
 	$(call log.kvp, CROSS_VENDOR, $(CROSS_VENDOR))
 	$(call log.kvp, CROSS_OS, $(CROSS_OS))
-	$(call log.separator)
 	$(call log.kvp, CROSS_SYSROOT, $(CROSS_SYSROOT))
-	$(call log.subheader, android)
 	$(call log.kvp, ANDROID_ROOT, $(ANDROID_ROOT))
 	$(call log.kvp, ANDROID_NDK, $(ANDROID_NDK))
-	$(call log.subheader, ios)
 	$(call log.kvp, XCODE_ROOT, $(XCODE_ROOT))
 	$(call log.close)

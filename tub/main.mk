@@ -5,7 +5,7 @@ main: | gitconfig help
 # Common variables
 # Override PRECMD= to see output all commands
 PRECMD ?= @
-SUBMAKE_PARALLEL := -j
+SUBMAKE_PARALLEL :=
 
 # Git
 GIT_ORIGIN := "git@github.com:tagion"

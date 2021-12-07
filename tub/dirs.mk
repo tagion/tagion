@@ -7,6 +7,7 @@ DSRC := ${abspath ${DROOT}}/src
 
 MAKE_ENV += env-dirs
 env-dirs:
+	$(PRECMD)
 	$(call log.header, env :: dirs)
 	$(call log.kvp, DBIN, $(DBIN))
 	$(call log.kvp, DTMP, $(DTMP))

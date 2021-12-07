@@ -5,20 +5,23 @@
 # Preconfigure is used to ensure certain things exist
 # before proceeding to normal configure
 %.preconfigure:
-	${call log.kvp, Preconfigured, $*}
+	$(PRECMD)
+	${call log.kvp, $*, preconfigured}
 
 preconfigure: | \
 	${addsuffix .preconfigure,${subst wrap-,,$(UNITS_WRAP)}} \
 	${addsuffix .preconfigure,${subst lib-,lib,$(UNITS_LIB)}} \
 	${addsuffix .preconfigure,${subst bin-,tagion,$(UNITS_BIN)}}
 
+.PHONY: preconfigure
 preconfigure:
 	@
 
+.PHONY: configure
 configure:
 	$(PRECMD)
 	$(MAKE) preconfigure
-	$(MAKE) _configure $(SUBMAKE_PARALLEL) -kij
+	$(MAKE) _configure ${if $(SUBMAKE_PARALLEL),-j} -ki
 
 _configure: | \
 	${addsuffix .configure,${subst lib-,lib,$(UNITS_LIB)}} \
@@ -39,7 +42,7 @@ makedeps.lib%.test.2: makedeps.lib%.test.1
 
 makedeps.lib%.test.1:
 	$(PRECMD)
-	${call log.kvp, lib$(*), generating $(FCONFIGURETEST)}
+	${call log.kvp, lib$(*), generating $(FCONFIGURETEST) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.test.o > \
@@ -58,7 +61,7 @@ makedeps.lib%.2: makedeps.lib%.1
 
 makedeps.lib%.1: 
 	$(PRECMD)
-	${call log.kvp, lib$(*), generating $(FCONFIGURE)}
+	${call log.kvp, lib$(*), generating $(FCONFIGURE) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.o > \
@@ -77,7 +80,7 @@ makedeps.tagion%.2: makedeps.tagion%.1
 
 makedeps.tagion%.1: 
 	$(PRECMD)
-	${call log.kvp, tagion$(*), generating $(FCONFIGURE)}
+	${call log.kvp, tagion$(*), generating $(FCONFIGURE) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- \
 	-of=$(DTMP)/tagion$*.o > \

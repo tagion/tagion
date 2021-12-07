@@ -8,7 +8,8 @@ proper: clean
 clean: TOCLEAN += $(DTMP)/*.o
 clean: TOCLEAN += $(DBIN)
 clean:
+	$(PRECMD)
 	${call log.header, clean}
-	$(PRECMD)${foreach _, $(TOCLEAN), $(RMDIR) $(_) > /dev/null || true;}
+	${foreach _, $(TOCLEAN), $(RMDIR) $(_) > /dev/null || true;}
 	${call log.lines, $(TOCLEAN)}
 	${call log.close}
