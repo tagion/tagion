@@ -2,6 +2,6 @@ DEPS += lib-basic
 DEPS += lib-wasm
 DEPS += lib-hibon
 
-PROGRAM := taigonwasmutil
+PROGRAM := tagionwasmutil
 
 $(PROGRAM).configure: SOURCE := tagion/*.d
