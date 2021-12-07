@@ -8,6 +8,7 @@ TUB_COMMIT = ${shell cd $(DROOT)/tub; git rev-parse --short HEAD}
 TUB_BRANCH = ${shell cd $(DROOT)/tub; git rev-parse --abbrev-ref HEAD}
 
 main_help:
+	$(PRECMD)
 	@${call log.header, tub :: $(TUB_BRANCH) ($(TUB_COMMIT)) :: help }
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show Make variables}

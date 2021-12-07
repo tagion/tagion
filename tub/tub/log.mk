@@ -1,6 +1,7 @@
 LOG_SEPARATOR=--------------------------------------------
 
 define log.header
+echo "";
 echo "$(LOG_SEPARATOR) $(strip $1)";
 endef
 
@@ -13,7 +14,7 @@ echo "";
 endef
 
 define log.close
-echo "$(LOG_SEPARATOR)";
+echo "";
 endef
 
 define log.separator

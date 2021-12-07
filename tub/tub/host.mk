@@ -26,6 +26,7 @@ endif
 
 MAKE_ENV += env-host
 env-host:
+	$(PRECMD)
 	$(call log.header, env :: host)
 	$(call log.kvp, OS, $(OS))
 	$(call log.kvp, ARCH, $(ARCH))
