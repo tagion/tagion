@@ -1,57 +1,53 @@
 LOG_SEPARATOR=--------------------------------------------
 
 define log.header
-@echo "\n$(LOG_SEPARATOR) \033[4m$(strip $1)\033[0m";
+echo "\n$(LOG_SEPARATOR) $(strip $1)";
 endef
 
 define log.subheader
-@echo "$(LOG_SEPARATOR) \033[4m$(strip $1)\033[0m";
+echo "$(LOG_SEPARATOR) $(strip $1)";
 endef
 
 define log.space
-@echo "\n";
+echo "\n";
 endef
 
 define log.close
-@echo "$(LOG_SEPARATOR)\n";
+echo "$(LOG_SEPARATOR)\n";
 endef
 
 define log.separator
-@echo "$(LOG_SEPARATOR)";
+echo "$(LOG_SEPARATOR)";
 endef
 
 define log.line
-@echo "$(strip $1)";
+echo "$(strip $1)";
 endef
 
 define log.lines
-@echo ${word 1, $1} ${foreach LINE, ${filter-out ${word 1, $1}, $1}, "\n${strip $(LINE)}"};
+echo ${word 1, $1} ${foreach LINE, ${filter-out ${word 1, $1}, $1}, "\n${strip $(LINE)}"};
 endef
 
 define log.kvp
-@echo "\033[1m$(strip $1)\033[0m: $(strip $2)";
+echo "$(strip $1): $(strip $2)";
 endef
 
 define log.info
 $(call log.header, Info)
-@echo "$(strip $1)";
+echo "$(strip $1)";
 endef
 
 define log.warning
 cat << EOF
-"\033[33m"
 $(call log.header, Warning)
 $(strip $1)
-"\033[0m"
 EOF
 endef
 
 define log.error
 cat << EOF
-"\033[31m"
 $(call log.header, Error)
 "$(strip $1)"
-"\033[0m"
 EOF
 endef
 
