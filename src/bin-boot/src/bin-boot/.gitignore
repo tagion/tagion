@@ -2,4 +2,8 @@
 *~
 .#*
 *#
+.#*
+*~
+*.parked
+local.mk
 gen.*
