@@ -5,19 +5,21 @@ lib%.test: $(DBIN)/lib%.test
 	$(DBIN)/lib$*.test
 
 $(DTMP)/lib%.test.o: $(DTMP)/lib%.way
+	$(PRECMD)
 	${eval $*DCFLAGS := -c -unittest -g -of$@}
 	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
 	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
 	${if $(LOGS),${call details.compile}}
-	$(PRECMD)$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
+	$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 $(DBIN)/lib%.test: $(DBIN)/lib%.test.way
+	$(PRECMD)
 	${eval $*DCFLAGS := -main -of$@}
 	${eval $*INFILES := ${filter %.o,$^}}
 	${eval $*INFILES += ${filter %.a,$^}}
 	${if $(LOGS),${call details.compile}}
-	$(PRECMD)$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
+	$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 lib%.o: $(DTMP)/lib%.o
@@ -30,17 +32,19 @@ lib%.a: $(DBIN)/lib%.a
 	@
 
 $(DTMP)/lib%.o: $(DTMP)/lib%.way
+	$(PRECMD)
 	${eval $*DCFLAGS := -c -of$@}
 	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
 	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
 	${if $(LOGS),${call details.compile}}
-	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
+	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 $(DBIN)/lib%.a: $(DBIN)/lib%.way
+	$(PRECMD)
 	${eval $*INFILES := ${filter %.o,$^}}
 	${if $(LOGS),${call details.archive}}
-	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
+	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
 	${call log.kvp, Archived, $@}
 
 tagion%.o: $(DTMP)/tagion%.o
@@ -50,19 +54,21 @@ tagion%: $(DBIN)/tagion%
 	@
 
 $(DTMP)/tagion%.o: $(DTMP)/%.way
+	$(PRECMD)
 	${eval $*DCFLAGS := -c -of$@}
 	${eval $*INFILES := ${filter $(DSRC)/bin-$*/%.d,$^}}
 	${eval $*INFILES += ${filter $(DSRC)/bin-$*/%.di,$^}}
 	${if $(LOGS),${call details.compile}}
-	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
+	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 $(DBIN)/tagion%: $(DBIN)/%.way
+	$(PRECMD)
 	${eval $*DCFLAGS := -of$@}
 	${eval $*INFILES := ${filter %.o,$^}}
 	${eval $*INFILES += ${filter %.a,$^}}
 	${if $(LOGS),${call details.compile}}
-	$(PRECMD)$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
+	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
 	${call log.kvp, Compiled, $@}
 
 # Logs
