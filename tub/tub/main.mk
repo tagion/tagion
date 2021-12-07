@@ -6,6 +6,7 @@ main: | gitconfig help
 # Override PRECMD= to see output all commands
 PRECMD ?= @
 SUBMAKE_PARALLEL :=
+LOGS = 1
 
 # Git
 GIT_ORIGIN := "git@github.com:tagion"
