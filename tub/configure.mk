@@ -47,6 +47,7 @@ makedeps.lib%.test.1:
 	echo >> $(DSRC)/lib-$*/$(FCONFIGURETEST)
 
 lib%.configure: makedeps.lib%.2 lib%.test.configure
+	$(PRECMD)
 	${call log.kvp, lib$*, configured}
 
 makedeps.lib%.2: makedeps.lib%.1
@@ -65,7 +66,8 @@ makedeps.lib%.1:
 	echo >> $(DSRC)/lib-$*/$(FCONFIGURE)
 
 tagion%.configure: makedeps.tagion%.2
-	${call log.kvp, Configured, tagion$*}
+	$(PRECMD)
+	${call log.kvp, tagion$*, configured}
 
 makedeps.tagion%.2: makedeps.tagion%.1
 	$(PRECMD)
