@@ -3,7 +3,10 @@ core
 *#
 .#*
 *~
-dfiles.mk
+*.parked
+local.mk
+gen.*
+
 wavm.di
 embedder_example
 revision.d
