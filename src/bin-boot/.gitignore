@@ -2,5 +2,8 @@
 *~
 .#*
 *#
-gen.configure.mk
+.#*
+*~
 *.parked
+local.mk
+gen.*
