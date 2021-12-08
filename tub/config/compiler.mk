@@ -111,6 +111,8 @@ LDCFLAGS += -m32
 endif
 endif
 
+INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
+
 MAKE_ENV += env-compiler
 env-compiler:
 	$(PRECMD)

@@ -1,5 +1,7 @@
 LOG_SEPARATOR=--------------------------------------------
 
+SEP=--------------------------------------------
+
 define log.header
 echo "";
 echo "$(LOG_SEPARATOR) $(strip $1)";

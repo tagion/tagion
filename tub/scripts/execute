@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 while [[ $(pwd) != / ]]; do
     ROOT=$(find "$(pwd)"/ -maxdepth 1 -name ".root")
