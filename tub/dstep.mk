@@ -3,9 +3,6 @@ VERSION_DSTEP := bc5cda92a97f44c333c493cda4e4cf686b7244f5
 
 DSRC_DSTEP := $(DTUB)/dstep
 
-
-
-
 MAKETOOLS += dstep
 dstep: $(DSRC_DSTEP)/.src
 	$(PRECMD)cd $(DSRC_DSTEP);

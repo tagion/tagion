@@ -4,7 +4,7 @@ define NEWLINE
 $(BLANK)
 endef
 
-export GITWRAPPER_MK=$(DMAKEFILE)/gitwrapper.mk
+export GITWRAPPER_MK=$(DMAKEFILE)/local.gitwrapper.mk
 -include $(GITWRAPPER_MK)
 
 GITS:="${subst $(NEWLINE),;,$(GITDEF)}"
@@ -18,7 +18,7 @@ all-gits:
 
 .ONESHELL:
 
-export define GITWRAPPER
+define GITWRAPPER
 #!${shell which bash}
 usage() { echo " usage:" && grep " .)\ #" $$0; exit 0; }
 [ $$# -eq 0 ] && usage
