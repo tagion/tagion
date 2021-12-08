@@ -2,6 +2,9 @@
 # Recursive make is used to ensure all side effects
 # of preconfigure are included
 
+FCONFIGURE := gen.configure.mk
+FCONFIGURETEST := gen.configure.test.mk
+
 # Preconfigure is used to ensure certain things exist
 # before proceeding to normal configure
 %.preconfigure:

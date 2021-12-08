@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# This file is generated. Changes can be overridden at any moment.
+
+make configure
