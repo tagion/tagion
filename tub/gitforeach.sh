@@ -26,7 +26,7 @@ echo "Showing $1 submodules"
 echo
 
 C=''
-for i in "${@:2}"; do
+for i in "${@:2}"; do 
     i="${i//\\/\\\\}"
     C="$C \"${i//\"/\\\"}\""
 done
