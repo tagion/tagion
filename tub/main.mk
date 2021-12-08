@@ -17,7 +17,6 @@ DMAKEFILE := ${realpath .}
 DTUB := $(DMAKEFILE)/tub
 DROOT := ${abspath ${DTUB}/../}
 
-include $(DTUB)/rex.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/utils.mk
 
