@@ -13,6 +13,7 @@ main_help:
 	${call log.kvp, make help, Show this help}
 	${call log.kvp, make env, Show Make variables}
 	${call log.kvp, make clone-* BRANCH=<branch>, Clone specific unit}
+	${call log.kvp, make configure, Configure units to compile}
 	${call log.kvp, make lib*, Compile src/lib-*}
 	${call log.kvp, make lib*.test, Compile and execute tests for src/lib-*}
 	${call log.kvp, make tagion*, Compile src/bin-*}
