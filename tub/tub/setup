@@ -7,7 +7,5 @@ git submodule update --init --recursive
 cp ./tub/.setup/Makefile .
 cp ./tub/.setup/configure .
 
-cp ./tub/.setup/config.submodule.mk .
-
 echo "Installing local git aliases..."
 ./tub/.setup/gitconfig
