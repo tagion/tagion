@@ -5,7 +5,8 @@ main: | gitconfig help
 # Common variables
 # Override PRECMD= to see output all commands
 PRECMD ?= @
-SUBMAKE_PARALLEL := -j
+SUBMAKE_PARALLEL :=
+LOGS = 1
 
 # Git
 GIT_ORIGIN := "git@github.com:tagion"
@@ -17,7 +18,6 @@ DTUB := $(DMAKEFILE)/tub
 DROOT := ${abspath ${DTUB}/../}
 
 include $(DTUB)/rex.mk
-include $(DTUB)/git.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/utils.mk
 
@@ -38,6 +38,10 @@ include $(DTUB)/compiler.mk
 include $(DTUB)/log.mk
 include $(DTUB)/help.mk
 
+# Make sure dirs exist
+${shell $(MKDIR) $(DROOT)/src}
+${shell $(MKDIR) $(DROOT)/build}
+
 FCONFIGURE := gen.configure.mk
 FCONFIGURETEST := gen.configure.test.mk
 
@@ -51,8 +55,6 @@ else
 $(call warning, Can not clone when BRANCH is not defined, make branch-<branch>)
 endif
 else
-${shell $(MKDIR) $(DROOT)/src}
-
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
 UNITS_BIN := ${shell ls $(DSRC) | grep bin-}
@@ -81,9 +83,3 @@ include $(DTUB)/clean.mk
 .SECONDARY:
 
 env: $(MAKE_ENV)
-
-submodules: $(DROOT)/submodule.init
-	$(PRECMD)git submodule init
-
-$(DROOT)/submodule.init:
-	$(PRECMD)git submodule init

@@ -38,6 +38,7 @@ endif
 
 MAKE_ENV += env-commands
 env-commands:
+	$(PRECMD)
 	$(call log.header, env :: commands ($(OS)))
 	$(call log.kvp, RM, $(RM))
 	$(call log.kvp, RMDIR, $(RMDIR))
