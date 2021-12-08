@@ -1,3 +1,5 @@
+LOGS = 1
+
 lib%.test.o: $(DTMP)/lib%.test.o
 	@
 
