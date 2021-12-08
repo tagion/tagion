@@ -107,7 +107,7 @@ class ReadRequestHandler : ResponseHandler {
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        scope foreign_recoder = manufactor.recorder(received.method.params);
+        const foreign_recoder = manufactor.recorder(received.method.params);
         foreach (archive; foreign_recoder[]) {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm: arrRemove = remove, countUntil;
@@ -282,7 +282,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
             try {
                 auto stream_id = (() @trusted => connect())();
-                auto filename = tempfile ~ (std.conv.to!string(sector));
+                immutable filename = tempfile ~ sector.to!string;
                 pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE = 0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
@@ -358,7 +358,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             super(journal_filename);
         }
 
-        const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
+        const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
             scope (failure) {
                 close();
             }
