@@ -1,24 +1,26 @@
-include ${call dir.resolve, dstep.mk}
-
 DEPS += lib-hibon
 DEPS += wrap-secp256k1
 
+PROGRAM := libcrypto
+
+include ${call dir.resolve, dstep.mk}
+
 # Normal unit config
-libcrypto.preconfigure: $(LCRYPTO_DIFILES)
+$(PROGRAM).preconfigure: $(LCRYPTO_DIFILES)
 
-libcrypto.configure: SOURCE := tagion/crypto/*.d tagion/crypto/secp256k1/*.d
+$(PROGRAM).configure: SOURCE := tagion/crypto/*.d tagion/crypto/secp256k1/*.d
 
-$(DBIN)/libcrypto.test: $(DTMP)/libsecp256k1.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
 
 ifdef TINY_AES
-libcrypto.configure: SOURCE += tagion/crypto/aes/tiny_aes/*.d
+$(PROGRAM).configure: SOURCE += tagion/crypto/aes/tiny_aes/*.d
 DCFLAGS+=$(DVERSION)=TINY_AES
 else
 DEPS += wrap-openssl
 
-libcrypto.configure: SOURCE += tagion/crypto/aes/openssl_aes/*.d
+$(PROGRAM).configure: SOURCE += tagion/crypto/aes/openssl_aes/*.d
 
-$(DBIN)/libcrypto.test: $(DTMP)/libssl.a
-$(DBIN)/libcrypto.test: $(DTMP)/libcrypto.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
+$(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
 endif
 
