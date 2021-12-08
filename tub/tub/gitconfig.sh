@@ -27,8 +27,8 @@ function set_alias() {
     for GITDIR in $GITDIRS; do
         echo "Setting git aliases for $GITDIR"
         cd $GITDIR
-        git config --local --add alias.all "!f() { $1/gitforeach.sh all "\$@"; }; f"
-        git config --local --add alias.drt "!f() { $1/gitforeach.sh dirty "\$@"; }; f"
+        git config --local --add alias.all "!bash  $1/gitforeach.sh all"
+        git config --local --add alias.drt "!bash  $1/gitforeach.sh dirty"
         for ALIAS_NAME in $ALIAS_NAMES; do
             ALIAS_VALUE=$(git config -f $GITCONFIG --get alias.$ALIAS_NAME)
             git config --local --add alias.$ALIAS_NAME "$ALIAS_VALUE"
