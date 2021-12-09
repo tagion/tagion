@@ -45,7 +45,7 @@ shift $$((OPTIND-1))
 
 ## If -a is not set then wrap repositories is ignored
 if [ -z "$${a}" ]; then
-if [[ "$$PWD" =~ .*src/wrap.* ]]; then
+if [[ "$$PWD" =~ .*src/wrap.*/src.* ]]; then
 exit
 fi
 fi
