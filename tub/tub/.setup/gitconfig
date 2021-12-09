@@ -33,6 +33,7 @@ for GITDIR in $GITDIRS; do
         fi
     done
 
+    git config --local --add alias.short "!bash $SCRIPTS/execute sum"
     git config --local --add alias.all "!bash $SCRIPTS/execute all"
     git config --local --add alias.drt "!bash $SCRIPTS/execute dirty"
     for ALIAS_NAME in $ALIAS_NAMES; do
@@ -44,6 +45,6 @@ done
 echo "Successfully installed!"
 echo
 cat $GITCONFIG
-echo "\tgit all = !bash $SCRIPTS/execute all"
-echo "\tgit drt = !bash $SCRIPTS/execute dirty"
+echo "\tgit all = !bash $SCRIPTS/execute all # Executes in all submodules"
+echo "\tgit drt = !bash $SCRIPTS/execute dirty # Executes only in dirty submodules"
 echo

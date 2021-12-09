@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 while [[ $(pwd) != / ]]; do
     ROOT=$(find "$(pwd)"/ -maxdepth 1 -name ".root")
@@ -17,24 +17,24 @@ if [[ -z "$ORIGIN_PATH" ]]; then
     exit
 fi
 
-if [ "$1" == "dirty" ]; then
-    MODE_DIRTY=1
-fi
-
-echo "Project: $ORIGIN_PATH"
-echo "Showing $1 submodules"
-echo
-
 C=''
-for i in "${@:2}"; do 
+for i in "${@:2}"; do
     i="${i//\\/\\\\}"
     C="$C \"${i//\"/\\\"}\""
 done
 
+if [[ -z "$C" ]]; then
+    C='status -s && echo "Branch: $(git rev-parse --abbrev-ref HEAD)"'
+fi
+
 function show_output() {
     echo -e "\033[1m$DIR\033[0m"
     bash -c "git $C"
-    echo
+}
+
+function show_output_sum() {
+    OUTPUT=$(bash -c "git $C")
+    echo -e "$OUTPUT \033[1m$DIR\033[0m"
 }
 
 SUBMODULES=$(git config --file .gitmodules --get-regexp path | awk '{ print $2 }')
@@ -42,8 +42,10 @@ SUBMODULES=$(git config --file .gitmodules --get-regexp path | awk '{ print $2 }
 for DIR in $SUBMODULES; do
     cd "$ORIGIN_PATH/$DIR/"
 
-    if [[ -z "$MODE_DIRTY" ]]; then
+    if [[ "$1" == "all" ]]; then
         show_output
+    elif [[ "$1" == "sum" ]]; then
+        show_output_sum
     else
         if [[ $(git diff --stat) != '' ]]; then
             show_output
