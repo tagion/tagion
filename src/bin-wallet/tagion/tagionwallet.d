@@ -15,6 +15,9 @@ import core.time : MonoTime;
 import std.socket : InternetAddress, AddressFamily;
 import core.thread;
 
+pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
+import tagion.options.CommonOptions;
+
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
