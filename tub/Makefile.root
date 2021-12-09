@@ -1,0 +1,16 @@
+# DO NOT MOFIFY
+# This file is generated, and can be replaced at any moment
+
+-include tub/main.mk
+
+ifndef DTUB
+
+all: doit
+
+# The following replaces ./tub/setup:
+%:
+	@git submodule tub update
+	@$(MAKE) init
+	@$(MAKE) $@
+
+endif
