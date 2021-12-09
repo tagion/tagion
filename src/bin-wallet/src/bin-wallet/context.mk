@@ -8,6 +8,7 @@ PROGRAM := tagionwallet
 
 $(PROGRAM).configure: SOURCE := tagion/*.d
 
+$(DBIN)/$(PROGRAM): DCFLAGS+=$(DVERSION)=DESKTOP
 $(DBIN)/$(PROGRAM): $(DTMP)/libsecp256k1.a
 $(DBIN)/$(PROGRAM): $(DTMP)/libssl.a
 $(DBIN)/$(PROGRAM): $(DTMP)/libcrypto.a
