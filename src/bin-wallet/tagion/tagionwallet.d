@@ -15,6 +15,7 @@ import core.time : MonoTime;
 import std.socket : InternetAddress, AddressFamily;
 import core.thread;
 
+version = DESKTOP;
 pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
 import tagion.options.CommonOptions;
 
