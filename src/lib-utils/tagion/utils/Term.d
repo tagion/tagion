@@ -1,6 +1,8 @@
 module tagion.utils.Term;
 
-version (DESKTOP) {
+version (MOBILE) {
+}
+else {
     import std.format;
     private import core.stdc.stdio;
     private import core.sys.posix.termios;
