@@ -68,9 +68,8 @@ endif
 include $(DTUB)/clean.mk
 
 
-setup: $(DROOT)/.root
+setup:
 	$(PRECMD)
-	touch $(DROOT)/.root
 	echo "Installing local git aliases..."
 	$(DTUB)/scripts/gitconfig
 	echo
