@@ -18,7 +18,7 @@ all-gits:
 
 .ONESHELL:
 
-define GITWRAPPER
+export define GITWRAPPER
 #!${shell which bash}
 usage() { echo " usage:" && grep " .)\ #" $$0; exit 0; }
 [ $$# -eq 0 ] && usage
