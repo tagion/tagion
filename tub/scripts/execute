@@ -28,7 +28,11 @@ if [[ -z "$C" ]]; then
 fi
 
 function show_output() {
+    if [[ "$DIR" == "." ]]; then
+    echo -e "\033[1mroot\033[0m"
+    else
     echo -e "\033[1m$DIR\033[0m"
+    fi
     bash -c "git $C"
 }
 
@@ -38,6 +42,7 @@ function show_output_sum() {
 }
 
 SUBMODULES=$(git config --file .gitmodules --get-regexp path | awk '{ print $2 }')
+SUBMODULES="$SUBMODULES ."
 
 for DIR in $SUBMODULES; do
     cd "$ORIGIN_PATH/$DIR/"
