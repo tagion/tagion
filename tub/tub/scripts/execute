@@ -59,6 +59,8 @@ for DIR in $SUBMODULES; do
     else
         if [[ $(git diff --stat) != '' ]]; then
             show_output
+        elif [[ "$DIR" == "." ]]; then
+            show_output
         fi
     fi
 
