@@ -66,3 +66,17 @@ endif
 
 # Enable cleaning
 include $(DTUB)/clean.mk
+
+
+init: $(DROOT)/.root
+
+$(DROOT)/.root:
+	$(PRECMD)
+	touch $(DROOT)/.root
+	echo "Installing local git aliases..."
+	$(DTUB)/scripts/gitconfig
+	echo
+	git move ${shell git rev-parse --abbrev-ref HEAD} &> /dev/null
+	echo "Git branches:"
+	git sbranch
+	touch $@

@@ -37,8 +37,13 @@ function show_output() {
 }
 
 function show_output_sum() {
+    if [[ "$DIR" == "." ]]; then
+    DIRNAME="\033[1mroot\033[0m"
+    else
+    DIRNAME="\033[1m$DIR\033[0m"
+    fi
     OUTPUT=$(bash -c "git $C")
-    echo -e "$OUTPUT \033[1m$DIR\033[0m"
+    echo -e "$OUTPUT $DIRNAME"
 }
 
 SUBMODULES=$(git config --file .gitmodules --get-regexp path | awk '{ print $2 }')
