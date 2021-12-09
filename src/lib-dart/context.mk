@@ -4,4 +4,6 @@ DEPS += lib-services
 DEPS += lib-gossip
 DEPS += lib-p2pgowrapper
 
-libdart.configure: SOURCE := tagion/**/*.d
+PROGRAM := libdart
+
+$(PROGRAM).configure: SOURCE := tagion/**/*.d
