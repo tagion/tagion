@@ -8,7 +8,7 @@ import std.stdint;
 import std.string : toStringz, fromStringz;
 import std.array;
 import std.random;
-import tagion.mobile.SecureWallet;
+import tagion.wallet.SecureWallet;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords;
 import tagion.communication.HiRPC;
