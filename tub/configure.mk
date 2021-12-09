@@ -47,6 +47,7 @@ makedeps.lib%.test.1:
 	$(PRECMD)
 	${call log.kvp, lib$(*), generating $(FCONFIGURETEST) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
+	$(DCFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.test.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURETEST)
@@ -66,6 +67,7 @@ makedeps.lib%.1:
 	$(PRECMD)
 	${call log.kvp, lib$(*), generating $(FCONFIGURE) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
+	$(DCFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURE)
@@ -85,6 +87,7 @@ makedeps.tagion%.1:
 	$(PRECMD)
 	${call log.kvp, tagion$(*), generating $(FCONFIGURE) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
+	$(DCFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- \
 	-of=$(DTMP)/tagion$*.o > \
 	$(DSRC)/bin-$*/$(FCONFIGURE)

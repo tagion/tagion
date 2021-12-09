@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-ln -s ./tub/main.mk Makefile
-make init
+cp ./tub/Makefile.template Makefile
+make setup

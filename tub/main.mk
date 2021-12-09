@@ -68,9 +68,7 @@ endif
 include $(DTUB)/clean.mk
 
 
-init: $(DROOT)/.root
-
-$(DROOT)/.root:
+setup: $(DROOT)/.root
 	$(PRECMD)
 	touch $(DROOT)/.root
 	echo "Installing local git aliases..."
@@ -79,4 +77,4 @@ $(DROOT)/.root:
 	git move ${shell git rev-parse --abbrev-ref HEAD} &> /dev/null
 	echo "Git branches:"
 	git sbranch
-	touch $@
+	touch $(DROOT)/.root
