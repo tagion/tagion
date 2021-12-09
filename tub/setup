@@ -1,11 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-PWD=$(pwd)
-
-git submodule update --init --recursive
-
-cp ./tub/.setup/Makefile .
-cp ./tub/.setup/configure .
-
-echo "Installing local git aliases..."
-./tub/.setup/gitconfig
+ln -s ./tub/main.mk Makefile
+make init
