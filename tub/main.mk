@@ -68,12 +68,16 @@ endif
 include $(DTUB)/clean.mk
 
 
-setup:
+setup: alias
+	$(PRECMD)
+	echo "Updating submodules..."
+	git move ${shell git rev-parse --abbrev-ref HEAD}
+	echo "Git branches:"
+	git sbranch
+	touch $(DROOT)/.root
+
+alias: 
 	$(PRECMD)
 	echo "Installing local git aliases..."
 	$(DTUB)/scripts/gitconfig
 	echo
-	git move ${shell git rev-parse --abbrev-ref HEAD} &> /dev/null
-	echo "Git branches:"
-	git sbranch
-	touch $(DROOT)/.root
