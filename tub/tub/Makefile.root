@@ -9,8 +9,8 @@ all: doit
 
 # The following replaces ./tub/setup:
 %:
-	@git submodule tub update
-	@$(MAKE) init
+	@git submodule update --init tub
+	@$(MAKE) setup
 	@$(MAKE) $@
 
 endif
