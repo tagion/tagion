@@ -147,9 +147,3 @@ gitconfig: $(GITWRAPPER_MK)
 
 $(GITWRAPPER_MK): $(GITCONFIG)
 	@$(COPY_GITCONFIG)
-
-
-UUID1=${shell uuidgen}
-
-test33:
-	@echo $(UUID1)
