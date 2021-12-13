@@ -71,10 +71,10 @@ include $(DTUB)/clean.mk
 setup: alias
 	$(PRECMD)
 	echo "Updating submodules..."
+	touch $(DROOT)/.root
 	git move ${shell git rev-parse --abbrev-ref HEAD}
 	echo "Git branches:"
 	git sbranch
-	touch $(DROOT)/.root
 
 alias: 
 	$(PRECMD)
