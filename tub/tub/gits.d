@@ -90,7 +90,6 @@ struct Git {
             command,
             null, Config.init, uint.max,
             reporoot);
-        //writefln("git_alias_log=%s", git_alias_log.output);
         return git_alias_log.output;
     }
 
