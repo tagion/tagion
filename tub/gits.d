@@ -198,8 +198,7 @@ struct Git {
             }
         }
         void doit(ref PidInfo pid_info, const(string[]) cmds, const(string) name, const(string) path) {
-            stdout.writefln("Git '%s'", name);
-            //writefln("cmds %s", cmds);
+            pid_info.stdout.writefln("Git '%s'", name);
             pid_info.pid =spawnProcess(
                 cmds,
                 stdin,
