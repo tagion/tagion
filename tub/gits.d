@@ -5,21 +5,25 @@ module gits;
 
 import std.stdio;
 import std.process;
-import std.file;
+import std.file : mkdir, rmdir, getcwd, setAttributes, tempDir, readText, fwrite=write;
 import std.string : lineSplitter, strip;
 
 import std.algorithm.iteration : each, map, splitter;
+import std.algorithm.searching : all;
 import std.regex;
 //import std.algorithm.iteration : chunkBy;
 import std.range : chunks, generate, takeExactly;
 import std.typecons : Yes, No;
 //std.range.takeExactly
 import std.random;
-import std.path : buildPath;
-import std.array : array;
+import std.path : buildPath, setExtension;
+import std.array : array, join, array_replace=replace;
 import std.conv : octal;
 import std.format;
 import std.range.primitives : isInputRange;
+import core.thread : Thread;
+import core.time;
+//std.array.replace
 
 enum REPOROOT="REPOROOT";
 
@@ -29,6 +33,8 @@ struct Git {
     const(string) reporoot;
     const(string[string]) gitmap;
     const(string) tmpdir;
+
+    enum pause=200;
 //    tempDir
     this(string reporoot) {
         this.reporoot = reporoot;
@@ -169,27 +175,47 @@ struct Git {
 
     }
 
+    enum log_ext="log";
+    enum num_of_processes=8;
     void doAll(const(string[]) command) {
-        void doit(const(string[]) cmds, string name, string path) {
-//            writefln("cmds=%s", cmds);
-            scope cmd_log=execute(
-                cmds,
-                null, Config.init, uint.max,
-                path);
-            if (cmd_log.output.strip.length) {
-                writefln("Git '%s'", name);
-                write(cmd_log.output);
+        struct PidInfo {
+            Pid pid;
+            string stdout_name;
+            string stderr_name;
+            File stdout;
+            File stderr;
+            void open(const(string) dir, const(string) filename) {
+                stdout_name=dir.buildPath([filename, "stdin"].join("_"))
+                    .setExtension(log_ext);
+                stderr_name=dir.buildPath([filename, "strerr"].join("_"))
+                    .setExtension(log_ext);
+                stdout=File(stdout_name, "w");
+                stderr=File(stderr_name, "w");
             }
+            void close() {
+                stdout.close;
+                stderr.close;
+            }
+        }
+        void doit(ref PidInfo pid_info, const(string[]) cmds, const(string) name, const(string) path) {
+            stdout.writefln("Git '%s'", name);
+            writefln("cmds %s", cmds);
+            pid_info.pid =spawnProcess(
+                cmds,
+                stdin,
+                pid_info.stdout,
+                pid_info.stderr,
+                null,
+                Config.init,
+                path);
         }
         string[] cmds;
         const git_alias=gitAlias(command[0], [".gitconfig", null]);
         if (git_alias) {
-
             cmds~="git";
             cmds~=command;
         }
         else if (gitCommand(command[0])) {
-
             cmds~="git";
             cmds~=command;
         }
@@ -197,11 +223,37 @@ struct Git {
             cmds~=command; //.dup;
         }
 
-        foreach(name, path; gitmap) {
-            doit(cmds, name, path);
+//        auto pids=new Pid[8];
+        auto pid_infos = new PidInfo[num_of_processes];
+        auto git_range=gitmap.byKeyValue;
+        while (!git_range.empty) {
+            if (pid_infos.all!((p) => p.pid.init !is Pid.init)) {
+                Thread.sleep(pause.msecs);
+            }
+            foreach(ref pid_info; pid_infos) {
+                if (pid_info.pid is Pid.init) {
+                    pid_info.open(tmpdir, git_range.front.value.array_replace("/", "_"));
+                    doit(pid_info, cmds, git_range.front.key, git_range.front.value);
+                    git_range.popFront;
+                }
+                const state = tryWait(pid_info.pid);
+                if (state.terminated) {
+                    pid_info.close;
+                    pid_info.stdout_name.readText.write;
+                    pid_info.stderr_name.readText.write;
+                    pid_info = PidInfo.init;
+                }
+            }
         }
-        doit(cmds, reporoot, reporoot);
 
+        PidInfo root_pid_info;
+        root_pid_info.open(tmpdir, "root");
+        doit(root_pid_info, cmds, reporoot, reporoot);
+        // writefln("MAIN ROOT !!!!!!!!!!!!!!!!");
+        wait(root_pid_info.pid);
+        root_pid_info.close;
+        root_pid_info.stdout_name.readText.write;
+        root_pid_info.stderr_name.readText.write;
     }
 }
 
