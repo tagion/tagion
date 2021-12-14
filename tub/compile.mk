@@ -67,7 +67,7 @@ $(DTMP)/tagion%.o: $(DTMP)/%.way
 $(DBIN)/tagion%: $(DBIN)/%.way
 	$(PRECMD)
 	${eval $*DCFLAGS := -of$@}
-	${eval $*INFILES := ${filter %.o,$^}}
+	${eval $*INFILES := ${filter $(DSRC)%.d,$^}}
 	${eval $*INFILES += ${filter %.a,$^}}
 	${if $(LOGS),${call details.compile}}
 	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
