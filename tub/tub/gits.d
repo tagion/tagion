@@ -3,9 +3,11 @@
 //#!/usr/bin/env rdmd
 module gits;
 
+import std.getopt;
+
 import std.stdio;
 import std.process;
-import std.file : mkdir, rmdir, getcwd, setAttributes, tempDir, readText, fwrite=write;
+import std.file : mkdir, rmdir, getcwd, setAttributes, tempDir, exists, readText, fwrite=write;
 import std.string : lineSplitter, strip;
 
 import std.algorithm.iteration : each, map, splitter;
@@ -16,7 +18,7 @@ import std.range : chunks, generate, takeExactly;
 import std.typecons : Yes, No;
 //std.range.takeExactly
 import std.random;
-import std.path : buildPath, setExtension;
+import std.path : buildPath, buildNormalizedPath, setExtension, isRooted;
 import std.array : array, join, array_replace=replace;
 import std.conv : octal;
 import std.format;
@@ -26,6 +28,7 @@ import core.time;
 //std.array.replace
 
 enum REPOROOT="REPOROOT";
+enum gitconfig=".gitconfig";
 
 enum ENV="/usr/bin/env";
 
@@ -33,12 +36,13 @@ struct Git {
     const(string) reporoot;
     const(string[string]) gitmap;
     const(string) tmpdir;
-
     enum pause=200;
+    Regex!char exclude_regex;
+    string gitconfig_file;
 //    tempDir
     this(string reporoot) {
         this.reporoot = reporoot;
-        gitmap = get_submodules(reporoot);
+        gitmap = getSubmodules(reporoot);
 
         tmpdir=tempDir.buildPath(
             ".gits-" ~
@@ -46,6 +50,8 @@ struct Git {
             .takeExactly(16)
             .array);
         tmpdir.mkdir;
+        gitconfig_file=reporoot.buildPath(gitconfig);
+        config;
     }
 
     version(none)
@@ -53,8 +59,24 @@ struct Git {
         tmpdir.rmdir;
     }
 
+    void config() {
+        import std.json;
+        {
+            exclude_regex = getConfig("tub.exclude", gitconfig_file)
+                .parseJSON
+                .array
+                .map!((j) => j.str)
+                .array
+                .regex;
+        }
+    }
 
-    static const(string[string]) get_submodules(const(string) reporoot) {
+    void gitAddAllAlias() {
+        const script=addAliasScript(gitAllAlias(gitconfig_file));
+        doAll([script]);
+    }
+
+    static const(string[string]) getSubmodules(const(string) reporoot) {
         scope git_log=execute([
                 "git", "submodule", "foreach", "--recursive",
                 "pwd"],
@@ -79,13 +101,13 @@ struct Git {
     enum git_alias_regex = regex(`alias\.(\w+)\s+(.*)`);
 
 
-    string gitAlias(string name, string config_file=null) const {
+    string getConfig(string name, string config_file=null) const {
         auto command = ["git",
             "--no-pager", "config"];
         if (config_file) {
             command~=["--file", config_file];
         }
-        command~=["--get", format("alias.%s", name)];
+        command~=["--get", name];
         scope git_alias_log=execute(
             command,
             null, Config.init, uint.max,
@@ -96,7 +118,7 @@ struct Git {
     string gitAlias(Range)(const(string) name, Range config_files) if (isInputRange!Range) {
         string git_alias;
         foreach(conf; config_files) {
-            git_alias = gitAlias(name, conf);
+            git_alias = getConfig(format!"alias.%s"(name), conf);
             if (!git_alias) {
                 return git_alias;
             }
@@ -176,6 +198,7 @@ struct Git {
 
     enum log_ext="log";
     enum num_of_processes=8;
+    bool not_commited;
     void doAll(const(string[]) command) {
         struct PidInfo {
             Pid pid;
@@ -198,6 +221,21 @@ struct Git {
         }
         void doit(ref PidInfo pid_info, const(string[]) cmds, const(string) name, const(string) path) {
             pid_info.stdout.writefln("Git '%s'", name);
+            version(none)
+            if (not_commited) {
+                scope git_log=execute([
+                        "git",
+                        "status",
+                        "--untracked-files=no",
+                        "--porcelain"],
+                    null, Config.init, uint.max,
+                    path);
+                if (git_log.output.strip.length is 0) {
+                    pid_info.close;
+                    pid_info=PidInfo.init;
+                    return;
+                }
+            }
             pid_info.pid =spawnProcess(
                 cmds,
                 stdin,
@@ -208,7 +246,7 @@ struct Git {
                 path);
         }
         string[] cmds;
-        const git_alias=gitAlias(command[0], [".gitconfig", null]);
+        const git_alias=gitAlias(command[0], [gitconfig, null]);
         if (git_alias) {
             cmds~="git";
             cmds~=command;
@@ -247,7 +285,6 @@ struct Git {
         PidInfo root_pid_info;
         root_pid_info.open(tmpdir, "root");
         doit(root_pid_info, cmds, reporoot, reporoot);
-        // writefln("MAIN ROOT !!!!!!!!!!!!!!!!");
         wait(root_pid_info.pid);
         root_pid_info.close;
         root_pid_info.stdout_name.readText.write;
@@ -255,11 +292,68 @@ struct Git {
     }
 }
 
-int main(string[] args) {
-
-    auto git =Git(environment.get(REPOROOT, getcwd));
-    if (args.length >= 2) {
-        git.doAll(args[1..$]); //, args[2..$]);
+string getRoot() {
+    auto result = environment.get(REPOROOT, getcwd);
+    while (!result.isRooted && !result.buildPath(gitconfig).exists) {
+        result=result.buildNormalizedPath("..");
     }
+    return result;
+}
+
+//debug = gits;
+int main(string[] args) {
+    const program="git all";
+    const REVNO="0.0";
+    auto git =Git(getRoot);
+    size_t gits_count(const size_t i=1) pure nothrow {
+        // debug(gits) {
+        //     writefln("called %d", i);
+        // }
+        if ((args.length > i) && (args[i][0] is '-')) {
+            return gits_count(i+1);
+        }
+        return i;
+    }
+    const count = gits_count;
+    auto gits_flags=args[0..count];
+    const cmd_args=args[count..$];
+    bool git_config_flags;
+    auto main_args = getopt(gits_flags,
+        std.getopt.config.caseSensitive,
+        std.getopt.config.bundling,
+        // "version",   "display the version",     &version_switch,
+        //  "gitlog:g", format("Git log file %s", git_log_json_file), &git_log_json_file,
+        "config", "Add the git aliases to all the submodules", &git_config_flags,
+//        "date|d", format("Recorde the date in the checkout default %s", set_date), &set_date
+        );
+
+    if (main_args.helpWanted) {
+        defaultGetoptPrinter(
+                [
+                    format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] command ...", program),
+                    "",
+                    // "Where:",
+                    // "<command>           one of [--read, --rim, --modify, --rpc]",
+                    // "",
+
+                    "<option>:",
+
+                    ].join("\n"),
+                main_args.options);
+            return 0;
+        }
+
+    //git.not_commited=true;
+    if (git_config_flags) {
+        git.gitAddAllAlias;
+    }
+    else if (cmd_args.length >= 1) {
+        git.doAll(cmd_args); //, args[2..$]);
+    }
+    // writefln("gits_args=%s", gits_flags);
     return 0;
 }
