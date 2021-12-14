@@ -18,6 +18,10 @@ import core.thread;
 version = DESKTOP;
 pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
 import tagion.options.CommonOptions;
+import tagion.utils.Gene;
+import tagion.utils.Miscellaneous;
+import tagion.basic.TagionExceptions;
+import tagion.basic.Logger;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
