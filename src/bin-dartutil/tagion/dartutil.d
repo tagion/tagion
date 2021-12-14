@@ -25,6 +25,10 @@ import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 // import tagion.revision;
 
+pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
+import tagion.utils.Gene;
+import tagion.utils.Miscellaneous;
+
 int main(string[] args) {
     immutable program = args[0];
 
