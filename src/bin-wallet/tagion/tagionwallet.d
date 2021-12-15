@@ -940,6 +940,9 @@ int main(string[] args) {
     string path;
     string invoicefile = "invoice_file.hibon";
 
+    string questions_str;
+    string answers_str;
+
     WalletOptions options;
     if (config_file.exists) {
         options.load(config_file);
@@ -968,7 +971,11 @@ int main(string[] args) {
         "pin|x", "Pincode", &pincode,
         "port|p", format("Tagion network port : default %d", options.port), &options.port,
         "url|u", format("Tagion url : default %s", options.addr), &options.addr,
-        "visual|g", "Visual user interface", &wallet_ui,);
+        "visual|g", "Visual user interface", &wallet_ui,
+        "questions", "Questions for wallet creation", &questions_str,
+        "answers", "Answers for wallet creation", &answers_str,
+        "generate-wallet", "Create a new wallet", &generate_wallet
+        );
     if (version_switch) {
         writefln("version %s", REVNO);
         writefln("Git handle %s", HASH);
@@ -1101,6 +1108,24 @@ int main(string[] args) {
         orders = Invoices(order_doc);
         // const contract=payment(orders, bills);
         // contractfile.fwrite(contract.toHiBON.serialize);
+    }
+
+    if (generate_wallet) {
+        const questions = questions_str.split(',');
+        const answers = answers_str.split(',');
+        assert(questions.length >= 3, "Minimal amount of answers is 3");
+        assert(questions.length is answers.length, "Amount of questions should be same as answers");
+        assert(pincode.length == 0, "You must provide pin-code");
+        auto hashnet = new StdHashNet;
+        auto recover = KeyRecover(hashnet);
+
+        const confidence = questions.length-1;
+        const secure_wallet=StdSecureWallet.createWallet(questions, answers, confidence, pincode);
+
+        secure_wallet.login(pincode);
+        options.walletfile.fwrite(secure_wallet.wallet);
+        options.devicefile.fwrite(secure_wallet.pin);
+        options.quizfile.fwrite(quiz);
     }
 
     version(none)
