@@ -11,7 +11,7 @@ import std.process;
 import std.file : mkdir, rmdirRecurse, getcwd, setAttributes, tempDir, exists, readText, fwrite=write;
 import std.string : lineSplitter, strip;
 
-import std.algorithm.iteration : each, map, splitter;
+import std.algorithm.iteration : each, map, filter, splitter;
 import std.algorithm.searching : all;
 import std.regex;
 //import std.algorithm.iteration : chunkBy;
@@ -63,13 +63,18 @@ struct Git {
 
     void config() {
         import std.json;
-        {
-            exclude_regex = getConfig("tub.exclude", gitconfig_file)
+        const exclude_text=getConfig("tub.exclude", gitconfig_file);
+        //writefln("exclude_text.length=%d",exclude_text.length);
+        if (exclude_text) {
+            exclude_regex = exclude_text
                 .parseJSON
                 .array
                 .map!((j) => j.str)
                 .array
                 .regex;
+        }
+        else {
+            exclude_regex=regex("#");
         }
     }
 
@@ -267,6 +272,7 @@ struct Git {
 //        auto pids=new Pid[8];
         auto pid_infos = new PidInfo[num_of_processes];
         auto git_range=gitmap.byKeyValue;
+    WhileLoop:
         while (!git_range.empty) {
             if (pid_infos.all!((p) => p.pid.init !is Pid.init)) {
                 Thread.sleep(pause.msecs);
@@ -276,6 +282,9 @@ struct Git {
                     pid_info.open(tmpdir, git_range.front.value.array_replace("/", "_"));
                     doit(pid_info, cmds, git_range.front.key, git_range.front.value);
                     git_range.popFront;
+                    if (git_range.empty) {
+                        break WhileLoop;
+                    }
                 }
                 const state = tryWait(pid_info.pid);
                 if (state.terminated) {
