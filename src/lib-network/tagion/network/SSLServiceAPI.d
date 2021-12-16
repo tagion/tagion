@@ -42,6 +42,10 @@ struct SSLServiceAPI {
         stop_service = true;
     }
 
+    void send(uint id, immutable(ubyte[]) buffer) {
+        service.send(id, buffer);
+    }
+
     @system
     void run() nothrow {
         try {

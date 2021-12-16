@@ -58,8 +58,7 @@ interface SSLFiber {
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
-    void send(uint id, immutable(ubyte[]) buffer); // Send directly to socket with proper id
-    void terminate(); // notify that socket is terminated
+    void raw_send(immutable(ubyte[]) buffer); // Send directly to socket
 }
 
 /++
@@ -70,6 +69,7 @@ class SSLFiberService {
     immutable(SSLOption) ssl_options;
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
+        void terminate(uint id);
         //    bool doActive(); ///
         //    SSLFiberService create(); //
     }
@@ -132,6 +132,12 @@ class SSLFiberService {
                 return assumeUnique(result);
             }
             return null;
+        }
+
+        void send(uint id, immutable(ubyte[]) buffer) {
+            if (id in active_fibers) {
+                raw_send(buffer);
+            }
         }
 
         /++
@@ -433,20 +439,11 @@ class SSLFiberService {
         }
 
         /++
-         send the buffer to proper client socket
+         Send directly to socket
          +/
-        @trusted
-        void send(uint id, immutable(ubyte[]) buffer) {
-            if (fiber_id == id) {
-                client.send(buffer);
-            }
-        }
-
-        /++
-         notify that socket is terminated
-         +/
-        @trusted
-        void terminate() {
+        @trusdted
+        void raw_send(immutable(ubyte[]) buffer) {
+            client.send(buffer);
         }
 
         /++
