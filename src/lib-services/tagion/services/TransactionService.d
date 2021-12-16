@@ -208,6 +208,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
                 return true;
             }
+            void terminate(uint id) {
+            }
         }
 
         auto relay = new TransactionRelay;

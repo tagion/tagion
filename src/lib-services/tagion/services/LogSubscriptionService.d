@@ -8,7 +8,7 @@ import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.network.SSLServiceAPI;
-import tagion.network.SSLFiberService : SSLFiberService, SSLFiber, SSLSocketFiber;
+import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 import tagion.basic.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.services.LoggerService;
@@ -29,8 +29,8 @@ struct Filter
     // protected fields
 
     void addSubscription(uint listener_id, Document doc) {} // add new listener and notify logService}
-    void removeSubscription(uint listener_id) { }// remove listener, all related filters and notify log service}
-    void notifyLogService() {}// logService.updateFilter()}
+    void removeSubscription(uint listener_id) { } // remove listener, all related filters and notify log service}
+    void notifyLogService() {} // logService.updateFilter()}
 }
 
 //function that should be called from LogService
@@ -42,7 +42,7 @@ void receiveLogs(Document doc)
     // send(logs_buffer, id)
 }
 
-void transactionServiceTask(immutable(Options) opts) nothrow {
+void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -58,7 +58,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         import std.conv;
 
         @safe class LogSubscriptionRelay : SSLFiberService.Relay {
-            bool agent(SSLSocketFiber ssl_relay) {
+            bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
                 //Document doc;
@@ -77,9 +77,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 }
 
                 const doc = receivessl();
-                // update Filter state -> notify LogService
                 log("%s", doc.toJSON);
-                const hirpc_received = hirpc.receive(doc);
                 {
                     import tagion.script.ScriptBuilder;
                     import tagion.script.ScriptParser;
@@ -87,26 +85,27 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
                     const listener_id = ssl_relay.id();
 
-                    addSubscription(listener_id, doc);
+                    // addSubscription(listener_id, doc);
                 }
 
                 return true;
             }
+
             void terminate(uint id) {
-                removeSubscription(id);
+                // removeSubscription(id);
             }
         }
 
         auto relay = new LogSubscriptionRelay;
-        SSLServiceAPI logsubscription_api = SSLServiceAPI(opts.logsubscription.service, relay);
-        auto logsubscription_thread = scriptlogsubscription_api.start;
+        SSLServiceAPI logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
+        auto logsubscription_thread = logsubscription_api.start;
 
         bool stop;
         void handleState(Control ts) {
             with (Control) switch (ts) {
             case STOP:
-                writefln("Subscription STOP %d", opts.logsubscription.service.port);
-                log("Kill socket thread port %d", opts.logsubscription.service.port);
+                writefln("Subscription STOP %d", opts.logSubscription.service.port);
+                log("Kill socket thread port %d", opts.logSubscription.service.port);
                 logsubscription_api.stop;
                 stop = true;
                 break;
