@@ -134,12 +134,6 @@ class SSLFiberService {
             return null;
         }
 
-        void send(uint id, immutable(ubyte[]) buffer) {
-            if (id in active_fibers) {
-                raw_send(buffer);
-            }
-        }
-
         /++
          Returns:
          true if the a response is available on the fiber_id
@@ -241,6 +235,7 @@ class SSLFiberService {
                 recycle_fibers ~= fiber;
                 active_fibers.remove(key);
                 handler.remove(key);
+                terminate(key.id);
             }
 
             try {
@@ -268,6 +263,14 @@ class SSLFiberService {
                 removeFiber;
             }
         }
+    }
+
+    @trusted
+    void send(uint id, immutable(ubyte[]) buffer)
+    in {
+        assert(id in active_fibers);
+    } do{
+            active_fibers[id].raw_send(buffer);
     }
 
     /++
@@ -441,7 +444,7 @@ class SSLFiberService {
         /++
          Send directly to socket
          +/
-        @trusdted
+        @trusted
         void raw_send(immutable(ubyte[]) buffer) {
             client.send(buffer);
         }

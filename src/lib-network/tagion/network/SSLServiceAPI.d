@@ -20,6 +20,7 @@ struct SSLServiceAPI {
     immutable(SSLOption) ssl_options;
     protected {
         Thread service_task;
+        SSLFiberService service;
         SSLFiberService.Relay relay;
     }
     //    const(HiRPC) hirpc;
@@ -60,7 +61,7 @@ struct SSLServiceAPI {
             _listener.bind(new InternetAddress(ssl_options.address, ssl_options.port));
             _listener.listen(ssl_options.max_queue_length);
 
-            auto service = new SSLFiberService(ssl_options, _listener, relay);
+            service = new SSLFiberService(ssl_options, _listener, relay);
             auto response_tid = service.start(ssl_options.response_task_name);
             if (response_tid != Tid.init) {
                 if (receiveOnly!Control !is Control.LIVE) {
