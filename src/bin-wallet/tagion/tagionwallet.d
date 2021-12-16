@@ -1039,6 +1039,25 @@ int main(string[] args) {
 
     auto wallet_interface=WalletInterface(options);
 
+    if (generate_wallet) {
+        const questions = questions_str.split(',');
+        const answers = answers_str.split(',');
+        assert(questions.length >= 3, "Minimal amount of answers is 3");
+        assert(questions.length is answers.length, "Amount of questions should be same as answers");
+        assert(pincode.length = 4, "You must provide pin-code with 4 digits");
+        auto hashnet = new StdHashNet;
+        auto recover = KeyRecover(hashnet);
+        const pincode1 = to!(char[])(pincode);
+
+        const confidence = questions.length - 1;
+        const secure_wallet = wallet_interface.StdSecureWallet.createWallet(questions, answers, to!uint(confidence), pincode1);
+
+        // secure_wallet.login(pincode1);
+        options.walletfile.fwrite(secure_wallet.wallet);
+        options.devicefile.fwrite(secure_wallet.pin);
+        return 0;
+    }
+
     if (options.walletfile.exists) {
         const wallet_doc = options.walletfile.fread;
         const pin_doc = options.devicefile.exists?options.devicefile.fread:Document.init;
@@ -1110,23 +1129,7 @@ int main(string[] args) {
         // contractfile.fwrite(contract.toHiBON.serialize);
     }
 
-    if (generate_wallet) {
-        const questions = questions_str.split(',');
-        const answers = answers_str.split(',');
-        assert(questions.length >= 3, "Minimal amount of answers is 3");
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-        assert(pincode.length == 0, "You must provide pin-code");
-        auto hashnet = new StdHashNet;
-        auto recover = KeyRecover(hashnet);
-
-        const confidence = questions.length-1;
-        const secure_wallet=StdSecureWallet.createWallet(questions, answers, confidence, pincode);
-
-        secure_wallet.login(pincode);
-        options.walletfile.fwrite(secure_wallet.wallet);
-        options.devicefile.fwrite(secure_wallet.pin);
-        options.quizfile.fwrite(quiz);
-    }
+    
 
     version(none)
         if (update_wallet) {
