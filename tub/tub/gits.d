@@ -1,6 +1,6 @@
-#!/usr/bin/rdmd -g
-   //# DMD
-   //#!/usr/bin/env rdmd
+#!/usr/bin/env rdmd
+//# DMD
+//#!/usr/bin/rdmd -g
 
 module gits;
 
