@@ -68,8 +68,6 @@ class SSLFiberService {
     immutable(SSLOption) ssl_options;
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
-        //    bool doActive(); ///
-        //    SSLFiberService create(); //
     }
     //alias Relay = bool delegate(SSLRelay) @safe;
 
@@ -266,6 +264,7 @@ class SSLFiberService {
      SSL Socket service fiber
      +/
     class SSLSocketFiber : Fiber, SSLFiber {
+        version(none)
         @trusted
         static uint buffer_to_uint(const ubyte[] buffer) pure {
             return *cast(uint*)(buffer.ptr)[0 .. uint.sizeof];
@@ -278,7 +277,7 @@ class SSLFiberService {
             uint fiber_id;
         }
 
-        @property uint id() {
+        @property uint id() const pure nothrow {
             return fiber_id;
         }
 
@@ -391,7 +390,6 @@ class SSLFiberService {
                     }
                     const leb128_len = LEB128.decode!uint(leb128_len_data);
                     const buffer_size = leb128_len.value;
-                    //const buffer_size=buffer_to_uint(len_data);
                     if (buffer_size > ssl_options.max_buffer_size) {
                         return null;
                     }
