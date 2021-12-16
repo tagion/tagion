@@ -171,6 +171,21 @@ struct Options {
 
     Transaction transaction;
 
+    struct LogSubscription {
+        string protocol_id;
+        string task_name; /// Transaction task name
+        string net_task_name;
+        string prefix;
+        uint timeout; /// Socket listerne timeout in msecs
+        import tagion.network.SSLOptions;
+        SSLOption service; /// SSL Service used by the transaction service
+        HostOptions host;
+        ushort max; // max == 0 means all
+        mixin JSONCommon;
+    }
+
+    LogSubscription logSubscription;
+
     import tagion.dart.DARTOptions;
     DARTOptions dart;
 
@@ -440,6 +455,43 @@ static setDefaultOption(ref Options options) {
                 key_size = 4096;
             }
             task_name = "transaction.service";
+        }
+        with (host) {
+            timeout = 3000;
+            max_size = 1024 * 100;
+        }
+    }
+    // LogSubscription
+    with (options.logSubscription) {
+        //        port=10700;
+        max = 0;
+        prefix = "logsubscription";
+        task_name = prefix;
+        net_task_name = "logsubscription_net";
+        timeout = 250;
+        with (service) {
+            prefix = "logsubscriptionservice";
+            task_name = prefix;
+            response_task_name = "respose";
+            address = "0.0.0.1";
+            port = 10_700;
+            select_timeout = 300;
+            client_timeout = 4000; // msecs
+            max_buffer_size = 0x4000;
+            max_queue_length = 100;
+            max_connections = 1000;
+            // max_number_of_accept_fibers = 100;
+            // min_duration_full_fibers_cycle_ms = 10;
+            //            max_number_of_fiber_reuse = 1000;
+            //            min_number_of_fibers = 10;
+            //            min_duration_for_accept_ms = 3000;
+            with(openssl) {
+                certificate = "pem_files/domain.pem";
+                private_key = "pem_files/domain.key.pem";
+                days = 365;
+                key_size = 4096;
+            }
+            task_name = "logsubscription.service";
         }
         with (host) {
             timeout = 3000;
