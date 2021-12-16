@@ -58,6 +58,8 @@ interface SSLFiber {
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
+    void send(uint id, immutable(ubyte[]) buffer); // Send directly to socket with proper id
+    void terminate(); // notify that socket is terminated
 }
 
 /++
@@ -428,6 +430,23 @@ class SSLFiberService {
                 checkTimeout;
             }
             while (!done);
+        }
+
+        /++
+         send the buffer to proper client socket
+         +/
+        @trusted
+        void send(uint id, immutable(ubyte[]) buffer) {
+            if (fiber_id == id) {
+                client.send(buffer);
+            }
+        }
+
+        /++
+         notify that socket is terminated
+         +/
+        @trusted
+        void terminate() {
         }
 
         /++
