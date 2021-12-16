@@ -1,13 +1,14 @@
 #!/usr/bin/rdmd -g
+   //# DMD
+   //#!/usr/bin/env rdmd
 
-//#!/usr/bin/env rdmd
 module gits;
 
 import std.getopt;
 
 import std.stdio;
 import std.process;
-import std.file : mkdir, rmdir, getcwd, setAttributes, tempDir, exists, readText, fwrite=write;
+import std.file : mkdir, rmdirRecurse, getcwd, setAttributes, tempDir, exists, readText, fwrite=write;
 import std.string : lineSplitter, strip;
 
 import std.algorithm.iteration : each, map, splitter;
@@ -17,6 +18,7 @@ import std.regex;
 import std.range : chunks, generate, takeExactly;
 import std.typecons : Yes, No;
 //std.range.takeExactly
+
 import std.random;
 import std.path : buildPath, buildNormalizedPath, setExtension, isRooted;
 import std.array : array, join, array_replace=replace;
@@ -42,6 +44,8 @@ struct Git {
 //    tempDir
     this(string reporoot) {
         this.reporoot = reporoot;
+        gitconfig_file=reporoot.buildPath(gitconfig);
+        config;
         gitmap = getSubmodules(reporoot);
 
         tmpdir=tempDir.buildPath(
@@ -50,13 +54,11 @@ struct Git {
             .takeExactly(16)
             .array);
         tmpdir.mkdir;
-        gitconfig_file=reporoot.buildPath(gitconfig);
-        config;
     }
 
-    version(none)
+//    version(none)
     ~this() {
-        tmpdir.rmdir;
+        tmpdir.rmdirRecurse;
     }
 
     void config() {
@@ -76,22 +78,25 @@ struct Git {
         doAll([script]);
     }
 
-    static const(string[string]) getSubmodules(const(string) reporoot) {
+    const(string[string]) getSubmodules(const(string) reporoot) {
         scope git_log=execute([
                 "git", "submodule", "foreach", "--recursive",
                 "pwd"],
             null, Config.init, uint.max,
             reporoot);
         string[string] result;
-        enum regex_repo = regex(`\w+\s+'([^']+)`);
+
+        enum repo_regex = regex(`\w+\s+'([^']+)`);
         git_log
             .output
             .lineSplitter
             .chunks(2)
             .each!((m) {
-                    const match=m.front.matchFirst(regex_repo);
-                    m.popFront;
-                    result[match[1]] = m.front;
+                    const match=m.front.matchFirst(repo_regex);
+                    if (!match.empty && match[1].matchFirst(exclude_regex).empty) {
+                            m.popFront;
+                            result[match[1]] = m.front;
+                    }
                     return Yes.each;
                 });
         return result;
@@ -318,12 +323,14 @@ int main(string[] args) {
     auto gits_flags=args[0..count];
     const cmd_args=args[count..$];
     bool git_config_flags;
+    bool git_repos;
     auto main_args = getopt(gits_flags,
         std.getopt.config.caseSensitive,
         std.getopt.config.bundling,
         // "version",   "display the version",     &version_switch,
         //  "gitlog:g", format("Git log file %s", git_log_json_file), &git_log_json_file,
         "config", "Add the git aliases to all the submodules", &git_config_flags,
+        "repos",  format("List the submodules included in the %s", program), &git_repos,
 //        "date|d", format("Recorde the date in the checkout default %s", set_date), &set_date
         );
 
@@ -336,12 +343,7 @@ int main(string[] args) {
                     "Usage:",
                     format("%s [<option>...] command ...", program),
                     "",
-                    // "Where:",
-                    // "<command>           one of [--read, --rim, --modify, --rpc]",
-                    // "",
-
                     "<option>:",
-
                     ].join("\n"),
                 main_args.options);
             return 0;
@@ -351,7 +353,12 @@ int main(string[] args) {
     if (git_config_flags) {
         git.gitAddAllAlias;
     }
-    else if (cmd_args.length >= 1) {
+    //writefln("cmd_args.length=%d", cmd_args.length);
+    if (git_repos) {
+        git.gitmap.byKeyValue
+            .each!((g) => writefln("Git '%s' path '%s'", g.key, g.value));
+    }
+    if (cmd_args.length >= 1) {
         git.doAll(cmd_args); //, args[2..$]);
     }
     // writefln("gits_args=%s", gits_flags);
