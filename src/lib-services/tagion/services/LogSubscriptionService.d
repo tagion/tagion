@@ -8,7 +8,7 @@ import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.network.SSLServiceAPI;
-import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
+import tagion.network.SSLFiberService : SSLFiberService, SSLFiber, SSLSocketFiber;
 import tagion.basic.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.services.LoggerService;
@@ -24,27 +24,13 @@ import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 
-//import tagion.dart.DARTFile;
-import tagion.dart.DART;
-import tagion.dart.Recorder : RecordFactory;
-
-@safe class HiRPCNet : StdSecureNet {
-    this(string passphrase) {
-        super();
-        generateKeyPair(passphrase);
-        // import tagion.utils.Miscellaneous;
-        // import tagion.Base;
-        // writefln("public=%s", (cast(Buffer)pubkey).toHexString);
-    }
-}
-
 struct Filter
 {
     // protected fields
 
-    void addSubscription(uint listener_id, Document doc) { // add new listener and notify logService}
-    void removeSubscription(uint listener_id) { // remove listener, all related filters and notify log service}
-    void notifyLogService() {// logService.updateFilter()}
+    void addSubscription(uint listener_id, Document doc) {} // add new listener and notify logService}
+    void removeSubscription(uint listener_id) { }// remove listener, all related filters and notify log service}
+    void notifyLogService() {}// logService.updateFilter()}
 }
 
 //function that should be called from LogService
@@ -62,7 +48,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             ownerTid.prioritySend(Control.END);
         }
 
-        // Set thread global options
         setOptions(opts);
         immutable task_name = opts.logSubscription.task_name;
 
@@ -80,7 +65,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 @trusted const(Document) receivessl() {
                     try {
                         immutable buffer = ssl_relay.receive;
-                        //log(cast(string) buffer);
                         const result = Document(buffer);
                         if (result.isInorder) {
                             return result;
@@ -104,18 +88,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     const listener_id = ssl_relay.id();
 
                     addSubscription(listener_id, doc);
-
-                    log(method_name);
-
-                    // get logs
-
-                    auto response = new HiBON;
-                    const hirpc_send = hirpc.result(hirpc_received, response);
-                    immutable send_buffer = hirpc_send.toDoc.serialize;
-                    ssl_relay.send(logs, listener_id);
                 }
 
                 return true;
+            }
+            void terminate(uint id) {
+                removeSubscription(id);
             }
         }
 
