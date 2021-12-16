@@ -309,21 +309,19 @@ string getRoot() {
 int main(string[] args) {
     const program="git all";
     const REVNO="0.0";
-    auto git =Git(getRoot);
-    size_t gits_count(const size_t i=1) pure nothrow {
-        // debug(gits) {
-        //     writefln("called %d", i);
-        // }
-        if ((args.length > i) && (args[i][0] is '-')) {
+    try {
+        auto git =Git(getRoot);
+        size_t gits_count(const size_t i=1) pure nothrow {
+            if ((args.length > i) && (args[i][0] is '-')) {
             return gits_count(i+1);
         }
-        return i;
-    }
-    const count = gits_count;
-    auto gits_flags=args[0..count];
-    const cmd_args=args[count..$];
-    bool git_config_flags;
-    bool git_repos;
+            return i;
+        }
+        const count = gits_count;
+        auto gits_flags=args[0..count];
+        const cmd_args=args[count..$];
+        bool git_config_flags;
+        bool git_repos;
     auto main_args = getopt(gits_flags,
         std.getopt.config.caseSensitive,
         std.getopt.config.bundling,
@@ -360,6 +358,11 @@ int main(string[] args) {
     }
     if (cmd_args.length >= 1) {
         git.doAll(cmd_args); //, args[2..$]);
+    }
+    }
+    catch (Exception e) {
+        stderr.writeln(e.msg);
+        return 1;
     }
     // writefln("gits_args=%s", gits_flags);
     return 0;
