@@ -9,4 +9,5 @@ endef
 GITS:=$(DMAKEFILE)/tub/gits.d
 gitconfig:
 	@cd $(DMAKEFILE);
-	@echo $(DMAKEFILE)/tub/gits.d config --local alias.all "!$(GITS)"
+	$(GITS) config --local alias.all "!$(GITS)"
+	git all --config
