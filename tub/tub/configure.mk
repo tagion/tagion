@@ -2,6 +2,9 @@
 # Recursive make is used to ensure all side effects
 # of preconfigure are included
 
+FCONFIGURE := gen.configure.mk
+FCONFIGURETEST := gen.configure.test.mk
+
 # Preconfigure is used to ensure certain things exist
 # before proceeding to normal configure
 %.preconfigure:
@@ -44,6 +47,7 @@ makedeps.lib%.test.1:
 	$(PRECMD)
 	${call log.kvp, lib$(*), generating $(FCONFIGURETEST) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
+	$(DCFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.test.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURETEST)
@@ -63,29 +67,20 @@ makedeps.lib%.1:
 	$(PRECMD)
 	${call log.kvp, lib$(*), generating $(FCONFIGURE) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
+	$(DCFLAGS) \
 	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/lib-$*/,$_}} -o- \
 	-of=$(DTMP)/lib$*.o > \
 	$(DSRC)/lib-$*/$(FCONFIGURE)
 	echo >> $(DSRC)/lib-$*/$(FCONFIGURE)
 
-tagion%.configure: makedeps.tagion%.2
-	$(PRECMD)
-	${call log.kvp, tagion$*, configured}
-
-makedeps.tagion%.2: makedeps.tagion%.1
-	$(PRECMD)
-	${call log.kvp, tagion$(*), extending $(FCONFIGURE)}
-	${call filter.bin.o, $(FCONFIGURE)}
-	echo $(DBIN)/tagion$*: ${foreach DEP,${filter bin-%,$($*_DEPF)},${subst bin-,$(DTMP)/tagion,$(DEP)}.o} ${foreach DEP,${filter lib-%,$($*_DEPF)},${subst lib-,$(DTMP)/lib,$(DEP)}.o} >> $(DSRC)/bin-$(*)/$(FCONFIGURE)
-
-makedeps.tagion%.1: 
+tagion%.configure: 
 	$(PRECMD)
 	${call log.kvp, tagion$(*), generating $(FCONFIGURE) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
-	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- \
-	-of=$(DTMP)/tagion$*.o > \
-	$(DSRC)/bin-$*/$(FCONFIGURE)
-	echo >> $(DSRC)/bin-$*/$(FCONFIGURE)
+	$(DCFLAGS) \
+	--makedeps=$(DSRC)/bin-$*/$(FCONFIGURE) ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- -of=$(DBIN)/tagion$*
+	${call log.kvp, tagion$*, configured}
+
 
 define filter.bin.o
 ${eval $*_DEPF := ${shell cat $(DSRC)/bin-$*/${strip $1} | grep $(DSRC)}}

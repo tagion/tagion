@@ -1,11 +1,3 @@
-BLANK :=
-define NEWLINE
-
-$(BLANK)
-endef
-
-.ONESHELL:
-
 GITS:=$(DMAKEFILE)/tub/gits.d
 gitconfig:
 	@cd $(DMAKEFILE);
