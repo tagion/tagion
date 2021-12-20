@@ -90,7 +90,11 @@ struct Git {
             null, Config.init, uint.max,
             reporoot);
         string[string] result;
+        if (git_log.output.matchFirst(regex("fatal"))) {
+            writeln(git_log.output);
+            return null;
 
+        }
         enum repo_regex = regex(`\w+\s+'([^']+)`);
         git_log
             .output
