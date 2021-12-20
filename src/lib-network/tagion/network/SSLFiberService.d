@@ -235,7 +235,7 @@ class SSLFiberService {
                 recycle_fibers ~= fiber;
                 active_fibers.remove(key);
                 handler.remove(key);
-                terminate(key.id);
+                relay.terminate(key);
             }
 
             try {
