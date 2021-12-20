@@ -1,5 +1,7 @@
 LOG_SEPARATOR=--------------------------------------------
 
+SEP=--------------------------------------------
+
 define log.header
 echo "";
 echo "$(LOG_SEPARATOR) $(strip $1)";
@@ -26,7 +28,7 @@ echo "$(strip $1)";
 endef
 
 define log.lines
-echo ${word 1, $1} ${foreach LINE, ${filter-out ${word 1, $1}, $1}, "\n${strip $(LINE)}"};
+echo -e ${word 1, $1} ${foreach LINE, ${filter-out ${word 1, $1}, $1}, "\n${strip $(LINE)}"};
 endef
 
 define log.kvp
