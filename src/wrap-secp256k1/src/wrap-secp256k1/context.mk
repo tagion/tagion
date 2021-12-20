@@ -23,6 +23,7 @@ clean-secp256k1: clean
 	@
 
 $(DTMP)/libsecp256k1.a: $(DTMP)/.way
+	echo $@
 	$(PRECMD)$(CP) $(DSRC_SECP256K1) $(DTMP_SECP256K1)
 	$(PRECMD)cd $(DTMP_SECP256K1); ./autogen.sh
 	$(PRECMD)cd $(DTMP_SECP256K1); ./configure $(CONFIGUREFLAGS_SECP256K1)
