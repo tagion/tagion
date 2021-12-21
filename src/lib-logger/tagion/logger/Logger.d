@@ -19,6 +19,30 @@ enum LoggerType {
     STDERR  = WARNING|ERROR|FATAL
 }
 
+struct LogFilter {
+    string task_name;
+    LoggerType log_level;
+    
+    mixin HiBONRecord!(q{
+        this(string task_name, LoggerType log_level) {
+            this.task_name = task_name;
+            this.log_level = log_level;
+        }
+    });
+
+    bool match(string task_name, LoggerType log_level) pure const nothrow {
+        // TODO
+        return true;
+    }
+}
+
+immutable struct LogFilterArray {
+    LogFilter[] filters;
+
+    this(immutable LogFilter[] filters_array) {
+        this.filters = filters_array;
+    }
+}
 
 private static Tid logger_tid;
 
