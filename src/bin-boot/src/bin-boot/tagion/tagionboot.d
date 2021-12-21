@@ -19,6 +19,11 @@ import tagion.script.StandardRecords : Invoice;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBONRecord : fread, fwrite;
 
+pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
+import tagion.script.ScriptException;
+import tagion.utils.Gene;
+import tagion.basic.Logger;
+
 //import tagion.revision;
 import std.array : join;
 
