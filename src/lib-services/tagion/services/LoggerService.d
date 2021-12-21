@@ -36,6 +36,17 @@ void loggerTask(immutable(Options) opts) {
             assert(register(opts.logger.task_name, thisTid));
         }
 
+        LogFilter[] log_filters;
+        bool matchAnyFilter() const nothrow {
+            // TODO
+            return true;
+        }
+
+        void sendToLogSubscriptionService(string task_name, LoggerType log_level, string log_output) {
+            // TODO
+            // send()
+        }
+
         task_register;
         log.set_logger_task(opts.logger.task_name);
 
@@ -82,28 +93,34 @@ void loggerTask(immutable(Options) opts) {
                 }
             }
 
+            string output;
             if (type is LoggerType.INFO) {
-                const output = format("%s: %s", label, text);
-                if (logging) {
-                    file.writeln(output);
-                }
-                printToConsole(output);
+                output = format("%s: %s", label, text);
             }
             else {
-                const output = format("%s:%s: %s", label, type, text);
-                if (logging) {
-                    file.writeln(output);
-                }
-                printToConsole(output);
+                output = format("%s:%s: %s", label, type, text);
             }
+
+            if (logging) {
+                file.writeln(output);
+            }
+            printToConsole(output);
+            if (matchAnyFilter) {
+                sendToLogSubscriptionService(label, type, output);
+            }
+
             if (type & LoggerType.STDERR) {
                 stderr.writefln("%s:%s: %s", label, type, text);
             }
         }
 
+        void filterReceiver(LogFilterArray array) {
+            log_filters = array.filters.dup;
+        }
+
         ownerTid.send(Control.LIVE);
         while (!stop && !abort) {
-            receive(&controller, &receiver);
+            receive(&controller, &receiver, &filterReceiver);
             if (opts.logger.flush && logging) {
                 file.flush();
             }
