@@ -15,3 +15,5 @@ __generated*
 # Emacs
 *~
 *#
+gits.o
+gits
