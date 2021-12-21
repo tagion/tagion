@@ -251,16 +251,16 @@ class DART : DARTFile { //, HiRPC.Supports {
         @HiRPCMethod() const(HiRPCSender) dartRim(const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.rims]=rims;
-            return hirpc.opDispatch!"dartRim"(rims, id);
-            //return hirpc.dartRim(rims, id);
+            //return hirpc.opDispatch!"dartRim"(rims, id);
+            return hirpc.dartRim(rims, id);
         }
 
         @HiRPCMethod() const(HiRPCSender) dartModify(const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
                 null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.recorder]=recorder.toDoc;
-            return hirpc.opDispatch!"dartModify"(recorder, id);
-            //return hirpc.dartModify(recorder, id);
+            //return hirpc.opDispatch!"dartModify"(recorder, id);
+            return hirpc.dartModify(recorder, id);
         }
     }
 
