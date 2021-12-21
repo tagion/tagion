@@ -19,6 +19,10 @@ import std.array : join;
  
 // import tagion.revision; 
 
+pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
+import tagion.utils.Gene;
+import tagion.basic.Logger;
+
 enum fileextensions {
     HIBON = ".hibon",
     JSON = ".json"
