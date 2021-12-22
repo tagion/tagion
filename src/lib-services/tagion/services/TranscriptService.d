@@ -12,7 +12,7 @@ import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 //import tagion.utils.Random;
 import tagion.basic.TagionExceptions;

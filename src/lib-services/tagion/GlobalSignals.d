@@ -4,7 +4,7 @@ import core.stdc.signal;
 import core.stdc.stdio;
 import core.stdc.stdlib : exit, system;
 import core.stdc.string : strlen;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 //import core.internal.execinfo;
 // The declaration of the backtrace function in the execinfo.d is not declared @nogc

@@ -10,7 +10,7 @@ import std.string: strip;
 
 import tagion.basic.Basic: basename, DataFormat;
 import tagion.basic.TagionExceptions;
-import tagion.basic.Logger: LoggerType;
+import tagion.logger.Logger: LoggerType;
 import tagion.utils.JSONCommon;
 
 /++

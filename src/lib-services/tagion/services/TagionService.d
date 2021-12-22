@@ -26,7 +26,7 @@ import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.Basic : Pubkey, Buffer, Control;

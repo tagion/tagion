@@ -13,7 +13,7 @@ import p2plib = p2p.node;
 import std.net.curl;
 
 // import tagion.services.LoggerService;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.services.Options;

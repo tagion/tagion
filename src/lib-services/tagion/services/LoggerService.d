@@ -10,7 +10,7 @@ import std.string;
 //extern(C) int pthread_setname_np(pthread_t, const char*);
 
 import tagion.basic.Basic : Control;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
@@ -37,12 +37,17 @@ void loggerTask(immutable(Options) opts) {
         }
 
         LogFilter[] log_filters;
-        bool matchAnyFilter() const nothrow {
-            // TODO
-            return true;
+        bool matchAnyFilter(string task_name, LoggerType log_level) const nothrow {
+            foreach(filter; log_filters) {
+                if (filter.task_name == task_name && filter.log_level & log_level) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         void sendToLogSubscriptionService(string task_name, LoggerType log_level, string log_output) {
+            writeln("sendToLogSubscriptionService; ", task_name, ": ", log_level);
             // TODO
             // send()
         }
@@ -105,7 +110,7 @@ void loggerTask(immutable(Options) opts) {
                 file.writeln(output);
             }
             printToConsole(output);
-            if (matchAnyFilter) {
+            if (matchAnyFilter(label, type)) {
                 sendToLogSubscriptionService(label, type, output);
             }
 
@@ -116,6 +121,7 @@ void loggerTask(immutable(Options) opts) {
 
         void filterReceiver(LogFilterArray array) {
             log_filters = array.filters.dup;
+            writeln(format("filterReceiver; length = %d", log_filters.length));
         }
 
         ownerTid.send(Control.LIVE);
