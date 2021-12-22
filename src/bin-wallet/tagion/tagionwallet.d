@@ -21,7 +21,7 @@ import tagion.options.CommonOptions;
 import tagion.utils.Gene;
 import tagion.utils.Miscellaneous;
 import tagion.basic.TagionExceptions;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
