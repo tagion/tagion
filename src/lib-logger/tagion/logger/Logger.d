@@ -5,7 +5,7 @@ import core.sys.posix.pthread;
 import std.string;
 import tagion.basic.Basic : Control;
 import tagion.basic.TagionExceptions;
-import tagion.hibon.HiBONRecord : HiBONRecord;
+import tagion.hibon.HiBONRecord;
 
 extern(C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
@@ -154,6 +154,10 @@ static struct Logger {
             }
             else {
                 try {
+                    LogFilter[] ff = [LogFilter("tagionlogservicetest", LoggerType.WARNING),
+                                        LogFilter("tagionlogservicetest", LoggerType.INFO)];
+                    logger_tid.send(LogFilterArray(ff.idup));
+
                     logger_tid.send(type, _task_name, text);
                 }
                 catch (Exception e) {
