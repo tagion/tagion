@@ -21,7 +21,7 @@ import std.array : join;
 
 pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
 import tagion.utils.Gene;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 enum fileextensions {
     HIBON = ".hibon",
