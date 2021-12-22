@@ -26,7 +26,7 @@ class TagionException : Exception, TagionExceptionInterface {
      +/
     version (none) @trusted final immutable(TaskException) taskException() {
         // version(LOGGER) {
-        import tagion.basic.Logger;
+        import tagion.logger.Logger;
 
         // if (task_name.length > 0) {
         //     task_name=log.task_name;
@@ -61,7 +61,7 @@ struct TaskFailure {
  +/
 @trusted
 static immutable(TaskFailure) taskException(const(Throwable) e) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
-    import tagion.basic.Logger;
+    import tagion.logger.Logger;
 
     return immutable(TaskFailure)(cast(immutable) e, log.task_name);
 }
@@ -74,7 +74,7 @@ static immutable(TaskFailure) taskException(const(Throwable) e) @nogc nothrow { 
 
 @safe
 static void fatal(const(Throwable) e) nothrow {
-    import tagion.basic.Logger;
+    import tagion.logger.Logger;
 
     immutable task_e = taskException(e);
     log(task_e);
