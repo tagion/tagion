@@ -24,22 +24,41 @@ import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 
-struct Filter
+struct LogSubscriptionFilters
 {
-    // protected fields
+    LogFilter[][uint] filters;
 
-    void addSubscription(uint listener_id, Document doc) {} // add new listener and notify logService}
-    void removeSubscription(uint listener_id) { } // remove listener, all related filters and notify log service}
-    void notifyLogService() {} // logService.updateFilter()}
-}
+    void addSubscription(uint listener_id, Document doc) nothrow {
+        filters[uint] = /*TODO: parse doc*/[LogFilter("tagionlogservicetest", LoggerType.ALL)];
+        notifyLogService;
+    }
 
-//function that should be called from LogService
-// add args
-void receiveLogs(Document doc)
-{
-    // filder doc -> return id
-    // immutable logs_buffer = doc.seliaze();
-    // send(logs_buffer, id)
+    void removeSubscription(uint listener_id) nothrow {
+        bool result = filters.remove(listener_id);
+        assert(result);
+        notifyLogService;
+    }
+
+    LogFilter[] collectAllFilters() const nothrow {
+        LogFilter[] all_filters;
+        foreach(filter_arr; filters) {
+            all_filters ~= filter_arr;
+        }
+        return all_filters;
+    }
+
+    void notifyLogService() nothrow {
+        // logger_service.send(collectAllFilters.idup);
+    }
+
+    bool matchListenerFilter(uint listener_id, string task_name, LoggerType log_level) {
+        foreach(filter; filters[listener_id]) {
+            if (filter.match(task_name, log_level)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
@@ -47,6 +66,8 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
         scope (success) {
             ownerTid.prioritySend(Control.END);
         }
+
+        LogSubscriptionFilters subscription_filters;
 
         setOptions(opts);
         immutable task_name = opts.logSubscription.task_name;
@@ -114,11 +135,23 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
             }
         }
 
+        void receiveLogs(string task_name, LoggerType log_level, string log_output)
+        {
+            foreach(listener_id; subscription_filters.filters.keys) {
+                if (subscription_filters.matchListenerFilter(listener_id, task_name, log_level)) {
+                    writeln("sent logs to ", listener_id);
+                    //immutable log_buffer = log_output.seliaze();
+                    //send(log_buffer, listener_id);
+                }
+            }
+        }
+
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
                 &handleState,
                 &taskfailure,
+                &receiveLogs,
                 );
         }
     }

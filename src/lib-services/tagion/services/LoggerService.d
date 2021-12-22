@@ -39,7 +39,7 @@ void loggerTask(immutable(Options) opts) {
         LogFilter[] log_filters;
         bool matchAnyFilter(string task_name, LoggerType log_level) const nothrow {
             foreach(filter; log_filters) {
-                if (filter.task_name == task_name && filter.log_level & log_level) {
+                if (filter.match(task_name, log_level)) {
                     return true;
                 }
             }
