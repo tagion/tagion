@@ -32,8 +32,10 @@ struct LogFilter {
     });
 
     bool match(string task_name, LoggerType log_level) pure const nothrow {
-        // TODO
-        return true;
+        if (this.task_name == task_name && this.log_level & log_level) {
+            return true;
+        }
+        return false;
     }
 }
 
