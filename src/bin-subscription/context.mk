@@ -1,6 +1,6 @@
-DEPS += lib-logger
+# DEPS += lib-logger
 
-PROGRAM:=tagionlogger
+PROGRAM:=tagionsubscription
 
 
 $(PROGRAM).configure: SOURCE := tagion/*.d
