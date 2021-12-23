@@ -73,25 +73,14 @@ makedeps.lib%.1:
 	$(DSRC)/lib-$*/$(FCONFIGURE)
 	echo >> $(DSRC)/lib-$*/$(FCONFIGURE)
 
-tagion%.configure: makedeps.tagion%.2
-	$(PRECMD)
-	${call log.kvp, tagion$*, configured}
-
-makedeps.tagion%.2: makedeps.tagion%.1
-	$(PRECMD)
-	${call log.kvp, tagion$(*), extending $(FCONFIGURE)}
-	${call filter.bin.o, $(FCONFIGURE)}
-	echo $(DBIN)/tagion$*: ${foreach DEP,${filter bin-%,$($*_DEPF)},${subst bin-,$(DTMP)/tagion,$(DEP)}.o} ${foreach DEP,${filter lib-%,$($*_DEPF)},${subst lib-,$(DTMP)/lib,$(DEP)}.o} >> $(DSRC)/bin-$(*)/$(FCONFIGURE)
-
-makedeps.tagion%.1: 
+tagion%.configure: 
 	$(PRECMD)
 	${call log.kvp, tagion$(*), generating $(FCONFIGURE) ($(SOURCE))}
 	ldc2 $(INCLFLAGS) \
 	$(DCFLAGS) \
-	--makedeps ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- \
-	-of=$(DTMP)/tagion$*.o > \
-	$(DSRC)/bin-$*/$(FCONFIGURE)
-	echo >> $(DSRC)/bin-$*/$(FCONFIGURE)
+	--makedeps=$(DSRC)/bin-$*/$(FCONFIGURE) ${foreach _,$(SOURCE),${addprefix $(DSRC)/bin-$*/,$_}} -o- -of=$(DBIN)/tagion$*
+	${call log.kvp, tagion$*, configured}
+
 
 define filter.bin.o
 ${eval $*_DEPF := ${shell cat $(DSRC)/bin-$*/${strip $1} | grep $(DSRC)}}
