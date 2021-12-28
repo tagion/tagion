@@ -25,14 +25,14 @@ struct LogFilter {
     LoggerType log_level;
     
     mixin HiBONRecord!(q{
-        this(string task_name, LoggerType log_level) {
+        this(string task_name, LoggerType log_level) nothrow {
             this.task_name = task_name;
             this.log_level = log_level;
         }
     });
 
     bool match(string task_name, LoggerType log_level) pure const nothrow {
-        if (this.task_name == task_name && this.log_level & log_level) {
+        if ((this.task_name == "" || this.task_name == task_name) && this.log_level & log_level) {
             return true;
         }
         return false;
@@ -156,10 +156,6 @@ static struct Logger {
             }
             else {
                 try {
-                    LogFilter[] ff = [LogFilter("tagionlogservicetest", LoggerType.WARNING),
-                                        LogFilter("tagionlogservicetest", LoggerType.INFO)];
-                    logger_tid.send(LogFilterArray(ff.idup));
-
                     logger_tid.send(type, _task_name, text);
                 }
                 catch (Exception e) {
