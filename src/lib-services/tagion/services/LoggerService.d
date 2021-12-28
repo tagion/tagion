@@ -11,6 +11,7 @@ import std.string;
 
 import tagion.basic.Basic : Control;
 import tagion.logger.Logger;
+import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
 
 import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
@@ -46,14 +47,14 @@ void loggerTask(immutable(Options) opts) {
             return false;
         }
 
-        void sendToLogSubscriptionService(string task_name, LoggerType log_level, string log_output) {
-            writeln("sendToLogSubscriptionService; ", task_name, ": ", log_level);
-            // TODO
-            // send()
-        }
-
         task_register;
         log.set_logger_task(opts.logger.task_name);
+
+        auto log_subscription_tid=spawn(&logSubscriptionServiceTask, opts);
+        scope(exit){
+            log_subscription_tid.send(Control.STOP);
+            auto respond_control = receiveOnly!Control;
+        }        
 
         File file;
         const logging = opts.logger.file_name.length != 0;
@@ -62,18 +63,16 @@ void loggerTask(immutable(Options) opts) {
             file.writefln("Logger task: %s", opts.logger.task_name);
             file.flush;
         }
-        // scope (exit) {
-        //     if (logging) {
-        //         file.close;
-        //         ownerTid.send(Control.END);
-        //     }
-        // }
 
-        // scope (success) {
-        //     if (logging) {
-        //         file.writeln("Logger closed");
-        //     }
-        // }
+        void sendToLogSubscriptionService(string task_name, LoggerType log_level, string log_output) {
+            if (log_subscription_tid == Tid.init) {
+                log_subscription_tid = locate(opts.logSubscription.task_name);
+            }
+
+            if (log_subscription_tid != Tid.init) {
+                log_subscription_tid.send(task_name, log_level, log_output);
+            }
+        }
 
         bool stop;
 
@@ -121,7 +120,6 @@ void loggerTask(immutable(Options) opts) {
 
         void filterReceiver(LogFilterArray array) {
             log_filters = array.filters.dup;
-            writeln(format("filterReceiver; length = %d", log_filters.length));
         }
 
         ownerTid.send(Control.LIVE);

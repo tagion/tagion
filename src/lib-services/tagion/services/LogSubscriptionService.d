@@ -1,4 +1,4 @@
-module tagion.services.LogSubscription;
+module tagion.services.LogSubscriptionService;
 
 import std.stdio : writeln, writefln;
 import std.format;
@@ -7,48 +7,50 @@ import core.thread;
 import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
 
-import tagion.network.SSLServiceAPI;
-import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
+// import tagion.network.SSLServiceAPI;
+// import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
+
 import tagion.logger.Logger;
-import tagion.services.Options : Options, setOptions, options;
-import tagion.services.LoggerService;
+import tagion.services.Options : Options, setOptions;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Basic : Control, Buffer;
 
 import tagion.hibon.Document;
-import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
-import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
-import tagion.script.SmartScript;
-import tagion.crypto.SecureNet : StdSecureNet;
-
-import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
+import tagion.basic.TagionExceptions : fatal, taskfailure;
 
 struct LogSubscriptionFilters
 {
     LogFilter[][uint] filters;
 
-    void addSubscription(uint listener_id, Document doc) nothrow {
-        filters[uint] = /*TODO: parse doc*/[LogFilter("tagionlogservicetest", LoggerType.ALL)];
+    void addSubscription(uint listener_id, Document doc) {
+        filters[listener_id] = /*TODO: parse doc, now filter for sending all logs*/[LogFilter("", LoggerType.ALL)];
         notifyLogService;
     }
 
-    void removeSubscription(uint listener_id) nothrow {
-        bool result = filters.remove(listener_id);
-        assert(result);
+    void removeSubscription(uint listener_id) {
+        filters.remove(listener_id);
         notifyLogService;
     }
 
-    LogFilter[] collectAllFilters() const nothrow {
+    LogFilter[] collectAllFilters() const {
         LogFilter[] all_filters;
-        foreach(filter_arr; filters) {
-            all_filters ~= filter_arr;
+        try {
+            foreach(filter_arr; filters) {
+                all_filters ~= filter_arr;
+            }
+            return all_filters;
+        }
+        catch (Throwable t) {
+            fatal(t);
         }
         return all_filters;
     }
 
-    void notifyLogService() nothrow {
-        // logger_service.send(collectAllFilters.idup);
+    void notifyLogService() {
+        if (logger_service_tid != Tid.init) {
+            logger_service_tid.send(LogFilterArray(collectAllFilters.idup));
+        }
     }
 
     bool matchListenerFilter(uint listener_id, string task_name, LoggerType log_level) {
@@ -61,6 +63,8 @@ struct LogSubscriptionFilters
     }
 }
 
+private static Tid logger_service_tid;
+
 void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
     try {
         scope (success) {
@@ -70,76 +74,79 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
         LogSubscriptionFilters subscription_filters;
 
         setOptions(opts);
-        immutable task_name = opts.logSubscription.task_name;
+ 
+        log.register(opts.logSubscription.task_name);
+        logger_service_tid=ownerTid;
 
-        log.register(task_name);
+        // TODO: this call is for testing purposes,
+        // remove when it will be able to add real subscription
+        subscription_filters.addSubscription(8888, Document([1,2,3]));
 
-        log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, commonOptions.url);
+        // log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, commonOptions.url);
 
-        import std.conv;
+        // import std.conv;
 
-        @safe class LogSubscriptionRelay : SSLFiberService.Relay {
-            bool agent(SSLFiber ssl_relay) {
-                import tagion.hibon.HiBONJSON;
+        // @safe class LogSubscriptionRelay : SSLFiberService.Relay {
+        //     bool agent(SSLFiber ssl_relay) {
+        //         import tagion.hibon.HiBONJSON;
 
-                //Document doc;
-                @trusted const(Document) receivessl() {
-                    try {
-                        immutable buffer = ssl_relay.receive;
-                        const result = Document(buffer);
-                        if (result.isInorder) {
-                            return result;
-                        }
-                    }
-                    catch (Exception t) {
-                        log.warning("%s", t.msg);
-                    }
-                    return Document();
-                }
+        //         //Document doc;
+        //         @trusted const(Document) receivessl() {
+        //             try {
+        //                 immutable buffer = ssl_relay.receive;
+        //                 const result = Document(buffer);
+        //                 if (result.isInorder) {
+        //                     return result;
+        //                 }
+        //             }
+        //             catch (Exception t) {
+        //                 log.warning("%s", t.msg);
+        //             }
+        //             return Document();
+        //         }
 
-                const doc = receivessl();
-                log("%s", doc.toJSON);
-                {
-                    import tagion.script.ScriptBuilder;
-                    import tagion.script.ScriptParser;
-                    import tagion.script.Script;
+        //         const doc = receivessl();
+        //         log("%s", doc.toJSON);
+        //         {
+        //             import tagion.script.ScriptBuilder;
+        //             import tagion.script.ScriptParser;
+        //             import tagion.script.Script;
 
-                    const listener_id = ssl_relay.id();
+        //             const listener_id = ssl_relay.id();
 
-                    // addSubscription(listener_id, doc);
-                }
+        //             // addSubscription(listener_id, doc);
+        //         }
 
-                return true;
-            }
+        //         return true;
+        //     }
 
-            void terminate(uint id) {
-                // removeSubscription(id);
-            }
-        }
+        //     void terminate(uint id) {
+        //         // removeSubscription(id);
+        //     }
+        // }
 
-        auto relay = new LogSubscriptionRelay;
-        SSLServiceAPI logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
-        auto logsubscription_thread = logsubscription_api.start;
+        // auto relay = new LogSubscriptionRelay;
+        // SSLServiceAPI logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
+        // auto logsubscription_thread = logsubscription_api.start;
 
         bool stop;
         void handleState(Control ts) {
-            with (Control) switch (ts) {
-            case STOP:
-                writefln("Subscription STOP %d", opts.logSubscription.service.port);
-                log("Kill socket thread port %d", opts.logSubscription.service.port);
-                logsubscription_api.stop;
-                stop = true;
-                break;
-            default:
-                log.error("Bad Control command %s", ts);
-            }
+            // with (Control) switch (ts) {
+            // case STOP:
+            //     writefln("Subscription STOP %d", opts.logSubscription.service.port);
+            //     log("Kill socket thread port %d", opts.logSubscription.service.port);
+            //     logsubscription_api.stop;
+            //     stop = true;
+            //     break;
+            // default:
+            //     log.error("Bad Control command %s", ts);
+            // }
         }
 
-        void receiveLogs(string task_name, LoggerType log_level, string log_output)
-        {
+        void receiveLogs(string task_name, LoggerType log_level, string log_output) {
             foreach(listener_id; subscription_filters.filters.keys) {
                 if (subscription_filters.matchListenerFilter(listener_id, task_name, log_level)) {
-                    writeln("sent logs to ", listener_id);
+                    writeln(format("sent {%s} to %d", log_output, listener_id));
                     //immutable log_buffer = log_output.seliaze();
                     //send(log_buffer, listener_id);
                 }
