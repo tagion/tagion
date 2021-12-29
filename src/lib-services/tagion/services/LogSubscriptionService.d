@@ -23,8 +23,8 @@ struct LogSubscriptionFilters
 {
     LogFilter[][uint] filters;
 
-    void addSubscription(uint listener_id, Document doc) {
-        filters[listener_id] = /*TODO: parse doc, now filter for sending all logs*/[LogFilter("", LoggerType.ALL)];
+    void addSubscription(uint listener_id, LogFilter[] filters_array) {
+        filters[listener_id] = filters_array.dup;
         notifyLogService;
     }
 
@@ -35,6 +35,7 @@ struct LogSubscriptionFilters
 
     LogFilter[] collectAllFilters() const {
         LogFilter[] all_filters;
+        // TODO: make better (.values.map...)
         try {
             foreach(filter_arr; filters) {
                 all_filters ~= filter_arr;
@@ -80,7 +81,7 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
 
         // TODO: this call is for testing purposes,
         // remove when it will be able to add real subscription
-        subscription_filters.addSubscription(8888, Document([1,2,3]));
+        subscription_filters.addSubscription(8888, [LogFilter("", LoggerType.ALL)]);
 
         // log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, commonOptions.url);
 
