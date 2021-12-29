@@ -6,6 +6,7 @@ import std.socket;
 import core.thread;
 import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
+import std.array : join;
 
 // import tagion.network.SSLServiceAPI;
 // import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
@@ -33,24 +34,9 @@ struct LogSubscriptionFilters
         notifyLogService;
     }
 
-    LogFilter[] collectAllFilters() const {
-        LogFilter[] all_filters;
-        // TODO: make better (.values.map...)
-        try {
-            foreach(filter_arr; filters) {
-                all_filters ~= filter_arr;
-            }
-            return all_filters;
-        }
-        catch (Throwable t) {
-            fatal(t);
-        }
-        return all_filters;
-    }
-
-    void notifyLogService() {
+    void notifyLogService() const {
         if (logger_service_tid != Tid.init) {
-            logger_service_tid.send(LogFilterArray(collectAllFilters.idup));
+            logger_service_tid.send(LogFilterArray(filters.values.join.idup));
         }
     }
 
@@ -81,7 +67,9 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
 
         // TODO: this call is for testing purposes,
         // remove when it will be able to add real subscription
-        subscription_filters.addSubscription(8888, [LogFilter("", LoggerType.ALL)]);
+        subscription_filters.addSubscription(8888, [LogFilter("", LoggerType.INFO)]);
+        subscription_filters.addSubscription(1111, [LogFilter("", LoggerType.ERROR)]);
+        subscription_filters.addSubscription(2222, [LogFilter("", LoggerType.WARNING)]);
 
         // log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, commonOptions.url);
 
