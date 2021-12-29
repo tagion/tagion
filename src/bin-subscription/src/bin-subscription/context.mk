@@ -1,4 +1,5 @@
-DEPS += lib-logger
+DEPS += lib-services
+DEPS += lib-utils
 
 PROGRAM:=tagionlogger
 
