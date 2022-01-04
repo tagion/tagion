@@ -1,5 +1,14 @@
-DEPS += wrap-openssl
 
+
+ifdef SHARED
+LIBSECP256K1:=libsecp256k1.so
+CONFIGUREFLAGS_SECP256K1 += --enable-shared=yes
+else
+LIBSECP256K1:=libsecp256k1.a
+CONFIGUREFLAGS_SECP256K1 += --enable-shared=on
+endif
+
+DEPS += wrap-openssl
 DSRC_SECP256K1 := ${call dir.resolve, src}
 DTMP_SECP256K1 := $(DTMP)/secp256k1
 
@@ -7,29 +16,29 @@ CONFIGUREFLAGS_SECP256K1 += --enable-module-ecdh
 CONFIGUREFLAGS_SECP256K1 += --enable-experimental
 CONFIGUREFLAGS_SECP256K1 += --enable-module-recovery
 CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
-CONFIGUREFLAGS_SECP256K1 += --enable-shared=no
+#CONFIGUREFLAGS_SECP256K1 += --enable-shared=no
 CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/include/
 
 include ${call dir.resolve, cross.mk}
 
-secp256k1: $(DTMP)/libsecp256k1.a
+secp256k1: $(DTMP)/$(LIBSECP256K1)
 	@
 
-TOCLEAN_SECP256K1 += $(DTMP)/libsecp256k1.a
+TOCLEAN_SECP256K1 += $(DTMP)/$(LIBSECP256K1)
 TOCLEAN_SECP256K1 += $(DTMP_SECP256K1)
 
 clean-secp256k1: TOCLEAN := $(TOCLEAN_SECP256K1)
 clean-secp256k1: clean
 	@
 
-$(DTMP)/libsecp256k1.a: $(DTMP)/.way
+$(DTMP)/$(LIBSECP256K1): $(DTMP)/.way
 	echo $@
 	$(PRECMD)$(CP) $(DSRC_SECP256K1) $(DTMP_SECP256K1)
 	$(PRECMD)cd $(DTMP_SECP256K1); ./autogen.sh
 	$(PRECMD)cd $(DTMP_SECP256K1); ./configure $(CONFIGUREFLAGS_SECP256K1)
 	$(PRECMD)cd $(DTMP_SECP256K1); make clean
 	$(PRECMD)cd $(DTMP_SECP256K1); make $(SUBMAKE_PARALLEL)
-	$(PRECMD)cd $(DTMP_SECP256K1); mv .libs/libsecp256k1.a $@
+	$(PRECMD)cd $(DTMP_SECP256K1); mv .libs/$(LIBSECP256K1) $@
 
 MAKE_ENV += env-secp256k1
 env-secp256k1:
