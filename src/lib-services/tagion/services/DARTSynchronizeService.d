@@ -74,8 +74,11 @@ struct ServiceState(T) {
     }
 }
 
-void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
-        shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
+void dartSynchronizeServiceTask(Net : SecureNet)(
+    immutable(Options) opts,
+    shared(p2plib.Node) node,
+    shared(Net) master_net,
+    immutable(DART.SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);

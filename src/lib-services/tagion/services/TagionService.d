@@ -308,8 +308,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         Thread.sleep(1000.msecs);
         while (!stop) {
             if (opts.sequential) {
-                immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload,
-                    &controller, &sequential, &receive_buffer, &_taskfailure,);
+                immutable message_received = receiveTimeout(
+                    opts.timeout.msecs,
+                    &receive_payload,
+                    &controller,
+                    &sequential,
+                    &receive_buffer,
+                    &_taskfailure,);
                 if (!message_received) {
                     log("TIME OUT");
                     timeout_count++;
@@ -319,8 +324,12 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 }
             }
             else {
-                immutable message_received = receiveTimeout(opts.timeout.msecs,
-                    &receive_payload, &controller, &receive_buffer, &_taskfailure,);
+                immutable message_received = receiveTimeout(
+                    opts.timeout.msecs,
+                    &receive_payload,
+                    &controller,
+                    &receive_buffer,
+                    &_taskfailure,);
                 if (!message_received) {
                     log("TIME OUT");
                     timeout_count++;
