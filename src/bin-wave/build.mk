@@ -3,8 +3,8 @@ PROGRAM:=tagionwave
 
 TAGIONWAVE_SRC_DIR:=$(DSRC)/bin-wave
 TAGIONWAVE_SRC:=$(TAGIONWAVE_SRC_DIR)/tagion/wave.d
-TAGIONWAVE:=$(DBIN)/tagionwave
-TAGIONWAVE_DEPS:=$(TAGIONWAVE_SRC_DIR)/gen.configure.bin.mk
+TAGIONWAVE:=$(DBIN)/$(PROGRAM)
+TAGIONWAVE_DEPS:=$(TAGIONWAVE_SRC_DIR)/gen.configure.lib.mk
 
 $(DBIN)/$(PROGRAM): $(DTMP)/libsecp256k1.a
 $(DBIN)/$(PROGRAM): $(DTMP)/libssl.a
