@@ -1,5 +1,12 @@
 module tagion.wave;
 
+// Inner dependency
+import tagion.dart.DARTFakeNet;
+import tagion.crypto.aes.tiny_aes.tiny_aes;
+import tagion.basic.TagionExceptions;
+import tagion.utils.Gene;
+import tagion.script.ScriptException;
+
 import std.stdio;
 import core.thread;
 import std.getopt;
