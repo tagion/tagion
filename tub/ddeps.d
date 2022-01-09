@@ -22,6 +22,7 @@ struct Ddeps {
     string DSRCDIR="DSRCDIR";
     string DOBJDIR="DOBJDIR";
     string DOBJEXT="o";
+    string DCIREXT="cir";
     struct Module {
         string file; // Source file
         string obj; // Object file
@@ -33,9 +34,6 @@ struct Ddeps {
         size_t rank;
         uint level;
         int marked;
-        string cirname() const {
-            return objname.setExtension("cir");
-        }
         auto allCircular() const {
             bool[const(Module)*] result;
             void collect(const(Module*) mod) {
@@ -52,6 +50,9 @@ struct Ddeps {
 
             return result.byKey;
         }
+    }
+    string cirname(const Module mod) const {
+        return mod.objname.setExtension(DCIREXT);
     }
 
     static int marker;
@@ -178,6 +179,11 @@ struct Ddeps {
         else {
             fout=stdout;
         }
+        fout.writefln("%s?=%s", DSRCDIR, sourcedir);
+        const dobjdir=environment.get(DOBJDIR, "");
+        if (dobjdir.length) {
+            fout.writefln("%s?=%s", DOBJDIR, dobjdir);
+        }
         foreach(name, mod; modules) {
             fout.writeln;
             fout.writeln("#");
@@ -196,8 +202,9 @@ struct Ddeps {
             }
             if (mod.circular) {
                 fout.writeln("# circular dependencies");
-                fout.writef(`%s: `, mod.cirname);
-                immutable cir_space=' '.repeat(mod.cirname.length).array;
+                const cir=cirname(mod);
+                fout.writef(`%s: `, cir);
+                immutable cir_space=' '.repeat(cir.length).array;
                 const cir_fmt="%-(%s \\\n "~cir_space~" %)";
                 fout.writefln(cir_fmt, mod.allCircular
                     .map!((impmod) => impmod.objname));
@@ -235,14 +242,11 @@ int main(string[] args) {
                 ddeps.DSRCDIR), &ddeps.DSRCDIR,
             "objdir", format("Object env directory name (Default:%s)",
                 ddeps.DOBJDIR), &ddeps.DOBJDIR,
-            "objext", format("Object env directory name (Default:%s)",
+            "objext", format("Object file extension   (Default:%s)",
                 ddeps.DOBJEXT), &ddeps.DOBJEXT,
+            "cirext", format("Circular file extension (Default:%s)",
+                ddeps.DCIREXT), &ddeps.DCIREXT,
 
-            // "version",   "display the version",     &version_switch,
-            //  "gitlog:g", format("Git log file %s", git_log_json_file), &git_log_json_file,
-//            "config", "Add the git aliases to all the submodules", &git_config_flags,
-//            "repos",  format("List the submodules included in the %s", program), &git_repos,
-//        "date|d", format("Recorde the date in the checkout default %s", set_date), &set_date
             );
 
         if (main_args.helpWanted) {
