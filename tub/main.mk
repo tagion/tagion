@@ -24,6 +24,7 @@ include $(DTUB)/utilities/dir.mk
 
 # Secondary tub functionality
 include $(DTUB)/ways.mk
+include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/host.mk
@@ -76,7 +77,7 @@ setup: alias
 	echo "Git branches:"
 	git sbranch
 
-alias: 
+alias:
 	$(PRECMD)
 	echo "Installing local git aliases..."
 	$(DTUB)/scripts/gitconfig

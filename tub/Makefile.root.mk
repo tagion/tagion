@@ -25,6 +25,6 @@ all: doit
 # The following replaces ./tub/setup:
 %:
 	@git submodule update --init --recursive
-	@$(MAKE) RECURSIVE=1 setup
+	@$(MAKE) RECURSIVE=1 gitconfig
 	@$(MAKE) RECURSIVE=1 $@
 endif
