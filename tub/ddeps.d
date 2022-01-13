@@ -6,7 +6,7 @@ module ddeps;
 
 import std.getopt;
 import std.file : exists, readText, getcwd;
-import std.path : setExtension, dirName;
+import std.path : setExtension, dirName, asNormalizedPath, buildPath;
 import std.process : environment;
 import std.format;
 import std.array : join, array, replace;
@@ -14,8 +14,12 @@ import std.stdio;
 import std.typecons : tuple;
 import std.algorithm.searching : count;
 import std.algorithm.iteration : fold;
-import std.algorithm : map, each, min, max, sort, filter;
-import std.range : repeat, tee;
+import std.algorithm : map, each, min, max, sort, filter, joiner;
+import std.range : repeat, tee, only;
+
+// Makefile environment format $(NAME)
+alias envFormat=format!("$(%s)", string);
+
 
 struct Ddeps {
     string sourcedir;
@@ -151,14 +155,14 @@ struct Ddeps {
     void objectName() {
         foreach(name, ref mod; modules) {
             mod.file =mod.file.replace(sourcedir, "");
-            mod.srcname=format("$(%s)%s", DSRCDIR, mod.file);
+            mod.srcname=buildPath(only(DSRCDIR.envFormat, mod.file));
             mod.obj = mod.file.setExtension(DOBJEXT);
-            mod.objname=format("$(%s)%s", DOBJDIR, mod.obj);
+            mod.objname=buildPath(only(DOBJDIR.envFormat, mod.obj));
         }
     }
 
     auto allObjectDirectories() const {
-        bool[string] result;
+        scope bool[string] result;
         return modules
             .byValue
             .map!((mod) => mod.objname.dirName)
@@ -166,6 +170,25 @@ struct Ddeps {
             .tee!(a => result[a]=true);
     }
 
+    auto allCirculars() const {
+        scope bool[string] result;
+        return modules
+            .byValue
+            .map!((mod) => mod.circular)
+            .map!((cirs) => cirs[]
+                .map!((cir) => cirname(*cir))
+                .filter!((name) => !(name in result))
+                .tee!(a => result[a]=true))
+            .joiner;
+    }
+
+    enum {
+        DOBJALL="DOBJALL",
+        DSRCALL="DSRCALL",
+        DCIRALL="DCIRALL",
+        DWAYSALL="DWAYSALL",
+        RM="RM",
+    }
     void display(string outputfile) const {
         File fout;
         scope(exit) {
@@ -179,11 +202,14 @@ struct Ddeps {
         else {
             fout=stdout;
         }
-        fout.writefln("%s?=%s", DSRCDIR, sourcedir);
+        fout.writefln("%s?=%s", DSRCDIR, sourcedir.asNormalizedPath);
         const dobjdir=environment.get(DOBJDIR, "");
         if (dobjdir.length) {
-            fout.writefln("%s?=%s", DOBJDIR, dobjdir);
+            fout.writefln("%s?=%s", DOBJDIR, dobjdir.asNormalizedPath);
+
         }
+        fout.writefln!"%s?=rm -f "(RM);
+
         foreach(name, mod; modules) {
             fout.writeln;
             fout.writeln("#");
@@ -203,27 +229,41 @@ struct Ddeps {
             if (mod.circular) {
                 fout.writeln("# circular dependencies");
                 const cir=cirname(mod);
-                fout.writef(`%s: `, cir);
+                fout.writef("%s: ", cir);
                 immutable cir_space=' '.repeat(cir.length).array;
                 const cir_fmt="%-(%s \\\n "~cir_space~" %)";
                 fout.writefln(cir_fmt, mod.allCircular
                     .map!((impmod) => impmod.objname));
+                fout.writefln("%s: | %s", mod.objname, cir);
+                fout.writefln("\ttouch %s", cir);
 
             }
         }
         fout.writeln;
-        fout.writeln("#");
-        fout.writefln("%-(DOBJALL += %s\n%)", modules.byValue
+        fout.writeln("# All D objects");
+        fout.writefln("%-("~DOBJALL~"+= %s\n%)", modules.byValue
             .map!((mod) => mod.objname));
 
         fout.writeln;
-        fout.writeln("#");
-        fout.writefln("%-(DSRCALL += %s\n%)", modules.byValue
+        fout.writeln("# All D source");
+        fout.writefln("%-("~DSRCALL~"+= %s\n%)", modules.byValue
             .map!((mod) => mod.srcname));
 
         fout.writeln;
-        fout.writeln("#");
-        fout.writefln("%-(DWAYSALL += %s\n%)", allObjectDirectories);
+        fout.writeln("# All circular targets");
+        fout.writefln("%-("~DCIRALL~"+= %s\n%)", allCirculars);
+
+        fout.writeln;
+        fout.writeln("# All target directories");
+        fout.writefln("%-("~DWAYSALL~"+= %s\n%)", allObjectDirectories);
+
+        fout.writeln;
+        fout.writeln("# Object Clear");
+        fout.writeln("CLEANER+=clean-obj");
+        fout.writeln("clean-obj:");
+        fout.writefln!"\t%s %s"(RM.envFormat, DOBJALL.envFormat);
+        fout.writefln!"\t%s %s"(RM.envFormat, DCIRALL.envFormat);
+
     }
 }
 

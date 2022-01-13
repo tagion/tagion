@@ -7,7 +7,8 @@ proper: clean
 .PHONY: clean
 clean: TOCLEAN += $(DTMP)/*.o
 clean: TOCLEAN += $(DBIN)
-clean:
+
+clean: $(CLEANER)
 	$(PRECMD)
 	${call log.header, clean}
 	${foreach _, $(TOCLEAN), $(RMDIR) $(_) > /dev/null || true;}

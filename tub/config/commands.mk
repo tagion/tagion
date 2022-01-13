@@ -6,35 +6,48 @@ CP := copy /Y
 MKDIR := mkdir
 MV := move
 LN := mklink
+GETOS:=Unknow-get-os
+GETARCH:=Unknow-get-arch
 else ifeq ($(OS),linux)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
+# RM := rm -f
+# RMDIR := rm -rf
+# CP := cp -fr
+# MKDIR := mkdir -p
+# MV := mv
+# LN := ln -s
 else ifeq ($(OS),freebsd)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
+# RM := rm -f
+# RMDIR := rm -rf
+# CP := cp -fr
+# MKDIR := mkdir -p
+# MV := mv
+# LN := ln -s
 else ifeq ($(OS),solaris)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
+# RM := rm -f
+# RMDIR := rm -rf
+# CP := cp -fr
+# MKDIR := mkdir -p
+# MV := mv
+# LN := ln -s
 else ifeq ($(OS),darwin)
-RM := rm -f
-RMDIR := rm -rf
-CP := cp -fr
-MKDIR := mkdir -p
-MV := mv
-LN := ln -s
+# RM := rm -f
+# RMDIR := rm -rf
+# CP := cp -fr
+# MKDIR := mkdir -p
+# MV := mv
+# LN := ln -s
 endif
+
+# Default posix commands
+GETOS?=${shell uname | tr A-Z a-z}
+GETARCH?=${shell uname -m}
+RM ?= rm -f
+RMDIR ?= rm -rf
+CP ?= cp -fr
+MKDIR ?= mkdir -p
+MV ?= mv
+LN ?= ln -s
+TOUCH = touch
 
 MAKE_ENV += env-commands
 env-commands:
