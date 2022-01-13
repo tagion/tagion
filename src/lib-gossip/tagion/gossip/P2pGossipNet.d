@@ -280,7 +280,7 @@ struct NodeAddress {
     version(none)
     this(ref return scope const(NodeAddress) node_address) inout {
         address = node_address.address;
-        is_marshal = is_marshal;
+        is_marshal = node_address.is_marshal; 
         id = node_address.id;
         port = node_address.port;
         sector = node_address.sector;
