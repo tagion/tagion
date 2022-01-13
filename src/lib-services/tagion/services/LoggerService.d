@@ -77,6 +77,7 @@ void loggerTask(immutable(Options) opts) {
         bool stop;
 
         void controller(Control ctrl) @safe {
+            writeln("RECEIVED CONTROL: ", ctrl);
             with (Control) switch (ctrl) {
                 case STOP:
                     stop = true;
