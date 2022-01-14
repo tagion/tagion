@@ -15,7 +15,7 @@ import std.algorithm.sorting: sort;
 import std.algorithm.iteration: map, each, filter, cache, fold, joiner;
 import std.algorithm.searching: count, any, all, until;
 import std.range.primitives: walkLength, isInputRange, isForwardRange, isBidirectionalRange;
-import std.range: enumerate, chain, tee;
+import std.range: enumerate, tee;
 
 import tagion.hibon.HiBON: HiBON;
 import tagion.hibon.Document: Document;
