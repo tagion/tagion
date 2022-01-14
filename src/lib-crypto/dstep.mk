@@ -1,32 +1,27 @@
-LCRYPTO_DIROOT := ${call dir.resolve, tagion/crypto/secp256k1/c}
+#
+# Secp256k1 DSTEP headers
+#
 LCRYPTO_PACKAGE := tagion.crypto.secp256k1.c
+LCRYPTO_DIROOT := ${call dir.resolve, tagion/crypto/secp256k1/c}
 
-LCRYPTO_DSTEPINC += $(DSRC_SECP256K1)/include
-LCRYPTO_HFILES += ${wildcard $(LCRYPTO_DSTEPINC)/*.h}
-LCRYPTO_HNOTDIR := ${notdir $(LCRYPTO_HFILES)}
-LCRYPTO_DINOTDIR := ${LCRYPTO_HNOTDIR:.h=.di}
-LCRYPTO_DIFILES := ${addprefix $(LCRYPTO_DIROOT)/,$(LCRYPTO_DINOTDIR)}
+CRYPTO_DFILES := ${wildcard ${call dir.resolve, tagion/crypto}/*.d}
 
-LCRYPTO_DSTEPFLAGS += ${addprefix -I,$(LCRYPTO_DSTEPINC)}
-LCRYPTO_DSTEPFLAGS += --global-attribute=nothrow
-LCRYPTO_DSTEPFLAGS += --global-attribute=@nogc
+$(LCRYPTO_DIROOT)/secp256k1_ecdh.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1
 
-TOCLEAN += $(LCRYPTO_DIFILES)
+${call DSTEP_DO,$(LCRYPTO_PACKAGE),$(DSRC_SECP256K1)/include,$(LCRYPTO_DIROOT),$(CRYPTO_DFILES)}
 
-$(LCRYPTO_DIROOT)/secp256k1_ecdh.di: LCRYPTO_DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1
 
-# Target for creating di local to this unit
-$(LCRYPTO_DIROOT)/%.di: $(LCRYPTO_DSTEPINC)/%.h $(LCRYPTO_DIROOT)/%.way
-	${call log.kvp, $*.di}
-	${call log.lines, $<}
-	${call log.lines, $@}
-	$(PRECMD)$(DSTEP) $(LCRYPTO_DSTEPFLAGS) --package "$(LCRYPTO_PACKAGE)" $< -o $@
 
-MAKE_SHOW_ENV += env-libcrypto-dstep
-env-libcrypto-dstep:
-	$(call log.header, env :: libscrypto :: dstep)
-	${call log.kvp, HFILES, $(HFILES)}
-	${call log.kvp, DESTROOT, $(DESTROOT)}
-	${call log.kvp, DIFILES, $(DIFILES)}
-	${call log.kvp, DSTEPFLAGS, $(DSTEPFLAGS)}
-	$(call log.close)
+
+#$(DIFILES_tagion.crypto.secp256k1.c)
+
+test33: /home/carsten/work/cross_regression/src/lib-crypto/tagion/crypto/SecureNet.d
+
+test34: $(DIFILES_tagion.crypto.secp256k1.c)
+
+test77:
+	@echo $(DSRC_SECP256K1)/include
+	@echo $(HFILES_tagion.crypto.secp256k1.c)
+	@echo $(DIFILES_tagion.crypto.secp256k1.c)
+	@echo $(LCRYPTO_DIROOT)
+	@echo CRYPTO_DFILES $(CRYPTO_DFILES)

@@ -23,4 +23,3 @@ $(PROGRAM).configure: SOURCE += tagion/crypto/aes/openssl_aes/*.d
 $(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
 $(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
 endif
-
