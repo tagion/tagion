@@ -98,7 +98,7 @@ endif
 
 # D step
 # TODO: Clone local dstep
-DSTEP:=dstep
+DSTEP?=${shell which dstep}
 
 # -m32 and -m64 switches cannot be used together with -march and -mtriple switches
 ifndef CROSS_OS

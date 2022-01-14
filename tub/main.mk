@@ -26,6 +26,7 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/ddeps.mk
+include $(DTUB)/config/dstep.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/host.mk
