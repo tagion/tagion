@@ -27,6 +27,8 @@ $$(DESTROOT_$1):
 	$$(PRECMD)mkdir -p $$@
 
 $4: | dstep-$1
+	@
+
 
 dstep-$1: $$(DIFILES_$1)
 
