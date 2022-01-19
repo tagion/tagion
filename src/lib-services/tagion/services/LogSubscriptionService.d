@@ -120,16 +120,17 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
 
         bool stop;
         void handleState(Control ts) {
-            // with (Control) switch (ts) {
-            // case STOP:
-            //     writefln("Subscription STOP %d", opts.logSubscription.service.port);
-            //     log("Kill socket thread port %d", opts.logSubscription.service.port);
-            //     logsubscription_api.stop;
-            //     stop = true;
-            //     break;
-            // default:
-            //     log.error("Bad Control command %s", ts);
-            // }
+            with (Control) switch (ts) {
+            case STOP:
+                writeln("Stopping LogSubscriptionService...");
+                // writefln("Subscription STOP %d", opts.logSubscription.service.port);
+                // log("Kill socket thread port %d", opts.logSubscription.service.port);
+                // logsubscription_api.stop;
+                stop = true;
+                break;
+            default:
+                log.error("Bad Control command %s", ts);
+            }
         }
 
         void receiveLogs(string task_name, LoggerType log_level, string log_output) {

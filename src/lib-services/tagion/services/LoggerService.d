@@ -77,11 +77,16 @@ void loggerTask(immutable(Options) opts) {
         bool stop;
 
         void controller(Control ctrl) @safe {
-            writeln("RECEIVED CONTROL: ", ctrl);
             with (Control) switch (ctrl) {
                 case STOP:
+                    writeln("Stopping LoggerService...");
                     stop = true;
                     file.writefln("%s Stopped ", opts.logger.task_name);
+                    break;
+                case END:
+                    // LoggerService shouldn't run without LogSubscriptionService
+                    stop = true;
+                    file.writefln("%s: LogSubscriptionService stopped %s", opts.logger.task_name, ctrl);
                     break;
                 default:
                     file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
