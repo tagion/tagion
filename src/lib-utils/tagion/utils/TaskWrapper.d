@@ -91,17 +91,32 @@ struct Task(alias Func) {
 mixin template TaskBasic() {
     import concurrency=std.concurrency;
     bool stop;
+    // TODO Do we need handle also "abort"? 
+
+    // Task can redefine this method to customize actions when receiving Control.STOP
+    void onSTOP() {
+        stop = true;
+    }
+
+    // Task can redefine this method to customize actions when receiving Control.LIVE
+    void onLIVE() {
+        /// Should throw something
+    }
+
+    // Task can redefine this method to customize actions when receiving Control.END
+    void onEND() {
+        // If the task can spawn another tasks then it could receive LIVE and END
+    }
+
     @TaskMethod void control(immutable(Control) control) {
         with(Control) {
             final switch(control) {
-            case STOP:
-                stop = true;
+            case STOP: onSTOP;
                 break;
-            case LIVE:
-                /// Should throw something
+            case LIVE: onLIVE;
                 break;
-            case END:
-                // If the task can spawn another tasks then it could receive LIVE and END
+            case END: onEND;
+                break;
             }
         }
     }
