@@ -122,29 +122,59 @@ mixin template TaskBasic() {
     }
 }
 
-struct SomeTask {
+struct FakeTask {
     import std.concurrency;
+    import std.string : StringException;
     mixin TaskBasic;
-    @TaskMethod void somename(string name) {
-        writeln("call somename: ", name);
-    }
-    @TaskMethod void some_othername(int name, string s, double d) {
-        writeln("call some_othername: ", name, s, d);
+
+    @TaskMethod void echo_string(string test_string) {
+        ownerTid.send(test_string);
     }
 
-    // This method is the task itself
+    @TaskMethod void throwing_method(int n) {
+        throw new StringException("You shall not pass");
+    }
+
     void opCall(int x, uint y) {
-        writefln("Result %s", 2*x*y);
+        ownerTid.send(Control.LIVE);
         while(!stop) {
             receive(
                 &control,
-                &somename,
-                &some_othername);
+                &echo_string,
+                &throwing_method);
         }
     }
 }
 
 unittest {
-    // TODO
-    // tests for TaskWrapper
+    import std.concurrency : receiveOnly, receive;
+    import std.variant : Variant;
+
+    void CheckReceive(Variant check_control) {
+        receive(
+            (Control c) { assert(c == check_control); },
+            (string s)  { assert(s == check_control); },
+            (Variant v) { assert(false); },
+        );
+    }
+
+    // Spawn fake task
+    alias fake_task=Task!FakeTask;
+    auto task=fake_task("fake_task_name", 10, 20);
+    CheckReceive(Variant(Control.LIVE));
+
+    // Check sending some string back and forth
+    enum test_string = "send some text";
+    task.echo_string(test_string);
+    CheckReceive(Variant(test_string));
+
+    // Check handling exceptions
+    task.throwing_method(10); 
+    CheckReceive(Variant(Control.END));
+
+    // Check stopping task using Control.STOP
+    auto task2=fake_task("another_fake_task_name", 10, 20);
+    CheckReceive(Variant(Control.LIVE));
+    task2.control(Control.STOP);
+    CheckReceive(Variant(Control.END));
 }
