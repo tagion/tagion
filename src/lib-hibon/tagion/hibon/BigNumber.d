@@ -17,8 +17,6 @@ import std.exception: assumeUnique;
 //import std.stdio;
 
 import tagion.hibon.HiBONException: check;
-import tagion.hibon.BigNumber;
-
 /++
  BigNumber used in the HiBON format
  It is a wrapper of the std.bigint
@@ -238,7 +236,7 @@ import tagion.hibon.BigNumber;
     @trusted T convert(T)() const if (isIntegral!T) {
         import std.conv: to;
 
-        
+
 
         .check((x >= T.min) && (x <= T.max),
                 format("Coversion range violation for type %s, value %s is outside the [%d..%d]",
@@ -284,7 +282,7 @@ import tagion.hibon.BigNumber;
 
     @trusted void check_minuz_zero() const pure {
         version (none)
-            
+
                 .check(sign && (_data.length is 1) && (_data[0] is 0),
                         "The number minus zero is not allowed");
     }
