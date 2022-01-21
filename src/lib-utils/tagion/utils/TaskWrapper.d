@@ -4,6 +4,8 @@ import std.stdio;
 import std.format;
 import std.traits : isCallable;
 import tagion.basic.Basic : Control;
+import tagion.logger.Logger;
+import tagion.basic.TagionExceptions : fatal, TaskFailure;
 
 struct TaskMethod {
 }
@@ -24,6 +26,7 @@ struct Task(alias Func) {
     this(string task_name, Params args) {
         this.task_name=task_name;
         _tid = spawn(&run, task_name, args);
+        // TODO add table
         version(none) {
         // Should we do the check and log if there is error but not stop the execution? 
         check(receiveOnly!Control is Control.LIVE);
@@ -73,17 +76,14 @@ struct Task(alias Func) {
                 ownerTid.prioritySend(Control.END);
             }
             
-            version(none) {
-                // TODO: fix logger for tasks
-                log.register(task_name);
-            }
+            log.register(task_name);
 
             Func task;
             // Boiler coded
             task(args);
         }
         catch (Exception e) {
-            assumeWontThrow(writefln("%s", e));
+            fatal(e);
         }
     }
 }
@@ -147,34 +147,31 @@ struct FakeTask {
 }
 
 unittest {
-    import std.concurrency : receiveOnly, receive;
+    import std.concurrency : receiveOnly, receive, locate, Tid;
     import std.variant : Variant;
 
-    void CheckReceive(Variant check_control) {
-        receive(
-            (Control c) { assert(c == check_control); },
-            (string s)  { assert(s == check_control); },
-            (Variant v) { assert(false); },
-        );
-    }
-
     // Spawn fake task
+    enum fake_task_name = "fake_task_name";
     alias fake_task=Task!FakeTask;
-    auto task=fake_task("fake_task_name", 10, 20);
-    CheckReceive(Variant(Control.LIVE));
-
+    auto task=fake_task(fake_task_name, 10, 20);
+    assert(receiveOnly!Control == Control.LIVE);
+    
     // Check sending some string back and forth
     enum test_string = "send some text";
     task.echo_string(test_string);
-    CheckReceive(Variant(test_string));
-
+    assert(receiveOnly!string == test_string);
+    
     // Check handling exceptions
     task.throwing_method(10); 
-    CheckReceive(Variant(Control.END));
+    assert(receiveOnly!Control == Control.END);
 
     // Check stopping task using Control.STOP
-    auto task2=fake_task("another_fake_task_name", 10, 20);
-    CheckReceive(Variant(Control.LIVE));
+    enum another_fake_task_name = "another_fake_task_name";
+    auto task2=fake_task(another_fake_task_name, 10, 20);
+    assert(receiveOnly!Control == Control.LIVE);
     task2.control(Control.STOP);
-    CheckReceive(Variant(Control.END));
+    assert(receiveOnly!Control == Control.END);
+    // TODO: check locate(task name)
+
+    // TODO: add tests for tasks table
 }
