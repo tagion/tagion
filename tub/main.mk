@@ -8,9 +8,9 @@ main: help
 PRECMD ?= @
 
 # Defining absolute Root and Tub directories
-DSRC := $(realpath src)
-DTUB := $(realpath tub)
-DROOT := ${abspath ${DTUB}/../}
+export DSRC := $(realpath src)
+export DTUB := $(realpath tub)
+export DROOT := ${abspath ${DTUB}/../}
 
 include $(DTUB)/utilities/dir.mk
 
@@ -26,7 +26,6 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/ddeps.mk
-include $(DTUB)/config/dstep.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/host.mk
@@ -34,7 +33,8 @@ include $(DTUB)/config/commands.mk
 include $(DTUB)/config/cross.mk
 include $(DTUB)/config/dirs.mk
 include $(DTUB)/config/compiler.mk
-include $(DTUB)/config/env.mk
+include $(DTUB)/config/dstep.mk
+#include $(DTUB)/config/env.mk
 include $(DTUB)/utilities/log.mk # TODO: Deprecate
 
 # Help
@@ -61,8 +61,9 @@ include $(DTUB)/config/units.mk
 ifeq ($(findstring configure,$(MAKECMDGOALS)),configure)
 include $(DTUB)/configure.mk
 else
--include $(DSRC)/lib-*/gen.*.mk
--include $(DSRC)/bin-*/gen.*.mk
+# -include $(DSRC)/lib-*/gen.*.mk
+# -include $(DSRC)/bin-*/gen.*.mk
+-include $(DBUILD)/gen.ddeps.mk
 include $(DTUB)/compile.mk
 endif
 endif

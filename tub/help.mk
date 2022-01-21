@@ -2,29 +2,32 @@ HELPER+=main_help
 
 .PHONY: help
 
-help: $(HELPER)
+help: help-main
 
 TUB_COMMIT = ${shell cd $(DROOT)/tub; git rev-parse --short HEAD}
 TUB_BRANCH = ${shell cd $(DROOT)/tub; git rev-parse --abbrev-ref HEAD}
 
-main_help:
+help-main:
 	$(PRECMD)
-	echo
-	echo $(SEP) help
-	echo "make init: First-time tub initialization (required)"
-	echo 
-	echo "make configure: Configure units to compile"
-	echo "make lib*: Compile src/lib-*"
-	echo "make lib*.test: Compile and execute tests for src/lib-*"
-	echo "make tagion*: Compile src/bin-*"
-	echo "make *: compile wrapped library | example: make secp256k1"
-	echo "make clean: Clean built and generated files"
-	echo
-	echo "make help: Show this help"
-	echo "make env: Show Make variables"
-	echo "make clone-* BRANCH=<branch>: Clone specific unit"
-	echo
-	echo "README: $(DTUB)/README.md"
-	echo "Branch: $(TUB_BRANCH)"
-	echo "Commit: $(TUB_COMMIT)"
-	echo
+	${call log.header, $@ :: main}
+	${call log.help, "make help-main", "Will display this part"}
+	${call log.help, "make help", "Show all helps"}
+	${call log.line}
+	${call log.help, "make init", "First-time tub initialization (required)"}
+	${call log.line}
+	${call log.help, "make configure", "Configure units to compile"}
+	${call log.help, "make lib<name>", "Compile src/lib-<name>"}
+	${call log.help, "make lib*.test", "Compile and execute tests for src/lib-*"}
+	${call log.help, "make tagion<name>", "Compile src/bin-<name>"}
+	${call log.help, "make *: compile wrapped library | example: make secp256k1"}
+	${call log.help, "make clean", "Cleans the generated files from the prime source"}
+	${call log.help, "make prober", "Cleans all"}
+	${call log.line}
+	${call log.help, "make env", "Show Make environment"}
+	${call log.line}
+	${call log.kvp, "README", "$(DTUB)/README.md"}
+	${call log.kvp, "Branch", "$(TUB_BRANCH)"}
+	${call log.kvp, "Commit", "$(TUB_COMMIT)"}
+	${call log.line}
+
+#	echo "make clone-* BRANCH=<branch>: Clone specific unit"

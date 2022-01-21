@@ -113,10 +113,9 @@ endif
 
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
-MAKE_ENV += env-compiler
 env-compiler:
 	$(PRECMD)
-	$(call log.header, env :: compiler)
+	$(call log.header, $@ :: compiler)
 	$(call log.kvp, DC, $(DC))
 	$(call log.kvp, COMPILER, $(COMPILER))
 	$(call log.kvp, ARCH, $(ARCH))
@@ -136,3 +135,5 @@ env-compiler:
 	$(call log.kvp, LDCFLAGS (Linker), $(LDCFLAGS))
 	$(call log.kvp, SOURCEFLAGS, $(SOURCEFLAGS))
 	$(call log.close)
+
+env: env-compiler

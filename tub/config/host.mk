@@ -35,10 +35,11 @@ ${info Install newer version: http://ftp.gnu.org/gnu/make/}
 ${error Unsupported GNU Make version}
 endif
 
-MAKE_ENV += env-host
 env-host:
 	$(PRECMD)
-	$(call log.header, env :: host)
+	$(call log.header, $@ :: host)
 	$(call log.kvp, OS, $(OS))
 	$(call log.kvp, ARCH, $(ARCH))
 	$(call log.close)
+
+env: env-host

@@ -6,7 +6,7 @@ module ddeps;
 
 import std.getopt;
 import std.file : exists, readText, getcwd;
-import std.path : setExtension, dirName, asNormalizedPath, buildPath;
+import std.path : setExtension, dirName, asNormalizedPath, buildNormalizedPath, dirSeparator, dirName;
 import std.process : environment;
 import std.format;
 import std.array : join, array, replace;
@@ -16,6 +16,7 @@ import std.algorithm.searching : count;
 import std.algorithm.iteration : fold;
 import std.algorithm : map, each, min, max, sort, filter, joiner;
 import std.range : repeat, tee, only;
+import std.ascii : toUpper;
 
 // Makefile environment format $(NAME)
 alias envFormat=format!("$(%s)", string);
@@ -116,12 +117,12 @@ struct Ddeps {
                     .filter!(q{a !is null})) {
                     const iscircular = circular(impmod);
                     if (mod.level <= impmod.level || iscircular) {
-                         mod.circular~=impmod;
-                         result=true;
-                     }
-                     else {
+                        mod.circular~=impmod;
+                        result=true;
+                    }
+                    else {
                         mod.deps~=impmod;
-                     }
+                    }
                 }
 
             }
@@ -129,11 +130,11 @@ struct Ddeps {
         }
         // Update ranks (number of imports)
         modules
-             .byValue
-             .each!((ref m) =>
-                 m.rank=m.imports
-                 .count!((impname) => (impname in modules) !is null)
-                 );
+            .byValue
+            .each!((ref m) =>
+                m.rank=m.imports
+                .count!((impname) => (impname in modules) !is null)
+                );
 
         // Sorts the ranks and search from the highest rank
         auto rank_func=modules
@@ -155,9 +156,9 @@ struct Ddeps {
     void objectName() {
         foreach(name, ref mod; modules) {
             mod.file =mod.file.replace(sourcedir, "");
-            mod.srcname=buildPath(only(DSRCDIR.envFormat, mod.file));
+            mod.srcname=buildNormalizedPath(DSRCDIR.envFormat, mod.file);
             mod.obj = mod.file.setExtension(DOBJEXT);
-            mod.objname=buildPath(only(DOBJDIR.envFormat, mod.obj));
+            mod.objname=buildNormalizedPath(DOBJDIR.envFormat, mod.obj);
         }
     }
 
@@ -182,13 +183,44 @@ struct Ddeps {
             .joiner;
     }
 
+    auto allModuleObjects(ref const(Module) mod) const {
+        scope bool[string] result;
+        void collect(const(Module*) mod) {
+            if (!(mod.objname in result)) {
+                result[mod.objname] = true;
+                mod.deps.each!(collect);
+                mod.circular.each!(collect);
+            }
+        }
+        collect(&mod);
+        return result.byKey;
+    }
+
+    auto allModuleSources(ref const(Module) mod) const {
+        scope bool[string] result;
+        void collect(const(Module*) mod) {
+            if (!(mod.srcname in result)) {
+                result[mod.srcname] = true;
+                mod.deps.each!(collect);
+                mod.circular.each!(collect);
+            }
+        }
+        collect(&mod);
+        return result.byKey;
+    }
+
     enum {
+        PRECMD="PRECMD",
         DOBJALL="DOBJALL",
         DSRCALL="DSRCALL",
         DCIRALL="DCIRALL",
         DWAYSALL="DWAYSALL",
+        CIROBJS="CIROBJS",
         RM="RM",
+        MKDIR="MKDIR",
+        MAKE="MAKE",
     }
+
     void display(string outputfile) const {
         File fout;
         scope(exit) {
@@ -206,15 +238,24 @@ struct Ddeps {
         const dobjdir=environment.get(DOBJDIR, "");
         if (dobjdir.length) {
             fout.writefln("%s?=%s", DOBJDIR, dobjdir.asNormalizedPath);
-
         }
         fout.writefln!"%s?=rm -f "(RM);
+        fout.writefln!"%s?=mkdir -p "(MKDIR);
+        fout.writeln;
+        fout.writeln(".SECONDEXPANSION:");
 
         foreach(name, mod; modules) {
             fout.writeln;
             fout.writeln("#");
             fout.writefln("# %s", name);
             fout.writeln("#");
+            fout.writefln("obj_%s=%s", name, mod.objname);
+            const objs_mod_fmt = "%-(objs_"~name~"+=%s\n%)";
+            fout.writefln("%-(objs_"~name~"+= %s \n%)", allModuleObjects(mod));
+            fout.writeln;
+            fout.writefln("%-(srcs_"~name~"+= %s \n%)", allModuleSources(mod));
+            fout.writeln;
+
             fout.writefln("%s: DMODULE=%s", mod.objname, name);
             fout.writefln("%s: %s", mod.objname, mod.srcname);
             if (mod.deps) {
@@ -228,14 +269,25 @@ struct Ddeps {
             }
             if (mod.circular) {
                 fout.writeln("# circular dependencies");
-                const cir=cirname(mod);
-                fout.writef("%s: ", cir);
-                immutable cir_space=' '.repeat(cir.length).array;
-                const cir_fmt="%-(%s \\\n "~cir_space~" %)";
+                immutable workdir=mod.objname.dirName.buildNormalizedPath(".way");
+//                immutable cirobjs=("CIRCULAR_"~name).map!((a) => (a == '.')?'_':a).map!((a) => cast(char)a.toUpper).array;
+                immutable cir=cirname(mod);
+                fout.writefln("%s: %s", cir, workdir);
+                immutable cir_fmt="%-(\t${eval "~CIROBJS~"+= %s }\n%) }";
                 fout.writefln(cir_fmt, mod.allCircular
                     .map!((impmod) => impmod.objname));
-                fout.writefln("%s: | %s", mod.objname, cir);
-                fout.writefln("\ttouch %s", cir);
+                fout.writefln("\t%stouch %s", PRECMD.envFormat, cir);
+                fout.writeln;
+                fout.writefln("%s: %s", mod.objname, cir);
+
+                fout.writeln;
+                fout.writefln("%s: $%s", mod.objname, CIROBJS.envFormat);
+                fout.writeln;
+                fout.writefln("%s: | %s", mod.objname, workdir);
+                fout.writeln;
+                // fout.writefln("%s:", mod.objname.dirName);
+                // fout.writefln("\t%s %s", MKDIR.envFormat, "$@");
+                // fout.writeln;
 
             }
         }
@@ -258,11 +310,24 @@ struct Ddeps {
         fout.writefln("%-("~DWAYSALL~"+= %s\n%)", allObjectDirectories);
 
         fout.writeln;
+        fout.writeln("# Make way for object");
+        fout.writefln("%s: | %s", DOBJALL.envFormat, DOBJDIR.envFormat);
+        fout.writeln;
+        fout.writefln("%s:", DOBJDIR.envFormat);
+        fout.writefln!"\t%s"(PRECMD.envFormat);
+        fout.writefln("\t%s $@", MKDIR.envFormat);
+        fout.writeln;
+
         fout.writeln("# Object Clear");
-        fout.writeln("CLEANER+=clean-obj");
         fout.writeln("clean-obj:");
+        fout.writefln!"\t%s"(PRECMD.envFormat);
         fout.writefln!"\t%s %s"(RM.envFormat, DOBJALL.envFormat);
         fout.writefln!"\t%s %s"(RM.envFormat, DCIRALL.envFormat);
+
+        fout.writeln;
+        fout.writeln("clean: clean-obj");
+
+
 
     }
 }
@@ -315,8 +380,10 @@ int main(string[] args) {
         }
 
         if (!ddeps.sourcedir) {
-            ddeps.sourcedir = environment.get("DSRCDIR", getcwd);
+            ddeps.sourcedir = environment.get(ddeps.DSRCDIR, getcwd);
         }
+
+        ddeps.sourcedir = ddeps.sourcedir.buildNormalizedPath ~ dirSeparator;
 
         ddeps.createMakeDeps(inputfile);
         ddeps.order;

@@ -36,7 +36,7 @@ dstep: dstep-$1
 
 env-dstep-$1:
 	$$(PRECMD)
-	$$(call log.header, env :: $1 :: dstep)
+	$$(call log.header, $$@ :: dstep)
 	$${call log.kvp, HFILES, $$(HFILES_$1)}
 	$${call log.kvp, DESTROOT, $$(DESTROOT_$1)}
 	$${call log.kvp, DFILES, $4}
@@ -46,6 +46,8 @@ env-dstep-$1:
 	$$(call log.close)
 
 env-dstep: env-dstep-$1
+
+env: env-dstep
 
 clean: clean-dstep-$1
 
@@ -59,10 +61,11 @@ endef
 
 help-dstep:
 	$(PRECMD)
-	${call log.header, help :: dstep}
+	${call log.header, $@ :: dstep}
+	${call log.help, "make help-dstep", "Will display this part"}
 	${call log.help, "make dstep", "Generated all .di via dstep"}
 	${call log.help, "make dstep-<module>", "Generate the <module>"}
-	${call log.help, "", "Ex make dstep-tagion.crypto.secp256k1.c"}
+	${call log.help, "", "Ex. make dstep-tagion.crypto.secp256k1.c"}
 	${call log.help, "make clean-dstep", "Clean all generated .di files"}
 	${call log.help, "make env-dstep", "List all dstep parameters"}
 	${call log.close}

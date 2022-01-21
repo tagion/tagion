@@ -32,7 +32,7 @@ echo -e ${word 1, $1} ${foreach LINE, ${filter-out ${word 1, $1}, $1}, "\n${stri
 endef
 
 define log.kvp
-echo "$(strip $1): $(strip $2)";
+printf "%-23s: %s\n" $(strip $1) $(strip $2);
 endef
 
 define log.printf
@@ -40,10 +40,8 @@ printf $1
 endef
 
 define log.help
-printf "  %-20s : %s\n" $1 $2
+printf "  %-20s : %s\n" $1 $2;
 endef
-
-#@printf  $1 "$2" "$3" - "$4" "$5" "$6" "$7" "$8" "$9" "$10";
 
 define log.info
 $(call log.header, Info)

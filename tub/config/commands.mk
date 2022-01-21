@@ -47,15 +47,19 @@ CP ?= cp -fr
 MKDIR ?= mkdir -p
 MV ?= mv
 LN ?= ln -s
-TOUCH = touch
+TOUCH ?= touch
+DLLEXT ?= so
+LIBEXT ?= a
+CD ?= cd
 
-MAKE_ENV += env-commands
 env-commands:
 	$(PRECMD)
-	$(call log.header, env :: commands ($(OS)))
+	$(call log.header, $@ :: commands ($(OS)))
 	$(call log.kvp, RM, $(RM))
 	$(call log.kvp, RMDIR, $(RMDIR))
 	$(call log.kvp, MKDIR, $(MKDIR))
 	$(call log.kvp, MV, $(MV))
 	$(call log.kvp, LN, $(LN))
 	$(call log.close)
+
+env: env-commands

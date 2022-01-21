@@ -64,7 +64,7 @@ ifeq ($(IS_ANDROID),android)
 
 ifeq ($(OS),darwin)
 ANDROID_NDK_HOST_TAG = darwin-x86_64
-else 
+else
 ANDROID_NDK_HOST_TAG = linux-x86_64
 endif
 
@@ -78,10 +78,9 @@ endif
 
 
 
-MAKE_ENV += env-cross
 env-cross:
 	$(PRECMD)
-	$(call log.header, env :: cross)
+	$(call log.header, $@ :: cross)
 	$(call log.kvp, MTRIPLE, $(MTRIPLE))
 	$(call log.kvp, CROSS_ENABLED, $(CROSS_ENABLED))
 	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
@@ -92,3 +91,5 @@ env-cross:
 	$(call log.kvp, ANDROID_NDK, $(ANDROID_NDK))
 	$(call log.kvp, XCODE_ROOT, $(XCODE_ROOT))
 	$(call log.close)
+
+env: env-cross
