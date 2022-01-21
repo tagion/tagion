@@ -4,7 +4,7 @@ import tagion.basic.Basic: Buffer, isBufferType;
 import std.exception;
 
 @trusted
-string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow 
+string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
         if (isBufferType!BUF) {
     static if (UCASE) {
         enum hexdigits = "0123456789ABCDEF";
@@ -106,7 +106,7 @@ string cutHex(bool UCASE = false, BUF)(BUF buf) pure if (isBufferType!BUF) {
 }
 
 @safe
-Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
+Buffer xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
 in {
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
@@ -135,8 +135,15 @@ do {
 }
 
 @safe
-Buffer xor(Range)(Range range) pure {
+Buffer xor(Range)(scope Range range) pure {
     import std.algorithm.iteration: fold;
-
-    return range.fold!((a, b) => xor(a, b));
+    pragma(msg, "xor Range ", Range);
+    // auto test(scope const(ubyte[]) a, scope const(ubyte[]) b) {
+    //     return xor(a, b);
+    // }
+    // const x=range.fold!((a, b) => test(a, b));
+    return range.fold!((scope a, scope b) => xor(a, b));
 }
+
+import std.compiler;
+pragma(msg, "### VERSION ", version_major, ".", version_minor);
