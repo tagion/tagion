@@ -12,7 +12,3 @@ ${call DSTEP_DO,$(LP2PGOWRAPPER_PACKAGE),$(DTMP_P2PGOWRAPPER),$(LP2PGOWRAPPER_DI
 
 # libp2pgowrapper.h is generated during compilation of go library
 $(DTMP_P2PGOWRAPPER)/%.h: $(DTMP)/libp2pgowrapper.a
-	@
-
-test88:
-	echo $(DTMP_P2PGOWRAPPER)
