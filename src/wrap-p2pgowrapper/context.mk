@@ -26,6 +26,10 @@ proper-p2pgowrapper:
 proper: proper-p2pgowrapper
 
 # libp2pgowrapper.h is generated during compilation of go library
+#.SECONDARY: $(HFILES.p2p.cgo)
+
+HFILES.p2p.cgo=${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}
+
 $(DTMP_P2PGOWRAPPER)/c_helper.h: $(LIBP2PGOWRAPPER)
 
 $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.h: $(LIBP2PGOWRAPPER)
