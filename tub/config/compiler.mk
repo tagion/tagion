@@ -70,10 +70,10 @@ DIP25 := $(DIP)25
 DIP1000 := $(DIP)1000
 
 # Define D Improvement Proposals
-ifeq ($(COMPILER),ldc)
-DCFLAGS += $(DIP25)
-DCFLAGS += $(DIP1000)
-endif
+#ifeq ($(COMPILER),ldc)
+#DCFLAGS += $(DIP25)
+#DCFLAGS += $(DIP1000)
+#endif
 
 # Define relocation model for ldc or other
 ifeq ($(COMPILER),ldc)
@@ -124,16 +124,16 @@ env-compiler:
 	$(call log.kvp, HF, $(HF))
 	$(call log.kvp, DF, $(DF))
 	$(call log.kvp, NO_OBJ, $(NO_OBJ))
-	$(call log.kvp, SONAME_FLAG, $(SONAME_FLAG))
+	$(call log.kvp, SONAME_FLAG, "$(SONAME_FLAG)")
 	$(call log.kvp, DVERSION, $(DVERSION))
 	$(call log.kvp, DEBUG, $(DEBUG))
 	$(call log.kvp, DIP, $(DIP))
 	$(call log.kvp, DIP25, $(DIP25))
 	$(call log.kvp, DIP1000, $(DIP1000))
 	$(call log.kvp, FPIC, $(FPIC))
-	$(call log.kvp, DCFLAGS (Complier), $(DCFLAGS))
-	$(call log.kvp, LDCFLAGS (Linker), $(LDCFLAGS))
-	$(call log.kvp, SOURCEFLAGS, $(SOURCEFLAGS))
+	$(call log.kvp, DCFLAGS, "$(DCFLAGS)")
+	$(call log.kvp, LDCFLAGS, "$(LDCFLAGS)")
+	$(call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)")
 	$(call log.close)
 
 env: env-compiler

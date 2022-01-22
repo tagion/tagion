@@ -20,6 +20,8 @@ clean-ddeps: clean-$$(PLATFORM)
 
 clean: clean-ddeps
 
+ddeps: $1/gen.ddeps.mk
+
 ifdef DOBJ
 env-ddeps-$$(PLATFORM):
 	$$(PRECMD)

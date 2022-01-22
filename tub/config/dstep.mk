@@ -11,38 +11,39 @@ DSTEP_ATTRIBUTES+= --global-attribute=@nogc
 #
 define DSTEP_DO
 ${eval
-HFILES_$1= $${wildcard $2/*.h}
-DIFILES_notdir_$1 = $${notdir $$(HFILES_$1)}
-DIFILES_$1 = $${addprefix $3/,$${DIFILES_notdir_$1:.h=.di}}
-DESTROOT_$1 = $3
-HPATH_$1 = $2
+HFILES.$1= $${wildcard $2/*.h}
+DIFILES_notdir.$1 = $${notdir $$(HFILES.$1)}
+DIFILES.$1 = $${addprefix $3/,$${DIFILES_notdir.$1:.h=.di}}
+DESTROOT.$1 = $3
+HPATH.$1 = $2
 
-$$(DESTROOT_$1)/%.di: $$(HPATH_$1)/%.h | $$(DESTROOT_$1)
+$$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
 	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS) --package $1 $$< -o $$@
 
 MAKE_SHOW_ENV += env-libcrypto-$1
 
-$$(DESTROOT_$1):
+$$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
 
 $4: | dstep-$1
 	@
 
 
-dstep-$1: $$(DIFILES_$1)
+dstep-$1: $$(DIFILES.$1)
 
 dstep: dstep-$1
 
 env-dstep-$1:
 	$$(PRECMD)
 	$$(call log.header, $$@ :: dstep)
-	$${call log.kvp, HFILES, $$(HFILES_$1)}
-	$${call log.kvp, DESTROOT, $$(DESTROOT_$1)}
-	$${call log.kvp, DFILES, $4}
-	$${call log.kvp, DIFILES, $$(DIFILES_$1)}
-	$${call log.kvp, DSTEP_ATTRIBUTES, $$(DSTEP_ATTRIBUTES)}
-	$${call log.kvp, DSTEPFLAGS, $$(DSTEPFLAGS)}
+	$${call log.env, HFILES.$1, $$(HFILES.$1)}
+	$${call log.env, HPATH.$1, $$(HPATH.$1)}
+	$${call log.env, DESTROOT.$1, $$(DESTROOT.$1)}
+	$${call log.env, DFILES, $4}
+	$${call log.env, DIFILES.$1, $$(DIFILES.$1)}
+	$${call log.env, DSTEP_ATTRIBUTES, $$(DSTEP_ATTRIBUTES)}
+	$${call log.env, DSTEPFLAGS, $$(DSTEPFLAGS)}
 	$$(call log.close)
 
 env-dstep: env-dstep-$1
@@ -52,7 +53,7 @@ env: env-dstep
 clean: clean-dstep-$1
 
 clean-dstep-$1:
-	$$(RM) $$(DIFILES_$1)
+	$$(RM) $$(DIFILES.$1)
 
 clean-dstep: clean-dstep-$1
 

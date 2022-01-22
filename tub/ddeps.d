@@ -249,11 +249,11 @@ struct Ddeps {
             fout.writeln("#");
             fout.writefln("# %s", name);
             fout.writeln("#");
-            fout.writefln("obj_%s=%s", name, mod.objname);
-            const objs_mod_fmt = "%-(objs_"~name~"+=%s\n%)";
-            fout.writefln("%-(objs_"~name~"+= %s \n%)", allModuleObjects(mod));
+            fout.writefln("DOBJ.%s=%s", name, mod.objname);
+            const objs_mod_fmt = "%-(DOBJS."~name~" +=%s\n%)";
+            fout.writefln("%-(DOBJS."~name~" += %s \n%)", allModuleObjects(mod));
             fout.writeln;
-            fout.writefln("%-(srcs_"~name~"+= %s \n%)", allModuleSources(mod));
+            fout.writefln("%-(DSRCS."~name~" += %s \n%)", allModuleSources(mod));
             fout.writeln;
 
             fout.writefln("%s: DMODULE=%s", mod.objname, name);
@@ -293,21 +293,21 @@ struct Ddeps {
         }
         fout.writeln;
         fout.writeln("# All D objects");
-        fout.writefln("%-("~DOBJALL~"+= %s\n%)", modules.byValue
+        fout.writefln("%-("~DOBJALL~" += %s\n%)", modules.byValue
             .map!((mod) => mod.objname));
 
         fout.writeln;
         fout.writeln("# All D source");
-        fout.writefln("%-("~DSRCALL~"+= %s\n%)", modules.byValue
+        fout.writefln("%-("~DSRCALL~" += %s\n%)", modules.byValue
             .map!((mod) => mod.srcname));
 
         fout.writeln;
         fout.writeln("# All circular targets");
-        fout.writefln("%-("~DCIRALL~"+= %s\n%)", allCirculars);
+        fout.writefln("%-("~DCIRALL~" += %s\n%)", allCirculars);
 
         fout.writeln;
         fout.writeln("# All target directories");
-        fout.writefln("%-("~DWAYSALL~"+= %s\n%)", allObjectDirectories);
+        fout.writefln("%-("~DWAYSALL~" += %s\n%)", allObjectDirectories);
 
         fout.writeln;
         fout.writeln("# Make way for object");

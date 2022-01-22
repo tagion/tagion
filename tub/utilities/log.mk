@@ -35,6 +35,10 @@ define log.kvp
 printf "%-23s: %s\n" $(strip $1) $(strip $2);
 endef
 
+define log.env
+[ -z "$(strip $2)" ] || printf "%-23s += %s\n" ${addprefix $(strip $1) ,$(strip $2)} && echo;
+endef
+
 define log.printf
 printf $1
 endef
