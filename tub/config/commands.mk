@@ -34,6 +34,13 @@ DLLEXT ?= so
 LIBEXT ?= a
 CD ?= cd
 
+# D step
+# TODO: Clone local dstep
+DSTEP?=${shell which dstep}
+
+GO?=${shell which go}
+
+
 env-commands:
 	$(PRECMD)
 	$(call log.header, $@ :: commands ($(OS)))
@@ -47,6 +54,8 @@ env-commands:
 	$(call log.kvp, TOUCH, "$(TOUCH)")
 	$(call log.kvp, LIBEXT, $(LIBEXT))
 	$(call log.kvp, DLLEXT, $(DLLEXT))
+	$(call log.kvp, DSTEP,  "$(DSTEP)")
+	$(call log.kvp, GO,  "$(GO)")
 	$(call log.close)
 
 env: env-commands

@@ -37,8 +37,6 @@ include $(DTUB)/config/dstep.mk
 #include $(DTUB)/config/env.mk
 include $(DTUB)/utilities/log.mk # TODO: Deprecate
 
-# Help
-include $(DTUB)/help.mk
 
 # Enable cloning, if BRANCH is known
 ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
@@ -88,3 +86,6 @@ alias:
 
 # Platformat
 -include $(DROOT)/platform.*.mk
+
+# Help
+include $(DTUB)/help.mk
