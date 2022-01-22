@@ -26,6 +26,8 @@ secp256k1: $(LIBSECP256K1)
 	@
 
 clean-secp256k1:
+	$(PRECMD)
+	${call log.header, $@ :: secp256k1}
 	$(RM) $(LIBSECP256K1)
 	$(RMDIR) $(DTMP_SECP256K1)
 
