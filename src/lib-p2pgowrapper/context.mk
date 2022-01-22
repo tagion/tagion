@@ -12,18 +12,22 @@ $(DBIN)/$(PROGRAM).test: LDCFLAGS += -L-framework -LCoreFoundation -L-framework 
 endif
 
 
-$(DIFILES.p2p.cgo): $(LIBP2PGOWRAPPER)
+#$(LP2PGOWRAPPER_DFILES): ${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}
 
-$(LP2PGOWRAPPER_DFILES): $(DIFILES.p2p.cgo)
+$(LP2PGOWRAPPER_DFILES): ${addprefix $(LP2PGOWRAPPER_DIROOT)/, c_helper.di libp2pgowrapper.di}
+
+#$(DIFILES.p2p.cgo)
+
+#/home/carsten/work/cross_regression/src/lib-p2pgowrapper/p2p/cgo/c_helper.di
 
 #.SECONDEXPANSION:
 
-test22: $(DIFILES.p2p.cgo)
+test22:
 	@echo $(LIBP2PGOWRAPPER)
 	@echo $(LP2PGOWRAPPER_DFILES)
 	@echo $(DIFILES.p2p.cgo)
+	@echo $(addprefix $(LP2PGOWRAPPER_DIROOT), c_helper.di libp2pgowrapper.di)
 
-#$()
 $(PROGRAM).preconfigure: $(LP2PGOWRAPPER_DIFILES)
 $(PROGRAM).configure: SOURCE := p2p/*.d p2p/cgo/*.di
 

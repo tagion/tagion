@@ -10,15 +10,12 @@ $(LP2PGOWRAPPER_DIROOT)/libp2pgowrapper.di: DSTEPFLAGS += --global-import=$(LP2P
 
 ${call DSTEP_DO,$(LP2PGOWRAPPER_PACKAGE),$(DTMP_P2PGOWRAPPER),$(LP2PGOWRAPPER_DIROOT),$(LP2PGOWRAPPER_DFILES)}
 
-# libp2pgowrapper.h is generated during compilation of go library
-$(DTMP_P2PGOWRAPPER)/%.h: $(DTMP)/libp2pgowrapper.a
-
 #
 # Pre-declare the header files
 #
-HFILES.p2p.cgo=${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}
+#HFILES.p2p.cgo=${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}
 
-DIFILES.p2p.cgo=${addprefix $(LP2PGOWRAPPER_DIROOT)/, c_helper.di libp2pgowrapper.di}
+#DIFILES.p2p.cgo=${addprefix $(LP2PGOWRAPPER_DIROOT)/, c_helper.di libp2pgowrapper.di}
 
 test34:
 	@echo $(LIBP2PGOWRAPPER)
