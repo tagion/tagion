@@ -29,6 +29,8 @@ $$(DESTROOT.$1):
 $4: | dstep-$1
 	@
 
+.SECONDARY: $$(DIFILES.$1)
+
 
 dstep-$1: $$(DIFILES.$1)
 
