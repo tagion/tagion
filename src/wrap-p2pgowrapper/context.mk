@@ -16,31 +16,26 @@ endif
 p2pgowrapper: $(LIBP2PGOWRAPPER)
 
 clean-p2pgowrapper:
+	$(PRECMD)
+	${call log.header, $@ :: p2pgowrapper}
 	$(RM) $(LIBP2PGOWRAPPER)
 
 clean: clean-p2pgowrapper
 
-proper-p2pgowrapper:
+proper-p2pgowrapper: clean-p2pgowrapper
+	$(PRECMD)
+	${call log.header, $@ :: p2pgowrapper}
 	$(RMDIR) $(DTMP_P2PGOWRAPPER)
 
 proper: proper-p2pgowrapper
 
-# libp2pgowrapper.h is generated during compilation of go library
-#.SECONDARY: $(HFILES.p2p.cgo)
 
-HFILES.p2p.cgo=${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}
-
-$(DTMP_P2PGOWRAPPER)/c_helper.h: $(LIBP2PGOWRAPPER)
-
-$(DTMP_P2PGOWRAPPER)/libp2pgowrapper.h: $(LIBP2PGOWRAPPER)
-
-
-
-# $(DTMP_P2PGOWRAPPER)/%.h: $(LIBP2PGOWRAPPER)
-# 	@echo $@
+${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}: $(LIBP2PGOWRAPPER)
 
 $(LIBP2PGOWRAPPER): $(DTMP_P2PGOWRAPPER)/.way
-	$(PRECMD)$(CP) $(DSRC_P2PGOWRAPPER)/* $(DTMP_P2PGOWRAPPER)
+	$(PRECMD)
+	${call log.kvp, build, $(@F)}
+	$(CP) $(DSRC_P2PGOWRAPPER)/* $(DTMP_P2PGOWRAPPER)
 	$(CD) $(DTMP_P2PGOWRAPPER); $(GO) build -buildmode=c-archive -o $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a
 	$(CD) $(DTMP_P2PGOWRAPPER); $(MV) $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a $(LIBP2PGOWRAPPER)
 
@@ -61,10 +56,3 @@ help-p2pgowrapper:
 	${call log.close}
 
 help: help-p2pgowrapper
-
-
-test32:
-	@echo $(LIBP2PGOWRAPPER)
-	@echo $(HFILES.p2p.cgo)
-	@echo $(DTMP_P2PGOWRAPPER)
-	@echo $(DTMP_P2PGOWRAPPER)/*.h
