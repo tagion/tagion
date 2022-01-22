@@ -219,6 +219,7 @@ struct Ddeps {
         RM="RM",
         MKDIR="MKDIR",
         MAKE="MAKE",
+        TOUCH="TOUCH",
     }
 
     void display(string outputfile) const {
@@ -241,6 +242,7 @@ struct Ddeps {
         }
         fout.writefln!"%s?=rm -f "(RM);
         fout.writefln!"%s?=mkdir -p "(MKDIR);
+        fout.writefln!"%s?=touch "(TOUCH);
         fout.writeln;
         fout.writeln(".SECONDEXPANSION:");
 
@@ -274,9 +276,10 @@ struct Ddeps {
                 immutable cir=cirname(mod);
                 fout.writefln("%s: %s", cir, workdir);
                 immutable cir_fmt="%-(\t${eval "~CIROBJS~"+= %s }\n%) }";
+                fout.writefln("\t%s", PRECMD.envFormat);
                 fout.writefln(cir_fmt, mod.allCircular
                     .map!((impmod) => impmod.objname));
-                fout.writefln("\t%stouch %s", PRECMD.envFormat, cir);
+                fout.writefln("\t%s %s", TOUCH.envFormat, cir);
                 fout.writeln;
                 fout.writefln("%s: %s", mod.objname, cir);
 
@@ -317,17 +320,6 @@ struct Ddeps {
         fout.writefln!"\t%s"(PRECMD.envFormat);
         fout.writefln("\t%s $@", MKDIR.envFormat);
         fout.writeln;
-
-        fout.writeln("# Object Clear");
-        fout.writeln("clean-obj:");
-        fout.writefln!"\t%s"(PRECMD.envFormat);
-        fout.writefln!"\t%s %s"(RM.envFormat, DOBJALL.envFormat);
-        fout.writefln!"\t%s %s"(RM.envFormat, DCIRALL.envFormat);
-
-        fout.writeln;
-        fout.writeln("clean: clean-obj");
-
-
 
     }
 }

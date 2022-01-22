@@ -55,6 +55,8 @@ env: env-dstep
 clean: clean-dstep-$1
 
 clean-dstep-$1:
+	$$(PRECMD)
+	$${call log.header, $$@ :: $1}
 	$$(RM) $$(DIFILES.$1)
 
 clean-dstep: clean-dstep-$1
