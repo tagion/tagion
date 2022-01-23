@@ -13,6 +13,8 @@ else
 LIBP2PGOWRAPPER:=$(DTMP)/libp2pgowrapper.$(LIBEXT)
 endif
 
+$(UNITTEST_BIN): LIBS+=$(LIBP2PGOWRAPPER)
+
 p2pgowrapper: $(LIBP2PGOWRAPPER)
 
 clean-p2pgowrapper:
@@ -26,9 +28,6 @@ proper-p2pgowrapper: clean-p2pgowrapper
 	$(PRECMD)
 	${call log.header, $@ :: p2pgowrapper}
 	$(RMDIR) $(DTMP_P2PGOWRAPPER)
-
-proper: proper-p2pgowrapper
-
 
 ${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}: $(LIBP2PGOWRAPPER)
 
