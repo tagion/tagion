@@ -23,3 +23,22 @@ $(PROGRAM).configure: SOURCE += tagion/crypto/aes/openssl_aes/*.d
 $(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
 $(DBIN)/$(PROGRAM).test: $(DTMP)/libcrypto.a
 endif
+
+
+DFILES_NATIVESECP256K1=${shell find $(DSRC)/lib-crypto -name "*.d"}
+
+
+$(DIFILES.tagion.crypto.secp256k1.c): $(LIBSECP256K1)
+
+$(DSRCS.tagion.crypto.secp256k1.NativeSecp256k1): $(DIFILES.tagion.crypto.secp256k1.c)
+
+$(DBUILD)/gen.ddeps.mk: | $(DSRCS.tagion.crypto.secp256k1.NativeSecp256k1)
+
+test21:
+	@echo $(DSRC)
+	@echo $(DFILES_NATIVESECP256K1)
+	@echo DIFILES.tagion.crypto.secp256k1.c=$(DIFILES.tagion.crypto.secp256k1.c)
+	@echo DSRCS.tagion.crypto.secp256k1.NativeSecp256k1=$(DSRCS.tagion.crypto.secp256k1.NativeSecp256k1)
+	@echo $(DBUILD)
+	@echo $(DBUILD)/gen.ddeps.mk
+	@echo LIBSECP256K1 $(LIBSECP256K1)

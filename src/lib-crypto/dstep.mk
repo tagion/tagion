@@ -4,7 +4,7 @@
 LCRYPTO_PACKAGE := tagion.crypto.secp256k1.c
 LCRYPTO_DIROOT := ${call dir.resolve, tagion/crypto/secp256k1/c}
 
-CRYPTO_DFILES := ${wildcard ${call dir.resolve, tagion/crypto}/*.d}
+CRYPTO_DFILES := ${shell find ${call dir.resolve, tagion/crypto} -name "*.d"}
 
 $(LCRYPTO_DIROOT)/secp256k1_ecdh.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1
 
@@ -19,9 +19,9 @@ test33: /home/carsten/work/cross_regression/src/lib-crypto/tagion/crypto/SecureN
 
 test34: $(DIFILES_tagion.crypto.secp256k1.c)
 
-test77:
+test57:
 	@echo $(DSRC_SECP256K1)/include
-	@echo $(HFILES_tagion.crypto.secp256k1.c)
-	@echo $(DIFILES_tagion.crypto.secp256k1.c)
-	@echo $(LCRYPTO_DIROOT)
+	@echo HFILES.tagion.crypto.secp256k1.c=$(HFILES.tagion.crypto.secp256k1.c)
+	@echo DIFILES.tagion.crypto.secp256k1.c=$(DIFILES.tagion.crypto.secp256k1.c)
+	@echo LCRYPTO_DIROOT=$(LCRYPTO_DIROOT)
 	@echo CRYPTO_DFILES $(CRYPTO_DFILES)
