@@ -251,6 +251,11 @@ struct Ddeps {
             fout.writeln("#");
             fout.writefln("# %s", name);
             fout.writeln("#");
+            fout.writefln("%s: %s", name, mod.objname);
+            fout.writeln;
+            fout.writefln(".PHONY: %s", name);
+            fout.writeln;
+
             fout.writefln("DOBJ.%s=%s", name, mod.objname);
             const objs_mod_fmt = "%-(DOBJS."~name~" +=%s\n%)";
             fout.writefln("%-(DOBJS."~name~" += %s \n%)", allModuleObjects(mod));
