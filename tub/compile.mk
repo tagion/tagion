@@ -30,7 +30,7 @@ $(DOBJALL):DFLAGS+=$(UNITTEST_FLAGS)
 
 $(UNITTEST_BIN): $(DOBJALL)
 	$(PRECMD)
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $?} $(LIBS) $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.o,${sort $?}} $(LIBS) $(OUTPUT)$@
 
 else
 
