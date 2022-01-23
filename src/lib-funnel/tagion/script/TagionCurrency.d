@@ -198,7 +198,7 @@ struct TagionCurrency {
         static foreach(op; ["*=", "/="]) {{
             enum code = format!q{
                 static assert(!__traits(compiles,
-                () =>
+                ()
                 {
                     TagionCurrency x;
                     x %s x;
