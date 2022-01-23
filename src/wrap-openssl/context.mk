@@ -4,24 +4,35 @@ DTMP_OPENSSL := $(DTMP)/openssl
 DPREFIX_OPENSSL := $(DTMP_OPENSSL)/install-lib
 DEXTRA_OPENSSL := $(DTMP_OPENSSL)/install-extra
 
-CONFIGUREFLAGS_OPENSSL += -static 
+CONFIGUREFLAGS_OPENSSL += -static
 CONFIGUREFLAGS_OPENSSL += --prefix=$(DPREFIX_OPENSSL)
 CONFIGUREFLAGS_OPENSSL += --openssldir=$(DEXTRA_OPENSSL)
 
 include ${call dir.resolve, cross.mk}
+LIBOPENSSL+=$(DTMP)/libssl.a
+LIBOPENSSL+=$(DTMP)/libcrypto.a
 
-openssl: $(DTMP)/libssl.a $(DTMP)/libcrypto.a
-	@
+openssl: $(LIBOPENSSL)
 
-TOCLEAN_OPENSSL += $(DTMP)/libssl.a
-TOCLEAN_OPENSSL += $(DTMP)/libcrypto.a
-TOCLEAN_OPENSSL += $(DTMP_OPENSSL)
+.PHONY: openssl
 
-clean-openssl: TOCLEAN := $(TOCLEAN_OPENSSL)
-clean-openssl: clean
-	@
+LIBOPENSSL+=$(DTMP)/libcrypto.a
+LIBOPENSSL+=$(DTMP)/libssl.a
+# TOCLEAN_OPENSSL += $(DTMP)/libssl.a
+# TOCLEAN_OPENSSL += $(DTMP)/libcrypto.a
+# TOCLEAN_OPENSSL += $(DTMP_OPENSSL)
 
-$(DTMP_OPENSSL)/.configured: $(DTMP)/.way 
+$(UNITTEST_BIN): LIBS+=$(LIBOPENSSL)
+
+proper-openssl:
+	$(PRECMD)
+	${call log.header, $@ :: openssl}
+	$(RM) $(LIBOPENSSL)
+	$(RMDIR) $(DTMP_OPENSSL)
+
+proper: proper-openssl
+
+$(DTMP_OPENSSL)/.configured: $(DTMP)/.way
 	$(PRECMD)$(CP) $(DSRC_OPENSSL) $(DTMP_OPENSSL)
 	$(PRECMD)cd $(DTMP_OPENSSL); ./config $(CONFIGUREFLAGS_OPENSSL)
 	$(PRECMD)cd $(DTMP_OPENSSL); make build_generated $(SUBMAKE_PARALLEL)
