@@ -1290,11 +1290,11 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
                 assert(
                     equal(
                     list
-                    .map!(i => {
+                    .map!((i) {
                         buffer.binwrite(i, 0);
                         return tuple(buffer.idup, i);
                     })
-                    .map!(q{a()})
+//                    .map!(q{a()})
                     .array
                     .sort,
                     s_doc["tabel"]
