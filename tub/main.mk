@@ -17,12 +17,17 @@ export DROOT := ${abspath ${DTUB}/../}
 include $(DTUB)/utilities/dir.mk
 
 # Root config
--include $(DROOT)/config.*.mk
--include $(DROOT)/config.mk
+#-include $(DROOT)/config.*.mk
+#-include $(DROOT)/config.mk
 
 # Local config, ignored by git
--include $(DROOT)/local.*.mk
--include $(DROOT)/local.mk
+#-include $(DROOT)/local.*.mk
+#-include $(DROOT)/local.mk
+
+test44:
+	@echo $@
+
+.PHONY: test44
 
 # Secondary tub functionality
 include $(DTUB)/ways.mk
@@ -37,8 +42,9 @@ include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 #include $(DTUB)/config/env.mk
 include $(DTUB)/utilities/log.mk
+-include $(DBUILD)/gen.ddeps.mk
 include $(DTUB)/config/ddeps.mk
-
+include $(DTUB)/config/prebuild.mk
 
 # Enable cloning, if BRANCH is known
 ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
@@ -52,15 +58,6 @@ endif
 else
 include $(DTUB)/config/units.mk
 
-# Enable configuration compilation
-ifeq ($(findstring configure,$(MAKECMDGOALS)),configure)
-include $(DTUB)/configure.mk
-else
-# -include $(DSRC)/lib-*/gen.*.mk
-# -include $(DSRC)/bin-*/gen.*.mk
-#-include $(DBUILD)/gen.ddeps.mk
-#include $(DTUB)/compile.mk
-endif
 endif
 
 include $(DTUB)/compile.mk
@@ -86,10 +83,10 @@ alias:
 	$(DTUB)/scripts/gitconfig
 	echo
 
--include $(DBUILD)/gen.ddeps.mk
-
-# Platformat
+# Platform
 -include $(DROOT)/platform.*.mk
+
+
 
 # Enable cleaning
 include $(DTUB)/clean.mk

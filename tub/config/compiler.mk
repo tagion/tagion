@@ -30,7 +30,7 @@ endif
 
 # Define flags for gdc other
 ifeq ($(COMPILER),gdc)
-DCFLAGS	= -O2
+DOPT	= -O2
 LINKERFLAG= -Xlinker
 OUTPUT	= -o
 HF		= -fintfc-file=
@@ -38,7 +38,7 @@ DF		= -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
 else
-DCFLAGS	= -O
+DOPT	= -O
 LINKERFLAG= -L
 OUTPUT	= -of
 HF		= -Hf
@@ -50,30 +50,42 @@ endif
 
 # Define version statement / soname flag
 ifeq ($(COMPILER),ldc)
-DVERSION = -d-version
-SONAME_FLAG = -soname
-DEBUG ?= -d-debug
+DVERSION := -d-version
+SONAME_FLAG := -soname
+DDEBUG := -d-debug
+DMAIN := -f-d-main
+DUNITTEST := --unittest
+DMAIN := --main
 DIP := --dip
+DFPIC := -relocation-model=pic
+DDEBUG_SYMBOLS := -g
+BETTERC := --betterC
+DCOMPILE_ONLY := -c
 else ifeq ($(COMPILER),gdc)
-DVERSION = -fversion
-SONAME_FLAG = $(LINKERFLAG)-soname
-DEBUG ?= -f-d-debug
+DVERSION := -fversion
+SONAME_FLAG := $(LINKERFLAG)-soname
+DDEBUG := -f-d-debug
+DUNITTEST := -f-d-unittest
+DMAIN := -f-d-main
 DIP := unknown-dip
+DDEBUG_SYMBOLS := -g
+BETTERC := --betterC
+DCOMPILE_ONLY := -c
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
-DEBUG ?= -debug
+DDEBUG := -debug
+DUNITTEST := -unittest
+DMAIN := -main
 DIP := -dip
+DFPIC := -fPIC
+DDEBUG_SYMBOLS := -g
+BETTERC := -betterC
+DCOMPILE_ONLY := -c
 endif
 
 DIP25 := $(DIP)25
 DIP1000 := $(DIP)1000
-
-# Define D Improvement Proposals
-#ifeq ($(COMPILER),ldc)
-#DCFLAGS += $(DIP25)
-#DCFLAGS += $(DIP1000)
-#endif
 
 # Define relocation model for ldc or other
 ifeq ($(COMPILER),ldc)
@@ -96,17 +108,13 @@ MODEL = 32
 endif
 endif
 
-# D step
-# TODO: Clone local dstep
-DSTEP?=${shell which dstep}
-
 # -m32 and -m64 switches cannot be used together with -march and -mtriple switches
 ifndef CROSS_OS
 ifeq ($(MODEL), 64)
-DCFLAGS  += -m64
+DFLAGS  += -m64
 LDCFLAGS += -m64
 else
-DCFLAGS  += -m32
+DFLAGS  += -m32
 LDCFLAGS += -m32
 endif
 endif
@@ -126,12 +134,17 @@ env-compiler:
 	$(call log.kvp, NO_OBJ, $(NO_OBJ))
 	$(call log.kvp, SONAME_FLAG, "$(SONAME_FLAG)")
 	$(call log.kvp, DVERSION, $(DVERSION))
-	$(call log.kvp, DEBUG, $(DEBUG))
+	$(call log.kvp, DDEBUG, $(DDEBUG))
+	$(call log.kvp, DUNITTEST, $(DUNITTEST))
+	$(call log.kvp, DMAIN, $(DMAIN))
 	$(call log.kvp, DIP, $(DIP))
 	$(call log.kvp, DIP25, $(DIP25))
 	$(call log.kvp, DIP1000, $(DIP1000))
-	$(call log.kvp, FPIC, $(FPIC))
-	$(call log.kvp, DCFLAGS, "$(DCFLAGS)")
+	$(call log.kvp, DFPIC, $(DFPIC))
+	$(call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY))
+	$(call log.kvp, BETTERC, $(BETTERC))
+	$(call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS))
+	$(call log.kvp, DFLAGS, "$(DFLAGS)")
 	$(call log.kvp, LDCFLAGS, "$(LDCFLAGS)")
 	$(call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)")
 	$(call log.close)

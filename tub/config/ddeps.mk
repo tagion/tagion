@@ -9,6 +9,8 @@ ${eval
 
 $$(PLATFORM)_DFILES = $${shell find $$(DSRC) -path "*/lib-*" -a -name "*.d" }
 
+$1/gen.ddeps.json: $1/.way
+
 $1/gen.ddeps.json: DFILES+=$$($$(PLATFORM)_DFILES)
 
 .SECONDARY: $1/gen.ddeps.json $1/gen.ddeps.mk
@@ -22,8 +24,6 @@ proper-ddeps-$$(PLATFORM):
 .PHONY: proper-ddeps-$$(PLATFORM)
 
 proper-ddeps: proper-ddeps-$$(PLATFORM)
-
-proper: proper-ddeps
 
 ddeps: $1/gen.ddeps.mk
 
@@ -77,7 +77,7 @@ endef
 %/gen.ddeps.json:
 	$(PRECMD)
 	${call log.kvp, $(@F), $(PLATFORM)}
-	ldc2 $(DCFLAGS) ${addprefix -I,$(DINC)} --o- -op --Xf=$@ $(DFILES)
+	ldc2 $(DFLAGS) ${addprefix -I,$(DINC)} --o- -op --Xf=$@ $(DFILES)
 
 %/gen.ddeps.mk: %/gen.ddeps.json
 	$(PRECMD)

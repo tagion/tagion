@@ -17,7 +17,11 @@ DIFILES.$1 = $${addprefix $3/,$${DIFILES_notdir.$1:.h=.di}}
 DESTROOT.$1 = $3
 HPATH.$1 = $2
 
-DIFILES+=DIFILES.$1
+DIFILES+=$$(DIFILES.$1)
+
+DIFILES_DEPS+=$4
+
+.SECONDARY: $$(DESTROOT.$1)/%.di
 
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
@@ -26,8 +30,7 @@ $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
 
-$4: | dstep-$1
-	@
+$4: $$(DIFILES.$1)
 
 .SECONDARY: $$(DIFILES.$1)
 
@@ -60,6 +63,8 @@ clean-dstep-$1:
 	$$(RM) $$(DIFILES.$1)
 
 clean-dstep: clean-dstep-$1
+
+proper: clean-dstep-$1
 
 }
 endef
