@@ -7,8 +7,6 @@ $(DOBJ)/%.o: $(DSRC)/%.d
 	${call log.kvp, compile, $(DMODULE)}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< -c $(OUTPUT)$@
 
-#$(DOBJ)/%.o: | $(DBUILD)/gen.ddeps.mk
-
 #
 # Unittest
 #
@@ -49,4 +47,4 @@ clean-obj:
 	$(RM) $(DOBJALL)
 	$(RM) $(DCIRALL)
 
-#clean: clean-obj
+clean: clean-obj

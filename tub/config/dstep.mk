@@ -17,11 +17,11 @@ DIFILES.$1 = $${addprefix $3/,$${DIFILES_notdir.$1:.h=.di}}
 DESTROOT.$1 = $3
 HPATH.$1 = $2
 
+DIFILES+=DIFILES.$1
+
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
 	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS) --package $1 $$< -o $$@
-
-MAKE_SHOW_ENV += env-libcrypto-$1
 
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
