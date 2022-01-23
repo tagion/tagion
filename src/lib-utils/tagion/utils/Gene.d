@@ -25,20 +25,20 @@ uint gene_count(const ulong bitstring) pure nothrow {
 
 @safe
 unittest {
-    enum SIZE_BITS
+    enum SIZE_BITS=ulong.sizeof*8;
     {
-        const bits=cast(size_t)0;
+        const bits=cast(ulong)0;
         assert(bits.gene_count == 0);
     }
     {
-        const bits=cast(size_t)long(-1);
-        assert(bits.gene_count == SIZE_SIZE);
+        const bits=cast(ulong)long(-1);
+        assert(bits.gene_count == SIZE_BITS);
     }
     {
         const a_bits=ulong(0b00001000_00010000_00000100_00100000_00000001_00001000_10000000_00000010UL);
         const b_bits=ulong(0b00101000_00010110_00100100_00100111_11110001_01001000_10011000_01100010);
-        assert(a_bits.gent_count == 8);
-        assert(b_bits.gent_count == 24);
+        assert(a_bits.gene_count == 8);
+        assert(b_bits.gene_count == 24);
     }
 }
 
