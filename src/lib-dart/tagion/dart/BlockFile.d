@@ -39,12 +39,6 @@ version (unittest) {
     }
 }
 
-// static this() {
-//     // Activate unittest
-//     immutable filename=fileId("dummy");
-//     //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
-// }
-// }
 extern (C) {
     int ftruncate(int fd, long length);
 }
@@ -440,15 +434,12 @@ class BlockFile {
     private this(string filename, immutable uint SIZE, const bool read_only = false) {
         File file;
         import std.stdio;
-
-        // writeln("before open ", filename);
         if (read_only) {
             file.open(filename, "r");
         }
         else {
             file.open(filename, "r+");
         }
-        // writeln("opened ", filename);
         this(file, SIZE);
     }
 

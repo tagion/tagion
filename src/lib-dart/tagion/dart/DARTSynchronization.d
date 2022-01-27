@@ -8,7 +8,7 @@ import p2p.cgo.c_helper;
 import std.random;
 import std.concurrency;
 
-import tagion.gossip.P2pGossipNet: NodeAddress, ConnectionPool;
+import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
@@ -24,7 +24,7 @@ import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
-import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.HiBON : HiBON;
 import tagion.basic.Logger;
 
 import tagion.communication.HiRPC;
@@ -37,8 +37,8 @@ alias HiRPCReceiver = HiRPC.Receiver;
 
 mixin template StateT(T) {
     protected T _state;
-    protected bool checkState(T[] expected...) nothrow {
-        import std.algorithm: canFind;
+    protected bool checkState(T[] expected...) @safe nothrow {
+        import std.algorithm : canFind;
 
         return expected.canFind(_state);
     }
@@ -107,10 +107,10 @@ class ReadRequestHandler : ResponseHandler {
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        const foreign_recoder = manufactor.recorder(received.method.params);
+        auto foreign_recoder = manufactor.recorder(received.method.params);
         foreach (archive; foreign_recoder[]) {
             fp_result[archive.fingerprint] = archive.toDoc;
-            import std.algorithm: arrRemove = remove, countUntil;
+            import std.algorithm : arrRemove = remove, countUntil;
 
             requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
         }
@@ -143,9 +143,10 @@ class ReadRequestHandler : ResponseHandler {
     }
 }
 
+@safe
 version (none) unittest {
     pragma(msg, "Fixme(Alex); Why doesn't this unittest not compile anymore!!!");
-    import std.bitmanip: nativeToBigEndian;
+    import std.bitmanip : nativeToBigEndian;
     import tagion.dart.DARTFakeNet;
 
     { //ReadSynchronizer  match requested fp
@@ -159,8 +160,7 @@ version (none) unittest {
         auto readSync = new ReadRequestHandler(fps, hirpc, "", receiver);
         assert(readSync.alive);
 
-        auto archive = new DARTFile.Recorder.Archive(net, Document(testfp), DARTFile
-                .Recorder.Archive.Type.STUB);
+        auto archive = new DARTFile.Recorder.Archive(net, Document(testfp), DARTFile.Recorder.Archive.Type.STUB);
         auto recorder = DARTFile.Recorder(net);
         recorder.insert(archive);
         auto nsender = hirpc.result(receiver, recorder.toHiBON);
@@ -172,7 +172,7 @@ version (none) unittest {
     }
 }
 
-// import tagion.gossip.GossipNet;
+import tagion.gossip.GossipNet;
 
 import core.thread;
 
@@ -224,9 +224,10 @@ class ReplayPool(T) {
 
 @safe
 interface SynchronizationFactory {
-    alias OnFailure = void delegate(const DART.Rims sector);
+    alias OnFailure = void delegate(const DART.Rims sector) @safe;
+    alias OnComplete =  void delegate(string) @safe;
     bool canSynchronize();
-    Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure);
+    Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, const OnComplete oncomplete, const OnFailure onfailure);
 }
 
 @safe
@@ -244,8 +245,12 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     immutable(ulong) own_port;
     immutable(Pubkey) pkey;
 
-    this(DART dart, const ulong port, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, immutable(
-            DARTOptions) dart_opts, immutable(Pubkey) pkey) {
+    this(DART dart,
+	const ulong port, 
+        shared p2plib.Node node,
+        shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool,
+        immutable(DARTOptions) opts,
+        immutable(Pubkey) pkey) {
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
@@ -264,11 +269,14 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         return node_address !is null && node_address.length > 0;
     }
 
-    Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, void delegate(string) @safe oncomplete, OnFailure onfailure) {
-        Tuple!(uint, ResponseHandler) syncWith(NodeAddress address) @safe {
+    Tuple!(uint, ResponseHandler) syncSector(
+        const DART.Rims sector,
+        const OnComplete oncomplete,
+        const OnFailure onfailure) {
+        Tuple!(uint, ResponseHandler) syncWith(NodeAddress address) {
             import p2p.go_helper;
 
-            ulong connect() {
+            ulong connect() @safe {
                 if (address.address in synchronizing) {
                     return synchronizing[address.address];
                 }
@@ -281,7 +289,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             }
 
             try {
-                auto stream_id = (() @trusted => connect())();
+                auto stream_id = connect;
                 immutable filename = tempfile ~ sector.to!string;
                 pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE = 0x80;
@@ -309,6 +317,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             import std.range : dropExactly;
             const random_key_index = uniform(0, node_address.length, rnd);
             const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front; //uniform(0, node_address.length, rnd)];
+
             if (node_addr.value.sector.inRange(sector)) {
                 const node_port = node_addr.value.port;
                 //const own_port = opts.port;
@@ -336,8 +345,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     class P2pSynchronizer : DART.StdSynchronizer, ResponseHandler {
         protected const ulong key;
         protected Buffer response;
-        protected void delegate(string journal_filename) @safe oncomplete;
-        protected OnFailure onfailure;
+        const OnComplete oncomplete;
+        const OnFailure onfailure;
         string filename;
         void setResponse(Buffer resp) @trusted {
             response = resp;
@@ -350,7 +359,10 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             return fiber.state != Fiber.State.TERM && connection_pool.contains(key);
         }
 
-        this(string journal_filename, const ulong key, void delegate(string) @safe oncomplete, OnFailure onfailure) {
+        this(string journal_filename,
+            const ulong key,
+            const OnComplete oncomplete,
+            const OnFailure onfailure) {
             filename = journal_filename;
             this.key = key;
             this.oncomplete = oncomplete;
@@ -362,7 +374,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             scope (failure) {
                 close();
             }
-            void send_request_to_forien_dart(const Document doc) @trusted {
+            void send_request_to_forien_dart(const Document doc) {
                 const sended = connection_pool.send(key, doc.serialize);
                 if (!sended) {
                     log("P2pSynchronizer: connection closed");
@@ -394,14 +406,13 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 finish;
             }
             if (alive) {
-                log("P2pSynchronizer: close alive. Sector: %d", convertFromBuffer!ushort(
-                        fiber.root_rims.rims));
+                log("P2pSynchronizer: close alive. Sector: %d", convertFromBuffer!ushort(fiber.root_rims.rims));
                 onfailure(fiber.root_rims);
                 fiber.reset();
             }
             else {
-                log("P2pSynchronizer: Synchronization Completed! Sector: %d", convertFromBuffer!ushort(
-                        fiber.root_rims.rims));
+                log("P2pSynchronizer: Synchronization Completed! Sector: %d", convertFromBuffer!ushort(fiber.root_rims
+                        .rims));
                 oncomplete(filename);
             }
             // connection_pool.close(key); //TODO: if one connnection used for one synchronization
@@ -587,7 +598,9 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     protected bool[DART.Rims] sync_sectors;
     protected DART.Rims[] failed_sync_sectors;
     HiRPC hirpc;
-    this(DART.SectorRange sectors, ReplayPool!string journal_replay, immutable(DARTOptions) dart_opts) @trusted {
+    this(DART.SectorRange sectors,
+        ReplayPool!string journal_replay,
+        immutable(DARTOptions) opts) @trusted {
         this.fast_load = dart_opts.fast_load;
         // writefln("Fast load: %s", fast_load);
         if (fast_load) {
@@ -610,8 +623,8 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     protected void run() {
-        import std.algorithm: filter, reduce;
-        import std.array: array;
+        import std.algorithm : filter, reduce;
+        import std.array : array;
 
         if (fast_load) {
             auto result = sync_factory.syncSector(DART.Rims.root, &onComplete, &onFailure);
@@ -677,7 +690,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         }
     }
 
-    void setResponse(Response!(ControlCode.Control_RequestHandled) resp)
+    void setResponse(Response!(p2plib.ControlCode.Control_RequestHandled) resp)
     in {
         assert(checkState(State.RUNNING, State.FIBER_RUNNING, State.ERROR));
     }
@@ -690,11 +703,11 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         handlerPool.setResponse(response);
     }
 
-    private void onComplete(string journal_filename) {
+    private void onComplete(string journal_filename) @safe {
         journal_replay.insert(journal_filename);
     }
 
-    private void onFailure(const DART.Rims sector) {
+    private void onFailure(const DART.Rims sector) @safe {
         // writeln("Failed synchronize sector");
         if (checkState(State.FIBER_RUNNING)) {
             failed_sync_sectors ~= sector;
@@ -727,7 +740,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
 @safe
 unittest {
-    import std.algorithm: count;
+    import std.algorithm : count;
 
     @safe
     static class FakeResponseHandler : ResponseHandler {
@@ -751,7 +764,7 @@ unittest {
 
         private Tuple!(uint, ResponseHandler) mockReturn;
         private uint sync_counter = 0;
-        Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure) {
+        Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, OnComplete oncomplete, OnFailure onfailure) {
             sync_counter++;
             return mockReturn;
         }
