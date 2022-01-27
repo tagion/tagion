@@ -5,20 +5,20 @@ import std.stdio;
 //import std.internal.math.biguintcore : BigDig;
 //import std.bigint;
 
-import std.typecons: Typedef, TypedefType;
+import std.typecons : Typedef, TypedefType;
 
 //import std.format;
-import std.meta: AliasSeq;
-import std.traits: Unqual, hasUDA, getUDAs, isIntegral, isSomeString, EnumMembers;
-import std.conv: emplace;
+import std.meta : AliasSeq;
+import std.traits : Unqual, hasUDA, getUDAs, isIntegral, isSomeString, EnumMembers;
+import std.conv : emplace;
 
-import tagion.basic.Message: message;
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
-import tagion.basic.Basic: isOneOf, CastTo;
+import tagion.basic.Message : message;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.basic.Basic : isOneOf, CastTo;
 import BigNumber = tagion.hibon.BigNumber;
 
-import tagion.basic.TagionExceptions: Check, TagionException;
+import tagion.basic.TagionExceptions : Check, TagionException;
 
 @safe
 class ScriptException : TagionException {
@@ -40,7 +40,7 @@ enum FunnelType {
     DOCUMENT,
     //    DOCRANGE,
     BINARY,
-    NUMBER,//    FUNCTION
+    NUMBER, //    FUNCTION
 }
 
 @safe
@@ -222,23 +222,28 @@ class Value {
         return by!E;
     }
 
-    final T get(T)()
-            if (isIntegral!T && Variant.asType!(Unqual!T) is FunnelType.NONE) {
+    final T get(T)() if (isIntegral!T && Variant.asType!(Unqual!T) is FunnelType.NONE) {
         alias UnqualT = Unqual!T;
         enum E = Variant.asType!UnqualT;
+
         
+
         .check(type is FunnelType.NUMBER, message("Number type excepted and not %s", type));
         return variant.to!T;
     }
 
     final bool get(T)() if (is(T == bool)) {
+
         
+
             .check(type is FunnelType.NUMBER, message("Number type excepted and not %s", type));
         return variant.by!(FunnelType.NUMBER) != 0;
     }
 
     final auto by(FunnelType E)() inout {
+
         
+
             .check(type is E, message("Expected type %s but access with %s", E, type));
         return variant.by!E;
     }
@@ -263,7 +268,9 @@ class Value {
                         alias BaseT = Variant.TypeT!E;
                         enum valid_type = is(T : BaseT);
                     }
+
                     
+
                     .check(valid_type,
                             message("Type compatible with %s but %s is not", E, T.stringof));
                     variant = Variant(x);
@@ -293,7 +300,7 @@ class Value {
                         return internalBy!(E);
                     }
                     else static if (E is BINARY) {
-                        import tagion.utils.Miscellaneous: toHex = toHexString;
+                        import tagion.utils.Miscellaneous : toHex = toHexString;
 
                         return internalBy!(E).toHex;
                     }
