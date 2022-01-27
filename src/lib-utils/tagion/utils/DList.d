@@ -314,7 +314,7 @@ unittest {
         assert(last.entry == 4);
     }
     { // pop
-        import std.algorithm.comparison: equal;
+        import std.algorithm.comparison : equal;
         import std.array;
 
         auto l = new DList!int;
@@ -335,7 +335,7 @@ unittest {
         }
     }
     { // More elements test
-        import std.algorithm.comparison: equal;
+        import std.algorithm.comparison : equal;
 
         auto l = new DList!int;
         enum amount = 4;
@@ -363,7 +363,7 @@ unittest {
         assert(l.length == amount);
 
         import std.stdio;
-        import std.algorithm: map;
+        import std.algorithm : map;
 
         { // Backward iteration test
             auto I = l.revert;

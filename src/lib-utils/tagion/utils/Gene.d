@@ -1,6 +1,6 @@
 module tagion.utils.Gene;
 
-import std.exception: assumeUnique;
+import std.exception : assumeUnique;
 import std.range : lockstep;
 import std.algorithm.iteration : fold;
 
@@ -19,24 +19,24 @@ uint gene_count(const ulong bitstring) pure nothrow {
             return count_ones!(HALF_BITS)(x & MASK) + count_ones!(HALF_BITS)(x >> HALF_BITS);
         }
     }
+
     return count_ones(bitstring);
 }
 
-
 @safe
 unittest {
-    enum SIZE_BITS=ulong.sizeof*8;
+    enum SIZE_BITS = ulong.sizeof * 8;
     {
-        const bits=cast(ulong)0;
+        const bits = cast(ulong) 0;
         assert(bits.gene_count == 0);
     }
     {
-        const bits=cast(ulong)long(-1);
+        const bits = cast(ulong) long(-1);
         assert(bits.gene_count == SIZE_BITS);
     }
     {
-        const a_bits=ulong(0b00001000_00010000_00000100_00100000_00000001_00001000_10000000_00000010UL);
-        const b_bits=ulong(0b00101000_00010110_00100100_00100111_11110001_01001000_10011000_01100010);
+        const a_bits = ulong(0b00001000_00010000_00000100_00100000_00000001_00001000_10000000_00000010UL);
+        const b_bits = ulong(0b00101000_00010110_00100100_00100111_11110001_01001000_10011000_01100010);
         assert(a_bits.gene_count == 8);
         assert(b_bits.gene_count == 24);
     }
@@ -45,7 +45,7 @@ unittest {
 @nogc @safe
 uint gene_count(scope const(ulong[]) bitstream) pure nothrow {
     return bitstream
-        .fold!((a,b) => a+gene_count(b))(uint(0));
+        .fold!((a, b) => a + gene_count(b))(uint(0));
 }
 
 @trusted
@@ -75,7 +75,7 @@ unittest {
         const b_bits = [0b01011001_00010110UL, 0b01100101_10010011UL];
         assert(b_bits.gene_count == 15);
         ulong[] result;
-        result.length=a_bits.length;
+        result.length = a_bits.length;
         gene_xor(result, a_bits, b_bits);
         assert(result == [0b00001000_01111011UL, 0b01110100_00001101]);
         assert(result.gene_count == 14);
