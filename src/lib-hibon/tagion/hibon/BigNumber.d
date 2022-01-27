@@ -4,19 +4,20 @@ protected import std.bigint;
 
 //import std.bigint;
 import std.format;
-import std.internal.math.biguintnoasm: BigDigit;
+import std.internal.math.biguintnoasm : BigDigit;
 
 //import std.conv : emplace;
-import std.typecons: Tuple;
+import std.typecons : Tuple;
 import std.range.primitives;
 import std.traits;
-import std.system: Endian;
+import std.system : Endian;
 import std.base64;
-import std.exception: assumeUnique;
+import std.exception : assumeUnique;
 
 //import std.stdio;
 
-import tagion.hibon.HiBONException: check;
+import tagion.hibon.HiBONException : check;
+
 /++
  BigNumber used in the HiBON format
  It is a wrapper of the std.bigint
@@ -234,9 +235,9 @@ import tagion.hibon.HiBONException: check;
      Converts to type T
      +/
     @trusted T convert(T)() const if (isIntegral!T) {
-        import std.conv: to;
+        import std.conv : to;
 
-
+        
 
         .check((x >= T.min) && (x <= T.max),
                 format("Coversion range violation for type %s, value %s is outside the [%d..%d]",
@@ -282,6 +283,8 @@ import tagion.hibon.HiBONException: check;
 
     @trusted void check_minuz_zero() const pure {
         version (none)
+
+            
 
                 .check(sign && (_data.length is 1) && (_data[0] is 0),
                         "The number minus zero is not allowed");
@@ -341,7 +344,7 @@ import tagion.hibon.HiBONException: check;
     }
 
     unittest { // Test of Two complement
-        import std.algorithm.comparison: equal;
+        import std.algorithm.comparison : equal;
 
         {
             const x = BigNumber(0);
@@ -568,7 +571,7 @@ import tagion.hibon.HiBONException: check;
 }
 
 unittest {
-    import std.algorithm.comparison: equal;
+    import std.algorithm.comparison : equal;
     import std.stdio;
     import LEB128 = tagion.utils.LEB128;
 
