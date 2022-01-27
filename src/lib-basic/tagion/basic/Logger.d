@@ -6,7 +6,7 @@ import core.sys.posix.pthread;
 import std.string;
 
 //import std.stdio : stderr;
-import tagion.basic.Basic: Control;
+import tagion.basic.Basic : Control;
 import tagion.basic.TagionExceptions;
 
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
@@ -61,7 +61,7 @@ static struct Logger {
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);
-            import std.stdio: stderr;
+            import std.stdio : stderr;
 
             stderr.writefln("Register: %s logger\n", _task_name);
             log("Register: %s logger", _task_name);
@@ -97,7 +97,7 @@ static struct Logger {
 
     @property @trusted
     bool isTask() const nothrow {
-        import std.exception: assumeWontThrow;
+        import std.exception : assumeWontThrow;
 
         return assumeWontThrow(logger_tid != logger_tid.init);
     }
@@ -118,8 +118,8 @@ static struct Logger {
     @trusted
     void report(LoggerType type, lazy scope string text) const nothrow {
         if ((type & masks[$ - 1]) && !silent) {
-            import std.exception: assumeWontThrow;
-            import std.conv: to;
+            import std.exception : assumeWontThrow;
+            import std.conv : to;
 
             if (!isTask) {
                 import core.stdc.stdio;
@@ -248,7 +248,7 @@ static struct Logger {
     @trusted
     void close() const nothrow {
         if (isTask) {
-            import std.exception: assumeWontThrow;
+            import std.exception : assumeWontThrow;
 
             assumeWontThrow(logger_tid.send(Control.STOP));
         }
