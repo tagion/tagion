@@ -77,7 +77,7 @@ unittest {
         ulong[] result;
         result.length = a_bits.length;
         gene_xor(result, a_bits, b_bits);
-        assert(result == [0b00001000_01111011UL, 0b01110100_00001101]);
-        assert(result.gene_count == 14);
+        assert(result == [0b00011000_01111011UL, 0b01110100_00001101]);
+        assert(result.gene_count == 15);
     }
 }
