@@ -21,7 +21,7 @@ import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, bitarray_clear, countVotes;
+import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, countVotes;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
@@ -1115,7 +1115,7 @@ class HashGraph {
         const channels = network.channels;
 
         try {
-            foreach (i; 0 .. 3276) {
+            foreach (i; 0 .. 550) {
                 const channel_number = network.random.value(0, channels.length);
                 const channel = channels[channel_number];
                 auto current = network.networks[channel];
