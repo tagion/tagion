@@ -17,7 +17,7 @@ import std.conv : to;
 import std.traits;
 import std.exception : assumeUnique;
 import std.container.rbtree : RedBlackTree, redBlackTree;
-import tagion.basic.Basic : basename, Buffer, log2;
+import tagion.basic.Basic : basename, Buffer, log2, assumeTrusted;
 import tagion.basic.TagionExceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
@@ -140,7 +140,6 @@ class BlockFile {
             return index in indices;
         }
 
-        @trusted
         void reclaim(const uint index) {
             if (index in indices) {
                 do_save(index);
@@ -150,8 +149,9 @@ class BlockFile {
         }
 
         void write() {
-
-            uint order_blocks(ref Range range, const uint previous_index = INDEX_NULL) {
+            uint order_blocks(
+                ref Range range,
+                const uint previous_index = INDEX_NULL) {
                 if (!range.empty) {
                     immutable index = range.front;
                     if (index < owner.last_block_index) {
@@ -197,8 +197,7 @@ class BlockFile {
             build_segments;
         }
 
-        @trusted
-        void dump() {
+        void dump() @trusted {
             import std.stdio;
 
             auto s = recycle_segments[];
@@ -268,7 +267,7 @@ class BlockFile {
         }
 
         const(uint) reserve_segment(bool random = false)(const uint size) {
-            void remove_segment(const(Segment) segment_to_be_removed, const uint size) @trusted
+            void remove_segment(const(Segment) segment_to_be_removed, const uint size)
             in {
                 assert(segment_to_be_removed.size >= size);
             }
@@ -461,7 +460,6 @@ class BlockFile {
          $(LREF BLOCK_SIZE)  = Set the block size of the underlining BlockFile
 
          +/
-    @trusted
     static void create(string filename, string description, immutable uint BLOCK_SIZE) {
         File file;
         file.open(filename, "w+");
@@ -501,7 +499,6 @@ class BlockFile {
      +     filename  = Name of the blockfile
      +     read_only = If `true` the file is opened as read-only
      +/
-    @trusted
     static BlockFile opCall(string filename, const bool read_only = false) {
         auto temp_file = new BlockFile(filename, 0x40, read_only);
         immutable SIZE = temp_file.headerblock.block_size;
@@ -545,8 +542,6 @@ class BlockFile {
 
     private void readInitial() {
         if (file.size > 0) {
-            import std.stdio;
-
             // writeln("read header ", file.name);
             readHeaderBlock;
             last_block_index--;
@@ -559,6 +554,8 @@ class BlockFile {
             // writeln("end reading ", file.name);
         }
     }
+
+    pragma(msg, "fixme(cbr): The Statistic here should use tagion.utils.Statistic");
 
     struct Statistic {
         enum Limits : double {
@@ -610,7 +607,6 @@ class BlockFile {
             return hibon;
         }
 
-        @trusted
         immutable(Buffer) serialize() const {
             return toHiBON.serialize;
         }
@@ -694,7 +690,7 @@ class BlockFile {
         long create_time; /// Time of creation
         char[ID_SIZE] id; /// Short description string
 
-        void write(ref File file) const @trusted
+        void write(ref File file) const
         in {
             assert(block_size >= HeaderBlock.sizeof);
         }
@@ -704,7 +700,9 @@ class BlockFile {
             foreach (i, m; this.tupleof) {
                 alias type = typeof(m);
                 static if (isStaticArray!type) {
-                    buffer[pos .. pos + type.sizeof] = (cast(ubyte*) id.ptr)[0 .. type.sizeof];
+                    assumeTrusted!({
+                            buffer[pos .. pos + type.sizeof] = (cast(ubyte*)id.ptr)[0 .. type.sizeof];
+                        });
                     pos += type.sizeof;
                 }
                 else {
@@ -714,7 +712,7 @@ class BlockFile {
             file.rawWrite(buffer);
         }
 
-        void read(ref File file, immutable uint BLOCK_SIZE) @trusted
+        void read(ref File file, immutable uint BLOCK_SIZE)
         in {
             assert(BLOCK_SIZE >= HeaderBlock.sizeof);
         }
@@ -725,7 +723,7 @@ class BlockFile {
             foreach (i, ref m; this.tupleof) {
                 alias type = typeof(m);
                 static if (isStaticArray!type && is(type : U[], U)) {
-                    m = (cast(U*) buf.ptr)[0 .. m.sizeof];
+                    assumeTrusted!({m = (cast(U*) buf.ptr)[0 .. m.sizeof];});
                     buf = buf[m.sizeof .. $];
                 }
                 else {
@@ -749,13 +747,17 @@ class BlockFile {
         uint first_index; /// Points to the first block of data
         uint root_index; /// Point the root of the database
         uint statistic_index; /// Points to the statistic data
-        final void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
+        final void write(
+            ref File file,
+            immutable uint BLOCK_SIZE) const {
             scope buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
                 buffer.binwrite(m, &pos);
             }
-            buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
+            assumeTrusted!({
+                    buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
+                });
             file.rawWrite(buffer);
             // Truncate the file after the master block
             file.truncate(file.size);
@@ -824,7 +826,7 @@ class BlockFile {
         enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
         enum HEADER_SIZE = cast(uint)(previous.sizeof + next.sizeof + size.sizeof);
         immutable(Buffer) data;
-        void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
+        void write(ref File file, immutable uint BLOCK_SIZE) const {
             scope buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
@@ -1274,7 +1276,7 @@ class BlockFile {
 
         void allocate_and_chain(SortedSegments)(const(AllocatedChain[]) allocate, ref scope SortedSegments sorted_segments) @safe {
             if (allocate.length > 0) {
-                uint chain(immutable(ubyte[]) data, const uint current_index, const uint previous_index, const bool head) @trusted {
+                uint chain(immutable(ubyte[]) data, const uint current_index, const uint previous_index, const bool head) {
                     scope (success) {
                         recycle_indices.reclaim(current_index);
                     }
