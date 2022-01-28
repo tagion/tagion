@@ -1,17 +1,17 @@
-doing:
-	@echo $$@
-
-
 # D ddeps macro function
 # Param $1 sets the platform path
 define DDEPS
 ${eval
 
-$$(PLATFORM)_DFILES = $${shell find $$(DSRC) -path "*/lib-*" -a -name "*.d" }
+$$(PLATFORM)_DFILES = $2
+
+$1/dfiles.mk: DFILES=$$($$(PLATFORM)_DFILES)
+
+$1/gen.ddeps.json: $1/dfiles.mk
 
 $1/gen.ddeps.json: $1/.way
 
-$1/gen.ddeps.json: DFILES+=$$($$(PLATFORM)_DFILES)
+$1/gen.ddeps.json: DFILES=$$($$(PLATFORM)_DFILES)
 
 .SECONDARY: $1/gen.ddeps.json $1/gen.ddeps.mk
 
@@ -36,10 +36,6 @@ help-ddeps-$$(PLATFORM):
 help-ddeps: help-ddeps-$$(PLATFORM)
 
 .PHONY: help-ddeps-$$(PLATFORM)
-
-test35:
-	@echo $$@ $$(PLATFORM)
-
 
 ifdef DOBJ
 env-ddeps-$$(PLATFORM):
@@ -77,7 +73,7 @@ endef
 %/gen.ddeps.json:
 	$(PRECMD)
 	${call log.kvp, $(@F), $(PLATFORM)}
-	ldc2 $(DFLAGS) ${addprefix -I,$(DINC)} --o- -op --Xf=$@ $(DFILES)
+	ldc2 $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- -op --Xf=$@ $(DFILES)
 
 %/gen.ddeps.mk: %/gen.ddeps.json
 	$(PRECMD)
@@ -102,7 +98,12 @@ help-ddeps:
 
 help: help-ddeps
 
+dfiles: $(DBUILD)/dfiles.mk
+
 .PHONY: env-ddeps help-ddeps
 
-test36:
-	@echo $@ $(PLATFORM)
+ifdef DFILES
+$(DBUILD)/dfiles.mk:
+	$(PRECMD)
+	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} | tee $@
+endif

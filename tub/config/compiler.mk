@@ -124,6 +124,7 @@ INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep
 env-compiler:
 	$(PRECMD)
 	$(call log.header, $@ :: compiler)
+	$(DC) --version | head -4
 	$(call log.kvp, DC, $(DC))
 	$(call log.kvp, COMPILER, $(COMPILER))
 	$(call log.kvp, ARCH, $(ARCH))

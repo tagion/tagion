@@ -24,10 +24,7 @@ include $(DTUB)/utilities/dir.mk
 #-include $(DROOT)/local.*.mk
 #-include $(DROOT)/local.mk
 
-test44:
-	@echo $@
 
-.PHONY: test44
 
 # Secondary tub functionality
 include $(DTUB)/ways.mk
@@ -38,6 +35,11 @@ include $(DTUB)/config/host.mk
 include $(DTUB)/config/commands.mk
 include $(DTUB)/config/cross.mk
 include $(DTUB)/config/dirs.mk
+
+# Packages
+-include $(DBUILD)/dfiles.mk
+DFILES?=${shell find $(DSRC) -path "*/lib-*" -a -name "*.d"}
+
 include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 #include $(DTUB)/config/env.mk
