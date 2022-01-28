@@ -1089,7 +1089,7 @@ class HashGraph {
 
             Elisa,
             Freja,
-            George,// Hermine,
+            George, // Hermine,
 
             // Illa,
             // Joella,

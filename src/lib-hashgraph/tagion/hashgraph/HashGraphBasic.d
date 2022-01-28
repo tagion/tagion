@@ -2,26 +2,26 @@ module tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
 import std.format;
-import std.typecons: TypedefType;
-import std.exception: assumeWontThrow;
+import std.typecons : TypedefType;
+import std.exception : assumeWontThrow;
 
-import tagion.basic.Basic: Buffer, Signature, Pubkey, EnumText;
+import tagion.basic.Basic : Buffer, Signature, Pubkey, EnumText;
 import tagion.hashgraph.Event;
-import tagion.hashgraph.HashGraph: HashGraph;
+import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask;
-import tagion.hibon.HiBON: HiBON;
-import tagion.communication.HiRPC: HiRPC;
+import tagion.hibon.HiBON : HiBON;
+import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONJSON: JSONString;
+import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
 
-import tagion.hibon.Document: Document;
-import tagion.crypto.SecureInterfaceNet: SecureNet;
+import tagion.hibon.Document : Document;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
 
-import tagion.basic.ConsensusExceptions: convertEnum, GossipConsensusException, ConsensusException;
+import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException, ConsensusException;
 
 enum minimum_nodes = 3;
-import tagion.utils.Miscellaneous: cutHex;
+import tagion.utils.Miscellaneous : cutHex;
 
 /++
  + Calculates the majority votes
@@ -70,6 +70,8 @@ enum ExchangeState : uint {
     COHERENT, /** Coherent state is when an the least epoch wavefront has been received or
                         if all the nodes isEva notes (This only occurs at genesis).
                      */
+
+
 
 }
 
@@ -165,7 +167,7 @@ struct EventBody {
     import tagion.basic.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
-    import std.traits: getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
     @Label("$p", true) @Filter(q{!a.empty}) Document payload; // Transaction
     @Label("$m", true) @(Filter.Initialized) Buffer mother; // Hash of the self-parent
@@ -358,9 +360,7 @@ struct Wavefront {
         foreach (e; epacks) {
             _tides.update(e.pubkey,
             { return e.event_body.altitude; },
-                    (int altitude) {
-                return highest(altitude, e.event_body.altitude);
-            });
+                    (int altitude) { return highest(altitude, e.event_body.altitude); });
         }
     }
 
