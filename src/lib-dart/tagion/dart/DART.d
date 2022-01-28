@@ -20,7 +20,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.dart.DARTFile;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
-import tagion.basic.Basic : EnumText;
+import tagion.basic.Basic : EnumText, assumeTrusted;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
@@ -456,7 +456,10 @@ class DART : DARTFile { //, HiRPC.Supports {
             record(recorder_worker);
         }
 
-        void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc) @trusted nothrow {
+        void set(
+            DART owner,
+            SynchronizationFiber fiber,
+            HiRPC hirpc) @trusted nothrow {
             import std.conv : emplace;
 
             this.fiber = fiber;
@@ -674,7 +677,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                 }
 
                 const foreign_doc = request.toDoc;
-                (() @trusted { fiber.yield; })();
+                assumeTrusted!(fiber.yield)();
                 // Here a yield loop should be implement to poll for response from the foriegn DART
                 // A timeout should also be implemented in this poll loop
                 const response_doc = send_request_to_foreign_dart(foreign_doc);
@@ -781,7 +784,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
+                            assumeTrusted!({dart_A_synchronizer.call;});
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
@@ -843,7 +846,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -899,7 +902,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -950,7 +953,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1003,7 +1006,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1057,7 +1060,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1111,7 +1114,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1164,7 +1167,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 

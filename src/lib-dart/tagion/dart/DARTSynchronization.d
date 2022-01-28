@@ -27,6 +27,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.basic.Logger;
+import tagion.basic.Basic : assumeTrusted;
 
 import tagion.communication.HiRPC;
 import tagion.communication.HandlerPool;
@@ -298,7 +299,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
-                (() @trusted { db_sync.call; })();
+                assumeTrusted!({db_sync.call; });
                 return tuple(db_sync.id, cast(ResponseHandler) sync);
             }
             catch (GoException e) {
@@ -393,21 +394,21 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 log("P2pSynchronizer: Exception on sending request: %s", e);
                 close();
             }
-            (() @trusted { fiber.yield; })();
+            assumeTrusted!(fiber.yield)();
             assert(response);
             auto doc = Document(response);
             auto received = hirpc.receive(doc);
             return received;
         }
 
-        void close() @trusted {
+        void close() {
             scope (exit) {
                 finish;
             }
             if (alive) {
                 log("P2pSynchronizer: close alive. Sector: %d", convertFromBuffer!ushort(fiber.root_rims.rims));
                 onfailure(fiber.root_rims);
-                fiber.reset();
+                assumeTrusted!({fiber.reset;});
             }
             else {
                 log("P2pSynchronizer: Synchronization Completed! Sector: %d", convertFromBuffer!ushort(fiber.root_rims
@@ -451,7 +452,7 @@ version (none) unittest {
         }
     }
 
-    @trusted
+    @safe
     synchronized
     class FakeNode : p2plib.Node {
         this() {
@@ -650,7 +651,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                     sync_sectors[sector] = true;
                     handlerPool.add(result[0], result[1], true);
                 }
-                (() @trusted { yield(); })();
+                assumeTrusted!yield;
             }
         }
         if (failed_sync_sectors.length > 0) {
@@ -672,7 +673,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         this.sync_factory = factory;
         if (factory.canSynchronize) {
             if (state == Fiber.State.TERM) {
-                (() @trusted { reset(); })();
+                assumeTrusted!({ reset(); });
             }
             if (checkState(State.ERROR) && failed_sync_sectors.length > 0) {
                 foreach (sector; failed_sync_sectors) {
@@ -681,7 +682,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                 failed_sync_sectors = [];
             }
             _state = State.FIBER_RUNNING;
-            (() @trusted { call; })();
+            assumeTrusted!({call;});
         }
     }
 
@@ -719,7 +720,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         }
         if (checkState(State.FIBER_RUNNING)) {
             if (handlerPool.size <= dart_opts.sync.max_handlers || dart_opts.sync.max_handlers == 0) {
-                (() @trusted { call; })();
+                assumeTrusted!({call; });
             }
         }
         if (checkState(State.RUNNING)) {
