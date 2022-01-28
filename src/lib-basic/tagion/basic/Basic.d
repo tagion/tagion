@@ -87,6 +87,7 @@ enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
 /++
  Creates a new clean bitarray
 +/
+version(none)
 deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length = length;
 }
@@ -94,10 +95,12 @@ deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t
 /++
  Change the size of the bitarray
 +/
+version(none)
 deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     bits.length = length;
 }
 
+version(none)
 unittest {
     {
         BitArray test;
@@ -397,11 +400,26 @@ static unittest {
 */
 template doFront(Range) if (isInputRange!Range) {
     alias T = ForeachType!Range;
-    T doFront(Range r) {
+    import std.range;
+    T doFront(Range r) @safe {
         if (r.empty) {
             return T.init;
         }
         return r.front;
+    }
+}
+
+
+@safe
+unittest {
+    {
+        int[] a;
+        static assert(isInputRange!(typeof(a)));
+        assert(a.doFront is int.init);
+    }
+    {
+         const a=[1,2,3];
+         assert(a.doFront is a[0]);
     }
 }
 
@@ -421,8 +439,55 @@ unittest {
 }
 
 auto eatOne(R)(ref R r) if (isInputRange!R) {
+    import std.range;
     scope (exit) {
         r.popFront;
     }
     return r.front;
+}
+
+unittest {
+    const(int)[] a=[1,2,3];
+    pragma(msg, typeof(a));
+    assert(eatOne(a) == 1);
+    assert(eatOne(a) == 2);
+    assert(eatOne(a) == 3);
+}
+
+/// Calling any system functions.
+template assumeTrusted(alias F) {
+    import std.traits;
+    static assert(isUnsafe!F);
+
+    alias ArgType = Parameters!F;
+    auto assumeTrusted(ArgType args) @trusted {
+        return F(args);
+    }
+}
+
+///
+@safe
+unittest  {
+    auto bar(int b) @system { return b+1; }
+    const b = assumeTrusted!bar(5);
+    assert(b == 6);
+
+    // applicable to 0-ary function
+    static auto foo() @system { return 3; }
+    const a = assumeTrusted!foo;
+    assert(a == 3);
+
+    // // It can be used for alias
+    alias trustedBar = assumeTrusted!bar;
+    alias trustedFoo = assumeTrusted!foo;
+    assert(is(typeof(trustedFoo) == function));
+
+    import core.stdc.stdlib;
+
+    const ptr=assumeTrusted!malloc(100);
+    assert(ptr !is null);
+
+    alias lambda=assumeTrusted!((int a) @system => a*3);
+
+    assert(lambda(42) == 3*42);
 }
