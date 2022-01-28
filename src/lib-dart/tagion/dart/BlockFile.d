@@ -690,7 +690,7 @@ class BlockFile {
         long create_time; /// Time of creation
         char[ID_SIZE] id; /// Short description string
 
-        void write(ref File file) const
+        void write(ref File file) const @safe
         in {
             assert(block_size >= HeaderBlock.sizeof);
         }
@@ -706,7 +706,9 @@ class BlockFile {
                     pos += type.sizeof;
                 }
                 else {
-                    buffer.binwrite(m, &pos);
+                    assumeTrusted!({
+                            buffer.binwrite(m, &pos);
+                        });
                 }
             }
             file.rawWrite(buffer);
@@ -753,7 +755,7 @@ class BlockFile {
             scope buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
-                buffer.binwrite(m, &pos);
+                assumeTrusted!({buffer.binwrite(m, &pos);});
             }
             assumeTrusted!({
                     buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
@@ -838,10 +840,12 @@ class BlockFile {
                 }
                 else static if (name != this.head.stringof) {
                     static if (name == this.size.stringof) {
-                        buffer.binwrite(m | (head ? HEAD_MASK : 0), &pos);
+                        assumeTrusted!({
+                                buffer.binwrite(m | (head ? HEAD_MASK : 0), &pos);
+                                });
                     }
                     else {
-                        buffer.binwrite(m, &pos);
+                        assumeTrusted!({buffer.binwrite(m, &pos);});
                     }
                 }
 
