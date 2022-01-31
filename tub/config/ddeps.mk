@@ -7,7 +7,7 @@ $$(PLATFORM)_DFILES = $2
 
 $1/dfiles.mk: DFILES=$$($$(PLATFORM)_DFILES)
 
-$1/gen.ddeps.json: $1/dfiles.mk
+#$1/gen.ddeps.json: $1/dfiles.mk
 
 $1/gen.ddeps.json: $1/.way
 
@@ -73,7 +73,7 @@ endef
 %/gen.ddeps.json:
 	$(PRECMD)
 	${call log.kvp, $(@F), $(PLATFORM)}
-	ldc2 $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- -op --Xf=$@ $(DFILES)
+	$(DC) $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- $(NO_OBJ)  $(DJSON)=$@ $(DFILES)
 
 %/gen.ddeps.mk: %/gen.ddeps.json
 	$(PRECMD)
@@ -98,7 +98,8 @@ help-ddeps:
 
 help: help-ddeps
 
-dfiles: $(DBUILD)/dfiles.mk
+prebuild: $(DBUILD)/dfiles.mk
+
 
 .PHONY: env-ddeps help-ddeps
 

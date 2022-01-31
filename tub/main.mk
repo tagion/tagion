@@ -45,8 +45,8 @@ include $(DTUB)/config/dstep.mk
 #include $(DTUB)/config/env.mk
 include $(DTUB)/utilities/log.mk
 -include $(DBUILD)/gen.ddeps.mk
-include $(DTUB)/config/ddeps.mk
 include $(DTUB)/config/prebuild.mk
+include $(DTUB)/config/ddeps.mk
 
 # Enable cloning, if BRANCH is known
 ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)

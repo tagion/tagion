@@ -61,6 +61,8 @@ DFPIC := -relocation-model=pic
 DDEBUG_SYMBOLS := -g
 BETTERC := --betterC
 DCOMPILE_ONLY := -c
+NO_OBJ ?= --o-
+DJSON ?= --Xf
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -71,6 +73,7 @@ DIP := unknown-dip
 DDEBUG_SYMBOLS := -g
 BETTERC := --betterC
 DCOMPILE_ONLY := -c
+NO_OBJ ?= -o-
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
@@ -82,6 +85,8 @@ DFPIC := -fPIC
 DDEBUG_SYMBOLS := -g
 BETTERC := -betterC
 DCOMPILE_ONLY := -c
+NO_OBJ ?= -o-
+DJSON ?= -Xf
 endif
 
 DIP25 := $(DIP)25
@@ -133,6 +138,7 @@ env-compiler:
 	$(call log.kvp, HF, $(HF))
 	$(call log.kvp, DF, $(DF))
 	$(call log.kvp, NO_OBJ, $(NO_OBJ))
+	$(call log.kvp, DJSON, $(DJSON))
 	$(call log.kvp, SONAME_FLAG, "$(SONAME_FLAG)")
 	$(call log.kvp, DVERSION, $(DVERSION))
 	$(call log.kvp, DDEBUG, $(DDEBUG))

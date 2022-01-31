@@ -1,4 +1,5 @@
 
+DFLAGS+=$(DIP25) $(DIP1000)
 #
 # D compiler
 #
@@ -14,9 +15,21 @@ $(DOBJ)/%.o: $(DSRC)/%.d
 #
 UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
 UNITTEST_DOBJ=$(DOBJ)/unittest/
-UNITTEST_BIN=$(DBIN)/unittest
+UNITTEST_BIN?=$(DBIN)/unittest
 
 unittest: $(UNITTEST_DOBJ)/.way
+
+ifndef DEVMODE
+$(UNITTEST_BIN): $(DFILES)
+	$(PRECMD)
+	@echo $<
+	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.d,${sort $?}} $(LIBS) $(OUTPUT)$@
+
+unittest-%:
+	@echo
+	$(MAKE) UNITTEST_BIN=$(DBIN)/$@ DSRCALL="$(DSRCS.$*)" $(DBIN)/$@
+endif
+
 ifdef UNITTEST
 
 $(DOBJALL): MODE=-unittest
@@ -27,10 +40,12 @@ unittest: $(UNITTEST_BIN)
 .PHONY: unittest
 
 $(DOBJALL):DFLAGS+=$(UNITTEST_FLAGS)
-
+ifdef DEVMODE
 $(UNITTEST_BIN): $(DOBJALL)
 	$(PRECMD)
 	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.o,${sort $?}} $(LIBS) $(OUTPUT)$@
+
+endif
 
 else
 
@@ -44,6 +59,7 @@ clean-unittest:
 	$(PRECMD)
 	${call log.header, $@ :: clean}
 	$(RMDIR) $(UNITTEST_DOBJ)
+	$(RM) $(UNITTEST_BIN)
 
 clean: clean-unittest
 
