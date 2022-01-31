@@ -15,6 +15,8 @@ endif
 
 $(UNITTEST_BIN): LIBS+=$(LIBP2PGOWRAPPER)
 
+prebuild: $(LIBP2PGOWRAPPER)
+
 p2pgowrapper: $(LIBP2PGOWRAPPER)
 
 clean-p2pgowrapper:
