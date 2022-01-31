@@ -107,7 +107,9 @@ class RecordFactory {
         }
 
         private this(Document doc) {
+
             
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {

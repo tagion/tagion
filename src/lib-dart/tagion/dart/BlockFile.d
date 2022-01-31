@@ -701,14 +701,12 @@ class BlockFile {
                 alias type = typeof(m);
                 static if (isStaticArray!type) {
                     assumeTrusted!({
-                            buffer[pos .. pos + type.sizeof] = (cast(ubyte*)id.ptr)[0 .. type.sizeof];
+                            buffer[pos .. pos + type.sizeof] = cast(ubyte[])id;
+                            pos += type.sizeof;
                         });
-                    pos += type.sizeof;
                 }
                 else {
-                    assumeTrusted!({
-                            buffer.binwrite(m, &pos);
-                        });
+                    buffer.binwrite(m, &pos);
                 }
             }
             file.rawWrite(buffer);
@@ -755,7 +753,7 @@ class BlockFile {
             scope buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
-                assumeTrusted!({buffer.binwrite(m, &pos);});
+                buffer.binwrite(m, &pos);
             }
             assumeTrusted!({
                     buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
@@ -840,12 +838,10 @@ class BlockFile {
                 }
                 else static if (name != this.head.stringof) {
                     static if (name == this.size.stringof) {
-                        assumeTrusted!({
-                                buffer.binwrite(m | (head ? HEAD_MASK : 0), &pos);
-                                });
+                        buffer.binwrite(m | (head ? HEAD_MASK : 0), &pos);
                     }
                     else {
-                        assumeTrusted!({buffer.binwrite(m, &pos);});
+                        buffer.binwrite(m, &pos);
                     }
                 }
 
