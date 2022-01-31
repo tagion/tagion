@@ -18,12 +18,10 @@ openssl: $(LIBOPENSSL)
 
 LIBOPENSSL+=$(DTMP)/libcrypto.a
 LIBOPENSSL+=$(DTMP)/libssl.a
-# TOCLEAN_OPENSSL += $(DTMP)/libssl.a
-# TOCLEAN_OPENSSL += $(DTMP)/libcrypto.a
-# TOCLEAN_OPENSSL += $(DTMP_OPENSSL)
+
+prebuild: $(LIBOPENSSL)
 
 $(UNITTEST_BIN): LIBS+=$(LIBOPENSSL)
-$(UNITTEST_BIN): $(LIBOPENSSL)
 
 proper-openssl:
 	$(PRECMD)
