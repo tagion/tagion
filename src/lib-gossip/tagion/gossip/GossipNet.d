@@ -26,7 +26,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
         }
     }
 
-    @trusted
     static private uint setGlobalNodeId(immutable(Pubkey) channel) {
         import core.atomic;
 
@@ -56,9 +55,8 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
 
     protected Tid _transcript_tid;
     @property void transcript_tid(Tid tid)
-    @trusted
     in {
-        assert(_transcript_tid != _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
+        assert(_transcript_tid !is _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
     }
     do {
         _transcript_tid = tid;
@@ -69,9 +67,9 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     }
 
     protected Tid _scripting_engine_tid;
-    @property void scripting_engine_tid(Tid tid) @trusted
+    @property void scripting_engine_tid(Tid tid)
     in {
-        assert(_scripting_engine_tid != _scripting_engine_tid.init, format(
+        assert(_scripting_engine_tid !is _scripting_engine_tid.init, format(
                 "%s hash already been set", __FUNCTION__));
     }
     do {

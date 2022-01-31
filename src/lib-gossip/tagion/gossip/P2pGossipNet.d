@@ -13,7 +13,7 @@ pragma(msg, "fixme(cbr): Eliminated dependency of Services Options");
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control, assumeTrusted;
 
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -180,7 +180,7 @@ unittest {
 
     import p2p.node : Stream;
 
-    @trusted
+    @safe
     synchronized
     class FakeStream : Stream {
         protected bool _writeBytesCalled = false;
@@ -207,6 +207,7 @@ unittest {
         assert(result);
         assert(fakeStream.writeBytesCalled);
     }
+
     { //ConnectionPool: send to non-exist connection
         auto connectionPool = new shared(ConnectionPool!(shared FakeStream, uint))(10.seconds);
         auto fakeStream = new shared(FakeStream)();
@@ -243,7 +244,7 @@ alias ActiveNodeAddressBook = immutable(AddressBook!Pubkey);
 
 @safe
 immutable class AddressBook(TKey) {
-    this(const(NodeAddress[TKey]) addrs) @trusted {
+    this(const(NodeAddress[TKey]) addrs) pure @trusted {
         this.data = cast(immutable) addrs.dup;
     }
 
@@ -298,7 +299,7 @@ struct NodeAddress {
 
                 auto json = parseJSON(address);
                 this.id = json["ID"].str;
-                auto addr = (() @trusted => json["Addrs"].array()[0].str())();
+                auto addr = assumeTrusted!({return json["Addrs"].array.front.str;});
                 auto tcpIndex = addr.indexOf(tcp_token) + tcp_token.length;
                 this.port = to!uint(addr[tcpIndex .. tcpIndex + 4]);
             }
@@ -379,32 +380,28 @@ class StdP2pNet : P2pNet {
         send_stop();
     }
 
-    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.concurrency : tsend = send, prioritySend, Tid, locate;
 
-        auto internal_sender = locate(internal_task_name);
+        auto internal_sender = assumeTrusted!locate(internal_task_name);
         log("send called");
-        if (internal_sender != Tid.init) {
+        if (internal_sender !is Tid.init) {
             counter++;
             log("sending to sender %s", internal_sender);
-            auto t = sender.toDoc;
-            tsend(internal_sender, channel, sender.toDoc, counter);
+            assumeTrusted!({tsend(internal_sender, channel, sender.toDoc, counter);});
         }
         else {
             log("sender not found");
         }
     }
 
-    @trusted
     protected void send_remove(Pubkey pk) {
         import std.concurrency : tsend = send, Tid, locate;
 
-        auto sender = locate(internal_task_name);
-        if (sender != Tid.init) {
+        auto sender = assumeTrusted!locate(internal_task_name);
+        if (sender !is Tid.init) {
             counter++;
-            // log("sending close to sender %d", counter);
-            tsend(sender, pk, counter);
+            assumeTrusted!({tsend(sender, pk, counter);});
         }
         else {
             log("sender not found");

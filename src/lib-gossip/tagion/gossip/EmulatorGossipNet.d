@@ -6,18 +6,12 @@ import std.format;
 import std.array : join;
 import std.conv : to;
 
-// import tagion.revision;
-//import tagion.services.Options;
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, assumeTrusted;
 
-//import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
 
-// import tagion.utils.Random;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
-
-//import tagion.Keywords;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -38,14 +32,13 @@ import core.time;
 import std.datetime;
 import core.thread;
 
-@trusted
-static uint getTids(Tid[] tids) {
+static uint getTids(Tid[] tids) @safe {
     uint result = uint.max;
     foreach (i, ref tid; tids) {
         immutable uint_i = cast(uint) i;
         immutable taskname = uint_i.get_node_name;
-        tid = locate(taskname);
-        if (tid == thisTid) {
+        tid = assumeTrusted!locate(taskname);
+        if (tid is thisTid) {
             result = uint_i;
         }
     }
@@ -56,11 +49,10 @@ static uint getTids(Tid[] tids) {
 class EmulatorGossipNet : GossipNet {
     private uint node_counter = 0;
     private Duration duration;
-    @trusted
     static Tid getTidByNodeNumber(const uint i) {
         immutable taskname = i.get_node_name;
         log("trying to locate: %s", taskname);
-        auto tid = locate(taskname);
+        auto tid = assumeTrusted!locate(taskname);
         return tid;
     }
 
@@ -134,15 +126,14 @@ class EmulatorGossipNet : GossipNet {
         return send_channel;
     }
 
-    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
         log.trace("send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
-        Thread.sleep(duration);
-        _tids[channel].send(sender.toDoc);
+        assumeTrusted!(Thread.sleep)(duration);
+        assumeTrusted!({_tids[channel].send(sender.toDoc);});
         log.trace("sended");
     }
 }
