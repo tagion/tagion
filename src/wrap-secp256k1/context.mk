@@ -25,6 +25,8 @@ CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/i
 CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
 include ${call dir.resolve, cross.mk}
 
+prebuild: $(LIBSECP256K1)
+
 secp256k1: $(LIBSECP256K1)
 	@
 
