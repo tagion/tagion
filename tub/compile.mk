@@ -40,6 +40,7 @@ unittest: $(UNITTEST_BIN)
 .PHONY: unittest
 
 $(DOBJALL):DFLAGS+=$(UNITTEST_FLAGS)
+
 ifdef DEVMODE
 $(UNITTEST_BIN): $(DOBJALL)
 	$(PRECMD)
